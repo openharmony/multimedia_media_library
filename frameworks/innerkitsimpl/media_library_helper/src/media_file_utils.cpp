@@ -1671,8 +1671,9 @@ bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
 
 bool MediaFileUtils::CheckMovingPhotoEffectMode(int32_t effectMode)
 {
-    return effectMode >= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START) &&
-           effectMode <= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_END);
+    return (effectMode >= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START) &&
+        effectMode <= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_END)) ||
+        effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY);
 }
 
 bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)

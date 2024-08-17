@@ -4869,7 +4869,17 @@ napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
 
 napi_value MediaLibraryNapi::CreateMovingPhotoEffectModeEnum(napi_env env)
 {
-    return CreateNumberEnumProperty(env, movingPhotoEffectModeEnum, sMovingPhotoEffectModeEnumRef_);
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_create_object(env, &result), JS_INNER_FAIL);
+    for (int32_t i = 0; i <movingPhotoEffectModeEnum.size(); i++) {
+        CHECK_ARGS(env, AddIntegerNamedProperty(env, result, movingPhotoEffectModeEnum[i], i),
+            JS_INNER_FAIL);
+    }
+    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "IMAGE_ONLY",
+        static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)), JS_INNER_FAIL);
+    CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sMovingPhotoEffectModeEnumRef_),
+        JS_INNER_FAIL);
+    return result;
 }
 
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,
