@@ -47,7 +47,7 @@ static int32_t SendLivePhoto(const UniqueFd &livePhotoFd, const string &destPath
     off_t totalSize = statSrc.st_size;
     CHECK_AND_RETURN_RET_LOG(sizeToSend <= totalSize - offset, E_INVALID_LIVE_PHOTO, "Failed to check sizeToSend");
 
-    if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateFile(destPath)) {
+    if (!MediaFileUtils::IsFileExists(destPath) && MediaFileUtils::CreateAsset(destPath) != E_OK) {
         MEDIA_ERR_LOG("Failed to create file, path:%{private}s", destPath.c_str());
         return E_HAS_FS_ERROR;
     }
