@@ -743,24 +743,47 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
     return isSuccess;
 }
 
-static void HandleSpecialFile(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values)
+int32_t FindSubtype(const FileInfo &fileInfo)
 {
-    if (fileInfo.isBurst == BURST_COVER) {
-        // only when gallery.db # gallery_media # isBurst = 1, then media_library.db # Photos # burst_cover_level = 1.
-        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER);
-    } else if (fileInfo.isBurst == BURST_MEMBER) {
-        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_MEMBER);
-    }
     if (fileInfo.burstKey.size() > 0) {
-        values.PutString(PhotoColumn::PHOTO_BURST_KEY, fileInfo.burstKey);
-        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
-        values.PutInt(PhotoColumn::PHOTO_BURST_SEQUENCE, fileInfo.burstSequence);
-        values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading burst photo
+        return static_cast<int32_t>(PhotoSubType::BURST);
     }
+
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
-        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
-        values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo now
+        return static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
     }
+    return static_cast<int32_t>(PhotoSubType::DEFAULT);
+}
+
+std::string FindBurstKey(const FileInfo &fileInfo)
+{
+    if (fileInfo.burstKey.size() > 0) {
+        return fileInfo.burstKey;
+    }
+    return "";
+}
+
+int32_t FindDirty(const FileInfo &fileInfo)
+{
+    // prevent uploading burst photo
+    if (fileInfo.burstKey.size() > 0) {
+        return -1;
+    }
+
+    // prevent uploading moving photo
+    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
+        return -1;
+    }
+    return static_cast<int32_t>(DirtyTypes::TYPE_NEW);
+}
+
+int32_t FindBurstCoverLevel(const FileInfo &fileInfo)
+{
+    // identify burst photo
+    if (fileInfo.isBurst == BURST_COVER || fileInfo.isBurst == BURST_MEMBER) {
+        return fileInfo.isBurst;
+    }
+    return BURST_COVER;
 }
 
 NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
@@ -802,7 +825,10 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
-    HandleSpecialFile(fileInfo, values);
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, FindSubtype(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, FindDirty(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, FindBurstCoverLevel(fileInfo));
+    values.PutString(PhotoColumn::PHOTO_BURST_KEY, FindBurstKey(fileInfo));
     return values;
 }
 
