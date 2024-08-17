@@ -33,6 +33,7 @@
 #include "photo_map_column.h"
 #include "photo_album_column.h"
 #include "vision_column.h"
+#include "moving_photo_file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -403,6 +404,19 @@ int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId
     return E_OK;
 }
 
+int32_t ParseLivePhoto(const std::string& path, const std::unique_ptr<Metadata>& data)
+{
+    if (data->GetFileMimeType() != "image/jpeg") {
+        return E_ERR;
+    }
+    if (!MovingPhotoFileUtils::IsLivePhoto(path)) {
+        return E_ERR;
+    }
+    return MovingPhotoFileUtils::ConvertToMovingPhoto(path, path,
+        MovingPhotoFileUtils::GetMovingPhotoVideoPath(path),
+        MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(path));
+}
+
 int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
 {
     data_ = make_unique<Metadata>();
@@ -462,7 +476,9 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
     data_->SetFileExtension(extension);
     data_->SetFileMimeType(mimeType);
     data_->SetFileMediaType(MimeTypeUtils::GetMediaTypeFromMimeType(mimeType));
-
+    if (ParseLivePhoto(path_, data_) == E_OK) {
+        data_->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    }
     return E_OK;
 }
 

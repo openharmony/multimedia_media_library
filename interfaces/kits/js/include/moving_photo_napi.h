@@ -31,6 +31,7 @@ public:
     ~MovingPhotoNapi() = default;
     EXPORT static napi_value Init(napi_env env, napi_value exports);
     static int32_t OpenReadOnlyFile(const string& uri, bool isReadImage);
+    static int32_t OpenReadOnlyMovingPhoto(const string& destLivePhotoUri);
     static napi_value NewMovingPhotoNapi(napi_env env, const string& photoUri, SourceMode sourceMode);
     std::string GetUri();
     SourceMode GetSourceMode();
@@ -63,6 +64,7 @@ struct MovingPhotoAsyncContext : public NapiError {
     ResourceType resourceType;
     std::string destImageUri;
     std::string destVideoUri;
+    std::string destLivePhotoUri;
     RequestContentMode requestContentMode = UNDEFINED;
     void* arrayBufferData = nullptr;
     size_t arrayBufferLength = 0;
