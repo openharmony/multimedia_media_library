@@ -68,11 +68,10 @@ static bool CompareIfContentEquals(const unsigned char originArray[], const stri
     int32_t fd = open(path.c_str(), O_RDONLY);
     int32_t len = lseek(fd, 0, SEEK_END);
     lseek(fd, 0, SEEK_SET);
-    if (len != size) {
+    if (len < 0 || len != size) {
         MEDIA_ERR_LOG("Failed to check size: %{public}d %{public}d", size, len);
         return false;
     }
-
     unsigned char* buf = static_cast<unsigned char*>(malloc(len));
     if (buf == nullptr) {
         return false;
