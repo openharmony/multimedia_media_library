@@ -513,6 +513,16 @@ int64_t Metadata::GetCoverPosition() const
     return coverPosition_;
 }
 
+void Metadata::SetFrameIndex(const VariantData &frameIndex)
+{
+    frameIndex_ = std::get<int32_t>(frameIndex);
+}
+
+int32_t Metadata::GetFrameIndex() const
+{
+    return frameIndex_;
+}
+
 void Metadata::SetIsTemp(const VariantData &isTemp)
 {
     isTemp_ = std::get<int32_t>(isTemp);
