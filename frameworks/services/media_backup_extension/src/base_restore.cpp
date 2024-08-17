@@ -478,9 +478,11 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
         }
         std::string tmpPath = fileInfos[i].cloudPath;
         std::string localPath = tmpPath.replace(0, RESTORE_AUDIO_CLOUD_DIR.length(), RESTORE_AUDIO_LOCAL_DIR);
-        if (!BackupFileUtils::MoveFile(fileInfos[i].filePath, localPath, sceneCode)) {
-            MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s.",
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+        int32_t moveErrCode = BackupFileUtils::MoveFile(fileInfos[i].filePath, localPath, sceneCode);
+        if (moveErrCode != E_SUCCESS) {
+            MEDIA_ERR_LOG("MoveFile failed, filePath: %{public}s, errCode: %{public}d, errno: %{public}d",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(), moveErrCode, errno);
+            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::MOVE_FAILED);
             continue;
         }
         BackupFileUtils::ModifyFile(localPath, fileInfos[i].dateModified / MSEC_TO_SEC);
@@ -531,10 +533,11 @@ static bool MoveExtraData(const FileInfo &fileInfo, int32_t sceneCode)
         MEDIA_WARN_LOG("Failed to get local extra data path");
         return false;
     }
-    if (!BackupFileUtils::MoveFile(fileInfo.extraDataPath, localExtraDataPath, sceneCode)) {
-        MEDIA_WARN_LOG("MoveFile failed, src:%{public}s, dest:%{public}s, errno:%{public}d",
+    int32_t errCode = BackupFileUtils::MoveFile(fileInfo.extraDataPath, localExtraDataPath, sceneCode);
+    if (errCode != E_OK) {
+        MEDIA_WARN_LOG("MoveFile failed, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
             BackupFileUtils::GarbleFilePath(fileInfo.extraDataPath, sceneCode).c_str(),
-            BackupFileUtils::GarbleFilePath(localExtraDataPath, sceneCode).c_str(), errno);
+            BackupFileUtils::GarbleFilePath(localExtraDataPath, sceneCode).c_str(), errCode, errno);
         return false;
     }
     return true;
@@ -544,10 +547,11 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
 {
     string tmpPath = fileInfo.cloudPath;
     string localPath = tmpPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
-    if (!BackupFileUtils::MoveFile(fileInfo.filePath, localPath, sceneCode)) {
-        MEDIA_ERR_LOG("MoveFile failed, src:%{public}s, dest:%{public}s, errno:%{public}d",
+    int32_t errCode = BackupFileUtils::MoveFile(fileInfo.filePath, localPath, sceneCode);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("MoveFile failed, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
             BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(),
-            BackupFileUtils::GarbleFilePath(localPath, sceneCode).c_str(), errno);
+            BackupFileUtils::GarbleFilePath(localPath, sceneCode).c_str(), errCode, errno);
         return false;
     }
     BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified);
@@ -555,10 +559,12 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
         string tmpVideoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(fileInfo.cloudPath);
         string localVideoPath = tmpVideoPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
-        if (!BackupFileUtils::MoveFile(fileInfo.movingPhotoVideoPath, localVideoPath, sceneCode)) {
-            MEDIA_ERR_LOG("MoveFile failed for moving photo, src:%{public}s, dest:%{public}s, errno:%{public}d",
+        errCode = BackupFileUtils::MoveFile(fileInfo.movingPhotoVideoPath, localVideoPath, sceneCode);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG(
+                "MoveFile failed for mov video, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
                 BackupFileUtils::GarbleFilePath(fileInfo.movingPhotoVideoPath, sceneCode).c_str(),
-                BackupFileUtils::GarbleFilePath(localVideoPath, sceneCode).c_str(), errno);
+                BackupFileUtils::GarbleFilePath(localVideoPath, sceneCode).c_str(), errCode, errno);
             (void)MediaFileUtils::DeleteFile(localPath);
             return false;
         }

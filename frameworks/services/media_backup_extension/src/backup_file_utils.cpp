@@ -223,7 +223,7 @@ int32_t BackupFileUtils::PreparePath(const std::string &path)
     return E_OK;
 }
 
-bool BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode)
+int32_t BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode)
 {
     bool errRet = false;
     if (!MediaFileUtils::IsFileExists(oldPath)) {
@@ -233,7 +233,7 @@ bool BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, int
         MEDIA_ERR_LOG("new path: %{public}s is exists.", GarbleFilePath(newPath, sceneCode).c_str());
         return E_FILE_EXIST;
     }
-    return (rename(oldPath.c_str(), newPath.c_str()) == E_SUCCESS);
+    return rename(oldPath.c_str(), newPath.c_str());
 }
 
 std::string BackupFileUtils::GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
