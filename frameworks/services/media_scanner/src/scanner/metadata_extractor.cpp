@@ -29,6 +29,7 @@
 #include "nlohmann/json.hpp"
 #include "sandbox_helper.h"
 #include "shooting_mode_column.h"
+#include "moving_photo_file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -476,7 +477,16 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
     }
 
     data->SetCoverPosition(videoData->GetCoverPosition());
-    data->SetFileSize(data->GetFileSize() + videoData->GetFileSize());
+
+    uint32_t frameIndex = MovingPhotoFileUtils::GetFrameIndex(videoData->GetCoverPosition(),
+        UniqueFd(open(videoPath.c_str(), O_RDONLY)));
+    off_t fileSize{0};
+    if (MovingPhotoFileUtils::GetExtraDataLen(MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(data->GetFilePath()),
+        videoPath, frameIndex, fileSize) != E_OK) {
+        MEDIA_ERR_LOG("Failed to get extra data file size");
+        return E_ERR;
+    }
+    data->SetFileSize(data->GetFileSize() + videoData->GetFileSize() + fileSize);
     int64_t videoDateModified = videoData->GetFileDateModified();
     if (videoDateModified > data->GetFileDateModified()) {
         data->SetFileDateModified(videoDateModified);
