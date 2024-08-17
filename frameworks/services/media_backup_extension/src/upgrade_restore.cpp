@@ -743,6 +743,26 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
     return isSuccess;
 }
 
+static void HandleSpecialFile(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values)
+{
+    if (fileInfo.isBurst == BURST_COVER) {
+        // only when gallery.db # gallery_media # isBurst = 1, then media_library.db # Photos # burst_cover_level = 1.
+        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER);
+    } else if (fileInfo.isBurst == BURST_MEMBER) {
+        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_MEMBER);
+    }
+    if (fileInfo.burstKey.size() > 0) {
+        values.PutString(PhotoColumn::PHOTO_BURST_KEY, fileInfo.burstKey);
+        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
+        values.PutInt(PhotoColumn::PHOTO_BURST_SEQUENCE, fileInfo.burstSequence);
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading burst photo
+    }
+    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
+        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo now
+    }
+}
+
 NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
     int32_t sourceType) const
 {
@@ -782,22 +802,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
-    if (fileInfo.isBurst == BURST_COVER) {
-        // only when gallery.db # gallery_media # isBurst = 1, then media_library.db # Photos # burst_cover_level = 1.
-        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER);
-    } else if (fileInfo.isBurst == BURST_MEMBER) {
-        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_MEMBER);
-    }
-    if (fileInfo.burstKey.size() > 0) {
-        values.PutString(PhotoColumn::PHOTO_BURST_KEY, fileInfo.burstKey);
-        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
-        values.PutInt(PhotoColumn::PHOTO_BURST_SEQUENCE, fileInfo.burstSequence);
-        values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading burst photo
-    }
-    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
-        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
-        values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo now
-    }
+    HandleSpecialFile(fileInfo, values);
     return values;
 }
 

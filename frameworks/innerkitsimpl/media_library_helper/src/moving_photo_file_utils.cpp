@@ -109,7 +109,8 @@ static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataS
     for (int32_t i = 0; i < CINEMAGRAPH_INFO_SIZE_LEN; i++) {
         cinemagraphSizeStream << hex << static_cast<int32_t>(cinemagraphSize[i]);
     }
-    extraDataSize = MIN_STANDARD_SIZE + std::stoi(cinemagraphSizeStream.str(), 0, 16); // size is hexadecimal
+    const int32_t HEX_BASE = 16;
+    extraDataSize = MIN_STANDARD_SIZE + std::stoi(cinemagraphSizeStream.str(), 0, HEX_BASE);
     return E_OK;
 }
 
@@ -235,8 +236,10 @@ int32_t MovingPhotoFileUtils::GetVersionAndFrameNum(const string &tag,
         return E_INVALID_VALUES;
     }
 
-    version = static_cast<uint32_t>(stoi(result[1]));
-    frameIndex = static_cast<uint32_t>(stoi(result[2]));
+    const int32_t VERSION_POSITION = 1;
+    const int32_t FRAME_INDEX_POSITION = 2;
+    version = static_cast<uint32_t>(stoi(result[VERSION_POSITION]));
+    frameIndex = static_cast<uint32_t>(stoi(result[FRAME_INDEX_POSITION]));
     size_t blankIndex = tag.find_first_of(' ');
     string tagTrimmed = tag;
     if (blankIndex != string::npos) {
