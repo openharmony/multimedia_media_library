@@ -56,6 +56,15 @@ const std::unordered_map<SourceState, SourceState> SourceLoader::ALL_SOURCE_LOAD
     { SourceState::CLOUD_ORIGIN, SourceState::FINISH },
 };
 
+// For cloud video, generating thumbnail foreground in LOCAL_ORIGIN state may download its source video.
+const std::unordered_map<SourceState, SourceState> SourceLoader::ALL_SOURCE_LOADING_CLOUD_VIDEO_STATES = {
+    { SourceState::BEGIN, SourceState::LOCAL_THUMB },
+    { SourceState::LOCAL_THUMB, SourceState::LOCAL_LCD },
+    { SourceState::LOCAL_LCD, SourceState::CLOUD_LCD },
+    { SourceState::CLOUD_LCD, SourceState::CLOUD_ORIGIN },
+    { SourceState::CLOUD_ORIGIN, SourceState::FINISH },
+};
+
 const std::unordered_map<SourceState, SourceState> SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES = {
     { SourceState::BEGIN, SourceState::CLOUD_LCD },
     { SourceState::CLOUD_LCD, SourceState::CLOUD_ORIGIN },
