@@ -412,6 +412,17 @@ int32_t ParseLivePhoto(const std::string& path, const std::unique_ptr<Metadata>&
     if (!MovingPhotoFileUtils::IsLivePhoto(path)) {
         return E_ERR;
     }
+
+    string extraDataDir = MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(path);
+    if (extraDataDir.empty()) {
+        MEDIA_ERR_LOG("failed to get local extra data dir");
+        return E_ERR;
+    }
+    if (!MediaFileUtils::IsFileExists(extraDataDir) && MediaFileUtils::CreateAsset(extraDataDir) != E_OK) {
+        MEDIA_ERR_LOG("Failed to create file, path:%{private}s", extraDataDir.c_str());
+        return E_ERR;
+    }
+
     return MovingPhotoFileUtils::ConvertToMovingPhoto(path, path,
         MovingPhotoFileUtils::GetMovingPhotoVideoPath(path),
         MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(path));
