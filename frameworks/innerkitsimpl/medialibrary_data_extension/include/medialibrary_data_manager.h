@@ -137,6 +137,7 @@ private:
     int32_t DeleteInRdbPredicatesAnalysis(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate);
     int32_t UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
         const DataShare::DataSharePredicates &predicates);
+    int32_t SolveInsertCmdSub(MediaLibraryCommand &cmd);
     void HandleOtherInitOperations();
     void InitRefreshAlbum();
     int32_t ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
