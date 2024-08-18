@@ -342,7 +342,6 @@ static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<Fi
             E_INVALID_VALUES,
             "Failed convert to live photo");
         fileAsset->SetPath(livePhotoPath);
-        isMovingPhotoVideo = true;
     }
     return E_OK;
 }

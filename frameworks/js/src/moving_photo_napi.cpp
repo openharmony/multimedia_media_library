@@ -277,7 +277,7 @@ static int32_t AcquireFdForArrayBuffer(MovingPhotoAsyncContext* context)
             fd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, false);
             CHECK_COND_RET(HandleFd(fd), fd, "Open source video file failed");
             return fd;
-        case ResourceType::VIDEO_RESOURCE:
+        case ResourceType::PRIVATE_MOVING_PHOTO_RESOURCE:
             fd = MovingPhotoNapi::OpenReadOnlyMovingPhoto(movingPhotoUri);
             CHECK_COND_RET(HandleFd(fd), fd, "Open source video file failed");
             return fd;

@@ -45,6 +45,7 @@ public:
     EXPORT static std::string GetMovingPhotoExtraDataDir(const std::string &imageCloudPath);
     EXPORT static std::string GetMovingPhotoExtraDataPath(const std::string &imageCloudPath);
 
+    EXPORT static std::string GetLivePhotoCacheDir(const std::string& path);
     EXPORT static std::string GetLivePhotoCachePath(const std::string& path);
     EXPORT static bool IsLivePhoto(const std::string& path);
     EXPORT static int32_t GetExtraDataLen(const std::string& extraDataPath, const std::string& videoPath,
