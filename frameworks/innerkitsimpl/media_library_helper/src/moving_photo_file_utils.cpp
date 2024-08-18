@@ -156,7 +156,7 @@ static string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off
         return "";
     }
     char* buffer = new char[needSize + 1];
-    std::memset(buffer, 0, needSize + 1); 
+    memset_s(buffer, needSize + 1, 0, needSize + 1);
     ssize_t bytesRead;
     if ((bytesRead = read(fd.Get(), buffer, needSize)) < 0) {
         MEDIA_ERR_LOG("failed to read extra file errno: %{public}d", errno);
@@ -168,7 +168,8 @@ static string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off
     return content;
 }
 
-static int32_t ReadExtraFile(const std::string& extraPath, map<string, string>& extraData) {
+static int32_t ReadExtraFile(const std::string& extraPath, map<string, string>& extraData)
+{
     UniqueFd fd(open(extraPath.c_str(), O_RDONLY));
     if (fd.Get() == E_ERR) {
         MEDIA_ERR_LOG("failed to open e file");
@@ -635,6 +636,6 @@ string MovingPhotoFileUtils::GetLivePhotoCachePath(const string &path)
     if (parentPath.empty()) {
         return "";
     }
-    return parentPath + "/livePhoto." + MediaFileUtils::GetExtensionFromPath(path);;
+    return parentPath + "/livePhoto." + MediaFileUtils::GetExtensionFromPath(path);
 }
 } // namespace OHOS::Media
