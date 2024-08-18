@@ -673,8 +673,7 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
     info.specialFileType = GetInt32Val(GALLERY_SPECIAL_FILE_TYPE, resultSet);
-    if (BackupFileUtils::IsLivePhoto(info) && !BackupFileUtils::ConvertToMovingPhoto(
-        info.filePath, info.movingPhotoVideoPath, info.extraDataPath)) {
+    if (BackupFileUtils::IsLivePhoto(info) && !BackupFileUtils::ConvertToMovingPhoto(info)) {
         MEDIA_ERR_LOG("Failed to convert live photo to moving photo, filePath = %{public}s",
             BackupFileUtils::GarbleFilePath(info.filePath, UPGRADE_RESTORE_ID).c_str());
         return false;

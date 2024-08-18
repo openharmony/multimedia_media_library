@@ -2326,17 +2326,20 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_to_moving_photo, T
     string livePhotoPath = "/data/test/backup_test_livephoto.jpg";
     EXPECT_EQ(MediaFileUtils::CreateDirectory("/data/test/"), true);
     EXPECT_EQ(MediaFileUtils::CreateFile(livePhotoPath), true);
-    string movingPhotoVideoPath;
-    string extraDataPath;
-    BackupFileUtils::ConvertToMovingPhoto(livePhotoPath, movingPhotoVideoPath, extraDataPath);
-    EXPECT_EQ(movingPhotoVideoPath, "/data/test/backup_test_livephoto.jpg.mp4");
-    EXPECT_EQ(extraDataPath, "/data/test/backup_test_livephoto.jpg.extra");
 
-    EXPECT_EQ(MediaFileUtils::CreateFile(movingPhotoVideoPath), true);
-    EXPECT_EQ(MediaFileUtils::CreateFile(extraDataPath), true);
-    BackupFileUtils::ConvertToMovingPhoto(livePhotoPath, movingPhotoVideoPath, extraDataPath);
-    EXPECT_EQ(movingPhotoVideoPath, "/data/test/backup_test_livephoto.jpg.mp4.dup.mp4");
-    EXPECT_EQ(extraDataPath, "/data/test/backup_test_livephoto.jpg.extra.dup.extra");
+    FileInfo info;
+    info.filePath = livePhotoPath;
+    BackupFileUtils::ConvertToMovingPhoto(info);
+    EXPECT_EQ(info.movingPhotoVideoPath, "/data/test/backup_test_livephoto.jpg.mp4");
+    EXPECT_EQ(info.extraDataPath, "/data/test/backup_test_livephoto.jpg.extra");
+    EXPECT_EQ(info.filePath, "/data/test/backup_test_livephoto.jpg.jpg");
+
+    info.filePath = livePhotoPath;
+    EXPECT_EQ(MediaFileUtils::CreateFile(info.movingPhotoVideoPath), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(info.extraDataPath), true);
+    BackupFileUtils::ConvertToMovingPhoto(info);
+    EXPECT_EQ(info.movingPhotoVideoPath, "/data/test/backup_test_livephoto.jpg.mp4.dup.mp4");
+    EXPECT_EQ(info.extraDataPath, "/data/test/backup_test_livephoto.jpg.extra.dup.extra");
     MEDIA_INFO_LOG("medialib_backup_test_convert_to_moving_photo end");
 }
 } // namespace Media

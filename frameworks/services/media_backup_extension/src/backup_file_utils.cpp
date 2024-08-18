@@ -405,19 +405,30 @@ static void addPathSuffix(const string &oldPath, const string &suffix, string &n
     }
 }
 
-bool BackupFileUtils::ConvertToMovingPhoto(const string &livePhotoPath,
-    string &movingPhotoVideoPath, string &extraDataPath)
+bool BackupFileUtils::ConvertToMovingPhoto(FileInfo &fileInfo)
 {
-    if (!MediaFileUtils::IsFileExists(livePhotoPath)) {
-        MEDIA_ERR_LOG("Live photo does not exist, path:%{private}s, errno:%{public}d", livePhotoPath.c_str(), errno);
+    if (!MediaFileUtils::IsFileExists(fileInfo.filePath)) {
+        MEDIA_ERR_LOG("Live photo does not exist, path:%{private}s, errno:%{public}d",
+            fileInfo.filePath.c_str(), errno);
         return false;
     }
 
-    addPathSuffix(livePhotoPath, ".mp4", movingPhotoVideoPath);
-    addPathSuffix(livePhotoPath, ".extra", extraDataPath);
-    int32_t ret = MovingPhotoFileUtils::ConvertToMovingPhoto(livePhotoPath,
-        livePhotoPath, movingPhotoVideoPath, extraDataPath);
-    return ret == E_OK;
+    string movingPhotoImagePath;
+    addPathSuffix(fileInfo.filePath, ".jpg", movingPhotoImagePath);
+    addPathSuffix(fileInfo.filePath, ".mp4", fileInfo.movingPhotoVideoPath);
+    addPathSuffix(fileInfo.filePath, ".extra", fileInfo.extraDataPath);
+    int32_t ret = MovingPhotoFileUtils::ConvertToMovingPhoto(
+        fileInfo.filePath, movingPhotoImagePath, fileInfo.movingPhotoVideoPath, fileInfo.extraDataPath);
+    if (ret != E_OK) {
+        return false;
+    }
+
+    if (!MediaFileUtils::DeleteFile(fileInfo.filePath)) {
+        MEDIA_WARN_LOG("Failed to delete original live photo: %{private}s, errno: %{public}d",
+            fileInfo.filePath.c_str(), errno);
+    }
+    fileInfo.filePath = movingPhotoImagePath;
+    return true;
 }
 } // namespace Media
 } // namespace OHOS
