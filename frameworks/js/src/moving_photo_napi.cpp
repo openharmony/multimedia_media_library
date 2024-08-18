@@ -158,7 +158,7 @@ int32_t MovingPhotoNapi::OpenReadOnlyFile(const std::string& uri, bool isReadIma
     return isReadImage ? OpenReadOnlyImage(curUri, isMediaLibUri) : OpenReadOnlyVideo(curUri, isMediaLibUri);
 }
 
-int32_t MovingPhotoNapi::OpenReadOnlyMovingPhoto(const string& destLivePhotoUri)
+int32_t MovingPhotoNapi::OpenReadOnlyLivePhoto(const string& destLivePhotoUri)
 {
     if (destLivePhotoUri.empty()) {
         NAPI_ERR_LOG("Failed to open read only file, uri is empty");
@@ -251,7 +251,7 @@ static int32_t RequestContentToSandbox(MovingPhotoAsyncContext* context)
         CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
     }
     if (!context->destLivePhotoUri.empty()) {
-        int32_t livePhotoFd = MovingPhotoNapi::OpenReadOnlyMovingPhoto(movingPhotoUri);
+        int32_t livePhotoFd = MovingPhotoNapi::OpenReadOnlyLivePhoto(movingPhotoUri);
         CHECK_COND_RET(HandleFd(livePhotoFd), livePhotoFd, "Open source video file failed");
         int32_t ret = WriteToSandboxUri(livePhotoFd, context->destLivePhotoUri);
         CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
@@ -278,7 +278,7 @@ static int32_t AcquireFdForArrayBuffer(MovingPhotoAsyncContext* context)
             CHECK_COND_RET(HandleFd(fd), fd, "Open source video file failed");
             return fd;
         case ResourceType::PRIVATE_MOVING_PHOTO_RESOURCE:
-            fd = MovingPhotoNapi::OpenReadOnlyMovingPhoto(movingPhotoUri);
+            fd = MovingPhotoNapi::OpenReadOnlyLivePhoto(movingPhotoUri);
             CHECK_COND_RET(HandleFd(fd), fd, "Open source video file failed");
             return fd;
         default:

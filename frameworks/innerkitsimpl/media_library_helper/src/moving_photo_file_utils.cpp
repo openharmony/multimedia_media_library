@@ -152,7 +152,7 @@ static string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off
 {
     off_t readPosition = fileSize >= offset ? fileSize - offset : 0;
     if (lseek(fd.Get(), readPosition, SEEK_SET) == E_ERR) {
-        MEDIA_ERR_LOG("failed to lseek extra file");
+        MEDIA_ERR_LOG("failed to lseek extra file errno: %{public}d", errno);
         return "";
     }
     char* buffer = new char[needSize + 1];
