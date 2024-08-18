@@ -408,7 +408,7 @@ static void addPathSuffix(const string &oldPath, const string &suffix, string &n
 bool BackupFileUtils::ConvertToMovingPhoto(FileInfo &fileInfo)
 {
     if (!MediaFileUtils::IsFileExists(fileInfo.filePath)) {
-        MEDIA_ERR_LOG("Live photo does not exist, path:%{private}s, errno:%{public}d",
+        MEDIA_ERR_LOG("Live photo does not exist, path: %{private}s, errno: %{public}d",
             fileInfo.filePath.c_str(), errno);
         return false;
     }
