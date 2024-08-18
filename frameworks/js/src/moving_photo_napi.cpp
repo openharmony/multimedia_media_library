@@ -251,7 +251,7 @@ static int32_t RequestContentToSandbox(MovingPhotoAsyncContext* context)
         CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
     }
     if (!context->destLivePhotoUri.empty()) {
-        int32_t livePhotoFd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, false);
+        int32_t livePhotoFd = MovingPhotoNapi::OpenReadOnlyMovingPhoto(movingPhotoUri);
         CHECK_COND_RET(HandleFd(livePhotoFd), livePhotoFd, "Open source video file failed");
         int32_t ret = WriteToSandboxUri(livePhotoFd, context->destLivePhotoUri);
         CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
