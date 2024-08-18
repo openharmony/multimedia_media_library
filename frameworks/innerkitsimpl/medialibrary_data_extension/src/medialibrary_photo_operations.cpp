@@ -336,8 +336,12 @@ static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<Fi
             E_INVALID_VALUES,
             "Non-moving photo is requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
             id.c_str(), fileAsset->GetPhotoSubType());
-        fileAsset->SetPath(MovingPhotoFileUtils::ConvertToLivePhoto(fileAsset->GetPath(),
-            fileAsset->GetCoverPosition()));
+        string livePhotoPath;
+        if (MovingPhotoFileUtils::ConvertToLivePhoto(fileAsset->GetPath(),
+            fileAsset->GetCoverPosition(), livePhotoPath) != E_OK) {
+            return E_INVALID_VALUES;
+        }
+        fileAsset->SetPath(livePhotoPath);
         isMovingPhotoVideo = true;
     }
     return E_OK;
