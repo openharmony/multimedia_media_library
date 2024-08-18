@@ -100,6 +100,8 @@ void Metadata::Init()
         &Metadata::SetDynamicRangeType);
     memberFuncMap_[PhotoColumn::PHOTO_FRONT_CAMERA] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetFrontCamera);
+    memberFuncMap_[PhotoColumn::MEDIA_FILE_PATH] = make_pair(ResultSetDataType::TYPE_STRING,
+        &Metadata::SetImagePath);
     memberFuncMap_[PhotoColumn::PHOTO_IS_TEMP] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetIsTemp);
 }
 
@@ -503,6 +505,16 @@ std::string Metadata::GetFrontCamera() const
     return frontcamera_;
 }
 
+void Metadata::SetMovingPhotoImagePath(const VariantData &imagePath)
+{
+    movingPhotoImagePath_ = std::get<string>(imagePath);
+}
+
+std::string Metadata::GetMovingPhotoImagePath() const
+{
+    return movingPhotoImagePath_;
+}
+
 void Metadata::SetCoverPosition(const VariantData &coverPosition)
 {
     coverPosition_ = std::get<int64_t>(coverPosition);
@@ -511,6 +523,16 @@ void Metadata::SetCoverPosition(const VariantData &coverPosition)
 int64_t Metadata::GetCoverPosition() const
 {
     return coverPosition_;
+}
+
+void Metadata::SetFrameIndex(const VariantData &frameIndex)
+{
+    frameIndex_ = std::get<int32_t>(frameIndex);
+}
+
+int32_t Metadata::GetFrameIndex() const
+{
+    return frameIndex_;
 }
 
 void Metadata::SetIsTemp(const VariantData &isTemp)

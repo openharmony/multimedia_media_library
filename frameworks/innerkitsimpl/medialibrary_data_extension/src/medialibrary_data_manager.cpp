@@ -939,7 +939,7 @@ static void CacheAging()
 
     std::error_code errCode;
     time_t now = time(nullptr);
-    constexpr int thresholdSeconds = 7 * 24 * 60 * 60; // 7 days
+    constexpr int thresholdSeconds = 24 * 60 * 60; // 24 hours
     for (const auto& entry : filesystem::recursive_directory_iterator(cacheDir)) {
         string filePath = entry.path().string();
         if (!entry.is_regular_file()) {

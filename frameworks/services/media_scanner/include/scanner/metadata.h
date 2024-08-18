@@ -138,12 +138,18 @@ public:
 
     void SetFrontCamera(const VariantData &forntcamera);
     EXPORT std::string GetFrontCamera() const;
+    
+    void SetMovingPhotoImagePath(const VariantData &imagePath);
+    EXPORT std::string GetMovingPhotoImagePath() const;
 
     void SetDynamicRangeType(const VariantData &type);
     EXPORT int32_t GetDynamicRangeType() const;
 
     void SetCoverPosition(const VariantData &coverPosition);
     int64_t GetCoverPosition() const;
+
+    void SetFrameIndex(const VariantData &frameIndex);
+    int32_t GetFrameIndex() const;
 
     EXPORT void SetIsTemp(const VariantData &isTemp);
     EXPORT int32_t GetIsTemp();
@@ -225,9 +231,15 @@ private:
 
     // front camera
     std::string frontcamera_;
+    
+    // image path
+    std::string movingPhotoImagePath_;
 
-    // cover position
+    // cover position of moving photo
     int64_t coverPosition_ = 0;
+
+    // frame index of live photo
+    int32_t frameIndex_ = 0;
 
     int32_t isTemp_;
 };
