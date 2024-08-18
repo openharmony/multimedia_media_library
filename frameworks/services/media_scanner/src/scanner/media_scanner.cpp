@@ -404,28 +404,28 @@ int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId
     return E_OK;
 }
 
-int32_t ParseLivePhoto(const std::string& path, const std::unique_ptr<Metadata>& data)
+bool ParseLivePhoto(const std::string& path, const std::unique_ptr<Metadata>& data)
 {
     if (data->GetFileMimeType() != "image/jpeg") {
-        return E_ERR;
+        return false;
     }
     if (!MovingPhotoFileUtils::IsLivePhoto(path)) {
-        return E_ERR;
+        return false;
     }
 
     string extraDataDir = MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(path);
     if (extraDataDir.empty()) {
         MEDIA_ERR_LOG("failed to get local extra data dir");
-        return E_ERR;
+        return false;
     }
     if (!MediaFileUtils::IsFileExists(extraDataDir) && MediaFileUtils::CreateAsset(extraDataDir) != E_OK) {
         MEDIA_ERR_LOG("Failed to create file, path:%{private}s", extraDataDir.c_str());
-        return E_ERR;
+        return false;
     }
 
     return MovingPhotoFileUtils::ConvertToMovingPhoto(path, path,
         MovingPhotoFileUtils::GetMovingPhotoVideoPath(path),
-        MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(path));
+        MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(path)) == E_OK;
 }
 
 int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
@@ -487,7 +487,7 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
     data_->SetFileExtension(extension);
     data_->SetFileMimeType(mimeType);
     data_->SetFileMediaType(MimeTypeUtils::GetMediaTypeFromMimeType(mimeType));
-    if (ParseLivePhoto(path_, data_) == E_OK) {
+    if (ParseLivePhoto(path_, data_)) {
         data_->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
     return E_OK;

@@ -518,13 +518,13 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
 
     uint32_t frameIndex = MovingPhotoFileUtils::GetFrameIndex(videoData->GetCoverPosition(),
         UniqueFd(open(videoPath.c_str(), O_RDONLY)));
-    off_t fileSize{0};
+    off_t extraDataSize{0};
     if (MovingPhotoFileUtils::GetExtraDataLen(MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(data->GetFilePath()),
-        videoPath, frameIndex, fileSize) != E_OK) {
+        videoPath, frameIndex, extraDataSize) != E_OK) {
         MEDIA_ERR_LOG("Failed to get extra data file size");
         return E_ERR;
     }
-    data->SetFileSize(data->GetFileSize() + videoData->GetFileSize() + fileSize);
+    data->SetFileSize(data->GetFileSize() + videoData->GetFileSize() + extraDataSize);
     int64_t videoDateModified = videoData->GetFileDateModified();
     if (videoDateModified > data->GetFileDateModified()) {
         data->SetFileDateModified(videoDateModified);

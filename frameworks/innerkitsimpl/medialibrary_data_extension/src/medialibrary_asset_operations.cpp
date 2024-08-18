@@ -2021,6 +2021,7 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
         InvalidateThumbnail(fileId, type);
     }
     CreateThumbnailFileScaned(uri, path, this->isCreateThumbSync);
+    MediaFileUtils::DeleteFile(MovingPhotoFileUtils::GetLivePhotoCachePath(path));
     return E_OK;
 }
 
