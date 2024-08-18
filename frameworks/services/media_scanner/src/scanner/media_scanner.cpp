@@ -418,7 +418,7 @@ bool ParseLivePhoto(const std::string& path, const std::unique_ptr<Metadata>& da
         MEDIA_ERR_LOG("failed to get local extra data dir");
         return false;
     }
-    if (!MediaFileUtils::IsFileExists(extraDataDir) && MediaFileUtils::CreateAsset(extraDataDir) != E_OK) {
+    if (!MediaFileUtils::IsFileExists(extraDataDir) && !MediaFileUtils::CreateDirectory(extraDataDir)) {
         MEDIA_ERR_LOG("Failed to create file, path:%{private}s", extraDataDir.c_str());
         return false;
     }
