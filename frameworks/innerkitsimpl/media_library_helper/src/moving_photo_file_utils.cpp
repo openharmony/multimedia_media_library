@@ -308,7 +308,7 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         MediaFileUtils::CreateDirectory(cacheDir), E_ERR, "Cannot create dir %{private}s", cacheDir.c_str());
     string cachePath = GetLivePhotoCachePath(movingPhotoImagepath);
     if (MediaFileUtils::IsFileExists(cachePath)) {
-        MEDIA_ERR_LOG("file is not exists");
+        livePhotoPath = cachePath;
         return E_OK;
     }
     UniqueFd imageFd(open(movingPhotoImagepath.c_str(), O_RDONLY));
