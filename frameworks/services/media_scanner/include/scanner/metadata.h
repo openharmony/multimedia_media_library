@@ -138,6 +138,9 @@ public:
 
     void SetFrontCamera(const VariantData &forntcamera);
     EXPORT std::string GetFrontCamera() const;
+    
+    void SetMovingPhotoImagePath(const VariantData &imagePath);
+    EXPORT std::string GetMovingPhotoImagePath() const;
 
     void SetDynamicRangeType(const VariantData &type);
     EXPORT int32_t GetDynamicRangeType() const;
@@ -228,6 +231,9 @@ private:
 
     // front camera
     std::string frontcamera_;
+    
+    // image path
+    std::string movingPhotoImagePath_;
 
     // cover position of moving photo
     int64_t coverPosition_ = 0;

@@ -59,6 +59,7 @@
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_vision_operations.h"
 #include "dfx_manager.h"
+#include "moving_photo_file_utils.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -307,6 +308,7 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     PhotoColumn::MEDIA_TYPE,
     PhotoColumn::MEDIA_TIME_PENDING,
     PhotoColumn::PHOTO_SUBTYPE,
+    PhotoColumn::PHOTO_COVER_POSITION,
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
 };
 
@@ -329,6 +331,17 @@ static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<Fi
             id.c_str(), fileAsset->GetPhotoSubType());
         fileAsset->SetPath(MediaFileUtils::GetMovingPhotoVideoPath(fileAsset->GetPath()));
         isMovingPhotoVideo = true;
+    } else if (movingPhotoOprnKey == OPEN_PRIVATE_LIVE_PHOTO) {
+        CHECK_AND_RETURN_RET_LOG(fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO),
+            E_INVALID_VALUES,
+            "Non-moving photo is requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
+            id.c_str(), fileAsset->GetPhotoSubType());
+        string livePhotoPath;
+        CHECK_AND_RETURN_RET_LOG(MovingPhotoFileUtils::ConvertToLivePhoto(fileAsset->GetPath(),
+            fileAsset->GetCoverPosition(), livePhotoPath) == E_OK,
+            E_INVALID_VALUES,
+            "Failed convert to live photo");
+        fileAsset->SetPath(livePhotoPath);
     }
     return E_OK;
 }

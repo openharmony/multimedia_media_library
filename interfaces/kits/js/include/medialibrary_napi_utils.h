@@ -318,7 +318,7 @@ const std::vector<std::string> requestPhotoTypeEnum {
 };
 
 const std::vector<std::string> resourceTypeEnum {
-    "IMAGE_RESOURCE", "VIDEO_RESOURCE", "PHOTO_PROXY"
+    "IMAGE_RESOURCE", "VIDEO_RESOURCE", "PHOTO_PROXY", "PRIVATE_MOVING_PHOTO_RESOURCE"
 };
 
 const std::vector<std::string> dynamicRangeTypeEnum {
