@@ -17,7 +17,6 @@
 #define FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MOVING_PHOTO_FILE_UTILS_H
 
 #include <string>
-#include "unique_fd.h"
 
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -34,7 +33,8 @@ public:
     EXPORT static int32_t ConvertToMovingPhoto(const std::string &livePhotoPath,
         const std::string &movingPhotoImagePath, const std::string &movingPhotoVideoPath,
         const std::string &extraDataPath);
-    EXPORT static const string ConvertToLivePhoto(const string& path, int64_t coverPosition);
+    EXPORT static const int32_t ConvertToLivePhoto(const string& movingPhotoImagepath, int64_t coverPosition,
+        std::string &livePhotoPath);
     EXPORT static int32_t GetCoverPosition(const std::string &videoPath, const uint32_t frameIndex,
         uint64_t &coverPosition, int32_t scene = 0);
     EXPORT static int32_t GetVersionAndFrameNum(const std::string &tag,
@@ -49,7 +49,7 @@ public:
     EXPORT static bool IsLivePhoto(const std::string& path);
     EXPORT static int32_t GetExtraDataLen(const std::string& extraDataPath, const std::string& videoPath,
         uint32_t frameIndex, off_t& fileSize);
-    EXPORT static uint32_t GetFrameIndex(int64_t time, const UniqueFd& fd);
+    EXPORT static uint32_t GetFrameIndex(int64_t time, const int32_t fd);
 };
 } // namespace OHOS::Media
 
