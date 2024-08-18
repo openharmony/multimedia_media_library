@@ -338,7 +338,7 @@ static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<Fi
             id.c_str(), fileAsset->GetPhotoSubType());
         string livePhotoPath;
         CHECK_AND_RETURN_RET_LOG(MovingPhotoFileUtils::ConvertToLivePhoto(fileAsset->GetPath(),
-            fileAsset->GetCoverPosition(), livePhotoPath) != E_OK,
+            fileAsset->GetCoverPosition(), livePhotoPath) == E_OK,
             E_INVALID_VALUES,
             "Failed convert to live photo");
         fileAsset->SetPath(livePhotoPath);
