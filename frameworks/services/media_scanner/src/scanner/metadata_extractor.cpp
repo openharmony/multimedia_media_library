@@ -366,7 +366,7 @@ void PopulateExtractedAVLocationMeta(std::shared_ptr<Meta> &meta, std::unique_pt
 
 static void ParseLivePhotoCoverPosition(std::unique_ptr<Metadata> &data)
 {
-    string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(data->GetImagePath());
+    string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(data->GetMovingPhotoImagePath());
     if (!MediaFileUtils::IsFileExists(extraPath)) {
         MEDIA_ERR_LOG("file not exists, path:%{private}s", extraPath.c_str());
         return;
@@ -505,7 +505,7 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
     }
 
     unique_ptr<Metadata> videoData = make_unique<Metadata>();
-    videoData->SetImagePath(data->GetFilePath());
+    videoData->SetMovingPhotoImagePath(data->GetFilePath());
     videoData->SetFilePath(videoPath);
     videoData->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     int32_t err = ExtractAVMetadata(videoData);

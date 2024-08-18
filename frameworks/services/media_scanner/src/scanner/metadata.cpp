@@ -101,7 +101,7 @@ void Metadata::Init()
     memberFuncMap_[PhotoColumn::PHOTO_FRONT_CAMERA] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetFrontCamera);
     memberFuncMap_[PhotoColumn::MEDIA_FILE_PATH] = make_pair(ResultSetDataType::TYPE_STRING,
-        &Metadata::SetImagePath);
+        &Metadata::SetMovingPhotoImagePath);
     memberFuncMap_[PhotoColumn::PHOTO_IS_TEMP] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetIsTemp);
 }
 

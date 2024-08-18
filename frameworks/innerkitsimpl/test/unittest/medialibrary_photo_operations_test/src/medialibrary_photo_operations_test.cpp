@@ -2986,6 +2986,109 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_read_moving_photo_video_tes
     MEDIA_INFO_LOG("end tdd photo_oprn_read_moving_photo_video_test_001");
 }
 
+static const unsigned char FILE_TEST_JPG[] = {
+    0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0x04, 0xFF, 0xD9
+};
+
+static const unsigned char FILE_TEST_MP4[] = {
+    0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6F, 0x6D, 0x01, 0x02, 0x03, 0x04
+};
+
+static const unsigned char FILE_TEST_LIVE_PHOTO[] = {
+    0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0x04, 0xFF, 0xD9, 0x00,
+    0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6F, 0x6D,
+    0x01, 0x02, 0x03, 0x04, 0x76, 0x33, 0x5f, 0x66, 0x30, 0x20, 0x20,
+    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+    0x20, 0x20, 0x30, 0x3a, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+    0x4c, 0x49, 0x56, 0x45, 0x5f, 0x33, 0x36, 0x20, 0x20, 0x20, 0x20,
+    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20
+};
+
+bool CompareFile(const unsigned char originArray[], off_t originSize,
+    const unsigned char targetArray[], off_t targetSize)
+{
+    if (originSize != targetSize) {
+        MEDIA_INFO_LOG("[lcl] originSize %{public}ld, targetSize %{public}ld", originSize, targetSize);
+        return false;
+    }
+    bool isEqual = true;
+    for (int i = 0; i < targetSize; i++) {
+        if (originArray[i] != targetArray[i]) {
+            MEDIA_INFO_LOG("[lcl] originSize %{public}c, targetSize %{public}c, i %{public}d", originArray[i], targetArray[i], i);
+            isEqual = false;
+        }
+    }
+    return isEqual;
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_convert_live_photo_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_convert_live_photo_test_001");
+
+    // create live photo
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutString(ASSET_EXTENTION, "jpg");
+    values.PutString(PhotoColumn::MEDIA_TITLE, "live_photo");
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int>(PhotoSubType::MOVING_PHOTO));
+    cmd.SetValueBucket(values);
+    cmd.SetBundleName("values");
+    MediaLibraryPhotoOperations::Create(cmd);
+    int32_t fileId = QueryPhotoIdByDisplayName("live_photo.jpg");
+    ASSERT_GE(fileId, 0);
+
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
+    string fileUriStr = fileUri.ToString();
+    Uri uri(fileUriStr);
+    MediaLibraryCommand openImageCmd(uri, Media::OperationType::OPEN);
+    int32_t imageFd = MediaLibraryPhotoOperations::Open(openImageCmd, "w");
+    ASSERT_GE(imageFd, 0);
+    int32_t resWrite = write(imageFd, FILE_TEST_JPG, sizeof(FILE_TEST_JPG));
+    if (resWrite == -1) {
+        EXPECT_EQ(false, true);
+    }
+
+    string videoUriStr = fileUriStr;
+    MediaFileUtils::UriAppendKeyValue(videoUriStr, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
+    Uri videoUri(videoUriStr);
+    MediaLibraryCommand videoCmd(videoUri, Media::OperationType::OPEN);
+    videoCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t videoFd = MediaLibraryDataManager::GetInstance()->OpenFile(videoCmd, "w");
+    ASSERT_GE(videoFd, 0);
+    resWrite = write(videoFd, FILE_TEST_MP4, sizeof(FILE_TEST_MP4));
+    if (resWrite == -1) {
+        EXPECT_EQ(false, true);
+    }
+
+    MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
+    ValuesBucket closeValues;
+    closeValues.PutString(MEDIA_DATA_DB_URI, fileUriStr);
+    closeCmd.SetValueBucket(closeValues);
+    MediaLibraryPhotoOperations::Close(closeCmd);
+
+    // read live photo video
+    string livePhotoUriStr = fileUriStr;
+    MediaFileUtils::UriAppendKeyValue(livePhotoUriStr, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_PRIVATE_LIVE_PHOTO);
+    Uri livePhotoUri(livePhotoUriStr);
+    MediaLibraryCommand livePhotoCmd(livePhotoUri, Media::OperationType::OPEN);
+    livePhotoCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t livePhotoFd = MediaLibraryDataManager::GetInstance()->OpenFile(livePhotoCmd, "rw");
+    ASSERT_GE(livePhotoFd, 0);
+    int64_t destLen = lseek(livePhotoFd, 0, SEEK_END);
+    lseek(livePhotoFd, 0, SEEK_SET);
+    unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
+    EXPECT_NE((buf == nullptr), true);
+    read(livePhotoFd, buf, destLen);
+
+    bool result = CompareFile(FILE_TEST_LIVE_PHOTO, sizeof(FILE_TEST_LIVE_PHOTO), buf, destLen);
+    free(buf);
+    close(livePhotoFd);
+    EXPECT_EQ(result, true);
+    MEDIA_INFO_LOG("end tdd photo_oprn_convert_live_photo_test_001");
+}
+
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_store_thumbnail_size_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_store_thumbnail_size_test_001");

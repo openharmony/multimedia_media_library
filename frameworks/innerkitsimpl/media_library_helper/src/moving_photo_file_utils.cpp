@@ -100,7 +100,7 @@ static off_t GetFileSize(const int32_t fd)
 {
     if (fd < 0) {
         MEDIA_ERR_LOG("file is error");
-        return index;
+        return E_ERR;
     }
     struct stat st;
     if (fstat(fd, &st) != E_OK) {
@@ -118,16 +118,6 @@ static off_t GetFileSize(const string& path)
         return E_ERR;
     }
     return st.st_size;
-}
-
-static int32_t SendContentToFile(const UniqueFd& destFd, const UniqueFd& srcFd, off_t& offset)
-{
-    off_t fileSize = GetFileSize(srcFd.Get());
-    if (sendfile(destFd.Get(), srcFd.Get(), &offset, fileSize) == E_ERR) {
-        MEDIA_ERR_LOG("failed to send file, errno: %{public}d", errno);
-        return E_ERR;
-    }
-    return E_OK;
 }
 
 static int32_t WriteContentTofile(const UniqueFd& destFd, const UniqueFd& srcFd)
@@ -234,7 +224,7 @@ static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhoto
     return E_OK;
 }
 
-static int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& extraPath, const string& videoPath,
+int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& extraPath, const string& videoPath,
     uint32_t frameIndex, off_t& fileSize)
 {
     if (MediaFileUtils::IsFileValid(extraPath)) {
