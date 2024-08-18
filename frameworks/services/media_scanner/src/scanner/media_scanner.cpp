@@ -425,7 +425,7 @@ void ParseLivePhoto(const std::string& path, const std::unique_ptr<Metadata>& da
     if (MovingPhotoFileUtils::ConvertToMovingPhoto(path, path,
             MovingPhotoFileUtils::GetMovingPhotoVideoPath(path),
             MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(path)) == E_OK) {
-        data->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO))
+        data->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
 }
 
@@ -488,9 +488,7 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
     data_->SetFileExtension(extension);
     data_->SetFileMimeType(mimeType);
     data_->SetFileMediaType(MimeTypeUtils::GetMediaTypeFromMimeType(mimeType));
-    if (ParseLivePhoto(path_, data_)) {
-        ;
-    }
+    ParseLivePhoto(path_, data_);
     return E_OK;
 }
 
