@@ -67,6 +67,7 @@
 #include "medialibrary_vision_operations.h"
 #include "dfx_manager.h"
 #include "dfx_const.h"
+#include "moving_photo_file_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
