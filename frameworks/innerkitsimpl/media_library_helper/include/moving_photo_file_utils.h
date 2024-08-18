@@ -33,6 +33,8 @@ public:
     EXPORT static int32_t ConvertToMovingPhoto(const std::string &livePhotoPath,
         const std::string &movingPhotoImagePath, const std::string &movingPhotoVideoPath,
         const std::string &extraDataPath);
+    EXPORT static int32_t ConvertToLivePhoto(const std::string& movingPhotoImagepath, int64_t coverPosition,
+        std::string &livePhotoPath);
     EXPORT static int32_t GetCoverPosition(const std::string &videoPath, const uint32_t frameIndex,
         uint64_t &coverPosition, int32_t scene = 0);
     EXPORT static int32_t GetVersionAndFrameNum(const std::string &tag,
@@ -42,6 +44,13 @@ public:
     EXPORT static std::string GetMovingPhotoVideoPath(const std::string &imagePath);
     EXPORT static std::string GetMovingPhotoExtraDataDir(const std::string &imageCloudPath);
     EXPORT static std::string GetMovingPhotoExtraDataPath(const std::string &imageCloudPath);
+
+    EXPORT static std::string GetLivePhotoCacheDir(const std::string& path);
+    EXPORT static std::string GetLivePhotoCachePath(const std::string& path);
+    EXPORT static bool IsLivePhoto(const std::string& path);
+    EXPORT static int32_t GetExtraDataLen(const std::string& extraDataPath, const std::string& videoPath,
+        uint32_t frameIndex, off_t& fileSize);
+    EXPORT static uint32_t GetFrameIndex(int64_t time, const int32_t fd);
 };
 } // namespace OHOS::Media
 

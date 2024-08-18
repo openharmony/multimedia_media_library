@@ -67,6 +67,7 @@
 #include "medialibrary_vision_operations.h"
 #include "dfx_manager.h"
 #include "dfx_const.h"
+#include "moving_photo_file_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -2021,6 +2022,7 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
         InvalidateThumbnail(fileId, type);
     }
     CreateThumbnailFileScaned(uri, path, this->isCreateThumbSync);
+    MediaFileUtils::DeleteFile(MovingPhotoFileUtils::GetLivePhotoCachePath(path));
     return E_OK;
 }
 

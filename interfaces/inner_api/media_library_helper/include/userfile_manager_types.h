@@ -50,6 +50,7 @@ enum class ResourceType {
     IMAGE_RESOURCE = 1, // corresponds to MEDIA_TYPE_IMAGE
     VIDEO_RESOURCE,     // corresponds to MEDIA_TYPE_VIDEO
     PHOTO_PROXY,
+    PRIVATE_MOVING_PHOTO_RESOURCE,
 };
 
 enum AnalysisType : int32_t {
