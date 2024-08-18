@@ -3009,13 +3009,13 @@ bool CompareFile(const unsigned char originArray[], off_t originSize,
     const unsigned char targetArray[], off_t targetSize)
 {
     if (originSize != targetSize) {
-        MEDIA_INFO_LOG("[lcl] originSize %{public}ld, targetSize %{public}ld", originSize, targetSize);
+        MEDIA_INFO_LOG("originSize %{public}ld, targetSize %{public}ld", originSize, targetSize);
         return false;
     }
     bool isEqual = true;
     for (int i = 0; i < targetSize; i++) {
         if (originArray[i] != targetArray[i]) {
-            MEDIA_INFO_LOG("[lcl] originSize %{public}c, targetSize %{public}c, i %{public}d", originArray[i], targetArray[i], i);
+            MEDIA_INFO_LOG("originSize %{public}c, targetSize %{public}c", originArray[i], targetArray[i]);
             isEqual = false;
         }
     }
