@@ -45,7 +45,7 @@ const std::string LIVE_PHOTO_VIDEO_INFO_METADATA = "VideoInfoMetadata";
 const std::string LIVE_PHOTO_SIGHT_TREMBLE_META_DATA = "SightTrembleMetadata";
 const std::string LIVE_PHOTO_VERSION_AND_FRAME_NUM = "VersionAndFrameNum";
 
-string GetVersionPositionTag(uint32_t frame, const string& data = "")
+static string GetVersionPositionTag(uint32_t frame, const string& data = "")
 {
     string buffer;
     bool hasCinemagraph{false};
@@ -70,7 +70,7 @@ string GetVersionPositionTag(uint32_t frame, const string& data = "")
     return buffer;
 }
 
-string GetDurationTag(const string& data = "")
+static string GetDurationTag(const string& data = "")
 {
     string buffer;
     if (data.size() != 0) {
@@ -85,7 +85,7 @@ string GetDurationTag(const string& data = "")
     return buffer;
 }
 
-string GetVideoInfoTag(off_t fileSize)
+static string GetVideoInfoTag(off_t fileSize)
 {
     string buffer = "LIVE_" + to_string(fileSize);
     uint16_t left = VERSION_TAG_LEN - buffer.length();
@@ -95,8 +95,12 @@ string GetVideoInfoTag(off_t fileSize)
     return buffer;
 }
 
-off_t GetFileSize(const int32_t fd)
+static off_t GetFileSize(const int32_t fd)
 {
+    if (fd < 0) {
+        MEDIA_ERR_LOG("file is error");
+        return index;
+    }
     struct stat st;
     if (fstat(fd, &st) != E_OK) {
         MEDIA_ERR_LOG("failed to get file size");
@@ -105,7 +109,7 @@ off_t GetFileSize(const int32_t fd)
     return st.st_size;
 }
 
-off_t GetFileSize(const string& path)
+static off_t GetFileSize(const string& path)
 {
     struct stat st;
     if (stat(path.c_str(), &st) != E_OK) {
@@ -115,7 +119,7 @@ off_t GetFileSize(const string& path)
     return st.st_size;
 }
 
-int32_t SendContentToFile(const UniqueFd& destFd, const UniqueFd& srcFd, off_t& offset)
+static int32_t SendContentToFile(const UniqueFd& destFd, const UniqueFd& srcFd, off_t& offset)
 {
     off_t fileSize = GetFileSize(srcFd.Get());
     if (sendfile(destFd.Get(), srcFd.Get(), &offset, fileSize) == E_ERR) {
@@ -124,7 +128,7 @@ int32_t SendContentToFile(const UniqueFd& destFd, const UniqueFd& srcFd, off_t& 
     return E_OK;
 }
 
-int32_t WriteContentTofile(const UniqueFd& destFd, const UniqueFd& srcFd)
+static int32_t WriteContentTofile(const UniqueFd& destFd, const UniqueFd& srcFd)
 {
     const uint32_t BUFFER_LENGTH = 2048;
     if (lseek(srcFd.Get(), 0, SEEK_SET) == E_ERR) {
@@ -142,7 +146,7 @@ int32_t WriteContentTofile(const UniqueFd& destFd, const UniqueFd& srcFd)
     return E_OK;
 }
 
-int32_t AddStringToFile(const UniqueFd& destFd, const string& temp)
+static int32_t AddStringToFile(const UniqueFd& destFd, const string& temp)
 {
     if (write(destFd.Get(), temp.c_str(), temp.size()) == E_ERR) {
         return E_ERR;
@@ -150,7 +154,7 @@ int32_t AddStringToFile(const UniqueFd& destFd, const string& temp)
     return E_OK;
 }
 
-string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off_t needSize)
+static string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off_t needSize)
 {
     off_t readPosition = fileSize >= offset ? fileSize - offset : 0;
     if (lseek(fd.Get(), readPosition, SEEK_SET) == E_ERR) {
@@ -170,7 +174,7 @@ string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off_t need
     return content;
 }
 
-int32_t ReadExtraFile(const std::string& extraPath, map<string, string>& extraData) {
+static int32_t ReadExtraFile(const std::string& extraPath, map<string, string>& extraData) {
     UniqueFd fd(open(extraPath.c_str(), O_RDONLY));
     if (fd.Get() == E_ERR) {
         MEDIA_ERR_LOG("failed to open e file");
@@ -179,8 +183,8 @@ int32_t ReadExtraFile(const std::string& extraPath, map<string, string>& extraDa
     uint32_t version{0};
     uint32_t frameIndex{0};
     bool hasCinemagraphInfo{false};
-    bool hasVersion = MovingPhotoFileUtils::GetVersionAndFrameNum(fd.Get(), version, frameIndex, hasCinemagraphInfo)
-        == E_OK;
+    bool hasVersion = MovingPhotoFileUtils::GetVersionAndFrameNum(
+        fd.Get(), version, frameIndex, hasCinemagraphInfo) == E_OK;
     off_t fileSize = GetFileSize(fd.Get());
     extraData[LIVE_PHOTO_VIDEO_INFO_METADATA] = GetEditData(fd, fileSize, LIVE_TAG_LEN, LIVE_TAG_LEN);
     extraData[LIVE_PHOTO_SIGHT_TREMBLE_META_DATA] = GetEditData(fd, fileSize, LIVE_TAG_LEN + PLAY_INFO_LEN,
@@ -199,7 +203,7 @@ int32_t ReadExtraFile(const std::string& extraPath, map<string, string>& extraDa
     return E_OK;
 }
 
-int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhotoFd, const UniqueFd& videoFd,
+static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhotoFd, const UniqueFd& videoFd,
     uint32_t frameIndex)
 {
     map<string, string> extraData;
@@ -231,7 +235,7 @@ int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhotoFd, con
     return E_OK;
 }
 
-int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& extraPath, const string& videoPath,
+static int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& extraPath, const string& videoPath,
     uint32_t frameIndex, off_t& fileSize)
 {
     if (MediaFileUtils::IsFileValid(extraPath)) {
@@ -243,6 +247,10 @@ int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& extraPath, const str
         return E_HAS_FS_ERROR;
     }
     UniqueFd extraDataFd(open(extraPath.c_str(), O_WRONLY | O_TRUNC));
+    if (extraDataFd.Get() == E_ERR) {
+        MEDIA_ERR_LOG("failed to open extra data");
+        return E_ERR;
+    }
     if (AddStringToFile(extraDataFd, GetVersionPositionTag(frameIndex)) == E_ERR) {
         MEDIA_ERR_LOG("write version position tag err");
         return E_ERR;
@@ -259,7 +267,7 @@ int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& extraPath, const str
     return E_OK;
 }
 
-int32_t MergeFile(const UniqueFd& imageFd, const UniqueFd& videoFd, const UniqueFd& livePhotoFd,
+static int32_t MergeFile(const UniqueFd& imageFd, const UniqueFd& videoFd, const UniqueFd& livePhotoFd,
     const string& extraPath, uint32_t frameIndex)
 {
     if (WriteContentTofile(livePhotoFd, imageFd) == E_ERR) {
@@ -280,6 +288,10 @@ int32_t MergeFile(const UniqueFd& imageFd, const UniqueFd& videoFd, const Unique
 uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
 {
     uint32_t index{0};
+    if (fd < 0) {
+        MEDIA_ERR_LOG("file is error");
+        return index;
+    }
     std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     if (avMetadataHelper->SetSource(fd, 0, static_cast<int64_t>(GetFileSize(fd)), AV_META_USAGE_META_ONLY) != E_OK) {
         MEDIA_ERR_LOG("failed to set source");
@@ -292,8 +304,8 @@ uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
     return index;
 }
 
-const int32_t ConvertToLivePhoto(const string& movingPhotoImagepath, int64_t coverPosition,
-        std::string &livePhotoPath)
+int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagepath, int64_t coverPosition,
+    std::string &livePhotoPath)
 {
     string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(movingPhotoImagepath);
     string cachePath = GetLivePhotoCachePath(movingPhotoImagepath);
@@ -322,7 +334,7 @@ const int32_t ConvertToLivePhoto(const string& movingPhotoImagepath, int64_t cov
         MEDIA_ERR_LOG("failed to open live photo file");
         return E_ERR;
     }
-    if (MergeFile(imageFd, videoFd, livePhotoFd, extraPath, GetFrameIndex(coverPosition, videoFd)) == E_ERR) {
+    if (MergeFile(imageFd, videoFd, livePhotoFd, extraPath, GetFrameIndex(coverPosition, videoFd.Get())) == E_ERR) {
         return E_ERR;
     }
     livePhotoPath = cachePath;

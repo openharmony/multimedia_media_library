@@ -33,7 +33,7 @@ public:
     EXPORT static int32_t ConvertToMovingPhoto(const std::string &livePhotoPath,
         const std::string &movingPhotoImagePath, const std::string &movingPhotoVideoPath,
         const std::string &extraDataPath);
-    EXPORT static const int32_t ConvertToLivePhoto(const string& movingPhotoImagepath, int64_t coverPosition,
+    EXPORT static int32_t ConvertToLivePhoto(const std::string& movingPhotoImagepath, int64_t coverPosition,
         std::string &livePhotoPath);
     EXPORT static int32_t GetCoverPosition(const std::string &videoPath, const uint32_t frameIndex,
         uint64_t &coverPosition, int32_t scene = 0);
