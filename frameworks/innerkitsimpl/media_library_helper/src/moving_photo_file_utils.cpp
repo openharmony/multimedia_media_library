@@ -45,7 +45,7 @@ const std::string LIVE_PHOTO_VIDEO_INFO_METADATA = "VideoInfoMetadata";
 const std::string LIVE_PHOTO_SIGHT_TREMBLE_META_DATA = "SightTrembleMetadata";
 const std::string LIVE_PHOTO_VERSION_AND_FRAME_NUM = "VersionAndFrameNum";
 
-static string GetVersionPositionTag(uint32_t frame, const string& data = "")
+static string GetVersionPositionTag(uint32_t frame, bool hasExtraData, const string& data = "")
 {
     string buffer;
     bool hasCinemagraph{false};
@@ -53,10 +53,11 @@ static string GetVersionPositionTag(uint32_t frame, const string& data = "")
         uint32_t version{0};
         uint32_t frameIndex{0};
         if (MovingPhotoFileUtils::GetVersionAndFrameNum(data, version, frameIndex, hasCinemagraph) != E_OK) {
-            MEDIA_ERR_LOG("Faild to get version and frame num");
             return buffer;
         }
         buffer = "v" + to_string(version) + "_f";
+    } else if (hasExtraData) {
+        return buffer;
     } else {
         buffer += "v3_f";
     }
@@ -197,7 +198,9 @@ static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhoto
     uint32_t frameIndex)
 {
     map<string, string> extraData;
+    bool hasExtraData{false};
     if (MediaFileUtils::IsFileValid(extraPath)) {
+        hasExtraData = true;
         if (ReadExtraFile(extraPath, extraData) == E_ERR) {
             MEDIA_ERR_LOG("write cinemagraph info err");
             return E_ERR;
@@ -207,9 +210,9 @@ static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhoto
             return E_ERR;
         }
     }
-
-    if (AddStringToFile(livePhotoFd, GetVersionPositionTag(frameIndex,
-        extraData[LIVE_PHOTO_VERSION_AND_FRAME_NUM])) == E_ERR) {
+    string versonAndFrameNum = GetVersionPositionTag(frameIndex, hasExtraData,
+        extraData[LIVE_PHOTO_VERSION_AND_FRAME_NUM]);
+    if (AddStringToFile(livePhotoFd, versonAndFrameNum) == E_ERR) {
         MEDIA_ERR_LOG("write version position tag err");
         return E_ERR;
     }
@@ -218,30 +221,34 @@ static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhoto
         return E_ERR;
     }
     if (AddStringToFile(livePhotoFd, GetVideoInfoTag(GetFileSize(videoFd.Get()) +
-        VERSION_TAG_LEN + extraData[LIVE_PHOTO_CINEMAGRAPH_INFO].size())) == E_ERR) {
+        versonAndFrameNum.size() + extraData[LIVE_PHOTO_CINEMAGRAPH_INFO].size())) == E_ERR) {
         MEDIA_ERR_LOG("write video info tag err");
         return E_ERR;
     }
     return E_OK;
 }
 
-int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& extraPath, const string& videoPath,
+int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& imagePath, const string& videoPath,
     uint32_t frameIndex, off_t& fileSize)
 {
+    string extraDir = MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(imagePath);
+    string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(imagePath);
     if (MediaFileUtils::IsFileValid(extraPath)) {
         fileSize = GetFileSize(extraPath);
         return E_OK;
     }
+    CHECK_AND_RETURN_RET_LOG(
+        MediaFileUtils::CreateDirectory(extraDir), E_ERR, "Cannot create dir %{private}s", extraDir.c_str());
     if (!MediaFileUtils::IsFileExists(extraPath) && MediaFileUtils::CreateAsset(extraPath) != E_OK) {
-        MEDIA_ERR_LOG("Failed to create file, path:%{private}s", extraPath.c_str());
+        MEDIA_ERR_LOG("Failed to create file, path:%{public}s", extraPath.c_str());
         return E_HAS_FS_ERROR;
     }
     UniqueFd extraDataFd(open(extraPath.c_str(), O_WRONLY | O_TRUNC));
     if (extraDataFd.Get() == E_ERR) {
-        MEDIA_ERR_LOG("failed to open extra data");
+        MEDIA_ERR_LOG("failed to open extra data, errno:%{public}d", errno);
         return E_ERR;
     }
-    if (AddStringToFile(extraDataFd, GetVersionPositionTag(frameIndex)) == E_ERR) {
+    if (AddStringToFile(extraDataFd, GetVersionPositionTag(frameIndex, false)) == E_ERR) {
         MEDIA_ERR_LOG("write version position tag err");
         return E_ERR;
     }
