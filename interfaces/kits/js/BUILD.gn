@@ -62,6 +62,7 @@ gen_js_obj("medialibraryinf_abc") {
 
 config("napi_config") {
   include_dirs = [
+    "${MEDIALIB_GLOBAL_PATH}/i18n/frameworks/intl/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
@@ -176,6 +177,7 @@ ohos_shared_library("medialibrary_nutils") {
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
+    "window_manager:libwm",
   ]
 
   defines = []
