@@ -202,7 +202,8 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
     MEDIA_INFO_LOG("no astc data size: %{public}d, requestId: %{public}d", static_cast<int>(infos.size()), requestId);
     for (auto& info : infos) {
         opts.row = info.id;
-        info.loaderOpts.loadingStates = SourceLoader::ALL_SOURCE_LOADING_STATES;
+        info.loaderOpts.loadingStates = (info.mediaType == MEDIA_TYPE_VIDEO && !info.isLocalFile) ?
+            SourceLoader::ALL_SOURCE_LOADING_CLOUD_VIDEO_STATES : SourceLoader::ALL_SOURCE_LOADING_STATES;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
         IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstc, opts, info, requestId);
     }
