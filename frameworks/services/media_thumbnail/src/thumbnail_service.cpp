@@ -641,5 +641,13 @@ void ThumbnailService::UpdateAstcWithNewDateAdded(const std::string &fileId, con
     IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::UpdateAstcDateAdded,
         opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
 }
+
+int32_t ThumbnailService::CheckCloudThumbnailDownloadFinish()
+{
+    if (!ThumbnailUtils::CheckCloudThumbnailDownloadFinish(rdbStorePtr_)) {
+        return E_CLOUD_THUMBNAIL_NOT_DOWNLOAD_FINISH;
+    }
+    return E_OK;
+}
 } // namespace Media
 } // namespace OHOS
