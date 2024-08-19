@@ -50,6 +50,7 @@ enum class ResourceType {
     IMAGE_RESOURCE = 1, // corresponds to MEDIA_TYPE_IMAGE
     VIDEO_RESOURCE,     // corresponds to MEDIA_TYPE_VIDEO
     PHOTO_PROXY,
+    PRIVATE_MOVING_PHOTO_RESOURCE,
 };
 
 enum AnalysisType : int32_t {
@@ -144,7 +145,9 @@ enum class MovingPhotoEffectMode : int32_t {
     LOOP_PLAY,
     LONG_EXPOSURE,
     MULTI_EXPOSURE,
-    EFFECT_MODE_END = MULTI_EXPOSURE
+    CINEMA_GRAPH,
+    EFFECT_MODE_END = CINEMA_GRAPH,
+    IMAGE_ONLY = 10
 };
 
 const std::string URI_PARAM_API_VERSION = "api_version";

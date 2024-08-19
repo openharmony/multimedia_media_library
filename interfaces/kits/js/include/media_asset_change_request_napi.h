@@ -157,6 +157,7 @@ private:
     void* movingPhotoVideoDataBuffer_;
     size_t movingPhotoVideoBufferSize_;
     AddResourceMode movingPhotoVideoResourceMode_;
+    int32_t currentEffectMode_;
     std::vector<ResourceType> addResourceTypes_; // support adding resource multiple times
     std::vector<AssetChangeOperation> assetChangeOperations_;
 };

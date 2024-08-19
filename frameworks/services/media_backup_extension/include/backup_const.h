@@ -39,6 +39,7 @@ constexpr int32_t CLONE_RESTORE_ID = 2;
 constexpr int32_t RETRY_TIME = 5;
 constexpr int32_t SLEEP_INTERVAL = 1;
 constexpr int32_t GARBAGE_PHOTO_SIZE = 2048;
+constexpr int32_t LIVE_PHOTO_TYPE = 50;
 constexpr size_t GARBLE_UNIT = 2;
 
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
@@ -75,6 +76,7 @@ const std::string GALLERY_MEDIA_BUCKET_ID = "relative_bucket_id";
 const std::string GALLERY_MEDIA_SOURCE_PATH = "sourcePath";
 const std::string GALLERY_RECYCLE_FLAG = "recycleFlag";
 const std::string GALLERY_HASH = "hash";
+const std::string GALLERY_SPECIAL_FILE_TYPE = "special_file_type";
 
 // external column
 const std::string EXTERNAL_IS_FAVORITE = "is_favorite";
@@ -222,6 +224,8 @@ struct FileInfo {
     std::string packageName;
     std::string bundleName;
     std::string oldPath;
+    std::string movingPhotoVideoPath;
+    std::string extraDataPath;
     int32_t fileIdOld {-1};
     int32_t fileIdNew {-1};
     int64_t fileSize {0};
@@ -230,6 +234,7 @@ struct FileInfo {
     int32_t hidden {0};
     int32_t isFavorite {0};
     int32_t fileType {0};
+    int32_t specialFileType {0};
     int64_t showDateToken {0};
     int32_t height {0};
     int32_t width {0};
@@ -331,8 +336,6 @@ struct FaceInfo {
     std::string tagIdOld;
     std::string tagIdNew;
     std::string landmarks;
-    std::string faceVersion;
-    std::string analysisVersion;
 };
 
 using NeedQueryMap = std::unordered_map<PhotoRelatedType, std::unordered_set<std::string>>;
@@ -341,7 +344,8 @@ using NeedQueryMap = std::unordered_map<PhotoRelatedType, std::unordered_set<std
 const std::string QUERY_FILE_COLUMN = "SELECT _id, " + GALLERY_FILE_DATA + ", " + GALLERY_DISPLAY_NAME + ", " +
     EXTERNAL_IS_FAVORITE + ", " + GALLERY_FILE_SIZE + ", " + GALLERY_DURATION + ", " + GALLERY_MEDIA_TYPE + ", " +
     EXTERNAL_DATE_MODIFIED + ", " + GALLERY_HEIGHT + ", " + GALLERY_WIDTH + ", " + GALLERY_TITLE + ", " +
-    GALLERY_ORIENTATION + ", " + EXTERNAL_DATE_ADDED + ", " + EXTERNAL_DATE_TAKEN + " FROM files WHERE ";
+    GALLERY_ORIENTATION + ", " + EXTERNAL_DATE_ADDED + ", " + EXTERNAL_DATE_TAKEN + ", " +
+    GALLERY_SPECIAL_FILE_TYPE + " FROM files WHERE ";
 
 const std::string IN_CAMERA = " bucket_id IN (-1739773001, 0, 1028075469, 0) AND (is_pending = 0)";
 
@@ -381,7 +385,8 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
     "," + GALLERY_FILE_SIZE + "," + GALLERY_DURATION + "," + GALLERY_MEDIA_TYPE + "," + GALLERY_SHOW_DATE_TOKEN + "," +
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + ", " +
     EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID + "," + GALLERY_MEDIA_SOURCE_PATH + "," +
-    GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH + ", " + GALLERY_ID + " FROM gallery_media ";
+    GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH + ", " + GALLERY_ID + "," +
+    GALLERY_SPECIAL_FILE_TYPE + " FROM gallery_media ";
 
 const std::string QUERY_MAX_ID = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \

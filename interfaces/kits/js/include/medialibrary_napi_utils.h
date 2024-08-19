@@ -17,6 +17,7 @@
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIALIBRARY_NAPI_UTILS_H_
 
 #include <memory>
+#include <set>
 #include <vector>
 
 #include "datashare_predicates.h"
@@ -318,7 +319,7 @@ const std::vector<std::string> requestPhotoTypeEnum {
 };
 
 const std::vector<std::string> resourceTypeEnum {
-    "IMAGE_RESOURCE", "VIDEO_RESOURCE", "PHOTO_PROXY"
+    "IMAGE_RESOURCE", "VIDEO_RESOURCE", "PHOTO_PROXY", "PRIVATE_MOVING_PHOTO_RESOURCE"
 };
 
 const std::vector<std::string> dynamicRangeTypeEnum {
@@ -326,7 +327,7 @@ const std::vector<std::string> dynamicRangeTypeEnum {
 };
 
 const std::vector<std::string> movingPhotoEffectModeEnum {
-    "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE"
+    "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE", "CINEMA_GRAPH"
 };
 
 const std::vector<std::string> fileKeyEnumValues {
@@ -514,27 +515,16 @@ const std::vector<std::string> PHOTO_COLUMN = {
     PhotoColumn::PHOTO_THUMB_SIZE,
 };
 
-const std::vector<std::string> ALBUM_COLUMN = {
-    PhotoAlbumColumns::ALBUM_ID,
-    PhotoAlbumColumns::Album_TYPE,
-    PhotoAlbumColumns::Album_SUBTYPE,
-    PhotoAlbumColumns::ALBUM_NAME,
-    PhotoAlbumColumns::ALBUM_COVER_URI,
-    PhotoAlbumColumns::ALBUM_COUNT,
-    PhotoAlbumColumns::ALBUM_IMAGE_COUNT,
-    PhotoAlbumColumns::ALBUM_VIDEO_COUNT
-}
-
-const std::vector<std::string> TIME_COLUMN = {
+const std::set<std::string> TIME_COLUMN = {
     MEDIA_DATA_DB_DATE_ADDED,
     MEDIA_DATA_DB_DATE_MODIFIED,
     MEDIA_DATA_DB_DATE_TRASHED,
-}
+};
 
 /* Util class used by napi asynchronous methods for making call to js callback function */
 class MediaLibraryNapiUtils {
 public:
-    static const std::unordered_map<std::string, ResultSetDataType> &GetTypeMap()
+    static const std::unordered_map<std::string, std::pair<ResultSetDataType, std::string>> &GetTypeMap()
     {
         static const std::unordered_map<std::string, std::pair<ResultSetDataType, std::string>> TYPE_MAP = {
             {MEDIA_DATA_DB_ID, {TYPE_INT32, "fileId"}},
@@ -565,10 +555,10 @@ public:
             {PhotoColumn::PHOTO_THUMBNAIL_READY, {TYPE_INT32, "thumbnailReady"}},
             {PhotoColumn::PHOTO_LCD_SIZE, {TYPE_STRING, "lcdSize"}},
             {PhotoColumn::PHOTO_THUMB_SIZE, {TYPE_STRING, "thumbSize"}},
-            {MEDIA_DATA_DB_COUNT, {TYPE_INT32, "count"},}
+            {MEDIA_DATA_DB_COUNT, {TYPE_INT32, "count"}},
             {PhotoAlbumColumns::ALBUM_ID, {TYPE_INT32, "albumId"}},
-            {PhotoAlbumColumns::Album_TYPE, {TYPE_INT32, "albumType"}},
-            {PhotoAlbumColumns::Album_SUBTYPE, {TYPE_INT32, "albumSubType"}},
+            {PhotoAlbumColumns::ALBUM_TYPE, {TYPE_INT32, "albumType"}},
+            {PhotoAlbumColumns::ALBUM_SUBTYPE, {TYPE_INT32, "albumSubType"}},
             {PhotoAlbumColumns::ALBUM_NAME, {TYPE_STRING, "albumName"}},
             {PhotoAlbumColumns::ALBUM_COVER_URI, {TYPE_STRING, "coverUri"}},
             {PhotoAlbumColumns::ALBUM_COUNT, {TYPE_INT32, "count"}},
@@ -577,7 +567,7 @@ public:
             {MEDIA_DATA_DB_DATE_ADDED, {TYPE_INT64, "dateAdded"}},
             {MEDIA_DATA_DB_DATE_MODIFIED, {TYPE_INT64, "dateModified"}},
             {MEDIA_DATA_DB_DATE_TRASHED, {TYPE_INT64, "dateTrashed"}},
-        }
+        };
         return TYPE_MAP;
     }
     
@@ -734,8 +724,11 @@ public:
     static void FixSpecialDateType(std::string &selections);
     static std::string TransferUri(const std::string &oldUri);
     static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    static napi_value GetNextRowAlbumObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     static napi_value CreateValueByIndex(napi_env env, int32_t index, std::string name,
         std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
+    static void handleTimeInfo(napi_env env, const std::string& name, napi_value result, int32_t index,
+        const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet);
 
     template <class AsyncContext>
     static napi_status ParsePredicates(napi_env env,

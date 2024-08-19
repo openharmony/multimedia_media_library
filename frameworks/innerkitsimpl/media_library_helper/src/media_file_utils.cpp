@@ -1558,7 +1558,11 @@ int64_t MediaFileUtils::Timespec2Millisecond(const struct timespec &time)
 string MediaFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
 {
     size_t splitIndex = imagePath.find_last_of('.');
-    return (splitIndex == string::npos) ? "" : (imagePath.substr(0, splitIndex) + ".mp4");
+    size_t lastSlashIndex = imagePath.find_last_of('/');
+    if (splitIndex == string::npos || (lastSlashIndex != string::npos && lastSlashIndex > splitIndex)) {
+        return "";
+    }
+    return imagePath.substr(0, splitIndex) + ".mp4";
 }
 
 bool MediaFileUtils::CheckMovingPhotoExtension(const string &extension)
@@ -1671,8 +1675,9 @@ bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
 
 bool MediaFileUtils::CheckMovingPhotoEffectMode(int32_t effectMode)
 {
-    return effectMode >= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START) &&
-           effectMode <= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_END);
+    return (effectMode >= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START) &&
+        effectMode <= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_END)) ||
+        effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY);
 }
 
 bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)

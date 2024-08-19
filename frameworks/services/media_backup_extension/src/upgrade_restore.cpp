@@ -672,6 +672,12 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
+    info.specialFileType = GetInt32Val(GALLERY_SPECIAL_FILE_TYPE, resultSet);
+    if (BackupFileUtils::IsLivePhoto(info) && !BackupFileUtils::ConvertToMovingPhoto(info)) {
+        MEDIA_ERR_LOG("Failed to convert live photo to moving photo, filePath = %{public}s",
+            BackupFileUtils::GarbleFilePath(info.filePath, UPGRADE_RESTORE_ID).c_str());
+        return false;
+    }
     info.height = GetInt64Val(GALLERY_HEIGHT, resultSet);
     info.width = GetInt64Val(GALLERY_WIDTH, resultSet);
     info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);
@@ -736,6 +742,49 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
     return isSuccess;
 }
 
+int32_t FindSubtype(const FileInfo &fileInfo)
+{
+    if (fileInfo.burstKey.size() > 0) {
+        return static_cast<int32_t>(PhotoSubType::BURST);
+    }
+
+    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
+        return static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+    }
+    return static_cast<int32_t>(PhotoSubType::DEFAULT);
+}
+
+std::string FindBurstKey(const FileInfo &fileInfo)
+{
+    if (fileInfo.burstKey.size() > 0) {
+        return fileInfo.burstKey;
+    }
+    return "";
+}
+
+int32_t FindDirty(const FileInfo &fileInfo)
+{
+    // prevent uploading burst photo
+    if (fileInfo.burstKey.size() > 0) {
+        return -1;
+    }
+
+    // prevent uploading moving photo
+    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
+        return -1;
+    }
+    return static_cast<int32_t>(DirtyTypes::TYPE_NEW);
+}
+
+int32_t FindBurstCoverLevel(const FileInfo &fileInfo)
+{
+    // identify burst photo
+    if (fileInfo.isBurst == BURST_COVER || fileInfo.isBurst == BURST_MEMBER) {
+        return fileInfo.isBurst;
+    }
+    return BURST_COVER;
+}
+
 NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
     int32_t sourceType) const
 {
@@ -775,18 +824,10 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
-    if (fileInfo.isBurst == BURST_COVER) {
-        // only when gallery.db # gallery_media # isBurst = 1, then media_library.db # Photos # burst_cover_level = 1.
-        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER);
-    } else if (fileInfo.isBurst == BURST_MEMBER) {
-        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_MEMBER);
-    }
-    if (fileInfo.burstKey.size() > 0) {
-        values.PutString(PhotoColumn::PHOTO_BURST_KEY, fileInfo.burstKey);
-        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
-        values.PutInt(PhotoColumn::PHOTO_BURST_SEQUENCE, fileInfo.burstSequence);
-        values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading burst photo
-    }
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, FindSubtype(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, FindDirty(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, FindBurstCoverLevel(fileInfo));
+    values.PutString(PhotoColumn::PHOTO_BURST_KEY, FindBurstKey(fileInfo));
     return values;
 }
 
@@ -1224,11 +1265,6 @@ void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
         return;
     }
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-    std::vector<int32_t> faceAnalysisTypeList = { FaceAnalysisType::RECOGNITION };
-    if (!BackupDatabaseUtils::GetFaceAnalysisVersion(faceAnalysisVersionMap_, faceAnalysisTypeList)) {
-        MEDIA_ERR_LOG("Get face analysis version failed, quit");
-        return;
-    }
     int32_t totalNumber = QueryPortraitAlbumTotalNumber();
     MEDIA_INFO_LOG("QueryPortraitAlbumTotalNumber, totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
@@ -1563,7 +1599,6 @@ bool UpgradeRestore::ParseFaceResultSet(const std::shared_ptr<NativeRdb::ResultS
         MEDIA_ERR_LOG("Get invalid landmarks for face %{public}s", faceInfo.faceId.c_str());
         return false;
     }
-    faceInfo.analysisVersion = CURRENT_ANALYSIS_VERSION;
     return true;
 }
 
@@ -1572,8 +1607,7 @@ bool UpgradeRestore::SetAttributes(FaceInfo &faceInfo, const std::unordered_map<
     return BackupDatabaseUtils::SetLandmarks(faceInfo, fileInfoMap) &&
         BackupDatabaseUtils::SetFileIdNew(faceInfo, fileInfoMap) &&
         BackupDatabaseUtils::SetTagIdNew(faceInfo, tagIdMap_) &&
-        BackupDatabaseUtils::SetAlbumIdNew(faceInfo, portraitAlbumIdMap_) &&
-        BackupDatabaseUtils::SetVersion(faceInfo.faceVersion, faceAnalysisVersionMap_, FaceAnalysisType::RECOGNITION);
+        BackupDatabaseUtils::SetAlbumIdNew(faceInfo, portraitAlbumIdMap_);
 }
 
 int32_t UpgradeRestore::InsertFaceAnalysisDataByTable(const std::vector<FaceInfo> &faceInfos, bool isMap,
@@ -1626,9 +1660,8 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FaceInfo &faceInfo,
         values.PutString(FACE_ID, faceInfo.faceId);
         values.PutString(TAG_ID, faceInfo.tagIdNew);
         values.PutString(LANDMARKS, faceInfo.landmarks);
-        values.PutString(IMAGE_FACE_VERSION, faceInfo.faceVersion);
+        values.PutString(IMAGE_FACE_VERSION, DEFAULT_BACKUP_VERSION); // replaced by the latest
         values.PutString(IMAGE_FEATURES_VERSION, E_VERSION); // updated by analysis service
-        values.PutString(ANALYSIS_VERSION, faceInfo.analysisVersion);
     }
     return values;
 }

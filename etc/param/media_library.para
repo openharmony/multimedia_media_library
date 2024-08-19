@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Huawei Device Co., Ltd.
+# Copyright (c) 2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,18 +11,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos.gni")
-
-ohos_prebuilt_etc("media_library_para") {
-  source = "media_library.para"
-  part_name = "media_library"
-  subsystem_name = "multimedia"
-  module_install_dir = "etc/param"
-}
-
-ohos_prebuilt_etc("media_library_para_dac") {
-  source = "media_library.para.dac"
-  part_name = "media_library"
-  subsystem_name = "multimedia"
-  module_install_dir = "etc/param"
-}
+persist.multimedia.medialibrary.rdb_hamode = 0
+persist.multimedia.medialibrary.rdb_switch_status = 0

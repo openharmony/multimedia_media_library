@@ -90,6 +90,8 @@ public:
 
     void SetFileId(int32_t fileId);
 
+    void SetIsSkipAlbumUpdate(bool isSkipAlbumUpdate);
+
 private:
     /* file */
     EXPORT int32_t ScanFile();

@@ -67,6 +67,7 @@
 #include "medialibrary_vision_operations.h"
 #include "dfx_manager.h"
 #include "dfx_const.h"
+#include "moving_photo_file_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1351,6 +1352,29 @@ void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThum
     }
 }
 
+void MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(const string &path, bool isCreateThumbSync,
+    bool isInvalidateThumb, bool isForceScan, int32_t fileId)
+{
+    // Force Scan means medialibrary will scan file without checking E_SCANNED
+    shared_ptr<ScanAssetCallback> scanAssetCallback = make_shared<ScanAssetCallback>();
+    if (scanAssetCallback == nullptr) {
+        MEDIA_ERR_LOG("Failed to create scan file callback object");
+        return;
+    }
+    if (isCreateThumbSync) {
+        scanAssetCallback->SetSync(true);
+    }
+    if (!isInvalidateThumb) {
+        scanAssetCallback->SetIsInvalidateThumb(false);
+    }
+
+    int ret = MediaScannerManager::GetInstance()->ScanFileSyncWithoutAlbumUpdate(path, scanAssetCallback,
+        MediaLibraryApi::API_10, isForceScan, fileId);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Scan file failed with error: %{public}d", ret);
+    }
+}
+
 string MediaLibraryAssetOperations::GetEditDataDirPath(const string &path)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {
@@ -1998,6 +2022,7 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
         InvalidateThumbnail(fileId, type);
     }
     CreateThumbnailFileScaned(uri, path, this->isCreateThumbSync);
+    MediaFileUtils::DeleteFile(MovingPhotoFileUtils::GetLivePhotoCachePath(path));
     return E_OK;
 }
 
