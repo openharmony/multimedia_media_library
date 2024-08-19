@@ -75,7 +75,7 @@ public:
     std::string GetAllExif() const;
     std::string GetFrontCamera() const;
     std::string GetUserComment() const;
-    std::shared_ptr<FileAsset> GetFileAssetInstance() const;
+    EXPORT std::shared_ptr<FileAsset> GetFileAssetInstance() const;
 
 private:
     EXPORT static void FileAssetNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
