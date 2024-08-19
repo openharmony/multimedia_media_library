@@ -33,6 +33,10 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_tracer.h"
+#include "file_asset.h"
+#include "media_asset_impl.h"
+#include "image_source_native.h"
+#include "media_userfile_client.h"
 
 namespace OHOS {
 namespace Media {
@@ -80,6 +84,7 @@ MediaAssetManagerImpl::~MediaAssetManagerImpl()
 
 static void DeleteInProcessMapRecord(const std::string &requestUri, const std::string &requestId)
 {
+    MEDIA_INFO_LOG("DeleteInProcessMapRecord lock multiStagesCaptureLock");
     std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     if (inProcessUriMap.find(requestUri) == inProcessUriMap.end()) {
         return;
@@ -103,6 +108,7 @@ static void DeleteInProcessMapRecord(const std::string &requestUri, const std::s
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(multiStagesObserverMap[requestUri]));
     }
     multiStagesObserverMap.erase(requestUri);
+    MEDIA_INFO_LOG("DeleteInProcessMapRecord unlock multiStagesCaptureLock");
 }
 
 static AssetHandler* CreateAssetHandler(const std::string &photoId, const std::string &requestId,
@@ -125,14 +131,16 @@ static void DeleteAssetHandlerSafe(AssetHandler *handler)
 
 static int32_t IsInProcessInMapRecord(const std::string &requestId, AssetHandler* &handler)
 {
+    MEDIA_INFO_LOG("IsInProcessInMapRecord lock multiStagesCaptureLock");
     std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     for (auto record : inProcessUriMap) {
         if (record.second.find(requestId) != record.second.end()) {
             handler = record.second[requestId];
+            MEDIA_INFO_LOG("IsInProcessInMapRecord unlock multiStagesCaptureLock");
             return true;
         }
     }
-
+    MEDIA_INFO_LOG("IsInProcessInMapRecord unlock multiStagesCaptureLock");
     return false;
 }
 
@@ -183,6 +191,7 @@ static void DeleteDataHandler(NativeNotifyMode notifyMode, const std::string &re
 static void InsertInProcessMapRecord(const std::string &requestUri, const std::string &requestId,
     AssetHandler *handler)
 {
+    MEDIA_INFO_LOG("InsertInProcessMapRecord lock multiStagesCaptureLock");
     std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     std::map<std::string, AssetHandler*> assetHandler;
     if (inProcessUriMap.find(requestUri) != inProcessUriMap.end()) {
@@ -193,6 +202,7 @@ static void InsertInProcessMapRecord(const std::string &requestUri, const std::s
         assetHandler[requestId] = handler;
         inProcessUriMap[requestUri] = assetHandler;
     }
+    MEDIA_INFO_LOG("InsertInProcessMapRecord unlock multiStagesCaptureLock");
 }
 
 static std::string GenerateRequestId()
@@ -207,9 +217,17 @@ static std::string GenerateRequestId()
 static AssetHandler* InsertDataHandler(NativeNotifyMode notifyMode,
     const unique_ptr<RequestSourceAsyncContext> &asyncContext)
 {
-    std::shared_ptr<CapiMediaAssetDataHandler> mediaAssetDataHandler = make_shared<CapiMediaAssetDataHandler>(
+    std::shared_ptr<CapiMediaAssetDataHandler> mediaAssetDataHandler;
+    if (asyncContext->returnDataType == ReturnDataType::TYPE_IMAGE_SOURCE) {
+        mediaAssetDataHandler = make_shared<CapiMediaAssetDataHandler>(
+            asyncContext->onRequestImageDataPreparedHandler, asyncContext->returnDataType, asyncContext->requestUri,
+            asyncContext->destUri, asyncContext->requestOptions.sourceMode);
+        mediaAssetDataHandler->SetPhotoQuality(static_cast<int32_t>(asyncContext->photoQuality));
+    } else {
+        mediaAssetDataHandler = make_shared<CapiMediaAssetDataHandler>(
         asyncContext->onDataPreparedHandler, asyncContext->returnDataType, asyncContext->requestUri,
         asyncContext->destUri, asyncContext->requestOptions.sourceMode);
+    }
 
     mediaAssetDataHandler->SetNotifyMode(notifyMode);
     AssetHandler *assetHandler = CreateAssetHandler(asyncContext->photoId, asyncContext->requestId,
@@ -269,10 +287,7 @@ MultiStagesCapturePhotoStatus MediaAssetManagerImpl::QueryPhotoStatus(int32_t fi
 
 bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
 {
-    if (assetHandler == nullptr) {
-        MEDIA_ERR_LOG("assetHandler is nullptr");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(assetHandler != nullptr, false, "assetHandler is nullptr");
 
     std::lock_guard<std::mutex> lock(assetHandler->mutex_);
     auto dataHandler = assetHandler->dataHandler;
@@ -300,6 +315,19 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
         strncpy_s(requestId.requestId, UUID_STR_LENGTH, assetHandler->requestId.c_str(), UUID_STR_LENGTH);
         if (dataHandler->onDataPreparedHandler_ != nullptr) {
             dataHandler->onDataPreparedHandler_(writeResult, requestId);
+        }
+    } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_IMAGE_SOURCE) {
+        MediaLibrary_RequestId requestId;
+        strncpy_s(requestId.requestId, UUID_STR_LENGTH, assetHandler->requestId.c_str(), UUID_STR_LENGTH);
+        if (dataHandler->onRequestImageDataPreparedHandler_ != nullptr) {
+            int32_t photoQuality = static_cast<int32_t>(MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS);
+            MediaLibrary_MediaQuality quality = (dataHandler->GetPhotoQuality() == photoQuality)
+                ? MEDIA_LIBRARY_QUALITY_FULL
+                : MEDIA_LIBRARY_QUALITY_FAST;
+            auto imageSource = CreateImageSource(assetHandler->requestId, dataHandler->GetRequestUri());
+            auto status = imageSource != nullptr ? MEDIA_LIBRARY_OK : MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+            dataHandler->onRequestImageDataPreparedHandler_(status, requestId, quality,
+                MEDIA_LIBRARY_COMPRESSED, imageSource);
         }
     } else {
         MEDIA_ERR_LOG("Return mode type invalid %{public}d", dataHandler->GetReturnDataType());
@@ -333,6 +361,7 @@ void MediaAssetManagerImpl::CreateDataHelper(int32_t systemAbilityId)
         }
     }
     MediaAssetManagerImpl::mediaLibraryManager_->InitMediaLibraryManager(remoteObj);
+    UserFileClient::Init(remoteObj);
     MEDIA_INFO_LOG("InitMediaLibraryManager success!");
 }
 
@@ -440,6 +469,77 @@ bool MediaAssetManagerImpl::NativeCancelRequest(const std::string &requestId)
     return true;
 }
 
+MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeRequestImageSource(OH_MediaAsset* mediaAsset,
+    NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
+    OH_MediaLibrary_OnImageDataPrepared callback)
+{
+    MEDIA_INFO_LOG("MediaAssetManagerImpl::NativeRequestImageSource Called");
+    std::shared_ptr<FileAsset> fileAsset_ = mediaAsset->GetFileAssetInstance();
+    MediaLibraryTracer tracer;
+    tracer.Start("NativeRequestImageSource");
+
+    std::unique_ptr<RequestSourceAsyncContext> asyncContext = std::make_unique<RequestSourceAsyncContext>();
+    asyncContext->callingPkgName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    asyncContext->requestUri = fileAsset_->GetUri();
+    asyncContext->displayName = fileAsset_->GetDisplayName();
+    asyncContext->fileId = fileAsset_->GetId();
+    asyncContext->requestOptions.deliveryMode = requestOptions.deliveryMode;
+    asyncContext->requestOptions.sourceMode = NativeSourceMode::EDITED_MODE;
+    asyncContext->returnDataType = ReturnDataType::TYPE_IMAGE_SOURCE;
+    asyncContext->needsExtraInfo = true;
+    asyncContext->onRequestImageDataPreparedHandler = callback;
+
+    if (sDataShareHelper_ == nullptr) {
+        CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
+        CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ == nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
+            "sDataShareHelper_ is null");
+    }
+
+    if (asyncContext->requestUri.length() > MAX_URI_SIZE) {
+        MEDIA_ERR_LOG("Request image uri lens out of limit requestUri lens: %{public}zu",
+            asyncContext->requestUri.length());
+        strncpy_s(requestId->requestId, UUID_STR_LENGTH, (ERROR_REQUEST_ID.c_str()), UUID_STR_LENGTH);
+        return MEDIA_LIBRARY_PARAMETER_ERROR;
+    }
+
+    if (MediaFileUtils::GetMediaType(asyncContext->displayName) != MEDIA_TYPE_IMAGE) {
+        MEDIA_ERR_LOG("Request image file type invalid");
+        strncpy_s(requestId->requestId, UUID_STR_LENGTH, (ERROR_REQUEST_ID.c_str()), UUID_STR_LENGTH);
+        return MEDIA_LIBRARY_PARAMETER_ERROR;
+    }
+
+    bool isSuccess = false;
+    asyncContext->requestId = GenerateRequestId();
+    isSuccess = OnHandleRequestImage(asyncContext);
+    if (isSuccess) {
+        strncpy_s(requestId->requestId, UUID_STR_LENGTH, (asyncContext->requestId.c_str()), UUID_STR_LENGTH);
+        return MEDIA_LIBRARY_OK;
+    } else {
+        strncpy_s(requestId->requestId, UUID_STR_LENGTH, (ERROR_REQUEST_ID.c_str()), UUID_STR_LENGTH);
+        return MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED;
+    }
+}
+
+OH_ImageSourceNative* MediaAssetManagerImpl::CreateImageSource(const std::string requestId,
+    const std::string requestUri)
+{
+    MEDIA_INFO_LOG("Request image success requestId: %{public}s, uri: %{public}s",
+        requestId.c_str(), requestUri.c_str());
+
+    std::string tmpUri = requestUri;
+    MediaFileUtils::UriAppendKeyValue(tmpUri, MEDIA_OPERN_KEYWORD, SOURCE_REQUEST);
+    Uri uri(tmpUri);
+    int fd = UserFileClient::OpenFile(uri, "r");
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, nullptr, "get image fd failed");
+
+    struct OH_ImageSourceNative *imageSource;
+    OH_ImageSourceNative_CreateFromFd(fd, &imageSource);
+    close(fd);
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, nullptr, "new OH_ImageSourceNative failed");
+
+    return imageSource;
+}
+
 bool MediaAssetManagerImpl::OnHandleRequestImage(
     const std::unique_ptr<RequestSourceAsyncContext> &asyncContext)
 {
@@ -447,10 +547,16 @@ bool MediaAssetManagerImpl::OnHandleRequestImage(
     bool result = false;
     switch (asyncContext->requestOptions.deliveryMode) {
         case NativeDeliveryMode::FAST_MODE:
+            if (asyncContext->needsExtraInfo) {
+                asyncContext->photoQuality = QueryPhotoStatus(asyncContext->fileId, asyncContext->photoId);
+                MEDIA_DEBUG_LOG("OnHandleRequestImage photoQuality: %{public}d", asyncContext->photoQuality);
+            }
             result = NotifyDataPreparedWithoutRegister(asyncContext);
             break;
         case NativeDeliveryMode::HIGH_QUALITY_MODE:
             status = QueryPhotoStatus(asyncContext->fileId, asyncContext->photoId);
+            asyncContext->photoQuality = status;
+            MEDIA_DEBUG_LOG("OnHandleRequestImage photoQuality: %{public}d", asyncContext->photoQuality);
             if (status == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
                 result = NotifyDataPreparedWithoutRegister(asyncContext);
             } else {
@@ -460,6 +566,8 @@ bool MediaAssetManagerImpl::OnHandleRequestImage(
             break;
         case NativeDeliveryMode::BALANCED_MODE:
             status = QueryPhotoStatus(asyncContext->fileId, asyncContext->photoId);
+            asyncContext->photoQuality = status;
+            MEDIA_DEBUG_LOG("OnHandleRequestImage photoQuality: %{public}d", asyncContext->photoQuality);
             result = NotifyDataPreparedWithoutRegister(asyncContext);
             if (status == MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS) {
                 RegisterTaskObserver(asyncContext);
@@ -470,8 +578,6 @@ bool MediaAssetManagerImpl::OnHandleRequestImage(
             return result;
         }
     }
-    ProcessImage(asyncContext->fileId, static_cast<int32_t>(asyncContext->requestOptions.deliveryMode),
-        asyncContext->callingPkgName);
     return result;
 }
 
@@ -538,6 +644,7 @@ void MediaAssetManagerImpl::ProcessImage(const int fileId, const int deliveryMod
     DataShare::DatashareBusinessError errCode;
     std::vector<std::string> columns { std::to_string(fileId), std::to_string(deliveryMode), packageName };
     sDataShareHelper_->Query(uri, predicates, columns, &errCode);
+    MEDIA_INFO_LOG("MediaAssetManagerImpl::ProcessImage Called");
 }
 
 void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
@@ -553,20 +660,33 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         return;
     }
 
+    MEDIA_INFO_LOG("MultiStagesTaskObserver::OnChange Called");
     for (auto &uri : changeInfo.uris_) {
         string uriString = uri.ToString();
-
-        std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
-        if (inProcessUriMap.find(uriString) == inProcessUriMap.end()) {
-            MEDIA_INFO_LOG("current uri does not in process, uri: %{public}s", uriString.c_str());
-            return;
-        }
-        std::map<std::string, AssetHandler *> assetHandlers = inProcessUriMap[uriString];
+        std::map<std::string, AssetHandler *> assetHandlers = GetAssetHandlers(uriString);
         for (auto handler : assetHandlers) {
             auto assetHandler = handler.second;
+            auto dataHandler = assetHandler->dataHandler;
+            if (dataHandler != nullptr) {
+                int32_t quality = static_cast<int32_t>(MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS);
+                dataHandler->SetPhotoQuality(quality);
+            }
             MediaAssetManagerImpl::NotifyImageDataPrepared(assetHandler);
         }
     }
+}
+
+std::map<std::string, AssetHandler *> MultiStagesTaskObserver::GetAssetHandlers(const std::string uriString)
+{
+    MEDIA_INFO_LOG("GetAssetHandlers lock multiStagesCaptureLock");
+    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
+    if (inProcessUriMap.find(uriString) == inProcessUriMap.end()) {
+        MEDIA_INFO_LOG("current uri does not in process, uri: %{public}s", uriString.c_str());
+        MEDIA_INFO_LOG("GetAssetHandlers unlock multiStagesCaptureLock");
+        return std::map<std::string, AssetHandler*>();
+    }
+    MEDIA_INFO_LOG("GetAssetHandlers unlock multiStagesCaptureLock");
+    return inProcessUriMap[uriString];
 }
 
 int32_t MediaAssetManagerImpl::WriteFileToPath(const std::string &srcUri, const std::string &destUri,
