@@ -238,9 +238,10 @@ int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& imagePath, const str
         return E_OK;
     }
     CHECK_AND_RETURN_RET_LOG(
-        MediaFileUtils::CreateDirectory(extraDir), E_ERR, "Cannot create dir %{private}s", extraDir.c_str());
+        MediaFileUtils::CreateDirectory(extraDir), E_ERR, "Cannot create dir %{private}s, errno:%{public}d",
+        extraDir.c_str(), errno);
     if (!MediaFileUtils::IsFileExists(extraPath) && MediaFileUtils::CreateAsset(extraPath) != E_OK) {
-        MEDIA_ERR_LOG("Failed to create file, path:%{public}s", extraPath.c_str());
+        MEDIA_ERR_LOG("Failed to create file, path:%{private}s, errno:%{public}d", extraPath.c_str(), errno);
         return E_HAS_FS_ERROR;
     }
     UniqueFd extraDataFd(open(extraPath.c_str(), O_WRONLY | O_TRUNC));
