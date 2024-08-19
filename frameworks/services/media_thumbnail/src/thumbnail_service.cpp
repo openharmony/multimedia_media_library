@@ -424,13 +424,13 @@ int32_t ThumbnailService::GenerateThumbnailBackground()
     return err;
 }
 
-int32_t ThumbnailService::UpgradeThumbnailBackground()
+int32_t ThumbnailService::UpgradeThumbnailBackground(bool isWifiConnected)
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE
     };
-    int32_t err = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts);
+    int32_t err = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, isWifiConnected);
     if (err != E_OK) {
         MEDIA_ERR_LOG("UpgradeThumbnailBackground failed : %{public}d", err);
     }

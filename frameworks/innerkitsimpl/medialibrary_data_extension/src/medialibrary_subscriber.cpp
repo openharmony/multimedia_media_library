@@ -292,11 +292,9 @@ void MedialibrarySubscriber::DoThumbnailOperation()
         MEDIA_ERR_LOG("GenerateThumbnailBackground faild");
     }
 
-    if (isWifiConn_) {
-        result = dataManager->UpgradeThumbnailBackground();
-        if (result != E_OK) {
-            MEDIA_ERR_LOG("UpgradeThumbnailBackground faild");
-        }
+    result = dataManager->UpgradeThumbnailBackground(isWifiConn_);
+    if (result != E_OK) {
+        MEDIA_ERR_LOG("UpgradeThumbnailBackground faild");
     }
 
     result = dataManager->DoAging();

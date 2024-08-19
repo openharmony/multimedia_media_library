@@ -469,7 +469,7 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
     return fd;
 }
 
-int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts)
+int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts, bool isWifiConnected)
 {
     if (opts.store == nullptr) {
         MEDIA_ERR_LOG("rdbStore is not init");
@@ -477,7 +477,7 @@ int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts)
     }
 
     vector<ThumbnailData> infos;
-    int32_t err = GetThumbnailDataNeedUpgrade(opts, infos);
+    int32_t err = GetThumbnailDataNeedUpgrade(opts, infos, isWifiConnected);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to GetThumbnailDataNeedUpgrade %{public}d", err);
         return err;
@@ -486,7 +486,7 @@ int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts)
         MEDIA_DEBUG_LOG("No need upgrade thumbnail.");
         return E_OK;
     }
-    MEDIA_INFO_LOG("will upgrade %{public}zu photo thumbnails.", infos.size());
+    MEDIA_INFO_LOG("Will upgrade %{public}zu photo thumbnails, wifi: %{public}d.", infos.size(), isWifiConnected);
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
         ThumbnailUtils::RecordStartGenerateStats(infos[i].stats, GenerateScene::UPGRADE, LoadSourceType::LOCAL_PHOTO);
@@ -538,10 +538,11 @@ int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts)
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::GetThumbnailDataNeedUpgrade(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas)
+int32_t ThumbnailGenerateHelper::GetThumbnailDataNeedUpgrade(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas,
+    bool isWifiConnected)
 {
     int32_t err = E_ERR;
-    if (!ThumbnailUtils::QueryUpgradeThumbnailInfos(opts, outDatas, err)) {
+    if (!ThumbnailUtils::QueryUpgradeThumbnailInfos(opts, outDatas, isWifiConnected, err)) {
         MEDIA_ERR_LOG("Failed to QueryUpgradeThumbnailInfos %{public}d", err);
         return err;
     }
