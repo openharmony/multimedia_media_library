@@ -64,6 +64,7 @@
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_restore.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_story_operations.h"
@@ -485,7 +486,23 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 
         case OperationObject::BUNDLE_PERMISSION:
             return UriPermissionOperations::HandleUriPermOperations(cmd);
+        case OperationObject::APP_URI_PERMISSION_INNER:
+            return UriPermissionOperations::InsertOperation(cmd);
+        case OperationObject::MEDIA_APP_URI_PERMISSION:
+            return MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
+        default:
+            break;
+    }
+    return SolveInsertCmdSub(cmd);
+}
 
+int32_t MediaLibraryDataManager::SolveInsertCmdSub(MediaLibraryCommand &cmd)
+{
+    if (MediaLibraryRestore::GetInstance().IsBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()) {
+        MEDIA_INFO_LOG("[SolveInsertCmdSub] rdb is backuping");
+        return E_FAIL;
+    }
+    switch (cmd.GetOprnObject()) {
         case OperationObject::VISION_START ... OperationObject::VISION_END:
             return MediaLibraryVisionOperations::InsertOperation(cmd);
 
@@ -493,31 +510,25 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::GEO_KNOWLEDGE:
         case OperationObject::GEO_PHOTO:
             return MediaLibraryLocationOperations::InsertOperation(cmd);
-
         case OperationObject::PAH_FORM_MAP:
             return MediaLibraryFormMapOperations::HandleStoreFormIdOperation(cmd);
         case OperationObject::SEARCH_TOTAL: {
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }
-
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryStoryOperations::InsertOperation(cmd);
-
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }
-        case OperationObject::APP_URI_PERMISSION_INNER:
-            return UriPermissionOperations::InsertOperation(cmd);
-        case OperationObject::MEDIA_APP_URI_PERMISSION:
-            return MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
         default:
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
                 cmd.GetOprnObject());
-            return E_FAIL;
+            break;
     }
+    return E_FAIL;
 }
 
 static int32_t LogMovingPhoto(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue)
@@ -750,6 +761,10 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
 int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryCommand &cmd,
     NativeRdb::RdbPredicates &rdbPredicate)
 {
+    if (MediaLibraryRestore::GetInstance().IsBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()) {
+        MEDIA_INFO_LOG("[DeleteInRdbPredicatesAnalysis] rdb is backuping");
+        return E_FAIL;
+    }
     switch (cmd.GetOprnObject()) {
         case OperationObject::VISION_START ... OperationObject::VISION_END: {
             return MediaLibraryVisionOperations::DeleteOperation(cmd);
@@ -766,7 +781,6 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryComma
         case OperationObject::USER_PHOTOGRAPHY: {
             return MediaLibraryStoryOperations::DeleteOperation(cmd);
         }
-            
         case OperationObject::SEARCH_TOTAL: {
             return MediaLibrarySearchOperations::DeleteOperation(cmd);
         }
@@ -939,7 +953,7 @@ static void CacheAging()
 
     std::error_code errCode;
     time_t now = time(nullptr);
-    constexpr int thresholdSeconds = 7 * 24 * 60 * 60; // 7 days
+    constexpr int thresholdSeconds = 24 * 60 * 60; // 24 hours
     for (const auto& entry : filesystem::recursive_directory_iterator(cacheDir)) {
         string filePath = entry.path().string();
         if (!entry.is_regular_file()) {

@@ -23,10 +23,6 @@
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
 
-#ifdef AI_ALGORITHM_VERSION
-#include "face_recognition.h"
-#endif
-
 namespace OHOS {
 namespace Media {
 const int32_t SCALE_FACTOR = 2;
@@ -420,53 +416,11 @@ void BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb:
     }
 }
 
-bool BackupDatabaseUtils::GetFaceAnalysisVersion(std::unordered_map<int32_t, std::string> &faceAnalysisVersionMap,
-    const std::vector<int32_t> &faceAnalysisTypeList)
-{
-    for (auto type : faceAnalysisTypeList) {
-        std::string version = GetVersionByFaceAnalysisType(type);
-        if (version == E_VERSION) {
-            MEDIA_ERR_LOG("Get face analysis version for %{public}d failed", type);
-            return false;
-        }
-        faceAnalysisVersionMap[type] = version;
-    }
-    return true;
-}
-
-std::string BackupDatabaseUtils::GetVersionByFaceAnalysisType(int32_t type)
-{
-    std::string version = E_VERSION;
-#ifdef AI_ALGORITHM_VERSION
-    switch (type) {
-        case FaceAnalysisType::RECOGNITION: {
-            AI::FaceRecognition faceRecognitionAnalyzer;
-            version = faceRecognitionAnalyzer.GetAlgorithmVersion();
-            break;
-        }
-        default:
-            MEDIA_ERR_LOG("Invalid face analysis type: %{public}d", type);
-    }
-#endif
-    return version;
-}
-
 bool BackupDatabaseUtils::SetTagIdNew(PortraitAlbumInfo &portraitAlbumInfo,
     std::unordered_map<std::string, std::string> &tagIdMap)
 {
     portraitAlbumInfo.tagIdNew = TAG_ID_PREFIX + std::to_string(MediaFileUtils::UTCTimeNanoSeconds());
     tagIdMap[portraitAlbumInfo.tagIdOld] = portraitAlbumInfo.tagIdNew;
-    return true;
-}
-
-bool BackupDatabaseUtils::SetVersion(std::string &version, const std::unordered_map<int32_t, std::string> &versionMap,
-    int32_t type)
-{
-    if (versionMap.count(type) == 0) {
-        MEDIA_ERR_LOG("Set version for type %{public}d failed", type);
-        return false;
-    }
-    version = versionMap.at(type);
     return true;
 }
 

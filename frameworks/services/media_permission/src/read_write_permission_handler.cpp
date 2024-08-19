@@ -281,7 +281,14 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
         UnifyOprnObject(cmd);
         return err;
     }
-    return err;
+
+    string perm = isWrite ? PERM_WRITE_IMAGEVIDEO : PERM_READ_IMAGEVIDEO;
+    err = PermissionUtils::CheckCallerPermission(perm) ? E_SUCCESS : E_PERMISSION_DENIED;
+    if (err < 0) {
+        return err;
+    }
+    UnifyOprnObject(cmd);
+    return E_SUCCESS;
 }
 
 static void FillV10Perms(const MediaType mediaType, const bool containsRead, const bool containsWrite,
@@ -330,7 +337,17 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, PermParam &perm
     int32_t err = (mediaType == MEDIA_TYPE_FILE) ?
         (PermissionUtils::CheckHasPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED) :
         (PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED);
-    return err;
+    if (err == E_SUCCESS) {
+        return E_SUCCESS;
+    }
+    perms.clear();
+    if (containsRead) {
+        perms.push_back(PERM_READ_IMAGEVIDEO);
+    }
+    if (containsWrite) {
+        perms.push_back(PERM_WRITE_IMAGEVIDEO);
+    }
+    return PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
 int32_t ReadWritePermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, PermParam &permParam)

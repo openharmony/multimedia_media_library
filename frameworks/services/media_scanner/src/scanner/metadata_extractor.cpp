@@ -29,6 +29,7 @@
 #include "nlohmann/json.hpp"
 #include "sandbox_helper.h"
 #include "shooting_mode_column.h"
+#include "moving_photo_file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -363,20 +364,41 @@ void PopulateExtractedAVLocationMeta(std::shared_ptr<Meta> &meta, std::unique_pt
     }
 }
 
+static void ParseLivePhotoCoverPosition(std::unique_ptr<Metadata> &data)
+{
+    string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(data->GetMovingPhotoImagePath());
+    if (!MediaFileUtils::IsFileExists(extraPath)) {
+        MEDIA_ERR_LOG("file not exists, path:%{private}s", extraPath.c_str());
+        return;
+    }
+    UniqueFd fd(open(extraPath.c_str(), O_RDONLY));
+    uint32_t version{0};
+    uint32_t frameIndex{0};
+    bool hasCinemagraphInfo{false};
+    if (MovingPhotoFileUtils::GetVersionAndFrameNum(fd, version, frameIndex, hasCinemagraphInfo) != E_OK) {
+        return;
+    }
+    uint64_t coverPosition;
+    if (MovingPhotoFileUtils::GetCoverPosition(data->GetFilePath(), frameIndex, coverPosition) != E_OK) {
+        return;
+    }
+    data->SetCoverPosition(static_cast<int64_t>(coverPosition));
+}
+
 static void ParseMovingPhotoCoverPosition(std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data)
 {
     shared_ptr<Meta> customMeta = make_shared<Meta>();
     bool isValid = meta->GetData(PHOTO_DATA_VIDEO_CUSTOM_INFO, customMeta);
     if (!isValid) {
         MEDIA_INFO_LOG("Video of moving photo does not contain customInfo");
-        return;
+        return ParseLivePhotoCoverPosition(data);
     }
 
     float coverPosition = 0.0f;
     isValid = customMeta->GetData(PHOTO_DATA_VIDEO_COVER_TIME, coverPosition);
     if (!isValid) {
         MEDIA_INFO_LOG("Video of moving photo does not contain cover position");
-        return;
+        return ParseLivePhotoCoverPosition(data);
     }
     // convert cover position from ms(float) to us(int64_t)
     constexpr int32_t MS_TO_US = 1000;
@@ -398,6 +420,24 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
     }
 }
 
+static void FillFrameIndex(std::shared_ptr<AVMetadataHelper> &avMetadataHelper,
+    std::unique_ptr<Metadata> &data)
+{
+    if (data->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        MEDIA_WARN_LOG("data is not moving photo");
+        return;
+    }
+
+    uint64_t coverPosition = static_cast<uint64_t>(data->GetCoverPosition());
+    uint32_t frameIndex = 0;
+    int32_t err = avMetadataHelper->GetFrameIndexByTime(coverPosition, frameIndex);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to get frame index, err: %{public}d", err);
+        return;
+    }
+    data->SetFrameIndex(static_cast<int32_t>(frameIndex));
+}
+
 int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, int32_t scene)
 {
     MediaLibraryTracer tracer;
@@ -417,11 +457,7 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
     }
 
     string filePath = data->GetFilePath();
-    if (filePath.empty()) {
-        MEDIA_ERR_LOG("AV metadata file path is empty");
-        return E_AVMETADATA;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_AVMETADATA, "AV metadata file path is empty");
     int32_t fd = open(filePath.c_str(), O_RDONLY);
     if (fd <= 0) {
         MEDIA_ERR_LOG("Open file descriptor failed, errno = %{public}d", errno);
@@ -442,13 +478,15 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
         MEDIA_ERR_LOG("SetSource failed for the given file descriptor, err = %{public}d", err);
         (void)close(fd);
         return E_AVMETADATA;
-    } else {
-        tracer.Start("avMetadataHelper->ResolveMetadata");
-        std::shared_ptr<Meta> meta = avMetadataHelper->GetAVMetadata();
-        std::unordered_map<int32_t, std::string> resultMap = avMetadataHelper->ResolveMetadata();
-        tracer.Finish();
-        if (!resultMap.empty()) {
-            FillExtractedMetadata(resultMap, meta, data);
+    }
+    tracer.Start("avMetadataHelper->ResolveMetadata");
+    std::shared_ptr<Meta> meta = avMetadataHelper->GetAVMetadata();
+    std::unordered_map<int32_t, std::string> resultMap = avMetadataHelper->ResolveMetadata();
+    tracer.Finish();
+    if (!resultMap.empty()) {
+        FillExtractedMetadata(resultMap, meta, data);
+        if (data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            FillFrameIndex(avMetadataHelper, data);
         }
     }
 
@@ -467,6 +505,7 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
     }
 
     unique_ptr<Metadata> videoData = make_unique<Metadata>();
+    videoData->SetMovingPhotoImagePath(data->GetFilePath());
     videoData->SetFilePath(videoPath);
     videoData->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     int32_t err = ExtractAVMetadata(videoData);
@@ -476,7 +515,16 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
     }
 
     data->SetCoverPosition(videoData->GetCoverPosition());
-    data->SetFileSize(data->GetFileSize() + videoData->GetFileSize());
+
+    uint32_t frameIndex = MovingPhotoFileUtils::GetFrameIndex(videoData->GetCoverPosition(),
+        UniqueFd(open(videoPath.c_str(), O_RDONLY)));
+    off_t extraDataSize{0};
+    if (MovingPhotoFileUtils::GetExtraDataLen(MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(data->GetFilePath()),
+        videoPath, frameIndex, extraDataSize) != E_OK) {
+        MEDIA_ERR_LOG("Failed to get extra data file size");
+        return E_ERR;
+    }
+    data->SetFileSize(data->GetFileSize() + videoData->GetFileSize() + extraDataSize);
     int64_t videoDateModified = videoData->GetFileDateModified();
     if (videoDateModified > data->GetFileDateModified()) {
         data->SetFileDateModified(videoDateModified);

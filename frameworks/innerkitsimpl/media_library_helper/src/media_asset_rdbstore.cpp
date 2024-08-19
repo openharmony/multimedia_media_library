@@ -371,7 +371,7 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::QueryRdb(
     return resultSet;
 }
 
-bool IsSuppertSharedAssetQuery(Uri& uri, OperationObject& object, bool isIgnoreSELinux = false)
+bool MediaAssetRdbStore::IsSupportSharedAssetQuery(Uri& uri, OperationObject& object, bool isIgnoreSELinux)
 {
     if (access(MEDIA_DB_DIR.c_str(), E_OK) != 0) {
         return false;

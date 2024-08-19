@@ -33,7 +33,7 @@ public:
     static std::string GetFullPathByPrefixType(PrefixType prefixType, const std::string &relativePath);
     static int32_t CreatePath(int32_t mediaType, const std::string &displayName, std::string &path);
     static int32_t PreparePath(const std::string &path);
-    static bool MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode);
+    static int32_t MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode);
     static std::string GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
         const std::string &path);
     static void ModifyFile(const std::string path, int64_t modifiedTime);
@@ -46,6 +46,8 @@ public:
     static bool GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel, size_t &pos);
     static bool ShouldIncludeSD(const std::string &prefix);
     static void DeleteSDDatabase(const std::string &prefix);
+    static bool IsLivePhoto(const FileInfo &fileInfo);
+    static bool ConvertToMovingPhoto(FileInfo &fileInfo);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);

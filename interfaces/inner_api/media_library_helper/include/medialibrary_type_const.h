@@ -194,13 +194,15 @@ const std::string AUDIO_BUCKET = "Audio";
 const std::string PRE_PATH_VALUES = "/storage/cloud/";
 const std::string DOCUMENT_URI_AUTHORITY = "docs";
 const std::string BACKUP_DATA_DIR_VALUE = "data/";
+const std::string BACKUP_SINGLE_DATA_DIR_VALUE = ".backup/";
 const std::string THUMB_DIR_VALUE = ".thumbs/Photo";
 const std::string EDIT_DATA_DIR_VALUE = ".editData";
 const std::string MEDIALIBRARY_TEMP_DIR = ".medialibrarytemp";
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
-    PHOTO_BUCKET + "/", AUDIO_BUCKET + "/", BACKUP_DATA_DIR_VALUE, EDIT_DATA_DIR_VALUE + "/"
+    PHOTO_BUCKET + "/", AUDIO_BUCKET + "/", BACKUP_DATA_DIR_VALUE, EDIT_DATA_DIR_VALUE + "/",
+    BACKUP_SINGLE_DATA_DIR_VALUE
 };
 
 const std::vector<std::string> E_POLICY_DIRS = {
@@ -209,6 +211,7 @@ const std::vector<std::string> E_POLICY_DIRS = {
     ROOT_MEDIA_DIR + PIC_DIR_VALUES,
     ROOT_MEDIA_DIR + PHOTO_BUCKET,
     ROOT_MEDIA_DIR + BACKUP_DATA_DIR_VALUE,
+    ROOT_MEDIA_DIR + BACKUP_SINGLE_DATA_DIR_VALUE,
     ROOT_MEDIA_DIR + THUMB_DIR_VALUE,
 };
 
@@ -222,8 +225,6 @@ const std::string FAVOURTIE_ALBUM_NAME_VALUES = "FavoritAlbum";
 static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
 static constexpr int UNCLOSE_FILE_TIMEPENDING = -2;
 static constexpr int UNOPEN_FILE_COMPONENT_TIMEPENDING = -3;
-
-const int32_t FILE_ID_WHICH_NO_NEED_UPDATE_ALBUM_INFO_IN_SCAN = -1;
 } // namespace OHOS
 } // namespace Media
 
