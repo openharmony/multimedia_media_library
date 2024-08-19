@@ -17,11 +17,11 @@ import("//foundation/multimedia/media_library/media_library.gni")
 group("unittest") {
   testonly = true
 
-  deps = [ ":media_library_asset_manager_test" ]
+  deps = [ ":media_asset_test" ]
 }
 
-ohos_unittest("media_library_asset_manager_test") {
-  module_out_path = "media_library/medialibraryextention"
+ohos_unittest("media_asset_test") {
+  module_out_path = "media_library/media_asset_test"
 
   include_dirs = [
     "./include",
@@ -33,15 +33,15 @@ ohos_unittest("media_library_asset_manager_test") {
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
+    "${MEDIALIB_INTERFACES_PATH}/kits/c",
     "//third_party/json/include",
-    "${MEDIALIB_INTERFACES_PATH}/kits/c/",
     "${MEDIALIB_INTERFACES_PATH}/kits/native/include",
     "${MEDIALIB_IMAGE_FRAMEWORK_PATH}/interfaces/kits/native/include/image",
   ]
 
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
-    "./src/media_library_asset_manager_test.cpp",
+    "./src/media_asset_test.cpp",
   ]
 
   deps = [
@@ -51,7 +51,6 @@ ohos_unittest("media_library_asset_manager_test") {
     "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary",
     "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary_js",
     "${MEDIALIB_NATIVE_PATH}/c_api:native_media_library_ndk",
-    "${MEDIALIB_NATIVE_PATH}/media_library_asset_manager:media_library_asset_manager",
   ]
 
   external_deps = [
@@ -79,4 +78,15 @@ ohos_unittest("media_library_asset_manager_test") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]
+
+  if (!media_library_link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
+  }
+
+  resource_config_file =
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
 }
