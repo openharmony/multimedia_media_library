@@ -856,7 +856,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_001, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_002, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts);
+    auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, false);
     EXPECT_EQ(res, -1);
 }
 
@@ -869,7 +869,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_003, T
     int errCode = 0;
     opts.store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     opts.table = "test";
-    auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts);
+    auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, false);
     EXPECT_EQ(res, 0);
 }
 
@@ -883,7 +883,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_004, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, UpgradeThumbnailBackground_test_001, TestSize.Level0)
 {
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
-    auto res = serverTest->UpgradeThumbnailBackground();
+    auto res = serverTest->UpgradeThumbnailBackground(false);
     EXPECT_NE(res, E_OK);
 }
 } // namespace Media
