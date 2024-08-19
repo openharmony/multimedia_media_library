@@ -53,8 +53,8 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bo
     thumbnailData.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
     ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::LOCAL, LoadSourceType::LOCAL_PHOTO);
     if (ThumbnailUtils::DeleteThumbExDir(thumbnailData)) {
-        MEDIA_ERR_LOG("Delete THM_EX directory, path: %{public}s, id: %{public}s", thumbnailData.path.c_str(),
-            thumbnailData.id.c_str());
+        MEDIA_ERR_LOG("Delete THM_EX directory, path: %{public}s, id: %{public}s",
+            DfxUtils::GetSafePath(thumbnailData.path).c_str(), thumbnailData.id.c_str());
     }
 
     if (isSync) {
@@ -179,7 +179,8 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts)
     int err = 0;
     ThumbnailUtils::QueryThumbnailDataFromFileId(opts, opts.fileId, data, err);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("QueryThumbnailDataFromFileId failed, path: %{public}s", data.path.c_str());
+        MEDIA_ERR_LOG("QueryThumbnailDataFromFileId failed, path: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
         return err;
     }
     ValuesBucket values;
@@ -294,14 +295,16 @@ bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailTyp
 {
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
     if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
-        MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, doCreateLcd failed: %{public}s", data.path.c_str());
+        MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, doCreateLcd failed: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
     if (thumbType != ThumbnailType::LCD) {
         bool isSuccess = IThumbnailHelper::DoCreateThumbnail(opts, data);
         IThumbnailHelper::UpdateThumbnailState(opts, data, isSuccess);
         if (!isSuccess) {
-            MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s", data.path.c_str());
+            MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s",
+                DfxUtils::GetSafePath(data.path).c_str());
             return false;
         }
     }
@@ -324,7 +327,7 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
 
     // No need to create thumbnails if corresponding file exists
     if (access(fileName.c_str(), F_OK) == 0) {
-        MEDIA_INFO_LOG("File exists, path: %{public}s", fileName.c_str());
+        MEDIA_INFO_LOG("File exists, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
         return E_OK;
     }
 
@@ -334,13 +337,13 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
     if (access(tempFileName.c_str(), F_OK) == 0) {
         fileName = tempFileName;
         data.isOpeningCloudFile = true;
-        MEDIA_INFO_LOG("Unrotated file exists, path: %{public}s", fileName.c_str());
+        MEDIA_INFO_LOG("Unrotated file exists, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
         return E_OK;
     }
 
-    MEDIA_INFO_LOG("No available file, create thumbnail, path: %{public}s", fileName.c_str());
+    MEDIA_INFO_LOG("No available file, create thumbnail, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
     if (!GenerateLocalThumbnail(opts, data, thumbType)) {
-        MEDIA_ERR_LOG("GenerateLocalThumbnail failed, path: %{public}s", tempFileName.c_str());
+        MEDIA_ERR_LOG("GenerateLocalThumbnail failed, path: %{public}s", DfxUtils::GetSafePath(tempFileName).c_str());
         return E_THUMBNAIL_LOCAL_CREATE_FAIL;
     }
     if (!opts.path.empty()) {
@@ -426,7 +429,7 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
 
     string absFilePath;
     if (!PathToRealPath(fileName, absFilePath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", fileName.c_str());
+        MEDIA_ERR_LOG("file is not real path, file path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
         return E_ERR;
     }
 
@@ -447,7 +450,7 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
         fileName = GetThumbnailPath(thumbnailData.path,
             thumbType == ThumbnailType::LCD ? THUMBNAIL_LCD_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
         if (!PathToRealPath(fileName, absFilePath)) {
-            MEDIA_ERR_LOG("file is not real path, file path: %{private}s", fileName.c_str());
+            MEDIA_ERR_LOG("file is not real path, file path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
             return E_ERR;
         }
 
