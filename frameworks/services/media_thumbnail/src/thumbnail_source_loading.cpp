@@ -330,7 +330,7 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 
 bool SourceLoader::CreateSourcePixelMap()
 {
-    if (state_ == SourceState::LOCAL_ORIGIN && data_.mediaType == MEDIA_TYPE_VIDEO && data_.isLocalFile) {
+    if (state_ == SourceState::LOCAL_ORIGIN && data_.mediaType == MEDIA_TYPE_VIDEO) {
         return CreateVideoFramePixelMap();
     }
 
