@@ -49,7 +49,7 @@ constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 constexpr int32_t BURST_COVER = 1;
 constexpr int32_t BURST_MEMBER = 2;
-const std::string INTERNAL_PREFIX = "/storage/emulated/0";
+const std::string INTERNAL_PREFIX = "/storage/emulated";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -68,15 +68,15 @@ UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::str
     dualDirName_ = dualDirName;
 }
 
-int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::string &upgradeFilePath, bool isUpgrade)
+int32_t UpgradeRestore::Init(const std::string &backupRestoreDir, const std::string &upgradeFilePath, bool isUpgrade)
 {
-    appDataPath_ = backupRetoreDir;
+    appDataPath_ = RESTORE_SANDBOX_DIR;
     string photosPreferencesPath;
     if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
-        filePath_ = upgradeFilePath;
-        galleryDbPath_ = upgradeFilePath + "/" + GALLERY_DB_NAME;
-        audioDbPath_ = GARBLE_DUAL_FRAME_CLONE_DIR + "/0/" + AUDIO_DB_NAME;
-        photosPreferencesPath = UPGRADE_FILE_DIR + "/" + galleryAppName_ + "_preferences.xml";
+        filePath_ = backupRestoreDir;
+        galleryDbPath_ = backupRestoreDir + "/" + GALLERY_DB_NAME;
+        audioDbPath_ = backupRestoreDir + INTERNAL_PREFIX + "/0/" + AUDIO_DB_NAME;
+        photosPreferencesPath = backupRestoreDir + "/" + galleryAppName_ + "_preferences.xml";
         // gallery db may include both internal & external, set flag to differentiate, default false
         shouldIncludeSD_ = BackupFileUtils::ShouldIncludeSD(filePath_);
         SetParameterForClone();
@@ -85,10 +85,10 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
 #endif
     } else {
         filePath_ = upgradeFilePath;
-        galleryDbPath_ = backupRetoreDir + "/" + galleryAppName_ + "/ce/databases/gallery.db";
-        externalDbPath_ = backupRetoreDir + "/" + mediaAppName_ + "/ce/databases/external.db";
+        galleryDbPath_ = RESTORE_SANDBOX_DIR + "/" + galleryAppName_ + "/ce/databases/gallery.db";
+        externalDbPath_ = RESTORE_SANDBOX_DIR + "/" + mediaAppName_ + "/ce/databases/external.db";
         photosPreferencesPath =
-            backupRetoreDir + "/" + galleryAppName_ + "/ce/shared_prefs/" + galleryAppName_ + "_preferences.xml";
+            RESTORE_SANDBOX_DIR + "/" + galleryAppName_ + "/ce/shared_prefs/" + galleryAppName_ + "_preferences.xml";
         shouldIncludeSD_ = false;
         if (!MediaFileUtils::IsFileExists(externalDbPath_)) {
             MEDIA_ERR_LOG("External db is not exist.");
