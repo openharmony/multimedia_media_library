@@ -34,6 +34,8 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
+
 class ThumbnailRequest;
 class ThumbnailManager;
 using RequestSharedPtr = std::shared_ptr<ThumbnailRequest>;
@@ -173,7 +175,7 @@ public:
     void Init();
     std::string AddPhotoRequest(const RequestPhotoParams &params, napi_env env, napi_ref callback);
     void RemovePhotoRequest(const std::string &requestId);
-    static std::unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, const Size &size,
+    EXPORT static std::unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, const Size &size,
         const std::string &path);
     void DeleteRequestIdFromMap(const std::string &requestId);
     void AddQualityPhotoRequest(const RequestSharedPtr &request);
