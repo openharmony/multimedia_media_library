@@ -121,12 +121,12 @@ bool ThumbnailUtils::DeleteThumbExDir(ThumbnailData &data)
     string dirName = MediaFileUtils::GetParentPath(fileName);
     if (access(dirName.c_str(), F_OK) != 0) {
         MEDIA_INFO_LOG("No need to delete THM_EX, directory not exists path: %{public}s, id: %{public}s",
-            dirName.c_str(), data.id.c_str());
+            DfxUtils::GetSafePath(dirName).c_str(), data.id.c_str());
         return true;
     }
     if (!MediaFileUtils::DeleteDir(dirName)) {
         MEDIA_INFO_LOG("Failed to delete THM_EX directory, path: %{public}s, id: %{public}s",
-            dirName.c_str(), data.id.c_str());
+            DfxUtils::GetSafePath(dirName).c_str(), data.id.c_str());
         return false;
     }
     return true;
@@ -145,14 +145,16 @@ bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHe
     unique_ptr<ImageSource> audioImageSource = ImageSource::CreateImageSource(audioPicMemory->GetBase(),
         audioPicMemory->GetSize(), opts, errCode);
     if (audioImageSource == nullptr) {
-        MEDIA_ERR_LOG("Failed to create image source! path %{private}s errCode %{public}d", data.path.c_str(), errCode);
+        MEDIA_ERR_LOG("Failed to create image source! path %{public}s errCode %{public}d",
+            DfxUtils::GetSafePath(data.path).c_str(), errCode);
         return false;
     }
 
     ImageInfo imageInfo;
     errCode = audioImageSource->GetImageInfo(0, imageInfo);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to get image info, path: %{private}s err: %{public}d", data.path.c_str(), errCode);
+        MEDIA_ERR_LOG("Failed to get image info, path: %{public}s err: %{public}d",
+            DfxUtils::GetSafePath(data.path).c_str(), errCode);
         return false;
     }
     data.stats.sourceWidth = imageInfo.size.width;
@@ -1249,18 +1251,6 @@ bool ThumbnailUtils::ScaleFastThumb(ThumbnailData &data, const Size &size)
     return true;
 }
 
-static string Desensitize(string &str)
-{
-    string result = str;
-    auto index = result.find('/');
-    if (index == string::npos) {
-        return "*****";
-    }
-    
-    result.replace(0, index, index, '*');
-    return result;
-}
-
 static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
 {
     string tempFileName = fileName + ".tmp";
@@ -1276,7 +1266,7 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
             int err = errno;
             std::string fileParentPath = MediaFileUtils::GetParentPath(tempFileName);
             MEDIA_ERR_LOG("save failed! status %{public}d, filePath: %{public}s exists: %{public}d, parent path "
-                "exists: %{public}d", err, Desensitize(tempFileName).c_str(), MediaFileUtils::IsFileExists(
+                "exists: %{public}d", err, DfxUtils::GetSafePath(tempFileName).c_str(), MediaFileUtils::IsFileExists(
                     tempFileName), MediaFileUtils::IsFileExists(fileParentPath));
             if (err == EACCES) {
                 MediaFileUtils::PrintStatInformation(fileParentPath);
@@ -1297,9 +1287,9 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
     close(fd.Release());
 
     if (MediaFileUtils::IsFileExists(fileName)) {
-        MEDIA_INFO_LOG("file: %{public}s exists and needs to be deleted", Desensitize(tempFileName).c_str());
+        MEDIA_INFO_LOG("file: %{public}s exists and needs to be deleted", DfxUtils::GetSafePath(fileName).c_str());
         if (!MediaFileUtils::DeleteFile(fileName)) {
-            MEDIA_ERR_LOG("delete file: %{public}s failed", Desensitize(tempFileName).c_str());
+            MEDIA_ERR_LOG("delete file: %{public}s failed", DfxUtils::GetSafePath(fileName).c_str());
             return -errno;
         }
     }
@@ -1307,7 +1297,8 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
     if (errCode != E_OK) {
         int32_t lastErrno = errno;
         if (!MediaFileUtils::DeleteFile(tempFileName)) {
-            MEDIA_WARN_LOG("Delete tmp thumb error: %{public}d, name: %{private}s", errno, tempFileName.c_str());
+            MEDIA_WARN_LOG("Delete tmp thumb error: %{public}d, name: %{public}s",
+                errno, DfxUtils::GetSafePath(tempFileName).c_str());
         }
         if (errCode == E_FILE_EXIST || (errCode == E_FILE_OPER_FAIL && lastErrno == EEXIST)) {
             return E_OK;
@@ -1322,7 +1313,7 @@ int ThumbnailUtils::SaveFileCreateDir(const string &path, const string &suffix, 
     fileName = GetThumbnailPath(path, suffix);
     string dir = MediaFileUtils::GetParentPath(fileName);
     if (!MediaFileUtils::CreateDirectory(dir)) {
-        MEDIA_ERR_LOG("Fail to create directory, fileName: %{public}s", fileName.c_str());
+        MEDIA_ERR_LOG("Fail to create directory, fileName: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
         return -errno;
     }
     return E_OK;
@@ -1398,12 +1389,14 @@ int ThumbnailUtils::SaveThumbDataToLocalDir(ThumbnailData &data, const std::stri
     string fileName;
     int ret = SaveFileCreateDir(data.path, suffix, fileName);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("SaveThumbDataToLocalDir create dir path %{public}s err %{public}d", data.path.c_str(), ret);
+        MEDIA_ERR_LOG("SaveThumbDataToLocalDir create dir path %{public}s err %{public}d",
+            DfxUtils::GetSafePath(data.path).c_str(), ret);
         return ret;
     }
     ret = ToSaveFile(data, fileName, output, writeSize);
     if (ret < 0) {
-        MEDIA_ERR_LOG("SaveThumbDataToLocalDir ToSaveFile path %{public}s err %{public}d", data.path.c_str(), ret);
+        MEDIA_ERR_LOG("SaveThumbDataToLocalDir ToSaveFile path %{public}s err %{public}d",
+            DfxUtils::GetSafePath(data.path).c_str(), ret);
         return ret;
     }
     return E_OK;
@@ -1415,18 +1408,19 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
         MEDIA_ERR_LOG("avMetadataHelper == nullptr");
         return E_ERR;
     }
-    MEDIA_DEBUG_LOG("path = %{private}s", path.c_str());
+    MEDIA_DEBUG_LOG("path = %{public}s", DfxUtils::GetSafePath(path).c_str());
 
     string absFilePath;
     if (!PathToRealPath(path, absFilePath)) {
-        MEDIA_ERR_LOG("Failed to open a nullptr path %{private}s, errno=%{public}d", path.c_str(), errno);
+        MEDIA_ERR_LOG("Failed to open a nullptr path, errno=%{public}d, path:%{public}s",
+            errno, DfxUtils::GetSafePath(path).c_str());
         return E_ERR;
     }
 
     int32_t fd = open(absFilePath.c_str(), O_RDONLY);
     if (fd < 0) {
         MEDIA_ERR_LOG("Open file failed, err %{public}d, file: %{public}s exists: %{public}d",
-            errno, absFilePath.c_str(), MediaFileUtils::IsFileExists(absFilePath));
+            errno, DfxUtils::GetSafePath(absFilePath).c_str(), MediaFileUtils::IsFileExists(absFilePath));
         return E_ERR;
     }
     struct stat64 st;
@@ -1518,7 +1512,7 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
         }
     }
     MEDIA_INFO_LOG("Start DeleteOriginImage, id: %{public}s, path: %{public}s",
-        opts.row.c_str(), tmpData.path.c_str());
+        opts.row.c_str(), DfxUtils::GetSafePath(tmpData.path).c_str());
     if (!opts.dateAdded.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC)) {
         isDelete = true;
     }
@@ -2098,13 +2092,13 @@ bool ThumbnailUtils::GetLocalThumbSize(const ThumbnailData &data, const Thumbnai
     SourceOptions opts;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(tmpPath, opts, err);
     if (err != E_OK || imageSource == nullptr) {
-        MEDIA_ERR_LOG("Failed to LoadImageSource for path:%{public}s", tmpPath.c_str());
+        MEDIA_ERR_LOG("Failed to LoadImageSource for path:%{public}s", DfxUtils::GetSafePath(tmpPath).c_str());
         return false;
     }
     ImageInfo imageInfo;
     err = imageSource->GetImageInfo(0, imageInfo);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to Get ImageInfo, path:%{public}s", tmpPath.c_str());
+        MEDIA_ERR_LOG("Failed to Get ImageInfo, path:%{public}s", DfxUtils::GetSafePath(tmpPath).c_str());
         return false;
     }
     size.height = imageInfo.size.height;
