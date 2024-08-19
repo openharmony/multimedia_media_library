@@ -19,6 +19,8 @@ config("media_capi_config") {
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/c",
     "${MEDIALIB_ROOT_PATH}/frameworks/native/c_api/common",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_ROOT_PATH}/frameworks/utils/include",
   ]
 
   cflags = [
@@ -58,12 +60,18 @@ ohos_shared_library("native_media_asset_manager") {
     }
   }
 
-  sources = [ "${MEDIALIB_ROOT_PATH}/frameworks/native/c_api/media_asset_manger_capi/media_asset_manager_capi.cpp" ]
+  sources = [
+    "${MEDIALIB_NATIVE_PATH}/c_api/media_access_helper_capi/media_access_helper_capi.cpp",
+    "${MEDIALIB_NATIVE_PATH}/c_api/media_asset_capi/media_asset_capi.cpp",
+    "${MEDIALIB_NATIVE_PATH}/c_api/media_asset_change_request_capi/media_asset_change_request_capi.cpp",
+    "${MEDIALIB_ROOT_PATH}/frameworks/native/c_api/media_asset_manger_capi/media_asset_manager_capi.cpp",
+  ]
 
   configs = [ ":media_capi_config" ]
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_NATIVE_PATH}/c_api:native_media_library_ndk",
     "${MEDIALIB_NATIVE_PATH}/media_library_asset_manager:media_library_asset_manager",
   ]
 
@@ -74,6 +82,12 @@ ohos_shared_library("native_media_asset_manager") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "hilog:libhilog",
+    "image_framework:image_native",
+    "image_framework:ohimage",
+    "napi:ace_napi",
+    "player_framework:media_client",
+    "relational_store:native_rdb",
+    "resource_management:librawfile",
   ]
   output_name = "media_asset_manager"
   output_extension = "so"
