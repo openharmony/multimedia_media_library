@@ -614,6 +614,13 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
     }
 
     ThumbnailUtils::GenTargetPixelmap(data, size);
+
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (data.source->ApplyColorSpace(ColorManager::ColorSpaceName::DISPLAY_P3) != E_OK) {
+        MEDIA_ERR_LOG("ApplyColorSpace to p3 failed");
+    }
+#endif
+
     if (!ThumbnailUtils::CompressImage(data.source,
         (type == ThumbnailType::MTH_ASTC) ? data.monthAstc : data.yearAstc, false, true)) {
         MEDIA_ERR_LOG("CompressImage to astc failed");
