@@ -138,6 +138,11 @@ public:
     static const std::unordered_map<SourceState, SourceState> ALL_SOURCE_LOADING_STATES;
 
     /*
+     * Define source loading states sequence for creating cloud video thumbnails on demand.
+     */
+    static const std::unordered_map<SourceState, SourceState> ALL_SOURCE_LOADING_CLOUD_VIDEO_STATES;
+
+    /*
      * Define source loading states sequence for creating thumbnails resolved cloud LCD.
      */
     static const std::unordered_map<SourceState, SourceState> CLOUD_LCD_SOURCE_LOADING_STATES;
