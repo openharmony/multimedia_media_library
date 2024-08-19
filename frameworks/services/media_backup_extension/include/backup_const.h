@@ -407,10 +407,13 @@ const std::string QUERY_ALL_AUDIOS_FROM_EXTERNAL = "SELECT " + EXTERNAL_IS_FAVOR
     EXTERNAL_FILE_SIZE + "," + EXTERNAL_DURATION + "," + EXTERNAL_MEDIA_TYPE + " FROM files WHERE media_type = 2 AND \
     _size > 0 AND _data LIKE '/storage/emulated/0/Music%'";
 
-const std::string QUERY_ALL_AUDIOS_FROM_AUDIODB = "SELECT " + AUDIO_DATA + "," + AUDIO_DATE_MODIFIED + "," +
-    AUDIO_DATE_TAKEN + " FROM mediainfo";
+const std::string DUAL_CLONE_AUDIO_FULL_TABLE = "mediainfo INNER JOIN mediafile ON mediainfo." + AUDIO_DATA +
+    " = '/storage/emulated/0'||mediafile.filepath";
 
-const std::string QUERY_DUAL_CLONE_AUDIO_COUNT = "SELECT count(1) as count FROM mediainfo";
+const std::string QUERY_ALL_AUDIOS_FROM_AUDIODB = "SELECT " + AUDIO_DATA + "," + AUDIO_DATE_MODIFIED + "," +
+    AUDIO_DATE_TAKEN + " FROM " + DUAL_CLONE_AUDIO_FULL_TABLE;
+
+const std::string QUERY_DUAL_CLONE_AUDIO_COUNT = "SELECT count(1) as count FROM " + DUAL_CLONE_AUDIO_FULL_TABLE;
 } // namespace Media
 } // namespace OHOS
 
