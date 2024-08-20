@@ -43,6 +43,7 @@ using namespace FileManagement::CloudSync;
 
 static constexpr int32_t DOWNLOAD_BATCH_SIZE = 2;
 static constexpr int32_t UPDATE_BATCH_SIZE = 1;
+static constexpr int32_t MAX_RETRY_COUNT = 2;
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
 static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.55;
@@ -55,6 +56,8 @@ uint32_t BackgroundCloudFileProcessor::startTimerId_ = 0;
 uint32_t BackgroundCloudFileProcessor::stopTimerId_ = 0;
 std::vector<std::string> BackgroundCloudFileProcessor::curDownloadPaths_;
 bool BackgroundCloudFileProcessor::isUpdating_ = true;
+int32_t BackgroundCloudFileProcessor::currentUpdateOffset_ = 0;
+int32_t BackgroundCloudFileProcessor::currentRetryCount_ = 0;
 
 void BackgroundCloudFileProcessor::DownloadCloudFiles()
 {
@@ -143,13 +146,12 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryCloudFi
     const string sql = "SELECT " + PhotoColumn::MEDIA_FILE_PATH + ", " + PhotoColumn::MEDIA_TYPE +
         " FROM(SELECT COUNT(*) AS count, " + PhotoColumn::MEDIA_FILE_PATH + ", " + PhotoColumn::MEDIA_TYPE + ", " +
         MediaColumn::MEDIA_DATE_MODIFIED + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
-        PhotoColumn::PHOTO_CLEAN_FLAG + " = " + std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) +
-        " AND " + PhotoColumn::PHOTO_POSITION + " = " + std::to_string(POSITION_CLOUD) + " AND " +
-        PhotoColumn::MEDIA_FILE_PATH + " IS NOT NULL AND " + PhotoColumn::MEDIA_FILE_PATH + " != '' AND " +
-        MediaColumn::MEDIA_SIZE + " > 0 AND(" + PhotoColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) +
-        " OR " + PhotoColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + ") GROUP BY " +
-        PhotoColumn::MEDIA_FILE_PATH + " HAVING count = 1) ORDER BY " + PhotoColumn::MEDIA_TYPE + " DESC, " +
-        MediaColumn::MEDIA_DATE_MODIFIED + " DESC LIMIT " + std::to_string(DOWNLOAD_BATCH_SIZE);
+        PhotoColumn::PHOTO_POSITION + " = " + std::to_string(POSITION_CLOUD) + " AND " + PhotoColumn::MEDIA_FILE_PATH +
+        " IS NOT NULL AND " + PhotoColumn::MEDIA_FILE_PATH + " != '' AND " + MediaColumn::MEDIA_SIZE + " > 0 AND(" +
+        PhotoColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR " + PhotoColumn::MEDIA_TYPE + " = " +
+        std::to_string(MEDIA_TYPE_VIDEO) + ") GROUP BY " + PhotoColumn::MEDIA_FILE_PATH +
+        " HAVING count = 1) ORDER BY " + PhotoColumn::MEDIA_TYPE + " DESC, " + MediaColumn::MEDIA_DATE_MODIFIED +
+        " DESC LIMIT " + std::to_string(DOWNLOAD_BATCH_SIZE);
 
     return uniStore->QuerySql(sql);
 }
@@ -272,7 +274,8 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateD
         ->EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE))
         ->And()
         ->EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN))
-        ->Limit(UPDATE_BATCH_SIZE);
+        ->OrderByAsc(MediaColumn::MEDIA_ID)
+        ->Limit(currentUpdateOffset_, UPDATE_BATCH_SIZE);
 
     return MediaLibraryRdbStore::Query(predicates, columns);
 }
@@ -341,6 +344,16 @@ int32_t BackgroundCloudFileProcessor::AddUpdateDataTask(const UpdateData &update
     return E_OK;
 }
 
+void BackgroundCloudFileProcessor::UpdateCurrentOffset()
+{
+    if ( currentRetryCount_ >= MAX_RETRY_COUNT) {
+        currentUpdateOffset_ += 1;
+        currentRetryCount_ = 0;
+    } else {
+        currentRetryCount_ += 1;
+    }
+}
+
 void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
 {
     auto *taskData = static_cast<UpdateAbnormalData *>(data);
@@ -361,11 +374,7 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
         metadata->SetFileWidth(abnormalData.width);
         metadata->SetFileSize(abnormalData.size);
         metadata->SetFileMimeType(abnormalData.mimeType);
-        int32_t ret = GetSizeAndMimeType(metadata);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("failed to get size and mimeType! err: %{public}d.", ret);
-            continue;
-        }
+        GetSizeAndMimeType(metadata);
         if (abnormalData.size == 0 || abnormalData.mimeType.empty()) {
             int64_t fileSize = metadata->GetFileSize();
             string mimeType =  metadata->GetFileMimeType();
@@ -374,8 +383,9 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
         }
         if (abnormalData.width == 0 || abnormalData.height == 0
             || (abnormalData.duration == 0 && updateData.mediaType == MEDIA_TYPE_VIDEO)) {
-            ret = GetExtractMetadata(metadata);
-            if (ret != E_OK) {
+            int32_t ret = GetExtractMetadata(metadata);
+            if (ret != E_OK && MediaFileUtils::IsFileExists(abnormalData.path)) {
+                UpdateCurrentOffset();
                 MEDIA_ERR_LOG("failed to get extract metadata! err: %{public}d.", ret);
                 continue;
             }
@@ -433,9 +443,10 @@ int32_t BackgroundCloudFileProcessor::GetSizeAndMimeType(std::unique_ptr<Metadat
     struct stat statInfo {};
     if (stat(path.c_str(), &statInfo) != 0) {
         MEDIA_ERR_LOG("stat syscall err");
-        return E_FAIL;
+        metadata->SetFileSize(static_cast<int64_t>(0));
+    } else {
+        metadata->SetFileSize(statInfo.st_size);
     }
-    metadata->SetFileSize(statInfo.st_size);
     string extension = ScannerUtils::GetFileExtension(path);
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     metadata->SetFileExtension(extension);
