@@ -297,12 +297,17 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
     for (const string &dir : DELETE_DIR_LIST) {
         if (!MediaFileUtils::DeleteDir(dir)) {
             MEDIA_ERR_LOG("Delete dir %{public}s failed", dir.c_str());
+            continue;
         }
+        if (!MediaFileUtils::CreateDirectory(dir)) {
+            MEDIA_ERR_LOG("Create dir %{public}s failed", dir.c_str());
+        };
     }
-    for (auto &dir : PRESET_ROOT_DIRS) {
-        string ditPath = ROOT_MEDIA_DIR + dir;
-        MediaFileUtils::CreateDirectory(ditPath);
-    }
+
+    string photoThumbsPath = ROOT_MEDIA_DIR + ".thumbs/Photo";
+    if (!MediaFileUtils::CreateDirectory(photoThumbsPath)) {
+        MEDIA_ERR_LOG("Create dir %{public}s failed", photoThumbsPath.c_str());
+    };
 
     return E_OK;
 }
