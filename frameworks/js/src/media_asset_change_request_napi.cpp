@@ -1153,7 +1153,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_call
 
 bool MediaAssetChangeRequestNapi::IsSetPhotoSubType()
 {
-    return isSetPhotoSubType;
+    return isSetPhotoSubType_;
 }
 
 napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callback_info info)
@@ -1180,10 +1180,10 @@ napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callb
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT, "Operation not support: the asset is not moving photo");
         return nullptr;
     }
-    changeRequest->isSetPhotoSubType = false;
+    changeRequest->isSetPhotoSubType_ = false;
     if (fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
         effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
-        changeRequest->isSetPhotoSubType = true;
+        changeRequest->isSetPhotoSubType_ = true;
         fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
     fileAsset->SetMovingPhotoEffectMode(effectMode);

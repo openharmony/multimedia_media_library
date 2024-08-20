@@ -158,7 +158,7 @@ private:
     void* movingPhotoVideoDataBuffer_;
     size_t movingPhotoVideoBufferSize_;
     AddResourceMode movingPhotoVideoResourceMode_;
-    bool isSetPhotoSubType{false};
+    bool isSetPhotoSubType_{false};
     std::vector<ResourceType> addResourceTypes_; // support adding resource multiple times
     std::vector<AssetChangeOperation> assetChangeOperations_;
 };
