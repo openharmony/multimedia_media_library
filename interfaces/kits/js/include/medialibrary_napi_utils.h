@@ -304,11 +304,11 @@ const std::vector<std::string> photoSubTypeEnum {
 };
 
 const std::vector<std::string> photoPermissionTypeEnum {
-    "TEMPORARY_READ_IMAGEVIDEO", "PERSIST_READ_IMAGEVIDEO"
+    "TEMPORARY_READ_IMAGEVIDEO", "PERSISTENT_READ_IMAGEVIDEO"
 };
 
 const std::vector<std::string> hideSensitiveTypeEnum {
-    "HIDE_LOCATION_AND_SHOTING_PARM", "HIDE_LOCATION_ONLY", "HIDE_SHOTING_PARM_ONLY", "NO_HIDE_SENSITIVE_TYPE"
+    "HIDE_LOCATION_AND_SHOOTING_PARAM", "HIDE_LOCATION_ONLY", "HIDE_SHOOTING_PARAM_ONLY", "NO_HIDE_SENSITIVE_TYPE"
 };
 
 const std::vector<std::string> notifyTypeEnum {
@@ -511,7 +511,7 @@ public:
     static napi_status GetStringArray(napi_env env, napi_value arg, std::vector<std::string> &array);
     static void UriAddTableName(std::string &uri, const std::string tableName);
     static std::string GetFileIdFromUri(const std::string &uri);
-    static int32_t GetFileIdFromAssetUri(const std::string &uri);
+    static int32_t GetFileIdFromPhotoUri(const std::string &uri);
     static MediaType GetMediaTypeFromUri(const std::string &uri);
     template <class AsyncContext>
     static napi_status GetPredicate(napi_env env, const napi_value arg, const std::string &propName,
