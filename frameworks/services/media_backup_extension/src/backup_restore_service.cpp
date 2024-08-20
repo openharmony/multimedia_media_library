@@ -52,9 +52,11 @@ void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &ga
 {
     std::unique_ptr<BaseRestore> restoreService;
     MEDIA_INFO_LOG("Start restore service: %{public}d", sceneCode);
+    std::string serviceBackupDir = backupDir;
     if (sceneCode == UPGRADE_RESTORE_ID) {
         restoreService = std::make_unique<UpgradeRestore>(galleryAppName, mediaAppName,
             UPGRADE_RESTORE_ID, GetDualDirName());
+        serviceBackupDir = RESTORE_SANDBOX_DIR;
     } else if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
         restoreService = std::make_unique<UpgradeRestore>(galleryAppName, mediaAppName, DUAL_FRAME_CLONE_RESTORE_ID);
     } else {
@@ -64,7 +66,7 @@ void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &ga
         MEDIA_ERR_LOG("Create media restore service failed.");
         return;
     }
-    restoreService->StartRestore(backupDir, UPGRADE_FILE_DIR);
+    restoreService->StartRestore(serviceBackupDir, UPGRADE_FILE_DIR);
 }
 
 void BackupRestoreService::StartRestoreEx(int32_t sceneCode, const std::string &galleryAppName,
@@ -72,9 +74,11 @@ void BackupRestoreService::StartRestoreEx(int32_t sceneCode, const std::string &
 {
     std::unique_ptr<BaseRestore> restoreService;
     MEDIA_INFO_LOG("Start restoreEx service: %{public}d", sceneCode);
+    std::string serviceBackupDir = backupDir;
     if (sceneCode == UPGRADE_RESTORE_ID) {
         restoreService = std::make_unique<UpgradeRestore>(galleryAppName, mediaAppName, UPGRADE_RESTORE_ID,
             GetDualDirName());
+        serviceBackupDir = RESTORE_SANDBOX_DIR;
     } else if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
         restoreService = std::make_unique<UpgradeRestore>(galleryAppName, mediaAppName, DUAL_FRAME_CLONE_RESTORE_ID);
     } else {
@@ -85,7 +89,7 @@ void BackupRestoreService::StartRestoreEx(int32_t sceneCode, const std::string &
         restoreExInfo = "";
         return;
     }
-    restoreService->StartRestoreEx(backupDir, UPGRADE_FILE_DIR, restoreExInfo);
+    restoreService->StartRestoreEx(serviceBackupDir, UPGRADE_FILE_DIR, restoreExInfo);
 }
 
 void BackupRestoreService::GetBackupInfo(int32_t sceneCode, std::string &backupInfo)
