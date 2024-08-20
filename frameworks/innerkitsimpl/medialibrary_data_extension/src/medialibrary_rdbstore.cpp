@@ -2632,6 +2632,18 @@ static void UpdateMultiCropInfo(RdbStore &store)
     };
     MEDIA_INFO_LOG("start update multi crop triggers");
     ExecSqls(executeSqlStrs, store);
+static void UpdateSearchIndexTrigger(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS update_search_status_trigger",
+        CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
+        "DROP TRIGGER IF EXISTS album_map_insert_search_trigger",
+        CREATE_ALBUM_MAP_INSERT_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS album_map_delete_search_trigger",
+        CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER,
+    };
+    MEDIA_INFO_LOG("start update search index");
+    ExecSqls(sqls, store);
 }
 
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
@@ -3043,6 +3055,10 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VISION_UPDATE_DATA_ADDED_INDEX) {
         UpdateDataAddedIndexWithFileId(store);
+    }
+
+    if (oldVersion < VISION_UPDATE_SEARCH_INDEX_TRIGGER) {
+        UpdateSearchIndexTrigger(store);
     }
 
     if (oldVersion < VISION_UPDATE_MULTI_CROP_INFO) {
