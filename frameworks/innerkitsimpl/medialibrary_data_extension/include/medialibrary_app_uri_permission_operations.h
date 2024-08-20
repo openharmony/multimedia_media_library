@@ -75,6 +75,8 @@ private:
         int &permissionTypeParam);
     static bool IsValidPermissionType(int &permissionType);
     static bool CanOverride(int &permissionTypeParam, int &permissionTypeDB);
+    static bool IsPhotoExist(int &photoFileId);
+    static bool IsPhotosAllExist(const std::vector<DataShare::DataShareValuesBucket> &values);
 };
 } // namespace Media
 } // namespace OHOS
