@@ -51,8 +51,7 @@ const std::unordered_map<SourceState, SourceState> SourceLoader::ALL_SOURCE_LOAD
     { SourceState::BEGIN, SourceState::LOCAL_THUMB },
     { SourceState::LOCAL_THUMB, SourceState::LOCAL_LCD },
     { SourceState::LOCAL_LCD, SourceState::LOCAL_ORIGIN },
-    { SourceState::LOCAL_ORIGIN, SourceState::CLOUD_THUMB },
-    { SourceState::CLOUD_THUMB, SourceState::CLOUD_LCD },
+    { SourceState::LOCAL_ORIGIN, SourceState::CLOUD_LCD },
     { SourceState::CLOUD_LCD, SourceState::CLOUD_ORIGIN },
     { SourceState::CLOUD_ORIGIN, SourceState::FINISH },
 };
@@ -321,7 +320,7 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 
 bool SourceLoader::CreateSourcePixelMap()
 {
-    if (state_ == SourceState::LOCAL_ORIGIN && data_.mediaType == MEDIA_TYPE_VIDEO) {
+    if (state_ == SourceState::LOCAL_ORIGIN && data_.mediaType == MEDIA_TYPE_VIDEO && data_.isLocalFile) {
         return CreateVideoFramePixelMap();
     }
 
