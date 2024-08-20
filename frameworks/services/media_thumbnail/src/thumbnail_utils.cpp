@@ -48,6 +48,7 @@
 #include "parameter.h"
 #include "post_proc.h"
 #include "rdb_errno.h"
+#include "result_set_utils.h"
 #include "thumbnail_const.h"
 #include "thumbnail_source_loading.h"
 #include "unique_fd.h"
@@ -1473,30 +1474,6 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
     return true;
 }
 
-#ifdef DISTRIBUTED
-bool ThumbnailUtils::RemoveDataFromKv(const shared_ptr<SingleKvStore> &kvStore, const string &key)
-{
-    if (key.empty()) {
-        MEDIA_ERR_LOG("RemoveLcdFromKv key empty");
-        return false;
-    }
-
-    if (kvStore == nullptr) {
-        MEDIA_ERR_LOG("KvStore is not init");
-        return false;
-    }
-
-    MediaLibraryTracer tracer;
-    tracer.Start("RemoveLcdFromKv kvStore->Get");
-    auto status = kvStore->Delete(key);
-    if (status != Status::SUCCESS) {
-        MEDIA_ERR_LOG("Failed to get key [%{private}s] ret [%{private}d]", key.c_str(), status);
-        return false;
-    }
-    return true;
-}
-#endif
-
 // notice: return value is whether thumb/lcd is deleted
 bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
 {
@@ -2167,6 +2144,34 @@ bool ThumbnailUtils::ConvertStrToInt32(const std::string &str, int32_t &ret)
         return false;
     }
     ret = static_cast<int32_t>(numberValue);
+    return true;
+}
+
+bool ThumbnailUtils::CheckCloudThumbnailDownloadFinish(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr)
+{
+    if (rdbStorePtr == nullptr) {
+        MEDIA_ERR_LOG("RdbStorePtr is nullptr!");
+        return false;
+    }
+
+    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    vector<string> column = { "count(1) AS count" };
+    rdbPredicates.BeginWrap()
+        ->GreaterThanOrEqualTo(PhotoColumn::PHOTO_POSITION, CLOUD_PHOTO_POSITION)
+        ->And()
+        ->NotEqualTo(PhotoColumn::PHOTO_THUMB_STATUS, CLOUD_THUMB_STATUS_DOWNLOAD)
+        ->EndWrap();
+    shared_ptr<ResultSet> resultSet = rdbStorePtr->Query(rdbPredicates, column);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("ResultSet is null!");
+        return false;
+    }
+
+    int32_t count = GetInt32Val(RDB_QUERY_COUNT, resultSet);
+    MEDIA_INFO_LOG("Number of undownloaded cloud images: %{public}d", count);
+    if (count > CLOUD_THUMBNAIL_DOWNLOAD_FINISH_NUMBER) {
+        return false;
+    }
     return true;
 }
 } // namespace Media
