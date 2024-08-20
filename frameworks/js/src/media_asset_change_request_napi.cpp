@@ -263,7 +263,7 @@ bool MediaAssetChangeRequestNapi::IsMovingPhoto() const
     return fileAsset_ != nullptr &&
         (fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
         (fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
-        currentEffectMode_ == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)));
+        fileAsset_->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)));
 }
 
 bool MediaAssetChangeRequestNapi::CheckMovingPhotoResource(ResourceType resourceType) const
@@ -1151,6 +1151,11 @@ napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_call
     RETURN_NAPI_UNDEFINED(env);
 }
 
+bool MediaAssetChangeRequestNapi::IsSetPhotoSubType()
+{
+    return isSetPhotoSubType;
+}
+
 napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callback_info info)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -1174,6 +1179,12 @@ napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callb
         fileAsset->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY))) {
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT, "Operation not support: the asset is not moving photo");
         return nullptr;
+    }
+    changeRequest->isSetPhotoSubType = false;
+    if (fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
+        effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+        changeRequest->isSetPhotoSubType = true;
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
     changeRequest->currentEffectMode_ = fileAsset->GetMovingPhotoEffectMode();
     fileAsset->SetMovingPhotoEffectMode(effectMode);
@@ -1754,6 +1765,9 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
         if (isSetEffectMode) {
             valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset_->GetMovingPhotoEffectMode());
             valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
+            if (IsSetPhotoSubType()) {
+                valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, fileAsset_->GetPhotoSubType());
+            }
         }
         ret = UserFileClient::Insert(submitCacheUri, valuesBucket);
     }
@@ -2056,6 +2070,9 @@ static bool SetEffectModeExecute(MediaAssetChangeRequestAsyncContext& context)
     auto fileAsset = changeRequest->GetFileAssetInstance();
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset->GetMovingPhotoEffectMode());
+    if (changeRequest->IsSetPhotoSubType()) {
+        valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, fileAsset->GetPhotoSubType());
+    }
     return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
 }
 

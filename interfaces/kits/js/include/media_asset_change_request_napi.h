@@ -108,6 +108,7 @@ public:
 
     sptr<PhotoProxy> GetPhotoProxyObj();
     void ReleasePhotoProxyObj();
+    bool IsSetPhotoSubType();
 
 private:
     EXPORT static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -157,7 +158,7 @@ private:
     void* movingPhotoVideoDataBuffer_;
     size_t movingPhotoVideoBufferSize_;
     AddResourceMode movingPhotoVideoResourceMode_;
-    int32_t currentEffectMode_;
+    bool isSetPhotoSubType{false};
     std::vector<ResourceType> addResourceTypes_; // support adding resource multiple times
     std::vector<AssetChangeOperation> assetChangeOperations_;
 };
