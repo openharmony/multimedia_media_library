@@ -1883,6 +1883,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_FIRST_VISIT_TIME, { IsInt64 } },
     { PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, { IsInt32 } },
     { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, { IsInt32 } },
+    { PhotoColumn::PHOTO_SUBTYPE, { IsInt32 } },
     { PhotoColumn::PHOTO_COVER_POSITION, { IsInt64 } },
     { PhotoColumn::PHOTO_IS_TEMP, { IsBool } },
     { PhotoColumn::PHOTO_DIRTY, { IsInt32 } },
