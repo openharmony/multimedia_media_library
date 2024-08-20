@@ -70,13 +70,13 @@ UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::str
 
 int32_t UpgradeRestore::Init(const std::string &backupRestoreDir, const std::string &upgradeFilePath, bool isUpgrade)
 {
-    appDataPath_ = RESTORE_SANDBOX_DIR;
     string photosPreferencesPath;
     if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
-        filePath_ = backupRestoreDir;
-        galleryDbPath_ = backupRestoreDir + "/" + GALLERY_DB_NAME;
-        audioDbPath_ = backupRestoreDir + INTERNAL_PREFIX + "/0/" + AUDIO_DB_NAME;
-        photosPreferencesPath = backupRestoreDir + "/" + galleryAppName_ + "_preferences.xml";
+        appDataPath_ = backupRestoreDir;
+        filePath_ = upgradeFilePath;
+        galleryDbPath_ = upgradeFilePath + "/" + GALLERY_DB_NAME;
+        audioDbPath_ = GARBLE_DUAL_FRAME_CLONE_DIR + "/0/" + AUDIO_DB_NAME;
+        photosPreferencesPath = UPGRADE_FILE_DIR + "/" + galleryAppName_ + "_preferences.xml";
         // gallery db may include both internal & external, set flag to differentiate, default false
         shouldIncludeSD_ = BackupFileUtils::ShouldIncludeSD(filePath_);
         SetParameterForClone();
@@ -84,6 +84,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRestoreDir, const std::str
         FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
 #endif
     } else {
+        appDataPath_ = RESTORE_SANDBOX_DIR;
         filePath_ = upgradeFilePath;
         galleryDbPath_ = RESTORE_SANDBOX_DIR + "/" + galleryAppName_ + "/ce/databases/gallery.db";
         externalDbPath_ = RESTORE_SANDBOX_DIR + "/" + mediaAppName_ + "/ce/databases/external.db";
