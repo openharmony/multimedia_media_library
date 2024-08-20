@@ -1186,7 +1186,6 @@ napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callb
         changeRequest->isSetPhotoSubType = true;
         fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
-    changeRequest->currentEffectMode_ = fileAsset->GetMovingPhotoEffectMode();
     fileAsset->SetMovingPhotoEffectMode(effectMode);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE);
     RETURN_NAPI_UNDEFINED(env);
