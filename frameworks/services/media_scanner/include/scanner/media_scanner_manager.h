@@ -43,6 +43,9 @@ public:
         MediaLibraryApi api = MediaLibraryApi::API_OLD, bool isForceScan = false);
     EXPORT int32_t ScanDir(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
     EXPORT int32_t ScanDirSync(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
+    int32_t ScanFileSyncWithoutAlbumUpdate(const std::string &path,
+        const std::shared_ptr<IMediaScannerCallback> &callback, MediaLibraryApi api = MediaLibraryApi::API_OLD,
+        bool isForceScan = false, int32_t fileId = 0);
 private:
     MediaScannerManager() = default;
 
