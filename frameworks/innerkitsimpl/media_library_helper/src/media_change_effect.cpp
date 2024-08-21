@@ -55,6 +55,29 @@ int32_t MediaChangeEffect::TakeEffect(const string &inputPath, const string &out
 #endif
     return 0;
 }
+
+int32_t MediaChangeEffect::TakeEffectForPicture(std::shared_ptr<Media::Picture> &inPicture, string &editData)
+{
+#ifdef IMAGE_EFFECT_SUPPORT
+    Effect::ErrorCode ret = Effect::ErrorCode::ERR_UNKNOWN;
+    std::shared_ptr<Effect::ImageEffect> imageEffect = Effect::ImageEffect::Restore(editData);
+    if (imageEffect == nullptr) {
+        return ParseInt(ret);
+    }
+
+    ret = imageEffect->SetInputPicture(inPicture.get()); // 原图修改
+    if (ret != Effect::ErrorCode::SUCCESS) {
+        return ParseInt(ret);
+    }
+
+    ret = imageEffect->Start();
+    if (ret != Effect::ErrorCode::SUCCESS) {
+        return ParseInt(ret);
+    }
+
+#endif
+    return 0;
+}
  
 } // end of namespace
-}
+}

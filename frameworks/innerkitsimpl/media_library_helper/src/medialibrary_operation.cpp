@@ -272,6 +272,8 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_START_GENERATE_THUMBNAILS, OperationType::START_GENERATE_THUMBNAILS },
         { OPRN_STOP_GENERATE_THUMBNAILS, OperationType::STOP_GENERATE_THUMBNAILS },
         { OPRN_TOOL_QUERY_BY_DISPLAY_NAME, OperationType::TOOL_QUERY_BY_DISPLAY_NAME },
+        { OPRN_ADD_LOWQUALITY_IMAGE, OperationType::ADD_LOWQUALITY_IMAGE },
+        { OPRN_FINISH_REQUEST_PICTURE, OperationType::FINISH_REQUEST_PICTURE },
         { OPRN_SCAN_WITHOUT_ALBUM_UPDATE, OperationType::SCAN_WITHOUT_ALBUM_UPDATE },
     };
     return oprnTypeMap;

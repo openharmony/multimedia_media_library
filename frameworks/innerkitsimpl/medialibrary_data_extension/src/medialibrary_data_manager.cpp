@@ -17,6 +17,7 @@
 
 #include "medialibrary_data_manager.h"
 
+#include <cstdlib>
 #include <shared_mutex>
 #include <unordered_set>
 
@@ -1341,7 +1342,8 @@ int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string
     }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
-    if (oprnObject != OperationObject::THUMBNAIL && oprnObject != OperationObject::THUMBNAIL_ASTC) {
+    if (oprnObject != OperationObject::THUMBNAIL && oprnObject != OperationObject::THUMBNAIL_ASTC &&
+        oprnObject != OperationObject::REQUEST_PICTURE && oprnObject != OperationObject::PHOTO_REQUEST_PICTURE_BUFFER) {
         string opObject = MediaFileUri::GetPathFirstDentry(const_cast<Uri &>(cmd.GetUri()));
         if (opObject == IMAGE_ASSET_TYPE || opObject == VIDEO_ASSET_TYPE || opObject == URI_TYPE_PHOTO) {
             cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);

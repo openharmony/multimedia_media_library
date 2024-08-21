@@ -1,4 +1,12 @@
 /*
+ * @Author: kerongfeng fengkerong@huawei.com
+ * @Date: 2024-08-21 18:04:16
+ * @LastEditors: kerongfeng fengkerong@huawei.com
+ * @LastEditTime: 2024-08-22 20:11:18
+ * @FilePath: \multimedia_media_library\frameworks\innerkitsimpl\medialibrary_data_extension\include\picture_manager_thread.h
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
+/*
  * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +56,8 @@ public:
     void Pause();
     void Resume();
     EXPORT void InsertPictureData(const std::string& imageId, sptr<PicturePair>& picturePair, PictureType pictureType);
-    EXPORT std::shared_ptr<Media::Picture> GetDataWithImageId(const std::string& imageId, bool isCleanImmediately = false);
+    EXPORT std::shared_ptr<Media::Picture> GetDataWithImageId(const std::string& imageId,
+        bool isCleanImmediately = false);
     EXPORT bool IsExsitDataForPictureType(PictureType pictureType);
     EXPORT bool IsExsitPictureByImageId(const std::string& imageId);
     EXPORT void SaveLowQualityPicture(const std::string& imageId = "default");

@@ -55,6 +55,7 @@
           "init",
           "ipc",
           "kv_store",
+          "libexif",
           "memory_utils",
           "memmgr",
           "image_framework",

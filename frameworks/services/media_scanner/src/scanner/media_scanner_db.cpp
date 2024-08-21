@@ -211,7 +211,6 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     MediaType mediaType = metadata.GetFileMediaType();
 
     values.PutString(MediaColumn::MEDIA_FILE_PATH, metadata.GetFilePath());
-    values.PutString(MediaColumn::MEDIA_MIME_TYPE, metadata.GetFileMimeType());
     values.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
     if (skipPhoto) {
         values.PutString(MediaColumn::MEDIA_NAME, metadata.GetFileName());

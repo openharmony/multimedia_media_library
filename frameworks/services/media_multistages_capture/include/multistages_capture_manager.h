@@ -1,4 +1,12 @@
 /*
+ * @Author: kerongfeng fengkerong@huawei.com
+ * @Date: 2024-08-21 18:04:16
+ * @LastEditors: kerongfeng fengkerong@huawei.com
+ * @LastEditTime: 2024-08-22 20:12:27
+ * @FilePath: \multimedia_media_library\frameworks\services\media_multistages_capture\include\multistages_capture_manager.h
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
+/*
  * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +33,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_command.h"
 #include "result_set.h"
+#include "picture_manager_thread.h"
 
 namespace OHOS {
 namespace Media {
@@ -58,6 +67,12 @@ public:
 
     void AddImageInternal(int32_t fileId, const std::string &photoId, int32_t deferredProcType,
         bool discardable = false);
+    bool IsHighQualityPhotoExist(const std::string &uri);
+    void DealHighQualityPicture(const std::string &imageId, std::shared_ptr<Media::Picture> picture,
+        bool isEdited = false);
+    void DealLowQualityPicture(const std::string &imageId, std::shared_ptr<Media::Picture> picture,
+        bool isEdited = false);
+    void SaveLowQualityImageInfo(MediaLibraryCommand &cmd);
 
     EXPORT bool IsPhotoDeleted(const std::string &photoId);
 
@@ -78,6 +93,8 @@ private:
     std::unordered_set<int32_t> setOfDeleted_;
 
     std::shared_ptr<DeferredProcessingAdapter> deferredProcSession_;
+
+    std::mutex deferredProcMutex_;
 };
 } // namespace Media
 } // namespace OHOS

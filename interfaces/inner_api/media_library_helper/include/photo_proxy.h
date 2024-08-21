@@ -25,6 +25,8 @@ enum class PhotoFormat : int32_t {
     RGBA = 0,
     JPG,
     MP4,
+    HEIF,
+    YUV,
 };
 
 enum class PhotoQuality : int32_t {

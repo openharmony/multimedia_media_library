@@ -58,6 +58,7 @@
 #include "thumbnail_service.h"
 #include "value_object.h"
 #include "medialibrary_tracer.h"
+#include "picture_handle_service.h"
 #include "post_event_utils.h"
 
 using namespace std;
@@ -781,10 +782,19 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     tracer.Start("MediaLibraryObjectUtils::OpenFile");
 
     string uriString = cmd.GetUri().ToString();
+    MEDIA_DEBUG_LOG("MediaLibraryObjectUtils OpenFile uriString:%{public}s", uriString.c_str());
     if (cmd.GetOprnObject() == OperationObject::THUMBNAIL) {
         return ThumbnailService::GetInstance()->GetThumbnailFd(uriString);
     } else if (cmd.GetOprnObject() == OperationObject::THUMBNAIL_ASTC) {
         return ThumbnailService::GetInstance()->GetThumbnailFd(uriString, true);
+    } else if (cmd.GetOprnObject() == OperationObject::REQUEST_PICTURE) {
+        std::string fileId = cmd.GetQuerySetParam(MediaColumn::MEDIA_ID);
+        int32_t fd;
+        PictureHandlerService::OpenPicture(fileId, fd);
+        return fd;
+    } else if (cmd.GetOprnObject() == OperationObject::PHOTO_REQUEST_PICTURE_BUFFER) {
+        std::string fd = cmd.GetQuerySetParam("fd");
+        return PictureHandlerService::RequestBufferHandlerFd(fd);
     } else if (IsDocumentUri(uriString)) {
         return OpenDocument(uriString, mode);
     }

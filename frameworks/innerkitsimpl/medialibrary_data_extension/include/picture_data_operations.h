@@ -95,7 +95,8 @@ public:
     void CleanPictureMapData(std::map<std::string, sptr<PicturePair>>& pictureMap, PictureType pictureType);
     void InsertPictureData(const std::string& imageId, sptr<PicturePair>& picturePair, PictureType pictureType);
     std::shared_ptr<Media::Picture> GetDataWithImageId(const std::string& imageId, bool isCleanImmediately = true);
-    std::shared_ptr<Media::Picture> GetDataWithImageIdAndPictureType(const std::string& imageId, PictureType pictureType,
+    std::shared_ptr<Media::Picture> GetDataWithImageIdAndPictureType(const std::string& imageId,
+        PictureType pictureType,
     bool isCleanImmediately = true);
     void DeleteDataWithImageId(const std::string& imageId, PictureType pictureType);
     bool IsExsitDataForPictureType(PictureType pictureType);

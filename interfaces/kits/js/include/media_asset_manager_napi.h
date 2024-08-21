@@ -109,6 +109,8 @@ public:
         napi_env env);
     static void GetImageSourceNapiObject(const std::string &fileUri, napi_value &imageSourceNapiObj, bool isSource,
         napi_env env);
+    static void GetPictureNapiObject(const std::string &fileUri, napi_value &imageSourceNapiObj, bool isSource,
+        napi_env env, bool& isPicture);
     static void WriteDataToDestPath(std::string requestUri, std::string destUri, napi_value& resultNapiValue,
         bool isSource, napi_env env);
 
@@ -118,7 +120,10 @@ private:
     static bool InitUserFileClient(napi_env env, napi_callback_info info);
     static napi_status ParseRequestMediaArgs(napi_env env, napi_callback_info info,
         unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
+    static napi_status ParseEfficentRequestMediaArgs(napi_env env, napi_callback_info info,
+        unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
     static napi_value JSRequestImage(napi_env env, napi_callback_info info);
+    static napi_value JSRequestEfficientIImage(napi_env env, napi_callback_info info);
     static napi_value JSRequestImageData(napi_env env, napi_callback_info info);
     static napi_value JSRequestMovingPhoto(napi_env env, napi_callback_info info);
     static napi_value JSRequestVideoFile(napi_env env, napi_callback_info info);

@@ -44,6 +44,7 @@
 #include "medialibrary_tracer.h"
 #include "moving_photo_napi.h"
 #include "permission_utils.h"
+#include "picture_handle_client.h"
 #include "ui_extension_context.h"
 #include "userfile_client.h"
 
@@ -81,6 +82,7 @@ napi_value MediaAssetManagerNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_STATIC_FUNCTION("requestVideoFile", JSRequestVideoFile),
             DECLARE_NAPI_STATIC_FUNCTION("cancelRequest", JSCancelRequest),
             DECLARE_NAPI_STATIC_FUNCTION("loadMovingPhoto", JSLoadMovingPhoto),
+            DECLARE_NAPI_STATIC_FUNCTION("requestEfficientImage", JSRequestEfficientIImage)
         }};
         MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
         return exports;
@@ -415,6 +417,53 @@ napi_status ParseArgGetDestPath(napi_env env, napi_value arg, std::string &destP
     return napi_ok;
 }
 
+napi_status ParseArgGetEfficientImageDataHandler(napi_env env, napi_value arg, napi_value& dataHandler,
+    bool& needsExtraInfo)
+{
+    CHECK_COND_LOG_THROW_RETURN_RET(env, arg != nullptr, OHOS_INVALID_PARAM_CODE, "efficient handler invalid argument",
+        napi_invalid_arg, "efficient data handler is nullptr");
+
+    napi_valuetype valueType;
+    napi_status status = napi_typeof(env, arg, &valueType);
+    CHECK_COND_LOG_THROW_RETURN_RET(env, status == napi_ok, OHOS_INVALID_PARAM_CODE, "invalid efficient data handler",
+        napi_invalid_arg, "failed to get type of efficient data handler, napi status: %{public}d",
+        static_cast<int>(status));
+    CHECK_COND_LOG_THROW_RETURN_RET(env, valueType == napi_object, OHOS_INVALID_PARAM_CODE,
+        "efficient data handler not a object", napi_invalid_arg, "efficient data handler not a object");
+
+    dataHandler = arg;
+
+    napi_value onDataPrepared;
+    status = napi_get_named_property(env, arg, ON_DATA_PREPARED_FUNC, &onDataPrepared);
+    CHECK_COND_LOG_THROW_RETURN_RET(env, status == napi_ok, OHOS_INVALID_PARAM_CODE,
+        "unable to get onDataPrepared function", napi_invalid_arg,
+        "failed to get type of efficient data handler, napi status: %{public}d", static_cast<int>(status));
+    status = napi_typeof(env, onDataPrepared, &valueType);
+    CHECK_COND_LOG_THROW_RETURN_RET(env, status == napi_ok, OHOS_INVALID_PARAM_CODE, "invalid onDataPrepared",
+        napi_invalid_arg, "failed to get type of onDataPrepared, napi status: %{public}d", static_cast<int>(status));
+    CHECK_COND_LOG_THROW_RETURN_RET(env, valueType == napi_function, OHOS_INVALID_PARAM_CODE,
+        "onDataPrepared not a function", napi_invalid_arg, "onDataPrepared not a function");
+
+    napi_value paramCountNapi;
+    status = napi_get_named_property(env, onDataPrepared, "length", &paramCountNapi);
+    CHECK_COND_LOG_THROW_RETURN_RET(env, status == napi_ok, OHOS_INVALID_PARAM_CODE, "invalid onDataPrepared",
+        napi_invalid_arg, "get onDataPrepared arg count fail, napi status: %{public}d", static_cast<int>(status));
+    int32_t paramCount = -1;
+    constexpr int paramCountMin = 2;
+    constexpr int paramCountMax = 3;
+    status = napi_get_value_int32(env, paramCountNapi, &paramCount);
+    CHECK_COND_LOG_THROW_RETURN_RET(env, status == napi_ok, OHOS_INVALID_PARAM_CODE, "invalid onDataPrepared",
+        napi_invalid_arg, "get onDataPrepared arg count value fail, napi status: %{public}d", static_cast<int>(status));
+    CHECK_COND_LOG_THROW_RETURN_RET(env, (paramCount >= paramCountMin && paramCount <= paramCountMax),
+        OHOS_INVALID_PARAM_CODE, "onDataPrepared has wrong number of parameters",
+        napi_invalid_arg, "onDataPrepared has wrong number of parameters");
+
+    if (paramCount == ARGS_THREE) {
+        needsExtraInfo = true;
+    }
+    return napi_ok;
+}
+
 napi_status ParseArgGetDataHandler(napi_env env, napi_value arg, napi_value& dataHandler, bool& needsExtraInfo)
 {
     CHECK_COND_LOG_THROW_RETURN_RET(env, arg != nullptr, OHOS_INVALID_PARAM_CODE, "data handler invalid argument",
@@ -531,6 +580,57 @@ napi_status MediaAssetManagerNapi::ParseRequestMediaArgs(napi_env env, napi_call
     return napi_ok;
 }
 
+napi_status MediaAssetManagerNapi::ParseEfficentRequestMediaArgs(napi_env env, napi_callback_info info,
+    unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
+{
+    napi_value thisVar = nullptr;
+    GET_JS_ARGS(env, info, asyncContext->argc, asyncContext->argv, thisVar);
+    if (asyncContext->argc != ARGS_FOUR && asyncContext->argc != ARGS_FIVE) {
+        NAPI_ERR_LOG("requestMedia argc error");
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMedia argc invalid");
+        return napi_invalid_arg;
+    }
+    if (ParseArgGetCallingPackageName(env, asyncContext->argv[PARAM0], asyncContext->callingPkgName) != napi_ok) {
+        NAPI_ERR_LOG("requestMedia ParseArgGetCallingPackageName error");
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMedia ParseArgGetPhotoAsset error");
+        return napi_invalid_arg;
+    }
+    if (ParseArgGetPhotoAsset(env, asyncContext->argv[PARAM1], asyncContext->fileId, asyncContext->photoUri,
+        asyncContext->displayName) != napi_ok) {
+        NAPI_ERR_LOG("requestMedia ParseArgGetPhotoAsset error");
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMedia ParseArgGetPhotoAsset error");
+        return napi_invalid_arg;
+    }
+    if (ParseArgGetRequestOption(env, asyncContext->argv[PARAM2], asyncContext->deliveryMode,
+        asyncContext->sourceMode) != napi_ok) {
+        NAPI_ERR_LOG("requestMedia ParseArgGetRequestOption error");
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMedia ParseArgGetRequestOption error");
+        return napi_invalid_arg;
+    }
+    if (asyncContext->argc == ARGS_FOUR) {
+        if (ParseArgGetEfficientImageDataHandler(env, asyncContext->argv[PARAM3], asyncContext->dataHandler,
+            asyncContext->needsExtraInfo) != napi_ok) {
+            NAPI_ERR_LOG("requestMedia ParseArgGetEfficientImageDataHandler error");
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMedia ParseArgGetEfficientImageDataHandler error");
+            return napi_invalid_arg;
+        }
+    } else if (asyncContext->argc == ARGS_FIVE) {
+        if (ParseArgGetDestPath(env, asyncContext->argv[PARAM3], asyncContext->destUri) != napi_ok) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMedia ParseArgGetDestPath error");
+            return napi_invalid_arg;
+        }
+        if (ParseArgGetEfficientImageDataHandler(env, asyncContext->argv[PARAM4], asyncContext->dataHandler,
+            asyncContext->needsExtraInfo) != napi_ok) {
+            NAPI_ERR_LOG("requestMedia ParseArgGetEfficientImageDataHandler error");
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
+                "requestMedia ParseArgGetEfficientImageDataHandler error");
+            return napi_invalid_arg;
+        }
+    }
+    asyncContext->hasReadPermission = HasReadPermission();
+    return napi_ok;
+}
+
 bool MediaAssetManagerNapi::InitUserFileClient(napi_env env, napi_callback_info info)
 {
     if (UserFileClient::IsValid()) {
@@ -603,6 +703,7 @@ napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback
 
 napi_value MediaAssetManagerNapi::JSRequestImage(napi_env env, napi_callback_info info)
 {
+    NAPI_DEBUG_LOG("JSRequestImage");
     if (env == nullptr || info == nullptr) {
         NAPI_ERR_LOG("JSRequestImage js arg invalid");
         NapiError::ThrowError(env, JS_INNER_FAIL, "JSRequestImage js arg invalid");
@@ -639,6 +740,48 @@ napi_value MediaAssetManagerNapi::JSRequestImage(napi_env env, napi_callback_inf
     asyncContext->subType = static_cast<PhotoSubType>(GetPhotoSubtype(env, asyncContext->argv[PARAM1]));
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestImage", JSRequestExecute,
+        JSRequestComplete);
+}
+
+napi_value MediaAssetManagerNapi::JSRequestEfficientIImage(napi_env env, napi_callback_info info)
+{
+    NAPI_DEBUG_LOG("JSRequestEfficientIImage");
+    if (env == nullptr || info == nullptr) {
+        NAPI_ERR_LOG("JSRequestEfficientIImage js arg invalid");
+        NapiError::ThrowError(env, JS_INNER_FAIL, "JSRequestEfficientIImage js arg invalid");
+        return nullptr;
+    }
+    if (!InitUserFileClient(env, info)) {
+        NAPI_ERR_LOG("JSRequestEfficientIImage init user file client failed");
+        NapiError::ThrowError(env, JS_INNER_FAIL, "handler is invalid");
+        return nullptr;
+    }
+
+    MediaLibraryTracer tracer;
+    tracer.Start("JSRequestEfficientIImage");
+
+    unique_ptr<MediaAssetManagerAsyncContext> asyncContext = make_unique<MediaAssetManagerAsyncContext>();
+    asyncContext->returnDataType = ReturnDataType::TYPE_PICTURE;
+    if (ParseEfficentRequestMediaArgs(env, info, asyncContext) != napi_ok) {
+        NAPI_ERR_LOG("failed to parse JSRequestEfficientIImage args");
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "failed to parse JSRequestEfficientIImage args");
+        return nullptr;
+    }
+    if (CreateDataHandlerRef(env, asyncContext, asyncContext->dataHandlerRef) != napi_ok
+            || CreateOnDataPreparedThreadSafeFunc(env, asyncContext, asyncContext->onDataPreparedPtr) != napi_ok) {
+        NAPI_ERR_LOG("CreateDataHandlerRef or CreateOnDataPreparedThreadSafeFunc failed");
+        return nullptr;
+    }
+    if (CreateDataHandlerRef(env, asyncContext, asyncContext->dataHandlerRef2) != napi_ok
+            || CreateOnDataPreparedThreadSafeFunc(env, asyncContext, asyncContext->onDataPreparedPtr2) != napi_ok) {
+        NAPI_ERR_LOG("CreateDataHandlerRef or CreateOnDataPreparedThreadSafeFunc failed");
+        return nullptr;
+    }
+
+    asyncContext->requestId = GenerateRequestId();
+    asyncContext->subType = static_cast<PhotoSubType>(GetPhotoSubtype(env, asyncContext->argv[PARAM1]));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestEfficientIImage", JSRequestExecute,
         JSRequestComplete);
 }
 
@@ -800,8 +943,10 @@ static napi_value GetInfoMapNapiValue(napi_env env, AssetHandler* assetHandler)
     return mapNapiValue;
 }
 
-static napi_value GetNapiValueOfMedia(napi_env env, const std::shared_ptr<NapiMediaAssetDataHandler>& dataHandler)
+static napi_value GetNapiValueOfMedia(napi_env env, const std::shared_ptr<NapiMediaAssetDataHandler>& dataHandler,
+    bool& isPicture)
 {
+    NAPI_DEBUG_LOG("GetNapiValueOfMedia");
     napi_value napiValueOfMedia = nullptr;
     if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_ARRAY_BUFFER) {
         MediaAssetManagerNapi::GetByteArrayNapiObject(dataHandler->GetRequestUri(), napiValueOfMedia,
@@ -815,6 +960,9 @@ static napi_value GetNapiValueOfMedia(napi_env env, const std::shared_ptr<NapiMe
     } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_MOVING_PHOTO) {
         napiValueOfMedia = MovingPhotoNapi::NewMovingPhotoNapi(
             env, dataHandler->GetRequestUri(), dataHandler->GetSourceMode());
+    } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
+        MediaAssetManagerNapi::GetPictureNapiObject(dataHandler->GetRequestUri(), napiValueOfMedia,
+            dataHandler->GetSourceMode() == SourceMode::ORIGINAL_MODE, env, isPicture);
     } else {
         NAPI_ERR_LOG("source mode type invalid");
     }
@@ -823,6 +971,7 @@ static napi_value GetNapiValueOfMedia(napi_env env, const std::shared_ptr<NapiMe
 
 void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *context, void *data)
 {
+    NAPI_DEBUG_LOG("OnDataPrepared");
     AssetHandler *assetHandler = reinterpret_cast<AssetHandler *>(data);
     CHECK_NULL_PTR_RETURN_VOID(assetHandler, "assetHandler is nullptr");
     auto dataHandler = assetHandler->dataHandler;
@@ -850,12 +999,23 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
             napi_get_undefined(env, &napiValueOfInfoMap);
         }
     }
-    napi_value napiValueOfMedia = GetNapiValueOfMedia(env, dataHandler);
-    if (napiValueOfMedia == nullptr) {
-        napi_get_undefined(env, &napiValueOfMedia);
+    bool isPicture = true;
+    napi_value napiValueOfMedia = GetNapiValueOfMedia(env, dataHandler, isPicture);
+    if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
+        if (isPicture) {
+            dataHandler->JsOnDataPrepared(env, napiValueOfMedia, nullptr, napiValueOfInfoMap);
+        } else {
+            if (napiValueOfMedia == nullptr) {
+                napi_get_undefined(env, &napiValueOfMedia);
+            }
+            dataHandler->JsOnDataPrepared(env, nullptr, napiValueOfMedia, napiValueOfInfoMap);
+        }
+    } else {
+        if (napiValueOfMedia == nullptr) {
+            napi_get_undefined(env, &napiValueOfMedia);
+        }
+        dataHandler->JsOnDataPrepared(env, napiValueOfMedia, napiValueOfInfoMap);
     }
-    dataHandler->JsOnDataPrepared(env, napiValueOfMedia, napiValueOfInfoMap);
-
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     NAPI_INFO_LOG("delete assetHandler: %{public}p", assetHandler);
     DeleteAssetHandlerSafe(assetHandler, env);
@@ -940,6 +1100,39 @@ void MediaAssetManagerNapi::GetImageSourceNapiObject(const std::string &fileUri,
     imageSourceNapi->SetNativeImageSource(std::move(nativeImageSourcePtr));
     imageSourceNapiObj = tempImageSourceNapi;
 }
+
+void MediaAssetManagerNapi::GetPictureNapiObject(const std::string &fileUri, napi_value &pictureNapiObj,
+    bool isSource, napi_env env,  bool& isPicture)
+{
+    if (env == nullptr) {
+        NAPI_ERR_LOG(" create image source object failed, need to initialize js env");
+        return;
+    }
+    NAPI_DEBUG_LOG("GetPictureNapiObject");
+
+    std::string tempStr = fileUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length());
+    std::size_t index = tempStr.find("/");
+    std::string fileId = tempStr.substr(0, index);
+    auto pic = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()));
+    if (pic == nullptr) {
+        NAPI_ERR_LOG("picture is null");
+        isPicture = false;
+        GetImageSourceNapiObject(fileUri, pictureNapiObj, isSource, env);
+        return;
+    }
+    NAPI_ERR_LOG("picture is not null");
+    napi_value tempPictureNapi;
+    PictureNapi::CreatePictureNapi(env, &tempPictureNapi);
+    PictureNapi* pictureNapi = nullptr;
+    napi_unwrap(env, tempPictureNapi, reinterpret_cast<void**>(&pictureNapi));
+    if (pictureNapi == nullptr) {
+        NAPI_ERR_LOG("GetPictureNapiObject unwrap image napi object failed");
+        return;
+    }
+    pictureNapi->SetNativePicture(pic);
+    pictureNapiObj = tempPictureNapi;
+}
+
 
 void MediaAssetManagerNapi::GetByteArrayNapiObject(const std::string &requestUri, napi_value &arrayBuffer,
     bool isSource, napi_env env)
@@ -1249,6 +1442,7 @@ napi_status MediaAssetManagerNapi::CreateDataHandlerRef(napi_env env,
 napi_status MediaAssetManagerNapi::CreateOnDataPreparedThreadSafeFunc(napi_env env,
     const unique_ptr<MediaAssetManagerAsyncContext> &context, napi_threadsafe_function &threadSafeFunc)
 {
+    NAPI_DEBUG_LOG("CreateOnDataPreparedThreadSafeFunc");
     napi_value workName = nullptr;
     napi_create_string_utf8(env, "Data Prepared", NAPI_AUTO_LENGTH, &workName);
     napi_status status = napi_create_threadsafe_function(env, context->dataHandler, NULL, workName, 0, 1,
