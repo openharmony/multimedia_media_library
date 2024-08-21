@@ -121,7 +121,7 @@ public:
     {
     }
 
-    // RGBA、JPG
+    // RGBA、JPG、YUV
     virtual PhotoFormat GetFormat() override
     {
         return PhotoFormat::RGBA;

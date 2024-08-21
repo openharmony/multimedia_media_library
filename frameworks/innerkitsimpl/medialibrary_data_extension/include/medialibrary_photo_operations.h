@@ -25,6 +25,7 @@
 #include "file_asset.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
+#include "picture.h"
 
 namespace OHOS {
 namespace Media {
@@ -50,7 +51,16 @@ public:
     EXPORT static void StoreThumbnailSize(const std::string& photoId, const std::string& photoPath);
     EXPORT static void DropThumbnailSize(const std::string& photoId);
     EXPORT static int32_t ScanFileWithoutAlbumUpdate(MediaLibraryCommand &cmd);
-
+    EXPORT static int32_t ProcessMultistagesPhotoForPicture(bool isEdited, const std::string &path,
+        std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type);
+    EXPORT static int32_t Save(bool isEdited, const std::string &path,
+        const uint8_t *addr, const long bytes, int32_t fileId);
+    EXPORT static int32_t AddFiltersToPicture(std::shared_ptr<Media::Picture>& inPicture,
+        const std::string &outputPath, std::string &editdata, const std::string &mime_type);
+    EXPORT static int32_t SavePicture(const int32_t &fileType, const std::shared_ptr<FileAsset> &fileAsset);
+    EXPORT static int32_t GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
+        bool isCleanImmediately, std::string &photoId);
+    EXPORT static int32_t FinishRequestPicture(MediaLibraryCommand &cmd);
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);
@@ -98,6 +108,10 @@ private:
     static bool IsNeedRevertEffectMode(MediaLibraryCommand& cmd, const std::shared_ptr<FileAsset>& fileAsset,
         int32_t& effectMode);
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
+    static std::shared_ptr<FileAsset> GetFileAsset(MediaLibraryCommand &cmd);
+private:
+    static std::mutex saveCameraPhotoMutex_;
+    static std::condition_variable condition_;
 };
 
 class PhotoEditingRecord {

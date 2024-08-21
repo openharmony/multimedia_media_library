@@ -25,6 +25,7 @@ enum class ReturnDataType {
     TYPE_ARRAY_BUFFER,
     TYPE_MOVING_PHOTO,
     TYPE_TARGET_PATH,
+    TYPE_PICTURE,
 };
 
 enum class DeliveryMode {
@@ -56,7 +57,8 @@ public:
     SourceMode GetSourceMode();
     void SetNotifyMode(NotifyMode trigger);
     NotifyMode GetNotifyMode();
-    void JsOnDataPrepared(napi_env env, napi_value exports, napi_value extraInfo = nullptr);
+    void JsOnDataPrepared(napi_env env, napi_value exports, napi_value extraInfo);
+    void JsOnDataPrepared(napi_env env, napi_value pictures, napi_value exports, napi_value extraInfo);
 
 private:
     napi_env env_ = nullptr;

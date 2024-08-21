@@ -381,6 +381,8 @@ const std::string MEDIA_DB_DIR = "/data/medialibrary/database";
 
 // requestId for generating thumbnail in batches
 const std::string THUMBNAIL_BATCH_GENERATE_REQUEST_ID = "thumbnail_request_id";
+const std::string IMAGE_FILE_TYPE = "image_file_type";
+
 } // namespace Media
 } // namespace OHOS
 

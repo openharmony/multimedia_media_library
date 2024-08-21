@@ -140,7 +140,8 @@ void PictureManagerThread::DeleteDataWithImageId(const std::string& imageId, Pic
     pictureDataOperations_->DeleteDataWithImageId(imageId, pictureType);
 }
 
-std::shared_ptr<Media::Picture> PictureManagerThread::GetDataWithImageId(const std::string& imageId, bool isCleanImmediately)
+std::shared_ptr<Media::Picture> PictureManagerThread::GetDataWithImageId(const std::string& imageId,
+    bool isCleanImmediately)
 {
     MEDIA_DEBUG_LOG("enter ");
     if (pictureDataOperations_ == nullptr) {

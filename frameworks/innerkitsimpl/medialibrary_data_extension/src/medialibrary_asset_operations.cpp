@@ -112,6 +112,9 @@ int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &
         case OperationType::SCAN_WITHOUT_ALBUM_UPDATE:
             errCode = MediaLibraryPhotoOperations::ScanFileWithoutAlbumUpdate(cmd);
             break;
+        case OperationType::FINISH_REQUEST_PICTURE:
+            errCode = MediaLibraryPhotoOperations::FinishRequestPicture(cmd);
+            break;
         default:
             MEDIA_ERR_LOG("unknown operation type %{public}d", cmd.GetOprnType());
             break;

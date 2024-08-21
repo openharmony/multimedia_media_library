@@ -15,6 +15,10 @@
 
 #define MLOG_TAG "PhotoAssetProxy"
 
+#include <cstdint>
+#include <string>
+#include <sstream>
+
 #include "media_photo_asset_proxy.h"
 
 #include "datashare_abs_result_set.h"
@@ -37,6 +41,7 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 const string API_VERSION = "api_version";
+const string SAVE_PICTURE = "save_picture";
 const double TIMER_MULTIPLIER = 60.0;
 const int32_t BURST_COVER = 1;
 const int32_t BURST_MEMBER = 2;
@@ -332,6 +337,9 @@ int32_t PhotoAssetProxy::UpdatePhotoQuality(shared_ptr<DataShare::DataShareHelpe
 {
     string uri = PAH_ADD_IMAGE;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    if (photoProxy->GetFormat() == PhotoFormat::YUV || photoProxy->GetFormat() == PhotoFormat::HEIF) {
+        MediaFileUtils::UriAppendKeyValue(uri, SAVE_PICTURE, OPRN_ADD_LOWQUALITY_IMAGE);
+    }
     Uri updateAssetUri(uri);
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
@@ -342,6 +350,7 @@ int32_t PhotoAssetProxy::UpdatePhotoQuality(shared_ptr<DataShare::DataShareHelpe
     valuesBucket.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, static_cast<int32_t>(photoProxy->GetDeferredProcType()));
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
     valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(subType));
+    valuesBucket.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(photoProxy->GetPhotoQuality()));
 
     int32_t changeRows = dataShareHelper->Update(updateAssetUri, predicates, valuesBucket);
     if (changeRows < 0) {
@@ -349,6 +358,35 @@ int32_t PhotoAssetProxy::UpdatePhotoQuality(shared_ptr<DataShare::DataShareHelpe
     }
     MEDIA_INFO_LOG("photoId: %{public}s, fileId: %{public}d", photoProxy->GetPhotoId().c_str(), fileId);
     return changeRows;
+}
+
+int PhotoAssetProxy::SaveLowQualityPhoto(std::shared_ptr<DataShare::DataShareHelper>  &dataShareHelper,
+    const sptr<PhotoProxy> &photoProxy, int32_t fileId, int32_t subType)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SaveLowQualityPhoto");
+    string uri = PAH_ADD_LOWQUALITY_IMAGE;
+    MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri updateAssetUri(uri);
+    DataShare::DataSharePredicates predicates;
+    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+    predicates.SetWhereArgs({ to_string(fileId) });
+
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::PHOTO_ID, photoProxy->GetPhotoId());
+    valuesBucket.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, static_cast<int32_t>(photoProxy->GetDeferredProcType()));
+    valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
+    valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(subType));
+    valuesBucket.Put(PhotoColumn::PHOTO_LATITUDE, photoProxy->GetLatitude());
+    valuesBucket.Put(PhotoColumn::PHOTO_LONGITUDE, photoProxy->GetLongitude());
+
+    int32_t changeRows = dataShareHelper->Update(updateAssetUri, predicates, valuesBucket);
+    if (changeRows < 0) {
+        MEDIA_ERR_LOG("update fail, error: %{public}d", changeRows);
+    }
+    MEDIA_INFO_LOG("photoId: %{public}s,", photoProxy->GetPhotoId().c_str());
+    photoProxy->Release();
+    return E_OK;
 }
 
 void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
@@ -385,8 +423,11 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
     if (cameraShotType_ == CameraShotType::VIDEO) {
         return;
     }
-    if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW) {
-        UpdatePhotoQuality(dataShareHelper_, photoProxy, fileId_, static_cast<int32_t>(subType_));
+    UpdatePhotoQuality(dataShareHelper_, photoProxy, fileId_, static_cast<int32_t>(subType_));
+    if (photoProxy->GetFormat() == PhotoFormat::YUV || photoProxy->GetFormat() == PhotoFormat::HEIF) {
+        photoProxy->Release();
+        tracer.Finish();
+        return;
     }
     tracer.Finish();
 

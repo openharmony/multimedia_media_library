@@ -76,7 +76,7 @@ const std::string OPRN_DISCARD_CAMERA_PHOTO = "discard_camera_photo";
 const std::string OPRN_SAVE_CAMERA_PHOTO = "save_camera_photo";
 const std::string OPRN_REMOVE_MSC_TASK = "remove_msc_task"; // remove multistages capture task
 const std::string OPRN_SCAN_WITHOUT_ALBUM_UPDATE = "scan_without_album_update";
-
+const std::string OPRN_ADD_LOWQUALITY_IMAGE = "add_lowquality_image";
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
 const std::string MEDIA_PHOTOOPRN = "photo_operation";
@@ -271,6 +271,8 @@ const std::string PAH_START_GENERATE_THUMBNAILS =
     MEDIALIBRARY_DATA_URI + "/" + PAH_BATCH_THUMBNAIL_OPERATE + "/" + OPRN_START_GENERATE_THUMBNAILS;
 const std::string PAH_STOP_GENERATE_THUMBNAILS =
     MEDIALIBRARY_DATA_URI + "/" + PAH_BATCH_THUMBNAIL_OPERATE + "/" + OPRN_STOP_GENERATE_THUMBNAILS;
+const std::string PAH_ADD_LOWQUALITY_IMAGE = MEDIALIBRARY_DATA_URI + "/" +
+    PAH_MULTISTAGES_CAPTURE + "/" + OPRN_ADD_LOWQUALITY_IMAGE;
 
 // PhotoAccessHelper album operation constants
 const std::string PAH_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_CREATE;
@@ -366,6 +368,10 @@ const std::string MISC_OPERATION = "miscellaneous_operation";
 const std::string OPRN_LOG_MOVING_PHOTO = "log_moving_photo";
 
 const std::string LOG_MOVING_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MISC_OPERATION + "/" + OPRN_LOG_MOVING_PHOTO;
+
+const std::string OPRN_FINISH_REQUEST_PICTURE = "finish_request_picture";
+const std::string PAH_FINISH_REQUEST_PICTURE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/"
+    + OPRN_FINISH_REQUEST_PICTURE;
 } // namespace Media
 } // namespace OHOS
 

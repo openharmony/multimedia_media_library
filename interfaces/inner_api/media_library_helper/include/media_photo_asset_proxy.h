@@ -62,6 +62,8 @@ private:
     static int PackAndSaveImage(int fd, const std::string &uri, const sptr<PhotoProxy> &photoProxy);
     static int32_t UpdatePhotoQuality(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
         const sptr<PhotoProxy> &photoProxy, int32_t fileId, int32_t subType);
+    static int SaveLowQualityPhoto(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
+    const sptr<PhotoProxy> &photoProxy, int32_t fileId, int32_t subType);
     static void DealWithLowQualityPhoto(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper, int fd,
         const std::string &uri, const sptr<PhotoProxy> &photoProxy);
     static void SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t size,
