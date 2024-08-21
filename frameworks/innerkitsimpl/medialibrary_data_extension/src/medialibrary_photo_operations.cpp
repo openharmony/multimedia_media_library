@@ -1371,9 +1371,8 @@ static int32_t UpdateEffectMode(int32_t fileId, int32_t setEffectMode, int32_t e
     updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, setEffectMode);
     if (setEffectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
         updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
-    } else if ((photoSubType == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
-        effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) &&
-        setEffectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+    } else if (photoSubType == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
+        effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
         updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
     updateCmd.SetValueBucket(updateValues);
@@ -1614,9 +1613,8 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
     updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, setEffectMode);
     if (setEffectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
         updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
-    } else if ((photoSubType == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
-        effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) &&
-        setEffectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+    } else if (photoSubType == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
+        effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
         updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
 
