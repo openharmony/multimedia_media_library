@@ -130,7 +130,7 @@ const std::string CONFIRM_BOX_PACKAGE_NAME = "com.ohos.photos";
 const std::string CONFIRM_BOX_EXT_ABILITY_NAME = "SaveUIExtensionAbility";
 const std::string CONFIRM_BOX_EXTENSION_TYPE = "ability.want.params.uiExtensionType";
 const std::string CONFIRM_BOX_REQUEST_TYPE = "sysDialog/common";
-const std::string CONFIRM_BOX_SRC_FILE_URIS = "srcFileUris";
+const std::string CONFIRM_BOX_SRC_FILE_URIS = "ability.params.stream";
 const std::string CONFIRM_BOX_TITLE_ARRAY = "titleArray";
 const std::string CONFIRM_BOX_EXTENSION_ARRAY = "extensionArray";
 const std::string CONFIRM_BOX_PHOTO_TYPE_ARRAY = "photoTypeArray";
@@ -6118,6 +6118,7 @@ static bool InitConfirmRequest(OHOS::AAFwk::Want &want, shared_ptr<ConfirmCallba
 
     want.SetElementName(CONFIRM_BOX_PACKAGE_NAME, CONFIRM_BOX_EXT_ABILITY_NAME);
     want.SetParam(CONFIRM_BOX_EXTENSION_TYPE, CONFIRM_BOX_REQUEST_TYPE);
+    want.AddFlags(Want::FLAG_AUTH_READ_URI_PERMISSION);
 
     // second param: Array<string>
     if (!ParseAndSetFileUriArray(env, want, args[PARAM1])) {
