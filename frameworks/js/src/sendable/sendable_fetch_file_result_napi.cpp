@@ -286,9 +286,12 @@ napi_value SendableFetchFileResultNapi::PhotoAccessHelperInit(napi_env env, napi
     napi_value ctorObj;
     napi_property_descriptor props[] = {
         DECLARE_NAPI_FUNCTION("getCount", JSGetCount),
+        DECLARE_NAPI_FUNCTION("isAfterLast", JSIsAfterLast),
         DECLARE_NAPI_FUNCTION("getFirstObject", JSGetFirstObject),
         DECLARE_NAPI_FUNCTION("getNextObject", JSGetNextObject),
         DECLARE_NAPI_FUNCTION("getAllObjects", JSGetAllObject),
+        DECLARE_NAPI_FUNCTION("getLastObject", JSGetLastObject),
+        DECLARE_NAPI_FUNCTION("getObjectByPosition", JSGetPositionObject),
         DECLARE_NAPI_FUNCTION("close", JSClose)
     };
     napi_define_sendable_class(env, PAH_FETCH_FILE_RESULT_SENDABLE_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
@@ -859,6 +862,161 @@ void FetchFileResultSendableAsyncContext::GetAllObjectFromFetchResult()
 bool SendableFetchFileResultNapi::CheckIfPropertyPtrNull()
 {
     return propertyPtr == nullptr;
+}
+
+napi_value SendableFetchFileResultNapi::JSIsAfterLast(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value jsResult = nullptr;
+    SendableFetchFileResultNapi* obj = nullptr;
+    bool isAfterLast = false;
+    napi_value thisVar = nullptr;
+
+    MediaLibraryTracer tracer;
+    tracer.Start("JSIsAfterLast");
+
+    napi_get_undefined(env, &jsResult);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
+    if (status != napi_ok || thisVar == nullptr) {
+        NAPI_ERR_LOG("JSIsAfterLast Invalid arguments!, status: %{public}d", status);
+        NAPI_ASSERT(env, false, "JSIsAfterLast thisVar == nullptr");
+    }
+
+    status = napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&obj));
+    if ((status == napi_ok) && CheckIfFFRNapiNotEmpty(obj)) {
+        switch (obj->GetFetchResType()) {
+            case FetchResType::TYPE_FILE:
+                isAfterLast = obj->GetFetchFileResultObject()->IsAtLastRow();
+                break;
+            case FetchResType::TYPE_ALBUM:
+                isAfterLast = obj->GetFetchAlbumResultObject()->IsAtLastRow();
+                break;
+            case FetchResType::TYPE_PHOTOALBUM:
+                isAfterLast = obj->GetFetchPhotoAlbumResultObject()->IsAtLastRow();
+                break;
+            case FetchResType::TYPE_SMARTALBUM:
+                isAfterLast = obj->GetFetchSmartAlbumResultObject()->IsAtLastRow();
+                break;
+            default:
+                NAPI_ERR_LOG("unsupported FetchResType");
+                break;
+        }
+        napi_get_boolean(env, isAfterLast, &jsResult);
+    } else {
+        NAPI_ERR_LOG("JSIsAfterLast obj == nullptr, status: %{public}d", status);
+        NAPI_ASSERT(env, false, "JSIsAfterLast obj == nullptr");
+    }
+
+    return jsResult;
+}
+
+napi_value SendableFetchFileResultNapi::JSGetLastObject(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value result = nullptr;
+    const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
+
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
+
+    napi_get_undefined(env, &result);
+    unique_ptr<FetchFileResultSendableAsyncContext> asyncContext = make_unique<FetchFileResultSendableAsyncContext>();
+    status = napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
+    if (status == napi_ok && CheckIfFFRNapiNotEmpty(asyncContext->objectInfo)) {
+        if (argc == ARGS_ONE) {
+            GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
+        }
+
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetLastObject", asyncContext);
+
+        asyncContext->objectPtr = asyncContext->objectInfo->propertyPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "propertyPtr is nullptr");
+
+        status = napi_create_async_work(
+            env, nullptr, resource, [](napi_env env, void *data) {
+                auto context = static_cast<FetchFileResultSendableAsyncContext*>(data);
+                context->GetLastObject();
+            },
+            reinterpret_cast<napi_async_complete_callback>(GetPositionObjectCompleteCallback),
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
+        if (status != napi_ok) {
+            napi_get_undefined(env, &result);
+        } else {
+            napi_queue_async_work(env, asyncContext->work);
+            asyncContext.release();
+        }
+    } else {
+        NAPI_ERR_LOG("JSGetLastObject obj == nullptr, status: %{public}d", status);
+        NAPI_ASSERT(env, false, "JSGetLastObject obj == nullptr");
+    }
+
+    return result;
+}
+
+napi_value SendableFetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value result = nullptr;
+    const int32_t refCount = 1;
+    napi_valuetype type = napi_undefined;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
+
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetPositionObject");
+
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
+
+    napi_get_undefined(env, &result);
+    unique_ptr<FetchFileResultSendableAsyncContext> asyncContext = make_unique<FetchFileResultSendableAsyncContext>();
+    status = napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
+    if (status == napi_ok && CheckIfFFRNapiNotEmpty(asyncContext->objectInfo)) {
+        // Check the arguments and their types
+        napi_typeof(env, argv[PARAM0], &type);
+        if (type == napi_number) {
+            napi_get_value_int32(env, argv[PARAM0], &(asyncContext->position));
+        } else {
+            NAPI_ERR_LOG("Argument mismatch, type: %{public}d", type);
+            return result;
+        }
+
+        if (argc == ARGS_TWO) {
+            GET_JS_ASYNC_CB_REF(env, argv[PARAM1], refCount, asyncContext->callbackRef);
+        }
+
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetPositionObject", asyncContext);
+
+        asyncContext->objectPtr = asyncContext->objectInfo->propertyPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "propertyPtr is nullptr");
+
+        status = napi_create_async_work(
+            env, nullptr, resource, [](napi_env env, void *data) {
+                auto context = static_cast<FetchFileResultSendableAsyncContext*>(data);
+                context->GetObjectAtPosition();
+            },
+            reinterpret_cast<napi_async_complete_callback>(GetPositionObjectCompleteCallback),
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
+        if (status != napi_ok) {
+            napi_get_undefined(env, &result);
+        } else {
+            napi_queue_async_work(env, asyncContext->work);
+            asyncContext.release();
+        }
+    } else {
+        NAPI_ERR_LOG("JSGetPositionObject obj == nullptr, status: %{public}d", status);
+        NAPI_ASSERT(env, false, "JSGetPositionObject obj == nullptr");
+    }
+
+    return result;
 }
 } // namespace Media
 } // namespace OHOS
