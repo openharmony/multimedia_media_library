@@ -162,9 +162,9 @@ int32_t BaseRestore::MoveFile(const std::string &srcFile, const std::string &dst
     }
 
     if (!MediaFileUtils::CopyFileUtil(srcFile, dstFile)) {
-        MEDIA_ERR_LOG("CopyFile failed, src: %{public}s, dst: %{public}s, errmsg: %{public}s",
+        MEDIA_ERR_LOG("CopyFile failed, src: %{public}s, dst: %{public}s, errMsg: %{public}s",
             BackupFileUtils::GarbleFilePath(srcFile, sceneCode_).c_str(),
-            BackupFileUtils::GarbleFilePath(dstFile, sceneCode_).c_str(), strerror(errno));
+            BackupFileUtils::GarbleFilePath(dstFile, DEFAULT_RESTORE_ID).c_str(), strerror(errno));
         return E_FAIL;
     }
     (void)MediaFileUtils::DeleteFile(srcFile);
@@ -580,8 +580,8 @@ int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string 
         std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
         if (MoveFile(srcFilePath, dstFilePath) != E_OK) {
             MEDIA_ERR_LOG("Move file from %{public}s to %{public}s failed",
-            BackupFileUtils::GarbleFilePath(srcFilePath, sceneCode_).c_str(),
-            BackupFileUtils::GarbleFilePath(dstFilePath, DEFAULT_RESTORE_ID).c_str());
+                BackupFileUtils::GarbleFilePath(srcFilePath, sceneCode_).c_str(),
+                BackupFileUtils::GarbleFilePath(dstFilePath, DEFAULT_RESTORE_ID).c_str());
             return E_FAIL;
         }
     }

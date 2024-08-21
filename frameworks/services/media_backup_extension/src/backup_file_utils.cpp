@@ -386,7 +386,7 @@ void BackupFileUtils::DeleteSdDatabase(const std::string &prefix)
             continue;
         }
         if (!MediaFileUtils::DeleteFile(sdDbPath)) {
-            MEDIA_ERR_LOG("Delete SD database %{public}s failed, errno: %{public}d", sdDb.c_str(), errno);
+            MEDIA_ERR_LOG("Delete Sd database %{public}s failed, errno: %{public}d", sdDb.c_str(), errno);
         }
     }
 }
