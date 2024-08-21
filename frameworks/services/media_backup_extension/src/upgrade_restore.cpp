@@ -47,7 +47,7 @@ constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
-const std::string INTERNAL_PREFIX = "/storage/emulated/0";
+const std::string INTERNAL_PREFIX = "/storage/emulated";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -75,6 +75,8 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         galleryDbPath_ = upgradeFilePath + "/" + GALLERY_DB_NAME;
         audioDbPath_ = GARBLE_DUAL_FRAME_CLONE_DIR + "/0/" + AUDIO_DB_NAME;
         photosPreferencesPath = UPGRADE_FILE_DIR + "/" + galleryAppName_ + "_preferences.xml";
+        // gallery db may include both internal & external, set flag to differentiate, default false
+        shouldIncludeSd_ = BackupFileUtils::ShouldIncludeSd(filePath_);
         SetParameterForClone();
 #ifdef CLOUD_SYNC_MANAGER
         FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
@@ -85,6 +87,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         externalDbPath_ = backupRetoreDir + "/" + mediaAppName_ + "/ce/databases/external.db";
         photosPreferencesPath =
             backupRetoreDir + "/" + galleryAppName_ + "/ce/shared_prefs/" + galleryAppName_ + "_preferences.xml";
+        shouldIncludeSd_ = false;
         if (!MediaFileUtils::IsFileExists(externalDbPath_)) {
             MEDIA_ERR_LOG("External db is not exist.");
             return E_FAIL;
@@ -99,6 +102,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
             MediaLibraryDataManager::GetInstance()->ReCreateMediaDir();
         }
     }
+    MEDIA_INFO_LOG("Shoud include Sd: %{public}d", static_cast<int32_t>(shouldIncludeSd_));
     return InitDbAndXml(photosPreferencesPath, isUpgrade);
 }
 
@@ -277,14 +281,15 @@ std::vector<FileInfo> UpgradeRestore::QueryAudioFileInfosFromAudio(int32_t offse
 
 bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
 {
-    std::string oldPath = GetStringVal(AUDIO_DATA, resultSet);
-    if (!ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
+    info.fileType = MediaType::MEDIA_TYPE_AUDIO;
+    info.oldPath = GetStringVal(AUDIO_DATA, resultSet);
+    if (!ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath)) {
+        MEDIA_ERR_LOG("Invalid path: %{private}s.", info.oldPath.c_str());
+        UpdateFailedFiles(info.fileType, info.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
     info.showDateToken = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet);
     info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
-    info.fileType = MediaType::MEDIA_TYPE_AUDIO;
     info.displayName = BackupFileUtils::GetFileNameFromPath(info.filePath);
     info.title = BackupFileUtils::GetFileTitle(info.displayName);
     info.isFavorite = 0;
@@ -359,16 +364,21 @@ void UpgradeRestore::AnalyzeGallerySource()
     int32_t galleryVideoCount = BackupDatabaseUtils::QueryGalleryVideoCount(galleryRdb_);
     int32_t galleryHiddenCount = BackupDatabaseUtils::QueryGalleryHiddenCount(galleryRdb_);
     int32_t galleryTrashedCount = BackupDatabaseUtils::QueryGalleryTrashedCount(galleryRdb_);
-    int32_t gallerySDCardCount = BackupDatabaseUtils::QueryGallerySDCardCount(galleryRdb_);
+    int32_t gallerySdCardCount = BackupDatabaseUtils::QueryGallerySdCardCount(galleryRdb_);
     int32_t galleryScreenVideoCount = BackupDatabaseUtils::QueryGalleryScreenVideoCount(galleryRdb_);
     int32_t galleryFavoriteCount =  BackupDatabaseUtils::QueryGalleryFavoriteCount(galleryRdb_);
     int32_t galleryImportsCount = BackupDatabaseUtils::QueryGalleryImportsCount(galleryRdb_);
-    MEDIA_INFO_LOG("gallery analyze result: {galleryAllCount: %{public}d, galleryImageCount: %{public}d, \
-        galleryVideoCount: %{public}d, galleryHiddenCount: %{public}d, galleryTrashedCount: %{public}d, \
-        gallerySDCardCount: %{public}d, galleryScreenVideoCount: %{public}d, galleryFavoriteCount: %{public}d, \
-        galleryImportsCount: %{public}d",
+    int32_t galleryCloudCount = BackupDatabaseUtils::QueryGalleryCloudCount(galleryRdb_);
+    int32_t galleryBurstCoverCount = BackupDatabaseUtils::QueryGalleryBurstCoverCount(galleryRdb_);
+    int32_t galleryBurstTotalCount = BackupDatabaseUtils::QueryGalleryBurstTotalCount(galleryRdb_);
+    MEDIA_INFO_LOG("gallery analyze result: {galleryAllCount: %{public}d, galleryImageCount: %{public}d, "
+        "galleryVideoCount: %{public}d, galleryHiddenCount: %{public}d, galleryTrashedCount: %{public}d, "
+        "gallerySdCardCount: %{public}d, galleryScreenVideoCount: %{public}d, galleryFavoriteCount: %{public}d, "
+        "galleryImportsCount: %{public}d, galleryCloudCount: %{public}d, galleryBurstCount: cover %{public}d, "
+        "total %{public}d}",
         galleryAllCount, galleryImageCount, galleryVideoCount, galleryHiddenCount, galleryTrashedCount,
-        gallerySDCardCount, galleryScreenVideoCount, galleryFavoriteCount, galleryImportsCount);
+        gallerySdCardCount, galleryScreenVideoCount, galleryFavoriteCount, galleryImportsCount, galleryCloudCount,
+        galleryBurstCoverCount, galleryBurstTotalCount);
 }
 
 void UpgradeRestore::AnalyzeExternalSource()
@@ -519,6 +529,7 @@ void UpgradeRestore::HandleRestData(void)
         MEDIA_DEBUG_LOG("Start to delete media data.");
         (void)MediaFileUtils::DeleteDir(mediaData);
     }
+    BackupFileUtils::DeleteSdDatabase(filePath_);
 
     // restore thumbnail for date fronted 500 photos
     MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
@@ -528,7 +539,7 @@ int32_t UpgradeRestore::QueryTotalNumber(void)
 {
     std::string querySql = QUERY_GALLERY_COUNT;
     querySql += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
-    BackupDatabaseUtils::UpdateSDWhereClause(querySql, sceneCode_);
+    BackupDatabaseUtils::UpdateSdWhereClause(querySql, shouldIncludeSd_);
     return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
 }
 
@@ -542,7 +553,7 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
     }
     std::string queryAllPhotosByCount = QUERY_ALL_PHOTOS;
     queryAllPhotosByCount += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
-    BackupDatabaseUtils::UpdateSDWhereClause(queryAllPhotosByCount, sceneCode_);
+    BackupDatabaseUtils::UpdateSdWhereClause(queryAllPhotosByCount, shouldIncludeSd_);
     queryAllPhotosByCount += ALL_PHOTOS_ORDER_BY;
     queryAllPhotosByCount += "limit " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
     auto resultSet = galleryRdb_->QuerySql(queryAllPhotosByCount);
@@ -561,14 +572,17 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
 
 bool UpgradeRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
 {
+    info.oldPath = GetStringVal(EXTERNAL_FILE_DATA, resultSet);
     int32_t mediaType = GetInt32Val(EXTERNAL_MEDIA_TYPE, resultSet);
     if (mediaType != DUAL_MEDIA_TYPE::AUDIO_TYPE) {
-        MEDIA_ERR_LOG("Invalid media type: %{public}d.", mediaType);
+        MEDIA_ERR_LOG("Invalid media type: %{public}d, path: %{public}s", mediaType,
+            BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str());
         return false;
     }
-    std::string oldPath = GetStringVal(EXTERNAL_FILE_DATA, resultSet);
-    if (!BaseRestore::ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
+    info.fileType = MediaType::MEDIA_TYPE_AUDIO;
+    if (!BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath)) {
+        MEDIA_ERR_LOG("Invalid path: %{private}s.", info.oldPath.c_str());
+        UpdateFailedFiles(info.fileType, info.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
     info.displayName = GetStringVal(EXTERNAL_DISPLAY_NAME, resultSet);
@@ -576,11 +590,10 @@ bool UpgradeRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb::Res
     info.fileSize = GetInt64Val(EXTERNAL_FILE_SIZE, resultSet);
     if (info.fileSize < GARBAGE_PHOTO_SIZE) {
         MEDIA_WARN_LOG("maybe garbage path = %{public}s.",
-            BackupFileUtils::GarbleFilePath(oldPath, UPGRADE_RESTORE_ID).c_str());
+            BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str());
     }
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(EXTERNAL_IS_FAVORITE, resultSet);
-    info.fileType = MediaType::MEDIA_TYPE_AUDIO;
     info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
     return true;
 }
@@ -630,22 +643,26 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     string dbName)
 {
     // only parse image and video
+    info.oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
     int32_t mediaType = GetInt32Val(GALLERY_MEDIA_TYPE, resultSet);
     if (mediaType != DUAL_MEDIA_TYPE::IMAGE_TYPE && mediaType != DUAL_MEDIA_TYPE::VIDEO_TYPE) {
-        MEDIA_ERR_LOG("Invalid media type: %{public}d.", mediaType);
+        MEDIA_ERR_LOG("Invalid media type: %{public}d, path: %{public}s", mediaType,
+            BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str());
         return false;
     }
-    std::string oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
+    info.fileType = (mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) ?
+        MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
     info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet);
     if (info.fileSize < fileMinSize_ && dbName == EXTERNAL_DB_NAME) {
         MEDIA_WARN_LOG("maybe garbage path = %{public}s, minSize:%{public}d.",
-            BackupFileUtils::GarbleFilePath(oldPath, UPGRADE_RESTORE_ID).c_str(), fileMinSize_);
+            BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str(), fileMinSize_);
         return false;
     }
     if (sceneCode_ == UPGRADE_RESTORE_ID ?
-        !BaseRestore::ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath) :
-        !ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath, info)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
+        !BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath) :
+        !ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath, info)) {
+        MEDIA_ERR_LOG("Invalid path: %{private}s.", info.oldPath.c_str());
+        UpdateFailedFiles(info.fileType, info.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
     info.displayName = GetStringVal(GALLERY_DISPLAY_NAME, resultSet);
@@ -653,8 +670,6 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
-    info.fileType = (mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) ?
-        MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
     info.height = GetInt64Val(GALLERY_HEIGHT, resultSet);
     info.width = GetInt64Val(GALLERY_WIDTH, resultSet);
     info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);
@@ -1282,14 +1297,14 @@ void UpgradeRestore::InsertPortraitAlbum(std::vector<PortraitAlbumInfo> &portrai
         MEDIA_ERR_LOG("portraitAlbumInfos are empty");
         return;
     }
-    
+
     int64_t startInsertAlbum = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t albumRowNum = InsertPortraitAlbumByTable(portraitAlbumInfos, true);
     if (albumRowNum <= 0) {
         BackupDatabaseUtils::PrintErrorLog("Insert portrait album failed", startInsertAlbum);
         return;
     }
-    
+
     int64_t startInsertTag = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t tagRowNum = InsertPortraitAlbumByTable(portraitAlbumInfos, false);
     if (tagRowNum <= 0) {

@@ -54,12 +54,14 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
     if (errorCode == E_OK) {
         RestorePhoto();
         RestoreAudio();
-        MEDIA_INFO_LOG("migrate database number: %{public}lld, file number: %{public}lld," \
-            "audio database number:%{public}lld, audio file number:%{public}lld," \
-            "map number: %{public}lld",
-            (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_,
-            (long long) migrateAudioDatabaseNumber_, (long long) migrateAudioFileNumber_,
-            (long long) migrateDatabaseMapNumber_);
+        MEDIA_INFO_LOG("migrate database number: %{public}lld, file number: %{public}lld (%{public}lld + "
+            "%{public}lld), duplicate number: %{public}lld + %{public}lld, audio database number:%{public}lld, "
+            "audio file number:%{public}lld, duplicate audio number: %{public}lld, map number: %{public}lld",
+            (long long)migrateDatabaseNumber_, (long long)migrateFileNumber_,
+            (long long)(migrateFileNumber_ - migrateVideoFileNumber_), (long long)migrateVideoFileNumber_,
+            (long long)migratePhotoDuplicateNumber_, (long long)migrateVideoDuplicateNumber_,
+            (long long)migrateAudioDatabaseNumber_, (long long)migrateAudioFileNumber_,
+            (long long)migrateAudioDuplicateNumber_, (long long) migrateDatabaseMapNumber_);
         MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
@@ -70,6 +72,8 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
             return;
         }
         watch->Notify(PhotoColumn::DEFAULT_PHOTO_URI, NotifyType::NOTIFY_ADD);
+    } else {
+        SetErrorCode(RestoreError::INIT_FAILED);
     }
     HandleRestData();
 }
@@ -152,13 +156,15 @@ shared_ptr<NativeRdb::ResultSet> BaseRestore::QuerySql(const string &sql, const 
 
 int32_t BaseRestore::MoveFile(const std::string &srcFile, const std::string &dstFile) const
 {
-    if (MediaFileUtils::MoveFile(srcFile, dstFile)) {
+    int32_t errCode = BackupFileUtils::MoveFile(srcFile, dstFile, sceneCode_);
+    if (errCode == E_SUCCESS) {
         return E_OK;
     }
 
     if (!MediaFileUtils::CopyFileUtil(srcFile, dstFile)) {
-        MEDIA_ERR_LOG("CopyFile failed, filePath: %{private}s, errmsg: %{public}s", srcFile.c_str(),
-            strerror(errno));
+        MEDIA_ERR_LOG("CopyFile failed, src: %{public}s, dst: %{public}s, errMsg: %{public}s",
+            BackupFileUtils::GarbleFilePath(srcFile, sceneCode_).c_str(),
+            BackupFileUtils::GarbleFilePath(dstFile, DEFAULT_RESTORE_ID).c_str(), strerror(errno));
         return E_FAIL;
     }
     (void)MediaFileUtils::DeleteFile(srcFile);
@@ -173,6 +179,7 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         if (!MediaFileUtils::IsFileValid(fileInfos[i].filePath)) {
             MEDIA_WARN_LOG("File is not exist, filePath = %{public}s.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::FILE_INVALID);
             continue;
         }
         std::string cloudPath;
@@ -200,6 +207,7 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
             (void)MediaFileUtils::DeleteFile(fileInfos[i].filePath);
             MEDIA_WARN_LOG("File %{public}s already exists.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+            UpdateDuplicateNumber(fileInfos[i].fileType);
             continue;
         }
         values.emplace_back(value);
@@ -370,6 +378,7 @@ std::vector<NativeRdb::ValuesBucket> BaseRestore::GetAudioInsertValues(int32_t s
         if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath)) {
             MEDIA_WARN_LOG("File is not exist, filePath = %{public}s.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::FILE_INVALID);
             continue;
         }
         std::string cloudPath;
@@ -393,6 +402,7 @@ std::vector<NativeRdb::ValuesBucket> BaseRestore::GetAudioInsertValues(int32_t s
             (void)MediaFileUtils::DeleteFile(fileInfos[i].filePath);
             MEDIA_WARN_LOG("File %{public}s already exists.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+            UpdateDuplicateNumber(fileInfos[i].fileType);
             continue;
         }
         values.emplace_back(value);
@@ -420,9 +430,12 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
         }
         std::string tmpPath = fileInfos[i].cloudPath;
         std::string localPath = tmpPath.replace(0, RESTORE_AUDIO_CLOUD_DIR.length(), RESTORE_AUDIO_LOCAL_DIR);
-        if (!BackupFileUtils::MoveFile(fileInfos[i].filePath, localPath, sceneCode)) {
-            MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s.",
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+        int32_t moveErrCode = BackupFileUtils::MoveFile(fileInfos[i].filePath, localPath, sceneCode);
+        if (moveErrCode != E_SUCCESS) {
+            MEDIA_ERR_LOG("MoveFile failed, filePath: %{public}s, errCode: %{public}d, errMsg: %{public}s.",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(), moveErrCode,
+                strerror(errno));
+            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::MOVE_FAILED);
             continue;
         }
         BackupFileUtils::ModifyFile(localPath, fileInfos[i].dateModified / MSEC_TO_SEC);
@@ -435,6 +448,7 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(AudioColumn::AUDIOS_TABLE, values, rowNum);
     if (errCode != E_OK) {
+        UpdateFailedFiles(fileInfos, RestoreError::INSERT_FAILED);
         return;
     }
     migrateAudioDatabaseNumber_ += rowNum;
@@ -453,7 +467,8 @@ NativeRdb::ValuesBucket BaseRestore::GetAudioInsertValue(const FileInfo &fileInf
     return value;
 }
 
-void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t sceneCode)
+void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
+    int32_t sceneCode)
 {
     vector<std::string> moveFailedData;
     for (size_t i = 0; i < fileInfos.size(); i++) {
@@ -462,17 +477,21 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
         }
         std::string tmpPath = fileInfos[i].cloudPath;
         std::string localPath = tmpPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
-        if (!BackupFileUtils::MoveFile(fileInfos[i].filePath, localPath, sceneCode)) {
+        int32_t moveErrCode = BackupFileUtils::MoveFile(fileInfos[i].filePath, localPath, sceneCode);
+        if (moveErrCode != E_SUCCESS) {
             MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s, errno:%{public}s",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(), strerror(errno));
+            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::MOVE_FAILED);
             moveFailedData.push_back(fileInfos[i].cloudPath);
             continue;
         }
         BackupFileUtils::ModifyFile(localPath, fileInfos[i].dateModified);
         fileMoveCount++;
+        videoFileMoveCount += fileInfos[i].fileType == MediaType::MEDIA_TYPE_VIDEO;
     }
     DeleteMoveFailedData(moveFailedData);
     migrateFileNumber_ += fileMoveCount;
+    migrateVideoFileNumber_ += videoFileMoveCount;
 }
 
 void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType)
@@ -492,6 +511,7 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(PhotoColumn::PHOTOS_TABLE, values, rowNum);
     if (errCode != E_OK) {
+        UpdateFailedFiles(fileInfos, RestoreError::INSERT_FAILED);
         return;
     }
 
@@ -501,12 +521,14 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     migrateDatabaseNumber_ += rowNum;
     int32_t fileMoveCount = 0;
-    MoveMigrateFile(fileInfos, fileMoveCount, sceneCode);
+    int32_t videoFileMoveCount = 0;
+    MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related"
-        " cost %{public}ld, and move %{public}ld file cost %{public}ld.", (long)(startInsert - startGenerate),
-        (long)rowNum, (long)(startInsertRelated - startInsert), (long)(startMove - startInsertRelated),
-        (long)fileMoveCount, (long)(end - startMove));
+        " cost %{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld.",
+        (long)(startInsert - startGenerate), (long)rowNum, (long)(startInsertRelated - startInsert),
+        (long)(startMove - startInsertRelated), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
+        (long)videoFileMoveCount, (long)(end - startMove));
 }
 
 void BaseRestore::DeleteMoveFailedData(std::vector<std::string> &moveFailedData)
@@ -548,7 +570,8 @@ int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vec
 int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string &dstDir) const
 {
     if (!MediaFileUtils::CreateDirectory(dstDir)) {
-        MEDIA_ERR_LOG("Create dstDir %{private}s failed", dstDir.c_str());
+        MEDIA_ERR_LOG("Create dstDir %{public}s failed",
+            BackupFileUtils::GarbleFilePath(dstDir, DEFAULT_RESTORE_ID).c_str());
         return E_FAIL;
     }
     for (const auto &dirEntry : std::filesystem::directory_iterator{ srcDir }) {
@@ -556,7 +579,9 @@ int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string 
         std::string tmpFilePath = srcFilePath;
         std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
         if (MoveFile(srcFilePath, dstFilePath) != E_OK) {
-            MEDIA_ERR_LOG("Move file from %{private}s to %{private}s failed", srcFilePath.c_str(), dstFilePath.c_str());
+            MEDIA_ERR_LOG("Move file from %{public}s to %{public}s failed",
+                BackupFileUtils::GarbleFilePath(srcFilePath, sceneCode_).c_str(),
+                BackupFileUtils::GarbleFilePath(dstFilePath, DEFAULT_RESTORE_ID).c_str());
             return E_FAIL;
         }
     }
@@ -704,9 +729,11 @@ std::string BaseRestore::GetRestoreExInfo()
 
 nlohmann::json BaseRestore::GetErrorInfoJson()
 {
+    int32_t errorCode = errorCode_ == RestoreError::SUCCESS ? STAT_DEFAULT_ERROR_CODE_SUCCESS :
+        STAT_DEFAULT_ERROR_CODE_FAILED;
     nlohmann::json errorInfoJson = {
         { STAT_KEY_TYPE, STAT_VALUE_ERROR_INFO },
-        { STAT_KEY_ERROR_CODE, std::to_string(errorCode_) },
+        { STAT_KEY_ERROR_CODE, std::to_string(errorCode) },
         { STAT_KEY_ERROR_INFO, errorInfo_ }
     };
     return errorInfoJson;
@@ -718,8 +745,9 @@ nlohmann::json BaseRestore::GetCountInfoJson(const std::vector<std::string> &cou
     countInfoJson[STAT_KEY_TYPE] = STAT_VALUE_COUNT_INFO;
     for (const auto &type : countInfoTypes) {
         SubCountInfo subCountInfo = GetSubCountInfo(type);
-        MEDIA_INFO_LOG("SubCountInfo %{public}s success: %{public}lld, failed: %{public}zu", type.c_str(),
-            (long long)subCountInfo.successCount, subCountInfo.failedFiles.size());
+        MEDIA_INFO_LOG("SubCountInfo %{public}s success: %{public}lld, duplicate: %{public}lld, failed: %{public}zu",
+            type.c_str(), (long long)subCountInfo.successCount, (long long)subCountInfo.duplicateCount,
+            subCountInfo.failedFiles.size());
         countInfoJson[STAT_KEY_INFOS].push_back(GetSubCountInfoJson(type, subCountInfo));
     }
     return countInfoJson;
@@ -729,12 +757,12 @@ SubCountInfo BaseRestore::GetSubCountInfo(const std::string &type)
 {
     std::unordered_map<std::string, int32_t> failedFiles = GetFailedFiles(type);
     if (type == STAT_TYPE_PHOTO) {
-        return SubCountInfo(migrateFileNumber_ - migrateVideoFileNumber_, failedFiles);
+        return SubCountInfo(migrateFileNumber_ - migrateVideoFileNumber_, migratePhotoDuplicateNumber_, failedFiles);
     }
     if (type == STAT_TYPE_VIDEO) {
-        return SubCountInfo(migrateVideoFileNumber_, failedFiles);
+        return SubCountInfo(migrateVideoFileNumber_, migrateVideoDuplicateNumber_, failedFiles);
     }
-    return SubCountInfo(migrateAudioFileNumber_, failedFiles);
+    return SubCountInfo(migrateAudioFileNumber_, migrateAudioDuplicateNumber_, failedFiles);
 }
 
 std::unordered_map<std::string, int32_t> BaseRestore::GetFailedFiles(const std::string &type)
@@ -752,6 +780,7 @@ nlohmann::json BaseRestore::GetSubCountInfoJson(const std::string &type, const S
     nlohmann::json subCountInfoJson;
     subCountInfoJson[STAT_KEY_BACKUP_INFO] = type;
     subCountInfoJson[STAT_KEY_SUCCESS_COUNT] = subCountInfo.successCount;
+    subCountInfoJson[STAT_KEY_DUPLICATE_COUNT] = subCountInfo.duplicateCount;
     subCountInfoJson[STAT_KEY_FAILED_COUNT] = subCountInfo.failedFiles.size();
     subCountInfoJson[STAT_KEY_DETAILS] = BackupFileUtils::GetDetailsPath(type, subCountInfo.failedFiles);
     return subCountInfoJson;
@@ -794,16 +823,34 @@ void BaseRestore::UpdateFailedFileByFileType(int32_t fileType, const std::string
 void BaseRestore::UpdateFailedFiles(int32_t fileType, const std::string &filePath, int32_t errorCode)
 {
     SetErrorCode(errorCode);
-    UpdateFailedFileByFileType(fileType, filePath, errorCode);
+    std::string realPath = sceneCode_ != CLONE_RESTORE_ID ? filePath :
+        BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL, filePath);
+    UpdateFailedFileByFileType(fileType, realPath, errorCode);
 }
 
 void BaseRestore::UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode)
 {
     SetErrorCode(errorCode);
     for (const auto &fileInfo : fileInfos) {
-        std::string localPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL, fileInfo.relativePath);
-        UpdateFailedFileByFileType(fileInfo.fileType, localPath, errorCode);
+        UpdateFailedFileByFileType(fileInfo.fileType, fileInfo.oldPath, errorCode);
     }
+}
+
+void BaseRestore::UpdateDuplicateNumber(int32_t fileType)
+{
+    if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE)) {
+        migratePhotoDuplicateNumber_++;
+        return;
+    }
+    if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
+        migrateVideoDuplicateNumber_++;
+        return;
+    }
+    if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_AUDIO)) {
+        migrateAudioDuplicateNumber_++;
+        return;
+    }
+    MEDIA_ERR_LOG("Unsupported file type: %{public}d", fileType);
 }
 
 void BaseRestore::SetParameterForClone()

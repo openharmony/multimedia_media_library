@@ -173,6 +173,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
 #endif
     backupRestoreDir_ = backupRestoreDir;
     garbagePath_ = backupRestoreDir_ + "/storage/media/local/files";
+    sceneCode_ = CLONE_RESTORE_ID;
     int32_t errorCode = Init(backupRestoreDir, upgradePath, true);
     if (errorCode == E_OK) {
         RestoreGallery();
@@ -274,8 +275,7 @@ void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fi
             MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s, error:%{public}s",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
                 strerror(errno));
-            UpdateFailedFiles(fileInfos[i].fileType, BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL,
-                fileInfos[i].relativePath), RestoreError::MOVE_FAILED);
+            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::MOVE_FAILED);
             moveFailedData.push_back(fileInfos[i].cloudPath);
             continue;
         }
@@ -329,8 +329,7 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!BackupFileUtils::IsFileValid(fileInfos[i].filePath, CLONE_RESTORE_ID)) {
-            UpdateFailedFiles(fileInfos[i].fileType, BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL,
-                fileInfos[i].relativePath), RestoreError::FILE_INVALID);
+            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::FILE_INVALID);
             continue;
         }
         if (!PrepareCloudPath(PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
@@ -939,41 +938,42 @@ void CloneRestore::RestoreGallery()
     RestoreAlbum();
     RestorePhoto();
     MEDIA_INFO_LOG("migrate database photo number: %{public}lld, file number: %{public}lld (%{public}lld + "
-        "%{public}lld), album number: %{public}lld, map number: %{public}lld", (long long)migrateDatabaseNumber_,
-        (long long)migrateFileNumber_, (long long)(migrateFileNumber_ - migrateVideoFileNumber_),
-        (long long)migrateVideoFileNumber_, (long long)migrateDatabaseAlbumNumber_,
-        (long long)migrateDatabaseMapNumber_);
+        "%{public}lld), duplicate number: %{public}lld + %{public}lld, album number: %{public}lld, map number: "
+        "%{public}lld", (long long)migrateDatabaseNumber_, (long long)migrateFileNumber_,
+        (long long)(migrateFileNumber_ - migrateVideoFileNumber_), (long long)migrateVideoFileNumber_,
+        (long long)migratePhotoDuplicateNumber_, (long long)migrateVideoDuplicateNumber_,
+        (long long)migrateDatabaseAlbumNumber_, (long long)migrateDatabaseMapNumber_);
     MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
     NotifyAlbum();
 }
 
 bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
 {
-    string localPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL, fileInfo.relativePath);
     fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
     if (fileInfo.cloudPath.empty()) {
         MEDIA_ERR_LOG("Get cloudPath empty");
-        UpdateFailedFiles(fileInfo.fileType, localPath, RestoreError::PATH_INVALID);
+        UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
     if (IsSameFileForClone(tableName, fileInfo)) {
         (void)MediaFileUtils::DeleteFile(fileInfo.filePath);
         MEDIA_WARN_LOG("File %{public}s already exists.",
             BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
+        UpdateDuplicateNumber(fileInfo.fileType);
         return false;
     }
     if (MediaFileUtils::IsFileExists(fileInfo.cloudPath) && BackupFileUtils::CreatePath(fileInfo.fileType,
         fileInfo.displayName, fileInfo.cloudPath) != E_OK) {
         MEDIA_ERR_LOG("Destination file path %{public}s exists, create new path failed",
             BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
-        UpdateFailedFiles(fileInfo.fileType, localPath, RestoreError::GET_PATH_FAILED);
+        UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::GET_PATH_FAILED);
         return false;
     }
     if (BackupFileUtils::PreparePath(BackupFileUtils::GetReplacedPathByPrefixType(
         PrefixType::CLOUD, PrefixType::LOCAL, fileInfo.cloudPath)) != E_OK) {
         MEDIA_ERR_LOG("Prepare cloudPath failed");
         fileInfo.cloudPath.clear();
-        UpdateFailedFiles(fileInfo.fileType, localPath, RestoreError::GET_PATH_FAILED);
+        UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::GET_PATH_FAILED);
         return false;
     }
     return true;
@@ -983,8 +983,9 @@ void CloneRestore::RestoreMusic()
 {
     CheckTableColumnStatus(mediaRdb_, CLONE_TABLE_LISTS_AUDIO);
     RestoreAudio();
-    MEDIA_INFO_LOG("migrate database audio number: %{public}lld, file number: %{public}lld",
-        (long long)migrateAudioDatabaseNumber_, (long long)migrateAudioFileNumber_);
+    MEDIA_INFO_LOG("migrate database audio number: %{public}lld, file number: %{public}lld, duplicate number: "
+        "%{public}lld", (long long)migrateAudioDatabaseNumber_, (long long)migrateAudioFileNumber_,
+        (long long)migrateAudioDuplicateNumber_);
 }
 
 void CloneRestore::RestoreAudio(void)
@@ -1036,21 +1037,19 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
     FileInfo &fileInfo)
 {
     fileInfo.fileType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
-    string oldPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    if (!ConvertPathToRealPath(oldPath, filePath_, fileInfo.filePath, fileInfo.relativePath)) {
-        UpdateFailedFiles(fileInfo.fileType, BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD,
-            PrefixType::LOCAL, oldPath), RestoreError::PATH_INVALID);
+    fileInfo.oldPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    if (!ConvertPathToRealPath(fileInfo.oldPath, filePath_, fileInfo.filePath, fileInfo.relativePath)) {
+        UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
     fileInfo.fileSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
     if (fileInfo.fileSize <= 0) {
         MEDIA_ERR_LOG("File size is invalid: %{public}lld, filePath: %{public}s", (long long)fileInfo.fileSize,
             BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
-        UpdateFailedFiles(fileInfo.fileType, BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL,
-            fileInfo.relativePath), RestoreError::FILE_INVALID);
+        UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::FILE_INVALID);
         return false;
     }
-    
+
     fileInfo.fileIdOld = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     fileInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     fileInfo.dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
@@ -1086,8 +1085,7 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
     unordered_set<int32_t> excludedFileIdSet;
     for (auto& fileInfo : fileInfos) {
         if (!BackupFileUtils::IsFileValid(fileInfo.filePath, CLONE_RESTORE_ID)) {
-            UpdateFailedFiles(fileInfo.fileType, BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL,
-                fileInfo.relativePath), RestoreError::FILE_INVALID);
+            UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::FILE_INVALID);
             continue;
         }
         if (!PrepareCloudPath(AudioColumn::AUDIOS_TABLE, fileInfo)) {
@@ -1097,8 +1095,7 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
             fileInfo.cloudPath);
         if (MoveFile(fileInfo.filePath, localPath) != E_OK) {
             MEDIA_ERR_LOG("Move audio file failed");
-            UpdateFailedFiles(fileInfo.fileType, BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL,
-                fileInfo.relativePath), RestoreError::MOVE_FAILED);
+            UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::MOVE_FAILED);
             excludedFileIdSet.insert(fileInfo.fileIdOld);
             continue;
         }
