@@ -147,6 +147,7 @@ enum class EXPORT OperationType : uint32_t {
     SAVE_CAMERA_PHOTO,
     REMOVE_MSC_TASK,
     TOOL_QUERY_BY_DISPLAY_NAME,
+    SCAN_WITHOUT_ALBUM_UPDATE,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

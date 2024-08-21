@@ -91,6 +91,32 @@ int32_t MediaScannerManager::ScanFileSync(const std::string &path,
     return E_OK;
 }
 
+int32_t MediaScannerManager::ScanFileSyncWithoutAlbumUpdate(const std::string &path,
+    const std::shared_ptr<IMediaScannerCallback> &callback, MediaLibraryApi api, bool isForceScan, int32_t fileId)
+{
+    MEDIA_DEBUG_LOG("scan file %{private}s, api%{public}d", path.c_str(), static_cast<int>(api));
+
+    string realPath;
+    if (!PathToRealPath(path, realPath)) {
+        MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", path.c_str(), errno);
+        return E_INVALID_PATH;
+    }
+
+    if (!ScannerUtils::IsRegularFile(realPath)) {
+        MEDIA_ERR_LOG("the path %{private}s is not a regular file", realPath.c_str());
+        return E_INVALID_PATH;
+    }
+
+    MediaScannerObj scanner = MediaScannerObj(realPath, callback, MediaScannerObj::FILE, api);
+    if (isForceScan) {
+        scanner.SetForceScan(true);
+    }
+    scanner.SetIsSkipAlbumUpdate(true);
+    scanner.Scan();
+
+    return E_OK;
+}
+
 int32_t MediaScannerManager::ScanDir(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
 {
     MEDIA_DEBUG_LOG("scan dir %{private}s", path.c_str());
