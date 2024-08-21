@@ -347,7 +347,7 @@ int32_t BackgroundCloudFileProcessor::AddUpdateDataTask(const UpdateData &update
 
 void BackgroundCloudFileProcessor::UpdateCurrentOffset()
 {
-    if ( currentRetryCount_ >= MAX_RETRY_COUNT) {
+    if (currentRetryCount_ >= MAX_RETRY_COUNT) {
         currentUpdateOffset_ += 1;
         currentRetryCount_ = 0;
     } else {
