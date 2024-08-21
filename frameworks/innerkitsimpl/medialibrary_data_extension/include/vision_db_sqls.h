@@ -35,6 +35,7 @@
 #include "vision_segmentation_column.h"
 #include "vision_total_column.h"
 #include "vision_video_label_column.h"
+#include "vision_multi_crop_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -124,6 +125,8 @@ const std::string CREATE_TAB_ANALYSIS_RECOMMENDATION = "CREATE TABLE IF NOT EXIS
     SCALE_Y + " REAL DEFAULT 0, " +
     SCALE_WIDTH + " REAL DEFAULT 0, " +
     SCALE_HEIGHT + " REAL DEFAULT 0, " +
+    MOVEMENT_CROP + " TEXT, " +
+    MOVEMENT_VERSION + " TEXT, " +
     ANALYSIS_VERSION + " TEXT)";
 
 const std::string CREATE_TAB_ANALYSIS_SEGMENTATION = "CREATE TABLE IF NOT EXISTS " + VISION_SEGMENTATION_TABLE + " (" +
