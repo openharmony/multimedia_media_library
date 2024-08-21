@@ -353,6 +353,7 @@ void BackgroundCloudFileProcessor::UpdateCurrentOffset()
     } else {
         currentRetryCount_ += 1;
     }
+    MEDIA_INFO_LOG("currentUpdateOffset_ is %{public}d, currentRetryCount_ is %{public}d", currentUpdateOffset_, currentRetryCount_);
 }
 
 void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
@@ -439,12 +440,12 @@ void BackgroundCloudFileProcessor::UpdateAbnormaldata(std::unique_ptr<Metadata> 
     }
 }
 
-int32_t BackgroundCloudFileProcessor::GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata)
+void BackgroundCloudFileProcessor::GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata)
 {
     std::string path = metadata->GetFilePath();
     struct stat statInfo {};
     if (stat(path.c_str(), &statInfo) != 0) {
-        MEDIA_ERR_LOG("stat syscall err");
+        MEDIA_ERR_LOG("stat syscall err %{public}d", errno);
         metadata->SetFileSize(static_cast<int64_t>(0));
     } else {
         metadata->SetFileSize(statInfo.st_size);
@@ -453,7 +454,6 @@ int32_t BackgroundCloudFileProcessor::GetSizeAndMimeType(std::unique_ptr<Metadat
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     metadata->SetFileExtension(extension);
     metadata->SetFileMimeType(mimeType);
-    return E_OK;
 }
 
 int32_t BackgroundCloudFileProcessor::GetExtractMetadata(std::unique_ptr<Metadata> &metadata)

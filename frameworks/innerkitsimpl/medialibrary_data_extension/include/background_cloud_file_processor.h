@@ -84,7 +84,7 @@ private:
     static int32_t AddUpdateDataTask(const UpdateData &updateData);
     static void UpdateCloudDataExecutor(AsyncTaskData *data);
     static void UpdateAbnormaldata(std::unique_ptr<Metadata> &metadata, const std::string &tableName);
-    static int32_t GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata);
+    static void GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata);
     static int32_t GetExtractMetadata(std::unique_ptr<Metadata> &metadata);
     static void StopUpdateData();
     static void UpdateCurrentOffset();
