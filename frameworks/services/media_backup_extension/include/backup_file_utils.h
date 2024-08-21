@@ -27,13 +27,13 @@ class BackupFileUtils {
 public:
     static int32_t FillMetadata(std::unique_ptr<Metadata> &data);
     static std::string GarbleFilePath(const std::string &filePath, int32_t sceneCode, std::string cloneFilePath = "");
-    static std::string GarbleFileName(std::string &fileName);
+    static std::string GarbleFileName(const std::string &fileName);
     static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &filePath);
     static std::string GetFullPathByPrefixType(PrefixType prefixType, const std::string &relativePath);
     static int32_t CreatePath(int32_t mediaType, const std::string &displayName, std::string &path);
     static int32_t PreparePath(const std::string &path);
-    static bool MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode);
+    static int32_t MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode);
     static std::string GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
         const std::string &path);
     static void ModifyFile(const std::string path, int64_t modifiedTime);
@@ -44,6 +44,8 @@ public:
         const std::unordered_map<std::string, int32_t> &failedFiles);
     static std::string GetFailedFilesStr(const std::unordered_map<std::string, int32_t> &failedFiles);
     static bool GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel, size_t &pos);
+    static bool ShouldIncludeSd(const std::string &prefix);
+    static void DeleteSdDatabase(const std::string &prefix);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
