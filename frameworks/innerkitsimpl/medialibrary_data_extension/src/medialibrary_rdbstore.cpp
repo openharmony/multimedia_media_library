@@ -2632,6 +2632,8 @@ static void UpdateMultiCropInfo(RdbStore &store)
     };
     MEDIA_INFO_LOG("start update multi crop triggers");
     ExecSqls(executeSqlStrs, store);
+}
+
 static void UpdateSearchIndexTrigger(RdbStore &store)
 {
     const vector<string> sqls = {
