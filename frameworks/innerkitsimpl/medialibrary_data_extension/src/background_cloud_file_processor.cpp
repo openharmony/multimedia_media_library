@@ -353,7 +353,8 @@ void BackgroundCloudFileProcessor::UpdateCurrentOffset()
     } else {
         currentRetryCount_ += 1;
     }
-    MEDIA_INFO_LOG("currentUpdateOffset_ is %{public}d, currentRetryCount_ is %{public}d", currentUpdateOffset_, currentRetryCount_);
+    MEDIA_INFO_LOG("currentUpdateOffset_ is %{public}d, currentRetryCount_ is %{public}d",
+        currentUpdateOffset_, currentRetryCount_);
 }
 
 void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
