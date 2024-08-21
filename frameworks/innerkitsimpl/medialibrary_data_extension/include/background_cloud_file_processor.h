@@ -84,9 +84,10 @@ private:
     static int32_t AddUpdateDataTask(const UpdateData &updateData);
     static void UpdateCloudDataExecutor(AsyncTaskData *data);
     static void UpdateAbnormaldata(std::unique_ptr<Metadata> &metadata, const std::string &tableName);
-    static int32_t GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata);
+    static void GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata);
     static int32_t GetExtractMetadata(std::unique_ptr<Metadata> &metadata);
     static void StopUpdateData();
+    static void UpdateCurrentOffset();
 
     static int32_t processInterval_;
     static int32_t downloadDuration_;
@@ -96,6 +97,8 @@ private:
     static uint32_t stopTimerId_;
     static std::vector<std::string> curDownloadPaths_;
     static bool isUpdating_;
+    static int32_t currentUpdateOffset_;
+    static int32_t currentRetryCount_;
 };
 } // namespace Media
 } // namespace OHOS
