@@ -1592,8 +1592,9 @@ bool MediaLibraryPhotoOperations::IsNeedRevertEffectMode(MediaLibraryCommand& cm
         return false;
     }
 
-    if (!GetInt32FromValuesBucket(cmd.GetValueBucket(), PhotoColumn::MOVING_PHOTO_EFFECT_MODE, setEffectMode) &&
-        MediaFileUtils::CheckMovingPhotoEffectMode(setEffectMode)) {
+    if (!GetInt32FromValuesBucket(cmd.GetValueBucket(), PhotoColumn::MOVING_PHOTO_EFFECT_MODE, setEffectMode) ||
+        (setEffectMode != static_cast<int32_t>(MovingPhotoEffectMode::DEFAULT) &&
+        setEffectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY))) {
         return false;
     }
     return true;
