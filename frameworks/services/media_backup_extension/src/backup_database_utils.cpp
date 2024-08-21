@@ -203,7 +203,7 @@ int32_t BackupDatabaseUtils::QueryGalleryCloneCount(std::shared_ptr<NativeRdb::R
     return QueryInt(galleryRdb, QUERY_GALLERY_CLONE_COUNT, CUSTOM_COUNT);
 }
 
-int32_t BackupDatabaseUtils::QueryGallerySDCardCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
+int32_t BackupDatabaseUtils::QueryGallerySdCardCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     static string QUERY_GALLERY_SD_CARD_COUNT =
         "SELECT count(1) AS count FROM gallery_media WHERE storage_id NOT IN (0, 65537) AND _size > 0";
@@ -224,6 +224,20 @@ int32_t BackupDatabaseUtils::QueryGalleryCloudCount(std::shared_ptr<NativeRdb::R
         "SELECT count(1) AS count FROM gallery_media \
         WHERE local_media_id = -1 AND _size > 0";
     return QueryInt(galleryRdb, QUERY_GALLERY_CLOUD_COUNT, CUSTOM_COUNT);
+}
+
+int32_t BackupDatabaseUtils::QueryGalleryBurstCoverCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
+{
+    static string QUERY_GALLERY_BURST_COVER_COUNT =
+        "SELECT count(1) AS count FROM gallery_media WHERE is_hw_burst = 1 AND _size > 0";
+    return QueryInt(galleryRdb, QUERY_GALLERY_BURST_COVER_COUNT, CUSTOM_COUNT);
+}
+
+int32_t BackupDatabaseUtils::QueryGalleryBurstTotalCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
+{
+    static string QUERY_GALLERY_BURST_TOTAL_COUNT =
+        "SELECT count(1) AS count FROM gallery_media WHERE is_hw_burst IN (1, 2) AND _size > 0";
+    return QueryInt(galleryRdb, QUERY_GALLERY_BURST_TOTAL_COUNT, CUSTOM_COUNT);
 }
 
 int32_t BackupDatabaseUtils::QueryExternalImageCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
@@ -318,9 +332,9 @@ void BackupDatabaseUtils::UpdateSelection(std::string &selection, const std::str
     selection += selection.empty() ? wrappedSelectionToAdd : ", " + wrappedSelectionToAdd;
 }
 
-void BackupDatabaseUtils::UpdateSDWhereClause(std::string &querySql, int32_t sceneCode)
+void BackupDatabaseUtils::UpdateSdWhereClause(std::string &querySql, bool shouldIncludeSd)
 {
-    if (sceneCode != UPGRADE_RESTORE_ID) {
+    if (shouldIncludeSd) {
         return;
     }
     querySql += " AND " + EXCLUDE_SD;

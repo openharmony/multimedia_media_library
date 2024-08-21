@@ -32,6 +32,7 @@ namespace Media {
 const string DEFAULT_IMAGE_NAME = "IMG_";
 const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
+const size_t MAX_FAILED_FILES_SIZE = 100;
 
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
 
@@ -86,11 +87,10 @@ string BackupFileUtils::GarbleFilePath(const std::string &filePath, int32_t scen
         return filePath;
     }
     size_t displayNameIndex = filePath.rfind("/");
-    if (displayNameIndex == string::npos) {
+    if (displayNameIndex == string::npos || displayNameIndex + 1 >= filePath.size()) {
         return filePath;
     }
-    std::string displayName = filePath.substr(displayNameIndex);
-    std::string garbleDisplayName = GarbleFileName(displayName);
+    std::string garbleDisplayName = GarbleFileName(filePath.substr(displayNameIndex + 1));
     std::string path;
     if (sceneCode == UPGRADE_RESTORE_ID) {
         path = filePath.substr(0, displayNameIndex).replace(0, UPGRADE_FILE_DIR.length(), GARBLE);
@@ -101,11 +101,11 @@ string BackupFileUtils::GarbleFilePath(const std::string &filePath, int32_t scen
     } else {
         path = filePath.substr(0, displayNameIndex);
     }
-    path += displayName;
+    path += "/" + garbleDisplayName;
     return path;
 }
 
-string BackupFileUtils::GarbleFileName(std::string &fileName)
+string BackupFileUtils::GarbleFileName(const std::string &fileName)
 {
     if (fileName.empty()) {
         return fileName;
@@ -114,15 +114,14 @@ string BackupFileUtils::GarbleFileName(std::string &fileName)
         fileName.find("SVID_") == 0) {
         return fileName;
     }
-    if (fileName.length() > GARBLE_HIGH_LENGTH) {
-        return fileName.replace(0, GARBLE_HIGH_LENGTH, GARBLE);
-    } else if (fileName.length() > GARBLE_MID_LENGTH) {
-        return fileName.replace(0, GARBLE_MID_LENGTH, GARBLE);
-    } else if (fileName.length() > GARBLE_LOW_LENGTH) {
-        return fileName.replace(0, GARBLE_LOW_LENGTH, GARBLE);
-    } else {
-        return fileName.replace(0, 1, GARBLE);
+    size_t titleIndex = fileName.rfind(".");
+    if (titleIndex == string::npos) {
+        titleIndex = fileName.size();
     }
+    if (titleIndex <= GARBLE.size() * GARBLE_UNIT) {
+        return fileName;
+    }
+    return GARBLE + fileName.substr(GARBLE.size());
 }
 
 int32_t BackupFileUtils::CreateAssetPathById(int32_t fileId, int32_t mediaType, const string &extension,
@@ -224,7 +223,7 @@ int32_t BackupFileUtils::PreparePath(const std::string &path)
     return E_OK;
 }
 
-bool BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode)
+int32_t BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode)
 {
     bool errRet = false;
     if (!MediaFileUtils::IsFileExists(oldPath)) {
@@ -234,7 +233,7 @@ bool BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, int
         MEDIA_ERR_LOG("new path: %{public}s is exists.", GarbleFilePath(newPath, sceneCode).c_str());
         return E_FILE_EXIST;
     }
-    return (rename(oldPath.c_str(), newPath.c_str()) == E_SUCCESS);
+    return rename(oldPath.c_str(), newPath.c_str());
 }
 
 std::string BackupFileUtils::GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
@@ -339,8 +338,12 @@ std::string BackupFileUtils::GetFailedFilesStr(const std::unordered_map<std::str
     size_t index = 0;
     for (const auto &iter : failedFiles) {
         failedFilesStream << "\n\"" + iter.first;
-        index + 1 < failedFiles.size() ? failedFilesStream << "\"," : failedFilesStream << "\"";
+        index + 1 < failedFiles.size() && index + 1 < MAX_FAILED_FILES_SIZE ? failedFilesStream << "\"," :
+            failedFilesStream << "\"";
         index++;
+        if (index == MAX_FAILED_FILES_SIZE) {
+            break;
+        }
     }
     failedFilesStream << "\n]";
     return failedFilesStream.str();
@@ -366,6 +369,26 @@ bool BackupFileUtils::GetPathPosByPrefixLevel(int32_t sceneCode, const std::stri
         return false;
     }
     return true;
+}
+
+bool BackupFileUtils::ShouldIncludeSd(const std::string &prefix)
+{
+    return MediaFileUtils::IsFileExists(prefix + "/" + PHOTO_SD_DB_NAME) ||
+        MediaFileUtils::IsFileExists(prefix + "/" + VIDEO_SD_DB_NAME);
+}
+
+void BackupFileUtils::DeleteSdDatabase(const std::string &prefix)
+{
+    std::vector<std::string> sdDbs = { PHOTO_SD_DB_NAME, VIDEO_SD_DB_NAME };
+    for (const auto &sdDb : sdDbs) {
+        std::string sdDbPath = prefix + "/" + sdDb;
+        if (!MediaFileUtils::IsFileExists(sdDbPath)) {
+            continue;
+        }
+        if (!MediaFileUtils::DeleteFile(sdDbPath)) {
+            MEDIA_ERR_LOG("Delete SD database %{public}s failed, errno: %{public}d", sdDb.c_str(), errno);
+        }
+    }
 }
 } // namespace Media
 } // namespace OHOS
