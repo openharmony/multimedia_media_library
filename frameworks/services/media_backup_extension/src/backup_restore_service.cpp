@@ -71,13 +71,15 @@ void BackupRestoreService::StartRestoreEx(int32_t sceneCode, const std::string &
     const std::string &mediaAppName, const std::string &backupDir, std::string &restoreExInfo)
 {
     std::unique_ptr<BaseRestore> restoreService;
-    MEDIA_INFO_LOG("Start restore service: %{public}d", sceneCode);
-    if (sceneCode != CLONE_RESTORE_ID) {
-        MEDIA_ERR_LOG("StartRestoreEx current scene is not supported");
-        restoreExInfo = "";
-        return;
+    MEDIA_INFO_LOG("Start restoreEx service: %{public}d", sceneCode);
+    if (sceneCode == UPGRADE_RESTORE_ID) {
+        restoreService = std::make_unique<UpgradeRestore>(galleryAppName, mediaAppName, UPGRADE_RESTORE_ID,
+            GetDualDirName());
+    } else if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
+        restoreService = std::make_unique<UpgradeRestore>(galleryAppName, mediaAppName, DUAL_FRAME_CLONE_RESTORE_ID);
+    } else {
+        restoreService = std::make_unique<CloneRestore>();
     }
-    restoreService = std::make_unique<CloneRestore>();
     if (restoreService == nullptr) {
         MEDIA_ERR_LOG("Create media restore service failed.");
         restoreExInfo = "";
