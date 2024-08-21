@@ -338,6 +338,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_LCD_SIZE,
     PhotoColumn::PHOTO_THUMB_SIZE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_FRONT_CAMERA,
     PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY, PhotoColumn::PHOTO_COVER_POSITION,
+    photoColumn::PHOTO_THUMBNAIL_READY
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
@@ -381,6 +382,7 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
         PHOTO_DATE_DAY,
         PHOTO_SHOOTING_MODE,
         PHOTO_SHOOTING_MODE_TAG,
+        PHOTO_THUMBNAIL_READY,
     };
 
     std::string result = "(";
