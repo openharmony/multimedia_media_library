@@ -398,6 +398,7 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
             metadata->SetFileDuration((duration == 0 && updateData.mediaType == MEDIA_TYPE_VIDEO) ? -1: duration);
         }
         UpdateAbnormaldata(metadata, PhotoColumn::PHOTOS_TABLE);
+        currentRetryCount_ = 0;
     }
 }
 
