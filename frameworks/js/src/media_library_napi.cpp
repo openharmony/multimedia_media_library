@@ -4929,14 +4929,11 @@ static napi_value ParseArgsCancelPhotoUriPermission(napi_env env, napi_callback_
 static napi_status ParseCreateConfig(napi_env env, napi_value arg,
     BundleInfo bundleInfo, MediaLibraryAsyncContext &context)
 {
-    const std::string photoType = "photoType";
-    const std::string photoSubType = "subtype";
-    const std::string extension = "fileNameExtension";
     const std::map<std::string, std::string> PHOTO_CREATE_CONFIG_PARAM = {
-        { photoType, MEDIA_DATA_DB_MEDIA_TYPE },
-        { photoSubType, PhotoColumn::PHOTO_SUBTYPE },
+        { PHOTO_TYPE, MEDIA_DATA_DB_MEDIA_TYPE },
+        { PHOTO_SUB_TYPE, PhotoColumn::PHOTO_SUBTYPE },
         { TITLE, MediaColumn::MEDIA_TITLE },
-        { extension, ASSET_EXTENTION }
+        { EXTENSION, ASSET_EXTENTION }
     };
 
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
@@ -4964,7 +4961,10 @@ static napi_status ParseCreateConfig(napi_env env, napi_value arg,
             size_t res = 0;
             result = napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res);
             CHECK_COND_RET(result == napi_ok, result, "failed to get string");
-            valuesBucket.Put(iter.second, string(buffer));
+            string bufferString(buffer);
+            if (!bufferString.empty()) {
+                valuesBucket.Put(iter.second, bufferString);
+            }
         } else if (valueType == napi_undefined || valueType == napi_null) {
             continue;
         } else {
