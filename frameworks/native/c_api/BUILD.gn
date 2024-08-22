@@ -14,52 +14,53 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-ohos_shared_library("media_library_asset_manager") {
+ohos_shared_library("native_media_library_ndk") {
   install_enable = true
 
   sources = [
-    "./src/media_asset_data_handler_capi.cpp",
-    "./src/media_asset_manager_impl.cpp",
+    "${MEDIALIB_NATIVE_PATH}/c_api/media_asset_change_request_impl.cpp",
+    "${MEDIALIB_NATIVE_PATH}/c_api/media_asset_helper.cpp",
+    "${MEDIALIB_NATIVE_PATH}/c_api/media_asset_impl.cpp",
+    "${MEDIALIB_NATIVE_PATH}/c_api/media_userfile_client.cpp",
   ]
 
   include_dirs = [
-    "${MEDIALIB_UTILS_PATH}/include",
-    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/c",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_ROOT_PATH}/frameworks/utils/include",
     "${MEDIALIB_NATIVE_PATH}/c_api/common",
   ]
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
-    "${MEDIALIB_INNERKITS_PATH}/media_library_manager:media_library_manager",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-    "${MEDIALIB_NATIVE_PATH}/c_api:native_media_library_ndk",
+    "${MEDIALIB_UTILS_PATH}:permission_utils",
   ]
 
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
-    "access_token:libnativetoken_shared",
-    "access_token:libtokensetproc_shared",
+    "ability_runtime:app_context",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken",
+    "access_token:libprivacy_sdk",
+    "access_token:libtoken_setproc",
+    "access_token:libtokenid_sdk",
     "app_file_service:fileuri_native",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
-    "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
-    "image_framework:image_source",
     "image_framework:ohimage",
     "ipc:ipc_core",
     "napi:ace_napi",
+    "player_framework:media_client",
     "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
     "resource_management:librawfile",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
   ]
 
   public_external_deps = [ "e2fsprogs:libext2_uuid" ]

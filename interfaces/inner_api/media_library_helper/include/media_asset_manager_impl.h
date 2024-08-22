@@ -36,6 +36,10 @@ public:
         const char* destPath, const NativeOnDataPrepared &callback) override;
     bool NativeCancelRequest(const std::string &requestId) override;
 
+    MediaLibrary_ErrorCode NativeRequestImageSource(OH_MediaAsset* mediaAsset,
+        NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
+        OH_MediaLibrary_OnImageDataPrepared callback) override;
+
 private:
     void CreateDataHelper(int32_t systemAbilityId);
     bool OnHandleRequestImage(const std::unique_ptr<RequestSourceAsyncContext> &asyncContext);
@@ -45,6 +49,8 @@ private:
     void ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName);
     static int32_t WriteFileToPath(const std::string &srcUri, const std::string &destPath, bool isSource);
     static int32_t GetFdFromSandBoxUri(const std::string &sandBoxUri);
+
+    static OH_ImageSourceNative* CreateImageSource(const std::string requestId, const std::string requestUri);
 
 private:
     static MediaLibraryManager* mediaLibraryManager_;
