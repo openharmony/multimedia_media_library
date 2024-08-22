@@ -47,7 +47,7 @@ constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
-const std::string INTERNAL_PREFIX = "/storage/emulated/0";
+const std::string INTERNAL_PREFIX = "/storage/emulated";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -71,10 +71,10 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
     appDataPath_ = backupRetoreDir;
     string photosPreferencesPath;
     if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
-        filePath_ = upgradeFilePath;
-        galleryDbPath_ = upgradeFilePath + "/" + GALLERY_DB_NAME;
-        audioDbPath_ = GARBLE_DUAL_FRAME_CLONE_DIR + "/0/" + AUDIO_DB_NAME;
-        photosPreferencesPath = UPGRADE_FILE_DIR + "/" + galleryAppName_ + "_preferences.xml";
+        filePath_ = backupRetoreDir;
+        galleryDbPath_ = backupRetoreDir + "/" + GALLERY_DB_NAME;
+        audioDbPath_ = backupRetoreDir + INTERNAL_PREFIX + "/0/" + AUDIO_DB_NAME;
+        photosPreferencesPath = backupRetoreDir + "/" + galleryAppName_ + "_preferences.xml";
         // gallery db may include both internal & external, set flag to differentiate, default false
         shouldIncludeSD_ = BackupFileUtils::ShouldIncludeSD(filePath_);
         SetParameterForClone();
