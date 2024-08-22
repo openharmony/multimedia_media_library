@@ -34,19 +34,19 @@ public:
         const std::string &movingPhotoImagePath, const std::string &movingPhotoVideoPath,
         const std::string &extraDataPath);
     EXPORT static int32_t ConvertToLivePhoto(const std::string& movingPhotoImagepath, int64_t coverPosition,
-        std::string &livePhotoPath);
+        std::string &livePhotoPath, int32_t userId = -1);
     EXPORT static int32_t GetCoverPosition(const std::string &videoPath, const uint32_t frameIndex,
         uint64_t &coverPosition, int32_t scene = 0);
     EXPORT static int32_t GetVersionAndFrameNum(const std::string &tag,
         uint32_t &version, uint32_t &frameIndex, bool &hasCinemagraphInfo);
     EXPORT static int32_t GetVersionAndFrameNum(int32_t fd, uint32_t &version, uint32_t &frameIndex,
         bool &hasCinemagraphInfo);
-    EXPORT static std::string GetMovingPhotoVideoPath(const std::string &imagePath);
-    EXPORT static std::string GetMovingPhotoExtraDataDir(const std::string &imageCloudPath);
-    EXPORT static std::string GetMovingPhotoExtraDataPath(const std::string &imageCloudPath);
+    EXPORT static std::string GetMovingPhotoVideoPath(const std::string &imagePath, int32_t userId = -1);
+    EXPORT static std::string GetMovingPhotoExtraDataDir(const std::string &imagePath, int32_t userId = -1);
+    EXPORT static std::string GetMovingPhotoExtraDataPath(const std::string &imagePath, int32_t userId = -1);
 
-    EXPORT static std::string GetLivePhotoCacheDir(const std::string& path);
-    EXPORT static std::string GetLivePhotoCachePath(const std::string& path);
+    EXPORT static std::string GetLivePhotoCacheDir(const std::string& imagePath, int32_t userId = -1);
+    EXPORT static std::string GetLivePhotoCachePath(const std::string& imagePath, int32_t userId = -1);
     EXPORT static bool IsLivePhoto(const std::string& path);
     EXPORT static int32_t GetExtraDataLen(const std::string& imagePath, const std::string& videoPath,
         uint32_t frameIndex, off_t& fileSize);

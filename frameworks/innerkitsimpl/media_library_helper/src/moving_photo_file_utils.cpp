@@ -309,21 +309,31 @@ uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
     return index;
 }
 
-int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagepath, int64_t coverPosition,
-    std::string &livePhotoPath)
+static string AppendUserId(const string& path, int32_t userId)
 {
-    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(movingPhotoImagepath);
-    string cacheDir = GetLivePhotoCacheDir(movingPhotoImagepath);
-    string extraPath = GetMovingPhotoExtraDataPath(movingPhotoImagepath);
+    if (userId < 0 || !MediaFileUtils::StartsWith(path, ROOT_MEDIA_DIR)) {
+        return path;
+    }
 
-    CHECK_AND_RETURN_RET_LOG(
-        MediaFileUtils::CreateDirectory(cacheDir), E_ERR, "Cannot create dir %{private}s", cacheDir.c_str());
-    string cachePath = GetLivePhotoCachePath(movingPhotoImagepath);
+    return "/storage/cloud/" + to_string(userId) + "/files/" + path.substr(ROOT_MEDIA_DIR.length());
+}
+
+int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagepath, int64_t coverPosition,
+    std::string &livePhotoPath, int32_t userId)
+{
+    string imagePath = AppendUserId(movingPhotoImagepath, userId);
+    string videoPath = GetMovingPhotoVideoPath(movingPhotoImagepath, userId);
+    string cacheDir = GetLivePhotoCacheDir(movingPhotoImagepath, userId);
+    string extraPath = GetMovingPhotoExtraDataPath(movingPhotoImagepath, userId);
+
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(cacheDir),
+        E_HAS_FS_ERROR, "Cannot create dir %{private}s, errno %{public}d", cacheDir.c_str(), errno);
+    string cachePath = GetLivePhotoCachePath(movingPhotoImagepath, userId);
     if (MediaFileUtils::IsFileExists(cachePath)) {
         livePhotoPath = cachePath;
         return E_OK;
     }
-    UniqueFd imageFd(open(movingPhotoImagepath.c_str(), O_RDONLY));
+    UniqueFd imageFd(open(imagePath.c_str(), O_RDONLY));
     if (imageFd.Get() == E_ERR) {
         MEDIA_ERR_LOG("failed to open image file");
         return E_ERR;
@@ -611,42 +621,42 @@ int32_t MovingPhotoFileUtils::GetVersionAndFrameNum(int32_t fd,
     return MovingPhotoFileUtils::GetVersionAndFrameNum(versionTag, version, frameIndex, hasCinemagraphInfo);
 }
 
-string MovingPhotoFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
+string MovingPhotoFileUtils::GetMovingPhotoVideoPath(const string &imagePath, int32_t userId)
 {
-    return MediaFileUtils::GetMovingPhotoVideoPath(imagePath);
+    return MediaFileUtils::GetMovingPhotoVideoPath(AppendUserId(imagePath, userId));
 }
 
-string MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(const string &imageCloudPath)
+string MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(const string &imagePath, int32_t userId)
 {
-    if (imageCloudPath.length() < ROOT_MEDIA_DIR.length()) {
+    if (imagePath.length() < ROOT_MEDIA_DIR.length() || !MediaFileUtils::StartsWith(imagePath, ROOT_MEDIA_DIR)) {
         return "";
     }
-    return MEDIA_EXTRA_DATA_DIR + imageCloudPath.substr(ROOT_MEDIA_DIR.length());
+    return AppendUserId(MEDIA_EXTRA_DATA_DIR, userId) + imagePath.substr(ROOT_MEDIA_DIR.length());
 }
 
-string MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(const string &imageCloudPath)
+string MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(const string &imagePath, int32_t userId)
 {
-    string parentPath = GetMovingPhotoExtraDataDir(imageCloudPath);
+    string parentPath = GetMovingPhotoExtraDataDir(imagePath, userId);
     if (parentPath.empty()) {
         return "";
     }
     return parentPath + "/extraData";
 }
 
-string MovingPhotoFileUtils::GetLivePhotoCacheDir(const string &path)
+string MovingPhotoFileUtils::GetLivePhotoCacheDir(const string &imagePath, int32_t userId)
 {
-    if (path.length() < ROOT_MEDIA_DIR.length()) {
+    if (imagePath.length() < ROOT_MEDIA_DIR.length() || !MediaFileUtils::StartsWith(imagePath, ROOT_MEDIA_DIR)) {
         return "";
     }
-    return MEDIA_CACHE_DIR + path.substr(ROOT_MEDIA_DIR.length());
+    return AppendUserId(MEDIA_CACHE_DIR, userId) + imagePath.substr(ROOT_MEDIA_DIR.length());
 }
 
-string MovingPhotoFileUtils::GetLivePhotoCachePath(const string &path)
+string MovingPhotoFileUtils::GetLivePhotoCachePath(const string &imagePath, int32_t userId)
 {
-    string parentPath = GetLivePhotoCacheDir(path);
+    string parentPath = GetLivePhotoCacheDir(imagePath, userId);
     if (parentPath.empty()) {
         return "";
     }
-    return parentPath + "/livePhoto." + MediaFileUtils::GetExtensionFromPath(path);
+    return parentPath + "/livePhoto." + MediaFileUtils::GetExtensionFromPath(imagePath);
 }
 } // namespace OHOS::Media
