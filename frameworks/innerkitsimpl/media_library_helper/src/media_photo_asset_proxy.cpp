@@ -412,6 +412,10 @@ int32_t PhotoAssetProxy::GetVideoFd()
 
 void PhotoAssetProxy::NotifyVideoSaveFinished()
 {
+    if (dataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("datashareHelper is nullptr");
+        return;
+    }
     string uriStr = PAH_MOVING_PHOTO_SCAN;
     MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri uri(uriStr);
