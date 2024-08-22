@@ -815,7 +815,7 @@ int32_t MediaLibraryAssetOperations::CheckExtWithType(const string &extention, i
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extention);
     auto typeFromExt = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
     CHECK_AND_RETURN_RET_LOG(typeFromExt == mediaType, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL,
-        "cannot match, mediaType=%{public}d, ext=%{private}s, type from ext=%{public}d",
+        "cannot match, mediaType=%{public}d, ext=%{public}s, type from ext=%{public}d",
         mediaType, extention.c_str(), typeFromExt);
     return E_OK;
 }
