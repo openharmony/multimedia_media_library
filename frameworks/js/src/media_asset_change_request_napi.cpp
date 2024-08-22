@@ -244,6 +244,11 @@ void MediaAssetChangeRequestNapi::RecordChangeOperation(AssetChangeOperation cha
         assetChangeOperations_.insert(assetChangeOperations_.begin() + 1, changeOperation);
         return;
     }
+    if (changeOperation == AssetChangeOperation::ADD_RESOURCE &&
+        Contains(AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE)) {
+        assetChangeOperations_.insert(assetChangeOperations_.begin(), changeOperation);
+        return;
+    }
     assetChangeOperations_.push_back(changeOperation);
 }
 
