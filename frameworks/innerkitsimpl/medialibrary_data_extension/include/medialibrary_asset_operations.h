@@ -65,6 +65,7 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_LONGITUDE, MEMBER_TYPE_DOUBLE },
     { PhotoColumn::PHOTO_HEIGHT, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_WIDTH, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_ALL_EXIF, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_LCD_VISIT_TIME, MEMBER_TYPE_INT64 },
     { PhotoColumn::PHOTO_EDIT_TIME, MEMBER_TYPE_INT64 },
     { PhotoColumn::PHOTO_SUBTYPE, MEMBER_TYPE_INT32 },
@@ -121,6 +122,7 @@ protected:
 
     EXPORT static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
+    static int32_t UpdateAllExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     EXPORT static int32_t SetUserComment(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     EXPORT static int32_t UpdateRelativePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
