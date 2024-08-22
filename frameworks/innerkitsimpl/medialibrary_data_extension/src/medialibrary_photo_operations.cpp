@@ -1357,7 +1357,7 @@ static int32_t RevertMetadata(int32_t fileId, int64_t time, int32_t effectMode, 
     return E_OK;
 }
 
-static int32_t UpdateEffectMode(int32_t fileId, int32_t setEffectMode, int32_t effectMode, int32_t photoSubType)
+static int32_t UpdateEffectMode(int32_t fileId, int32_t effectMode, int32_t photoSubType)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -1368,11 +1368,10 @@ static int32_t UpdateEffectMode(int32_t fileId, int32_t setEffectMode, int32_t e
     MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
     ValuesBucket updateValues;
-    updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, setEffectMode);
-    if (setEffectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+    updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode);
+    if (effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
         updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
-    } else if (photoSubType == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
-        effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+    } else if (photoSubType == static_cast<int32_t>(PhotoSubType::DEFAULT)) {
         updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
     updateCmd.SetValueBucket(updateValues);
@@ -1584,7 +1583,7 @@ static int32_t Move(const string& srcPath, const string& destPath)
 }
 
 bool MediaLibraryPhotoOperations::IsNeedRevertEffectMode(MediaLibraryCommand& cmd,
-    const shared_ptr<FileAsset>& fileAsset, int32_t& setEffectMode)
+    const shared_ptr<FileAsset>& fileAsset, int32_t& effectMode)
 {
     if ((fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
         fileAsset->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) ||
@@ -1592,9 +1591,9 @@ bool MediaLibraryPhotoOperations::IsNeedRevertEffectMode(MediaLibraryCommand& cm
         return false;
     }
 
-    if (!GetInt32FromValuesBucket(cmd.GetValueBucket(), PhotoColumn::MOVING_PHOTO_EFFECT_MODE, setEffectMode) ||
-        (setEffectMode != static_cast<int32_t>(MovingPhotoEffectMode::DEFAULT) &&
-        setEffectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY))) {
+    if (!GetInt32FromValuesBucket(cmd.GetValueBucket(), PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode) ||
+        (effectMode != static_cast<int32_t>(MovingPhotoEffectMode::DEFAULT) &&
+        effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY))) {
         return false;
     }
     return true;
@@ -1605,17 +1604,15 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
 {
     isNeedScan = false;
     int32_t photoSubType = fileAsset->GetPhotoSubType();
-    int32_t effectMode = fileAsset->GetMovingPhotoEffectMode();
-    int32_t setEffectMode{0};
-    if (!IsNeedRevertEffectMode(cmd, fileAsset, setEffectMode)) {
+    int32_t effectMode{0};
+    if (!IsNeedRevertEffectMode(cmd, fileAsset, effectMode)) {
         return E_OK;
     }
     ValuesBucket& updateValues = cmd.GetValueBucket();
-    updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, setEffectMode);
-    if (setEffectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+    updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode);
+    if (effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
         updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
-    } else if (photoSubType == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
-        effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+    } else if (photoSubType == static_cast<int32_t>(PhotoSubType::DEFAULT)) {
         updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
 
@@ -2042,9 +2039,8 @@ int32_t MediaLibraryPhotoOperations::SubmitEffectModeExecute(MediaLibraryCommand
 
     CHECK_AND_RETURN_RET_LOG(Move(imageCachePath, assetPath) == E_OK, E_HAS_FS_ERROR, "Failed to move image");
     CHECK_AND_RETURN_RET_LOG(Move(videoCachePath, assetVideoPath) == E_OK, E_HAS_FS_ERROR, "Failed to move video");
-    CHECK_AND_RETURN_RET_LOG(UpdateEffectMode(id, effectMode, fileAsset->GetMovingPhotoEffectMode(),
-        fileAsset->GetPhotoSubType()) == E_OK,
-        errCode, "Failed to update effect mode");
+    CHECK_AND_RETURN_RET_LOG(UpdateEffectMode(id, effectMode, fileAsset->GetPhotoSubType()) == E_OK, errCode,
+        "Failed to update effect mode");
     ScanFile(assetPath, true, true, true);
     return E_OK;
 }
