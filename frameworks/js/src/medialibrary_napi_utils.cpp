@@ -1012,10 +1012,12 @@ int32_t MediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
     string imgFaceWidthClause = "( " + imgFaceWidthColumn + " > " + to_string(minSize) +
         " OR ( " + imgFaceWidthColumn + " <= 1.0 " + " AND " + imgFaceWidthColumn + " * " + imgWidthColumn +
         " > " + to_string(minSize) + " ) )";
+    string imgFaceOcclusionClause = "( " + VISION_IMAGE_FACE_TABLE + "." + FACE_OCCLUSION + " = 0 OR " +
+        VISION_IMAGE_FACE_TABLE + "." + FACE_OCCLUSION + " IS NULL )";
     string portraitRotationLimit = "BETWEEN -30 AND 30";
     onClause = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + " = " + VISION_IMAGE_FACE_TABLE + "." +
         MediaColumn::MEDIA_ID + " AND " + VISION_IMAGE_FACE_TABLE + "." + TOTAL_FACES + " = 1 AND " +
-        imgFaceHeightClause + " AND " + imgFaceWidthClause + " AND " +
+        imgFaceHeightClause + " AND " + imgFaceWidthClause + " AND " + imgFaceOcclusionClause + " AND " +
         VISION_IMAGE_FACE_TABLE + "." + PITCH + " " + portraitRotationLimit + " AND " +
         VISION_IMAGE_FACE_TABLE + "." + YAW + " " + portraitRotationLimit + " AND " +
         VISION_IMAGE_FACE_TABLE + "." + ROLL + " " + portraitRotationLimit;
