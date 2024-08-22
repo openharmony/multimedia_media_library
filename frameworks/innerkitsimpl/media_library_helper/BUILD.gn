@@ -62,6 +62,7 @@ ohos_shared_library("media_library") {
     "src/native_album_asset.cpp",
     "src/photo_album.cpp",
     "src/photo_album_column.cpp",
+    "src/photo_file_utils.cpp",
     "src/photo_map_column.cpp",
     "src/smart_album_asset.cpp",
   ]

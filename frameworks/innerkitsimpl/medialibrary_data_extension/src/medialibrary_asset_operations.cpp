@@ -1453,7 +1453,7 @@ string MediaLibraryAssetOperations::GetEditDataDirPath(const string &path)
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
     }
-    return ROOT_MEDIA_DIR + ".editData/" + path.substr(ROOT_MEDIA_DIR.length());
+    return MEDIA_EDIT_DATA_DIR + path.substr(ROOT_MEDIA_DIR.length());
 }
 
 string MediaLibraryAssetOperations::GetEditDataSourcePath(const string &path)
