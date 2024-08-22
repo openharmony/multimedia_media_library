@@ -47,8 +47,6 @@ constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
-constexpr int32_t BURST_COVER = 1;
-constexpr int32_t BURST_MEMBER = 2;
 const std::string INTERNAL_PREFIX = "/storage/emulated/0";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
@@ -764,11 +762,6 @@ std::string FindBurstKey(const FileInfo &fileInfo)
 
 int32_t FindDirty(const FileInfo &fileInfo)
 {
-    // prevent uploading burst photo
-    if (fileInfo.burstKey.size() > 0) {
-        return -1;
-    }
-
     // prevent uploading moving photo
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
         return -1;
@@ -779,10 +772,11 @@ int32_t FindDirty(const FileInfo &fileInfo)
 int32_t FindBurstCoverLevel(const FileInfo &fileInfo)
 {
     // identify burst photo
-    if (fileInfo.isBurst == BURST_COVER || fileInfo.isBurst == BURST_MEMBER) {
+    if (fileInfo.isBurst == static_cast<int32_t>(BurstCoverLevelType::COVER) ||
+        fileInfo.isBurst == static_cast<int32_t>(BurstCoverLevelType::MEMBER)) {
         return fileInfo.isBurst;
     }
-    return BURST_COVER;
+    return static_cast<int32_t>(BurstCoverLevelType::COVER);
 }
 
 NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,

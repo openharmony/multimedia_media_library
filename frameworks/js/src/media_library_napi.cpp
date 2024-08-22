@@ -90,7 +90,6 @@ const int64_t MAX_INT64 = 9223372036854775807;
 const uint32_t MAX_UINT32 = 4294967295;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
-const std::string BURST_COVER_LEVEL = "1";
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
 mutex MediaLibraryNapi::sOnOffMutex_;
@@ -5131,7 +5130,8 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     if (context->assetType == TYPE_PHOTO) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
         predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
-        predicates.And()->EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
+        predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+            to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     }
 
     napi_value result = nullptr;
@@ -5151,6 +5151,10 @@ static napi_value ParseArgsGetBurstAssets(napi_env env, napi_callback_info info,
     std::string burstKey;
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[PARAM0], burstKey),
         OHOS_INVALID_PARAM_CODE);
+    if (burstKey.empty()) {
+        NAPI_ERR_LOG("The input burstkey cannot be empty");
+        return nullptr;
+    }
     /* Parse the second argument */
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM1], ASSET_FETCH_OPT, context),
         JS_INNER_FAIL);
@@ -5163,7 +5167,8 @@ static napi_value ParseArgsGetBurstAssets(napi_env env, napi_callback_info info,
         PhotoColumn::IsPhotoColumn, TYPE_PHOTO));
     predicates.And()->EqualTo(PhotoColumn::PHOTO_BURST_KEY, burstKey);
     predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    predicates.OrderByAsc(PhotoColumn::PHOTO_BURST_SEQUENCE);
+    predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
+    predicates.OrderByAsc(MediaColumn::MEDIA_NAME);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
