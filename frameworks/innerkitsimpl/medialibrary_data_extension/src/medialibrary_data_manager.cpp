@@ -317,6 +317,7 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
     shareHelper->UnregisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_);
     rdbStore_ = nullptr;
     MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
+    MEDIA_INFO_LOG("CloseKvStore success");
 
 #ifdef DISTRIBUTED
     if (kvStorePtr_ != nullptr) {
