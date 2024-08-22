@@ -2648,6 +2648,16 @@ static void UpdateSearchIndexTrigger(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddOriginalSubtype(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_ORIGINAL_SUBTYPE + " INT"
+    };
+    MEDIA_INFO_LOG("start add original_subtype column");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -3065,6 +3075,10 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VISION_UPDATE_MULTI_CROP_INFO) {
         UpdateMultiCropInfo(store);
+    }
+
+    if (oldVersion < VISION_ADD_ORIGINAL_SUBTYPE) {
+        AddOriginalSubtype(store);
     }
 }
 
