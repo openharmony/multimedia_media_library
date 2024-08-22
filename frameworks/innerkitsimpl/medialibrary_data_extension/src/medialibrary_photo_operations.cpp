@@ -196,9 +196,38 @@ static bool GetValidOrderClause(const DataSharePredicates &predicate, string &cl
     return (count == 1);
 }
 
-static shared_ptr<NativeRdb::ResultSet> HandleAlbumIndexOfUri(const vector<string> &columns, const string &photoId,
+static bool AppendValidOrderClause(MediaLibraryCommand &cmd, RdbPredicates &predicates, const string &photoId)
+{
+    constexpr int32_t FIELD_IDX = 0;
+    const auto &items = cmd.GetDataSharePred().GetOperationList();
+    int32_t count = 0;
+    string columnName = " (" + MediaColumn::MEDIA_DATE_ADDED + ", " + MediaColumn::MEDIA_ID + ") ";
+    string value = " (SELECT " + MediaColumn::MEDIA_DATE_ADDED + ", " + MediaColumn::MEDIA_ID + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " + photoId + ") ";
+    string whereClause = predicates.GetWhereClause();
+    for (const auto &item : items) {
+        if (item.operation == ORDER_BY_ASC) {
+            count++;
+            whereClause += " AND " + columnName + " <= " + value;
+        } else if (item.operation == ORDER_BY_DESC) {
+            count++;
+            whereClause += " AND " + columnName + " >= " + value;
+        }
+    }
+    predicates.SetWhereClause(whereClause);
+
+    // only support orderby with one item
+    return (count == 1);
+}
+
+static shared_ptr<NativeRdb::ResultSet> HandleAlbumIndexOfUri(MediaLibraryCommand &cmd, const string &photoId,
     const string &albumId)
 {
+    string orderClause;
+    CHECK_AND_RETURN_RET_LOG(GetValidOrderClause(cmd.GetDataSharePred(), orderClause), nullptr, "invalid orderby");
+    vector<string> columns;
+    columns.push_back(orderClause);
+    columns.push_back(MediaColumn::MEDIA_ID);
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     CHECK_AND_RETURN_RET_LOG(GetPredicatesByAlbumId(albumId, predicates) == E_SUCCESS, nullptr, "invalid album uri");
     return MediaLibraryRdbStore::GetIndexOfUri(predicates, columns, photoId);
@@ -207,20 +236,18 @@ static shared_ptr<NativeRdb::ResultSet> HandleAlbumIndexOfUri(const vector<strin
 static shared_ptr<NativeRdb::ResultSet> HandleIndexOfUri(MediaLibraryCommand &cmd, RdbPredicates &predicates,
     const string &photoId, const string &albumId)
 {
-    string orderClause;
-    CHECK_AND_RETURN_RET_LOG(GetValidOrderClause(cmd.GetDataSharePred(), orderClause), nullptr, "invalid orderby");
-    vector<string> columns;
-    columns.push_back(orderClause);
-    columns.push_back(MediaColumn::MEDIA_ID);
     if (!albumId.empty()) {
-        return HandleAlbumIndexOfUri(columns, photoId, albumId);
-    } else {
-        predicates.And()->EqualTo(
-            PhotoColumn::PHOTO_SYNC_STATUS, std::to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-        predicates.And()->EqualTo(
-            PhotoColumn::PHOTO_CLEAN_FLAG, std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
-        return MediaLibraryRdbStore::GetIndexOfUri(predicates, columns, photoId);
+        return HandleAlbumIndexOfUri(cmd, photoId, albumId);
     }
+    string indexClause = " COUNT(*) as " + PHOTO_INDEX;
+    vector<string> columns;
+    columns.push_back(indexClause);
+    predicates.And()->EqualTo(
+        PhotoColumn::PHOTO_SYNC_STATUS, std::to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.And()->EqualTo(
+        PhotoColumn::PHOTO_CLEAN_FLAG, std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
+    CHECK_AND_RETURN_RET_LOG(AppendValidOrderClause(cmd, predicates, photoId), nullptr, "invalid orderby");
+    return MediaLibraryRdbStore::GetIndexOfUriForPhotos(predicates, columns, photoId);
 }
 
 static shared_ptr<NativeRdb::ResultSet> HandleAnalysisIndex(MediaLibraryCommand &cmd,
