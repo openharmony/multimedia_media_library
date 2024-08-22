@@ -145,6 +145,7 @@ void MediaLibraryInotify::DoStop()
     isWatching_ = false;
     watchList_.clear();
     inotifyFd_ = 0;
+    MEDIA_INFO_LOG("stop success");
 }
 
 int32_t MediaLibraryInotify::RemoveByFileUri(const string &uri, MediaLibraryApi api)
