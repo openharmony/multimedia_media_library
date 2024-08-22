@@ -190,6 +190,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             break;
         case StatusEventType::SCREEN_ON:
             isScreenOff_ = false;
+            CheckHalfDayMissions();
             break;
         case StatusEventType::CHARGING:
             isCharging_ = true;
@@ -197,6 +198,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             break;
         case StatusEventType::DISCHARGING:
             isCharging_ = false;
+            CheckHalfDayMissions();
             break;
         case StatusEventType::BATTERY_CHANGED:
             isPowerSufficient_ = want.GetIntParam(COMMON_EVENT_KEY_BATTERY_CAPACITY,
