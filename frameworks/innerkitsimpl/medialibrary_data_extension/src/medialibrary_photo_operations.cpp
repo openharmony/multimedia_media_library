@@ -22,6 +22,7 @@
 #include "abs_shared_result_set.h"
 #include "file_asset.h"
 #include "file_utils.h"
+#include "image_source.h"
 #include "media_analysis_helper.h"
 #include "media_change_effect.h"
 #include "media_column.h"
@@ -959,11 +960,34 @@ int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cm
     return updateRows;
 }
 
+int32_t MediaLibraryPhotoOperations::UpdateExif(MediaLibraryCommand &cmd,
+    const shared_ptr<FileAsset> &fileAsset)
+{
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("fileAsset is null");
+        return E_INVALID_VALUES;
+    }
+    ValuesBucket &values = cmd.GetValueBucket();
+    ValueObject valueObject;
+    int32_t hasOrientation = values.GetObject(PhotoColumn::PHOTO_ORIENTATION, valueObject);
+    int32_t errCode = E_OK;
+    if (hasOrientation) {
+        if (fileAsset->GetMediaType() != MEDIA_TYPE_IMAGE) {
+            MEDIA_ERR_LOG("Only images support rotation.");
+            return E_INVALID_VALUES;
+        }
+        errCode = UpdateAllExif(cmd, fileAsset);
+    } else {
+        CHECK_AND_RETURN_RET_LOG(false, errCode, "The image does not have rotation angle: %{public}d", errCode);
+    }
+    return errCode;
+}
+
 int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
 {
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE,
         PhotoColumn::MEDIA_NAME, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, MediaColumn::MEDIA_HIDDEN,
-        PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
+        PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_ALL_EXIF };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
         OperationObject::FILESYSTEM_PHOTO, columns);
     if (fileAsset == nullptr) {
@@ -983,6 +1007,10 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     errCode = UpdateFileName(cmd, fileAsset, isNameChanged);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Photo Name failed, fileName=%{private}s",
         fileAsset->GetDisplayName().c_str());
+
+    errCode = UpdateExif(cmd, fileAsset);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update allexif failed, allexif=%{private}s",
+        fileAsset->GetAllExif().c_str());
 
     TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
     errCode = transactionOprn.Start();

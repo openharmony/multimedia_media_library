@@ -90,6 +90,7 @@ private:
     static int32_t MoveCacheFile(MediaLibraryCommand &cmd, int32_t subtype,
         const std::string &cachePath, const std::string &destPath);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
+    static int32_t UpdateExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,
         const std::string &editdata, int32_t fileId, const std::string &photoStatus = "");
