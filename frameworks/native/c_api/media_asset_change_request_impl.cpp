@@ -48,6 +48,10 @@ OH_MediaAssetChangeRequest::OH_MediaAssetChangeRequest(OH_MediaAsset* mediaAsset
     mediaAsset_ = mediaAsset;
     movingPhotoVideoDataBuffer_ = nullptr;
     dataBuffer_ = nullptr;
+    movingPhotoVideoResourceMode_ = AddResourceMode::DEFAULT;
+    addResourceMode_ = AddResourceMode::DEFAULT;
+    movingPhotoVideoBufferSize_ = 0;
+    dataBufferSize_ = 0;
 }
 
 OH_MediaAssetChangeRequest::~OH_MediaAssetChangeRequest()
