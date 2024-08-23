@@ -38,7 +38,7 @@ public:
 
 const string ConfigTestOpenCall::CREATE_TABLE_TEST = string("CREATE TABLE IF NOT EXISTS test ") +
     "(file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, media_type INTEGER," +
-    " date_added TEXT, display_name TEXT, thumbnail_ready TEXT)";
+    " date_added TEXT, display_name TEXT, thumbnail_ready TEXT, position TEXT)";
 
 const int32_t E_THUMBNAIL_ASTC_ALL_EXIST = -2307;
 const int32_t E_THUMBNAIL_LCD_ALL_EXIST = -2308;
