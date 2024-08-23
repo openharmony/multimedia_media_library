@@ -1372,8 +1372,7 @@ static int32_t UpdateEffectMode(int32_t fileId, int32_t effectMode, int32_t phot
     updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode);
     if (effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
         updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
-    } else if (photoSubType == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
-        effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+    } else if (photoSubType == static_cast<int32_t>(PhotoSubType::DEFAULT)) {
         updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
     updateCmd.SetValueBucket(updateValues);
@@ -1665,6 +1664,7 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
     if (!IsNeedRevertEffectMode(cmd, fileAsset, effectMode)) {
         return E_OK;
     }
+    isNeedScan = true;
     ValuesBucket& updateValues = cmd.GetValueBucket();
     updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode);
     if (effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
@@ -1696,11 +1696,12 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_FS_ERROR,
             "Failed to move image from %{private}s to %{private}s",
             sourceImagePath.c_str(), imagePath.c_str());
-        isNeedScan = true;
     } else {
         string editData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
             "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
+        // 添加水印时会扫描，这里不扫描
+        isNeedScan = false;
         CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourceImagePath, imagePath, editData, fileAsset->GetId()) == E_OK,
             E_FAIL, "Failed to add filters to photo");
     }
