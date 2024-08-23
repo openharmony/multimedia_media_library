@@ -4756,13 +4756,17 @@ static napi_value ParseArgsGrantPhotoUriPermission(napi_env env, napi_callback_i
     string appid;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], appid) ==
         napi_ok, "Failed to get appid");
+    if (appid.empty()) {
+        NAPI_ERR_LOG("appid is empty");
+        return nullptr;
+    }
     context->valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
 
     // parse fileId
     string uri;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], uri) ==
         napi_ok, "Failed to get uri");
-    int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromAssetUri(uri);
+    int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromPhotoUri(uri);
     if (fileId < 0) {
         return nullptr;
     }
@@ -4779,15 +4783,8 @@ static napi_value ParseArgsGrantPhotoUriPermission(napi_env env, napi_callback_i
     }
     context->valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
-    // parse uriType
-    int uriType = 0;
-    // parse fileId ensured uri is photo or audio.
-    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
-        uriType = AppUriPermissionColumn::URI_PHOTO;
-    } else {
-        uriType = AppUriPermissionColumn::URI_AUDIO;
-    }
-    context->valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, uriType);
+    // parsing fileId ensured uri is photo.
+    context->valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
@@ -4801,7 +4798,7 @@ static bool ParseUriTypes(std::string &appid, int &permissionType, std::vector<s
     std::set<int32_t> fileIdSet;
     for (const auto &uri : uris) {
         OHOS::DataShare::DataShareValuesBucket valuesBucket;
-        int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromAssetUri(uri);
+        int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromPhotoUri(uri);
         if (fileId < 0) {
             return false;
         }
@@ -4812,13 +4809,8 @@ static bool ParseUriTypes(std::string &appid, int &permissionType, std::vector<s
         valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
         valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
         valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
-
-        // parse uriType. parse fileId ensured uri is photo or audio.
-        if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
-            valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
-        } else {
-            valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_AUDIO);
-        }
+        // parsing fileId ensured uri is photo.
+        valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
         context->valuesBucketArray.push_back(move(valuesBucket));
     }
     return true;
@@ -4841,6 +4833,10 @@ static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_
     string appid;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], appid) ==
         napi_ok, "Failed to get appid");
+    if (appid.empty()) {
+        NAPI_ERR_LOG("appid is empty");
+        return nullptr;
+    }
 
     // parse uris
     vector<string> uris;
@@ -4888,13 +4884,17 @@ static napi_value ParseArgsCancelPhotoUriPermission(napi_env env, napi_callback_
     string appid;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], appid) ==
         napi_ok, "Failed to get appid");
+    if (appid.empty()) {
+        NAPI_ERR_LOG("appid is empty");
+        return nullptr;
+    }
     context->predicates.And()->EqualTo(AppUriPermissionColumn::APP_ID, appid);
 
     // parse fileId
     string uri;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], uri) ==
         napi_ok, "Failed to get uri");
-    int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromAssetUri(uri);
+    int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromPhotoUri(uri);
     if (fileId < 0) {
         return nullptr;
     }
@@ -4911,15 +4911,8 @@ static napi_value ParseArgsCancelPhotoUriPermission(napi_env env, napi_callback_
     }
     context->predicates.And()->EqualTo(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
-    // parse uriType
-    int uriType = 0;
-    // parse fileId ensured uri is photo or audio.
-    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
-        uriType = AppUriPermissionColumn::URI_PHOTO;
-    } else {
-        uriType = AppUriPermissionColumn::URI_AUDIO;
-    }
-    context->predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, uriType);
+    // parsing fileId ensured uri is photo.
+    context->predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
@@ -5138,7 +5131,7 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     if (context->assetType == TYPE_PHOTO) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
         predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
-        predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
+        predicates.And()->EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
     }
 
     napi_value result = nullptr;
