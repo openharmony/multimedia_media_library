@@ -4693,7 +4693,7 @@ static napi_value ParseArgsCreatePhotoAssetComponent(napi_env env, napi_callback
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], extension) ==
         napi_ok, "Failed to get extension");
     CHECK_COND_WITH_MESSAGE(env, mediaType == MediaFileUtils::GetMediaType("." + extension),
-        "Failed to check extension %{public}s, mismatch with %{public}d", extension.c_str(), type);
+        "Failed to check extension");
     context->valuesBucket.Put(ASSET_EXTENTION, extension);
 
     /* Parse the third argument into albumUri if exists */
