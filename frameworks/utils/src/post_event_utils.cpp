@@ -278,12 +278,29 @@ void PostEventUtils::PostMscResultStat(const VariantMap &stat)
     }
 }
 
+void PostEventUtils::PostDatabaseCorruption(const VariantMap &errMap)
+{
+    string date = GetStringValue(KEY_DB_CORRUPT, errMap);
+    MEDIA_ERR_LOG("ReportDatabaseCorruption periodTime:%{public}s", date.c_str());
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "DATABASE_CORRUPTION_ERROR",
+        HiviewDFX::HiSysEvent::EventType::FAULT,
+        "DATE", date);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportDatabaseCorruption error:%{public}d", ret);
+    }
+}
+
 void PostEventUtils::PostErrorProcess(const uint32_t &errType, const VariantMap &error)
 {
     switch (errType) {
         case ErrType::FILE_OPT_ERR:
         case ErrType::DB_OPT_ERR:
         case ErrType::DB_UPGRADE_ERR:
+            break;
+        case ErrType::DB_CORRUPT_ERR:
+            PostDatabaseCorruption(error);
             break;
         default:
             PostFileOptError(error);

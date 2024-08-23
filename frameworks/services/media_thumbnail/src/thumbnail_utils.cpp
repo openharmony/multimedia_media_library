@@ -738,6 +738,7 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_POSITION,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
@@ -2032,7 +2033,7 @@ bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, bool isSource
     }
     Size desiredSize;
     Size targetSize = ConvertDecodeSize(data, {dataSource->GetWidth(), dataSource->GetHeight()}, desiredSize);
-    if (!ScaleTargetPixelMap(dataSource, targetSize, Media::AntiAliasingOption::MEDIUM)) {
+    if (!ScaleTargetPixelMap(dataSource, targetSize, Media::AntiAliasingOption::HIGH)) {
         MEDIA_ERR_LOG("Fail to scale to targetSize");
         return false;
     }

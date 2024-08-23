@@ -1315,8 +1315,27 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Protrait_Album_NAME_NOT_NULL_test_
 HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001, TestSize.Level0)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    mediaLibraryDataManager->refCnt_.store(0);
     auto ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_EQ(ret<=0, false);
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001_2, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    mediaLibraryDataManager->refCnt_.store(1);
+    mediaLibraryDataManager->thumbnailService_ = nullptr;
+    auto ret = mediaLibraryDataManager->GenerateThumbnailBackground();
+    EXPECT_EQ(ret, E_THUMBNAIL_SERVICE_NULLPTR);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001_3, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    mediaLibraryDataManager->refCnt_.store(1);
+    mediaLibraryDataManager->thumbnailService_ = std::make_shared<ThumbnailService>();
+    auto ret = mediaLibraryDataManager->GenerateThumbnailBackground();
+    EXPECT_EQ(ret, mediaLibraryDataManager->thumbnailService_->GenerateThumbnailBackground());
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpgradeThumbnailBackground_new_002, TestSize.Level0)

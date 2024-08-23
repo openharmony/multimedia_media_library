@@ -432,6 +432,11 @@ void FileAsset::SetPhotoSubType(int32_t photoSubType)
     member_[PhotoColumn::PHOTO_SUBTYPE] = photoSubType;
 }
 
+int32_t FileAsset::GetOriginalSubType() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE);
+}
+
 const std::string &FileAsset::GetCameraShotKey() const
 {
     return GetStrMember(PhotoColumn::CAMERA_SHOT_KEY);

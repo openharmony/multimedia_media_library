@@ -246,6 +246,16 @@ static void FillV10Perms(const MediaType mediaType, const bool containsRead, con
     }
 }
 
+static void FillDeprecatedPerms(const bool containsRead, const bool containsWrite, vector<string> &perm)
+{
+    if (containsRead) {
+        perm.push_back(PERMISSION_NAME_READ_MEDIA);
+    }
+    if (containsWrite) {
+        perm.push_back(PERMISSION_NAME_WRITE_MEDIA);
+    }
+}
+
 static inline bool ContainsFlag(const string &mode, const char flag)
 {
     return mode.find(flag) != string::npos;
@@ -289,13 +299,9 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     if (err == E_SUCCESS) {
         return E_SUCCESS;
     }
+    // Try to check deprecated permissions
     perms.clear();
-    if (containsRead) {
-        perms.push_back(PERM_READ_IMAGEVIDEO);
-    }
-    if (containsWrite) {
-        perms.push_back(PERM_WRITE_IMAGEVIDEO);
-    }
+    FillDeprecatedPerms(containsRead, containsWrite, perms);
     return PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
@@ -343,12 +349,12 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
 
 static inline int32_t HandleMediaVolumePerm()
 {
-    return PermissionUtils::CheckCallerPermission(PERM_READ_IMAGEVIDEO) ? E_SUCCESS : E_PERMISSION_DENIED;
+    return PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
 static inline int32_t HandleBundlePermCheck()
 {
-    bool ret = PermissionUtils::CheckCallerPermission(PERM_WRITE_IMAGEVIDEO);
+    bool ret = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA);
     if (ret) {
         return E_SUCCESS;
     }
@@ -560,7 +566,7 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     }
 
     // Finally, we should check the permission of medialibrary interfaces.
-    string perm = isWrite ? PERM_WRITE_IMAGEVIDEO : PERM_READ_IMAGEVIDEO;
+    string perm = isWrite ? PERMISSION_NAME_WRITE_MEDIA : PERMISSION_NAME_READ_MEDIA;
     err = PermissionUtils::CheckCallerPermission(perm) ? E_SUCCESS : E_PERMISSION_DENIED;
     if (err < 0) {
         return err;

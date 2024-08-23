@@ -169,7 +169,6 @@ void SetTables()
     PrepareUniqueNumberTable();
 }
 
-
 void ClearAndRestart()
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -226,126 +225,162 @@ void MediaLibraryAppUriPermissionOperationsTest::SetUp()
 void MediaLibraryAppUriPermissionOperationsTest::TearDown()
 {}
 
-int32_t TestInsert(DataShareValuesBucket &dataShareValue)
+int32_t CreatePhotoApi10(int mediaType, const string &displayName)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutString(MediaColumn::MEDIA_NAME, displayName);
+    values.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryPhotoOperations::Create(cmd);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Create Photo failed, errCode=%{public}d", ret);
+        return ret;
+    }
+    return ret;
+}
+
+int TestInsert(DataShareValuesBucket &dataShareValue)
 {
     dataShareValue.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
     MediaLibraryCommand cmd(OperationObject::MEDIA_APP_URI_PERMISSION, OperationType::CREATE,
         MediaLibraryApi::API_10);
     ValuesBucket rdbValue = RdbUtils::ToValuesBucket(dataShareValue);
     cmd.SetValueBucket(rdbValue);
-    int32_t ret = MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
+    int ret = MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
     return ret;
 }
 
 /**
  * insert a new persist read data.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_create_api12_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_001, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_create_api12_test_001");
+    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_001");
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (photoId < E_OK) {
+        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
+        return;
+    }
 
-    int32_t ret = -1;
+    int ret = -1;
     OHOS::DataShare::DataShareValuesBucket dataShareValue;
     dataShareValue.Put(AppUriPermissionColumn::APP_ID, "appid01");
-    dataShareValue.Put(AppUriPermissionColumn::FILE_ID, 100);
+    dataShareValue.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
     ret = TestInsert(dataShareValue);
-    // expected result: 0, success
     EXPECT_EQ(ret, 0);
 
-    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_create_api12_test_001");
+    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_001");
 }
 
 /**
  * insert a new temporary read data.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_create_api12_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_002, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_create_api12_test_002");
+    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_002");
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (photoId < E_OK) {
+        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
+        return;
+    }
 
-    int32_t ret = -1;
+    int ret = -1;
 
     OHOS::DataShare::DataShareValuesBucket dataShareValue;
     dataShareValue.Put(AppUriPermissionColumn::APP_ID, "appid01");
-    dataShareValue.Put(AppUriPermissionColumn::FILE_ID, 100);
+    dataShareValue.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
     ret = TestInsert(dataShareValue);
-    // expected result: 0, success
     EXPECT_EQ(ret, 0);
 
-    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_create_api12_test_002");
+    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_002");
 }
 
 /**
  * insert a repeat persist read data, and the origin data is temporary read.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_create_api12_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_003, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_create_api12_test_003");
+    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_003");
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (photoId < E_OK) {
+        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
+        return;
+    }
 
-    int32_t ret = -1;
+    int ret = -1;
     // step 1: insert a new temporary read data.
     OHOS::DataShare::DataShareValuesBucket dataShareValue01;
     dataShareValue01.Put(AppUriPermissionColumn::APP_ID, "appid01");
-    dataShareValue01.Put(AppUriPermissionColumn::FILE_ID, 100);
+    dataShareValue01.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue01.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
     ret = TestInsert(dataShareValue01);
-    // expected result: 0, success
     EXPECT_EQ(ret, 0);
 
     // step 2: insert a repeat persist read data.
     OHOS::DataShare::DataShareValuesBucket dataShareValue02;
     dataShareValue02.Put(AppUriPermissionColumn::APP_ID, "appid01");
-    dataShareValue02.Put(AppUriPermissionColumn::FILE_ID, 100);
+    dataShareValue02.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue02.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
     ret = TestInsert(dataShareValue02);
-    // expected result: 0, success
     EXPECT_EQ(ret, 0);
 
-    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_create_api12_test_003");
+    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_003");
 }
 
 /**
  * insert a repeat temporary read data, and the origin data is persist read.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_create_api12_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_004, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_create_api12_test_004");
+    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_004");
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (photoId < E_OK) {
+        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
+        return;
+    }
 
-    int32_t ret = -1;
+    int ret = -1;
     // step 1: insert a new persist read data.
     OHOS::DataShare::DataShareValuesBucket dataShareValue01;
     dataShareValue01.Put(AppUriPermissionColumn::APP_ID, "appid01");
-    dataShareValue01.Put(AppUriPermissionColumn::FILE_ID, 100);
+    dataShareValue01.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue01.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
     ret = TestInsert(dataShareValue01);
-    // expected result: 0, success
     EXPECT_EQ(ret, 0);
 
     // step 2: insert a repeat temporary read data.
     OHOS::DataShare::DataShareValuesBucket dataShareValue02;
     dataShareValue02.Put(AppUriPermissionColumn::APP_ID, "appid01");
-    dataShareValue02.Put(AppUriPermissionColumn::FILE_ID, 100);
+    dataShareValue02.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue02.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
     ret = TestInsert(dataShareValue02);
     // expected result: 1, alread exist.
     EXPECT_EQ(ret, 1);
 
-    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_create_api12_test_004");
+    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_004");
 }
 
 /**
  * insert a repeat persist read data, and the origin data is persist read, too.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_create_api12_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_005, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_create_api12_test_005");
+    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_005");
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (photoId < E_OK) {
+        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
+        return;
+    }
 
-    int32_t ret = -1;
+    int ret = -1;
     // step 1: insert a new persist read data.
     OHOS::DataShare::DataShareValuesBucket dataShareValue01;
     dataShareValue01.Put(AppUriPermissionColumn::APP_ID, "appid01");
-    dataShareValue01.Put(AppUriPermissionColumn::FILE_ID, 100);
+    dataShareValue01.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue01.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
     ret = TestInsert(dataShareValue01);
     // expected result: 0, success
@@ -354,23 +389,23 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_cre
     // step 2: insert a repeat persist read data.
     OHOS::DataShare::DataShareValuesBucket dataShareValue02;
     dataShareValue02.Put(AppUriPermissionColumn::APP_ID, "appid01");
-    dataShareValue02.Put(AppUriPermissionColumn::FILE_ID, 100);
+    dataShareValue02.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue02.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
     ret = TestInsert(dataShareValue02);
     // expected result: 1, alread exist
     EXPECT_EQ(ret, 1);
 
-    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_create_api12_test_005");
+    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_005");
 }
 
 /**
  * insert a new data, but this data lacks the fileId.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_create_api12_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_006, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_create_api12_test_006");
+    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_006");
 
-    int32_t ret = -1;
+    int ret = -1;
     OHOS::DataShare::DataShareValuesBucket dataShareValue01;
     dataShareValue01.Put(AppUriPermissionColumn::APP_ID, "appid01");
     dataShareValue01.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
@@ -378,30 +413,35 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_cre
     // expected result: -1, failed.
     EXPECT_EQ(ret, -1);
 
-    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_create_api12_test_006");
+    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_006");
 }
 
-int32_t TestDelete(OHOS::DataShare::DataSharePredicates &dataSharePredicate)
+int TestDelete(OHOS::DataShare::DataSharePredicates &dataSharePredicate)
 {
     // MEDIALIBRARY_TABLE just fro RdbPredicates
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(dataSharePredicate,
         AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
-    int32_t ret = MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
+    int ret = MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
     return ret;
 }
 
 /**
  * cancel a data.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_create_api12_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_007, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_create_api12_test_007");
+    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_007");
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (photoId < E_OK) {
+        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
+        return;
+    }
 
-    int32_t ret = -1;
+    int ret = -1;
     // step 1: insert a new data.
     OHOS::DataShare::DataShareValuesBucket dataShareValue01;
     dataShareValue01.Put(AppUriPermissionColumn::APP_ID, "appid01");
-    dataShareValue01.Put(AppUriPermissionColumn::FILE_ID, 100);
+    dataShareValue01.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue01.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
     ret = TestInsert(dataShareValue01);
     // expected result: 0, success.
@@ -410,17 +450,17 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_cre
     // step 2: cancel the data.
     OHOS::DataShare::DataSharePredicates dataSharePredicate;
     dataSharePredicate.And()->EqualTo(AppUriPermissionColumn::APP_ID, "appid01");
-    dataSharePredicate.And()->EqualTo(AppUriPermissionColumn::FILE_ID, 100);
+    dataSharePredicate.And()->EqualTo(AppUriPermissionColumn::FILE_ID, photoId);
     dataSharePredicate.And()->EqualTo(AppUriPermissionColumn::PERMISSION_TYPE,
         AppUriPermissionColumn::PERMISSION_PERSIST_READ);
     ret = TestDelete(dataSharePredicate);
     // expected result: 0, success.
     EXPECT_EQ(ret, 0);
 
-    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_create_api12_test_007");
+    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_007");
 }
 
-int32_t TestBatchInsert(std::vector<DataShare::DataShareValuesBucket> &dataShareValues)
+int TestBatchInsert(std::vector<DataShare::DataShareValuesBucket> &dataShareValues)
 {
     MediaLibraryCommand cmd(OperationObject::MEDIA_APP_URI_PERMISSION, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -430,15 +470,22 @@ int32_t TestBatchInsert(std::vector<DataShare::DataShareValuesBucket> &dataShare
 /**
  * batch insert two new temporary read data.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_create_api12_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_008, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_create_api12_test_009");
+    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_008");
+    int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    int32_t photoId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (photoId1 < E_OK || photoId2 < E_OK) {
+        MEDIA_ERR_LOG("create photos failed,photoId1=%{public}d,photoId2=%{public}d", photoId1, photoId2);
+        return;
+    }
+    std::vector<int32_t> photoIds = { photoId1, photoId2 };
 
     std::vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int i = 0; i < 2; ++i) {
         OHOS::DataShare::DataShareValuesBucket dataShareValue;
         dataShareValue.Put(AppUriPermissionColumn::APP_ID, "appidBatch01");
-        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, 300 + i);
+        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, photoIds[i]);
         dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
         dataShareValue.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
         dataShareValues.push_back(dataShareValue);
@@ -447,20 +494,28 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_cre
     // expected result: 0, success.
     EXPECT_EQ(ret, 0);
 
-    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_create_api12_test_009");
+    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_008");
 }
 
 /**
  * batch insert two repeat persist read data, and the two origin data is temporary read.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_create_api12_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_009, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_create_api12_test_010");
+    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_009");
+    int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
+    int32_t photoId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo2.jpg");
+    if (photoId1 < E_OK || photoId2 < E_OK) {
+        MEDIA_ERR_LOG("create photos failed,photoId1=%{public}d,photoId2=%{public}d", photoId1, photoId2);
+        return;
+    }
+    std::vector<int32_t> photoIds = { photoId1, photoId2 };
+
     std::vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int i = 0; i < 2; ++i) {
         OHOS::DataShare::DataShareValuesBucket dataShareValue;
         dataShareValue.Put(AppUriPermissionColumn::APP_ID, "appidBatch01");
-        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, 300 + i);
+        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, photoIds[i]);
         dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
         dataShareValue.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
         dataShareValues.push_back(dataShareValue);
@@ -473,7 +528,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_cre
     for (int i = 0; i < 2; ++i) {
         OHOS::DataShare::DataShareValuesBucket dataShareValue;
         dataShareValue.Put(AppUriPermissionColumn::APP_ID, "appidBatch01");
-        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, 300 + i);
+        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, photoIds[i]);
         dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
         dataShareValue.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
         dataShareValues02.push_back(dataShareValue);
@@ -482,20 +537,28 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_cre
     // expected result: 0, success.
     EXPECT_EQ(ret, 0);
 
-    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_create_api12_test_010");
+    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_009");
 }
 
 /**
  * batch insert two repeat persist read data, and the two origin data is persist read, too.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_create_api12_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_010, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_create_api12_test_011");
+    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_010");
+    int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
+    int32_t photoId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo2.jpg");
+    if (photoId1 < E_OK || photoId2 < E_OK) {
+        MEDIA_ERR_LOG("create photos failed,photoId1=%{public}d,photoId2=%{public}d", photoId1, photoId2);
+        return;
+    }
+    std::vector<int32_t> photoIds = { photoId1, photoId2 };
+
     std::vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int i = 0; i < 2; ++i) {
         OHOS::DataShare::DataShareValuesBucket dataShareValue;
         dataShareValue.Put(AppUriPermissionColumn::APP_ID, "appidBatch01");
-        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, 300 + i);
+        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, photoIds[i]);
         dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
         dataShareValue.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
         dataShareValues.push_back(dataShareValue);
@@ -508,7 +571,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_cre
     for (int i = 0; i < 2; ++i) {
         OHOS::DataShare::DataShareValuesBucket dataShareValue;
         dataShareValue.Put(AppUriPermissionColumn::APP_ID, "appidBatch01");
-        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, 300 + i);
+        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, photoIds[i]);
         dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
         dataShareValue.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
         dataShareValues02.push_back(dataShareValue);
@@ -517,36 +580,41 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_cre
     // expected result: 0, success.
     EXPECT_EQ(ret, 0);
 
-    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_create_api12_test_011");
+    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_010");
 }
-
 
 /**
  * batch insert two temporary read data.
  * The first data is repeat data, and the permission of origin data is persist read.
  * The second data is new.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_create_api12_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_011, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_create_api12_test_012");
-    std::vector<DataShare::DataShareValuesBucket> dataShareValues;
-    for (int i = 0; i < 1; ++i) {
-        OHOS::DataShare::DataShareValuesBucket dataShareValue;
-        dataShareValue.Put(AppUriPermissionColumn::APP_ID, "appidBatch01");
-        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, 300 + i);
-        dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
-        dataShareValue.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
-        dataShareValues.push_back(dataShareValue);
+    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_011");
+    int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
+    int32_t photoId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo2.jpg");
+    if (photoId1 < E_OK || photoId2 < E_OK) {
+        MEDIA_ERR_LOG("create photos failed,photoId1=%{public}d,photoId2=%{public}d", photoId1, photoId2);
+        return;
     }
+
+    std::vector<DataShare::DataShareValuesBucket> dataShareValues;
+    OHOS::DataShare::DataShareValuesBucket dataShareValue;
+    dataShareValue.Put(AppUriPermissionColumn::APP_ID, "appidBatch01");
+    dataShareValue.Put(AppUriPermissionColumn::FILE_ID, photoId1);
+    dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
+    dataShareValue.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
+    dataShareValues.push_back(dataShareValue);
     int ret = TestBatchInsert(dataShareValues);
     // expected result: 0, success.
     EXPECT_EQ(ret, 0);
 
+    std::vector<int32_t> photoIds = { photoId1, photoId2 };
     std::vector<DataShare::DataShareValuesBucket> dataShareValues02;
     for (int i = 0; i < 2; ++i) {
         OHOS::DataShare::DataShareValuesBucket dataShareValue;
         dataShareValue.Put(AppUriPermissionColumn::APP_ID, "appidBatch01");
-        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, 300 + i);
+        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, photoIds[i]);
         dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
         dataShareValue.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
         dataShareValues02.push_back(dataShareValue);
@@ -555,7 +623,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_cre
     // expected result: 0, success.
     EXPECT_EQ(ret, 0);
 
-    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_create_api12_test_012");
+    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_011");
 }
 
 } // namespace Media

@@ -329,7 +329,7 @@ ohos_shared_library("medialibrary_data_extension") {
     sources += [ "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_proc_session_callback.cpp" ]
   }
 
-  if (!media_library_link_opt) {
+  if (!media_library_link_opt && !asan_detector) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -345,6 +345,17 @@ ohos_shared_library("medialibrary_data_extension") {
     "-fvisibility-inlines-hidden",
     "-Os",
   ]
+
+  if (asan_detector) {
+    cflags_cc += [
+      "-fsanitize=address",
+      "-shared-libasan",
+    ]
+    ldflags = [
+      "-fsanitize=address",
+      "-shared-libasan",
+    ]
+  }
 
   if (defined(global_parts_info) &&
       defined(global_parts_info.powermgr_battery_manager)) {

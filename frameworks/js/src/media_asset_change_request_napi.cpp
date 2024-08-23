@@ -346,8 +346,7 @@ bool MediaAssetChangeRequestNapi::CheckMovingPhotoWriteOperation()
 
     bool isCreation = Contains(AssetChangeOperation::CREATE_FROM_SCRATCH);
     if (!isCreation) {
-        NAPI_ERR_LOG("Moving photo is not supported to edit now");
-        return false;
+        return true;
     }
 
     int addResourceTimes =
@@ -1759,6 +1758,9 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
         valuesBucket.Put(CACHE_FILE_NAME, cacheFileName_);
         ret = PutMediaAssetEditData(valuesBucket);
         CHECK_COND_RET(ret == E_OK, ret, "Failed to put editData");
+        if (IsMovingPhoto()) {
+            valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
+        }
         if (isSetEffectMode) {
             valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset_->GetMovingPhotoEffectMode());
             valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
