@@ -250,24 +250,21 @@ string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
     return id;
 }
 
-int32_t MediaLibraryNapiUtils::GetFileIdFromAssetUri(const string &uri)
+int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
 {
     const static int ERROR = -1;
-    std::string tmp;
-    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
-        tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
-    } else if (uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
-        tmp = uri.substr(AudioColumn::AUDIO_URI_PREFIX.size());
-    } else {
-        NAPI_ERR_LOG("only photo or audio uri is valid");
+    if (PhotoColumn::PHOTO_URI_PREFIX.size() >= uri.size()) {
+        NAPI_ERR_LOG("photo uri is too short");
         return ERROR;
     }
-    size_t fisrtSlashIndex = tmp.find_first_of('/');
-    if (fisrtSlashIndex == string::npos) {
-        NAPI_ERR_LOG("second half of uri includes no slash");
+    if (uri.substr(0, PhotoColumn::PHOTO_URI_PREFIX.size()) !=
+        PhotoColumn::PHOTO_URI_PREFIX) {
+        NAPI_ERR_LOG("only photo uri is valid");
         return ERROR;
     }
-    std::string fileIdStr = tmp.substr(0, fisrtSlashIndex);
+    std::string tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
+
+    std::string fileIdStr = tmp.substr(0, tmp.find_first_of('/'));
     if (fileIdStr.empty()) {
         NAPI_ERR_LOG("intercepted fileId is empty");
         return ERROR;
@@ -275,6 +272,7 @@ int32_t MediaLibraryNapiUtils::GetFileIdFromAssetUri(const string &uri)
     if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)) {
         return std::stoi(fileIdStr);
     }
+
     NAPI_ERR_LOG("asset fileId is invalid");
     return ERROR;
 }
