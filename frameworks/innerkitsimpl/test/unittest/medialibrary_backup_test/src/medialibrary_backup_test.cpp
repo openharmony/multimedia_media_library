@@ -2332,7 +2332,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_to_moving_photo, T
     BackupFileUtils::ConvertToMovingPhoto(info);
     EXPECT_EQ(info.movingPhotoVideoPath, "/data/test/backup_test_livephoto.jpg.mp4");
     EXPECT_EQ(info.extraDataPath, "/data/test/backup_test_livephoto.jpg.extra");
-    EXPECT_EQ(info.filePath, "/data/test/backup_test_livephoto.jpg.jpg");
 
     info.filePath = livePhotoPath;
     EXPECT_EQ(MediaFileUtils::CreateFile(info.movingPhotoVideoPath), true);

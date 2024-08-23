@@ -244,6 +244,11 @@ void MediaAssetChangeRequestNapi::RecordChangeOperation(AssetChangeOperation cha
         assetChangeOperations_.insert(assetChangeOperations_.begin() + 1, changeOperation);
         return;
     }
+    if (changeOperation == AssetChangeOperation::ADD_RESOURCE &&
+        Contains(AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE)) {
+        assetChangeOperations_.insert(assetChangeOperations_.begin(), changeOperation);
+        return;
+    }
     assetChangeOperations_.push_back(changeOperation);
 }
 
@@ -263,7 +268,7 @@ bool MediaAssetChangeRequestNapi::IsMovingPhoto() const
     return fileAsset_ != nullptr &&
         (fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
         (fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
-        currentEffectMode_ == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)));
+        fileAsset_->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)));
 }
 
 bool MediaAssetChangeRequestNapi::CheckMovingPhotoResource(ResourceType resourceType) const
@@ -1174,7 +1179,10 @@ napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callb
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT, "Operation not support: the asset is not moving photo");
         return nullptr;
     }
-    changeRequest->currentEffectMode_ = fileAsset->GetMovingPhotoEffectMode();
+    if (fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
+        effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    }
     fileAsset->SetMovingPhotoEffectMode(effectMode);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE);
     RETURN_NAPI_UNDEFINED(env);

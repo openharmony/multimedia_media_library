@@ -273,5 +273,74 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoExtraDat
     string extraDataPath = "/storage/cloud/files/.editData/Photo/1/IMG_123435213_231.jpg/extraData";
     EXPECT_EQ(MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(imagePath), extraDataPath);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetLivePhotoCacheDir_001, TestSize.Level0)
+{
+    string imagePath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
+    string extraDataDir = "/storage/cloud/files/.cache/Photo/1/IMG_123435213_231.jpg";
+    EXPECT_EQ(MovingPhotoFileUtils::GetLivePhotoCacheDir(imagePath), extraDataDir);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetLivePhotoCachePath_001, TestSize.Level0)
+{
+    string imagePath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
+    string extraDataPath = "/storage/cloud/files/.cache/Photo/1/IMG_123435213_231.jpg/livePhoto.jpg";
+    EXPECT_EQ(MovingPhotoFileUtils::GetLivePhotoCachePath(imagePath), extraDataPath);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_001, TestSize.Level0)
+{
+    string dirPath = "/data/test/GetExtraDataLen_001";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string imagePath = dirPath + "/" + "livePhotoSamePath.jpg";
+    EXPECT_EQ(WriteFileContent(imagePath, FILE_TEST_JPG, sizeof(FILE_TEST_JPG)), true);
+    string videoPath = dirPath + "/" + "video.mp4";
+    EXPECT_EQ(WriteFileContent(videoPath, FILE_TEST_MP4, sizeof(FILE_TEST_MP4)), true);
+    off_t fileSize{0};
+    EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen(imagePath, videoPath, 0, fileSize), E_OK);
+    EXPECT_EQ(fileSize, MIN_STANDARD_SIZE);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_002, TestSize.Level0)
+{
+    string dirPath = "/data/test/GetExtraDataLen_002";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string imagePath = dirPath + "/" + "livePhotoSamePath.jpg";
+    EXPECT_EQ(WriteFileContent(imagePath, FILE_TEST_JPG, sizeof(FILE_TEST_JPG)), true);
+    string videoPath = dirPath + "/" + "video.mp4";
+    EXPECT_EQ(WriteFileContent(videoPath, FILE_TEST_MP4, sizeof(FILE_TEST_MP4)), true);
+
+    string extraDir = MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(imagePath);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(imagePath);
+    EXPECT_EQ(MediaFileUtils::CreateAsset(extraPath), E_SUCCESS);
+    EXPECT_EQ(WriteFileContent(extraPath, FILE_TEST_EXTRA_DATA, sizeof(FILE_TEST_EXTRA_DATA)), true);
+
+    off_t fileSize{0};
+    EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen(imagePath, videoPath, 0, fileSize), E_OK);
+    EXPECT_EQ(fileSize, sizeof(FILE_TEST_EXTRA_DATA));
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_001, TestSize.Level0)
+{
+    string dirPath = "/data/test/GetFrameIndex_001";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string videoPath = dirPath + "/" + "video.mp4";
+    EXPECT_EQ(WriteFileContent(videoPath, FILE_TEST_MP4, sizeof(FILE_TEST_MP4)), true);
+    int32_t fd = open(videoPath.c_str(), O_RDONLY);
+    EXPECT_GT(fd, 0);
+    EXPECT_GT(MovingPhotoFileUtils::GetFrameIndex(0, fd), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsLivePhoto_001, TestSize.Level0)
+{
+    string dirPath = "/data/test/IsLivePhoto_001/iamge.jpg";
+    string livePhotDir = MovingPhotoFileUtils::GetLivePhotoCacheDir(dirPath);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(livePhotDir), true);
+    string livePhotoPath = livePhotDir + "/" + "livePhoto.jpg";
+    EXPECT_EQ(MediaFileUtils::CreateAsset(livePhotoPath), E_SUCCESS);
+    EXPECT_EQ(WriteFileContent(livePhotoPath, FILE_TEST_LIVE_PHOTO, sizeof(FILE_TEST_LIVE_PHOTO)), true);
+    EXPECT_EQ(MovingPhotoFileUtils::IsLivePhoto(livePhotoPath), true);
+}
 } // namespace Media
 } // namespace OHOS
