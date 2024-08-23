@@ -41,6 +41,12 @@ ThumbnailGenerateWorker::~ThumbnailGenerateWorker()
 
 int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
 {
+    std::unique_lock<std::mutex> lock(taskMutex_);
+    if (!threads_.empty()) {
+        return E_OK;
+    }
+
+    MEDIA_INFO_LOG("threads empty, need to init, taskType:%{public}d", taskType_);
     int32_t threadNum;
     std::string threadName;
     taskType_ = taskType;
@@ -61,6 +67,8 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
         pthread_setname_np(thread.native_handle(), threadName.c_str());
         threads_.emplace_back(std::move(thread));
     }
+    lock.unlock();
+    RegisterWorkerTimer();
     return E_OK;
 }
 
@@ -90,13 +98,7 @@ int32_t ThumbnailGenerateWorker::AddTask(
         return E_ERR;
     }
 
-    std::unique_lock<std::mutex> lock(taskMutex_);
-    if (threads_.empty()) {
-        MEDIA_INFO_LOG("threads empty, need to init, taskType:%{public}d", taskType_);
-        Init(taskType_);
-    }
-    lock.unlock();
-
+    Init(taskType_);
     workerCv_.notify_one();
     return E_OK;
 }
@@ -117,7 +119,6 @@ void ThumbnailGenerateWorker::IgnoreTaskByRequestId(int32_t requestId)
 void ThumbnailGenerateWorker::WaitForTask()
 {
     std::unique_lock<std::mutex> lock(workerLock_);
-    RegisterWorkerTimer();
     if (highPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty() && isThreadRunning_) {
         ignoreRequestId_ = 0;
         bool ret = workerCv_.wait_for(lock, std::chrono::milliseconds(CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL), [this]() {
@@ -238,7 +239,6 @@ void ThumbnailGenerateWorker::RegisterWorkerTimer()
 {
     Utils::Timer::TimerCallback timerCallback = [this]() {
         MEDIA_INFO_LOG("ThumbnailGenerateWorker timerCallback, ClearWorkerThreads, taskType:%{public}d", taskType_);
-        insertTaskCount_ = 0;
         TryClearWorkerThreads();
     };
 
@@ -248,20 +248,16 @@ void ThumbnailGenerateWorker::RegisterWorkerTimer()
         timer_.Setup();
     }
     
-    if (insertTaskCount_ == 0 || insertTaskCount_ >= TASK_INSERT_COUNT) {
-        timer_.Unregister(timerId_);
-        insertTaskCount_ = 0;
-        timerId_ = timer_.Register(timerCallback, CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL, true);
-        MEDIA_INFO_LOG("ThumbnailGenerateWorker timer Restart, taskType:%{public}d, timeId:%{public}u",
-            taskType_, timerId_);
-    }
-    insertTaskCount_++;
+    timer_.Unregister(timerId_);
+    timerId_ = timer_.Register(timerCallback, CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL, false);
+    MEDIA_INFO_LOG("ThumbnailGenerateWorker timer Restart, taskType:%{public}d, timeId:%{public}u",
+        taskType_, timerId_);
 }
 
 void ThumbnailGenerateWorker::TryCloseTimer()
 {
     std::lock_guard<std::mutex> lock(timerMutex_);
-    if (!isThreadRunning_ && timerId_ != 0) {
+    if (threads_.empty() && timerId_ != 0) {
         timer_.Unregister(timerId_);
         timer_.Shutdown();
         timerId_ = 0;
