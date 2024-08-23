@@ -262,13 +262,13 @@ bool MediaFileUtils::IsFileValid(const string &fileName)
     struct stat statInfo {};
     if (!fileName.empty()) {
         if (stat(fileName.c_str(), &statInfo) == E_SUCCESS) {
-            //if the given path is a directory path, return
+            // if the given path is a directory path, return
             if (statInfo.st_mode & S_IFDIR) {
                 MEDIA_ERR_LOG("file is a directory");
                 return false;
             }
 
-            //if the file is empty
+            // if the file is empty
             if (statInfo.st_size == 0) {
                 MEDIA_WARN_LOG("file is empty");
             }
