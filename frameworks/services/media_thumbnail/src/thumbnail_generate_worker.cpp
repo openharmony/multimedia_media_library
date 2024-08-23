@@ -134,6 +134,7 @@ void ThumbnailGenerateWorker::StartWorker()
 {
     std::string name("ThumbnailGenerateWorker");
     pthread_setname_np(pthread_self(), name.c_str());
+    MEDIA_INFO_LOG("ThumbnailGenerateWorker thread start, taskType:%{public}d", taskType_);
     while (isThreadRunning_) {
         WaitForTask();
         std::shared_ptr<ThumbnailGenerateTask> task;
@@ -154,6 +155,7 @@ void ThumbnailGenerateWorker::StartWorker()
             DecreaseRequestIdTaskNum(task);
         }
     }
+    MEDIA_INFO_LOG("ThumbnailGenerateWorker thread finish, taskType:%{public}d", taskType_);
 }
 
 bool ThumbnailGenerateWorker::NeedIgnoreTask(int32_t requestId)
@@ -246,9 +248,10 @@ void ThumbnailGenerateWorker::RegisterWorkerTimer()
     if (timerId_ == 0) {
         MEDIA_INFO_LOG("ThumbnailGenerateWorker timer Setup, taskType:%{public}d", taskType_);
         timer_.Setup();
+    } else {
+        timer_.Unregister(timerId_);
     }
     
-    timer_.Unregister(timerId_);
     timerId_ = timer_.Register(timerCallback, CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL, false);
     MEDIA_INFO_LOG("ThumbnailGenerateWorker timer Restart, taskType:%{public}d, timeId:%{public}u",
         taskType_, timerId_);
