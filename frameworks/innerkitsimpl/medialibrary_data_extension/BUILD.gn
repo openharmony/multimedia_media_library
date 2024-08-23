@@ -304,6 +304,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "window_manager:libdm",
   ]
 
+  public_external_deps = [ "e2fsprogs:libext2_uuid" ]
+
   defines = []
   if (defined(global_parts_info) &&
       defined(global_parts_info.filemanagement_dfs_service)) {

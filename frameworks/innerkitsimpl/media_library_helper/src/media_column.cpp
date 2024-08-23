@@ -251,7 +251,7 @@ const std::string PhotoColumn::CREATE_PHOTO_DISPLAYNAME_INDEX = BaseColumn::Crea
     PHOTO_DISPLAYNAME_INDEX + " ON " + PHOTOS_TABLE + " (" + MediaColumn::MEDIA_NAME + ")";
 
 const std::string PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX = BaseColumn::CreateIndex() + PHOTO_BURSTKEY_INDEX +
-    " ON " + PHOTOS_TABLE + " (" + PHOTO_BURST_KEY + "," + MEDIA_TIME_PENDING  + "," + PHOTO_BURST_SEQUENCE + " ASC);";
+    " ON " + PHOTOS_TABLE + " (" + PHOTO_BURST_KEY + "," + MEDIA_TIME_PENDING  + "," + MEDIA_NAME + " ASC);";
 
 const std::string PhotoColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn::MEDIA_SIZE + ") AS " +
     MediaColumn::MEDIA_SIZE + "," +

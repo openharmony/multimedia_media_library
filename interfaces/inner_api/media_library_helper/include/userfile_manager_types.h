@@ -184,6 +184,12 @@ enum class CoverSatisfiedType : int32_t {
     USER_SETTING = 2,
     ANALYSIS_SETTING = 4
 };
+
+enum class BurstCoverLevelType : int32_t {
+    COVER = 1,
+    MEMBER = 2,
+    DEFAULT = COVER
+};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_FILEMANAGEMENT_USERFILEMGR_TYPES_H
