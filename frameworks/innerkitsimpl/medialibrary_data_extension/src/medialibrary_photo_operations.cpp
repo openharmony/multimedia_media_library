@@ -2019,7 +2019,7 @@ int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(MediaLibraryCommand& cm
     if (!MediaFileUtils::IsFileExists(sourceVideoPath)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(videoPath, sourceVideoPath) == E_SUCCESS,
             E_HAS_FS_ERROR, "Move video file failed, srcPath:%{private}s, newPath:%{private}s",
-                videoPath.c_str(), sourceVideoPath.c_str());
+            videoPath.c_str(), sourceVideoPath.c_str());
     }
     return E_OK;
 }
