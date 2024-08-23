@@ -1149,6 +1149,7 @@ const static vector<string> EDITED_COLUMN_VECTOR = {
     PhotoColumn::MEDIA_DATE_TRASHED,
     PhotoColumn::PHOTO_SUBTYPE,
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+    PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
 };
 
 static int32_t CheckFileAssetStatus(const shared_ptr<FileAsset>& fileAsset, bool checkMovingPhoto = false)
@@ -1491,6 +1492,33 @@ int32_t MediaLibraryPhotoOperations::RevertToOrigin(MediaLibraryCommand &cmd)
     return errCode;
 }
 
+int32_t MediaLibraryPhotoOperations::UpdateMovingPhotoSubtype(int32_t fileId, int32_t currentPhotoSubType)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Failed to get rdbStore when updating subtype");
+        return E_HAS_DB_ERROR;
+    }
+
+    int32_t updatePhotoSubType = currentPhotoSubType == static_cast<int32_t>(PhotoSubType::DEFAULT) ?
+        static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) : static_cast<int32_t>(PhotoSubType::DEFAULT);
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    ValuesBucket updateValues;
+    updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, updatePhotoSubType);
+    if (currentPhotoSubType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        updateValues.PutInt(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    }
+    updateCmd.SetValueBucket(updateValues);
+    int32_t updateRows = -1;
+    int32_t errCode = rdbStore->Update(updateCmd, updateRows);
+    if (errCode != NativeRdb::E_OK || updateRows < 0) {
+        MEDIA_ERR_LOG("Update subtype field failed. errCode:%{public}d, updateRows:%{public}d", errCode, updateRows);
+        return E_HAS_DB_ERROR;
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset)
 {
     int32_t errCode = CheckFileAssetStatus(fileAsset);
@@ -1506,6 +1534,15 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     string sourcePath = GetEditDataSourcePath(path);
     CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Cannot get source path, id=%{public}d", fileId);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(sourcePath), E_NO_SUCH_FILE, "Can not get source file");
+
+    int32_t subtype = static_cast<int32_t>(fileAsset->GetPhotoSubType());
+    int32_t movingPhotoSubtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+    if (subtype == movingPhotoSubtype || fileAsset->GetOriginalSubType() == movingPhotoSubtype) {
+        string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourcePath);
+        errCode = RevertMovingPhotoVideo(fileAsset, path, sourceVideoPath, subtype);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_FS_ERROR, "Failed to revert movingPhoto video");
+    }
+
     string editDataPath = GetEditDataPath(path);
     CHECK_AND_RETURN_RET_LOG(!editDataPath.empty(), E_INVALID_URI, "Cannot get editdata path, id=%{public}d", fileId);
 
@@ -1580,6 +1617,25 @@ static int32_t Move(const string& srcPath, const string& destPath)
             srcPath.c_str(), destPath.c_str(), ret, errno);
     }
     return ret;
+}
+
+int32_t MediaLibraryPhotoOperations::RevertMovingPhotoVideo(const std::shared_ptr<FileAsset> &fileAsset,
+    const string &path, const string &sourceVideoPath, int32_t subtype)
+{
+    int32_t fileId = fileAsset->GetId();
+    CHECK_AND_RETURN_RET_LOG(!sourceVideoPath.empty(), E_INVALID_URI,
+        "Cannot get source video path, id=%{public}d", fileId);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(sourceVideoPath), E_NO_SUCH_FILE,
+        "Can not get source video file, id=%{public}d", fileId);
+
+    int32_t errCode = E_OK;
+    if (subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        errCode = UpdateMovingPhotoSubtype(fileAsset->GetId(), subtype);
+        CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
+    }
+    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
+    CHECK_AND_RETURN_RET_LOG(Move(sourceVideoPath, videoPath) == E_OK, E_HAS_FS_ERROR, "Failed to move video");
+    return errCode;
 }
 
 bool MediaLibraryPhotoOperations::IsNeedRevertEffectMode(MediaLibraryCommand& cmd,
@@ -1661,7 +1717,8 @@ int32_t MediaLibraryPhotoOperations::MoveCacheFile(
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckMovingPhotoImage(cachePath), E_INVALID_MOVING_PHOTO,
         "Failed to check image of moving photo");
     string cacheMovingPhotoVideoName;
-    if (GetStringFromValuesBucket(cmd.GetValueBucket(), CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName)) {
+    if (GetStringFromValuesBucket(cmd.GetValueBucket(), CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName) &&
+            !cacheMovingPhotoVideoName.empty()) {
         string cacheVideoPath = GetAssetCacheDir() + "/" + cacheMovingPhotoVideoName;
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckMovingPhotoVideo(cacheVideoPath), E_INVALID_MOVING_PHOTO,
             "Failed to check video of moving photo");
@@ -1881,18 +1938,18 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
 int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand& cmd,
     const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
 {
-    int32_t subtype = fileAsset->GetPhotoSubType();
-    if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        MEDIA_ERR_LOG("Moving photo is not supported to edit now");
-        return E_INVALID_VALUES;
-    }
-
     string editData;
     int32_t id = fileAsset->GetId();
     int32_t errCode = ParseMediaAssetEditData(cmd, editData);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to parse MediaAssetEditData");
     errCode = SaveSourceAndEditData(fileAsset, editData);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to save source and editData");
+
+    int32_t subtype = fileAsset->GetPhotoSubType();
+    if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        errCode = SubmitEditMovingPhotoExecute(cmd, fileAsset);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to SubmitEditMovingPhotoExecute");
+    }
 
     string assetPath = fileAsset->GetFilePath();
     errCode = MoveCacheFile(cmd, subtype, cachePath, assetPath);
@@ -1945,6 +2002,49 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
     }
     ScanFile(assetPath, false, true, true);
     return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(MediaLibraryCommand& cmd,
+    const shared_ptr<FileAsset>& fileAsset, const string& assetPath)
+{
+    MEDIA_INFO_LOG("Moving photo SaveSourceVideoFile begin");
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
+    string sourceImagePath = GetEditDataSourcePath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(!sourceImagePath.empty(), E_INVALID_PATH, "Can not get source image path");
+    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(!videoPath.empty(), E_INVALID_PATH, "Can not get video path");
+    string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourceImagePath);
+    CHECK_AND_RETURN_RET_LOG(!videoPath.empty(), E_INVALID_PATH, "Can not get source video path");
+    if (!MediaFileUtils::IsFileExists(sourceVideoPath)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(videoPath, sourceVideoPath) == E_SUCCESS,
+            E_HAS_FS_ERROR, "Move video file failed, srcPath:%{private}s, newPath:%{private}s",
+                videoPath.c_str(), sourceVideoPath.c_str());
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::SubmitEditMovingPhotoExecute(MediaLibraryCommand& cmd,
+    const shared_ptr<FileAsset>& fileAsset)
+{
+    MEDIA_INFO_LOG("Moving photo SubmitEditMovingPhotoExecute begin, fileId:%{public}d", fileAsset->GetId());
+    string assetPath = fileAsset->GetFilePath();
+    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
+    int32_t errCode = E_OK;
+    if (fileAsset->GetPhotoEditTime() == 0) { // the asset has not been edited before
+        // Save video file in the photo direvtory to the .editdata directory
+        errCode = SaveSourceVideoFile(cmd, fileAsset, assetPath);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
+            "Failed to save %{private}s to sourcePath, errCode: %{public}d", assetPath.c_str(), errCode);
+    }
+
+    string cacheMovingPhotoVideoName;
+    GetStringFromValuesBucket(cmd.GetValueBucket(), CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName);
+    if (cacheMovingPhotoVideoName.empty()) {
+        errCode = UpdateMovingPhotoSubtype(fileAsset->GetId(), fileAsset->GetPhotoSubType());
+        MEDIA_INFO_LOG("Moving photo graffiti editing, which becomes a normal photo, fileId:%{public}d",
+            fileAsset->GetId());
+    }
+    return errCode;
 }
 
 int32_t MediaLibraryPhotoOperations::GetMovingPhotoCachePath(MediaLibraryCommand& cmd,

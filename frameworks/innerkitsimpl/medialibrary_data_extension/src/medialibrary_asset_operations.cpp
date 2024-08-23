@@ -297,12 +297,17 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
     for (const string &dir : DELETE_DIR_LIST) {
         if (!MediaFileUtils::DeleteDir(dir)) {
             MEDIA_ERR_LOG("Delete dir %{public}s failed", dir.c_str());
+            continue;
         }
+        if (!MediaFileUtils::CreateDirectory(dir)) {
+            MEDIA_ERR_LOG("Create dir %{public}s failed", dir.c_str());
+        };
     }
-    for (auto &dir : PRESET_ROOT_DIRS) {
-        string ditPath = ROOT_MEDIA_DIR + dir;
-        MediaFileUtils::CreateDirectory(ditPath);
-    }
+
+    string photoThumbsPath = ROOT_MEDIA_DIR + ".thumbs/Photo";
+    if (!MediaFileUtils::CreateDirectory(photoThumbsPath)) {
+        MEDIA_ERR_LOG("Create dir %{public}s failed", photoThumbsPath.c_str());
+    };
 
     return E_OK;
 }
@@ -834,7 +839,7 @@ int32_t MediaLibraryAssetOperations::CheckExtWithType(const string &extention, i
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extention);
     auto typeFromExt = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
     CHECK_AND_RETURN_RET_LOG(typeFromExt == mediaType, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL,
-        "cannot match, mediaType=%{public}d, ext=%{private}s, type from ext=%{public}d",
+        "cannot match, mediaType=%{public}d, ext=%{public}s, type from ext=%{public}d",
         mediaType, extention.c_str(), typeFromExt);
     return E_OK;
 }

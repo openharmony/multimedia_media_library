@@ -58,6 +58,7 @@ enum TblSearchPhotoStatus {
     NO_INDEX = 0,
     INDEXED = 1,
     NEED_UPDATE = 2,
+    INDEXED_NEW = 3,
 };
 
 const std::string CREATE_SEARCH_TOTAL_TABLE = "CREATE TABLE IF NOT EXISTS " + SEARCH_TOTAL_TABLE + " (" +
@@ -113,7 +114,8 @@ const std::string CREATE_SEARCH_UPDATE_STATUS_TRIGGER =
     " UPDATE " + SEARCH_TOTAL_TABLE +
     " SET " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::NEED_UPDATE) +
     " WHERE " + " (" + TBL_SEARCH_FILE_ID + " = OLD.file_id" +
-    " AND " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED) + ");" +
+    " AND (" + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED) +
+    " OR " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED_NEW) + "));" +
     " END;";
 
 // Listening of Photos: delete
@@ -136,7 +138,8 @@ const std::string CREATE_ALBUM_MAP_INSERT_SEARCH_TRIGGER =
     " UPDATE " + SEARCH_TOTAL_TABLE +
     " SET " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::NEED_UPDATE) +
     " WHERE " + " (" + TBL_SEARCH_FILE_ID + " = NEW.map_asset " +
-    " AND " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED) + ");" +
+    " AND (" + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED) +
+    " OR " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED_NEW) + "));" +
     " END;";
 
 // Listening of photoMap: delete
@@ -148,7 +151,8 @@ const std::string CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER =
     " UPDATE " + SEARCH_TOTAL_TABLE +
     " SET " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::NEED_UPDATE) +
     " WHERE " + " (" + TBL_SEARCH_FILE_ID + " = old.map_asset " +
-    " AND " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED) + ");" +
+    " AND (" + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED) +
+    " OR " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED_NEW) + "));" +
     " END;";
 
 // Listening of photoAlbum: update of(album_name)

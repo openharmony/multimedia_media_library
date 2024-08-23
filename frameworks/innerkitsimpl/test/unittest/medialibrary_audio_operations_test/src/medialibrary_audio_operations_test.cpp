@@ -1670,5 +1670,214 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api9_test_001, Test
 
     MEDIA_INFO_LOG("end tdd audio_oprn_pending_api9_test_001");
 }
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_001");
+    AbsPredicates predicates;
+    OperationObject oprnObject = OperationObject::SMART_ALBUM;
+    vector<shared_ptr<FileAsset>> fileAssetVector;
+    vector<string> columns;
+    string networkId;
+    auto ret = MediaLibraryAssetOperations::GetFileAssetVectorFromDb(predicates, oprnObject,
+        fileAssetVector, columns, networkId);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_001");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_002");
+    string uri;
+    bool isPhoto = true;
+    std::vector<std::string> columns;
+    string pendingStatus;
+    auto ret = MediaLibraryAssetOperations::GetFileAssetByUri(uri, isPhoto, columns, pendingStatus);
+    EXPECT_EQ(ret, nullptr);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_002");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_003");
+    string uri = "a";
+    bool isPhoto = true;
+    std::vector<std::string> columns;
+    string pendingStatus;
+    auto ret = MediaLibraryAssetOperations::GetFileAssetByUri(uri, isPhoto, columns, pendingStatus);
+    EXPECT_EQ(ret, nullptr);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_003");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_004");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    auto ret = MediaLibraryAssetOperations::DeleteAssetInDb(cmd);
+    EXPECT_EQ(ret <= 0, true);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_004");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_005");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    shared_ptr<FileAsset> fileAsset;
+    bool isNameChanged;
+    auto ret = MediaLibraryAssetOperations::UpdateFileName(cmd, fileAsset, isNameChanged);
+    EXPECT_EQ(ret <= 0, true);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_005");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_006");
+    FileAsset fileAsset;
+    fileAsset.member_[MEDIA_DATA_DB_FILE_PATH] = "path/to/file";
+    auto ret = MediaLibraryAssetOperations::SetAssetPathInCreate(fileAsset);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_006");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_007");
+    FileAsset fileAsset;
+    auto ret = MediaLibraryAssetOperations::SetAssetPathInCreate(fileAsset);
+    EXPECT_EQ(ret <= 0, true);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_007");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_008");
+    FileAsset fileAsset;
+    string extension;
+    auto ret = MediaLibraryAssetOperations::SetAssetPath(fileAsset, extension);
+    EXPECT_EQ(ret <= 0, true);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_008");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_009");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    shared_ptr<FileAsset> fileAsset;
+    auto ret = MediaLibraryAssetOperations::SetUserComment(cmd, fileAsset);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_009");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_010, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_010");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    shared_ptr<FileAsset> fileAsset;
+    bool isNameChanged;
+    auto ret = MediaLibraryAssetOperations::UpdateRelativePath(cmd, fileAsset, isNameChanged);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_010");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_011, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_011");
+    string filePath;
+    string mode;
+    auto ret = MediaLibraryAssetOperations::OpenFileWithPrivacy(filePath, mode);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_011");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_012, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_012");
+    shared_ptr<FileAsset> fileAsset;
+    string mode;
+    MediaLibraryApi api = MediaLibraryApi::API_OLD;
+    bool isMovingPhotoVideo = true;
+    auto ret = MediaLibraryAssetOperations::OpenAsset(fileAsset, mode, api, isMovingPhotoVideo);
+    EXPECT_EQ(ret, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_012");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_013, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_013");
+    shared_ptr<FileAsset> fileAsset;
+    bool isCreateThumbSync = true;
+    auto ret = MediaLibraryAssetOperations::CloseAsset(fileAsset, isCreateThumbSync);
+    EXPECT_EQ(ret, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_013");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_014, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_014");
+    string path;
+    auto ret = MediaLibraryAssetOperations::GetEditDataDirPath(path);
+    EXPECT_EQ(ret, "");
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_014");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_015, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_015");
+    string path = ROOT_MEDIA_DIR;
+    auto ret = MediaLibraryAssetOperations::GetEditDataDirPath(path);
+    EXPECT_EQ(ret, ROOT_MEDIA_DIR + ".editData/" + path.substr(ROOT_MEDIA_DIR.length()));
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_015");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_016, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_016");
+    string path;
+    auto ret = MediaLibraryAssetOperations::GetEditDataSourcePath(path);
+    EXPECT_EQ(ret, "");
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_016");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_017, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_017");
+    string path;
+    auto ret = MediaLibraryAssetOperations::GetEditDataPath(path);
+    EXPECT_EQ(ret, "");
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_017");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_018, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_018");
+    string path;
+    auto ret = MediaLibraryAssetOperations::GetEditDataCameraPath(path);
+    EXPECT_EQ(ret, "");
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_018");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_019, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_019");
+    string uri;
+    string bundleName;
+    string path;
+    bool isMovingPhoto = true;
+    auto ret = MediaLibraryAssetOperations::GrantUriPermission(uri, bundleName, path, isMovingPhoto);
+    EXPECT_EQ(ret, E_INVALID_VALUES);
+    string uri2 = "a";
+    auto ret2 = MediaLibraryAssetOperations::GrantUriPermission(uri2, bundleName, path, isMovingPhoto);
+    EXPECT_EQ(ret2, E_INVALID_VALUES);
+    string path2 = "a";
+    auto ret3 = MediaLibraryAssetOperations::GrantUriPermission(uri, bundleName, path2, isMovingPhoto);
+    EXPECT_EQ(ret3, E_INVALID_VALUES);
+    auto ret4 = MediaLibraryAssetOperations::GrantUriPermission(uri2, bundleName, path2, isMovingPhoto);
+    EXPECT_EQ(ret4, E_OK);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_019");
+}
 } // namespace Media
 } // namespace OHOS

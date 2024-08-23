@@ -15,11 +15,13 @@
 #define MLOG_TAG "MediaLibraryRestore"
 
 #include "medialibrary_restore.h"
+#include "dfx_utils.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_tracer.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "parameter.h"
+#include "post_event_utils.h"
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
 #endif
@@ -106,10 +108,15 @@ void MediaLibraryRestore::ReadHAModeFromPara()
 
 void MediaLibraryRestore::CheckRestore(const int32_t &errCode)
 {
-    MEDIA_INFO_LOG("CheckRestore is called, errcode=%{public}d", errCode);
+    MEDIA_DEBUG_LOG("CheckRestore is called, errcode=%{public}d", errCode);
     if (errCode != NativeRdb::E_SQLITE_CORRUPT) {
         return;
     }
+
+    std::string date = DfxUtils::GetCurrentDateMillisecond();
+    VariantMap map = {{KEY_DB_CORRUPT, std::move(date)}};
+    PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_CORRUPT_ERR, map);
+
     MEDIA_INFO_LOG("Restore is called");
     CHECK_AND_RETURN_LOG((!isRestoring_), "RdbStore is restoring");
     CHECK_AND_RETURN_LOG((haMode_ == HAMode::MAIN_REPLICA), "RdbStore is not double write mode");
