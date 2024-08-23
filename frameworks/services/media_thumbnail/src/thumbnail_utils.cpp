@@ -2107,6 +2107,10 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
         MEDIA_DATA_DB_ORIENTATION,
     };
     rdbPredicate.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
+    rdbPredicate.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, "0");
+    rdbPredicate.EqualTo(MEDIA_DATA_DB_DATE_TRASHED, "0");
+    rdbPredicate.EqualTo(COMPAT_HIDDEN, "0");
     rdbPredicate.Limit(THUMBNAIL_GENERATE_BATCH_COUNT);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicate, column);
     if (!CheckResultSetCount(resultSet, err)) {
