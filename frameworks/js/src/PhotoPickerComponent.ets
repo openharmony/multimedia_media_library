@@ -27,6 +27,7 @@ export struct PhotoPickerComponent {
   onEnterPhotoBrowser?: (photoBrowserInfo: PhotoBrowserInfo) => boolean;
   onExitPhotoBrowser?: (photoBrowserInfo: PhotoBrowserInfo) => boolean;
   onPickerControllerReady?: () => void;
+  onPhotoBrowserChanged?: (browserItemInfo: BaseItemInfo) => boolean;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
   private proxy: UIExtensionProxy | undefined;
 
@@ -47,9 +48,21 @@ export struct PhotoPickerComponent {
       this.proxy.send({'totalCount': map?.get(MaxCountType.TOTAL_MAX_COUNT),
         'photoCount': map?.get(MaxCountType.PHOTO_MAX_COUNT), 'videoCount': map?.get(MaxCountType.VIDEO_MAX_COUNT)});
       console.info('PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT');
+    } else if (data?.has('SET_PHOTO_BROWSER_ITEM')) {
+      this.onSetPhotoBrowserItem(data);
     } else {
       console.info('PhotoPickerComponent onChanged: other case');
     }
+  }
+
+  private onSetPhotoBrowserItem(data?:
+    Map<string, Array<string> | string | MaxSelected | PhotoBrowserRangeInfo>): void {
+    let photoBrowserRangeInfo: PhotoBrowserRangeInfo = data?.get('SET_PHOTO_BROWSER_ITEM') as PhotoBrowserRangeInfo;
+    this.proxy?.send({
+      'itemUri': photoBrowserRangeInfo?.uri,
+      'photoBrowserRange': photoBrowserRangeInfo?.photoBrowserRange
+    });
+    console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_ITEM');
   }
 
   build() {
@@ -112,6 +125,8 @@ export struct PhotoPickerComponent {
         this.onPickerControllerReady();
         console.info('PhotoPickerComponent onReceive: onPickerControllerReady');
       }
+    } else if (dataType === 'onPhotoBrowserChanged') {
+      this.handlePhotoBrowserChange(wantParam);
     } else {
       console.info('PhotoPickerComponent onReceive: other case');
     }
@@ -192,6 +207,15 @@ export struct PhotoPickerComponent {
     console.info('PhotoPickerComponent onReceive: onPhotoBrowserStateChanged = ' + isEnter);
   }
 
+  private handlePhotoBrowserChange(wantParam: Record<string, Object>): void {
+    let browserItemInfo: BaseItemInfo = new BaseItemInfo();
+    browserItemInfo.uri = wantParam['uri'] as string;
+    if (this.onPhotoBrowserChanged) {
+      this.onPhotoBrowserChanged(browserItemInfo);
+    }
+    console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + browserItemInfo.uri);
+  }
+
   private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string {
     let filterType: string;
     if (mimeType === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE) {
@@ -208,7 +232,7 @@ export struct PhotoPickerComponent {
 
 @Observed
 export class PickerController {
-  data?: Map<string, Array<string> | string | MaxSelected>;
+  data?: Map<string, Array<string> | string | MaxSelected | PhotoBrowserRangeInfo>;
 
   setData(type: DataType, data: Object) {
     if (!data) {
@@ -239,6 +263,15 @@ export class PickerController {
       console.info('PhotoPickerComponent SET_MAX_SELECT_COUNT' + JSON.stringify(maxSelected));
     }
   }
+
+  setPhotoBrowserItem(uri: string, photoBrowserRange?: PhotoBrowserRange) {
+    let photoBrowserRangeInfo: PhotoBrowserRangeInfo = new PhotoBrowserRangeInfo();
+    photoBrowserRangeInfo.uri = uri;
+    let newPhotoBrowserRange = photoBrowserRange? photoBrowserRange : PhotoBrowserRange.ALL;
+    photoBrowserRangeInfo.photoBrowserRange = newPhotoBrowserRange;
+    this.data = new Map([['SET_PHOTO_BROWSER_ITEM', photoBrowserRangeInfo]]);
+    console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM' + JSON.stringify(photoBrowserRangeInfo));
+  }
 }
 
 export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
@@ -254,14 +287,17 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   maxVideoSelectNumber?: number;
 }
 
-export class ItemInfo {
-  itemType?: ItemType;
+export class BaseItemInfo  {
   uri?: string;
   mimeType?: string;
   width?: number;
   height?: number;
   size?: number;
   duration?: number;
+}
+
+export class ItemInfo extends BaseItemInfo {
+  itemType?: ItemType;
 }
 
 export class PhotoBrowserInfo {
@@ -275,6 +311,11 @@ export class AnimatorParams {
 
 export class MaxSelected {
   data?: Map<MaxCountType, number>;
+}
+
+class PhotoBrowserRangeInfo {
+  uri?: string;
+  photoBrowserRange?: PhotoBrowserRange;
 }
 
 export enum DataType {
@@ -318,4 +359,9 @@ export enum MaxCountType {
   TOTAL_MAX_COUNT = 0,
   PHOTO_MAX_COUNT = 1,
   VIDEO_MAX_COUNT = 2
+}
+
+export enum PhotoBrowserRange {
+  ALL = 0,
+  SELECTED_ONLY = 1
 }
