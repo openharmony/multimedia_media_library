@@ -22,6 +22,7 @@
 #include "media_asset_base_capi.h"
 #include "media_asset_data_handler_capi.h"
 #include "media_asset_magic.h"
+#include "image_source_native_impl.h"
 
 using namespace OHOS::Media;
 
@@ -93,4 +94,21 @@ bool OH_MediaAssetManager_CancelRequest(OH_MediaAssetManager* manager, const Med
     CHECK_AND_PRINT_LOG(managerObj->manager_ != nullptr, "manager_ is null");
     CHECK_AND_PRINT_LOG(strlen(requestId.requestId) > 0, "requestId is empty");
     return managerObj->manager_->NativeCancelRequest(requestId.requestId);
+}
+
+MediaLibrary_ErrorCode OH_MediaAssetManager_RequestImage(OH_MediaAssetManager* manager, OH_MediaAsset* mediaAsset,
+    MediaLibrary_RequestOptions requestOptions, MediaLibrary_RequestId* requestId,
+    OH_MediaLibrary_OnImageDataPrepared callback)
+{
+    CHECK_AND_RETURN_RET_LOG(manager != nullptr, MEDIA_LIBRARY_PARAMETER_ERROR, "input manager is nullptr!");
+    struct MediaAssetMangerObject *managerObj = reinterpret_cast<MediaAssetMangerObject *>(manager);
+    CHECK_AND_RETURN_RET_LOG(managerObj->manager_ != nullptr, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED,
+        "manager_ is null");
+    CHECK_AND_RETURN_RET_LOG(mediaAsset != nullptr, MEDIA_LIBRARY_PARAMETER_ERROR, "mediaAsset is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(requestId != nullptr, MEDIA_LIBRARY_PARAMETER_ERROR, "requestId is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, MEDIA_LIBRARY_PARAMETER_ERROR, "callback is nullptr!");
+
+    NativeRequestOptions nativeRequestOptions;
+    OH_MediaAssetManager_Convert(requestOptions, nativeRequestOptions);
+    return managerObj->manager_->NativeRequestImageSource(mediaAsset, nativeRequestOptions, requestId, callback);
 }

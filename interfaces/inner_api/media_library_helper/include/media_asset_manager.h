@@ -22,6 +22,8 @@
 
 #include "datashare_helper.h"
 #include "media_asset_data_handler_capi.h"
+#include "media_asset_base_capi.h"
+#include "image_source_native.h"
 
 namespace OHOS {
 namespace Media {
@@ -45,6 +47,9 @@ struct RequestSourceAsyncContext {
     NativeOnDataPrepared onDataPreparedHandler;
     NativeRequestOptions requestOptions;
     ReturnDataType returnDataType;
+    OH_MediaLibrary_OnImageDataPrepared onRequestImageDataPreparedHandler;
+    MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+    bool needsExtraInfo;
 };
 
 struct AssetHandler {
@@ -65,6 +70,10 @@ public:
     MultiStagesTaskObserver(int fileId)
         : fileId_(fileId) {};
     void OnChange(const ChangeInfo &changelnfo) override;
+
+private:
+    std::map<std::string, AssetHandler *> GetAssetHandlers(const std::string uriString);
+
 private:
     int fileId_;
 };
@@ -79,6 +88,10 @@ public:
         const char* destPath, const NativeOnDataPrepared &callback) = 0;
     virtual std::string NativeRequestVideo(const char* videoUri, const NativeRequestOptions &requestOptions,
         const char* destUri, const NativeOnDataPrepared &callback) = 0;
+
+    virtual MediaLibrary_ErrorCode NativeRequestImageSource(OH_MediaAsset* mediaAsset,
+        NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
+        OH_MediaLibrary_OnImageDataPrepared callback) = 0;
 };
 
 class __attribute__((visibility("default"))) MediaAssetManagerFactory {
