@@ -57,6 +57,7 @@
 #include "story_db_sqls.h"
 #include "dfx_const.h"
 #include "dfx_timer.h"
+#include "vision_multi_crop_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -2623,6 +2624,16 @@ static void UpdateDataAddedIndexWithFileId(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpdateMultiCropInfo(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "ALTER TABLE " + VISION_RECOMMENDATION_TABLE + " ADD COLUMN " + MOVEMENT_CROP + " TEXT",
+        "ALTER TABLE " + VISION_RECOMMENDATION_TABLE + " ADD COLUMN " + MOVEMENT_VERSION + " TEXT",
+    };
+    MEDIA_INFO_LOG("start update multi crop triggers");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void UpdateSearchIndexTrigger(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2635,6 +2646,59 @@ static void UpdateSearchIndexTrigger(RdbStore &store)
     };
     MEDIA_INFO_LOG("start update search index");
     ExecSqls(sqls, store);
+}
+
+static void AddOriginalSubtype(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_ORIGINAL_SUBTYPE + " INT"
+    };
+    MEDIA_INFO_LOG("start add original_subtype column");
+    ExecSqls(sqls, store);
+}
+
+static void UpdateBurstDirtyAsync(AsyncTaskData *data)
+{
+    const int32_t sleepTimeMs = 1000;
+    this_thread::sleep_for(chrono::milliseconds(sleepTimeMs));
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("MediaDataAbility insert functionality rebStore is null.");
+        return;
+    }
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        MEDIA_ERR_LOG("MediaDataAbility insert functionality rdbStorePtr is null.");
+        return;
+    }
+
+    string sql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_DIRTY + " = " +
+        to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) + " WHERE " + PhotoColumn::PHOTO_SUBTYPE + " = " +
+        to_string(static_cast<int32_t>(PhotoSubType::BURST)) + " AND " + PhotoColumn::PHOTO_DIRTY + " = -1 ";
+    
+    auto resultSet = rdbStorePtr->QueryByStep(sql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("failed to acquire from visitor query.");
+    }
+    MEDIA_INFO_LOG("end UpdateBurstDirtyAsync");
+}
+
+static void UpdateBurstDirty()
+{
+    MEDIA_INFO_LOG("start UpdateBurstDirty");
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Failed to get async worker instance!");
+        return;
+    }
+    shared_ptr<MediaLibraryAsyncTask> updateBurstDirtyTask =
+        make_shared<MediaLibraryAsyncTask>(UpdateBurstDirtyAsync, nullptr);
+    if (updateBurstDirtyTask != nullptr) {
+        asyncWorker->AddTask(updateBurstDirtyTask, false);
+    } else {
+        MEDIA_ERR_LOG("Failed to create async task for updateBurstDirtyTask!");
+    }
 }
 
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
@@ -3050,6 +3114,18 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VISION_UPDATE_SEARCH_INDEX_TRIGGER) {
         UpdateSearchIndexTrigger(store);
+    }
+
+    if (oldVersion < VISION_UPDATE_MULTI_CROP_INFO) {
+        UpdateMultiCropInfo(store);
+    }
+
+    if (oldVersion < VISION_ADD_ORIGINAL_SUBTYPE) {
+        AddOriginalSubtype(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_BURST_DIRTY) {
+        UpdateBurstDirty();
     }
 }
 

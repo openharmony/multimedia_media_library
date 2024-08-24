@@ -118,11 +118,11 @@ napi_value SendablePhotoAccessHelper::Init(napi_env env, napi_value exports)
 
     napi_property_descriptor props[] = {
         DECLARE_NAPI_FUNCTION("getAssets", PhotoAccessGetPhotoAssets),
+        DECLARE_NAPI_FUNCTION("getBurstAssets", PhotoAccessGetBurstAssets),
         DECLARE_NAPI_FUNCTION("createAsset", PhotoAccessHelperCreatePhotoAsset),
         DECLARE_NAPI_FUNCTION("release", JSRelease),
         DECLARE_NAPI_FUNCTION("getAlbums", PhotoAccessGetPhotoAlbums),
         DECLARE_NAPI_FUNCTION("getHiddenAlbums", PahGetHiddenAlbums),
-        DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", PhotoAccessGetSharedPhotoAssets),
     };
     napi_define_sendable_class(env, SENDABLE_PHOTOACCESSHELPER_NAPI_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
                                MediaLibraryNapiConstructor, nullptr, sizeof(props) / sizeof(props[0]),
@@ -1662,38 +1662,52 @@ napi_value SendablePhotoAccessHelper::PhotoAccessHelperCreatePhotoAsset(napi_env
         PhotoAccessCreateAssetExecute, JSCreateAssetCompleteCallback);
 }
 
-static napi_value PhotoAccessGetFileAssetsExecuteSync(napi_env env, SendablePhotoAccessHelperAsyncContext& asyncContext)
+static napi_value ParseArgsGetBurstAssets(napi_env env, napi_callback_info info,
+    unique_ptr<SendablePhotoAccessHelperAsyncContext> &context)
 {
-    auto context = &asyncContext;
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_ARGS(env, SendableMediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        OHOS_INVALID_PARAM_CODE);
+
+    /* Parse the first argument */
+    std::string burstKey;
+    CHECK_ARGS(env, SendableMediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[PARAM0], burstKey),
+        OHOS_INVALID_PARAM_CODE);
+    if (burstKey.empty()) {
+        NAPI_ERR_LOG("The input burstkey cannot be empty");
+        return nullptr;
+    }
+    /* Parse the second argument */
+    CHECK_ARGS(env, SendableMediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM1], ASSET_FETCH_OPT,
+        context), JS_INNER_FAIL);
+    
+    auto &predicates = context->predicates;
     if (context->assetType != TYPE_PHOTO) {
         return nullptr;
     }
-    string queryUri = PAH_QUERY_PHOTO;
-    SendableMediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    CHECK_NULLPTR_RET(SendableMediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
+        PhotoColumn::IsPhotoColumn, TYPE_PHOTO));
+    predicates.And()->EqualTo(PhotoColumn::PHOTO_BURST_KEY, burstKey);
+    predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
+    predicates.OrderByAsc(MediaColumn::MEDIA_NAME);
 
-    Uri uri(queryUri);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
-        context->predicates, context->fetchColumn);
-    CHECK_NULLPTR_RET(resultSet);
-
-    napi_value jsFileArray = 0;
-    napi_create_array(env, &jsFileArray);
-
-    int count = 0;
-    while (!resultSet->GoToNextRow()) {
-        napi_value item = SendableMediaLibraryNapiUtils::GetNextRowObject(env, resultSet);
-        napi_set_element(env, jsFileArray, count++, item);
-    }
-    return jsFileArray;
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
 }
 
-napi_value SendablePhotoAccessHelper::PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info)
+napi_value SendablePhotoAccessHelper::PhotoAccessGetBurstAssets(napi_env env, napi_callback_info info)
 {
-    unique_ptr<SendablePhotoAccessHelperAsyncContext> context = make_unique<SendablePhotoAccessHelperAsyncContext>();
-    context->assetType = TYPE_PHOTO;
-    CHECK_NULLPTR_RET(ParseArgsGetAssets(env, info, context));
+    NAPI_INFO_LOG("PhotoAccessHelper::PhotoAccessGetBurstAssets start");
+    unique_ptr<SendablePhotoAccessHelperAsyncContext> asyncContext =
+        make_unique<SendablePhotoAccessHelperAsyncContext>();
+    asyncContext->assetType = TYPE_PHOTO;
+    CHECK_NULLPTR_RET(ParseArgsGetBurstAssets(env, info, asyncContext));
 
-    return PhotoAccessGetFileAssetsExecuteSync(env, *context);
+    return SendableMediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets",
+        PhotoAccessGetAssetsExecute, GetFileAssetsAsyncCallbackComplete);
 }
 } // namespace Media
 } // namespace OHOS

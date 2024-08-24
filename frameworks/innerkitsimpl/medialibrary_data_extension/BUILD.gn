@@ -70,12 +70,12 @@ config("media_data_extension_public_config") {
     "-fvisibility=hidden",
     "-fdata-sections",
     "-ffunction-sections",
-    "-O2",
+    "-Os",
   ]
 
   cflags_cc = [
     "-fvisibility-inlines-hidden",
-    "-O2",
+    "-Os",
   ]
 
   if (target_cpu == "arm") {
@@ -211,6 +211,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_album_refresh.cpp",
     "src/medialibrary_analysis_album_operations.cpp",
     "src/medialibrary_app_uri_permission_operations.cpp",
+    "src/medialibrary_app_uri_sensitive_operations.cpp",
     "src/medialibrary_appstate_observer.cpp",
     "src/medialibrary_asset_operations.cpp",
     "src/medialibrary_audio_operations.cpp",
@@ -234,6 +235,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_story_operations.cpp",
     "src/medialibrary_subscriber.cpp",
     "src/medialibrary_uripermission_operations.cpp",
+    "src/medialibrary_urisensitive_operations.cpp",
     "src/medialibrary_vision_operations.cpp",
     "src/photo_map_operations.cpp",
     "src/picture_data_operations.cpp",
@@ -308,6 +310,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "window_manager:libdm",
   ]
 
+  public_external_deps = [ "e2fsprogs:libext2_uuid" ]
+
   defines = []
   if (defined(global_parts_info) &&
       defined(global_parts_info.filemanagement_dfs_service)) {
@@ -333,7 +337,7 @@ ohos_shared_library("medialibrary_data_extension") {
     sources += [ "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_proc_session_callback.cpp" ]
   }
 
-  if (!media_library_link_opt) {
+  if (!media_library_link_opt && !asan_detector) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -349,6 +353,17 @@ ohos_shared_library("medialibrary_data_extension") {
     "-fvisibility-inlines-hidden",
     "-Os",
   ]
+
+  if (asan_detector) {
+    cflags_cc += [
+      "-fsanitize=address",
+      "-shared-libasan",
+    ]
+    ldflags = [
+      "-fsanitize=address",
+      "-shared-libasan",
+    ]
+  }
 
   if (defined(global_parts_info) &&
       defined(global_parts_info.powermgr_battery_manager)) {

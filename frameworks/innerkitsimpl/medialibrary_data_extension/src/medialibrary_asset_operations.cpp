@@ -81,6 +81,11 @@ const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
 constexpr int32_t NO_DESENSITIZE = 3;
 
+constexpr int32_t ORIENTATION_0 = 1;
+constexpr int32_t ORIENTATION_90 = 6;
+constexpr int32_t ORIENTATION_180 = 3;
+constexpr int32_t ORIENTATION_270 = 8;
+
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
     int errCode = E_ERR;
@@ -300,12 +305,17 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
     for (const string &dir : DELETE_DIR_LIST) {
         if (!MediaFileUtils::DeleteDir(dir)) {
             MEDIA_ERR_LOG("Delete dir %{public}s failed", dir.c_str());
+            continue;
         }
+        if (!MediaFileUtils::CreateDirectory(dir)) {
+            MEDIA_ERR_LOG("Create dir %{public}s failed", dir.c_str());
+        };
     }
-    for (auto &dir : PRESET_ROOT_DIRS) {
-        string ditPath = ROOT_MEDIA_DIR + dir;
-        MediaFileUtils::CreateDirectory(ditPath);
-    }
+
+    string photoThumbsPath = ROOT_MEDIA_DIR + ".thumbs/Photo";
+    if (!MediaFileUtils::CreateDirectory(photoThumbsPath)) {
+        MEDIA_ERR_LOG("Create dir %{public}s failed", photoThumbsPath.c_str());
+    };
 
     return E_OK;
 }
@@ -686,9 +696,8 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
-        if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
-            fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
-            assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo and burst photo
+        if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo
         }
         HandleIsTemp(cmd, assetInfo);
         HandleBurstPhoto(cmd, assetInfo);
@@ -837,7 +846,7 @@ int32_t MediaLibraryAssetOperations::CheckExtWithType(const string &extention, i
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extention);
     auto typeFromExt = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
     CHECK_AND_RETURN_RET_LOG(typeFromExt == mediaType, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL,
-        "cannot match, mediaType=%{public}d, ext=%{private}s, type from ext=%{public}d",
+        "cannot match, mediaType=%{public}d, ext=%{public}s, type from ext=%{public}d",
         mediaType, extention.c_str(), typeFromExt);
     return E_OK;
 }
@@ -981,6 +990,65 @@ int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
     return E_OK;
 }
 
+static const std::unordered_map<int, int> ORIENTATION_MAP = {
+    {0, ORIENTATION_0},
+    {90, ORIENTATION_90},
+    {180, ORIENTATION_180},
+    {270, ORIENTATION_270}
+};
+
+int32_t MediaLibraryAssetOperations::UpdateAllExif(MediaLibraryCommand &cmd,
+    const shared_ptr<FileAsset> &fileAsset)
+{
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("fileAsset is null");
+        return E_INVALID_VALUES;
+    }
+    MEDIA_INFO_LOG("Update image exlf information, DisplayName=%{private}s, Orientation=%{private}d",
+        fileAsset->GetDisplayName().c_str(), fileAsset->GetOrientation());
+    ValuesBucket &values = cmd.GetValueBucket();
+    ValueObject valueObject;
+    if (!(values.GetObject(PhotoColumn::PHOTO_ORIENTATION, valueObject))) {
+        return E_OK;
+    }
+    int32_t cmdOrientation;
+    valueObject.GetInt(cmdOrientation);
+
+    string exifStr = fileAsset->GetAllExif();
+    if (exifStr.size() == 0) {
+        return E_INVALID_VALUES;
+    }
+    nlohmann::json exifJson = nlohmann::json::parse(exifStr);
+    exifJson["Orientation"] = cmdOrientation;
+    exifStr = exifJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+    values.PutString(PhotoColumn::PHOTO_ALL_EXIF, exifStr);
+
+    uint32_t err = 0;
+    SourceOptions opts;
+    string filePath = fileAsset->GetFilePath();
+    string extension = MediaFileUtils::GetExtensionFromPath(filePath);
+    opts.formatHint = "image/" + extension;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(filePath, opts, err);
+    if (err != 0 || imageSource == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain image exif, err = %{public}d", err);
+        return E_INVALID_VALUES;
+    }
+
+    auto imageSourceOrientation = ORIENTATION_MAP.find(cmdOrientation);
+    if (imageSourceOrientation == ORIENTATION_MAP.end()) {
+        MEDIA_ERR_LOG("imageSourceOrientation value is invalid.");
+        return E_INVALID_VALUES;
+    }
+
+    err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_ORIENTATION,
+        std::to_string(imageSourceOrientation->second), filePath);
+    if (err != 0) {
+        MEDIA_ERR_LOG("Modify image property allexif failed, err = %{public}d", err);
+        return E_INVALID_VALUES;
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryAssetOperations::SetUserComment(MediaLibraryCommand &cmd,
     const shared_ptr<FileAsset> &fileAsset)
 {
@@ -1094,7 +1162,8 @@ int32_t MediaLibraryAssetOperations::UpdateFileInDb(MediaLibraryCommand &cmd)
     return updateRows;
 }
 
-int32_t MediaLibraryAssetOperations::OpenFileWithPrivacy(const string &filePath, const string &mode)
+int32_t MediaLibraryAssetOperations::OpenFileWithPrivacy(const string &filePath, const string &mode,
+    const string &fileId)
 {
     std::string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
@@ -1102,7 +1171,7 @@ int32_t MediaLibraryAssetOperations::OpenFileWithPrivacy(const string &filePath,
         return E_ERR;
     }
 
-    return MediaPrivacyManager(absFilePath, mode).Open();
+    return MediaPrivacyManager(absFilePath, mode, fileId).Open();
 }
 
 static int32_t SetPendingTime(const shared_ptr<FileAsset> &fileAsset, int64_t pendingTime)
@@ -1234,7 +1303,8 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     }
 
     tracer.Start("OpenFileWithPrivacy");
-    int32_t fd = OpenFileWithPrivacy(path, lowerMode);
+    string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
+    int32_t fd = OpenFileWithPrivacy(path, lowerMode, fileId);
     tracer.Finish();
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{public}d, errno %{public}d", fd, errno);
@@ -1870,7 +1940,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { MediaColumn::MEDIA_PARENT_ID, { IsInt64, IsBelowApi9 } },
     { MediaColumn::MEDIA_RELATIVE_PATH, { IsString, IsBelowApi9 } },
     { MediaColumn::MEDIA_VIRTURL_PATH, { Forbidden } },
-    { PhotoColumn::PHOTO_ORIENTATION, { IsInt64, IsBelowApi9 } },
+    { PhotoColumn::PHOTO_ORIENTATION, { IsInt64 } },
     { PhotoColumn::PHOTO_LATITUDE, { Forbidden } },
     { PhotoColumn::PHOTO_LONGITUDE, { Forbidden } },
     { PhotoColumn::PHOTO_HEIGHT, { Forbidden } },

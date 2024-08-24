@@ -61,6 +61,8 @@ static const string MEDIA_ASSET_CHANGE_REQUEST_CLASS = "MediaAssetChangeRequest"
 thread_local napi_ref MediaAssetChangeRequestNapi::constructor_ = nullptr;
 std::atomic<uint32_t> MediaAssetChangeRequestNapi::cacheFileId_ = 0;
 
+static const std::array<int, 4> ORIENTATION_ARRAY = {0, 90, 180, 270};
+
 constexpr int64_t CREATE_ASSET_REQUEST_PENDING = -4;
 
 constexpr int32_t YES = 1;
@@ -148,6 +150,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setCameraShotKey", JSSetCameraShotKey),
             DECLARE_NAPI_FUNCTION("saveCameraPhoto", JSSaveCameraPhoto),
             DECLARE_NAPI_FUNCTION("discardCameraPhoto", JSDiscardCameraPhoto),
+            DECLARE_NAPI_FUNCTION("setOrientation", JSSetOrientation),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -244,6 +247,11 @@ void MediaAssetChangeRequestNapi::RecordChangeOperation(AssetChangeOperation cha
         assetChangeOperations_.insert(assetChangeOperations_.begin() + 1, changeOperation);
         return;
     }
+    if (changeOperation == AssetChangeOperation::ADD_RESOURCE &&
+        Contains(AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE)) {
+        assetChangeOperations_.insert(assetChangeOperations_.begin(), changeOperation);
+        return;
+    }
     assetChangeOperations_.push_back(changeOperation);
 }
 
@@ -263,7 +271,7 @@ bool MediaAssetChangeRequestNapi::IsMovingPhoto() const
     return fileAsset_ != nullptr &&
         (fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
         (fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
-        currentEffectMode_ == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)));
+        fileAsset_->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)));
 }
 
 bool MediaAssetChangeRequestNapi::CheckMovingPhotoResource(ResourceType resourceType) const
@@ -341,8 +349,7 @@ bool MediaAssetChangeRequestNapi::CheckMovingPhotoWriteOperation()
 
     bool isCreation = Contains(AssetChangeOperation::CREATE_FROM_SCRATCH);
     if (!isCreation) {
-        NAPI_ERR_LOG("Moving photo is not supported to edit now");
-        return false;
+        return true;
     }
 
     int addResourceTimes =
@@ -1071,6 +1078,31 @@ napi_value MediaAssetChangeRequestNapi::JSSetTitle(napi_env env, napi_callback_i
     RETURN_NAPI_UNDEFINED(env);
 }
 
+napi_value MediaAssetChangeRequestNapi::JSSetOrientation(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env, asyncContext != nullptr, "asyncContext context is null");
+
+    int orientationValue;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, orientationValue) == napi_ok,
+        "Failed to parse args for orientation");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+    if (std::find(ORIENTATION_ARRAY.begin(), ORIENTATION_ARRAY.end(), orientationValue) == ORIENTATION_ARRAY.end()) {
+        napi_throw_range_error(env, nullptr, "orientationValue value is invalid.");
+        return nullptr;
+    }
+
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND_WITH_MESSAGE(env, changeRequest != nullptr, "changeRequest is null");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_WITH_MESSAGE(env, fileAsset != nullptr, "fileAsset is null");
+    fileAsset->SetOrientation(orientationValue);
+
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_ORIENTATION);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 napi_value MediaAssetChangeRequestNapi::JSSetLocation(napi_env env, napi_callback_info info)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -1185,7 +1217,10 @@ napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callb
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT, "Operation not support: the asset is not moving photo");
         return nullptr;
     }
-    changeRequest->currentEffectMode_ = fileAsset->GetMovingPhotoEffectMode();
+    if (fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
+        effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    }
     fileAsset->SetMovingPhotoEffectMode(effectMode);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE);
     RETURN_NAPI_UNDEFINED(env);
@@ -1768,6 +1803,9 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
         valuesBucket.Put(CACHE_FILE_NAME, cacheFileName_);
         ret = PutMediaAssetEditData(valuesBucket);
         CHECK_COND_RET(ret == E_OK, ret, "Failed to put editData");
+        if (IsMovingPhoto()) {
+            valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
+        }
         if (isSetEffectMode) {
             valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset_->GetMovingPhotoEffectMode());
             valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
@@ -2044,6 +2082,22 @@ static bool SetTitleExecute(MediaAssetChangeRequestAsyncContext& context)
     return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
 }
 
+static bool SetOrientationExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetOrientationExecute");
+
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    if (fileAsset == nullptr) {
+        NAPI_ERR_LOG("fileAsset is null");
+        return false;
+    }
+    valuesBucket.Put(PhotoColumn::PHOTO_ORIENTATION, fileAsset->GetOrientation());
+    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+}
+
 static bool SetUserCommentExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -2229,6 +2283,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_FAVORITE, SetFavoriteExecute },
     { AssetChangeOperation::SET_HIDDEN, SetHiddenExecute },
     { AssetChangeOperation::SET_TITLE, SetTitleExecute },
+    { AssetChangeOperation::SET_ORIENTATION, SetOrientationExecute },
     { AssetChangeOperation::SET_USER_COMMENT, SetUserCommentExecute },
     { AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE, SetEffectModeExecute },
     { AssetChangeOperation::SET_PHOTO_QUALITY_AND_PHOTOID, SetPhotoQualityExecute },

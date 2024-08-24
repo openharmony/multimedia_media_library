@@ -1097,7 +1097,7 @@ void BaseRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos,
 
 void BaseRestore::ReportPortraitStat(int32_t sceneCode)
 {
-    if (sceneCode != UPGRADE_RESTORE_ID) {
+    if (sceneCode != DUAL_FRAME_CLONE_RESTORE_ID) {
         return;
     }
     MEDIA_INFO_LOG("PortraitStat: album %{public}zu, photo %{public}lld, face %{public}lld, cost %{public}lld",

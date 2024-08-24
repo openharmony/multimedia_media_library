@@ -15,6 +15,8 @@
 #ifndef MEDIALIBRARY_SUBSCRIBER_H
 #define MEDIALIBRARY_SUBSCRIBER_H
 
+#include <thread>
+
 #include "common_event_manager.h"
 #include "common_event_subscribe_info.h"
 #include "common_event_subscriber.h"
@@ -38,7 +40,7 @@ public:
     EXPORT MedialibrarySubscriber() = default;
     EXPORT explicit MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo);
     EXPORT static bool Subscribe(void);
-    EXPORT virtual ~MedialibrarySubscriber() = default;
+    EXPORT virtual ~MedialibrarySubscriber();
 
     EXPORT virtual void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
 
@@ -54,6 +56,12 @@ private:
     std::mutex mutex_;
     int32_t agingCount_ {0};
     int64_t lockTime_ {0};
+
+    std::mutex delayTaskLock_;
+    std::condition_variable delayTaskCv_;
+    bool isTaskWaiting_{false};
+    std::thread backgroundOperationThread_;
+
     EXPORT void DoBackgroundOperation();
     EXPORT void StopBackgroundOperation();
     EXPORT void StartAnalysisService();
@@ -69,6 +77,9 @@ private:
     void CheckHalfDayMissions();
     void UpdateBackgroundTimer();
     void DoThumbnailOperation();
+    bool IsDelayTaskTimeOut();
+    void EndBackgroundOperationThread();
+    void DoBurstFromGallery();
 };
 }  // namespace Media
 }  // namespace OHOS
