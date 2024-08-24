@@ -310,9 +310,7 @@ BufferHandle* PictureHandlerClient::ReadBufferHandle(MessageParcel &data)
     handle->format = data.ReadInt32();
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle format: %{public}d", handle->format);
     handle->usage = data.ReadInt64();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle usage: %{public}ld", handle->usage);
     handle->phyAddr = data.ReadUint64();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle phyAddr: %{public}ld", handle->phyAddr);
 
     int32_t fd = RequestBufferHandlerFd(data.ReadInt32());
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle fd: %{public}d", fd);

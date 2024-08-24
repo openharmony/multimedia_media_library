@@ -63,7 +63,6 @@ constexpr int32_t FACE_RECOGNITION = 1;
 constexpr int32_t FACE_FEATURE = 2;
 constexpr int32_t FACE_CLUSTERED = 3;
 constexpr int32_t CLOUD_POSITION_STATUS = 2;
-const std::string BURST_COVER_LEVEL = "1";
 
 // 注意，端云同步代码仓也有相同常量，添加新相册时，请通知端云同步进行相应修改
 const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
@@ -477,7 +476,7 @@ static void GetAlbumPredicates(PhotoAlbumSubType subtype, const shared_ptr<Resul
         to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) + ") AND " +
         MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " + MediaColumn::MEDIA_HIDDEN + " = ? AND " +
         MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " + PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
-        PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + BURST_COVER_LEVEL;
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + to_string(static_cast<int32_t>(BurstCoverLevelType::COVER));
 
     static const string QUERY_ASSETS_FROM_ANALYSIS_ALBUM =
         PhotoColumn::PHOTO_SYNC_STATUS + " = " + to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) +
@@ -485,7 +484,8 @@ static void GetAlbumPredicates(PhotoAlbumSubType subtype, const shared_ptr<Resul
         " AND " + MediaColumn::MEDIA_ID + " IN (SELECT " + PhotoMap::ASSET_ID + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
         " WHERE " + PhotoMap::ALBUM_ID + " = ?) AND " + MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " +
         MediaColumn::MEDIA_HIDDEN + " = ? AND " + MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " +
-        PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + BURST_COVER_LEVEL;
+        PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " +
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER));
 
     bool isUserAlbum = !subtype;
     bool isSourceAlbum = subtype == PhotoAlbumSubType::SOURCE_GENERIC;
@@ -896,8 +896,9 @@ static void GetPortraitAlbumCoverAnalysis(const string &albumId, RdbPredicates &
     string whereClause = "( " + anaAlbumGroupTag + " IN ( SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
         " WHERE " + ALBUM_ID + " = " + albumId + " )) AND " + photosDateTrashed + " = " + to_string(0) + " AND " +
         photosHidden + " = " + to_string(0) + " AND " + photosTimePending + " = " + to_string(0) + " AND " +
-        photosIsTemp + " = " + to_string(0) + " AND " + photoIsCover + " = " + BURST_COVER_LEVEL + " AND " +
-        isExcluded + " = " + to_string(1) + " AND " + aestheticsScore + " IS NOT NULL ";
+        photosIsTemp + " = " + to_string(0) + " AND " + photoIsCover + " = " +
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) + " AND " + isExcluded + " = " +
+        to_string(1) + " AND " + aestheticsScore + " IS NOT NULL ";
 
     predicates.SetWhereClause(whereClause);
 
@@ -948,7 +949,7 @@ static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates
     predicates.EqualTo(photosHidden, to_string(0));
     predicates.EqualTo(photosTimePending, to_string(0));
     predicates.EqualTo(photosIsTemp, to_string(0));
-    predicates.EqualTo(photoIsCover, BURST_COVER_LEVEL);
+    predicates.EqualTo(photoIsCover, to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     predicates.EndWrap();
     predicates.Distinct();
 }
@@ -984,7 +985,7 @@ static bool IsCoverValid(const shared_ptr<NativeRdb::RdbStore> &rdbStore, const 
         photoCleanFlag + " = " + to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) + " AND " +
         photosDateTrashed + " = " + to_string(0) + " AND " + photosHidden + " = " + to_string(0) + " AND " +
         photosTimePending + " = " + to_string(0) + " AND " + photosIsTemp + " = " + to_string(0) + " AND " +
-        photoIsCover + " = " + BURST_COVER_LEVEL;
+        photoIsCover + " = " + to_string(static_cast<int32_t>(BurstCoverLevelType::COVER));
 
     predicates.SetWhereClause(whereClause);
     predicates.Limit(1);

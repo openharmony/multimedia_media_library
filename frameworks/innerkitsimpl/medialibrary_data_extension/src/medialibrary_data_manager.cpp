@@ -48,6 +48,7 @@
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_app_uri_permission_operations.h"
+#include "medialibrary_app_uri_sensitive_operations.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
 #include "medialibrary_bundle_manager.h"
@@ -73,6 +74,7 @@
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_uripermission_operations.h"
+#include "medialibrary_urisensitive_operations.h"
 #include "medialibrary_vision_operations.h"
 #include "medialibrary_search_operations.h"
 #include "mimetype_utils.h"
@@ -94,6 +96,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_photo_map_column.h"
 #include "parameter.h"
+#include "uuid.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -113,6 +116,9 @@ namespace Media {
 unique_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
+static const int32_t UUID_STR_LENGTH = 37;
+static const int32_t MATCH_BURST_BEGIN = 0;
+static const int32_t MATCH_BURST_END = 25;
 
 #ifdef DISTRIBUTED
 static constexpr int MAX_QUERY_THUMBNAIL_KEY_COUNT = 20;
@@ -210,6 +216,7 @@ void MediaLibraryDataManager::HandleOtherInitOperations()
 {
     InitRefreshAlbum();
     UriPermissionOperations::DeleteAllTemporaryAsync();
+    UriSensitiveOperations::DeleteAllSensitiveAsync();
 }
 
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
@@ -318,6 +325,7 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
     shareHelper->UnregisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_);
     rdbStore_ = nullptr;
     MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
+    MEDIA_INFO_LOG("CloseKvStore success");
 
 #ifdef DISTRIBUTED
     if (kvStorePtr_ != nullptr) {
@@ -487,10 +495,20 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 
         case OperationObject::BUNDLE_PERMISSION:
             return UriPermissionOperations::HandleUriPermOperations(cmd);
-        case OperationObject::APP_URI_PERMISSION_INNER:
+        case OperationObject::APP_URI_PERMISSION_INNER: {
+            int32_t ret = UriSensitiveOperations::InsertOperation(cmd);
+            if (ret < 0) {
+                return ret;
+            }
             return UriPermissionOperations::InsertOperation(cmd);
-        case OperationObject::MEDIA_APP_URI_PERMISSION:
+        }
+        case OperationObject::MEDIA_APP_URI_PERMISSION: {
+            int32_t ret = MediaLibraryAppUriSensitiveOperations::HandleInsertOperation(cmd);
+            if (ret != MediaLibraryAppUriSensitiveOperations::SUCCEED) {
+                return ret;
+            }
             return MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
+        }
         default:
             break;
     }
@@ -652,8 +670,16 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
     } else if (cmd.GetOprnObject() == OperationObject::ANALYSIS_PHOTO_MAP) {
         return PhotoMapOperations::AddAnaLysisPhotoAssets(values);
     } else if (cmd.GetOprnObject() == OperationObject::APP_URI_PERMISSION_INNER) {
+        int32_t ret = UriSensitiveOperations::GrantUriSensitive(cmd, values);
+        if (ret < 0) {
+            return ret;
+        }
         return UriPermissionOperations::GrantUriPermission(cmd, values);
     } else if (cmd.GetOprnObject() == OperationObject::MEDIA_APP_URI_PERMISSION) {
+        int32_t ret = MediaLibraryAppUriSensitiveOperations::BatchInsert(cmd, values);
+        if (ret != MediaLibraryAppUriSensitiveOperations::SUCCEED) {
+            return ret;
+        }
         return MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
@@ -997,6 +1023,172 @@ int32_t MediaLibraryDataManager::DoAging()
     }
     asyncWorker->Init();
     return E_OK;
+}
+
+static string GenerateUuid()
+{
+    uuid_t uuid;
+    uuid_generate(uuid);
+    char str[UUID_STR_LENGTH] = {};
+    uuid_unparse(uuid, str);
+    return str;
+}
+
+static string generateRegexpMatchForNumber(const int32_t num)
+{
+    string regexpMatchNumber = "[0-9]";
+    string strRegexpMatch = "";
+    for (int i = 0; i < num; i++) {
+        strRegexpMatch += regexpMatchNumber;
+    }
+    return strRegexpMatch;
+}
+
+static string generateCoverUpdateSql(const string title, const int32_t mapAlbum, const int32_t isFavourite)
+{
+    string globMember = title.substr(MATCH_BURST_BEGIN, MATCH_BURST_END) + generateRegexpMatchForNumber(3);
+    string globCover = title.substr(MATCH_BURST_BEGIN, MATCH_BURST_END) + generateRegexpMatchForNumber(3) + "_COVER";
+    string burstkey = GenerateUuid();
+
+    return "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_SUBTYPE + " = " +
+        to_string(static_cast<int32_t>(PhotoSubType::BURST)) + ", " + PhotoColumn::PHOTO_BURST_KEY + " = '" +
+        burstkey + "', " + MediaColumn::MEDIA_IS_FAV + " = " + to_string(isFavourite) + ", " +
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = CASE WHEN " + MediaColumn::MEDIA_TITLE +
+        " NOT LIKE '%COVER%' THEN " + to_string(static_cast<int32_t>(BurstCoverLevelType::MEMBER)) + " ELSE " +
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) + " END WHERE " + MediaColumn::MEDIA_TYPE +
+        " = " + to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
+        to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + MediaColumn::MEDIA_ID +
+        " IN (SELECT " + PhotoMap::ASSET_ID + " FROM " + PhotoMap::TABLE + " WHERE " + PhotoMap::ALBUM_ID + " = " +
+        to_string(mapAlbum) + ") AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globMember +
+        "') OR LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globCover + "'));";
+}
+
+static string generateMemberUpdateSql(const string title, const int32_t mapAlbum)
+{
+    string globTitle = title.substr(MATCH_BURST_BEGIN, MATCH_BURST_END) + generateRegexpMatchForNumber(3) + "_COVER";
+
+    string subWhere = "FROM " + PhotoColumn::PHOTOS_TABLE + " AS p2 JOIN " + PhotoMap::TABLE + " AS p3 ON p2." +
+        MediaColumn::MEDIA_ID + " = p3." + PhotoMap::ASSET_ID + " WHERE LOWER(p2." + MediaColumn::MEDIA_TITLE +
+        ") GLOB LOWER('" + globTitle + "') AND p3." + PhotoMap::ALBUM_ID + " = " + to_string(mapAlbum);
+
+    return "UPDATE " + PhotoColumn::PHOTOS_TABLE + " AS p1 SET " + PhotoColumn::PHOTO_BURST_KEY +
+        " = (SELECT CASE WHEN p2." + PhotoColumn::PHOTO_BURST_KEY + " IS NOT NULL THEN p2." +
+        PhotoColumn::PHOTO_BURST_KEY + " ELSE NULL END " + subWhere + " LIMIT 1 ), " +
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = (SELECT CASE WHEN COUNT(1) > 0 THEN " +
+        to_string(static_cast<int32_t>(BurstCoverLevelType::MEMBER)) + " ELSE " +
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) + " END " + subWhere + "), " +
+        PhotoColumn::PHOTO_SUBTYPE + " = (SELECT CASE WHEN COUNT(1) > 0 THEN " +
+        to_string(static_cast<int32_t>(PhotoSubType::BURST)) + " ELSE p1." + PhotoColumn::PHOTO_SUBTYPE + " END " +
+        subWhere + "), " + MediaColumn::MEDIA_IS_FAV + " = (SELECT CASE WHEN COUNT(1) > 0 THEN p2." +
+        MediaColumn::MEDIA_IS_FAV + " ELSE 0 END " + subWhere + ") WHERE p1." + MediaColumn::MEDIA_TITLE + " = '" +
+        title + "' AND EXISTS(SELECT 1 FROM " + PhotoMap::TABLE + " AS p3 WHERE p1." + MediaColumn::MEDIA_ID +
+        " = p3." + PhotoMap::ASSET_ID + " AND p3." + PhotoMap::ALBUM_ID + " = " + to_string(mapAlbum) + ");";
+}
+
+static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::RdbStore> rdbStore,
+    shared_ptr<NativeRdb::ResultSet> resultSet)
+{
+    int32_t count;
+    int32_t retCount = resultSet->GetRowCount(count);
+    if (count == 0) {
+        if (isCover) {
+            MEDIA_INFO_LOG("No burst cover need to update");
+        } else {
+            MEDIA_INFO_LOG("No burst member need to update");
+        }
+        return E_SUCCESS;
+    }
+    if (retCount != E_SUCCESS || count < 0) {
+        return E_ERR;
+    }
+
+    int32_t ret = E_ERR;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int columnIndex = 0;
+        string title;
+        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_TITLE, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetString(columnIndex, title);
+        }
+        int32_t mapAlbum = 0;
+        if (resultSet->GetColumnIndex(PhotoMap::ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetInt(columnIndex, mapAlbum);
+        }
+        int32_t isFavourite = 0;
+        if (isCover && resultSet->GetColumnIndex(MediaColumn::MEDIA_IS_FAV, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetInt(columnIndex, isFavourite);
+        }
+        string updateSql;
+        if (isCover) {
+            updateSql = generateCoverUpdateSql(title, mapAlbum, isFavourite);
+        } else {
+            updateSql = generateMemberUpdateSql(title, mapAlbum);
+        }
+
+        MEDIA_INFO_LOG("isCover: %{public}s, updateSql: %{public}s", to_string(isCover).c_str(), updateSql.c_str());
+        ret = rdbStore->ExecuteSql(updateSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("rdbStore->ExecuteSql failed, ret = %{public}d", ret);
+            return E_HAS_DB_ERROR;
+        }
+    }
+    return ret;
+}
+
+static shared_ptr<NativeRdb::ResultSet> QueryBurst(shared_ptr<NativeRdb::RdbStore> rdbStore, string globStr)
+{
+    string querySql = "SELECT p1." + MediaColumn::MEDIA_TITLE + ", p1." + MediaColumn::MEDIA_IS_FAV + ", p2." +
+        PhotoMap::ALBUM_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " AS p1 JOIN " + PhotoMap::TABLE +
+        " AS p2 ON p1." + MediaColumn::MEDIA_ID + " = p2." + PhotoMap::ASSET_ID + " WHERE " +
+        MediaColumn::MEDIA_TYPE + " = " + to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " +
+        PhotoColumn::PHOTO_SUBTYPE + " != " + to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) +
+        " AND " + PhotoColumn::PHOTO_BURST_KEY + " IS NULL AND LOWER(" + MediaColumn::MEDIA_TITLE +
+        ") GLOB LOWER('" + globStr + "')";
+    
+    auto resultSet = rdbStore->QueryByStep(querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("failed to acquire result from visitor query.");
+    }
+    return resultSet;
+}
+
+int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
+{
+    MEDIA_INFO_LOG("Begin UpdateBurstFromGallery");
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryDataManager::UpdateBurstFromGallery");
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+    if (rdbStore_ == nullptr) {
+        MEDIA_DEBUG_LOG("rdbStore_ is nullptr");
+        return E_FAIL;
+    }
+
+    // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx_COVER, 'x' represents a number
+    string globCoverStr = "IMG_" + generateRegexpMatchForNumber(8) + "_" + generateRegexpMatchForNumber(6) +
+        "_BURST" + generateRegexpMatchForNumber(3) + "_COVER";
+    // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx, 'x' represents a number
+    string globMemberStr = "IMG_" + generateRegexpMatchForNumber(8) + "_" + generateRegexpMatchForNumber(6) +
+        "_BURST" + generateRegexpMatchForNumber(3);
+    
+    MEDIA_INFO_LOG("Begin UpdateBurstPhotoByCovers");
+    auto resultSet = QueryBurst(rdbStore_, globCoverStr);
+    int32_t ret = UpdateBurstPhoto(true, rdbStore_, resultSet);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("failed to UpdateBurstPhotoByCovers.");
+        return E_FAIL;
+    }
+
+    MEDIA_INFO_LOG("Begin UpdateBurstPhotoByMembers");
+    resultSet = QueryBurst(rdbStore_, globMemberStr);
+    ret = UpdateBurstPhoto(false, rdbStore_, resultSet);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("failed to UpdateBurstPhotoByMembers.");
+        return E_FAIL;
+    }
+    return ret;
 }
 
 #ifdef DISTRIBUTED

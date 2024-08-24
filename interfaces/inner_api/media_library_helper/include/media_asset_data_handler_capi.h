@@ -19,6 +19,8 @@
 #include "stdint.h"
 #include <string>
 
+#include "media_asset_base_capi.h"
+
 namespace OHOS {
 namespace Media {
 
@@ -123,6 +125,8 @@ class CapiMediaAssetDataHandler {
 public:
     CapiMediaAssetDataHandler(NativeOnDataPrepared dataHandler, ReturnDataType dataType, const std::string &uri,
         const std::string &destUri, NativeSourceMode sourceMode);
+    CapiMediaAssetDataHandler(OH_MediaLibrary_OnImageDataPrepared imageDataHandler, ReturnDataType dataType,
+        const std::string &uri, const std::string &destUri, NativeSourceMode sourceMode);
     ~CapiMediaAssetDataHandler() = default;
     ReturnDataType GetReturnDataType();
     std::string GetRequestUri();
@@ -131,6 +135,9 @@ public:
     void SetNotifyMode(NativeNotifyMode trigger);
     NativeNotifyMode GetNotifyMode();
     NativeOnDataPrepared onDataPreparedHandler_;
+    OH_MediaLibrary_OnImageDataPrepared onRequestImageDataPreparedHandler_;
+    int32_t GetPhotoQuality();
+    void SetPhotoQuality(int32_t photoQuality);
 
 private:
     ReturnDataType dataType_;
@@ -138,6 +145,7 @@ private:
     std::string destUri_;
     NativeSourceMode sourceMode_;
     NativeNotifyMode notifyMode_ = NativeNotifyMode::FAST_NOTIFY;
+    int32_t photoQuality_;
 };
 } // Media
 } // OHOS

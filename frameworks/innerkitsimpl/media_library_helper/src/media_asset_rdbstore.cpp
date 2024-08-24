@@ -39,7 +39,6 @@ const std::string MEDIA_LIBRARY_STARTUP_PARAM_PREFIX = "multimedia.medialibrary.
 const std::string RBDSTORE_DATE_ADDED_TIME_TEMPLATE = "0000000000000";
 const std::string RBDSTORE_FIELD_ID_TEMPLATE = "0000000000";
 constexpr uint32_t BASE_USER_RANGE = 200000;
-const std::string BURST_COVER_LEVEL = "1";
 const std::unordered_set<OperationObject> OPERATION_OBJECT_SET = {
     OperationObject::UFM_PHOTO,
     OperationObject::UFM_AUDIO,
@@ -386,7 +385,8 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
                     ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0")
                     ->EqualTo(MediaColumn::MEDIA_HIDDEN, "0")
                     ->EqualTo(PhotoColumn::PHOTO_IS_TEMP, "0")
-                    ->EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
+                    ->EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+                        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     std::vector<std::string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_DATE_ADDED};
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     AddQueryFilter(rdbPredicates);

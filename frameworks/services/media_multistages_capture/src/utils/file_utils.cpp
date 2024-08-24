@@ -30,6 +30,7 @@
 #include "medialibrary_operation.h"
 #include "medialibrary_object_utils.h"
 #include "picture.h"
+#include "image_type.h"
 
 using namespace std;
 
@@ -115,6 +116,8 @@ int32_t FileUtils::SavePicture(const string &imageId, std::shared_ptr<Media::Pic
     Media::ImagePacker imagePacker;
     Media::PackOption packOption;
     packOption.format = mime_type;
+    packOption.needsPackProperties = true;
+    packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
     imagePacker.StartPacking(path, packOption);
     imagePacker.AddPicture(*(picture));
     imagePacker.FinalizePacking();
@@ -131,6 +134,8 @@ int32_t FileUtils::SavePicture(const string &path, std::shared_ptr<Media::Pictur
     Media::ImagePacker imagePacker;
     Media::PackOption packOption;
     packOption.format = mime_type;
+    packOption.needsPackProperties = true;
+    packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
     imagePacker.StartPacking(path, packOption);
 
     imagePacker.AddPicture(*(picture));

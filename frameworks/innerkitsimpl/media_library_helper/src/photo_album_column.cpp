@@ -27,7 +27,6 @@
 namespace OHOS::Media {
 using namespace std;
 using namespace NativeRdb;
-const std::string BURST_COVER_LEVEL = "1";
 
 // PhotoAlbum table
 const string PhotoAlbumColumns::TABLE = "PhotoAlbum";
@@ -197,7 +196,8 @@ inline void SetDefaultPredicatesCondition(RdbPredicates &predicates, const int32
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(isHidden));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(timePending));
     predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(isTemp));
-    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
 }
 
 void PhotoAlbumColumns::GetUserAlbumPredicates(const int32_t albumId, RdbPredicates &predicates, const bool hiddenState)
@@ -276,7 +276,8 @@ static void GetTrashPredicates(RdbPredicates &predicates)
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     predicates.EndWrap();
 }
 

@@ -276,13 +276,11 @@ bool PictureHandlerService ::WriteBufferHandler(MessageParcel &data, BufferHandl
     MEDIA_DEBUG_LOG("PictureHandlerService::WriteBufferHandler format: %{public}d", handle.format);
     data.WriteInt32(handle.format);
 
-    MEDIA_DEBUG_LOG("PictureHandlerService::WriteBufferHandler usage: %{public}ld", handle.usage);
     data.WriteInt64(handle.usage);
 
-    MEDIA_DEBUG_LOG("PictureHandlerService::WriteBufferHandler phyAddr: %{public}lu", handle.phyAddr);
     data.WriteUint64(handle.phyAddr);
 
-    MEDIA_DEBUG_LOG("PictureHandlerService::WriteBufferHandler fd: %{public}d", handle.fd);
+    MEDIA_DEBUG_LOG("PictureHandlerService::WriteBufferHandler fd: %{public}d.", handle.fd);
     data.WriteInt32(handle.fd);
 
     for (uint32_t i = 0; i < handle.reserveFds; i++) {

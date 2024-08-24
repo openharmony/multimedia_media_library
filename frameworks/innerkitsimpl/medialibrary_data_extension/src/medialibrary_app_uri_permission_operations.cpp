@@ -54,6 +54,14 @@ int32_t MediaLibraryAppUriPermissionOperations::HandleInsertOperation(MediaLibra
     if (!IsValidPermissionType(permissionTypeParam)) {
         return ERROR;
     }
+    // parse fileId
+    int fileId = -1;
+    if (!GetIntFromValuesBucket(cmd.GetValueBucket(), AppUriPermissionColumn::FILE_ID, fileId)) {
+        return ERROR;
+    }
+    if (!IsPhotoExist(fileId)) {
+        return ERROR;
+    }
     // query permission data before insert
     int queryFlag = ERROR;
     shared_ptr<ResultSet> resultSet = QueryNewData(cmd.GetValueBucket(), queryFlag);
@@ -80,6 +88,10 @@ int32_t MediaLibraryAppUriPermissionOperations::HandleInsertOperation(MediaLibra
     int64_t outRowId = -1;
     cmd.GetValueBucket().PutLong(AppUriPermissionColumn::DATE_MODIFIED,
         MediaFileUtils::UTCTimeMilliSeconds());
+    
+    cmd.GetValueBucket().Delete(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+
     int32_t errCode = rdbStore->Insert(cmd, outRowId);
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("insert into db error, errCode=%{public}d", errCode);
@@ -100,6 +112,9 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
         MEDIA_ERR_LOG("start transaction error, errCode = %{public}d", errCode);
         return ERROR;
     }
+    if (!IsPhotosAllExist(values)) {
+        return ERROR;
+    }
     std::vector<ValuesBucket> insertVector;
     for (auto it = values.begin(); it != values.end(); it++) {
         ValuesBucket value = RdbUtils::ToValuesBucket(*it);
@@ -114,6 +129,9 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
             permissionTypeParam)) {
             return ERROR;
         }
+
+        value.Delete(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
+        
         if (queryFlag == 0) {
             // delete the temporary permission when the app dies
             if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
@@ -298,6 +316,59 @@ bool MediaLibraryAppUriPermissionOperations::CanOverride(int &permissionTypePara
     }
     // PERMISSION_PERSIST_READ_WRITE can override PERMISSION_PERSIST_READ, but not vice verse.
     return permissionTypeParam == AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE;
+}
+
+bool MediaLibraryAppUriPermissionOperations::IsPhotoExist(int32_t &photoFileId)
+{
+    // query whether photo exists.
+    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.And()->EqualTo(PhotoColumn::MEDIA_ID, std::to_string(photoFileId));
+    vector<string> photoColumns;
+    photoColumns.push_back(PhotoColumn::MEDIA_ID);
+    shared_ptr<NativeRdb::ResultSet> photoRestultSet = MediaLibraryRdbStore::Query(rdbPredicates, photoColumns);
+    if (photoRestultSet == nullptr) {
+        MEDIA_ERR_LOG("query photoRestultSet is null,fileId=%{public}d", photoFileId);
+        return false;
+    }
+    int32_t photoNumRows = 0;
+    photoRestultSet->GetRowCount(photoNumRows);
+    if (photoNumRows == 0) {
+        MEDIA_ERR_LOG("query photo not exist,fileId=%{public}d", photoFileId);
+        return false;
+    }
+    return true;
+}
+
+bool MediaLibraryAppUriPermissionOperations::IsPhotosAllExist(
+    const std::vector<DataShare::DataShareValuesBucket> &values)
+{
+    std::vector<std::string> fileIds;
+    bool isValid = false;
+    for (auto it = values.begin(); it != values.end(); it++) {
+        int fileId = it->Get(AppUriPermissionColumn::FILE_ID, isValid);
+        if (!isValid) {
+            MEDIA_ERR_LOG("get fileId error");
+            return false;
+        }
+        fileIds.push_back(std::to_string(static_cast<int32_t>(fileId)));
+    }
+    // query whether photos exists.
+    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.And()->In(MediaColumn::MEDIA_ID, fileIds);
+    vector<string> photoColumns;
+    photoColumns.push_back(PhotoColumn::MEDIA_ID);
+    shared_ptr<NativeRdb::ResultSet> photoRestultSet = MediaLibraryRdbStore::Query(rdbPredicates, photoColumns);
+    if (photoRestultSet == nullptr) {
+        MEDIA_ERR_LOG("query photoRestultSet is null");
+        return false;
+    }
+    int32_t photoNumRows = 0;
+    photoRestultSet->GetRowCount(photoNumRows);
+    if (photoNumRows != fileIds.size()) {
+        MEDIA_ERR_LOG("some photo not exist");
+        return false;
+    }
+    return true;
 }
 
 } // namespace Media

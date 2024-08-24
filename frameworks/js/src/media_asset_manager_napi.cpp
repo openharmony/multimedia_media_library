@@ -590,11 +590,7 @@ napi_status MediaAssetManagerNapi::ParseEfficentRequestMediaArgs(napi_env env, n
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMedia argc invalid");
         return napi_invalid_arg;
     }
-    if (ParseArgGetCallingPackageName(env, asyncContext->argv[PARAM0], asyncContext->callingPkgName) != napi_ok) {
-        NAPI_ERR_LOG("requestMedia ParseArgGetCallingPackageName error");
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMedia ParseArgGetPhotoAsset error");
-        return napi_invalid_arg;
-    }
+
     if (ParseArgGetPhotoAsset(env, asyncContext->argv[PARAM1], asyncContext->fileId, asyncContext->photoUri,
         asyncContext->displayName) != napi_ok) {
         NAPI_ERR_LOG("requestMedia ParseArgGetPhotoAsset error");

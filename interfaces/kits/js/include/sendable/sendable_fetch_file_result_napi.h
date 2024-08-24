@@ -71,9 +71,12 @@ private:
     EXPORT static napi_value FetchFileResultNapiConstructor(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSGetCount(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSIsAfterLast(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetFirstObject(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetNextObject(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetAllObject(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetLastObject(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetPositionObject(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSClose(napi_env env, napi_callback_info info);
 
     napi_env env_;

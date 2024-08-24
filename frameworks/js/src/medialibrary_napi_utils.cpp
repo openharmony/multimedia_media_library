@@ -54,7 +54,6 @@ namespace OHOS {
 namespace Media {
 static const string EMPTY_STRING = "";
 using json = nlohmann::json;
-static const std::string BURST_COVER_LEVEL = "1";
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
     napi_value ctorObj;
@@ -250,24 +249,21 @@ string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
     return id;
 }
 
-int32_t MediaLibraryNapiUtils::GetFileIdFromAssetUri(const string &uri)
+int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
 {
     const static int ERROR = -1;
-    std::string tmp;
-    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
-        tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
-    } else if (uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
-        tmp = uri.substr(AudioColumn::AUDIO_URI_PREFIX.size());
-    } else {
-        NAPI_ERR_LOG("only photo or audio uri is valid");
+    if (PhotoColumn::PHOTO_URI_PREFIX.size() >= uri.size()) {
+        NAPI_ERR_LOG("photo uri is too short");
         return ERROR;
     }
-    size_t fisrtSlashIndex = tmp.find_first_of('/');
-    if (fisrtSlashIndex == string::npos) {
-        NAPI_ERR_LOG("second half of uri includes no slash");
+    if (uri.substr(0, PhotoColumn::PHOTO_URI_PREFIX.size()) !=
+        PhotoColumn::PHOTO_URI_PREFIX) {
+        NAPI_ERR_LOG("only photo uri is valid");
         return ERROR;
     }
-    std::string fileIdStr = tmp.substr(0, fisrtSlashIndex);
+    std::string tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
+
+    std::string fileIdStr = tmp.substr(0, tmp.find_first_of('/'));
     if (fileIdStr.empty()) {
         NAPI_ERR_LOG("intercepted fileId is empty");
         return ERROR;
@@ -275,6 +271,7 @@ int32_t MediaLibraryNapiUtils::GetFileIdFromAssetUri(const string &uri)
     if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)) {
         return std::stoi(fileIdStr);
     }
+
     NAPI_ERR_LOG("asset fileId is invalid");
     return ERROR;
 }
@@ -911,7 +908,8 @@ inline void SetDefaultPredicatesCondition(DataSharePredicates &predicates, const
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(isHidden));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(timePending));
     predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(isTemp));
-    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
 }
 
 int32_t MediaLibraryNapiUtils::GetUserAlbumPredicates(
@@ -1012,10 +1010,12 @@ int32_t MediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
     string imgFaceWidthClause = "( " + imgFaceWidthColumn + " > " + to_string(minSize) +
         " OR ( " + imgFaceWidthColumn + " <= 1.0 " + " AND " + imgFaceWidthColumn + " * " + imgWidthColumn +
         " > " + to_string(minSize) + " ) )";
+    string imgFaceOcclusionClause = "( " + VISION_IMAGE_FACE_TABLE + "." + FACE_OCCLUSION + " = 0 OR " +
+        VISION_IMAGE_FACE_TABLE + "." + FACE_OCCLUSION + " IS NULL )";
     string portraitRotationLimit = "BETWEEN -30 AND 30";
     onClause = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + " = " + VISION_IMAGE_FACE_TABLE + "." +
         MediaColumn::MEDIA_ID + " AND " + VISION_IMAGE_FACE_TABLE + "." + TOTAL_FACES + " = 1 AND " +
-        imgFaceHeightClause + " AND " + imgFaceWidthClause + " AND " +
+        imgFaceHeightClause + " AND " + imgFaceWidthClause + " AND " + imgFaceOcclusionClause + " AND " +
         VISION_IMAGE_FACE_TABLE + "." + PITCH + " " + portraitRotationLimit + " AND " +
         VISION_IMAGE_FACE_TABLE + "." + YAW + " " + portraitRotationLimit + " AND " +
         VISION_IMAGE_FACE_TABLE + "." + ROLL + " " + portraitRotationLimit;
@@ -1070,7 +1070,8 @@ static int32_t GetTrashPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     predicates.EndWrap();
     return E_SUCCESS;
 }
