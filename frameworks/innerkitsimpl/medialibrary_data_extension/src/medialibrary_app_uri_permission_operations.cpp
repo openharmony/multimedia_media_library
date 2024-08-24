@@ -88,6 +88,10 @@ int32_t MediaLibraryAppUriPermissionOperations::HandleInsertOperation(MediaLibra
     int64_t outRowId = -1;
     cmd.GetValueBucket().PutLong(AppUriPermissionColumn::DATE_MODIFIED,
         MediaFileUtils::UTCTimeMilliSeconds());
+    
+    cmd.GetValueBucket().Delete(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+
     int32_t errCode = rdbStore->Insert(cmd, outRowId);
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("insert into db error, errCode=%{public}d", errCode);
@@ -125,6 +129,9 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
             permissionTypeParam)) {
             return ERROR;
         }
+
+        value.Delete(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
+        
         if (queryFlag == 0) {
             // delete the temporary permission when the app dies
             if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=

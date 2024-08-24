@@ -731,7 +731,7 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd,
     return E_SUCCESS;
 }
 
-static int32_t OpenAsset(const string &filePath, const string &mode)
+static int32_t OpenAsset(const string &filePath, const string &mode, const string &fileId)
 {
     MediaLibraryTracer tracer;
     tracer.Start("OpenAsset");
@@ -743,7 +743,7 @@ static int32_t OpenAsset(const string &filePath, const string &mode)
     }
     MEDIA_DEBUG_LOG("File absFilePath is %{private}s", absFilePath.c_str());
 
-    return MediaPrivacyManager(absFilePath, mode).Open();
+    return MediaPrivacyManager(absFilePath, mode, fileId).Open();
 }
 
 static bool CheckIsOwner(const string &bundleName)
@@ -803,7 +803,8 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     }
 
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
-    int32_t fd = OpenAsset(path, mode);
+    string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
+    int32_t fd = OpenAsset(path, mode, fileId);
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
         return E_HAS_FS_ERROR;
@@ -1406,7 +1407,8 @@ int32_t MediaLibraryObjectUtils::CopyAsset(const shared_ptr<FileAsset> &srcFileA
         return E_INVALID_URI;
     }
     string srcPath = MediaFileUtils::UpdatePath(srcFileAsset->GetPath(), srcFileAsset->GetUri());
-    int32_t srcFd = OpenAsset(srcPath, MEDIA_FILEMODE_READWRITE);
+    string fileId = MediaFileUtils::GetIdFromUri(srcFileAsset->GetUri());
+    int32_t srcFd = OpenAsset(srcPath, MEDIA_FILEMODE_READWRITE, fileId);
     // dest asset
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     ValuesBucket values;
@@ -1431,7 +1433,8 @@ int32_t MediaLibraryObjectUtils::CopyAsset(const shared_ptr<FileAsset> &srcFileA
         return E_INVALID_URI;
     }
     string destPath = MediaFileUtils::UpdatePath(destFileAsset->GetPath(), destFileAsset->GetUri());
-    int32_t destFd = OpenAsset(destPath, MEDIA_FILEMODE_READWRITE);
+    string destFileId = MediaFileUtils::GetIdFromUri(destFileAsset->GetUri());
+    int32_t destFd = OpenAsset(destPath, MEDIA_FILEMODE_READWRITE, destFileId);
     return CopyAssetByFd(srcFd, srcFileAsset->GetId(), destFd, outRow);
 }
 

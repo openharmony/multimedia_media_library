@@ -47,6 +47,7 @@
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_app_uri_permission_operations.h"
+#include "medialibrary_app_uri_sensitive_operations.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
 #include "medialibrary_bundle_manager.h"
@@ -72,6 +73,7 @@
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_uripermission_operations.h"
+#include "medialibrary_urisensitive_operations.h"
 #include "medialibrary_vision_operations.h"
 #include "medialibrary_search_operations.h"
 #include "mimetype_utils.h"
@@ -213,6 +215,7 @@ void MediaLibraryDataManager::HandleOtherInitOperations()
 {
     InitRefreshAlbum();
     UriPermissionOperations::DeleteAllTemporaryAsync();
+    UriSensitiveOperations::DeleteAllSensitiveAsync();
 }
 
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
@@ -491,10 +494,20 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 
         case OperationObject::BUNDLE_PERMISSION:
             return UriPermissionOperations::HandleUriPermOperations(cmd);
-        case OperationObject::APP_URI_PERMISSION_INNER:
+        case OperationObject::APP_URI_PERMISSION_INNER: {
+            int32_t ret = UriSensitiveOperations::InsertOperation(cmd);
+            if (ret < 0) {
+                return ret;
+            }
             return UriPermissionOperations::InsertOperation(cmd);
-        case OperationObject::MEDIA_APP_URI_PERMISSION:
+        }
+        case OperationObject::MEDIA_APP_URI_PERMISSION: {
+            int32_t ret = MediaLibraryAppUriSensitiveOperations::HandleInsertOperation(cmd);
+            if (ret != MediaLibraryAppUriSensitiveOperations::SUCCEED) {
+                return ret;
+            }
             return MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
+        }
         default:
             break;
     }
@@ -656,8 +669,16 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
     } else if (cmd.GetOprnObject() == OperationObject::ANALYSIS_PHOTO_MAP) {
         return PhotoMapOperations::AddAnaLysisPhotoAssets(values);
     } else if (cmd.GetOprnObject() == OperationObject::APP_URI_PERMISSION_INNER) {
+        int32_t ret = UriSensitiveOperations::GrantUriSensitive(cmd, values);
+        if (ret < 0) {
+            return ret;
+        }
         return UriPermissionOperations::GrantUriPermission(cmd, values);
     } else if (cmd.GetOprnObject() == OperationObject::MEDIA_APP_URI_PERMISSION) {
+        int32_t ret = MediaLibraryAppUriSensitiveOperations::BatchInsert(cmd, values);
+        if (ret != MediaLibraryAppUriSensitiveOperations::SUCCEED) {
+            return ret;
+        }
         return MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {

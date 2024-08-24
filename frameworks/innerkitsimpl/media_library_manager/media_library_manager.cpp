@@ -42,6 +42,7 @@
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "media_app_uri_permission_column.h"
+#include "media_app_uri_sensitive_column.h"
 #include "post_proc.h"
 #include "permission_utils.h"
 #include "result_set_utils.h"
@@ -1234,6 +1235,7 @@ int32_t MediaLibraryManager::GrantPhotoUriPermission(const string &appid, const 
         valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
         valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, tableType);
         valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, static_cast<int32_t>(photoPermissionType));
+        valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, static_cast<int32_t>(hideSensitiveTpye));
         valueSet.push_back(valuesBucket);
     }
     Uri insertUri(MEDIALIBRARY_GRANT_URIPERM_URI);
