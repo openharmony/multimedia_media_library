@@ -9,17 +9,17 @@
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * See the License for the specific language governing Sensitives and
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_APP_URI_PERMISSION_OPERATIONS
-#define MEDIALIBRARY_APP_URI_PERMISSION_OPERATIONS
+#ifndef MEDIALIBRARY_APP_URI_SENSITIVE_OPERATIONS
+#define MEDIALIBRARY_APP_URI_SENSITIVE_OPERATIONS
 
 #include <string>
 #include <unordered_map>
-#include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
+#include "media_app_uri_permission_column.h"
 #include "file_asset.h"
 #include "medialibrary_command.h"
 #include "rdb_predicates.h"
@@ -28,28 +28,27 @@
 
 namespace OHOS {
 namespace Media {
-#define EXPORT __attribute__ ((visibility ("default")))
 
-EXPORT const std::unordered_map<std::string, int> APP_URI_PERMISSION_MEMBER_MAP = {
-    {AppUriPermissionColumn::ID, MEMBER_TYPE_INT32},
-    {AppUriPermissionColumn::APP_ID, MEMBER_TYPE_STRING},
-    {AppUriPermissionColumn::FILE_ID, MEMBER_TYPE_INT32},
-    {AppUriPermissionColumn::URI_TYPE, MEMBER_TYPE_INT32},
-    {AppUriPermissionColumn::PERMISSION_TYPE, MEMBER_TYPE_INT32},
-    {AppUriPermissionColumn::DATE_MODIFIED, MEMBER_TYPE_INT64}};
+EXPORT const std::unordered_map<std::string, int> APP_URI_SENSITIVE_MEMBER_MAP = {
+    {AppUriSensitiveColumn::ID, MEMBER_TYPE_INT32},
+    {AppUriSensitiveColumn::APP_ID, MEMBER_TYPE_STRING},
+    {AppUriSensitiveColumn::FILE_ID, MEMBER_TYPE_INT32},
+    {AppUriSensitiveColumn::URI_TYPE, MEMBER_TYPE_INT32},
+    {AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, MEMBER_TYPE_INT32},
+    {AppUriSensitiveColumn::DATE_MODIFIED, MEMBER_TYPE_INT64}};
 
-class MediaLibraryAppUriPermissionOperations {
+class MediaLibraryAppUriSensitiveOperations {
 public:
-    EXPORT static const int ERROR;
-    EXPORT static const int SUCCEED;
-    EXPORT static const int ALREADY_EXIST;
-    EXPORT static const int NO_DATA;
+    static const int ERROR;
+    static const int SUCCEED;
+    static const int ALREADY_EXIST;
+    static const int NO_DATA;
 
-    EXPORT static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
-    EXPORT static int32_t BatchInsert(MediaLibraryCommand &cmd,
+    static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
+    static int32_t BatchInsert(MediaLibraryCommand &cmd,
         const std::vector<DataShare::DataShareValuesBucket> &values);
-    EXPORT static int32_t DeleteOperation(NativeRdb::RdbPredicates &predicates);
-    EXPORT static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryOperation(
+    static int32_t DeleteOperation(NativeRdb::RdbPredicates &predicates);
+    static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryOperation(
         DataShare::DataSharePredicates &predicates, std::vector<std::string> &fetchColumns);
 private:
     /**
@@ -68,18 +67,25 @@ private:
      */
     static bool GetIntFromValuesBucket(OHOS::NativeRdb::ValuesBucket &valueBucket,
         const std::string &column, int &result);
+    
+    /**
+     * get the value of the int type corresponding to {@code column} from {@code valueBucket}.
+     * @param result target value
+     * @return true: Successfully obtained the value.
+     *         false: failed to get the value.
+     */
+    static bool GetStringFromValuesBucket(OHOS::NativeRdb::ValuesBucket &valueBucket,
+        const std::string &column, std::string &result);
+    
     /**
      * @param resultSetDB must contain id value.
-     * @param valueBucketParam must contain permissionType value.
+     * @param valueBucketParam must contain SensitiveType value.
      */
-    static int UpdatePermissionType(std::shared_ptr<OHOS::NativeRdb::ResultSet> &resultSetDB,
-        int &permissionTypeParam);
-    static bool IsValidPermissionType(int &permissionType);
-    static bool CanOverride(int &permissionTypeParam, int &permissionTypeDB);
-    static bool IsPhotoExist(int &photoFileId);
-    static bool IsPhotosAllExist(const std::vector<DataShare::DataShareValuesBucket> &values);
+    static int UpdateSensitiveType(std::shared_ptr<OHOS::NativeRdb::ResultSet> &resultSetDB,
+        int &sensitiveTypeParam);
+    static bool IsValidSensitiveType(int &sensitiveType);
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif // MEDIALIBRARY_APP_URI_PERMISSION_OPERATIONS
+#endif // MEDIALIBRARY_APP_URI_SENSITIVE_OPERATIONS
