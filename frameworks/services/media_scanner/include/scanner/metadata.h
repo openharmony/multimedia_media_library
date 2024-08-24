@@ -228,9 +228,6 @@ private:
 
     // packageName
     std::string ownerPackage_;
-
-    // front camera
-    std::string frontcamera_;
     
     // image path
     std::string movingPhotoImagePath_;

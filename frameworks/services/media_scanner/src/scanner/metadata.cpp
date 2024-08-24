@@ -495,16 +495,6 @@ int32_t Metadata::GetDynamicRangeType() const
     return dynamicRangeType_;
 }
 
-void Metadata::SetFrontCamera(const VariantData &frontcamera)
-{
-    frontcamera_ = std::get<string>(frontcamera);
-}
-
-std::string Metadata::GetFrontCamera() const
-{
-    return frontcamera_;
-}
-
 void Metadata::SetMovingPhotoImagePath(const VariantData &imagePath)
 {
     movingPhotoImagePath_ = std::get<string>(imagePath);
