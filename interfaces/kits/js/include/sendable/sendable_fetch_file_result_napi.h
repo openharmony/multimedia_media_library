@@ -81,8 +81,6 @@ private:
 
     napi_env env_;
     std::shared_ptr<SendableFetchResultProperty> propertyPtr;
-    static thread_local napi_ref sConstructor_;
-    static thread_local napi_ref userFileMgrConstructor_;
     static thread_local napi_ref photoAccessHelperConstructor_;
     static inline thread_local std::unique_ptr<FetchResult<FileAsset>> sFetchFileResult_ = nullptr;
     static inline thread_local std::unique_ptr<FetchResult<AlbumAsset>> sFetchAlbumResult_ = nullptr;

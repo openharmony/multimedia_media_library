@@ -33,7 +33,6 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
-#include "sendable_moving_photo_napi.h"
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
 #include "smart_album_napi.h"
@@ -1310,10 +1309,6 @@ template napi_status SendableMediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique
 template napi_status SendableMediaLibraryNapiUtils::ParsePredicates<unique_ptr<SendablePAHAsyncContext>>(
     napi_env env, const napi_value arg, unique_ptr<SendablePAHAsyncContext> &context,
     const FetchOptionType &fetchOptType);
-
-template napi_value SendableMediaLibraryNapiUtils::NapiCreateAsyncWork<SendableMovingPhotoAsyncContext>(napi_env env,
-    unique_ptr<SendableMovingPhotoAsyncContext> &asyncContext, const string &resourceName,
-    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
 } // namespace Media
 } // namespace OHOS
