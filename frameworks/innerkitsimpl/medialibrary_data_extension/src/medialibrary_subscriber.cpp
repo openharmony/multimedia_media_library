@@ -73,6 +73,7 @@ const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 1;
 // WIFI should be available in this state
 const int32_t WIFI_STATE_CONNECTED = 4;
 
+const int32_t DELAY_TASK_TIME = 30000;
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
@@ -130,6 +131,11 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
         isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_, isWifiConn_);
 }
 
+MedialibrarySubscriber::~MedialibrarySubscriber()
+{
+    EndBackgroundOperationThread();
+}
+
 bool MedialibrarySubscriber::Subscribe(void)
 {
     EventFwk::MatchingSkills matchingSkills;
@@ -161,12 +167,14 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
         return;
     }
 
-    MEDIA_DEBUG_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
+    MEDIA_INFO_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
         currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 
     currentStatus_ = newStatus;
+    EndBackgroundOperationThread();
     if (currentStatus_) {
-        DoBackgroundOperation();
+        isTaskWaiting_ = true;
+        backgroundOperationThread_ = std::thread([this] { this->DoBackgroundOperation(); });
     } else {
         StopBackgroundOperation();
     }
@@ -182,6 +190,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             break;
         case StatusEventType::SCREEN_ON:
             isScreenOff_ = false;
+            CheckHalfDayMissions();
             break;
         case StatusEventType::CHARGING:
             isCharging_ = true;
@@ -189,6 +198,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             break;
         case StatusEventType::DISCHARGING:
             isCharging_ = false;
+            CheckHalfDayMissions();
             break;
         case StatusEventType::BATTERY_CHANGED:
             isPowerSufficient_ = want.GetIntParam(COMMON_EVENT_KEY_BATTERY_CAPACITY,
@@ -311,15 +321,44 @@ void MedialibrarySubscriber::DoThumbnailOperation()
     PostEventUtils::GetInstance().PostStatProcess(StatType::AGING_STAT, map);
 }
 
-void MedialibrarySubscriber::DoBackgroundOperation()
+static void QueryBurstNeedUpdate(AsyncTaskData *data)
 {
-    if (!currentStatus_) {
-        MEDIA_DEBUG_LOG("The conditions for DoBackgroundOperation are not met, will return.");
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    if (dataManager == nullptr) {
         return;
     }
 
-    MEDIA_INFO_LOG("Start background operation, status:%{public}d,%{public}d,%{public}d,%{public}d,%{public}d",
-        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
+    int32_t result = dataManager->UpdateBurstFromGallery();
+    if (result != E_OK) {
+        MEDIA_ERR_LOG("UpdateBurstFromGallery faild");
+    }
+}
+
+static int32_t DoUpdateBurstFromGallery()
+{
+    MEDIA_INFO_LOG("Begin DoUpdateBurstFromGallery");
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Failed to get async worker instance!");
+        return E_FAIL;
+    }
+    shared_ptr<MediaLibraryAsyncTask> updateBurstTask =
+        make_shared<MediaLibraryAsyncTask>(QueryBurstNeedUpdate, nullptr);
+    if (updateBurstTask != nullptr) {
+        asyncWorker->AddTask(updateBurstTask, false);
+    } else {
+        MEDIA_ERR_LOG("Failed to create async task for updateBurstTask!");
+        return E_FAIL;
+    }
+    return E_SUCCESS;
+}
+
+void MedialibrarySubscriber::DoBackgroundOperation()
+{
+    if (!IsDelayTaskTimeOut() || !currentStatus_) {
+        MEDIA_INFO_LOG("The conditions for DoBackgroundOperation are not met, will return.");
+        return;
+    }
 
     // delete temporary photos
     DeleteTemporaryPhotos();
@@ -329,6 +368,11 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
     Init();
     DoThumbnailOperation();
+    // update burst from gallery
+    int32_t ret = DoUpdateBurstFromGallery();
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("DoUpdateBurstFromGallery faild");
+    }
 
     auto watch = MediaLibraryInotify::GetInstance();
     if (watch != nullptr) {
@@ -380,6 +424,24 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
     } else {
         BackgroundCloudFileProcessor::StopTimer();
     }
+}
+
+bool MedialibrarySubscriber::IsDelayTaskTimeOut()
+{
+    std::unique_lock<std::mutex> lock(delayTaskLock_);
+    return !delayTaskCv_.wait_for(lock, std::chrono::milliseconds(DELAY_TASK_TIME), [this]() {
+        return !isTaskWaiting_;
+    });
+}
+
+void MedialibrarySubscriber::EndBackgroundOperationThread()
+{
+    isTaskWaiting_ = false;
+    delayTaskCv_.notify_all();
+    if (!backgroundOperationThread_.joinable()) {
+        return;
+    }
+    backgroundOperationThread_.join();
 }
 }  // namespace Media
 }  // namespace OHOS

@@ -20,6 +20,7 @@
 #include <unordered_set>
 #include <variant>
 #include <vector>
+#include <optional>
 
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -339,6 +340,80 @@ struct FaceInfo {
     std::string landmarks;
 };
 
+struct AnalysisAlbumTbl {
+    std::optional<int32_t> albumId;
+    std::optional<int32_t> albumType;
+    std::optional<int32_t> albumSubtype;
+    std::optional<std::string> albumName;
+    std::optional<std::string> coverUri;
+    std::optional<int32_t> count;
+    std::optional<int64_t> dateModified;
+    std::optional<int32_t> rank;
+    std::optional<std::string> tagId;
+    std::optional<int32_t> userOperation;
+    std::optional<std::string> groupTag;
+    std::optional<int32_t> userDisplayLevel;
+    std::optional<int32_t> isMe;
+    std::optional<int32_t> isRemoved;
+    std::optional<int32_t> renameOperation;
+    std::optional<int32_t> isLocal;
+    std::optional<int32_t> isCoverSatisfied;
+};
+
+struct FaceTagTbl {
+    std::optional<int32_t> id;
+    std::optional<std::string> tagId;
+    std::optional<std::string> tagName;
+    std::optional<int32_t> userOperation;
+    std::optional<std::string> groupTag;
+    std::optional<int32_t> renameOperation;
+    std::optional<std::string> centerFeatures;
+    std::optional<std::string> tagVersion;
+    std::optional<int32_t> userDisplayLevel;
+    std::optional<int32_t> tagOrder;
+    std::optional<int32_t> isMe;
+    std::optional<std::string> coverUri;
+    std::optional<int32_t> count;
+    std::optional<int64_t> dateModify;
+    std::optional<int32_t> albumType;
+    std::optional<int32_t> isRemoved;
+    std::optional<std::string> analysisVersion;
+};
+
+struct ImageFaceTbl {
+    std::optional<int32_t> id;
+    std::optional<int32_t> fileId;
+    std::optional<std::string> faceId;
+    std::optional<std::string> tagId;
+    std::optional<double> scaleX;
+    std::optional<double> scaleY;
+    std::optional<double> scaleWidth;
+    std::optional<double> scaleHeight;
+    std::optional<std::string> landmarks;
+    std::optional<double> pitch;
+    std::optional<double> yaw;
+    std::optional<double> roll;
+    std::optional<double> prob;
+    std::optional<int32_t> totalFaces;
+    std::optional<std::string> faceVersion;
+    std::optional<std::string> featuresVersion;
+    std::optional<std::string> features;
+    std::optional<int32_t> faceOcclusion;
+    std::optional<std::string> analysisVersion;
+    std::optional<double> beautyBounderX;
+    std::optional<double> beautyBounderY;
+    std::optional<double> beautyBounderWidth;
+    std::optional<double> beautyBounderHeight;
+    std::optional<double> aestheticsScore;
+    std::optional<std::string> beautyBounderVersion;
+    std::optional<int32_t> isExcluded;
+};
+
+struct AnalysisPhotoMapTbl {
+    std::optional<int32_t> mapAlbum;
+    std::optional<int32_t> mapAsset;
+};
+
 using NeedQueryMap = std::unordered_map<PhotoRelatedType, std::unordered_set<std::string>>;
 
 // sql for external
@@ -415,6 +490,12 @@ const std::string QUERY_ALL_AUDIOS_FROM_AUDIODB = "SELECT " + AUDIO_DATA + "," +
     AUDIO_DATE_TAKEN + " FROM " + DUAL_CLONE_AUDIO_FULL_TABLE;
 
 const std::string QUERY_DUAL_CLONE_AUDIO_COUNT = "SELECT count(1) as count FROM " + DUAL_CLONE_AUDIO_FULL_TABLE;
+
+const std::vector<std::string> EXCLUDED_PORTRAIT_COLUMNS = {"album_id", "count", "cover_uri", "rank",
+    "is_cover_satisfied"};
+const std::vector<std::string> EXCLUDED_FACE_TAG_COLUMNS = {"id", "user_operation", "rename_operation", "group_tag",
+    "user_display_level", "tag_order", "is_me", "cover_uri", "count", "date_modify", "album_type", "is_removed"};
+const std::vector<std::string> EXCLUDED_IMAGE_FACE_COLUMNS = {"id"};
 } // namespace Media
 } // namespace OHOS
 

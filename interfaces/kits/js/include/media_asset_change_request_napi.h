@@ -50,6 +50,7 @@ enum class AssetChangeOperation {
     SAVE_CAMERA_PHOTO,
     ADD_FILTERS,
     DISCARD_CAMERA_PHOTO,
+    SET_ORIENTATION,
 };
 
 enum class AddResourceMode {
@@ -135,6 +136,7 @@ private:
     EXPORT static napi_value JSSetCameraShotKey(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSaveCameraPhoto(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDiscardCameraPhoto(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetOrientation(napi_env env, napi_callback_info info);
 
     bool CheckChangeOperations(napi_env env);
     bool CheckMovingPhotoWriteOperation();
@@ -160,7 +162,6 @@ private:
     void* movingPhotoVideoDataBuffer_;
     size_t movingPhotoVideoBufferSize_;
     AddResourceMode movingPhotoVideoResourceMode_;
-    int32_t currentEffectMode_;
     std::vector<ResourceType> addResourceTypes_; // support adding resource multiple times
     std::vector<AssetChangeOperation> assetChangeOperations_;
     int32_t imageFileType_;

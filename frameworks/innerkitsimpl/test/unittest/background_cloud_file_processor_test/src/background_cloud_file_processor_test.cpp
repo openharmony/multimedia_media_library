@@ -88,15 +88,27 @@ string InsertPhoto(const MediaType &mediaType)
     int64_t fileId = -1;
     int64_t timestamp = GetTimestamp();
     string title = GetTitle(timestamp);
-    string displayName = title + ".jpg";
-    string path = "/storage/cloud/files/photo/1/" + title + ".jpg";
+    string displayName = mediaType == MEDIA_TYPE_VIDEO ? (title + ".mp4") : (title + ".jpg");
+    string path = "/storage/cloud/files/photo/1/" + displayName;
     int32_t position = 2;
     int64_t videoSize = 1 * 1000 * 1000 * 1000;
     int64_t imageSize = 10 * 1000 * 1000;
+    int32_t videoDuration = 0;
+    int32_t imageDuration = 2560;
+    int32_t videoWidth = 3072;
+    int32_t imageWidth = 1920;
+    int32_t videoHeight = 4096;
+    int32_t imageHeight = 1080;
+    string videoMimeType = "video/mp4";
+    string imageMimeType = "image/jpeg";
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
     valuesBucket.PutInt(PhotoColumn::PHOTO_POSITION, position);
     valuesBucket.PutLong(MediaColumn::MEDIA_SIZE, mediaType == MEDIA_TYPE_VIDEO ? videoSize : imageSize);
+    valuesBucket.PutInt(MediaColumn::MEDIA_DURATION, mediaType == MEDIA_TYPE_VIDEO ? videoDuration : imageDuration);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_WIDTH, mediaType == MEDIA_TYPE_VIDEO ? videoWidth : imageWidth);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_HEIGHT, mediaType == MEDIA_TYPE_VIDEO ? videoHeight : imageHeight);
+    valuesBucket.PutString(MediaColumn::MEDIA_MIME_TYPE, mediaType == MEDIA_TYPE_VIDEO ? videoMimeType : imageMimeType);
     valuesBucket.PutString(MediaColumn::MEDIA_FILE_PATH, path);
     valuesBucket.PutString(MediaColumn::MEDIA_TITLE, title);
     valuesBucket.PutString(MediaColumn::MEDIA_NAME, displayName);
@@ -105,6 +117,7 @@ string InsertPhoto(const MediaType &mediaType)
     valuesBucket.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
+    valuesBucket.PutInt(MediaColumn::MEDIA_TIME_PENDING, 0);
     int32_t ret = rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
     transactionOprn.Finish();
@@ -120,6 +133,24 @@ vector<string> PreparePhotos(const int count, const MediaType &mediaType)
         photos.push_back(path);
     }
     return photos;
+}
+
+int32_t PrepareAbnormalPhotos(const string &column)
+{
+    EXPECT_NE((rdbStore == nullptr), true);
+    TransactionOperations transactionOprn(rdbStore->GetRaw());
+    transactionOprn.Start();
+    string updateSql;
+    if (column == MediaColumn::MEDIA_MIME_TYPE) {
+        updateSql = "update " + PhotoColumn::PHOTOS_TABLE + " set " + column + " = '' ";
+    } else {
+        updateSql = "update " + PhotoColumn::PHOTOS_TABLE + " set " + column + " = 0 ";
+    }
+    vector<string> executeSqls = {updateSql};
+    int32_t ret = ExecSqls(executeSqls);
+    EXPECT_EQ(ret, E_OK);
+    transactionOprn.Finish();
+    return ret;
 }
 
 int32_t QueryPhotosCount()
@@ -306,6 +337,34 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 
     BackgroundCloudFileProcessor::StopTimer();
     MEDIA_INFO_LOG("background_cloud_file_processor_test_007 End");
+}
+
+// Scenario8: Test how many image can be updated in one minute
+HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("background_cloud_file_processor_test_008 Start");
+    PreparePhotos(10, MEDIA_TYPE_IMAGE);
+    PrepareAbnormalPhotos(MediaColumn::MEDIA_SIZE);
+    auto resultSet = BackgroundCloudFileProcessor::QueryUpdateData();
+    int32_t rowCount;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(rowCount, 1);
+    MEDIA_INFO_LOG("background_cloud_file_processor_test_008 End");
+}
+
+// Scenario9: Test how many video can be updated in one minute
+HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("background_cloud_file_processor_test_009 Start");
+    PreparePhotos(10, MEDIA_TYPE_VIDEO);
+    PrepareAbnormalPhotos(MediaColumn::MEDIA_SIZE);
+    auto resultSet = BackgroundCloudFileProcessor::QueryUpdateData();
+    int32_t rowCount;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(rowCount, 1);
+    MEDIA_INFO_LOG("background_cloud_file_processor_test_009 End");
 }
 } // namespace Media
 } // namespace OHOS

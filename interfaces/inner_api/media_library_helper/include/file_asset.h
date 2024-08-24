@@ -154,6 +154,8 @@ public:
 
     EXPORT int32_t GetPhotoIndex() const;
 
+    EXPORT int32_t GetOriginalSubType() const;
+
     EXPORT const std::string &GetCameraShotKey() const;
     EXPORT void SetCameraShotKey(const std::string &cameraShotKey);
 

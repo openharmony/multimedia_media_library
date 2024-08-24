@@ -77,8 +77,8 @@ private:
     EXPORT static napi_value GetPhotoAccessHelper(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetBurstAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
 

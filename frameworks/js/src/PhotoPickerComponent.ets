@@ -49,11 +49,20 @@ export struct PhotoPickerComponent {
         'photoCount': map?.get(MaxCountType.PHOTO_MAX_COUNT), 'videoCount': map?.get(MaxCountType.VIDEO_MAX_COUNT)});
       console.info('PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT');
     } else if (data?.has('SET_PHOTO_BROWSER_ITEM')) {
-      this.proxy.send({'itemUri': data?.get('SET_PHOTO_BROWSER_ITEM') as string});
-      console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_ITEM');
+      this.onSetPhotoBrowserItem(data);
     } else {
       console.info('PhotoPickerComponent onChanged: other case');
     }
+  }
+
+  private onSetPhotoBrowserItem(data?: 
+    Map<string, Array<string> | string | MaxSelected | PhotoBrowserRangeInfo>): void {
+    let photoBrowserRangeInfo: PhotoBrowserRangeInfo = data?.get('SET_PHOTO_BROWSER_ITEM') as PhotoBrowserRangeInfo;
+    this.proxy?.send({
+      'itemUri': photoBrowserRangeInfo?.uri, 
+      'photoBrowserRange': photoBrowserRangeInfo?.photoBrowserRange
+    });
+    console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_ITEM');
   }
 
   build() {
@@ -223,7 +232,7 @@ export struct PhotoPickerComponent {
 
 @Observed
 export class PickerController {
-  data?: Map<string, Array<string> | string | MaxSelected>;
+  data?: Map<string, Array<string> | string | MaxSelected | PhotoBrowserRangeInfo>;
 
   setData(type: DataType, data: Object) {
     if (!data) {
@@ -255,9 +264,13 @@ export class PickerController {
     }
   }
 
-  setPhotoBrowserItem(uri: string) {
-    this.data = new Map([['SET_PHOTO_BROWSER_ITEM', uri]]);
-    console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM' + JSON.stringify(uri));
+  setPhotoBrowserItem(uri: string, photoBrowserRange?: PhotoBrowserRange) {
+    let photoBrowserRangeInfo: PhotoBrowserRangeInfo = new PhotoBrowserRangeInfo();
+    photoBrowserRangeInfo.uri = uri;
+    let newPhotoBrowserRange = photoBrowserRange? photoBrowserRange : PhotoBrowserRange.ALL;
+    photoBrowserRangeInfo.photoBrowserRange = newPhotoBrowserRange;
+    this.data = new Map([['SET_PHOTO_BROWSER_ITEM', photoBrowserRangeInfo]]);
+    console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM' + JSON.stringify(photoBrowserRangeInfo));
   }
 }
 
@@ -298,6 +311,11 @@ export class AnimatorParams {
 
 export class MaxSelected {
   data?: Map<MaxCountType, number>;
+}
+
+class PhotoBrowserRangeInfo {
+  uri?: string;
+  photoBrowserRange?: PhotoBrowserRange;
 }
 
 export enum DataType {
@@ -341,4 +359,9 @@ export enum MaxCountType {
   TOTAL_MAX_COUNT = 0,
   PHOTO_MAX_COUNT = 1,
   VIDEO_MAX_COUNT = 2
+}
+
+export enum PhotoBrowserRange {
+  ALL = 0,
+  SELECTED_ONLY = 1
 }

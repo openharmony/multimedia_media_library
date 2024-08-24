@@ -100,11 +100,19 @@ export class PhotoPickerComponent extends ViewPU {
             });
             console.info('PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT');
         } else if (null == o ? void 0 : o.has('SET_PHOTO_BROWSER_ITEM')) {
-            this.proxy.send({ itemUri: null == o ? void 0 : o.get('SET_PHOTO_BROWSER_ITEM') });
-            console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_ITEM');
+            this.onSetPhotoBrowserItem(o);
         } else {
             console.info('PhotoPickerComponent onChanged: other case');
         }
+    }
+
+    onSetPhotoBrowserItem(o) {
+        let e = null == o ? void 0 : o.get('SET_PHOTO_BROWSER_ITEM');
+        this.proxy.send({ 
+            itemUri: null == e ? void 0 : e.uri, 
+            photoBrowserRange: null == e ? void 0 : e.photoBrowserRange 
+        });
+        console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_ITEM');
     }
 
     initialRender() {
@@ -291,9 +299,13 @@ let PickerController = class {
         }
     }
 
-    setPhotoBrowserItem(e) {
-        this.data = new Map([['SET_PHOTO_BROWSER_ITEM', e]]);
-        console.info('PhotoPickerComponent SET_MAX_SELECT_COUNT' + JSON.stringify(e));
+    setPhotoBrowserItem(e, o) {
+        let l = new PhotoBrowserRangeInfo;
+        l.uri = e;
+        let m = o ? o : PhotoBrowserRange.ALL;
+        l.photoBrowserRange = m;
+        this.data = new Map([['SET_PHOTO_BROWSER_ITEM', l]]);
+        console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM ' + JSON.stringify(l));
     }
 };
 PickerController = __decorate([Observed], PickerController);
@@ -314,6 +326,9 @@ export class AnimatorParams {
 }
 
 export class MaxSelected {
+}
+
+class PhotoBrowserRangeInfo {
 }
 
 export var DataType;
@@ -367,5 +382,11 @@ export var MaxCountType;
     e[e.VIDEO_MAX_COUNT = 2] = 'VIDEO_MAX_COUNT';
 }(MaxCountType || (MaxCountType = {}));
 
+export var PhotoBrowserRange;
+!function(e) {
+    e[e.ALL = 0] = 'ALL';
+    e[e.SELECTED_ONLY = 1] = 'SELECTED_ONLY';
+}(PhotoBrowserRange || (PhotoBrowserRange = {}));
+
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
-    MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType };
+    MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange };
