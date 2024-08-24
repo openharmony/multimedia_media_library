@@ -3091,10 +3091,12 @@ static napi_value ParseArgsCreatePhotoAssetComponent(napi_env env, napi_callback
     NAPI_ASSERT(env, (mediaType == MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO), "invalid file type");
 
     /* Parse the second argument into albumUri if exists */
-    string extention;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], extention) ==
-        napi_ok, "Failed to get extention");
-    context->valuesBucket.Put(ASSET_EXTENTION, extention);
+    string extension;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], extension) ==
+        napi_ok, "Failed to get extension");
+    CHECK_COND_WITH_MESSAGE(env, mediaType == MediaFileUtils::GetMediaType("." + extension),
+        "Failed to check extension");
+    context->valuesBucket.Put(ASSET_EXTENTION, extension);
 
     /* Parse the third argument into albumUri if exists */
     if (context->argc >= ARGS_THREE) {
