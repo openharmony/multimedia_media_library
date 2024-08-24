@@ -333,18 +333,19 @@ static void InsertOrientation(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata->GetOrientation()); // video use orientation in metadata
 }
 
-static void SetValueForMovingPhoto(const FileInfo &fileInfo,
+static void SetCoverPosition(const FileInfo &fileInfo,
     const unique_ptr<Metadata> &imageMetaData, NativeRdb::ValuesBucket &value)
 {
-    uint32_t version = 0;
-    uint32_t frameIndex = 0;
-    bool hasCinemagraphInfo = false;
-    UniqueFd extraDataFd(open(fileInfo.extraDataPath.c_str(), O_RDONLY));
-    (void)MovingPhotoFileUtils::GetVersionAndFrameNum(extraDataFd.Get(), version, frameIndex, hasCinemagraphInfo);
-
     uint64_t coverPosition = 0;
-    (void)MovingPhotoFileUtils::GetCoverPosition(fileInfo.movingPhotoVideoPath,
-        frameIndex, coverPosition, Scene::AV_META_SCENE_CLONE);
+    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
+        uint32_t version = 0;
+        uint32_t frameIndex = 0;
+        bool hasCinemagraphInfo = false;
+        UniqueFd extraDataFd(open(fileInfo.extraDataPath.c_str(), O_RDONLY));
+        (void)MovingPhotoFileUtils::GetVersionAndFrameNum(extraDataFd.Get(), version, frameIndex, hasCinemagraphInfo);
+        (void)MovingPhotoFileUtils::GetCoverPosition(fileInfo.movingPhotoVideoPath,
+            frameIndex, coverPosition, Scene::AV_META_SCENE_CLONE);
+    }
     value.PutLong(PhotoColumn::PHOTO_COVER_POSITION, static_cast<int64_t>(coverPosition));
 }
 
@@ -389,9 +390,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
     value.PutString(PhotoColumn::PHOTO_DATE_DAY,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
-    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
-        SetValueForMovingPhoto(fileInfo, data, value);
-    }
+    SetCoverPosition(fileInfo, data, value);
 }
 
 void BaseRestore::SetAudioValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
