@@ -165,18 +165,22 @@ void PictureDataOperations::SavePictureWithImageId(const std::string& imageId)
 {
     MEDIA_DEBUG_LOG("enter ");
     enum PictureType pictureType;
+    bool isSuccess = false;
     for (pictureType = HIGH_QUALITY_PICTURE; pictureType >= LOW_QUALITY_PICTURE;
         pictureType = (PictureType)(pictureType - 1)) {
         switch (pictureType) {
             case LOW_QUALITY_PICTURE:
-                SavePicture(imageId, lowQualityPictureMap_);
+                isSuccess = SavePicture(imageId, lowQualityPictureMap_);
                 break;
             case HIGH_QUALITY_PICTURE:
-                SavePicture(imageId, highQualityPictureMap_);
+                isSuccess = SavePicture(imageId, highQualityPictureMap_);
                 break;
             default:
                 break;
         }
+    }
+    if (isSuccess) { // 高质量提前返回
+        return;
     }
     MEDIA_DEBUG_LOG("end ");
 }
