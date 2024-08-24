@@ -664,7 +664,7 @@ napi_value SendablePhotoAccessHelper::JSRelease(napi_env env, napi_callback_info
     }
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
-    NAPI_CALL(env, napi_remove_wrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)));
+    NAPI_CALL(env, napi_remove_wrap_sendable(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)));
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
     NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRelease", asyncContext);
 

@@ -703,7 +703,7 @@ napi_value SendableFetchFileResultNapi::JSClose(napi_env env, napi_callback_info
     if ((status == napi_ok) && (obj != nullptr)) {
         obj->propertyPtr = nullptr;
     }
-    status = napi_remove_wrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    status = napi_remove_wrap_sendable(env, thisVar, reinterpret_cast<void **>(&obj));
     if ((status == napi_ok) && (obj != nullptr)) {
         napi_create_int32(env, E_SUCCESS, &jsResult);
     } else {
