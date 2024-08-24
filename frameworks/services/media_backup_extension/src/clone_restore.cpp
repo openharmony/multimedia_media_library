@@ -1477,7 +1477,7 @@ void CloneRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::
     analysisAlbumTbl.isLocal = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_LOCAL);
 }
 
-void CloneRestore::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, FaceTagTbl& aceTagTbl)
+void CloneRestore::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, FaceTagTbl& faceTagTbl)
 {
     faceTagTbl.tagId = GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_TAG_ID);
     faceTagTbl.tagName = GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_TAG_NAME);
@@ -1635,7 +1635,7 @@ void CloneRestore::RestorePortraitClusteringInfo()
     std::vector<std::string> commonColumn = BackupDatabaseUtils::GetCommonColumnInfos(mediaRdb_, mediaLibraryRdb_,
         VISION_FACE_TAG_TABLE);
     std::vector<std::string> commonColumns = BackupDatabaseUtils::filterColumns(commonColumn,
-        XCLUDED_FACE_TAG_COLUMNS);
+        EXCLUDED_FACE_TAG_COLUMNS);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         vector<FaceTagTbl> faceTagTbls = QueryFaceTagTbl(offset, commonColumns);
         BatchInsertFaceTags(faceTagTbls);
@@ -1864,7 +1864,7 @@ void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::Resu
     imageFaceTbl.beautyBounderWidth = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_BEAUTY_BOUNDER_WIDTH);
     imageFaceTbl.beautyBounderHeight = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_BEAUTY_BOUNDER_HEIGHT);
     imageFaceTbl.aestheticsScore = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_AESTHETICS_SCORE);
-    imageFaceTbl.beautyBounderVersion = GetOptionalValue<std::string>(resultSet, MAGE_FACE_COL_BEAUTY_BOUNDER_VERSION);
+    imageFaceTbl.beautyBounderVersion = GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION);
     imageFaceTbl.isExcluded = GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_IS_EXCLUDED);
 }
 
@@ -1959,7 +1959,7 @@ void CloneRestore::UpdateFaceGroupTagsUnion()
     MEDIA_INFO_LOG("get all TagId  %{public}zu", allTagIds.size());
     for (const auto& pair : tagPairs) {
         if (pair.second.has_value()) {
-            std::vector<std::string> groupTags = BackupDatabaseUtils::splitString(pair.second.value(), '|');
+            std::vector<std::string> groupTags = BackupDatabaseUtils::SplitString(pair.second.value(), '|');
             MEDIA_INFO_LOG("TagId: %{public}s, old GroupTags is: %{public}s",
                            pair.first.value_or(std::string("-1")).c_str(), pair.second.value().c_str());
             groupTags.erase(std::remove_if(groupTags.begin(), groupTags.end(),
