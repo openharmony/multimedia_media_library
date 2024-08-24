@@ -2029,12 +2029,13 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     string photoId;
     if (GetPicture(fileId, picture, false, photoId) == E_OK) {
         string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
-        int32_t ret = AddFiltersToPicture(picture, sourcePath, editData, fileType);
+        int32_t ret = AddFiltersToPicture(picture, assetPath, editData, fileType);
         auto pictureManagerThread = PictureManagerThread::GetInstance();
         if (pictureManagerThread != nullptr) {
             pictureManagerThread->Start();
         }
         pictureManagerThread->FinishAccessingPicture(photoId);
+        MediaLibraryObjectUtils::ScanFileAsync(assetPath, to_string(fileId), MediaLibraryApi::API_10);
         return ret;
     }
     // 生成水印
@@ -2250,7 +2251,8 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
         PhotoColumn::PHOTO_EDIT_TIME };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
         PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "Failed to getmapmanagerthread:: FileAsset, fileId=%{public}d", id);
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
+        "Failed to getmapmanagerthread:: FileAsset, fileId=%{public}d", id);
     int32_t errCode = SubmitCacheExecute(cmd, fileAsset, cachePath);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to submit cache, fileId=%{public}d", id);
     return id;
@@ -2381,6 +2383,12 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", outputPath.c_str());
     int32_t ret = MediaChangeEffect::TakeEffectForPicture(inPicture, editdata);
+    Media::ImagePacker imagePacker;
+    Media::PackOption packOption;
+    packOption.format = mime_type;
+    imagePacker.StartPacking(outputPath, packOption);
+    imagePacker.AddPicture(*(inPicture));
+    imagePacker.FinalizePacking();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("MediaLibraryPhotoOperations: AddFiltersToPicture: TakeEffect error. ret = %d", ret);
         return E_ERR;

@@ -142,7 +142,8 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
     MEDIA_DEBUG_LOG("end");
 }
 
-std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageId(const std::string& imageId, bool isCleanImmediately)
+std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageId(const std::string& imageId,
+    bool isCleanImmediately)
 {
     MEDIA_DEBUG_LOG("enter %{public}s enter", imageId.c_str());
     enum PictureType pictureType;
@@ -260,7 +261,8 @@ void PictureDataOperations::SaveLowQualityPicture(const std::string& imageId)
 }
 
 // 落盘低质量图，包括低质量裸图
-bool PictureDataOperations::SavePicture(const std::string& imageId, std::map<std::string, sptr<PicturePair>>& pictureMap)
+bool PictureDataOperations::SavePicture(const std::string& imageId,
+    std::map<std::string, sptr<PicturePair>>& pictureMap)
 {
     MEDIA_DEBUG_LOG("enter photoId: %{public}s", imageId.c_str());
     lock_guard<mutex> lock(pictureMapMutex_);
