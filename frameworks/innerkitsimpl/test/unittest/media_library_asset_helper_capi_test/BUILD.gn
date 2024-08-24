@@ -37,7 +37,6 @@ ohos_unittest("media_library_asset_helper_capi_test") {
   ]
 
   sources = [
-    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/media_library_asset_helper_capi_test.cpp",
   ]
