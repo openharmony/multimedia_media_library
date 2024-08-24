@@ -19,6 +19,10 @@
 #include <mutex>
 
 #include "cloud_sync_helper.h"
+#include "dfx_manager.h"
+#include "dfx_timer.h"
+#include "dfx_const.h"
+#include "dfx_reporter.h"
 #include "ipc_skeleton.h"
 #include "location_column.h"
 #include "media_column.h"
@@ -44,6 +48,7 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "parameters.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "post_event_utils.h"
@@ -1157,6 +1162,7 @@ static const vector<string> onCreateSqlStrs = {
     TriggerDeletePhotoClearAppUriPermission(),
     TriggerDeleteAudioClearAppUriPermission(),
     PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX,
+    PhotoColumn::UPDATA_PHOTOS_DATA_UNIQUE,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2701,6 +2707,71 @@ static void UpdateBurstDirty()
     }
 }
 
+static void ReportFailInfoAsync(AsyncTaskData *data)
+{
+    MEDIA_INFO_LOG("Start ReportFailInfoAsync");
+    const int32_t sleepTimeMs = 1000;
+    this_thread::sleep_for(chrono::milliseconds(sleepTimeMs));
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("MediaDataAbility insert functionality rebStore is null.");
+        return;
+    }
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        MEDIA_ERR_LOG("MediaDataAbility insert functionality rdbStorePtr is null.");
+        return;
+    }
+
+    string querySql = "SELECT data FROM Photos GROUP BY data HAVING COUNT(*) > 1";
+    auto result = rdbStorePtr->QuerySql(querySql);
+    int32_t count = 0;
+    if (result == nullptr) {
+        MEDIA_ERR_LOG("result is null");
+        return;
+    }
+    if (result->GetRowCount(count) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("GetRowCount fail");
+    }
+    result->Close();
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    DfxReporter::ReportStartResult(DfxType::ADD_DATA_UNIQUE_INDEX_FAIL, count, startTime);
+    bool ret = system::SetParameter("persist.multimedia.medialibrary.data_unique", "1");
+    if (!ret) {
+        MEDIA_ERR_LOG("Failed to set parameter, ret:%{public}d", ret);
+    }
+    MEDIA_INFO_LOG("HasDirtyData count:%{public}d", count);
+}
+
+static void ReportFailInfo()
+{
+    MEDIA_INFO_LOG("Start ReportFailInfo");
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Failed to get async worker instance!");
+        return;
+    }
+    shared_ptr<MediaLibraryAsyncTask> reportTask =
+        make_shared<MediaLibraryAsyncTask>(ReportFailInfoAsync, nullptr);
+    if (reportTask != nullptr) {
+        asyncWorker->AddTask(reportTask, false);
+    } else {
+        MEDIA_ERR_LOG("Failed to create async task for reportTask!");
+    }
+}
+
+static void UpdateDataUniqueIndex(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start UpdateDataUniqueIndex");
+    string sql = PhotoColumn::UPDATA_PHOTOS_DATA_UNIQUE;
+    auto err = store.ExecuteSql(sql);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to exec: %{public}s", sql.c_str());
+        ReportFailInfo();
+    }
+    MEDIA_INFO_LOG("End UpdateDataUniqueIndex");
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -3126,6 +3197,10 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_BURST_DIRTY) {
         UpdateBurstDirty();
+    }
+
+    if (oldVersion < VERSION_UDAPTE_DATA_UNIQUE) {
+        UpdateDataUniqueIndex(store);
     }
 }
 
