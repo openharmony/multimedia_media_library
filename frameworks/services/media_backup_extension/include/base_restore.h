@@ -119,6 +119,7 @@ protected:
     std::atomic<uint64_t> migrateAudioDuplicateNumber_{0};
     std::atomic<uint64_t> migratePortraitPhotoNumber_{0};
     std::atomic<uint64_t> migratePortraitFaceNumber_{0};
+    std::atomic<uint64_t> migratePortraitAlbumNumber_{0};
     std::atomic<uint64_t> migratePortraitTotalTimeCost_{0};
     std::atomic<uint32_t> imageNumber_;
     std::atomic<uint32_t> videoNumber_;
