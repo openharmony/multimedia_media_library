@@ -106,7 +106,6 @@ private:
 
     Utils::Timer timer_{"closeThumbnailWorker"};
     uint32_t timerId_ = 0;
-    std::atomic<uint32_t> insertTaskCount_ = 0;
     std::mutex timerMutex_;
     std::mutex taskMutex_;
 };
