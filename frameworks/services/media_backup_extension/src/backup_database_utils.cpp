@@ -678,7 +678,7 @@ std::pair<std::vector<int32_t>, std::vector<int32_t>> BackupDatabaseUtils::Unzip
     return {std::move(oldFileIds), std::move(newFileIds)};
 }
 
-std::vector<std::string> BackupDatabaseUtils::splitString(const std::string& str, char delimiter)
+std::vector<std::string> BackupDatabaseUtils::SplitString(const std::string& str, char delimiter)
 {
     std::vector<std::string> elements;
     std::stringstream ss(str);
