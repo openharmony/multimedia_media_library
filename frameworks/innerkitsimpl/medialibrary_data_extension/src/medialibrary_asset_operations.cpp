@@ -1096,7 +1096,8 @@ int32_t MediaLibraryAssetOperations::UpdateFileInDb(MediaLibraryCommand &cmd)
     return updateRows;
 }
 
-int32_t MediaLibraryAssetOperations::OpenFileWithPrivacy(const string &filePath, const string &mode)
+int32_t MediaLibraryAssetOperations::OpenFileWithPrivacy(const string &filePath, const string &mode,
+    const string &fileId)
 {
     std::string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
@@ -1104,7 +1105,7 @@ int32_t MediaLibraryAssetOperations::OpenFileWithPrivacy(const string &filePath,
         return E_ERR;
     }
 
-    return MediaPrivacyManager(absFilePath, mode).Open();
+    return MediaPrivacyManager(absFilePath, mode, fileId).Open();
 }
 
 static int32_t SetPendingTime(const shared_ptr<FileAsset> &fileAsset, int64_t pendingTime)
@@ -1236,7 +1237,8 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     }
 
     tracer.Start("OpenFileWithPrivacy");
-    int32_t fd = OpenFileWithPrivacy(path, lowerMode);
+    string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
+    int32_t fd = OpenFileWithPrivacy(path, lowerMode, fileId);
     tracer.Finish();
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{public}d, errno %{public}d", fd, errno);

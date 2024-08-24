@@ -1108,17 +1108,18 @@ int32_t MediaLibraryPhotoOperations::OpenCache(MediaLibraryCommand& cmd, const s
 
     string cacheDir = GetAssetCacheDir();
     string path = cacheDir + "/" + fileName;
+    string fileId = MediaFileUtils::GetIdFromUri(uriString);
 
     if (mode == MEDIA_FILEMODE_READONLY) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(path), E_HAS_FS_ERROR,
             "Cache file does not exist, path=%{private}s", path.c_str());
-        return OpenFileWithPrivacy(path, mode);
+        return OpenFileWithPrivacy(path, mode, fileId);
     }
     CHECK_AND_RETURN_RET_LOG(
         MediaFileUtils::CreateDirectory(cacheDir), E_HAS_FS_ERROR, "Cannot create dir %{private}s", cacheDir.c_str());
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateAsset(path) == E_SUCCESS, E_HAS_FS_ERROR,
         "Create cache file failed, path=%{private}s", path.c_str());
-    return OpenFileWithPrivacy(path, mode);
+    return OpenFileWithPrivacy(path, mode, fileId);
 }
 
 int32_t MediaLibraryPhotoOperations::OpenEditOperation(MediaLibraryCommand &cmd, bool &isSkip)
@@ -1210,7 +1211,7 @@ int32_t MediaLibraryPhotoOperations::RequestEditData(MediaLibraryCommand &cmd)
         }
     }
 
-    return OpenFileWithPrivacy(dataPath, "r");
+    return OpenFileWithPrivacy(dataPath, "r", id);
 }
 
 int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
@@ -1247,9 +1248,9 @@ int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
         GetEditDataSourcePath(path);
     if (sourcePath.empty() || !MediaFileUtils::IsFileExists(sourcePath)) {
         MEDIA_INFO_LOG("sourcePath does not exist: %{private}s", sourcePath.c_str());
-        return OpenFileWithPrivacy(isMovingPhotoVideoRequest ? movingPhotoVideoPath : path, "r");
+        return OpenFileWithPrivacy(isMovingPhotoVideoRequest ? movingPhotoVideoPath : path, "r", id);
     } else {
-        return OpenFileWithPrivacy(sourcePath, "r");
+        return OpenFileWithPrivacy(sourcePath, "r", id);
     }
 }
 
@@ -1305,7 +1306,8 @@ int32_t MediaLibraryPhotoOperations::CommitEditOpenExecute(const shared_ptr<File
         }
     }
 
-    return OpenFileWithPrivacy(path, "rw");
+    string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
+    return OpenFileWithPrivacy(path, "rw", fileId);
 }
 
 static int32_t UpdateEditTime(int32_t fileId, int64_t time)

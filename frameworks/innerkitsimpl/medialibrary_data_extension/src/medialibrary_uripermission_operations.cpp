@@ -76,6 +76,7 @@ int32_t UriPermissionOperations::UpdateOperation(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("UriPermission update operation, rdbStore is null.");
         return E_HAS_DB_ERROR;
     }
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     int32_t updateRows = -1;
     int32_t errCode = rdbStore->Update(cmd, updateRows);
     if (errCode != NativeRdb::E_OK || updateRows < 0) {
@@ -128,6 +129,7 @@ int32_t UriPermissionOperations::DeleteOperation(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("UriPermission update operation, rdbStore is null.");
         return E_HAS_DB_ERROR;
     }
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     int32_t deleteRows = -1;
     int32_t errCode = rdbStore->Delete(cmd, deleteRows);
     if (errCode != NativeRdb::E_OK || deleteRows < 0) {
@@ -144,6 +146,7 @@ int32_t UriPermissionOperations::InsertOperation(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("UriPermission insert operation, rdbStore is null.");
         return E_HAS_DB_ERROR;
     }
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     int64_t rowId = -1;
     int32_t errCode = rdbStore->Insert(cmd, rowId);
     if (errCode != NativeRdb::E_OK || rowId < 0) {
@@ -161,6 +164,7 @@ int32_t UriPermissionOperations::BatchInsertOperation(MediaLibraryCommand &cmd,
         MEDIA_ERR_LOG("UriPermission insert operation, rdbStore is null.");
         return E_HAS_DB_ERROR;
     }
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     int64_t outInsertNum = -1;
     int32_t errCode = rdbStore->BatchInsert(cmd, outInsertNum, values);
     if (errCode != NativeRdb::E_OK || outInsertNum < 0) {
@@ -183,6 +187,7 @@ static void QueryUriPermission(MediaLibraryCommand &cmd, const std::vector<DataS
         MEDIA_ERR_LOG("UriPermission query operation, rdbStore is null.");
         return;
     }
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     for (const auto val : values) {
         predicateInColumns.push_back(static_cast<string>(val.Get(AppUriPermissionColumn::FILE_ID, isValid)));
     }
@@ -237,6 +242,7 @@ static void GetAllUriDbOperation(const vector<DataShareValuesBucket> &values, ve
 static void BatchUpdate(MediaLibraryCommand &cmd, std::vector<string> inColumn, int32_t tableType,
     const std::vector<DataShareValuesBucket> &values)
 {
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     bool isValid;
     string appid = values.at(0).Get(AppUriPermissionColumn::APP_ID, isValid);
     int32_t permissionType = values.at(0).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);

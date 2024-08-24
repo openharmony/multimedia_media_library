@@ -35,6 +35,7 @@
 #include "media_change_request_napi.h"
 #include "media_column.h"
 #include "media_app_uri_permission_column.h"
+#include "media_app_uri_sensitive_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_smart_album_column.h"
@@ -4741,19 +4742,9 @@ static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info inf
     }
 }
 
-static napi_value ParseArgsGrantPhotoUriPermission(napi_env env, napi_callback_info info,
+static napi_value ParseArgsGrantPhotoUriPermissionInner(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    constexpr size_t minArgs = ARGS_ONE;
-    constexpr size_t maxArgs = ARGS_FOUR;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
-        napi_ok, "Failed to get object info");
-    
-    context->isCreateByComponent = false;
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return nullptr;
-    }
     // parse appid
     string appid;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], appid) ==
@@ -4785,6 +4776,17 @@ static napi_value ParseArgsGrantPhotoUriPermission(napi_env env, napi_callback_i
     }
     context->valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
+    // parse hideSensitiveType
+    int32_t hideSensitiveType;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_THREE], hideSensitiveType) ==
+        napi_ok, "Failed to get hideSensitiveType");
+    if (AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.find((int)hideSensitiveType) ==
+        AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.end()) {
+        NAPI_ERR_LOG("invalid picker hideSensitiveType, hideSensitiveType=%{public}d", permissionType);
+        return nullptr;
+    }
+    context->valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, hideSensitiveType);
+
     // parsing fileId ensured uri is photo.
     context->valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
 
@@ -4793,7 +4795,24 @@ static napi_value ParseArgsGrantPhotoUriPermission(napi_env env, napi_callback_i
     return result;
 }
 
-static bool ParseUriTypes(std::string &appid, int &permissionType, std::vector<std::string> &uris,
+static napi_value ParseArgsGrantPhotoUriPermission(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_FOUR;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, "Failed to get object info");
+    
+    context->isCreateByComponent = false;
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    
+    return ParseArgsGrantPhotoUriPermissionInner(env, info, context);
+}
+
+static bool ParseUriTypes(std::string &appid, int &permissionType, int &sensitiveType, std::vector<std::string> &uris,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
     // used for deduplication
@@ -4811,6 +4830,7 @@ static bool ParseUriTypes(std::string &appid, int &permissionType, std::vector<s
         valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
         valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
         valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
+        valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, sensitiveType);
         // parsing fileId ensured uri is photo.
         valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
         context->valuesBucketArray.push_back(move(valuesBucket));
@@ -4860,7 +4880,17 @@ static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_
         return nullptr;
     }
 
-    if (!ParseUriTypes(appid, permissionType, uris, context)) {
+    // parse hideSensitiveType
+    int32_t hideSensitiveType;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_THREE], hideSensitiveType) ==
+        napi_ok, "Failed to get hideSensitiveType");
+    if (AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.find((int)hideSensitiveType) ==
+        AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.end()) {
+        NAPI_ERR_LOG("invalid picker hideSensitiveType, hideSensitiveType=%{public}d", permissionType);
+        return nullptr;
+    }
+
+    if (!ParseUriTypes(appid, permissionType, hideSensitiveType, uris, context)) {
         return nullptr;
     }
 

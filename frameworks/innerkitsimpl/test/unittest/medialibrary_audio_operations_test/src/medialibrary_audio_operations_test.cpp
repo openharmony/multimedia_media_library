@@ -1788,7 +1788,8 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_011
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_011");
     string filePath;
     string mode;
-    auto ret = MediaLibraryAssetOperations::OpenFileWithPrivacy(filePath, mode);
+    string fileId;
+    auto ret = MediaLibraryAssetOperations::OpenFileWithPrivacy(filePath, mode, fileId);
     EXPECT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_011");
 }

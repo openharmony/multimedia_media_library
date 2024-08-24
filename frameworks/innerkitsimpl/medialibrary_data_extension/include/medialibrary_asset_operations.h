@@ -146,7 +146,8 @@ protected:
     EXPORT static std::string CreateExtUriForV10Asset(FileAsset &fileAsset);
     static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         std::string &value);
-    EXPORT static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode);
+    EXPORT static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode,
+        const std::string &fileId);
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0);
     static void ScanFileWithoutAlbumUpdate(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
