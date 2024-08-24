@@ -20,7 +20,6 @@
 #include "sendable_photo_album_napi.h"
 #include "sendable_file_asset_napi.h"
 #include "sendable_photo_access_helper_napi.h"
-#include "sendable_moving_photo_napi.h"
 #include "napi/native_node_api.h"
 
 #endif  // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_NATIVE_MODULE_OHOS_MEDIALIBRARY_SENDABLE_H_
