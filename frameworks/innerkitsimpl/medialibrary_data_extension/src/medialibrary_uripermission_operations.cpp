@@ -218,6 +218,82 @@ static void GetSingleDbOperation(const vector<DataShareValuesBucket> &values, ve
     }
 }
 
+static void GetMediafileQueryResult(const vector<string>& predicateInColumns, OperationObject object,
+    std::vector<int32_t>& fileIdList)
+{
+    MediaLibraryCommand queryCmd(object, OperationType::QUERY);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("UriPermission query operation, rdbStore is null.");
+        return;
+    }
+    vector<string> columns;
+    queryCmd.GetAbsRdbPredicates()->In(AppUriPermissionColumn::FILE_ID, predicateInColumns);
+    auto queryResult = rdbStore->Query(queryCmd, columns);
+    if ((queryResult == nullptr) || (queryResult->GoToFirstRow() != NativeRdb::E_OK)) {
+        MEDIA_INFO_LOG("UriPermission query result is null.");
+        return;
+    }
+    do {
+        fileIdList.push_back(GetInt32Val(AppUriPermissionColumn::FILE_ID, queryResult));
+    } while (!queryResult->GoToNextRow());
+}
+
+static void FilterSameElementFromColumns(vector<string>& columns)
+{
+    if (!columns.empty()) {
+        set<string> sec(columns.begin(), columns.end());
+        columns.assign(sec.begin(), sec.end());
+    }
+}
+
+static void FilterNotExistUri(const std::vector<DataShareValuesBucket> &values, vector<int32_t>& dbOperation)
+{
+    vector<int32_t> photoFileIdList;
+    vector<int32_t> audioFileIdList;
+    vector<string> photosColumns;
+    vector<string> audioColumns;
+    bool isValid;
+    for (const auto val : values) {
+        if (static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isValid)) == PHOTOSTYPE) {
+            photosColumns.push_back(val.Get(AppUriPermissionColumn::FILE_ID, isValid));
+        } else if (static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isValid)) == AUDIOSTYPE) {
+            audioColumns.push_back(val.Get(AppUriPermissionColumn::FILE_ID, isValid));
+        }
+    }
+    FilterSameElementFromColumns(photosColumns);
+    FilterSameElementFromColumns(audioColumns);
+    if (!photosColumns.empty()) {
+        GetMediafileQueryResult(photosColumns, OperationObject::FILESYSTEM_PHOTO, photoFileIdList);
+    }
+    if (!audioColumns.empty()) {
+        GetMediafileQueryResult(audioColumns, OperationObject::FILESYSTEM_AUDIO, audioFileIdList);
+    }
+    for (size_t i = 0; i < values.size(); i++) {
+        int32_t fileId = std::stoi((static_cast<string>(values[i].Get(AppUriPermissionColumn::FILE_ID, isValid))));
+        int32_t uriType = values[i].Get(AppUriPermissionColumn::URI_TYPE, isValid);
+        if (uriType == PHOTOSTYPE) {
+            auto notExistIt = std::find(photoFileIdList.begin(), photoFileIdList.end(), fileId);
+            auto sameIt = std::find(photosColumns.begin(), photosColumns.end(), to_string(fileId));
+            if (notExistIt == photoFileIdList.end() || sameIt == photosColumns.end()) {
+                dbOperation[i] = NO_DB_OPERATION;
+            }
+            if (sameIt != photosColumns.end()) {
+                photosColumns.erase(sameIt);
+            }
+        } else if (uriType == AUDIOSTYPE) {
+            auto it = std::find(audioFileIdList.begin(), audioFileIdList.end(), fileId);
+            auto sameIt = std::find(audioColumns.begin(), audioColumns.end(), to_string(fileId));
+            if (it != audioFileIdList.end() || sameIt == audioColumns.end()) {
+                audioColumns.erase(sameIt);
+            }
+            if (sameIt == audioColumns.end()) {
+                dbOperation[i] = NO_DB_OPERATION;
+            }
+        }
+    }
+}
+
 static void GetAllUriDbOperation(const vector<DataShareValuesBucket> &values, vector<int32_t> &dbOperation,
     std::shared_ptr<OHOS::NativeRdb::ResultSet> &queryResult)
 {
@@ -233,7 +309,7 @@ static void GetAllUriDbOperation(const vector<DataShareValuesBucket> &values, ve
         querySingleResultSet.push_back(GetInt32Val(AppUriPermissionColumn::FILE_ID, queryResult));
         querySingleResultSet.push_back(GetInt32Val(AppUriPermissionColumn::URI_TYPE, queryResult));
         querySingleResultSet.push_back(GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryResult));
-        for (int i = 0; i < values.size(); i++) {
+        for (size_t i = 0; i < values.size(); i++) {
             GetSingleDbOperation(values, dbOperation, querySingleResultSet, i);
         }
     } while (!queryResult->GoToNextRow());
@@ -283,7 +359,7 @@ static int32_t ValueBucketCheck(const std::vector<DataShareValuesBucket> &values
         val.Get(AppUriPermissionColumn::URI_TYPE, isValidArr[URI_TYPE_INDEX]);
         val.Get(AppUriPermissionColumn::PERMISSION_TYPE, isValidArr[PERMISSION_TYPE_INDEX]);
         val.Get(AppUriPermissionColumn::APP_ID, isValidArr[APP_ID_INDEX]);
-        for (int i = 0; i < sizeof(isValidArr); i++) {
+        for (size_t i = 0; i < sizeof(isValidArr); i++) {
             if ((isValidArr[i]) == false) {
                 return E_ERR;
             }
@@ -330,7 +406,8 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
     AppstateOberserverBuild(permissionType);
     QueryUriPermission(cmd, values, resultSet);
     GetAllUriDbOperation(values, dbOperation, resultSet);
-    for (int i = 0; i < values.size(); i++) {
+    FilterNotExistUri(values, dbOperation);
+    for (size_t i = 0; i < values.size(); i++) {
         int32_t fileId = std::stoi((static_cast<string>(values.at(i).Get(AppUriPermissionColumn::FILE_ID, isValid))));
         int32_t uriType = values.at(i).Get(AppUriPermissionColumn::URI_TYPE, isValid);
         if ((dbOperation.at(i) == UPDATE_DB_OPERATION) && (uriType == PHOTOSTYPE)) {

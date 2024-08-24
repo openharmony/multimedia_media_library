@@ -1212,6 +1212,17 @@ int32_t MediaLibraryManager::GrantPhotoUriPermission(const string &appid, const 
         MEDIA_ERR_LOG("Media Uri list error, please check!");
         return E_ERR;
     }
+    if (photoPermissionType != PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO &&
+        photoPermissionType != PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO &&
+        photoPermissionType != PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO) {
+        MEDIA_ERR_LOG("photoPermissionType error, please check param!");
+        return E_ERR;
+    }
+    if (hideSensitiveTpye < HideSensitiveType::ALL_DESENSITIZE ||
+        hideSensitiveTpye > HideSensitiveType::NO_DESENSITIZE) {
+        MEDIA_ERR_LOG("HideSensitiveType error, please check param!");
+        return E_ERR;
+    }
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
     if (dataShareHelper == nullptr) {
@@ -1227,7 +1238,7 @@ int32_t MediaLibraryManager::GrantPhotoUriPermission(const string &appid, const 
         }
         if (tableType == -1) {
             MEDIA_ERR_LOG("Uri invalid error, uri:%{private}s", uri.c_str());
-            return E_INVALID_URI;
+            return E_ERR;
         }
         string fileId = MediaFileUtils::GetIdFromUri(uri);
         DataShareValuesBucket valuesBucket;
@@ -1239,8 +1250,8 @@ int32_t MediaLibraryManager::GrantPhotoUriPermission(const string &appid, const 
         valueSet.push_back(valuesBucket);
     }
     Uri insertUri(MEDIALIBRARY_GRANT_URIPERM_URI);
-    dataShareHelper->BatchInsert(insertUri, valueSet);
-    return E_SUCCESS;
+    auto ret = dataShareHelper->BatchInsert(insertUri, valueSet);
+    return ret;
 }
 
 shared_ptr<PhotoAssetProxy> MediaLibraryManager::CreatePhotoAssetProxy(CameraShotType cameraShotType,

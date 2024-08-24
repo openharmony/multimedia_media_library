@@ -495,8 +495,6 @@ static int32_t HandleSpecialObjectPermission(MediaLibraryCommand &cmd, bool isWr
         return HandleMediaVolumePerm();
     } else if (obj == OperationObject::BUNDLE_PERMISSION) {
         return HandleBundlePermCheck();
-    } else if (obj == OperationObject::APP_URI_PERMISSION_INNER) {
-        return E_SUCCESS;
     }
 
     return E_NEED_FURTHER_CHECK;
