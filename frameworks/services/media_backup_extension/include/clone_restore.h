@@ -16,7 +16,19 @@
 #ifndef OHOS_MEDIA_CLONE_RESTORE_H
 #define OHOS_MEDIA_CLONE_RESTORE_H
 
+#include <optional>
+#include <type_traits>
+#include <set>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
+#include <vector>
+
 #include "base_restore.h"
+#include "backup_const.h"
+#include "medialibrary_rdb_utils.h"
+#include "medialibrary_errno.h"
+#include "backup_database_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -30,6 +42,7 @@ public:
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
         int32_t sourceType) const override;
     std::string GetBackupInfo() override;
+    using TagPairOpt = std::pair<std::optional<std::string>, std::optional<std::string>>;
 
 private:
     void RestorePhoto(void) override;
@@ -45,6 +58,7 @@ private:
     void InsertPhoto(std::vector<FileInfo> &fileInfos);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
+    std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
     int32_t MoveAsset(FileInfo &fileInfo);
     bool IsFilePathExist(const std::string &filePath) const;
     int32_t QueryTotalNumber(const std::string &tableName);
@@ -116,6 +130,54 @@ private:
     void SetSpecialAttributes(const std::string &tableName, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         FileInfo &fileInfo);
     bool IsSameFileForClone(const std::string &tableName, FileInfo &fileInfo);
+    NativeRdb::ValuesBucket GetInsertValue(const AnalysisAlbumTbl &portraitAlbumInfo);
+    int32_t InsertPortraitAlbumByTable(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
+    bool DeleteAlbums(const std::vector<std::string> &albumNames, const std::vector<std::string> tagIds);
+    void InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
+    void ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        AnalysisAlbumTbl &analysisAlbumTbl);
+    std::vector<AnalysisAlbumTbl> QueryPortraitAlbumTbl(int32_t offset,
+        const std::vector<std::string>& commonColumns);
+    void RestoreFromGalleryPortraitAlbum();
+    int32_t QueryPortraitAlbumTotalNumber(std::shared_ptr<NativeRdb::RdbStore> rdbPtr, std::string query);
+    void UpdateFaceAnalysisTblStatus();
+    void UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
+    std::unordered_map<std::string, std::string> CreateImgFaceColumnFieldMap();
+    void ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, ImageFaceTbl &imageFaceTbl);
+    void ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FaceTagTbl &faceTagTbl);
+    NativeRdb::ValuesBucket CreateValuesBucketFromImageFaceTbl(const ImageFaceTbl& imageFaceTbl);
+    void BatchInsertImageFaces(const std::vector<ImageFaceTbl>& imageFaceTbls);
+    void DeleteExistingImageFaceData(const std::string& fileIdInClause);
+    std::vector<ImageFaceTbl> ProcessImageFaceTbls(const std::vector<ImageFaceTbl>& imageFaceTbls,
+    const std::string& fileIdInClause, const std::vector<FileIdPair>& fileIdPairs);
+    std::vector<ImageFaceTbl> QueryImageFaceTbl(int32_t offset, std::string &fileIdClause,
+        const std::vector<std::string>& commonColumns);
+    void RestoreImageFaceInfo(std::vector<FileInfo> &fileInfos);
+    NativeRdb::ValuesBucket CreateValuesBucketFromFaceTagTbl(const FaceTagTbl& faceTagTbl);
+    void BatchInsertFaceTags(const std::vector<FaceTagTbl>& faceTagTbls);
+    void DeleteExistingFaceTagData(const std::string& inClause);
+    std::vector<FaceTagTbl> QueryFaceTagTbl(int32_t offset, std::vector<std::string> &commonColumns);
+    void RestorePortraitClusteringInfo();
+    void ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, TagPairOpt& tagPair);
+    void UpdateGroupTagColumn(const std::vector<TagPairOpt>& updatedPairs);
+    void UpdateFaceGroupTagsUnion();
+    void ReportPortraitCloneStat(int32_t sceneCode);
+    void ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql);
+    std::vector<CloneRestore::TagPairOpt> QueryTagInfo(void);
+
+    template<typename T>
+    struct always_false : std::false_type {};
+    template<typename T>
+    static std::optional<T> GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        const std::string &columnName);
+
+    template<typename T>
+    static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
+        const std::optional<T>& optionalValue);
+
+    template<typename T>
+    void PutWithDefault(NativeRdb::ValuesBucket& values, const std::string& columnName,
+        const std::optional<T>& optionalValue, const T& defaultValue);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
@@ -131,6 +193,62 @@ private:
     std::unordered_set<std::string> albumToNotifySet_;
     std::string garbagePath_;
 };
+
+template<typename T>
+std::optional<T> CloneRestore::GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    const std::string &columnName)
+{
+    int32_t columnIndex;
+    int32_t err = resultSet->GetColumnIndex(columnName, columnIndex);
+    if (err != E_OK) {
+        return std::nullopt;
+    }
+
+    bool isNull = false;
+    int32_t errCode = resultSet->IsColumnNull(columnIndex, isNull);
+    if (errCode || isNull) {
+        return std::nullopt;
+    }
+
+    T value;
+    if constexpr (std::is_same_v<T, int32_t>) {
+        errCode = resultSet->GetInt(columnIndex, value);
+    } else if constexpr (std::is_same_v<T, int64_t>) {
+        errCode = resultSet->GetLong(columnIndex, value);
+    } else if constexpr (std::is_same_v<T, double>) {
+        errCode = resultSet->GetDouble(columnIndex, value);
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        errCode = resultSet->GetString(columnIndex, value);
+    } else {
+        static_assert(always_false<T>::value, "Unsupported type for GetOptionalValue");
+    }
+
+    return errCode ? std::nullopt : std::optional<T>(value);
+}
+
+template<typename T>
+void CloneRestore::PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
+    const std::optional<T>& optionalValue)
+{
+    if (optionalValue.has_value()) {
+        if constexpr (std::is_same_v<std::decay_t<T>, int32_t>) {
+            values.PutInt(columnName, optionalValue.value());
+        } else if constexpr (std::is_same_v<std::decay_t<T>, int64_t>) {
+            values.PutLong(columnName, optionalValue.value());
+        } else if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
+            values.PutString(columnName, optionalValue.value());
+        } else if constexpr (std::is_same_v<std::decay_t<T>, double>) {
+            values.PutDouble(columnName, optionalValue.value());
+        }
+    }
+}
+
+template<typename T>
+void CloneRestore::PutWithDefault(NativeRdb::ValuesBucket& values, const std::string& columnName,
+    const std::optional<T>& optionalValue, const T& defaultValue)
+{
+    PutIfPresent(values, columnName, optionalValue.value_or(defaultValue));
+}
 } // namespace Media
 } // namespace OHOS
 

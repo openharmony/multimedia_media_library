@@ -69,6 +69,7 @@ enum AnalysisType : int32_t {
     ANALYSIS_HEAD_POSITION,
     ANALYSIS_BONE_POSE,
     ANALYSIS_VIDEO_LABEL,
+    ANALYSIS_MULTI_CROP,
 };
 
 enum HighlightAlbumInfoType : int32_t {
@@ -196,6 +197,10 @@ const std::string MIME_TYPE_HEIF = "image/heif";
 const std::unordered_map<ImageFileType, std::string> IMAGE_FILE_TYPE_MAP = {
     {JPEG, MIME_TYPE_JPEG},
     {HEIF, MIME_TYPE_HEIF},
+enum class BurstCoverLevelType : int32_t {
+    COVER = 1,
+    MEMBER = 2,
+    DEFAULT = COVER
 };
 } // namespace Media
 } // namespace OHOS

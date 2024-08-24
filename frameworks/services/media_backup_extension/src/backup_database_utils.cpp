@@ -584,5 +584,119 @@ void BackupDatabaseUtils::UpdateGroupTag(std::shared_ptr<NativeRdb::RdbStore> rd
         }
     }
 }
+
+std::vector<std::pair<std::string, std::string>> BackupDatabaseUtils::GetColumnInfoPairs(
+    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName)
+{
+    std::vector<std::pair<std::string, std::string>> columnInfoPairs;
+    std::string querySql = "SELECT name, type FROM pragma_table_info('" + tableName + "')";
+    auto resultSet = GetQueryResultSet(rdbStore, querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is nullptr");
+        return columnInfoPairs;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string columnName = GetStringVal(PRAGMA_TABLE_NAME, resultSet);
+        std::string columnType = GetStringVal(PRAGMA_TABLE_TYPE, resultSet);
+        if (columnName.empty() || columnType.empty()) {
+            MEDIA_ERR_LOG("Empty column name or type: %{public}s, %{public}s", columnName.c_str(), columnType.c_str());
+            continue;
+        }
+        columnInfoPairs.emplace_back(columnName, columnType);
+    }
+
+    return columnInfoPairs;
+}
+
+std::vector<std::string> BackupDatabaseUtils::GetCommonColumnInfos(std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
+    std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::string tableName)
+{
+    std::vector<std::string> commonColumns;
+    auto mediaRdbColumnInfoPairs = BackupDatabaseUtils::GetColumnInfoPairs(mediaRdb, tableName);
+    auto mediaLibraryRdbColumnInfoPairs = BackupDatabaseUtils::GetColumnInfoPairs(mediaLibraryRdb, tableName);
+
+    for (const auto &pair : mediaRdbColumnInfoPairs) {
+        auto it = std::find_if(mediaLibraryRdbColumnInfoPairs.begin(), mediaLibraryRdbColumnInfoPairs.end(),
+            [&](const std::pair<std::string, std::string> &p) {
+                return p.first == pair.first && p.second == pair.second;
+            });
+        if (it != mediaLibraryRdbColumnInfoPairs.end()) {
+            commonColumns.emplace_back(pair.first);
+        }
+    }
+
+    return commonColumns;
+}
+
+std::vector<std::string> BackupDatabaseUtils::filterColumns(const std::vector<std::string>& allColumns,
+    const std::vector<std::string>& excludedColumns)
+{
+    std::vector<std::string> filteredColumns;
+    std::copy_if(allColumns.begin(), allColumns.end(), std::back_inserter(filteredColumns),
+        [&excludedColumns](const std::string& column) {
+            return std::find(excludedColumns.begin(), excludedColumns.end(), column) == excludedColumns.end();
+        });
+    return filteredColumns;
+}
+
+void BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
+{
+    std::string insertSql =
+        "INSERT OR REPLACE INTO AnalysisPhotoMap (map_album, map_asset) "
+        "SELECT AnalysisAlbum.album_id, tab_analysis_image_face.file_id "
+        "FROM AnalysisAlbum "
+        "INNER JOIN tab_analysis_image_face ON AnalysisAlbum.tag_id = tab_analysis_image_face.tag_id";
+
+    int32_t ret = rdbStore->ExecuteSql(insertSql);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("execute update AnalysisPhotoMap failed, ret=%{public}d", ret);
+    }
+}
+
+std::vector<FileIdPair> BackupDatabaseUtils::CollectFileIdPairs(const std::vector<FileInfo>& fileInfos)
+{
+    std::set<FileIdPair> uniquePairs;
+
+    for (const auto& fileInfo : fileInfos) {
+        uniquePairs.emplace(fileInfo.fileIdOld, fileInfo.fileIdNew);
+    }
+
+    return std::vector<FileIdPair>(uniquePairs.begin(), uniquePairs.end());
+}
+
+std::pair<std::vector<int32_t>, std::vector<int32_t>> BackupDatabaseUtils::UnzipFileIdPairs(
+    const std::vector<FileIdPair>& pairs)
+{
+    std::vector<int32_t> oldFileIds;
+    std::vector<int32_t> newFileIds;
+
+    for (const auto& pair : pairs) {
+        oldFileIds.push_back(pair.first);
+        newFileIds.push_back(pair.second);
+    }
+
+    return {std::move(oldFileIds), std::move(newFileIds)};
+}
+
+std::vector<std::string> BackupDatabaseUtils::SplitString(const std::string& str, char delimiter)
+{
+    std::vector<std::string> elements;
+    std::stringstream ss(str);
+    std::string item;
+    while (std::getline(ss, item, delimiter)) {
+        if (!item.empty()) {
+            elements.emplace_back(item);
+        }
+    }
+    return elements;
+}
+
+void BackupDatabaseUtils::PrintQuerySql(const std::string& querySql)
+{
+    MEDIA_INFO_LOG("Generated SQL Query:");
+    MEDIA_INFO_LOG("--------------------");
+    MEDIA_INFO_LOG("%{public}s", querySql.c_str());
+    MEDIA_INFO_LOG("--------------------");
+}
 } // namespace Media
 } // namespace OHOS

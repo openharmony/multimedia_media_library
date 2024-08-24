@@ -33,6 +33,8 @@
 #include "medialibrary_unistore_manager.h"
 #include "vision_total_column.h"
 #include "vision_image_face_column.h"
+#include "result_set_utils.h"
+#include "photo_map_column.h"
 #define private public
 #include "medialibrary_data_manager.h"
 #undef private
@@ -1315,8 +1317,27 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Protrait_Album_NAME_NOT_NULL_test_
 HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001, TestSize.Level0)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    mediaLibraryDataManager->refCnt_.store(0);
     auto ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_EQ(ret<=0, false);
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001_2, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    mediaLibraryDataManager->refCnt_.store(1);
+    mediaLibraryDataManager->thumbnailService_ = nullptr;
+    auto ret = mediaLibraryDataManager->GenerateThumbnailBackground();
+    EXPECT_EQ(ret, E_THUMBNAIL_SERVICE_NULLPTR);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001_3, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    mediaLibraryDataManager->refCnt_.store(1);
+    mediaLibraryDataManager->thumbnailService_ = std::make_shared<ThumbnailService>();
+    auto ret = mediaLibraryDataManager->GenerateThumbnailBackground();
+    EXPECT_EQ(ret, mediaLibraryDataManager->thumbnailService_->GenerateThumbnailBackground());
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpgradeThumbnailBackground_new_002, TestSize.Level0)
@@ -1332,6 +1353,190 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, RestoreThumbnailDualFrame_new_003, Tes
     auto ret = mediaLibraryDataManager->RestoreThumbnailDualFrame();
     mediaLibraryDataManager->SetStartupParameter();
     EXPECT_EQ(ret<=0, true);
+}
+
+struct BurstResult {
+    int64_t fileId;
+    string title;
+    int32_t mediaType;
+    int32_t subtype;
+    int32_t isFavourite;
+    int32_t burstCoverLevel;
+    string burstKey;
+    int32_t burstKeyLength;
+    bool isCover;
+    int32_t mapAlbum;
+};
+
+void InsertBurstAsset(BurstResult &result)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    EXPECT_NE(rdbStore, nullptr);
+    auto rdbStorePtr = rdbStore->GetRaw();
+    EXPECT_NE(rdbStorePtr, nullptr);
+
+    ValuesBucket valuesBucket;
+    valuesBucket.PutInt(MediaColumn::MEDIA_TYPE, result.mediaType);
+    valuesBucket.PutString(MediaColumn::MEDIA_TITLE, result.title);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, result.subtype);
+    valuesBucket.PutInt(MediaColumn::MEDIA_IS_FAV, result.isFavourite);
+    if (result.burstKey != "") {
+        valuesBucket.PutString(PhotoColumn::PHOTO_BURST_KEY, result.burstKey);
+    }
+    
+    int32_t ret = rdbStorePtr->Insert(result.fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
+}
+
+void InsertPhotomapForBurst(BurstResult result)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    EXPECT_NE(rdbStore, nullptr);
+    auto rdbStorePtr = rdbStore->GetRaw();
+    EXPECT_NE(rdbStorePtr, nullptr);
+
+    int64_t fileId = -1;
+    ValuesBucket valuesBucket;
+    valuesBucket.PutInt(PhotoMap::ASSET_ID, result.fileId);
+    valuesBucket.PutInt(PhotoMap::ALBUM_ID, result.mapAlbum);
+
+    int32_t ret = rdbStorePtr->Insert(fileId, PhotoMap::TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
+}
+
+void ValidBurstValue(BurstResult &exResult)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    EXPECT_NE(rdbStore, nullptr);
+    auto rdbStorePtr = rdbStore->GetRaw();
+    EXPECT_NE(rdbStorePtr, nullptr);
+
+    string querySql = "SELECT p1." + MediaColumn::MEDIA_ID + ", p1." + MediaColumn::MEDIA_TITLE + ", p1." +
+        PhotoColumn::PHOTO_SUBTYPE + ", p1." + MediaColumn::MEDIA_IS_FAV + ", p1." + PhotoColumn::PHOTO_BURST_KEY +
+        ", p1." + PhotoColumn::PHOTO_BURST_COVER_LEVEL + ", p2." + PhotoMap::ALBUM_ID + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " AS p1 JOIN " + PhotoMap::TABLE + " AS p2 ON p1." + MediaColumn::MEDIA_ID +
+        " = p2." + PhotoMap::ASSET_ID + " WHERE p1." + MediaColumn::MEDIA_ID + " = " + to_string(exResult.fileId);
+
+    auto resultSet = rdbStorePtr->QueryByStep(querySql);
+    EXPECT_NE(resultSet, nullptr);
+    EXPECT_EQ(resultSet->GoToFirstRow(), E_OK);
+    int32_t count = -1;
+    int32_t ret = resultSet->GetRowCount(count);
+    EXPECT_EQ(ret, E_OK);
+    string titleValue = GetStringVal(MediaColumn::MEDIA_TITLE, resultSet);
+    EXPECT_EQ(titleValue, exResult.title);
+    int32_t subtypeValue = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    EXPECT_EQ(subtypeValue, exResult.subtype);
+    int32_t isFavouriteValue = GetInt32Val(MediaColumn::MEDIA_IS_FAV, resultSet);
+    EXPECT_EQ(isFavouriteValue, exResult.isFavourite);
+    int32_t burstCoverLevelValue = GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet);
+    EXPECT_EQ(burstCoverLevelValue, exResult.burstCoverLevel);
+    string burstKeyValue = GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet);
+    EXPECT_EQ(burstKeyValue.size(), exResult.burstKeyLength);
+    int32_t mapAlbumValue = GetInt32Val(PhotoMap::ALBUM_ID, resultSet);
+    EXPECT_EQ(mapAlbumValue, exResult.mapAlbum);
+
+    if (exResult.isCover && exResult.burstKeyLength > 0) {
+        exResult.burstKey = burstKeyValue;
+    }
+    if (!exResult.isCover && exResult.burstKeyLength > 0) {
+        EXPECT_EQ(burstKeyValue, exResult.burstKey);
+    }
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start UpdateBurstFromGallery_test_function_001");
+    struct BurstResult burstCover = {-1, "IMG_12345678_123456_BURST001_COVER",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), static_cast<int32_t>(PhotoSubType::DEFAULT), 0,
+        static_cast<int32_t>(BurstCoverLevelType::COVER), "", 0, true, 8};
+    InsertBurstAsset(burstCover);
+    InsertPhotomapForBurst(burstCover);
+    ValidBurstValue(burstCover);
+
+    struct BurstResult burstMember = {-1, "IMG_12345678_123456_BURST002",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), static_cast<int32_t>(PhotoSubType::DEFAULT), 0,
+        static_cast<int32_t>(BurstCoverLevelType::COVER), "", 0, false, 8};
+    InsertBurstAsset(burstMember);
+    InsertPhotomapForBurst(burstMember);
+    ValidBurstValue(burstMember);
+
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(dataManager, nullptr);
+    dataManager->refCnt_.store(1);
+    auto result = dataManager->UpdateBurstFromGallery();
+    EXPECT_EQ(result, E_OK);
+
+    burstCover.subtype = static_cast<int32_t>(PhotoSubType::BURST);
+    burstCover.burstKeyLength = 36;
+    ValidBurstValue(burstCover);
+
+    burstMember.subtype = static_cast<int32_t>(PhotoSubType::BURST);
+    burstMember.burstCoverLevel = static_cast<int32_t>(BurstCoverLevelType::MEMBER);
+    burstMember.burstKeyLength = 36;
+    burstMember.burstKey = burstCover.burstKey;
+    ValidBurstValue(burstMember);
+    MEDIA_INFO_LOG("end UpdateBurstFromGallery_test_001");
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start UpdateBurstFromGallery_test_function_002");
+    struct BurstResult burstCover = {-1, "IMG_12345678_123456_BURST001_cover",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), static_cast<int32_t>(PhotoSubType::DEFAULT), 0,
+        static_cast<int32_t>(BurstCoverLevelType::COVER), "", 0, true, 8};
+    InsertBurstAsset(burstCover);
+    InsertPhotomapForBurst(burstCover);
+    ValidBurstValue(burstCover);
+
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(dataManager, nullptr);
+    dataManager->refCnt_.store(1);
+    auto result = dataManager->UpdateBurstFromGallery();
+    EXPECT_EQ(result, E_OK);
+
+    // IMG_12345678_123456_BURST001_cover is burst cover (case-insensitive to letters)
+    burstCover.subtype = static_cast<int32_t>(PhotoSubType::BURST);
+    burstCover.burstKeyLength = 36;
+    ValidBurstValue(burstCover);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start UpdateBurstFromGallery_test_function_003");
+    struct BurstResult burstCover = {-1, "IMG_12345678_123456_BURST_cover",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), static_cast<int32_t>(PhotoSubType::DEFAULT), 0,
+        static_cast<int32_t>(BurstCoverLevelType::COVER), "", 0, true, 8};
+    InsertBurstAsset(burstCover);
+    InsertPhotomapForBurst(burstCover);
+    ValidBurstValue(burstCover);
+
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(dataManager, nullptr);
+    dataManager->refCnt_.store(1);
+    auto result = dataManager->UpdateBurstFromGallery();
+    EXPECT_EQ(result, E_OK);
+
+    // IMG_12345678_123456_BURST_cover is not burst cover (case-insensitive to letters)
+    ValidBurstValue(burstCover);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_001, TestSize.Level0)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(dataManager, nullptr);
+    dataManager->refCnt_.store(0);
+    auto result = dataManager->UpdateBurstFromGallery();
+    EXPECT_EQ(result, E_FAIL);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_002, TestSize.Level0)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(dataManager, nullptr);
+    dataManager->refCnt_.store(1);
+    auto result = dataManager->UpdateBurstFromGallery();
+    EXPECT_EQ(result, E_OK);
 }
 
 } // namespace Media

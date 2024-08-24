@@ -52,8 +52,10 @@ const std::string IMAGE_CONTAINER_TYPE_JPE = "jpe";
 const std::string IMAGE_CONTAINER_TYPE_PNG = "png";
 const std::string IMAGE_CONTAINER_TYPE_WEBP = "webp";
 const std::string IMAGE_CONTAINER_TYPE_RAW = "raw";
+const std::string IMAGE_CONTAINER_TYPE_DNG = "dng";
 const std::string IMAGE_CONTAINER_TYPE_SVG = "svg";
 const std::string IMAGE_CONTAINER_TYPE_HEIF = "heif";
+const std::string IMAGE_CONTAINER_TYPE_HEIC = "heic";
 const std::string DIR_ALL_CONTAINER_TYPE = ".ALLTYPE";
 const std::string DIR_ALL_TYPE_VALUES = "ALLTYPE";
 

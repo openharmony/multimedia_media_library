@@ -43,8 +43,6 @@ namespace Media {
 const string API_VERSION = "api_version";
 const string SAVE_PICTURE = "save_picture";
 const double TIMER_MULTIPLIER = 60.0;
-const int32_t BURST_COVER = 1;
-const int32_t BURST_MEMBER = 2;
 
 PhotoAssetProxy::PhotoAssetProxy() {}
 
@@ -129,11 +127,9 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
     if (cameraShotType_ == CameraShotType::BURST) {
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
         values.Put(PhotoColumn::PHOTO_BURST_KEY, photoProxy->GetBurstKey());
-        if (photoProxy->IsCoverPhoto()) {
-            values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER);
-        } else {
-            values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_MEMBER);
-        }
+        values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+            photoProxy->IsCoverPhoto() ? static_cast<int32_t>(BurstCoverLevelType::COVER)
+                                       : static_cast<int32_t>(BurstCoverLevelType::MEMBER));
     }
     values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
     values.Put(PhotoColumn::PHOTO_IS_TEMP, true);

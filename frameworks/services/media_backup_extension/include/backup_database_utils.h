@@ -17,6 +17,9 @@
 #define BACKUP_DATABASE_UTILS_H
 
 #include <string>
+#include <sstream>
+#include <vector>
+#include <type_traits>
 
 #include "backup_const.h"
 #include "rdb_helper.h"
@@ -24,6 +27,7 @@
 
 namespace OHOS {
 namespace Media {
+using FileIdPair = std::pair<int32_t, int32_t>;
 class BackupDatabaseUtils {
 public:
     static int32_t InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
@@ -82,6 +86,22 @@ public:
     static bool IsValInBound(float val, float minVal, float maxVal);
     static void UpdateGroupTag(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::unordered_map<std::string, std::string> &groupTagMap);
+    static std::vector<std::pair<std::string, std::string>> GetColumnInfoPairs(
+        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName);
+    static std::vector<std::string> GetCommonColumnInfos(std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
+        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::string tableName);
+    static std::vector<std::string> filterColumns(const std::vector<std::string>& allColumns,
+        const std::vector<std::string>& excludedColumns);
+    static std::vector<FileIdPair> CollectFileIdPairs(const std::vector<FileInfo>& fileInfos);
+    static std::pair<std::vector<int32_t>, std::vector<int32_t>> UnzipFileIdPairs(const std::vector<FileIdPair>& pairs);
+    static void UpdateAnalysisPhotoMapStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
+    static std::vector<std::string> SplitString(const std::string& str, char delimiter);
+    static void PrintQuerySql(const std::string& querySql);
+
+    template <typename T>
+    static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
+    template <typename T>
+    static std::string JoinSQLValues(const std::vector<T>& values, std::string_view delimiter);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
@@ -101,6 +121,44 @@ public:
         return 0;
     }
 };
+
+template <typename T>
+std::string BackupDatabaseUtils::JoinSQLValues(const std::vector<T>& values, std::string_view delimiter)
+{
+    std::stringstream ss;
+    bool first = true;
+    for (const auto& value : values) {
+        if (!first) {
+            ss << delimiter;
+        }
+        first = false;
+        if constexpr (std::is_same_v<T, std::string>) {
+            ss << "'" << value << "'";
+        } else {
+            ss << std::to_string(value);
+        }
+    }
+    return ss.str();
+}
+
+template <typename T>
+std::string BackupDatabaseUtils::JoinValues(const std::vector<T>& values, std::string_view delimiter)
+{
+    std::stringstream ss;
+    bool first = true;
+    for (const auto& value : values) {
+        if (!first) {
+            ss << delimiter;
+        }
+        first = false;
+        if constexpr (std::is_same_v<T, std::string>) {
+            ss << value;
+        } else {
+            ss << std::to_string(value);
+        }
+    }
+    return ss.str();
+}
 } // namespace Media
 } // namespace OHOS
 

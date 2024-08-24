@@ -31,6 +31,7 @@
 #include "system_ability_definition.h"
 #include "media_asset_base_capi.h"
 #include "media_asset_manager_capi.h"
+#include "media_asset_impl.h"
 
 using namespace std;
 using namespace OHOS;
@@ -60,6 +61,7 @@ const int SCAN_WAIT_TIME_1S = 1;
 const char ERROR_REQUEST_ID[UUID_STR_MAX_LENGTH] = "00000000-0000-0000-0000-000000000000";
 const std::string ROOT_TEST_MEDIA_DIR =
     "/data/app/el2/100/base/com.ohos.medialibrary.medialibrarydata/haps/";
+const std::string TEST_DISPLAY_NAME = "test_image.png";
 
 static const unsigned char FILE_CONTENT_JPG[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24, 0x5d, 0x54, 0x45, 0x4e, 0x43, 0x20, 0x20, 0x20, 0x0b,
@@ -214,6 +216,14 @@ void CallbackFunciton(int32_t result, MediaLibrary_RequestId requestId)
     EXPECT_EQ(result, E_SUCCESS);
     MEDIA_INFO_LOG("CallbackFunciton::result: %{public}d", result);
     MEDIA_INFO_LOG("CallbackFunciton::requestId: %{public}s", requestId.requestId);
+}
+
+void CallbackFuncitonWithQuality(MediaLibrary_ErrorCode result,
+    MediaLibrary_RequestId requestId, MediaLibrary_MediaQuality mediaQuality,
+    MediaLibrary_MediaContentType type, OH_ImageSourceNative* imageSourceNative)
+{
+    MEDIA_INFO_LOG("CallbackFuncitonWithQuality::result: %{public}d", result);
+    MEDIA_INFO_LOG("CallbackFuncitonWithQuality::requestId: %{public}s", requestId.requestId);
 }
 
 /**
@@ -500,6 +510,62 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_007, TestSi
         requestOptions, destUri.c_str(), callback);
     bool ret = OH_MediaAssetManager_CancelRequest(manager, requestID);
     ASSERT_EQ(ret, false);
+}
+
+/**
+ * @tc.number    : MediaLibraryAssetManager_test_008
+ * @tc.name      : request image by ML_HIGH_QUALITY_MODE, then request image
+ * @tc.desc      : call request image function and verify the correct return code and image source
+ */
+HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryAssetManager_test_008::Start");
+    string srcDisplayName = "request_video_src_4.jpg";
+    string destDisplayName = "request_video_dest_4.jpg";
+    string srcuri = mediaLibraryManager->CreateAsset(srcDisplayName);
+    EXPECT_NE(srcuri, "");
+    int32_t srcFd = mediaLibraryManager->OpenAsset(srcuri, MEDIA_FILEMODE_READWRITE);
+    EXPECT_NE(srcFd <= 0, true);
+    int32_t resWrite = write(srcFd, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
+    if (resWrite == -1) {
+        EXPECT_EQ(false, true);
+    }
+    mediaLibraryManager->CloseAsset(srcuri, srcFd);
+
+    string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
+    EXPECT_NE(destUri, "");
+    MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
+    sleep(SCAN_WAIT_TIME_1S);
+    OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
+    ASSERT_NE(manager, nullptr);
+    MediaLibrary_RequestOptions requestOptions;
+    requestOptions.deliveryMode = MediaLibrary_DeliveryMode::MEDIA_LIBRARY_HIGH_QUALITY_MODE;
+    static OH_MediaLibrary_OnDataPrepared callback_ = CallbackFunciton;
+    static OH_MediaLibrary_OnImageDataPrepared callback = CallbackFuncitonWithQuality;
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_MEDIALIBRARY);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    fileAsset->SetDisplayName(TEST_DISPLAY_NAME);
+    auto mediaAsset = new OH_MediaAsset(fileAsset);
+    ASSERT_NE(mediaAsset, nullptr);
+    MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, srcuri.c_str(),
+        requestOptions, destUri.c_str(), callback_);
+    MediaLibrary_ErrorCode ret = OH_MediaAssetManager_RequestImage(manager, mediaAsset, requestOptions,
+        &requestID, callback);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_OK);
+    ret = OH_MediaAssetManager_RequestImage(nullptr, mediaAsset, requestOptions, &requestID, callback);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
+    ret = OH_MediaAssetManager_RequestImage(manager, nullptr, requestOptions, &requestID, callback);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
+    ret = OH_MediaAssetManager_RequestImage(manager, mediaAsset, requestOptions, nullptr, callback);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
+    ret = OH_MediaAssetManager_RequestImage(manager, mediaAsset, requestOptions, &requestID, nullptr);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
+    std::shared_ptr<FileAsset> fileAsset_ = mediaAsset->GetFileAssetInstance();
+    const string displayName = "";
+    fileAsset_->SetDisplayName(displayName);
+    ret = OH_MediaAssetManager_RequestImage(manager, mediaAsset, requestOptions, &requestID, callback);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
 }
 } // namespace Media
 } // namespace OHOS

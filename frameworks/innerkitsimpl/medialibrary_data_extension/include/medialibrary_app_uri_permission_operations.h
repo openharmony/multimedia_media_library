@@ -19,6 +19,7 @@
 #include <string>
 #include <unordered_map>
 #include "media_app_uri_permission_column.h"
+#include "media_app_uri_sensitive_column.h"
 #include "file_asset.h"
 #include "medialibrary_command.h"
 #include "rdb_predicates.h"
@@ -75,6 +76,8 @@ private:
         int &permissionTypeParam);
     static bool IsValidPermissionType(int &permissionType);
     static bool CanOverride(int &permissionTypeParam, int &permissionTypeDB);
+    static bool IsPhotoExist(int &photoFileId);
+    static bool IsPhotosAllExist(const std::vector<DataShare::DataShareValuesBucket> &values);
 };
 } // namespace Media
 } // namespace OHOS

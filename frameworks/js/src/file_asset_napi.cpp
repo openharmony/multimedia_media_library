@@ -80,6 +80,7 @@
 #include "vision_segmentation_column.h"
 #include "vision_total_column.h"
 #include "vision_video_label_column.h"
+#include "vision_multi_crop_column.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -1273,6 +1274,10 @@ static void BuildCommitModifyUriApi10(FileAssetAsyncContext *context, string &ur
 static bool CheckDisplayNameInCommitModify(FileAssetAsyncContext *context)
 {
     if (context->resultNapiType != ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+        if (context->objectPtr->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
+            context->error = JS_E_DISPLAYNAME;
+            return false;
+        }
         if (context->objectPtr->GetMediaType() != MediaType::MEDIA_TYPE_FILE) {
             if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
                 context->error = JS_E_DISPLAYNAME;
@@ -1979,6 +1984,7 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
         HEAD_SCALE_WIDTH, HEAD_SCALE_HEIGHT, PROB, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
     { ANALYSIS_BONE_POSE, { POSE, PAH_QUERY_ANA_POSE, { POSE_ID, POSE_LANDMARKS, POSE_SCALE_X, POSE_SCALE_Y,
         POSE_SCALE_WIDTH, POSE_SCALE_HEIGHT, PROB, POSE_TYPE, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
+    { ANALYSIS_MULTI_CROP, { RECOMMENDATION, PAH_QUERY_ANA_RECOMMENDATION, { MOVEMENT_CROP, MOVEMENT_VERSION } } },
 };
 
 static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
