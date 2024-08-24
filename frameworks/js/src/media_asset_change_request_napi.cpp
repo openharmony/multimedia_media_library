@@ -2164,7 +2164,8 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_SUBTYPE,
         to_string(fileAsset->GetPhotoSubType()));
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, IMAGE_FILE_TYPE, to_string(context.objectInfo->GetImageFileType()));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, IMAGE_FILE_TYPE,
+        to_string(context.objectInfo->GetImageFileType()));
     Uri uri(uriStr);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);

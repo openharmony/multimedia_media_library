@@ -89,6 +89,7 @@ private:
         const NativeRdb::AbsRdbPredicates &predicates);
     void CancelRequestAndRemoveImage(const std::vector<std::string> &columns);
     void AddImage(MediaLibraryCommand &cmd);
+    int32_t UpdatePictureQuality(const std::string &photoId);
 
     std::unordered_set<int32_t> setOfDeleted_;
 

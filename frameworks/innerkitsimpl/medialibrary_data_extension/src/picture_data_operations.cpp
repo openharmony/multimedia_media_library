@@ -142,7 +142,8 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
     MEDIA_DEBUG_LOG("end");
 }
 
-std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageId(const std::string& imageId, bool isCleanImmediately)
+std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageId(const std::string& imageId,
+    bool isCleanImmediately)
 {
     MEDIA_DEBUG_LOG("enter %{public}s enter", imageId.c_str());
     enum PictureType pictureType;
@@ -165,18 +166,22 @@ void PictureDataOperations::SavePictureWithImageId(const std::string& imageId)
 {
     MEDIA_DEBUG_LOG("enter ");
     enum PictureType pictureType;
+    bool isSuccess = false;
     for (pictureType = HIGH_QUALITY_PICTURE; pictureType >= LOW_QUALITY_PICTURE;
         pictureType = (PictureType)(pictureType - 1)) {
         switch (pictureType) {
             case LOW_QUALITY_PICTURE:
-                SavePicture(imageId, lowQualityPictureMap_);
+                isSuccess = SavePicture(imageId, lowQualityPictureMap_);
                 break;
             case HIGH_QUALITY_PICTURE:
-                SavePicture(imageId, highQualityPictureMap_);
+                isSuccess = SavePicture(imageId, highQualityPictureMap_);
                 break;
             default:
                 break;
         }
+    }
+    if (isSuccess) { // 高质量提前返回
+        return;
     }
     MEDIA_DEBUG_LOG("end ");
 }
@@ -256,7 +261,8 @@ void PictureDataOperations::SaveLowQualityPicture(const std::string& imageId)
 }
 
 // 落盘低质量图，包括低质量裸图
-bool PictureDataOperations::SavePicture(const std::string& imageId, std::map<std::string, sptr<PicturePair>>& pictureMap)
+bool PictureDataOperations::SavePicture(const std::string& imageId,
+    std::map<std::string, sptr<PicturePair>>& pictureMap)
 {
     MEDIA_DEBUG_LOG("enter photoId: %{public}s", imageId.c_str());
     lock_guard<mutex> lock(pictureMapMutex_);

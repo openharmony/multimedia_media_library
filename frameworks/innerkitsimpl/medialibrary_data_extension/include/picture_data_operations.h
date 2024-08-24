@@ -72,7 +72,7 @@ public:
         return *this;
     }
 
-    ~PicturePair() 
+    ~PicturePair()
     {
         if (picture_) {
             picture_ = nullptr;

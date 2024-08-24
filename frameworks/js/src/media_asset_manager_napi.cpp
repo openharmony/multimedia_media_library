@@ -611,7 +611,8 @@ napi_status MediaAssetManagerNapi::ParseEfficentRequestMediaArgs(napi_env env, n
         if (ParseArgGetEfficientImageDataHandler(env, asyncContext->argv[PARAM3], asyncContext->dataHandler,
             asyncContext->needsExtraInfo) != napi_ok) {
             NAPI_ERR_LOG("requestMedia ParseArgGetEfficientImageDataHandler error");
-            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMedia ParseArgGetEfficientImageDataHandler error");
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
+                "requestMedia ParseArgGetEfficientImageDataHandler error");
             return napi_invalid_arg;
         }
     } else if (asyncContext->argc == ARGS_FIVE) {
