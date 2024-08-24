@@ -337,7 +337,7 @@ int32_t PhotoAssetProxy::UpdatePhotoQuality(shared_ptr<DataShare::DataShareHelpe
 {
     string uri = PAH_ADD_IMAGE;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    if (photoProxy->GetFormat() == PhotoFormat::YUV || photoProxy->GetFormat() == PhotoFormat::HEIF) {
+    if (photoProxy->GetFormat() == PhotoFormat::YUV) {
         MediaFileUtils::UriAppendKeyValue(uri, SAVE_PICTURE, OPRN_ADD_LOWQUALITY_IMAGE);
     }
     Uri updateAssetUri(uri);
@@ -424,7 +424,7 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
         return;
     }
     UpdatePhotoQuality(dataShareHelper_, photoProxy, fileId_, static_cast<int32_t>(subType_));
-    if (photoProxy->GetFormat() == PhotoFormat::YUV || photoProxy->GetFormat() == PhotoFormat::HEIF) {
+    if (photoProxy->GetFormat() == PhotoFormat::YUV) {
         photoProxy->Release();
         tracer.Finish();
         return;
