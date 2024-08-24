@@ -133,8 +133,8 @@ public:
     NativeSourceMode GetSourceMode();
     void SetNotifyMode(NativeNotifyMode trigger);
     NativeNotifyMode GetNotifyMode();
-    NativeOnDataPrepared onDataPreparedHandler_;
-    OH_MediaLibrary_OnImageDataPrepared onRequestImageDataPreparedHandler_;
+    NativeOnDataPrepared onDataPreparedHandler_ = nullptr;
+    OH_MediaLibrary_OnImageDataPrepared onRequestImageDataPreparedHandler_ = nullptr;
     int32_t GetPhotoQuality();
     void SetPhotoQuality(int32_t photoQuality);
 
@@ -144,7 +144,7 @@ private:
     std::string destUri_;
     NativeSourceMode sourceMode_;
     NativeNotifyMode notifyMode_ = NativeNotifyMode::FAST_NOTIFY;
-    int32_t photoQuality_;
+    int32_t photoQuality_ = 0;
 };
 } // Media
 } // OHOS

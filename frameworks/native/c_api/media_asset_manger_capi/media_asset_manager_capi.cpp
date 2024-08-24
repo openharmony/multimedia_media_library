@@ -26,6 +26,8 @@
 
 using namespace OHOS::Media;
 
+const std::string ERROR_REQUEST_ID = "00000000-0000-0000-0000-000000000000";
+
 struct MediaAssetMangerObject : public OH_MediaAssetManager {
     explicit MediaAssetMangerObject(const std::shared_ptr<MediaAssetManager> &manager)
         : manager_(manager) {}
@@ -52,18 +54,23 @@ OH_MediaAssetManager *OH_MediaAssetManager_Create(void)
 MediaLibrary_RequestId OH_MediaAssetManager_RequestImageForPath(OH_MediaAssetManager* manager, const char* uri,
     MediaLibrary_RequestOptions requestOptions, const char* destPath, OH_MediaLibrary_OnDataPrepared callback)
 {
-    CHECK_AND_PRINT_LOG(manager != nullptr, "input manager is nullptr!");
+    MediaLibrary_RequestId requestId;
+    strncpy_s(requestId.requestId, UUID_STR_LENGTH, ERROR_REQUEST_ID.c_str(), UUID_STR_LENGTH);
+
+    CHECK_AND_RETURN_RET_LOG(manager != nullptr, requestId, "input manager is nullptr!");
     struct MediaAssetMangerObject *managerObj = reinterpret_cast<MediaAssetMangerObject *>(manager);
-    CHECK_AND_PRINT_LOG(managerObj->manager_ != nullptr, "manager_ is null");
-    CHECK_AND_PRINT_LOG(uri != nullptr, "uri is null");
-    CHECK_AND_PRINT_LOG(destPath != nullptr, "destPath is null");
-    CHECK_AND_PRINT_LOG(callback != nullptr, "callback is null");
+    CHECK_AND_RETURN_RET_LOG(managerObj != nullptr, requestId, "managerObj is null");
+    CHECK_AND_RETURN_RET_LOG(managerObj->manager_ != nullptr, requestId, "manager_ is null");
+    CHECK_AND_RETURN_RET_LOG(uri != nullptr, requestId, "uri is null");
+    CHECK_AND_RETURN_RET_LOG(destPath != nullptr, requestId, "destPath is null");
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, requestId, "callback is null");
     NativeRequestOptions nativeRequestOptions;
     OH_MediaAssetManager_Convert(requestOptions, nativeRequestOptions);
     NativeOnDataPrepared nativeCallback = reinterpret_cast<NativeOnDataPrepared>(callback);
+    CHECK_AND_RETURN_RET_LOG(nativeCallback != nullptr, requestId, "nativeCallback is null");
+
     std::string requestIdStr = managerObj->manager_->NativeRequestImage(uri, nativeRequestOptions, destPath,
         nativeCallback);
-    MediaLibrary_RequestId requestId;
     strncpy_s(requestId.requestId, UUID_STR_LENGTH, requestIdStr.c_str(), UUID_STR_LENGTH);
     return requestId;
 }
@@ -71,28 +78,34 @@ MediaLibrary_RequestId OH_MediaAssetManager_RequestImageForPath(OH_MediaAssetMan
 MediaLibrary_RequestId OH_MediaAssetManager_RequestVideoForPath(OH_MediaAssetManager* manager, const char* uri,
     MediaLibrary_RequestOptions requestOptions, const char* destPath, OH_MediaLibrary_OnDataPrepared callback)
 {
-    CHECK_AND_PRINT_LOG(manager != nullptr, "input manager is nullptr!");
+    MediaLibrary_RequestId requestId;
+    strncpy_s(requestId.requestId, UUID_STR_LENGTH, ERROR_REQUEST_ID.c_str(), UUID_STR_LENGTH);
+
+    CHECK_AND_RETURN_RET_LOG(manager != nullptr, requestId, "input manager is nullptr!");
     struct MediaAssetMangerObject *managerObj = reinterpret_cast<MediaAssetMangerObject *>(manager);
-    CHECK_AND_PRINT_LOG(managerObj->manager_ != nullptr, "manager_ is null");
-    CHECK_AND_PRINT_LOG(uri != nullptr, "uri is null");
-    CHECK_AND_PRINT_LOG(destPath != nullptr, "destPath is null");
-    CHECK_AND_PRINT_LOG(callback != nullptr, "callback is null");
+    CHECK_AND_RETURN_RET_LOG(managerObj != nullptr, requestId, "imanagerObj is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(managerObj->manager_ != nullptr, requestId, "manager_ is null");
+    CHECK_AND_RETURN_RET_LOG(uri != nullptr, requestId, "uri is null");
+    CHECK_AND_RETURN_RET_LOG(destPath != nullptr, requestId, "destPath is null");
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, requestId, "callback is null");
     NativeRequestOptions nativeRequestOptions;
     OH_MediaAssetManager_Convert(requestOptions, nativeRequestOptions);
     NativeOnDataPrepared nativeCallback = reinterpret_cast<NativeOnDataPrepared>(callback);
+    CHECK_AND_RETURN_RET_LOG(nativeCallback != nullptr, requestId, "nativeCallback is null");
+
     std::string requestIdStr = managerObj->manager_->NativeRequestVideo(uri, nativeRequestOptions, destPath,
         nativeCallback);
-    MediaLibrary_RequestId requestId;
     strncpy_s(requestId.requestId, UUID_STR_LENGTH, requestIdStr.c_str(), UUID_STR_LENGTH);
     return requestId;
 }
 
 bool OH_MediaAssetManager_CancelRequest(OH_MediaAssetManager* manager, const MediaLibrary_RequestId requestId)
 {
-    CHECK_AND_PRINT_LOG(manager != nullptr, "input manager is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(manager != nullptr, false, "input manager is nullptr!");
     struct MediaAssetMangerObject *managerObj = reinterpret_cast<MediaAssetMangerObject *>(manager);
-    CHECK_AND_PRINT_LOG(managerObj->manager_ != nullptr, "manager_ is null");
-    CHECK_AND_PRINT_LOG(strlen(requestId.requestId) > 0, "requestId is empty");
+    CHECK_AND_RETURN_RET_LOG(managerObj != nullptr, false, "managerObj is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(managerObj->manager_ != nullptr, false, "manager_ is null");
+    CHECK_AND_RETURN_RET_LOG(strlen(requestId.requestId) > 0, false, "requestId is empty");
     return managerObj->manager_->NativeCancelRequest(requestId.requestId);
 }
 
@@ -102,6 +115,7 @@ MediaLibrary_ErrorCode OH_MediaAssetManager_RequestImage(OH_MediaAssetManager* m
 {
     CHECK_AND_RETURN_RET_LOG(manager != nullptr, MEDIA_LIBRARY_PARAMETER_ERROR, "input manager is nullptr!");
     struct MediaAssetMangerObject *managerObj = reinterpret_cast<MediaAssetMangerObject *>(manager);
+    CHECK_AND_RETURN_RET_LOG(managerObj != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "managerObj is null");
     CHECK_AND_RETURN_RET_LOG(managerObj->manager_ != nullptr, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED,
         "manager_ is null");
     CHECK_AND_RETURN_RET_LOG(mediaAsset != nullptr, MEDIA_LIBRARY_PARAMETER_ERROR, "mediaAsset is nullptr!");
