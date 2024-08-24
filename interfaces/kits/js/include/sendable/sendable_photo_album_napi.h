@@ -85,7 +85,6 @@ private:
     napi_env env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;
     static thread_local PhotoAlbum *pAlbumData_;
-    static thread_local napi_ref constructor_;
     static thread_local napi_ref photoAccessConstructor_;
 };
 

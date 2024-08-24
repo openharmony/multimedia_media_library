@@ -33,7 +33,6 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-thread_local napi_ref SendableFetchFileResultNapi::userFileMgrConstructor_ = nullptr;
 thread_local napi_ref SendableFetchFileResultNapi::photoAccessHelperConstructor_ = nullptr;
 
 SendableFetchFileResultNapi::SendableFetchFileResultNapi()
@@ -135,10 +134,6 @@ void SendableFetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<Fil
     napi_ref &constructorRef)
 {
     switch (fileResult->GetResultNapiType()) {
-        case ResultNapiType::TYPE_USERFILE_MGR: {
-            constructorRef = userFileMgrConstructor_;
-            break;
-        }
         case ResultNapiType::TYPE_PHOTOACCESS_HELPER: {
             constructorRef = photoAccessHelperConstructor_;
             break;
@@ -154,10 +149,6 @@ void SendableFetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<Alb
     napi_ref &constructorRef)
 {
     switch (fileResult->GetResultNapiType()) {
-        case ResultNapiType::TYPE_USERFILE_MGR: {
-            constructorRef = userFileMgrConstructor_;
-            break;
-        }
         case ResultNapiType::TYPE_PHOTOACCESS_HELPER: {
             constructorRef = photoAccessHelperConstructor_;
             break;
@@ -173,10 +164,6 @@ void SendableFetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<Sma
     napi_ref &constructorRef)
 {
     switch (fileResult->GetResultNapiType()) {
-        case ResultNapiType::TYPE_USERFILE_MGR: {
-            constructorRef = userFileMgrConstructor_;
-            break;
-        }
         case ResultNapiType::TYPE_PHOTOACCESS_HELPER: {
             constructorRef = photoAccessHelperConstructor_;
             break;
@@ -192,10 +179,6 @@ void SendableFetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<Pho
     napi_ref &constructorRef)
 {
     switch (fileResult->GetResultNapiType()) {
-        case ResultNapiType::TYPE_USERFILE_MGR: {
-            constructorRef = userFileMgrConstructor_;
-            break;
-        }
         case ResultNapiType::TYPE_PHOTOACCESS_HELPER: {
             constructorRef = photoAccessHelperConstructor_;
             break;
@@ -210,6 +193,12 @@ void SendableFetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<Pho
 napi_value SendableFetchFileResultNapi::CreateFetchFileResult(napi_env env,
     unique_ptr<FetchResult<FileAsset>> fileResult)
 {
+    if (photoAccessHelperConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        SendableFetchFileResultNapi::PhotoAccessHelperInit(env, exports);
+    }
+
     MediaLibraryTracer tracer;
     tracer.Start("CreateFetchFileResult");
     napi_value constructor;
@@ -228,6 +217,12 @@ napi_value SendableFetchFileResultNapi::CreateFetchFileResult(napi_env env,
 napi_value SendableFetchFileResultNapi::CreateFetchFileResult(napi_env env,
     unique_ptr<FetchResult<AlbumAsset>> fileResult)
 {
+    if (photoAccessHelperConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        SendableFetchFileResultNapi::PhotoAccessHelperInit(env, exports);
+    }
+    
     MediaLibraryTracer tracer;
     tracer.Start("CreateFetchFileResult");
     napi_value constructor;
@@ -245,6 +240,12 @@ napi_value SendableFetchFileResultNapi::CreateFetchFileResult(napi_env env,
 napi_value SendableFetchFileResultNapi::CreateFetchFileResult(napi_env env,
     unique_ptr<FetchResult<PhotoAlbum>> fileResult)
 {
+    if (photoAccessHelperConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        SendableFetchFileResultNapi::PhotoAccessHelperInit(env, exports);
+    }
+
     MediaLibraryTracer tracer;
     tracer.Start("CreateFetchFileResult");
     napi_value constructor;
@@ -262,6 +263,12 @@ napi_value SendableFetchFileResultNapi::CreateFetchFileResult(napi_env env,
 napi_value SendableFetchFileResultNapi::CreateFetchFileResult(napi_env env,
     unique_ptr<FetchResult<SmartAlbumAsset>> fileResult)
 {
+    if (photoAccessHelperConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        SendableFetchFileResultNapi::PhotoAccessHelperInit(env, exports);
+    }
+
     MediaLibraryTracer tracer;
     tracer.Start("CreateFetchFileResult");
     napi_value constructor;

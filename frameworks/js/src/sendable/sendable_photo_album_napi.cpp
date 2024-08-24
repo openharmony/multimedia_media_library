@@ -37,7 +37,6 @@ using namespace OHOS::DataShare;
 
 namespace OHOS::Media {
 thread_local PhotoAlbum *SendablePhotoAlbumNapi::pAlbumData_ = nullptr;
-thread_local napi_ref SendablePhotoAlbumNapi::constructor_ = nullptr;
 thread_local napi_ref SendablePhotoAlbumNapi::photoAccessConstructor_ = nullptr;
 static const string PHOTO_ALBUM_CLASS = "UserFileMgrPhotoAlbum";
 static const string PHOTOACCESS_PHOTO_ALBUM_CLASS = "PhotoAccessPhotoAlbum";
@@ -81,13 +80,15 @@ napi_value SendablePhotoAlbumNapi::CreatePhotoAlbumNapi(napi_env env, unique_ptr
         return nullptr;
     }
 
-    napi_value constructor;
-    napi_ref constructorRef;
-    if (albumData->GetResultNapiType() == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
-        constructorRef = photoAccessConstructor_;
-    } else {
-        constructorRef = constructor_;
+    if (photoAccessConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        SendablePhotoAlbumNapi::PhotoAccessInit(env, exports);
     }
+
+    napi_value constructor;
+    napi_ref constructorRef = photoAccessConstructor_;
+
     CHECK_ARGS(env, napi_get_reference_value(env, constructorRef, &constructor), JS_INNER_FAIL);
 
     napi_value result = nullptr;
@@ -102,6 +103,12 @@ napi_value SendablePhotoAlbumNapi::CreatePhotoAlbumNapi(napi_env env, shared_ptr
     if (albumData == nullptr || albumData->GetResultNapiType() != ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         NAPI_ERR_LOG("Unsupported photo album data");
         return nullptr;
+    }
+
+    if (photoAccessConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        SendablePhotoAlbumNapi::PhotoAccessInit(env, exports);
     }
 
     napi_value constructor = nullptr;

@@ -191,6 +191,12 @@ napi_value SendableFileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileA
     if (iAsset == nullptr) {
         return nullptr;
     }
+    
+    if (photoAccessHelperConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        SendableFileAssetNapi::PhotoAccessHelperInit(env, exports);
+    }
 
     napi_value constructor = nullptr;
     napi_ref constructorRef;

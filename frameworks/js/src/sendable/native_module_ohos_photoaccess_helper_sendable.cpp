@@ -26,7 +26,6 @@ static napi_value PhotoAccessHelperExport(napi_env env, napi_value exports)
     SendablePhotoAlbumNapi::PhotoAccessInit(env, exports);
     SendableFileAssetNapi::PhotoAccessHelperInit(env, exports);
     SendableFetchFileResultNapi::PhotoAccessHelperInit(env, exports);
-    SendableMovingPhotoNapi::Init(env, exports);
     return exports;
 }
 
