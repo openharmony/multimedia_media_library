@@ -197,6 +197,11 @@ const std::unordered_map<ImageFileType, std::string> IMAGE_FILE_TYPE_MAP = {
     {JPEG, MIME_TYPE_JPEG},
     {HEIF, MIME_TYPE_HEIF},
 };
+enum class BurstCoverLevelType : int32_t {
+    COVER = 1,
+    MEMBER = 2,
+    DEFAULT = COVER
+};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_FILEMANAGEMENT_USERFILEMGR_TYPES_H

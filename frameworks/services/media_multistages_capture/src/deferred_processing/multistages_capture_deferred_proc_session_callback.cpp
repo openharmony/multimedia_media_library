@@ -158,6 +158,8 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         tracer.Finish();
         MEDIA_INFO_LOG("result set is empty");
+        // 高质量图先上来，直接保存
+        MultiStagesCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false);
         MultiStagesCaptureDfxTotalTime::GetInstance().RemoveStartTime(imageId);
         MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR));
         return;

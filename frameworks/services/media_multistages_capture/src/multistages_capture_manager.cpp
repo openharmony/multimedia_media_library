@@ -288,12 +288,20 @@ void MultiStagesCaptureManager::AddImage(MediaLibraryCommand &cmd)
     if (values.GetObject(PhotoColumn::PHOTO_QUALITY, valueObject)) {
         valueObject.GetInt(photoQuality);
     }
-    if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
-        return;
-    }
+
     string photoId = "";
     if (values.GetObject(PhotoColumn::PHOTO_ID, valueObject)) {
         valueObject.GetString(photoId);
+    }
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread != nullptr) {
+        pictureManagerThread->Start();
+    }
+    if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL) ||
+        pictureManagerThread->IsExsitPictureByImageId(photoId)) {
+        pictureManagerThread->SavePictureWithImageId(photoId);
+        UpdatePictureQuality(photoId);
+        return;
     }
     int32_t deferredProcType = -1;
     if (values.GetObject(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, valueObject)) {
@@ -311,6 +319,31 @@ void MultiStagesCaptureManager::AddImage(MediaLibraryCommand &cmd)
         MEDIA_DEBUG_LOG("save last low quality Image");
         SaveLowQualityImageInfo(cmd);
     }
+}
+
+int32_t MultiStagesCaptureManager::UpdatePictureQuality(const std::string &photoId)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdatePhotoQuality " + photoId);
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    NativeRdb::ValuesBucket updateValues;
+    updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+    updateCmd.SetValueBucket(updateValues);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
+    int32_t updatePhotoIdResult = DatabaseAdapter::Update(updateCmd);
+ 
+    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, false);
+    updateCmd.GetAbsRdbPredicates()->NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
+        to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+    NativeRdb::ValuesBucket updateValuesDirty;
+    updateValuesDirty.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    updateCmd.SetValueBucket(updateValuesDirty);
+    auto isTempResult = DatabaseAdapter::Update(updateCmd);
+    if (isTempResult < 0) {
+        MEDIA_WARN_LOG("update temp flag fail, photoId: %{public}s", photoId.c_str());
+    }
+ 
+    return updatePhotoIdResult;
 }
 
 void MultiStagesCaptureManager::SyncWithDeferredProcSessionInternal()
