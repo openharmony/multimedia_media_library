@@ -576,7 +576,6 @@ ohos_shared_library("sendablephotoaccesshelper") {
     "${MEDIALIB_JS_PATH}/src/sendable/sendable_fetch_file_result_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/sendable/sendable_file_asset_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/sendable/sendable_medialibrary_napi_utils.cpp",
-    "${MEDIALIB_JS_PATH}/src/sendable/sendable_moving_photo_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/sendable/sendable_photo_access_helper_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/sendable/sendable_photo_album_napi.cpp",
   ]

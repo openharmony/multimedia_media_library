@@ -277,6 +277,11 @@ napi_value SendablePhotoAccessHelper::GetPhotoAccessHelper(napi_env env, napi_ca
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetPhotoAccessHelper");
+    if (photoAccessHelperConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        SendablePhotoAccessHelper::Init(env, exports);
+    }
 
     return CreateNewInstance(env, info, photoAccessHelperConstructor_);
 }
