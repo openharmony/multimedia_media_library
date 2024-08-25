@@ -176,7 +176,7 @@ static int32_t ExecSqls(const vector<string> &sqls, RdbStore &store)
     return NativeRdb::E_OK;
 }
 
-static void CreateBurstKeyIndex(RdbStore &store)
+static void CreateBurstIndex(RdbStore &store)
 {
     const vector<string> sqls = {
         PhotoColumn::DROP_SCHPT_DAY_INDEX,
@@ -210,7 +210,7 @@ static void UpgradeRdbStore(AsyncTaskData *data)
     }
 
     if (OLD_VERSION < VERSION_CREATE_BURSTKEY_INDEX) {
-        CreateBurstKeyIndex(*rdbStore);
+        CreateBurstIndex(*rdbStore);
     }
 }
 
@@ -2628,7 +2628,7 @@ static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
 
 static void CreateBurstkeyIndex(RdbStore &store)
 {
-    // this function move to CreateBurstkeyIndex(), avoid to cost for long time.
+    // this function move to CreateBurstIndex(RdbStore &store), avoid to cost for long time.
 }
 
 static void UpdateIndexForAlbumQuery(RdbStore &store)
