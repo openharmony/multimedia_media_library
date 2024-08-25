@@ -18,8 +18,11 @@
 #include <string>
 #include <pixel_map.h>
 
+#include "ability_context_impl.h"
 #include "datashare_helper.h"
 #include "media_log.h"
+#include "medialibrary_data_manager.h"
+#include "medialibrary_unistore_manager.h"
 #include "rdb_predicates.h"
 #include "thumbnail_generate_helper.h"
 #include "thumbnail_service.h"
@@ -40,9 +43,23 @@ static inline int32_t FuzzInt32(const uint8_t *data)
     return static_cast<int32_t>(*data);
 }
 
+static int Init()
+{
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    abilityContextImpl->SetStageContext(stageContext);
+    int32_t sceneCode = 0;
+    return Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl, abilityContextImpl,
+        sceneCode);
+}
+
+
 static void ThumhnailTest(const uint8_t* data, size_t size)
 {
-    Media::ThumbnailService::GetInstance()->Init(nullptr, nullptr);
+    if (Init() != 0) {
+        MEDIA_ERR_LOG("Init medialibrary fail");
+        return;
+    }
     Media::ThumbnailService::GetInstance()->GetThumbnailFd(FuzzString(data, size),
         FuzzInt32(data));
     string thumUri = "file://media/Photo/1?operation=thumbnail&width=-1&height=-1";
@@ -56,18 +73,19 @@ static void ThumhnailTest(const uint8_t* data, size_t size)
     Media::ThumbnailService::GetInstance()->GenerateThumbnailBackground();
     Media::ThumbnailService::GetInstance()->UpgradeThumbnailBackground(false);
     Media::ThumbnailService::GetInstance()->RestoreThumbnailDualFrame();
+    Media::ThumbnailService::GetInstance()->CheckCloudThumbnailDownloadFinish();
     Media::ThumbnailService::GetInstance()->InterruptBgworker();
-    Media::ThumbnailService::GetInstance()->ReleaseService();
 }
 
 static void ThumbnailHelperTest(const uint8_t* data, size_t size)
 {
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return;
+    }
     Media::ThumbRdbOpt opts = {
-        .store = nullptr,
-        .path = FuzzString(data, size),
-        .table = FuzzString(data, size),
-        .row = 0,
-        .uri = FuzzString(data, size),
+        .store = rdbStore->GetRaw(),
+        .table = "Photos",
     };
     Media::ThumbnailGenerateHelper::GetThumbnailPixelMap(opts,
         static_cast<Media::ThumbnailType>(FuzzInt32(data)));

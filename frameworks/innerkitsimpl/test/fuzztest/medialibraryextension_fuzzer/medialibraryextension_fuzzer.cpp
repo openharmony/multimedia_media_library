@@ -133,13 +133,6 @@ static inline DatashareBusinessError FuzzDataShareBusinessError(const uint8_t *d
     return error;
 }
 
-static inline void InitFuzzer(MediaDataShareExtAbility &extension)
-{
-    AAFwk::Want want;
-    extension.OnStart(want);
-    extension.OnConnect(want);
-}
-
 static inline void NotifyChangeFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
 {
     extension.NotifyChange(FuzzUri(data, size));
@@ -262,7 +255,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     auto extension = OHOS::Init();
-    OHOS::InitFuzzer(extension);
     OHOS::InsertFuzzer(extension, data, size);
     OHOS::InsertExtFuzzer(extension, data, size);
     OHOS::UpdateFuzzer(extension, data, size);
