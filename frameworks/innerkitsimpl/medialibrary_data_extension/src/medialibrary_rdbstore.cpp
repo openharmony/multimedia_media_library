@@ -176,7 +176,7 @@ static int32_t ExecSqls(const vector<string> &sqls, RdbStore &store)
     return NativeRdb::E_OK;
 }
 
-static void CreateBurstKeyIndexAsync(AsyncTaskData *data)
+static void CreateBurstKeyIndex()
 {
     if (MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() == nullptr) {
         MEDIA_ERR_LOG("MediaDataAbility insert functionality is null.");
@@ -206,27 +206,27 @@ static void CreateBurstKeyIndexAsync(AsyncTaskData *data)
     MEDIA_INFO_LOG("end create idx_burstkey");
 }
 
-static void CreateBurstKeyIndex()
+static void UpgradeRdbStore(AsyncTaskData *data)
 {
-    MEDIA_INFO_LOG("start CreateBurstKeyIndex");
+    MEDIA_INFO_LOG("start UpgradeRdbStoreAsync");
+    if (OLD_VERSION < VERSION_CREATE_BURSTKEY_INDEX) {
+        CreateBurstKeyIndex();
+    }
+}
+
+static void UpgradeRdbStoreAsync()
+{
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
         MEDIA_ERR_LOG("Failed to get async worker instance!");
         return;
     }
-    shared_ptr<MediaLibraryAsyncTask> createBurstKeyIndexTask =
-        make_shared<MediaLibraryAsyncTask>(CreateBurstKeyIndexAsync, nullptr);
-    if (createBurstKeyIndexTask != nullptr) {
-        asyncWorker->AddTask(createBurstKeyIndexTask, false);
+    shared_ptr<MediaLibraryAsyncTask> upgradeRdbStoreTask =
+        make_shared<MediaLibraryAsyncTask>(UpgradeRdbStore, nullptr);
+    if (upgradeRdbStoreTask != nullptr) {
+        asyncWorker->AddTask(upgradeRdbStoreTask, false);
     } else {
-        MEDIA_ERR_LOG("Failed to create async task for createBurstKeyIndexTask!");
-    }
-}
-
-static void UpgradeExtensionAsync()
-{
-    if (OLD_VERSION < VERSION_CREATE_BURSTKEY_INDEX) {
-        CreateBurstKeyIndex();
+        MEDIA_ERR_LOG("Failed to create async task for upgradeRdbStoreTask!");
     }
 }
 
@@ -248,8 +248,9 @@ int32_t MediaLibraryRdbStore::Init()
         return errCode;
     }
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), SUCCESS");
+    // add process for which cost long time
     if (OLD_VERSION != -1) {
-        UpgradeExtensionAsync();
+        UpgradeRdbStoreAsync();
     }
     return E_OK;
 }
