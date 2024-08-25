@@ -752,6 +752,7 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
         .isWrite = true,
     };
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
+    cmd.SetDataSharePred(predicates);
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
     if (err != E_SUCCESS) {
@@ -789,6 +790,7 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
         .isWrite = true,
     };
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
+    cmd.SetDataSharePred(predicates);
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
     if (err != E_SUCCESS) {
@@ -811,6 +813,7 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     MediaLibraryCommand cmd(uri);
     PermParam permParam = {.isWrite = false};
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, nullptr, "permissionHandler_ is nullptr");
+    cmd.SetDataSharePred(predicates);
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
     if (err != E_SUCCESS) {
