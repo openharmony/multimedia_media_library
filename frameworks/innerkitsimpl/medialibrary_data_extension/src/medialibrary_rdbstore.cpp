@@ -176,18 +176,8 @@ static int32_t ExecSqls(const vector<string> &sqls, RdbStore &store)
     return NativeRdb::E_OK;
 }
 
-static void CreateBurstKeyIndex()
+static void CreateBurstKeyIndex(RdbStore &store)
 {
-    if (MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() == nullptr) {
-        MEDIA_ERR_LOG("MediaDataAbility insert functionality is null.");
-        return;
-    }
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("MediaDataAbility insert functionality rdbStore is null.");
-        return;
-    }
-
     const vector<string> sqls = {
         PhotoColumn::DROP_SCHPT_DAY_INDEX,
         PhotoColumn::DROP_SCHPT_HIDDEN_TIME_INDEX,
@@ -202,15 +192,25 @@ static void CreateBurstKeyIndex()
         PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX
     };
     MEDIA_INFO_LOG("start create idx_burstkey");
-    ExecSqls(sqls, *rdbStore);
+    ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end create idx_burstkey");
 }
 
 static void UpgradeRdbStore(AsyncTaskData *data)
 {
     MEDIA_INFO_LOG("start UpgradeRdbStoreAsync");
+    if (MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() == nullptr) {
+        MEDIA_ERR_LOG("MediaDataAbility insert functionality is null.");
+        return;
+    }
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("MediaDataAbility insert functionality rdbStore is null.");
+        return;
+    }
+
     if (OLD_VERSION < VERSION_CREATE_BURSTKEY_INDEX) {
-        CreateBurstKeyIndex();
+        CreateBurstKeyIndex(*rdbStore);
     }
 }
 
