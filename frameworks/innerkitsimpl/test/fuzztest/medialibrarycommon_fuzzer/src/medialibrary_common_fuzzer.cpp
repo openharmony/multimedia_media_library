@@ -72,8 +72,14 @@ static void PermissionUtilsTest(const uint8_t *data, size_t size)
     string packageName;
     Media::PermissionUtils::GetPackageName(FuzzInt32(data), packageName);
     Media::PermissionUtils::CheckIsSystemAppByUid();
-    Media::PermissionUtils::IsNativeSAApp();
     Media::PermissionUtils::GetPackageNameByBundleName(FuzzString(data, size));
+    Media::PermissionUtils::GetAppIdByBundleName(packageName);
+    Media::PermissionUtils::IsSystemApp();
+    Media::PermissionUtils::IsNativeSAApp();
+    Media::PermissionUtils::IsRootShell();
+    Media::PermissionUtils::IsHdcShell();
+    Media::PermissionUtils::GetTokenId();
+    Media::PermissionUtils::ClearBundleInfoInCache();
 }
 
 static void FileUriTest(const uint8_t *data, size_t size)
