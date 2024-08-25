@@ -27,6 +27,8 @@
 #include "medialibrary_uripermission_operations.h"
 #include "permission_utils.h"
 #include "medialibrary_type_const.h"
+#include "medialibrary_data_manager.h"
+#include "media_column.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -35,19 +37,66 @@ namespace OHOS::Media {
 static set<int> readPermSet{0, 1, 3, 4};
 
 static set<int> writePermSet{2, 3, 4};
+static string UFM_PHOTO_PREFIX = "datashare:///media/userfilemgr_photo_operation";
+static string UFM_AUDIO_PREFIX = "datashare:///media/userfilemgr_audio_operation";
+static string PATH_PHOTO_PREFIX = "datashare:///media/phaccess_photo_operation";
+
+static bool ParseFileIdFromPredicates(const DataShare::DataSharePredicates &predicates, string &fileId)
+{
+    constexpr int32_t FIELD_IDX = 0;
+    constexpr int32_t VALUE_IDX = 1;
+    constexpr int32_t OPERATION_SIZE = 2;
+    auto operationItems = predicates.GetOperationList();
+    for (DataShare::OperationItem item : operationItems) {
+        if (item.singleParams.size() < OPERATION_SIZE) {
+            continue;
+        }
+        if (!MediaLibraryDataManagerUtils::IsNumber(static_cast<string>(item.GetSingle(VALUE_IDX)))) {
+            continue;
+        }
+        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_ID) {
+            fileId = static_cast<string>(item.GetSingle(VALUE_IDX));
+            return true;
+        }
+    }
+    MEDIA_ERR_LOG("parse fileId from predicates fail");
+    return false;
+}
+
+static bool ParseInfoFromCmd(MediaLibraryCommand &cmd, string &fileId, int32_t &uriType)
+{
+    if (MediaFileUtils::StartsWith(cmd.GetUri().ToString(), PhotoColumn::PHOTO_URI_PREFIX)) {
+        uriType = static_cast<int32_t>(TableType::TYPE_PHOTOS);
+        fileId = MediaFileUtils::GetIdFromUri(cmd.GetUri().ToString());
+        return true;
+    }
+    if (MediaFileUtils::StartsWith(cmd.GetUri().ToString(), AudioColumn::AUDIO_URI_PREFIX)) {
+        uriType = static_cast<int32_t>(TableType::TYPE_AUDIOS);
+        fileId = MediaFileUtils::GetIdFromUri(cmd.GetUri().ToString());
+        return true;
+    }
+    bool isPhotoType = MediaFileUtils::StartsWith(cmd.GetUri().ToString(), UFM_PHOTO_PREFIX)
+        || MediaFileUtils::StartsWith(cmd.GetUri().ToString(), PATH_PHOTO_PREFIX);
+    if (isPhotoType) {
+        uriType = static_cast<int32_t>(TableType::TYPE_PHOTOS);
+        return ParseFileIdFromPredicates(cmd.GetDataSharePred(), fileId);
+    }
+    if (MediaFileUtils::StartsWith(cmd.GetUri().ToString(), UFM_AUDIO_PREFIX)) {
+        uriType = static_cast<int32_t>(TableType::TYPE_AUDIOS);
+        return ParseFileIdFromPredicates(cmd.GetDataSharePred(), fileId);
+    }
+    MEDIA_ERR_LOG("parse fileId and uriType from cmd fail");
+    return false;
+}
 
 int32_t DbPermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, PermParam &permParam)
 {
     MEDIA_DEBUG_LOG("DbPermissionHandler enter");
     bool isWrite = permParam.isWrite;
     string appId = GetClientAppId();
-    string fileId = MediaFileUtils::GetIdFromUri(cmd.GetUri().ToString());
+    string fileId = "";
     int32_t uriType = 0;
-    if (MediaFileUtils::StartsWith(cmd.GetUri().ToString(), PhotoColumn::PHOTO_URI_PREFIX)) {
-        uriType = static_cast<int32_t>(TableType::TYPE_PHOTOS);
-    } else if (MediaFileUtils::StartsWith(cmd.GetUri().ToString(), AudioColumn::AUDIO_URI_PREFIX)) {
-        uriType = static_cast<int32_t>(TableType::TYPE_AUDIOS);
-    } else {
+    if (!ParseInfoFromCmd(cmd, fileId, uriType)) {
         return E_INVALID_URI;
     }
     MEDIA_DEBUG_LOG("isWrite=%{public}d,appId=%{public}s,fileId=%{public}s,uriType=%{public}d",
