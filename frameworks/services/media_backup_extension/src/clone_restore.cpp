@@ -1406,12 +1406,11 @@ void CloneRestore::RestoreFromGalleryPortraitAlbum()
 {
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t totalNumber {0};
-    std::string querySql =
-    "SELECT count(1) AS count FROM " + ANALYSIS_ALBUM_TABLE +
-        " WHERE (" +
-        SMARTALBUM_DB_ALBUM_TYPE + " = " + std::to_string(SMART) + " AND " +
-        "album_subtype" + " = " + std::to_string(PORTRAIT) + ") AND ";
-    querySql += tableExtraQueryWhereClauseMap_.at(ANALYSIS_ALBUM_TABLE);
+    std::string querySql =   "SELECT count(1) AS count FROM " + ANALYSIS_ALBUM_TABLE + " WHERE ";
+    std::string whereClause = "(" + SMARTALBUM_DB_ALBUM_TYPE + " = " + std::to_string(SMART) + " AND " +
+        "album_subtype" + " = " + std::to_string(PORTRAIT) + ")";
+    AppendExtraWhereClause(whereClause, ANALYSIS_ALBUM_TABLE);
+    querySql += whereClause;
 
     totalNumber = BackupDatabaseUtils::QueryInt(mediaRdb_, querySql, CUSTOM_COUNT);
     MEDIA_INFO_LOG("QueryPortraitAlbum totalNumber = %{public}d", totalNumber);
@@ -1439,11 +1438,12 @@ vector<AnalysisAlbumTbl> CloneRestore::QueryPortraitAlbumTbl(int32_t offset,
     std::string querySql =
         "SELECT " + inClause +
         " FROM " + ANALYSIS_ALBUM_TABLE +
-        " WHERE (" +
+        " WHERE ";
+    std::string whereClause = "(" +
         SMARTALBUM_DB_ALBUM_TYPE + " = " + std::to_string(SMART) + " AND " +
-        "album_subtype" + " = " + std::to_string(PORTRAIT) + ") AND ";
-
-    querySql += tableExtraQueryWhereClauseMap_.at(ANALYSIS_ALBUM_TABLE);
+        "album_subtype" + " = " + std::to_string(PORTRAIT) + ")";
+    AppendExtraWhereClause(whereClause, ANALYSIS_ALBUM_TABLE);
+    querySql += whereClause;
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
@@ -1650,9 +1650,17 @@ vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, std::vector<std
     result.reserve(QUERY_COUNT);
 
     std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
-    std::string querySql = "SELECT " + inClause +
-    " FROM " + VISION_FACE_TAG_TABLE +
-    " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
+    std::string querySql = "SELECT DISTINCT " + inClause +
+        " FROM " + VISION_FACE_TAG_TABLE + " vft" +
+        " WHERE EXISTS (" +
+        "   SELECT 1" +
+        "   FROM AnalysisAlbum aa" +
+        "   JOIN AnalysisPhotoMap apm ON aa.album_id = apm.map_album" +
+        "   JOIN Photos ph ON ph.file_id = apm.map_asset" +
+        "   WHERE aa.tag_id = vft.tag_id" +
+        "   AND ph.position IN (1, 3)" +
+        " )";
+    querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
     if (resultSet == nullptr) {
@@ -1999,6 +2007,15 @@ void CloneRestore::ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, con
     int ret = rdbStore->ExecuteSql(sql);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to execute SQL: %{public}s", sql.c_str());
+    }
+}
+
+void CloneRestore::AppendExtraWhereClause(std::string& whereClause, const std::string& tableName)
+{
+    auto it = tableExtraQueryWhereClauseMap_.find(tableName);
+    if (it != tableExtraQueryWhereClauseMap_.end()) {
+        whereClause += whereClause.empty() ? "" : " AND ";
+        whereClause += it->second;
     }
 }
 } // namespace Media
