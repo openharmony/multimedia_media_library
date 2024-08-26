@@ -415,7 +415,27 @@ int DoCreatePhotoAlbum(const string &albumName, const string &relativePath)
     sql.append(");");
     MEDIA_DEBUG_LOG("DoCreatePhotoAlbum InsertSql: %{private}s", sql.c_str());
 
-    return MediaLibraryRdbStore::ExecuteForLastInsertedRowId(sql, bindArgs);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    int64_t lastInsertRowId = 0;
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("RdbStore is nullptr!");
+        return lastInsertRowId;
+    }
+
+    TransactionOperations op(rdbStore->GetRaw());
+    int32_t err = op.Start();
+    if (err != E_OK) {
+        return lastInsertRowId;
+    }
+    lastInsertRowId = rdbStore->ExecuteForLastInsertedRowId(sql, bindArgs);
+    if (lastInsertRowId < 0) {
+        MEDIA_ERR_LOG("insert fail and rollback");
+        rdbStore->GetRaw()->RollBack();
+    } else {
+        op.Finish();
+    }
+
+    return lastInsertRowId;
 }
 
 inline int CreatePhotoAlbum(const string &albumName)
@@ -439,12 +459,21 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     }
     int rowId;
     if (OperationObject::ANALYSIS_PHOTO_ALBUM == cmd.GetOprnObject()) {
-        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
         if (rdbStore == nullptr) {
             return E_HAS_DB_ERROR;
         }
-        int64_t outRowId;
-        rdbStore->Insert(cmd, outRowId);
+        int64_t outRowId = 0;
+        TransactionOperations op(rdbStore->GetRaw());
+        int32_t err = op.Start();
+        if (err == E_OK) {
+            auto ret = rdbStore->Insert(cmd, outRowId);
+            if (ret != E_OK) {
+                rdbStore->GetRaw()->RollBack();
+            } else {
+                op.Finish();
+            }
+        }
         rowId = outRowId;
     } else {
         rowId = CreatePhotoAlbum(albumName);
