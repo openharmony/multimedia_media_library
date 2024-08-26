@@ -1122,16 +1122,19 @@ int32_t BaseRestore::GetUniqueId(int32_t fileType)
             lock_guard<mutex> lock(imageMutex_);
             uniqueId = static_cast<int32_t>(imageNumber_);
             imageNumber_++;
+            break;
         }
         case MediaType::MEDIA_TYPE_VIDEO: {
             lock_guard<mutex> lock(videoMutex_);
             uniqueId = static_cast<int32_t>(videoNumber_);
             videoNumber_++;
+            break;
         }
         case MediaType::MEDIA_TYPE_AUDIO: {
             lock_guard<mutex> lock(audioMutex_);
             uniqueId = static_cast<int32_t>(audioNumber_);
             audioNumber_++;
+            break;
         }
         default:
             MEDIA_ERR_LOG("Unsupported file type: %{public}d", fileType);
