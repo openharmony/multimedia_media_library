@@ -419,9 +419,6 @@ bool SourceLoader::IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, I
         return false;
     }
 
-    // upload if minSize is larger than SHORT_SIDE_THRESHOLD and source is not from thumb
-    data_.loaderOpts.needUpload = minSize >= SHORT_SIDE_THRESHOLD && state_ != SourceState::LOCAL_THUMB
-        && state_ != SourceState::CLOUD_THUMB;
     data_.stats.sourceWidth = imageInfo.size.width;
     data_.stats.sourceHeight = imageInfo.size.height;
     return true;
