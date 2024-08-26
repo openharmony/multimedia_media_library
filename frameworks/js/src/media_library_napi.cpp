@@ -4863,7 +4863,7 @@ static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_
     vector<string> uris;
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, context->argv[ARGS_ONE], uris),
         JS_ERR_PARAMETER_INVALID);
-    int urisMaxSize = 1000;
+    size_t urisMaxSize = 1000;
     if (uris.empty() || uris.size() > urisMaxSize) {
         NAPI_ERR_LOG("the size of uriList is invalid");
         return nullptr;
