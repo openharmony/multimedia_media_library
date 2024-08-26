@@ -183,6 +183,8 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
+
 /* Constants for array index */
 const int32_t PARAM0 = 0;
 const int32_t PARAM1 = 1;
@@ -482,7 +484,7 @@ public:
         return TYPE_MAP;
     }
     static napi_value NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info);
-    static napi_value NapiAddStaticProps(napi_env env, napi_value exports,
+    EXPORT static napi_value NapiAddStaticProps(napi_env env, napi_value exports,
         const std::vector<napi_property_descriptor> &staticProps);
 
     static napi_status GetUInt32(napi_env env, napi_value arg, uint32_t &value);
@@ -617,7 +619,7 @@ public:
     static bool IsSystemApp();
     static std::string GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
         const std::string &propertyName);
-    static std::string ParseResultSet2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
+    EXPORT static std::string ParseResultSet2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         const std::vector<std::string> &cloumns);
 
     static std::string ParseAnalysisFace2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
