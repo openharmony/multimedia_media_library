@@ -40,6 +40,7 @@ export class PhotoPickerComponent extends ViewPU {
         this.onEnterPhotoBrowser = void 0;
         this.onExitPhotoBrowser = void 0;
         this.onPickerControllerReady = void 0;
+        this.onPhotoBrowserChanged = void 0;
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
         this.setInitiallyProvidedValue(o);
@@ -53,6 +54,7 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.onItemClicked && (this.onItemClicked = e.onItemClicked);
         void 0 !== e.onEnterPhotoBrowser && (this.onEnterPhotoBrowser = e.onEnterPhotoBrowser);
         void 0 !== e.onExitPhotoBrowser && (this.onExitPhotoBrowser = e.onExitPhotoBrowser);
+        void 0 !== e.onPhotoBrowserChanged && (this.onPhotoBrowserChanged = e.onPhotoBrowserChanged);
         void 0 !== e.onPickerControllerReady && (this.onPickerControllerReady = e.onPickerControllerReady);
         this.__pickerController.set(e.pickerController);
         void 0 !== e.proxy && (this.proxy = e.proxy);
@@ -97,12 +99,23 @@ export class PhotoPickerComponent extends ViewPU {
                 videoCount: null == t ? void 0 : t.get(MaxCountType.VIDEO_MAX_COUNT)
             });
             console.info('PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT');
+        } else if (null == o ? void 0 : o.has('SET_PHOTO_BROWSER_ITEM')) {
+            this.onSetPhotoBrowserItem(o);
         } else {
             console.info('PhotoPickerComponent onChanged: other case');
         }
     }
 
-    initialRender() {
+    onSetPhotoBrowserItem(o) {
+        let e = null == o ? void 0 : o.get('SET_PHOTO_BROWSER_ITEM');
+        this.proxy.send({
+            itemUri: null == e ? void 0 : e.uri,
+            photoBrowserRange: null == e ? void 0 : e.photoBrowserRange
+        });
+        console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_ITEM');
+    }
+
+	initialRender() {
         this.observeComponentCreation2(((e, o) => {
             Row.create();
             Row.height('100%');
@@ -174,6 +187,8 @@ export class PhotoPickerComponent extends ViewPU {
                 this.onPickerControllerReady();
                 console.info('PhotoPickerComponent onReceive: onPickerControllerReady');
             }
+        } else if ('onPhotoBrowserChanged' === o) {
+            this.handlePhotoBrowserChange(e);
         } else {
             console.info('PhotoPickerComponent onReceive: other case');
         }
@@ -231,6 +246,15 @@ export class PhotoPickerComponent extends ViewPU {
         console.info('PhotoPickerComponent onReceive: onPhotoBrowserStateChanged = ' + o);
     }
 
+    handlePhotoBrowserChange(e) {
+        let o = new BaseItemInfo();
+        o.uri = e.uri;
+        if (this.onPhotoBrowserChanged) {
+            this.onPhotoBrowserChanged(o);
+        }
+        console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + o.uri);
+    }
+
     convertMIMETypeToFilterType(e) {
         let o;
         o = e === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE ?
@@ -274,13 +298,25 @@ let PickerController = class {
             console.info('PhotoPickerComponent SET_MAX_SELECT_COUNT' + JSON.stringify(e));
         }
     }
+
+    setPhotoBrowserItem(e, o) {
+        let l = new PhotoBrowserRangeInfo;
+        l.uri = e;
+        let m = o ? o : PhotoBrowserRange.ALL;
+        l.photoBrowserRange = m;
+        this.data = new Map([['SET_PHOTO_BROWSER_ITEM', l]]);
+        console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM ' + JSON.stringify(l));
+    }
 };
 PickerController = __decorate([Observed], PickerController);
 
 export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
 }
 
-export class ItemInfo {
+export class BaseItemInfo {
+}
+
+export class ItemInfo extends BaseItemInfo {
 }
 
 export class PhotoBrowserInfo {
@@ -290,6 +326,9 @@ export class AnimatorParams {
 }
 
 export class MaxSelected {
+}
+
+class PhotoBrowserRangeInfo {
 }
 
 export var DataType;
@@ -343,5 +382,11 @@ export var MaxCountType;
     e[e.VIDEO_MAX_COUNT = 2] = 'VIDEO_MAX_COUNT';
 }(MaxCountType || (MaxCountType = {}));
 
-export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, ItemInfo, PhotoBrowserInfo, AnimatorParams,
-    MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType };
+export var PhotoBrowserRange;
+!function(e) {
+    e[e.ALL = 0] = 'ALL';
+    e[e.SELECTED_ONLY = 1] = 'SELECTED_ONLY';
+}(PhotoBrowserRange || (PhotoBrowserRange = {}));
+
+export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
+    MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange };
