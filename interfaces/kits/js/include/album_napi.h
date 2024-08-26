@@ -49,7 +49,7 @@ class AlbumNapi {
 public:
     EXPORT static napi_value UserFileMgrInit(napi_env env, napi_value exports);
     EXPORT static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
-    static napi_value CreateAlbumNapi(napi_env env, std::unique_ptr<AlbumAsset> &albumData);
+    EXPORT static napi_value CreateAlbumNapi(napi_env env, std::unique_ptr<AlbumAsset> &albumData);
     int32_t GetAlbumId() const;
     std::string GetAlbumName() const;
     std::string GetAlbumPath() const;
