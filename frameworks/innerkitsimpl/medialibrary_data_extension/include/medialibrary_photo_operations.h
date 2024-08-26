@@ -99,7 +99,7 @@ private:
     static int32_t UpdateExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,
-        const std::string &editdata, int32_t fileId, const std::string &photoStatus = "");
+        const std::string &editdata, const std::string &photoStatus = "");
     static int32_t RevertToOriginalEffectMode(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNeedScan);
     static bool IsNeedRevertEffectMode(MediaLibraryCommand& cmd, const std::shared_ptr<FileAsset>& fileAsset,
