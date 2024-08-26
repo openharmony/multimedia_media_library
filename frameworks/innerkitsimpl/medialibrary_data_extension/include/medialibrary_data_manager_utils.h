@@ -34,7 +34,7 @@ public:
     EXPORT static std::string GetDisPlayNameFromPath(const std::string &path);
     EXPORT static std::string ObtionCondition(std::string &strQueryCondition,
         const std::vector<std::string> &whereArgs);
-    static std::string GetTypeUriByUri(std::string &uri);
+    EXPORT static std::string GetTypeUriByUri(std::string &uri);
 };
 } // namespace Media
 } // namespace OHOS
