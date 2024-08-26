@@ -107,6 +107,7 @@ protected:
     bool NeedQueryByPhotoRelatedType(const FileInfo &fileInfo, PhotoRelatedType photoRelatedType,
         const std::unordered_set<std::string> &needQuerySet);
     void UpdateFaceAnalysisStatus();
+    int32_t GetUniqueId(int32_t fileType);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;

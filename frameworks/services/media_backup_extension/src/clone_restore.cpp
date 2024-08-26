@@ -181,6 +181,9 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
         RestoreGallery();
         RestoreMusic();
         (void)NativeRdb::RdbHelper::DeleteRdbStore(dbPath_);
+        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
+        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
+        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, audioNumber_, AUDIO_ASSET_TYPE);
     } else {
         SetErrorCode(RestoreError::INIT_FAILED);
     }
@@ -964,12 +967,16 @@ bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
         UpdateDuplicateNumber(fileInfo.fileType);
         return false;
     }
-    if (MediaFileUtils::IsFileExists(fileInfo.cloudPath) && BackupFileUtils::CreatePath(fileInfo.fileType,
-        fileInfo.displayName, fileInfo.cloudPath) != E_OK) {
-        MEDIA_ERR_LOG("Destination file path %{public}s exists, create new path failed",
-            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
-        UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::GET_PATH_FAILED);
-        return false;
+    if (MediaFileUtils::IsFileExists(fileInfo.cloudPath)) {
+        int32_t uniqueId = GetUniqueId(fileInfo.fileType);
+        int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfo.fileType,
+            MediaFileUtils::GetExtensionFromPath(fileInfo.displayName), fileInfo.cloudPath);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("Destination file path %{public}s exists, create new path failed",
+                BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
+            UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::GET_PATH_FAILED);
+            return false;
+        }
     }
     if (BackupFileUtils::PreparePath(BackupFileUtils::GetReplacedPathByPrefixType(
         PrefixType::CLOUD, PrefixType::LOCAL, fileInfo.cloudPath)) != E_OK) {

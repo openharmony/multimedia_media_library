@@ -213,20 +213,12 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
             continue;
         }
         std::string cloudPath;
-        int32_t uniqueId;
-        if (fileInfos[i].fileType == MediaType::MEDIA_TYPE_IMAGE) {
-            lock_guard<mutex> lock(imageMutex_);
-            uniqueId = static_cast<int32_t>(imageNumber_);
-            imageNumber_++;
-        } else {
-            lock_guard<mutex> lock(videoMutex_);
-            uniqueId = static_cast<int32_t>(videoNumber_);
-            videoNumber_++;
-        }
+        int32_t uniqueId = GetUniqueId(fileInfos[i].fileType);
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfos[i].displayName), cloudPath);
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d", errCode);
+            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::GET_PATH_FAILED);
             continue;
         }
         fileInfos[i].cloudPath = cloudPath;
@@ -430,16 +422,12 @@ std::vector<NativeRdb::ValuesBucket> BaseRestore::GetAudioInsertValues(int32_t s
             continue;
         }
         std::string cloudPath;
-        int32_t uniqueId;
-        {
-            lock_guard<mutex> lock(audioMutex_);
-            uniqueId = static_cast<int32_t>(audioNumber_);
-            audioNumber_++;
-        }
+        int32_t uniqueId = GetUniqueId(fileInfos[i].fileType);
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfos[i].displayName), cloudPath);
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d", errCode);
+            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::GET_PATH_FAILED);
             continue;
         }
         fileInfos[i].cloudPath = cloudPath;
@@ -1124,6 +1112,31 @@ void BaseRestore::UpdateFaceAnalysisStatus()
         "cost %{public}lld", (long long)(startUpdateTotal - startUpdateGroupTag),
         (long long)(startUpdateFaceTag - startUpdateTotal), (long long)(end - startUpdateFaceTag));
     migratePortraitTotalTimeCost_ += end - startUpdateGroupTag;
+}
+
+int32_t BaseRestore::GetUniqueId(int32_t fileType)
+{
+    int32_t uniqueId = -1;
+    switch (fileType) {
+        case MediaType::MEDIA_TYPE_IMAGE: {
+            lock_guard<mutex> lock(imageMutex_);
+            uniqueId = static_cast<int32_t>(imageNumber_);
+            imageNumber_++;
+        }
+        case MediaType::MEDIA_TYPE_VIDEO: {
+            lock_guard<mutex> lock(videoMutex_);
+            uniqueId = static_cast<int32_t>(videoNumber_);
+            videoNumber_++;
+        }
+        case MediaType::MEDIA_TYPE_AUDIO: {
+            lock_guard<mutex> lock(audioMutex_);
+            uniqueId = static_cast<int32_t>(audioNumber_);
+            audioNumber_++;
+        }
+        default:
+            MEDIA_ERR_LOG("Unsupported file type: %{public}d", fileType);
+    }
+    return uniqueId;
 }
 } // namespace Media
 } // namespace OHOS
