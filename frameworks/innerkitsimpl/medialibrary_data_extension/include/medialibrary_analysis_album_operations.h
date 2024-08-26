@@ -34,6 +34,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 struct GroupPhotoAlbumInfo {
     int32_t albumId;
     std::string tagId;
@@ -49,12 +50,12 @@ struct GroupPhotoAlbumInfo {
 };
 class MediaLibraryAnalysisAlbumOperations {
 public:
-    static int32_t UpdateMergeGroupAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo);
-    static int32_t HandleGroupPhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
+    EXPORT static int32_t UpdateMergeGroupAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo);
+    EXPORT static int32_t HandleGroupPhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates);
-    static std::shared_ptr<NativeRdb::ResultSet> QueryGroupPhotoAlbum(MediaLibraryCommand &cmd,
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryGroupPhotoAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
-    static void UpdateGroupPhotoAlbumById(int32_t albumId);
+    EXPORT static void UpdateGroupPhotoAlbumById(int32_t albumId);
 };
 } // namespace Media
 } // namespace OHOS

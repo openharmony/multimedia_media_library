@@ -40,7 +40,7 @@ namespace Media {
 const int MediaLibraryAppUriPermissionOperations::ERROR = -1;
 const int MediaLibraryAppUriPermissionOperations::SUCCEED = 0;
 const int MediaLibraryAppUriPermissionOperations::ALREADY_EXIST = 1;
-const int MediaLibraryAppUriPermissionOperations::NO_DATA = 0;
+const int MediaLibraryAppUriPermissionOperations::NO_DATA_EXIST = 0;
 
 int32_t MediaLibraryAppUriPermissionOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
@@ -221,7 +221,7 @@ std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriPermissionOperatio
     fetchColumns.push_back(AppUriPermissionColumn::PERMISSION_TYPE);
 
     shared_ptr<ResultSet> resultSet = QueryOperation(permissionPredicates, fetchColumns);
-    resultFlag = (resultSet == nullptr ? NO_DATA : ALREADY_EXIST);
+    resultFlag = (resultSet == nullptr ? NO_DATA_EXIST : ALREADY_EXIST);
     return resultSet;
 }
 
