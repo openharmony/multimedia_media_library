@@ -1046,7 +1046,7 @@ static string generateRegexpMatchForNumber(const int32_t num)
 static string generateCoverUpdateSql(const string title, const int32_t mapAlbum, const int32_t isFavourite)
 {
     string globMember = title.substr(MATCH_BURST_BEGIN, MATCH_BURST_END) + generateRegexpMatchForNumber(3);
-    string globCover = title.substr(MATCH_BURST_BEGIN, MATCH_BURST_END) + generateRegexpMatchForNumber(3) + "_COVER";
+    string globCover = globMember + "_COVER";
     string burstkey = GenerateUuid();
 
     return "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_SUBTYPE + " = " +
@@ -1165,12 +1165,11 @@ int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
         return E_FAIL;
     }
 
-    // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx_COVER, 'x' represents a number
-    string globCoverStr = "IMG_" + generateRegexpMatchForNumber(8) + "_" + generateRegexpMatchForNumber(6) +
-        "_BURST" + generateRegexpMatchForNumber(3) + "_COVER";
     // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx, 'x' represents a number
     string globMemberStr = "IMG_" + generateRegexpMatchForNumber(8) + "_" + generateRegexpMatchForNumber(6) +
         "_BURST" + generateRegexpMatchForNumber(3);
+    // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx_COVER, 'x' represents a number
+    string globCoverStr = globMemberStr + "_COVER";
     
     MEDIA_INFO_LOG("Begin UpdateBurstPhotoByCovers");
     auto resultSet = QueryBurst(rdbStore_, globCoverStr);

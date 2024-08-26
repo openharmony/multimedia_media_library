@@ -107,7 +107,7 @@ const std::string PIC_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE;
 const std::string AUDIO_EXTENSION_VALUES = DIR_ALL_AUDIO_CONTAINER_TYPE;
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
-int32_t OLD_VERSION = -1;
+int32_t g_oldVersion = -1;
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
     int32_t startNumber;
@@ -196,9 +196,20 @@ static void CreateBurstIndex(RdbStore &store)
     MEDIA_INFO_LOG("end create idx_burstkey");
 }
 
+static void UpdateBurstDirty(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_DIRTY + " = " +
+        to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) + " WHERE " + PhotoColumn::PHOTO_SUBTYPE + " = " +
+        to_string(static_cast<int32_t>(PhotoSubType::BURST)) + " AND " + PhotoColumn::PHOTO_DIRTY + " = -1 ",
+    };
+    MEDIA_INFO_LOG("start UpdateBurstDirty");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end UpdateBurstDirty");
+}
+
 static void UpgradeRdbStore(AsyncTaskData *data)
 {
-    MEDIA_INFO_LOG("start UpgradeRdbStoreAsync");
     if (MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() == nullptr) {
         MEDIA_ERR_LOG("MediaDataAbility insert functionality is null.");
         return;
@@ -209,8 +220,12 @@ static void UpgradeRdbStore(AsyncTaskData *data)
         return;
     }
 
-    if (OLD_VERSION < VERSION_CREATE_BURSTKEY_INDEX) {
+    if (g_oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
         CreateBurstIndex(*rdbStore);
+    }
+
+    if (g_oldVersion < VERSION_UPDATE_BURST_DIRTY) {
+        UpdateBurstDirty(*rdbStore);
     }
 }
 
@@ -249,7 +264,7 @@ int32_t MediaLibraryRdbStore::Init()
     }
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), SUCCESS");
     // add process for which cost long time
-    if (OLD_VERSION != -1) {
+    if (g_oldVersion != -1 && g_oldVersion < MEDIA_RDB_VERSION) {
         UpgradeRdbStoreAsync();
     }
     return E_OK;
@@ -2626,11 +2641,6 @@ static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
-static void CreateBurstkeyIndex(RdbStore &store)
-{
-    // this function move to CreateBurstIndex(RdbStore &store), avoid to cost for long time.
-}
-
 static void UpdateIndexForAlbumQuery(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2707,49 +2717,6 @@ static void AddOriginalSubtype(RdbStore &store)
     };
     MEDIA_INFO_LOG("start add original_subtype column");
     ExecSqls(sqls, store);
-}
-
-static void UpdateBurstDirtyAsync(AsyncTaskData *data)
-{
-    const int32_t sleepTimeMs = 1000;
-    this_thread::sleep_for(chrono::milliseconds(sleepTimeMs));
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("MediaDataAbility insert functionality rebStore is null.");
-        return;
-    }
-    auto rdbStorePtr = rdbStore->GetRaw();
-    if (rdbStorePtr == nullptr) {
-        MEDIA_ERR_LOG("MediaDataAbility insert functionality rdbStorePtr is null.");
-        return;
-    }
-
-    string sql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_DIRTY + " = " +
-        to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) + " WHERE " + PhotoColumn::PHOTO_SUBTYPE + " = " +
-        to_string(static_cast<int32_t>(PhotoSubType::BURST)) + " AND " + PhotoColumn::PHOTO_DIRTY + " = -1 ";
-    
-    auto resultSet = rdbStorePtr->QueryByStep(sql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("failed to acquire from visitor query.");
-    }
-    MEDIA_INFO_LOG("end UpdateBurstDirtyAsync");
-}
-
-static void UpdateBurstDirty()
-{
-    MEDIA_INFO_LOG("start UpdateBurstDirty");
-    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Failed to get async worker instance!");
-        return;
-    }
-    shared_ptr<MediaLibraryAsyncTask> updateBurstDirtyTask =
-        make_shared<MediaLibraryAsyncTask>(UpdateBurstDirtyAsync, nullptr);
-    if (updateBurstDirtyTask != nullptr) {
-        asyncWorker->AddTask(updateBurstDirtyTask, false);
-    } else {
-        MEDIA_ERR_LOG("Failed to create async task for updateBurstDirtyTask!");
-    }
 }
 
 static void ReportFailInfoAsync(AsyncTaskData *data)
@@ -3240,9 +3207,7 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
         AddOriginalSubtype(store);
     }
 
-    if (oldVersion < VERSION_UPDATE_BURST_DIRTY) {
-        UpdateBurstDirty();
-    }
+    // VERSION_UPDATE_BURST_DIRTY = 106 move to UpgradeRdbStoreAsync(), avoid to cost for long time.
 
     if (oldVersion < VERSION_UDAPTE_DATA_UNIQUE) {
         UpdateDataUniqueIndex(store);
@@ -3307,9 +3272,7 @@ static void UpgradeExtensionPart1(RdbStore &store, int32_t oldVersion)
         AddBurstSequence(store);
     }
 
-    if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
-        CreateBurstkeyIndex(store);
-    }
+    // VERSION_CREATE_BURSTKEY_INDEX = 98 move to UpgradeRdbStoreAsync(), avoid to cost for long time.
 
     UpgradeExtensionPart2(store, oldVersion);
     // !! Do not add upgrade code here !!
@@ -3418,7 +3381,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataCallBack::OnUpgrade");
-    OLD_VERSION = oldVersion;
+    g_oldVersion = oldVersion;
     MEDIA_INFO_LOG("OnUpgrade old:%{public}d, new:%{public}d", oldVersion, newVersion);
     g_upgradeErr = false;
     if (oldVersion < VERSION_ADD_CLOUD) {
