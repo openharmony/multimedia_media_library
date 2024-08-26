@@ -91,6 +91,8 @@ public:
         isForceScan_ = isForceScan;
     }
 
+    void SetIsSkipAlbumUpdate(bool isSkipAlbumUpdate);
+
 private:
     /* file */
     EXPORT int32_t ScanFile();
@@ -144,6 +146,7 @@ private:
     std::vector<std::unique_ptr<Metadata>> dataBuffer_;
     MediaLibraryApi api_;
     bool isForceScan_ = false;
+    bool isSkipAlbumUpdate_ = false;
 };
 
 class ScanErrCallback : public IMediaScannerCallback {

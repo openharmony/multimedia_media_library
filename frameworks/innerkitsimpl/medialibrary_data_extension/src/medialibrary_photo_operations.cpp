@@ -2202,5 +2202,27 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::ScanMovingPhoto(Me
     MediaLibraryObjectUtils::ScanFileAsync(path, fileId, MediaLibraryApi::API_10);
     return nullptr;
 }
+
+int32_t MediaLibraryPhotoOperations::ScanFileWithoutAlbumUpdate(MediaLibraryCommand &cmd)
+{
+    if (!PermissionUtils::IsNativeSAApp()) {
+        MEDIA_DEBUG_LOG("do not have permission");
+        return E_VIOLATION_PARAMETERS;
+    }
+    const ValuesBucket &values = cmd.GetValueBucket();
+    string uriString;
+    if (!GetStringFromValuesBucket(values, MEDIA_DATA_DB_URI, uriString)) {
+        return E_INVALID_VALUES;
+    }
+    string path = MediaFileUri::GetPathFromUri(uriString, true);
+    string fileIdStr = MediaFileUri::GetPhotoId(uriString);
+    int32_t fileId = 0;
+    if (MediaLibraryDataManagerUtils::IsNumber(fileIdStr)) {
+        fileId = atoi(fileIdStr.c_str());
+    }
+    MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId);
+
+    return E_OK;
+}
 } // namespace Media
 } // namespace OHOS

@@ -270,6 +270,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_SAVE_CAMERA_PHOTO, OperationType::SAVE_CAMERA_PHOTO },
         { OPRN_REMOVE_MSC_TASK, OperationType::REMOVE_MSC_TASK },
         { OPRN_TOOL_QUERY_BY_DISPLAY_NAME, OperationType::TOOL_QUERY_BY_DISPLAY_NAME },
+        { OPRN_SCAN_WITHOUT_ALBUM_UPDATE, OperationType::SCAN_WITHOUT_ALBUM_UPDATE },
     };
     return oprnTypeMap;
 }
