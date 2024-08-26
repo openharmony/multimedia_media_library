@@ -1651,8 +1651,8 @@ vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, std::vector<std
 
     std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
     std::string querySql = "SELECT " + inClause +
-    " FROM " + VISION_FACE_TAG_TABLE +
-    " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
+    " FROM " + VISION_FACE_TAG_TABLE + + " WHERE " + tableExtraQueryWhereClauseMap_.at(ANALYSIS_ALBUM_TABLE);
+    querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
     if (resultSet == nullptr) {
