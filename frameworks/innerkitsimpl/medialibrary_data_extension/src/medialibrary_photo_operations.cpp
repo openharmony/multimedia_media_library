@@ -1596,7 +1596,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
         string editData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
             "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
-        CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourcePath, path, editData, fileId) == E_OK, E_FAIL,
+        CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourcePath, path, editData) == E_OK, E_FAIL,
             "Failed to add filters to photo");
     }
 
@@ -1730,9 +1730,7 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
         string editData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
             "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
-        // 添加水印时会扫描，这里不扫描
-        isNeedScan = false;
-        CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourceImagePath, imagePath, editData, fileAsset->GetId()) == E_OK,
+        CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourceImagePath, imagePath, editData) == E_OK,
             E_FAIL, "Failed to add filters to photo");
     }
     return E_OK;
@@ -1964,7 +1962,11 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     string editData;
     SaveEditDataCamera(cmd, assetPath, editData);
     // 生成水印
-    return AddFiltersToPhoto(sourcePath, assetPath, editData, fileAsset->GetId());
+    int32_t ret = AddFiltersToPhoto(sourcePath, assetPath, editData);
+    if (ret == E_OK) {
+        MediaLibraryObjectUtils::ScanFileAsync(assetPath, to_string(fileAsset->GetId()), MediaLibraryApi::API_10);
+    }
+    return ret;
 }
 
 int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand& cmd,
@@ -2255,15 +2257,16 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, cons
                 "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
             const string HIGH_QUALITY_PHOTO_STATUS = "high";
             CHECK_AND_RETURN_RET_LOG(
-                AddFiltersToPhoto(editDataSourcePath, path, editData, fileId, HIGH_QUALITY_PHOTO_STATUS) == E_OK,
+                AddFiltersToPhoto(editDataSourcePath, path, editData, HIGH_QUALITY_PHOTO_STATUS) == E_OK,
                 E_FAIL, "Failed to add filters to photo");
+            MediaLibraryObjectUtils::ScanFileAsync(path, to_string(fileId), MediaLibraryApi::API_10);
             return E_OK;
         }
     }
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
-    const std::string &outputPath, const std::string &editdata, int32_t fileId, const std::string &photoStatus)
+    const std::string &outputPath, const std::string &editdata, const std::string &photoStatus)
 {
     MEDIA_INFO_LOG("AddFiltersToPhoto inputPath: %{public}s, outputPath: %{public}s, editdata: %{public}s",
         inputPath.c_str(), outputPath.c_str(), editdata.c_str());
@@ -2298,7 +2301,6 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
         return ret;
     }
     MEDIA_INFO_LOG("AddFiltersToPhoto finish");
-    MediaLibraryObjectUtils::ScanFileAsync(outputPath, to_string(fileId), MediaLibraryApi::API_10);
     return E_OK;
 }
 
