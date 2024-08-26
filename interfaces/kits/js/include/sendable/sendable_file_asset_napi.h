@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_FILE_ASSET_NAPI_H_
-#define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_FILE_ASSET_NAPI_H_
+#ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_FILE_ASSET_NAPI_SENDABLE_H_
+#define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_FILE_ASSET_NAPI_SENDABLE_H_
 
 #include <mutex>
 
@@ -23,38 +23,35 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "napi_error.h"
-#include "pixel_map_napi.h"
 #include "values_bucket.h"
 #include "napi_remote_object.h"
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "datashare_helper.h"
-#include "foundation/ability/ability_runtime/interfaces/kits/native/appkit/ability_runtime/context/context.h"
+#include "context.h"
 #include "thumbnail_manager.h"
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-static const std::string FILE_ASSET_NAPI_CLASS_NAME = "FileAsset";
-static const std::string USERFILEMGR_FILEASSET_NAPI_CLASS_NAME = "UserFileMgrFileAsset";
-static const std::string PHOTOACCESSHELPER_FILEASSET_NAPI_CLASS_NAME = "PhotoAccessHelperFileAsset";
+static const std::string SENDABLE_FILE_ASSET_NAPI_CLASS_NAME = "SendableFileAsset";
+static const std::string SENDABLE_USERFILEMGR_FILEASSET_NAPI_CLASS_NAME = "SendableUserFileMgrFileAsset";
+static const std::string SENDABLE_PHOTOACCESSHELPER_FILEASSET_NAPI_CLASS_NAME = "SendablePhotoAccessHelperFileAsset";
 
-struct AnalysisSourceInfo {
+struct SendableAnalysisSourceInfo {
     std::string fieldStr;
     std::string uriStr;
     std::vector<std::string> fetchColumn;
 };
 
-class FileAssetNapi {
+class SendableFileAssetNapi {
 public:
-    EXPORT FileAssetNapi();
-    EXPORT ~FileAssetNapi();
+    EXPORT SendableFileAssetNapi();
+    EXPORT ~SendableFileAssetNapi();
 
-    EXPORT static napi_value UserFileMgrInit(napi_env env, napi_value exports);
     EXPORT static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
     EXPORT static napi_value CreateFileAsset(napi_env env, std::unique_ptr<FileAsset> &iAsset);
     EXPORT static napi_value CreatePhotoAsset(napi_env env, std::shared_ptr<FileAsset> &fileAsset);
-    EXPORT static napi_value AttachCreateFileAsset(napi_env env, std::shared_ptr<FileAsset> &iAsset);
 
     std::string GetFileDisplayName() const;
     std::string GetRelativePath() const;
@@ -74,7 +71,7 @@ public:
     std::string GetAllExif() const;
     std::string GetFrontCamera() const;
     std::string GetUserComment() const;
-    EXPORT std::shared_ptr<FileAsset> GetFileAssetInstance() const;
+    std::shared_ptr<FileAsset> GetFileAssetInstance() const;
 
 private:
     EXPORT static void FileAssetNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
@@ -86,57 +83,33 @@ private:
     EXPORT static napi_value JSGetMediaType(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetFileDisplayName(napi_env env, napi_callback_info info);
 
-    EXPORT static napi_value JSGetCount(napi_env env, napi_callback_info info);
     void UpdateFileAssetInfo();
-    EXPORT static napi_value UserFileMgrSet(napi_env env, napi_callback_info info);
-    EXPORT static napi_value UserFileMgrGet(napi_env env, napi_callback_info info);
-    EXPORT static napi_value UserFileMgrOpen(napi_env env, napi_callback_info info);
-    EXPORT static napi_value UserFileMgrClose(napi_env env, napi_callback_info info);
-    EXPORT static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
-    EXPORT static napi_value UserFileMgrFavorite(napi_env env, napi_callback_info info);
-    EXPORT static napi_value UserFileMgrGetThumbnail(napi_env env, napi_callback_info info);
-    EXPORT static napi_value JSGetReadOnlyFd(napi_env env, napi_callback_info info);
-    EXPORT static napi_value UserFileMgrSetHidden(napi_env env, napi_callback_info info);
-    EXPORT static napi_value UserFileMgrSetPending(napi_env env, napi_callback_info info);
-    EXPORT static napi_value JSGetExif(napi_env env, napi_callback_info info);
-    EXPORT static napi_value UserFileMgrSetUserComment(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperSet(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGet(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info);
 
-    EXPORT static napi_value PhotoAccessHelperOpen(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessHelperClose(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessHelperFavorite(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessHelperRequestPhoto(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessHelperCancelPhotoRequest(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessHelperSetHidden(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessHelperSetPending(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessHelperSetUserComment(napi_env env, napi_callback_info info);
-    EXPORT static napi_value UserFileMgrGetJson(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessHelperIsEdited(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessHelperRequestEditData(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperRequestSource(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessHelperCommitEditedAsset(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessHelperRevertToOriginal(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessHelperGetEditData(napi_env env, napi_callback_info info);
+    EXPORT static napi_value ConvertFromPhotoAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value ConvertToPhotoAsset(napi_env env, napi_callback_info info);
 
     bool HandleParamSet(const std::string &inputKey, const std::string &value, ResultNapiType resultNapiType);
     napi_env env_;
 
-    static thread_local napi_ref userFileMgrConstructor_;
     static thread_local napi_ref photoAccessHelperConstructor_;
-    static thread_local std::shared_ptr<FileAsset> sFileAsset_;
+    static thread_local FileAsset *sFileAsset_;
     std::shared_ptr<FileAsset> fileAssetPtr = nullptr;
     static std::shared_ptr<ThumbnailManager> thumbnailManager_;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> member_;
     std::mutex mutex_;
 };
-struct FileAssetAsyncContext : public NapiError {
+struct SendableFileAssetAsyncContext : public NapiError {
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;
     bool status;
-    FileAssetNapi *objectInfo;
+    SendableFileAssetNapi *objectInfo;
     std::shared_ptr<FileAsset> objectPtr = nullptr;
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
     Size size;

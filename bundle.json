@@ -100,7 +100,8 @@
             "//foundation/multimedia/media_library/interfaces/kits/js:albumpickercomponent",
             "//foundation/multimedia/media_library/interfaces/kits/js:albumpickercomponent_js",
             "//foundation/multimedia/media_library/interfaces/kits/js:recentphotocomponent",
-            "//foundation/multimedia/media_library/interfaces/kits/js:recentphotocomponent_js"
+            "//foundation/multimedia/media_library/interfaces/kits/js:recentphotocomponent_js",
+            "//foundation/multimedia/media_library/interfaces/kits/js:sendablephotoaccesshelper"
           ],
           "service_group": [
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
