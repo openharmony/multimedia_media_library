@@ -284,11 +284,11 @@ static void FilterNotExistUri(const std::vector<DataShareValuesBucket> &values, 
         } else if (uriType == AUDIOSTYPE) {
             auto it = std::find(audioFileIdList.begin(), audioFileIdList.end(), fileId);
             auto sameIt = std::find(audioColumns.begin(), audioColumns.end(), to_string(fileId));
-            if (it != audioFileIdList.end() || sameIt == audioColumns.end()) {
-                audioColumns.erase(sameIt);
-            }
-            if (sameIt == audioColumns.end()) {
+            if (it == audioFileIdList.end() || sameIt == audioColumns.end()) {
                 dbOperation[i] = NO_DB_OPERATION;
+            }
+            if (sameIt != audioColumns.end()) {
+                audioColumns.erase(sameIt);
             }
         }
     }
