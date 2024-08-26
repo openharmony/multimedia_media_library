@@ -164,6 +164,7 @@ private:
     void ReportPortraitCloneStat(int32_t sceneCode);
     void ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql);
     std::vector<CloneRestore::TagPairOpt> QueryTagInfo(void);
+    void AppendExtraWhereClause(std::string& whereClause, const std::string& tableName);
 
     template<typename T>
     struct always_false : std::false_type {};
