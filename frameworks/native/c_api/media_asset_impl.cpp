@@ -69,7 +69,8 @@ MediaLibrary_ErrorCode OH_MediaAsset::GetUri(const char** uri)
     }
 
     const std::string fileUri = fileAsset_->GetUri();
-    int32_t len = fileUri.length() < MAX_URI_LENGTH ? fileUri.length() : MAX_URI_LENGTH - 1;
+    int32_t uriLen = static_cast<int32_t>(fileUri.length());
+    int32_t len = uriLen < MAX_URI_LENGTH ? uriLen : MAX_URI_LENGTH - 1;
     strncpy_s(uri_, MAX_URI_LENGTH, fileUri.c_str(), len);
     MEDIA_INFO_LOG("OH_MediaAsset::GetUri, uri: %{public}s, return uri: %{public}s",
         fileUri.c_str(), uri_);
@@ -85,7 +86,8 @@ MediaLibrary_ErrorCode OH_MediaAsset::GetDisplayName(const char** displayName)
     }
 
     const std::string display = fileAsset_->GetDisplayName();
-    int32_t len = display.length() < MAX_DISPLAY_NAME_LENGTH ? display.length() : MAX_DISPLAY_NAME_LENGTH - 1;
+    int32_t displayNameLen = static_cast<int32_t>(display.length());
+    int32_t len = displayNameLen < MAX_DISPLAY_NAME_LENGTH ? displayNameLen : MAX_DISPLAY_NAME_LENGTH - 1;
     strncpy_s(displayName_, MAX_DISPLAY_NAME_LENGTH, display.c_str(), len);
     MEDIA_INFO_LOG("OH_MediaAsset::GetDisplayName, display name: %{public}s, return display name: %{public}s",
         display.c_str(), displayName_);
