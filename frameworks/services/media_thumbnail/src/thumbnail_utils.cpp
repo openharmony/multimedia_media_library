@@ -213,7 +213,6 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     }
     PixelMapParams param;
     param.colorFormat = PixelFormat::RGBA_8888;
-    data.loaderOpts.needUpload = true;
     ConvertDecodeSize(data, {videoWidth, videoHeight}, desiredSize);
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
