@@ -1650,12 +1650,16 @@ vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, std::vector<std
     result.reserve(QUERY_COUNT);
 
     std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
-    std::string querySql = "SELECT " + inClause +
-    " FROM " + VISION_FACE_TAG_TABLE + " WHERE ";
-    std::string whereClause;
-    AppendExtraWhereClause(whereClause, ANALYSIS_ALBUM_TABLE);
-
-    querySql += whereClause;
+    std::string querySql = "SELECT DISTINCT " + inClause +
+        " FROM " + VISION_FACE_TAG_TABLE + " vft" +
+        " WHERE EXISTS (" +
+        "   SELECT 1" +
+        "   FROM AnalysisAlbum aa" +
+        "   JOIN AnalysisPhotoMap apm ON aa.album_id = apm.map_album" +
+        "   JOIN Photos ph ON ph.file_id = apm.map_asset" +
+        "   WHERE aa.tag_id = vft.tag_id" +
+        "   AND ph.position IN (1, 3)" +
+        " )";
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
