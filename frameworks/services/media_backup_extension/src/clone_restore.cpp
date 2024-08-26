@@ -180,10 +180,10 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
     if (errorCode == E_OK) {
         RestoreGallery();
         RestoreMusic();
-        (void)NativeRdb::RdbHelper::DeleteRdbStore(dbPath_);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, audioNumber_, AUDIO_ASSET_TYPE);
+        (void)NativeRdb::RdbHelper::DeleteRdbStore(dbPath_);
     } else {
         SetErrorCode(RestoreError::INIT_FAILED);
     }
