@@ -39,6 +39,7 @@ enum class AssetChangeOperation {
 };
 
 enum class AddResourceMode {
+    DEFAULT = -1,
     DATA_BUFFER,
     FILE_URI,
 };
