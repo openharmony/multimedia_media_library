@@ -98,7 +98,8 @@ const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS 
     " (file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, title TEXT, display_name TEXT, size BIGINT," +
     " media_type INT, date_added BIGINT, date_taken BIGINT, duration INT, is_favorite INT default 0, " +
     " date_trashed BIGINT DEFAULT 0, hidden INT DEFAULT 0, height INT, width INT, user_comment TEXT, " +
-    " orientation INT DEFAULT 0, package_name TEXT);";
+    " orientation INT DEFAULT 0, package_name TEXT, burst_cover_level INT DEFAULT 1, burst_key TEXT, " +
+    " dirty INTEGER DEFAULT 0, subtype INT );";
 
 const string PhotosOpenCall::CREATE_PHOTOS_ALBUM = "CREATE TABLE IF NOT EXISTS PhotoAlbum \
     (album_id INTEGER PRIMARY KEY AUTOINCREMENT, album_type INT,   \
@@ -1259,7 +1260,10 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_MoveDirectory, TestSize.Level0)
         std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
     string srcDir = "/data/test";
     string dstDir = "/data/test1";
-    EXPECT_EQ(upgrade->MoveDirectory(srcDir, dstDir), 0);
+    EXPECT_EQ(upgrade->MoveDirectory(srcDir, dstDir), E_OK);
+    // delete the destination directory after moving to prevent errors caused by an existing directory
+    auto ret = MediaFileUtils::DeleteDir(dstDir);
+    EXPECT_EQ(ret, true);
     MEDIA_INFO_LOG("medialib_backup_MoveDirectory end");
 }
 
