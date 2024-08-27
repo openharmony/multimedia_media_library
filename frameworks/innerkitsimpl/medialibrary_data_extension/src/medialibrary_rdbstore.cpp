@@ -2930,7 +2930,7 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
         UpdateDataAddedIndexWithFileId(store);
     }
     
-    if (oldVersion < VISION_UPDATE_MULTI_CROP_INFO) {
+    if (oldVersion < VERSION_UPDATE_MULTI_CROP_INFO) {
         UpdateMultiCropInfo(store);
     }
 }
