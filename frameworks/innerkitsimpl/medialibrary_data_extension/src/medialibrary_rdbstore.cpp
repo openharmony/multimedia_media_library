@@ -56,6 +56,7 @@
 #include "story_db_sqls.h"
 #include "dfx_const.h"
 #include "dfx_timer.h"
+#include "vision_multi_crop_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -2470,6 +2471,16 @@ static void UpdateDataAddedIndexWithFileId(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpdateMultiCropInfo(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "ALTER TABLE " + VISION_RECOMMENDATION_TABLE + " ADD COLUMN " + MOVEMENT_CROP + " TEXT",
+        "ALTER TABLE " + VISION_RECOMMENDATION_TABLE + " ADD COLUMN " + MOVEMENT_VERSION + " TEXT",
+    };
+    MEDIA_INFO_LOG("start update multi crop triggers");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2917,6 +2928,10 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VISION_UPDATE_DATA_ADDED_INDEX) {
         UpdateDataAddedIndexWithFileId(store);
+    }
+    
+    if (oldVersion < VERSION_UPDATE_MULTI_CROP_INFO) {
+        UpdateMultiCropInfo(store);
     }
 }
 
