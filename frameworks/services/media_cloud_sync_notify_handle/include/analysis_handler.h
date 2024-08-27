@@ -18,7 +18,7 @@
 
 #include <functional>
 #include "base_handler.h"
-#include "medialibrary_album_operations.h"
+#include "medialibrary_album_refresh.h"
 
 namespace OHOS {
 namespace Media {

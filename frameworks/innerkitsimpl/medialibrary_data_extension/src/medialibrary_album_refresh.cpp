@@ -12,37 +12,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define MLOG_TAG "AlbumOperation"
-
-#include "medialibrary_album_operations.h"
-
-#include <cstddef>
-#include <cstdio>
-#include <cstring>
 
 #include "media_file_utils.h"
-#include "media_log.h"
-#include "medialibrary_analysis_album_operations.h"
-#include "medialibrary_asset_operations.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
+#include "medialibrary_album_refresh.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_rdb_transaction.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
-#include "medialibrary_tracer.h"
-#include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
-#include "photo_map_column.h"
 
-using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media {
-void NotifyAnalysisAlbum(PhotoAlbumSubType subtype, int32_t albumId)
+static void NotifyAnalysisAlbum(PhotoAlbumSubType subtype, int32_t albumId)
 {
     const static set<PhotoAlbumSubType> NEED_FLUSH_ANALYSIS_ALBUM = {
         PhotoAlbumSubType::SHOOTING_MODE,
@@ -55,14 +39,14 @@ void NotifyAnalysisAlbum(PhotoAlbumSubType subtype, int32_t albumId)
         }
         if (albumId > 0) {
             watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX,
-                to_string(albumId)), NotifyType::NOTIFY_ADD);
+                std::to_string(albumId)), NotifyType::NOTIFY_ADD);
         } else {
             watch->Notify(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
         }
     }
 }
 
-void NotifySystemAlbumFunc(PhotoAlbumType albumtype, PhotoAlbumSubType subtype, int32_t albumId)
+static void NotifySystemAlbumFunc(PhotoAlbumType albumtype, PhotoAlbumSubType subtype, int32_t albumId)
 {
     if (albumtype == PhotoAlbumType::SMART) {
         NotifyAnalysisAlbum(subtype, albumId);
@@ -80,14 +64,14 @@ void NotifySystemAlbumFunc(PhotoAlbumType albumtype, PhotoAlbumSubType subtype, 
         }
         if (albumId > 0) {
             watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
-                to_string(albumId)), NotifyType::NOTIFY_ADD);
+                std::to_string(albumId)), NotifyType::NOTIFY_ADD);
         } else {
             watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
         }
     }
 }
 
-void RefreshCallbackFunc()
+static void RefreshCallbackFunc()
 {
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
@@ -98,7 +82,7 @@ void RefreshCallbackFunc()
     watch->Notify(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
 }
 
-void RefreshAlbumAsyncTask(AsyncTaskData *data)
+static void RefreshAlbumAsyncTask(AsyncTaskData *data)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
