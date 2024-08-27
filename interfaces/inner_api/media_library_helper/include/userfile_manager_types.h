@@ -68,6 +68,7 @@ enum AnalysisType : int32_t {
     ANALYSIS_HEAD_POSITION,
     ANALYSIS_BONE_POSE,
     ANALYSIS_VIDEO_LABEL,
+    ANALYSIS_MULTI_CROP,
 };
 
 enum HighlightAlbumInfoType : int32_t {

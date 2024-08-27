@@ -57,6 +57,7 @@ const std::string URI_IMAGE_FACE = MEDIALIBRARY_DATA_URI + "/" + VISION_IMAGE_FA
 const std::string URI_FACE_TAG = MEDIALIBRARY_DATA_URI + "/" + VISION_FACE_TAG_TABLE;
 const std::string URI_HEAD = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_HEAD;
 const std::string URI_POSE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_POSE;
+const std::string URI_MULTI_CROP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MULTI_CROP;
 } // namespace Media
 } // namespace OHOS
 #endif // MEDIALIBRARY_VISION_COLUMN_H
