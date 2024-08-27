@@ -143,12 +143,13 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryCloudFi
     const string sql = "SELECT " + PhotoColumn::MEDIA_FILE_PATH + ", " + PhotoColumn::MEDIA_TYPE +
         " FROM(SELECT COUNT(*) AS count, " + PhotoColumn::MEDIA_FILE_PATH + ", " + PhotoColumn::MEDIA_TYPE + ", " +
         MediaColumn::MEDIA_DATE_MODIFIED + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
-        PhotoColumn::PHOTO_POSITION + " = " + std::to_string(POSITION_CLOUD) + " AND " + PhotoColumn::MEDIA_FILE_PATH +
-        " IS NOT NULL AND " + PhotoColumn::MEDIA_FILE_PATH + " != '' AND " + MediaColumn::MEDIA_SIZE + " > 0 AND(" +
-        PhotoColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR " + PhotoColumn::MEDIA_TYPE + " = " +
-        std::to_string(MEDIA_TYPE_VIDEO) + ") GROUP BY " + PhotoColumn::MEDIA_FILE_PATH +
-        " HAVING count = 1) ORDER BY " + PhotoColumn::MEDIA_TYPE + " DESC, " + MediaColumn::MEDIA_DATE_MODIFIED +
-        " DESC LIMIT " + std::to_string(DOWNLOAD_BATCH_SIZE);
+        PhotoColumn::PHOTO_CLEAN_FLAG + " = " + std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) +
+        " AND " + PhotoColumn::PHOTO_POSITION + " = " + std::to_string(POSITION_CLOUD) + " AND " +
+        PhotoColumn::MEDIA_FILE_PATH + " IS NOT NULL AND " + PhotoColumn::MEDIA_FILE_PATH + " != '' AND " +
+        MediaColumn::MEDIA_SIZE + " > 0 AND(" + PhotoColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) +
+        " OR " + PhotoColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + ") GROUP BY " +
+        PhotoColumn::MEDIA_FILE_PATH + " HAVING count = 1) ORDER BY " + PhotoColumn::MEDIA_TYPE + " DESC, " +
+        MediaColumn::MEDIA_DATE_MODIFIED + " DESC LIMIT " + std::to_string(DOWNLOAD_BATCH_SIZE);
 
     return uniStore->QuerySql(sql);
 }
