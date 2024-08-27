@@ -190,6 +190,9 @@ static int32_t ReadExtraFile(const std::string& extraPath, map<string, string>& 
         if (hasCinemagraphInfo) {
             extraData[LIVE_PHOTO_CINEMAGRAPH_INFO] = GetExtraData(fd, fileSize, fileSize, fileSize - MIN_STANDARD_SIZE);
         }
+    } else if (fileSize > LIVE_TAG_LEN + PLAY_INFO_LEN) {
+        extraData[LIVE_PHOTO_CINEMAGRAPH_INFO] = GetExtraData(fd, fileSize, fileSize,
+            fileSize - LIVE_TAG_LEN - PLAY_INFO_LEN);
     }
     return E_OK;
 }
@@ -202,7 +205,7 @@ static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhoto
     if (MediaFileUtils::IsFileValid(extraPath)) {
         hasExtraData = true;
         if (ReadExtraFile(extraPath, extraData) == E_ERR) {
-            MEDIA_ERR_LOG("write cinemagraph info err");
+            MEDIA_ERR_LOG("read extra file err");
             return E_ERR;
         }
         if (AddStringToFile(livePhotoFd, extraData[LIVE_PHOTO_CINEMAGRAPH_INFO]) == E_ERR) {
@@ -597,7 +600,7 @@ int32_t MovingPhotoFileUtils::GetVersionAndFrameNum(int32_t fd,
     CHECK_AND_RETURN_RET_LOG(fstat64(fd, &st) == 0, E_HAS_FS_ERROR,
         "Failed to get file state, errno:%{public}d", errno);
     int64_t totalSize = st.st_size;
-    CHECK_AND_RETURN_RET_LOG(totalSize > MIN_STANDARD_SIZE, E_INVALID_LIVE_PHOTO,
+    CHECK_AND_RETURN_RET_LOG(totalSize >= MIN_STANDARD_SIZE, E_INVALID_LIVE_PHOTO,
         "Failed to fetch version tag, total size is %{public}" PRId64, totalSize);
 
     char versionTag[VERSION_TAG_LEN + 1];
