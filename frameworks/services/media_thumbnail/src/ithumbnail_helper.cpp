@@ -810,6 +810,10 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
+    
+    if (data.orientation != 0 && data.sourceEx != nullptr && data.sourceEx->IsHdr()) {
+        data.sourceEx->ToSdr();
+    }
     if (data.orientation != 0 && !ThumbnailUtils::ScaleThumbnailFromSource(data, true)) {
         MEDIA_ERR_LOG("Fail to scale from LCD_EX to THM_EX, path: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
