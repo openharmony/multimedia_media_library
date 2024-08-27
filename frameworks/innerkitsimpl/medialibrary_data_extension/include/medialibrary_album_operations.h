@@ -66,8 +66,6 @@ public:
     static std::shared_ptr<NativeRdb::ResultSet> QueryPortraitAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
 };
-
-EXPORT void RefreshAlbums(bool forceRefresh = false);
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H

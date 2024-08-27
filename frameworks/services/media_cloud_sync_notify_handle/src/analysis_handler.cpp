@@ -21,7 +21,6 @@
 #include "photo_map_column.h"
 #include "result_set_utils.h"
 #include "vision_column.h"
-#include "medialibrary_album_operations.h"
 
 using namespace std;
 
