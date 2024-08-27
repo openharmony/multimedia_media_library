@@ -6011,7 +6011,7 @@ static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyn
 
 napi_value MediaLibraryNapi::PhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info)
 {
-    NAPI_INFO_LOG("MediaLibraryNapi::PhotoAccessGetPhotoAssets start");
+    NAPI_DEBUG_LOG("MediaLibraryNapi::PhotoAccessGetPhotoAssets start");
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->assetType = TYPE_PHOTO;
     CHECK_NULLPTR_RET(ParseArgsGetAssets(env, info, asyncContext));
