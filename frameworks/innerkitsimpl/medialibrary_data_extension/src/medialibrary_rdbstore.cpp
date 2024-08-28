@@ -208,6 +208,16 @@ static void UpdateBurstDirty(RdbStore &store)
     MEDIA_INFO_LOG("end UpdateBurstDirty");
 }
 
+static void UpdateReadyOnThumbnailUpgrade(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::UPDATE_READY_ON_THUMBNAIL_UPGRADE,
+    };
+    MEDIA_INFO_LOG("start update ready for thumbnail upgrade");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("finish update ready for thumbnail upgrade");
+}
+
 static void UpgradeRdbStore(AsyncTaskData *data)
 {
     if (MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() == nullptr) {
@@ -226,6 +236,10 @@ static void UpgradeRdbStore(AsyncTaskData *data)
 
     if (g_oldVersion < VERSION_UPDATE_BURST_DIRTY) {
         UpdateBurstDirty(*rdbStore);
+    }
+
+    if (g_oldVersion < VERSION_UPGRADE_THUMBNAIL) {
+        UpdateReadyOnThumbnailUpgrade(*rdbStore);
     }
 }
 
@@ -2665,16 +2679,6 @@ static void UpdateVideoLabelTableForSubLabelType(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-static void UpdateReadyOnThumbnailUpgrade(RdbStore &store)
-{
-    const vector<string> sqls = {
-        PhotoColumn::UPDATE_READY_ON_THUMBNAIL_UPGRADE,
-    };
-    MEDIA_INFO_LOG("start update ready for thumbnail upgrade");
-    ExecSqls(sqls, store);
-    MEDIA_INFO_LOG("finish update ready for thumbnail upgrade");
-}
-
 static void UpdateDataAddedIndexWithFileId(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -3187,9 +3191,7 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
         UpdateVideoLabelTableForSubLabelType(store);
     }
 
-    if (oldVersion < VERSION_UPGRADE_THUMBNAIL) {
-        UpdateReadyOnThumbnailUpgrade(store);
-    }
+    // VERSION_UPGRADE_THUMBNAIL = 101 move to UpgradeRdbStoreAsync(), avoid to cost for long time.
 
     if (oldVersion < VISION_UPDATE_DATA_ADDED_INDEX) {
         UpdateDataAddedIndexWithFileId(store);
