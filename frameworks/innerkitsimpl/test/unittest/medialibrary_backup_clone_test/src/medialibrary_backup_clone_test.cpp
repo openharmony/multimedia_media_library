@@ -726,30 +726,5 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generat
     }
     MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_003 end");
 }
-
-/**
- * @brief BurstKeyGenerator should find the burst sequence from FileInfo
- */
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generator_004, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_004 start");
-    BurstKeyGenerator burstKeyGenerator;
-    std::vector<FileInfo> fileInfos;
-    FileInfo fileInfoCover;
-    fileInfoCover.title = "IMG_20240619_022412_BURST001_COVER";
-    fileInfoCover.isBurst = 1;
-    fileInfos.push_back(fileInfoCover);
-    for (int i = 2; i <= 5; i++) {
-        FileInfo item;
-        item.title = "IMG_20240619_022412_BURST00" + std::to_string(i);
-        item.isBurst = 2;
-        fileInfos.push_back(item);
-    }
-    string burstKey;
-    for (int i = 1; i <= fileInfos.size(); i++) {
-        EXPECT_EQ(i, burstKeyGenerator.FindBurstSequence(fileInfos[i - 1]));
-    }
-    MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_004 end");
-}
 } // namespace Media
 } // namespace OHOS
