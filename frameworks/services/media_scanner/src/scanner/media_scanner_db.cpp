@@ -1019,7 +1019,7 @@ int32_t MediaScannerDb::DeleteError(const std::string &err)
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_ERR;
     }
-
+    MEDIA_INFO_LOG("delete error: %{public}s", err.c_str());
     return E_OK;
 }
 
