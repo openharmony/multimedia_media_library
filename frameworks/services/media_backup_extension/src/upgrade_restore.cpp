@@ -718,7 +718,6 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
         return isSuccess;
     }
     info.burstKey = burstKeyGenerator_.FindBurstKey(info);
-    info.burstSequence = burstKeyGenerator_.FindBurstSequence(info);
     ParseResultSetForMap(resultSet, info);
     return isSuccess;
 }
