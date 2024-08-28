@@ -472,6 +472,7 @@ bool EndState::StateSwitch(CloudSyncDfxManager& manager)
 
 void EndState::Process(CloudSyncDfxManager& manager)
 {
+    std::unique_lock<std::mutex> lock(manager.endStateMutex_);
     if (IsReported()) {
         manager.ShutDownTimer();
         return;
@@ -497,6 +498,7 @@ void EndState::Process(CloudSyncDfxManager& manager)
 
 void CloudSyncDfxManager::StartTimer()
 {
+    std::unique_lock<std::mutex> lock(timerMutex_);
     if (timerId_ != 0) {
         return;
     }
@@ -522,14 +524,16 @@ void CloudSyncDfxManager::StartTimer()
         }
     };
     timerId_ = timer_.Register(timerCallback, SIX_HOUR * TO_MILLION, false);
+    MEDIA_INFO_LOG("CloudSyncDfxManager StartTimer id:%{public}d", timerId_);
 }
 
 void CloudSyncDfxManager::ShutDownTimer()
 {
+    std::unique_lock<std::mutex> lock(timerMutex_);
     if (timerId_ == 0) {
         return;
     }
-    MEDIA_INFO_LOG("CloudSyncDfxManager ShutDownTimer");
+    MEDIA_INFO_LOG("CloudSyncDfxManager ShutDownTimer id:%{public}d", timerId_);
     timer_.Unregister(timerId_);
     timerId_ = 0;
     timer_.Shutdown();

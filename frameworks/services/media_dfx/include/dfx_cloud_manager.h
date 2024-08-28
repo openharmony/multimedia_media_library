@@ -16,6 +16,7 @@
 #ifndef OHOS_MEDIA_DFX_CLOUD_MANAGER_H
 #define OHOS_MEDIA_DFX_CLOUD_MANAGER_H
 
+#include <mutex>
 #include <timer.h>
 
 namespace OHOS {
@@ -77,6 +78,8 @@ private:
     void StartTimer();
     void SetStartTime();
     void ResetStartTime();
+    std::mutex timerMutex_;
+    std::mutex endStateMutex_;
     Utils::Timer timer_{ "CloudSyncTimer" };
     uint32_t timerId_{ 0 };
     SyncState syncState_{ SyncState::INIT_STATE };
