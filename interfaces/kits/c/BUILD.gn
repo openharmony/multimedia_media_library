@@ -91,6 +91,7 @@ ohos_shared_library("native_media_asset_manager") {
   ]
   output_name = "media_asset_manager"
   output_extension = "so"
+  innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
   part_name = "media_library"
 }
