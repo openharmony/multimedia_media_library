@@ -257,6 +257,10 @@ void DfxManager::HandleHalfDayMissions()
     if (MediaFileUtils::UTCTimeSeconds() - lastReportTime > HALF_DAY && dfxWorker_ != nullptr) {
         MEDIA_INFO_LOG("start handle statistic behavior");
         auto *taskData = new (nothrow) StatisticData(dfxReporter_);
+        if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to alloc async data for Handle Half Day Missions!");
+        return;
+        }
         auto statisticTask = make_shared<DfxTask>(HandleStatistic, taskData);
         if (statisticTask == nullptr) {
             MEDIA_ERR_LOG("Failed to create statistic task.");
