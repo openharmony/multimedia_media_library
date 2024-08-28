@@ -20,9 +20,17 @@
 #include <sys/stat.h>
 
 #include "media_log.h"
+#include "database_adapter.h"
+#include "result_set_utils.h"
+#include "media_column.h"
+#include "image_packer.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
+#include "medialibrary_operation.h"
+#include "medialibrary_object_utils.h"
+#include "picture.h"
+#include "image_type.h"
 
 using namespace std;
 
@@ -78,5 +86,62 @@ int32_t FileUtils::SaveImage(const string &filePath, void *output, size_t writeS
     return ret;
 }
 
+int32_t FileUtils::SavePicture(const string &imageId, std::shared_ptr<Media::Picture> &picture, bool isEdited)
+{
+    MediaLibraryTracer tracer;
+    // 通过imageid获取fileid 获取uri
+    MEDIA_INFO_LOG("photoid: %{public}s", imageId.c_str());
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+    string where = PhotoColumn::PHOTO_ID + " = ? ";
+    vector<string> whereArgs { imageId };
+    cmd.GetAbsRdbPredicates()->SetWhereClause(where);
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
+        PhotoColumn::PHOTO_SUBTYPE, MediaColumn::MEDIA_MIME_TYPE};
+    tracer.Start("Query");
+    auto resultSet = DatabaseAdapter::Query(cmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+        tracer.Finish();
+        MEDIA_INFO_LOG("result set is empty");
+        return -1;
+    }
+    tracer.Finish();
+    string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    int fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    //查询是否编辑 编辑目录下
+    string mime_type = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
+    if (mime_type == "") {
+        mime_type = "image/jpeg";
+    }
+    Media::ImagePacker imagePacker;
+    Media::PackOption packOption;
+    packOption.format = mime_type;
+    packOption.needsPackProperties = true;
+    packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
+    imagePacker.StartPacking(path, packOption);
+    imagePacker.AddPicture(*(picture));
+    imagePacker.FinalizePacking();
+    MediaLibraryObjectUtils::ScanFileAsync(path, to_string(fileId), MediaLibraryApi::API_10);
+    MEDIA_INFO_LOG("SavePicture end");
+    return 0;
+}
+
+int32_t FileUtils::SavePicture(const string &path, std::shared_ptr<Media::Picture> &picture,
+    const std::string &mime_type, bool isEdited)
+{
+    MEDIA_INFO_LOG("SavePicture width %{public}d, heigh %{public}d",
+        picture->GetMainPixel()->GetWidth(), picture->GetMainPixel()->GetHeight());
+    Media::ImagePacker imagePacker;
+    Media::PackOption packOption;
+    packOption.format = mime_type;
+    packOption.needsPackProperties = true;
+    packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
+    imagePacker.StartPacking(path, packOption);
+
+    imagePacker.AddPicture(*(picture));
+    imagePacker.FinalizePacking();
+    MEDIA_INFO_LOG("SavePicture end");
+    return 0;
+}
 } // namespace Media
 } // namespace OHOS

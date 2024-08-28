@@ -185,6 +185,19 @@ enum class CoverSatisfiedType : int32_t {
     ANALYSIS_SETTING = 4
 };
 
+enum ImageFileType : int32_t {
+    JPEG = 1,
+    HEIF = 2
+};
+
+const std::string MIME_TYPE_JPEG = "image/jpeg";
+
+const std::string MIME_TYPE_HEIF = "image/heif";
+
+const std::unordered_map<ImageFileType, std::string> IMAGE_FILE_TYPE_MAP = {
+    {JPEG, MIME_TYPE_JPEG},
+    {HEIF, MIME_TYPE_HEIF},
+};
 enum class BurstCoverLevelType : int32_t {
     COVER = 1,
     MEMBER = 2,
