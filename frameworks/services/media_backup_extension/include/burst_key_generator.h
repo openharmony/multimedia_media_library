@@ -26,7 +26,6 @@ namespace Media {
 class BurstKeyGenerator {
 public:
     std::string FindBurstKey(const FileInfo &fileInfo);
-    int32_t FindBurstSequence(const FileInfo &fileInfo);
 
 private:
     std::string FindTitlePrefix(const FileInfo &fileInfo);
@@ -34,14 +33,9 @@ private:
     int32_t FindGroupIndex(const FileInfo &fileInfo);
     std::string FindObjectHash(const FileInfo &fileInfo);
     std::string GenerateUuid();
-    bool isNumeric(const std::string &str)
-    {
-        return str.find_first_not_of("0123456789") == std::string::npos;
-    }
  
 private:
     const std::string TITLE_KEY_WORDS_OF_BURST = "_BURST";
-    const int TITLE_SEQUENCE_LEN_OF_BURST = 3;
     const int BURST_COVER_TYPE = 1;
     const int BURST_MEMBER_TYPE = 2;
     std::unordered_map<std::string, std::string> groupHashMap_;
