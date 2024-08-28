@@ -43,6 +43,11 @@ const std::string PERM_WRITE_AUDIO = "ohos.permission.WRITE_AUDIO";
 const std::string PERM_WRITE_DOCUMENT = "ohos.permission.WRITE_DOCUMENT";
 const std::string PERM_MANAGE_PRIVATE_PHOTOS = "ohos.permission.MANAGE_PRIVATE_PHOTOS";
 const std::string PERM_SHORT_TERM_WRITE_IMAGEVIDEO = "ohos.permission.SHORT_TERM_WRITE_IMAGEVIDEO";
+constexpr int THREE_HUNDERD_S = 300;
+
+enum SaveType {
+    SHORT_IMAGE_PERM = 0,
+};
 
 const std::vector<std::string> WRITE_PERMS_V10 = {
     PERM_WRITE_IMAGEVIDEO,

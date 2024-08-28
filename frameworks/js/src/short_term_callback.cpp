@@ -60,7 +60,8 @@ void ShortTermCallback::OnResult(int32_t resultCode, const OHOS::AAFwk::Want &wa
     if (len > 0) {
         SendMessageBack(desFileUris[0]);
     } else {
-        CHECK_ARGS_RET_VOID(this->env_, true, JS_INNER_FAIL);
+        string desFileUri;
+        SendMessageBack(desFileUri);
     }
 }
 
