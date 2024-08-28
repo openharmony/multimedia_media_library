@@ -609,6 +609,9 @@ static bool AddOwnerCheck(MediaLibraryCommand &cmd, DataSharePredicates &appidPr
         return false;
     }
     string clientAppId = GetClientAppId();
+    if (clientAppId.empty()) {
+        return false;
+    }
     appidPredicates.And()->EqualTo("owner_appid", clientAppId);
     return true;
 }
