@@ -3260,9 +3260,6 @@ static void UpgradeExtensionPart1(RdbStore &store, int32_t oldVersion)
     }
 
     // VERSION_CREATE_BURSTKEY_INDEX = 98 move to UpgradeRdbStoreAsync(), avoid to cost for long time.
-    if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
-        CreateBurstkeyIndex(store);
-    }
 
     UpgradeExtensionPart2(store, oldVersion);
     // !! Do not add upgrade code here !!
