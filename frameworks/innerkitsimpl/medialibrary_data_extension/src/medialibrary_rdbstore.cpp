@@ -2636,15 +2636,6 @@ void AddBurstCoverLevelAndBurstKey(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-void AddBurstSequence(RdbStore &store)
-{
-    const vector<string> sqls = {
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_BURST_SEQUENCE + " INT",
-    };
-    MEDIA_INFO_LOG("start add burst_sequence column");
-    ExecSqls(sqls, store);
-}
-
 static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -3268,10 +3259,6 @@ static void UpgradeExtensionPart1(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_SOURCE_ALBUM_AND_ALBUM_BUNDLENAME_TRIGGERS) {
         UpdateSourceAlbumAndAlbumBundlenameTriggers(store);
-    }
-
-    if (oldVersion < VERSION_ADD_BURST_SEQUENCE) {
-        AddBurstSequence(store);
     }
 
     // VERSION_CREATE_BURSTKEY_INDEX = 98 move to UpgradeRdbStoreAsync(), avoid to cost for long time.
