@@ -27,6 +27,7 @@
 #include "media_change_request_napi.h"
 #include "photo_proxy.h"
 #include "unique_fd.h"
+#include "userfile_manager_types.h"
 #include "values_bucket.h"
 
 namespace OHOS {
@@ -106,6 +107,8 @@ public:
     int32_t CreateAssetBySecurityComponent(std::string& assetUri);
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
     int32_t PutMediaAssetEditData(DataShare::DataShareValuesBucket& valuesBucket);
+    void SetImageFileType(int32_t imageFileType);
+    int32_t GetImageFileType();
 
     sptr<PhotoProxy> GetPhotoProxyObj();
     void ReleasePhotoProxyObj();
@@ -161,6 +164,7 @@ private:
     AddResourceMode movingPhotoVideoResourceMode_;
     std::vector<ResourceType> addResourceTypes_; // support adding resource multiple times
     std::vector<AssetChangeOperation> assetChangeOperations_;
+    int32_t imageFileType_;
 };
 
 struct MediaAssetChangeRequestAsyncContext : public NapiError {

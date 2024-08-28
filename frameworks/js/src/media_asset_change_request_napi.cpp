@@ -465,6 +465,16 @@ string MediaAssetChangeRequestNapi::GetCacheMovingPhotoVideoName() const
     return cacheMovingPhotoVideoName_;
 }
 
+void MediaAssetChangeRequestNapi::SetImageFileType(int32_t imageFileType)
+{
+    imageFileType_ = imageFileType;
+}
+
+int32_t MediaAssetChangeRequestNapi::GetImageFileType()
+{
+    return imageFileType_;
+}
+
 napi_value MediaAssetChangeRequestNapi::JSGetAsset(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
@@ -1240,12 +1250,19 @@ napi_value MediaAssetChangeRequestNapi::JSSetCameraShotKey(napi_env env, napi_ca
 
 napi_value MediaAssetChangeRequestNapi::JSSaveCameraPhoto(napi_env env, napi_callback_info info)
 {
+    constexpr size_t minArgs = ARGS_ZERO;
+    constexpr size_t maxArgs = ARGS_ONE;
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env,
-        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ZERO) == napi_ok,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, minArgs, maxArgs) == napi_ok,
         "Failed to get object info");
-
     auto changeRequest = asyncContext->objectInfo;
+    if (asyncContext->argc == ARGS_ONE) {
+        int32_t fileType;
+        MediaLibraryNapiUtils::GetInt32Arg(env, asyncContext->argv[PARAM0], fileType);
+        NAPI_DEBUG_LOG("fileType: %{public}d", fileType);
+        changeRequest->SetImageFileType(fileType);
+    }
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
     if (changeRequest->Contains(AssetChangeOperation::SET_EDIT_DATA) &&
@@ -2169,6 +2186,9 @@ static void DiscardHighQualityPhoto(MediaAssetChangeRequestAsyncContext& context
 
 static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SaveCameraPhotoExecute");
+
     auto changeOpreations = context.assetChangeOperations;
     bool containsAddResource = std::find(changeOpreations.begin(), changeOpreations.end(),
         AssetChangeOperation::ADD_RESOURCE) != changeOpreations.end();
@@ -2198,6 +2218,8 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_SUBTYPE,
         to_string(fileAsset->GetPhotoSubType()));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, IMAGE_FILE_TYPE,
+        to_string(context.objectInfo->GetImageFileType()));
     Uri uri(uriStr);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);

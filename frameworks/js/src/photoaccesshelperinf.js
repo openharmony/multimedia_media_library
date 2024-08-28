@@ -720,4 +720,5 @@ export default {
   MovingPhoto: photoAccessHelper.MovingPhoto,
   MovingPhotoEffectMode: photoAccessHelper.MovingPhotoEffectMode,
   CompleteButtonText: CompleteButtonText,
+  ImageFileType: photoAccessHelper.ImageFileType,
 };

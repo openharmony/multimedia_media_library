@@ -695,6 +695,12 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     if (command.GetUri().ToString().find(MEDIA_DATA_DB_HIGHLIGHT) != string::npos) {
         command.SetOprnObject(OperationObject::HIGHLIGHT_COVER);
     }
+    if (command.GetUri().ToString().find(PhotoColumn::PHOTO_REQUEST_PICTURE) != string::npos) {
+        command.SetOprnObject(OperationObject::REQUEST_PICTURE);
+    }
+    if (command.GetUri().ToString().find(PhotoColumn::PHOTO_REQUEST_PICTURE_BUFFER) != string::npos) {
+        command.SetOprnObject(OperationObject::PHOTO_REQUEST_PICTURE_BUFFER);
+    }
     return MediaLibraryDataManager::GetInstance()->OpenFile(command, unifyMode);
 }
 

@@ -17,6 +17,7 @@
 #define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_FILE_UTILS_H
 
 #include <string>
+#include "picture.h"
 
 namespace OHOS {
 namespace Media {
@@ -26,6 +27,10 @@ public:
     FileUtils();
     ~FileUtils();
     EXPORT static int32_t SaveImage(const std::string &filePath, void *output, size_t writeSize);
+    EXPORT static int32_t SavePicture(const std::string &imageId,
+        std::shared_ptr<Media::Picture> &picture, bool isEdited = false);
+    EXPORT static int32_t SavePicture(const std::string &path, std::shared_ptr<Media::Picture> &picture,
+        const std::string &mime_type, bool isEdited = false);
 
 private:
     EXPORT static int DeleteFile(const std::string &fileName);

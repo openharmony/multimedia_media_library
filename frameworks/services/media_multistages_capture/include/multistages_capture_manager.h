@@ -25,6 +25,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_command.h"
 #include "result_set.h"
+#include "picture_manager_thread.h"
 
 namespace OHOS {
 namespace Media {
@@ -58,6 +59,12 @@ public:
 
     void AddImageInternal(int32_t fileId, const std::string &photoId, int32_t deferredProcType,
         bool discardable = false);
+    bool IsHighQualityPhotoExist(const std::string &uri);
+    void DealHighQualityPicture(const std::string &imageId, std::shared_ptr<Media::Picture> picture,
+        bool isEdited = false);
+    void DealLowQualityPicture(const std::string &imageId, std::shared_ptr<Media::Picture> picture,
+        bool isEdited = false);
+    void SaveLowQualityImageInfo(MediaLibraryCommand &cmd);
 
     EXPORT bool IsPhotoDeleted(const std::string &photoId);
 
@@ -74,10 +81,13 @@ private:
         const NativeRdb::AbsRdbPredicates &predicates);
     void CancelRequestAndRemoveImage(const std::vector<std::string> &columns);
     void AddImage(MediaLibraryCommand &cmd);
+    int32_t UpdatePictureQuality(const std::string &photoId);
 
     std::unordered_set<int32_t> setOfDeleted_;
 
     std::shared_ptr<DeferredProcessingAdapter> deferredProcSession_;
+
+    std::mutex deferredProcMutex_;
 };
 } // namespace Media
 } // namespace OHOS

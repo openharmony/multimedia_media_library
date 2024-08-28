@@ -332,6 +332,10 @@ const std::vector<std::string> movingPhotoEffectModeEnum {
     "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE", "CINEMA_GRAPH"
 };
 
+const std::vector<std::string> imageFileTypeEnum {
+    "JPEG", "HEIF"
+};
+
 const std::vector<std::string> fileKeyEnumValues {
     MEDIA_DATA_DB_ID,
     MEDIA_DATA_DB_RELATIVE_PATH,

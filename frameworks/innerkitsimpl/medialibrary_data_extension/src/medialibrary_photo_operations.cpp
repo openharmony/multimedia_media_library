@@ -24,6 +24,8 @@
 #include "file_utils.h"
 #include "image_source.h"
 #include "media_analysis_helper.h"
+#include "image_packer.h"
+#include "iservice_registry.h"
 #include "media_change_effect.h"
 #include "media_column.h"
 #include "media_file_uri.h"
@@ -50,6 +52,10 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "photo_map_operations.h"
+#include "picture.h"
+#include "image_type.h"
+#include "picture_manager_thread.h"
+
 #include "rdb_predicates.h"
 #include "result_set_utils.h"
 #include "thumbnail_const.h"
@@ -70,9 +76,12 @@ using namespace OHOS::RdbDataShareAdapter;
 namespace OHOS {
 namespace Media {
 static const string ANALYSIS_HAS_DATA = "1";
+constexpr int SAVE_PHOTO_WAIT_MS = 300;
+constexpr int TASK_NUMBER_MAX = 5;
 shared_ptr<PhotoEditingRecord> PhotoEditingRecord::instance_ = nullptr;
 mutex PhotoEditingRecord::mutex_;
-
+std::mutex MediaLibraryPhotoOperations::saveCameraPhotoMutex_;
+std::condition_variable MediaLibraryPhotoOperations::condition_;
 int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
 {
     switch (cmd.GetApi()) {
@@ -743,6 +752,15 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("get fileId fail");
         return 0;
     }
+    vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
+        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
+        PhotoColumn::MEDIA_ID, fileId, OperationObject::FILESYSTEM_PHOTO, columns);
+
+    string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
+    if (!fileType.empty()) {
+        SavePicture(stoi(fileType), fileAsset);
+    }
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
@@ -777,11 +795,9 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     }
 
     string needScanStr = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
-    if (needScanStr.compare("1") == 0) {
-        string path = MediaFileUri::GetPathFromUri(uri, true);
-        if (!path.empty()) {
-            ScanFile(path, false, true, true, stoi(fileId));
-        }
+    string path = MediaFileUri::GetPathFromUri(uri, true);
+    if (!path.empty()) {
+        ScanFile(path, false, true, true, stoi(fileId));
     }
     MEDIA_INFO_LOG("Success, updatedRows: %{public}d, needScanStr: %{public}s", updatedRows, needScanStr.c_str());
     return updatedRows;
@@ -1415,6 +1431,27 @@ static int32_t UpdateEffectMode(int32_t fileId, int32_t effectMode, int32_t phot
     return E_OK;
 }
 
+static int32_t UpdateMimeType(const int32_t &fileId, const std::string mimeType)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Failed to get rdbStore when updating effect mode");
+        return E_HAS_DB_ERROR;
+    }
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    ValuesBucket updateValues;
+    updateValues.PutString(MediaColumn::MEDIA_MIME_TYPE, mimeType);
+    updateCmd.SetValueBucket(updateValues);
+    int32_t updateRows = -1;
+    int32_t errCode = rdbStore->Update(updateCmd, updateRows);
+    if (errCode != NativeRdb::E_OK || updateRows < 0) {
+        MEDIA_ERR_LOG("Update mime type failed. errCode:%{public}d, updateRows:%{public}d.", errCode, updateRows);
+        return E_HAS_DB_ERROR;
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::CommitEditInsert(MediaLibraryCommand &cmd)
 {
     const ValuesBucket &values = cmd.GetValueBucket();
@@ -1921,18 +1958,134 @@ int32_t MediaLibraryPhotoOperations::SaveSourceAndEditData(
     return E_OK;
 }
 
+std::shared_ptr<FileAsset> MediaLibraryPhotoOperations::GetFileAsset(MediaLibraryCommand& cmd)
+{
+    const ValuesBucket& values = cmd.GetValueBucket();
+    int32_t id = 0;
+    GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id);
+    vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
+        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
+        PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
+    return fileAsset;
+}
+
+int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
+    bool isCleanImmediately, std::string &photoId)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileId));
+    vector<string> columns = { PhotoColumn::PHOTO_ID };
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("result set is empty");
+        return E_FILE_EXIST;
+    }
+
+    photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+    if (photoId.empty()) {
+        MEDIA_ERR_LOG("photoId is emply fileId is: %{public}d", fileId);
+        return E_FILE_EXIST;
+    }
+
+    MEDIA_INFO_LOG("photoId: %{public}s", photoId.c_str());
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread != nullptr) {
+        pictureManagerThread->Start();
+        picture = pictureManagerThread->GetDataWithImageId(photoId, isCleanImmediately);
+    }
+    if (picture == nullptr) {
+        MEDIA_ERR_LOG("picture is not exists!");
+        return E_FILE_EXIST;
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::FinishRequestPicture(MediaLibraryCommand &cmd)
+{
+    const ValuesBucket& values = cmd.GetValueBucket();
+    int32_t fileId = 0;
+    GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, fileId);
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileId));
+    vector<string> columns = { PhotoColumn::PHOTO_ID };
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("result set is empty");
+        return E_FILE_EXIST;
+    }
+
+    string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+    if (photoId.empty()) {
+        MEDIA_ERR_LOG("photoId is emply fileId is: %{public}d", fileId);
+        return E_FILE_EXIST;
+    }
+
+    MEDIA_INFO_LOG("photoId: %{public}s", photoId.c_str());
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread != nullptr) {
+        pictureManagerThread->Start();
+    }
+    pictureManagerThread->FinishAccessingPicture(photoId);
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
 {
     if (IsCameraEditData(cmd)) {
-        const ValuesBucket& values = cmd.GetValueBucket();
-        int32_t id = 0;
-        GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id);
-        vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
-            PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED };
-        shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
-            PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
+        shared_ptr<FileAsset> fileAsset = GetFileAsset(cmd);
         return AddFiltersExecute(cmd, fileAsset, "");
     }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const std::shared_ptr<FileAsset> &fileAsset)
+{
+    int32_t fileId = fileAsset->GetId();
+    MEDIA_DEBUG_LOG("fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
+
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread != nullptr) {
+        pictureManagerThread->Start();
+    }
+    std::shared_ptr<Media::Picture> picture;
+    std::string photoId;
+    if (GetPicture(fileId, picture, false, photoId) != E_OK) {
+        MEDIA_ERR_LOG("Failed to get picture");
+        return E_FILE_EXIST;
+    }
+
+    MEDIA_INFO_LOG("SaveCameraPhotoPicture::begin");
+    {
+        unique_lock<mutex> locker(saveCameraPhotoMutex_);
+        bool ret = condition_.wait_for(locker, chrono::milliseconds(SAVE_PHOTO_WAIT_MS),
+            [pictureManagerThread]() { return pictureManagerThread->GetPendingTaskSize() < TASK_NUMBER_MAX; });
+        if (!ret) {
+            MEDIA_INFO_LOG("SaveCameraPhotoPicture::Wait wait for lock timeout");
+        }
+    }
+
+    string assetPath = fileAsset->GetFilePath();
+    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
+
+    ImageFileType type = static_cast<ImageFileType>(fileType);
+    auto itr = IMAGE_FILE_TYPE_MAP.find(type);
+    if (itr == IMAGE_FILE_TYPE_MAP.end()) {
+        MEDIA_ERR_LOG("fileType : %{public} is not support", fileType);
+        return E_INVALID_ARGUMENTS;
+    }
+    std::string format = itr->second;
+    Media::ImagePacker imagePacker;
+    Media::PackOption packOption;
+    packOption.format = format;
+    packOption.needsPackProperties = true;
+    packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
+    imagePacker.StartPacking(assetPath, packOption);
+    imagePacker.AddPicture(*(picture));
+    imagePacker.FinalizePacking();
+    MEDIA_DEBUG_LOG("SavePicture end");
+    pictureManagerThread->FinishAccessingPicture(photoId);
     return E_OK;
 }
 
@@ -1940,6 +2093,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
 {
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
+    int32_t fileId = fileAsset->GetId();
     string assetPath = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
     string editDataDirPath = GetEditDataDirPath(assetPath);
@@ -1961,6 +2115,19 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     // 保存editdata_camera文件
     string editData;
     SaveEditDataCamera(cmd, assetPath, editData);
+    std::shared_ptr<Media::Picture> picture;
+    string photoId;
+    if (GetPicture(fileId, picture, false, photoId) == E_OK) {
+        string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
+        int32_t ret = AddFiltersToPicture(picture, assetPath, editData, fileType);
+        auto pictureManagerThread = PictureManagerThread::GetInstance();
+        if (pictureManagerThread != nullptr) {
+            pictureManagerThread->Start();
+        }
+        pictureManagerThread->FinishAccessingPicture(photoId);
+        MediaLibraryObjectUtils::ScanFileAsync(assetPath, to_string(fileId), MediaLibraryApi::API_10);
+        return ret;
+    }
     // 生成水印
     int32_t ret = AddFiltersToPhoto(sourcePath, assetPath, editData);
     if (ret == E_OK) {
@@ -2221,7 +2388,8 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
         PhotoColumn::PHOTO_EDIT_TIME };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
         PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "Failed to get FileAsset, fileId=%{public}d", id);
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
+        "Failed to getmapmanagerthread:: FileAsset, fileId=%{public}d", id);
     int32_t errCode = SubmitCacheExecute(cmd, fileAsset, cachePath);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to submit cache, fileId=%{public}d", id);
     return id;
@@ -2265,6 +2433,41 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, cons
     }
 }
 
+int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEdited, const std::string &path,
+    std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto");
+    string editDataSourcePath = GetEditDataSourcePath(path);
+    string editDataCameraPath = GetEditDataCameraPath(path);
+
+    if (isEdited) {
+        // 图片编辑过了只替换低质量裸图
+        return FileUtils::SavePicture(editDataSourcePath, picture, mime_type, isEdited);
+    } else {
+        if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
+            // 图片没编辑过且没有editdata_camera，只落盘在Photo目录
+            return FileUtils::SavePicture(path, picture, mime_type, isEdited);
+        } else {
+            // 图片没编辑过且有editdata_camera
+            MediaLibraryTracer tracer;
+            tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto AddFiltersToPhoto");
+            // (1) 先替换低质量裸图
+            int ret = FileUtils::SavePicture(editDataSourcePath, picture, mime_type, isEdited);
+            if (ret != E_OK) {
+                return ret;
+            }
+            // (2) 生成高质量水印滤镜图片
+            string editData;
+            CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
+                "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
+            CHECK_AND_RETURN_RET_LOG(AddFiltersToPicture(picture, path, editData, mime_type) == E_OK, E_FAIL,
+                "Failed to add filters to photo");
+            return E_OK;
+        }
+    }
+}
+
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
     const std::string &outputPath, const std::string &editdata, const std::string &photoStatus)
 {
@@ -2301,6 +2504,34 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
         return ret;
     }
     MEDIA_INFO_LOG("AddFiltersToPhoto finish");
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::Picture> &inPicture,
+    const std::string &outputPath, string &editdata, const std::string &mime_type)
+{
+    if (inPicture == nullptr) {
+        MEDIA_ERR_LOG("AddFiltersToPicture: picture is null");
+        return E_ERR;
+    }
+    MEDIA_INFO_LOG("AddFiltersToPicture outputPath: %{public}s, editdata: %{public}s",
+        outputPath.c_str(), editdata.c_str());
+    size_t lastSlash = outputPath.rfind('/');
+    CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
+        "Failed to check outputPath: %{public}s", outputPath.c_str());
+    int32_t ret = MediaChangeEffect::TakeEffectForPicture(inPicture, editdata);
+    Media::ImagePacker imagePacker;
+    Media::PackOption packOption;
+    packOption.format = mime_type;
+    packOption.needsPackProperties = true;
+    packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
+    imagePacker.StartPacking(outputPath, packOption);
+    imagePacker.AddPicture(*(inPicture));
+    imagePacker.FinalizePacking();
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaLibraryPhotoOperations: AddFiltersToPicture: TakeEffect error. ret = %d", ret);
+        return E_ERR;
+    }
     return E_OK;
 }
 

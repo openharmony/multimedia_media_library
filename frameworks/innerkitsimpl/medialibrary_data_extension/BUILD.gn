@@ -238,6 +238,9 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_urisensitive_operations.cpp",
     "src/medialibrary_vision_operations.cpp",
     "src/photo_map_operations.cpp",
+    "src/picture_data_operations.cpp",
+    "src/picture_handle_service.cpp",
+    "src/picture_manager_thread.cpp",
     "src/trash_async_worker.cpp",
   ]
   sources += media_scan_source
@@ -295,6 +298,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "ipc:ipc_core",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
+    "libexif:libexif",
     "napi:ace_napi",
     "os_account:os_account_innerkits",
     "player_framework:media_client",
