@@ -115,37 +115,5 @@ std::string BurstKeyGenerator::FindBurstKey(const FileInfo &fileInfo)
         FindObjectHash(fileInfo).c_str(), groupHash.c_str(), groupHashMap_[groupHash].c_str());
     return groupHashMap_[groupHash];
 }
-
-/**
- * parse burst sequence from FileInfo.title
- *
- * @param fileInfo the data from gallery.db#gallery_media
- * @return the burst sequence, if not burst photo return 0.
- */
-int32_t BurstKeyGenerator::FindBurstSequence(const FileInfo &fileInfo)
-{
-    // only accept data of burst photo
-    if (fileInfo.isBurst != BURST_COVER_TYPE && fileInfo.isBurst != BURST_MEMBER_TYPE) {
-        return 0;
-    }
-    std::string title = fileInfo.title;
-    // title must contains _BURST
-    size_t pos = title.find(TITLE_KEY_WORDS_OF_BURST);
-    if (pos == std::string::npos) {
-        return 0;
-    }
-    // avoid crash for invalid data: out of range
-    size_t numberStartIndex = pos + TITLE_KEY_WORDS_OF_BURST.size();
-    size_t minLen = numberStartIndex + TITLE_SEQUENCE_LEN_OF_BURST;
-    if (minLen > title.size()) {
-        return 0;
-    }
-    std::string number = title.substr(numberStartIndex, TITLE_SEQUENCE_LEN_OF_BURST);
-    // avoid crash for invalid data: not number sequence
-    if (!isNumeric(number)) {
-        return 0;
-    }
-    return std::stoi(number);
-}
 }  // namespace Media
 }  // namespace OHOS
