@@ -53,7 +53,6 @@ static int Init()
         sceneCode);
 }
 
-
 static void ThumhnailTest(const uint8_t* data, size_t size)
 {
     if (Init() != 0) {
@@ -74,7 +73,7 @@ static void ThumhnailTest(const uint8_t* data, size_t size)
     Media::ThumbnailService::GetInstance()->UpgradeThumbnailBackground(false);
     Media::ThumbnailService::GetInstance()->RestoreThumbnailDualFrame();
     Media::ThumbnailService::GetInstance()->CheckCloudThumbnailDownloadFinish();
-    Media::ThumbnailService::GetInstance()->InterruptBgworker();
+    Media::ThumbnailService::GetInstance()->StopAllWorker();
 }
 
 static void ThumbnailHelperTest(const uint8_t* data, size_t size)

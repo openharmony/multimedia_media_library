@@ -43,7 +43,7 @@ public:
     EXPORT static const int ERROR;
     EXPORT static const int SUCCEED;
     EXPORT static const int ALREADY_EXIST;
-    EXPORT static const int NO_DATA;
+    EXPORT static const int NO_DATA_EXIST;
 
     EXPORT static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
     EXPORT static int32_t BatchInsert(MediaLibraryCommand &cmd,

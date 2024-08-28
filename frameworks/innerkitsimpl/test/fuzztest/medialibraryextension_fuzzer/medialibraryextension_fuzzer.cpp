@@ -19,12 +19,14 @@
 #include <memory>
 #include <string>
 
+#include "ability_context_impl.h"
 #include "data_ability_observer_interface.h"
 #include "datashare_business_error.h"
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
 #include "datashare_values_bucket.h"
 #include "media_datashare_ext_ability.h"
+#include "medialibrary_data_manager.h"
 #include "media_file_ext_ability.h"
 #include "media_datashare_stub_impl.h"
 #include "media_log.h"
@@ -204,6 +206,17 @@ static inline void StopFuzzer(MediaDataShareExtAbility &extension)
     extension.OnStop();
 }
 
+static int InitExtention(MediaDataShareExtAbility &extension)
+{
+    extension.InitPermissionHandler();
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    abilityContextImpl->SetStageContext(stageContext);
+    int32_t sceneCode = 0;
+    return Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl, abilityContextImpl,
+        sceneCode);
+}
+
 class ArkJsRuntime : public AbilityRuntime::JsRuntime {
 public:
     ArkJsRuntime() {};
@@ -255,6 +268,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     auto extension = OHOS::Init();
+    OHOS::InitExtention(extension);
     OHOS::InsertFuzzer(extension, data, size);
     OHOS::InsertExtFuzzer(extension, data, size);
     OHOS::UpdateFuzzer(extension, data, size);
