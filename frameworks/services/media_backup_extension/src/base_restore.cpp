@@ -950,9 +950,6 @@ void BaseRestore::SetParameterForClone()
 
 void BaseRestore::StopParameterForClone(int32_t sceneCode)
 {
-    if (sceneCode == UPGRADE_RESTORE_ID) {
-        return;
-    }
     bool retFlag = system::SetParameter(CLONE_FLAG, "0");
     if (!retFlag) {
         MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
