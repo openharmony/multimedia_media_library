@@ -769,7 +769,7 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     if (needToResetTime) {
         AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
         Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(tokenCaller,
-            PERM_SHORT_TERM_WRITE_IMAGEVIDEO , THREE_HUNDERD_S);
+            PERM_SHORT_TERM_WRITE_IMAGEVIDEO, THREE_HUNDERD_S);
     }
     return ret;
 }
