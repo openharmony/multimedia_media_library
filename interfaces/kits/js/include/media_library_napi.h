@@ -280,6 +280,7 @@ private:
     EXPORT static napi_value ShowAssetsCreationDialog(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperAgentCreateAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperAgentCreateAssetsWithMode(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGrantPhotoUriPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGrantPhotoUrisPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessCancelPhotoUriPermission(napi_env env, napi_callback_info info);
@@ -309,6 +310,7 @@ private:
     EXPORT static napi_value CreateAnalysisTypeEnum(napi_env env);
     EXPORT static napi_value CreateRequestPhotoTypeEnum(napi_env env);
     EXPORT static napi_value CreateResourceTypeEnum(napi_env env);
+    EXPORT static napi_value CreateAuthorizationModeEnum(napi_env env);
     EXPORT static napi_value CreateHighlightAlbumInfoTypeEnum(napi_env env);
     EXPORT static napi_value CreateHighlightUserActionTypeEnum(napi_env env);
     EXPORT static napi_value CreateMovingPhotoEffectModeEnum(napi_env env);
@@ -366,6 +368,7 @@ private:
     static thread_local napi_ref sHighlightUserActionType_;
     static thread_local napi_ref sMovingPhotoEffectModeEnumRef_;
     static thread_local napi_ref sImageFileTypeEnumEnumRef_;
+    static thread_local napi_ref sAuthorizationModeEnumRef_;
 
     static std::mutex sOnOffMutex_;
 };

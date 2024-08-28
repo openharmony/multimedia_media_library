@@ -403,6 +403,18 @@ static int32_t HandleSecurityComponentPermission(MediaLibraryCommand &cmd)
     return E_NEED_FURTHER_CHECK;
 }
 
+static int32_t HandleShortPermission(bool &need)
+{
+    int32_t err = PermissionUtils::CheckPhotoCallerPermission(PERM_SHORT_TERM_WRITE_IMAGEVIDEO) ? E_SUCCESS :
+        E_PERMISSION_DENIED;
+    if (!err) {
+        need = true;
+    } else {
+        need = false;
+    }
+    return err;
+}
+
 static int32_t UserFileMgrPermissionCheck(MediaLibraryCommand &cmd, const bool isWrite)
 {
     static const set<OperationObject> USER_FILE_MGR_OBJECTS = {
@@ -736,12 +748,15 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     PermParam permParam = {
         .isWrite = true,
     };
+    bool needToResetTime = false;
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
     if (err != E_SUCCESS) {
         err = CheckPermFromUri(cmd, true);
     }
+    if ((err != E_SUCCESS) && cmd.GetUriStringWithoutSegment() == PAH_CREATE_PHOTO)
+        err = HandleShortPermission(needToResetTime);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err < 0) {
@@ -750,7 +765,13 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     }
 
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
-    return MediaLibraryDataManager::GetInstance()->InsertExt(cmd, value, result);
+    int32_t ret =  MediaLibraryDataManager::GetInstance()->InsertExt(cmd, value, result);
+    if (needToResetTime) {
+        AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+        Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(tokenCaller,
+            PERM_SHORT_TERM_WRITE_IMAGEVIDEO , THREE_HUNDERD_S);
+    }
+    return ret;
 }
 
 int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &predicates,

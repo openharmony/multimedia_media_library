@@ -164,6 +164,7 @@ thread_local napi_ref MediaLibraryNapi::sPhotoPermissionType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHideSensitiveType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDynamicRangeType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHiddenPhotosDisplayModeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sAuthorizationModeEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 using Context = MediaLibraryAsyncContext* ;
 
@@ -333,6 +334,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("grantPhotoUriPermission", PhotoAccessGrantPhotoUriPermission),
             DECLARE_NAPI_FUNCTION("grantPhotoUrisPermission", PhotoAccessGrantPhotoUrisPermission),
             DECLARE_NAPI_FUNCTION("cancelPhotoUriPermission", PhotoAccessCancelPhotoUriPermission),
+            DECLARE_NAPI_FUNCTION("createAssetsForAppWithMode", PhotoAccessHelperAgentCreateAssetsWithMode),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -366,6 +368,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("HighlightUserActionType", CreateHighlightUserActionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("MovingPhotoEffectMode", CreateMovingPhotoEffectModeEnum(env)),
         DECLARE_NAPI_PROPERTY("ImageFileType", CreateImageFileTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("AuthorizationMode", CreateAuthorizationModeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -6644,6 +6647,11 @@ napi_value MediaLibraryNapi::CreateSourceModeEnum(napi_env env)
     return CreateNumberEnumProperty(env, sourceModeEnum, sSourceModeEnumRef_);
 }
 
+napi_value MediaLibraryNapi::CreateAuthorizationModeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, AuthorizationModeEnum, sAuthorizationModeEnumRef_);
+}
+
 napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
 {
     const int32_t startIdx = 1;
@@ -7383,6 +7391,82 @@ static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
             context->uriArray.push_back(move(outUri));
         }
     }
+}
+
+static napi_value ParseArgsCreateAgentCreateAssetsWithMode(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    /* Parse the arguments */
+    BundleInfo bundleInfo;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO],
+        bundleInfo.bundleName) == napi_ok, "Failed to get bundleName");
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE],
+        bundleInfo.packageName) == napi_ok, "Failed to get appName");
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_TWO],
+        bundleInfo.appId) == napi_ok, "Failed to get appId");
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+
+    vector<napi_value> napiValues;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[ARGS_FIVE], napiValues));
+    if (napiValues.empty()) {
+        return result;
+    }
+
+    for (const auto& napiValue : napiValues) {
+        CHECK_COND_WITH_MESSAGE(env, ParseCreateConfig(env, napiValue, bundleInfo, *context) == napi_ok,
+            "Parse asset create config failed");
+    }
+
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamCallback(env, context)
+        == napi_ok, "Failed to get callback");
+    return result;
+}
+
+static napi_value ParseArgsAgentCreateAssetsWithMode(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_SIX;
+    constexpr size_t maxArgs = ARGS_SIX;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, "Failed to get object info");
+
+    context->isCreateByComponent = false;
+    context->isCreateByAgent = true;
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    return ParseArgsCreateAgentCreateAssetsWithMode(env, info, context);
+}
+
+napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssetsWithMode(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperAgentCreateAssetsWithMode");
+
+    NAPI_INFO_LOG("enter");
+    int32_t authorizationMode = -1;
+    int32_t tokenId = -1;
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->assetType = TYPE_PHOTO;
+    NAPI_ASSERT(env, ParseArgsAgentCreateAssetsWithMode(env, info, asyncContext), "Failed to parse js args");
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetInt32Arg(env, asyncContext->argv[ARGS_THREE], tokenId));
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetInt32Arg(env, asyncContext->argv[ARGS_FOUR], authorizationMode));
+    CHECK_COND_WITH_MESSAGE(env, authorizationMode == SaveType::SHORT_IMAGE_PERM, "authorizationMode is error");
+
+    int ret = Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(
+        tokenId, PERM_SHORT_TERM_WRITE_IMAGEVIDEO, THREE_HUNDERD_S);
+    if (ret != E_SUCCESS) {
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "This app have no short permission");
+        return nullptr;
+    }
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperAgentCreateAssetsWithMode",
+        PhotoAccessAgentCreateAssetsExecute, JSCreateAssetCompleteCallback);
 }
 
 napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssets(napi_env env, napi_callback_info info)
@@ -8203,8 +8287,7 @@ napi_value MediaLibraryNapi::CreateAssetWithShortTermPermission(napi_env env, na
     };
     OHOS::Ace::ModalUIExtensionConfig config;
     config.isProhibitBack = true;
-    OHOS::AAFwk::Want request;
-    int32_t sessionId = uiContent->CreateModalUIExtension(request, extensionCallback, config);
+    int32_t sessionId = uiContent->CreateModalUIExtension(want, extensionCallback, config);
     NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");
     callback->SetSessionId(sessionId);
     return result;

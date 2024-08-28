@@ -747,6 +747,7 @@ export default {
   PhotoViewMIMETypes: PhotoViewMIMETypes,
   DeliveryMode: photoAccessHelper.DeliveryMode,
   SourceMode: photoAccessHelper.SourceMode,
+  AuthorizationMode: photoAccessHelper.AuthorizationMode,
   BaseSelectOptions: BaseSelectOptions,
   PhotoSelectOptions: PhotoSelectOptions,
   PhotoSelectResult: PhotoSelectResult,
