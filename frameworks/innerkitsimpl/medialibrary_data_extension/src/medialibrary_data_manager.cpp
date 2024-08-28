@@ -96,6 +96,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_photo_map_column.h"
 #include "parameter.h"
+#include "parameters.h"
 #include "uuid.h"
 
 using namespace std;
@@ -1723,6 +1724,19 @@ void MediaLibraryDataManager::SetStartupParameter()
         MEDIA_ERR_LOG("Failed to set startup, result: %{public}d", ret);
     } else {
         MEDIA_INFO_LOG("Set startup success: %{public}s", to_string(uid).c_str());
+    }
+    std::string nextFlag = "persist.update.hmos_to_next_flag";
+    auto isUpgrade = system::GetParameter(nextFlag, "");
+    MEDIA_INFO_LOG("isUpgrade:%{public}s", isUpgrade.c_str());
+    if (isUpgrade != "1") {
+        return;
+    }
+    std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
+    auto currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
+    MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
+    bool retFlag = system::SetParameter(CLONE_FLAG, currentTime);
+    if (!retFlag) {
+        MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
     }
 }
 
