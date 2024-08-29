@@ -50,6 +50,9 @@ void DfxAnalyzer::FlushThumbnail(std::unordered_map<std::string, ThumbnailErrorI
     for (auto entry: thumbnailErrorMap) {
         string key = entry.first + SPLIT_CHAR + to_string(entry.second.method) + SPLIT_CHAR +
             to_string(entry.second.errCode);
+        if (!prefs->GetString(key).empty()) {
+            continue;
+        }
         string value = to_string(entry.second.time);
         prefs->PutString(key, value);
     }
