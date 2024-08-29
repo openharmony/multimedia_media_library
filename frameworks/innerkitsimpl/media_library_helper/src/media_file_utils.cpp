@@ -414,6 +414,7 @@ void MediaFileUtils::RecoverMediaTempDir()
             MoveFile(fullPath, ROOT_MEDIA_DIR + PHOTO_BUCKET + SLASH_STR + suffixName);
         }
         DeleteDir(ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR);
+        closedir(dir);
     }
 }
 

@@ -2239,6 +2239,10 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateAddeds, subTypes,
         predicates.GetTableName(), deletedRows, bundleName);
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to alloc async data for Delete From Disk!");
+        return E_ERR;
+    }
     auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
     if (deleteFilesTask == nullptr) {
         MEDIA_ERR_LOG("Failed to create async task for deleting files.");

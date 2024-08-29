@@ -1526,6 +1526,7 @@ int32_t MediaLibraryObjectUtils::CopyDir(const shared_ptr<FileAsset> &srcDirAsse
     queryCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(srcDirAsset->GetId()))->And()->
         EqualTo(MEDIA_DATA_DB_IS_TRASH, "0")->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_NOFILE));
     auto resultSet = QueryWithCondition(queryCmd, {});
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "query rdbstore failed");
     auto count = 0;
     auto ret = resultSet->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "get rdbstore failed");
