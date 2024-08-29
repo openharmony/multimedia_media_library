@@ -101,6 +101,7 @@ const std::string PIC_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE;
 const std::string AUDIO_EXTENSION_VALUES = DIR_ALL_AUDIO_CONTAINER_TYPE;
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
+int32_t g_oldVersion = -1;
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
     int32_t startNumber;
@@ -143,38 +144,6 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
 }
 
-int32_t MediaLibraryRdbStore::Init()
-{
-    MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
-    if (rdbStore_ != nullptr) {
-        return E_OK;
-    }
-
-    int32_t errCode = 0;
-    MediaLibraryDataCallBack rdbDataCallBack;
-    MediaLibraryTracer tracer;
-    tracer.Start("MediaLibraryRdbStore::Init GetRdbStore");
-    rdbStore_ = RdbHelper::GetRdbStore(config_, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
-    tracer.Finish();
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("GetRdbStore is failed ");
-        return errCode;
-    }
-    MEDIA_INFO_LOG("SUCCESS");
-    return E_OK;
-}
-
-MediaLibraryRdbStore::~MediaLibraryRdbStore() = default;
-
-void MediaLibraryRdbStore::Stop()
-{
-    if (rdbStore_ == nullptr) {
-        return;
-    }
-
-    rdbStore_ = nullptr;
-}
-
 bool g_upgradeErr = false;
 void UpdateFail(const string &errFile, const int &errLine)
 {
@@ -196,6 +165,95 @@ static int32_t ExecSqls(const vector<string> &sqls, RdbStore &store)
         }
     }
     return NativeRdb::E_OK;
+}
+
+static void CreateBurstIndex(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_SCHPT_DAY_INDEX,
+        PhotoColumn::CREATE_SCHPT_DAY_INDEX,
+        PhotoColumn::DROP_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoColumn::DROP_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX
+    };
+    MEDIA_INFO_LOG("start create idx_burstkey");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end create idx_burstkey");
+}
+
+static void UpgradeRdbStore(AsyncTaskData *data)
+{
+    if (MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() == nullptr) {
+        MEDIA_ERR_LOG("MediaDataAbility insert functionality is null.");
+        return;
+    }
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("MediaDataAbility insert functionality rdbStore is null.");
+        return;
+    }
+
+    if (g_oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
+        CreateBurstIndex(*rdbStore);
+    }
+}
+
+static void UpgradeRdbStoreAsync()
+{
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Failed to get async worker instance!");
+        return;
+    }
+    shared_ptr<MediaLibraryAsyncTask> upgradeRdbStoreTask =
+        make_shared<MediaLibraryAsyncTask>(UpgradeRdbStore, nullptr);
+    if (upgradeRdbStoreTask != nullptr) {
+        asyncWorker->AddTask(upgradeRdbStoreTask, false);
+    } else {
+        MEDIA_ERR_LOG("Failed to create async task for upgradeRdbStoreTask!");
+    }
+}
+
+int32_t MediaLibraryRdbStore::Init()
+{
+    MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
+    if (rdbStore_ != nullptr) {
+        return E_OK;
+    }
+
+    int32_t errCode = 0;
+    MediaLibraryDataCallBack rdbDataCallBack;
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRdbStore::Init GetRdbStore");
+    rdbStore_ = RdbHelper::GetRdbStore(config_, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
+    tracer.Finish();
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("GetRdbStore is failed ");
+        return errCode;
+    }
+    MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), SUCCESS");
+    // add process for which cost long time
+    if (g_oldVersion != -1 && g_oldVersion < MEDIA_RDB_VERSION) {
+        UpgradeRdbStoreAsync();
+    }
+    return E_OK;
+}
+
+MediaLibraryRdbStore::~MediaLibraryRdbStore() = default;
+
+void MediaLibraryRdbStore::Stop()
+{
+    if (rdbStore_ == nullptr) {
+        return;
+    }
+
+    rdbStore_ = nullptr;
 }
 
 #ifdef DISTRIBUTED
@@ -1067,6 +1125,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTO_DISPLAYNAME_INDEX,
     AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
     AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX,
+    PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2444,7 +2503,8 @@ static void AddMovingPhotoEffectMode(RdbStore &store)
 void AddBurstCoverLevelAndBurstKey(RdbStore &store)
 {
     const vector<string> sqls = {
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " INT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_BURST_COVER_LEVEL +
+            " INT DEFAULT 1",
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_BURST_KEY + " TEXT",
     };
     MEDIA_INFO_LOG("start add burst_cover_level and burst_key column");
@@ -2933,6 +2993,8 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_UPDATE_MULTI_CROP_INFO) {
         UpdateMultiCropInfo(store);
     }
+
+    // VERSION_CREATE_BURSTKEY_INDEX = 99 move to UpgradeRdbStoreAsync(), avoid to cost for long time.
 }
 
 static void CreatePhotosExtTable(RdbStore &store)
@@ -3038,7 +3100,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataCallBack::OnUpgrade");
-
+    g_oldVersion = oldVersion;
     MEDIA_INFO_LOG("OnUpgrade old:%{public}d, new:%{public}d", oldVersion, newVersion);
     g_upgradeErr = false;
     if (oldVersion < VERSION_ADD_CLOUD) {

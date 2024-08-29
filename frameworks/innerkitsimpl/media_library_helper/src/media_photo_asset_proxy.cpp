@@ -107,7 +107,6 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
         MEDIA_ERR_LOG("Failed to create Asset, burstKey is empty when CameraShotType::BURST");
         return;
     }
-
     string displayName = photoProxy->GetTitle() + "." + photoProxy->GetExtension();
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
     if ((mediaType != MEDIA_TYPE_IMAGE) && (mediaType != MEDIA_TYPE_VIDEO)) {
@@ -123,13 +122,12 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
     if (cameraShotType_ == CameraShotType::BURST) {
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
         values.Put(PhotoColumn::PHOTO_BURST_KEY, photoProxy->GetBurstKey());
-        if (photoProxy->IsCoverPhoto()) {
-            values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 1);
-        }
+        values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+            photoProxy->IsCoverPhoto() ? static_cast<int32_t>(BurstCoverLevelType::COVER)
+                                       : static_cast<int32_t>(BurstCoverLevelType::MEMBER));
     }
     values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
     values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
-
     string uri = PAH_CREATE_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri createUri(uri);
@@ -140,10 +138,7 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
     }
     MEDIA_INFO_LOG(
         "CreatePhotoAsset Success, photoId: %{public}s, fileId: %{public}d, uri: %{public}s, burstKey: %{public}s",
-        photoProxy->GetPhotoId().c_str(),
-        fileId_,
-        uri_.c_str(),
-        photoProxy->GetBurstKey().c_str());
+        photoProxy->GetPhotoId().c_str(), fileId_, uri_.c_str(), photoProxy->GetBurstKey().c_str());
 }
 
 static bool isHighQualityPhotoExist(string uri)
