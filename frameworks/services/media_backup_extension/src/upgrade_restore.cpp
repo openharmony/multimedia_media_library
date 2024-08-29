@@ -733,6 +733,41 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
     return isSuccess;
 }
 
+int32_t FindSubtype(const FileInfo &fileInfo)
+{
+    if (fileInfo.burstKey.size() > 0) {
+        return static_cast<int32_t>(PhotoSubType::BURST);
+    }
+    return static_cast<int32_t>(PhotoSubType::DEFAULT);
+}
+
+std::string FindBurstKey(const FileInfo &fileInfo)
+{
+    if (fileInfo.burstKey.size() > 0) {
+        return fileInfo.burstKey;
+    }
+    return "";
+}
+
+int32_t FindDirty(const FileInfo &fileInfo)
+{
+    // prevent uploading burst photo
+    if (fileInfo.burstKey.size() > 0) {
+        return -1;
+    }
+    return static_cast<int32_t>(DirtyTypes::TYPE_NEW);
+}
+
+int32_t FindBurstCoverLevel(const FileInfo &fileInfo)
+{
+    // identify burst photo
+    if (fileInfo.isBurst == static_cast<int32_t>(BurstCoverLevelType::COVER) ||
+        fileInfo.isBurst == static_cast<int32_t>(BurstCoverLevelType::MEMBER)) {
+        return fileInfo.isBurst;
+    }
+    return static_cast<int32_t>(BurstCoverLevelType::COVER);
+}
+
 NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
     int32_t sourceType) const
 {
@@ -765,15 +800,10 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
-    if (fileInfo.isBurst == 1) {
-        // only when gallery.db # gallery_media # isBurst = 1, then media_library.db # Photos # burst_cover_level = 1.
-        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 1);
-    }
-    if (fileInfo.burstKey.size() > 0) {
-        values.PutString(PhotoColumn::PHOTO_BURST_KEY, fileInfo.burstKey);
-        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
-        values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading burst photo
-    }
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, FindSubtype(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, FindDirty(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, FindBurstCoverLevel(fileInfo));
+    values.PutString(PhotoColumn::PHOTO_BURST_KEY, FindBurstKey(fileInfo));
     return values;
 }
 
