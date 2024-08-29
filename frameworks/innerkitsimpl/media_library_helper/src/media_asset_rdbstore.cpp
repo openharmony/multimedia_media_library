@@ -20,6 +20,7 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_tracer.h"
 #include "parameter.h"
 #include "parameters.h"
 #include "photo_album_column.h"
@@ -359,6 +360,8 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::QueryRdb(
 
 int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::vector<std::string> &batchKeys)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaAssetRdbStore::QueryTimeIdBatch");
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("rdbStore_ is nullptr when query");
         return NativeRdb::E_DB_NOT_EXIST;
@@ -369,7 +372,9 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
                     ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0")
                     ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0")
                     ->EqualTo(MediaColumn::MEDIA_HIDDEN, "0")
-                    ->EqualTo(PhotoColumn::PHOTO_IS_TEMP, "0");
+                    ->EqualTo(PhotoColumn::PHOTO_IS_TEMP, "0")
+                    ->EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+                              to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     std::vector<std::string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_DATE_ADDED};
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     AddQueryFilter(rdbPredicates);

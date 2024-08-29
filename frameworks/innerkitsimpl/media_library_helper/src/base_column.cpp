@@ -42,6 +42,12 @@ const string &BaseColumn::DropTrigger()
     return DROP_TRIGGER;
 }
 
+const string &BaseColumn::DropIndex()
+{
+    static const string DROP_INDEX = "DROP INDEX IF EXISTS ";
+    return DROP_INDEX;
+}
+
 string BaseColumn::AlterTableAddIntColumn(const std::string &table, const std::string &column)
 {
     return "ALTER TABLE " + table + " ADD COLUMN " + column + " INT DEFAULT 0;";
