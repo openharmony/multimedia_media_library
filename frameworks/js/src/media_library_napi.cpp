@@ -3547,7 +3547,7 @@ static napi_value ParseArgsGetBurstAssets(napi_env env, napi_callback_info info,
         PhotoColumn::IsPhotoColumn, TYPE_PHOTO));
     predicates.And()->EqualTo(PhotoColumn::PHOTO_BURST_KEY, burstKey);
     predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    predicates.OrderByAsc(PhotoColumn::PHOTO_BURST_SEQUENCE);
+    predicates.OrderByAsc(MediaColumn::MEDIA_NAME);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
