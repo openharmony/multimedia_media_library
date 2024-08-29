@@ -399,14 +399,8 @@ bool OH_MediaAssetChangeRequest::SubmitCacheExecute()
 
 bool OH_MediaAssetChangeRequest::AddResourceExecute()
 {
-    unique_lock<mutex> ulock(mutex_);
     if (!HasWritePermission()) {
         return WriteBySecurityComponent();
-    }
-    if (IsMovingPhoto() && HasAddResource(MediaLibrary_ResourceType::MEDIA_LIBRARY_VIDEO_RESOURCE) &&
-        AddMovingPhotoVideoExecute()) {
-        MEDIA_ERR_LOG("Faild to write cache file for video of moving photo");
-        return false;
     }
 
     if (IsMovingPhoto() && HasAddResource(MediaLibrary_ResourceType::MEDIA_LIBRARY_VIDEO_RESOURCE) &&
