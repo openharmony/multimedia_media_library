@@ -239,7 +239,7 @@ int32_t MediaLibraryRdbStore::Init()
     }
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), SUCCESS");
     // add process for which cost long time
-    if (OLD_VERSION != -1) {
+    if (g_oldVersion != -1 && g_oldVersion < MEDIA_RDB_VERSION) {
         UpgradeRdbStoreAsync();
     }
     return E_OK;
