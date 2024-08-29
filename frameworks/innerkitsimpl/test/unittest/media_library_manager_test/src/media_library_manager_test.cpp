@@ -588,6 +588,24 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_008, TestSize.Level0)
     EXPECT_LE(rfd, 0);
 }
 
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_009, TestSize.Level0)
+{
+    // read invalid uri
+    EXPECT_EQ(mediaLibraryManager->ReadPrivateMovingPhoto(""), -1);
+    EXPECT_EQ(mediaLibraryManager->ReadPrivateMovingPhoto("file://media/Photo"), -1);
+    EXPECT_EQ(mediaLibraryManager->ReadPrivateMovingPhoto("file://media/Photo/1"), -1);
+    EXPECT_EQ(mediaLibraryManager->ReadPrivateMovingPhoto("file://media/Photo/1/IMG_009/IMG_009.jpg"), -1);
+
+    string displayName = "movingPhoto.jpg";
+    string uri = mediaLibraryManager->CreateAsset(displayName);
+    MEDIA_INFO_LOG("createFile uri: %{public}s", uri.c_str());
+    EXPECT_NE(uri, "");
+
+    int32_t fd = mediaLibraryManager->ReadPrivateMovingPhoto(uri);
+    EXPECT_GE(fd, 0);
+    mediaLibraryManager->CloseAsset(uri, fd);
+}
+
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_001 enter");
@@ -798,6 +816,18 @@ HWTEST_F(MediaLibraryManagerTest, ReadMovingPhotoVideo_002, TestSize.Level0)
 {
     string uri = "..;";
     EXPECT_EQ(manager.ReadMovingPhotoVideo(uri), -1);
+}
+
+HWTEST_F(MediaLibraryManagerTest, ReadMovingPhoto_001, TestSize.Level0)
+{
+    string uri = "";
+    EXPECT_EQ(manager.ReadPrivateMovingPhoto(uri), -1);
+}
+
+HWTEST_F(MediaLibraryManagerTest, ReadMovingPhoto_002, TestSize.Level0)
+{
+    string uri = "..;";
+    EXPECT_EQ(manager.ReadPrivateMovingPhoto(uri), -1);
 }
 
 HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoImageUri_001, TestSize.Level0)

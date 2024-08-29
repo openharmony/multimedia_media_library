@@ -188,6 +188,14 @@ public:
     EXPORT int32_t ReadMovingPhotoVideo(const string &uri);
 
     /**
+     * @brief Open private moving photo to read
+     *
+     * @param uri asset uri of the moving photo
+     * @return read fd for success and <-1> for fail
+     */
+    EXPORT int32_t ReadPrivateMovingPhoto(const string &uri);
+
+    /**
      * @brief Get image uri of moving photo
      *
      * @param uri asset uri of the moving photo
