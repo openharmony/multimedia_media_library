@@ -181,6 +181,17 @@
           ],
           "when": "always"
         }
+      },
+      {
+        "name": "ohos.permission.GRANT_SHORT_TERM_WRITE_MEDIAVIDEO",
+        "reason": "$string:permission_grant_short_term_write",
+        "usedScene":{
+          "abilities":[
+            "MainAbility",
+            "DataShareExtAbility"
+          ],
+          "when": "always"
+        }
       }
     ],
     "proxyDatas": [
