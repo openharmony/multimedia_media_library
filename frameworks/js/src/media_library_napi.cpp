@@ -287,6 +287,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         MediaLibraryNapiConstructor,
         {
             DECLARE_NAPI_FUNCTION("getAssets", PhotoAccessGetPhotoAssets),
+            DECLARE_NAPI_FUNCTION("getBurstAssets", PhotoAccessGetBurstAssets),
             DECLARE_NAPI_FUNCTION("createAsset", PhotoAccessHelperCreatePhotoAsset),
             DECLARE_NAPI_FUNCTION("registerChange", PhotoAccessHelperOnCallback),
             DECLARE_NAPI_FUNCTION("unRegisterChange", PhotoAccessHelperOffCallback),
@@ -3513,7 +3514,40 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     if (context->assetType == TYPE_PHOTO) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
         predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
+        predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+            to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static napi_value ParseArgsGetBurstAssets(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        OHOS_INVALID_PARAM_CODE);
+
+    /* Parse the first argument */
+    std::string burstKey;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[PARAM0], burstKey),
+        OHOS_INVALID_PARAM_CODE);
+    /* Parse the second argument */
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM1], ASSET_FETCH_OPT, context),
+        JS_INNER_FAIL);
+    
+    auto &predicates = context->predicates;
+    if (context->assetType != TYPE_PHOTO) {
+        return nullptr;
+    }
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
+        PhotoColumn::IsPhotoColumn, TYPE_PHOTO));
+    predicates.And()->EqualTo(PhotoColumn::PHOTO_BURST_KEY, burstKey);
+    predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.OrderByAsc(MediaColumn::MEDIA_NAME);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -4324,9 +4358,21 @@ static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyn
 
 napi_value MediaLibraryNapi::PhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info)
 {
+    NAPI_INFO_LOG("MediaLibraryNapi::PhotoAccessGetPhotoAssets start");
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->assetType = TYPE_PHOTO;
     CHECK_NULLPTR_RET(ParseArgsGetAssets(env, info, asyncContext));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets",
+        PhotoAccessGetAssetsExecute, GetFileAssetsAsyncCallbackComplete);
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetBurstAssets(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("MediaLibraryNapi::PhotoAccessGetBurstAssets start");
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->assetType = TYPE_PHOTO;
+    CHECK_NULLPTR_RET(ParseArgsGetBurstAssets(env, info, asyncContext));
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets",
         PhotoAccessGetAssetsExecute, GetFileAssetsAsyncCallbackComplete);
