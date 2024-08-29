@@ -64,7 +64,7 @@ const std::string LOCATION_ALBUM_TYPE = std::to_string(PhotoAlbumType::SMART) + 
 const std::string LOCATION_ALBUM_SUBTYPE = std::to_string(PhotoAlbumSubType::GEOGRAPHY_LOCATION) +
     " AS " + ALBUM_SUBTYPE;
 const std::string LOCATION_COUNT = "COUNT(*) AS " + COUNT;
-const std::string LOCATION_DATE_MODIFIED = "MAX(date_modified) AS " + DATE_MODIFIED;
+const std::string LOCATION_DATE_MODIFIED = "MAX(" + MediaColumn::MEDIA_DATE_ADDED + ") AS " + DATE_MODIFIED;
 const std::string CITY_ALBUM_NAME =  CITY_NAME + " AS " + ALBUM_NAME;
 const std::string LOCATION_COVER_URI =
     " (SELECT '" + PhotoColumn::PHOTO_URI_PREFIX + "'||" + MediaColumn::MEDIA_ID + "||" +
@@ -178,15 +178,6 @@ bool PhotoAlbumColumns::IsPhotoAlbumColumn(const string &columnName)
         PhotoAlbumColumns::ALBUM_RELATIVE_PATH, CONTAINS_HIDDEN, HIDDEN_COUNT, HIDDEN_COVER
     };
     return PHOTO_ALBUM_COLUMNS.find(columnName) != PHOTO_ALBUM_COLUMNS.end();
-}
-
-bool PhotoAlbumColumns::IsLocationAlbumColumn(const string &columnName)
-{
-    static const set<string> LOCATION_ALBUM_COLUMNS = {
-        LOCATION_ALBUM_TYPE, LOCATION_ALBUM_SUBTYPE, LOCATION_COUNT, LOCATION_DATE_MODIFIED,
-        CITY_ALBUM_NAME, LOCATION_COVER_URI
-    };
-    return LOCATION_ALBUM_COLUMNS.find(columnName) != LOCATION_ALBUM_COLUMNS.end();
 }
 
 inline void SetDefaultPredicatesCondition(RdbPredicates &predicates, const int32_t dateTrashed,
