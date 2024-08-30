@@ -32,6 +32,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_album_operations.h"
+#include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
@@ -2161,6 +2162,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     errCode = UpdateEditTime(id, MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d", id);
     ScanFile(assetPath, false, true, true);
+    MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(id);
     NotifyFormMap(id, assetPath, false);
     MediaLibraryVisionOperations::EditCommitOperation(cmd);
     return E_OK;

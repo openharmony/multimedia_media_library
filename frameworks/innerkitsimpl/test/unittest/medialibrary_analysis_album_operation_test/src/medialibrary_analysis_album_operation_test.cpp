@@ -648,5 +648,79 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, MergeAlbum_UpdateMergeGroupAlbu
     ClearTables();
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeGroupAlbumsInfo End");
 }
+
+void InsertPortraitAlbumCoverSatisfiedTestData(int fileId, CoverSatisfiedType coverSatisfiedType)
+{
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
+    valuesBucket.Put(ALBUM_SUBTYPE, PORTRAIT);
+    string coverUri =
+        PhotoColumn::PHOTO_URI_PREFIX + to_string(fileId) + "/" + to_string(fileId) + "/" + to_string(fileId) + ".jpg";
+    valuesBucket.Put(COVER_URI, coverUri);
+    int count = 10 + fileId;
+    valuesBucket.Put(COUNT, count);
+    string tagId = "ser_171100000000000000" + to_string(fileId);
+    valuesBucket.Put(TAG_ID, tagId);
+    valuesBucket.Put(GROUP_TAG, tagId);
+    valuesBucket.Put(USER_DISPLAY_LEVEL, 1);
+    valuesBucket.Put(IS_COVER_SATISFIED, static_cast<int32_t>(coverSatisfiedType));
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+}
+
+int32_t GetCoverSatisfied(const shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    int32_t isCoverSatisfied = GetInt32Val(IS_COVER_SATISFIED, resultSet);
+    EXPECT_GE(isCoverSatisfied, 0);
+    return isCoverSatisfied;
+}
+
+shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbumInfoByFileId(int32_t fileId)
+{
+    EXPECT_GT(fileId, 0);
+    vector<string> columns = { COUNT, COVER_URI, IS_COVER_SATISFIED };
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY, MediaLibraryApi::API_10);
+    const string coverUriPrefix = PhotoColumn::PHOTO_URI_PREFIX + to_string(fileId) + "/%";
+    cmd.GetAbsRdbPredicates()->Like(COVER_URI, coverUriPrefix);
+    EXPECT_NE(g_rdbStore, nullptr);
+    shared_ptr<NativeRdb::ResultSet> resultSet = g_rdbStore->Query(cmd, columns);
+    EXPECT_NE(resultSet, nullptr);
+    EXPECT_EQ(resultSet->GoToFirstRow(), E_OK);
+    return resultSet;
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, UpdatePortraitAlbumCoverSatisfied, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("UpdatePortraitAlbumCoverSatisfied Start");
+    ClearTables();
+
+    int fileId = 1;
+    InsertPortraitAlbumCoverSatisfiedTestData(fileId, CoverSatisfiedType::NO_SETTING);
+    MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(fileId);
+    shared_ptr<NativeRdb::ResultSet> resultSet = QueryAnalysisAlbumInfoByFileId(fileId);
+    EXPECT_EQ(GetCoverSatisfied(resultSet), 1);
+
+    fileId = 2;
+    InsertPortraitAlbumCoverSatisfiedTestData(fileId, CoverSatisfiedType::DEFAULT_SETTING);
+    MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(fileId);
+    resultSet = QueryAnalysisAlbumInfoByFileId(fileId);
+    EXPECT_EQ(GetCoverSatisfied(resultSet), 1);
+
+    fileId = 3;
+    InsertPortraitAlbumCoverSatisfiedTestData(fileId, CoverSatisfiedType::USER_SETTING);
+    MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(fileId);
+    resultSet = QueryAnalysisAlbumInfoByFileId(fileId);
+    EXPECT_EQ(GetCoverSatisfied(resultSet), 3);
+
+    fileId = 4;
+    InsertPortraitAlbumCoverSatisfiedTestData(fileId, CoverSatisfiedType::ANALYSIS_SETTING);
+    MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(fileId);
+    resultSet = QueryAnalysisAlbumInfoByFileId(fileId);
+    EXPECT_EQ(GetCoverSatisfied(resultSet), 5);
+
+    ClearTables();
+    MEDIA_INFO_LOG("UpdatePortraitAlbumCoverSatisfied End");
+}
 } // namespace Media
 } // namespace OHOS
