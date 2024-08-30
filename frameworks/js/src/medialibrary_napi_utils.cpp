@@ -1351,11 +1351,12 @@ void MediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name
     status = resultSet->GetLong(index, longVal);
     int64_t modifieldValue = longVal / 1000;
     napi_create_int64(env, modifieldValue, &value);
-    auto dataType = MediaLibraryNapiUtils::GetTypeMap().at(name);
+    auto dataType = MediaLibraryNapiUtils::GetTimeTypeMap().at(name);
     napi_set_named_property(env, result, dataType.second.c_str(), value);
 }
 
-napi_value MediaLibraryNapiUtils::GetNextRowObject(napi_env env, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+napi_value MediaLibraryNapiUtils::GetNextRowObject(napi_env env, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+    bool isShared)
 {
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetNextRowObject fail, result is nullptr");
@@ -1379,7 +1380,8 @@ napi_value MediaLibraryNapiUtils::GetNextRowObject(napi_env env, shared_ptr<Nati
         }
         value = MediaLibraryNapiUtils::CreateValueByIndex(env, index, name, resultSet, fileAsset);
         auto dataType = MediaLibraryNapiUtils::GetTypeMap().at(name);
-        napi_set_named_property(env, result, dataType.second.c_str(), value);
+        std::string tmpName = isShared ? dataType.second : name;
+        napi_set_named_property(env, result, tmpName.c_str(), value);
         handleTimeInfo(env, name, result, index, resultSet);
     }
     string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath(), false);

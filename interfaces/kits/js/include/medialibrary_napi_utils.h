@@ -503,6 +503,7 @@ const std::vector<std::string> PHOTO_COLUMN = {
     MEDIA_DATA_DB_NAME,
     MEDIA_DATA_DB_SIZE,
     MEDIA_DATA_DB_DATE_ADDED,
+    MEDIA_DATA_DB_DATE_MODIFIED,
     MEDIA_DATA_DB_DURATION,
     MEDIA_DATA_DB_WIDTH,
     MEDIA_DATA_DB_HEIGHT,
@@ -545,7 +546,8 @@ public:
             {MEDIA_DATA_DB_NAME, {TYPE_STRING, "displayName"}},
             {MEDIA_DATA_DB_SIZE, {TYPE_INT64, "size"}},
             {MEDIA_DATA_DB_DATE_ADDED, {TYPE_INT64, "dateAddedMs"}},
-            {MEDIA_DATA_DB_DURATION, {TYPE_INT64, "dateModifiedMs"}},
+            {MEDIA_DATA_DB_DATE_MODIFIED, {TYPE_INT64, "dateModifiedMs"}},
+            {MEDIA_DATA_DB_DURATION, {TYPE_INT64, "duration"}},
             {MEDIA_DATA_DB_WIDTH, {TYPE_INT32, "width"}},
             {MEDIA_DATA_DB_HEIGHT, {TYPE_INT32, "height"}},
             {MEDIA_DATA_DB_DATE_TAKEN, {TYPE_INT64, "dateTaken"}},
@@ -564,9 +566,9 @@ public:
             {PhotoColumn::PHOTO_SUBTYPE, {TYPE_INT32, "subtype"}},
             {PhotoColumn::MOVING_PHOTO_EFFECT_MODE, {TYPE_INT32, "movingPhotoEffectMode"}},
             {PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, {TYPE_INT32, "dynamicRangeType"}},
-            {PhotoColumn::PHOTO_THUMBNAIL_READY, {TYPE_INT32, "thumbnailReady"}},
+            {PhotoColumn::PHOTO_THUMBNAIL_READY, {TYPE_INT64, "thumbnailReady"}},
             {PhotoColumn::PHOTO_LCD_SIZE, {TYPE_STRING, "lcdSize"}},
-            {PhotoColumn::PHOTO_THUMB_SIZE, {TYPE_STRING, "thumbSize"}},
+            {PhotoColumn::PHOTO_THUMB_SIZE, {TYPE_STRING, "thmSize"}},
             {MEDIA_DATA_DB_COUNT, {TYPE_INT32, "count"}},
             {PhotoAlbumColumns::ALBUM_ID, {TYPE_INT32, "albumId"}},
             {PhotoAlbumColumns::ALBUM_TYPE, {TYPE_INT32, "albumType"}},
@@ -576,11 +578,18 @@ public:
             {PhotoAlbumColumns::ALBUM_COUNT, {TYPE_INT32, "count"}},
             {PhotoAlbumColumns::ALBUM_IMAGE_COUNT, {TYPE_INT32, "imageCount"}},
             {PhotoAlbumColumns::ALBUM_VIDEO_COUNT, {TYPE_INT32, "videoCount"}},
+        };
+        return TYPE_MAP;
+    }
+
+    static const std::unordered_map<std::string, std::pair<ResultSetDataType, std::string>>& GetTimeTypeMap()
+    {
+        static const std::unordered_map<std::string, std::pair<ResultSetDataType, std::string>> TIME_TYPE_MAP = {
             {MEDIA_DATA_DB_DATE_ADDED, {TYPE_INT64, "dateAdded"}},
             {MEDIA_DATA_DB_DATE_MODIFIED, {TYPE_INT64, "dateModified"}},
             {MEDIA_DATA_DB_DATE_TRASHED, {TYPE_INT64, "dateTrashed"}},
         };
-        return TYPE_MAP;
+        return TIME_TYPE_MAP;
     }
     
     static napi_value NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info);
@@ -735,7 +744,8 @@ public:
         napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
     static void FixSpecialDateType(std::string &selections);
     static std::string TransferUri(const std::string &oldUri);
-    static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+        bool isShared = false);
     static napi_value GetNextRowAlbumObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     static napi_value CreateValueByIndex(napi_env env, int32_t index, std::string name,
         std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
