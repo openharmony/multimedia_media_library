@@ -92,6 +92,9 @@ static void PermissionUtilsTest(const uint8_t *data, size_t size)
     Media::PermissionUtils::CheckCallerPermission(perms);
     Media::PermissionUtils::CheckPhotoCallerPermission(perms);
     Media::PermissionUtils::CheckPhotoCallerPermission(FuzzString(data, size));
+    Media::PermissionUtils::CheckHasPermission(perms);
+    perms.push_back(FuzzString(data, size));
+    Media::PermissionUtils::CheckHasPermission(perms);
     string packageName;
     Media::PermissionUtils::GetPackageName(FuzzInt32(data), packageName);
     Media::PermissionUtils::CheckIsSystemAppByUid();
