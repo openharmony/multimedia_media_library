@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <thread>
 
 #include "ability_context_impl.h"
 #include "data_ability_observer_interface.h"
@@ -158,6 +159,11 @@ static inline void UpdateFuzzer(MediaDataShareExtAbility &extension, const uint8
     extension.Update(FuzzUri(data, size), FuzzDataSharePredicates(data, size), FuzzDataShareValuesBucket(data, size));
 }
 
+static inline void OpenFileFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+{
+    extension.OpenFile(FuzzUri(data, size), FuzzString(data, size));
+}
+
 static inline void DeleteFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
 {
     DataSharePredicates predicates;
@@ -274,6 +280,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::UpdateFuzzer(extension, data, size);
     OHOS::QueryFuzzer(extension, data, size);
     OHOS::DeleteFuzzer(extension, data, size);
+    OHOS::OpenFileFuzzer(extension, data, size);
 
     OHOS::RegisterObserverFuzzer(extension, data, size);
     OHOS::UnregisterObserverFuzzer(extension, data, size);
@@ -287,5 +294,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::CreateFileFuzzer(fileExtension, data, size);
 #endif
     OHOS::StopFuzzer(extension);
+    int sleepTime = 100;
+    std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
     return 0;
 }
