@@ -51,7 +51,8 @@ constexpr int32_t APP_ID_INDEX = 3;
 
 const string DB_OPERATION = "uriSensitive_operation";
 
-int32_t UriSensitiveOperations::UpdateOperation(MediaLibraryCommand &cmd)
+int32_t UriSensitiveOperations::UpdateOperation(MediaLibraryCommand &cmd,
+    NativeRdb::RdbPredicates &rdbPredicate)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -59,10 +60,9 @@ int32_t UriSensitiveOperations::UpdateOperation(MediaLibraryCommand &cmd)
         return E_HAS_DB_ERROR;
     }
     cmd.SetTableName(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
-    int32_t updateRows = -1;
-    int32_t errCode = rdbStore->Update(cmd, updateRows);
-    if (errCode != NativeRdb::E_OK || updateRows < 0) {
-        MEDIA_ERR_LOG("UriSensitive Update db failed, errCode = %{public}d", errCode);
+    int32_t updateRows = MediaLibraryRdbStore::Update(cmd.GetValueBucket(), rdbPredicate);
+    if (updateRows < 0) {
+        MEDIA_ERR_LOG("UriSensitive Update db failed, errCode = %{public}d", updateRows);
         return E_HAS_DB_ERROR;
     }
     return static_cast<int32_t>(updateRows);
@@ -75,19 +75,19 @@ static void DeleteAllSensitiveOperation(AsyncTaskData *data)
         MEDIA_ERR_LOG("UriSensitive update operation, rdbStore is null.");
     }
 
-    int32_t ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::DROP_APP_URI_SENSITIVE_TABLE);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("UriSensitive table delete all temporary Sensitive failed");
-        return;
-    }
-
-    ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::CREATE_APP_URI_SENSITIVE_TABLE);
+    int32_t ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::CREATE_APP_URI_SENSITIVE_TABLE);
     if (ret < 0) {
         MEDIA_ERR_LOG("UriSensitive table delete all temporary Sensitive failed");
         return;
     }
 
     ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::CREATE_URI_URITYPE_APPID_INDEX);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("UriSensitive table delete all temporary Sensitive failed");
+        return;
+    }
+
+    ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::DELETE_APP_URI_SENSITIVE_TABLE);
     if (ret < 0) {
         MEDIA_ERR_LOG("UriSensitive table delete all temporary Sensitive failed");
         return;
@@ -178,11 +178,8 @@ static void QueryUriSensitive(MediaLibraryCommand &cmd, const std::vector<DataSh
     }
     predicates.In(AppUriSensitiveColumn::FILE_ID, predicateInColumns);
     predicates.And()->EqualTo(AppUriSensitiveColumn::APP_ID, appid);
-    cmd.SetDataSharePred(predicates);
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
-    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    resultSet = rdbStore->Query(cmd, columns);
+    resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
     return;
 }
 
@@ -242,11 +239,8 @@ static void BatchUpdate(MediaLibraryCommand &cmd, std::vector<string> inColumn, 
         return;
     }
     cmd.SetValueBucket(value);
-    cmd.SetDataSharePred(predicates);
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
-    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    UriSensitiveOperations::UpdateOperation(cmd);
+    UriSensitiveOperations::UpdateOperation(cmd, rdbPredicate);
 }
 
 static void AppstateOberserverBuild(int32_t sensitiveType)
