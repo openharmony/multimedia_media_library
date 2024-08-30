@@ -73,7 +73,7 @@ static void ThumhnailTest(const uint8_t* data, size_t size)
     Media::ThumbnailService::GetInstance()->UpgradeThumbnailBackground(false);
     Media::ThumbnailService::GetInstance()->RestoreThumbnailDualFrame();
     Media::ThumbnailService::GetInstance()->CheckCloudThumbnailDownloadFinish();
-    Media::ThumbnailService::GetInstance()->StopAllWorker();
+    Media::ThumbnailService::GetInstance()->InterruptBgworker();
 }
 
 static void ThumbnailHelperTest(const uint8_t* data, size_t size)
