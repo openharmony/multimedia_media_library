@@ -2253,19 +2253,4 @@ bool MediaLibraryRdbUtils::HasDataToAnalysis(const std::shared_ptr<NativeRdb::Rd
     bool highlight = HasHighLightData(rdbStore);
     return (loc || cv || search || highlight);
 }
-
-void MediaLibraryRdbUtils::UpdatePortraitAlbumCoverSatisfied(const shared_ptr<RdbStore> &rdbStore, const string &uri)
-{
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("UpdatePortraitAlbumCoverSatisfied, rdbStore is nullptr!");
-        return;
-    }
-MEDIA_INFO_LOG("UpdatePortraitAlbumCoverSatisfied, uri: %{public}s", uri.c_str());
-    const string sql = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_COVER_SATISFIED + " = " + IS_COVER_SATISFIED +
-        " | " + to_string(static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING)) + " WHERE " +
-        PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT)) +
-        " AND " + PhotoAlbumColumns::ALBUM_COVER_URI + " = " + uri;
-
-    rdbStore->ExecuteSql(sql);
-}
 } // namespace OHOS::Media
