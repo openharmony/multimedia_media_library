@@ -818,19 +818,22 @@ void MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(int3
 
     const string coverUriPrefix = "'" + PhotoColumn::PHOTO_URI_PREFIX + to_string(fileId) + "/%'";
 
-    const string sql = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_COVER_SATISFIED + " = " + IS_COVER_SATISFIED +
-        " | " + to_string(static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING)) + " WHERE " +
+    const string updateSql = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_COVER_SATISFIED + " = " +
+        IS_COVER_SATISFIED + " | " + to_string(static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING)) + " WHERE " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT)) +
         " AND " + PhotoAlbumColumns::ALBUM_COVER_URI + " LIKE " + coverUriPrefix;
 
     TransactionOperations transactionOprn(rdbStorePtr);
     int32_t errCode = transactionOprn.Start();
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("UpdatePortraitAlbumCoverSatisfied failed, Transaction Start error, errCode: %{public}d.",
-            errCode);
+        MEDIA_ERR_LOG("Transaction Start error, fileId: %{public}d, errCode: %{public}d.", fileId, errCode);
         return;
     }
-    rdbStorePtr->ExecuteSql(sql);
+    int32_t ret = rdbStorePtr->ExecuteSql(updateSql);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ExecuteSql error, fileId: %{public}d, ret: %{public}d.", fileId, ret);
+        return;
+    }
     transactionOprn.Finish();
 }
 } // namespace OHOS::Media
