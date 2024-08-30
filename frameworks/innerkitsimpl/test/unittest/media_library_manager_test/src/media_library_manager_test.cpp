@@ -601,7 +601,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_009, TestSize.Level0)
     MEDIA_INFO_LOG("createFile uri: %{public}s", uri.c_str());
     EXPECT_NE(uri, "");
 
-    int32_t fd = mediaLibraryManager->ReadPrivateMovingPhoto(uri);
+    int32_t fd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
     EXPECT_GE(fd, 0);
     mediaLibraryManager->CloseAsset(uri, fd);
 }
