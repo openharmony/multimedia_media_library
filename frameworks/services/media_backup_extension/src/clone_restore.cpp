@@ -1242,7 +1242,7 @@ void CloneRestore::RestorePhotoBatch(int32_t offset)
     MEDIA_INFO_LOG("end restore photo, offset: %{public}d", offset);
     RestoreImageFaceInfo(fileInfos);
 
-    auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
+    auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
 }
 
