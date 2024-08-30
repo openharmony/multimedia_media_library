@@ -125,6 +125,12 @@ const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLA
     { PhotoColumn::PHOTOS_TABLE,
         {
             { PhotoColumn::PHOTO_POSITION, PhotoColumn::PHOTO_POSITION + " IN (1, 3)" },
+            { PhotoColumn::PHOTO_SYNC_STATUS, PhotoColumn::PHOTO_SYNC_STATUS + " = " +
+                to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) },
+            { PhotoColumn::PHOTO_CLEAN_FLAG, PhotoColumn::PHOTO_CLEAN_FLAG + " = " +
+                to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) },
+            { MediaColumn::MEDIA_TIME_PENDING, MediaColumn::MEDIA_TIME_PENDING + " = 0" },
+            { PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::PHOTO_IS_TEMP + " = 0" },
         }},
     { PhotoAlbumColumns::TABLE,
         {
