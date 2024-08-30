@@ -22,6 +22,7 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_restore.h"
+#include "medialibrary_rdb_utils.h"
 #include "result_set_utils.h"
 
 namespace OHOS {
@@ -420,6 +421,36 @@ void BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb:
     }
 }
 
+void BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+    const std::vector<FileIdPair>& fileIdPair)
+{
+    std::string fileIdNewFilterClause = GetFileIdNewFilterClause(rdbStore, fileIdPair);
+    std::string updateSql =
+        "UPDATE tab_analysis_total "
+        "SET face = CASE "
+            "WHEN EXISTS (SELECT 1 FROM tab_analysis_image_face "
+                         "WHERE tab_analysis_image_face.file_id = tab_analysis_total.file_id "
+                         "AND tag_id = '-1') THEN 2 "
+            "WHEN EXISTS (SELECT 1 FROM tab_analysis_image_face "
+                         "WHERE tab_analysis_image_face.file_id = tab_analysis_total.file_id "
+                         "AND tag_id = '-2') THEN 4 "
+            "ELSE 3 "
+        "END "
+        "WHERE EXISTS (SELECT 1 FROM tab_analysis_image_face "
+                      "WHERE tab_analysis_image_face.file_id = tab_analysis_total.file_id "
+                      "AND " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause + ")";
+
+    int32_t errCode = rdbStore->ExecuteSql(updateSql);
+    if (errCode < 0) {
+        MEDIA_ERR_LOG("execute update analysis total failed, ret=%{public}d", errCode);
+    }
+}
+
+void BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
+{
+    BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(mediaLibraryRdb);
+}
+
 bool BackupDatabaseUtils::SetTagIdNew(PortraitAlbumInfo &portraitAlbumInfo,
     std::unordered_map<std::string, std::string> &tagIdMap)
 {
@@ -697,6 +728,113 @@ void BackupDatabaseUtils::PrintQuerySql(const std::string& querySql)
     MEDIA_INFO_LOG("--------------------");
     MEDIA_INFO_LOG("%{public}s", querySql.c_str());
     MEDIA_INFO_LOG("--------------------");
+}
+
+bool BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(const std::vector<std::string> &albumNames,
+    const std::vector<std::string> tagIds, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
+{
+    std::set<std::string> uniqueAlbums(albumNames.begin(), albumNames.end());
+    std::vector<std::string> uniqueAlbumNames(uniqueAlbums.begin(), uniqueAlbums.end());
+    MEDIA_INFO_LOG("unique AlbumName %{public}zu", uniqueAlbumNames.size());
+
+    std::string inClause = BackupDatabaseUtils::JoinSQLValues<string>(uniqueAlbumNames, ", ");
+    std::string tagIdClause;
+    if (!tagIds.empty()) {
+        tagIdClause = "(" + BackupDatabaseUtils::JoinSQLValues<string>(tagIds, ", ") + ")";
+    }
+    // 删除 VisionFaceTag 表中的记录
+    std::string deleteFaceTagSql = "DELETE FROM " + VISION_FACE_TAG_TABLE +
+                                   " WHERE tag_id IN (SELECT A.tag_id FROM " + ANALYSIS_ALBUM_TABLE + " AS A, " +
+                                   VISION_FACE_TAG_TABLE + " AS B WHERE A.tag_id = B.tag_id AND " +
+                                   ANALYSIS_COL_ALBUM_NAME + " IN (" + inClause + "))";
+    ExecuteSQL(mediaLibraryRdb, deleteFaceTagSql);
+
+    std::string imageFaceClause = "tag_id IN (SELECT A.tag_id FROM " + ANALYSIS_ALBUM_TABLE + " AS A, " +
+        VISION_IMAGE_FACE_TABLE + " AS B WHERE A.tag_id = B.tag_id AND " +
+        ANALYSIS_COL_ALBUM_NAME + " IN (" + inClause + "))";
+
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> updatePredicates =
+            make_unique<NativeRdb::AbsRdbPredicates>(VISION_IMAGE_FACE_TABLE);
+    updatePredicates->SetWhereClause(imageFaceClause);
+    int32_t deletedRows = 0;
+    NativeRdb::ValuesBucket valuesBucket;
+    valuesBucket.PutString(FACE_TAG_COL_TAG_ID, std::string("-1"));
+
+    int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb, deletedRows, valuesBucket, updatePredicates);
+    if (deletedRows < 0 || ret < 0) {
+        MEDIA_ERR_LOG("Failed to update tag_id colum value");
+        return false;
+    }
+
+    // 删除 AnalysisAlbum 表中的记录
+    std::string unnamedCondition = ANALYSIS_COL_ALBUM_NAME + " IS NULL OR " +
+                                   ANALYSIS_COL_ALBUM_NAME + " = ''";
+
+    std::string deleteAnalysisSql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE +
+                                    " WHERE " + ANALYSIS_COL_ALBUM_NAME + " IN (" + inClause + ")";
+    if (!tagIds.empty()) {
+        deleteAnalysisSql += " OR ";
+        deleteAnalysisSql += "(" + unnamedCondition + " AND " + ANALYSIS_COL_TAG_ID + " IN " + tagIdClause + ")";
+    }
+    ExecuteSQL(mediaLibraryRdb, deleteAnalysisSql);
+
+    return true;
+}
+
+void BackupDatabaseUtils::ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql)
+{
+    int ret = rdbStore->ExecuteSql(sql);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to execute SQL: %{public}s", sql.c_str());
+    }
+}
+
+std::string BackupDatabaseUtils::GetFileIdNewFilterClause(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    const std::vector<FileIdPair>& fileIdPair)
+{
+    std::vector<int32_t> result;
+    auto [oldFileIds, newFileIds] = BackupDatabaseUtils::UnzipFileIdPairs(fileIdPair);
+    std::string fileIdNewInClause = "(" + BackupDatabaseUtils::JoinValues<int>(newFileIds, ", ") + ")";
+    std::string querySql = "SELECT " + IMAGE_FACE_COL_FILE_ID +
+        " FROM " + VISION_IMAGE_FACE_TABLE +
+        " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewInClause;
+
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb, querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query resultSet is null.");
+        return "()";
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t value;
+        int32_t columnIndex;
+        int32_t err = resultSet->GetColumnIndex(IMAGE_FACE_COL_FILE_ID, columnIndex);
+        if (err == E_OK) {
+            resultSet->GetInt(columnIndex, value);
+            result.emplace_back(value);
+        }
+    }
+
+    std::vector<int32_t> newFileIdsToDelete;
+    for (const auto& fileId : result) {
+        auto it = std::find_if(fileIdPair.begin(), fileIdPair.end(),
+            [fileId](const FileIdPair& pair) { return pair.second == fileId; });
+        if (it != fileIdPair.end()) {
+            newFileIdsToDelete.push_back(it->second);
+        }
+    }
+
+    return "(" + BackupDatabaseUtils::JoinValues<int>(newFileIdsToDelete, ", ") + ")";
+}
+
+void BackupDatabaseUtils::DeleteExistingImageFaceData(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    const std::vector<FileIdPair>& fileIdPair)
+{
+    std::string fileIdNewFilterClause = GetFileIdNewFilterClause(mediaLibraryRdb, fileIdPair);
+
+    std::string deleteFaceSql = "DELETE FROM " + VISION_IMAGE_FACE_TABLE +
+        " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
+    BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, deleteFaceSql);
 }
 } // namespace Media
 } // namespace OHOS
