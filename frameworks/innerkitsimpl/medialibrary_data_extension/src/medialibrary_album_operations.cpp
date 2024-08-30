@@ -431,10 +431,9 @@ int DoCreatePhotoAlbum(const string &albumName, const string &relativePath)
     lastInsertRowId = rdbStore->ExecuteForLastInsertedRowId(sql, bindArgs);
     if (lastInsertRowId < 0) {
         MEDIA_ERR_LOG("insert fail and rollback");
-        rdbStore->GetRaw()->RollBack();
-    } else {
-        op.Finish();
+        return lastInsertRowId;
     }
+    op.Finish();
 
     return lastInsertRowId;
 }
@@ -470,10 +469,10 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
         if (err == E_OK) {
             auto ret = rdbStore->Insert(cmd, outRowId);
             if (ret != E_OK) {
-                rdbStore->GetRaw()->RollBack();
-            } else {
-                op.Finish();
+                MEDIA_ERR_LOG("insert fail, ret: %{public}d", ret);
+                return outRowId;
             }
+            op.Finish();
         }
         rowId = outRowId;
     } else {
