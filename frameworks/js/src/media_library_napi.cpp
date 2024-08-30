@@ -2512,7 +2512,7 @@ static napi_value GetSharedPhotoAssets(const napi_env& env, vector<string>& file
         return value;
     }
     do {
-        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result);
+        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
         if (assetValue == nullptr) {
             return nullptr;
         }
@@ -2633,7 +2633,7 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
     if (photoAssetArray == nullptr) {
         NAPI_ERR_LOG("Failed to get sharedPhotoAsset");
     }
-    status = napi_set_named_property(env, result, "extraAssets", photoAssetArray);
+    status = napi_set_named_property(env, result, "sharedExtraPhotoAssets", photoAssetArray);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Set extraAssets named property error!");
     }
