@@ -21,6 +21,7 @@
 #include <string>
 
 #include "media_analysis_helper.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "media_refresh_album_column.h"
 #include "medialibrary_business_record_column.h"
@@ -1826,6 +1827,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumCountInternal(const shared_ptr<Rdb
 int RefreshPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     function<void(PhotoAlbumType, PhotoAlbumSubType, int)> refreshProcessHandler)
 {
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     vector<string> albumIds;
     int ret = GetAllRefreshAlbumIds(rdbStore, albumIds);
     if (ret != E_SUCCESS) {
@@ -1842,6 +1844,8 @@ int RefreshPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
         return E_HAS_DB_ERROR;
     }
     ret = RefreshAlbums(rdbStore, resultSet, refreshProcessHandler);
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("%{public}d photo albums update cost %{public}ld", (int)albumIds.size(), (long)(end - start));
     return ret;
 }
 
@@ -1922,6 +1926,7 @@ static int32_t GetRefreshAnalysisAlbumIds(const shared_ptr<NativeRdb::RdbStore> 
 int RefreshAnalysisPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     function<void(PhotoAlbumType, PhotoAlbumSubType, int)> refreshProcessHandler, const vector<string> &subtypes)
 {
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     vector<string> albumIds;
     int ret = GetRefreshAnalysisAlbumIds(rdbStore, albumIds, subtypes);
     if (ret != E_SUCCESS) {
@@ -1943,6 +1948,8 @@ int RefreshAnalysisPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
         return E_HAS_DB_ERROR;
     }
     ret = RefreshAnalysisAlbums(rdbStore, resultSet, refreshProcessHandler, subtypes);
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("%{public}d analysis albums update cost %{public}ld", (int)albumIds.size(), (long)(end - start));
     return ret;
 }
 
