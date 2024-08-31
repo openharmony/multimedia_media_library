@@ -22,6 +22,7 @@
 #include "datashare_values_bucket.h"
 #include "medialibrary_command.h"
 #include "values_bucket.h"
+#include "rdb_predicates.h"
 
 namespace OHOS {
 namespace Media {
@@ -29,7 +30,8 @@ namespace Media {
 using namespace OHOS::DataShare;
 class UriSensitiveOperations {
 public:
-    EXPORT static int32_t UpdateOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t UpdateOperation(MediaLibraryCommand &cmd,
+        NativeRdb::RdbPredicates &rdbPredicate);
     EXPORT static int32_t InsertOperation(MediaLibraryCommand &cmd);
     EXPORT static int32_t BatchInsertOperation(MediaLibraryCommand &cmd,
         const std::vector<NativeRdb::ValuesBucket> &values);
