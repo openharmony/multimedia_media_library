@@ -118,6 +118,11 @@ void MediaLibraryCommand::SetResult(const std::string &result)
     result_ = result;
 }
 
+bool MediaLibraryCommand::IsDataSharePredNull() const
+{
+    return datasharePred_ == nullptr;
+}
+
 // get functions
 OperationObject MediaLibraryCommand::GetOprnObject() const
 {
