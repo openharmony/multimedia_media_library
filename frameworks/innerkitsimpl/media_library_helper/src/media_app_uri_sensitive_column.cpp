@@ -62,8 +62,8 @@ const std::string AppUriSensitiveColumn::CREATE_URI_URITYPE_APPID_INDEX = BaseCo
     AppUriSensitiveColumn::URI_TYPE + "," +
     AppUriSensitiveColumn::APP_ID + " DESC)";
 
-const std::string AppUriSensitiveColumn::DROP_APP_URI_SENSITIVE_TABLE =
-    "DROP TABLE IF EXISTS " + AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE;
+const std::string AppUriSensitiveColumn::DELETE_APP_URI_SENSITIVE_TABLE =
+    "DELETE FROM " + AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE;
 
 const std::set<std::string> AppUriSensitiveColumn::ALL_COLUMNS = {
     AppUriSensitiveColumn::ID, AppUriSensitiveColumn::APP_ID, AppUriSensitiveColumn::FILE_ID,
