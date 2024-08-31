@@ -883,6 +883,26 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
     return dataShareHelper->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
 }
 
+int32_t MediaLibraryManager::ReadPrivateMovingPhoto(const string &uri)
+{
+    if (!CheckPhotoUri(uri)) {
+        MEDIA_ERR_LOG("invalid uri: %{public}s", uri.c_str());
+        return E_ERR;
+    }
+
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    if (dataShareHelper == nullptr) {
+        MEDIA_ERR_LOG("Failed to read video of moving photo, datashareHelper is nullptr");
+        return E_ERR;
+    }
+
+    string movingPhotoUri = uri;
+    MediaFileUtils::UriAppendKeyValue(movingPhotoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_PRIVATE_LIVE_PHOTO);
+    Uri openMovingPhotoUri(movingPhotoUri);
+    return dataShareHelper->OpenFile(openMovingPhotoUri, MEDIA_FILEMODE_READONLY);
+}
+
 std::string MediaLibraryManager::GetMovingPhotoImageUri(const string &uri)
 {
     if (uri.empty()) {

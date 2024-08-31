@@ -2512,7 +2512,7 @@ static napi_value GetSharedPhotoAssets(const napi_env& env, vector<string>& file
         return value;
     }
     do {
-        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result);
+        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
         if (assetValue == nullptr) {
             return nullptr;
         }
@@ -2633,7 +2633,7 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
     if (photoAssetArray == nullptr) {
         NAPI_ERR_LOG("Failed to get sharedPhotoAsset");
     }
-    status = napi_set_named_property(env, result, "extraAssets", photoAssetArray);
+    status = napi_set_named_property(env, result, "sharedExtraPhotoAssets", photoAssetArray);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Set extraAssets named property error!");
     }
@@ -6291,11 +6291,7 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
         if (errCode == E_PERMISSION_DENIED) {
-            if (context->hiddenOnly || context->hiddenAlbumFetchMode == ASSETS_MODE) {
-                context->error = OHOS_PERMISSION_DENIED_CODE;
-            } else {
-                context->SaveError(E_HAS_DB_ERROR);
-            }
+            context->SaveError(E_PERMISSION_DENIED);
         } else {
             context->SaveError(E_HAS_DB_ERROR);
         }
@@ -7459,7 +7455,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssetsWithMode(napi_env
     CHECK_COND_WITH_MESSAGE(env, authorizationMode == SaveType::SHORT_IMAGE_PERM, "authorizationMode is error");
 
     int ret = Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(
-        tokenId, PERM_SHORT_TERM_WRITE_IMAGEVIDEO, THREE_HUNDERD_S);
+        tokenId, PERM_SHORT_TERM_WRITE_IMAGEVIDEO, SHORT_TERM_PERMISSION_DURATION_300S);
     if (ret != E_SUCCESS) {
         NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "This app have no short permission");
         return nullptr;

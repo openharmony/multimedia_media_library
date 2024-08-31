@@ -767,6 +767,7 @@ static void GetFileAssetsNative(napi_env env, void *data)
         UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetFileAssetsNative called, UserFileClient::Query errorCode is = %{public}d", errCode);
+        context->SaveError(errCode);
         return;
     }
     context->fetchResult = std::make_unique<FetchResult<FileAsset>>(move(resultSet));
@@ -807,9 +808,8 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status, vo
         }
     } else {
         NAPI_ERR_LOG("No fetch file result found!");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                                                     "Failed to obtain fetchFileResult from DB");
     }
 
     tracer.Finish();

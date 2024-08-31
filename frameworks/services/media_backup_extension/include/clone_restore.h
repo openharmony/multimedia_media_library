@@ -132,7 +132,6 @@ private:
     bool IsSameFileForClone(const std::string &tableName, FileInfo &fileInfo);
     NativeRdb::ValuesBucket GetInsertValue(const AnalysisAlbumTbl &portraitAlbumInfo);
     int32_t InsertPortraitAlbumByTable(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
-    bool DeleteAlbums(const std::vector<std::string> &albumNames, const std::vector<std::string> tagIds);
     void InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
     void ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         AnalysisAlbumTbl &analysisAlbumTbl);
@@ -140,16 +139,13 @@ private:
         const std::vector<std::string>& commonColumns);
     void RestoreFromGalleryPortraitAlbum();
     int32_t QueryPortraitAlbumTotalNumber(std::shared_ptr<NativeRdb::RdbStore> rdbPtr, std::string query);
-    void UpdateFaceAnalysisTblStatus();
-    void UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     std::unordered_map<std::string, std::string> CreateImgFaceColumnFieldMap();
     void ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, ImageFaceTbl &imageFaceTbl);
     void ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FaceTagTbl &faceTagTbl);
     NativeRdb::ValuesBucket CreateValuesBucketFromImageFaceTbl(const ImageFaceTbl& imageFaceTbl);
     void BatchInsertImageFaces(const std::vector<ImageFaceTbl>& imageFaceTbls);
-    void DeleteExistingImageFaceData(const std::string& fileIdInClause);
     std::vector<ImageFaceTbl> ProcessImageFaceTbls(const std::vector<ImageFaceTbl>& imageFaceTbls,
-    const std::string& fileIdInClause, const std::vector<FileIdPair>& fileIdPairs);
+        const std::vector<FileIdPair>& fileIdPairs);
     std::vector<ImageFaceTbl> QueryImageFaceTbl(int32_t offset, std::string &fileIdClause,
         const std::vector<std::string>& commonColumns);
     void RestoreImageFaceInfo(std::vector<FileInfo> &fileInfos);
@@ -162,7 +158,6 @@ private:
     void UpdateGroupTagColumn(const std::vector<TagPairOpt>& updatedPairs);
     void UpdateFaceGroupTagsUnion();
     void ReportPortraitCloneStat(int32_t sceneCode);
-    void ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql);
     std::vector<CloneRestore::TagPairOpt> QueryTagInfo(void);
     void AppendExtraWhereClause(std::string& whereClause, const std::string& tableName);
 

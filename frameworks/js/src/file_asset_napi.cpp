@@ -3276,8 +3276,7 @@ static void UserFileMgrSetHiddenComplete(napi_env env, napi_status status, void 
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->changedRows,
-            "Failed to modify hidden state");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -3470,8 +3469,7 @@ static void UserFileMgrSetUserCommentComplete(napi_env env, napi_status status, 
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
-            "Failed to edit user comment");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -3776,8 +3774,7 @@ static void PhotoAccessHelperFavoriteComplete(napi_env env, napi_status status, 
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->changedRows,
-            "Failed to modify favorite state");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -3995,8 +3992,7 @@ static void PhotoAccessHelperSetHiddenComplete(napi_env env, napi_status status,
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->changedRows,
-            "Failed to modify hidden state");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -4128,8 +4124,7 @@ static void PhotoAccessHelperSetUserCommentComplete(napi_env env, napi_status st
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
-            "Failed to edit user comment");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
 

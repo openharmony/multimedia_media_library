@@ -25,13 +25,14 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 constexpr int32_t PROCESS_INTERVAL = 5 * 60 * 1000;  // 5 minute
 constexpr int32_t DOWNLOAD_DURATION = 10 * 1000; // 10 seconds
 
 class BackgroundCloudFileProcessor {
 public:
-    static void StartTimer();
-    static void StopTimer();
+    EXPORT static void StartTimer();
+    EXPORT static void StopTimer();
 
 private:
     typedef struct {

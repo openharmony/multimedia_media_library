@@ -340,7 +340,13 @@ void UpgradeRestore::RestorePhoto(void)
         MEDIA_INFO_LOG("migrate from others number: %{public}lld, file number: %{public}lld",
             (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
     }
-    UpdateFaceAnalysisStatus();
+
+    if (sceneCode_ == UPGRADE_RESTORE_ID) {
+        UpdateFaceAnalysisStatus();
+    } else {
+        UpdateDualCloneFaceAnalysisStatus();
+    }
+
     ReportPortraitStat(sceneCode_);
     (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
 }
@@ -483,6 +489,9 @@ void UpgradeRestore::RestoreBatch(int32_t offset)
     MEDIA_INFO_LOG("start restore from gallery, offset: %{public}d", offset);
     std::vector<FileInfo> infos = QueryFileInfos(offset);
     InsertPhoto(sceneCode_, infos, SourceType::GALLERY);
+
+    auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
+    BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
 }
 
 void UpgradeRestore::RestoreFromExternal(bool isCamera)
@@ -1253,17 +1262,22 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
 
 void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
 {
-    if (sceneCode_ != UPGRADE_RESTORE_ID) {
-        MEDIA_ERR_LOG("Portrait restoration for %{public}d not supported", sceneCode_);
-        return;
-    }
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t totalNumber = QueryPortraitAlbumTotalNumber();
     MEDIA_INFO_LOG("QueryPortraitAlbumTotalNumber, totalNumber = %{public}d", totalNumber);
+
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        vector<PortraitAlbumInfo> portraitAlbumInfos = QueryPortraitAlbumInfos(offset);
+        std::vector<std::string> tagNameToDeleteSelection;
+        std::vector<std::string> tagIds;
+        vector<PortraitAlbumInfo> portraitAlbumInfos = QueryPortraitAlbumInfos(offset,
+            tagNameToDeleteSelection);
+        if (!BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(tagNameToDeleteSelection, tagIds, mediaLibraryRdb_)) {
+            MEDIA_ERR_LOG("Batch delete duplicate portrait album failed.");
+            return;
+        }
         InsertPortraitAlbum(portraitAlbumInfos);
     }
+
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migratePortraitTotalTimeCost_ += end - start;
 }
@@ -1273,7 +1287,8 @@ int32_t UpgradeRestore::QueryPortraitAlbumTotalNumber()
     return BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_GALLERY_PORTRAIT_ALBUM_COUNT, CUSTOM_COUNT);
 }
 
-vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset)
+vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset,
+    std::vector<std::string>& tagNameToDeleteSelection)
 {
     vector<PortraitAlbumInfo> result;
     result.reserve(QUERY_COUNT);
@@ -1296,6 +1311,9 @@ vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset
         if (!SetAttributes(portraitAlbumInfo)) {
             MEDIA_ERR_LOG("Set attributes failed, exclude %{public}s", portraitAlbumInfo.tagName.c_str());
             continue;
+        }
+        if (!portraitAlbumInfo.tagName.empty()) {
+            tagNameToDeleteSelection.emplace_back(portraitAlbumInfo.tagName);
         }
         UpdateGroupTagMap(portraitAlbumInfo);
         result.emplace_back(portraitAlbumInfo);
@@ -1430,9 +1448,6 @@ void UpgradeRestore::BatchQueryAlbum(std::vector<PortraitAlbumInfo> &portraitAlb
 
 bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap)
 {
-    if (sceneCode_ != UPGRADE_RESTORE_ID) {
-        return false;
-    }
     if (portraitAlbumIdMap_.empty()) {
         return false;
     }
@@ -1465,21 +1480,15 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
 void UpgradeRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
     int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum)
 {
-    if (sceneCode_ != UPGRADE_RESTORE_ID) {
-        return;
-    }
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     if (needQueryMap.count(PhotoRelatedType::PORTRAIT) == 0) {
         return;
     }
-    if (mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
+    if (mediaLibraryRdb_ == nullptr || fileInfos.empty()) {
+        MEDIA_ERR_LOG("mediaLibraryRdb_ is null or fileInfos empty");
         return;
     }
-    if (fileInfos.empty()) {
-        MEDIA_ERR_LOG("fileInfos are empty");
-        return;
-    }
+
     std::string hashSelection;
     std::unordered_map<std::string, FileInfo> fileInfoMap;
     SetHashReference(fileInfos, needQueryMap, hashSelection, fileInfoMap);
@@ -1489,6 +1498,9 @@ void UpgradeRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInf
         totalNumber);
     std::unordered_set<std::string> excludedFiles;
     std::unordered_set<std::string> filesWithFace;
+    auto uniqueFileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
+    BackupDatabaseUtils::DeleteExistingImageFaceData(mediaLibraryRdb_, uniqueFileIdPairs);
+
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         std::vector<FaceInfo> faceInfos = QueryFaceInfos(hashSelection, fileInfoMap, offset, excludedFiles);
         int64_t startInsertFace = MediaFileUtils::UTCTimeMilliSeconds();
@@ -1668,6 +1680,37 @@ void UpgradeRestore::UpdateFilesWithFace(std::unordered_set<std::string> &filesW
         }
         filesWithFace.insert(faceInfo.hash);
     }
+}
+
+void UpgradeRestore::UpdateFaceAnalysisStatus()
+{
+    if (portraitAlbumIdMap_.empty()) {
+        MEDIA_INFO_LOG("There is no need to update face analysis status");
+        return;
+    }
+    int64_t startUpdateGroupTag = MediaFileUtils::UTCTimeMilliSeconds();
+    BackupDatabaseUtils::UpdateGroupTag(mediaLibraryRdb_, groupTagMap_);
+    int64_t startUpdateTotal = MediaFileUtils::UTCTimeMilliSeconds();
+    BackupDatabaseUtils::UpdateAnalysisTotalStatus(mediaLibraryRdb_);
+    int64_t startUpdateFaceTag = MediaFileUtils::UTCTimeMilliSeconds();
+    BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(mediaLibraryRdb_);
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("Update group tag cost %{public}lld, update total table cost %{public}lld, update face tag table "
+        "cost %{public}lld", (long long)(startUpdateTotal - startUpdateGroupTag),
+        (long long)(startUpdateFaceTag - startUpdateTotal), (long long)(end - startUpdateFaceTag));
+    migratePortraitTotalTimeCost_ += end - startUpdateGroupTag;
+}
+
+void UpgradeRestore::UpdateDualCloneFaceAnalysisStatus()
+{
+    if (portraitAlbumIdMap_.empty()) {
+        MEDIA_INFO_LOG("There is no need to update face analysis status");
+        return;
+    }
+
+    BackupDatabaseUtils::UpdateGroupTag(mediaLibraryRdb_, groupTagMap_);
+    BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
+    BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
 }
 } // namespace Media
 } // namespace OHOS
