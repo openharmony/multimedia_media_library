@@ -2243,6 +2243,12 @@ int32_t MediaLibraryPhotoOperations::SubmitEditMovingPhotoExecute(MediaLibraryCo
     string cacheMovingPhotoVideoName;
     GetStringFromValuesBucket(cmd.GetValueBucket(), CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName);
     if (cacheMovingPhotoVideoName.empty()) {
+        string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
+        CHECK_AND_RETURN_RET_LOG(!videoPath.empty(), E_INVALID_PATH, "Can not get video path");
+        if (MediaFileUtils::IsFileExists(videoPath)) {
+            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(videoPath), E_HAS_FS_ERROR,
+                "Failed to delete video file, path:%{private}s", videoPath.c_str());
+        }
         errCode = UpdateMovingPhotoSubtype(fileAsset->GetId(), fileAsset->GetPhotoSubType());
         MEDIA_INFO_LOG("Moving photo graffiti editing, which becomes a normal photo, fileId:%{public}d",
             fileAsset->GetId());
