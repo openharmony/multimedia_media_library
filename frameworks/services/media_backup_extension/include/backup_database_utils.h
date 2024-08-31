@@ -97,6 +97,16 @@ public:
     static void UpdateAnalysisPhotoMapStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static std::vector<std::string> SplitString(const std::string& str, char delimiter);
     static void PrintQuerySql(const std::string& querySql);
+    static bool DeleteDuplicatePortraitAlbum(const std::vector<std::string> &albumNames,
+        const std::vector<std::string> tagIds, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql);
+    static void UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        const std::vector<FileIdPair>& fileIdPair);
+    static std::string GetFileIdNewFilterClause(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+        const std::vector<FileIdPair>& fileIdPair);
+    static void UpdateFaceAnalysisTblStatus(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void DeleteExistingImageFaceData(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+        const std::vector<FileIdPair>& fileIdPair);
 
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);

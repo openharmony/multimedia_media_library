@@ -97,7 +97,8 @@ private:
         std::string &relativePath, FileInfo &fileInfo);
     void RestoreFromGalleryPortraitAlbum();
     int32_t QueryPortraitAlbumTotalNumber();
-    std::vector<PortraitAlbumInfo> QueryPortraitAlbumInfos(int32_t offset);
+    std::vector<PortraitAlbumInfo> QueryPortraitAlbumInfos(int32_t offset,
+        std::vector<std::string>& tagNameToDeleteSelection);
     bool ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         PortraitAlbumInfo &portraitAlbumInfo);
     bool SetAttributes(PortraitAlbumInfo &portraitAlbumInfo);
@@ -122,6 +123,8 @@ private:
         const std::unordered_set<std::string> &excludedFiles);
     NativeRdb::ValuesBucket GetInsertValue(const FaceInfo &faceInfo, bool isMap);
     void UpdateFilesWithFace(std::unordered_set<std::string> &filesWithFace, const std::vector<FaceInfo> &faceInfos);
+    void UpdateFaceAnalysisStatus();
+    void UpdateDualCloneFaceAnalysisStatus();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

@@ -1021,7 +1021,7 @@ static void ConvertColumnsForPortrait(PhotoAlbumNapiAsyncContext *context)
         return;
     }
 
-    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    shared_ptr<PhotoAlbum> photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     if (photoAlbum == nullptr || (photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::PORTRAIT &&
         !IsFeaturedSinglePortraitAlbum(photoAlbum))) {
         return;
@@ -1112,8 +1112,7 @@ static void JSGetPhotoAssetsCallbackComplete(napi_env env, napi_status status, v
         GetPhotoMapQueryResult(env, context, jsContext);
     } else {
         NAPI_ERR_LOG("No fetch file result found!");
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "Failed to get fetchFileResult from DB");
+        context->HandleError(env, jsContext->error);
     }
 
     tracer.Finish();

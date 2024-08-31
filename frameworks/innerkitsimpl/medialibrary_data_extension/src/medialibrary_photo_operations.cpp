@@ -2243,6 +2243,12 @@ int32_t MediaLibraryPhotoOperations::SubmitEditMovingPhotoExecute(MediaLibraryCo
     string cacheMovingPhotoVideoName;
     GetStringFromValuesBucket(cmd.GetValueBucket(), CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName);
     if (cacheMovingPhotoVideoName.empty()) {
+        string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
+        CHECK_AND_RETURN_RET_LOG(!videoPath.empty(), E_INVALID_PATH, "Can not get video path");
+        if (MediaFileUtils::IsFileExists(videoPath)) {
+            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(videoPath), E_HAS_FS_ERROR,
+                "Failed to delete video file, path:%{private}s", videoPath.c_str());
+        }
         errCode = UpdateMovingPhotoSubtype(fileAsset->GetId(), fileAsset->GetPhotoSubType());
         MEDIA_INFO_LOG("Moving photo graffiti editing, which becomes a normal photo, fileId:%{public}d",
             fileAsset->GetId());
@@ -2628,6 +2634,11 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
     }
     size_t photoThumbnailSize = LCDThumbnailSize + THMThumbnailSize + THMASTCThumbnailSize;
 
+    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    int32_t errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Error starting transaction: %{public}d, photoId: %{public}s", errCode, photoId.c_str());
+    }
     string sql = "INSERT OR REPLACE INTO " + PhotoExtColumn::PHOTOS_EXT_TABLE + " (" +
         PhotoExtColumn::PHOTO_ID + ", " + PhotoExtColumn::THUMBNAIL_SIZE +
         ") VALUES (" + photoId + ", " + to_string(photoThumbnailSize) + ")";
@@ -2636,6 +2647,7 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
     }
+    transactionOprn.Finish();
 }
 
 void MediaLibraryPhotoOperations::DropThumbnailSize(const string& photoId)
@@ -2651,12 +2663,18 @@ void MediaLibraryPhotoOperations::DropThumbnailSize(const string& photoId)
         return;
     }
 
+    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    int32_t errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Error starting transaction: %{public}d, photoId: %{public}s", errCode, photoId.c_str());
+    }
     string sql = "DELETE FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE +
         " WHERE " + PhotoExtColumn::PHOTO_ID + " = " + photoId + ";";
     int32_t ret = rdbStore->ExecuteSql(sql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
     }
+    transactionOprn.Finish();
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::ScanMovingPhoto(MediaLibraryCommand &cmd,

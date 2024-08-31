@@ -59,7 +59,7 @@ public:
     static const std::string CREATE_URI_URITYPE_APPID_INDEX EXPORT;
 
     // drop sensitive column sql
-    static const std::string DROP_APP_URI_SENSITIVE_TABLE EXPORT;
+    static const std::string DELETE_APP_URI_SENSITIVE_TABLE EXPORT;
 
     // all columns
     static const std::set<std::string> ALL_COLUMNS EXPORT;

@@ -412,7 +412,15 @@ int32_t UserFileClientEx::Delete(const std::string &uri, bool isRestart)
     valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, 0);
     Uri deleteUri(deleteUriStr);
     MEDIA_INFO_LOG("delete. deleteUri:%{public}s, uri:%{public}s", deleteUri.ToString().c_str(), uri.c_str());
-    auto ret = UserFileClient::Update(deleteUri, predicates, valuesBucket);
+    int ret = 0;
+    if (tableName == PhotoColumn::PHOTOS_TABLE) {
+        ret = UserFileClient::Update(deleteUri, predicates, valuesBucket);
+    } else if (tableName == AudioColumn::AUDIOS_TABLE) {
+        ret = UserFileClient::Delete(deleteUri, predicates);
+    } else {
+        MEDIA_ERR_LOG("invalid table name: %{public}s", tableName.c_str());
+    }
+
     if (ret < 0) {
         MEDIA_ERR_LOG("delete the file failed. ret:%{public}d, deleteUri:%{public}s, uri:%{public}s",
             ret, deleteUri.ToString().c_str(), uri.c_str());

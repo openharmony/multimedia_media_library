@@ -23,10 +23,11 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaAnalysisHelper {
 public:
-    static void StartMediaAnalysisServiceAsync(int32_t code, const std::vector<std::string> &uris = {});
-    static void StartMediaAnalysisServiceSync(int32_t code, const std::vector<std::string> &fileIds = {});
+    EXPORT static void StartMediaAnalysisServiceAsync(int32_t code, const std::vector<std::string> &uris = {});
+    EXPORT static void StartMediaAnalysisServiceSync(int32_t code, const std::vector<std::string> &fileIds = {});
     static void StartPortraitCoverSelectionAsync(const std::string albumId);
 
 private:

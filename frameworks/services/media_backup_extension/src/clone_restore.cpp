@@ -125,6 +125,12 @@ const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLA
     { PhotoColumn::PHOTOS_TABLE,
         {
             { PhotoColumn::PHOTO_POSITION, PhotoColumn::PHOTO_POSITION + " IN (1, 3)" },
+            { PhotoColumn::PHOTO_SYNC_STATUS, PhotoColumn::PHOTO_SYNC_STATUS + " = " +
+                to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) },
+            { PhotoColumn::PHOTO_CLEAN_FLAG, PhotoColumn::PHOTO_CLEAN_FLAG + " = " +
+                to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) },
+            { MediaColumn::MEDIA_TIME_PENDING, MediaColumn::MEDIA_TIME_PENDING + " = 0" },
+            { PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::PHOTO_IS_TEMP + " = 0" },
         }},
     { PhotoAlbumColumns::TABLE,
         {
@@ -241,7 +247,7 @@ void CloneRestore::RestorePhoto(void)
     }
     ffrt::wait();
 
-    UpdateFaceAnalysisTblStatus();
+    BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
     ReportPortraitCloneStat(sceneCode_);
 }
@@ -1241,6 +1247,9 @@ void CloneRestore::RestorePhotoBatch(int32_t offset)
     BatchNotifyPhoto(fileInfos);
     MEDIA_INFO_LOG("end restore photo, offset: %{public}d", offset);
     RestoreImageFaceInfo(fileInfos);
+
+    auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
+    BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
 }
 
 void CloneRestore::RestoreAudioBatch(int32_t offset)
@@ -1520,7 +1529,7 @@ void CloneRestore::InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAl
     MEDIA_INFO_LOG("Total albums: %zu, Albums with names: %zu, Albums with tagIds: %zu",
                    analysisAlbumTbl.size(), albumNames.size(), tagIds.size());
 
-    if (!DeleteAlbums(albumNames, tagIds)) {
+    if (!BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(albumNames, tagIds, mediaLibraryRdb_)) {
         MEDIA_ERR_LOG("Batch delete failed.");
         return;
     }
@@ -1532,51 +1541,6 @@ void CloneRestore::InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAl
 
     migratePortraitAlbumNumber_ += albumRowNum;
     return ;
-}
-
-bool CloneRestore::DeleteAlbums(const std::vector<std::string> &albumNames, const std::vector<std::string> tagIds)
-{
-    std::set<std::string> uniqueAlbums(albumNames.begin(), albumNames.end());
-    std::vector<std::string> uniqueAlbumNames(uniqueAlbums.begin(), uniqueAlbums.end());
-    MEDIA_INFO_LOG("unique AlbumName %{public}zu", uniqueAlbumNames.size());
-
-    std::string inClause = BackupDatabaseUtils::JoinSQLValues<string>(uniqueAlbumNames, ", ");
-    std::string tagIdClause = "(" + BackupDatabaseUtils::JoinSQLValues<string>(tagIds, ", ") + ")";
-    // 删除 VisionFaceTag 表中的记录
-    std::string deleteFaceTagSql = "DELETE FROM " + VISION_FACE_TAG_TABLE +
-                                   " WHERE tag_id IN (SELECT A.tag_id FROM " + ANALYSIS_ALBUM_TABLE + " AS A, " +
-                                   VISION_FACE_TAG_TABLE + " AS B WHERE A.tag_id = B.tag_id AND " +
-                                   ANALYSIS_COL_ALBUM_NAME + " IN (" + inClause + "))";
-    ExecuteSQL(mediaLibraryRdb_, deleteFaceTagSql);
-
-    std::string imageFaceClause = "tag_id IN (SELECT A.tag_id FROM " + ANALYSIS_ALBUM_TABLE + " AS A, " +
-        VISION_IMAGE_FACE_TABLE + " AS B WHERE A.tag_id = B.tag_id AND " +
-        ANALYSIS_COL_ALBUM_NAME + " IN (" + inClause + "))";
-
-    std::unique_ptr<NativeRdb::AbsRdbPredicates> updatePredicates =
-            make_unique<NativeRdb::AbsRdbPredicates>(VISION_IMAGE_FACE_TABLE);
-    updatePredicates->SetWhereClause(imageFaceClause);
-    int32_t deletedRows = 0;
-    NativeRdb::ValuesBucket valuesBucket;
-    valuesBucket.PutString(FACE_TAG_COL_TAG_ID, std::string("-1"));
-
-    int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb_, deletedRows, valuesBucket, updatePredicates);
-    if (deletedRows < 0 || ret < 0) {
-        MEDIA_ERR_LOG("Failed to update tag_id colum value");
-        return false;
-    }
-
-    // 删除 AnalysisAlbum 表中的记录
-    std::string unnamedCondition = ANALYSIS_COL_ALBUM_NAME + " IS NULL OR " +
-                                   ANALYSIS_COL_ALBUM_NAME + " = ''";
-
-    std::string deleteAnalysisSql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE +
-                                    " WHERE " + ANALYSIS_COL_ALBUM_NAME + " IN (" + inClause + ")";
-    deleteAnalysisSql += " OR ";
-    deleteAnalysisSql += "(" + unnamedCondition + " AND " + ANALYSIS_COL_TAG_ID + " IN " + tagIdClause + ")";
-    ExecuteSQL(mediaLibraryRdb_, deleteAnalysisSql);
-
-    return true;
 }
 
 int32_t CloneRestore::InsertPortraitAlbumByTable(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl)
@@ -1706,7 +1670,6 @@ void CloneRestore::RestoreImageFaceInfo(std::vector<FileInfo> &fileInfos)
     auto [oldFileIds, newFileIds] = BackupDatabaseUtils::UnzipFileIdPairs(uniqueFileIdPairs);
 
     std::string fileIdOldInClause = "(" + BackupDatabaseUtils::JoinValues<int>(oldFileIds, ", ") + ")";
-    std::string fileIdNewInClause = "(" + BackupDatabaseUtils::JoinValues<int>(newFileIds, ", ") + ")";
 
     std::string querySql = QUERY_IMAGE_FACE_COUNT;
     querySql += " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdOldInClause;
@@ -1718,9 +1681,10 @@ void CloneRestore::RestoreImageFaceInfo(std::vector<FileInfo> &fileInfos)
     std::vector<std::string> commonColumns = BackupDatabaseUtils::filterColumns(commonColumn,
         EXCLUDED_IMAGE_FACE_COLUMNS);
 
+    BackupDatabaseUtils::DeleteExistingImageFaceData(mediaLibraryRdb_, uniqueFileIdPairs);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         std::vector<ImageFaceTbl> imageFaceTbls = QueryImageFaceTbl(offset, fileIdOldInClause, commonColumns);
-        auto imageFaces = ProcessImageFaceTbls(imageFaceTbls, fileIdNewInClause, uniqueFileIdPairs);
+        auto imageFaces = ProcessImageFaceTbls(imageFaceTbls, uniqueFileIdPairs);
         BatchInsertImageFaces(imageFaces);
     }
 
@@ -1757,14 +1721,12 @@ std::vector<ImageFaceTbl> CloneRestore::QueryImageFaceTbl(int32_t offset, std::s
 }
 
 std::vector<ImageFaceTbl> CloneRestore::ProcessImageFaceTbls(const std::vector<ImageFaceTbl>& imageFaceTbls,
-    const std::string& fileIdInClause, const std::vector<FileIdPair>& fileIdPairs)
+    const std::vector<FileIdPair>& fileIdPairs)
 {
     if (imageFaceTbls.empty()) {
         MEDIA_ERR_LOG("image faces tbl empty");
         return {};
     }
-
-    DeleteExistingImageFaceData(fileIdInClause);
 
     std::vector<ImageFaceTbl> imageFaceNewTbls;
     imageFaceNewTbls.reserve(imageFaceTbls.size());
@@ -1785,14 +1747,6 @@ std::vector<ImageFaceTbl> CloneRestore::ProcessImageFaceTbls(const std::vector<I
     }
 
     return imageFaceNewTbls;
-}
-
-void CloneRestore::DeleteExistingImageFaceData(const std::string& fileIdInClause)
-{
-    /* Delete from VISION_IMAGE_FACE_TABLE where file_id are in the clauses */
-    std::string deleteFaceSql = "DELETE FROM " + VISION_IMAGE_FACE_TABLE +
-                                " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdInClause;
-    ExecuteSQL(mediaLibraryRdb_, deleteFaceSql);
 }
 
 void CloneRestore::BatchInsertImageFaces(const std::vector<ImageFaceTbl>& imageFaceTbls)
@@ -1881,34 +1835,6 @@ void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::Resu
     imageFaceTbl.aestheticsScore = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_AESTHETICS_SCORE);
     imageFaceTbl.beautyBounderVersion = GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION);
     imageFaceTbl.isExcluded = GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_IS_EXCLUDED);
-}
-
-void CloneRestore::UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
-{
-    std::string updateSql =
-        "UPDATE tab_analysis_total "
-        "SET face = CASE "
-            "WHEN EXISTS (SELECT 1 FROM tab_analysis_image_face "
-                         "WHERE tab_analysis_image_face.file_id = tab_analysis_total.file_id "
-                         "AND tag_id = '-1') THEN 2 "
-            "WHEN EXISTS (SELECT 1 FROM tab_analysis_image_face "
-                         "WHERE tab_analysis_image_face.file_id = tab_analysis_total.file_id "
-                         "AND tag_id = '-2') THEN 4 "
-            "ELSE 3 "
-        "END "
-        "WHERE EXISTS (SELECT 1 FROM tab_analysis_image_face "
-                      "WHERE tab_analysis_image_face.file_id = tab_analysis_total.file_id)";
-
-    int32_t errCode = rdbStore->ExecuteSql(updateSql);
-    if (errCode < 0) {
-        MEDIA_ERR_LOG("execute update analysis total failed, ret=%{public}d", errCode);
-    }
-}
-
-void CloneRestore::UpdateFaceAnalysisTblStatus()
-{
-    UpdateAnalysisTotalTblStatus(mediaLibraryRdb_);
-    BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(mediaLibraryRdb_);
 }
 
 void CloneRestore::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, TagPairOpt& tagPair)
@@ -2007,14 +1933,6 @@ void CloneRestore::ReportPortraitCloneStat(int32_t sceneCode)
 
     BackupDfxUtils::PostPortraitStat(static_cast<uint32_t>(migratePortraitAlbumNumber_), migratePortraitPhotoNumber_,
         migratePortraitFaceNumber_, migratePortraitTotalTimeCost_);
-}
-
-void CloneRestore::ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql)
-{
-    int ret = rdbStore->ExecuteSql(sql);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to execute SQL: %{public}s", sql.c_str());
-    }
 }
 
 void CloneRestore::AppendExtraWhereClause(std::string& whereClause, const std::string& tableName)

@@ -511,7 +511,7 @@ static void JSPhotoAccessGetPhotoAssetsExecute(napi_env env, void *data)
     int32_t errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
     if (resultSet == nullptr) {
-        context->SaveError(E_HAS_DB_ERROR);
+        context->SaveError(errCode);
         return;
     }
     context->fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
@@ -547,8 +547,7 @@ static void JSGetPhotoAssetsCallbackComplete(napi_env env, napi_status status, v
         GetPhotoMapQueryResult(env, context, jsContext);
     } else {
         NAPI_ERR_LOG("No fetch file result found!");
-        SendableMediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "Failed to get fetchFileResult from DB");
+        context->HandleError(env, jsContext->error);
     }
 
     tracer.Finish();

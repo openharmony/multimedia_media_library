@@ -13,8 +13,10 @@
  * limitations under the License.
  */
 
-#include "media_file_utils.h"
 #include "medialibrary_album_refresh.h"
+
+#include "cpu_utils.h"
+#include "media_file_utils.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdb_utils.h"
@@ -93,8 +95,10 @@ static void RefreshAlbumAsyncTask(AsyncTaskData *data)
         MEDIA_ERR_LOG("RdbStore is nullptr!");
         return;
     }
+    SlowDown();
     int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(rdbStore->GetRaw(),
         NotifySystemAlbumFunc, RefreshCallbackFunc);
+    ResetCpu();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("RefreshAllAlbums failed ret:%{public}d", ret);
     }

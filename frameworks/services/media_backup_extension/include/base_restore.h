@@ -47,7 +47,7 @@ public:
 
 protected:
     int32_t Init(void);
-    
+
     virtual void RestorePhoto(void) = 0;
     virtual void RestoreAudio(void) = 0;
     virtual void HandleRestData(void) = 0;
@@ -106,7 +106,6 @@ protected:
     bool NeedQuery(const FileInfo &fileInfo, const NeedQueryMap &needQueryMap);
     bool NeedQueryByPhotoRelatedType(const FileInfo &fileInfo, PhotoRelatedType photoRelatedType,
         const std::unordered_set<std::string> &needQuerySet);
-    void UpdateFaceAnalysisStatus();
     int32_t GetUniqueId(int32_t fileType);
 
 protected:

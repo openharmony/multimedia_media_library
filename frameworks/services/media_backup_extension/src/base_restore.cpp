@@ -1081,33 +1081,11 @@ void BaseRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos,
 
 void BaseRestore::ReportPortraitStat(int32_t sceneCode)
 {
-    if (sceneCode != DUAL_FRAME_CLONE_RESTORE_ID) {
-        return;
-    }
     MEDIA_INFO_LOG("PortraitStat: album %{public}zu, photo %{public}lld, face %{public}lld, cost %{public}lld",
         portraitAlbumIdMap_.size(), (long long)migratePortraitPhotoNumber_, (long long)migratePortraitFaceNumber_,
         (long long)migratePortraitTotalTimeCost_);
     BackupDfxUtils::PostPortraitStat(static_cast<uint32_t>(portraitAlbumIdMap_.size()), migratePortraitPhotoNumber_,
         migratePortraitFaceNumber_, migratePortraitTotalTimeCost_);
-}
-
-void BaseRestore::UpdateFaceAnalysisStatus()
-{
-    if (portraitAlbumIdMap_.empty()) {
-        MEDIA_INFO_LOG("There is no need to update face analysis status");
-        return;
-    }
-    int64_t startUpdateGroupTag = MediaFileUtils::UTCTimeMilliSeconds();
-    BackupDatabaseUtils::UpdateGroupTag(mediaLibraryRdb_, groupTagMap_);
-    int64_t startUpdateTotal = MediaFileUtils::UTCTimeMilliSeconds();
-    BackupDatabaseUtils::UpdateAnalysisTotalStatus(mediaLibraryRdb_);
-    int64_t startUpdateFaceTag = MediaFileUtils::UTCTimeMilliSeconds();
-    BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(mediaLibraryRdb_);
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("Update group tag cost %{public}lld, update total table cost %{public}lld, update face tag table "
-        "cost %{public}lld", (long long)(startUpdateTotal - startUpdateGroupTag),
-        (long long)(startUpdateFaceTag - startUpdateTotal), (long long)(end - startUpdateFaceTag));
-    migratePortraitTotalTimeCost_ += end - startUpdateGroupTag;
 }
 
 int32_t BaseRestore::GetUniqueId(int32_t fileType)
