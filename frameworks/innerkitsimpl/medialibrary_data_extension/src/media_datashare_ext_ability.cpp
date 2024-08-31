@@ -407,7 +407,7 @@ static int32_t HandleShortPermission(bool &need)
 {
     int32_t err = PermissionUtils::CheckPhotoCallerPermission(PERM_SHORT_TERM_WRITE_IMAGEVIDEO) ? E_SUCCESS :
         E_PERMISSION_DENIED;
-    if (!err) {
+    if (err == E_SUCCESS) {
         need = true;
     } else {
         need = false;
@@ -768,8 +768,12 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     int32_t ret =  MediaLibraryDataManager::GetInstance()->InsertExt(cmd, value, result);
     if (needToResetTime) {
         AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
-        Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(tokenCaller,
-            PERM_SHORT_TERM_WRITE_IMAGEVIDEO, THREE_HUNDERD_S);
+        err = Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(tokenCaller,
+            PERM_SHORT_TERM_WRITE_IMAGEVIDEO, SHORT_TERM_PERMISSION_DURATION_300S);
+        if (err < 0) {
+            MEDIA_ERR_LOG("queryResultSet is nullptr! errCode: %{public}d", err);
+            return err;
+        }
     }
     return ret;
 }
