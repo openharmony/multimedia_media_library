@@ -7459,7 +7459,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssetsWithMode(napi_env
     CHECK_COND_WITH_MESSAGE(env, authorizationMode == SaveType::SHORT_IMAGE_PERM, "authorizationMode is error");
 
     int ret = Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(
-        tokenId, PERM_SHORT_TERM_WRITE_IMAGEVIDEO, THREE_HUNDERD_S);
+        tokenId, PERM_SHORT_TERM_WRITE_IMAGEVIDEO, SHORT_TERM_PERMISSION_DURATION_300S);
     if (ret != E_SUCCESS) {
         NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "This app have no short permission");
         return nullptr;
