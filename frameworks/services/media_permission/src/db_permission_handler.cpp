@@ -75,6 +75,11 @@ static bool ParseInfoFromCmd(MediaLibraryCommand &cmd, string &fileId, int32_t &
         fileId = MediaFileUtils::GetIdFromUri(cmd.GetUri().ToString());
         return true;
     }
+
+    if (cmd.IsDataSharePredNull()) {
+        MEDIA_DEBUG_LOG("DataSharePred is nullptr");
+        return false;
+    }
     bool isPhotoType = MediaFileUtils::StartsWith(cmd.GetUri().ToString(), UFM_PHOTO_PREFIX)
         || MediaFileUtils::StartsWith(cmd.GetUri().ToString(), PATH_PHOTO_PREFIX);
     if (isPhotoType) {
