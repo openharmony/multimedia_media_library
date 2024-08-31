@@ -189,7 +189,7 @@ static void ClearEmptyGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &cle
     ValuesBucket values;
     values.PutInt(PhotoAlbumColumns::ALBUM_COUNT, 0);
     values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, "");
-    values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::NO_SETTING));
+    values.PutInt(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING));
     values.PutInt(IS_ME, ALBUM_IS_NOT_ME);
 
     RdbPredicates rdbPredicates(ANALYSIS_ALBUM_TABLE);
@@ -217,9 +217,9 @@ static string BuildUpdateGroupPhotoAlbumSql(const GroupPhotoAlbumInfo &albumInfo
     string withSql;
     string coverUriValueSql;
     string isCoverSatisfiedValueSql;
-    if (albumInfo.isCoverSatisfied == static_cast<int32_t>(CoverSatisfiedType::NO_SETTING)) {
+    if (albumInfo.isCoverSatisfied == static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING)) {
         coverUriValueSql = "'" + albumInfo.candidateUri + "'";
-        isCoverSatisfiedValueSql = to_string(static_cast<int32_t>(CoverSatisfiedType::NO_SETTING));
+        isCoverSatisfiedValueSql = to_string(static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING));
     } else {
         string oldCoverId = MediaFileUri::GetPhotoId(albumInfo.coverUri);
         if (!oldCoverId.empty() && MediaLibraryDataManagerUtils::IsNumber(oldCoverId)) {
@@ -236,10 +236,10 @@ static string BuildUpdateGroupPhotoAlbumSql(const GroupPhotoAlbumInfo &albumInfo
                 "' ELSE '" + albumInfo.candidateUri + "' END";
             isCoverSatisfiedValueSql = "CASE (SELECT 1 FROM is_cover_exist) WHEN 1 THEN " +
                 to_string(albumInfo.isCoverSatisfied) + " ELSE " +
-                to_string(static_cast<int32_t>(CoverSatisfiedType::NO_SETTING)) + " END";
+                to_string(static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING)) + " END";
         } else {
             coverUriValueSql = "'" + albumInfo.candidateUri + "'";
-            isCoverSatisfiedValueSql = to_string(static_cast<int32_t>(CoverSatisfiedType::NO_SETTING));
+            isCoverSatisfiedValueSql = to_string(static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING));
         }
     }
     string updateSql = withSql + " UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " +
@@ -283,7 +283,7 @@ static void InsertGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &insertA
         values.Put(GROUP_TAG, album.tagId);
         values.Put(IS_ME, album.isMe);
         values.Put(IS_LOCAL, LOCAL_ALBUM);
-        values.Put(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::NO_SETTING));
+        values.Put(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING));
         insertValues.push_back(values);
     }
     Uri uri(PAH_INSERT_ANA_PHOTO_ALBUM);
@@ -524,7 +524,7 @@ static int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const Merg
     if (currentAlbum.isCoverSatisfied == targetAlbum.isCoverSatisfied) {
         candidateIds = currentFileId + ", " + targetFileId;
     } else {
-        candidateIds = currentAlbum.isCoverSatisfied != static_cast<int32_t>(CoverSatisfiedType::NO_SETTING) ?
+        candidateIds = currentAlbum.isCoverSatisfied != static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING) ?
             currentFileId :
             targetFileId;
     }
@@ -662,9 +662,9 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
             } else if (GetMergeAlbumCoverUri(newInfo, info, it->second) != E_OK) {
                 return E_HAS_DB_ERROR;
             }
-            if (info.isCoverSatisfied != static_cast<int32_t>(CoverSatisfiedType::NO_SETTING) ||
-                it->second.isCoverSatisfied != static_cast<int32_t>(CoverSatisfiedType::NO_SETTING)) {
-                updateMap[reorderedTagId].isCoverSatisfied = static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING);
+            if (info.isCoverSatisfied != static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING) ||
+                it->second.isCoverSatisfied != static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING)) {
+                updateMap[reorderedTagId].isCoverSatisfied = static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING);
             }
             updateMap[reorderedTagId].coverUri = newInfo.coverUri;
             deleteId.push_back(info.albumId);
@@ -725,7 +725,7 @@ static int32_t SetGroupCoverUri(const ValuesBucket &values, const DataSharePredi
         return E_INVALID_VALUES;
     }
     std::string updateForSetCoverUri = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" + coverUri +
-        "', " + IS_COVER_SATISFIED + " = " + to_string(static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING)) +
+        "', " + IS_COVER_SATISFIED + " = " + to_string(static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING)) +
         " WHERE " + ALBUM_ID + " = " + targetAlbumId;
     vector<string> updateSqls = { updateForSetCoverUri };
     err = ExecSqls(updateSqls, uniStore);
@@ -819,7 +819,7 @@ void MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(int3
     const string coverUriPrefix = "'" + PhotoColumn::PHOTO_URI_PREFIX + to_string(fileId) + "/%'";
 
     const string updateSql = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_COVER_SATISFIED + " = " +
-        IS_COVER_SATISFIED + " | " + to_string(static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING)) + " WHERE " +
+        IS_COVER_SATISFIED + " | " + to_string(static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING)) + " WHERE " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT)) +
         " AND " + PhotoAlbumColumns::ALBUM_COVER_URI + " LIKE " + coverUriPrefix;
 
