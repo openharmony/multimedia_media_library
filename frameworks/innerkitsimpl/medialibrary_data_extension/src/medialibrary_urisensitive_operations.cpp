@@ -214,7 +214,7 @@ static void GetAllUriDbOperation(const vector<DataShareValuesBucket> &values, ve
         querySingleResultSet.push_back(GetInt32Val(AppUriSensitiveColumn::FILE_ID, queryResult));
         querySingleResultSet.push_back(GetInt32Val(AppUriSensitiveColumn::URI_TYPE, queryResult));
         querySingleResultSet.push_back(GetInt32Val(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, queryResult));
-        for (int i = 0; i < values.size(); i++) {
+        for (size_t i = 0; i < values.size(); i++) {
             GetSingleDbOperation(values, dbOperation, querySingleResultSet, i);
         }
     } while (!queryResult->GoToNextRow());
@@ -306,7 +306,7 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
     AppstateOberserverBuild(sensitiveType);
     QueryUriSensitive(cmd, values, resultSet);
     GetAllUriDbOperation(values, dbOperation, resultSet);
-    for (int i = 0; i < values.size(); i++) {
+    for (size_t i = 0; i < values.size(); i++) {
         int32_t fileId = std::stoi((static_cast<string>(values.at(i).Get(AppUriSensitiveColumn::FILE_ID, isValid))));
         int32_t uriType = values.at(i).Get(AppUriSensitiveColumn::URI_TYPE, isValid);
         if ((dbOperation.at(i) == UPDATE_DB_OPERATION) && (uriType == PHOTOSTYPE)) {
