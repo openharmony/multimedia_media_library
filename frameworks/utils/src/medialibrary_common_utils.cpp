@@ -132,6 +132,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     MEDIA_DATA_DB_DATE_MODIFIED,
     MEDIA_DATA_DB_DATE_MODIFIED_S,
     MEDIA_DATA_DB_DATE_TAKEN,
+    MEDIA_DATA_DB_DATE_TAKEN_S,
     MEDIA_DATA_DB_TITLE,
     MEDIA_DATA_DB_ARTIST,
     MEDIA_DATA_DB_AUDIO_ALBUM,
@@ -163,6 +164,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     PhotoColumn::PHOTO_IS_TEMP,
     PhotoColumn::PHOTO_BURST_KEY,
     PhotoColumn::PHOTO_LCD_VISIT_TIME,
+    PhotoColumn::PHOTO_DETAIL_TIME,
 
     // Photos table columns
     COMPAT_HIDDEN,

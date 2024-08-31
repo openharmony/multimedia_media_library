@@ -121,6 +121,7 @@ public:
     static const std::string PHOTO_BURST_KEY EXPORT;
     static const std::string PHOTO_COVER_POSITION EXPORT;
     static const std::string PHOTO_ORIGINAL_SUBTYPE EXPORT;
+    static const std::string PHOTO_DETAIL_TIME EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
@@ -146,6 +147,8 @@ public:
     static const std::string PHOTO_DATE_MONTH_FORMAT EXPORT;
     static const std::string PHOTO_DATE_DAY_FORMAT EXPORT;
     static const std::string PHOTO_FRONT_CAMERA EXPORT;
+    // format in PhotoTable detail time
+    static const std::string PHOTO_DETAIL_TIME_FORMAT EXPORT;
 
     // table name
     static const std::string PHOTOS_TABLE EXPORT;

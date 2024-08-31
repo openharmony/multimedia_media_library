@@ -153,7 +153,7 @@ static void InsertDateAdded(const Metadata &metadata, ValuesBucket &outValues)
                     static_cast<long long>(dateAdded));
             }
         } else {
-            dateAdded = dateTaken * MSEC_TO_SEC;
+            dateAdded = dateTaken;
             MEDIA_WARN_LOG("Invalid dateAdded time, use dateTaken instead: %{public}lld",
                 static_cast<long long>(dateAdded));
         }
@@ -239,6 +239,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, metadata.GetDynamicRangeType());
         values.PutLong(PhotoColumn::PHOTO_COVER_POSITION, metadata.GetCoverPosition());
         values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, metadata.GetFrontCamera());
+        values.PutString(PhotoColumn::PHOTO_DETAIL_TIME, metadata.GetDetailTime());
 
         if (metadata.GetPhotoSubType() != 0) {
             values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());

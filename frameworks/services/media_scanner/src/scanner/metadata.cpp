@@ -55,7 +55,8 @@ Metadata::Metadata()
     recyclePath_(FILE_RECYCLE_PATH_DEFAULT),
     timePending_(FILE_TIME_PENDING_DEFAULT),
     isTemp_(FILE_IS_TEMP_DEFAULT),
-    frontcamera_(FILE_FRONT_CAMERA_DEFAULT)
+    frontcamera_(FILE_FRONT_CAMERA_DEFAULT),
+    detailTime_(FILE_DETAIL_TIME_DEFAULT)
 {
     Init();
 }
@@ -103,6 +104,8 @@ void Metadata::Init()
         &Metadata::SetFrontCamera);
     memberFuncMap_[PhotoColumn::MEDIA_FILE_PATH] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetMovingPhotoImagePath);
+    memberFuncMap_[PhotoColumn::PHOTO_DETAIL_TIME] = make_pair(ResultSetDataType::TYPE_STRING,
+        &Metadata::SetDetailTime);
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -543,6 +546,16 @@ void Metadata::SetFrontCamera(const VariantData &frontcamera)
 std::string Metadata::GetFrontCamera() const
 {
     return frontcamera_;
+}
+
+void Metadata::SetDetailTime(const VariantData &detailTime)
+{
+    detailTime_ = std::get<string>(detailTime);
+}
+
+std::string Metadata::GetDetailTime() const
+{
+    return detailTime_;
 }
 } // namespace Media
 } // namespace OHOS

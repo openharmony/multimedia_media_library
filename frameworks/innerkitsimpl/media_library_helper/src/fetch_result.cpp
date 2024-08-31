@@ -87,6 +87,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_BURST_COVER_LEVEL, TYPE_INT32 },
         { PhotoColumn::PHOTO_BURST_KEY, TYPE_STRING },
         { PhotoColumn::PHOTO_THUMBNAIL_READY, TYPE_INT64 },
+        { PhotoColumn::PHOTO_DETAIL_TIME, TYPE_STRING },
     };
     return RESULT_TYPE_MAP;
 }
