@@ -1021,7 +1021,7 @@ static void ConvertColumnsForPortrait(PhotoAlbumNapiAsyncContext *context)
         return;
     }
 
-    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    shared_ptr<PhotoAlbum> photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     if (photoAlbum == nullptr || (photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::PORTRAIT &&
         !IsFeaturedSinglePortraitAlbum(photoAlbum))) {
         return;
