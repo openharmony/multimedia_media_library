@@ -25,7 +25,7 @@
 using namespace std;
 
 namespace OHOS::Media {
-static string AppendUserId(const string& path, int32_t userId)
+string PhotoFileUtils::AppendUserId(const string& path, int32_t userId)
 {
     if (userId < 0 || !MediaFileUtils::StartsWith(path, ROOT_MEDIA_DIR)) {
         return path;

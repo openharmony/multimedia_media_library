@@ -27,6 +27,9 @@ public:
     EXPORT static std::string GetEditDataPath(const std::string &photoPath, int32_t userId = -1);
     EXPORT static std::string GetEditDataCameraPath(const std::string &photoPath, int32_t userId = -1);
     EXPORT static std::string GetEditDataSourcePath(const std::string &photoPath, int32_t userId = -1);
+
+protected:
+    EXPORT static std::string AppendUserId(const std::string &path, int32_t userId = -1);
 };
 } // namespace OHOS::Media
 
