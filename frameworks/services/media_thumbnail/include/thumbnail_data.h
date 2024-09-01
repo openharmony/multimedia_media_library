@@ -91,6 +91,7 @@ public:
     EXPORT std::vector<uint8_t> yearAstc;
     EXPORT std::vector<uint8_t> lcd;
     EXPORT std::string dateAdded;
+    EXPORT std::string dateTaken;
     EXPORT std::string displayName;
     EXPORT std::string fileUri;
     EXPORT std::string id;

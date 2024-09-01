@@ -400,7 +400,7 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
         return NativeRdb::E_DB_NOT_EXIST;
     }
     DataShare::DataSharePredicates predicates;
-    predicates.And()->OrderByDesc(MediaColumn::MEDIA_DATE_ADDED)
+    predicates.And()->OrderByDesc(MediaColumn::MEDIA_DATE_TAKEN)
                     ->Limit(count, start)
                     ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0")
                     ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0")
@@ -408,7 +408,7 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
                     ->EqualTo(PhotoColumn::PHOTO_IS_TEMP, "0")
                     ->EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
                         to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
-    std::vector<std::string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_DATE_ADDED};
+    std::vector<std::string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_DATE_TAKEN};
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     AddQueryFilter(rdbPredicates);
     auto resultSet = rdbStore_->Query(rdbPredicates, columns);
@@ -419,18 +419,18 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int columnIndex = 0;
-        int64_t dateAddedTime = 0;
+        int64_t dateTakenTime = 0;
         int fileId = 0;
 
-        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_ADDED, columnIndex) == NativeRdb::E_OK) {
-            resultSet->GetLong(columnIndex, dateAddedTime);
+        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_TAKEN, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetLong(columnIndex, dateTakenTime);
         }
         if (resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, columnIndex) == NativeRdb::E_OK) {
             resultSet->GetInt(columnIndex, fileId);
         }
 
-        std::string timeId = RBDSTORE_DATE_ADDED_TIME_TEMPLATE.substr(std::to_string(dateAddedTime).length()) +
-                             std::to_string(dateAddedTime) +
+        std::string timeId = RBDSTORE_DATE_ADDED_TIME_TEMPLATE.substr(std::to_string(dateTakenTime).length()) +
+                             std::to_string(dateTakenTime) +
                              RBDSTORE_FIELD_ID_TEMPLATE.substr(std::to_string(fileId).length()) +
                              std::to_string(fileId);
         batchKeys.emplace_back(std::move(timeId));
