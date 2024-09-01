@@ -166,6 +166,7 @@ const std::string ROOT_SANDBOX_DIR = "/storage/Share/";
 const std::string FS_TYPE_EPFS = "epfs";
 const std::string EPFS_MOUNT_POINT = "/storage/cloud/epfs";
 const std::string MEDIA_CACHE_DIR = ROOT_MEDIA_DIR + ".cache/";
+const std::string MEDIA_EDIT_DATA_DIR = ROOT_MEDIA_DIR + ".editData/";
 const char SLASH_CHAR = '/';
 const std::string SLASH_STR = "/";
 

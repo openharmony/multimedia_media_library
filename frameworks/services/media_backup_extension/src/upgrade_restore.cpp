@@ -774,10 +774,6 @@ std::string FindBurstKey(const FileInfo &fileInfo)
 
 int32_t FindDirty(const FileInfo &fileInfo)
 {
-    // prevent uploading moving photo
-    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
-        return -1;
-    }
     return static_cast<int32_t>(DirtyTypes::TYPE_NEW);
 }
 

@@ -55,6 +55,7 @@ const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
             MediaColumn::MEDIA_DATE_ADDED,
             MediaColumn::MEDIA_DATE_MODIFIED,
             PhotoColumn::PHOTO_ORIENTATION,
+            PhotoColumn::PHOTO_SUBTYPE,
         }},
     { PhotoAlbumColumns::TABLE,
         {
@@ -463,8 +464,17 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
         MEDIA_ERR_LOG("Move photo file failed");
         return E_FAIL;
     }
-
     BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
+
+    if (fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        string localVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(localPath);
+        if (MoveFile(MediaFileUtils::GetMovingPhotoVideoPath(fileInfo.filePath), localVideoPath) != E_OK) {
+            MEDIA_ERR_LOG("Move video of moving photo failed");
+            return E_FAIL;
+        }
+        BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified / MSEC_TO_SEC);
+    }
+
     string srcEditDataPath = backupRestoreDir_ +
         BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL_EDIT_DATA, fileInfo.relativePath);
     string dstEditDataPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD,
@@ -500,6 +510,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateAdded);
     values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, fileInfo.dateModified);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation); // photos need orientation
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileInfo.subtype);
 
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_,
         PhotoColumn::PHOTOS_TABLE);
@@ -1415,6 +1426,7 @@ void CloneRestore::SetSpecialAttributes(const string &tableName, const shared_pt
         return;
     }
     fileInfo.orientation = GetInt32Val(PhotoColumn::PHOTO_ORIENTATION, resultSet);
+    fileInfo.subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
 }
 
 bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInfo)

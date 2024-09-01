@@ -696,9 +696,6 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
-        if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-            assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo
-        }
         HandleIsTemp(cmd, assetInfo);
         HandleBurstPhoto(cmd, assetInfo);
     }
@@ -1453,7 +1450,7 @@ string MediaLibraryAssetOperations::GetEditDataDirPath(const string &path)
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
     }
-    return ROOT_MEDIA_DIR + ".editData/" + path.substr(ROOT_MEDIA_DIR.length());
+    return MEDIA_EDIT_DATA_DIR + path.substr(ROOT_MEDIA_DIR.length());
 }
 
 string MediaLibraryAssetOperations::GetEditDataSourcePath(const string &path)

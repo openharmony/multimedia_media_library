@@ -342,5 +342,90 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsLivePhoto_001, TestS
     EXPECT_EQ(WriteFileContent(livePhotoPath, FILE_TEST_LIVE_PHOTO, sizeof(FILE_TEST_LIVE_PHOTO)), true);
     EXPECT_EQ(MovingPhotoFileUtils::IsLivePhoto(livePhotoPath), true);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePhoto_001, TestSize.Level0)
+{
+    string movingPhotoImagepath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
+    string sourceLivePhotoPath;
+    EXPECT_LT(MovingPhotoFileUtils::ConvertToSourceLivePhoto(movingPhotoImagepath, sourceLivePhotoPath), E_OK);
+    EXPECT_EQ(sourceLivePhotoPath, "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePhoto_002, TestSize.Level0)
+{
+    string movingPhotoImagepath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
+    string sourceLivePhotoPath;
+    string result = "/storage/cloud/files/.cache/Photo/1/IMG_123435213_231.jpg/sourceLivePhoto.jpg";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/.cache/Photo/1/IMG_123435213_231.jpg"), true);
+    EXPECT_EQ(MediaFileUtils::CreateAsset(result), E_SUCCESS);
+    EXPECT_EQ(MovingPhotoFileUtils::ConvertToSourceLivePhoto(movingPhotoImagepath, sourceLivePhotoPath), E_OK);
+    EXPECT_EQ(sourceLivePhotoPath, result);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceMovingPhotoImagePath_001, TestSize.Level0)
+{
+    string movingPhotoImagepath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoImagePath(movingPhotoImagepath),
+        "/storage/cloud/files/.editData/Photo/1/IMG_123435213_231.jpg/source.jpg");
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoImagePath(movingPhotoImagepath, -1),
+        "/storage/cloud/files/.editData/Photo/1/IMG_123435213_231.jpg/source.jpg");
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoImagePath(movingPhotoImagepath, 100),
+        "/storage/cloud/100/files/.editData/Photo/1/IMG_123435213_231.jpg/source.jpg");
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoImagePath(movingPhotoImagepath, 102),
+        "/storage/cloud/102/files/.editData/Photo/1/IMG_123435213_231.jpg/source.jpg");
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoImagePath("/storage/cloud/data/invalid.jpg"), "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceMovingPhotoVideoPath_001, TestSize.Level0)
+{
+    string movingPhotoImagepath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(movingPhotoImagepath),
+        "/storage/cloud/files/.editData/Photo/1/IMG_123435213_231.jpg/source.mp4");
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(movingPhotoImagepath, -1),
+        "/storage/cloud/files/.editData/Photo/1/IMG_123435213_231.jpg/source.mp4");
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(movingPhotoImagepath, 100),
+        "/storage/cloud/100/files/.editData/Photo/1/IMG_123435213_231.jpg/source.mp4");
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(movingPhotoImagepath, 102),
+        "/storage/cloud/102/files/.editData/Photo/1/IMG_123435213_231.jpg/source.mp4");
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath("/storage/cloud/test/invalid.jpg"), "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceLivePhotoCachePath_001, TestSize.Level0)
+{
+    string movingPhotoImagepath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceLivePhotoCachePath(movingPhotoImagepath),
+        "/storage/cloud/files/.cache/Photo/1/IMG_123435213_231.jpg/sourceLivePhoto.jpg");
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceLivePhotoCachePath(movingPhotoImagepath, -1),
+        "/storage/cloud/files/.cache/Photo/1/IMG_123435213_231.jpg/sourceLivePhoto.jpg");
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceLivePhotoCachePath(movingPhotoImagepath, 100),
+        "/storage/cloud/100/files/.cache/Photo/1/IMG_123435213_231.jpg/sourceLivePhoto.jpg");
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceLivePhotoCachePath(movingPhotoImagepath, 102),
+        "/storage/cloud/102/files/.cache/Photo/1/IMG_123435213_231.jpg/sourceLivePhoto.jpg");
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceLivePhotoCachePath("/storage/cloud/data/invalid.jpg"), "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsMovingPhoto_001, TestSize.Level0)
+{
+    EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(0, 0, 0), false);
+    EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(0, 0, 4), false);
+    EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(0, 5, 1), false);
+    EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(1, 0, 0), false);
+    EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(2, 0, 0), false);
+    EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(4, 0, 0), false);
+    EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(3, 0, 0), true);
+    EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(0, 10, 0), true);
+    EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(0, 0, 3), true);
+    EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(0, 2, 3), true);
+    EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(3, 0, 3), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsGraffiti_001, TestSize.Level0)
+{
+    EXPECT_EQ(MovingPhotoFileUtils::IsGraffiti(0, 0), false);
+    EXPECT_EQ(MovingPhotoFileUtils::IsGraffiti(0, 1), false);
+    EXPECT_EQ(MovingPhotoFileUtils::IsGraffiti(0, 2), false);
+    EXPECT_EQ(MovingPhotoFileUtils::IsGraffiti(3, 3), false);
+    EXPECT_EQ(MovingPhotoFileUtils::IsGraffiti(0, 3), true);
+}
 } // namespace Media
 } // namespace OHOS
