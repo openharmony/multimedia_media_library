@@ -844,9 +844,9 @@ int32_t MediaLibraryDataCallBack::PrepareDir(RdbStore &store)
     };
 
     for (const auto& dirValuesBucket : dirValuesBuckets) {
-        if (InsertDirValues(dirValuesBucket, store) != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("PrepareDir failed");
-            return NativeRdb::E_ERROR;
+        int32_t insertResult = InsertDirValues(dirValuesBucket, store);
+        if (insertResult != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("insert failed, insertResult: %{public}d", insertResult);
         }
     }
     return NativeRdb::E_OK;
