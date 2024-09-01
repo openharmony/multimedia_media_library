@@ -38,7 +38,7 @@
 using namespace std;
 
 namespace OHOS::Media {
-const std::string MEDIA_EXTRA_DATA_DIR = "/storage/cloud/files/.editData/";
+const std::string MEDIA_EXTRA_DATA_DIR = MEDIA_EDIT_DATA_DIR;
 
 const std::string LIVE_PHOTO_CINEMAGRAPH_INFO = "CinemagraphInfo";
 const std::string LIVE_PHOTO_VIDEO_INFO_METADATA = "VideoInfoMetadata";
@@ -310,20 +310,21 @@ uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
 }
 
 int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagepath, int64_t coverPosition,
-    std::string &livePhotoPath)
+    std::string &livePhotoPath, int32_t userId)
 {
-    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(movingPhotoImagepath);
-    string cacheDir = GetLivePhotoCacheDir(movingPhotoImagepath);
-    string extraPath = GetMovingPhotoExtraDataPath(movingPhotoImagepath);
+    string imagePath = AppendUserId(movingPhotoImagepath, userId);
+    string videoPath = GetMovingPhotoVideoPath(movingPhotoImagepath, userId);
+    string cacheDir = GetLivePhotoCacheDir(movingPhotoImagepath, userId);
+    string extraPath = GetMovingPhotoExtraDataPath(movingPhotoImagepath, userId);
 
-    CHECK_AND_RETURN_RET_LOG(
-        MediaFileUtils::CreateDirectory(cacheDir), E_ERR, "Cannot create dir %{private}s", cacheDir.c_str());
-    string cachePath = GetLivePhotoCachePath(movingPhotoImagepath);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(cacheDir),
+        E_HAS_FS_ERROR, "Cannot create dir %{private}s, errno %{public}d", cacheDir.c_str(), errno);
+    string cachePath = GetLivePhotoCachePath(movingPhotoImagepath, userId);
     if (MediaFileUtils::IsFileExists(cachePath)) {
         livePhotoPath = cachePath;
         return E_OK;
     }
-    UniqueFd imageFd(open(movingPhotoImagepath.c_str(), O_RDONLY));
+    UniqueFd imageFd(open(imagePath.c_str(), O_RDONLY));
     if (imageFd.Get() == E_ERR) {
         MEDIA_ERR_LOG("failed to open image file");
         return E_ERR;
@@ -347,6 +348,46 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         return E_ERR;
     }
     livePhotoPath = cachePath;
+    return E_OK;
+}
+
+int32_t MovingPhotoFileUtils::ConvertToSourceLivePhoto(const string& movingPhotoImagePath,
+    string& sourceLivePhotoPath, int32_t userId)
+{
+    string sourceImagePath = GetSourceMovingPhotoImagePath(movingPhotoImagePath, userId);
+    string sourceVideoPath = GetSourceMovingPhotoVideoPath(movingPhotoImagePath, userId);
+    if (!MediaFileUtils::IsFileExists(sourceVideoPath)) {
+        sourceVideoPath = GetMovingPhotoVideoPath(movingPhotoImagePath, userId);
+    }
+    string extraDataPath = GetMovingPhotoExtraDataPath(movingPhotoImagePath, userId);
+
+    string cacheDir = GetLivePhotoCacheDir(movingPhotoImagePath, userId);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(cacheDir), E_HAS_FS_ERROR,
+        "Cannot create dir %{private}s, errno %{public}d", cacheDir.c_str(), errno);
+    string sourceCachePath = GetSourceLivePhotoCachePath(movingPhotoImagePath, userId);
+    if (MediaFileUtils::IsFileExists(sourceCachePath)) {
+        sourceLivePhotoPath = sourceCachePath;
+        MEDIA_INFO_LOG("source live photo exists: %{private}s", sourceCachePath.c_str());
+        return E_OK;
+    }
+
+    UniqueFd imageFd(open(sourceImagePath.c_str(), O_RDONLY));
+    CHECK_AND_RETURN_RET_LOG(imageFd.Get() >= 0, E_HAS_FS_ERROR,
+        "Failed to open source image:%{private}s, errno:%{public}d", sourceImagePath.c_str(), errno);
+    UniqueFd videoFd(open(sourceVideoPath.c_str(), O_RDONLY));
+    CHECK_AND_RETURN_RET_LOG(videoFd.Get() >= 0, E_HAS_FS_ERROR,
+        "Failed to open source video:%{private}s, errno:%{public}d", sourceVideoPath.c_str(), errno);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateAsset(sourceCachePath) == E_OK, E_HAS_FS_ERROR,
+        "Failed to create source live photo:%{private}s, errno:%{public}d", sourceCachePath.c_str(), errno);
+    UniqueFd livePhotoFd(open(sourceCachePath.c_str(), O_WRONLY | O_TRUNC));
+    CHECK_AND_RETURN_RET_LOG(livePhotoFd.Get() >= 0, E_HAS_FS_ERROR,
+        "Failed to open source live photo:%{private}s, errno:%{public}d", sourceCachePath.c_str(), errno);
+
+    if (MergeFile(imageFd, videoFd, livePhotoFd, extraDataPath, 0) != E_OK) {
+        MEDIA_ERR_LOG("Failed to merge file of sourve live photo");
+        return E_ERR;
+    }
+    sourceLivePhotoPath = sourceCachePath;
     return E_OK;
 }
 
@@ -497,11 +538,13 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
         "Failed to copy image of live photo");
     CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd, movingPhotoVideoPath, videoSize, offset)) == E_OK, err,
         "Failed to copy video of live photo");
-    CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd, extraDataPath, extraDataSize, offset)) == E_OK, err,
-        "Failed to copy extra data of live photo");
-    if (isSameImagePath && (err = rename(tempImagePath.c_str(), movingPhotoImagePath.c_str())) < 0) {
-        MEDIA_ERR_LOG("Failed to rename moving photo image, ret:%{public}d, errno:%{public}d", err, errno);
-        return err;
+    if (!extraDataPath.empty()) {
+        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd, extraDataPath, extraDataSize, offset)) == E_OK, err,
+            "Failed to copy extra data of live photo");
+    }
+    if (isSameImagePath) {
+        err = rename(tempImagePath.c_str(), movingPhotoImagePath.c_str());
+        CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to rename image:%{public}d, errno:%{public}d", err, errno);
     }
     return E_OK;
 }
@@ -611,42 +654,74 @@ int32_t MovingPhotoFileUtils::GetVersionAndFrameNum(int32_t fd,
     return MovingPhotoFileUtils::GetVersionAndFrameNum(versionTag, version, frameIndex, hasCinemagraphInfo);
 }
 
-string MovingPhotoFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
+string MovingPhotoFileUtils::GetMovingPhotoVideoPath(const string &imagePath, int32_t userId)
 {
-    return MediaFileUtils::GetMovingPhotoVideoPath(imagePath);
+    return MediaFileUtils::GetMovingPhotoVideoPath(AppendUserId(imagePath, userId));
 }
 
-string MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(const string &imageCloudPath)
+string MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(const string &imagePath, int32_t userId)
 {
-    if (imageCloudPath.length() < ROOT_MEDIA_DIR.length()) {
+    if (imagePath.length() < ROOT_MEDIA_DIR.length() || !MediaFileUtils::StartsWith(imagePath, ROOT_MEDIA_DIR)) {
         return "";
     }
-    return MEDIA_EXTRA_DATA_DIR + imageCloudPath.substr(ROOT_MEDIA_DIR.length());
+    return AppendUserId(MEDIA_EXTRA_DATA_DIR, userId) + imagePath.substr(ROOT_MEDIA_DIR.length());
 }
 
-string MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(const string &imageCloudPath)
+string MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(const string &imagePath, int32_t userId)
 {
-    string parentPath = GetMovingPhotoExtraDataDir(imageCloudPath);
+    string parentPath = GetMovingPhotoExtraDataDir(imagePath, userId);
     if (parentPath.empty()) {
         return "";
     }
     return parentPath + "/extraData";
 }
 
-string MovingPhotoFileUtils::GetLivePhotoCacheDir(const string &path)
+string MovingPhotoFileUtils::GetSourceMovingPhotoImagePath(const string& imagePath, int32_t userId)
 {
-    if (path.length() < ROOT_MEDIA_DIR.length()) {
-        return "";
-    }
-    return MEDIA_CACHE_DIR + path.substr(ROOT_MEDIA_DIR.length());
+    return GetEditDataSourcePath(imagePath, userId);
 }
 
-string MovingPhotoFileUtils::GetLivePhotoCachePath(const string &path)
+string MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(const string& imagePath, int32_t userId)
 {
-    string parentPath = GetLivePhotoCacheDir(path);
+    return GetMovingPhotoVideoPath(GetSourceMovingPhotoImagePath(imagePath, userId));
+}
+
+string MovingPhotoFileUtils::GetLivePhotoCacheDir(const string &imagePath, int32_t userId)
+{
+    if (imagePath.length() < ROOT_MEDIA_DIR.length() || !MediaFileUtils::StartsWith(imagePath, ROOT_MEDIA_DIR)) {
+        return "";
+    }
+    return AppendUserId(MEDIA_CACHE_DIR, userId) + imagePath.substr(ROOT_MEDIA_DIR.length());
+}
+
+string MovingPhotoFileUtils::GetLivePhotoCachePath(const string &imagePath, int32_t userId)
+{
+    string parentPath = GetLivePhotoCacheDir(imagePath, userId);
     if (parentPath.empty()) {
         return "";
     }
-    return parentPath + "/livePhoto." + MediaFileUtils::GetExtensionFromPath(path);
+    return parentPath + "/livePhoto." + MediaFileUtils::GetExtensionFromPath(imagePath);
+}
+
+string MovingPhotoFileUtils::GetSourceLivePhotoCachePath(const string& imagePath, int32_t userId)
+{
+    string parentPath = GetLivePhotoCacheDir(imagePath, userId);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/sourceLivePhoto." + MediaFileUtils::GetExtensionFromPath(imagePath);
+}
+
+bool MovingPhotoFileUtils::IsMovingPhoto(int32_t subtype, int32_t effectMode, int32_t originalSubtype)
+{
+    return subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+           effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY) ||
+           IsGraffiti(subtype, originalSubtype);
+}
+
+bool MovingPhotoFileUtils::IsGraffiti(int32_t subtype, int32_t originalSubtype)
+{
+    return subtype == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
+           originalSubtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
 }
 } // namespace OHOS::Media
