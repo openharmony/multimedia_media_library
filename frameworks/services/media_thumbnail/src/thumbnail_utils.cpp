@@ -607,7 +607,7 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &i
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_LCD_VISIT_TIME, "0");
-    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("QueryNoLcdInfos failed %{public}d", err);
@@ -660,7 +660,7 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
     }
 
     rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
-    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
 
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
@@ -696,6 +696,7 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_DATE_TAKEN,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, std::to_string(
@@ -703,7 +704,7 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
     if (!isWifiConnected) {
         rdbPredicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, "2");
     }
-    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -738,12 +739,13 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_NAME,
         MEDIA_DATA_DB_POSITION,
+        MEDIA_DATA_DB_DATE_TAKEN,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
     rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->
         EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
-    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
     rdbPredicates.Limit(ASTC_GENERATE_COUNT_AFTER_RESTORE);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
@@ -776,10 +778,10 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_NAME,
         MEDIA_DATA_DB_POSITION,
         MEDIA_DATA_DB_ORIENTATION,
+        MEDIA_DATA_DB_DATE_TAKEN,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.BeginWrap()
@@ -798,7 +800,7 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         ->EqualTo(PhotoColumn::PHOTO_POSITION, "2")->And()->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, "0")
         ->EndWrap()
         ->EndWrap();
-    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -830,10 +832,11 @@ bool ThumbnailUtils::QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore
     vector<string> column = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_DATE_TAKEN,
     };
     RdbPredicates rdbPredicates(table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "1");
-    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
     shared_ptr<ResultSet> resultSet = rdbStorePtr->QueryByStep(rdbPredicates, column);
     int err = 0;
     if (!CheckResultSetCount(resultSet, err)) {
@@ -876,7 +879,7 @@ bool ThumbnailUtils::QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &ti
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
 
-    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
 
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (resultSet == nullptr) {
@@ -1505,10 +1508,10 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
     }
     MEDIA_INFO_LOG("Start DeleteOriginImage, id: %{public}s, path: %{public}s",
         opts.row.c_str(), DfxUtils::GetSafePath(tmpData.path).c_str());
-    if (!opts.dateAdded.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC)) {
+    if (!opts.dateTaken.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC)) {
         isDelete = true;
     }
-    if (!opts.dateAdded.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::YEAR_ASTC)) {
+    if (!opts.dateTaken.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::YEAR_ASTC)) {
         isDelete = true;
     }
     if (DeleteThumbFile(tmpData, ThumbnailType::THUMB)) {
@@ -1530,14 +1533,20 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
 bool ThumbnailUtils::DoDeleteMonthAndYearAstc(ThumbRdbOpt &opts)
 {
     MEDIA_INFO_LOG("Start DoDeleteMonthAndYearAstc, id: %{public}s", opts.row.c_str());
-    return DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC) &&
-        DeleteAstcDataFromKvStore(opts, ThumbnailType::YEAR_ASTC);
+    bool isDeleteAstcSuccess = true;
+    if (!DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC)) {
+        isDeleteAstcSuccess = false;
+    }
+    if (!DeleteAstcDataFromKvStore(opts, ThumbnailType::YEAR_ASTC)) {
+        isDeleteAstcSuccess = false;
+    }
+    return isDeleteAstcSuccess;
 }
 
-bool ThumbnailUtils::DoUpdateAstcDateAdded(ThumbRdbOpt &opts, ThumbnailData &data)
+bool ThumbnailUtils::DoUpdateAstcDateTaken(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    MEDIA_INFO_LOG("Start DoUpdateAstcDateAdded, id: %{public}s", opts.row.c_str());
-    return UpdateAstcDateAddedFromKvStore(opts, data);
+    MEDIA_INFO_LOG("Start DoUpdateAstcDateTaken, id: %{public}s", opts.row.c_str());
+    return UpdateAstcDateTakenFromKvStore(opts, data);
 }
 
 #ifdef DISTRIBUTED
@@ -1674,6 +1683,11 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
     if (err == NativeRdb::E_OK) {
         err = resultSet->GetInt(index, data.photoWidth);
     }
+
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_TAKEN, index);
+    if (err == NativeRdb::E_OK) {
+        ParseStringResult(resultSet, index, data.dateTaken, err);
+    }
 }
 
 bool ThumbnailUtils::ResizeThumb(int &width, int &height)
@@ -1759,7 +1773,7 @@ bool ThumbnailUtils::IsSupportGenAstc()
 int ThumbnailUtils::SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type)
 {
     string key;
-    if (!GenerateKvStoreKey(data.id, data.dateAdded, key)) {
+    if (!GenerateKvStoreKey(data.id, data.dateTaken, key)) {
         MEDIA_ERR_LOG("GenerateKvStoreKey failed");
         return E_ERR;
     }
@@ -1781,39 +1795,44 @@ int ThumbnailUtils::SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailTy
     }
 
     int status = kvStore->Insert(key, type == ThumbnailType::MTH_ASTC ? data.monthAstc : data.yearAstc);
+    if (status != E_OK) {
+        MEDIA_ERR_LOG("Insert failed, type:%{public}d, field_id:%{public}s, status:%{public}d",
+            type, key.c_str(), status);
+        return E_ERR;
+    }
     MEDIA_INFO_LOG("type:%{public}d, field_id:%{public}s, status:%{public}d", type, key.c_str(), status);
     return status;
 }
 
-bool ThumbnailUtils::GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key)
+bool ThumbnailUtils::GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key)
 {
-    if (fieldId.empty()) {
-        MEDIA_ERR_LOG("fieldId is empty");
+    if (fileId.empty()) {
+        MEDIA_ERR_LOG("fileId is empty");
         return false;
     }
-    if (dateAdded.empty()) {
-        MEDIA_ERR_LOG("dateAdded is empty");
+    if (dateKey.empty()) {
+        MEDIA_ERR_LOG("dateKey is empty");
         return false;
     }
 
-    size_t length = fieldId.length();
+    size_t length = fileId.length();
     if (length >= MAX_FIELD_LENGTH) {
-        MEDIA_ERR_LOG("fieldId too long");
+        MEDIA_ERR_LOG("fileId too long");
         return false;
     }
-    std::string assembledFieldId = KVSTORE_FIELD_ID_TEMPLATE.substr(length) + fieldId;
+    std::string assembledFileId = KVSTORE_FIELD_ID_TEMPLATE.substr(length) + fileId;
 
-    length = dateAdded.length();
-    std::string assembledDateAdded;
+    length = dateKey.length();
+    std::string assembledDateKey;
     if (length > MAX_DATE_ADDED_LENGTH) {
-        MEDIA_ERR_LOG("dateAdded invalid, fieldId:%{public}s", fieldId.c_str());
+        MEDIA_ERR_LOG("dateKey invalid, id:%{public}s", fileId.c_str());
         return false;
     } else if (length == MAX_DATE_ADDED_LENGTH) {
-        assembledDateAdded = dateAdded;
+        assembledDateKey = dateKey;
     } else {
-        assembledDateAdded = KVSTORE_DATE_ADDED_TEMPLATE.substr(length) + dateAdded;
+        assembledDateKey = KVSTORE_DATE_ADDED_TEMPLATE.substr(length) + dateKey;
     }
-    key = assembledDateAdded + assembledFieldId;
+    key = assembledDateKey + assembledFileId;
     return true;
 }
 
@@ -1845,14 +1864,14 @@ bool ThumbnailUtils::GenerateOldKvStoreKey(const std::string &fieldId, const std
     return true;
 }
 
-bool ThumbnailUtils::CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data)
+bool ThumbnailUtils::CheckDateTaken(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (!data.dateAdded.empty()) {
+    if (!data.dateTaken.empty()) {
         return true;
     }
 
     vector<string> column = {
-        MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_DATE_TAKEN,
     };
     vector<string> selectionArgs;
     string strQueryCondition = MEDIA_DATA_DB_ID + " = " + data.id;
@@ -1873,9 +1892,9 @@ bool ThumbnailUtils::CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data)
     }
 
     int index;
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_ADDED, index);
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_TAKEN, index);
     if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.dateAdded, err);
+        ParseStringResult(resultSet, index, data.dateTaken, err);
     } else {
         MEDIA_ERR_LOG("GetColumnIndex failed, err: %{public}d", err);
         resultSet->Close();
@@ -1903,6 +1922,7 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_ORIENTATION,
         MEDIA_DATA_DB_POSITION,
+        MEDIA_DATA_DB_DATE_TAKEN,
     };
     auto resultSet = opts.store->QueryByStep(predicates, columns);
     if (resultSet == nullptr) {
@@ -1929,7 +1949,7 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
 bool ThumbnailUtils::DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type)
 {
     string key;
-    if (!GenerateKvStoreKey(opts.row, opts.dateAdded, key)) {
+    if (!GenerateKvStoreKey(opts.row, opts.dateTaken, key)) {
         MEDIA_ERR_LOG("GenerateKvStoreKey failed");
         return false;
     }
@@ -1954,13 +1974,13 @@ bool ThumbnailUtils::DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const Thumbnai
     return status == E_OK;
 }
 
-bool ThumbnailUtils::UpdateAstcDateAddedFromKvStore(ThumbRdbOpt &opts, const ThumbnailData &data)
+bool ThumbnailUtils::UpdateAstcDateTakenFromKvStore(ThumbRdbOpt &opts, const ThumbnailData &data)
 {
     std::string formerKey;
     std::string newKey;
-    if (!GenerateKvStoreKey(opts.row, opts.dateAdded, formerKey) ||
-        !GenerateKvStoreKey(opts.row, data.dateAdded, newKey)) {
-        MEDIA_ERR_LOG("UpdateAstcDateAddedFromKvStore GenerateKvStoreKey failed");
+    if (!GenerateKvStoreKey(opts.row, opts.dateTaken, formerKey) ||
+        !GenerateKvStoreKey(opts.row, data.dateTaken, newKey)) {
+        MEDIA_ERR_LOG("UpdateAstcDateTakenFromKvStore GenerateKvStoreKey failed");
         return false;
     }
 
@@ -2002,7 +2022,7 @@ void ThumbnailUtils::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData)
     if (!opts.path.empty()) {
         outData.path = opts.path;
         outData.id = opts.row;
-        outData.dateAdded = opts.dateAdded;
+        outData.dateTaken = opts.dateTaken;
         outData.fileUri = opts.fileUri;
         outData.stats.uri = outData.fileUri;
         return;
@@ -2116,6 +2136,7 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_NAME,
         MEDIA_DATA_DB_ORIENTATION,
+        MEDIA_DATA_DB_DATE_TAKEN,
     };
     rdbPredicate.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
     rdbPredicate.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
@@ -2191,6 +2212,40 @@ bool ThumbnailUtils::CheckCloudThumbnailDownloadFinish(const std::shared_ptr<Nat
     if (count > CLOUD_THUMBNAIL_DOWNLOAD_FINISH_NUMBER) {
         return false;
     }
+    return true;
+}
+
+bool ThumbnailUtils::QueryOldKeyAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
+    const std::string &table, std::vector<ThumbnailData> &infos)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_DATE_TAKEN,
+    };
+    RdbPredicates rdbPredicates(table);
+    rdbPredicates.GreaterThanOrEqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "3");
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
+    shared_ptr<ResultSet> resultSet = rdbStorePtr->QueryByStep(rdbPredicates, column);
+    int err = 0;
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        return false;
+    }
+
+    ThumbnailData data;
+    do {
+        ParseQueryResult(resultSet, data, err);
+        infos.push_back(data);
+    } while (resultSet->GoToNextRow() == E_OK);
     return true;
 }
 } // namespace Media
