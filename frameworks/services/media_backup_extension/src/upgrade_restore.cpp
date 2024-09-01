@@ -689,6 +689,9 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.width = GetInt64Val(GALLERY_WIDTH, resultSet);
     info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);
     info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
+    info.firstUpdateTime = GetInt64Val(GALLERY_FIRST_UPDATE_TIME, resultSet);
+    info.dateTaken = GetInt64Val(GALLERY_DATE_TAKEN, resultSet);
+    info.detailTime = GetStringVal(GALLERY_DETAIL_TIME, resultSet);
     return true;
 }
 
@@ -745,6 +748,7 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
         return isSuccess;
     }
     info.showDateToken = GetInt64Val(EXTERNAL_DATE_TAKEN, resultSet);
+    info.dateTaken = GetInt64Val(EXTERNAL_DATE_TAKEN, resultSet);
     return isSuccess;
 }
 
@@ -796,12 +800,15 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
     values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
-    if (fileInfo.showDateToken != 0) {
-        values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);
-        values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken / MILLISECONDS);
-    } else {
-        MEDIA_WARN_LOG("Get showDateToken = 0, path: %{private}s", fileInfo.filePath.c_str());
+    if (fileInfo.firstUpdateTime != 0) {
+        values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.firstUpdateTime);
+    } else if (fileInfo.dateTaken != 0) {
+        values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateTaken);
     }
+    if (fileInfo.dateTaken != 0) {
+        values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.dateTaken);
+    }
+    values.PutString(PhotoColumn::PHOTO_DETAIL_TIME, fileInfo.detailTime);
     values.PutLong(MediaColumn::MEDIA_DURATION, fileInfo.duration);
     values.PutInt(MediaColumn::MEDIA_IS_FAV, fileInfo.isFavorite);
     if (fileInfo.isFavorite != 0) {

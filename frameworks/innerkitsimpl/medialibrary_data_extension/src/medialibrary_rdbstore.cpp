@@ -218,6 +218,18 @@ static void UpdateReadyOnThumbnailUpgrade(RdbStore &store)
     MEDIA_INFO_LOG("finish update ready for thumbnail upgrade");
 }
 
+static void UpdateDateTakenToMillionSecond(RdbStore &store)
+{
+    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond start");
+    const vector<string> updateSql = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
+            MediaColumn::MEDIA_DATE_TAKEN + " = " + MediaColumn::MEDIA_DATE_TAKEN +  "*1000 WHERE " +
+            MediaColumn::MEDIA_DATE_TAKEN + " < 1e10",
+    };
+    ExecSqls(updateSql, store);
+    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond end");
+}
+
 static void UpgradeRdbStore(AsyncTaskData *data)
 {
     if (MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() == nullptr) {
@@ -240,6 +252,10 @@ static void UpgradeRdbStore(AsyncTaskData *data)
 
     if (g_oldVersion < VERSION_UPGRADE_THUMBNAIL) {
         UpdateReadyOnThumbnailUpgrade(*rdbStore);
+    }
+
+    if (g_oldVersion < VERSION_ADD_DETAIL_TIME) {
+        UpdateDateTakenToMillionSecond(*rdbStore);
     }
 }
 
@@ -3172,6 +3188,15 @@ static void UpdateSourceAlbumAndAlbumBundlenameTriggers(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddDetailTimeToPhotos(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_DETAIL_TIME + " TEXT"
+    };
+    MEDIA_INFO_LOG("Add detail_time column start");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_UPDATE_PHOTO_INDEX_FOR_ALBUM_COUNT_COVER) {
@@ -3204,6 +3229,10 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UDAPTE_DATA_UNIQUE) {
         UpdateDataUniqueIndex(store);
+    }
+    
+    if (oldVersion < VERSION_ADD_DETAIL_TIME) {
+        AddDetailTimeToPhotos(store);
     }
 }
 

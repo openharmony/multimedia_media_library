@@ -71,6 +71,7 @@ const int64_t FILE_LAST_VISIT_TIME_DEFAULT = 0;
 const int32_t FILE_DYNAMIC_RANGE_TYPE_DEFAULT = 0;
 const int32_t FILE_IS_TEMP_DEFAULT = 0;
 const std::string FILE_FRONT_CAMERA_DEFAULT = "";
+const std::string FILE_DETAIL_TIME_DEFAULT = "";
 
 const std::string DEFAULT_AUDIO_MIME_TYPE = "audio/*";
 const std::string DEFAULT_VIDEO_MIME_TYPE = "video/*";
