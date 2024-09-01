@@ -112,7 +112,7 @@ static void ParseFileUriTest(const uint8_t* data, size_t size)
     string outTableName;
     string uri = "file://media/Photo/2";
     Media::ThumbnailUriUtils::ParseFileUri(uri, outFileId, outNetworkId, outTableName);
-    Media::ThumbnailUriUtils::GetDateAddedFromUri(FuzzString(data, size));
+    Media::ThumbnailUriUtils::GetDateTakenFromUri(FuzzString(data, size));
     Media::ThumbnailUriUtils::GetFileUriFromUri(FuzzString(data, size));
 }
 } // namespace OHOS

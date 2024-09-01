@@ -107,6 +107,7 @@ const std::string PIC_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE;
 const std::string AUDIO_EXTENSION_VALUES = DIR_ALL_AUDIO_CONTAINER_TYPE;
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
+int32_t MediaLibraryRdbStore::oldVersion_ = -1;
 int32_t g_oldVersion = -1;
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
@@ -218,18 +219,6 @@ static void UpdateReadyOnThumbnailUpgrade(RdbStore &store)
     MEDIA_INFO_LOG("finish update ready for thumbnail upgrade");
 }
 
-static void UpdateDateTakenToMillionSecond(RdbStore &store)
-{
-    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond start");
-    const vector<string> updateSql = {
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
-            MediaColumn::MEDIA_DATE_TAKEN + " = " + MediaColumn::MEDIA_DATE_TAKEN +  "*1000 WHERE " +
-            MediaColumn::MEDIA_DATE_TAKEN + " < 1e10",
-    };
-    ExecSqls(updateSql, store);
-    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond end");
-}
-
 static void UpgradeRdbStore(AsyncTaskData *data)
 {
     if (MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() == nullptr) {
@@ -252,10 +241,6 @@ static void UpgradeRdbStore(AsyncTaskData *data)
 
     if (g_oldVersion < VERSION_UPGRADE_THUMBNAIL) {
         UpdateReadyOnThumbnailUpgrade(*rdbStore);
-    }
-
-    if (g_oldVersion < VERSION_ADD_DETAIL_TIME) {
-        UpdateDateTakenToMillionSecond(*rdbStore);
     }
 }
 
@@ -3400,6 +3385,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataCallBack::OnUpgrade");
     g_oldVersion = oldVersion;
+    MediaLibraryRdbStore::SetRdbOldVersion(oldVersion);
     MEDIA_INFO_LOG("OnUpgrade old:%{public}d, new:%{public}d", oldVersion, newVersion);
     g_upgradeErr = false;
     if (oldVersion < VERSION_ADD_CLOUD) {
@@ -3483,6 +3469,16 @@ void MediaLibraryRdbStore::AddColumnIfNotExists(
         string sql = "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnType;
         store.ExecuteSql(sql);
     }
+}
+
+void MediaLibraryRdbStore::SetRdbOldVersion(int32_t oldVersion)
+{
+    oldVersion_ = oldVersion;
+}
+
+int32_t MediaLibraryRdbStore::GetRdbOldVersion()
+{
+    return oldVersion_;
 }
 
 #ifdef DISTRIBUTED

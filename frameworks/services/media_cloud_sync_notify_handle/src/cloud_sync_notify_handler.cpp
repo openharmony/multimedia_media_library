@@ -62,23 +62,23 @@ void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
 {
     for (auto &uri : uris) {
         string uriString = uri.ToString();
-        auto dateAddedPos = uriString.rfind('/');
-        if (dateAddedPos == string::npos) {
+        auto dateTakenPos = uriString.rfind('/');
+        if (dateTakenPos == string::npos) {
             continue;
         }
-        auto fileIdPos = uriString.rfind('/', dateAddedPos - 1);
+        auto fileIdPos = uriString.rfind('/', dateTakenPos - 1);
         if (fileIdPos == string::npos) {
             continue;
         }
 
-        string dateAdded = uriString.substr(dateAddedPos + 1);
-        string fileId = uriString.substr(fileIdPos + 1, dateAddedPos - fileIdPos - 1);
-        if (!IsCloudNotifyInfoValid(dateAdded) || !IsCloudNotifyInfoValid(fileId)) {
+        string dateTaken = uriString.substr(dateTakenPos + 1);
+        string fileId = uriString.substr(fileIdPos + 1, dateTakenPos - fileIdPos - 1);
+        if (!IsCloudNotifyInfoValid(dateTaken) || !IsCloudNotifyInfoValid(fileId)) {
             MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
             continue;
         }
 
-        ThumbnailService::GetInstance()->DeleteAstcWithFileIdAndDateAdded(fileId, dateAdded);
+        ThumbnailService::GetInstance()->DeleteAstcWithFileIdAndDateTaken(fileId, dateTaken);
     }
 }
 
@@ -86,29 +86,29 @@ void CloudSyncNotifyHandler::HandleTimeUpdateEvent(const std::list<Uri> &uris)
 {
     for (auto &uri : uris) {
         string uriString = uri.ToString();
-        auto newDateAddedPos = uriString.rfind('/');
-        if (newDateAddedPos == string::npos) {
+        auto newDateTakenPos = uriString.rfind('/');
+        if (newDateTakenPos == string::npos) {
             continue;
         }
-        auto formerDateAddedPos = uriString.rfind('/', newDateAddedPos - 1);
-        if (formerDateAddedPos == string::npos) {
+        auto formerDateTakenPos = uriString.rfind('/', newDateTakenPos - 1);
+        if (formerDateTakenPos == string::npos) {
             continue;
         }
-        auto fileIdPos = uriString.rfind('/', formerDateAddedPos - 1);
+        auto fileIdPos = uriString.rfind('/', formerDateTakenPos - 1);
         if (fileIdPos == string::npos) {
             continue;
         }
 
-        string newDateAdded = uriString.substr(newDateAddedPos + 1);
-        string formerDateAdded = uriString.substr(formerDateAddedPos + 1, newDateAddedPos - formerDateAddedPos - 1);
-        string fileId = uriString.substr(fileIdPos + 1, formerDateAddedPos - fileIdPos - 1);
-        if (!IsCloudNotifyInfoValid(newDateAdded) || !IsCloudNotifyInfoValid(formerDateAdded) ||
+        string newDateTaken = uriString.substr(newDateTakenPos + 1);
+        string formerDateTaken = uriString.substr(formerDateTakenPos + 1, newDateTakenPos - formerDateTakenPos - 1);
+        string fileId = uriString.substr(fileIdPos + 1, formerDateTakenPos - fileIdPos - 1);
+        if (!IsCloudNotifyInfoValid(newDateTaken) || !IsCloudNotifyInfoValid(formerDateTaken) ||
             !IsCloudNotifyInfoValid(fileId)) {
             MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
             continue;
         }
 
-        ThumbnailService::GetInstance()->UpdateAstcWithNewDateAdded(fileId, newDateAdded, formerDateAdded);
+        ThumbnailService::GetInstance()->UpdateAstcWithNewDateTaken(fileId, newDateTaken, formerDateTaken);
     }
 }
 
