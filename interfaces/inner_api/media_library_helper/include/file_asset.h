@@ -196,6 +196,8 @@ public:
     EXPORT const std::string &GetBurstKey() const;
     EXPORT void SetBurstKey(const std::string &burstKey);
 
+    EXPORT const std::string &GetDetailTime() const;
+    EXPORT void SetDetailTime(const std::string &detailTime);
 private:
     const std::string &GetStrMember(const std::string &name) const;
     int32_t GetInt32Member(const std::string &name) const;

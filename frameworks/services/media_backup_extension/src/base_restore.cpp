@@ -305,7 +305,7 @@ static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::Valu
                 static_cast<long long>(dateAdded));
         }
     } else {
-        dateAdded = dateTaken * MSEC_TO_SEC;
+        dateAdded = dateTaken;
         MEDIA_WARN_LOG("Invalid dateAdded time, use dateTaken instead: %{public}lld",
             static_cast<long long>(dateAdded));
     }
