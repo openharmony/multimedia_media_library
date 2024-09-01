@@ -223,6 +223,70 @@ void MediaLibraryDataManager::HandleOtherInitOperations()
     UriSensitiveOperations::DeleteAllSensitiveAsync();
 }
 
+static int32_t ExecSqls(const vector<string> &sqls, shared_ptr<NativeRdb::RdbStore> &store)
+{
+    int32_t err = NativeRdb::E_OK;
+    for (const auto &sql : sqls) {
+        err = store->ExecuteSql(sql);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to exec: %{private}s", sql.c_str());
+            continue;
+        }
+    }
+    return NativeRdb::E_OK;
+}
+
+static void UpdateDateTakenToMillionSecond(shared_ptr<NativeRdb::RdbStore> &store)
+{
+    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond start");
+    const vector<string> updateSql = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
+            MediaColumn::MEDIA_DATE_TAKEN + " = " + MediaColumn::MEDIA_DATE_TAKEN +  "*1000 WHERE " +
+            MediaColumn::MEDIA_DATE_TAKEN + " < 1e10",
+    };
+    ExecSqls(updateSql, store);
+    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond end");
+}
+
+static void OnUpgradeRdbStore(AsyncTaskData* data)
+{
+    auto *taskData = static_cast<UpgradeRdbStoreAsyncTaskData *>(data);
+    auto rdbStore = taskData->rdbStore_;
+    int32_t oldVersion = taskData->oldVersion_;
+    MEDIA_INFO_LOG("Start MediaLibraryDataManager::UpgradeRdbStoreAsync, oldVersion:%{public}d", oldVersion);
+    if (oldVersion < VERSION_ADD_DETAIL_TIME) {
+        UpdateDateTakenToMillionSecond(rdbStore);
+        ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
+    }
+}
+
+void MediaLibraryDataManager::UpgradeRdbStoreAsync()
+{
+    int32_t oldVersion = MediaLibraryRdbStore::GetRdbOldVersion();
+    if (oldVersion == -1 || oldVersion >= MEDIA_RDB_VERSION) {
+        MEDIA_INFO_LOG("No need to upgrade rdb, oldVersion: %{public}d", oldVersion);
+        return;
+    }
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("RdbStore is null");
+        return;
+    }
+
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return;
+    }
+    auto *taskData = new (std::nothrow) UpgradeRdbStoreAsyncTaskData(rdbStore_, oldVersion);
+    shared_ptr<MediaLibraryAsyncTask> upgradeRdbTask =
+        make_shared<MediaLibraryAsyncTask>(OnUpgradeRdbStore, taskData);
+    if (upgradeRdbTask != nullptr) {
+        asyncWorker->AddTask(upgradeRdbTask, true);
+    } else {
+        MEDIA_WARN_LOG("Can not init update rdb task");
+    }
+}
+
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
     const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode)
@@ -282,6 +346,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_, true);
+    UpgradeRdbStoreAsync();
 
     refCnt_++;
     return E_OK;

@@ -81,11 +81,14 @@ public:
     static void AddColumnIfNotExists(
         RdbStore &store, const std::string &columnName, const std::string &columnType, const std::string &tableName);
     EXPORT static int32_t QueryPragma(const std::string &key, int64_t &value);
+    EXPORT static void SetRdbOldVersion(int32_t oldVersion);
+    EXPORT static int32_t GetRdbOldVersion();
 
 private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    static int32_t oldVersion_;
 #ifdef DISTRIBUTED
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
 #endif
@@ -122,16 +125,16 @@ private:
 class DeleteFilesTask : public AsyncTaskData {
 public:
     DeleteFilesTask(const std::vector<std::string> &ids, const std::vector<std::string> &paths,
-        const std::vector<std::string> &notifyUris, const std::vector<std::string> &dateAddeds,
+        const std::vector<std::string> &notifyUris, const std::vector<std::string> &dateTakens,
         const std::vector<int32_t> &subTypes, const std::string &table, int32_t deleteRows, std::string bundleName)
-        : ids_(ids), paths_(paths), notifyUris_(notifyUris), dateAddeds_(dateAddeds), subTypes_(subTypes),
+        : ids_(ids), paths_(paths), notifyUris_(notifyUris), dateTakens_(dateTakens), subTypes_(subTypes),
         table_(table), deleteRows_(deleteRows), bundleName_(bundleName) {}
     virtual ~DeleteFilesTask() override = default;
 
     std::vector<std::string> ids_;
     std::vector<std::string> paths_;
     std::vector<std::string> notifyUris_;
-    std::vector<std::string> dateAddeds_;
+    std::vector<std::string> dateTakens_;
     std::vector<int32_t> subTypes_;
     std::string table_;
     int32_t deleteRows_;

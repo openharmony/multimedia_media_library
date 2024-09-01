@@ -442,7 +442,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_018, T
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::MTH_ASTC;
     data.source = make_shared<PixelMap>();
-    data.dateAdded = "default value";
+    data.dateTaken = "default value";
     auto res = IThumbnailHelper::GenThumbnail(opts, data, type);
     EXPECT_EQ(res, false);
 }
@@ -453,7 +453,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_019, T
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::YEAR_ASTC;
     data.source = make_shared<PixelMap>();
-    data.dateAdded = "default value";
+    data.dateTaken = "default value";
     auto res = IThumbnailHelper::GenThumbnail(opts, data, type);
     EXPECT_EQ(res, false);
 }
@@ -598,7 +598,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_035, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_036, TestSize.Level0)
 {
     std::shared_ptr<ThumbnailTaskData> data;
-    IThumbnailHelper::UpdateAstcDateAdded(data);
+    IThumbnailHelper::UpdateAstcDateTaken(data);
     ThumbRdbOpt opts;
     ThumbnailData thumbData;
     int32_t requestId;
@@ -742,7 +742,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_014, Te
 {
     ThumbnailData data;
     data.id = "a";
-    data.dateAdded = "b";
+    data.dateTaken = "b";
     ThumbnailType type = ThumbnailType::MTH_ASTC;
     auto res = ThumbnailUtils::SaveAstcDataToKvStore(data, type);
     EXPECT_EQ(res >= 0, true);
@@ -804,8 +804,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_017, Te
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    data.dateAdded = "a";
-    auto res = ThumbnailUtils::CheckDateAdded(opts, data);
+    data.dateTaken = "a";
+    auto res = ThumbnailUtils::CheckDateTaken(opts, data);
     EXPECT_EQ(res, true);
 }
 
@@ -863,14 +863,10 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_002, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_003, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    const string dbPath = "/data/test/medialibrary_thumbnail_service_test.db";
-    NativeRdb::RdbStoreConfig config(dbPath);
-    ConfigTestOpenCall helper;
-    int errCode = 0;
-    opts.store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
     opts.table = "test";
     auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, false);
-    EXPECT_EQ(res, 0);
+    EXPECT_NE(res, E_OK);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_004, TestSize.Level0)

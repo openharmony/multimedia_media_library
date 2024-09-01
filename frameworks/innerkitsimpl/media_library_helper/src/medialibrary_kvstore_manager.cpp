@@ -84,16 +84,7 @@ void MediaLibraryKvStoreManager::CloseAllKvStore()
         return;
     }
 
-    std::set<KvStoreValueType> valueTypes;
-    kvStoreMap_.Iterate([&valueTypes](KvStoreValueType valueType, KvStoreSharedPtr &ptr) {
-        if (ptr != nullptr && ptr->Close()) {
-            valueTypes.insert(valueType);
-        }
-    });
-    for (auto type : valueTypes) {
-        kvStoreMap_.Erase(type);
-    }
-    valueTypes.clear();
+    kvStoreMap_.Clear();
 }
 
 bool MediaLibraryKvStoreManager::CloseKvStore(const KvStoreValueType &valueType)

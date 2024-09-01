@@ -2137,7 +2137,7 @@ static void DeleteFiles(AsyncTaskData *data)
     }
     for (size_t i = 0; i < taskData->ids_.size(); i++) {
         ThumbnailService::GetInstance()->InvalidateThumbnail(
-            taskData->ids_[i], taskData->table_, taskData->paths_[i], taskData->dateAddeds_[i]);
+            taskData->ids_[i], taskData->table_, taskData->paths_[i], taskData->dateTakens_[i]);
     }
     if (taskData->table_ == PhotoColumn::PHOTOS_TABLE) {
         for (const auto &path : taskData->paths_) {
@@ -2147,12 +2147,12 @@ static void DeleteFiles(AsyncTaskData *data)
 }
 
 int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
-    vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateAddeds, vector<int32_t> &outSubTypes)
+    vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateTakens, vector<int32_t> &outSubTypes)
 {
     vector<string> columns = {
         MediaColumn::MEDIA_ID,
         MediaColumn::MEDIA_FILE_PATH,
-        MediaColumn::MEDIA_DATE_ADDED,
+        MediaColumn::MEDIA_DATE_TAKEN,
         PhotoColumn::PHOTO_SUBTYPE
     };
     auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
@@ -2164,7 +2164,7 @@ int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
             to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))));
         outPaths.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet,
             TYPE_STRING)));
-        outDateAddeds.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_ADDED, resultSet,
+        outDateTakens.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_TAKEN, resultSet,
             TYPE_STRING)));
         outSubTypes.push_back(
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE, resultSet, TYPE_INT32)));
@@ -2207,10 +2207,10 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     }
     vector<string> ids;
     vector<string> paths;
-    vector<string> dateAddeds;
+    vector<string> dateTakens;
     vector<int32_t> subTypes;
     int32_t deletedRows = 0;
-    GetIdsAndPaths(predicates, ids, paths, dateAddeds, subTypes);
+    GetIdsAndPaths(predicates, ids, paths, dateTakens, subTypes);
     if (ids.empty()) {
         MEDIA_ERR_LOG("Failed to delete files in db, ids size: 0");
         return deletedRows;
@@ -2235,7 +2235,7 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
 
     const vector<string> &notifyUris = isAging ? agingNotifyUris : whereArgs;
     string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-    auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateAddeds, subTypes,
+    auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateTakens, subTypes,
         predicates.GetTableName(), deletedRows, bundleName);
     if (taskData == nullptr) {
         MEDIA_ERR_LOG("Failed to alloc async data for Delete From Disk!");

@@ -53,7 +53,7 @@ public:
     EXPORT int32_t CreateThumbnailFileScaned(const std::string &uri, const std::string &path,
         bool isSync = false);
     void InvalidateThumbnail(const std::string &id, const std::string &tableName,
-        const std::string &path = "", const std::string &dateAdded = "");
+        const std::string &path = "", const std::string &dateTaken = "");
     EXPORT void Init(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
 #ifdef DISTRIBUTED
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
@@ -61,13 +61,14 @@ public:
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
     int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
-    void DeleteAstcWithFileIdAndDateAdded(const std::string &fileId, const std::string &dateAdded);
+    void DeleteAstcWithFileIdAndDateTaken(const std::string &fileId, const std::string &dateTaken);
     int32_t CreateAstcCloudDownload(const std::string &id);
     EXPORT int32_t CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
     EXPORT void CancelAstcBatchTask(int32_t requestId);
-    void UpdateAstcWithNewDateAdded(const std::string &fileId, const std::string &newDateAdded,
-        const std::string &formerDateAdded);
+    void UpdateAstcWithNewDateTaken(const std::string &fileId, const std::string &newDateTaken,
+        const std::string &formerDateTaken);
     EXPORT int32_t CheckCloudThumbnailDownloadFinish();
+    EXPORT void AstcChangeKeyFromDateAddedToDateTaken();
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();

@@ -143,6 +143,7 @@ private:
     int32_t SolveInsertCmdSub(MediaLibraryCommand &cmd);
     void HandleOtherInitOperations();
     void InitRefreshAlbum();
+    void UpgradeRdbStoreAsync();
     int32_t ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
         const NativeRdb::ValuesBucket &value, const DataShare::DataSharePredicates &predicates);
     std::shared_mutex mgrSharedMutex_;
@@ -167,6 +168,16 @@ public:
     ScanFileCallback() = default;
     ~ScanFileCallback() = default;
     int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
+};
+
+class UpgradeRdbStoreAsyncTaskData : public AsyncTaskData {
+public:
+    UpgradeRdbStoreAsyncTaskData(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        int32_t oldVersion) : rdbStore_(rdbStore), oldVersion_(oldVersion) {};
+    virtual ~UpgradeRdbStoreAsyncTaskData() override = default;
+
+    std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    int32_t oldVersion_;
 };
 } // namespace Media
 } // namespace OHOS

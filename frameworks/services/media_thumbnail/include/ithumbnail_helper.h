@@ -108,7 +108,7 @@ public:
     EXPORT static bool DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType);
     EXPORT static bool IsPureCloudImage(ThumbRdbOpt &opts);
     EXPORT static void DeleteMonthAndYearAstc(std::shared_ptr<ThumbnailTaskData> &data);
-    EXPORT static void UpdateAstcDateAdded(std::shared_ptr<ThumbnailTaskData> &data);
+    EXPORT static void UpdateAstcDateTaken(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static bool UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess);
 private:
     EXPORT static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
