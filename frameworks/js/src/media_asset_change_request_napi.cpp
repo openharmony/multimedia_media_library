@@ -881,6 +881,7 @@ static napi_value ParseArgsDeleteAssets(
         CHECK_COND(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos, JS_E_URI);
     }
 
+    NAPI_INFO_LOG("DeleteAssetsExecute size:%{public}zu", uris.size());
     context->predicates.In(PhotoColumn::MEDIA_ID, uris);
     context->valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
     context->uris.assign(uris.begin(), uris.end());
