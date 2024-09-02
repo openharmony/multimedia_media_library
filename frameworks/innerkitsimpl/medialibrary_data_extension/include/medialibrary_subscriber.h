@@ -79,7 +79,6 @@ private:
     void DoThumbnailOperation();
     bool IsDelayTaskTimeOut();
     void EndBackgroundOperationThread();
-    void DoBurstFromGallery();
 };
 }  // namespace Media
 }  // namespace OHOS
