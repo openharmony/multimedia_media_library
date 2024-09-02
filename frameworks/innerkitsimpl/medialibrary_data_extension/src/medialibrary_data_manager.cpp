@@ -1230,9 +1230,9 @@ static int32_t UpdateBurstFav(shared_ptr<NativeRdb::RdbStore> rdbStore)
         MediaColumn::MEDIA_IS_FAV + " != p1." + MediaColumn::MEDIA_IS_FAV + ")";
     
     int32_t ret = rdbStore->ExecuteSql(updateSql);
-    if (ret != E_SUCCESS) {
-        MEDIA_ERR_LOG("failed to UpdateBurstPhotoByCovers.");
-        return E_FAIL;
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore->ExecuteSql failed , ret = %{public}d", ret);
+        return E_HAS_DB_ERROR;
     }
     return ret;
 }
