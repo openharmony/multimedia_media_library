@@ -1560,7 +1560,7 @@ void CloneRestore::InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAl
         MEDIA_ERR_LOG("Failed to insert album");
     }
 
-    migratePortraitAlbumNumber_ += albumRowNum;
+    migratePortraitAlbumNumber_ += static_cast<uint64_t>(albumRowNum);
     return ;
 }
 
