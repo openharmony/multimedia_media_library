@@ -128,7 +128,6 @@ void CleanVisionData()
     MediaLibraryDataManager::GetInstance()->Delete(geoKnowledgeCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(videoFaceCmd, predicates);
 }
-}
 
 void ClearAnalysisAlbum()
 {
