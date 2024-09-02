@@ -1193,7 +1193,6 @@ static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::RdbSto
             updateSql = generateMemberUpdateSql(title, mapAlbum);
         }
 
-        MEDIA_INFO_LOG("isCover: %{public}s, updateSql: %{public}s", to_string(isCover).c_str(), updateSql.c_str());
         ret = rdbStore->ExecuteSql(updateSql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("rdbStore->ExecuteSql failed, ret = %{public}d", ret);
@@ -1220,6 +1219,24 @@ static shared_ptr<NativeRdb::ResultSet> QueryBurst(shared_ptr<NativeRdb::RdbStor
     return resultSet;
 }
 
+static int32_t UpdateBurstFav(shared_ptr<NativeRdb::RdbStore> rdbStore)
+{
+    string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " AS p1 SET " + MediaColumn::MEDIA_IS_FAV +
+        " = (SELECT p2." + MediaColumn::MEDIA_IS_FAV + " FROM " + PhotoColumn::PHOTOS_TABLE + " AS p2 WHERE p2." +
+        PhotoColumn::PHOTO_BURST_KEY + " = p1." + PhotoColumn::PHOTO_BURST_KEY + " AND p2." +
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 ORDER BY " + MediaColumn::MEDIA_DATE_MODIFIED +
+        " DESC LIMIT 1) WHERE EXISTS(SELECT 1 FROM " + PhotoColumn::PHOTOS_TABLE + " AS p2 WHERE p2." +
+        PhotoColumn::PHOTO_BURST_KEY + " = p1." + PhotoColumn::PHOTO_BURST_KEY + " AND p2." +
+        MediaColumn::MEDIA_IS_FAV + " != p1." + MediaColumn::MEDIA_IS_FAV + ")";
+    
+    int32_t ret = rdbStore->ExecuteSql(updateSql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore->ExecuteSql failed , ret = %{public}d", ret);
+        return E_HAS_DB_ERROR;
+    }
+    return ret;
+}
+
 int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
 {
     MEDIA_INFO_LOG("Begin UpdateBurstFromGallery");
@@ -1241,7 +1258,6 @@ int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
     // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx_COVER, 'x' represents a number
     string globCoverStr = globMemberStr + "_COVER";
     
-    MEDIA_INFO_LOG("Begin UpdateBurstPhotoByCovers");
     auto resultSet = QueryBurst(rdbStore_, globCoverStr);
     int32_t ret = UpdateBurstPhoto(true, rdbStore_, resultSet);
     if (ret != E_SUCCESS) {
@@ -1249,11 +1265,16 @@ int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
         return E_FAIL;
     }
 
-    MEDIA_INFO_LOG("Begin UpdateBurstPhotoByMembers");
     resultSet = QueryBurst(rdbStore_, globMemberStr);
     ret = UpdateBurstPhoto(false, rdbStore_, resultSet);
     if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("failed to UpdateBurstPhotoByMembers.");
+        return E_FAIL;
+    }
+
+    ret = UpdateBurstFav(rdbStore_);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("failed to UpdateBurstFav.");
         return E_FAIL;
     }
     return ret;
