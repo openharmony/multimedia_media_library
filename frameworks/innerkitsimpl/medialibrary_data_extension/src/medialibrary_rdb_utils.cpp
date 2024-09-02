@@ -328,7 +328,7 @@ static inline int32_t GetAlbumSubType(const shared_ptr<ResultSet> &resultSet)
     return GetIntValFromColumn(resultSet, PhotoAlbumColumns::ALBUM_SUBTYPE);
 }
 
-static inline int32_t GetIsCoverSatisfied(const shared_ptr<ResultSet> &resultSet)
+static inline uint8_t GetIsCoverSatisfied(const shared_ptr<ResultSet> &resultSet)
 {
     return GetIntValFromColumn(resultSet, IS_COVER_SATISFIED);
 }
@@ -430,7 +430,7 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const shared_pt
 }
 
 static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
-    ValuesBucket &values, int newCount, int coverSatisfied)
+    ValuesBucket &values, int newCount, uint8_t coverSatisfied)
 {
     string newCover;
     if (newCount != 0) {
@@ -441,7 +441,7 @@ static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const s
     int32_t ret = E_SUCCESS;
     if (oldCover != newCover) {
         ret = E_NEED_UPDATE_ALBUM_COVER_URI;
-        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING) | coverSatisfied);
+        values.PutInt(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING) | coverSatisfied);
         values.PutString(targetColumn, newCover);
         MEDIA_DEBUG_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s", targetColumn.c_str(),
             oldCover.c_str(), newCover.c_str());
@@ -978,17 +978,17 @@ static bool IsCoverValid(const shared_ptr<NativeRdb::RdbStore> &rdbStore, const 
 }
 
 static inline void SetCoverSatisfied(const string &fileId, const vector<string> &fileIds, ValuesBucket &values,
-    int coverSatisfied)
+    uint8_t coverSatisfied)
 {
     if (find(fileIds.begin(), fileIds.end(), fileId) != fileIds.end()) {
-        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING) | coverSatisfied);
+        values.PutInt(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING) | coverSatisfied);
     }
 }
 
 static inline bool ShouldUpdatePortraitAlbumCover(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const string &albumId, const string &fileId, const int32_t isCoverSatisfied)
+    const string &albumId, const string &fileId, const uint8_t isCoverSatisfied)
 {
-    return isCoverSatisfied == static_cast<int32_t>(CoverSatisfiedType::NO_SETTING) ||
+    return isCoverSatisfied == static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING) ||
         !IsCoverValid(rdbStore, albumId, fileId);
 }
 
@@ -1008,7 +1008,7 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
 
     string coverUri = GetAlbumCover(albumResult, PhotoAlbumColumns::ALBUM_COVER_URI);
     string coverId = GetPhotoId(coverUri);
-    int isCoverSatisfied = GetIsCoverSatisfied(albumResult);
+    uint8_t isCoverSatisfied = GetIsCoverSatisfied(albumResult);
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     string albumId = to_string(GetAlbumId(albumResult));
