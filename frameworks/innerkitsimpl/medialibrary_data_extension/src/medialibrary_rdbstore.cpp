@@ -181,14 +181,14 @@ static void CreateBurstIndex(RdbStore &store)
 {
     const vector<string> sqls = {
         PhotoColumn::DROP_SCHPT_DAY_INDEX,
-        PhotoColumn::DROP_SCHPT_HIDDEN_TIME_INDEX,
-        PhotoColumn::DROP_PHOTO_FAVORITE_INDEX,
-        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
-        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
         PhotoColumn::CREATE_SCHPT_DAY_INDEX,
+        PhotoColumn::DROP_SCHPT_HIDDEN_TIME_INDEX,
         PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoColumn::DROP_PHOTO_FAVORITE_INDEX,
         PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
         PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
         PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
         PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX
     };
