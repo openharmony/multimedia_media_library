@@ -201,7 +201,7 @@ void InsertPortraitsToAlbum(const vector<PortraitData> &portraitData,
         MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::UPDATE);
         ValuesBucket updateValues;
         updateValues.PutString(COVER_URI, coverUri);
-        updateValues.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::NO_SETTING));
+        updateValues.PutInt(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING));
         cmd.SetValueBucket(updateValues);
         cmd.GetAbsRdbPredicates()->EqualTo(ALBUM_ID, to_string(albumData.albumId));
         int32_t ret = g_rdbStore->Update(cmd, changedRows);
@@ -665,7 +665,7 @@ void InsertPortraitAlbumCoverSatisfiedTestData(int fileId, CoverSatisfiedType co
     valuesBucket.Put(TAG_ID, tagId);
     valuesBucket.Put(GROUP_TAG, tagId);
     valuesBucket.Put(USER_DISPLAY_LEVEL, 1);
-    valuesBucket.Put(IS_COVER_SATISFIED, static_cast<int32_t>(coverSatisfiedType));
+    valuesBucket.Put(IS_COVER_SATISFIED, static_cast<uint8_t>(coverSatisfiedType));
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 }
 
