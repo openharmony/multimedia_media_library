@@ -1592,10 +1592,12 @@ void ResetOcrInfo(const int32_t &fileId)
     auto mediaLibraryRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (mediaLibraryRdbStore == nullptr) {
         MEDIA_ERR_LOG("MediaLibrary rdbStore is nullptr!");
+        return;
     }
     auto rdbStore = mediaLibraryRdbStore->GetRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr!");
+        return;
     }
     string sqlDeleteOcr = "DELETE FROM " + VISION_OCR_TABLE + " WHERE file_id = " + to_string(fileId) + ";" +
         " UPDATE " + VISION_TOTAL_TABLE + " SET ocr = 0 WHERE file_id = " + to_string(fileId) + ";";
