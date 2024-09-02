@@ -751,10 +751,6 @@ std::string FindBurstKey(const FileInfo &fileInfo)
 
 int32_t FindDirty(const FileInfo &fileInfo)
 {
-    // prevent uploading burst photo
-    if (fileInfo.burstKey.size() > 0) {
-        return -1;
-    }
     return static_cast<int32_t>(DirtyTypes::TYPE_NEW);
 }
 

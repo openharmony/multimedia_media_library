@@ -1679,6 +1679,10 @@ static napi_value ParseArgsGetBurstAssets(napi_env env, napi_callback_info info,
     std::string burstKey;
     CHECK_ARGS(env, SendableMediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[PARAM0], burstKey),
         OHOS_INVALID_PARAM_CODE);
+    if (burstKey.empty()) {
+        NAPI_ERR_LOG("The input burstkey cannot be empty");
+        return nullptr;
+    }
     /* Parse the second argument */
     CHECK_ARGS(env, SendableMediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM1], ASSET_FETCH_OPT,
         context), JS_INNER_FAIL);
@@ -1691,6 +1695,7 @@ static napi_value ParseArgsGetBurstAssets(napi_env env, napi_callback_info info,
         PhotoColumn::IsPhotoColumn, TYPE_PHOTO));
     predicates.And()->EqualTo(PhotoColumn::PHOTO_BURST_KEY, burstKey);
     predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
     predicates.OrderByAsc(MediaColumn::MEDIA_NAME);
 
     napi_value result = nullptr;
