@@ -364,7 +364,8 @@ bool MediaLibraryAppUriPermissionOperations::IsPhotosAllExist(
     }
     int32_t photoNumRows = 0;
     photoRestultSet->GetRowCount(photoNumRows);
-    if (photoNumRows != fileIds.size()) {
+    size_t photoNum = static_cast<size_t>(photoNumRows);
+    if (photoNum != fileIds.size()) {
         MEDIA_ERR_LOG("some photo not exist");
         return false;
     }
