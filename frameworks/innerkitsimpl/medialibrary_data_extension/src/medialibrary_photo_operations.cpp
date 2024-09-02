@@ -1436,7 +1436,6 @@ void ResetOcrInfo(const int32_t &fileId)
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Update ocr info failed, ret = %{public}d, file id is %{public}d", ret, fileId);
     }
-    return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset)
