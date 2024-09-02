@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "BackupTest"
+
 #include "medialibrary_backup_test.h"
 
 #include <sys/stat.h>
@@ -30,6 +32,10 @@
 #include "upgrade_restore.h"
 #include "media_file_utils.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_rdb_utils.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
+#include "vision_db_sqls.h"
 #undef private
 #undef protected
 
@@ -47,11 +53,25 @@ const std::string MEDIA_APP_NAME = "external";
 const std::string MEDIA_LIBRARY_APP_NAME = "medialibrary";
 const std::string TEST_PATH_PREFIX = "/TestPrefix";
 const std::string TEST_RELATIVE_PATH = "/Pictures/Test/test.jpg";
+const std::string TEST_CLOUD_PATH_PREFIX = "/storage/cloud/files/Photo/1/";
 
-const int EXPECTED_NUM = 30;
+const int EXPECTED_NUM = 34;
 const int EXPECTED_OREINTATION = 270;
 const int TEST_LOCAL_MEDIA_ID = 12345;
 const int TEST_PREFIX_LEVEL = 4;
+const int TEST_SIZE_MIN = 1080;
+const int TEST_SIZE_MAX = 2560;
+const int TEST_SIZE_INCR_UNIT = 100;
+const int TEST_SIZE_MULT_UNIT = 2;
+const int TEST_PORTRAIT_ALBUM_COUNT = 2;
+const int TEST_PORTRAIT_TAG_COUNT = 3;
+const int TEST_PORTRAIT_PHOTO_COUNT = 3;
+const int TEST_PORTRAIT_FACE_COUNT = 4;
+const float TEST_SCALE_MIN = 0.2;
+const float TEST_SCALE_MAX = 0.8;
+const float TEST_LANDMARK_BELOW = 0.1;
+const float TEST_LANDMARK_BETWEEN = 0.5;
+const float TEST_LANDMARK_ABOVE = 0.9;
 const std::string EXPECTED_PACKAGE_NAME = "wechat";
 const std::string EXPECTED_USER_COMMENT = "user_comment";
 const int64_t EXPECTED_DATE_ADDED = 1432973383179;
@@ -61,6 +81,20 @@ const int64_t TEST_FALSE_MEDIAID = -1;
 const int64_t TEST_SIZE_2MB = 2 * 1024 * 1024;
 const int64_t TEST_SIZE_2MB_BELOW = TEST_SIZE_2MB - 1;
 const int64_t TEST_SIZE_2MB_ABOVE = TEST_SIZE_2MB + 1;
+const vector<string> CLEAR_SQLS = {
+    "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
+    "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " != " +
+        to_string(PhotoAlbumType::SYSTEM),
+    "DELETE FROM " + PhotoMap::TABLE,
+    "DELETE FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_SUBTYPE + " != " +
+        to_string(PhotoAlbumSubType::SHOOTING_MODE),
+    "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE,
+    "DELETE FROM " + AudioColumn::AUDIOS_TABLE,
+    "DELETE FROM tab_analysis_image_face",
+    "DELETE FROM tab_analysis_face_tag",
+    "DELETE FROM tab_analysis_total",
+    CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
+};
 
 const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS Photos ") +
     " (file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, title TEXT, display_name TEXT, size BIGINT," +
@@ -2047,6 +2081,230 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_sd_where_clause, Te
     BackupDatabaseUtils::UpdateSdWhereClause(whereClause, false);
     EXPECT_EQ(whereClause.empty(), false);
     GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_001 start";
+    int length = TEST_SIZE_MIN; // (0, 2 * min), no need to scale
+    float scale = BackupDatabaseUtils::GetLandmarksScale(length, length);
+    EXPECT_EQ(scale, 1);
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_001 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_002, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_002 start";
+    int length = TEST_SIZE_MIN * TEST_SIZE_MULT_UNIT + TEST_SIZE_INCR_UNIT; // [2 * min, 4 * min)
+    float scale = BackupDatabaseUtils::GetLandmarksScale(length, length);
+    float expectedScale = 1.0 / TEST_SIZE_MULT_UNIT;
+    EXPECT_EQ(scale, expectedScale);
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_002 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_003, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_003 start";
+    int length = TEST_SIZE_MIN * TEST_SIZE_MULT_UNIT * TEST_SIZE_MULT_UNIT; // [4 * min, ...)
+    float scale = BackupDatabaseUtils::GetLandmarksScale(length, length);
+    float expectedScale = 1.0 / TEST_SIZE_MULT_UNIT / TEST_SIZE_MULT_UNIT;
+    EXPECT_EQ(scale, expectedScale);
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_003 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_004, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_004 start";
+    int width = TEST_SIZE_MIN;
+    int height = TEST_SIZE_MAX * TEST_SIZE_MULT_UNIT; // max len exceeds
+    float scale = BackupDatabaseUtils::GetLandmarksScale(width, height);
+    float expectedScale = 1.0 / TEST_SIZE_MULT_UNIT;
+    EXPECT_EQ(scale, expectedScale);
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_004 end";
+}
+
+void InitFaceInfoScale(FaceInfo &faceInfo, float scaleX, float scaleY, float scaleWidth, float scaleHeight)
+{
+    faceInfo.scaleX = scaleX;
+    faceInfo.scaleY = scaleY;
+    faceInfo.scaleWidth = scaleWidth;
+    faceInfo.scaleHeight = scaleHeight;
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_001 start";
+    FaceInfo faceInfo;
+    InitFaceInfoScale(faceInfo, TEST_SCALE_MIN, TEST_SCALE_MIN, TEST_SCALE_MAX - TEST_SCALE_MIN,
+        TEST_SCALE_MAX - TEST_SCALE_MIN);
+    bool result = BackupDatabaseUtils::IsLandmarkValid(faceInfo, TEST_LANDMARK_BETWEEN, TEST_LANDMARK_BETWEEN);
+    EXPECT_EQ(result, true);
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_001 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_002, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_002 start";
+    FaceInfo faceInfo;
+    InitFaceInfoScale(faceInfo, TEST_SCALE_MIN, TEST_SCALE_MIN, TEST_SCALE_MAX - TEST_SCALE_MIN,
+        TEST_SCALE_MAX - TEST_SCALE_MIN);
+    bool result = BackupDatabaseUtils::IsLandmarkValid(faceInfo, TEST_LANDMARK_BETWEEN, TEST_LANDMARK_BELOW);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_002 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_003, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_003 start";
+    FaceInfo faceInfo;
+    InitFaceInfoScale(faceInfo, TEST_SCALE_MIN, TEST_SCALE_MIN, TEST_SCALE_MAX - TEST_SCALE_MIN,
+        TEST_SCALE_MAX - TEST_SCALE_MIN);
+    bool result = BackupDatabaseUtils::IsLandmarkValid(faceInfo, TEST_LANDMARK_BETWEEN, TEST_LANDMARK_ABOVE);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_003 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_004, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_004 start";
+    FaceInfo faceInfo;
+    InitFaceInfoScale(faceInfo, TEST_SCALE_MIN, TEST_SCALE_MIN, TEST_SCALE_MAX - TEST_SCALE_MIN,
+        TEST_SCALE_MAX - TEST_SCALE_MIN);
+    bool result = BackupDatabaseUtils::IsLandmarkValid(faceInfo, TEST_LANDMARK_BELOW, TEST_LANDMARK_BETWEEN);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_004 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_005, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_005 start";
+    FaceInfo faceInfo;
+    InitFaceInfoScale(faceInfo, TEST_SCALE_MIN, TEST_SCALE_MIN, TEST_SCALE_MAX - TEST_SCALE_MIN,
+        TEST_SCALE_MAX - TEST_SCALE_MIN);
+    bool result = BackupDatabaseUtils::IsLandmarkValid(faceInfo, TEST_LANDMARK_ABOVE, TEST_LANDMARK_BETWEEN);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_005 end";
+}
+
+void ExecuteSqls(shared_ptr<RdbStore> rdbStore, const vector<string> &sqls)
+{
+    for (const auto &sql : sqls) {
+        int32_t errCode = rdbStore->ExecuteSql(sql);
+        if (errCode == E_OK) {
+            continue;
+        }
+        MEDIA_ERR_LOG("Execute %{public}s failed: %{public}d", sql.c_str(), errCode);
+    }
+}
+
+void ClearData(shared_ptr<RdbStore> rdbStore)
+{
+    MEDIA_INFO_LOG("Start clear data");
+    ExecuteSqls(rdbStore, CLEAR_SQLS);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
+    MEDIA_INFO_LOG("End clear data");
+}
+
+void InsertPhoto(unique_ptr<UpgradeRestore> &upgrade, vector<FileInfo> &fileInfos)
+{
+    // Photo
+    for (auto &fileInfo : fileInfos) {
+        fileInfo.cloudPath = TEST_CLOUD_PATH_PREFIX + fileInfo.displayName;
+        ValuesBucket values = upgrade->GetInsertValue(fileInfo, fileInfo.cloudPath, SourceType::GALLERY);
+        int64_t rowNum = 0;
+        if (upgrade->mediaLibraryRdb_->Insert(rowNum, PhotoColumn::PHOTOS_TABLE, values) != E_OK) {
+            MEDIA_ERR_LOG("InsertSql failed, filePath = %{public}s", fileInfo.filePath.c_str());
+        }
+    }
+    // Photo related
+    upgrade->InsertPhotoRelated(fileInfos, SourceType::GALLERY);
+}
+
+void RestorePhotoWithPortrait(unique_ptr<UpgradeRestore> &upgrade)
+{
+    vector<FileInfo> fileInfos = upgrade->QueryFileInfos(0);
+    InsertPhoto(upgrade, fileInfos);
+    upgrade->UpdateFaceAnalysisStatus();
+}
+
+void QueryInt(shared_ptr<RdbStore> rdbStore, const string &querySql, const string &columnName,
+    int32_t &result)
+{
+    ASSERT_NE(rdbStore, nullptr);
+    auto resultSet = rdbStore->QuerySql(querySql);
+    ASSERT_NE(resultSet, nullptr);
+    ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
+    result = GetInt32Val(columnName, resultSet);
+    MEDIA_INFO_LOG("Query %{public}s result: %{public}d", querySql.c_str(), result);
+}
+
+void QueryPortraitAlbumCount(shared_ptr<RdbStore> rdbStore, int32_t &result)
+{
+    string querySql = "SELECT count(DISTINCT group_tag) AS count FROM AnalysisAlbum WHERE album_type = 4096 AND \
+        album_subtype = 4102";
+    QueryInt(rdbStore, querySql, "count", result);
+}
+
+void QueryPortraitTagCount(shared_ptr<RdbStore> rdbStore, int32_t &result)
+{
+    string querySql = "SELECT count(1) as count FROM tab_analysis_face_tag";
+    QueryInt(rdbStore, querySql, "count", result);
+}
+
+void QueryPortraitPhotoCount(shared_ptr<RdbStore> rdbStore, int32_t &result)
+{
+    string querySql = "SELECT count(DISTINCT file_id) as count FROM tab_analysis_image_face";
+    QueryInt(rdbStore, querySql, "count", result);
+}
+
+void QueryPortraitFaceCount(shared_ptr<RdbStore> rdbStore, int32_t &result)
+{
+    string querySql = "SELECT count(1) as count FROM tab_analysis_image_face";
+    QueryInt(rdbStore, querySql, "count", result);
+}
+
+void QueryPortraitTotalCount(shared_ptr<RdbStore> rdbStore, int32_t &result)
+{
+    string querySql = "SELECT count(1) as count FROM tab_analysis_total WHERE face > 0";
+    QueryInt(rdbStore, querySql, "count", result);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_portrait, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_restore_portrait start");
+    MediaLibraryUnitTestUtils::Init();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    ASSERT_NE(rdbStore, nullptr);
+    unique_ptr<UpgradeRestore> upgrade =
+        make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
+    upgrade->galleryRdb_ = restoreService->galleryRdb_;
+    upgrade->mediaLibraryRdb_ = rdbStore;
+    upgrade->filePath_ = TEST_UPGRADE_FILE_DIR;
+    ClearData(rdbStore);
+
+    // restore portrait album
+    upgrade->RestoreFromGalleryPortraitAlbum();
+    int32_t albumCount = 0;
+    QueryPortraitAlbumCount(rdbStore, albumCount);
+    EXPECT_EQ(albumCount, TEST_PORTRAIT_ALBUM_COUNT);
+    int32_t tagCount = 0;
+    QueryPortraitTagCount(rdbStore, tagCount);
+    EXPECT_EQ(tagCount, TEST_PORTRAIT_TAG_COUNT);
+    EXPECT_EQ(static_cast<int32_t>(upgrade->portraitAlbumIdMap_.size()), TEST_PORTRAIT_TAG_COUNT);
+
+    // restore face analysis data
+    RestorePhotoWithPortrait(upgrade);
+    int32_t photoCount = 0;
+    QueryPortraitPhotoCount(rdbStore, photoCount);
+    EXPECT_EQ(photoCount, TEST_PORTRAIT_PHOTO_COUNT);
+    int32_t faceCount = 0;
+    QueryPortraitFaceCount(rdbStore, faceCount);
+    EXPECT_EQ(faceCount, TEST_PORTRAIT_FACE_COUNT);
+    int32_t totalCount = 0;
+    QueryPortraitTotalCount(rdbStore, totalCount);
+    EXPECT_EQ(totalCount, TEST_PORTRAIT_PHOTO_COUNT);
+    ClearData(rdbStore);
+    MEDIA_INFO_LOG("medialib_backup_test_restore_portrait end");
 }
 } // namespace Media
 } // namespace OHOS
