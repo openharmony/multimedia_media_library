@@ -1431,8 +1431,8 @@ int32_t ResetOcrInfo(const int32_t &fileId)
         MEDIA_ERR_LOG("rdbStore is nullptr!");
         return E_HAS_DB_ERROR;
     }
-    string sqlDeleteOcr = "DELETE FROM " + VISION_OCR_TABLE + "WHERE file_id = " + to_string(fileId) + ";" +
-        "UPDATE " + VISION_TOTAL_TABLE + " SET ocr = 0 WHERE file_id = " + to_string(fileId) + ";";
+    string sqlDeleteOcr = "DELETE FROM " + VISION_OCR_TABLE + " WHERE file_id = " + to_string(fileId) + ";" +
+        " UPDATE " + VISION_TOTAL_TABLE + " SET ocr = 0 WHERE file_id = " + to_string(fileId) + ";";
 
     int ret = rdbStore->ExecuteSql(sqlDeleteOcr);
     if (ret != NativeRdb::E_OK) {
