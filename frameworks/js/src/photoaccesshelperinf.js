@@ -118,11 +118,17 @@ function getAbilityResource(bundleInfo) {
   let labelId = 0;
   for (let hapInfo of bundleInfo.hapModulesInfo) {
     if (hapInfo.type === bundleManager.ModuleType.ENTRY) {
-      for (let abilityInfo of hapInfo.abilitiesInfo) {
-        if (abilityInfo.name === hapInfo.mainElementName) {
-          labelId = abilityInfo.labelId;
-        }
-      }
+      labelId = getLabelId(hapInfo);
+    }
+  }
+  return labelId;
+}
+
+function getLabelId(hapInfo) {
+  let labelId = 0;
+  for (let abilityInfo of hapInfo.abilitiesInfo) {
+    if (abilityInfo.name === hapInfo.mainElementName) {
+      labelId = abilityInfo.labelId;
     }
   }
   return labelId;
@@ -363,7 +369,7 @@ async function createAssetWithShortTermPermissionOk(photoCreationConfig) {
   try {
     let labelId = getAbilityResource(bundleInfo);
     let appName = await gContext.resourceManager.getStringValue(labelId);
-    
+
     if (photoAccessHelper.checkShortTermPermission()) {
       let photoCreationConfigs = [photoCreationConfig];
       let desFileUris = await getPhotoAccessHelper(getContext(this)).createAssetsHasPermission(bundleName, appName, appId,
