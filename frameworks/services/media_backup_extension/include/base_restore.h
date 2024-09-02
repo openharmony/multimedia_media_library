@@ -138,7 +138,6 @@ protected:
     int maxFileId_ = 0;
     int maxCount_ = 0;
     int32_t sceneCode_ = DEFAULT_RESTORE_ID;
-    std::unordered_map<int32_t, std::string> faceAnalysisVersionMap_;
     std::unordered_map<std::string, std::string> tagIdMap_;
     std::unordered_map<std::string, std::string> groupTagMap_;
     std::unordered_map<std::string, int32_t> portraitAlbumIdMap_;
