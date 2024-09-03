@@ -842,8 +842,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoFace_Test_001, TestSize.Level
     valuesBucket.Put(ROLL, 90);
     valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(TOTAL_FACES, 1);
-    valuesBucket.Put(FRAMEID, "1.01");
-    valuesBucket.Put(FRAMETIMESTAMP, "3.0");
+    valuesBucket.Put(FRAME_ID, "1.01");
+    valuesBucket.Put(FRAME_TIMESTAMP, "3.0");
     valuesBucket.Put(FEATURES, 1);
     valuesBucket.Put(TRACKS, '1');
     valuesBucket.Put(ALGO_VERSION, '1');
@@ -881,8 +881,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateVideoFace_Test_001, TestSize.Level
     valuesBucket.Put(ROLL, 90);
     valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(TOTAL_FACES, 1);
-    valuesBucket.Put(FRAMEID, "1.01");
-    valuesBucket.Put(FRAMETIMESTAMP, "3.0");
+    valuesBucket.Put(FRAME_ID, "1.01");
+    valuesBucket.Put(FRAME_TIMESTAMP, "3.0");
     valuesBucket.Put(FEATURES, 2);
     valuesBucket.Put(TRACKS, '1');
     valuesBucket.Put(ALGO_VERSION, '1');
@@ -922,8 +922,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteVideoFace_Test_001, TestSize.Level
     valuesBucket.Put(ROLL, 90);
     valuesBucket.Put(PROB, 1.9);
     valuesBucket.Put(TOTAL_FACES, 1);
-    valuesBucket.Put(FRAMEID, "1.01");
-    valuesBucket.Put(FRAMETIMESTAMP, "3.0");
+    valuesBucket.Put(FRAME_ID, "1.01");
+    valuesBucket.Put(FRAME_TIMESTAMP, "3.0");
     valuesBucket.Put(FEATURES, 2);
     valuesBucket.Put(TRACKS, '2');
     valuesBucket.Put(ALGO_VERSION, '1');
@@ -962,8 +962,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryVideoFace_Test_001, TestSize.Level0
     valuesBucket.Put(ROLL, 90);
     valuesBucket.Put(PROB, 1.9);
     valuesBucket.Put(TOTAL_FACES, 1);
-    valuesBucket.Put(FRAMEID, "1.01");
-    valuesBucket.Put(FRAMETIMESTAMP, "3.0");
+    valuesBucket.Put(FRAME_ID, "1.01");
+    valuesBucket.Put(FRAME_TIMESTAMP, "3.0");
     valuesBucket.Put(FEATURES, 3);
     valuesBucket.Put(TRACKS, '2');
     valuesBucket.Put(ALGO_VERSION, '1');
