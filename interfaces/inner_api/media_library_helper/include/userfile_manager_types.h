@@ -116,9 +116,9 @@ enum PhotoAlbumSubType : int32_t {
     CLASSIFY = ANALYSIS_START,
     GEOGRAPHY_LOCATION = 4099,
     GEOGRAPHY_CITY,
-    SHOOTING_MODE,
-    PORTRAIT,
-    GROUP_PHOTO,
+    SHOOTING_MODE = 4101,
+    PORTRAIT = 4102,
+    GROUP_PHOTO = 4103,
     HIGHLIGHT = 4104,
     HIGHLIGHT_SUGGESTIONS,
     ANALYSIS_END = HIGHLIGHT_SUGGESTIONS,
@@ -178,6 +178,12 @@ enum class RequestPhotoType : int32_t {
     REQUEST_TYPE_END
 };
 
+enum class BurstCoverLevelType : int32_t {
+    COVER = 1,
+    MEMBER = 2,
+    DEFAULT = COVER
+};
+
 enum class CoverSatisfiedType : uint8_t {
     NO_SETTING = 0,
     DEFAULT_SETTING = 1,
@@ -197,11 +203,6 @@ const std::string MIME_TYPE_HEIF = "image/heif";
 const std::unordered_map<ImageFileType, std::string> IMAGE_FILE_TYPE_MAP = {
     {JPEG, MIME_TYPE_JPEG},
     {HEIF, MIME_TYPE_HEIF},
-};
-enum class BurstCoverLevelType : int32_t {
-    COVER = 1,
-    MEMBER = 2,
-    DEFAULT = COVER
 };
 } // namespace Media
 } // namespace OHOS
