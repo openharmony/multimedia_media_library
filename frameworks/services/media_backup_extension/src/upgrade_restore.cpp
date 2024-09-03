@@ -1492,7 +1492,7 @@ void UpgradeRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInf
             (long)(startInsertMap - startInsertFace), (long)mapRowNum, (long)(endInsert - startInsertMap));
     }
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    photoNum = filesWithFace.size();
+    photoNum = static_cast<int64_t>(filesWithFace.size());
     migratePortraitFaceNumber_ += faceRowNum;
     migratePortraitPhotoNumber_ += photoNum;
     migratePortraitTotalTimeCost_ += end - start;
