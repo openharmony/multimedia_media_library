@@ -262,8 +262,8 @@ const std::string CREATE_TAB_VIDEO_FACE = "CREATE TABLE IF NOT EXISTS " + VISION
     ROLL + " BLOB, " +
     PROB + " BLOB, " +
     TOTAL_FACES + " INTEGER, " +
-    FRAMEID + " INT, " +
-    FRAMETIMESTAMP + " INT, " +
+    FRAME_ID + " INT, " +
+    FRAME_TIMESTAMP + " INT, " +
     TRACKS + " TEXT, " +
     ALGO_VERSION + " TEXT, " +
     FEATURES + " BLOB, " +
@@ -486,6 +486,10 @@ const std::string UPDATE_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " 
 const std::string IMAGE_FACE_INDEX = "image_face_index";
 const std::string CREATE_IMAGE_FACE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + IMAGE_FACE_INDEX + " ON " +
     VISION_IMAGE_FACE_TABLE + " (" + FILE_ID + "," + FACE_ID + ")";
+
+const std::string VIDEO_FACE_INDEX = "video_face_index";
+const std::string CREATE_VIDEO_FACE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + VIDEO_FACE_INDEX + " ON " +
+    VISION_VIDEO_FACE_TABLE + " (" + FILE_ID + "," + FACE_ID + ")";    
 
 const std::string ADD_SALIENCY_STATUS_COLUMN = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + SALIENCY + " INT";
 const std::string UPDATE_SALIENCY_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE +

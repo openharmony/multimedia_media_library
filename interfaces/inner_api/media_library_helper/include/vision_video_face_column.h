@@ -20,8 +20,8 @@
 
 namespace OHOS {
 namespace Media {
-const std::string FRAMEID = "frameId";
-const std::string FRAMETIMESTAMP = "frameTimestamp";
+const std::string FRAME_ID = "frame_id";
+const std::string FRAME_TIMESTAMP = "frame_timestamp";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_VIDEO_FACE_COLUMN_H
