@@ -71,11 +71,11 @@ public:
     EXPORT void SetHiddenOnly(const bool hiddenOnly);
     EXPORT bool GetHiddenOnly() const;
 
-    EXPORT void SetLocationOnly(const bool locationOnly);
-    EXPORT bool GetLocationOnly() const;
-
     EXPORT void SetDisplayLevel(const int32_t displayLevel);
     EXPORT int32_t GetDisplayLevel() const;
+
+    EXPORT void SetLocationOnly(const bool locationOnly);
+    EXPORT bool GetLocationOnly() const;
 
     EXPORT static bool IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsTrashAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
