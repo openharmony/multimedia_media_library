@@ -116,9 +116,9 @@ enum PhotoAlbumSubType : int32_t {
     CLASSIFY = ANALYSIS_START,
     GEOGRAPHY_LOCATION = 4099,
     GEOGRAPHY_CITY,
-    SHOOTING_MODE,
-    PORTRAIT,
-    GROUP_PHOTO,
+    SHOOTING_MODE = 4101,
+    PORTRAIT = 4102,
+    GROUP_PHOTO = 4103,
     HIGHLIGHT = 4104,
     HIGHLIGHT_SUGGESTIONS,
     ANALYSIS_END = HIGHLIGHT_SUGGESTIONS,
@@ -178,16 +178,17 @@ enum class RequestPhotoType : int32_t {
     REQUEST_TYPE_END
 };
 
+enum class BurstCoverLevelType : int32_t {
+    COVER = 1,
+    MEMBER = 2,
+    DEFAULT = COVER
+};
+
 enum class CoverSatisfiedType : uint8_t {
     NO_SETTING = 0,
     DEFAULT_SETTING = 1,
     USER_SETTING = 2,
     ANALYSIS_SETTING = 4
-};
-enum class BurstCoverLevelType : int32_t {
-    COVER = 1,
-    MEMBER = 2,
-    DEFAULT = COVER
 };
 } // namespace Media
 } // namespace OHOS

@@ -2089,9 +2089,10 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     MEDIA_DEBUG_LOG("fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
 
     auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
+    if (pictureManagerThread == nullptr) {
+        return E_ERR;
     }
+    pictureManagerThread->Start();
     std::shared_ptr<Media::Picture> picture;
     std::string photoId;
     if (GetPicture(fileId, picture, false, photoId) != E_OK) {
@@ -2288,6 +2289,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditMovingPhotoExecute(MediaLibraryCo
         string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
         CHECK_AND_RETURN_RET_LOG(!videoPath.empty(), E_INVALID_PATH, "Can not get video path");
         if (MediaFileUtils::IsFileExists(videoPath)) {
+            MEDIA_INFO_LOG("Delete video file in photo directory, file is: %{private}s", videoPath.c_str());
             CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(videoPath), E_HAS_FS_ERROR,
                 "Failed to delete video file, path:%{private}s", videoPath.c_str());
         }
@@ -2519,7 +2521,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
-    const std::string &outputPath, const std::string &editdata, int32_t fileId, const std::string &photoStatus)
+    const std::string &outputPath, const std::string &editdata, const std::string &photoStatus)
 {
     MEDIA_INFO_LOG("AddFiltersToPhoto inputPath: %{public}s, outputPath: %{public}s, editdata: %{public}s",
         inputPath.c_str(), outputPath.c_str(), editdata.c_str());

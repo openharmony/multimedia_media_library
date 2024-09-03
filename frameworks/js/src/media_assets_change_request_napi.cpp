@@ -266,6 +266,8 @@ static bool SetAssetsPropertyExecute(
             return false;
     }
 
+    NAPI_INFO_LOG("changeOperation:%{public}d, size:%{public}zu",
+        changeOperation, changeRequest->GetFileAssetUriArray().size());
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetsUri(uri);
     int32_t changedRows = UserFileClient::Update(updateAssetsUri, predicates, valuesBucket);
