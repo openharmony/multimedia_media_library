@@ -37,7 +37,8 @@ public:
 };
 
 const string ConfigTestOpenCall::CREATE_TABLE_TEST = string("CREATE TABLE IF NOT EXISTS test ") +
-    "(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, age INTEGER, salary REAL, blobType BLOB)";
+    "(file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, media_type INTEGER," +
+    " date_added TEXT, display_name TEXT, thumbnail_ready TEXT, position TEXT)";
 
 const int32_t E_THUMBNAIL_ASTC_ALL_EXIST = -2307;
 const int32_t E_THUMBNAIL_LCD_ALL_EXIST = -2308;
@@ -852,6 +853,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_003, T
     ConfigTestOpenCall helper;
     int errCode = 0;
     opts.store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    opts.table = "test";
     auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts);
     EXPECT_EQ(res, 0);
 }

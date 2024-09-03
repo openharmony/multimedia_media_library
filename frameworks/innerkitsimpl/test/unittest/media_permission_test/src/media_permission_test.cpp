@@ -112,7 +112,7 @@ HWTEST_F(MediaPermissionTest, MediaPermissionTest_004, TestSize.Level0)
     MEDIA_INFO_LOG("MediaPermissionTest_004 end");
 }
 
-// grant鉴权成功
+// grant鉴权失败
 HWTEST_F(MediaPermissionTest, MediaPermissionTest_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaPermissionTest_005 begin");
@@ -124,7 +124,8 @@ HWTEST_F(MediaPermissionTest, MediaPermissionTest_005, TestSize.Level0)
     };
     permissionHandler_ = std::make_shared<GrantPermissionHandler>();
     int err = permissionHandler_->CheckPermission(cmd, permParam);
-    EXPECT_EQ(err, 0);
+    // unknown object will return E_PERMISSION_DENIED
+    EXPECT_EQ(err, E_PERMISSION_DENIED);
     MEDIA_INFO_LOG("MediaPermissionTest_005 end");
 }
 
