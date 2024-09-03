@@ -393,6 +393,11 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         int32_t changedRows = 0;
         std::vector<string> perms = { PERM_READ_IMAGEVIDEO, PERM_WRITE_IMAGEVIDEO };
         if (PermissionUtils::CheckHasPermission(perms)) {
+            string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+            if (whereClause.length() > 0) {
+                whereClause += " AND ";
+                cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
+            }
             cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
         }
         changedRows = MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
