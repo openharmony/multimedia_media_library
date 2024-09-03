@@ -441,7 +441,7 @@ bool BackupDatabaseUtils::SetLandmarks(FaceInfo &faceInfo, const std::unordered_
         MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, scale = 0", faceInfo.faceId.c_str());
         return false;
     }
-    nlohmann::json landmarksJson = nlohmann::json::parse(faceInfo.landmarks);
+    nlohmann::json landmarksJson = nlohmann::json::parse(faceInfo.landmarks, nullptr, false);
     if (landmarksJson.is_discarded()) {
         MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, parse landmarks failed", faceInfo.faceId.c_str());
         return false;
