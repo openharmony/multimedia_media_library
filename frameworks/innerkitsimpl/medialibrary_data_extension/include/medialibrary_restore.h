@@ -15,7 +15,6 @@
 #ifndef OHOS_MEDIALIBRARY_RESTORE_H
 #define OHOS_MEDIALIBRARY_RESTORE_H
 
-#include <mutex>
 #include <string>
 #include <memory>
 #include "result_set.h"
@@ -34,8 +33,8 @@ public:
     EXPORT bool IsRestoring() const;
     EXPORT bool IsBackuping() const;
     EXPORT bool IsWaiting() const;
-    EXPORT void DoRdbHAModeSwitch();
-    EXPORT void InterruptRdbHAModeSwitch();
+    EXPORT void CheckBackup();
+    EXPORT void InterruptBackup();
     EXPORT int32_t GetHaMode() const;
     EXPORT void ResetHaMode();
     EXPORT void CheckResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet);
@@ -43,6 +42,8 @@ private:
 #ifdef CLOUD_SYNC_MANAGER
     void StopCloudSync();
 #endif
+    void DoRdbBackup();
+    void ResetHAModeSwitchStatus();
     void SaveHAModeToPara();
     void SaveHAModeSwitchStatusToPara(const uint32_t &status);
     void ReadHAModeFromPara();
