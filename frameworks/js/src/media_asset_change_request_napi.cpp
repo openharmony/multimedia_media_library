@@ -2118,9 +2118,6 @@ static bool SetEffectModeExecute(MediaAssetChangeRequestAsyncContext& context)
 
     // SET_MOVING_PHOTO_EFFECT_MODE will be applied together with ADD_RESOURCE
     auto changeRequest = context.objectInfo;
-    if (changeRequest->Contains(AssetChangeOperation::ADD_RESOURCE)) {
-        return true;
-    }
     if (std::find(context.assetChangeOperations.begin(), context.assetChangeOperations.end(),
         AssetChangeOperation::ADD_RESOURCE) != context.assetChangeOperations.end()) {
         return true;
