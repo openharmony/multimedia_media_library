@@ -31,6 +31,8 @@ public:
         std::shared_ptr<Media::Picture> &picture, bool isEdited = false);
     EXPORT static int32_t SavePicture(const std::string &path, std::shared_ptr<Media::Picture> &picture,
         const std::string &mime_type, bool isEdited = false);
+    EXPORT static int DealPicture(const std::string &mime_type, const std::string &path,
+        std::shared_ptr<Media::Picture> &picture);
 
 private:
     EXPORT static int DeleteFile(const std::string &fileName);

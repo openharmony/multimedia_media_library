@@ -29,7 +29,7 @@ static const size_t AUXILIARY_PICTURE_TYPE_COUNT = static_cast<size_t>(Auxiliary
 
 class PictureHandlerService {
 public:
-    static bool OpenPicture(std::string &fileId, int32_t &fd);
+    static bool OpenPicture(const std::string &fileId, int32_t &fd);
     static int32_t RequestBufferHandlerFd(const std::string fd);
 private:
 

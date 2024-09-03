@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 
 #include "media_log.h"
+#include "media_file_utils.h"
 #include "database_adapter.h"
 #include "result_set_utils.h"
 #include "media_column.h"
@@ -90,6 +91,9 @@ int32_t FileUtils::SavePicture(const string &imageId, std::shared_ptr<Media::Pic
 {
     MediaLibraryTracer tracer;
     // 通过imageid获取fileid 获取uri
+    if (picture == nullptr) {
+        return -1;
+    }
     MEDIA_INFO_LOG("photoid: %{public}s", imageId.c_str());
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
     string where = PhotoColumn::PHOTO_ID + " = ? ";
@@ -108,21 +112,17 @@ int32_t FileUtils::SavePicture(const string &imageId, std::shared_ptr<Media::Pic
     tracer.Finish();
     string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     int fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    string sourcePath = isEdited ? MediaLibraryAssetOperations::GetEditDataSourcePath(path) : path;
     //查询是否编辑 编辑目录下
     string mime_type = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
     if (mime_type == "") {
         mime_type = "image/jpeg";
     }
-    Media::ImagePacker imagePacker;
-    Media::PackOption packOption;
-    packOption.format = mime_type;
-    packOption.needsPackProperties = true;
-    packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
-    imagePacker.StartPacking(path, packOption);
-    imagePacker.AddPicture(*(picture));
-    imagePacker.FinalizePacking();
-    MediaLibraryObjectUtils::ScanFileAsync(path, to_string(fileId), MediaLibraryApi::API_10);
-    MEDIA_INFO_LOG("SavePicture end");
+    int ret = DealPicture(mime_type, sourcePath, picture);
+    if (ret < 0) {
+        return ret;
+    }
+    MediaLibraryObjectUtils::ScanFileAsync(sourcePath, to_string(fileId), MediaLibraryApi::API_10);
     return 0;
 }
 
@@ -131,16 +131,46 @@ int32_t FileUtils::SavePicture(const string &path, std::shared_ptr<Media::Pictur
 {
     MEDIA_INFO_LOG("SavePicture width %{public}d, heigh %{public}d",
         picture->GetMainPixel()->GetWidth(), picture->GetMainPixel()->GetHeight());
+    return DealPicture(mime_type, path, picture);
+}
+
+int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &path,
+    std::shared_ptr<Media::Picture> &picture)
+{
+    MEDIA_DEBUG_LOG("DealPicture");
+    if (picture == nullptr) {
+        return -1;
+    }
     Media::ImagePacker imagePacker;
     Media::PackOption packOption;
     packOption.format = mime_type;
     packOption.needsPackProperties = true;
     packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
-    imagePacker.StartPacking(path, packOption);
-
+    size_t lastSlash = path.rfind('/');
+    CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && path.size() > (lastSlash + 1), E_INVALID_VALUES,
+        "Failed to check outputPath: %{public}s", path.c_str());
+    string tempOutputPath = path.substr(0, lastSlash) + "/temp_" + path.substr(lastSlash + 1);
+    int32_t ret = MediaFileUtils::CreateAsset(tempOutputPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS || ret == E_FILE_EXIST, E_HAS_FS_ERROR,
+        "Failed to create temp filters file %{private}s", tempOutputPath.c_str());
+    imagePacker.StartPacking(tempOutputPath, packOption);
     imagePacker.AddPicture(*(picture));
     imagePacker.FinalizePacking();
-    MEDIA_INFO_LOG("SavePicture end");
+    size_t size = -1;
+    MediaFileUtils::GetFileSize(tempOutputPath, size);
+    MEDIA_DEBUG_LOG("SavePicture end {public}%zu", size);
+    if (size == 0) {
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
+            "Failed to delete temp filters file, errno: %{public}d", errno);
+        return E_OK;
+    }
+    ret = rename(tempOutputPath.c_str(), path.c_str());
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Failed to rename temp  file, ret: %{public}d, errno: %{public}d", ret, errno);
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
+            "Failed to delete temp file, errno: %{public}d", errno);
+        return ret;
+    }
     return 0;
 }
 } // namespace Media

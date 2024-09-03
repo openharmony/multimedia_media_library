@@ -143,18 +143,6 @@ void MultiStagesCaptureManager::SaveLowQualityImageInfo(MediaLibraryCommand &cmd
     if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
         valueObject.GetInt(fileId);
     }
-
-    string path = MediaLibraryFormMapOperations::GetFilePathById(ToString(fileId));
-    string uri = MediaLibraryFormMapOperations::GetUriByFileId(fileId, path.c_str());
-    auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
-    }
-
-    //如果存在低质量图触发前一个落盘/20S超时落盘/二阶段图像到来落盘
-    if (pictureManagerThread->IsExsitDataForPictureType(LOW_QUALITY_PICTURE)) {
-        pictureManagerThread->SaveLowQualityPicture();
-    }
 }
 
 // 低质量入缓存
@@ -162,9 +150,10 @@ void MultiStagesCaptureManager::DealLowQualityPicture(const std::string &imageId
     std::shared_ptr<Media::Picture> picture, bool isEdited)
 {
     auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
+    if (pictureManagerThread == nullptr) {
+        return;
     }
+    pictureManagerThread->Start();
     if (pictureManagerThread->IsExsitPictureByImageId(imageId)) {
         return;
     }
@@ -195,9 +184,10 @@ void MultiStagesCaptureManager::DealHighQualityPicture(const std::string &imageI
 {
     MEDIA_INFO_LOG("photoid: %{public}s", imageId.c_str());
     auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
+    if (pictureManagerThread == nullptr) {
+        return;
     }
+    pictureManagerThread->Start();
     // 将低质量图存入缓存
     time_t currentTime;
     if ((currentTime = time(NULL)) == -1) {
@@ -294,9 +284,10 @@ void MultiStagesCaptureManager::AddImage(MediaLibraryCommand &cmd)
         valueObject.GetString(photoId);
     }
     auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
+    if (pictureManagerThread == nullptr) {
+        return;
     }
+    pictureManagerThread->Start();
     if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL) ||
         pictureManagerThread->IsExsitPictureByImageId(photoId)) {
         pictureManagerThread->SavePictureWithImageId(photoId);
