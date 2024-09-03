@@ -1424,18 +1424,12 @@ static int32_t UpdateEffectMode(int32_t fileId, int32_t effectMode)
     }
     updateCmd.SetValueBucket(updateValues);
 
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    int32_t errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        return errCode;
-    }
     int32_t updateRows = -1;
-    errCode = rdbStore->Update(updateCmd, updateRows);
+    int32_t errCode = rdbStore->Update(updateCmd, updateRows);
     if (errCode != NativeRdb::E_OK || updateRows < 0) {
         MEDIA_ERR_LOG("Update effect mode failed. errCode:%{public}d, updateRows:%{public}d.", errCode, updateRows);
         return E_HAS_DB_ERROR;
     }
-    transactionOprn.Finish();
     return E_OK;
 }
 
