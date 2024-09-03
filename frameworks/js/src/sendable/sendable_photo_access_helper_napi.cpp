@@ -123,6 +123,7 @@ napi_value SendablePhotoAccessHelper::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("release", JSRelease),
         DECLARE_NAPI_FUNCTION("getAlbums", PhotoAccessGetPhotoAlbums),
         DECLARE_NAPI_FUNCTION("getHiddenAlbums", PahGetHiddenAlbums),
+        DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", PhotoAccessGetSharedPhotoAssets);
     };
     napi_define_sendable_class(env, SENDABLE_PHOTOACCESSHELPER_NAPI_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
                                MediaLibraryNapiConstructor, nullptr, sizeof(props) / sizeof(props[0]),
