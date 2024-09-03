@@ -1209,6 +1209,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_VISION_DELETE_TRIGGER,
     CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
     CREATE_IMAGE_FACE_INDEX,
+    CREATE_VIDEO_FACE_INDEX,
     CREATE_OBJECT_INDEX,
     CREATE_RECOMMENDATION_INDEX,
     CREATE_COMPOSITION_INDEX,
@@ -3187,6 +3188,7 @@ static void AddVideoFaceTable(RdbStore &store)
 {
     const vector<string> sqls = {
         CREATE_TAB_VIDEO_FACE,
+        CREATE_VIDEO_FACE_INDEX,
         "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + GEO + " INT"
     };
     MEDIA_INFO_LOG("Add video face table start");
