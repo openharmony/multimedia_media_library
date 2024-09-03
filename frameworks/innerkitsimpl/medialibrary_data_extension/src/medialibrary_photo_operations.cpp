@@ -2271,6 +2271,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditMovingPhotoExecute(MediaLibraryCo
         string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
         CHECK_AND_RETURN_RET_LOG(!videoPath.empty(), E_INVALID_PATH, "Can not get video path");
         if (MediaFileUtils::IsFileExists(videoPath)) {
+            MEDIA_INFO_LOG("Delete video file in photo directory, file is: %{private}s", videoPath.c_str());
             CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(videoPath), E_HAS_FS_ERROR,
                 "Failed to delete video file, path:%{private}s", videoPath.c_str());
         }
