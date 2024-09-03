@@ -1132,7 +1132,7 @@ static string generateUpdateSql(const bool isCover, const string title, const in
     } else {
         string subWhere = "FROM " + PhotoColumn::PHOTOS_TABLE + " AS p2 JOIN " + PhotoMap::TABLE + " AS p3 ON p2." +
             MediaColumn::MEDIA_ID + " = p3." + PhotoMap::ASSET_ID + " WHERE LOWER(p2." + MediaColumn::MEDIA_TITLE +
-            ") GLOB LOWER('" + globTitle + "') AND p3." + PhotoMap::ALBUM_ID + " = " + to_string(mapAlbum);
+            ") GLOB LOWER('" + globCover + "') AND p3." + PhotoMap::ALBUM_ID + " = " + to_string(mapAlbum);
 
         updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " AS p1 SET " + PhotoColumn::PHOTO_BURST_KEY +
             " = (SELECT CASE WHEN p2." + PhotoColumn::PHOTO_BURST_KEY + " IS NOT NULL THEN p2." +
@@ -1176,10 +1176,6 @@ static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::RdbSto
         int32_t mapAlbum = 0;
         if (resultSet->GetColumnIndex(PhotoMap::ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
             resultSet->GetInt(columnIndex, mapAlbum);
-        }
-        int32_t isFavourite = 0;
-        if (isCover && resultSet->GetColumnIndex(MediaColumn::MEDIA_IS_FAV, columnIndex) == NativeRdb::E_OK) {
-            resultSet->GetInt(columnIndex, isFavourite);
         }
 
         string updateSql = generateUpdateSql(isCover, title, mapAlbum);
