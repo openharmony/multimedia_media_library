@@ -2121,6 +2121,10 @@ static bool SetEffectModeExecute(MediaAssetChangeRequestAsyncContext& context)
     if (changeRequest->Contains(AssetChangeOperation::ADD_RESOURCE)) {
         return true;
     }
+    if (std::find(context.assetChangeOperations.begin(), context.assetChangeOperations.end(),
+        AssetChangeOperation::ADD_RESOURCE) != context.assetChangeOperations.end()) {
+        return true;
+    }
 
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
