@@ -119,6 +119,7 @@ private:
 private:
     static std::mutex saveCameraPhotoMutex_;
     static std::condition_variable condition_;
+    static std::string lastPhotoId_;
 };
 
 class PhotoEditingRecord {

@@ -79,10 +79,24 @@ namespace Media {
 static const string ANALYSIS_HAS_DATA = "1";
 constexpr int SAVE_PHOTO_WAIT_MS = 300;
 constexpr int TASK_NUMBER_MAX = 5;
+enum ImageFileType : int32_t {
+    JPEG = 1,
+    HEIF = 2
+};
+
+const std::string MIME_TYPE_JPEG = "image/jpeg";
+
+const std::string MIME_TYPE_HEIF = "image/heif";
+
+const std::unordered_map<ImageFileType, std::string> IMAGE_FILE_TYPE_MAP = {
+    {JPEG, MIME_TYPE_JPEG},
+    {HEIF, MIME_TYPE_HEIF},
+};
 shared_ptr<PhotoEditingRecord> PhotoEditingRecord::instance_ = nullptr;
 mutex PhotoEditingRecord::mutex_;
 std::mutex MediaLibraryPhotoOperations::saveCameraPhotoMutex_;
 std::condition_variable MediaLibraryPhotoOperations::condition_;
+std::string MediaLibraryPhotoOperations::lastPhotoId_ = "default";
 int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
 {
     switch (cmd.GetApi()) {
@@ -2055,8 +2069,8 @@ int32_t MediaLibraryPhotoOperations::FinishRequestPicture(MediaLibraryCommand &c
     auto pictureManagerThread = PictureManagerThread::GetInstance();
     if (pictureManagerThread != nullptr) {
         pictureManagerThread->Start();
+        pictureManagerThread->FinishAccessingPicture(photoId);
     }
-    pictureManagerThread->FinishAccessingPicture(photoId);
     return E_OK;
 }
 
@@ -2105,16 +2119,13 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
         return E_INVALID_ARGUMENTS;
     }
     std::string format = itr->second;
-    Media::ImagePacker imagePacker;
-    Media::PackOption packOption;
-    packOption.format = format;
-    packOption.needsPackProperties = true;
-    packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
-    imagePacker.StartPacking(assetPath, packOption);
-    imagePacker.AddPicture(*(picture));
-    imagePacker.FinalizePacking();
-    MEDIA_DEBUG_LOG("SavePicture end");
-    pictureManagerThread->FinishAccessingPicture(photoId);
+    FileUtils::DealPicture(format, assetPath, picture);
+    UpdateMimeType(fileId, format);
+    if (pictureManagerThread != nullptr) {
+        pictureManagerThread->FinishAccessingPicture(photoId);
+        pictureManagerThread->DeleteDataWithImageId(lastPhotoId_, LOW_QUALITY_PICTURE);
+    }
+    lastPhotoId_ = photoId;
     return E_OK;
 }
 
@@ -2148,13 +2159,14 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     string photoId;
     if (GetPicture(fileId, picture, false, photoId) == E_OK) {
         string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
-        int32_t ret = AddFiltersToPicture(picture, assetPath, editData, fileType);
+        FileUtils::SavePicture(sourcePath, picture, fileType);
+        int32_t ret = MediaChangeEffect::TakeEffectForPicture(picture, editData);
         auto pictureManagerThread = PictureManagerThread::GetInstance();
         if (pictureManagerThread != nullptr) {
             pictureManagerThread->Start();
+            pictureManagerThread->FinishAccessingPicture(photoId);
         }
-        pictureManagerThread->FinishAccessingPicture(photoId);
-        MediaLibraryObjectUtils::ScanFileAsync(assetPath, to_string(fileId), MediaLibraryApi::API_10);
+        MediaLibraryObjectUtils::ScanFileAsync(sourcePath, to_string(fileId), MediaLibraryApi::API_10);
         return ret;
     }
     // 生成水印
@@ -2507,7 +2519,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
-    const std::string &outputPath, const std::string &editdata, const std::string &photoStatus)
+    const std::string &outputPath, const std::string &editdata, int32_t fileId, const std::string &photoStatus)
 {
     MEDIA_INFO_LOG("AddFiltersToPhoto inputPath: %{public}s, outputPath: %{public}s, editdata: %{public}s",
         inputPath.c_str(), outputPath.c_str(), editdata.c_str());
@@ -2542,6 +2554,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
         return ret;
     }
     MEDIA_INFO_LOG("AddFiltersToPhoto finish");
+    MediaLibraryObjectUtils::ScanFileAsync(outputPath, to_string(fileId), MediaLibraryApi::API_10);
     return E_OK;
 }
 
@@ -2558,18 +2571,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", outputPath.c_str());
     int32_t ret = MediaChangeEffect::TakeEffectForPicture(inPicture, editdata);
-    Media::ImagePacker imagePacker;
-    Media::PackOption packOption;
-    packOption.format = mime_type;
-    packOption.needsPackProperties = true;
-    packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
-    imagePacker.StartPacking(outputPath, packOption);
-    imagePacker.AddPicture(*(inPicture));
-    imagePacker.FinalizePacking();
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("MediaLibraryPhotoOperations: AddFiltersToPicture: TakeEffect error. ret = %d", ret);
-        return E_ERR;
-    }
+    FileUtils::DealPicture(mime_type, outputPath, inPicture);
     return E_OK;
 }
 

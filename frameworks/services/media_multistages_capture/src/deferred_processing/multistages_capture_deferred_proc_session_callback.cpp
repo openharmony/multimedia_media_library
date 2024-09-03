@@ -205,10 +205,6 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnDeliveryLowQualityImage(co
         MEDIA_INFO_LOG("OnDeliveryLowQualityImage picture is null");
         return;
     }
-    auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
-    }
 
     MediaLibraryTracer tracer;
     tracer.Start("OnDeliveryLowQualityImage " + imageId);

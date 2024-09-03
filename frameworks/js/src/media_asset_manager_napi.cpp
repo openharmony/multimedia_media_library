@@ -82,7 +82,7 @@ napi_value MediaAssetManagerNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_STATIC_FUNCTION("requestVideoFile", JSRequestVideoFile),
             DECLARE_NAPI_STATIC_FUNCTION("cancelRequest", JSCancelRequest),
             DECLARE_NAPI_STATIC_FUNCTION("loadMovingPhoto", JSLoadMovingPhoto),
-            DECLARE_NAPI_STATIC_FUNCTION("requestEfficientImage", JSRequestEfficientIImage)
+            DECLARE_NAPI_STATIC_FUNCTION("quickRequestImage", JSRequestEfficientIImage)
         }};
         MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
         return exports;
