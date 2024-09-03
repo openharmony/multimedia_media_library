@@ -109,8 +109,6 @@ void CleanVisionData()
     MediaLibraryCommand geoDictionaryCmd(geoDictionaryUri);
     Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
     MediaLibraryCommand geoKnowledgeCmd(geoKnowledgeUri);
-    Uri videoFaceUri(URI_VIDEO_FACE);
-    MediaLibraryCommand videoFaceCmd(videoFaceUri);
     MediaLibraryDataManager::GetInstance()->Delete(ocrCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(labelCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(aesCmd, predicates);
@@ -126,6 +124,13 @@ void CleanVisionData()
     MediaLibraryDataManager::GetInstance()->Delete(faceTagCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(geoDictionaryCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(geoKnowledgeCmd, predicates);
+}
+
+void ClearVideoFaceData()
+{
+    DataShare::DataSharePredicates predicates;
+    Uri videoFaceUri(URI_VIDEO_FACE);
+    MediaLibraryCommand videoFaceCmd(videoFaceUri);
     MediaLibraryDataManager::GetInstance()->Delete(videoFaceCmd, predicates);
 }
 
@@ -170,11 +175,13 @@ void MediaLibraryVisionTest::SetUpTestCase(void)
     CleanVisionData();
     ClearAnalysisAlbum();
     ClearPhotos();
+    ClearVideoFaceData();
 }
 
 void MediaLibraryVisionTest::TearDownTestCase(void)
 {
     CleanVisionData();
+    ClearVideoFaceData();
     MEDIA_INFO_LOG("Vision_Test::End");
 }
 
@@ -182,6 +189,7 @@ void MediaLibraryVisionTest::SetUp(void)
 {
     MEDIA_INFO_LOG("SetUp");
     CleanVisionData();
+    ClearVideoFaceData();
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
@@ -938,7 +946,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteVideoFace_Test_001, TestSize.Level
 HWTEST_F(MediaLibraryVisionTest, Vision_QueryVideoFace_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Vision_QueryVideoFace_Test_001::Start");
-   Uri videoFaceUri(URI_VIDEO_FACE);
+    Uri videoFaceUri(URI_VIDEO_FACE);
     MediaLibraryCommand cmd(videoFaceUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(FILE_ID, 5);
