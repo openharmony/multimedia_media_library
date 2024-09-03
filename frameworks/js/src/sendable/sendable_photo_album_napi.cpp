@@ -64,7 +64,7 @@ napi_value SendablePhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value expo
         DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
         DECLARE_NAPI_FUNCTION("getAssets", JSPhoteAccessGetPhotoAssets),
         DECLARE_NAPI_FUNCTION("convertToPhotoAlbum", ConvertToPhotoAlbum),
-        DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", PhotoAccessGetSharedPhotoAssets),
+        DECLARE_NAPI_FUNCTION("getSharedAlbumAssets", JSPhotoAccessGetSharedAlbumAssets),
     };
     napi_define_sendable_class(env, PHOTOACCESS_PHOTO_ALBUM_CLASS.c_str(), NAPI_AUTO_LENGTH,
                                PhotoAlbumNapiConstructor, nullptr, sizeof(props) / sizeof(props[0]), props,
@@ -762,7 +762,7 @@ static napi_value PhotoAccessGetFileAssetsExecuteSync(napi_env env, SendablePhot
     return jsFileArray;
 }
 
-napi_value SendablePhotoAlbumNapi::PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info)
+napi_value SendablePhotoAlbumNapi::JSPhotoAccessGetSharedAlbumAssets(napi_env env, napi_callback_info info)
 {
     unique_ptr<SendablePhotoAccessHelperAsyncContext> context = make_unique<SendablePhotoAccessHelperAsyncContext>();
     context->assetType = TYPE_PHOTO;
