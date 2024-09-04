@@ -1205,12 +1205,14 @@ static void TrashAlbumExecute(const TrashAlbumExecuteOpt &opt)
 
     auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(opt.data);
     if (context->predicates.GetOperationList().empty()) {
+        NAPI_ERR_LOG("Operation list is empty.");
         return;
     }
     Uri uri(opt.uri);
     int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
+        NAPI_ERR_LOG("Trash album executed, changeRows: %{pubic}d.", changedRows);
         return;
     }
     context->changedRows = changedRows;
