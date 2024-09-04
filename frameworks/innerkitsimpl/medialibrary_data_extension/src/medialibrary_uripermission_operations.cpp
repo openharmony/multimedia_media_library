@@ -188,7 +188,7 @@ static void QueryUriPermission(MediaLibraryCommand &cmd, const std::vector<DataS
         return;
     }
     cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
-    for (const auto val : values) {
+    for (const auto &val : values) {
         predicateInColumns.push_back(static_cast<string>(val.Get(AppUriPermissionColumn::FILE_ID, isValid)));
     }
     predicates.In(AppUriPermissionColumn::FILE_ID, predicateInColumns);
@@ -254,7 +254,7 @@ static void FilterNotExistUri(const std::vector<DataShareValuesBucket> &values, 
     vector<string> photosColumns;
     vector<string> audioColumns;
     bool isValid;
-    for (const auto val : values) {
+    for (const auto &val : values) {
         if (static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isValid)) == PHOTOSTYPE) {
             photosColumns.push_back(val.Get(AppUriPermissionColumn::FILE_ID, isValid));
         } else if (static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isValid)) == AUDIOSTYPE) {
@@ -297,7 +297,7 @@ static void FilterNotExistUri(const std::vector<DataShareValuesBucket> &values, 
 static void GetAllUriDbOperation(const vector<DataShareValuesBucket> &values, vector<int32_t> &dbOperation,
     std::shared_ptr<OHOS::NativeRdb::ResultSet> &queryResult)
 {
-    for (const auto val : values) {
+    for (const auto &val : values) {
         dbOperation.push_back(INSERT_DB_OPERATION);
     }
     if ((queryResult == nullptr) || (queryResult->GoToFirstRow() != NativeRdb::E_OK)) {
@@ -354,7 +354,7 @@ static int32_t ValueBucketCheck(const std::vector<DataShareValuesBucket> &values
     if (values.empty()) {
         return E_ERR;
     }
-    for (const auto val : values) {
+    for (const auto &val : values) {
         val.Get(AppUriPermissionColumn::FILE_ID, isValidArr[FILE_ID_INDEX]);
         val.Get(AppUriPermissionColumn::URI_TYPE, isValidArr[URI_TYPE_INDEX]);
         val.Get(AppUriPermissionColumn::PERMISSION_TYPE, isValidArr[PERMISSION_TYPE_INDEX]);
