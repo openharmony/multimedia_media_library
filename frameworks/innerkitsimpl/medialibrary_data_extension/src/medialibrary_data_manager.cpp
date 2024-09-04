@@ -1352,6 +1352,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(MediaLibraryCommand &
     auto absResultSet = QueryRdb(cmd, columns, predicates, errCode);
     if (absResultSet == nullptr) {
         errCode = (errCode != E_OK) ? errCode : E_FAIL;
+        MEDIA_ERR_LOG("Query rdb failed, errCode: %{public}d", errCode);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
             {KEY_OPT_TYPE, OptType::QUERY}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
