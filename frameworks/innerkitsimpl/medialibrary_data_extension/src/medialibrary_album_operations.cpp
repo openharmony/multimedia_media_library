@@ -1431,7 +1431,54 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
     return E_OK;
 }
 
-int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumInfo &currentAlbum,
+inline string JoinCandidateIds(const vector<string> &candidateIds)
+{
+    return accumulate(candidateIds.begin() + 1, candidateIds.end(), candidateIds[0],
+        [](const string &a, const string &b) { return a + ", " + b; });
+}
+
+string GetCandidateIdsAndSetCoverSatisfied(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumInfo &currentAlbum,
+    const MergeAlbumInfo &targetAlbum, const string &currentFileId, const string &targetFileId)
+{
+    vector<string> candidateIds;
+    if (currentAlbum.isCoverSatisfied & static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING)) {
+        candidateIds.push_back(currentFileId);
+    }
+    if (targetAlbum.isCoverSatisfied & static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING)) {
+        candidateIds.push_back(targetFileId);
+    }
+    if (!candidateIds.empty()) {
+        updateAlbumInfo.isCoverSatisfied = static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING_EDITE);
+        return JoinCandidateIds(candidateIds);
+    }
+
+    if (currentAlbum.isCoverSatisfied & static_cast<uint8_t>(CoverSatisfiedType::BEAUTY_SETTING)) {
+        candidateIds.push_back(currentFileId);
+    }
+    if (targetAlbum.isCoverSatisfied & static_cast<uint8_t>(CoverSatisfiedType::BEAUTY_SETTING)) {
+        candidateIds.push_back(targetFileId);
+    }
+    if (!candidateIds.empty()) {
+        updateAlbumInfo.isCoverSatisfied = static_cast<uint8_t>(CoverSatisfiedType::BEAUTY_SETTING_EDITE);
+        return JoinCandidateIds(candidateIds);
+    }
+
+    if (currentAlbum.isCoverSatisfied & static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING)) {
+        candidateIds.push_back(currentFileId);
+    }
+    if (targetAlbum.isCoverSatisfied & static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING)) {
+        candidateIds.push_back(targetFileId);
+    }
+    if (!candidateIds.empty()) {
+        updateAlbumInfo.isCoverSatisfied = static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING);
+        return JoinCandidateIds(candidateIds);
+    }
+
+    updateAlbumInfo.isCoverSatisfied = static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING);
+    return currentFileId + ", " + targetFileId;
+}
+
+int32_t GetMergeAlbumCoverUriAndSatisfied(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumInfo &currentAlbum,
     const MergeAlbumInfo &targetAlbum)
 {
     string currentFileId = ParseFileIdFromCoverUri(currentAlbum.coverUri);
@@ -1444,14 +1491,9 @@ int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumI
         MEDIA_ERR_LOG("uniStore is nullptr! failed query get merge album cover uri");
         return E_DB_FAIL;
     }
-    string candidateIds;
-    if (currentAlbum.isCoverSatisfied == targetAlbum.isCoverSatisfied) {
-        candidateIds = currentFileId + ", " + targetFileId;
-    } else {
-        candidateIds = currentAlbum.isCoverSatisfied != static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING) ?
-            currentFileId :
-            targetFileId;
-    }
+    string candidateIds =
+        GetCandidateIdsAndSetCoverSatisfied(updateAlbumInfo, currentAlbum, targetAlbum, currentFileId, targetFileId);
+
     const std::string queryAlbumInfo = "SELECT " + MediaColumn::MEDIA_ID + "," + MediaColumn::MEDIA_TITLE + "," +
         MediaColumn::MEDIA_NAME + ", MAX(" + MediaColumn::MEDIA_DATE_ADDED + ") FROM " + PhotoColumn::PHOTOS_TABLE +
         " WHERE " + MediaColumn::MEDIA_ID + " IN (" + candidateIds + " )";
@@ -1486,10 +1528,9 @@ int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumI
 int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo, int32_t currentAlbumId)
 {
     MergeAlbumInfo updateAlbumInfo;
-    if (GetMergeAlbumCoverUri(updateAlbumInfo, mergeAlbumInfo[0], mergeAlbumInfo[1]) != E_OK) {
+    if (GetMergeAlbumCoverUriAndSatisfied(updateAlbumInfo, mergeAlbumInfo[0], mergeAlbumInfo[1]) != E_OK) {
         return E_HAS_DB_ERROR;
     }
-    updateAlbumInfo.isCoverSatisfied = mergeAlbumInfo[0].isCoverSatisfied | mergeAlbumInfo[1].isCoverSatisfied;
     updateAlbumInfo.count = GetMergeAlbumCount(mergeAlbumInfo[0].albumId, mergeAlbumInfo[1].albumId);
     updateAlbumInfo.groupTag = "'" + mergeAlbumInfo[0].groupTag + "|" + mergeAlbumInfo[1].groupTag + "'";
     updateAlbumInfo.isMe = (mergeAlbumInfo[0].isMe == 1 || mergeAlbumInfo[1].isMe == 1) ? 1 : 0;
