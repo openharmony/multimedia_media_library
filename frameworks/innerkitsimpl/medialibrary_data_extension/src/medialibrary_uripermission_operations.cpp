@@ -397,7 +397,6 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
     bool isValid = false;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     TransactionOperations op(rdbStore->GetRaw());
-    int32_t err = op.Start();
     if (ValueBucketCheck(values) != E_OK) {
         return E_ERR;
     }
@@ -421,6 +420,7 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
             InsertValueBucketPrepare(values, fileId, uriType, batchInsertBucket);
         }
     }
+    int32_t err = op.Start();
     if (photoNeedToUpdate) {
         BatchUpdate(cmd, photosValues, PHOTOSTYPE, values);
     }
