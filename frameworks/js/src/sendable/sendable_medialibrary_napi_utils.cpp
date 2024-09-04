@@ -1098,6 +1098,22 @@ napi_value SendableMediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32
     return value;
 }
 
+void SendableMediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name, napi_value result,
+    int32_t index, const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
+{
+    if (TIME_COLUMN.count(name) == 0) {
+        return;
+    }
+    int64_t longVal = 0;
+    int status;
+    napi_value value = nullptr;
+    status = resultSet->GetLong(index, longVal);
+    int64_t modifieldValue = longVal / 1000;
+    napi_create_int64(env, modifieldValue, &value);
+    auto dataType = SendableMediaLibraryNapiUtils::GetTimeTypeMap().at(name);
+    napi_set_named_property(env, result, dataType.second.c_str(), value);
+}
+
 napi_value SendableMediaLibraryNapiUtils::GetNextRowObject(napi_env env,
     shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
@@ -1122,8 +1138,9 @@ napi_value SendableMediaLibraryNapiUtils::GetNextRowObject(napi_env env,
             continue;
         }
         value = SendableMediaLibraryNapiUtils::CreateValueByIndex(env, index, name, resultSet, fileAsset);
-        auto dataType = MediaLibraryNapiUtils::GetTypeMap().at(name);
+        auto dataType = SendableMediaLibraryNapiUtils::GetTypeMap().at(name);
         napi_set_named_property(env, result, dataType.second.c_str(), value);
+        handleTimeInfo(env, name, result, index, resultSet);
     }
 
     string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath(), false);

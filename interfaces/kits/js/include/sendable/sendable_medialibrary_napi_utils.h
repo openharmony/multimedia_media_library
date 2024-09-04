@@ -43,19 +43,59 @@ struct SendableJSAsyncContextOutput {
 /* Util class used by napi asynchronous methods for making call to js callback function */
 class SendableMediaLibraryNapiUtils {
 public:
-    static const std::unordered_map<std::string, ResultSetDataType> &GetTypeMap()
+    static const std::unordered_map<std::string, std::pair<ResultSetDataType, std::string>> &GetTypeMap()
     {
-        static const std::unordered_map<std::string, ResultSetDataType> TYPE_MAP = {
-            {MEDIA_DATA_DB_ID, TYPE_INT32},
-            {MEDIA_DATA_DB_FILE_PATH, TYPE_STRING},
-            {MEDIA_DATA_DB_NAME, TYPE_STRING},
-            {MEDIA_DATA_DB_MEDIA_TYPE, TYPE_INT32},
-            {MEDIA_DATA_DB_DATE_ADDED, TYPE_INT64},
-            {MEDIA_DATA_DB_DATE_MODIFIED, TYPE_INT64},
-            {MEDIA_DATA_DB_DATE_TAKEN, TYPE_INT64},
-            {MEDIA_DATA_DB_COUNT, TYPE_INT32},
+        static const std::unordered_map<std::string, std::pair<ResultSetDataType, std::string>> TYPE_MAP = {
+            {MEDIA_DATA_DB_ID, {TYPE_INT32, "fileId"}},
+            {MEDIA_DATA_DB_FILE_PATH, {TYPE_STRING, "data"}},
+            {MEDIA_DATA_DB_MEDIA_TYPE, {TYPE_INT32, "mediaType"}},
+            {MEDIA_DATA_DB_NAME, {TYPE_STRING, "displayName"}},
+            {MEDIA_DATA_DB_SIZE, {TYPE_INT64, "size"}},
+            {MEDIA_DATA_DB_DATE_ADDED, {TYPE_INT64, "dateAddedMs"}},
+            {MEDIA_DATA_DB_DATE_MODIFIED, {TYPE_INT64, "dateModifiedMs"}},
+            {MEDIA_DATA_DB_DURATION, {TYPE_INT64, "duration"}},
+            {MEDIA_DATA_DB_WIDTH, {TYPE_INT32, "width"}},
+            {MEDIA_DATA_DB_HEIGHT, {TYPE_INT32, "height"}},
+            {MEDIA_DATA_DB_DATE_TAKEN, {TYPE_INT64, "dateTaken"}},
+            {MEDIA_DATA_DB_ORIENTATION, {TYPE_INT32, "orientation"}},
+            {MEDIA_DATA_DB_IS_FAV, {TYPE_INT32, "isFavourite"}},
+            {MEDIA_DATA_DB_TITLE, {TYPE_STRING, "title"}},
+            {MEDIA_DATA_DB_POSITION, {TYPE_INT32, "position"}},
+            {MEDIA_DATA_DB_DATE_TRASHED, {TYPE_INT64, "dateTrashedMs"}},
+            {MediaColumn::MEDIA_HIDDEN, {TYPE_INT32, "hidden"}},
+            {PhotoColumn::PHOTO_USER_COMMENT, {TYPE_STRING, "userComment"}},
+            {PhotoColumn::CAMERA_SHOT_KEY, {TYPE_STRING, "cameraShotKey"}},
+            {PhotoColumn::PHOTO_DATE_YEAR, {TYPE_STRING, "dateYear"}},
+            {PhotoColumn::PHOTO_DATE_MONTH, {TYPE_STRING, "dateMonth"}},
+            {PhotoColumn::PHOTO_DATE_DAY, {TYPE_STRING, "dateDay"}},
+            {MEDIA_DATA_DB_TIME_PENDING, {TYPE_INT64, "pending"}},
+            {PhotoColumn::PHOTO_SUBTYPE, {TYPE_INT32, "subtype"}},
+            {PhotoColumn::MOVING_PHOTO_EFFECT_MODE, {TYPE_INT32, "movingPhotoEffectMode"}},
+            {PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, {TYPE_INT32, "dynamicRangeType"}},
+            {PhotoColumn::PHOTO_THUMBNAIL_READY, {TYPE_INT64, "thumbnailReady"}},
+            {PhotoColumn::PHOTO_LCD_SIZE, {TYPE_STRING, "lcdSize"}},
+            {PhotoColumn::PHOTO_THUMB_SIZE, {TYPE_STRING, "thmSize"}},
+            {MEDIA_DATA_DB_COUNT, {TYPE_INT32, "count"}},
+            {PhotoAlbumColumns::ALBUM_ID, {TYPE_INT32, "albumId"}},
+            {PhotoAlbumColumns::ALBUM_TYPE, {TYPE_INT32, "albumType"}},
+            {PhotoAlbumColumns::ALBUM_SUBTYPE, {TYPE_INT32, "albumSubType"}},
+            {PhotoAlbumColumns::ALBUM_NAME, {TYPE_STRING, "albumName"}},
+            {PhotoAlbumColumns::ALBUM_COVER_URI, {TYPE_STRING, "coverUri"}},
+            {PhotoAlbumColumns::ALBUM_COUNT, {TYPE_INT32, "count"}},
+            {PhotoAlbumColumns::ALBUM_IMAGE_COUNT, {TYPE_INT32, "imageCount"}},
+            {PhotoAlbumColumns::ALBUM_VIDEO_COUNT, {TYPE_INT32, "videoCount"}},
         };
         return TYPE_MAP;
+    }
+
+    static const std::unordered_map<std::string, std::pair<ResultSetDataType, std::string>>& GetTimeTypeMap()
+    {
+        static const std::unordered_map<std::string, std::pair<ResultSetDataType, std::string>> TIME_TYPE_MAP = {
+            {MEDIA_DATA_DB_DATE_ADDED, {TYPE_INT64, "dateAdded"}},
+            {MEDIA_DATA_DB_DATE_MODIFIED, {TYPE_INT64, "dateModified"}},
+            {MEDIA_DATA_DB_DATE_TRASHED, {TYPE_INT64, "dateTrashed"}},
+        };
+        return TIME_TYPE_MAP;
     }
 
     static napi_status GetUInt32(napi_env env, napi_value arg, uint32_t &value);
@@ -188,6 +228,8 @@ public:
     static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     static napi_value CreateValueByIndex(napi_env env, int32_t index, std::string name,
         std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
+    static void handleTimeInfo(napi_env env, const std::string& name, napi_value result,
+        int32_t index, const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet);
 
     template <class AsyncContext>
     static napi_status ParsePredicates(napi_env env,

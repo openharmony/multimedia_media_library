@@ -123,7 +123,7 @@ napi_value SendablePhotoAccessHelper::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("release", JSRelease),
         DECLARE_NAPI_FUNCTION("getAlbums", PhotoAccessGetPhotoAlbums),
         DECLARE_NAPI_FUNCTION("getHiddenAlbums", PahGetHiddenAlbums),
-        DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", PhotoAccessGetSharedPhotoAssets);
+        DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", PhotoAccessGetSharedPhotoAssets),
     };
     napi_define_sendable_class(env, SENDABLE_PHOTOACCESSHELPER_NAPI_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
                                MediaLibraryNapiConstructor, nullptr, sizeof(props) / sizeof(props[0]),
@@ -1714,6 +1714,41 @@ napi_value SendablePhotoAccessHelper::PhotoAccessGetBurstAssets(napi_env env, na
 
     return SendableMediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets",
         PhotoAccessGetAssetsExecute, GetFileAssetsAsyncCallbackComplete);
+}
+
+napi_value SendablePhotoAccessHelper::PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetSharedPhotoAssets");
+    unique_ptr<SendablePhotoAccessHelperAsyncContext> asyncContext =
+        make_unique<SendablePhotoAccessHelperAsyncContext>();
+    asyncContext->assetType = TYPE_PHOTO;
+    CHECK_NULLPTR_RET(ParseArgsGetAssets(env, info, asyncContext));
+
+    SendablePhotoAccessHelperAsyncContext* context =
+        static_cast<SendablePhotoAccessHelperAsyncContext*>((asyncContext.get()));
+    string queryUri = PAH_QUERY_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+
+    Uri uri(queryUri);
+    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
+        context->predicates, context->fetchColumn);
+    CHECK_NULLPTR_RET(resultSet);
+
+    napi_value jsFileArray = 0;
+    napi_create_array(env, &jsFileArray);
+
+    int count = 0;
+    int err = resultSet->GoToFirstRow();
+    if (err != napi_ok) {
+        NAPI_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        return jsFileArray;
+    }
+    do {
+        napi_value item = MediaLibraryNapiUtils::GetNextRowObject(env, resultSet, true);
+        napi_set_element(env, jsFileArray, count++, item);
+    } while (!resultSet->GoToNextRow());
+    return jsFileArray;
 }
 } // namespace Media
 } // namespace OHOS
