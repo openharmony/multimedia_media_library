@@ -441,7 +441,7 @@ static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const s
     int32_t ret = E_SUCCESS;
     if (oldCover != newCover) {
         ret = E_NEED_UPDATE_ALBUM_COVER_URI;
-        values.PutInt(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING) | coverSatisfied);
+        values.PutInt(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING));
         values.PutString(targetColumn, newCover);
         MEDIA_DEBUG_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s", targetColumn.c_str(),
             oldCover.c_str(), newCover.c_str());
