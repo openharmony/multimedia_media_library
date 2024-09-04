@@ -118,6 +118,10 @@ string DfxUtils::GetCurrentDateMillisecond()
     auto now = std::chrono::system_clock::now();
     std::time_t now_time = std::chrono::system_clock::to_time_t(now);
     std::tm* now_tm = std::localtime(&now_time);
+    if (now_tm == nullptr) {
+        MEDIA_ERR_LOG("GetCurrentDateMillisecond failed: now_tm is nullptr");
+        return "";
+    }
     auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
     std::chrono::duration<int, std::milli> ms_part = now_ms.time_since_epoch() % std::chrono::seconds(ONE_SECOND);
 

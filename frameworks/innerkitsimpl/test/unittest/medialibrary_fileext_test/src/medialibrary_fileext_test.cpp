@@ -1404,7 +1404,8 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromRelativePath_test_
         exit(1);
     }
     shared_ptr<FileAsset> fileAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("GetFileInfoFromRelativePath_002.jpg", g_pictures, fileAsset));
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("GetFileInfoFromRelativePath_002.jpg", g_pictures, fileAsset),
+        true);
     FileInfo parentInfo;
     auto ret = mediaFileExtAbility->GetFileInfoFromRelativePath(fileAsset->GetRelativePath(), parentInfo);
     PrintFileInfo(parentInfo, "medialib_GetFileInfoFromRelativePath_test_002");
@@ -1453,7 +1454,8 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromRelativePath_test_
     EXPECT_EQ(mediaFileExtAbility->GetFileInfoFromRelativePath(testRelativePath, parentInfo), E_SUCCESS);
 
     shared_ptr<FileAsset> fileAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("GetFileInfoFromRelativePath_004.jpg", g_pictures, fileAsset));
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("GetFileInfoFromRelativePath_004.jpg", g_pictures, fileAsset),
+        true);
     testRelativePath = "Pictures/GetFileInfoFromRelativePath_004.jpg";
     EXPECT_EQ(mediaFileExtAbility->GetFileInfoFromRelativePath(testRelativePath, parentInfo), E_SUCCESS);
 }
