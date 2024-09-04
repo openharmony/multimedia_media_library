@@ -468,16 +468,23 @@ static int32_t GetFdFromSandbox(const string &path, string &sandboxPath, bool is
             MediaFileUtils::DesensitizePath(path).c_str());
         return fd;
     }
-    fd = open(sandboxPath.c_str(), O_RDONLY);
-    if (fd < 0 && isAstc) {
-        string suffixStr = "THM_ASTC.astc";
-        size_t thmIdx = sandboxPath.find(suffixStr);
-        if (thmIdx != std::string::npos) {
-            sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
-            fd = open(sandboxPath.c_str(), O_RDONLY);
-        }
+    string absFilePath;
+    if (PathToRealPath(sandboxPath, absFilePath)) {
+        return open(absFilePath.c_str(), O_RDONLY);
     }
-    return fd;
+    if (!isAstc) {
+        return fd;
+    }
+    string suffixStr = "THM_ASTC.astc";
+    size_t thmIdx = sandboxPath.find(suffixStr);
+    if (thmIdx == std::string::npos) {
+        return fd;
+    }
+    sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
+    if (!PathToRealPath(sandboxPath, absFilePath)) {
+        return fd;
+    }
+    return open(absFilePath.c_str(), O_RDONLY);
 }
 
 int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size, bool isAstc)
