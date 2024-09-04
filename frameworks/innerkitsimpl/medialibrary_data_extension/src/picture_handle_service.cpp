@@ -276,7 +276,7 @@ bool PictureHandlerService ::WriteBufferHandler(MessageParcel &data, BufferHandl
     MEDIA_DEBUG_LOG("PictureHandlerService::WriteBufferHandler format: %{public}d", handle.format);
     data.WriteInt32(handle.format);
 
-    data.WriteInt64(handle.usage);
+    data.WriteUint64(handle.usage);
 
     data.WriteUint64(handle.phyAddr);
 

@@ -38,7 +38,7 @@ private:
     static bool ReadImageInfo(MessageParcel &data, ImageInfo &imageInfo);
     static bool ReadYuvDataInfo(MessageParcel &data, YUVDataInfo &yuvInfo);
     static bool ReadSurfaceBuffer(MessageParcel &data, std::unique_ptr<PixelMap> &pixelMap);
-    static BufferHandle* ReadBufferHandle(MessageParcel &data);
+    static bool ReadBufferHandle(MessageParcel &data, sptr<SurfaceBuffer> &surfaceBuffer);
     static bool ReadExifMetadata(MessageParcel &data, std::unique_ptr<Media::Picture> &picture);
     static bool ReadMaintenanceData(MessageParcel &data, std::unique_ptr<Media::Picture> &picture);
     static int32_t RequestBufferHandlerFd(const int32_t &fd);

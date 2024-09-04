@@ -174,14 +174,18 @@ bool PictureHandlerClient::ReadAuxiliaryPicture(MessageParcel &data, std::unique
 
     auxiliaryPicture->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
 
-    int32_t metadataSize = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPicture metadataSize: %{public}d", metadataSize);
-    for (int i = 0; i < metadataSize; i++) {
-        MetadataType type = static_cast<MetadataType>(data.ReadInt32());
-        MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPicture type: %{public}d", type);
-        std::shared_ptr<ImageMetadata> metadataPtr(nullptr);
-        metadataPtr.reset(ExifMetadata::Unmarshalling(data));
-        auxiliaryPicture->SetMetadata(type, metadataPtr);
+    int32_t metadataSize = 0;
+    if (data.ReadInt32(metadataSize)) {
+        MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPicture metadataSize: %{public}d", metadataSize);
+        for (int i = 0; i < metadataSize; i++) {
+            MetadataType type = static_cast<MetadataType>(data.ReadInt32());
+            MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPicture type: %{public}d", type);
+            std::shared_ptr<ImageMetadata> metadataPtr(nullptr);
+            metadataPtr.reset(ExifMetadata::Unmarshalling(data));
+            auxiliaryPicture->SetMetadata(type, metadataPtr);
+        }
+    } else {
+        MEDIA_ERR_LOG("PictureHandlerClient::ReadAuxiliaryPicture metadataSize failed");
     }
     picture->SetAuxiliaryPicture(auxiliaryPicture);
     MEDIA_DEBUG_LOG("PictureHandler::ReadAuxiliaryPicture end");
@@ -275,8 +279,7 @@ bool PictureHandlerClient::ReadSurfaceBuffer(MessageParcel &data, std::unique_pt
         return false;
     }
     sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
-    BufferHandle* handle = ReadBufferHandle(data);
-    surfaceBuffer->SetBufferHandle(handle);
+    ReadBufferHandle(data, surfaceBuffer);
     void* nativeBuffer = surfaceBuffer.GetRefPtr();
     OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(nativeBuffer);
     ref->IncStrongRef(ref);
@@ -286,15 +289,20 @@ bool PictureHandlerClient::ReadSurfaceBuffer(MessageParcel &data, std::unique_pt
     return true;
 }
 
-BufferHandle* PictureHandlerClient::ReadBufferHandle(MessageParcel &data)
+bool PictureHandlerClient::ReadBufferHandle(MessageParcel &data, sptr<SurfaceBuffer> &surfaceBuffer)
 {
-    uint32_t reserveFds = data.ReadUint32();
+    uint32_t reserveFds = 0;
+    bool readReserveFdsRet = data.ReadUint32(reserveFds);
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle reserveFds: %{public}d", reserveFds);
     uint32_t reserveInts = data.ReadUint32();
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle reserveInts: %{public}d", reserveInts);
 
     size_t handleSize = sizeof(BufferHandle) + (sizeof(int32_t) * (reserveFds + reserveInts));
     BufferHandle *handle = static_cast<BufferHandle *>(malloc(handleSize));
+    if (handle == nullptr) {
+        MEDIA_ERR_LOG("PictureHandlerClient::ReadBufferHandle malloc BufferHandle failed");
+        return false;
+    }
     memset_s(handle, handleSize, 0, handleSize);
 
     handle->reserveFds = reserveFds;
@@ -309,7 +317,7 @@ BufferHandle* PictureHandlerClient::ReadBufferHandle(MessageParcel &data)
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle size: %{public}d", handle->size);
     handle->format = data.ReadInt32();
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle format: %{public}d", handle->format);
-    handle->usage = data.ReadInt64();
+    handle->usage = data.ReadUint64();
     handle->phyAddr = data.ReadUint64();
 
     int32_t fd = RequestBufferHandlerFd(data.ReadInt32());
@@ -317,15 +325,19 @@ BufferHandle* PictureHandlerClient::ReadBufferHandle(MessageParcel &data)
     handle->fd = dup(fd);
     close(fd);
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle handle->fd: %{public}d", handle->fd);
-    for (uint32_t i = 0; i < reserveFds; i++) {
-        int32_t reserveFd = RequestBufferHandlerFd(data.ReadInt32());
-        MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle reserve[%{public}d]: %{public}d", i, reserveFd);
-        handle->reserve[i] = dup(reserveFd);
-        MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle handle->reserve[%{public}d]: %{public}d",
-            i, handle->reserve[i]);
-        close(reserveFd);
+    if (readReserveFdsRet) {
+        for (uint32_t i = 0; i < reserveFds; i++) {
+            int32_t reserveFd = RequestBufferHandlerFd(data.ReadInt32());
+            MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle reserve[%{public}d]: %{public}d", i, reserveFd);
+            handle->reserve[i] = dup(reserveFd);
+            MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle handle->reserve[%{public}d]: %{public}d",
+                i, handle->reserve[i]);
+            close(reserveFd);
+        }
     }
-    return handle;
+
+    surfaceBuffer->SetBufferHandle(handle);
+    return true;
 }
 
 bool PictureHandlerClient::ReadExifMetadata(MessageParcel &data, std::unique_ptr<Media::Picture> &picture)
@@ -349,8 +361,7 @@ bool PictureHandlerClient::ReadMaintenanceData(MessageParcel &data, std::unique_
         return true;
     }
     sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
-    BufferHandle* handle = ReadBufferHandle(data);
-    surfaceBuffer->SetBufferHandle(handle);
+    ReadBufferHandle(data, surfaceBuffer);
     return picture->SetMaintenanceData(surfaceBuffer);
 }
 
