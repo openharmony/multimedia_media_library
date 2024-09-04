@@ -17,6 +17,7 @@
 
 #include <memory>
 #include <mutex>
+#include <thread>
 #include <nlohmann/json.hpp>
 
 #include "abs_shared_result_set.h"
@@ -357,6 +358,30 @@ static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<Fi
     return E_OK;
 }
 
+static void UpdateLastVisitTime(MediaLibraryCommand &cmd, const string &id)
+{
+    if (cmd.GetTableName() != PhotoColumn::PHOTOS_TABLE) {
+        return;
+    }
+    std::thread([&] {
+        int32_t changedRows = 0;
+        string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+        if (whereClause.empty()) {
+            cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
+        } else {
+            string where = whereClause + " AND " + PhotoColumn::MEDIA_ID + " = ?";
+            vector<string> whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
+            whereArgs.push_back(id);
+            cmd.GetAbsRdbPredicates()->SetWhereClause(where);
+            cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+        }
+        changedRows = MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
+        if (changedRows <= 0) {
+            MEDIA_ERR_LOG("update lastVisitTime Failed, changedRows = %{public}d.", changedRows);
+        }
+    }).detach();
+}
+
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
@@ -389,22 +414,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     if (errCode != E_OK) {
         return errCode;
     }
-    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        int32_t changedRows = 0;
-        std::vector<string> perms = { PERM_READ_IMAGEVIDEO, PERM_WRITE_IMAGEVIDEO };
-        if (PermissionUtils::CheckHasPermission(perms)) {
-            string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
-            if (whereClause.length() > 0) {
-                whereClause += " AND ";
-                cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
-            }
-            cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
-        }
-        changedRows = MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
-        if (changedRows <= 0) {
-            MEDIA_ERR_LOG("update lastVisitTime Failed, changedRows = %{public}d.", changedRows);
-        }
-    }
+    UpdateLastVisitTime(cmd, id);
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10, isMovingPhotoVideo);
     }
