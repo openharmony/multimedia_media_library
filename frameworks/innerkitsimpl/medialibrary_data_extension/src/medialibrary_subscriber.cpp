@@ -152,10 +152,10 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 {
     if (isScreenOff_ && isCharging_) {
         DfxManager::GetInstance()->HandleHalfDayMissions();
-        MediaLibraryRestore::GetInstance().DoRdbHAModeSwitch();
+        MediaLibraryRestore::GetInstance().CheckBackup();
     }
     if (!isScreenOff_ || !isCharging_) {
-        MediaLibraryRestore::GetInstance().InterruptRdbHAModeSwitch();
+        MediaLibraryRestore::GetInstance().InterruptBackup();
     }
 }
 
