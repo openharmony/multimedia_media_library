@@ -360,25 +360,26 @@ static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<Fi
 
 static void UpdateLastVisitTime(MediaLibraryCommand &cmd, const string &id)
 {
-    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        std::thread([&] {
-            int32_t changedRows = 0;
-            string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
-            if (whereClause.empty()) {
-                cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
-            } else {
-                string where = whereClause + " AND " + PhotoColumn::MEDIA_ID + " = ?";
-                vector<string> whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
-                whereArgs.push_back(id);
-                cmd.GetAbsRdbPredicates()->SetWhereClause(where);
-                cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
-            }
-            changedRows = MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
-            if (changedRows <= 0) {
-                MEDIA_ERR_LOG("update lastVisitTime Failed, changedRows = %{public}d.", changedRows);
-            }
-        }).detach();
+    if (cmd.GetTableName() != PhotoColumn::PHOTOS_TABLE) {
+        return;
     }
+    std::thread([&] {
+        int32_t changedRows = 0;
+        string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+        if (whereClause.empty()) {
+            cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
+        } else {
+            string where = whereClause + " AND " + PhotoColumn::MEDIA_ID + " = ?";
+            vector<string> whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
+            whereArgs.push_back(id);
+            cmd.GetAbsRdbPredicates()->SetWhereClause(where);
+            cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+        }
+        changedRows = MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
+        if (changedRows <= 0) {
+            MEDIA_ERR_LOG("update lastVisitTime Failed, changedRows = %{public}d.", changedRows);
+        }
+    }).detach();
 }
 
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
