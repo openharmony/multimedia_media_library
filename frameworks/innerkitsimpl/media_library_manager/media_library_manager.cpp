@@ -298,9 +298,33 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
     return E_SUCCESS;
 }
 
+std::shared_ptr<DataShareResultSet> GetResultSetFromPhotos(const string &value, vector<string> &columns,
+    sptr<IRemoteObject> &token)
+{
+    if (!CheckPhotoUri(value)) {
+        MEDIA_ERR_LOG("Failed to check invalid uri: %{public}s", value.c_str());
+        return nullptr;
+    }
+    Uri queryUri(PAH_QUERY_PHOTO);
+    DataSharePredicates predicates;
+    string fileId = MediaFileUtils::GetIdFromUri(value);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    DatashareBusinessError businessError;
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    if (dataShareHelper == nullptr) {
+        MEDIA_ERR_LOG("datashareHelper is nullptr");
+        return nullptr;
+    }
+    return dataShareHelper->Query(queryUri, predicates, columns, &businessError);
+}
+
 std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(string columnName, const string &value,
     vector<string> &columns)
 {
+    if (columnName == MEDIA_DATA_DB_URI) {
+        return GetResultSetFromPhotos(value, columns, token_);
+    }
     Uri uri(MEDIALIBRARY_MEDIA_PREFIX);
     DataSharePredicates predicates;
     predicates.EqualTo(columnName, value);
@@ -468,16 +492,23 @@ static int32_t GetFdFromSandbox(const string &path, string &sandboxPath, bool is
             MediaFileUtils::DesensitizePath(path).c_str());
         return fd;
     }
-    fd = open(sandboxPath.c_str(), O_RDONLY);
-    if (fd < 0 && isAstc) {
-        string suffixStr = "THM_ASTC.astc";
-        size_t thmIdx = sandboxPath.find(suffixStr);
-        if (thmIdx != std::string::npos) {
-            sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
-            fd = open(sandboxPath.c_str(), O_RDONLY);
-        }
+    string absFilePath;
+    if (PathToRealPath(sandboxPath, absFilePath)) {
+        return open(absFilePath.c_str(), O_RDONLY);
     }
-    return fd;
+    if (!isAstc) {
+        return fd;
+    }
+    string suffixStr = "THM_ASTC.astc";
+    size_t thmIdx = sandboxPath.find(suffixStr);
+    if (thmIdx == std::string::npos) {
+        return fd;
+    }
+    sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
+    if (!PathToRealPath(sandboxPath, absFilePath)) {
+        return fd;
+    }
+    return open(absFilePath.c_str(), O_RDONLY);
 }
 
 int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size, bool isAstc)
