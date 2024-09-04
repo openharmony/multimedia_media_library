@@ -2556,7 +2556,6 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
         return ret;
     }
     MEDIA_INFO_LOG("AddFiltersToPhoto finish");
-    MediaLibraryObjectUtils::ScanFileAsync(outputPath, to_string(fileId), MediaLibraryApi::API_10);
     return E_OK;
 }
 
