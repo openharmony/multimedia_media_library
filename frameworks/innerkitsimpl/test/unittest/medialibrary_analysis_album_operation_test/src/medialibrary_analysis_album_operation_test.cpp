@@ -714,7 +714,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, UpdatePortraitAlbumCoverSatisfi
     EXPECT_EQ(GetCoverSatisfied(resultSet), 3);
 
     fileId = 4;
-    InsertPortraitAlbumCoverSatisfiedTestData(fileId, CoverSatisfiedType::ANALYSIS_SETTING);
+    InsertPortraitAlbumCoverSatisfiedTestData(fileId, CoverSatisfiedType::BEAUTY_SETTING);
     MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(fileId);
     resultSet = QueryAnalysisAlbumInfoByFileId(fileId);
     EXPECT_EQ(GetCoverSatisfied(resultSet), 5);
