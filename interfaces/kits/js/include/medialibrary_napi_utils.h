@@ -262,6 +262,10 @@ const std::vector<std::string> AuthorizationModeEnum {
     "SHORT_TIME_AUTHORIZATION"
 };
 
+const std::vector<std::string> compatibleModeEnum {
+    "ORIGINAL_FORMAT_MODE", "COMPATIBLE_FORMAT_MODE"
+};
+
 const std::vector<std::string> HIDDEN_PHOTOS_DISPLAY_MODE_ENUM {
     "ASSETS_MODE", "ALBUMS_MODE"
 };
