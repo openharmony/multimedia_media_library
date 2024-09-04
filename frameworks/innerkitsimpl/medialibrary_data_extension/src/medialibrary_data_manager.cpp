@@ -551,9 +551,11 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::FILESYSTEM_DIR:
             return MediaLibraryDirOperations::HandleDirOperation(cmd);
 
-        case OperationObject::SMART_ALBUM:
+        case OperationObject::SMART_ALBUM: {
+            string packageName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+            MEDIA_INFO_LOG("%{public}s call smart album insert!", packageName.c_str());
             return MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperation(cmd);
-
+        }
         case OperationObject::SMART_ALBUM_MAP:
             return MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd);
 
