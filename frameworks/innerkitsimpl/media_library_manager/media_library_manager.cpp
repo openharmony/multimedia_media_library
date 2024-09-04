@@ -313,7 +313,7 @@ std::shared_ptr<DataShareResultSet> GetResultSetFromPhotos(const string &value, 
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("Failed to read video of moving photo, datashareHelper is nullptr");
+        MEDIA_ERR_LOG("datashareHelper is nullptr");
         return nullptr;
     }
     return dataShareHelper->Query(queryUri, predicates, columns, &businessError);
