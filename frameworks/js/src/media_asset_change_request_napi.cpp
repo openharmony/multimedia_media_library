@@ -723,6 +723,7 @@ static napi_value ParseArgsCreateAsset(
 
 napi_value MediaAssetChangeRequestNapi::JSCreateAssetRequest(napi_env env, napi_callback_info info)
 {
+    NAPI_INFO_LOG("CreateAssetRequest Start");
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env, ParseArgsCreateAsset(env, info, asyncContext), "Failed to parse args");
 
@@ -813,6 +814,7 @@ napi_value MediaAssetChangeRequestNapi::CreateAssetRequestFromRealPath(napi_env 
 
 napi_value MediaAssetChangeRequestNapi::JSCreateImageAssetRequest(napi_env env, napi_callback_info info)
 {
+    NAPI_INFO_LOG("CreateImageAssetRequest Start");
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env, ParseArgsCreateAssetFromFileUri(env, info, MediaType::MEDIA_TYPE_IMAGE, asyncContext),
         "Failed to parse args");
@@ -821,6 +823,7 @@ napi_value MediaAssetChangeRequestNapi::JSCreateImageAssetRequest(napi_env env, 
 
 napi_value MediaAssetChangeRequestNapi::JSCreateVideoAssetRequest(napi_env env, napi_callback_info info)
 {
+    NAPI_INFO_LOG("CreateVideoAssetRequest start");
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env, ParseArgsCreateAssetFromFileUri(env, info, MediaType::MEDIA_TYPE_VIDEO, asyncContext),
         "Failed to parse args");
