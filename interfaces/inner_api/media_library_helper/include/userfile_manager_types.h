@@ -179,7 +179,9 @@ enum class CoverSatisfiedType : uint8_t {
     NO_SETTING = 0,
     DEFAULT_SETTING = 1,
     USER_SETTING = 2,
-    ANALYSIS_SETTING = 4
+    USER_SETTING_EDITE = 3,
+    BEAUTY_SETTING = 4,
+    BEAUTY_SETTING_EDITE = 5
 };
 
 enum class BurstCoverLevelType : int32_t {
