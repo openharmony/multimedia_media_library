@@ -645,6 +645,7 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
     int32_t errCode = transactionOprn.Start();
     if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Tansaction operat failed, errCode=%{public}d", errCode);
         return errCode;
     }
 
@@ -674,9 +675,11 @@ static void TrashPhotosSendNotify(vector<string> &notifyUris)
     auto watch = MediaLibraryNotify::GetInstance();
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
     if (trashAlbumId <= 0) {
+        MEDIA_ERR_LOG("Skip to send trash photos notify, trashAlbumId=%{public}d", trashAlbumId);
         return;
     }
     if (notifyUris.empty()) {
+        MEDIA_ERR_LOG("Skip to send trash photos notify, notifyUris is empty.");
         return;
     }
     if (notifyUris.size() == 1) {
@@ -700,6 +703,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Failed to get rdb store.");
         return E_HAS_DB_ERROR;
     }
 
