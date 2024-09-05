@@ -63,6 +63,14 @@
     {
       "name": "permission_get_wifi_info",
       "value": "Allow MedialibrarySubscriber to obtain wifi information"
+    },
+    {
+      "name": "permission_get_app_state",
+      "value": "Allow MedialibraryAppStateObserver to get app stop status"
+    },
+    {
+      "name": "permission_grant_short_term_write",
+      "value": "Allow app short term write image video"
     }
   ]
 }
