@@ -201,11 +201,12 @@ const int32_t ARGS_TWO = 2;
 const int32_t ARGS_THREE = 3;
 const int32_t ARGS_FOUR = 4;
 const int32_t ARGS_FIVE = 5;
+const int32_t ARGS_SIX = 6;
 const int32_t ARGS_SEVEN = 7;
 const int32_t ARG_BUF_SIZE = 384; // 256 for display name and 128 for relative path
 constexpr uint32_t NAPI_INIT_REF_COUNT = 1;
 
-constexpr size_t NAPI_ARGC_MAX = 5;
+constexpr size_t NAPI_ARGC_MAX = 6;
 
 // Error codes
 const int32_t ERR_DEFAULT = 0;
@@ -254,6 +255,10 @@ const std::vector<std::string> deliveryModeEnum {
 
 const std::vector<std::string> sourceModeEnum {
     "ORIGINAL_MODE", "EDITED_MODE"
+};
+
+const std::vector<std::string> AuthorizationModeEnum {
+    "SHORT_TIME_AUTHORIZATION"
 };
 
 const std::vector<std::string> HIDDEN_PHOTOS_DISPLAY_MODE_ENUM {

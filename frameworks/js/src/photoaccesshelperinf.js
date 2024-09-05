@@ -356,6 +356,45 @@ function showAssetsCreationDialog(...params) {
   return showAssetsCreationDialogParamsOk(...params);
 }
 
+async function createAssetWithShortTermPermissionOk(photoCreationConfig) {
+  let bundleInfo = getBundleInfo();
+  if (bundleInfo === undefined) {
+    return new Promise((resolve, reject) => {
+      reject(new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID));
+    });
+  }
+
+  let bundleName = bundleInfo.name;
+  let appId = bundleInfo.signatureInfo.appId;
+  try {
+    let labelId = getAbilityResource(bundleInfo);
+    let appName = await gContext.resourceManager.getStringValue(labelId);
+    if (photoAccessHelper.checkShortTermPermission()) {
+      let photoCreationConfigs = [photoCreationConfig];
+      let desFileUris = await getPhotoAccessHelper(getContext(this)).createAssetsHasPermission(bundleName, appName, appId,
+        photoCreationConfigs);
+      return new Promise((resolve, reject) => {
+        resolve(desFileUris[0]);
+      });
+    }
+    return new Promise((resolve, reject) => {
+      photoAccessHelper.createAssetWithShortTermPermission(getContext(this), photoCreationConfig, bundleName, appName,
+        appId, result => {
+          showAssetsCreationDialogResult(result, reject, resolve);
+        });
+    });
+  } catch (error) {
+    return errorResult(new BusinessError(ERROR_MSG_INNER_FAIL, error.code), null);
+  }
+}
+
+function createAssetWithShortTermPermission(photoCreationConfig) {
+  if (!checkIsPhotoCreationConfigValid(photoCreationConfig)) {
+    throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID);
+  }
+  return createAssetWithShortTermPermissionOk(photoCreationConfig);
+}
+
 function getPhotoAccessHelper(context) {
   if (context === undefined) {
     console.log('photoAccessHelper gContext undefined');
@@ -367,6 +406,7 @@ function getPhotoAccessHelper(context) {
     console.log('photoAccessHelper getPhotoAccessHelper inner add createDeleteRequest and showAssetsCreationDialog');
     helper.createDeleteRequest = createDeleteRequest;
     helper.showAssetsCreationDialog = showAssetsCreationDialog;
+    helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
   }
   return helper;
 }
@@ -403,6 +443,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
             ' and showAssetsCreationDialog');
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
+          helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
         }
         return helper;
       })
@@ -421,6 +462,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
             ' and showAssetsCreationDialog');
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
+          helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
         }
         asyncCallback(err, helper);
       }
@@ -704,6 +746,7 @@ export default {
   PhotoViewMIMETypes: PhotoViewMIMETypes,
   DeliveryMode: photoAccessHelper.DeliveryMode,
   SourceMode: photoAccessHelper.SourceMode,
+  AuthorizationMode: photoAccessHelper.AuthorizationMode,
   BaseSelectOptions: BaseSelectOptions,
   PhotoSelectOptions: PhotoSelectOptions,
   PhotoSelectResult: PhotoSelectResult,
