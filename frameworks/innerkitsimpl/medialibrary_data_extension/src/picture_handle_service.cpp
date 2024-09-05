@@ -33,7 +33,7 @@
 namespace OHOS {
 namespace Media {
 
-bool PictureHandlerService::OpenPicture(std::string &fileId, int32_t &fd)
+bool PictureHandlerService::OpenPicture(const std::string &fileId, int32_t &fd)
 {
     MEDIA_DEBUG_LOG("PictureHandlerService OpenPicture fileId: %{public}s", fileId.c_str());
     MessageParcel data;
@@ -276,7 +276,7 @@ bool PictureHandlerService ::WriteBufferHandler(MessageParcel &data, BufferHandl
     MEDIA_DEBUG_LOG("PictureHandlerService::WriteBufferHandler format: %{public}d", handle.format);
     data.WriteInt32(handle.format);
 
-    data.WriteInt64(handle.usage);
+    data.WriteUint64(handle.usage);
 
     data.WriteUint64(handle.phyAddr);
 

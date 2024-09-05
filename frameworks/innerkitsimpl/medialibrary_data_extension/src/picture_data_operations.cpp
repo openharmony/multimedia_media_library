@@ -221,10 +221,10 @@ bool PictureDataOperations::IsExsitDataForPictureType(PictureType pictureType)
     bool isExsit = false;
     switch (pictureType) {
         case LOW_QUALITY_PICTURE:
-            isExsit = lowQualityPictureMap_.size() >= 0;
+            isExsit = lowQualityPictureMap_.size() >= 1;
             break;
         case HIGH_QUALITY_PICTURE:
-            isExsit = highQualityPictureMap_.size() >= 0;
+            isExsit = highQualityPictureMap_.size() >= 1;
             break;
         default:
             break;
