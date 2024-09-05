@@ -357,9 +357,9 @@ async function createAssetWithShortTermPermissionOk(photoCreationConfig) {
 
   let bundleName = bundleInfo.name;
   let appId = bundleInfo.signatureInfo.appId;
-  let labelId = getAbilityResource(bundleInfo.hapModulesInfo[0]);
-  let appName = await gContext.resourceManager.getStringValue(labelId);
   try {
+    let labelId = getAbilityResource(bundleInfo);
+    let appName = await gContext.resourceManager.getStringValue(labelId);
     if (photoAccessHelper.checkShortTermPermission()) {
       let photoCreationConfigs = [photoCreationConfig];
       let desFileUris = await getPhotoAccessHelper(getContext(this)).createAssetsHasPermission(bundleName, appName, appId,
