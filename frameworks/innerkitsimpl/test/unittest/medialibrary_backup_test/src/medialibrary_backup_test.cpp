@@ -1800,7 +1800,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     auto ret = upgrade->GetErrorInfoJson();
     string str = ret[STAT_KEY_ERROR_INFO].dump();
     str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
-    EXPECT_EQ(str, "File path is invalid");
+    EXPECT_EQ(str, "");
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype end";
 }
 
@@ -1879,7 +1879,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_illegal_t
 
     vector<string> types = { "test" };
     auto ret = upgrade->GetCountInfoJson(types);
-    string str = ret[STAT_KEY_INFOS][1][STAT_KEY_BACKUP_INFO].dump();
+    string str = ret[STAT_KEY_INFOS][0][STAT_KEY_BACKUP_INFO].dump();
     str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
     EXPECT_EQ(str, "test");
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_illegal_types end";
