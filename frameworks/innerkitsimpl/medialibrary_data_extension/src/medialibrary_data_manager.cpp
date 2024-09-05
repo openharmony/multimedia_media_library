@@ -91,6 +91,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_photo_map_column.h"
 #include "parameter.h"
+#include "uuid.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -110,6 +111,7 @@ namespace Media {
 unique_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
+static const int32_t UUID_STR_LENGTH = 37;
 
 #ifdef DISTRIBUTED
 static constexpr int MAX_QUERY_THUMBNAIL_KEY_COUNT = 20;
@@ -990,6 +992,160 @@ int32_t MediaLibraryDataManager::DoAging()
     }
     asyncWorker->Init();
     return E_OK;
+}
+
+static string GenerateUuid()
+{
+    uuid_t uuid;
+    uuid_generate(uuid);
+    char str[UUID_STR_LENGTH] = {};
+    uuid_unparse(uuid, str);
+    return str;
+}
+
+static string generateRegexpMatchForNumber(const int32_t num)
+{
+    string regexpMatchNumber = "[0-9]";
+    string strRegexpMatch = "";
+    for (int i = 0; i < num; i++) {
+        strRegexpMatch += regexpMatchNumber;
+    }
+    return strRegexpMatch;
+}
+
+static string generateUpdateSql(const bool isCover, const string title, const int32_t mapAlbum)
+{
+    int32_t index = title.find_first_of("BURST");
+    string globMember = title.substr(0, index) + "BURST" + generateRegexpMatchForNumber(3);
+    string globCover = globMember + "_COVER";
+    string updateSql;
+    if (isCover) {
+        string burstkey = GenerateUuid();
+        updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_SUBTYPE + " = " +
+            to_string(static_cast<int32_t>(PhotoSubType::BURST)) + ", " + PhotoColumn::PHOTO_BURST_KEY + " = '" +
+            burstkey + "', " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = CASE WHEN " + MediaColumn::MEDIA_TITLE +
+            " NOT LIKE '%COVER%' THEN " + to_string(static_cast<int32_t>(BurstCoverLevelType::MEMBER)) + " ELSE " +
+            to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) + " END WHERE " + MediaColumn::MEDIA_TYPE +
+            " = " + to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
+            to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + MediaColumn::MEDIA_ID +
+            " IN (SELECT " + PhotoMap::ASSET_ID + " FROM " + PhotoMap::TABLE + " WHERE " + PhotoMap::ALBUM_ID + " = " +
+            to_string(mapAlbum) + ") AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globMember +
+            "') OR LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globCover + "'));";
+    } else {
+        string subWhere = "FROM " + PhotoColumn::PHOTOS_TABLE + " AS p2 JOIN " + PhotoMap::TABLE + " AS p3 ON p2." +
+            MediaColumn::MEDIA_ID + " = p3." + PhotoMap::ASSET_ID + " WHERE LOWER(p2." + MediaColumn::MEDIA_TITLE +
+            ") GLOB LOWER('" + globCover + "') AND p3." + PhotoMap::ALBUM_ID + " = " + to_string(mapAlbum);
+
+        updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " AS p1 SET " + PhotoColumn::PHOTO_BURST_KEY +
+            " = (SELECT CASE WHEN p2." + PhotoColumn::PHOTO_BURST_KEY + " IS NOT NULL THEN p2." +
+            PhotoColumn::PHOTO_BURST_KEY + " ELSE NULL END " + subWhere + " LIMIT 1 ), " +
+            PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = (SELECT CASE WHEN COUNT(1) > 0 THEN " +
+            to_string(static_cast<int32_t>(BurstCoverLevelType::MEMBER)) + " ELSE " +
+            to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) + " END " + subWhere + "), " +
+            PhotoColumn::PHOTO_SUBTYPE + " = (SELECT CASE WHEN COUNT(1) > 0 THEN " +
+            to_string(static_cast<int32_t>(PhotoSubType::BURST)) + " ELSE p1." + PhotoColumn::PHOTO_SUBTYPE + " END " +
+            subWhere + ") WHERE p1." + MediaColumn::MEDIA_TITLE + " = '" + title + "' AND EXISTS(SELECT 1 FROM " +
+            PhotoMap::TABLE + " AS p3 WHERE p1." + MediaColumn::MEDIA_ID + " = p3." + PhotoMap::ASSET_ID + " AND p3." +
+            PhotoMap::ALBUM_ID + " = " + to_string(mapAlbum) + ");";
+    }
+    return updateSql;
+}
+
+static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::RdbStore> rdbStore,
+    shared_ptr<NativeRdb::ResultSet> resultSet)
+{
+    int32_t count;
+    int32_t retCount = resultSet->GetRowCount(count);
+    if (count == 0) {
+        if (isCover) {
+            MEDIA_INFO_LOG("No burst cover need to update");
+        } else {
+            MEDIA_INFO_LOG("No burst member need to update");
+        }
+        return E_SUCCESS;
+    }
+    if (retCount != E_SUCCESS || count < 0) {
+        return E_ERR;
+    }
+
+    int32_t ret = E_ERR;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int columnIndex = 0;
+        string title;
+        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_TITLE, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetString(columnIndex, title);
+        }
+        int32_t mapAlbum = 0;
+        if (resultSet->GetColumnIndex(PhotoMap::ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetInt(columnIndex, mapAlbum);
+        }
+
+        string updateSql = generateUpdateSql(isCover, title, mapAlbum);
+        ret = rdbStore->ExecuteSql(updateSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("rdbStore->ExecuteSql failed, ret = %{public}d", ret);
+            return E_HAS_DB_ERROR;
+        }
+    }
+    return ret;
+}
+
+static shared_ptr<NativeRdb::ResultSet> QueryBurst(shared_ptr<NativeRdb::RdbStore> rdbStore,
+    const string globNameRule1, const string globNameRule2)
+{
+    string querySql = "SELECT p1." + MediaColumn::MEDIA_TITLE + ", p2." + PhotoMap::ALBUM_ID +
+        " FROM " + PhotoColumn::PHOTOS_TABLE + " AS p1 JOIN " + PhotoMap::TABLE + " AS p2 ON p1." +
+        MediaColumn::MEDIA_ID + " = p2." + PhotoMap::ASSET_ID + " WHERE " + MediaColumn::MEDIA_TYPE + " = " +
+        to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
+        to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_BURST_KEY +
+        " IS NULL AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule1 + "') OR LOWER(" +
+        MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule2 + "'))";
+    
+    auto resultSet = rdbStore->QueryByStep(querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("failed to acquire result from visitor query.");
+    }
+    return resultSet;
+}
+
+int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
+{
+    MEDIA_INFO_LOG("Begin UpdateBurstFromGallery");
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryDataManager::UpdateBurstFromGallery");
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+    if (rdbStore_ == nullptr) {
+        MEDIA_DEBUG_LOG("rdbStore_ is nullptr");
+        return E_FAIL;
+    }
+
+    string globNameRule = "IMG_" + generateRegexpMatchForNumber(8) + "_" + generateRegexpMatchForNumber(6) + "_";
+
+    // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx, 'x' represents a number
+    string globMemberStr1 = globNameRule + "BURST" + generateRegexpMatchForNumber(3);
+    string globMemberStr2 = globNameRule + "[0-9]_BURST" + generateRegexpMatchForNumber(3);
+    // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx_COVER, 'x' represents a number
+    string globCoverStr1 = globMemberStr1 + "_COVER";
+    string globCoverStr2 = globMemberStr2 + "_COVER";
+
+    auto resultSet = QueryBurst(rdbStore_, globCoverStr1, globCoverStr2);
+    int32_t ret = UpdateBurstPhoto(true, rdbStore_, resultSet);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("failed to UpdateBurstPhotoByCovers.");
+        return E_FAIL;
+    }
+
+    resultSet = QueryBurst(rdbStore_, globMemberStr1, globMemberStr2);
+    ret = UpdateBurstPhoto(false, rdbStore_, resultSet);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("failed to UpdateBurstPhotoByMembers.");
+        return E_FAIL;
+    }
+    return ret;
 }
 
 #ifdef DISTRIBUTED

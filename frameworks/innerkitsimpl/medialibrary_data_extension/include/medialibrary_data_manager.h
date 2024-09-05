@@ -88,6 +88,9 @@ public:
      */
     EXPORT int32_t RevertPendingByPackage(const std::string &bundleName);
 
+    // update burst photo from gallery
+    EXPORT int32_t UpdateBurstFromGallery();
+
     EXPORT std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 
     EXPORT int32_t InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context,

@@ -187,6 +187,18 @@ static void CreateBurstIndex(RdbStore &store)
     MEDIA_INFO_LOG("end create idx_burstkey");
 }
 
+static void UpdateBurstDirty(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_DIRTY + " = " +
+        to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) + " WHERE " + PhotoColumn::PHOTO_SUBTYPE + " = " +
+        to_string(static_cast<int32_t>(PhotoSubType::BURST)) + " AND " + PhotoColumn::PHOTO_DIRTY + " = -1 ",
+    };
+    MEDIA_INFO_LOG("start UpdateBurstDirty");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end UpdateBurstDirty");
+}
+
 static void UpgradeRdbStore(AsyncTaskData *data)
 {
     if (MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() == nullptr) {
@@ -201,6 +213,10 @@ static void UpgradeRdbStore(AsyncTaskData *data)
 
     if (g_oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
         CreateBurstIndex(*rdbStore);
+    }
+
+    if (g_oldVersion < VERSION_UPDATE_BURST_DIRTY) {
+        UpdateBurstDirty(*rdbStore);
     }
 }
 

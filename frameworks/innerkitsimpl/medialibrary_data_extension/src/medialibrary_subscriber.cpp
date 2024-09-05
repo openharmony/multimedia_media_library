@@ -304,6 +304,38 @@ void MedialibrarySubscriber::DoThumbnailOperation()
     PostEventUtils::GetInstance().PostStatProcess(StatType::AGING_STAT, map);
 }
 
+static void QueryBurstNeedUpdate(AsyncTaskData *data)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    if (dataManager == nullptr) {
+        return;
+    }
+
+    int32_t result = dataManager->UpdateBurstFromGallery();
+    if (result != E_OK) {
+        MEDIA_ERR_LOG("UpdateBurstFromGallery faild");
+    }
+}
+
+static int32_t DoUpdateBurstFromGallery()
+{
+    MEDIA_INFO_LOG("Begin DoUpdateBurstFromGallery");
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Failed to get async worker instance!");
+        return E_FAIL;
+    }
+    shared_ptr<MediaLibraryAsyncTask> updateBurstTask =
+        make_shared<MediaLibraryAsyncTask>(QueryBurstNeedUpdate, nullptr);
+    if (updateBurstTask != nullptr) {
+        asyncWorker->AddTask(updateBurstTask, false);
+    } else {
+        MEDIA_ERR_LOG("Failed to create async task for updateBurstTask!");
+        return E_FAIL;
+    }
+    return E_SUCCESS;
+}
+
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     if (!currentStatus_) {
@@ -319,6 +351,11 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
     Init();
     DoThumbnailOperation();
+    // update burst from gallery
+    int32_t ret = DoUpdateBurstFromGallery();
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("DoUpdateBurstFromGallery faild");
+    }
 
     auto watch = MediaLibraryInotify::GetInstance();
     if (watch != nullptr) {

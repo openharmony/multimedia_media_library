@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 99;
+const int32_t MEDIA_RDB_VERSION = 100;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -127,6 +127,7 @@ enum {
     VISION_UPDATE_DATA_ADDED_INDEX = 97,
     VERSION_UPDATE_MULTI_CROP_INFO = 98,
     VERSION_CREATE_BURSTKEY_INDEX = 99,
+    VERSION_UPDATE_BURST_DIRTY = 100,
 };
 
 enum {
