@@ -135,6 +135,9 @@ public:
 
     EXPORT void SetPhotoSubType(const VariantData &photoSubType);
     EXPORT int32_t GetPhotoSubType() const;
+    
+    EXPORT void SetMovingPhotoEffectMode(const VariantData &movingPhotoEffectMode);
+    EXPORT int32_t GetMovingPhotoEffectMode() const;
 
     EXPORT void SetFrontCamera(const VariantData &forntcamera);
     EXPORT std::string GetFrontCamera() const;
@@ -225,6 +228,8 @@ private:
 
     // photo subtype
     int32_t photoSubType_ = 0;
+
+    int32_t movingPhotoEffectMode_{0};
 
     bool forAdd_ = false;
     std::string tableName_;

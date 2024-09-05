@@ -97,6 +97,8 @@ void Metadata::Init()
     memberFuncMap_[PhotoColumn::MEDIA_OWNER_PACKAGE] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetOwnerPackage);
     memberFuncMap_[PhotoColumn::PHOTO_SUBTYPE] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetPhotoSubType);
+    memberFuncMap_[PhotoColumn::MOVING_PHOTO_EFFECT_MODE] = make_pair(ResultSetDataType::TYPE_INT32,
+        &Metadata::SetMovingPhotoEffectMode);
     memberFuncMap_[PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE] = make_pair(ResultSetDataType::TYPE_INT32,
         &Metadata::SetDynamicRangeType);
     memberFuncMap_[PhotoColumn::PHOTO_IS_TEMP] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetIsTemp);
@@ -446,6 +448,16 @@ void Metadata::SetPhotoSubType(const VariantData &photoSubType)
 int32_t Metadata::GetPhotoSubType() const
 {
     return photoSubType_;
+}
+
+void Metadata::SetMovingPhotoEffectMode(const VariantData &movingPhotoEffectMode)
+{
+    movingPhotoEffectMode_ = std::get<int32_t>(movingPhotoEffectMode);
+}
+
+int32_t Metadata::GetMovingPhotoEffectMode() const
+{
+    return movingPhotoEffectMode_;
 }
 
 void Metadata::SetTableName(const string &tableName)
