@@ -1808,6 +1808,7 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
     if (!isSourceImageExist || !isSourceVideoExist) {
         MEDIA_INFO_LOG("isSourceImageExist=%{public}d, isSourceVideoExist=%{public}d",
             isSourceImageExist, isSourceVideoExist);
+        isNeedScan = false;
         return E_OK;
     }
     string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(imagePath);
