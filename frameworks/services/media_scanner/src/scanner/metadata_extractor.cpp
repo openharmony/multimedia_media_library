@@ -588,7 +588,8 @@ int32_t MetadataExtractor::Extract(std::unique_ptr<Metadata> &data)
     if (data->GetFileMediaType() == MEDIA_TYPE_IMAGE) {
         int32_t ret = ExtractImageMetadata(data);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to extract image metadata");
-        if (data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        if (data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+            data->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
             return CombineMovingPhotoMetadata(data);
         }
         return ret;
