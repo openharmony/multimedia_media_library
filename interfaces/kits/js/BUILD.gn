@@ -129,6 +129,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/napi_error.cpp",
     "${MEDIALIB_JS_PATH}/src/photo_album_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/photo_proxy_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/short_term_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/smart_album_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/thumbnail_manager.cpp",
     "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
