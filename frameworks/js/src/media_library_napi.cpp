@@ -22,12 +22,15 @@
 #include <functional>
 #include <sys/sendfile.h>
 
+#include "access_token.h"
+#include "accesstoken_kit.h"
 #include "ability_context.h"
 #include "confirm_callback.h"
 #include "context.h"
 #include "directory_ex.h"
 #include "file_ex.h"
 #include "hitrace_meter.h"
+#include "ipc_skeleton.h"
 #include "location_column.h"
 #include "media_device_column.h"
 #include "media_directory_type_column.h"
@@ -55,6 +58,7 @@
 #include "result_set_utils.h"
 #include "safe_map.h"
 #include "search_column.h"
+#include "short_term_callback.h"
 #include "smart_album_napi.h"
 #include "story_album_column.h"
 #include "string_ex.h"
@@ -77,6 +81,7 @@ using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
+using namespace OHOS::Security::AccessToken;
 
 namespace OHOS {
 namespace Media {
@@ -126,6 +131,11 @@ const std::map<std::string, std::string> CREATE_OPTIONS_PARAM = {
 const std::string EXTENSION = "fileNameExtension";
 const std::string PHOTO_TYPE = "photoType";
 const std::string PHOTO_SUB_TYPE = "subtype";
+const std::string SHORT_TERM_TAG = "shortTerm";
+const std::string SHORT_TERM_TITLE = "title";
+const std::string SHORT_TERM_EXTENSION = "extension";
+const std::string SHORT_TERM_PHOTO_TYPE = "photoType";
+const std::string SHORT_TERM_PHOTO_SUB_TYPE = "photoSubType";
 const std::string CONFIRM_BOX_PACKAGE_NAME = "com.ohos.photos";
 const std::string CONFIRM_BOX_EXT_ABILITY_NAME = "SaveUIExtensionAbility";
 const std::string CONFIRM_BOX_EXTENSION_TYPE = "ability.want.params.uiExtensionType";
@@ -151,6 +161,7 @@ thread_local napi_ref MediaLibraryNapi::sPositionTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPhotoSubType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDynamicRangeType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHiddenPhotosDisplayModeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sAuthorizationModeEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 using Context = MediaLibraryAsyncContext* ;
 
@@ -309,9 +320,11 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("startCreateThumbnailTask", PhotoAccessStartCreateThumbnailTask),
             DECLARE_NAPI_FUNCTION("stopCreateThumbnailTask", PhotoAccessStopCreateThumbnailTask),
             DECLARE_NAPI_FUNCTION("createAssetsForApp", PhotoAccessHelperAgentCreateAssets),
+            DECLARE_NAPI_FUNCTION("createAssetsHasPermission", CreateAssetsHasPermission),
             DECLARE_NAPI_FUNCTION("grantPhotoUriPermission", PhotoAccessGrantPhotoUriPermission),
             DECLARE_NAPI_FUNCTION("grantPhotoUrisPermission", PhotoAccessGrantPhotoUrisPermission),
             DECLARE_NAPI_FUNCTION("cancelPhotoUriPermission", PhotoAccessCancelPhotoUriPermission),
+            DECLARE_NAPI_FUNCTION("createAssetsForAppWithMode", PhotoAccessHelperAgentCreateAssetsWithMode),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -322,6 +335,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_STATIC_FUNCTION("getPhotoAccessHelperAsync", GetPhotoAccessHelperAsync),
         DECLARE_NAPI_STATIC_FUNCTION("createDeleteRequest", CreateDeleteRequest),
         DECLARE_NAPI_STATIC_FUNCTION("showAssetsCreationDialog", ShowAssetsCreationDialog),
+        DECLARE_NAPI_STATIC_FUNCTION("checkShortTermPermission", CheckShortTermPermission),
+        DECLARE_NAPI_STATIC_FUNCTION("createAssetWithShortTermPermission", CreateAssetWithShortTermPermission),
         DECLARE_NAPI_PROPERTY("PhotoType", CreateMediaTypeUserFileEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumKeys", CreateAlbumKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumType", CreateAlbumTypeEnum(env)),
@@ -340,6 +355,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("HighlightAlbumInfoType", CreateHighlightAlbumInfoTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("HighlightUserActionType", CreateHighlightUserActionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("MovingPhotoEffectMode", CreateMovingPhotoEffectModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("AuthorizationMode", CreateAuthorizationModeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -3390,17 +3406,13 @@ static napi_value ParseArgsCreateAgentCreateAssets(napi_env env, napi_callback_i
 static napi_value ParseArgsAgentCreateAssets(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t minArgs = ARGS_FOUR;
     constexpr size_t maxArgs = ARGS_FOUR;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
         napi_ok, "Failed to get object info");
 
     context->isCreateByComponent = false;
     context->isCreateByAgent = true;
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return nullptr;
-    }
 
     return ParseArgsCreateAgentCreateAssets(env, info, context);
 }
@@ -4828,6 +4840,11 @@ napi_value MediaLibraryNapi::CreateSourceModeEnum(napi_env env)
     return CreateNumberEnumProperty(env, sourceModeEnum, sSourceModeEnumRef_);
 }
 
+napi_value MediaLibraryNapi::CreateAuthorizationModeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, AuthorizationModeEnum, sAuthorizationModeEnumRef_);
+}
+
 napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
 {
     const int32_t startIdx = 1;
@@ -5549,6 +5566,82 @@ static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
     }
 }
 
+static napi_value ParseArgsCreateAgentCreateAssetsWithMode(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    /* Parse the arguments */
+    BundleInfo bundleInfo;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO],
+        bundleInfo.bundleName) == napi_ok, "Failed to get bundleName");
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE],
+        bundleInfo.packageName) == napi_ok, "Failed to get appName");
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_TWO],
+        bundleInfo.appId) == napi_ok, "Failed to get appId");
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+
+    vector<napi_value> napiValues;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[ARGS_FIVE], napiValues));
+    if (napiValues.empty()) {
+        return result;
+    }
+
+    for (const auto& napiValue : napiValues) {
+        CHECK_COND_WITH_MESSAGE(env, ParseCreateConfig(env, napiValue, bundleInfo, *context) == napi_ok,
+            "Parse asset create config failed");
+    }
+
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamCallback(env, context)
+        == napi_ok, "Failed to get callback");
+    return result;
+}
+
+static napi_value ParseArgsAgentCreateAssetsWithMode(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_SIX;
+    constexpr size_t maxArgs = ARGS_SIX;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, "Failed to get object info");
+
+    context->isCreateByComponent = false;
+    context->isCreateByAgent = true;
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    return ParseArgsCreateAgentCreateAssetsWithMode(env, info, context);
+}
+
+napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssetsWithMode(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperAgentCreateAssetsWithMode");
+
+    NAPI_INFO_LOG("enter");
+    int32_t authorizationMode = -1;
+    int32_t tokenId = -1;
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->assetType = TYPE_PHOTO;
+    NAPI_ASSERT(env, ParseArgsAgentCreateAssetsWithMode(env, info, asyncContext), "Failed to parse js args");
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetInt32Arg(env, asyncContext->argv[ARGS_THREE], tokenId));
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetInt32Arg(env, asyncContext->argv[ARGS_FOUR], authorizationMode));
+    CHECK_COND_WITH_MESSAGE(env, authorizationMode == SaveType::SHORT_IMAGE_PERM, "authorizationMode is error");
+
+    int ret = Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(
+        tokenId, PERM_SHORT_TERM_WRITE_IMAGEVIDEO, SHORT_TERM_PERMISSION_DURATION_300S);
+    if (ret != E_SUCCESS) {
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "This app have no short permission");
+        return nullptr;
+    }
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperAgentCreateAssetsWithMode",
+        PhotoAccessAgentCreateAssetsExecute, JSCreateAssetCompleteCallback);
+}
+
 napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssets(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -5556,6 +5649,25 @@ napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssets(napi_env env, na
 
     NAPI_INFO_LOG("enter");
 
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->assetType = TYPE_PHOTO;
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    NAPI_ASSERT(env, ParseArgsAgentCreateAssets(env, info, asyncContext), "Failed to parse js args");
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperAgentCreateAssets",
+        PhotoAccessAgentCreateAssetsExecute, JSCreateAssetCompleteCallback);
+}
+
+napi_value MediaLibraryNapi::CreateAssetsHasPermission(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperAgentCreateAssets");
+
+    NAPI_INFO_LOG("enter");
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->assetType = TYPE_PHOTO;
@@ -6260,6 +6372,99 @@ napi_value MediaLibraryNapi::ShowAssetsCreationDialog(napi_env env, napi_callbac
     NapiError::ThrowError(env, JS_INNER_FAIL, "ace_engine is not support");
     return nullptr;
 #endif
+}
+
+napi_value MediaLibraryNapi::CheckShortTermPermission(napi_env env, napi_callback_info info)
+{
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int res = AccessTokenKit::VerifyAccessToken(tokenCaller, PERM_SHORT_TERM_WRITE_IMAGEVIDEO);
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, res == PermissionState::PERMISSION_GRANTED, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static bool InitShortTermRequest(OHOS::AAFwk::Want &want, shared_ptr<ShortTermCallback> &callback,
+                                 napi_env env, napi_value args[], size_t argsLen)
+{
+    if (argsLen < ARGS_SIX) {
+        return false;
+    }
+
+    want.SetElementName(CONFIRM_BOX_PACKAGE_NAME, CONFIRM_BOX_EXT_ABILITY_NAME);
+    want.SetParam(CONFIRM_BOX_EXTENSION_TYPE, CONFIRM_BOX_REQUEST_TYPE);
+
+    if (args[PARAM1] == nullptr) {
+        return false;
+    }
+
+    PhotoCreationConfig config;
+    napi_value element = args[PARAM1];
+    if (!ParseConfigObject(env, element, config)) {
+        return false;
+    }
+    want.SetParam(SHORT_TERM_TAG, true);
+    want.SetParam(SHORT_TERM_TITLE, config.title);
+    want.SetParam(SHORT_TERM_EXTENSION, config.fileNameExtension);
+    want.SetParam(SHORT_TERM_PHOTO_TYPE, config.photoType);
+    want.SetParam(SHORT_TERM_PHOTO_SUB_TYPE, config.subtype);
+
+    string bundleName;
+    if (!ParseString(env, args[PARAM2], bundleName)) {
+        return false;
+    }
+    want.SetParam(CONFIRM_BOX_BUNDLE_NAME, bundleName);
+
+    string appName;
+    if (!ParseString(env, args[PARAM3], appName)) {
+        return false;
+    }
+    want.SetParam(CONFIRM_BOX_APP_NAME, appName);
+
+    string appId;
+    if (!ParseString(env, args[PARAM4], appId)) {
+        return false;
+    }
+    want.SetParam(CONFIRM_BOX_APP_ID, appId);
+
+    callback->SetFunc(args[PARAM5]);
+    return true;
+}
+
+napi_value MediaLibraryNapi::CreateAssetWithShortTermPermission(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("CreateAssetWithShortTermPermission enter");
+    size_t argc = ARGS_SIX;
+    napi_value args[ARGS_SIX] = {nullptr};
+    napi_value thisVar = nullptr;
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr), JS_ERR_PARAMETER_INVALID);
+    auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
+    NAPI_ASSERT(env, context != nullptr, "context == nullptr");
+
+    shared_ptr<OHOS::AbilityRuntime::AbilityContext> abilityContext =
+        OHOS::AbilityRuntime::Context::ConvertTo<OHOS::AbilityRuntime::AbilityContext>(context);
+    NAPI_ASSERT(env, abilityContext != nullptr, "abilityContext == nullptr");
+
+    auto uiContent = abilityContext->GetUIContent();
+    NAPI_ASSERT(env, uiContent != nullptr, "uiContent == nullptr");
+
+    OHOS::AAFwk::Want want;
+    shared_ptr<ShortTermCallback> callback = make_shared<ShortTermCallback>(env, uiContent);
+    NAPI_ASSERT(env, InitShortTermRequest(want, callback, env, args, sizeof(args)), "parse short term param fail");
+
+    OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
+        ([callback](auto arg) { callback->OnRelease(arg); }),
+        ([callback](auto arg1, auto arg2) { callback->OnResult(arg1, arg2); }),
+        ([callback](auto arg) { callback->OnReceive(arg); }),
+        ([callback](auto arg1, auto arg2, auto arg3) { callback->OnError(arg1, arg2, arg3); }),
+    };
+    OHOS::Ace::ModalUIExtensionConfig config;
+    config.isProhibitBack = true;
+    int32_t sessionId = uiContent->CreateModalUIExtension(want, extensionCallback, config);
+    NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");
+    callback->SetSessionId(sessionId);
+    return result;
 }
 
 static void StartPhotoPickerExecute(napi_env env, void *data)
