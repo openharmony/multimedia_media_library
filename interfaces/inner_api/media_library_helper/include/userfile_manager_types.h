@@ -192,20 +192,6 @@ enum class CoverSatisfiedType : uint8_t {
     BEAUTY_SETTING = 4,
     BEAUTY_SETTING_EDITE = 5
 };
-
-enum ImageFileType : int32_t {
-    JPEG = 1,
-    HEIF = 2
-};
-
-const std::string MIME_TYPE_JPEG = "image/jpeg";
-
-const std::string MIME_TYPE_HEIF = "image/heif";
-
-const std::unordered_map<ImageFileType, std::string> IMAGE_FILE_TYPE_MAP = {
-    {JPEG, MIME_TYPE_JPEG},
-    {HEIF, MIME_TYPE_HEIF},
-};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_FILEMANAGEMENT_USERFILEMGR_TYPES_H
