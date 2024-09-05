@@ -170,8 +170,10 @@ static void JSGetHighlightAlbumInfoExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Invalid highlightAlbumInfoType");
         return;
     }
-    int albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
-    int subType = context->objectInfo->GetPhotoAlbumInstance()->GetPhotoAlbumSubType();
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is null");
+    int albumId = photoAlbum->GetAlbumId();
+    int subType = photoAlbum->GetPhotoAlbumSubType();
     Uri uri (uriStr);
     if (subType == PhotoAlbumSubType::HIGHLIGHT) {
         predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
