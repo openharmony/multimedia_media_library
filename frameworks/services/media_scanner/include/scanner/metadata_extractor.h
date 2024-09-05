@@ -35,7 +35,6 @@ public:
     EXPORT static int32_t ExtractAVMetadata(std::unique_ptr<Metadata> &data, int32_t scene = 0);
     EXPORT static int32_t ExtractImageMetadata(std::unique_ptr<Metadata> &data);
     static int32_t ExtractImageExif(std::unique_ptr<ImageSource> &imageSource, std::unique_ptr<Metadata> &data);
-    static bool IsMovingPhoto(std::unique_ptr<Metadata> &data);
 
 private:
     MetadataExtractor() = delete;

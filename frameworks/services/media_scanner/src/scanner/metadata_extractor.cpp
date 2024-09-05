@@ -65,6 +65,12 @@ static Type stringToNum(const string &str)
     return num;
 }
 
+static bool IsMovingPhoto(unique_ptr<Metadata> &data)
+{
+    return data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+        data->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY);
+}
+
 double GetLongitudeLatitude(string inputStr, const string& ref = "")
 {
     auto pos = inputStr.find(',');
@@ -595,12 +601,6 @@ int32_t MetadataExtractor::Extract(std::unique_ptr<Metadata> &data)
     } else {
         return ExtractAVMetadata(data);
     }
-}
-
-bool MetadataExtractor::IsMovingPhoto(unique_ptr<Metadata> &data)
-{
-    return data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
-        data->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY);
 }
 } // namespace Media
 } // namespace OHOS
