@@ -430,7 +430,7 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const shared_pt
 }
 
 static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
-    ValuesBucket &values, int newCount, uint8_t coverSatisfied)
+    ValuesBucket &values, int newCount)
 {
     string newCover;
     if (newCount != 0) {
@@ -977,14 +977,6 @@ static bool IsCoverValid(const shared_ptr<NativeRdb::RdbStore> &rdbStore, const 
     return true;
 }
 
-static inline void SetCoverSatisfied(const string &fileId, const vector<string> &fileIds, ValuesBucket &values,
-    uint8_t coverSatisfied)
-{
-    if (find(fileIds.begin(), fileIds.end(), fileId) != fileIds.end()) {
-        values.PutInt(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING) | coverSatisfied);
-    }
-}
-
 static inline bool ShouldUpdatePortraitAlbumCover(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const string &albumId, const string &fileId, const uint8_t isCoverSatisfied)
 {
@@ -1019,7 +1011,6 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
         return E_HAS_DB_ERROR;
     }
     int32_t newCount = SetCount(countResult, albumResult, values, false, PhotoAlbumSubType::PORTRAIT);
-    SetCoverSatisfied(coverId, fileIds, values, isCoverSatisfied);
     if (!ShouldUpdatePortraitAlbumCover(rdbStore, albumId, coverId, isCoverSatisfied)) {
         return E_SUCCESS;
     }
@@ -1029,7 +1020,7 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
         MEDIA_ERR_LOG("Failed to query Portrait Album Cover");
         return E_HAS_DB_ERROR;
     }
-    return SetPortraitCover(coverResult, albumResult, values, newCount, isCoverSatisfied);
+    return SetPortraitCover(coverResult, albumResult, values, newCount);
 }
 
 static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
