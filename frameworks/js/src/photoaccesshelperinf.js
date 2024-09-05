@@ -114,10 +114,21 @@ function errorResult(rej, asyncCallback) {
 }
 
 function getAbilityResource(bundleInfo) {
-  let labelId = bundleInfo.abilitiesInfo[0].labelId;
-  for (let abilityInfo of bundleInfo.abilitiesInfo) {
-    if (abilityInfo.name === bundleInfo.mainElementName) {
-      labelId = abilityInfo.labelId;
+  console.log('getAbilityResource enter.');
+  let labelId = 0;
+  for (let hapInfo of bundleInfo.hapModulesInfo) {
+    if (hapInfo.type === bundleManager.ModuleType.ENRTY) {
+      labelId = getLabelId(hapInfo);
+    }
+  }
+  return labelId;
+}
+
+function getLabelId(hapInfo) {
+  let labelId = 0;
+  for (let abilitiesInfo of hapInfo.abilitiesInfo) {
+    if (abilitiesInfo.name === hapInfo.mainElementName) {
+      labelId = abilitiesInfo.labelId;
     }
   }
 
@@ -133,7 +144,7 @@ async function getAppName() {
     if (bundleInfo === undefined || bundleInfo.hapModulesInfo === undefined || bundleInfo.hapModulesInfo.length === 0) {
       return appName;
     }
-    const labelId = getAbilityResource(bundleInfo.hapModulesInfo[0]);
+    const labelId = getAbilityResource(bundleInfo);
     const resourceMgr = gContext.resourceManager;
     appName = await resourceMgr.getStringValue(labelId);
     console.info(`photoAccessHelper appName: ${appName}`);
@@ -287,8 +298,6 @@ function getBundleInfo() {
   let bundleInfo = bundleManager.getBundleInfoForSelfSync(flags);
   if (((bundleInfo === undefined) || (bundleInfo.name === undefined)) ||
       ((bundleInfo.hapModulesInfo === undefined) || (bundleInfo.hapModulesInfo.length === 0)) ||
-      ((bundleInfo.hapModulesInfo[0].abilitiesInfo === undefined) ||
-       (bundleInfo.hapModulesInfo[0].abilitiesInfo.length === 0)) ||
       ((bundleInfo.signatureInfo === undefined) || (bundleInfo.signatureInfo.appId === undefined))) {
     console.error('photoAccessHelper failed to get bundle info.');
     return undefined;
@@ -323,11 +332,11 @@ async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfig
   console.info('photoAccessHelper bundleName is ' + bundleName + '.');
   console.info('photoAccessHelper appId is ' + appId + '.');
 
-  let labelId = getAbilityResource(bundleInfo.hapModulesInfo[0]);
-  let appName = await gContext.resourceManager.getStringValue(labelId);
-  console.info('photoAccessHelper appName is ' + appName + '.');
-
   try {
+    let labelId = getAbilityResource(bundleInfo);
+    let appName = await gContext.resourceManager.getStringValue(labelId);
+    console.info('photoAccessHelper appName is ' + appName + '.');
+
     // only promise type
     return new Promise((resolve, reject) => {
       photoAccessHelper.showAssetsCreationDialog(getContext(this), srcFileUris, photoCreationConfigs, bundleName,
