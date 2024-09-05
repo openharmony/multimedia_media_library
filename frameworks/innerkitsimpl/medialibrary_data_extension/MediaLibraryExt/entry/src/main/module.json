@@ -171,7 +171,7 @@
           "when": "always"
         }
       },
-       {
+      {
         "name": "ohos.permission.RUNNING_STATE_OBSERVER",
         "reason": "$string:permission_get_app_state",
         "usedScene":{
