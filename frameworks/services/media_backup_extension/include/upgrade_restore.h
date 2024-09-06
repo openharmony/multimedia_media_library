@@ -125,6 +125,7 @@ private:
     void UpdateFilesWithFace(std::unordered_set<std::string> &filesWithFace, const std::vector<FaceInfo> &faceInfos);
     void UpdateFaceAnalysisStatus();
     void UpdateDualCloneFaceAnalysisStatus();
+    bool HasLowQualityImage();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

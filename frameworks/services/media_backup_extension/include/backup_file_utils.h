@@ -39,7 +39,8 @@ public:
     static void ModifyFile(const std::string path, int64_t modifiedTime);
     static std::string GetFileNameFromPath(const string &path);
     static std::string GetFileTitle(const string &displayName);
-    static bool IsFileValid(const std::string &filePath, int32_t sceneCode);
+    static bool IsFileValid(std::string &filePath, int32_t sceneCode,
+        string relativePath = "", bool hasLowQualityImage = false);
     static std::string GetDetailsPath(const std::string &type,
         const std::unordered_map<std::string, int32_t> &failedFiles);
     static std::string GetFailedFilesStr(const std::unordered_map<std::string, int32_t> &failedFiles);
@@ -48,6 +49,7 @@ public:
     static void DeleteSDDatabase(const std::string &prefix);
     static bool IsLivePhoto(const FileInfo &fileInfo);
     static bool ConvertToMovingPhoto(FileInfo &fileInfo);
+    static string ConvertLowQualityPath(int32_t sceneCode, const std::string &filePath, const string &relativePath);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
