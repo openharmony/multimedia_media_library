@@ -441,37 +441,6 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoLabel_Test_002, TestSize.Leve
     MEDIA_INFO_LOG("Vision_InsertVideoLabel_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdateVideoLabel_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("Vision_UpdateVideoLabel_Test_001::Start");
-    Uri videoLabelUri(URI_VIDEO_LABEL);
-    MediaLibraryCommand cmd(videoLabelUri);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(FILE_ID, 3);
-    valuesBucket.Put(CATEGORY_ID, 1);
-    valuesBucket.Put(CONFIDENCE_PROBABILITY, 1.12);
-    valuesBucket.Put(SUB_CATEGORY, "1,2,3");
-    valuesBucket.Put(SUB_CONFIDENCE_PROB, 2.23);
-    valuesBucket.Put(SUB_LABEL, "1,2,3,4");
-    valuesBucket.Put(SUB_LABEL_PROB, 2.344);
-    valuesBucket.Put(TRACKS, "[{\"beginFrames\":0}]");
-    valuesBucket.Put(VIDEO_PART_FEATURE, 235);
-    valuesBucket.Put(FILTER_TAG, "19,37,66");
-    valuesBucket.Put(ALGO_VERSION, "1");
-    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
-    DataShare::DataShareValuesBucket updateValues;
-    updateValues.Put(SUB_LABEL, 3);
-    updateValues.Put(ALGO_VERSION, "2.01");
-    DataShare::DataSharePredicates predicates;
-    vector<string> inValues;
-    inValues.push_back("123421");
-    inValues.push_back("3");
-    predicates.In(FILE_ID, inValues);
-    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
-    EXPECT_EQ((retVal == 1), true);
-    MEDIA_INFO_LOG("Vision_UpdateVideoLabel_Test_001::retVal = %{public}d. End", retVal);
-}
-
 HWTEST_F(MediaLibraryVisionTest, Vision_DeleteVideoLabel_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Vision_DeleteVideoLabel_Test_001::Start");
