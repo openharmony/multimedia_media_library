@@ -34,7 +34,6 @@ using namespace OHOS::DataShare;
  * @since 1.0
  * @version 1.0
  */
-
 enum class PhotoPermissionType : int32_t {
     TEMPORARY_READ_IMAGEVIDEO = 0,
     PERSIST_READ_IMAGEVIDEO,
@@ -158,7 +157,7 @@ public:
      *
      * @param uriBatch parameter for input, indicates the range of astc data that needs to be obtained
      * @param astcBatch parameter for output
-     * @return if obtain success, return 0; Otherwise return error code
+     * @return if obtain success, return 0; Otherwise return error code.
      */
     EXPORT int32_t GetBatchAstcs(
         const std::vector<std::string> &uriBatch, std::vector<std::vector<uint8_t>> &astcBatch);
