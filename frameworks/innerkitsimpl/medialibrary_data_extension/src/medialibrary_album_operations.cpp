@@ -551,6 +551,7 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
 {
     string whereClause;
     if (value == FIRST_PAGE) {
+        std::string whereClauseAlbumName = ALBUM_NAME + " IS NOT NULL AND " + ALBUM_NAME + " != ''";
         string whereClauseRelatedMe = ALBUM_ID + " IN (SELECT " + MAP_ALBUM + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
             " WHERE " + MAP_ASSET + " IN ( SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
             " WHERE " + MediaColumn::MEDIA_ID + " IN (SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
@@ -565,7 +566,8 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
         USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (((" + USER_DISPLAY_LEVEL + " != 3 AND " +
             USER_DISPLAY_LEVEL + " !=2) OR " + USER_DISPLAY_LEVEL + " IS NULL) AND ((" +
-            whereClauseDisplay + ") OR (" + whereClauseRelatedMe + ") OR (" + whereClauseSatifyCount + "))) GROUP BY " +
+            whereClauseDisplay + ") OR (" + whereClauseRelatedMe + ") OR (" + whereClauseSatifyCount + ") OR (" +
+            whereClauseAlbumName + "))) GROUP BY " +
             GROUP_TAG + " ORDER BY CASE WHEN " + RENAME_OPERATION + " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == SECOND_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 2 OR (" +

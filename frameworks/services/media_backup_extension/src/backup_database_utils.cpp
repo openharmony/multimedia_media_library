@@ -766,15 +766,12 @@ bool BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(const std::vector<std::st
         return false;
     }
 
-    // 删除 AnalysisAlbum 表中的记录
-    std::string unnamedCondition = ANALYSIS_COL_ALBUM_NAME + " IS NULL OR " +
-                                   ANALYSIS_COL_ALBUM_NAME + " = ''";
-
+    /* 删除 AnalysisAlbum 表中的记录 */
     std::string deleteAnalysisSql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE +
                                     " WHERE " + ANALYSIS_COL_ALBUM_NAME + " IN (" + inClause + ")";
     if (!tagIds.empty()) {
         deleteAnalysisSql += " OR ";
-        deleteAnalysisSql += "(" + unnamedCondition + " AND " + ANALYSIS_COL_TAG_ID + " IN " + tagIdClause + ")";
+        deleteAnalysisSql += "(" + ANALYSIS_COL_TAG_ID + " IN " + tagIdClause + ")";
     }
     ExecuteSQL(mediaLibraryRdb, deleteAnalysisSql);
 
