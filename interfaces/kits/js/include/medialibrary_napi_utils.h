@@ -245,16 +245,16 @@ enum HiddenPhotosDisplayMode {
     ALBUMS_MODE = 1
 };
 
-const std::vector<std::string> privateAlbumTypeNameEnum {
-    "TYPE_FAVORITE", "TYPE_TRASH", "TYPE_HIDE", "TYPE_SMART", "TYPE_SEARCH"
-};
-
 const std::vector<std::string> deliveryModeEnum {
     "FAST_MODE", "HIGH_QUALITY_MODE", "BALANCE_MODE"
 };
 
 const std::vector<std::string> sourceModeEnum {
     "ORIGINAL_MODE", "EDITED_MODE"
+};
+
+const std::vector<std::string> privateAlbumTypeNameEnum {
+    "TYPE_FAVORITE", "TYPE_TRASH", "TYPE_HIDE", "TYPE_SMART", "TYPE_SEARCH"
 };
 
 const std::vector<std::string> AuthorizationModeEnum {
