@@ -97,7 +97,7 @@ static string GetVideoInfoTag(off_t fileSize)
     return buffer;
 }
 
-static off_t GetFileSize(const int32_t fd)
+static size_t GetFileSize(const int32_t fd)
 {
     if (fd < 0) {
         MEDIA_ERR_LOG("file is error");
@@ -108,17 +108,23 @@ static off_t GetFileSize(const int32_t fd)
         MEDIA_ERR_LOG("failed to get file size, errno: %{public}d", errno);
         return E_ERR;
     }
-    return st.st_size;
+    if (st.st_size >= 0) {
+        return static_cast<size_t>(st.st_size);
+    }
+    return 0;
 }
 
-static off_t GetFileSize(const string& path)
+static size_t GetFileSize(const string& path)
 {
     struct stat st;
     if (stat(path.c_str(), &st) != E_OK) {
         MEDIA_ERR_LOG("failed to get file size, errno: %{public}d", errno);
         return E_ERR;
     }
-    return st.st_size;
+    if (st.st_size >= 0) {
+        return static_cast<size_t>(st.st_size);
+    }
+    return 0;
 }
 
 static int32_t WriteContentTofile(const UniqueFd& destFd, const UniqueFd& srcFd)
@@ -171,7 +177,12 @@ static string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off
 
 static int32_t ReadExtraFile(const std::string& extraPath, map<string, string>& extraData)
 {
-    UniqueFd fd(open(extraPath.c_str(), O_RDONLY));
+    string absFilePath;
+    if (!PathToRealPath(extraPath, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", extraPath.c_str());
+        return E_HAS_FS_ERROR;
+    }
+    UniqueFd fd(open(absFilePath.c_str(), O_RDONLY));
     if (fd.Get() == E_ERR) {
         MEDIA_ERR_LOG("failed to open e file");
         return E_ERR;
@@ -234,8 +245,13 @@ static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhoto
 int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& imagePath, const string& videoPath,
     uint32_t frameIndex, off_t& fileSize)
 {
-    string extraDir = MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(imagePath);
-    string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(imagePath);
+    string absFilePath;
+    if (!PathToRealPath(imagePath, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", imagePath.c_str());
+        return E_HAS_FS_ERROR;
+    }
+    string extraDir = MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(absFilePath);
+    string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(absFilePath);
     if (MediaFileUtils::IsFileValid(extraPath)) {
         fileSize = GetFileSize(extraPath);
         return E_OK;
@@ -312,14 +328,19 @@ uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
 int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagepath, int64_t coverPosition,
     std::string &livePhotoPath, int32_t userId)
 {
-    string imagePath = AppendUserId(movingPhotoImagepath, userId);
-    string videoPath = GetMovingPhotoVideoPath(movingPhotoImagepath, userId);
-    string cacheDir = GetLivePhotoCacheDir(movingPhotoImagepath, userId);
-    string extraPath = GetMovingPhotoExtraDataPath(movingPhotoImagepath, userId);
+    string absFilePath;
+    if (!PathToRealPath(movingPhotoImagepath, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", movingPhotoImagepath.c_str());
+        return E_HAS_FS_ERROR;
+    }
+    string imagePath = AppendUserId(absFilePath, userId);
+    string videoPath = GetMovingPhotoVideoPath(absFilePath, userId);
+    string cacheDir = GetLivePhotoCacheDir(absFilePath, userId);
+    string extraPath = GetMovingPhotoExtraDataPath(absFilePath, userId);
 
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(cacheDir),
         E_HAS_FS_ERROR, "Cannot create dir %{private}s, errno %{public}d", cacheDir.c_str(), errno);
-    string cachePath = GetLivePhotoCachePath(movingPhotoImagepath, userId);
+    string cachePath = GetLivePhotoCachePath(absFilePath, userId);
     if (MediaFileUtils::IsFileExists(cachePath)) {
         livePhotoPath = cachePath;
         return E_OK;
@@ -354,17 +375,22 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
 int32_t MovingPhotoFileUtils::ConvertToSourceLivePhoto(const string& movingPhotoImagePath,
     string& sourceLivePhotoPath, int32_t userId)
 {
-    string sourceImagePath = GetSourceMovingPhotoImagePath(movingPhotoImagePath, userId);
-    string sourceVideoPath = GetSourceMovingPhotoVideoPath(movingPhotoImagePath, userId);
-    if (!MediaFileUtils::IsFileExists(sourceVideoPath)) {
-        sourceVideoPath = GetMovingPhotoVideoPath(movingPhotoImagePath, userId);
+    string absFilePath;
+    if (!PathToRealPath(movingPhotoImagePath, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", movingPhotoImagePath.c_str());
+        return E_HAS_FS_ERROR;
     }
-    string extraDataPath = GetMovingPhotoExtraDataPath(movingPhotoImagePath, userId);
+    string sourceImagePath = GetSourceMovingPhotoImagePath(absFilePath, userId);
+    string sourceVideoPath = GetSourceMovingPhotoVideoPath(absFilePath, userId);
+    if (!MediaFileUtils::IsFileExists(sourceVideoPath)) {
+        sourceVideoPath = GetMovingPhotoVideoPath(absFilePath, userId);
+    }
+    string extraDataPath = GetMovingPhotoExtraDataPath(absFilePath, userId);
 
-    string cacheDir = GetLivePhotoCacheDir(movingPhotoImagePath, userId);
+    string cacheDir = GetLivePhotoCacheDir(absFilePath, userId);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(cacheDir), E_HAS_FS_ERROR,
         "Cannot create dir %{private}s, errno %{public}d", cacheDir.c_str(), errno);
-    string sourceCachePath = GetSourceLivePhotoCachePath(movingPhotoImagePath, userId);
+    string sourceCachePath = GetSourceLivePhotoCachePath(absFilePath, userId);
     if (MediaFileUtils::IsFileExists(sourceCachePath)) {
         sourceLivePhotoPath = sourceCachePath;
         MEDIA_INFO_LOG("source live photo exists: %{private}s", sourceCachePath.c_str());
@@ -393,11 +419,16 @@ int32_t MovingPhotoFileUtils::ConvertToSourceLivePhoto(const string& movingPhoto
 
 bool MovingPhotoFileUtils::IsLivePhoto(const string& path)
 {
-    if (access(path.c_str(), F_OK) != E_OK) {
+    string absFilePath;
+    if (!PathToRealPath(path, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", path.c_str());
+        return E_HAS_FS_ERROR;
+    }
+    if (access(absFilePath.c_str(), F_OK) != E_OK) {
         MEDIA_ERR_LOG("failed to open file errno: %{public}d", errno);
         return false;
     }
-    UniqueFd livePhotoFd(open(path.c_str(), O_RDONLY));
+    UniqueFd livePhotoFd(open(absFilePath.c_str(), O_RDONLY));
     if (GetFileSize(livePhotoFd.Get()) < LIVE_TAG_LEN) {
         MEDIA_ERR_LOG("failed to get file size errno: %{public}d", errno);
         return false;
@@ -424,6 +455,11 @@ bool MovingPhotoFileUtils::IsLivePhoto(const string& path)
 
 static int32_t SendLivePhoto(const UniqueFd &livePhotoFd, const string &destPath, int64_t sizeToSend, off_t &offset)
 {
+    string absFilePath;
+    if (!PathToRealPath(destPath, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", destPath.c_str());
+        return E_HAS_FS_ERROR;
+    }
     struct stat64 statSrc {};
     CHECK_AND_RETURN_RET_LOG(livePhotoFd.Get() >= 0, livePhotoFd.Get(), "Failed to check src fd of live photo");
     CHECK_AND_RETURN_RET_LOG(fstat64(livePhotoFd.Get(), &statSrc) == 0, E_HAS_FS_ERROR,
@@ -431,13 +467,13 @@ static int32_t SendLivePhoto(const UniqueFd &livePhotoFd, const string &destPath
     off_t totalSize = statSrc.st_size;
     CHECK_AND_RETURN_RET_LOG(sizeToSend <= totalSize - offset, E_INVALID_LIVE_PHOTO, "Failed to check sizeToSend");
 
-    if (!MediaFileUtils::IsFileExists(destPath) && MediaFileUtils::CreateAsset(destPath) != E_OK) {
-        MEDIA_ERR_LOG("Failed to create file, path:%{private}s", destPath.c_str());
+    if (!MediaFileUtils::IsFileExists(absFilePath) && MediaFileUtils::CreateAsset(absFilePath) != E_OK) {
+        MEDIA_ERR_LOG("Failed to create file, path:%{private}s", absFilePath.c_str());
         return E_HAS_FS_ERROR;
     }
-    UniqueFd destFd(open(destPath.c_str(), O_WRONLY));
+    UniqueFd destFd(open(absFilePath.c_str(), O_WRONLY));
     if (destFd.Get() < 0) {
-        MEDIA_ERR_LOG("Failed to open dest path:%{private}s, errno:%{public}d", destPath.c_str(), errno);
+        MEDIA_ERR_LOG("Failed to open dest path:%{private}s, errno:%{public}d", absFilePath.c_str(), errno);
         return destFd.Get();
     }
 
@@ -501,14 +537,19 @@ static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataS
 int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoPath, const string &movingPhotoImagePath,
     const string &movingPhotoVideoPath, const string &extraDataPath)
 {
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(livePhotoPath), E_NO_SUCH_FILE,
-        "Live photo does not exist, path:%{private}s, errno:%{public}d", livePhotoPath.c_str(), errno);
-    CHECK_AND_RETURN_RET_LOG(livePhotoPath.compare(movingPhotoVideoPath) != 0 &&
-        livePhotoPath.compare(extraDataPath) != 0, E_INVALID_VALUES,
+    string absFilePath;
+    if (!PathToRealPath(livePhotoPath, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", livePhotoPath.c_str());
+        return E_HAS_FS_ERROR;
+    }
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(absFilePath), E_NO_SUCH_FILE,
+        "Live photo does not exist, path:%{private}s, errno:%{public}d", absFilePath.c_str(), errno);
+    CHECK_AND_RETURN_RET_LOG(absFilePath.compare(movingPhotoVideoPath) != 0 &&
+        absFilePath.compare(extraDataPath) != 0, E_INVALID_VALUES,
         "Failed to check dest path of moving photo");
-    UniqueFd livePhotoFd(open(livePhotoPath.c_str(), O_RDONLY));
+    UniqueFd livePhotoFd(open(absFilePath.c_str(), O_RDONLY));
     CHECK_AND_RETURN_RET_LOG(livePhotoFd.Get() >= 0, E_HAS_FS_ERROR,
-        "Failed to open live photo:%{private}s, errno:%{public}d", livePhotoPath.c_str(), errno);
+        "Failed to open live photo:%{private}s, errno:%{public}d", absFilePath.c_str(), errno);
 
     struct stat64 st;
     CHECK_AND_RETURN_RET_LOG(fstat64(livePhotoFd.Get(), &st) == 0, E_HAS_FS_ERROR,
@@ -532,7 +573,7 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
     CHECK_AND_RETURN_RET_LOG(imageSize > 0 && videoSize > 0, E_INVALID_LIVE_PHOTO,
         "Failed to check live photo, image size:%{public}" PRId64 "video size:%{public}" PRId64, imageSize, videoSize);
     off_t offset = 0;
-    bool isSameImagePath = livePhotoPath.compare(movingPhotoImagePath) == 0;
+    bool isSameImagePath = absFilePath.compare(movingPhotoImagePath) == 0;
     string tempImagePath = isSameImagePath ? movingPhotoImagePath + ".temp" : movingPhotoImagePath;
     CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd, tempImagePath, imageSize, offset)) == E_OK, err,
         "Failed to copy image of live photo");
