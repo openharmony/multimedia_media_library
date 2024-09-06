@@ -42,6 +42,7 @@ constexpr int32_t SLEEP_INTERVAL = 1;
 constexpr int32_t GARBAGE_PHOTO_SIZE = 2048;
 constexpr int32_t LIVE_PHOTO_TYPE = 50;
 constexpr size_t GARBLE_UNIT = 2;
+constexpr uint32_t COVER_URI_NUM = 3;
 
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
@@ -495,8 +496,7 @@ const std::string QUERY_ALL_AUDIOS_FROM_AUDIODB = "SELECT " + AUDIO_DATA + "," +
 
 const std::string QUERY_DUAL_CLONE_AUDIO_COUNT = "SELECT count(1) as count FROM " + DUAL_CLONE_AUDIO_FULL_TABLE;
 
-const std::vector<std::string> EXCLUDED_PORTRAIT_COLUMNS = {"album_id", "count", "cover_uri", "rank",
-    "is_cover_satisfied"};
+const std::vector<std::string> EXCLUDED_PORTRAIT_COLUMNS = {"album_id", "count", "rank"};
 const std::vector<std::string> EXCLUDED_FACE_TAG_COLUMNS = {"id", "user_operation", "rename_operation", "group_tag",
     "user_display_level", "tag_order", "is_me", "cover_uri", "count", "date_modify", "album_type", "is_removed"};
 const std::vector<std::string> EXCLUDED_IMAGE_FACE_COLUMNS = {"id"};
