@@ -1459,6 +1459,13 @@ void CloneRestore::RestoreFromGalleryPortraitAlbum()
 
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         vector<AnalysisAlbumTbl> analysisAlbumTbl = QueryPortraitAlbumTbl(offset, commonColumns);
+        for (const auto& album : analysisAlbumTbl) {
+            if (album.tagId.has_value() && album.coverUri.has_value()) {
+                coverUriInfo_.emplace_back(album.tagId.value(),
+                    std::make_pair(album.coverUri.value(), album.isCoverSatisfied.value()));
+            }
+        }
+
         InsertPortraitAlbum(analysisAlbumTbl);
     }
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
@@ -1504,6 +1511,7 @@ void CloneRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::
     analysisAlbumTbl.albumType = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_ALBUM_TYPE);
     analysisAlbumTbl.albumSubtype = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_ALBUM_SUBTYPE);
     analysisAlbumTbl.albumName = GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_ALBUM_NAME);
+    analysisAlbumTbl.coverUri = GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_COVER_URI);
     analysisAlbumTbl.tagId = GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_TAG_ID);
     analysisAlbumTbl.userOperation = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_USER_OPERATION);
     analysisAlbumTbl.groupTag = GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_GROUP_TAG);
@@ -1512,6 +1520,7 @@ void CloneRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::
     analysisAlbumTbl.isRemoved = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_REMOVED);
     analysisAlbumTbl.renameOperation = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_RENAME_OPERATION);
     analysisAlbumTbl.isLocal = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_LOCAL);
+    analysisAlbumTbl.isCoverSatisfied = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_COVER_SATISFIED);
 }
 
 void CloneRestore::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, FaceTagTbl& faceTagTbl)
@@ -1711,6 +1720,8 @@ void CloneRestore::RestoreImageFaceInfo(std::vector<FileInfo> &fileInfos)
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migratePortraitTotalTimeCost_ += end - start;
+
+    GenNewCoverUris(coverUriInfo_, fileInfos);
 }
 
 std::vector<ImageFaceTbl> CloneRestore::QueryImageFaceTbl(int32_t offset, std::string &fileIdClause,
@@ -1739,6 +1750,101 @@ std::vector<ImageFaceTbl> CloneRestore::QueryImageFaceTbl(int32_t offset, std::s
     }
 
     return result;
+}
+
+bool CloneRestore::GetFileInfoByFileId(int32_t fileId, const std::vector<FileInfo>& fileInfos, FileInfo& outFileInfo)
+{
+    auto it = std::find_if(fileInfos.begin(), fileInfos.end(),
+        [fileId](const FileInfo& info) { return info.fileIdNew == fileId; });
+    if (it != fileInfos.end()) {
+        outFileInfo = *it;
+        return true;
+    }
+
+    return false;
+}
+
+void CloneRestore::GenNewCoverUris(const std::vector<CloneRestore::CoverUriInfo>& coverUriInfo,
+    std::vector<FileInfo> &fileInfos)
+{
+    if (coverUriInfo.empty() && fileInfos.empty()) {
+        MEDIA_WARN_LOG("Empty coverUriInfo or fileIdPairs, skipping.");
+        return;
+    }
+
+    std::unordered_map<std::string, std::pair<std::string, int32_t>> tagIdToCoverInfo;
+    for (const auto& [tagId, coverInfo] : coverUriInfo) {
+        tagIdToCoverInfo[tagId] = coverInfo;
+    }
+
+    auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
+    std::unordered_map<std::string, int32_t> oldToNewFileId;
+    for (const auto& [oldId, newId] : fileIdPairs) {
+        oldToNewFileId[std::to_string(oldId)] = newId;
+    }
+
+    std::vector<std::string> tagIds;
+    std::string updateSql = GenCoverUriUpdateSql(tagIdToCoverInfo, oldToNewFileId, fileInfos, tagIds);
+
+    BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updateSql);
+}
+
+std::string CloneRestore::GenCoverUriUpdateSql(const std::unordered_map<std::string, std::pair<std::string, int32_t>>&
+    tagIdToCoverInfo, const std::unordered_map<std::string, int32_t>& oldToNewFileId,
+    const std::vector<FileInfo>& fileInfos, std::vector<std::string>& tagIds)
+{
+    std::unordered_map<std::string, std::string> coverUriUpdates;
+    std::unordered_map<std::string, int32_t> isCoverSatisfiedUpdates;
+
+    for (const auto& [tagId, coverInfo] : tagIdToCoverInfo) {
+        const auto& [oldCoverUri, isCoverSatisfied] = coverInfo;
+        std::string newUri = ProcessUriAndGenNew(tagId, oldCoverUri, oldToNewFileId, fileInfos);
+        if (!newUri.empty()) {
+            coverUriUpdates[tagId] = newUri;
+            isCoverSatisfiedUpdates[tagId] = isCoverSatisfied;
+            tagIds.push_back(tagId);
+        }
+    }
+
+    std::string updateSql = "UPDATE AnalysisAlbum SET ";
+
+    updateSql += "cover_uri = CASE ";
+    for (const auto& [tagId, newUri] : coverUriUpdates) {
+        updateSql += "WHEN tag_id = '" + tagId + "' THEN '" + newUri + "' ";
+    }
+    updateSql += "ELSE cover_uri END, ";
+
+    updateSql += "isCoverSatisfied = CASE ";
+    for (const auto& [tagId, isCoverSatisfied] : isCoverSatisfiedUpdates) {
+        updateSql += "WHEN tag_id = '" + tagId + "' THEN " + std::to_string(isCoverSatisfied) + " ";
+    }
+
+    updateSql += "ELSE isCoverSatisfied END ";
+    updateSql += "WHERE tag_id IN ('" +
+        BackupDatabaseUtils::JoinValues(tagIds, "','") + "')";
+
+    return updateSql;
+}
+std::string CloneRestore::ProcessUriAndGenNew(const std::string& tagId, const std::string& oldCoverUri,
+    const std::unordered_map<std::string, int32_t>& oldToNewFileId, const std::vector<FileInfo>& fileInfos)
+{
+    auto uriParts = BackupDatabaseUtils::SplitString(oldCoverUri, '/');
+    if (uriParts.size() >= COVER_URI_NUM) {
+        std::string fileIdOld = uriParts[uriParts.size() - 3];
+        auto it = oldToNewFileId.find(fileIdOld);
+        if (it != oldToNewFileId.end()) {
+            int32_t fileIdNew = it->second;
+            FileInfo fileInfo {};
+            if (GetFileInfoByFileId(fileIdNew, fileInfos, fileInfo)) {
+                std::string extraUri = MediaFileUtils::GetExtraUri(fileInfo.displayName, fileInfo.cloudPath);
+                return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
+                    std::to_string(fileIdNew), extraUri);
+            }
+        } else {
+            MEDIA_WARN_LOG("No match for oldFileId: %{public}s, skipping.", fileIdOld.c_str());
+        }
+    }
+    return "";
 }
 
 std::vector<ImageFaceTbl> CloneRestore::ProcessImageFaceTbls(const std::vector<ImageFaceTbl>& imageFaceTbls,
