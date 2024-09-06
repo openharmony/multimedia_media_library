@@ -43,6 +43,7 @@ public:
         int32_t sourceType) const override;
     std::string GetBackupInfo() override;
     using TagPairOpt = std::pair<std::optional<std::string>, std::optional<std::string>>;
+    using CoverUriInfo = std::pair<std::string, std::pair<std::string, int32_t>>;
 
 private:
     void RestorePhoto(void) override;
@@ -160,6 +161,14 @@ private:
     void ReportPortraitCloneStat(int32_t sceneCode);
     std::vector<CloneRestore::TagPairOpt> QueryTagInfo(void);
     void AppendExtraWhereClause(std::string& whereClause, const std::string& tableName);
+    void GenNewCoverUris(const std::vector<CoverUriInfo>& coverUriInfo,
+        std::vector<FileInfo> &fileInfos);
+    bool GetFileInfoByFileId(int32_t fileId, const std::vector<FileInfo>& fileInfos, FileInfo& outFileInfo);
+    std::string GenCoverUriUpdateSql(const std::unordered_map<std::string, std::pair<std::string, int32_t>>&
+        tagIdToCoverInfo, const std::unordered_map<std::string, int32_t>& oldToNewFileId,
+        const std::vector<FileInfo>& fileInfos, std::vector<std::string>& tagIds);
+    std::string ProcessUriAndGenNew(const std::string& tagId, const std::string& oldCoverUri,
+        const std::unordered_map<std::string, int32_t>& oldToNewFileId, const std::vector<FileInfo>& fileInfos);
 
     template<typename T>
     struct always_false : std::false_type {};
@@ -188,6 +197,7 @@ private:
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tableCommonColumnInfoMap_;
     std::unordered_set<std::string> albumToNotifySet_;
     std::string garbagePath_;
+    std::vector<CoverUriInfo> coverUriInfo_;
 };
 
 template<typename T>
