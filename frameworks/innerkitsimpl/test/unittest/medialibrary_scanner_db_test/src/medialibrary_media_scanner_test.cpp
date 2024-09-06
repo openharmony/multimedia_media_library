@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <cstdint>
+
 #include "medialibrary_errno.h"
 #include "medialibrary_scanner_db_test.h"
 #include "media_scanner_db.h"
@@ -25,7 +27,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-HWTEST_F(MediaLibraryScannerDbTest, medialib_Scan_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_Scan_test_001, TestSize.Level0)
 {
     string path = "/storage/media";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
@@ -45,7 +47,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_Scan_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_ScanFileInternal_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_ScanFileInternal_test_001, TestSize.Level0)
 {
     string path = "medialib_ScanFileInternal_test_001/.test";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
@@ -58,7 +60,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ScanFileInternal_test_001, TestSize
     EXPECT_NE(ret, E_FILE_HIDDEN);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_ScanFile_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_ScanFile_test_001, TestSize.Level0)
 {
     string path = "/storage/cloud/files/";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
@@ -67,7 +69,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ScanFile_test_001, TestSize.Level0)
     EXPECT_NE(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_GetFileMetadata_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_GetFileMetadata_test_001, TestSize.Level0)
 {
     string path = "/data";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
@@ -79,7 +81,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_GetFileMetadata_test_001, TestSize.
     EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_GetParentDirInfo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_GetParentDirInfo_test_001, TestSize.Level0)
 {
     string path = "GetParentDirInfo";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
@@ -96,7 +98,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_GetParentDirInfo_test_001, TestSize
     EXPECT_EQ(ret, E_DATA);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_ScanFileInTraversal_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_ScanFileInTraversal_test_001, TestSize.Level0)
 {
     string dir = "/storage/cloud/files/";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
@@ -115,7 +117,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ScanFileInTraversal_test_001, TestS
     EXPECT_NE(ret, E_FILE_HIDDEN);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_WalkFileTree_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_WalkFileTree_test_001, TestSize.Level0)
 {
     string dir = "/storage/cloud/files";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
@@ -127,7 +129,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_WalkFileTree_test_001, TestSize.Lev
     EXPECT_EQ(ret, ERR_NOT_ACCESSIBLE);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_CleanupDirectory_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_CleanupDirectory_test_001, TestSize.Level0)
 {
     shared_ptr<IMediaScannerCallback> callback = nullptr;
     MediaScannerObj mediaScannerObj("", callback, MediaScannerObj::DIRECTORY);
@@ -139,7 +141,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_CleanupDirectory_test_001, TestSize
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_InsertOrUpdateAlbumInfo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_InsertOrUpdateAlbumInfo_test_001, TestSize.Level0)
 {
     string dir = "/storage/cloud/files";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
@@ -150,7 +152,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_InsertOrUpdateAlbumInfo_test_001, T
     EXPECT_EQ(ret, UNKNOWN_ID);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_Commit_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_Commit_test_001, TestSize.Level0)
 {
     string dir = "/storage";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
@@ -161,7 +163,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_Commit_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_AddToTransaction_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_AddToTransaction_test_001, TestSize.Level0)
 {
     string dir = "/storage/cloud/files";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
@@ -171,7 +173,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_AddToTransaction_test_001, TestSize
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_CommitTransaction_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_CommitTransaction_test_001, TestSize.Level0)
 {
     string dir = "/storage/cloud/files";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
@@ -181,7 +183,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_CommitTransaction_test_001, TestSiz
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_InvokeCallback_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_InvokeCallback_test_001, TestSize.Level0)
 {
     shared_ptr<IMediaScannerCallback> callback = nullptr;
     MediaScannerObj mediaScannerObj("", callback, MediaScannerObj::FILE);

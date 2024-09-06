@@ -67,6 +67,16 @@ void MediaScannerObj::SetErrorPath(const std::string &path)
     errorPath_ = path;
 }
 
+void MediaScannerObj::SetForceScan(bool isForceScan)
+{
+    isForceScan_ = isForceScan;
+}
+
+void MediaScannerObj::SetFileId(int32_t fileId)
+{
+    fileId_ = fileId;
+}
+
 void MediaScannerObj::SetIsSkipAlbumUpdate(bool isSkipAlbumUpdate)
 {
     isSkipAlbumUpdate_ = isSkipAlbumUpdate;
@@ -723,6 +733,15 @@ int32_t MediaScannerObj::CleanupDirectory()
     return E_OK;
 }
 
+static int32_t OpenFailedOperation(const string &path)
+{
+    MEDIA_ERR_LOG("Failed to opendir %{private}s, errno %{private}d", path.c_str(), errno);
+    VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
+        {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::SCAN}};
+    PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+    return ERR_NOT_ACCESSIBLE;
+}
+
 int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
 {
     int err = E_OK;
@@ -746,12 +765,8 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
     }
     fName[len++] = '/';
     if ((dirPath = opendir(path.c_str())) == nullptr) {
-        MEDIA_ERR_LOG("Failed to opendir %{private}s, errno %{private}d", path.c_str(), errno);
         FREE_MEMORY_AND_SET_NULL(fName);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::SCAN}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return ERR_NOT_ACCESSIBLE;
+        return OpenFailedOperation(path);
     }
 
     while ((ent = readdir(dirPath)) != nullptr) {
