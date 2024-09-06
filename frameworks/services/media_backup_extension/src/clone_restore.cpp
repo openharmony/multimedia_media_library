@@ -1814,12 +1814,12 @@ std::string CloneRestore::GenCoverUriUpdateSql(const std::unordered_map<std::str
     }
     updateSql += "ELSE cover_uri END, ";
 
-    updateSql += "isCoverSatisfied = CASE ";
+    updateSql += "is_cover_satisfied = CASE ";
     for (const auto& [tagId, isCoverSatisfied] : isCoverSatisfiedUpdates) {
         updateSql += "WHEN tag_id = '" + tagId + "' THEN " + std::to_string(isCoverSatisfied) + " ";
     }
 
-    updateSql += "ELSE isCoverSatisfied END ";
+    updateSql += "ELSE is_cover_satisfied END ";
     updateSql += "WHERE tag_id IN ('" +
         BackupDatabaseUtils::JoinValues(tagIds, "','") + "')";
 
