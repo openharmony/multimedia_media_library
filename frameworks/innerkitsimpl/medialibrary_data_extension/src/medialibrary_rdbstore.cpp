@@ -506,6 +506,7 @@ int32_t MediaLibraryRdbStore::UpdateLastVisitTime(const string &id)
     if (ret != NativeRdb::E_OK || changedRows <= 0) {
         MEDIA_ERR_LOG("rdbStore_->UpdateLastVisitTime failed, changedRows = %{public}d, ret = %{public}d",
             changedRows, ret);
+        MediaLibraryRestore::GetInstance().CheckRestore(ret);
     }
     return changedRows;
 }
