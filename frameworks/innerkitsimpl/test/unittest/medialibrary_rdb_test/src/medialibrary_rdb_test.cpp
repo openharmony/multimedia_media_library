@@ -480,39 +480,10 @@ HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_001, TestSize.Le
     if (rdbStorePtr == nullptr) {
         exit(1);
     }
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    ValuesBucket valuesBucket;
-    string title = "medialib_UpdateLastVisitTime_test_001";
-    valuesBucket.PutString(MEDIA_DATA_DB_TITLE, title);
-    valuesBucket.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
-    cmd.SetValueBucket(valuesBucket);
-    int32_t updatedRows = E_HAS_DB_ERROR;
+    string id = "1";
     rdbStorePtr->Init();
-    int32_t ret = rdbStorePtr->UpdateLastVisitTime(cmd, updatedRows);
+    int32_t ret = rdbStorePtr->UpdateLastVisitTime(id);
     EXPECT_GE(ret, E_OK);
-}
-
-HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_002, TestSize.Level0)
-{
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    int32_t updatedRows = 0;
-    int32_t ret = rdbStorePtr->UpdateLastVisitTime(cmd, updatedRows);
-    EXPECT_EQ(ret, updatedRows);
-}
-
-HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_003, TestSize.Level0)
-{
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
-    rdbStorePtr->Stop();
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    int32_t updatedRows = E_HAS_DB_ERROR;
-    int32_t ret = rdbStorePtr->UpdateLastVisitTime(cmd, updatedRows);
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
 HWTEST_F(MediaLibraryRdbTest, medialib_ResetAnalysisTables_test, TestSize.Level0)
