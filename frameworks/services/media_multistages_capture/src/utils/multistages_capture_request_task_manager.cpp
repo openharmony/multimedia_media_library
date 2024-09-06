@@ -29,7 +29,7 @@ std::mutex MultiStagesCaptureRequestTaskManager::mutex_;
 
 void MultiStagesCaptureRequestTaskManager::AddPhotoInProgress(int32_t fileId, const string &photoId, bool isTrashed)
 {
-    unique_lock<mutex> lock(mutex_, try_to_lock);
+    unique_lock<mutex> lock(mutex_);
     fileId2PhotoId_.emplace(fileId, photoId);
     PhotoState state = PhotoState::NORMAL;
     if (isTrashed) {
@@ -42,7 +42,7 @@ void MultiStagesCaptureRequestTaskManager::AddPhotoInProgress(int32_t fileId, co
 // 2. 删除到回收站,isTrashed=false, state NORMAL => TRASHED
 void MultiStagesCaptureRequestTaskManager::UpdatePhotoInProgress(const string &photoId)
 {
-    unique_lock<mutex> lock(mutex_, try_to_lock);
+    unique_lock<mutex> lock(mutex_);
     if (photoIdInProcess_.count(photoId) == 0) {
         MEDIA_INFO_LOG("photo id (%{public}s) not in progress", photoId.c_str());
         return;
@@ -55,7 +55,7 @@ void MultiStagesCaptureRequestTaskManager::UpdatePhotoInProgress(const string &p
 void MultiStagesCaptureRequestTaskManager::RemovePhotoInProgress(const string &photoId, bool isRestorable)
 {
     if (!isRestorable) {
-        unique_lock<mutex> lock(mutex_, try_to_lock);
+        unique_lock<mutex> lock(mutex_);
         if (photoIdInProcess_.count(photoId) == 0) {
             MEDIA_INFO_LOG("photo id (%{public}s) not in progress.", photoId.c_str());
             return;
@@ -72,7 +72,7 @@ void MultiStagesCaptureRequestTaskManager::RemovePhotoInProgress(const string &p
 int32_t MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(const std::string &photoId,
     RequestType requestType)
 {
-    unique_lock<mutex> lock(mutex_, try_to_lock);
+    unique_lock<mutex> lock(mutex_);
     if (photoIdInProcess_.count(photoId) == 0) {
         MEDIA_INFO_LOG("photo id (%{public}s) not in progress.", photoId.c_str());
         return 0;
@@ -86,7 +86,7 @@ int32_t MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(c
 
 bool MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(const string &photoId)
 {
-    unique_lock<mutex> lock(mutex_, try_to_lock);
+    unique_lock<mutex> lock(mutex_);
     if (photoId.empty() || photoIdInProcess_.find(photoId) == photoIdInProcess_.end()) {
         return false;
     }
@@ -95,7 +95,7 @@ bool MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(const string &photoI
 
 std::string MultiStagesCaptureRequestTaskManager::GetProcessingPhotoId(int32_t fileId)
 {
-    unique_lock<mutex> lock(mutex_, try_to_lock);
+    unique_lock<mutex> lock(mutex_);
     if (fileId2PhotoId_.find(fileId) == fileId2PhotoId_.end()) {
         MEDIA_ERR_LOG("photo not in process, id=%{public}d", fileId);
         return "";
