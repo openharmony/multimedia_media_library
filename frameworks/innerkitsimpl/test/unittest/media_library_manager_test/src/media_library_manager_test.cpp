@@ -519,7 +519,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
  
     // assert
-    EXPECT_EQ(0, GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet));
+    EXPECT_EQ(2, GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet));
     EXPECT_EQ(burstKey, GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet));
  
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_003 exit");
