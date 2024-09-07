@@ -637,12 +637,14 @@ static string ReorderTagId(string target, const vector<MergeAlbumInfo> &mergeAlb
 
 int32_t GetMergeAlbumInfo(shared_ptr<ResultSet> resultSet, MergeAlbumInfo &info)
 {
+    int isCoverSatisfied = 0;
     if (GetIntValueFromResultSet(resultSet, ALBUM_ID, info.albumId) != E_OK ||
         GetStringValueFromResultSet(resultSet, TAG_ID, info.tagId) != E_OK ||
         GetStringValueFromResultSet(resultSet, COVER_URI, info.coverUri) != E_OK ||
-        GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, info.isCoverSatisfied) != E_OK) {
+        GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, isCoverSatisfied) != E_OK) {
         return E_HAS_DB_ERROR;
     }
+    info.isCoverSatisfied = static_cast<uint8_t>(isCoverSatisfied);
     return E_OK;
 }
 
