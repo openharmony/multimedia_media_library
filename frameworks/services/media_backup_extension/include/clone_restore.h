@@ -42,7 +42,6 @@ public:
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
         int32_t sourceType) const override;
     std::string GetBackupInfo() override;
-    using TagPairOpt = std::pair<std::optional<std::string>, std::optional<std::string>>;
     using CoverUriInfo = std::pair<std::string, std::pair<std::string, int32_t>>;
 
 private:
@@ -155,11 +154,7 @@ private:
     void DeleteExistingFaceTagData(const std::string& inClause);
     std::vector<FaceTagTbl> QueryFaceTagTbl(int32_t offset, std::vector<std::string> &commonColumns);
     void RestorePortraitClusteringInfo();
-    void ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, TagPairOpt& tagPair);
-    void UpdateGroupTagColumn(const std::vector<TagPairOpt>& updatedPairs);
-    void UpdateFaceGroupTagsUnion();
     void ReportPortraitCloneStat(int32_t sceneCode);
-    std::vector<CloneRestore::TagPairOpt> QueryTagInfo(void);
     void AppendExtraWhereClause(std::string& whereClause, const std::string& tableName);
     void GenNewCoverUris(const std::vector<CoverUriInfo>& coverUriInfo,
         std::vector<FileInfo> &fileInfos);
@@ -169,12 +164,6 @@ private:
         const std::vector<FileInfo>& fileInfos, std::vector<std::string>& tagIds);
     std::string ProcessUriAndGenNew(const std::string& tagId, const std::string& oldCoverUri,
         const std::unordered_map<std::string, int32_t>& oldToNewFileId, const std::vector<FileInfo>& fileInfos);
-
-    template<typename T>
-    struct always_false : std::false_type {};
-    template<typename T>
-    static std::optional<T> GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        const std::string &columnName);
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -199,38 +188,6 @@ private:
     std::string garbagePath_;
     std::vector<CoverUriInfo> coverUriInfo_;
 };
-
-template<typename T>
-std::optional<T> CloneRestore::GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    const std::string &columnName)
-{
-    int32_t columnIndex;
-    int32_t err = resultSet->GetColumnIndex(columnName, columnIndex);
-    if (err != E_OK) {
-        return std::nullopt;
-    }
-
-    bool isNull = false;
-    int32_t errCode = resultSet->IsColumnNull(columnIndex, isNull);
-    if (errCode || isNull) {
-        return std::nullopt;
-    }
-
-    T value;
-    if constexpr (std::is_same_v<T, int32_t>) {
-        errCode = resultSet->GetInt(columnIndex, value);
-    } else if constexpr (std::is_same_v<T, int64_t>) {
-        errCode = resultSet->GetLong(columnIndex, value);
-    } else if constexpr (std::is_same_v<T, double>) {
-        errCode = resultSet->GetDouble(columnIndex, value);
-    } else if constexpr (std::is_same_v<T, std::string>) {
-        errCode = resultSet->GetString(columnIndex, value);
-    } else {
-        static_assert(always_false<T>::value, "Unsupported type for GetOptionalValue");
-    }
-
-    return errCode ? std::nullopt : std::optional<T>(value);
-}
 
 template<typename T>
 void CloneRestore::PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
