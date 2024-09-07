@@ -20,10 +20,7 @@
 #include "backup_const_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_restore.h"
-#include "medialibrary_rdb_utils.h"
-#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -591,31 +588,6 @@ bool BackupDatabaseUtils::IsValInBound(float val, float minVal, float maxVal)
     return val >= minVal && val <= maxVal;
 }
 
-void BackupDatabaseUtils::UpdateGroupTag(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
-    const std::unordered_map<std::string, std::string> &groupTagMap)
-{
-    static std::string UPDATE_SQL_START = "UPDATE AnalysisAlbum SET group_tag = CASE ";
-    static std::string UPDATE_SQL_END = " END ";
-    auto it = groupTagMap.begin();
-    while (it != groupTagMap.end()) {
-        std::string updateCase;
-        int32_t offset = 0;
-        while (offset < UPDATE_COUNT && it != groupTagMap.end()) {
-            updateCase += " WHEN group_tag = '" + it->first + "' THEN '" + it->second + "'";
-            offset++;
-            it++;
-        }
-        if (updateCase.empty()) {
-            break;
-        }
-        std::string updateSql = UPDATE_SQL_START + updateCase + UPDATE_SQL_END;
-        int32_t errCode = rdbStore->ExecuteSql(updateSql);
-        if (errCode < 0) {
-            MEDIA_ERR_LOG("execute update group tag failed, ret=%{public}d", errCode);
-        }
-    }
-}
-
 std::vector<std::pair<std::string, std::string>> BackupDatabaseUtils::GetColumnInfoPairs(
     const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName)
 {
@@ -832,6 +804,91 @@ void BackupDatabaseUtils::DeleteExistingImageFaceData(std::shared_ptr<NativeRdb:
     std::string deleteFaceSql = "DELETE FROM " + VISION_IMAGE_FACE_TABLE +
         " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, deleteFaceSql);
+}
+
+void BackupDatabaseUtils::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet,
+    TagPairOpt& tagPair)
+{
+    tagPair.first = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_TAG_ID);
+    tagPair.second = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_GROUP_TAG);
+}
+
+std::vector<TagPairOpt> BackupDatabaseUtils::QueryTagInfo(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
+{
+    std::vector<TagPairOpt> result;
+    std::string querySql =
+    "SELECT " + ANALYSIS_COL_TAG_ID + ", " +
+    ANALYSIS_COL_GROUP_TAG +
+    " FROM " + ANALYSIS_ALBUM_TABLE +
+    " WHERE " + ANALYSIS_COL_TAG_ID + " IS NOT NULL AND " +
+    ANALYSIS_COL_TAG_ID + " != ''";
+
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb, querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG ("Query resultSet is null.");
+        return result;
+    }
+    while (resultSet->GoToNextRow () == NativeRdb::E_OK) {
+        TagPairOpt tagPair;
+        ParseFaceTagResultSet(resultSet, tagPair);
+        result.emplace_back(tagPair);
+    }
+    return result;
+}
+
+void BackupDatabaseUtils::UpdateGroupTagColumn(const std::vector<TagPairOpt>& updatedPairs,
+    std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
+{
+    for (const auto& pair : updatedPairs) {
+        if (pair.first.has_value() && pair.second.has_value()) {
+            std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+                std::make_unique<NativeRdb::AbsRdbPredicates>(ANALYSIS_ALBUM_TABLE);
+            std::string whereClause = ANALYSIS_COL_TAG_ID + " = '" + pair.first.value() + "'";
+            predicates->SetWhereClause(whereClause);
+
+            int32_t updatedRows = 0;
+            NativeRdb::ValuesBucket valuesBucket;
+            valuesBucket.PutString(ANALYSIS_COL_GROUP_TAG, pair.second.value());
+
+            int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb, updatedRows, valuesBucket, predicates);
+            if (updatedRows <= 0 || ret < 0) {
+                MEDIA_ERR_LOG("Failed to update group_tag for tag_id: %s", pair.first.value().c_str());
+            }
+        }
+    }
+}
+
+void BackupDatabaseUtils::UpdateFaceGroupTagsUnion(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
+{
+    std::vector<TagPairOpt> tagPairs = QueryTagInfo(mediaLibraryRdb);
+    std::vector<TagPairOpt> updatedPairs;
+    std::vector<std::string> allTagIds;
+    for (const auto& pair : tagPairs) {
+        if (pair.first.has_value()) {
+            allTagIds.emplace_back(pair.first.value());
+        }
+    }
+    MEDIA_INFO_LOG("get all TagId  %{public}zu", allTagIds.size());
+    for (const auto& pair : tagPairs) {
+        if (pair.second.has_value()) {
+            std::vector<std::string> groupTags = BackupDatabaseUtils::SplitString(pair.second.value(), '|');
+            MEDIA_INFO_LOG("TagId: %{public}s, old GroupTags is: %{public}s",
+                           pair.first.value_or(std::string("-1")).c_str(), pair.second.value().c_str());
+            groupTags.erase(std::remove_if(groupTags.begin(), groupTags.end(),
+                [&allTagIds](const std::string& tagId) {
+                return std::find(allTagIds.begin(), allTagIds.end(), tagId) == allTagIds.end();
+                }),
+                groupTags.end());
+
+            std::string newGroupTag = BackupDatabaseUtils::JoinValues<std::string>(groupTags, "|");
+            if (newGroupTag != pair.second.value()) {
+                updatedPairs.emplace_back(pair.first, newGroupTag);
+                MEDIA_INFO_LOG("TagId: %{public}s  GroupTags updated", pair.first.value().c_str());
+            }
+        }
+    }
+
+    UpdateGroupTagColumn(updatedPairs, mediaLibraryRdb);
 }
 } // namespace Media
 } // namespace OHOS
