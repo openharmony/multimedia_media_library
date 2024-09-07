@@ -55,11 +55,11 @@ export struct PhotoPickerComponent {
     }
   }
 
-  private onSetPhotoBrowserItem(data?:
+  private onSetPhotoBrowserItem(data?: 
     Map<string, Array<string> | string | MaxSelected | PhotoBrowserRangeInfo>): void {
     let photoBrowserRangeInfo: PhotoBrowserRangeInfo = data?.get('SET_PHOTO_BROWSER_ITEM') as PhotoBrowserRangeInfo;
     this.proxy?.send({
-      'itemUri': photoBrowserRangeInfo?.uri,
+      'itemUri': photoBrowserRangeInfo?.uri, 
       'photoBrowserRange': photoBrowserRangeInfo?.photoBrowserRange
     });
     console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_ITEM');
@@ -267,7 +267,7 @@ export class PickerController {
   setPhotoBrowserItem(uri: string, photoBrowserRange?: PhotoBrowserRange) {
     let photoBrowserRangeInfo: PhotoBrowserRangeInfo = new PhotoBrowserRangeInfo();
     photoBrowserRangeInfo.uri = uri;
-    let newPhotoBrowserRange = photoBrowserRange? photoBrowserRange : PhotoBrowserRange.ALL;
+    let newPhotoBrowserRange = photoBrowserRange ? photoBrowserRange : PhotoBrowserRange.ALL;
     photoBrowserRangeInfo.photoBrowserRange = newPhotoBrowserRange;
     this.data = new Map([['SET_PHOTO_BROWSER_ITEM', photoBrowserRangeInfo]]);
     console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM' + JSON.stringify(photoBrowserRangeInfo));
@@ -287,7 +287,7 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   maxVideoSelectNumber?: number;
 }
 
-export class BaseItemInfo  {
+export class BaseItemInfo {
   uri?: string;
   mimeType?: string;
   width?: number;
