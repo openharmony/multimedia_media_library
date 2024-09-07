@@ -246,10 +246,7 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
     auditLog.operationScenario = "io";
     auditLog.operationCount = 1,
     auditLog.operationStatus = "running";
-    auditLog.extend = "OK",
-    auditLog.id = id;
-    auditLog.type = type;
-    auditLog.size = size;
+    auditLog.extend = "OK";
     OHOS::Media::HiAudit::GetInstance().Write(auditLog);
 
     CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
