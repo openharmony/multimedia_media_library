@@ -119,7 +119,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { HIGHLIGHT_PLAY_INFO_TABLE, OperationObject::STORY_PLAY },
         { USER_PHOTOGRAPHY_INFO_TABLE, OperationObject::USER_PHOTOGRAPHY },
         { PAH_HIGHLIGHT_COVER, OperationObject::STORY_COVER },
-        { PAH_HIGHLIGHT_PLAY, OperationObject::STORY_COVER },
+        { PAH_HIGHLIGHT_PLAY, OperationObject::STORY_PLAY },
 
         // others
         { MISC_OPERATION, OperationObject::MISCELLANEOUS },
