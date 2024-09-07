@@ -22,8 +22,10 @@
 
 using namespace OHOS::Media;
 
+const static int64_t MILLI_TO_SECOND = 1000;
 const static int32_t MAX_URI_LENGTH = 256;
 const static int32_t MAX_DISPLAY_NAME_LENGTH = MAX_URI_LENGTH + 6;
+const static int32_t MAX_TITLE_LENGTH = 256;
 
 const std::unordered_map<MediaType, MediaLibrary_MediaType> g_mediaTypeMapping = {
     {MediaType::MEDIA_TYPE_IMAGE, MediaLibrary_MediaType::MEDIA_LIBRARY_IMAGE},
@@ -32,19 +34,30 @@ const std::unordered_map<MediaType, MediaLibrary_MediaType> g_mediaTypeMapping =
 
 const std::unordered_map<PhotoSubType, MediaLibrary_MediaSubType> g_photoSubTypeMapping = {
     {PhotoSubType::DEFAULT, MediaLibrary_MediaSubType::MEDIA_LIBRARY_DEFAULT},
+    {PhotoSubType::CAMERA, MediaLibrary_MediaSubType::MEDIA_LIBRARY_DEFAULT},
     {PhotoSubType::MOVING_PHOTO, MediaLibrary_MediaSubType::MEDIA_LIBRARY_MOVING_PHOTO},
-    {PhotoSubType::SUBTYPE_END, MediaLibrary_MediaSubType::MEDIA_LIBRARY_BURST},
+    {PhotoSubType::BURST, MediaLibrary_MediaSubType::MEDIA_LIBRARY_BURST},
 };
 
-OH_MediaAsset::OH_MediaAsset(std::shared_ptr<OHOS::Media::FileAsset> fileAsset)
+std::shared_ptr<MediaAsset> MediaAssetFactory::CreateMediaAsset(
+    std::shared_ptr<FileAsset> fileAsset)
 {
-    MEDIA_DEBUG_LOG("OH_MediaAsset Constructor is called.");
+    std::shared_ptr<MediaAssetImpl> impl = std::make_shared<MediaAssetImpl>(fileAsset);
+    CHECK_AND_PRINT_LOG(impl != nullptr, "Failed to create MediaAssetManagerImpl instance.");
+
+    return impl;
+}
+
+MediaAssetImpl::MediaAssetImpl(std::shared_ptr<FileAsset> fileAsset)
+{
+    MEDIA_DEBUG_LOG("MediaAssetImpl Constructor is called.");
     fileAsset_ = fileAsset;
     uri_ = new char[MAX_URI_LENGTH];
     displayName_ = new char[MAX_DISPLAY_NAME_LENGTH];
+    title_ = new char[MAX_TITLE_LENGTH];
 }
 
-OH_MediaAsset::~OH_MediaAsset()
+MediaAssetImpl::~MediaAssetImpl()
 {
     if (fileAsset_ != nullptr) {
         fileAsset_ = nullptr;
@@ -59,9 +72,14 @@ OH_MediaAsset::~OH_MediaAsset()
         delete[] displayName_;
         displayName_ = nullptr;
     }
+
+    if (title_ != nullptr) {
+        delete[] title_;
+        title_ = nullptr;
+    }
 }
 
-MediaLibrary_ErrorCode OH_MediaAsset::GetUri(const char** uri)
+MediaLibrary_ErrorCode MediaAssetImpl::GetUri(const char** uri)
 {
     if (uri_ == nullptr) {
         uri_ = new(std::nothrow) char[MAX_URI_LENGTH];
@@ -72,13 +90,37 @@ MediaLibrary_ErrorCode OH_MediaAsset::GetUri(const char** uri)
     int32_t uriLen = static_cast<int32_t>(fileUri.length());
     int32_t len = uriLen < MAX_URI_LENGTH ? uriLen : MAX_URI_LENGTH - 1;
     strncpy_s(uri_, MAX_URI_LENGTH, fileUri.c_str(), len);
-    MEDIA_INFO_LOG("OH_MediaAsset::GetUri, uri: %{public}s, return uri: %{public}s",
+    MEDIA_INFO_LOG("MediaAssetImpl::GetUri, uri: %{public}s, return uri: %{public}s",
         fileUri.c_str(), uri_);
     *uri = uri_;
     return MEDIA_LIBRARY_OK;
 }
 
-MediaLibrary_ErrorCode OH_MediaAsset::GetDisplayName(const char** displayName)
+MediaLibrary_ErrorCode MediaAssetImpl::GetMediaType(MediaLibrary_MediaType* mediaType)
+{
+    MediaType type = fileAsset_->GetMediaType();
+    MEDIA_INFO_LOG("GetMediaType type: %{public}d", static_cast<int32_t>(type));
+    auto itr = g_mediaTypeMapping.find(type);
+    if (itr != g_mediaTypeMapping.end()) {
+        *mediaType = itr->second;
+        return MEDIA_LIBRARY_OK;
+    }
+    return MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+}
+
+MediaLibrary_ErrorCode MediaAssetImpl::GetMediaSubType(MediaLibrary_MediaSubType* mediaSubType)
+{
+    PhotoSubType subType = static_cast<PhotoSubType>(fileAsset_->GetPhotoSubType());
+    MEDIA_INFO_LOG("GetMediaSubType subType: %{public}d", static_cast<int32_t>(subType));
+    auto itr = g_photoSubTypeMapping.find(subType);
+    if (itr != g_photoSubTypeMapping.end()) {
+        *mediaSubType = itr->second;
+        return MEDIA_LIBRARY_OK;
+    }
+    return MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+}
+
+MediaLibrary_ErrorCode MediaAssetImpl::GetDisplayName(const char** displayName)
 {
     if (displayName_ == nullptr) {
         displayName_ = new(std::nothrow) char[MAX_DISPLAY_NAME_LENGTH];
@@ -89,43 +131,95 @@ MediaLibrary_ErrorCode OH_MediaAsset::GetDisplayName(const char** displayName)
     int32_t displayNameLen = static_cast<int32_t>(display.length());
     int32_t len = displayNameLen < MAX_DISPLAY_NAME_LENGTH ? displayNameLen : MAX_DISPLAY_NAME_LENGTH - 1;
     strncpy_s(displayName_, MAX_DISPLAY_NAME_LENGTH, display.c_str(), len);
-    MEDIA_INFO_LOG("OH_MediaAsset::GetDisplayName, display name: %{public}s, return display name: %{public}s",
+    MEDIA_INFO_LOG("MediaAssetImpl::GetDisplayName, display name: %{public}s, return display name: %{public}s",
         display.c_str(), displayName_);
     *displayName = displayName_;
     return MEDIA_LIBRARY_OK;
 }
 
-MediaLibrary_ErrorCode OH_MediaAsset::GetSize(uint32_t* size)
+MediaLibrary_ErrorCode MediaAssetImpl::GetSize(uint32_t* size)
 {
     *size = static_cast<uint32_t>(fileAsset_->GetSize());
     return MEDIA_LIBRARY_OK;
 }
 
-MediaLibrary_ErrorCode OH_MediaAsset::GetDateModifiedMs(uint32_t* dateModifiedMs)
+MediaLibrary_ErrorCode MediaAssetImpl::GetDateAdded(uint32_t* dateAdded)
+{
+    *dateAdded = static_cast<uint32_t>(fileAsset_->GetDateAdded() / MILLI_TO_SECOND);
+    return MEDIA_LIBRARY_OK;
+}
+
+MediaLibrary_ErrorCode MediaAssetImpl::GetDateModified(uint32_t* dateModified)
+{
+    *dateModified = static_cast<uint32_t>(fileAsset_->GetDateModified() / MILLI_TO_SECOND);
+    return MEDIA_LIBRARY_OK;
+}
+
+MediaLibrary_ErrorCode MediaAssetImpl::GetDateAddedMs(uint32_t* dateAddedMs)
+{
+    *dateAddedMs = static_cast<uint32_t>(fileAsset_->GetDateModified());
+    return MEDIA_LIBRARY_OK;
+}
+
+MediaLibrary_ErrorCode MediaAssetImpl::GetDateModifiedMs(uint32_t* dateModifiedMs)
 {
     *dateModifiedMs = static_cast<uint32_t>(fileAsset_->GetDateModified());
     return MEDIA_LIBRARY_OK;
 }
 
-std::shared_ptr<FileAsset> OH_MediaAsset::GetFileAssetInstance() const
+MediaLibrary_ErrorCode MediaAssetImpl::GetDateTaken(uint32_t* dateTaken)
+{
+    *dateTaken = static_cast<uint32_t>(fileAsset_->GetDateTaken());
+    return MEDIA_LIBRARY_OK;
+}
+
+std::shared_ptr<FileAsset> MediaAssetImpl::GetFileAssetInstance() const
 {
     return fileAsset_;
 }
 
-MediaLibrary_ErrorCode OH_MediaAsset::GetWidth(uint32_t* width)
+MediaLibrary_ErrorCode MediaAssetImpl::GetDuration(uint32_t* duration)
+{
+    *duration  = static_cast<uint32_t>(fileAsset_->GetDuration());
+    return MEDIA_LIBRARY_OK;
+}
+
+MediaLibrary_ErrorCode MediaAssetImpl::GetWidth(uint32_t* width)
 {
     *width = static_cast<uint32_t>(fileAsset_->GetWidth());
     return MEDIA_LIBRARY_OK;
 }
 
-MediaLibrary_ErrorCode OH_MediaAsset::GetHeight(uint32_t* height)
+MediaLibrary_ErrorCode MediaAssetImpl::GetHeight(uint32_t* height)
 {
     *height = static_cast<uint32_t>(fileAsset_->GetHeight());
     return MEDIA_LIBRARY_OK;
 }
 
-MediaLibrary_ErrorCode OH_MediaAsset::GetOrientation(uint32_t* orientation)
+MediaLibrary_ErrorCode MediaAssetImpl::GetOrientation(uint32_t* orientation)
 {
     *orientation = static_cast<uint32_t>(fileAsset_->GetOrientation());
+    return MEDIA_LIBRARY_OK;
+}
+
+MediaLibrary_ErrorCode MediaAssetImpl::IsFavorite(uint32_t* favorite)
+{
+    *favorite = static_cast<uint32_t>(fileAsset_->IsFavorite());
+    return MEDIA_LIBRARY_OK;
+}
+
+MediaLibrary_ErrorCode MediaAssetImpl::GetTitle(const char** title)
+{
+    if (title_ == nullptr) {
+        title_ = new(std::nothrow) char[MAX_TITLE_LENGTH];
+        CHECK_AND_RETURN_RET_LOG(title_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "alloc memory failed!");
+    }
+
+    const std::string titleStr = fileAsset_->GetTitle();
+    int32_t titleLen = static_cast<int32_t>(titleStr.length());
+    int32_t len = titleLen < MAX_TITLE_LENGTH ? titleLen : MAX_TITLE_LENGTH - 1;
+    strncpy_s(title_, MAX_TITLE_LENGTH, titleStr.c_str(), len);
+    MEDIA_INFO_LOG("GetTitle, title: %{public}s, return title: %{public}s", titleStr.c_str(), title_);
+    *title = title_;
     return MEDIA_LIBRARY_OK;
 }

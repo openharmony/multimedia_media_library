@@ -57,7 +57,7 @@ extern "C" {
  *         {@link #MEDIA_LIBRARY_PERMISSION_DENIED} Permission is denied.
  *         {@link #MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR} if internal system error.
  * @since 12
-*/
+ */
 MediaLibrary_ErrorCode OH_MediaAccessHelper_ApplyChanges(OH_MediaAssetChangeRequest* changeRequest);
 
 #ifdef __cplusplus

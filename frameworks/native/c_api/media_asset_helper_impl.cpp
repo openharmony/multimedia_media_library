@@ -13,24 +13,32 @@
  * limitations under the License.
  */
 
-#include "media_asset_helper.h"
+#include "media_asset_helper_impl.h"
+
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_userfile_client.h"
 #include "media_column.h"
 #include "medialibrary_errno.h"
 #include "userfilemgr_uri.h"
+#include "oh_media_asset.h"
 
 namespace OHOS {
 namespace Media {
 
-MediaAssetHelper* MediaAssetHelper::GetInstance()
+std::shared_ptr<MediaAssetHelper> MediaAssetHelperFactory::CreateMediaAssetHelper()
 {
-    static MediaAssetHelper instance;
-    return &instance;
+    std::shared_ptr<MediaAssetHelperImpl> impl = std::make_shared<MediaAssetHelperImpl>();
+    CHECK_AND_PRINT_LOG(impl != nullptr, "Failed to create MediaAssetHelperImpl instance.");
+
+    return impl;
 }
 
-OH_MediaAsset* MediaAssetHelper::GetMediaAsset(std::string uri, int32_t cameraShotType, std::string burstKey)
+MediaAssetHelperImpl::MediaAssetHelperImpl() {}
+
+MediaAssetHelperImpl::~MediaAssetHelperImpl() {}
+
+OH_MediaAsset* MediaAssetHelperImpl::GetMediaAsset(std::string uri, int32_t cameraShotType, std::string burstKey)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, nullptr, "create file asset failed");
@@ -56,12 +64,13 @@ OH_MediaAsset* MediaAssetHelper::GetMediaAsset(std::string uri, int32_t cameraSh
     }
 
     InitFileAsset(fileAsset);
-    auto mediaAsset = new OH_MediaAsset(fileAsset);
+    auto mediaAssetObj = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto mediaAsset = new OH_MediaAsset(mediaAssetObj);
     CHECK_AND_RETURN_RET_LOG(mediaAsset != nullptr, nullptr, "create media asset failed");
     return mediaAsset;
 }
 
-void MediaAssetHelper::InitFileAsset(std::shared_ptr<FileAsset> fileAsset)
+void MediaAssetHelperImpl::InitFileAsset(std::shared_ptr<FileAsset> fileAsset)
 {
     auto resultSet = QueryFileAsset(fileAsset->GetId());
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "query resultSet is nullptr");
@@ -98,7 +107,7 @@ void MediaAssetHelper::InitFileAsset(std::shared_ptr<FileAsset> fileAsset)
     return;
 }
 
-std::shared_ptr<DataShare::DataShareResultSet> MediaAssetHelper::QueryFileAsset(int32_t mediaId)
+std::shared_ptr<DataShare::DataShareResultSet> MediaAssetHelperImpl::QueryFileAsset(int32_t mediaId)
 {
     if (!UserFileClient::IsValid()) {
         UserFileClient::Init();
@@ -128,7 +137,7 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetHelper::QueryFileAsset(
     return resultSet;
 }
 
-void MediaAssetHelper::UpdateFileAsset(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
+void MediaAssetHelperImpl::UpdateFileAsset(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
     std::shared_ptr<FileAsset> fileAsset)
 {
     int indexPos = -1;

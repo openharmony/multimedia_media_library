@@ -117,6 +117,7 @@ typedef struct NativeRequestOptions {
 enum class ReturnDataType {
     TYPE_IMAGE_SOURCE = 0,
     TYPE_ARRAY_BUFFER,
+    TYPE_MOVING_PHOTO,
     TYPE_TARGET_FILE,
     TYPE_PICTURE,
 };
@@ -127,6 +128,8 @@ public:
         const std::string &destUri, NativeSourceMode sourceMode);
     CapiMediaAssetDataHandler(OH_MediaLibrary_OnImageDataPrepared imageDataHandler, ReturnDataType dataType,
         const std::string &uri, const std::string &destUri, NativeSourceMode sourceMode);
+    CapiMediaAssetDataHandler(OH_MediaLibrary_OnMovingPhotoDataPrepared photoDataHandler, ReturnDataType dataType,
+        const std::string &uri, const std::string &destUri, NativeSourceMode sourceMode);
     ~CapiMediaAssetDataHandler() = default;
     ReturnDataType GetReturnDataType();
     std::string GetRequestUri();
@@ -136,6 +139,7 @@ public:
     NativeNotifyMode GetNotifyMode();
     NativeOnDataPrepared onDataPreparedHandler_ = nullptr;
     OH_MediaLibrary_OnImageDataPrepared onRequestImageDataPreparedHandler_ = nullptr;
+    OH_MediaLibrary_OnMovingPhotoDataPrepared onRequestMovingPhotoDataPreparedHandler_ = nullptr;
     int32_t GetPhotoQuality();
     void SetPhotoQuality(int32_t photoQuality);
 
