@@ -12,32 +12,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef OHOS_MEDIA_BURST_KEY_GENERATOR_H
 #define OHOS_MEDIA_BURST_KEY_GENERATOR_H
- 
+
 #include <unordered_map>
- 
+
 #include "backup_const.h"
- 
+
 namespace OHOS {
 namespace Media {
+
+static const int32_t UUID_STR_LENGTH = 37;
+
 class BurstKeyGenerator {
 public:
     std::string FindBurstKey(const FileInfo &fileInfo);
- 
+
 private:
     std::string FindTitlePrefix(const FileInfo &fileInfo);
     std::string FindGroupHash(const FileInfo &fileInfo);
     int32_t FindGroupIndex(const FileInfo &fileInfo);
     std::string FindObjectHash(const FileInfo &fileInfo);
     std::string GenerateUuid();
- 
+
 private:
+    const std::string TITLE_KEY_WORDS_OF_BURST = "_BURST";
+    const int BURST_COVER_TYPE = 1;
+    const int BURST_MEMBER_TYPE = 2;
     std::unordered_map<std::string, std::string> groupHashMap_;
     std::unordered_map<std::string, int32_t> objectHashMap_;
 };
 }  // namespace Media
 }  // namespace OHOS
- 
+
 #endif  // OHOS_MEDIA_BURST_KEY_GENERATOR_H
