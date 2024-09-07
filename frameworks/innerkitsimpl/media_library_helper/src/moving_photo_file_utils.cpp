@@ -327,19 +327,20 @@ uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
 int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagepath, int64_t coverPosition,
     std::string &livePhotoPath, int32_t userId)
 {
-    string absMovingPhotoImagepath;
-    if (!PathToRealPath(movingPhotoImagepath, absMovingPhotoImagepath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", movingPhotoImagepath.c_str());
+    string imagePath = AppendUserId(movingPhotoImagepath, userId);
+    string videoPath = GetMovingPhotoVideoPath(movingPhotoImagepath, userId);
+    string cacheDir = GetLivePhotoCacheDir(movingPhotoImagepath, userId);
+    string extraPath = GetMovingPhotoExtraDataPath(movingPhotoImagepath, userId);
+
+    string absImagePath;
+    if (!PathToRealPath(imagePath, absImagePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", imagePath.c_str());
         return E_HAS_FS_ERROR;
     }
-    string imagePath = AppendUserId(absMovingPhotoImagepath, userId);
-    string videoPath = GetMovingPhotoVideoPath(absMovingPhotoImagepath, userId);
-    string cacheDir = GetLivePhotoCacheDir(absMovingPhotoImagepath, userId);
-    string extraPath = GetMovingPhotoExtraDataPath(absMovingPhotoImagepath, userId);
 
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(cacheDir),
         E_HAS_FS_ERROR, "Cannot create dir %{private}s, errno %{public}d", cacheDir.c_str(), errno);
-    string cachePath = GetLivePhotoCachePath(absMovingPhotoImagepath, userId);
+    string cachePath = GetLivePhotoCachePath(absImagePath, userId);
     if (MediaFileUtils::IsFileExists(cachePath)) {
         livePhotoPath = cachePath;
         return E_OK;
@@ -374,22 +375,24 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
 int32_t MovingPhotoFileUtils::ConvertToSourceLivePhoto(const string& movingPhotoImagePath,
     string& sourceLivePhotoPath, int32_t userId)
 {
-    string absMovingPhotoImagepath;
-    if (!PathToRealPath(movingPhotoImagePath, absMovingPhotoImagepath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", movingPhotoImagePath.c_str());
+    string sourceImagePath = GetSourceMovingPhotoImagePath(movingPhotoImagePath, userId);
+
+    string absSourceImagePath;
+    if (!PathToRealPath(sourceImagePath, absSourceImagePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", sourceImagePath.c_str());
         return E_HAS_FS_ERROR;
     }
-    string sourceImagePath = GetSourceMovingPhotoImagePath(absMovingPhotoImagePath, userId);
-    string sourceVideoPath = GetSourceMovingPhotoVideoPath(absMovingPhotoImagePath, userId);
-    if (!MediaFileUtils::IsFileExists(sourceVideoPath)) {
-        sourceVideoPath = GetMovingPhotoVideoPath(absMovingPhotoImagePath, userId);
-    }
-    string extraDataPath = GetMovingPhotoExtraDataPath(absMovingPhotoImagePath, userId);
 
-    string cacheDir = GetLivePhotoCacheDir(absMovingPhotoImagePath, userId);
+    string sourceVideoPath = GetSourceMovingPhotoVideoPath(absSourceImagePath, userId);
+    if (!MediaFileUtils::IsFileExists(sourceVideoPath)) {
+        sourceVideoPath = GetMovingPhotoVideoPath(absSourceImagePath, userId);
+    }
+    string extraDataPath = GetMovingPhotoExtraDataPath(absSourceImagePath, userId);
+
+    string cacheDir = GetLivePhotoCacheDir(absSourceImagePath, userId);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(cacheDir), E_HAS_FS_ERROR,
         "Cannot create dir %{private}s, errno %{public}d", cacheDir.c_str(), errno);
-    string sourceCachePath = GetSourceLivePhotoCachePath(absMovingPhotoImagePath, userId);
+    string sourceCachePath = GetSourceLivePhotoCachePath(absSourceImagePath, userId);
     if (MediaFileUtils::IsFileExists(sourceCachePath)) {
         sourceLivePhotoPath = sourceCachePath;
         MEDIA_INFO_LOG("source live photo exists: %{private}s", sourceCachePath.c_str());

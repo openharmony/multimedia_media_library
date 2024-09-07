@@ -6658,7 +6658,7 @@ napi_value MediaLibraryNapi::CreateMovingPhotoEffectModeEnum(napi_env env)
 {
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_create_object(env, &result), JS_INNER_FAIL);
-    for (uint32_t i = 0; i < movingPhotoEffectModeEnum.size(); i++) {
+    for (size_t i = 0; i < movingPhotoEffectModeEnum.size(); i++) {
         CHECK_ARGS(env, AddIntegerNamedProperty(env, result, movingPhotoEffectModeEnum[i], static_cast<int32_t>(i)),
             JS_INNER_FAIL);
     }
