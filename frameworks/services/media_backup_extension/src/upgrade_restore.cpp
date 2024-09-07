@@ -1237,11 +1237,6 @@ void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
         return;
     }
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-    std::vector<int32_t> faceAnalysisTypeList = { FaceAnalysisType::RECOGNITION };
-    if (!BackupDatabaseUtils::GetFaceAnalysisVersion(faceAnalysisVersionMap_, faceAnalysisTypeList)) {
-        MEDIA_ERR_LOG("Get face analysis version failed, quit");
-        return;
-    }
     int32_t totalNumber = QueryPortraitAlbumTotalNumber();
     MEDIA_INFO_LOG("QueryPortraitAlbumTotalNumber, totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
@@ -1364,9 +1359,6 @@ std::vector<NativeRdb::ValuesBucket> UpgradeRestore::GetInsertValues(std::vector
 {
     std::vector<NativeRdb::ValuesBucket> values;
     for (auto &portraitAlbumInfo : portraitAlbumInfos) {
-        if (!BackupDatabaseUtils::SetGroupTagNew(portraitAlbumInfo, groupTagMap_)) {
-            continue;
-        }
         NativeRdb::ValuesBucket value = GetInsertValue(portraitAlbumInfo, isAlbum);
         values.emplace_back(value);
     }
@@ -1380,7 +1372,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const PortraitAlbumInfo &
     values.PutInt(COUNT, 0);
     if (isAlbum) {
         values.PutString(ALBUM_NAME, portraitAlbumInfo.tagName);
-        values.PutString(GROUP_TAG, portraitAlbumInfo.groupTagNew);
+        values.PutString(GROUP_TAG, portraitAlbumInfo.groupTagOld);
         values.PutInt(USER_OPERATION, portraitAlbumInfo.userOperation);
         values.PutInt(RENAME_OPERATION, RENAME_OPERATION_RENAMED);
         values.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
@@ -1496,7 +1488,7 @@ void UpgradeRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInf
             (long)(startInsertMap - startInsertFace), (long)mapRowNum, (long)(endInsert - startInsertMap));
     }
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    photoNum = filesWithFace.size();
+    photoNum = static_cast<int64_t>(filesWithFace.size());
     migratePortraitFaceNumber_ += faceRowNum;
     migratePortraitPhotoNumber_ += photoNum;
     migratePortraitTotalTimeCost_ += end - start;
@@ -1520,7 +1512,7 @@ void UpgradeRestore::SetHashReference(const std::vector<FileInfo> &fileInfos, co
 
 int32_t UpgradeRestore::QueryFaceTotalNumber(const std::string &hashSelection)
 {
-    std::string querySql = "SELECT count(1) as count FROM " + GALLERY_TABLE_MERGE_FACE + " WHERE " +
+    std::string querySql = "SELECT count(1) as count FROM " + GALLERY_FACE_TABLE_FULL + " AND " +
         GALLERY_MERGE_FACE_HASH + " IN (" + hashSelection + ")";
     return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
 }
@@ -1533,10 +1525,10 @@ std::vector<FaceInfo> UpgradeRestore::QueryFaceInfos(const std::string &hashSele
     result.reserve(QUERY_COUNT);
     std::string querySql = "SELECT " + GALLERY_SCALE_X + ", " + GALLERY_SCALE_Y + ", " + GALLERY_SCALE_WIDTH + ", " +
         GALLERY_SCALE_HEIGHT + ", " + GALLERY_PITCH + ", " + GALLERY_YAW + ", " + GALLERY_ROLL + ", " +
-        GALLERY_PROB + ", " + GALLERY_TOTAL_FACE + ", " + GALLERY_MERGE_FACE_HASH + ", " + GALLERY_FACE_ID + ", " +
-        GALLERY_MERGE_FACE_TAG_ID + ", " + GALLERY_LANDMARKS + " FROM " + GALLERY_TABLE_MERGE_FACE + " WHERE " +
+        GALLERY_PROB + ", " + GALLERY_TOTAL_FACE + ", " + GALLERY_MERGE_FACE_HASH + ", " + GALLERY_MERGE_FACE_FACE_ID +
+        ", " + GALLERY_MERGE_FACE_TAG_ID + ", " + GALLERY_LANDMARKS + " FROM " + GALLERY_FACE_TABLE_FULL + " AND " +
         GALLERY_MERGE_FACE_HASH + " IN (" + hashSelection + ") ORDER BY " + GALLERY_MERGE_FACE_HASH + ", " +
-        GALLERY_FACE_ID;
+        GALLERY_MERGE_FACE_FACE_ID;
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
     if (resultSet == nullptr) {
@@ -1572,14 +1564,13 @@ bool UpgradeRestore::ParseFaceResultSet(const std::shared_ptr<NativeRdb::ResultS
     faceInfo.prob = GetDoubleVal(GALLERY_PROB, resultSet);
     faceInfo.totalFaces = GetInt32Val(GALLERY_TOTAL_FACE, resultSet);
     faceInfo.hash = GetStringVal(GALLERY_MERGE_FACE_HASH, resultSet);
-    faceInfo.faceId = GetStringVal(GALLERY_FACE_ID, resultSet);
+    faceInfo.faceId = GetStringVal(GALLERY_MERGE_FACE_FACE_ID, resultSet);
     faceInfo.tagIdOld = GetStringVal(GALLERY_MERGE_FACE_TAG_ID, resultSet);
     faceInfo.landmarks = BackupDatabaseUtils::GetLandmarksStr(GALLERY_LANDMARKS, resultSet);
     if (faceInfo.landmarks.empty()) {
         MEDIA_ERR_LOG("Get invalid landmarks for face %{public}s", faceInfo.faceId.c_str());
         return false;
     }
-    faceInfo.analysisVersion = CURRENT_ANALYSIS_VERSION;
     return true;
 }
 
@@ -1588,8 +1579,7 @@ bool UpgradeRestore::SetAttributes(FaceInfo &faceInfo, const std::unordered_map<
     return BackupDatabaseUtils::SetLandmarks(faceInfo, fileInfoMap) &&
         BackupDatabaseUtils::SetFileIdNew(faceInfo, fileInfoMap) &&
         BackupDatabaseUtils::SetTagIdNew(faceInfo, tagIdMap_) &&
-        BackupDatabaseUtils::SetAlbumIdNew(faceInfo, portraitAlbumIdMap_) &&
-        BackupDatabaseUtils::SetVersion(faceInfo.faceVersion, faceAnalysisVersionMap_, FaceAnalysisType::RECOGNITION);
+        BackupDatabaseUtils::SetAlbumIdNew(faceInfo, portraitAlbumIdMap_);
 }
 
 int32_t UpgradeRestore::InsertFaceAnalysisDataByTable(const std::vector<FaceInfo> &faceInfos, bool isMap,
@@ -1642,9 +1632,8 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FaceInfo &faceInfo,
         values.PutString(FACE_ID, faceInfo.faceId);
         values.PutString(TAG_ID, faceInfo.tagIdNew);
         values.PutString(LANDMARKS, faceInfo.landmarks);
-        values.PutString(IMAGE_FACE_VERSION, faceInfo.faceVersion);
+        values.PutString(IMAGE_FACE_VERSION, DEFAULT_BACKUP_VERSION); // replaced by the latest
         values.PutString(IMAGE_FEATURES_VERSION, E_VERSION); // updated by analysis service
-        values.PutString(ANALYSIS_VERSION, faceInfo.analysisVersion);
     }
     return values;
 }
