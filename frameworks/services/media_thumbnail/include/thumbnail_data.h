@@ -83,6 +83,7 @@ public:
     EXPORT bool needResizeLcd {false};
     EXPORT bool isLocalFile {true};
     EXPORT bool isOpeningCloudFile {false};
+    EXPORT bool noNeedTwoStore {false};
     EXPORT std::shared_ptr<PixelMap> source;
     EXPORT std::shared_ptr<PixelMap> sourceEx;
     EXPORT std::vector<uint8_t> thumbnail;
