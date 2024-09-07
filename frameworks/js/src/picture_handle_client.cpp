@@ -334,8 +334,6 @@ bool PictureHandlerClient::ReadBufferHandle(MessageParcel &data, sptr<SurfaceBuf
             int32_t reserveFd = RequestBufferHandlerFd(data.ReadInt32());
             MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle reserve[%{public}d]: %{public}d", i, reserveFd);
             handle->reserve[i] = dup(reserveFd);
-            MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle handle->reserve[%{public}d]: %{public}d",
-                i, handle->reserve[i]);
             close(reserveFd);
         }
     }
