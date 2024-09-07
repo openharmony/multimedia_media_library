@@ -34,7 +34,6 @@
 #include "thumbnail_const.h"
 #include "userfile_manager_types.h"
 #include "value_object.h"
-#include "hi_audit.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -238,17 +237,6 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
         "Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
 
     int32_t outRow = InsertAssetInDb(cmd, fileAsset);
-
-    OHOS::Media::AuditLog auditLog;
-    auditLog.isUserBehavior = true;
-    auditLog.cause = "USER BEHAVIOR";
-    auditLog.operationType = "ADD";
-    auditLog.operationScenario = "io";
-    auditLog.operationCount = 1,
-    auditLog.operationStatus = "running";
-    auditLog.extend = "OK";
-    OHOS::Media::HiAudit::GetInstance().Write(auditLog);
-
     CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
     transactionOprn.Finish();
     fileAsset.SetId(outRow);
