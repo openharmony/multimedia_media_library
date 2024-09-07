@@ -288,6 +288,9 @@ bool PictureHandlerService ::WriteBufferHandler(MessageParcel &data, BufferHandl
             i, handle.reserve[i]);
         data.WriteInt32(handle.reserve[i]);
     }
+    for (uint32_t j = 0; j < handle.reserveInts; j++) {
+        data.WriteInt32(handle.reserve[handle.reserveFds + j]);
+    }
 
     return true;
 }
