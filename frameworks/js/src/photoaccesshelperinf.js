@@ -758,6 +758,7 @@ export default {
   DeliveryMode: photoAccessHelper.DeliveryMode,
   SourceMode: photoAccessHelper.SourceMode,
   AuthorizationMode: photoAccessHelper.AuthorizationMode,
+  CompatibleMode: photoAccessHelper.CompatibleMode,
   BaseSelectOptions: BaseSelectOptions,
   PhotoSelectOptions: PhotoSelectOptions,
   PhotoSelectResult: PhotoSelectResult,
