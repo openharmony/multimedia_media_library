@@ -60,6 +60,7 @@ group("test") {
     "unittest/medialibrary_vision_test:unittest",
     "unittest/medialibrary_visitor_db_test:unittest",
     "unittest/mediascanner_test:unittest",
+    "unittest/moving_photo_test:unittest",
     "unittest/notify_test:Notifytest",
     "unittest/photo_album_test:PhotoAlbumTest",
     "unittest/portrait_album_update_test:PortraitAlbumUpdateTest",
