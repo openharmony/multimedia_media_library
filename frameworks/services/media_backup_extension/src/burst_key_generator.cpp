@@ -29,12 +29,11 @@ namespace Media {
  */
 std::string BurstKeyGenerator::FindTitlePrefix(const FileInfo &fileInfo)
 {
-    const std::string keyWord = "_BURST";
-    auto suffixIndex = fileInfo.title.find(keyWord);
+    auto suffixIndex = fileInfo.title.find(TITLE_KEY_WORDS_OF_BURST);
     if (suffixIndex == std::string::npos) {
         return "";
     }
-    return fileInfo.title.substr(0, suffixIndex + keyWord.size());
+    return fileInfo.title.substr(0, suffixIndex + TITLE_KEY_WORDS_OF_BURST.size());
 }
  
 /**
@@ -82,15 +81,15 @@ std::string BurstKeyGenerator::FindObjectHash(const FileInfo &fileInfo)
 }
  
 /**
- * @brief generate a uuid, like xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx
+ * @brief generate a uuid without '-'
  *
- * @return std::string uuid with 36 characters
+ * @return std::string uuid with 32 characters
  */
 std::string BurstKeyGenerator::GenerateUuid()
 {
     uuid_t uuid;
     uuid_generate(uuid);
-    char str[37] = {};
+    char str[UUID_STR_LENGTH] = {};
     uuid_unparse(uuid, str);
     return str;
 }
@@ -104,7 +103,7 @@ std::string BurstKeyGenerator::GenerateUuid()
 std::string BurstKeyGenerator::FindBurstKey(const FileInfo &fileInfo)
 {
     // isBurst, 1=burst cover photo, 2=burst photo, 0=others
-    if (fileInfo.isBurst != 1 && fileInfo.isBurst != 2) {
+    if (fileInfo.isBurst != BURST_COVER_TYPE && fileInfo.isBurst != BURST_MEMBER_TYPE) {
         return "";
     }
     std::string groupHash = FindGroupHash(fileInfo);
