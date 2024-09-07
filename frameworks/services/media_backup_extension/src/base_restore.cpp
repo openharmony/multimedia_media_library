@@ -18,7 +18,6 @@
 #include "base_restore.h"
 
 #include "application_context.h"
-#include "background_task_mgr_helper.h"
 #include "backup_database_utils.h"
 #include "backup_dfx_utils.h"
 #include "backup_file_utils.h"
@@ -29,6 +28,7 @@
 #include "media_file_utils.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_asset_operations.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_type_const.h"
@@ -37,7 +37,6 @@
 #include "parameters.h"
 #include "photo_album_column.h"
 #include "result_set_utils.h"
-#include "resource_type.h"
 #include "userfilemgr_uri.h"
 #include "medialibrary_notify.h"
 
@@ -88,14 +87,17 @@ int32_t BaseRestore::Init(void)
         MEDIA_ERR_LOG("Failed to get context");
         return E_FAIL;
     }
-    BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo =
-        BackgroundTaskMgr::EfficiencyResourceInfo(BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
-    BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
     int32_t err = BackupDatabaseUtils::InitDb(mediaLibraryRdb_, MEDIA_DATA_ABILITY_DB_NAME, DATABASE_PATH, BUNDLE_NAME,
         true, context->GetArea());
     if (err != E_OK) {
         MEDIA_ERR_LOG("medialibrary rdb fail, err = %{public}d", err);
         return E_FAIL;
+    }
+    int32_t sceneCode = 0;
+    int32_t errCode = MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context, nullptr, sceneCode);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("When restore, InitMedialibraryMgr fail, errcode = %{public}d", errCode);
+        return errCode;
     }
     migrateDatabaseNumber_ = 0;
     migrateFileNumber_ = 0;
@@ -479,8 +481,9 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
         std::string localPath = tmpPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
         int32_t moveErrCode = BackupFileUtils::MoveFile(fileInfos[i].filePath, localPath, sceneCode);
         if (moveErrCode != E_SUCCESS) {
-            MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s, errno:%{public}s",
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(), strerror(errno));
+            MEDIA_ERR_LOG("MoveFile failed, filePath: %{public}s, errCode: %{public}d, errMsg: %{public}s.",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(), moveErrCode,
+                strerror(errno));
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::MOVE_FAILED);
             moveFailedData.push_back(fileInfos[i].cloudPath);
             continue;
@@ -865,9 +868,6 @@ void BaseRestore::SetParameterForClone()
 
 void BaseRestore::StopParameterForClone(int32_t sceneCode)
 {
-    if (sceneCode == UPGRADE_RESTORE_ID) {
-        return;
-    }
     bool retFlag = system::SetParameter(CLONE_FLAG, "0");
     if (!retFlag) {
         MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);

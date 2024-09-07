@@ -288,6 +288,17 @@ std::unordered_map<std::string, std::string> BackupDatabaseUtils::GetColumnInfoM
     return columnInfoMap;
 }
 
+std::string BackupDatabaseUtils::GarbleInfoName(const string &infoName)
+{
+    std::string garbledInfoName = infoName;
+    if (infoName.size() <= MIN_GARBLE_SIZE) {
+        return garbledInfoName;
+    }
+    size_t garbledSize = infoName.size() - MIN_GARBLE_SIZE;
+    garbledInfoName.replace(GARBLE_START, garbledSize, GARBLE);
+    return garbledInfoName;
+}
+
 void BackupDatabaseUtils::UpdateUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t number,
     const std::string &type)
 {
@@ -304,17 +315,6 @@ int32_t BackupDatabaseUtils::QueryUniqueNumber(const std::shared_ptr<NativeRdb::
 {
     const string querySql = "SELECT unique_number FROM UniqueNumber WHERE media_type = '" + type + "'";
     return QueryInt(rdbStore, querySql, UNIQUE_NUMBER);
-}
-
-std::string BackupDatabaseUtils::GarbleInfoName(const string &infoName)
-{
-    std::string garbledInfoName = infoName;
-    if (infoName.size() <= MIN_GARBLE_SIZE) {
-        return garbledInfoName;
-    }
-    size_t garbledSize = infoName.size() - MIN_GARBLE_SIZE;
-    garbledInfoName.replace(GARBLE_START, garbledSize, GARBLE);
-    return garbledInfoName;
 }
 
 int32_t BackupDatabaseUtils::QueryExternalAudioCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
