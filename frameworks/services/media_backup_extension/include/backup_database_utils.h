@@ -88,8 +88,6 @@ public:
     static float GetLandmarksScale(int32_t width, int32_t height);
     static bool IsLandmarkValid(const FaceInfo &faceInfo, float landmarkX, float landmarkY);
     static bool IsValInBound(float val, float minVal, float maxVal);
-    static void UpdateGroupTag(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
-        const std::unordered_map<std::string, std::string> &groupTagMap);
     static std::vector<std::pair<std::string, std::string>> GetColumnInfoPairs(
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName);
     static std::vector<std::string> GetCommonColumnInfos(std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
