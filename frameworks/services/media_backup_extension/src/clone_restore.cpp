@@ -982,7 +982,7 @@ void CloneRestore::RestoreGallery()
         (long long)migratePhotoDuplicateNumber_, (long long)migrateVideoDuplicateNumber_,
         (long long)migrateDatabaseAlbumNumber_, (long long)migrateDatabaseMapNumber_);
     MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
-    UpdateFaceGroupTagsUnion();
+    BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
     NotifyAlbum();
 }
 
@@ -1508,29 +1508,36 @@ vector<AnalysisAlbumTbl> CloneRestore::QueryPortraitAlbumTbl(int32_t offset,
 void CloneRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
     AnalysisAlbumTbl &analysisAlbumTbl)
 {
-    analysisAlbumTbl.albumType = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_ALBUM_TYPE);
-    analysisAlbumTbl.albumSubtype = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_ALBUM_SUBTYPE);
-    analysisAlbumTbl.albumName = GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_ALBUM_NAME);
-    analysisAlbumTbl.coverUri = GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_COVER_URI);
-    analysisAlbumTbl.tagId = GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_TAG_ID);
-    analysisAlbumTbl.userOperation = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_USER_OPERATION);
-    analysisAlbumTbl.groupTag = GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_GROUP_TAG);
-    analysisAlbumTbl.userDisplayLevel = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_USER_DISPLAY_LEVEL);
-    analysisAlbumTbl.isMe = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_ME);
-    analysisAlbumTbl.isRemoved = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_REMOVED);
-    analysisAlbumTbl.renameOperation = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_RENAME_OPERATION);
-    analysisAlbumTbl.isLocal = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_LOCAL);
-    analysisAlbumTbl.isCoverSatisfied = GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_COVER_SATISFIED);
+    analysisAlbumTbl.albumType = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_ALBUM_TYPE);
+    analysisAlbumTbl.albumSubtype = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+        ANALYSIS_COL_ALBUM_SUBTYPE);
+    analysisAlbumTbl.albumName = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_ALBUM_NAME);
+    analysisAlbumTbl.coverUri = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_COVER_URI);
+    analysisAlbumTbl.tagId = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_TAG_ID);
+    analysisAlbumTbl.userOperation = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+        ANALYSIS_COL_USER_OPERATION);
+    analysisAlbumTbl.groupTag = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_GROUP_TAG);
+    analysisAlbumTbl.userDisplayLevel = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+        ANALYSIS_COL_USER_DISPLAY_LEVEL);
+    analysisAlbumTbl.isMe = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_ME);
+    analysisAlbumTbl.isRemoved = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_REMOVED);
+    analysisAlbumTbl.renameOperation = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+        ANALYSIS_COL_RENAME_OPERATION);
+    analysisAlbumTbl.isLocal = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_LOCAL);
+    analysisAlbumTbl.isCoverSatisfied = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+        ANALYSIS_COL_IS_COVER_SATISFIED);
 }
 
 void CloneRestore::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, FaceTagTbl& faceTagTbl)
 {
-    faceTagTbl.tagId = GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_TAG_ID);
-    faceTagTbl.tagName = GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_TAG_NAME);
-    faceTagTbl.groupTag = GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_GROUP_TAG);
-    faceTagTbl.centerFeatures = GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_CENTER_FEATURES);
-    faceTagTbl.tagVersion = GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_TAG_VERSION);
-    faceTagTbl.analysisVersion = GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_ANALYSIS_VERSION);
+    faceTagTbl.tagId = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_TAG_ID);
+    faceTagTbl.tagName = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_TAG_NAME);
+    faceTagTbl.groupTag = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_GROUP_TAG);
+    faceTagTbl.centerFeatures = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        FACE_TAG_COL_CENTER_FEATURES);
+    faceTagTbl.tagVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_TAG_VERSION);
+    faceTagTbl.analysisVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        FACE_TAG_COL_ANALYSIS_VERSION);
 }
 
 void CloneRestore::InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl)
@@ -1937,114 +1944,41 @@ NativeRdb::ValuesBucket CloneRestore::CreateValuesBucketFromImageFaceTbl(const I
 void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet,
     ImageFaceTbl& imageFaceTbl)
 {
-    imageFaceTbl.fileId = GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_FILE_ID);
-    imageFaceTbl.faceId = GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_FACE_ID);
-    imageFaceTbl.tagId = GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_TAG_ID);
-    imageFaceTbl.scaleX = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_SCALE_X);
-    imageFaceTbl.scaleY = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_SCALE_Y);
-    imageFaceTbl.scaleWidth = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_SCALE_WIDTH);
-    imageFaceTbl.scaleHeight = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_SCALE_HEIGHT);
-    imageFaceTbl.landmarks = GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_LANDMARKS);
-    imageFaceTbl.pitch = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_PITCH);
-    imageFaceTbl.yaw = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_YAW);
-    imageFaceTbl.roll = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_ROLL);
-    imageFaceTbl.prob = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_PROB);
-    imageFaceTbl.totalFaces = GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_TOTAL_FACES);
-    imageFaceTbl.faceVersion = GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_FACE_VERSION);
-    imageFaceTbl.featuresVersion = GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_FEATURES_VERSION);
-    imageFaceTbl.features = GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_FEATURES);
-    imageFaceTbl.faceOcclusion = GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_FACE_OCCLUSION);
-    imageFaceTbl.analysisVersion = GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_ANALYSIS_VERSION);
-    imageFaceTbl.beautyBounderX = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_BEAUTY_BOUNDER_X);
-    imageFaceTbl.beautyBounderY = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_BEAUTY_BOUNDER_Y);
-    imageFaceTbl.beautyBounderWidth = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_BEAUTY_BOUNDER_WIDTH);
-    imageFaceTbl.beautyBounderHeight = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_BEAUTY_BOUNDER_HEIGHT);
-    imageFaceTbl.aestheticsScore = GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_AESTHETICS_SCORE);
-    imageFaceTbl.beautyBounderVersion = GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION);
-    imageFaceTbl.isExcluded = GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_IS_EXCLUDED);
-}
-
-void CloneRestore::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, TagPairOpt& tagPair)
-{
-    tagPair.first = GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_TAG_ID);
-    tagPair.second = GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_GROUP_TAG);
-}
-
-std::vector<CloneRestore::TagPairOpt> CloneRestore::QueryTagInfo(void)
-{
-    std::vector<CloneRestore::TagPairOpt> result;
-    std::string querySql =
-    "SELECT " + ANALYSIS_COL_TAG_ID + ", " +
-    ANALYSIS_COL_GROUP_TAG +
-    " FROM " + ANALYSIS_ALBUM_TABLE +
-    " WHERE " + ANALYSIS_COL_TAG_ID + " IS NOT NULL AND " +
-    ANALYSIS_COL_TAG_ID + " != ''";
-
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG ("Query resultSet is null.");
-        return result;
-    }
-    while (resultSet->GoToNextRow () == NativeRdb::E_OK) {
-        TagPairOpt tagPair;
-        ParseFaceTagResultSet(resultSet, tagPair);
-        result.emplace_back(tagPair);
-    }
-    return result;
-}
-
-void CloneRestore::UpdateGroupTagColumn(const std::vector<TagPairOpt>& updatedPairs)
-{
-    for (const auto& pair : updatedPairs) {
-        if (pair.first.has_value() && pair.second.has_value()) {
-            std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
-                std::make_unique<NativeRdb::AbsRdbPredicates>(ANALYSIS_ALBUM_TABLE);
-            std::string whereClause = ANALYSIS_COL_TAG_ID + " = '" + pair.first.value() + "'";
-            predicates->SetWhereClause(whereClause);
-
-            int32_t updatedRows = 0;
-            NativeRdb::ValuesBucket valuesBucket;
-            valuesBucket.PutString(ANALYSIS_COL_GROUP_TAG, pair.second.value());
-
-            int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb_, updatedRows, valuesBucket, predicates);
-            if (updatedRows <= 0 || ret < 0) {
-                MEDIA_ERR_LOG("Failed to update group_tag for tag_id: %s", pair.first.value().c_str());
-            }
-        }
-    }
-}
-
-void CloneRestore::UpdateFaceGroupTagsUnion()
-{
-    std::vector<TagPairOpt> tagPairs = QueryTagInfo();
-    std::vector<TagPairOpt> updatedPairs;
-    std::vector<std::string> allTagIds;
-    for (const auto& pair : tagPairs) {
-        if (pair.first.has_value()) {
-            allTagIds.emplace_back(pair.first.value());
-        }
-    }
-    MEDIA_INFO_LOG("get all TagId  %{public}zu", allTagIds.size());
-    for (const auto& pair : tagPairs) {
-        if (pair.second.has_value()) {
-            std::vector<std::string> groupTags = BackupDatabaseUtils::SplitString(pair.second.value(), '|');
-            MEDIA_INFO_LOG("TagId: %{public}s, old GroupTags is: %{public}s",
-                           pair.first.value_or(std::string("-1")).c_str(), pair.second.value().c_str());
-            groupTags.erase(std::remove_if(groupTags.begin(), groupTags.end(),
-                [&allTagIds](const std::string& tagId) {
-                return std::find(allTagIds.begin(), allTagIds.end(), tagId) == allTagIds.end();
-                }),
-                groupTags.end());
-
-            std::string newGroupTag = BackupDatabaseUtils::JoinValues<std::string>(groupTags, "|");
-            if (newGroupTag != pair.second.value()) {
-                updatedPairs.emplace_back(pair.first, newGroupTag);
-                MEDIA_INFO_LOG("TagId: %{public}s  GroupTags updated", pair.first.value().c_str());
-            }
-        }
-    }
-
-    UpdateGroupTagColumn(updatedPairs);
+    imageFaceTbl.fileId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_FILE_ID);
+    imageFaceTbl.faceId = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_FACE_ID);
+    imageFaceTbl.tagId = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_TAG_ID);
+    imageFaceTbl.scaleX = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_SCALE_X);
+    imageFaceTbl.scaleY = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_SCALE_Y);
+    imageFaceTbl.scaleWidth = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_SCALE_WIDTH);
+    imageFaceTbl.scaleHeight = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_SCALE_HEIGHT);
+    imageFaceTbl.landmarks = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_LANDMARKS);
+    imageFaceTbl.pitch = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_PITCH);
+    imageFaceTbl.yaw = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_YAW);
+    imageFaceTbl.roll = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_ROLL);
+    imageFaceTbl.prob = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_PROB);
+    imageFaceTbl.totalFaces = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_TOTAL_FACES);
+    imageFaceTbl.faceVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        IMAGE_FACE_COL_FACE_VERSION);
+    imageFaceTbl.featuresVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        IMAGE_FACE_COL_FEATURES_VERSION);
+    imageFaceTbl.features = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_FEATURES);
+    imageFaceTbl.faceOcclusion = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+        IMAGE_FACE_COL_FACE_OCCLUSION);
+    imageFaceTbl.analysisVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        IMAGE_FACE_COL_ANALYSIS_VERSION);
+    imageFaceTbl.beautyBounderX = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_BEAUTY_BOUNDER_X);
+    imageFaceTbl.beautyBounderY = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_BEAUTY_BOUNDER_Y);
+    imageFaceTbl.beautyBounderWidth = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_BEAUTY_BOUNDER_WIDTH);
+    imageFaceTbl.beautyBounderHeight = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_BEAUTY_BOUNDER_HEIGHT);
+    imageFaceTbl.aestheticsScore = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_AESTHETICS_SCORE);
+    imageFaceTbl.beautyBounderVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION);
+    imageFaceTbl.isExcluded = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_IS_EXCLUDED);
 }
 
 void CloneRestore::ReportPortraitCloneStat(int32_t sceneCode)
