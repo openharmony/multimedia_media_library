@@ -108,9 +108,9 @@ export class PhotoPickerComponent extends ViewPU {
 
     onSetPhotoBrowserItem(o) {
         let e = null == o ? void 0 : o.get('SET_PHOTO_BROWSER_ITEM');
-        this.proxy.send({
-            itemUri: null == e ? void 0 : e.uri,
-            photoBrowserRange: null == e ? void 0 : e.photoBrowserRange
+        this.proxy.send({ 
+            itemUri: null == e ? void 0 : e.uri, 
+            photoBrowserRange: null == e ? void 0 : e.photoBrowserRange 
         });
         console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_ITEM');
     }
