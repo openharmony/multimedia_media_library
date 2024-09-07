@@ -430,7 +430,9 @@ void UpdateLcdDbState(ThumbRdbOpt &opts, ThumbnailData &data)
     if (opts.table != PhotoColumn::PHOTOS_TABLE) {
         return;
     }
-    StoreThumbnailSize(opts, data);
+    if (!data.noNeedTwoStore) {
+        StoreThumbnailSize(opts, data);
+    }
     int err = 0;
     if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
         MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
@@ -794,6 +796,7 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
 {
     MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
         data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    data.noNeedTwoStore = true;
     if (!DoCreateLcd(opts, data)) {
         MEDIA_ERR_LOG("Fail to create lcd, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
