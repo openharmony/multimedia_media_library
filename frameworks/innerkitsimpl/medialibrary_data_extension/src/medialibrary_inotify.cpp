@@ -117,7 +117,7 @@ void MediaLibraryInotify::Restart()
 {
     for (auto iter = watchList_.begin(); iter != watchList_.end(); iter++) {
         if (inotify_rm_watch(inotifyFd_, iter->first) != 0) {
-            MEDIA_ERR_LOG("rm watfch fd: %{public}d, fail: %{public}d", iter->first, errno);
+            MEDIA_ERR_LOG("rm watch fd: %{public}d, fail: %{public}d", iter->first, errno);
         }
     }
     isWatching_ = false;

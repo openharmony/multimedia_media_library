@@ -51,10 +51,10 @@ public:
 private:
     int32_t Remove(int wd);
     void WatchCallBack();
+    int32_t Init();
     void Restart();
 
 private:
-    int32_t Init();
     static std::shared_ptr<MediaLibraryInotify> instance_;
     static std::mutex mutex_;
     static inline std::unordered_map<int, struct WatchInfo> watchList_;
