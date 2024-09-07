@@ -1115,7 +1115,7 @@ static string generateRegexpMatchForNumber(const int32_t num)
 
 static string generateUpdateSql(const bool isCover, const string title, const int32_t mapAlbum)
 {
-    int32_t index = title.find_first_of("BURST");
+    uint32_t index = title.find_first_of("BURST");
     string globMember = title.substr(0, index) + "BURST" + generateRegexpMatchForNumber(3);
     string globCover = globMember + "_COVER";
     string updateSql;
