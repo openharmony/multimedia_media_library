@@ -419,12 +419,7 @@ void PopulateExtractedAVLocationMeta(std::shared_ptr<Meta> &meta, std::unique_pt
 
 static void ParseLivePhotoCoverPosition(std::unique_ptr<Metadata> &data)
 {
-    string absFilePath;
-    if (!PathToRealPath(data->GetMovingPhotoImagePath(), absFilePath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", data->GetMovingPhotoImagePath().c_str());
-        return;
-    }
-    string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(absFilePath);
+    string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(data->GetMovingPhotoImagePath());
     if (!MediaFileUtils::IsFileExists(extraPath)) {
         MEDIA_ERR_LOG("file not exists, path:%{private}s", extraPath.c_str());
         return;
