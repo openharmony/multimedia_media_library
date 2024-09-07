@@ -47,9 +47,13 @@ public:
     EXPORT int32_t RemoveByFileUri(const std::string &uri, MediaLibraryApi api = MediaLibraryApi::API_OLD);
     EXPORT void DoAging();
     void DoStop();
+
 private:
     int32_t Remove(int wd);
     void WatchCallBack();
+    void Restart();
+
+private:
     int32_t Init();
     static std::shared_ptr<MediaLibraryInotify> instance_;
     static std::mutex mutex_;
