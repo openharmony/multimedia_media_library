@@ -18,7 +18,7 @@ var __decorate = this && this.__decorate || function (e, o, t, i) {
     if ('object' === typeof Reflect && 'function' === typeof Reflect.decorate) {
         l = Reflect.decorate(e, o, t, i);
     } else {
-        for (var s = e.length - 1; s >= 0; s--) {
+        for (let s = e.length - 1; s >= 0; s--) {
             (n = e[s]) && (l = (r < 3 ? n(l) : r > 3 ? n(o, t, l) : n(o, t)) || l);
         }
     }
