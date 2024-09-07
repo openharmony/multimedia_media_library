@@ -75,6 +75,26 @@ NotifyMode NapiMediaAssetDataHandler::GetNotifyMode()
     return notifyMode_;
 }
 
+void NapiMediaAssetDataHandler::SetRequestId(std::string requestId)
+{
+    requestId_ = requestId;
+}
+
+std::string NapiMediaAssetDataHandler::GetRequestId()
+{
+    return requestId_;
+}
+
+void NapiMediaAssetDataHandler::SetCompatibleMode(const CompatibleMode &compatibleMode)
+{
+    compatibleMode_ = compatibleMode;
+}
+
+CompatibleMode NapiMediaAssetDataHandler::GetCompatibleMode()
+{
+    return compatibleMode_;
+}
+
 void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_env env, napi_value arg, napi_value extraInfo)
 {
     if (dataHandlerRef_ == nullptr) {

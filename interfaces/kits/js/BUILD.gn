@@ -119,6 +119,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/media_asset_edit_data_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_asset_manager_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_assets_change_request_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/media_call_transcode.cpp",
     "${MEDIALIB_JS_PATH}/src/media_change_request_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_library_comm_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_library_napi.cpp",
