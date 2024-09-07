@@ -101,6 +101,9 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
 
     // 获取Picture的序列化MessageParcel对象
     uint8_t *pictureParcelData = static_cast<uint8_t *>(malloc(dataSize));
+    if (pictureParcelData == nullptr) {
+        return E_ERR;
+    }
     if (memcpy_s((void*)pictureParcelData, dataSize, addr+readoffset, dataSize)) {
         MEDIA_ERR_LOG("PictureHandlerService::ReadPicture memcpy_s pictureParcel failed!");
         free(pictureParcelData);
@@ -294,7 +297,8 @@ bool PictureHandlerClient::ReadBufferHandle(MessageParcel &data, sptr<SurfaceBuf
     uint32_t reserveFds = 0;
     bool readReserveFdsRet = data.ReadUint32(reserveFds);
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle reserveFds: %{public}d", reserveFds);
-    uint32_t reserveInts = data.ReadUint32();
+    uint32_t reserveInts = 0;
+    bool reserveIntsRet = data.ReadUint32(reserveInts);
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle reserveInts: %{public}d", reserveInts);
 
     size_t handleSize = sizeof(BufferHandle) + (sizeof(int32_t) * (reserveFds + reserveInts));
@@ -336,6 +340,11 @@ bool PictureHandlerClient::ReadBufferHandle(MessageParcel &data, sptr<SurfaceBuf
         }
     }
 
+    if (reserveIntsRet) {
+        for (uint32_t j = 0; j < handle->reserveInts; j++) {
+            handle->reserve[reserveFds + j] = data.ReadInt32();
+        }
+    }
     surfaceBuffer->SetBufferHandle(handle);
     return true;
 }

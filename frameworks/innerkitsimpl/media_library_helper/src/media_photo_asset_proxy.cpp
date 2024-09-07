@@ -43,7 +43,12 @@ namespace Media {
 const string API_VERSION = "api_version";
 const string SAVE_PICTURE = "save_picture";
 const double TIMER_MULTIPLIER = 60.0;
-
+const std::unordered_map<CameraShotType, PhotoSubType> CAMERASHOT_TO_SUBTYPE_MAP = {
+    {CameraShotType::MOVING_PHOTO, PhotoSubType::MOVING_PHOTO},
+    {CameraShotType::BURST, PhotoSubType::BURST},
+    {CameraShotType::IMAGE, PhotoSubType::CAMERA},
+    {CameraShotType::VIDEO, PhotoSubType::CAMERA},
+};
 PhotoAssetProxy::PhotoAssetProxy() {}
 
 PhotoAssetProxy::PhotoAssetProxy(shared_ptr<DataShare::DataShareHelper> dataShareHelper, CameraShotType cameraShotType,
@@ -53,7 +58,12 @@ PhotoAssetProxy::PhotoAssetProxy(shared_ptr<DataShare::DataShareHelper> dataShar
     cameraShotType_ = cameraShotType;
     callingUid_ = callingUid;
     userId_ = userId;
-    subType_ = cameraShotType == CameraShotType::MOVING_PHOTO ? PhotoSubType::MOVING_PHOTO : PhotoSubType::CAMERA;
+    auto itr = CAMERASHOT_TO_SUBTYPE_MAP.find(cameraShotType);
+    if (itr == CAMERASHOT_TO_SUBTYPE_MAP.end()) {
+        subType_ = PhotoSubType::CAMERA;
+    } else {
+        subType_ = itr->second;
+    }
     MEDIA_INFO_LOG("init success, shottype: %{public}d, callingUid: %{public}d, userid: %{public}d",
         static_cast<int32_t>(cameraShotType), callingUid, userId);
 }
