@@ -170,9 +170,10 @@ int32_t BaseRestore::MoveFile(const std::string &srcFile, const std::string &dst
     return E_OK;
 }
 
-static bool IsFileValid(const FileInfo &fileInfo, const int32_t sceneCode)
+bool BaseRestore::IsFileValid(FileInfo &fileInfo, const int32_t sceneCode)
 {
-    if (!MediaFileUtils::IsFileValid(fileInfo.filePath)) {
+    if (!BackupFileUtils::IsFileValid(fileInfo.filePath, DUAL_FRAME_CLONE_RESTORE_ID,
+        fileInfo.relativePath, hasLowQualityImage_)) {
         MEDIA_ERR_LOG("File is not valid: %{public}s, errno=%{public}d.",
             BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(), errno);
         return false;
@@ -354,7 +355,13 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
     value.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
     value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
-    value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
+    if (fileInfo.fileSize != 0) {
+        value.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
+    } else {
+        MEDIA_WARN_LOG("DB file size is zero!");
+        value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
+        fileInfo.fileSize = data->GetFileSize();
+    }
     value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
     value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
     value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, data->GetDateTaken());
