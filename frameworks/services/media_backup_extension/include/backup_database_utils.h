@@ -120,6 +120,7 @@ public:
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
     template <typename T>
     static std::string JoinSQLValues(const std::vector<T>& values, std::string_view delimiter);
+
     template<typename T>
     struct always_false : std::false_type {};
     template<typename T>
