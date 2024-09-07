@@ -134,9 +134,9 @@ protected:
     int32_t errorCode_{RestoreError::SUCCESS};
     std::string errorInfo_;
     std::unordered_map<std::string, std::unordered_map<std::string, int32_t>> failedFilesMap_;
-    int fileMinSize_ = 0;
     int maxFileId_ = 0;
     int maxCount_ = 0;
+    int fileMinSize_ = 0;
     int32_t sceneCode_ = DEFAULT_RESTORE_ID;
     std::unordered_map<std::string, std::string> tagIdMap_;
     std::unordered_map<std::string, std::string> groupTagMap_;

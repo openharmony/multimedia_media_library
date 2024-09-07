@@ -88,6 +88,7 @@ const std::string EXTERNAL_DISPLAY_NAME = "_display_name";
 const std::string EXTERNAL_FILE_SIZE = "_size";
 const std::string EXTERNAL_DURATION = "duration";
 const std::string EXTERNAL_MEDIA_TYPE = "media_type";
+const std::string EXTERNAL_DATE_TAKEN = "datetaken";
 
 // custom column
 const std::string CUSTOM_COUNT = "count";
@@ -336,7 +337,7 @@ using NeedQueryMap = std::unordered_map<PhotoRelatedType, std::unordered_set<std
 const std::string QUERY_FILE_COLUMN = "SELECT _id, " + GALLERY_FILE_DATA + ", " + GALLERY_DISPLAY_NAME + ", " +
     EXTERNAL_IS_FAVORITE + ", " + GALLERY_FILE_SIZE + ", " + GALLERY_DURATION + ", " + GALLERY_MEDIA_TYPE + ", " +
     EXTERNAL_DATE_MODIFIED + ", " + GALLERY_HEIGHT + ", " + GALLERY_WIDTH + ", " + GALLERY_TITLE + ", " +
-    GALLERY_ORIENTATION + ", " + EXTERNAL_DATE_ADDED + " FROM files WHERE ";
+    GALLERY_ORIENTATION + ", " + EXTERNAL_DATE_ADDED + ", " + EXTERNAL_DATE_TAKEN + " FROM files WHERE ";
 
 const std::string IN_CAMERA = " bucket_id IN (-1739773001, 0, 1028075469, 0) AND (is_pending = 0)";
 
@@ -365,7 +366,7 @@ const std::string ALL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND (relati
     relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) AND _size > 0 \
     AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' ";
 
-const std::string ALL_PHOTOS_ORDER_BY = " ORDER BY _id ASC ";
+const std::string ALL_PHOTOS_ORDER_BY = " ORDER BY showDateToken ASC ";
 
 const std::string EXCLUDE_SD = " (storage_id IN (0, 65537)) ";
 

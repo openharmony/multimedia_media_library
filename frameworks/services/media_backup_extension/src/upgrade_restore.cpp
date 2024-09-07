@@ -74,13 +74,13 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         filePath_ = upgradeFilePath;
         galleryDbPath_ = upgradeFilePath + "/" + GALLERY_DB_NAME;
         audioDbPath_ = GARBLE_DUAL_FRAME_CLONE_DIR + "/0/" + AUDIO_DB_NAME;
-        photosPreferencesPath = UPGRADE_FILE_DIR + "/" + galleryAppName_ + "_preferences.xml";
         // gallery db may include both internal & external, set flag to differentiate, default false
         shouldIncludeSd_ = BackupFileUtils::ShouldIncludeSd(filePath_);
         SetParameterForClone();
 #ifdef CLOUD_SYNC_MANAGER
         FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
 #endif
+        photosPreferencesPath = UPGRADE_FILE_DIR + "/" + galleryAppName_ + "_preferences.xml";
     } else {
         filePath_ = upgradeFilePath;
         galleryDbPath_ = backupRetoreDir + "/" + galleryAppName_ + "/ce/databases/gallery.db";
@@ -106,7 +106,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
     return InitDbAndXml(photosPreferencesPath, isUpgrade);
 }
 
-int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
+int32_t UpgradeRestore::InitDbAndXml(const std::string &xmlPath, bool isUpgrade)
 {
     if (isUpgrade && BaseRestore::Init() != E_OK) {
         return E_FAIL;
@@ -132,10 +132,11 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
             return E_FAIL;
         }
     }
-    ParseXml(xmlPath);
+
     if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
         GetMaxFileId(mediaLibraryRdb_);
     }
+    ParseXml(xmlPath);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -147,8 +148,8 @@ int UpgradeRestore::StringToInt(const std::string& str)
     }
     int base = 0;
     size_t num = 0;
-    int sign = 1;
-    size_t len = static_cast<ssize_t>(str.length());
+    int sign = 1; // positive one
+    size_t len = str.length();
     while (num < len && str[num] == ' ') {
         num++;
     }
@@ -188,7 +189,7 @@ int32_t UpgradeRestore::HandleXmlNode(xmlNodePtr cur)
     return E_ERR;
 }
 
-int32_t UpgradeRestore::ParseXml(string path)
+int32_t UpgradeRestore::ParseXml(const std::string &path)
 {
     std::unique_ptr<xmlDoc, decltype(&xmlFreeDoc)> docPtr(
         xmlReadFile(path.c_str(), nullptr, XML_PARSE_NOBLANKS), xmlFreeDoc);
@@ -523,11 +524,11 @@ void UpgradeRestore::HandleRestData(void)
     std::string mediaData = appDataPath_ + "/" + mediaAppName_;
     if (MediaFileUtils::IsFileExists(photoData)) {
         MEDIA_DEBUG_LOG("Start to delete photo data.");
-        (void)MediaFileUtils::DeleteDir(photoData);
+        MediaFileUtils::DeleteDir(photoData);
     }
     if (MediaFileUtils::IsFileExists(mediaData)) {
         MEDIA_DEBUG_LOG("Start to delete media data.");
-        (void)MediaFileUtils::DeleteDir(mediaData);
+        MediaFileUtils::DeleteDir(mediaData);
     }
     BackupFileUtils::DeleteSdDatabase(filePath_);
 
@@ -729,7 +730,7 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
         MEDIA_ERR_LOG("ParseResultSetFromExternal fail");
         return isSuccess;
     }
-    info.showDateToken = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet);
+    info.showDateToken = GetInt64Val(EXTERNAL_DATE_TAKEN, resultSet);
     return isSuccess;
 }
 
@@ -774,20 +775,27 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     if (fileInfo.showDateToken != 0) {
-        if (sourceType == SourceType::EXTERNAL_CAMERA || sourceType == SourceType::EXTERNAL_OTHERS) {
-            values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken * MILLISECONDS);
-            values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken);
-        } else {
-            values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);
-            values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken / MILLISECONDS);
-        }
+        values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);
+        values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken / MILLISECONDS);
     } else {
         MEDIA_WARN_LOG("Get showDateToken = 0, path: %{private}s", fileInfo.filePath.c_str());
     }
     values.PutLong(MediaColumn::MEDIA_DURATION, fileInfo.duration);
     values.PutInt(MediaColumn::MEDIA_IS_FAV, fileInfo.isFavorite);
+    if (fileInfo.isFavorite != 0) {
+        string fileName = fileInfo.displayName;
+        MEDIA_WARN_LOG("the file :%{public}s is favorite.", BackupFileUtils::GarbleFileName(fileName).c_str());
+    }
     values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
+    if (fileInfo.recycledTime != 0) {
+        string fileName = fileInfo.displayName;
+        MEDIA_WARN_LOG("the file :%{public}s is trash.", BackupFileUtils::GarbleFileName(fileName).c_str());
+    }
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
+    if (fileInfo.hidden != 0) {
+        string fileName = fileInfo.displayName;
+        MEDIA_WARN_LOG("the file :%{public}s is hidden.", BackupFileUtils::GarbleFileName(fileName).c_str());
+    }
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, fileInfo.height);
     values.PutInt(PhotoColumn::PHOTO_WIDTH, fileInfo.width);
     values.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);

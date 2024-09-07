@@ -89,9 +89,9 @@ private:
     void IntegratedAlbum(GalleryAlbumInfo &galleryAlbumInfo);
     void ParseResultSetForMap(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
     void UpdateFileInfo(const GalleryAlbumInfo &galleryAlbumInfo, FileInfo &info);
-    int32_t ParseXml(std::string path);
+    int32_t InitDbAndXml(const std::string &xmlPath, bool isUpgrade);
+    int32_t ParseXml(const std::string &path);
     int StringToInt(const std::string& str);
-    int32_t InitDbAndXml(std::string xmlPath, bool isUpgrade);
     int32_t HandleXmlNode(xmlNodePtr cur);
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath, FileInfo &fileInfo);

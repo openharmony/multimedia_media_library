@@ -223,19 +223,6 @@ int32_t BackupFileUtils::PreparePath(const std::string &path)
     return E_OK;
 }
 
-int32_t BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode)
-{
-    bool errRet = false;
-    if (!MediaFileUtils::IsFileExists(oldPath)) {
-        MEDIA_ERR_LOG("old path: %{public}s is not exists.", GarbleFilePath(oldPath, sceneCode).c_str());
-        return E_NO_SUCH_FILE;
-    } else if (MediaFileUtils::IsFileExists(newPath)) {
-        MEDIA_ERR_LOG("new path: %{public}s is exists.", GarbleFilePath(newPath, sceneCode).c_str());
-        return E_FILE_EXIST;
-    }
-    return rename(oldPath.c_str(), newPath.c_str());
-}
-
 std::string BackupFileUtils::GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
     const std::string &path)
 {
@@ -251,6 +238,19 @@ std::string BackupFileUtils::GetReplacedPathByPrefixType(PrefixType srcPrefixTyp
     return replacedPath;
 }
 
+int32_t BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode)
+{
+    bool errRet = false;
+    if (!MediaFileUtils::IsFileExists(oldPath)) {
+        MEDIA_ERR_LOG("old path: %{public}s is not exists.", GarbleFilePath(oldPath, sceneCode).c_str());
+        return E_NO_SUCH_FILE;
+    } else if (MediaFileUtils::IsFileExists(newPath)) {
+        MEDIA_ERR_LOG("new path: %{public}s is exists.", GarbleFilePath(newPath, sceneCode).c_str());
+        return E_FILE_EXIST;
+    }
+    return rename(oldPath.c_str(), newPath.c_str());
+}
+
 void BackupFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
 {
     if (modifiedTime <= 0) {
@@ -264,27 +264,6 @@ void BackupFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
     if (ret != 0) {
         MEDIA_ERR_LOG("Modify file failed: %{public}d", ret);
     }
-}
-
-string BackupFileUtils::GetFileNameFromPath(const string &path)
-{
-    if (!path.empty()) {
-        size_t lastPosition = path.rfind("/");
-        if (lastPosition != string::npos) {
-            if (path.size() > lastPosition) {
-                return path.substr(lastPosition + 1);
-            }
-        }
-    }
-
-    MEDIA_ERR_LOG("Failed to obtain file name because given pathname is empty");
-    return "";
-}
-
-string BackupFileUtils::GetFileTitle(const string &displayName)
-{
-    string::size_type pos = displayName.find_last_of('.');
-    return (pos == string::npos) ? displayName : displayName.substr(0, pos);
 }
 
 bool BackupFileUtils::IsFileValid(const std::string &filePath, int32_t sceneCode)
@@ -306,6 +285,27 @@ bool BackupFileUtils::IsFileValid(const std::string &filePath, int32_t sceneCode
         return false;
     }
     return true;
+}
+
+string BackupFileUtils::GetFileNameFromPath(const string &path)
+{
+    if (!path.empty()) {
+        size_t lastPosition = path.rfind("/");
+        if (lastPosition != string::npos) {
+            if (path.size() > lastPosition) {
+                return path.substr(lastPosition + 1);
+            }
+        }
+    }
+
+    MEDIA_ERR_LOG("Failed to obtain file name because given pathname is empty");
+    return "";
+}
+
+string BackupFileUtils::GetFileTitle(const string &displayName)
+{
+    string::size_type pos = displayName.find_last_of('.');
+    return (pos == string::npos) ? displayName : displayName.substr(0, pos);
 }
 
 std::string BackupFileUtils::GetDetailsPath(const std::string &type,
