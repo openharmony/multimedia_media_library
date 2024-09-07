@@ -35,6 +35,9 @@ public:
     void InitGarbageAlbum();
     void InitGalleryAlbumOne();
     void InitGalleryAlbumTwo();
+    void InitGalleryMergeTag();
+    void InitGalleryMergeFace();
+    void InitGalleryFace();
     std::shared_ptr<NativeRdb::RdbStore> galleryStorePtr_;
 };
 
@@ -45,6 +48,9 @@ public:
     static const string CREATE_GALLERY_MEDIA;
     static const string CREATE_GARBAGE_ALBUM;
     static const string CREATE_GALLERY_ALBUM;
+    static const string CREATE_GALLERY_MERGE_TAG;
+    static const string CREATE_GALLERY_MERGE_FACE;
+    static const string CREATE_GALLERY_FACE;
 };
 } // namespace Media
 } // namespace OHOS

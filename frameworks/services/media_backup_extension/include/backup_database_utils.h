@@ -70,24 +70,22 @@ public:
     static uint32_t GetUint32ValFromBytes(const std::vector<uint8_t> &bytes, size_t start);
     static void UpdateAnalysisTotalStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static void UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
-    static bool GetFaceAnalysisVersion(std::unordered_map<int32_t, std::string> &faceAnalysisVersionMap,
-        const std::vector<int32_t> &faceAnalysisTypeList);
     static bool SetTagIdNew(PortraitAlbumInfo &portraitAlbumInfo,
         std::unordered_map<std::string, std::string> &tagIdMap);
-    static bool SetVersion(std::string &version, const std::unordered_map<int32_t, std::string> &versionMap,
-        int32_t type);
-    static bool SetGroupTagNew(PortraitAlbumInfo &portraitAlbumInfo,
-        const std::unordered_map<std::string, std::string> &groupTagMap);
     static bool SetLandmarks(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
     static bool SetFileIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
     static bool SetTagIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, std::string> &tagIdMap);
     static bool SetAlbumIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, int32_t> &albumIdMap);
     static void PrintErrorLog(const std::string &errorLog, int64_t start);
+    static float GetLandmarksScale(int32_t width, int32_t height);
+    static bool IsLandmarkValid(const FaceInfo &faceInfo, float landmarkX, float landmarkY);
+    static bool IsValInBound(float val, float minVal, float maxVal);
+    static void UpdateGroupTag(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        const std::unordered_map<std::string, std::string> &groupTagMap);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     static std::string IsCallerSelfFunc(const std::vector<std::string> &args);
-    static std::string GetVersionByFaceAnalysisType(int32_t type);
 };
 
 class RdbCallback : public NativeRdb::RdbOpenCallback {

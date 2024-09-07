@@ -1015,8 +1015,17 @@ void BaseRestore::UpdateFaceAnalysisStatus()
         MEDIA_INFO_LOG("There is no need to update face analysis status");
         return;
     }
+    int64_t startUpdateGroupTag = MediaFileUtils::UTCTimeMilliSeconds();
+    BackupDatabaseUtils::UpdateGroupTag(mediaLibraryRdb_, groupTagMap_);
+    int64_t startUpdateTotal = MediaFileUtils::UTCTimeMilliSeconds();
     BackupDatabaseUtils::UpdateAnalysisTotalStatus(mediaLibraryRdb_);
+    int64_t startUpdateFaceTag = MediaFileUtils::UTCTimeMilliSeconds();
     BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(mediaLibraryRdb_);
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("Update group tag cost %{public}lld, update total table cost %{public}lld, update face tag table "
+        "cost %{public}lld", (long long)(startUpdateTotal - startUpdateGroupTag),
+        (long long)(startUpdateFaceTag - startUpdateTotal), (long long)(end - startUpdateFaceTag));
+    migratePortraitTotalTimeCost_ += end - startUpdateGroupTag;
 }
 } // namespace Media
 } // namespace OHOS
