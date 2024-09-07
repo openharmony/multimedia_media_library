@@ -30,6 +30,7 @@
 #include "sandbox_helper.h"
 #include "shooting_mode_column.h"
 #include "moving_photo_file_utils.h"
+#include "directory_ex.h"
 
 namespace OHOS {
 namespace Media {
@@ -421,7 +422,7 @@ static void ParseLivePhotoCoverPosition(std::unique_ptr<Metadata> &data)
     string absFilePath;
     if (!PathToRealPath(data->GetMovingPhotoImagePath(), absFilePath)) {
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", data->GetMovingPhotoImagePath().c_str());
-        return E_HAS_FS_ERROR;
+        return;
     }
     string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(absFilePath);
     if (!MediaFileUtils::IsFileExists(extraPath)) {

@@ -1766,9 +1766,12 @@ int32_t MediaLibraryPhotoOperations::RevertMovingPhotoVideo(const std::shared_pt
 bool MediaLibraryPhotoOperations::IsNeedRevertEffectMode(MediaLibraryCommand& cmd,
     const shared_ptr<FileAsset>& fileAsset, int32_t& effectMode)
 {
-    if ((fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
-        fileAsset->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) ||
-        fileAsset->GetPhotoEditTime() != 0) {
+    if (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+        fileAsset->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+        return false;
+    }
+    if (fileAsset->GetPhotoEditTime() != 0) {
+        ProcessEditedEffectMode(cmd);
         return false;
     }
 
@@ -1780,13 +1783,10 @@ bool MediaLibraryPhotoOperations::IsNeedRevertEffectMode(MediaLibraryCommand& cm
     return true;
 }
 
-void ProcessEditedScene(MediaLibraryCommand& cmd, const shared_ptr<FileAsset>& fileAsset)
+void MediaLibraryPhotoOperations::ProcessEditedEffectMode(MediaLibraryCommand& cmd)
 {
-    if (fileAsset->GetPhotoEditTime() == 0) {
-        return;
-    }
     int32_t effectMode = 0;
-    if (!MediaLibraryAssetOperations::GetInt32FromValuesBucket(
+    if (!GetInt32FromValuesBucket(
         cmd.GetValueBucket(), PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode) ||
         effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
         return;
@@ -1802,7 +1802,6 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
     isNeedScan = false;
     int32_t effectMode{0};
     if (!IsNeedRevertEffectMode(cmd, fileAsset, effectMode)) {
-        ProcessEditedScene(cmd, fileAsset);
         return E_OK;
     }
     isNeedScan = true;
