@@ -114,6 +114,7 @@ private:
         bool &isNeedScan);
     static bool IsNeedRevertEffectMode(MediaLibraryCommand& cmd, const std::shared_ptr<FileAsset>& fileAsset,
         int32_t& effectMode);
+    static void ProcessEditedEffectMode(MediaLibraryCommand& cmd);
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static std::shared_ptr<FileAsset> GetFileAsset(MediaLibraryCommand &cmd);
 private:

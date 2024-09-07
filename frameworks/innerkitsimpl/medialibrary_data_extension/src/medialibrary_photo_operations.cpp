@@ -1755,9 +1755,12 @@ int32_t MediaLibraryPhotoOperations::RevertMovingPhotoVideo(const std::shared_pt
 bool MediaLibraryPhotoOperations::IsNeedRevertEffectMode(MediaLibraryCommand& cmd,
     const shared_ptr<FileAsset>& fileAsset, int32_t& effectMode)
 {
-    if ((fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
-        fileAsset->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) ||
-        fileAsset->GetPhotoEditTime() != 0) {
+    if (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+        fileAsset->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+        return false;
+    }
+    if (fileAsset->GetPhotoEditTime() != 0) {
+        ProcessEditedEffectMode(cmd);
         return false;
     }
 
@@ -1767,6 +1770,19 @@ bool MediaLibraryPhotoOperations::IsNeedRevertEffectMode(MediaLibraryCommand& cm
         return false;
     }
     return true;
+}
+
+void MediaLibraryPhotoOperations::ProcessEditedEffectMode(MediaLibraryCommand& cmd)
+{
+    int32_t effectMode = 0;
+    if (!GetInt32FromValuesBucket(
+        cmd.GetValueBucket(), PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode) ||
+        effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+        return;
+    }
+    ValuesBucket& updateValues = cmd.GetValueBucket();
+    updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode);
+    updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
 }
 
 int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
@@ -1797,6 +1813,7 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
     if (!isSourceImageExist || !isSourceVideoExist) {
         MEDIA_INFO_LOG("isSourceImageExist=%{public}d, isSourceVideoExist=%{public}d",
             isSourceImageExist, isSourceVideoExist);
+        isNeedScan = false;
         return E_OK;
     }
     string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(imagePath);
