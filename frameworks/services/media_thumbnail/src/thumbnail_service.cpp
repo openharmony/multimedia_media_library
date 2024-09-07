@@ -677,7 +677,7 @@ static bool IsAstcChangeOldKeyToNewKeySuccess(std::shared_ptr<MediaLibraryKvStor
     }
     std::vector<uint8_t> monthValue;
     std::vector<uint8_t> yearValue;
-    if (yearKvStore->Query(newKey, monthValue) == E_OK) {
+    if (yearKvStore->Query(newKey, yearValue) == E_OK) {
         MEDIA_INFO_LOG("NewKey Astc exists, fileID %{public}s", newKey.c_str());
         monthKvStore->Delete(oldKey);
         yearKvStore->Delete(oldKey);
@@ -685,12 +685,12 @@ static bool IsAstcChangeOldKeyToNewKeySuccess(std::shared_ptr<MediaLibraryKvStor
     }
     bool isChangeKeySuccess = true;
     if (monthKvStore->Query(oldKey, monthValue) != E_OK || monthKvStore->Insert(newKey, monthValue) != E_OK ||
-        monthKvStore->Delete(oldKey)) {
+        monthKvStore->Delete(oldKey) != E_OK) {
         MEDIA_ERR_LOG("MonthValue update failed, fileID %{public}s", newKey.c_str());
         isChangeKeySuccess = false;
     }
     if (yearKvStore->Query(oldKey, yearValue) != E_OK || yearKvStore->Insert(newKey, yearValue) != E_OK ||
-        yearKvStore->Delete(oldKey)) {
+        yearKvStore->Delete(oldKey) != E_OK) {
         MEDIA_ERR_LOG("YearValue update failed, fileID %{public}s", newKey.c_str());
         isChangeKeySuccess = false;
     }
@@ -728,6 +728,8 @@ static void PerformKvStoreChangeKeyTask(std::shared_ptr<ThumbnailTaskData> &data
             continue;
         }
         if (!IsAstcChangeOldKeyToNewKeySuccess(monthKvStore, yearKvStore, oldKey, newKey)) {
+            monthKvStore->Delete(oldKey);
+            yearKvStore->Delete(oldKey);
             UpdateThumbnailReadyToFailed(data->opts_, infos[i].id);
         }
     }
