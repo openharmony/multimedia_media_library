@@ -21,6 +21,7 @@
 
 #include "abs_shared_result_set.h"
 #include "medialibrary_command.h"
+#include "medialibrary_async_worker.h"
 #include "datashare_predicates.h"
 
 namespace OHOS {
@@ -37,7 +38,7 @@ public:
     static int32_t InsertOperation(MediaLibraryCommand &cmd);
     static int32_t UpdateOperation(MediaLibraryCommand &cmd);
     static int32_t DeleteOperation(MediaLibraryCommand &cmd);
-    static int32_t EditCommitOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t EditCommitOperation(MediaLibraryCommand &cmd);
     static std::shared_ptr<NativeRdb::ResultSet> QueryOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
     static std::shared_ptr<NativeRdb::ResultSet> DealWithActiveOcrTask(
