@@ -229,7 +229,7 @@ private:
     // photo subtype
     int32_t photoSubType_ = 0;
 
-    int32_t movingPhotoEffectMode_{0};
+    int32_t movingPhotoEffectMode_ = 0;
 
     bool forAdd_ = false;
     std::string tableName_;

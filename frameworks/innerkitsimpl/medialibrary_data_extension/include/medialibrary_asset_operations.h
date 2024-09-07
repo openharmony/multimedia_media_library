@@ -96,6 +96,8 @@ public:
     EXPORT static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
         const bool compatible = false);
     EXPORT static std::string GetEditDataSourcePath(const std::string &path);
+    static bool GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
+        int32_t &value);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
@@ -143,8 +145,6 @@ protected:
     EXPORT static int32_t GrantUriPermission(const std::string &uri, const std::string &bundleName,
         const std::string &path, bool isMovingPhoto = false);
 
-    static bool GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
-        int32_t &value);
     EXPORT static std::string CreateExtUriForV10Asset(FileAsset &fileAsset);
     static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         std::string &value);

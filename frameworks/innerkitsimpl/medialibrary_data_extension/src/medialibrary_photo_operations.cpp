@@ -1780,12 +1780,29 @@ bool MediaLibraryPhotoOperations::IsNeedRevertEffectMode(MediaLibraryCommand& cm
     return true;
 }
 
+void ProcessEditedScene(MediaLibraryCommand& cmd, const shared_ptr<FileAsset>& fileAsset)
+{
+    if (fileAsset->GetPhotoEditTime() == 0) {
+        return;
+    }
+    int32_t effectMode = 0;
+    if (!MediaLibraryAssetOperations::GetInt32FromValuesBucket(
+        cmd.GetValueBucket(), PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode) ||
+        effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+        return;
+    }
+    ValuesBucket& updateValues = cmd.GetValueBucket();
+    updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode);
+    updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
+}
+
 int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
     MediaLibraryCommand& cmd, const shared_ptr<FileAsset>& fileAsset, bool& isNeedScan)
 {
     isNeedScan = false;
     int32_t effectMode{0};
     if (!IsNeedRevertEffectMode(cmd, fileAsset, effectMode)) {
+        ProcessEditedScene(cmd, fileAsset);
         return E_OK;
     }
     isNeedScan = true;
