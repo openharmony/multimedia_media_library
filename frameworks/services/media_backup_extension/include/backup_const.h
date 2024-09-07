@@ -500,6 +500,11 @@ const std::vector<std::string> EXCLUDED_PORTRAIT_COLUMNS = {"album_id", "count",
 const std::vector<std::string> EXCLUDED_FACE_TAG_COLUMNS = {"id", "user_operation", "rename_operation", "group_tag",
     "user_display_level", "tag_order", "is_me", "cover_uri", "count", "date_modify", "album_type", "is_removed"};
 const std::vector<std::string> EXCLUDED_IMAGE_FACE_COLUMNS = {"id"};
+
+const std::string ALL_PHOTOS_WHERE_CLAUSE_WITH_LOW_QUALITY = " (local_media_id != -1) AND (relative_bucket_id \
+    IS NULL OR relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) \
+    AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
+    (_size > 0 OR (_size = 0 AND photo_quality = 0)) ";
 } // namespace Media
 } // namespace OHOS
 
