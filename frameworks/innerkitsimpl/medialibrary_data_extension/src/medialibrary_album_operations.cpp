@@ -1414,6 +1414,7 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         MergeAlbumInfo albumInfo;
+        int isCoverSatisfied = 0;
         if (GetIntValueFromResultSet(resultSet, ALBUM_ID, albumInfo.albumId) != E_OK ||
             GetStringValueFromResultSet(resultSet, GROUP_TAG, albumInfo.groupTag) != E_OK ||
             GetIntValueFromResultSet(resultSet, COUNT, albumInfo.count) != E_OK ||
@@ -1424,10 +1425,11 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
             GetIntValueFromResultSet(resultSet, RANK, albumInfo.rank) != E_OK ||
             GetIntValueFromResultSet(resultSet, RENAME_OPERATION, albumInfo.renameOperation) != E_OK ||
             GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumInfo.albumName) != E_OK ||
-            GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, albumInfo.isCoverSatisfied) != E_OK) {
+            GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, isCoverSatisfied) != E_OK) {
                 MEDIA_ERR_LOG("GetMergeAlbumsInfo db fail");
                 return E_HAS_DB_ERROR;
             }
+        albumInfo.isCoverSatisfied = static_cast<uint8_t>(isCoverSatisfied);
         mergeAlbumInfo.push_back(albumInfo);
     }
     return E_OK;

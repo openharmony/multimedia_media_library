@@ -102,7 +102,6 @@ private:
     bool ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         PortraitAlbumInfo &portraitAlbumInfo);
     bool SetAttributes(PortraitAlbumInfo &portraitAlbumInfo);
-    void UpdateGroupTagMap(const PortraitAlbumInfo &portraitAlbumInfo);
     void InsertPortraitAlbum(std::vector<PortraitAlbumInfo> &portraitAlbumInfos);
     int32_t InsertPortraitAlbumByTable(std::vector<PortraitAlbumInfo> &portraitAlbumInfos, bool isAlbum);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<PortraitAlbumInfo> &portraitAlbumInfos,
@@ -125,6 +124,7 @@ private:
     void UpdateFilesWithFace(std::unordered_set<std::string> &filesWithFace, const std::vector<FaceInfo> &faceInfos);
     void UpdateFaceAnalysisStatus();
     void UpdateDualCloneFaceAnalysisStatus();
+    bool HasLowQualityImage();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
