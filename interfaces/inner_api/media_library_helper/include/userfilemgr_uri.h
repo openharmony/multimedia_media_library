@@ -39,6 +39,7 @@ const std::string OPRN_ANALYSIS_INDEX = "analysis_index";
 const std::string OPRN_HIDE = "hide";
 const std::string OPRN_BATCH_UPDATE_FAV = "batch_update_favorite";
 const std::string OPRN_BATCH_UPDATE_USER_COMMENT = "batch_update_user_comment";
+const std::string OPRN_BATCH_UPDATE_OWNER_ALBUM_ID = "batch_update_owner_album_id";
 const std::string OPRN_QUERY_HIDDEN = "query_hidden";
 const std::string OPRN_STORE_FORM_ID = "store_form_id";
 const std::string OPRN_REMOVE_FORM_ID = "remove_form_id";
@@ -251,6 +252,8 @@ const std::string PAH_ADD_FILTERS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/
 const std::string PAH_BATCH_UPDATE_FAVORITE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_FAV;
 const std::string PAH_BATCH_UPDATE_USER_COMMENT =
     MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_USER_COMMENT;
+const std::string PAH_BATCH_UPDATE_OWNER_ALBUM_ID =
+    MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_OWNER_ALBUM_ID;
 const std::string PAH_GET_ANALYSIS_INDEX = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_ANALYSIS_INDEX;
 const std::string PAH_DISCARD_CAMERA_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_DISCARD_CAMERA_PHOTO;
 const std::string PAH_SAVE_CAMERA_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SAVE_CAMERA_PHOTO;
