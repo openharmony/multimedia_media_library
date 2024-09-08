@@ -1337,7 +1337,7 @@ vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset
         if (!portraitAlbumInfo.tagName.empty()) {
             tagNameToDeleteSelection.emplace_back(portraitAlbumInfo.tagName);
         }
-        UpdateGroupTagMap(portraitAlbumInfo);
+
         result.emplace_back(portraitAlbumInfo);
     }
     return result;
@@ -1357,16 +1357,6 @@ bool UpgradeRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb
 bool UpgradeRestore::SetAttributes(PortraitAlbumInfo &portraitAlbumInfo)
 {
     return BackupDatabaseUtils::SetTagIdNew(portraitAlbumInfo, tagIdMap_);
-}
-
-void UpgradeRestore::UpdateGroupTagMap(const PortraitAlbumInfo &portraitAlbumInfo)
-{
-    std::string &groupTagNew = groupTagMap_[portraitAlbumInfo.groupTagOld];
-    if (groupTagNew.empty()) {
-        groupTagNew = portraitAlbumInfo.tagIdNew;
-    } else {
-        groupTagNew = groupTagNew + "|" + portraitAlbumInfo.tagIdNew;
-    }
 }
 
 void UpgradeRestore::InsertPortraitAlbum(std::vector<PortraitAlbumInfo> &portraitAlbumInfos)
@@ -1711,7 +1701,7 @@ void UpgradeRestore::UpdateFaceAnalysisStatus()
         return;
     }
     int64_t startUpdateGroupTag = MediaFileUtils::UTCTimeMilliSeconds();
-    BackupDatabaseUtils::UpdateGroupTag(mediaLibraryRdb_, groupTagMap_);
+    BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
     int64_t startUpdateTotal = MediaFileUtils::UTCTimeMilliSeconds();
     BackupDatabaseUtils::UpdateAnalysisTotalStatus(mediaLibraryRdb_);
     int64_t startUpdateFaceTag = MediaFileUtils::UTCTimeMilliSeconds();
@@ -1730,7 +1720,7 @@ void UpgradeRestore::UpdateDualCloneFaceAnalysisStatus()
         return;
     }
 
-    BackupDatabaseUtils::UpdateGroupTag(mediaLibraryRdb_, groupTagMap_);
+    BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
 }

@@ -141,7 +141,6 @@ protected:
     int maxCount_ = 0;
     int32_t sceneCode_ = -1;
     std::unordered_map<std::string, std::string> tagIdMap_;
-    std::unordered_map<std::string, std::string> groupTagMap_;
     std::unordered_map<std::string, int32_t> portraitAlbumIdMap_;
     bool hasLowQualityImage_ = false;
 };

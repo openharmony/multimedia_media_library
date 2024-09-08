@@ -30,6 +30,7 @@
 #include "sandbox_helper.h"
 #include "shooting_mode_column.h"
 #include "moving_photo_file_utils.h"
+#include "directory_ex.h"
 
 namespace OHOS {
 namespace Media {
@@ -63,6 +64,12 @@ static Type stringToNum(const string &str)
     Type num;
     iss >> num;
     return num;
+}
+
+static bool IsMovingPhoto(unique_ptr<Metadata> &data)
+{
+    return data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+        data->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY);
 }
 
 double GetLongitudeLatitude(string inputStr, const string& ref = "")
@@ -461,7 +468,7 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
     int64_t timeNow = MediaFileUtils::UTCTimeMilliSeconds();
     data->SetLastVisitTime(timeNow);
 
-    if (data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+    if (IsMovingPhoto(data)) {
         ParseMovingPhotoCoverPosition(meta, data);
     }
 }
@@ -469,7 +476,7 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
 static void FillFrameIndex(std::shared_ptr<AVMetadataHelper> &avMetadataHelper,
     std::unique_ptr<Metadata> &data)
 {
-    if (data->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+    if (!IsMovingPhoto(data)) {
         MEDIA_WARN_LOG("data is not moving photo");
         return;
     }
@@ -531,7 +538,7 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
     tracer.Finish();
     if (!resultMap.empty()) {
         FillExtractedMetadata(resultMap, meta, data);
-        if (data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        if (IsMovingPhoto(data)) {
             FillFrameIndex(avMetadataHelper, data);
         }
     }
@@ -588,7 +595,7 @@ int32_t MetadataExtractor::Extract(std::unique_ptr<Metadata> &data)
     if (data->GetFileMediaType() == MEDIA_TYPE_IMAGE) {
         int32_t ret = ExtractImageMetadata(data);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to extract image metadata");
-        if (data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        if (IsMovingPhoto(data)) {
             return CombineMovingPhotoMetadata(data);
         }
         return ret;
