@@ -232,6 +232,9 @@ int32_t UserFileClientEx::InsertExt(const std::string &tableName, const std::str
     values.Put(MediaColumn::MEDIA_NAME, name);
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtension(name));
     values.Put(MediaColumn::MEDIA_TYPE, MimeTypeUtils::GetMediaTypeFromMimeType(mimeType));
+    values.Put(MediaColumn::MEDIA_OWNER_PACKAGE, "com.mediatool.album");
+    values.Put(MediaColumn::MEDIA_OWNER_APPID, "mediatool.appid");
+    values.Put(MediaColumn::MEDIA_PACKAGE_NAME "mediatool");
     MEDIA_INFO_LOG("insertext. insertUri:%{public}s, name:%{public}s", insertUri.ToString().c_str(), name.c_str());
     auto ret = UserFileClient::InsertExt(insertUri, values, outString);
     if (ret <= 0) {
