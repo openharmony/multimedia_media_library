@@ -160,13 +160,22 @@ int32_t BaseRestore::MoveFile(const std::string &srcFile, const std::string &dst
     if (MediaFileUtils::MoveFile(srcFile, dstFile)) {
         return E_OK;
     }
-
-    if (!MediaFileUtils::CopyFileUtil(srcFile, dstFile)) {
-        MEDIA_ERR_LOG("CopyFile failed, filePath: %{private}s, errmsg: %{public}s", srcFile.c_str(),
-            strerror(errno));
+    if (this->CopyFile(srcFile, dstFile) != E_OK) {
         return E_FAIL;
     }
     (void)MediaFileUtils::DeleteFile(srcFile);
+    return E_OK;
+}
+
+int32_t BaseRestore::CopyFile(const std::string &srcFile, const std::string &dstFile) const
+{
+    if (!MediaFileUtils::CopyFileUtil(srcFile, dstFile)) {
+        MEDIA_ERR_LOG("CopyFile failed, src: %{public}s, dst: %{public}s, errMsg: %{public}s",
+            BackupFileUtils::GarbleFilePath(srcFile, sceneCode_).c_str(),
+            BackupFileUtils::GarbleFilePath(srcFile, DEFAULT_RESTORE_ID).c_str(),
+            strerror(errno));
+        return E_FAIL;
+    }
     return E_OK;
 }
 
@@ -225,8 +234,7 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         fileInfos[i].cloudPath = cloudPath;
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
         SetValueFromMetaData(fileInfos[i], value);
-        if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID && maxFileId_ > 0 &&
-            HasSameFileForDualClone(mediaLibraryRdb_, PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
+        if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID && this->HasSameFileForDualClone(fileInfos[i])) {
             RemoveDuplicateDualCloneFiles(fileInfos[i]);
             MEDIA_WARN_LOG("File %{public}s already exists.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
@@ -236,53 +244,6 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         values.emplace_back(value);
     }
     return values;
-}
-
-void BaseRestore::GetMaxFileId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
-{
-    string maxFileId = "max(" + MediaColumn::MEDIA_ID + ")";
-    string querySql = "SELECT " + maxFileId + "," + MEDIA_COLUMN_COUNT_1 + " FROM Photos";
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        maxFileId_ = 0;
-        return;
-    }
-    maxFileId_ = GetInt32Val(maxFileId, resultSet);
-    maxCount_ = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
-    MEDIA_INFO_LOG("maxFIleId:%{public}d, maxCount:%{public}d", maxFileId_, maxCount_);
-}
-
-bool BaseRestore::HasSameFileForDualClone(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const std::string &tableName, FileInfo &fileInfo)
-{
-    string querySql = "SELECT p." + MediaColumn::MEDIA_ID + " , p." + MediaColumn::MEDIA_FILE_PATH +
-        " FROM (SELECT file_id, size, orientation, data FROM Photos " + \
-        " where file_id <= " + to_string(maxFileId_) + " AND display_name = '" + fileInfo.displayName + "' limit " + \
-        to_string(maxCount_) + ") as p INNER JOIN PhotoMap ON p.file_id = PhotoMap.map_asset " + \
-        "INNER JOIN PhotoAlbum ON PhotoAlbum.album_id = PhotoMap.map_album Where size = " +
-        to_string(fileInfo.fileSize) + \
-        " AND (((PhotoAlbum.bundle_name = '' OR PhotoAlbum.bundle_name is null ) AND PhotoAlbum.album_name = '" +
-        fileInfo.packageName + "') OR (((PhotoAlbum.bundle_name != '' AND PhotoAlbum.bundle_name is not null) " + \
-        "AND PhotoAlbum.bundle_name = '" + fileInfo.bundleName + "') OR PhotoAlbum.album_name = '" +
-        fileInfo.packageName + "'))";
-
-    if (fileInfo.fileType != MEDIA_TYPE_VIDEO) {
-        querySql += " AND p.orientation = " + to_string(fileInfo.orientation);
-    }
-    querySql += " LIMIT 1 ";
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return false;
-    }
-    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    if (fileId <= 0 || cloudPath.empty()) {
-        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d", fileId);
-        return false;
-    }
-    fileInfo.fileIdNew = fileId;
-    fileInfo.cloudPath = cloudPath;
-    return true;
 }
 
 static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
@@ -440,7 +401,7 @@ std::vector<NativeRdb::ValuesBucket> BaseRestore::GetAudioInsertValues(int32_t s
         NativeRdb::ValuesBucket value = GetAudioInsertValue(fileInfos[i], cloudPath);
         SetAudioValueFromMetaData(fileInfos[i], value);
         if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID &&
-            HasSameFile(mediaLibraryRdb_, AudioColumn::AUDIOS_TABLE, fileInfos[i])) {
+            HasSameAudioFile(mediaLibraryRdb_, AudioColumn::AUDIOS_TABLE, fileInfos[i])) {
             (void)MediaFileUtils::DeleteFile(fileInfos[i].filePath);
             MEDIA_WARN_LOG("File %{public}s already exists.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
@@ -680,7 +641,7 @@ int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string 
     return E_OK;
 }
 
-bool BaseRestore::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+bool BaseRestore::IsSameAudioFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
     FileInfo &fileInfo)
 {
     string srcPath = fileInfo.filePath;
@@ -700,7 +661,7 @@ bool BaseRestore::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStor
         return false;
     }
     if ((srcStatInfo.st_size != dstStatInfo.st_size || srcStatInfo.st_mtime != dstStatInfo.st_mtime) &&
-        !HasSameFile(rdbStore, tableName, fileInfo)) { /* file size & last modify time */
+        !HasSameAudioFile(rdbStore, tableName, fileInfo)) { /* file size & last modify time */
         MEDIA_INFO_LOG("Size (%{public}lld -> %{public}lld) or mtime (%{public}lld -> %{public}lld) differs",
             (long long)srcStatInfo.st_size, (long long)dstStatInfo.st_size, (long long)srcStatInfo.st_mtime,
             (long long)dstStatInfo.st_mtime);
@@ -710,18 +671,13 @@ bool BaseRestore::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStor
     return true;
 }
 
-bool BaseRestore::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+bool BaseRestore::HasSameAudioFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
     FileInfo &fileInfo)
 {
-    string querySql;
-    if (tableName != PhotoColumn::PHOTOS_TABLE) {
-        querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
-            tableName + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
-            MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
-            MediaColumn::MEDIA_DATE_MODIFIED + " = " + to_string(fileInfo.dateModified);
-    } else {
-        querySql = GetSameFileQuerySql(fileInfo);
-    }
+    string querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
+        tableName + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
+        MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
+        MediaColumn::MEDIA_DATE_MODIFIED + " = " + to_string(fileInfo.dateModified);
     querySql += " LIMIT 1";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -961,36 +917,6 @@ void BaseRestore::StopParameterForClone(int32_t sceneCode)
     if (!retFlag) {
         MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
     }
-}
-
-std::string BaseRestore::GetSameFileQuerySql(const FileInfo &fileInfo)
-{
-    std::string querySql = "SELECT P." + MediaColumn::MEDIA_ID + ", P." + MediaColumn::MEDIA_FILE_PATH;
-    if (!fileInfo.packageName.empty() || !fileInfo.bundleName.empty()) {
-        querySql += " FROM (SELECT file_id, size, orientation, data, date_added FROM Photos WHERE file_id <= " +
-            to_string(maxFileId_) + " AND display_name = '" + fileInfo.displayName + "' LIMIT " +
-            to_string(maxCount_) + ") AS P INNER JOIN PhotoMap AS PM ON P.file_id = PM.map_asset " +
-            "INNER JOIN PhotoAlbum AS PA ON PA.album_id = PM.map_album AND PA.album_type = " +
-            to_string(PhotoAlbumType::SOURCE) + " AND PA.album_subtype = " +
-            to_string(PhotoAlbumSubType::SOURCE_GENERIC) + " WHERE P.size = " + to_string(fileInfo.fileSize) +
-            " AND (((PA.bundle_name = '' OR PA.bundle_name is null ) AND PA.album_name = '" + fileInfo.packageName +
-            "') OR (((PA.bundle_name != '' AND PA.bundle_name is not null) AND PA.bundle_name = '" +
-            fileInfo.bundleName + "') OR PA.album_name = '" + fileInfo.packageName + "'))";
-    } else {
-        querySql += " FROM " + PhotoColumn::PHOTOS_TABLE + " AS P WHERE " + MediaColumn::MEDIA_ID + " <= " +
-            to_string(maxFileId_) + " AND " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
-            MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND NOT EXISTS (SELECT 1 FROM " +
-            PhotoMap::TABLE + " AS PM INNER JOIN " + PhotoAlbumColumns::TABLE + " AS PA ON PM." + PhotoMap::ALBUM_ID +
-            " = PA." + PhotoAlbumColumns::ALBUM_ID + " WHERE PA." + PhotoAlbumColumns::ALBUM_TYPE + " = " +
-            to_string(PhotoAlbumType::SOURCE) + " AND PA." + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " +
-            to_string(PhotoAlbumSubType::SOURCE_GENERIC) + " AND PM." + PhotoMap::ASSET_ID + " = P." +
-            MediaColumn::MEDIA_ID + ")";
-    }
-    if (fileInfo.fileType != MEDIA_TYPE_VIDEO) {
-        querySql += " AND P.orientation = " + to_string(fileInfo.orientation);
-    }
-    querySql += " ORDER BY ABS(P." + MediaColumn::MEDIA_DATE_ADDED + " - " + to_string(fileInfo.dateAdded) + ")";
-    return querySql;
 }
 
 void BaseRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType)
