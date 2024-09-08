@@ -100,6 +100,9 @@ const std::string PhotoColumn::PHOTO_BURST_KEY = "burst_key";
 const std::string PhotoColumn::PHOTO_COVER_POSITION = "cover_position";
 const std::string PhotoColumn::PHOTO_ORIGINAL_SUBTYPE = "original_subtype";
 const std::string PhotoColumn::PHOTO_DETAIL_TIME = "detail_time";
+const std::string PhotoColumn::PHOTO_OWNER_ALBUM_ID = "owner_album_id";
+const std::string PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID = "original_asset_cloud_id";
+const std::string PhotoColumn::PHOTO_SOURCE_PATH = "source_path";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -206,7 +209,10 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_IS_TEMP + " INT DEFAULT 0," +
     PHOTO_BURST_COVER_LEVEL + " INT DEFAULT 1, " +
     PHOTO_BURST_KEY + " TEXT, " +
-    PHOTO_DETAIL_TIME + " TEXT)";
+    PHOTO_DETAIL_TIME + " TEXT, " +
+    PHOTO_OWNER_ALBUM_ID + " INT DEFAULT 0, " +
+    PHOTO_ORIGINAL_ASSET_CLOUD_ID + " TEXT, " +
+    PHOTO_SOURCE_PATH + " TEXT)";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
     PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";
@@ -394,6 +400,8 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
         PHOTO_DATE_DAY,
         PHOTO_SHOOTING_MODE,
         PHOTO_SHOOTING_MODE_TAG,
+        PHOTO_OWNER_ALBUM_ID,
+        PHOTO_SOURCE_PATH
     };
 
     std::string result = "(";

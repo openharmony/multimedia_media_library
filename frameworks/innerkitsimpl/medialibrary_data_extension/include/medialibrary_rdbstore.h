@@ -96,6 +96,13 @@ private:
     NativeRdb::RdbStoreConfig config_ {""};
 };
 
+class CompensateAlbumIdData : public AsyncTaskData {
+public:
+    CompensateAlbumIdData(NativeRdb::Rdbstore *store) : upgradeStore_(store){};
+    virtual ~CompensateAlbumIdData() override = default;
+    NativeRdb::RdbStore *upgradeStore_;
+};
+
 class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
 public:
     struct DirValuesBucket {
