@@ -76,7 +76,8 @@
           "ffrt",
           "preferences",
           "wifi",
-          "libxml2"
+          "libxml2",
+          "zlib"
         ],
         "third_party": [
           "e2fsprogs",
