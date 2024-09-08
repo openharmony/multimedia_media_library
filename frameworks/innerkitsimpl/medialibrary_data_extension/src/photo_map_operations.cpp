@@ -104,12 +104,12 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
         changedRows = MediaLibraryRdbUtils::UpdateOwnerAlbumId(rdbStore->GetRaw(), values, updateIds);
         MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore->GetRaw(), { to_string(albumId) });
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore->GetRaw(), { 
-            to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO,
+            to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::FAVORITE)
         });
         auto watch = MediaLibraryNotify::GetInstance();
         for (const auto &id : updateIds) {
-            string notifyUri = PhotoColumn::PHOTO_URI_PREFIX = to_string(id);
+            string notifyUri = PhotoColumn::PHOTO_URI_PREFIX + to_string(id);
             watch->Notify(MediaFileUtils::Encode(notifyUri), NotifyType::NOTIFY_ALBUM_ADD_ASSET, albumId);
             watch->Notify(MediaFileUtils::Encode(notifyUri), NotifyType::NOTIFY_ALBUM_ADD_ASSET,
                 watch->GetAlbumIdBySubType(PhotoAlbumSubType::IMAGE));

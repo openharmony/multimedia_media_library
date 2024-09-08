@@ -15,7 +15,7 @@
 
 #include "cloud_sync_notify_handler.h"
 
-#include "medialibrary_album_fusion_tuils.h"
+#include "medialibrary_album_fusion_utils.h"
 #include "notify_responsibility_chain_factory.h"
 #include "thumbnail_service.h"
 #include "medialibrary_rdb_utils.h"
@@ -174,7 +174,7 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
 
     if (uriString.find("file://cloudsync/Photo/RebuildCloudData/") != string::npos) {
         MEDIA_INFO_LOG("Get cloud rebuild cloud data notification : %{public}s",
-            "file://cloudsync/Photo/RebuildCloudData/")
+            "file://cloudsync/Photo/RebuildCloudData/");
         MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
     }
 
