@@ -29,6 +29,10 @@
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
+#include "photo_album_restore.h"
+#include "photos_restore.h"
+#include "photos_dao.h"
+#include "gallery_db_upgrade.h"
 #include "vision_album_column.h"
 #include "vision_column.h"
 #include "vision_face_tag_column.h"
@@ -133,9 +137,6 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
         }
     }
     ParseXml(xmlPath);
-    if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
-        GetMaxFileId(mediaLibraryRdb_);
-    }
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -332,13 +333,20 @@ std::vector<FileInfo> UpgradeRestore::QueryAudioFileInfosFromExternal(int32_t of
     return result;
 }
 
-void UpgradeRestore::RestorePhoto(void)
+void UpgradeRestore::RestorePhoto()
 {
     AnalyzeSource();
     InitGarbageAlbum();
     HandleClone();
-    RestoreFromGalleryAlbum(); // 跨端相册融合
+    // upgrade gallery.db
+    DataTransfer::GalleryDbUpgrade galleryDbUpgrade;
+    galleryDbUpgrade.OnUpgrade(*this->galleryRdb_);
+    // restore PhotoAlbum
+    this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
+    this->photoAlbumRestore_.Restore();
     RestoreFromGalleryPortraitAlbum();
+    // restore Photos
+    this->photosRestorePtr_->OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     RestoreFromGallery();
     StopParameterForClone(sceneCode_);
     MEDIA_INFO_LOG("migrate from gallery number: %{public}lld, file number: %{public}lld",
@@ -488,7 +496,8 @@ void UpgradeRestore::UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::Resul
 void UpgradeRestore::RestoreFromGallery()
 {
     HasLowQualityImage();
-    int32_t totalNumber = QueryTotalNumber();
+    int32_t totalNumber =
+        this->photosRestorePtr_->GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset });
@@ -556,18 +565,6 @@ void UpgradeRestore::HandleRestData(void)
     MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
 }
 
-int32_t UpgradeRestore::QueryTotalNumber(void)
-{
-    std::string querySql = QUERY_GALLERY_COUNT;
-    if (hasLowQualityImage_) {
-        querySql += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE_WITH_LOW_QUALITY;
-    } else {
-        querySql += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
-    }
-    BackupDatabaseUtils::UpdateSDWhereClause(querySql, shouldIncludeSD_);
-    return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
-}
-
 std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
 {
     std::vector<FileInfo> result;
@@ -576,16 +573,8 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
         MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
         return result;
     }
-    std::string queryAllPhotosByCount = QUERY_ALL_PHOTOS;
-    if (hasLowQualityImage_) {
-        queryAllPhotosByCount += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE_WITH_LOW_QUALITY;
-    } else {
-        queryAllPhotosByCount += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
-    }
-    BackupDatabaseUtils::UpdateSDWhereClause(queryAllPhotosByCount, shouldIncludeSD_);
-    queryAllPhotosByCount += ALL_PHOTOS_ORDER_BY;
-    queryAllPhotosByCount += "limit " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
-    auto resultSet = galleryRdb_->QuerySql(queryAllPhotosByCount);
+    auto resultSet = this->photosRestorePtr_->GetGalleryMedia(
+        offset, QUERY_COUNT, this->shouldIncludeSd_, this->hasLowQualityImage_);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
         return result;
@@ -715,22 +704,6 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     return true;
 }
 
-void UpgradeRestore::ParseResultSetForMap(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
-{
-    std::string relativeBucketId = GetStringVal(GALLERY_MEDIA_BUCKET_ID, resultSet);
-    // hiddenAlbum
-    if (relativeBucketId == hiddenAlbumBucketId_ && !hiddenAlbumBucketId_.empty()) {
-        std::string sourcePath = GetStringVal(GALLERY_MEDIA_SOURCE_PATH, resultSet);
-        UpdateHiddenAlbumToMediaAlbumId(sourcePath, info);
-    } else {
-        auto it = galleryAlbumMap_.find(relativeBucketId);
-        if (it != galleryAlbumMap_.end()) {
-            UpdateFileInfo(it->second, info);
-            return;
-        }
-    }
-}
-
 bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
 {
     info.localMediaId = GetInt32Val(GALLERY_LOCAL_MEDIA_ID, resultSet);
@@ -750,7 +723,13 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
         return isSuccess;
     }
     info.burstKey = burstKeyGenerator_.FindBurstKey(info);
-    ParseResultSetForMap(resultSet, info);
+    // Pre-Fetch: sourcePath, lPath
+    info.sourcePath = GetStringVal(GALLERY_MEDIA_SOURCE_PATH, resultSet);
+    info.lPath = GetStringVal("lPath", resultSet);
+    // Find lPath, bundleName, packageName by sourcePath, lPath
+    info.lPath = this->photosRestorePtr_->FindlPath(info);
+    info.bundleName = this->photosRestorePtr_->FindBundleName(info);
+    info.packageName = this->photosRestorePtr_->FindPackageName(info);
     return isSuccess;
 }
 
@@ -808,7 +787,7 @@ int32_t FindBurstCoverLevel(const FileInfo &fileInfo)
 }
 
 NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
-    int32_t sourceType) const
+    int32_t sourceType)
 {
     NativeRdb::ValuesBucket values;
     values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
@@ -830,11 +809,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
         string fileName = fileInfo.displayName;
         MEDIA_WARN_LOG("the file :%{public}s is favorite.", BackupFileUtils::GarbleFileName(fileName).c_str());
     }
-    values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
-    if (fileInfo.recycledTime != 0) {
-        string fileName = fileInfo.displayName;
-        MEDIA_WARN_LOG("the file :%{public}s is trash.", BackupFileUtils::GarbleFileName(fileName).c_str());
-    }
+    values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, this->photosRestorePtr_->FindDateTrashed(fileInfo));
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
     if (fileInfo.hidden != 0) {
         string fileName = fileInfo.displayName;
@@ -848,418 +823,13 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
-    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, FindSubtype(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_DIRTY, FindDirty(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, FindBurstCoverLevel(fileInfo));
-    values.PutString(PhotoColumn::PHOTO_BURST_KEY, FindBurstKey(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, this->photosRestorePtr_->FindSubtype(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestorePtr_->FindDirty(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestorePtr_->FindBurstCoverLevel(fileInfo));
+    values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestorePtr_->FindBurstKey(fileInfo));
+    // find album_id by lPath.
+    values.PutInt("owner_album_id", this->photosRestorePtr_->FindAlbumId(fileInfo));
     return values;
-}
-
-bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
-    std::string &newPath, std::string &relativePath)
-{
-    size_t pos = 0;
-    if (!BackupFileUtils::GetPathPosByPrefixLevel(sceneCode_, srcPath, INTERNAL_PREFIX_LEVEL, pos)) {
-        return false;
-    }
-    newPath = prefix + srcPath;
-    relativePath = srcPath.substr(pos);
-    return true;
-}
-
-void UpgradeRestore::IntegratedAlbum(GalleryAlbumInfo &galleryAlbumInfo)
-{
-    auto albunmNameMatch = [&galleryAlbumInfo](const AlbumInfo &albumInfo) {
-        return galleryAlbumInfo.albumName == albumInfo.albumName ||
-               (!galleryAlbumInfo.albumENName.empty() && galleryAlbumInfo.albumENName == albumInfo.albumName) ||
-               (!galleryAlbumInfo.albumCNName.empty() && galleryAlbumInfo.albumCNName == albumInfo.albumName) ||
-               (!galleryAlbumInfo.albumNickName.empty() && galleryAlbumInfo.albumNickName == albumInfo.albumName) ||
-               (!galleryAlbumInfo.albumListName.empty() && galleryAlbumInfo.albumListName == albumInfo.albumName) ||
-               (!galleryAlbumInfo.albumBundleName.empty() &&
-                galleryAlbumInfo.albumBundleName == albumInfo.albumBundleName);
-    };
-    auto it = std::find_if(photoAlbumInfos_.begin(), photoAlbumInfos_.end(), albunmNameMatch);
-    if (it != photoAlbumInfos_.end()) {
-        galleryAlbumInfo.mediaAlbumId = it->albumIdOld;
-    }
-}
-
-void UpgradeRestore::RestoreFromGalleryAlbum()
-{
-    vector<GalleryAlbumInfo> galleryAlbumInfos = QueryGalleryAlbumInfos();
-    photoAlbumInfos_ = QueryPhotoAlbumInfos();
-    bool bInsertScreenreCorderAlbum = false;
-    // 遍历galleryAlbumInfos，查找对应的相册信息并更新
-    for (auto &galleryAlbumInfo : galleryAlbumInfos) {
-        IntegratedAlbum(galleryAlbumInfo);
-        if (galleryAlbumInfo.albumCNName == SCREEN_SHOT_AND_RECORDER &&
-           mediaScreenreCorderAlbumId_ == PHOTOS_TABLE_ALBUM_ID) {
-            bInsertScreenreCorderAlbum = true;
-        }
-    }
-    // 将符合新增规则的进行插入处理
-    InsertAlbum(galleryAlbumInfos, bInsertScreenreCorderAlbum);
-    galleryAlbumMap_.clear();
-    for (auto &galleryAlbumInfo : galleryAlbumInfos) {
-        galleryAlbumMap_.insert({galleryAlbumInfo.albumRelativeBucketId, galleryAlbumInfo});
-    }
-}
-
-vector<GalleryAlbumInfo> UpgradeRestore::QueryGalleryAlbumInfos()
-{
-    int32_t totalNumber = QueryAlbumTotalNumber(GALLERY_ALBUM, false);
-    MEDIA_INFO_LOG("QueryAlbumTotalNumber, totalNumber = %{public}d", totalNumber);
-    vector<GalleryAlbumInfo> result;
-    result.reserve(totalNumber);
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        string querySql = QUERY_GALLERY_ALBUM_INFO + " LIMIT " + to_string(offset) + ", " + to_string(QUERY_COUNT);
-        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Query resultSql is null.");
-            return result;
-        }
-        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            GalleryAlbumInfo galleryAlbumInfo;
-            if (ParseGalleryAlbumResultSet(resultSet, galleryAlbumInfo)) {
-                result.emplace_back(galleryAlbumInfo);
-            }
-        }
-    }
-    UpdatehiddenAlbumBucketId();
-    return result;
-}
-
-vector<AlbumInfo> UpgradeRestore::QueryPhotoAlbumInfos()
-{
-    int32_t totalNumber = QueryAlbumTotalNumber(PhotoAlbumColumns::TABLE, true);
-    MEDIA_INFO_LOG("QueryAlbumTotalNumber, totalNumber = %{public}d", totalNumber);
-    vector<AlbumInfo> result;
-    result.reserve(totalNumber);
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        string querySql = "SELECT * FROM " + PhotoAlbumColumns::TABLE;
-        querySql += " LIMIT " + to_string(offset) + ", " + to_string(QUERY_COUNT);
-        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Query resultSql is null.");
-            return result;
-        }
-        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            AlbumInfo albumInfo;
-            if (ParseAlbumResultSet(resultSet, albumInfo)) {
-                result.emplace_back(albumInfo);
-            }
-        }
-    }
-    return result;
-}
-
-int32_t UpgradeRestore::QueryAlbumTotalNumber(const std::string &tableName, bool bgallery)
-{
-    std::string querySql = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM " + tableName;
-    std::shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
-    if (bgallery) {
-        resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-    } else {
-        querySql += " WHERE " + GALLERY_ALBUM_IPATH + " != '" + GALLERT_IMPORT + "'";
-        resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
-    }
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
-    int32_t result = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
-    return result;
-}
-
-bool UpgradeRestore::ParseAlbumResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet, AlbumInfo &albumInfo)
-{
-    albumInfo.albumIdOld = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
-    albumInfo.albumName = GetStringVal(PhotoAlbumColumns::ALBUM_NAME, resultSet);
-    if (albumInfo.albumName == VIDEO_SCREEN_RECORDER_NAME) {
-        mediaScreenreCorderAlbumId_ = albumInfo.albumIdOld;
-    }
-    albumInfo.albumBundleName = GetStringVal(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, resultSet);
-    if (mediaScreenreCorderAlbumId_ == PHOTOS_TABLE_ALBUM_ID && albumInfo.albumBundleName == VIDEO_SCREEN_RECORDER) {
-        mediaScreenreCorderAlbumId_ = albumInfo.albumIdOld;
-    }
-    albumInfo.albumType = static_cast<PhotoAlbumType>(GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet));
-    albumInfo.albumSubType = static_cast<PhotoAlbumSubType>(GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet));
-    return true;
-}
-
-void UpgradeRestore::UpdateGalleryAlbumInfo(GalleryAlbumInfo &galleryAlbumInfo)
-{
-    if (ALBUM_PART_MAP.find(galleryAlbumInfo.albumlPath) != ALBUM_PART_MAP.end()) {
-        auto data = ALBUM_PART_MAP.at(galleryAlbumInfo.albumlPath);
-        galleryAlbumInfo.albumCNName = data.first;
-        galleryAlbumInfo.albumENName = data.second;
-    }
-    if (ALBUM_WHITE_LIST_MAP.find(galleryAlbumInfo.albumName) != ALBUM_WHITE_LIST_MAP.end()) {
-        auto data = ALBUM_WHITE_LIST_MAP.at(galleryAlbumInfo.albumName);
-        galleryAlbumInfo.albumListName = data.first;
-        galleryAlbumInfo.albumBundleName = data.second;
-    } else if (!galleryAlbumInfo.albumNickName.empty() &&
-               ALBUM_WHITE_LIST_MAP.find(galleryAlbumInfo.albumNickName) != ALBUM_WHITE_LIST_MAP.end()) {
-        auto data = ALBUM_WHITE_LIST_MAP.at(galleryAlbumInfo.albumNickName);
-        galleryAlbumInfo.albumListName = data.first;
-        galleryAlbumInfo.albumBundleName = data.second;
-    } else if (!galleryAlbumInfo.albumCNName.empty() &&
-               ALBUM_WHITE_LIST_MAP.find(galleryAlbumInfo.albumCNName) != ALBUM_WHITE_LIST_MAP.end()) {
-        auto data = ALBUM_WHITE_LIST_MAP.at(galleryAlbumInfo.albumCNName);
-        galleryAlbumInfo.albumListName = data.first;
-        galleryAlbumInfo.albumBundleName = data.second;
-    } else if (!galleryAlbumInfo.albumENName.empty() &&
-               ALBUM_WHITE_LIST_MAP.find(galleryAlbumInfo.albumENName) != ALBUM_WHITE_LIST_MAP.end()) {
-        auto data = ALBUM_WHITE_LIST_MAP.at(galleryAlbumInfo.albumENName);
-        galleryAlbumInfo.albumListName = data.first;
-        galleryAlbumInfo.albumBundleName = data.second;
-    }
-}
-
-bool UpgradeRestore::ParseGalleryAlbumResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
-    GalleryAlbumInfo &galleryAlbumInfo)
-{
-    galleryAlbumInfo.albumRelativeBucketId = GetStringVal(GALLERY_ALBUM_BUCKETID, resultSet);
-    galleryAlbumInfo.albumName = GetStringVal(GALLERY_ALBUM_NAME, resultSet);
-    galleryAlbumInfo.albumNickName = GetStringVal(GALLERY_NICK_NAME, resultSet);
-    galleryAlbumInfo.albumlPath = GetStringVal(GALLERY_ALBUM_IPATH, resultSet);
-    UpdateGalleryAlbumInfo(galleryAlbumInfo);
-    return true;
-}
-
-void UpgradeRestore::InsertAlbum(vector<GalleryAlbumInfo> &galleryAlbumInfos,
-    bool bInsertScreenreCorderAlbum)
-{
-    if (mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
-        return;
-    }
-    if (galleryAlbumInfos.empty()) {
-        MEDIA_ERR_LOG("albumInfos are empty");
-        return;
-    }
-    int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
-    vector<NativeRdb::ValuesBucket> values = GetInsertValues(galleryAlbumInfos, bInsertScreenreCorderAlbum);
-    if (values.size() == 0) {
-        MEDIA_ERR_LOG("no album need insert");
-        return;
-    }
-    int64_t rowNum = 0;
-    int32_t errCode = BatchInsertWithRetry(PhotoAlbumColumns::TABLE, values, rowNum);
-    if (errCode != E_OK) {
-        return;
-    }
-    // 更新galleryAlbumInfos内mediaAlbumId映射关系，为PhotoMap表新增使用
-    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
-    BatchQueryAlbum(galleryAlbumInfos);
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("insert %{public}ld albums cost %{public}ld, query cost %{public}ld.", (long)rowNum,
-        (long)(startQuery - startInsert), (long)(end - startQuery));
-}
-
-vector<NativeRdb::ValuesBucket> UpgradeRestore::GetInsertValues(vector<GalleryAlbumInfo> &galleryAlbumInfos,
-    bool bInsertScreenreCorderAlbum)
-{
-    vector<NativeRdb::ValuesBucket> values;
-    if (bInsertScreenreCorderAlbum) {
-        NativeRdb::ValuesBucket value;
-        value.PutInt(PhotoAlbumColumns::ALBUM_TYPE, static_cast<int32_t>(PhotoAlbumType::SOURCE));
-        value.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC));
-        value.PutString(PhotoAlbumColumns::ALBUM_NAME, VIDEO_SCREEN_RECORDER_NAME);
-        value.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, VIDEO_SCREEN_RECORDER);
-        values.emplace_back(value);
-    }
-    std::unordered_map<std::string, std::string> nameMap;
-    for (size_t i = 0; i < galleryAlbumInfos.size(); i++) {
-        if (galleryAlbumInfos[i].mediaAlbumId != PHOTOS_TABLE_ALBUM_ID) {
-            continue;
-        }
-        if (!galleryAlbumInfos[i].albumListName.empty()) {
-            galleryAlbumInfos[i].albumMediaName = galleryAlbumInfos[i].albumListName;
-        } else if (!galleryAlbumInfos[i].albumCNName.empty()) {
-            galleryAlbumInfos[i].albumMediaName = galleryAlbumInfos[i].albumCNName;
-        } else if (!galleryAlbumInfos[i].albumNickName.empty()) {
-            galleryAlbumInfos[i].albumMediaName = galleryAlbumInfos[i].albumNickName;
-        } else if (!galleryAlbumInfos[i].albumENName.empty()) {
-            galleryAlbumInfos[i].albumMediaName = galleryAlbumInfos[i].albumENName;
-        } else {
-            galleryAlbumInfos[i].albumMediaName = galleryAlbumInfos[i].albumName;
-        }
-
-        if (nameMap.find(galleryAlbumInfos[i].albumMediaName) != nameMap.end()) {
-            continue;
-        }
-        nameMap.insert({galleryAlbumInfos[i].albumMediaName, galleryAlbumInfos[i].albumName});
-        NativeRdb::ValuesBucket value;
-        value.PutInt(PhotoAlbumColumns::ALBUM_TYPE, static_cast<int32_t>(PhotoAlbumType::SOURCE));
-        value.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC));
-        value.PutString(PhotoAlbumColumns::ALBUM_NAME, galleryAlbumInfos[i].albumMediaName);
-        value.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, galleryAlbumInfos[i].albumBundleName);
-        values.emplace_back(value);
-    }
-    return values;
-}
-
-static std::string ReplaceAll(std::string str, const std::string &oldValue, const std::string &newValue)
-{
-    for (std::string::size_type pos(0); pos != std::string::npos; pos += newValue.length()) {
-        if ((pos = str.find(oldValue, pos)) != std::string::npos) {
-            str.replace(pos, oldValue.length(), newValue);
-        } else {
-            break;
-        }
-    }
-    return str;
-}
-
-void UpgradeRestore::BatchQueryAlbum(vector<GalleryAlbumInfo> &galleryAlbumInfos)
-{
-    for (auto &galleryAlbumInfo : galleryAlbumInfos) {
-        if (galleryAlbumInfo.mediaAlbumId != PHOTOS_TABLE_ALBUM_ID) {
-            continue;
-        }
-        string querySql = "SELECT * FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
-            PhotoAlbumColumns::ALBUM_NAME + " = '" + ReplaceAll(galleryAlbumInfo.albumMediaName, "\'", "\'\'") + "'";
-        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-        if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-            continue;
-        }
-        AlbumInfo albumInfo;
-        if (ParseAlbumResultSet(resultSet, albumInfo)) {
-            galleryAlbumInfo.mediaAlbumId = albumInfo.albumIdOld;
-            photoAlbumInfos_.emplace_back(albumInfo);
-        }
-        if (galleryAlbumInfo.mediaAlbumId <= 0) {
-            MEDIA_ERR_LOG("The album_id is abnormal, From Gallery %{public}s",
-                galleryAlbumInfo.albumRelativeBucketId.c_str());
-        }
-    }
-    UpdateMediaScreenreCorderAlbumId();
-}
-
-void UpgradeRestore::UpdateMediaScreenreCorderAlbumId()
-{
-    if (mediaScreenreCorderAlbumId_ != PHOTOS_TABLE_ALBUM_ID) {
-        return;
-    }
-    string querySql = "SELECT * FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
-        PhotoAlbumColumns::ALBUM_NAME + " = '" + VIDEO_SCREEN_RECORDER_NAME + "'";
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return;
-    }
-    AlbumInfo albumInfo;
-    if (ParseAlbumResultSet(resultSet, albumInfo)) {
-        mediaScreenreCorderAlbumId_ = albumInfo.albumIdOld;
-        photoAlbumInfos_.emplace_back(albumInfo);
-    }
-}
-
-void UpgradeRestore::UpdatehiddenAlbumBucketId()
-{
-    string querySql = "SELECT " + GALLERY_ALBUM_BUCKETID + " FROM " + GALLERY_ALBUM +
-        " WHERE " + GALLERY_ALBUM_IPATH + " = '" + GALLERT_HIDDEN_ALBUM + "'";
-    std::shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
-    resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return;
-    }
-    hiddenAlbumBucketId_ = GetStringVal(GALLERY_ALBUM_BUCKETID, resultSet);
-}
-
-static std::string GetRealPath(const std::string &filePath, const std::string &path, bool bFirst)
-{
-    if (filePath.empty() || path.empty()) {
-        return "";
-    }
-    string realPath = "";
-    size_t fileIndex;
-    if (bFirst) {
-        fileIndex = filePath.find_first_of(FILE_SEPARATOR);
-        if (fileIndex != string::npos) {
-            realPath = filePath.substr(fileIndex);
-        }
-    } else {
-        fileIndex = filePath.find_last_of(path);
-        if (fileIndex != string::npos) {
-            realPath = filePath.substr(0, fileIndex);
-        }
-    }
-    return realPath;
-}
-
-void UpgradeRestore::UpdateHiddenAlbumToMediaAlbumId(const std::string &sourcePath, FileInfo &info)
-{
-    // 去掉文件名
-    string filePath = GetRealPath(sourcePath, FILE_SEPARATOR, false);
-    //去掉前缀
-    string realPath = ReplaceAll(filePath, GALLERT_ROOT_PATH, "");
-    string ablumIPath = GetRealPath(realPath, FILE_SEPARATOR, true);
-    if (ablumIPath.empty()) {
-        return;
-    }
-    // 路径匹配
-    for (auto &galleryAlbuminfo : galleryAlbumMap_) {
-        if (ablumIPath == galleryAlbuminfo.second.albumlPath) {
-            UpdateFileInfo(galleryAlbuminfo.second, info);
-            return;
-        }
-    }
-    // 查询不到新增相册
-    InstertHiddenAlbum(ablumIPath, info);
-}
-
-void UpgradeRestore::InstertHiddenAlbum(const std::string &ablumIPath, FileInfo &info)
-{
-    GalleryAlbumInfo galleryAlbumInfo;
-    galleryAlbumInfo.albumlPath = ablumIPath;
-    size_t fileIndex = ablumIPath.find_last_of(FILE_SEPARATOR);
-    if (fileIndex != string::npos) {
-        galleryAlbumInfo.albumName = ablumIPath.substr(fileIndex + 1);
-    }
-    //IPath匹配
-    auto it = nickMap_.find(galleryAlbumInfo.albumlPath);
-    if (it != nickMap_.end())  {
-        galleryAlbumInfo.albumNickName = it->second;
-    }
-    UpdateGalleryAlbumInfo(galleryAlbumInfo);
-    IntegratedAlbum(galleryAlbumInfo);
-    bool bInsertScreenreCorderAlbum = false;
-    if (galleryAlbumInfo.albumCNName == SCREEN_SHOT_AND_RECORDER &&
-        mediaScreenreCorderAlbumId_ == PHOTOS_TABLE_ALBUM_ID) {
-            bInsertScreenreCorderAlbum = true;
-    }
-    // 将符合新增规则的进行插入处理
-    vector<GalleryAlbumInfo> galleryAlbumInfos;
-    galleryAlbumInfos.emplace_back(galleryAlbumInfo);
-    InsertAlbum(galleryAlbumInfos, bInsertScreenreCorderAlbum);
-    for (auto &galleryAlbumInfo : galleryAlbumInfos) {
-        if (galleryAlbumInfo.mediaAlbumId != PHOTOS_TABLE_ALBUM_ID) {
-            UpdateFileInfo(galleryAlbumInfo, info);
-        }
-        galleryAlbumMap_.insert({galleryAlbumInfo.albumName, galleryAlbumInfo});
-    }
-}
-
-void UpgradeRestore::UpdateFileInfo(const GalleryAlbumInfo &galleryAlbumInfo, FileInfo &info)
-{
-    if (galleryAlbumInfo.albumCNName == SCREEN_SHOT_AND_RECORDER && info.fileType == MediaType::MEDIA_TYPE_VIDEO &&
-       mediaScreenreCorderAlbumId_ > 0) {
-        info.mediaAlbumId = mediaScreenreCorderAlbumId_;
-        info.packageName = VIDEO_SCREEN_RECORDER_NAME;
-        info.bundleName = VIDEO_SCREEN_RECORDER;
-        return;
-    } else {
-        info.mediaAlbumId = galleryAlbumInfo.mediaAlbumId;
-    }
-    auto albunmNameMatch = [mediaAlbumId{info.mediaAlbumId}](const AlbumInfo &albumInfo) {
-        return mediaAlbumId == albumInfo.albumIdOld;
-    };
-    auto it = std::find_if(photoAlbumInfos_.begin(), photoAlbumInfos_.end(), albunmNameMatch);
-    if (it != photoAlbumInfos_.end() && it->albumType == PhotoAlbumType::SOURCE &&
-        it->albumSubType == PhotoAlbumSubType::SOURCE_GENERIC) {
-        info.packageName = it->albumName;
-        info.bundleName = it->albumBundleName;
-    }
 }
 
 bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
@@ -1279,6 +849,23 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
     } else {
         newPath = prefix + relativePath; // others, remove sd prefix, use relative path
     }
+    return true;
+}
+ 
+/**
+ * @brief Update the FileInfo if it has a copy in system.
+ */
+bool UpgradeRestore::HasSameFileForDualClone(FileInfo &fileInfo)
+{
+    PhotosDao::PhotosRowData rowData = this->photosRestorePtr_->FindSameFile(fileInfo);
+    int32_t fileId = rowData.fileId;
+    std::string cloudPath = rowData.data;
+    if (fileId <= 0 || cloudPath.empty()) {
+        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d, %{public}s", fileId, cloudPath.c_str());
+        return false;
+    }
+    fileInfo.fileIdNew = fileId;
+    fileInfo.cloudPath = cloudPath;
     return true;
 }
 
