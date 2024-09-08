@@ -25,9 +25,9 @@ namespace Media {
 
 // UPDATE Photos SET owner_album_id =
 const std::string UPDATE_ALBUM_ASSET_MAPPING_CONSISTENCY_DATA_SQL =
-    "UPDATE " + PhotoColumn::PHOTO_TABLE +
+    "UPDATE " + PhotoColumn::PHOTOS_TABLE +
     " SET " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " =" +
-    " (SELECT " + PhotoColumn::ALBUM_ID + " FROM " + PhotoMap::TABLE +
+    " (SELECT " + PhotoMap::ALBUM_ID + " FROM " + PhotoMap::TABLE +
     " WHERE Photos." + PhotoColumn::MEDIA_ID + " = PhotoMap." + PhotoMap::ASSET_ID +
     " ) WHERE EXISTS ( SELECT 1 FROM " + PhotoMap::TABLE +
     " WHERE Photos." + PhotoColumn::MEDIA_ID + " = " +

@@ -211,7 +211,7 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
         }
     }
     this->mediaLibraryRdb_->Commit();
-    MEDIA_INFO_LOG("restore albums success, %{public}ld albums", photoAlbums.size());
+    MEDIA_INFO_LOG("restore albums success, %{public}d albums", static_cast<int32_t>(photoAlbums.size()));
     return NativeRdb::E_OK;
 }
 }  // namespace OHOS::Media

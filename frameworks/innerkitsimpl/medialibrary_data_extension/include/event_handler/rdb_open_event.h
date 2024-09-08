@@ -19,8 +19,8 @@
 #include <string>
 #include "rdb_store.h"
 
-namespace OHOS:Media {
-class IRdbOpenEvennt {
+namespace OHOS::Media {
+class IRdbOpenEvent {
 public:
     virtual int32_t OnCreate(NativeRdb::RdbStore &store) = 0;
     virtual int32_t OnUpgrade(NativeRdb::RdbStore &store, int32_t oldVersion, int32_t newVersion) = 0;

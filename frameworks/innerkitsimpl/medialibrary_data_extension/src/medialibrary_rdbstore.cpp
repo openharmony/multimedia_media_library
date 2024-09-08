@@ -18,7 +18,7 @@
 
 #include <mutex>
 
-#include "album_plugin_table_event_hander.h"
+#include "album_plugin_table_event_handler.h"
 #include "cloud_sync_helper.h"
 #include "dfx_manager.h"
 #include "dfx_timer.h"
@@ -783,7 +783,7 @@ inline void BuildInsertSystemAlbumSql(const ValuesBucket &values, const AbsRdbPr
 int32_t PrepareAlbumPlugin(RdbStore &store)
 {
     AlbumPluginTableEventHandler albumPluginTableEventHander;
-    return albumPluginTableEventHander.onCreate(store);
+    return albumPluginTableEventHander.OnCreate(store);
 }
 
 int32_t PrepareSystemAlbums(RdbStore &store)
@@ -1233,7 +1233,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
     CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
     CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
-    CREATE_INSERT_SOURCE_PHOTO_UPDATE_ALBUM_ID_TRIGGER,
+    CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER,
     INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
     CREATE_SOURCE_ALBUM_INDEX,
     FormMap::CREATE_FORM_MAP_TABLE,
@@ -2873,7 +2873,7 @@ static void AddOwnerAlbumIdAndRefractorTrigger(RdbStore &store)
         "DROP TRIGGER IF EXISTS photos_mdirty_trigger",
         PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
         CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
-        CREATE_INSERT_SOURCE_PHOTO_UPDATE_ALBUM_ID_TRIGGER,
+        CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER,
 
     };
     MEDIA_INFO_LOG("Add owner_album_id column for Photos");
@@ -3367,7 +3367,7 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_OWNER_ALBUM_ID) {
         AddOwnerAlbumIdAndRefractorTrigger(store);
         AlbumPluginTableEventHandler albumPluginTableEventHandler;
-        albumPluginTableEventHandler.OnUpgrade(store, oldVersion, newVersion);
+        albumPluginTableEventHandler.OnUpgrade(store, oldVersion, oldVersion);
         AddMergeInfoColumnForAlbum(store);
         ReconstructMediaLibraryStorageFormat(store);
     }

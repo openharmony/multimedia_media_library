@@ -98,7 +98,7 @@ private:
 
 class CompensateAlbumIdData : public AsyncTaskData {
 public:
-    CompensateAlbumIdData(NativeRdb::Rdbstore *store) : upgradeStore_(store){};
+    CompensateAlbumIdData(NativeRdb::RdbStore *store) : upgradeStore_(store){};
     virtual ~CompensateAlbumIdData() override = default;
     NativeRdb::RdbStore *upgradeStore_;
 };

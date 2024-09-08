@@ -818,7 +818,7 @@ static int32_t GetLPathFromSourcePath(const string &sourcePath, string &lPath)
 {
     size_t pos1 = SOURCE_PATH_PREFIX.length();
     size_t pos2 = sourcePath.find_last_of("/");
-    if (pos2 == string::nops) {
+    if (pos2 == string::npos) {
         return E_INDEX;
     }
     lPath = sourcePath.substr(pos1, pos2 - pos1);
@@ -841,7 +841,7 @@ static bool HasSameLpath(const string &lPath, const string &assetId)
         }
         const std::string UPDATE_ALBUM_ID_IN_PHOTOS = "UPDATE Photos Set owner_album_id = " +
             to_string(albumId) + " WHERE file_id = " + assetId;
-        int ret = rdbStore->ExecSqls(UPDATE_ALBUM_ID_IN_PHOTOS);
+        int ret = rdbStore->ExecuteSql(UPDATE_ALBUM_ID_IN_PHOTOS);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Update new album is fails");
             return false;
@@ -857,7 +857,7 @@ static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUse
         return;
     }
     const string userAlbumMark = "/Users/";
-    if (lPath.find(userAlbumMark) != string::nops) {
+    if (lPath.find(userAlbumMark) != string::npos) {
         isUserAlbum = true;
     }
     MEDIA_INFO_LOG("new album need to build, lpath is %{public}s", lPath.c_str());
@@ -866,11 +866,11 @@ static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUse
     auto albumType = PhotoAlbumType::SOURCE;
     auto albumSubType = PhotoAlbumSubType::SOURCE_GENERIC;
     string queryExpiredAlbumInfo = "SELECT * FROM album_plugin WHERE lpath = '" +
-        lpath + "' AND priority = '1'";
+        lPath + "' AND priority = '1'";
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     shared_ptr<NativeRdb::ResultSet> albumPluginResultSet = rdbStore->QuerySql(queryExpiredAlbumInfo);
     if (albumPluginResultSet == nullptr || albumPluginResultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        albumName = lpath.substr(lpath.find_last_of("/") + 1);
+        albumName = lPath.substr(lPath.find_last_of("/") + 1);
         if (isUserAlbum) {
             albumType = PhotoAlbumType::USER;
             albumSubType = PhotoAlbumSubType::USER_GENERIC;
@@ -895,11 +895,10 @@ static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUse
     }
     const std::string UPDATE_NEW_ALBUM_ID_IN_PHOTOS = "UPDTE Photos SET owner_album_id = " +
         to_string(newAlbumId) + "WHERE file_id = " + assetId;
-    ret = rdbStore->ExecSqls(UPDATE_NEW_ALBUM_ID_IN_PHOTOS);
-    shared_ptr<NativeRdb::ResultSet> albumResultSet = rdbStore->QuerySql(QUERY_LPATH);
+    ret = rdbStore->ExecuteSql(UPDATE_NEW_ALBUM_ID_IN_PHOTOS);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Update new album is fails");
-        return false;
+        return;
     }
 }
 
@@ -920,12 +919,12 @@ void MediaLibraryAlbumOperations::DealwithNoAlbumAssets(const vector<string> &wh
         int ownerAlbumIdIndex;
         int32_t ownerAlbumId;
         resultSet->GetColumnIndex(PhotoColumn::PHOTO_OWNER_ALBUM_ID, ownerAlbumIdIndex);
-        if (resultSet->GetString(ownerAlbumIdIndex, ownerAlbumId) != NativeRdb::E_OK) {
+        if (resultSet->GetInt(ownerAlbumIdIndex, ownerAlbumId) != NativeRdb::E_OK) {
             continue;
         }
 
         const std::string queryAlbum = "SELECT * FROM PhotoAlbum WHERE album_id = " + to_string(ownerAlbumId);
-        auto resultSetAlbum = rdbStore->QuerySql(queryAlbum);
+        auto resultSetAlbum = uniStore->QuerySql(queryAlbum);
         if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
             string sourcePath, lPath;
             GetStringValueFromResultSet(resultSet, PhotoColumn::PHOTO_SOURCE_PATH, sourcePath);
