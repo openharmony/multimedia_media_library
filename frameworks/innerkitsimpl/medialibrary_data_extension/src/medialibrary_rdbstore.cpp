@@ -142,8 +142,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     string name = MEDIA_DATA_ABILITY_DB_NAME;
     int32_t errCode = 0;
     string realPath = RdbSqlUtils::GetDefaultDatabasePath(databaseDir, name, errCode);
-    int32_t haMode = MediaLibraryRestore::GetInstance().DetectHaMode(realPath);
-    config_.SetHaMode(move(haMode));
+    config_.SetHaMode(HAMode::MANUAL_TRIGGER);
     config_.SetAllowRebuild(true);
     config_.SetName(move(name));
     config_.SetPath(move(realPath));

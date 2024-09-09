@@ -28,15 +28,12 @@ public:
     virtual ~MediaLibraryRestore() = default;
     EXPORT static MediaLibraryRestore &GetInstance();
 
-    EXPORT int32_t DetectHaMode(const std::string &dbPath);
     EXPORT void CheckRestore(const int32_t &errCode);
     EXPORT bool IsRestoring() const;
     EXPORT bool IsBackuping() const;
     EXPORT bool IsWaiting() const;
     EXPORT void CheckBackup();
     EXPORT void InterruptBackup();
-    EXPORT int32_t GetHaMode() const;
-    EXPORT void ResetHaMode();
     EXPORT void CheckResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet);
 private:
 #ifdef CLOUD_SYNC_MANAGER
@@ -44,14 +41,11 @@ private:
 #endif
     void DoRdbBackup();
     void ResetHAModeSwitchStatus();
-    void SaveHAModeToPara();
     void SaveHAModeSwitchStatusToPara(const uint32_t &status);
-    void ReadHAModeFromPara();
     bool isRestoring_{false};
     std::atomic<bool> isBackuping_{false};
     std::atomic<bool> isWaiting_{false};
     std::atomic<bool> isInterrupting_{false};
-    int32_t haMode_{0};
 };
 } // namespace Media
 } // namespace OHOS
