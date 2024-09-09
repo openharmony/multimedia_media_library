@@ -210,7 +210,11 @@ template<typename T>
 void CloneRestore::PutWithDefault(NativeRdb::ValuesBucket& values, const std::string& columnName,
     const std::optional<T>& optionalValue, const T& defaultValue)
 {
-    PutIfPresent(values, columnName, optionalValue.value_or(defaultValue));
+    if (optionalValue.has_value()) {
+        PutIfPresent(values, columnName, optionalValue);
+    } else {
+        PutIfPresent(values, columnName, std::optional<T>(defaultValue));
+    }
 }
 } // namespace Media
 } // namespace OHOS
