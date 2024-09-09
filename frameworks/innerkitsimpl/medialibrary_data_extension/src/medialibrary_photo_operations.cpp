@@ -1059,6 +1059,37 @@ int32_t MediaLibraryPhotoOperations::UpdateExif(MediaLibraryCommand &cmd,
     return errCode;
 }
 
+int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &cmd)
+{
+    vector<shared_ptr<FileAsset>> fileAssetVector;
+    vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_TYPE, PhotoColumn::MEDIA_NAME };
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(*(cmd.GetAbsRdbPredicates()));
+    int32_t errCode = GetFileAssetVectorFromDb(*(cmd.GetAbsRdbPredicates()),
+        OperationObject::FILESYSTEM_PHOTO, fileAssetVector, columns);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Failed to query file asset vector from db, errCode=%{private}d", errCode);
+    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    errCode = transactionOprn.Start();
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Failed to start TransactionOperations, errCode=%{private}d", errCode);
+    int32_t updateRows = UpdateFileInDb(cmd);
+    if (updateRows < 0) {
+        MEDIA_ERR_LOG("Update Photo in database failed, updateRows=%{public}d", updateRows);
+        return updateRows;
+    }
+    transactionOprn.Finish();
+    SendOwnerAlbumIdNotify(cmd);
+    auto watch =  MediaLibraryNotify::GetInstance();
+    for (const auto &fileAsset : fileAssetVector) {
+        string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
+        string assetUri = MediaFileUtils::GetUriByExtrConditions(
+            PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()), extraUri);
+        watch->Notify(assetUri, NotifyType::NOTIFY_UPDATE);
+    }
+    return updateRows;
+}
+
 int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
 {
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE,
@@ -1131,6 +1162,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
             return BatchSetFavorite(cmd);
         case OperationType::BATCH_UPDATE_USER_COMMENT:
             return BatchSetUserComment(cmd);
+        case OperationType::BATCH_UPDATE_OWNER_ALBUM_ID:
+            return BatchSetOwnerAlbumId(cmd);
         case OperationType::DISCARD_CAMERA_PHOTO:
             return DiscardCameraPhoto(cmd);
         case OperationType::SAVE_CAMERA_PHOTO:
