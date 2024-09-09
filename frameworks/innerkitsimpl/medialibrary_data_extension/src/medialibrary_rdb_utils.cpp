@@ -440,7 +440,6 @@ static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const s
     int32_t ret = E_SUCCESS;
     if (oldCover != newCover) {
         ret = E_NEED_UPDATE_ALBUM_COVER_URI;
-        values.Delete(IS_COVER_SATISFIED);
         values.PutInt(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING));
         values.PutString(targetColumn, newCover);
         MEDIA_INFO_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s", targetColumn.c_str(),
@@ -918,7 +917,7 @@ static bool IsCoverValid(const shared_ptr<NativeRdb::RdbStore> &rdbStore, const 
         photoCleanFlag + " = " + to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) + " AND " +
         photosDateTrashed + " = " + to_string(0) + " AND " + photosHidden + " = " + to_string(0) + " AND " +
         photosTimePending + " = " + to_string(0) + " AND " + photosIsTemp + " = " + to_string(0) + " AND " +
-        photoIsCover + " = " + BURST_COVER_LEVEL;
+        photoIsCover + " = " + to_string(static_cast<int32_t>(BurstCoverLevelType::COVER));
 
     predicates.SetWhereClause(whereClause);
     predicates.Limit(1);
