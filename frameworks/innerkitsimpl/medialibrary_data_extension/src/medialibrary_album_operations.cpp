@@ -549,9 +549,9 @@ int32_t GetStringValueFromResultSet(shared_ptr<ResultSet> resultSet, const strin
 
 void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePredicates &predicates)
 {
+    std::string whereClauseAlbumName = ALBUM_NAME + " IS NOT NULL AND " + ALBUM_NAME + " != ''";
     string whereClause;
     if (value == FIRST_PAGE) {
-        std::string whereClauseAlbumName = ALBUM_NAME + " IS NOT NULL AND " + ALBUM_NAME + " != ''";
         string whereClauseRelatedMe = ALBUM_ID + " IN (SELECT " + MAP_ALBUM + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
             " WHERE " + MAP_ASSET + " IN ( SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
             " WHERE " + MediaColumn::MEDIA_ID + " IN (SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
@@ -574,7 +574,7 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
             COUNT + " < " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND " + COUNT + " >= " +
             to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " AND (" + USER_DISPLAY_LEVEL + " != 1 OR " +
             USER_DISPLAY_LEVEL + " IS NULL) AND (" + USER_DISPLAY_LEVEL + " != 3 OR " + USER_DISPLAY_LEVEL +
-            " IS NULL))) GROUP BY " + GROUP_TAG + " ORDER BY CASE WHEN " + RENAME_OPERATION +
+            " IS NULL))) AND NOT (" + whereClauseAlbumName + ")" +  " GROUP BY " + GROUP_TAG + " ORDER BY CASE WHEN " + RENAME_OPERATION +
             " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == FAVORITE_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 3 )GROUP BY " +
