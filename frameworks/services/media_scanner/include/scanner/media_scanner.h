@@ -145,7 +145,7 @@ private:
     std::vector<std::unique_ptr<Metadata>> dataBuffer_;
     MediaLibraryApi api_;
     bool isForceScan_ = false;
-    int32_t fileId = 0;
+    int32_t fileId_ = 0;
     bool isSkipAlbumUpdate_ = false;
     int32_t fileId_ = 0;
 };
