@@ -121,6 +121,8 @@ public:
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
     template <typename T>
     static std::string JoinSQLValues(const std::vector<T>& values, std::string_view delimiter);
+    void UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
+        const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap);
 
     template<typename T>
     struct always_false : std::false_type {};

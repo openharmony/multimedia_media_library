@@ -890,6 +890,21 @@ void BackupDatabaseUtils::UpdateFaceGroupTagsUnion(std::shared_ptr<NativeRdb::Rd
     UpdateGroupTagColumn(updatedPairs, mediaLibraryRdb);
 }
 
+void BackupDatabaseUtils::UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
+    const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap)
+{
+    for (auto& [groupTag, tagIds] : groupTagMap) {
+        if (tagIds.size() > 1) {
+            std::string newGroupTag = BackupDatabaseUtils::JoinValues<std::string>(tagIds, "|");
+            if (newGroupTag != groupTag) {
+                for (const auto& tagId : tagIds) {
+                    updatedPairs.emplace_back(tagId, newGroupTag);
+                }
+            }
+        }
+    }
+}
+
     /* 双框架的group_id是合并相册之一的某一 tag_id */
 void BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
 {
@@ -905,17 +920,7 @@ void BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRd
         }
     }
 
-    for (auto& [groupTag, tagIds] : groupTagMap) {
-        if (tagIds.size() > 1) {
-            std::string newGroupTag = BackupDatabaseUtils::JoinValues<std::string>(tagIds, "|");
-            if (newGroupTag != groupTag) {
-                for (const auto& tagId : tagIds) {
-                    updatedPairs.emplace_back(tagId, newGroupTag);
-                }
-            }
-        }
-    }
-
+    UpdateGroupTags(updatedPairs, groupTagMap);
     UpdateGroupTagColumn(updatedPairs, mediaLibraryRdb);
 }
 } // namespace Media
