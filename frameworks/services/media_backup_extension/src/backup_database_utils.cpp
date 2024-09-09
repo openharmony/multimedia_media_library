@@ -890,5 +890,34 @@ void BackupDatabaseUtils::UpdateFaceGroupTagsUnion(std::shared_ptr<NativeRdb::Rd
 
     UpdateGroupTagColumn(updatedPairs, mediaLibraryRdb);
 }
+
+    /* 双框架的group_id是合并相册之一的某一 tag_id */
+void BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
+{
+    std::vector<TagPairOpt> tagPairs = QueryTagInfo(mediaLibraryRdb);
+    std::vector<TagPairOpt> updatedPairs;
+    std::unordered_map<std::string, std::vector<std::string>> groupTagMap;
+
+    for (const auto& pair : tagPairs) {
+        if (pair.first.has_value() && pair.second.has_value()) {
+            groupTagMap[pair.second.value()].push_back(pair.first.value());
+        } else {
+            MEDIA_INFO_LOG("Found tag_id without group_tag: %{public}s", pair.first.value().c_str());
+        }
+    }
+
+    for (auto& [groupTag, tagIds] : groupTagMap) {
+        if (tagIds.size() > 1) {
+            std::string newGroupTag = BackupDatabaseUtils::JoinValues<std::string>(tagIds, "|");
+            if (newGroupTag != groupTag) {
+                for (const auto& tagId : tagIds) {
+                    updatedPairs.emplace_back(tagId, newGroupTag);
+                }
+            }
+        }
+    }
+
+    UpdateGroupTagColumn(updatedPairs, mediaLibraryRdb);
+}
 } // namespace Media
 } // namespace OHOS

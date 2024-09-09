@@ -115,6 +115,7 @@ public:
     static void UpdateGroupTagColumn(const std::vector<TagPairOpt>& updatedPairs,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void UpdateFaceGroupTagsUnion(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
 
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
