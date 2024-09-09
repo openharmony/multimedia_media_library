@@ -113,10 +113,27 @@ bool OH_MediaAssetManager_CancelRequest(OH_MediaAssetManager* manager, const Med
  *         {@link #MEDIA_LIBRARY_PERMISSION_DENIED} if permission is denied.
  *         {@link #MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR} if internal system error.
  * @since 12
-*/
+ */
 MediaLibrary_ErrorCode OH_MediaAssetManager_RequestImage(OH_MediaAssetManager* manager, OH_MediaAsset* mediaAsset,
     MediaLibrary_RequestOptions requestOptions, MediaLibrary_RequestId* requestId,
     OH_MediaLibrary_OnImageDataPrepared callback);
+
+/**
+ * @brief Request moving photo object.
+ *
+ * @permission ohos.permission.READ_IMAGEVIDEO
+ * @param manager the pointer to {@link OH_MediaAssetManager} instance.
+ * @param mediaAsset the {@link OH_MediaAsset} instance of media file object to be requested.
+ * @param requestOptions the {@link MediaLibrary_RequestOptions} for image request strategy mode.
+ * @param callback the {@link OH_MediaLibrary_OnMovingPhotoDataPrepared} that will be called
+ *                 when the requested source is prepared.
+ * @return the {@link MediaLibrary_RequestId}, if the request fails, "" is returned.
+           The possible reason is that the parameter is invalid, or permission is denied, or there is system error.
+ * @since 13
+ */
+MediaLibrary_ErrorCode OH_MediaAssetManager_RequestMovingPhoto(OH_MediaAssetManager* manager, OH_MediaAsset* mediaAsset,
+    MediaLibrary_RequestOptions requestOptions, MediaLibrary_RequestId* requestId,
+    OH_MediaLibrary_OnMovingPhotoDataPrepared callback);
 
 /**
  * @brief Release the {@link OH_MediaAssetManager} instance.
@@ -128,7 +145,7 @@ MediaLibrary_ErrorCode OH_MediaAssetManager_RequestImage(OH_MediaAssetManager* m
  *                                                2. Incorrect parameter types.
  *                                                3. Parameter verification failed.
  * @since 12
-*/
+ */
 MediaLibrary_ErrorCode OH_MediaAssetManager_Release(OH_MediaAssetManager* manager);
 
 #ifdef __cplusplus

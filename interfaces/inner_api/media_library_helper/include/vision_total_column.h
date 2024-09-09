@@ -34,6 +34,7 @@ const std::string FACE_TAG = "face_tag";
 const std::string HEAD = "head";
 const std::string POSE = "pose";
 const std::string DETAIL_ADDRESS = "detail_address";
+const std::string GEO = "geo";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_TOTAL_COLUMN_H

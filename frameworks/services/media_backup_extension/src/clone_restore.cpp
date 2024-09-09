@@ -1936,7 +1936,7 @@ NativeRdb::ValuesBucket CloneRestore::CreateValuesBucketFromImageFaceTbl(const I
     PutIfPresent(values, IMAGE_FACE_COL_BEAUTY_BOUNDER_HEIGHT, imageFaceTbl.beautyBounderHeight);
     PutIfPresent(values, IMAGE_FACE_COL_AESTHETICS_SCORE, imageFaceTbl.aestheticsScore);
     PutIfPresent(values, IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION, imageFaceTbl.beautyBounderVersion);
-    PutIfPresent(values, IMAGE_FACE_COL_IS_EXCLUDED, imageFaceTbl.isExcluded);
+    PutWithDefault(values, IMAGE_FACE_COL_IS_EXCLUDED, imageFaceTbl.isExcluded, 0);
 
     return values;
 }
