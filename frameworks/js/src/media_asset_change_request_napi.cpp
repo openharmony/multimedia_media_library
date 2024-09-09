@@ -1105,7 +1105,7 @@ static int SavePhotoProxyImage(const UniqueFd& destFd, sptr<PhotoProxy> photoPro
         NAPI_ERR_LOG("packet pixelMap failed");
         return E_ERR;
     }
-    NAPI_INFO_LOG("pack pixelMap success, packedSize: %{public}ld", packedSize);
+    NAPI_INFO_LOG("pack pixelMap success, packedSize: %{public}" PRId64, packedSize);
 
     int ret = write(destFd, buffer, packedSize);
     if (ret < 0) {
