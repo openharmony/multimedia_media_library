@@ -1654,7 +1654,7 @@ void MediaLibraryAssetOperations::SendOwnerAlbumIdNotify(MediaLibraryCommand &cm
     value.GetInt(targetAlbumId);
     auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
-    int oriAlbumId = GetAlbumIdByPredicates(whereClause, whereArgs);
+    int32_t oriAlbumId = GetAlbumIdByPredicates(whereClause, whereArgs);
 
     vector<int32_t> updateIds;
     updateIds.push_back(targetAlbumId);
