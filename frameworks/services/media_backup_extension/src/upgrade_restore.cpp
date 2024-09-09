@@ -751,41 +751,6 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
     return isSuccess;
 }
 
-int32_t FindSubtype(const FileInfo &fileInfo)
-{
-    if (fileInfo.burstKey.size() > 0) {
-        return static_cast<int32_t>(PhotoSubType::BURST);
-    }
-
-    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
-        return static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
-    }
-    return static_cast<int32_t>(PhotoSubType::DEFAULT);
-}
-
-std::string FindBurstKey(const FileInfo &fileInfo)
-{
-    if (fileInfo.burstKey.size() > 0) {
-        return fileInfo.burstKey;
-    }
-    return "";
-}
-
-int32_t FindDirty(const FileInfo &fileInfo)
-{
-    return static_cast<int32_t>(DirtyTypes::TYPE_NEW);
-}
-
-int32_t FindBurstCoverLevel(const FileInfo &fileInfo)
-{
-    // identify burst photo
-    if (fileInfo.isBurst == static_cast<int32_t>(BurstCoverLevelType::COVER) ||
-        fileInfo.isBurst == static_cast<int32_t>(BurstCoverLevelType::MEMBER)) {
-        return fileInfo.isBurst;
-    }
-    return static_cast<int32_t>(BurstCoverLevelType::COVER);
-}
-
 NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
     int32_t sourceType)
 {
