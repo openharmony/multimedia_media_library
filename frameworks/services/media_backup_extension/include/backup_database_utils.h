@@ -116,9 +116,9 @@ public:
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void UpdateFaceGroupTagsUnion(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
-    void UpdateTagPairs(std::vector<TagPairOpt>& updatedPairs, const std::string& newGroupTag,
+    static void UpdateTagPairs(std::vector<TagPairOpt>& updatedPairs, const std::string& newGroupTag,
         const std::vector<std::string>& tagIds);
-    void UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
+    static void UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
         const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap);
 
     template <typename T>
