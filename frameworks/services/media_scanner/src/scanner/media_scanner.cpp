@@ -82,16 +82,6 @@ void MediaScannerObj::SetIsSkipAlbumUpdate(bool isSkipAlbumUpdate)
     isSkipAlbumUpdate_ = isSkipAlbumUpdate;
 }
 
-void MediaScannerObj::SetForceScan(bool isForceScan)
-{
-    isForceScan_ = isForceScan;
-}
-
-void MediaScannerObj::SetFileId(int32_t fileId)
-{
-    fileId_ = fileId;
-}
-
 int32_t MediaScannerObj::ScanFile()
 {
     MEDIA_DEBUG_LOG("scan file %{private}s", path_.c_str());
