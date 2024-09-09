@@ -147,7 +147,6 @@ private:
     bool isForceScan_ = false;
     int32_t fileId_ = 0;
     bool isSkipAlbumUpdate_ = false;
-    int32_t fileId_ = 0;
 };
 
 class ScanErrCallback : public IMediaScannerCallback {
