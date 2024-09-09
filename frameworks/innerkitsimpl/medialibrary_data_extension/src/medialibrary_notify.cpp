@@ -417,6 +417,7 @@ NotifyTaskWorker::~NotifyTaskWorker()
 
 void NotifyTaskWorker::StartThread()
 {
+    MEDIA_INFO_LOG("Start notify thread");
     isThreadRunning_ = true;
     thread_ = std::thread([this]() { this->StartWorker(); });
     thread_.detach();
@@ -470,6 +471,7 @@ void NotifyTaskWorker::StartWorker()
                 task = nullptr;
             }
         } else {
+            MEDIA_INFO_LOG("Notify queue is empty, end thread");
             isThreadRunning_ = false;
             return;
         }
