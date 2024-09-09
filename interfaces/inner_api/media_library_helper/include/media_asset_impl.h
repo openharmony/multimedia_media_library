@@ -16,28 +16,45 @@
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_ASSET_IMPL_H
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_ASSET_IMPL_H
 
-#include "media_asset_base_capi.h"
+#include "nocopyable.h"
 #include "file_asset.h"
+#include "media_asset.h"
 
-struct OH_MediaAsset {
+namespace OHOS {
+namespace Media {
+
+class MediaAssetImpl : public MediaAsset, public NoCopyable {
 public:
-    OH_MediaAsset(std::shared_ptr<OHOS::Media::FileAsset> fileAsset);
-    ~OH_MediaAsset();
+    MediaAssetImpl(std::shared_ptr<FileAsset> fileAsset);
+    ~MediaAssetImpl();
 
-    MediaLibrary_ErrorCode GetUri(const char** uri);
-    MediaLibrary_ErrorCode GetDisplayName(const char** displayName);
-    MediaLibrary_ErrorCode GetSize(uint32_t* size);
-    MediaLibrary_ErrorCode GetDateModifiedMs(uint32_t* dateModifiedMs);
-    MediaLibrary_ErrorCode GetWidth(uint32_t* width);
-    MediaLibrary_ErrorCode GetHeight(uint32_t* height);
-    MediaLibrary_ErrorCode GetOrientation(uint32_t* orientation);
+    MediaLibrary_ErrorCode GetUri(const char** uri) override;
+    MediaLibrary_ErrorCode GetMediaType(MediaLibrary_MediaType* mediaType) override;
+    MediaLibrary_ErrorCode GetMediaSubType(MediaLibrary_MediaSubType* mediaSubType) override;
+    MediaLibrary_ErrorCode GetDisplayName(const char** displayName) override;
+    MediaLibrary_ErrorCode GetSize(uint32_t* size) override;
+    MediaLibrary_ErrorCode GetDateAdded(uint32_t* dateAdded) override;
+    MediaLibrary_ErrorCode GetDateModified(uint32_t* dateModified) override;
+    MediaLibrary_ErrorCode GetDateAddedMs(uint32_t* dateAddedMs) override;
+    MediaLibrary_ErrorCode GetDateModifiedMs(uint32_t* dateModifiedMs) override;
+    MediaLibrary_ErrorCode GetDateTaken(uint32_t* dateTaken) override;
+    MediaLibrary_ErrorCode GetDuration(uint32_t* duration) override;
+    MediaLibrary_ErrorCode GetWidth(uint32_t* width) override;
+    MediaLibrary_ErrorCode GetHeight(uint32_t* height) override;
+    MediaLibrary_ErrorCode GetOrientation(uint32_t* orientation) override;
+    MediaLibrary_ErrorCode IsFavorite(uint32_t* favorite) override;
+    MediaLibrary_ErrorCode GetTitle(const char** title) override;
 
-    std::shared_ptr<OHOS::Media::FileAsset> GetFileAssetInstance() const;
+    std::shared_ptr<FileAsset> GetFileAssetInstance() const override;
 
 private:
-    std::shared_ptr<OHOS::Media::FileAsset> fileAsset_ = nullptr;
+    std::shared_ptr<FileAsset> fileAsset_ = nullptr;
     char* uri_;
     char* displayName_;
+    char* title_;
 };
+
+}
+}
 
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_ASSET_IMPL_H

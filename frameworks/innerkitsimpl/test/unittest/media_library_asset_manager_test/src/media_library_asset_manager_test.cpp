@@ -31,7 +31,8 @@
 #include "system_ability_definition.h"
 #include "media_asset_base_capi.h"
 #include "media_asset_manager_capi.h"
-#include "media_asset_impl.h"
+#include "oh_media_asset.h"
+#include "media_asset.h"
 
 using namespace std;
 using namespace OHOS;
@@ -90,7 +91,7 @@ void MediaLibraryAssetManagerTest::SetUpTestCase(void)
     MEDIA_INFO_LOG("MediaLibraryAssetManagerTest::SetUpTestCase:: invoked");
     CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
     if (sDataShareHelper_ == nullptr) {
-        EXPECT_NE(sDataShareHelper_, nullptr);
+        ASSERT_NE(sDataShareHelper_, nullptr);
         return;
     }
 
@@ -174,7 +175,7 @@ void DeleteFile(std::string fileUri)
     predicates.EqualTo(MEDIA_DATA_DB_ID, MediaFileUtils::GetIdFromUri(fileUri));
     int retVal = sDataShareHelper_->Delete(deleteAssetUri, predicates);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test DeleteFile::uri :%{private}s", deleteAssetUri.ToString().c_str());
-    EXPECT_NE(retVal, E_ERR);
+    ASSERT_NE(retVal, E_ERR);
 }
 
 void ClearFile()
@@ -189,10 +190,10 @@ void ClearFile()
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
     shared_ptr<DataShareResultSet> resultSet = nullptr;
     resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
-    EXPECT_NE((resultSet == nullptr), true);
+    ASSERT_NE((resultSet == nullptr), true);
 
     unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
-    EXPECT_NE((fetchFileResult->GetCount() < 0), true);
+    ASSERT_NE((fetchFileResult->GetCount() < 0), true);
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     while (fileAsset != nullptr) {
         DeleteFile(fileAsset->GetUri());
@@ -218,12 +219,19 @@ void CallbackFunciton(int32_t result, MediaLibrary_RequestId requestId)
     MEDIA_INFO_LOG("CallbackFunciton::requestId: %{public}s", requestId.requestId);
 }
 
-void CallbackFuncitonWithQuality(MediaLibrary_ErrorCode result,
+void CallbackFuncitonOnImageDataPrepared(MediaLibrary_ErrorCode result,
     MediaLibrary_RequestId requestId, MediaLibrary_MediaQuality mediaQuality,
     MediaLibrary_MediaContentType type, OH_ImageSourceNative* imageSourceNative)
 {
-    MEDIA_INFO_LOG("CallbackFuncitonWithQuality::result: %{public}d", result);
-    MEDIA_INFO_LOG("CallbackFuncitonWithQuality::requestId: %{public}s", requestId.requestId);
+    MEDIA_INFO_LOG("CallbackFuncitonOnImageDataPrepared::result: %{public}d", result);
+    MEDIA_INFO_LOG("CallbackFuncitonOnImageDataPrepared::requestId: %{public}s", requestId.requestId);
+}
+
+void CallbackFuncitonOnMovingPhotoDataPrepared(MediaLibrary_ErrorCode result, MediaLibrary_RequestId requestId,
+    MediaLibrary_MediaQuality mediaQuality, MediaLibrary_MediaContentType type, OH_MovingPhoto* movingPhoto)
+{
+    MEDIA_INFO_LOG("CallbackFuncitonOnMovingPhotoDataPrepared::result: %{public}d", result);
+    MEDIA_INFO_LOG("CallbackFuncitonOnMovingPhotoDataPrepared::requestId: %{public}s", requestId.requestId);
 }
 
 /**
@@ -237,9 +245,9 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_001, TestSi
     string srcDisplayName = "request_image_src_1.jpg";
     string destDisplayName = "request_image_dest_1.jpg";
     string srcuri = mediaLibraryManager->CreateAsset(srcDisplayName);
-    EXPECT_NE(srcuri, "");
+    ASSERT_NE(srcuri, "");
     int32_t srcFd = mediaLibraryManager->OpenAsset(srcuri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(srcFd <= 0, true);
+    ASSERT_NE(srcFd <= 0, true);
     int32_t resWrite = write(srcFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
     if (resWrite == -1) {
         EXPECT_EQ(false, true);
@@ -247,7 +255,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_001, TestSi
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
 
     string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
-    EXPECT_NE(destUri, "");
+    ASSERT_NE(destUri, "");
     sleep(SCAN_WAIT_TIME_1S);
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
@@ -258,14 +266,14 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_001, TestSi
     MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, srcuri.c_str(),
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
-    EXPECT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
+    ASSERT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
     AppFileService::ModuleFileUri::FileUri destFileUri(destUri);
     string destPath = destFileUri.GetRealPath();
     int destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
     int64_t destLen = lseek(destFd, 0, SEEK_END);
     lseek(destFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
-    EXPECT_NE((buf == nullptr), true);
+    ASSERT_NE((buf == nullptr), true);
     read(destFd, buf, destLen);
     bool result = CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
     free(buf);
@@ -285,9 +293,9 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_002, TestSi
     string srcDisplayName = "request_image_src_2.jpg";
     string destDisplayName = "request_image_dest_2.jpg";
     string srcuri = mediaLibraryManager->CreateAsset(srcDisplayName);
-    EXPECT_NE(srcuri, "");
+    ASSERT_NE(srcuri, "");
     int32_t srcFd = mediaLibraryManager->OpenAsset(srcuri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(srcFd <= 0, true);
+    ASSERT_NE(srcFd <= 0, true);
     int32_t resWrite = write(srcFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
     if (resWrite == -1) {
         EXPECT_EQ(false, true);
@@ -295,7 +303,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_002, TestSi
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
 
     string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
-    EXPECT_NE(destUri, "");
+    ASSERT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
@@ -306,14 +314,14 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_002, TestSi
     MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, srcuri.c_str(),
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
-    EXPECT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
+    ASSERT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
     AppFileService::ModuleFileUri::FileUri destFileUri(destUri);
     string destPath = destFileUri.GetRealPath();
     int destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
     int64_t destLen = lseek(destFd, 0, SEEK_END);
     lseek(destFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
-    EXPECT_NE((buf == nullptr), true);
+    ASSERT_NE((buf == nullptr), true);
     read(destFd, buf, destLen);
     bool result = CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
     free(buf);
@@ -333,9 +341,9 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_003, TestSi
     string srcDisplayName = "request_video_src_1.mp4";
     string destDisplayName = "request_video_dest_1.mp4";
     string srcuri = mediaLibraryManager->CreateAsset(srcDisplayName);
-    EXPECT_NE(srcuri, "");
+    ASSERT_NE(srcuri, "");
     int32_t srcFd = mediaLibraryManager->OpenAsset(srcuri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(srcFd <= 0, true);
+    ASSERT_NE(srcFd <= 0, true);
     int32_t resWrite = write(srcFd, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
     if (resWrite == -1) {
         EXPECT_EQ(false, true);
@@ -343,7 +351,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_003, TestSi
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
 
     string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
-    EXPECT_NE(destUri, "");
+    ASSERT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
@@ -354,14 +362,14 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_003, TestSi
     MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestVideoForPath(manager, srcuri.c_str(),
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
-    EXPECT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
+    ASSERT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
     AppFileService::ModuleFileUri::FileUri destFileUri(destUri);
     string destPath = destFileUri.GetRealPath();
     int destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
     int64_t destLen = lseek(destFd, 0, SEEK_END);
     lseek(destFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
-    EXPECT_NE((buf == nullptr), true);
+    ASSERT_NE((buf == nullptr), true);
     read(destFd, buf, destLen);
     bool result = CompareIfArraysEquals(buf, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
     free(buf);
@@ -380,7 +388,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_004, TestSi
     MEDIA_INFO_LOG("MediaLibraryAssetManager_test_004::Start");
     string destDisplayName = "request_image_dest_3.jpg";
     string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
-    EXPECT_NE(destUri, "");
+    ASSERT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
@@ -405,9 +413,9 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_005, TestSi
     string srcDisplayName = "request_video_src_2.mp4";
     string destDisplayName = "request_video_dest_2.mp4";
     string srcuri = mediaLibraryManager->CreateAsset(srcDisplayName);
-    EXPECT_NE(srcuri, "");
+    ASSERT_NE(srcuri, "");
     int32_t srcFd = mediaLibraryManager->OpenAsset(srcuri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(srcFd <= 0, true);
+    ASSERT_NE(srcFd <= 0, true);
     int32_t resWrite = write(srcFd, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
     if (resWrite == -1) {
         EXPECT_EQ(false, true);
@@ -415,7 +423,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_005, TestSi
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
 
     string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
-    EXPECT_NE(destUri, "");
+    ASSERT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
@@ -426,19 +434,19 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_005, TestSi
     MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestVideoForPath(manager, srcuri.c_str(),
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
-    EXPECT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
+    ASSERT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
     AppFileService::ModuleFileUri::FileUri destFileUri(destUri);
     string destPath = destFileUri.GetRealPath();
     int destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
     int64_t destLen = lseek(destFd, 0, SEEK_END);
     lseek(destFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
-    EXPECT_NE((buf == nullptr), true);
+    ASSERT_NE((buf == nullptr), true);
     read(destFd, buf, destLen);
     bool result = CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
     free(buf);
     close(destFd);
-    EXPECT_NE(result, true);
+    ASSERT_NE(result, true);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", destDisplayName.c_str());
 }
 
@@ -453,9 +461,9 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_006, TestSi
     string srcDisplayName = "request_video_src_3.mp4";
     string destDisplayName = "request_video_dest_3.mp4";
     string srcuri = mediaLibraryManager->CreateAsset(srcDisplayName);
-    EXPECT_NE(srcuri, "");
+    ASSERT_NE(srcuri, "");
     int32_t srcFd = mediaLibraryManager->OpenAsset(srcuri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(srcFd <= 0, true);
+    ASSERT_NE(srcFd <= 0, true);
     int32_t resWrite = write(srcFd, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
     if (resWrite == -1) {
         EXPECT_EQ(false, true);
@@ -463,7 +471,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_006, TestSi
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
 
     string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
-    EXPECT_NE(destUri, "");
+    ASSERT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
@@ -488,9 +496,9 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_007, TestSi
     string srcDisplayName = "request_video_src_4.jpg";
     string destDisplayName = "request_video_dest_4.jpg";
     string srcuri = mediaLibraryManager->CreateAsset(srcDisplayName);
-    EXPECT_NE(srcuri, "");
+    ASSERT_NE(srcuri, "");
     int32_t srcFd = mediaLibraryManager->OpenAsset(srcuri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(srcFd <= 0, true);
+    ASSERT_NE(srcFd <= 0, true);
     int32_t resWrite = write(srcFd, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
     if (resWrite == -1) {
         EXPECT_EQ(false, true);
@@ -498,7 +506,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_007, TestSi
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
 
     string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
-    EXPECT_NE(destUri, "");
+    ASSERT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
@@ -523,9 +531,9 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_008, TestSi
     string srcDisplayName = "request_video_src_4.jpg";
     string destDisplayName = "request_video_dest_4.jpg";
     string srcuri = mediaLibraryManager->CreateAsset(srcDisplayName);
-    EXPECT_NE(srcuri, "");
+    ASSERT_NE(srcuri, "");
     int32_t srcFd = mediaLibraryManager->OpenAsset(srcuri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(srcFd <= 0, true);
+    ASSERT_NE(srcFd <= 0, true);
     int32_t resWrite = write(srcFd, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
     if (resWrite == -1) {
         EXPECT_EQ(false, true);
@@ -533,7 +541,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_008, TestSi
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
 
     string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
-    EXPECT_NE(destUri, "");
+    ASSERT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
@@ -541,12 +549,13 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_008, TestSi
     MediaLibrary_RequestOptions requestOptions;
     requestOptions.deliveryMode = MediaLibrary_DeliveryMode::MEDIA_LIBRARY_HIGH_QUALITY_MODE;
     static OH_MediaLibrary_OnDataPrepared callback_ = CallbackFunciton;
-    static OH_MediaLibrary_OnImageDataPrepared callback = CallbackFuncitonWithQuality;
+    static OH_MediaLibrary_OnImageDataPrepared callback = CallbackFuncitonOnImageDataPrepared;
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_MEDIALIBRARY);
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     fileAsset->SetDisplayName(TEST_DISPLAY_NAME);
-    auto mediaAsset = new OH_MediaAsset(fileAsset);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto mediaAsset = new OH_MediaAsset(mediaAssetImpl);
     ASSERT_NE(mediaAsset, nullptr);
     MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, srcuri.c_str(),
         requestOptions, destUri.c_str(), callback_);
@@ -561,10 +570,67 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_008, TestSi
     EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
     ret = OH_MediaAssetManager_RequestImage(manager, mediaAsset, requestOptions, &requestID, nullptr);
     EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
-    std::shared_ptr<FileAsset> fileAsset_ = mediaAsset->GetFileAssetInstance();
+    std::shared_ptr<FileAsset> fileAsset_ = mediaAsset->mediaAsset_->GetFileAssetInstance();
     const string displayName = "";
     fileAsset_->SetDisplayName(displayName);
     ret = OH_MediaAssetManager_RequestImage(manager, mediaAsset, requestOptions, &requestID, callback);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
+}
+
+/**
+ * @tc.number    : MediaLibraryAssetManager_test_009
+ * @tc.name      : request moving photo by ML_HIGH_QUALITY_MODE, then request moving photo
+ * @tc.desc      : call request moving photo function and verify the correct return code and moving photo source
+ */
+HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryAssetManager_test_009::Start");
+    string srcDisplayName = "request_video_src_4.jpg";
+    string destDisplayName = "request_video_dest_4.jpg";
+    string srcuri = mediaLibraryManager->CreateAsset(srcDisplayName);
+    ASSERT_NE(srcuri, "");
+    int32_t srcFd = mediaLibraryManager->OpenAsset(srcuri, MEDIA_FILEMODE_READWRITE);
+    ASSERT_NE(srcFd <= 0, true);
+    int32_t resWrite = write(srcFd, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
+    if (resWrite == -1) {
+        EXPECT_EQ(false, true);
+    }
+    mediaLibraryManager->CloseAsset(srcuri, srcFd);
+
+    string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
+    ASSERT_NE(destUri, "");
+    MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
+    sleep(SCAN_WAIT_TIME_1S);
+    OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
+    ASSERT_NE(manager, nullptr);
+    MediaLibrary_RequestOptions requestOptions;
+    requestOptions.deliveryMode = MediaLibrary_DeliveryMode::MEDIA_LIBRARY_HIGH_QUALITY_MODE;
+    static OH_MediaLibrary_OnDataPrepared callback_ = CallbackFunciton;
+    static OH_MediaLibrary_OnMovingPhotoDataPrepared callback = CallbackFuncitonOnMovingPhotoDataPrepared;
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_MEDIALIBRARY);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    fileAsset->SetDisplayName(TEST_DISPLAY_NAME);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    ASSERT_NE(mediaAsset, nullptr);
+    MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, srcuri.c_str(),
+        requestOptions, destUri.c_str(), callback_);
+    MediaLibrary_ErrorCode ret = OH_MediaAssetManager_RequestMovingPhoto(manager, mediaAsset, requestOptions,
+        &requestID, callback);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_OK);
+    ret = OH_MediaAssetManager_RequestMovingPhoto(manager, mediaAsset, requestOptions, &requestID, callback);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_OK);
+    ret = OH_MediaAssetManager_RequestMovingPhoto(manager, nullptr, requestOptions, &requestID, callback);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
+    ret = OH_MediaAssetManager_RequestMovingPhoto(manager, mediaAsset, requestOptions, nullptr, callback);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
+    ret = OH_MediaAssetManager_RequestMovingPhoto(manager, mediaAsset, requestOptions, &requestID, nullptr);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
+    std::shared_ptr<FileAsset> fileAsset_ = mediaAsset->mediaAsset_->GetFileAssetInstance();
+    const string displayName = "";
+    fileAsset_->SetDisplayName(displayName);
+    ret = OH_MediaAssetManager_RequestMovingPhoto(manager, mediaAsset, requestOptions, &requestID, callback);
     EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
 }
 } // namespace Media

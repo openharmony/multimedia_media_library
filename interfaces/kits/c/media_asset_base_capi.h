@@ -83,6 +83,15 @@ typedef struct OH_MediaAssetManager OH_MediaAssetManager;
 typedef struct OH_MediaAssetChangeRequest OH_MediaAssetChangeRequest;
 
 /**
+ * @brief Define Moving Photo
+ *
+ * This structure provides the ability to obtain information about moving photo.
+ *
+ * @since 13
+ */
+typedef struct OH_MovingPhoto OH_MovingPhoto;
+
+/**
  * @brief Define Media Asset
  *
  * This structure provides the ability to encapsulate file asset attributes.
@@ -284,6 +293,22 @@ typedef void (*OH_MediaLibrary_OnDataPrepared)(int32_t result, MediaLibrary_Requ
 typedef void (*OH_MediaLibrary_OnImageDataPrepared)(MediaLibrary_ErrorCode result,
     MediaLibrary_RequestId requestId, MediaLibrary_MediaQuality mediaQuality, MediaLibrary_MediaContentType type,
     OH_ImageSourceNative* imageSourceNative);
+
+/**
+ * @brief Called when a requested source is prepared.
+ *
+ * This function is called when the requested source is prepared.
+ *
+ * @param result Results {@link MediaLibrary_ErrorCode} of the processing of the requested resources.
+ * @param requestId the {@link MediaLibrary_RequestId}.
+ * @param mediaQuality the {@link MediaLibrary_MediaQuality} of the requested source.
+ * @param type the {@link MediaLibrary_MediaContentType} of the requested source.
+ * @param movingPhoto the {@link OH_MovingPhoto} of the requested source.
+ * @since 13
+ */
+typedef void (*OH_MediaLibrary_OnMovingPhotoDataPrepared)(MediaLibrary_ErrorCode result,
+    MediaLibrary_RequestId requestId, MediaLibrary_MediaQuality mediaQuality, MediaLibrary_MediaContentType type,
+    OH_MovingPhoto* movingPhoto);
 
 #ifdef __cplusplus
 }

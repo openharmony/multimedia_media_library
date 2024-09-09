@@ -55,8 +55,27 @@ extern "C" {
  *                                                3. Parameter verification failed.
  *         {@link #MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR} if internal system error.
  * @since 12
-*/
+ */
 OH_MediaAssetChangeRequest* OH_MediaAssetChangeRequest_Create(OH_MediaAsset* mediaAsset);
+
+/**
+ * @brief Add resource of the asset using file uri.
+ *
+ * @param changeRequest the {@link OH_MediaAssetChangeRequest} instance.
+ * @param resourceType the {@link MediaLibrary_ResourceType} of the resource to add.
+ * @param fileUri the file uri.
+ * @return {@link #MEDIA_LIBRARY_OK} if the method call succeeds.
+ *         {@link #MEDIA_LIBRARY_PARAMETER_ERROR} Parameter error. Possible causes:
+ *                                                1. Mandatory parameters are left unspecified.
+ *                                                2. Incorrect parameter types.
+ *                                                3. Parameter verification failed.
+ *         {@link #MEDIA_LIBRARY_NO_SUCH_FILE} if file does not exist.
+ *         {@link #MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR} if internal system error.
+ *         {@link #MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED} if operation is not supported.
+ * @since 13
+ */
+MediaLibrary_ErrorCode OH_MediaAssetChangeRequest_AddResourceWithUri(OH_MediaAssetChangeRequest* changeRequest,
+    MediaLibrary_ResourceType resourceType, char* fileUri);
 
 /**
  * @brief Add resource of the asset using ArrayBuffer.
@@ -73,9 +92,28 @@ OH_MediaAssetChangeRequest* OH_MediaAssetChangeRequest_Create(OH_MediaAsset* med
  *         {@link #MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR} if internal system error.
  *         {@link #MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED} if operation is not supported.
  * @since 12
-*/
+ */
 MediaLibrary_ErrorCode OH_MediaAssetChangeRequest_AddResourceWithBuffer(OH_MediaAssetChangeRequest* changeRequest,
     MediaLibrary_ResourceType resourceType, uint8_t* buffer, uint32_t length);
+
+/**
+ * @brief Get write cache handler.
+ *
+ * @permission ohos.permission.WRITE_IMAGEVIDEO
+ * @param changeRequest the {@link OH_MediaAssetChangeRequest} instance.
+ * @param fd the write cache handler.
+ * @return {@link #MEDIA_LIBRARY_OK} if the method call succeeds.
+ *         {@link #MEDIA_LIBRARY_PARAMETER_ERROR} Parameter error. Possible causes:
+ *                                                1. Mandatory parameters are left unspecified.
+ *                                                2. Incorrect parameter types.
+ *                                                3. Parameter verification failed.
+ *         {@link #MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR} if internal system error.
+ *         {@link #MEDIA_LIBRARY_PERMISSION_DENIED} if permission is denied.
+ *         {@link #MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED} if operation is not supported.
+ * @since 13
+ */
+MediaLibrary_ErrorCode OH_MediaAssetChangeRequest_GetWriteCacheHandler(OH_MediaAssetChangeRequest* changeRequest,
+    int32_t* fd);
 
 /**
  * @brief Save the photo asset captured by camera.
@@ -90,7 +128,7 @@ MediaLibrary_ErrorCode OH_MediaAssetChangeRequest_AddResourceWithBuffer(OH_Media
  *         {@link #MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR} if internal system error.
  *         {@link #MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED} if operation is not supported.
  * @since 12
-*/
+ */
 MediaLibrary_ErrorCode OH_MediaAssetChangeRequest_SaveCameraPhoto(OH_MediaAssetChangeRequest* changeRequest,
     MediaLibrary_ImageFileType imageFileType);
 
@@ -106,7 +144,7 @@ MediaLibrary_ErrorCode OH_MediaAssetChangeRequest_SaveCameraPhoto(OH_MediaAssetC
  *         {@link #MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR} if internal system error.
  *         {@link #MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED} if operation is not supported.
  * @since 12
-*/
+ */
 MediaLibrary_ErrorCode OH_MediaAssetChangeRequest_DiscardCameraPhoto(OH_MediaAssetChangeRequest* changeRequest);
 
 /**
@@ -119,7 +157,7 @@ MediaLibrary_ErrorCode OH_MediaAssetChangeRequest_DiscardCameraPhoto(OH_MediaAss
  *                                                2. Incorrect parameter types.
  *                                                3. Parameter verification failed.
  * @since 12
-*/
+ */
 MediaLibrary_ErrorCode OH_MediaAssetChangeRequest_Release(OH_MediaAssetChangeRequest* changeRequest);
 
 #ifdef __cplusplus
