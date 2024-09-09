@@ -25,7 +25,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_HandleUriPermOperations_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_HandleUriPermOperations_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::INSERT_PERMISSION);
     int32_t ret = UriPermissionOperations::HandleUriPermOperations(cmd);
@@ -36,7 +36,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_HandleUriPermOpera
     EXPECT_EQ(ret, E_FAIL);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_HandleUriPermOperations_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_HandleUriPermOperations_test_002, TestSize.Level0)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);
@@ -50,7 +50,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_HandleUriPermOpera
     EXPECT_EQ(ret, E_FAIL);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_HandleUriPermInsert_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_HandleUriPermInsert_test_001, TestSize.Level0)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);
@@ -65,7 +65,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_HandleUriPermInser
     EXPECT_EQ(ret, E_INVALID_VALUES);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_InsertBundlePermission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_InsertBundlePermission_test_001, TestSize.Level0)
 {
     string bundleName = "inserBundTestCase";
     string mode = "rw";
@@ -75,7 +75,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_InsertBundlePermis
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_GetUriPermissionMode_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_GetUriPermissionMode_test_001, TestSize.Level0)
 {
     string fileId = "-1";
     string bundleName = "uriPerissionTestCase";
@@ -85,7 +85,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_GetUriPermissionMo
     EXPECT_EQ(ret, E_PERMISSION_DENIED);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_CheckUriPermission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_CheckUriPermission_test_001, TestSize.Level0)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     string permissionMode = "w";
@@ -93,7 +93,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_CheckUriPermission
     EXPECT_EQ(ret, E_PERMISSION_DENIED);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_DeleteBundlePermission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_DeleteBundlePermission_test_001, TestSize.Level0)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);

@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #define MLOG_TAG "Thumbnail"
 
 #include "thumbnail_utils.h"
@@ -1686,16 +1687,15 @@ bool ThumbnailUtils::ResizeThumb(int &width, int &height)
             width = maxLen;
             height = minLen;
         }
-    } else if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD) {
-        if (ratio > ASPECT_RATIO_THRESHOLD) {
-            int newMaxLen = static_cast<int>(minLen * ASPECT_RATIO_THRESHOLD);
-            if (height > width) {
-                width = minLen;
-                height = newMaxLen;
-            } else {
-                width = newMaxLen;
-                height = minLen;
-            }
+    }
+    if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD && ratio > ASPECT_RATIO_THRESHOLD) {
+        int newMaxLen = static_cast<int>(minLen * ASPECT_RATIO_THRESHOLD);
+        if (height > width) {
+            width = minLen;
+            height = newMaxLen;
+        } else {
+            width = newMaxLen;
+            height = minLen;
         }
     }
     return true;
