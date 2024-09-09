@@ -79,6 +79,7 @@
 #include "medialibrary_search_operations.h"
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
+#include "enhancement_manager.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "photo_map_operations.h"
@@ -969,6 +970,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         }
         case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE:
             return ProcessThumbnailBatchCmd(cmd, value, predicates);
+        case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
+            return EnhancementManager::GetInstance().HandleEnhancementUpdateOperation(cmd);
         default:
             break;
     }
@@ -1525,6 +1528,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
             return MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
+        case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
+            return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);

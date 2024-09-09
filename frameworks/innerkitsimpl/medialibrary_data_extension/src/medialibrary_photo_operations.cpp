@@ -50,6 +50,7 @@
 #include "medialibrary_uripermission_operations.h"
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
+#include "enhancement_manager.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -734,6 +735,13 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     if (updatedRows < 0) {
         MEDIA_ERR_LOG("Trash photo failed. Result %{public}d.", updatedRows);
         return E_HAS_DB_ERROR;
+    }
+    // delete cloud enhanacement task
+    vector<string> ids = rdbPredicate.GetWhereArgs();
+    vector<string> photoIds;
+    EnhancementManager::GetInstance().CancelTasksInternal(ids, photoIds, CloudEnhancementAvailableType::TRASH);
+    for (string& photoId : photoIds) {
+        CloudEnhancementGetCount::GetInstance().Report("DeleteCancellationType", photoId);
     }
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
@@ -1551,6 +1559,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
         to_string(PhotoAlbumSubType::VIDEO),
         to_string(PhotoAlbumSubType::SCREENSHOT),
         to_string(PhotoAlbumSubType::FAVORITE),
+        to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
     });
     errCode = UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d",
@@ -1685,6 +1694,8 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     }
 
     ScanFile(path, true, true, true);
+    // revert cloud enhancement ce_available
+    EnhancementManager::GetInstance().RevertEditUpdateInternal(fileId);
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     return E_OK;
 }
@@ -2226,6 +2237,14 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     ResetOcrInfo(id);
     ScanFile(assetPath, false, true, true);
     MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(id);
+    // delete cloud enhacement task
+    vector<string> fileId;
+    fileId.emplace_back(to_string(fileAsset->GetId()));
+    vector<string> photoId;
+    EnhancementManager::GetInstance().CancelTasksInternal(fileId, photoId, CloudEnhancementAvailableType::EDIT);
+    if (!photoId.empty()) {
+        CloudEnhancementGetCount::GetInstance().Report("EditCancellationType", photoId.front());
+    }
     NotifyFormMap(id, assetPath, false);
     MediaLibraryVisionOperations::EditCommitOperation(cmd);
     return E_OK;

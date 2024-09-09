@@ -302,6 +302,18 @@ static void GetAllImagesPredicates(RdbPredicates &predicates, const bool hiddenS
     predicates.EndWrap();
 }
 
+static void GetCloudEnhancementPredicates(RdbPredicates &predicates, const bool hiddenState)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenState, 0, false);
+    predicates.EqualTo(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
+        to_string(static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT)));
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
+    predicates.EndWrap();
+}
+
 void PhotoAlbumColumns::GetSourceAlbumPredicates(const int32_t albumId, RdbPredicates &predicates,
     const bool hiddenState)
 {
@@ -337,6 +349,9 @@ void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype
         }
         case PhotoAlbumSubType::IMAGE: {
             return GetAllImagesPredicates(predicates, hiddenState);
+        }
+        case PhotoAlbumSubType::CLOUD_ENHANCEMENT: {
+            return GetCloudEnhancementPredicates(predicates, hiddenState);
         }
         default: {
             predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(0));

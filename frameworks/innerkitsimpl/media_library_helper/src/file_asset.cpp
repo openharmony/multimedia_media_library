@@ -537,6 +537,16 @@ void FileAsset::SetBurstKey(const std::string &burstKey)
     member_[PhotoColumn::PHOTO_BURST_KEY] = burstKey;
 }
 
+int32_t FileAsset::GetCEAvailable() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_CE_AVAILABLE);
+}
+
+void FileAsset::SetCEAvailable(int32_t ceAvailable)
+{
+    member_[PhotoColumn::PHOTO_CE_AVAILABLE] = ceAvailable;
+}
+
 const std::string &FileAsset::GetDetailTime() const
 {
     return GetStrMember(PhotoColumn::PHOTO_DETAIL_TIME);

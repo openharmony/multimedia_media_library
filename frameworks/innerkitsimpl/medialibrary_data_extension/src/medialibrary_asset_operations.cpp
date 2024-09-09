@@ -52,6 +52,7 @@
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
+#include "enhancement_manager.h"
 #include "permission_utils.h"
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
@@ -1957,6 +1958,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_IS_TEMP, { IsBool } },
     { PhotoColumn::PHOTO_DIRTY, { IsInt32 } },
     { PhotoColumn::PHOTO_DETAIL_TIME, { IsStringNotNull } },
+    { PhotoColumn::PHOTO_CE_AVAILABLE, { IsInt32 } },
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)
@@ -2182,6 +2184,13 @@ static inline int32_t DeleteDbByIds(const string &table, vector<string> &ids, co
     return MediaLibraryRdbStore::Delete(predicates);
 }
 
+void RemoveTaskReport(vector<string> &photoIds)
+{
+    for (string& photoId : photoIds) {
+        CloudEnhancementGetCount::GetInstance().Report("DeleteCancellationType", photoId);
+    }
+}
+
 /**
  * @brief Delete files permanently from system.
  *
@@ -2211,13 +2220,15 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     vector<int32_t> subTypes;
     int32_t deletedRows = 0;
     GetIdsAndPaths(predicates, ids, paths, dateTakens, subTypes);
-    if (ids.empty()) {
-        MEDIA_ERR_LOG("Failed to delete files in db, ids size: 0");
-        return deletedRows;
-    }
+    CHECK_AND_RETURN_RET_LOG(!ids.empty(), deletedRows, "Failed to delete files in db, ids size: 0");
 
     // notify deferred processing session to remove image
     MultiStagesCaptureManager::GetInstance().RemoveImages(predicates, false);
+
+    // delete cloud enhanacement task
+    vector<string> photoIds;
+    EnhancementManager::GetInstance().RemoveTasksInternal(ids, photoIds);
+    RemoveTaskReport(photoIds);
 
     deletedRows = DeleteDbByIds(predicates.GetTableName(), ids, compatible);
     if (deletedRows <= 0) {

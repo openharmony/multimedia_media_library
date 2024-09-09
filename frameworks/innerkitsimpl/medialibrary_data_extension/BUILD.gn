@@ -44,6 +44,13 @@ config("media_data_extension_public_config") {
 
   include_dfx = [ "${MEDIALIB_SERVICES_PATH}/media_dfx/include" ]
 
+  include_cloud_enhancement = [ 
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/enhancement_service",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/utils",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/dfx",  
+  ]
+
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -63,6 +70,7 @@ config("media_data_extension_public_config") {
   include_dirs += include_scanner
   include_dirs += include_multistages_capture
   include_dirs += include_dfx
+  include_dirs += include_cloud_enhancement
 
   ldflags = [ "-Wl,--gc-sections" ]
 
@@ -199,6 +207,14 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_permission/src/read_write_permission_handler.cpp",
   ]
 
+  media_cloud_enhancement_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_service/enhancement_service_adapter.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/enhancement_database_operations.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_task_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/dfx/cloud_enhancement_dfx_get_count.cpp",
+  ]
+
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
@@ -254,6 +270,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_dfx_source
   sources += media_cloud_sync_notify_handle_source
   sources += media_permission_source
+  sources += media_cloud_enhancement_source
 
   public_configs = [ ":media_data_extension_public_config" ]
 
@@ -331,6 +348,13 @@ ohos_shared_library("medialibrary_data_extension") {
       defined(global_parts_info.security_security_component_manager)) {
     defines += [ "MEDIALIBRARY_SECURITY_OPEN=1" ]
     external_deps += [ "security_component_manager:libsecurity_component_sdk" ]
+  }
+
+  if (defined(global_parts_info) && 
+      defined(global_parts_info.device_cloud_gateway_media_cloud_enhance_service)) {
+    defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
+    external_deps += [ "media_cloud_enhance_service:media_cloud_enhance_client" ]
+    sources += [ "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_service/enhancement_service_callback.cpp" ]
   }
 
   if (defined(global_parts_info) &&
