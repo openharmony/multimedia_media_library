@@ -13,16 +13,18 @@
  * limitations under the License.
  */
 
-#include "media_access_helper_capi.h"
+#ifndef MULTIMEDIA_MEDIA_LIBRARY_NATIVE_OH_MEDIA_ASSET_H
+#define MULTIMEDIA_MEDIA_LIBRARY_NATIVE_OH_MEDIA_ASSET_H
 
-#include "media_log.h"
-#include "oh_media_asset_change_request.h"
+#include <refbase.h>
+#include "media_asset.h"
 
-MediaLibrary_ErrorCode OH_MediaAccessHelper_ApplyChanges(OH_MediaAssetChangeRequest* changeRequest)
-{
-    CHECK_AND_RETURN_RET_LOG(changeRequest != nullptr, MEDIA_LIBRARY_PARAMETER_ERROR, "changeRequest is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(changeRequest->request_ != nullptr, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED,
-        "request_ is nullptr!");
+struct OH_MediaAsset : public OHOS::RefBase {
+    explicit OH_MediaAsset(const std::shared_ptr<OHOS::Media::MediaAsset> &mediaAsset)
+        : mediaAsset_(mediaAsset) {}
+    ~OH_MediaAsset() = default;
 
-    return changeRequest->request_->ApplyChanges();
-}
+    std::shared_ptr<OHOS::Media::MediaAsset> mediaAsset_ = nullptr;
+};
+
+#endif // MULTIMEDIA_MEDIA_LIBRARY_NATIVE_OH_MEDIA_ASSET_H
