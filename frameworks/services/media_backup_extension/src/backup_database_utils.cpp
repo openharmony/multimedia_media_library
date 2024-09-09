@@ -890,6 +890,14 @@ void BackupDatabaseUtils::UpdateFaceGroupTagsUnion(std::shared_ptr<NativeRdb::Rd
     UpdateGroupTagColumn(updatedPairs, mediaLibraryRdb);
 }
 
+void BackupDatabaseUtils::UpdateTagPairs(std::vector<TagPairOpt>& updatedPairs, const std::string& newGroupTag,
+    const std::vector<std::string>& tagIds)
+{
+    for (const auto& tagId : tagIds) {
+        updatedPairs.emplace_back(tagId, newGroupTag);
+    }
+}
+
 void BackupDatabaseUtils::UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
     const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap)
 {
@@ -897,9 +905,7 @@ void BackupDatabaseUtils::UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
         if (tagIds.size() > 1) {
             std::string newGroupTag = BackupDatabaseUtils::JoinValues<std::string>(tagIds, "|");
             if (newGroupTag != groupTag) {
-                for (const auto& tagId : tagIds) {
-                    updatedPairs.emplace_back(tagId, newGroupTag);
-                }
+                UpdateTagPairs(updatedPairs, newGroupTag, tagIds);
             }
         }
     }
