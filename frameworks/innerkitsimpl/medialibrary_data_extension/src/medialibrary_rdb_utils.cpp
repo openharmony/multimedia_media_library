@@ -1456,7 +1456,7 @@ int32_t MediaLibraryRdbUtils::UpdateRemoveAsset(const shared_ptr<RdbStore> &rdbS
 }
 
 int32_t MediaLibraryRdbUtils::UpdateOwnerAlbumId(const shared_ptr<RdbStore> &rdbStore,
-        const vector<DataShare::DataShareValuesBucket> &values, vector<int32_t> &updateIds)
+    const vector<DataShare::DataShareValuesBucket> &values, vector<int32_t> &updateIds)
 {
     vector<string> whereIdArgs;
     int32_t updateRows = 0;
