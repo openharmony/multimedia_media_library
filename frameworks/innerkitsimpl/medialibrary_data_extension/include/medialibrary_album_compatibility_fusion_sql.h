@@ -86,7 +86,7 @@ const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     "strftime('%s000', 'now')" +
     ");" + FILL_ALBUM_ID_FOR_PHOTOS + "; END;";
 
-const std::string CREATE_INSERT_SOURCE_PHOTO_UPDATE_ALBUM_ID_TRIGGER =
+const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS insert_source_photo_update_album_id_trigger AFTER INSERT ON "
     + PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT + "> 0 AND NEW.owner_album_id = 0" +
     " BEGIN " + FILL_ALBUM_ID_FOR_PHOTOS + "; END;";
