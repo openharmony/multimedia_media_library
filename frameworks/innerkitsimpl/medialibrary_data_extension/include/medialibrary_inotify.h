@@ -47,10 +47,14 @@ public:
     EXPORT int32_t RemoveByFileUri(const std::string &uri, MediaLibraryApi api = MediaLibraryApi::API_OLD);
     EXPORT void DoAging();
     void DoStop();
+
 private:
     int32_t Remove(int wd);
     void WatchCallBack();
     int32_t Init();
+    void Restart();
+
+private:
     static std::shared_ptr<MediaLibraryInotify> instance_;
     static std::mutex mutex_;
     static inline std::unordered_map<int, struct WatchInfo> watchList_;
