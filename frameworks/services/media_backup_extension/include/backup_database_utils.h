@@ -116,17 +116,16 @@ public:
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void UpdateFaceGroupTagsUnion(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    void UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
+        const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap);
 
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
     template <typename T>
     static std::string JoinSQLValues(const std::vector<T>& values, std::string_view delimiter);
-    void UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
-        const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap);
-
-    template<typename T>
+    template <typename T>
     struct always_false : std::false_type {};
-    template<typename T>
+    template <typename T>
     static std::optional<T> GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::string &columnName);
 
