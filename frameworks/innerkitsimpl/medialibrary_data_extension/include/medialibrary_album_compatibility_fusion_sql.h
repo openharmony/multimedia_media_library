@@ -91,13 +91,13 @@ const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
     PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT + "> 0 AND NEW.owner_album_id = 0" +
     " BEGIN " + FILL_ALBUM_ID_FOR_PHOTOS + "; END;";
 
-const std::string QUEYR_NOT_MATCHED_DATA_IN_PHOTOMAP   =
+const std::string QUERY_NOT_MATCHED_DATA_IN_PHOTOMAP   =
     "SELECT " + PhotoMap::ASSET_ID + ", " + PhotoMap::ALBUM_ID + " FROM " + PhotoMap::TABLE +
     " WHERE dirty != '4' AND " + PhotoMap::ASSET_ID + " IN (SELECT " + PhotoMap::ASSET_ID + " FROM " +
     PhotoMap::TABLE + " GROUP BY " + PhotoMap::ASSET_ID + " HAVING count(*) > 1) ORDER BY " +
     PhotoMap::ASSET_ID + " DESC";
 
-const std::string QUEYR_NEW_NOT_MATCHED_DATA_IN_PHOTOMAP =
+const std::string QUERY_NEW_NOT_MATCHED_DATA_IN_PHOTOMAP =
     "SELECT " + PhotoMap::ASSET_ID + ", " + PhotoMap::ALBUM_ID + " FROM " + PhotoMap::TABLE +
     " WHERE dirty != '4'";
 
