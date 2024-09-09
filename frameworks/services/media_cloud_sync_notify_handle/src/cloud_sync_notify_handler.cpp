@@ -29,6 +29,7 @@ namespace OHOS {
 namespace Media {
 using ChangeType = DataShare::DataShareObserver::ChangeType;
 
+const std::string INVALID_ZERO_ID = "0";
 const int32_t CLOUD_FIRST_FIVE_HUNDRED = 1;
 const int32_t CLOUD_INCREMENT_DOWNLOAD = 2;
 const std::string CLOUDSYNC_STATUS_KEY = "persist.kernel.cloudsync.status";
@@ -41,7 +42,7 @@ static bool IsCloudInsertTaskPriorityHigh()
 
 static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
 {
-    if (cloudNotifyInfo.empty() || cloudNotifyInfo == "0") {
+    if (cloudNotifyInfo.empty()) {
         return false;
     }
     for (char const& ch : cloudNotifyInfo) {
@@ -66,7 +67,7 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
             continue;
         }
         string idString = uriString.substr(pos + 1);
-        if (!IsCloudNotifyInfoValid(idString)) {
+        if (idString.compare(INVALID_ZERO_ID) == 0 || !IsCloudNotifyInfoValid(idString)) {
             MEDIA_WARN_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
             continue;
         }
