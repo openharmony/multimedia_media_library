@@ -561,7 +561,7 @@ void PhotosAddAsset(const int &albumId, const string &assetId, const string &ext
 {
     auto watch = MediaLibraryNotify::GetInstance();
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, assetId, extrUri),
-            NotifyType::NOTIFY_ALBUM_ADD_ASSET, albumId);
+        NotifyType::NOTIFY_ALBUM_ADD_ASSET, albumId);
 }
 
 void MediaLibraryPhotoOperations::SolvePhotoAlbumInCreate(MediaLibraryCommand &cmd, FileAsset &fileAsset)
