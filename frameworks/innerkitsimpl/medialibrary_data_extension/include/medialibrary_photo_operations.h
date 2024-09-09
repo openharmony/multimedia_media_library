@@ -62,7 +62,7 @@ public:
         bool isCleanImmediately, std::string &photoId);
     EXPORT static int32_t FinishRequestPicture(MediaLibraryCommand &cmd);
     EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs);
-    EXPORT static void FinishRequestPicture(std::vector<std::string> &notifyUris);
+    EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris);
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);

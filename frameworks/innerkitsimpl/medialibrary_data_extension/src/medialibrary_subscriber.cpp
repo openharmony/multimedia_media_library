@@ -37,7 +37,7 @@
 #include "thermal_mgr_client.h"
 #endif
 
-#include "medialibrary_album_fusion_tuils.h"
+#include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"

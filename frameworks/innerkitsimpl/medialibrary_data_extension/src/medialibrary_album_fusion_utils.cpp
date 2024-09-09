@@ -155,9 +155,9 @@ int32_t MediaLibraryAlbumFusionUtils::QueryNoMatchedMap(NativeRdb::RdbStore *upg
     }
     std::string queryNotMatchedDataSql = "";
     if (isUpgrade) {
-        queryNotMatchedDataSql = QUEYR_NOT_MATCHED_DATA_IN_PHOTOMAP;
+        queryNotMatchedDataSql = QUERY_NOT_MATCHED_DATA_IN_PHOTOMAP;
     } else {
-        queryNotMatchedDataSql = QUEYR_NEW_NOT_MATCHED_DATA_IN_PHOTOMAP;
+        queryNotMatchedDataSql = QUERY_NEW_NOT_MATCHED_DATA_IN_PHOTOMAP;
     }
     auto resultSet = upgradeStore->QuerySql(queryNotMatchedDataSql);
     if (resultSet == nullptr) {
@@ -466,7 +466,7 @@ static int32_t copyMetaData(NativeRdb::RdbStore *upgradeStore, int64_t &newAsset
         MEDIA_ERR_LOG("upgradeStore->Insert failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
-    MEDIA_DEBUG_LOG("Insert copy meta data success, rowId = %{public}ld, ret = %{public}d", newAssetId, ret);
+    MEDIA_DEBUG_LOG("Insert copy meta data success, rowId = %{public}lld, ret = %{public}d", newAssetId, ret);
     return ret;
 }
 
@@ -750,7 +750,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleSingleFileCopy(NativeRdb::RdbStore *
             isLocalAsset(resultSet), assetId);
         return err;
     }
-    MEDIA_INFO_LOG("Copy file success, fileId is %{public}d, albumId is %{public}d, and copyed file id is %{public}ld",
+    MEDIA_INFO_LOG("Copy file success, fileId is %{public}d, albumId is %{public}d, and copyed file id is %{public}lld",
         assetId, ownerAlbumId, newAssetId);
     return E_OK;
 }
@@ -861,7 +861,7 @@ static int32_t CopyAlbumMetaData(NativeRdb::RdbStore *upgradeStore,
         MEDIA_ERR_LOG("Insert copyed album failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
-    MEDIA_ERR_LOG("Insert copyed album success,oldAlbumId is = %{public}d newAlbumId is %{public}ld",
+    MEDIA_ERR_LOG("Insert copyed album success,oldAlbumId is = %{public}d newAlbumId is %{public}lld",
         oldAlbumId, newAlbumId);
     return ret;
 }
@@ -935,7 +935,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleExpiredAlbumData(NativeRdb::RdbStore
         GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, oldAlbumId);
         CopyAlbumMetaData(upgradeStore, resultSet, oldAlbumId, newAlbumId);
         DeleteALbumAndUpdateRelationship(upgradeStore, oldAlbumId, newAlbumId, IsCloudAlbum(resultSet));
-        MEDIA_ERR_LOG("Finish handle old album %{public}d, new inserted album id is %{public}ld",
+        MEDIA_ERR_LOG("Finish handle old album %{public}d, new inserted album id is %{public}lld",
             oldAlbumId, newAlbumId);
     }
     return E_OK;
@@ -985,7 +985,7 @@ int32_t MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(NativeRdb::R
         MEDIA_INFO_LOG("fail to get rdbstore");
         return E_DB_FAIL;
     }
-    int32_t err = HanldeChangeNameAlbum(upgradeStore);
+    int32_t err = HandleChangeNameAlbum(upgradeStore);
     HandleExpiredAlbumData(upgradeStore);
     // Keep dual hidden assets dirty state synced, let cloudsync handle compensating for hidden flags
     KeepHiddenAlbumAssetSynced(upgradeStore);
@@ -1001,7 +1001,7 @@ int32_t MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(NativeRdb::RdbStore 
         MEDIA_INFO_LOG("fail to get rdbstore");
         return E_DB_FAIL;
     }
-    MEDIA_INFO_LOG("MergeClashSourceAlbum %{public}d, target album is %{public}ld",
+    MEDIA_INFO_LOG("MergeClashSourceAlbum %{public}d, target album is %{public}lld",
         sourceAlbumId, targetAlbumId);
     DeleteALbumAndUpdateRelationship(upgradeStore, sourceAlbumId, targetAlbumId, IsCloudAlbum(resultSet));
     return E_OK;
@@ -1025,11 +1025,11 @@ static int32_t MergeScreenShotAlbum(NativeRdb::RdbStore *upgradeStore, shared_pt
     if (newAlbunResultSet == nullptr || newAlbunResultSet->GoToFirstRow() != NativeRdb::E_OK) {
         // Create a new bundle name screenshot album
         CopyAlbumMetaData(upgradeStore, resultSet, oldAlbumId, newAlbumId);
-        MEDIA_INFO_LOG("Create new screenshot album, album id is %{public}ld", newAlbumId);
+        MEDIA_INFO_LOG("Create new screenshot album, album id is %{public}lld", newAlbumId);
     } else {
         GetLongValueFromResultSet(newAlbunResultSet, PhotoAlbumColumns::ALBUM_ID, newAlbumId);
     }
-    MEDIA_INFO_LOG("Begin merge screenshot album, new album is %{public}ld", newAlbumId);
+    MEDIA_INFO_LOG("Begin merge screenshot album, new album is %{public}lld", newAlbumId);
     MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(upgradeStore, resultSet, oldAlbumId, newAlbumId);
     MEDIA_INFO_LOG("End handle expired screen shot album data ");
     return E_OK;
@@ -1052,7 +1052,7 @@ static int32_t MergeScreenRecordAlbum(NativeRdb::RdbStore *upgradeStore, shared_
     if (newAlbunResultSet == nullptr || newAlbunResultSet->GoToFirstRow() != NativeRdb::E_OK) {
         // Create a new bundle name screenshot album
         CopyAlbumMetaData(upgradeStore, resultSet, oldAlbumId, newAlbumId);
-        MEDIA_INFO_LOG("Create new screenrecord album, album id is %{public}ld", newAlbumId);
+        MEDIA_INFO_LOG("Create new screenrecord album, album id is %{public}lld", newAlbumId);
     } else {
         GetLongValueFromResultSet(newAlbunResultSet, PhotoAlbumColumns::ALBUM_ID, newAlbumId);
     }
@@ -1061,7 +1061,7 @@ static int32_t MergeScreenRecordAlbum(NativeRdb::RdbStore *upgradeStore, shared_
     return E_OK;
 }
 
-int32_t MediaLibraryAlbumFusionUtils::HanldeChangeNameAlbum(NativeRdb::RdbStore *upgradeStore)
+int32_t MediaLibraryAlbumFusionUtils::HandleChangeNameAlbum(NativeRdb::RdbStore *upgradeStore)
 {
     MEDIA_INFO_LOG("Begin handle change name album data");
     if (upgradeStore == nullptr) {
@@ -1156,7 +1156,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(NativeRdb::RdbStore *
             }
         }
     }
-    MEDIA_INFO_LOG("End clean duplicated album, cost: %{public}ld",
+    MEDIA_INFO_LOG("End clean duplicated album, cost: %{public}lld",
         MediaFileUtils::UTCTimeMilliSeconds() - beginTime);
     return E_OK;
 }

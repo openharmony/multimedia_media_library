@@ -170,9 +170,7 @@ int32_t BaseRestore::MoveFile(const std::string &srcFile, const std::string &dst
 int32_t BaseRestore::CopyFile(const std::string &srcFile, const std::string &dstFile) const
 {
     if (!MediaFileUtils::CopyFileUtil(srcFile, dstFile)) {
-        MEDIA_ERR_LOG("CopyFile failed, src: %{public}s, dst: %{public}s, errMsg: %{public}s",
-            BackupFileUtils::GarbleFilePath(srcFile, sceneCode_).c_str(),
-            BackupFileUtils::GarbleFilePath(srcFile, DEFAULT_RESTORE_ID).c_str(),
+        MEDIA_ERR_LOG("CopyFile failed, filePath: %{private}s, errmsg: %{public}s", srcFile.c_str(),
             strerror(errno));
         return E_FAIL;
     }

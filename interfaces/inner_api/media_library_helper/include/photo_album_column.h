@@ -44,7 +44,7 @@ public:
     static const std::string ALBUM_BUNDLE_NAME EXPORT;
     static const std::string ALBUM_LOCAL_LANGUAGE EXPORT;
     static const std::string ALBUM_IS_LOCAL EXPORT;
-    static const std::string ALBUM_DATA_ADDED EXPORT;
+    static const std::string ALBUM_DATE_ADDED EXPORT;
     static const std::string ALBUM_PRIORITY EXPORT;
     static const std::string ALBUM_LPATH EXPORT;
     // For api9 compatibility

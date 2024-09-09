@@ -485,7 +485,7 @@ static void GetAlbumPredicates(PhotoAlbumSubType subtype, const shared_ptr<Resul
     bool isSourceAlbum = subtype == PhotoAlbumSubType::SOURCE_GENERIC;
     bool isAnalysisAlbum = subtype >= PhotoAlbumSubType::ANALYSIS_START && subtype <= PhotoAlbumSubType::ANALYSIS_END;
     if (isUpdateAlbum && isAnalysisAlbum) {
-        predicates.SetWhereClause(QUERY_ASSETS_FROM_PHOTO_ALBUM);
+        predicates.SetWhereClause(QUERY_ASSETS_FROM_ANALYSIS_ALBUM);
         predicates.SetWhereArgs({ to_string(GetAlbumId(albumResult)), to_string(hiddenState) });
         return;
     }
@@ -1340,15 +1340,15 @@ void MediaLibraryRdbUtils::UpdateUserAlbumInternal(const shared_ptr<RdbStore> &r
 
 static int32_t GetIntFromResultSet(shared_ptr<ResultSet> resultSet, const string &column, int &value)
 {
-    if (result == nullptr) {
+    if (resultSet == nullptr) {
         return E_HAS_DB_ERROR;
     }
     int index = -1;
-    result->GetColumnIndex(column, index);
+    resultSet->GetColumnIndex(column, index);
     if (index == -1) {
         return E_HAS_DB_ERROR;
     }
-    if (result->GetInt(index, value) != NativeRdb::E_OK) {
+    if (resultSet->GetInt(index, value) != NativeRdb::E_OK) {
         return E_HAS_DB_ERROR;
     }
     return E_OK;
@@ -1356,15 +1356,15 @@ static int32_t GetIntFromResultSet(shared_ptr<ResultSet> resultSet, const string
 
 static int32_t GetStringFromResultSet(shared_ptr<ResultSet> resultSet, const string &column, string &value)
 {
-    if (result == nullptr) {
+    if (resultSet == nullptr) {
         return E_HAS_DB_ERROR;
     }
     int index = -1;
-    result->GetColumnIndex(column, index);
+    resultSet->GetColumnIndex(column, index);
     if (index == -1) {
         return E_HAS_DB_ERROR;
     }
-    if (result->GetString(index, value) != NativeRdb::E_OK) {
+    if (resultSet->GetString(index, value) != NativeRdb::E_OK) {
         return E_HAS_DB_ERROR;
     }
     return E_OK;
@@ -1405,14 +1405,14 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<RdbStor
             continue;
         }
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
-            to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO,
-            to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::TRASH,
+            to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
+            to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::TRASH),
             to_string(PhotoAlbumSubType::HIDDEN)
         });
         if (!hasHiddenAssets) {
             newWhereIdArgs.push_back(albumId);
         } else {
-            MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { album });
+            MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { albumId });
         }
         MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), fileAssetsUri);
@@ -1449,8 +1449,8 @@ int32_t MediaLibraryRdbUtils::UpdateRemoveAsset(const shared_ptr<RdbStore> &rdbS
         return E_HAS_DB_ERROR;
     }
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
-        to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO,
-        to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::TRASH,
+        to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
+        to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::TRASH),
         to_string(PhotoAlbumSubType::HIDDEN)
     });
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
