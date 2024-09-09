@@ -314,6 +314,7 @@ int64_t DfxManager::HandleOneDayReport()
     }
     dfxReporter_->ReportThumbnailError();
     dfxReporter_->ReportAdaptationToMovingPhoto();
+    dfxReporter_->ReportPhotoRecordInfo();
     return MediaFileUtils::UTCTimeSeconds();
 }
 
