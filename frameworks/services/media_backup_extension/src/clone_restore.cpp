@@ -252,8 +252,8 @@ void CloneRestore::RestorePhoto()
     MEDIA_INFO_LOG("GetPhotosRowCountInPhotoMap, totalNumber = %{public}d", totalNumberInPhotoMap);
     for (int32_t offset = 0; offset < totalNumberInPhotoMap; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestorePhotoBatch(offset, 1); }, {&offset});
-     }
-     ffrt::wait();
+    }
+    ffrt::wait();
     // Scenario 2, clone photos from Photos only.
     int32_t totalNumber = this->photosClone_.GetPhotosRowCountNotInPhotoMap();
     MEDIA_INFO_LOG("QueryTotalNumberNot, totalNumber = %{public}d", totalNumber);
@@ -1324,7 +1324,7 @@ string CloneRestore::GetBackupInfoByCount(int32_t photoCount, int32_t videoCount
 }
 
 void MEDIA_LOG_TO_DEBUG(std::vector<FileInfo> fileInfos)
- {
+{
     for (auto &fileInfo : fileInfos) {
         MEDIA_INFO_LOG("Media_Restore: fileId: %{public}d, \
             displayName: %{public}s, \

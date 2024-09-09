@@ -1131,7 +1131,6 @@ int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(NativeRdb::RdbStore *
     MEDIA_INFO_LOG("Begin clean duplicated album, there are %{public}d to clean", rowCount);
     if (rowCount == 0) {
         MEDIA_INFO_LOG("Query duplicate album, no album need to deal????");
-        //return E_OK;
     }
     int32_t indexLeft = 0;
     while (indexLeft < rowCount) {
