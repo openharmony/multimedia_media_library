@@ -103,7 +103,7 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
 
         changedRows = MediaLibraryRdbUtils::UpdateOwnerAlbumId(rdbStore->GetRaw(), values, updateIds);
         MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore->GetRaw(), { to_string(albumId) });
-        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore->GetRaw(), { 
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore->GetRaw(), {
             to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::FAVORITE)
         });
@@ -279,7 +279,7 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     }
     whereIdArgs.erase(whereIdArgs.begin());
     deleteRow = MediaLibraryRdbUtils::UpdateRemoveAsset(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),whereIdArgs);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), whereIdArgs);
 
     string strAlbumId = predicates.GetWhereArgs()[0];
     if (strAlbumId.empty()) {
