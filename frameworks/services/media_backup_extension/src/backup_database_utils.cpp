@@ -816,12 +816,11 @@ void BackupDatabaseUtils::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb:
 std::vector<TagPairOpt> BackupDatabaseUtils::QueryTagInfo(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
 {
     std::vector<TagPairOpt> result;
-    std::string querySql =
-    "SELECT " + ANALYSIS_COL_TAG_ID + ", " +
-    ANALYSIS_COL_GROUP_TAG +
-    " FROM " + ANALYSIS_ALBUM_TABLE +
-    " WHERE " + ANALYSIS_COL_TAG_ID + " IS NOT NULL AND " +
-    ANALYSIS_COL_TAG_ID + " != ''";
+    std::string querySql = "SELECT " + ANALYSIS_COL_TAG_ID + ", " +
+        ANALYSIS_COL_GROUP_TAG +
+        " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ANALYSIS_COL_TAG_ID + " IS NOT NULL AND " +
+        ANALYSIS_COL_TAG_ID + " != ''";
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb, querySql);
     if (resultSet == nullptr) {
