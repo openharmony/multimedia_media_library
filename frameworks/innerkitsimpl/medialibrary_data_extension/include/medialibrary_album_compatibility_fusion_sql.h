@@ -87,8 +87,8 @@ const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     ");" + FILL_ALBUM_ID_FOR_PHOTOS + "; END;";
 
 const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
-    "CREATE TRIGGER IF NOT EXISTS insert_source_photo_update_album_id_trigger AFTER INSERT ON "
-    + PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT + "> 0 AND NEW.owner_album_id = 0" +
+    "CREATE TRIGGER IF NOT EXISTS insert_source_photo_update_album_id_trigger AFTER INSERT ON " +
+    PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT + "> 0 AND NEW.owner_album_id = 0" +
     " BEGIN " + FILL_ALBUM_ID_FOR_PHOTOS + "; END;";
 
 const std::string QUEYR_NOT_MATCHED_DATA_IN_PHOTOMAP   =
@@ -113,4 +113,4 @@ const std::string CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET =
         "'1', strftime('%s000', 'now'), '/Pictures/hiddenAlbum', '1')";
 } // namespace Media
 } // namespace OHOS
-#endif  // FRAMEWORKS_SERVICES_MEDIA_LIBRARY_ALBUM_COMPATIBILITY_FUSION_DATA_H
+#endif  // OHOS_MEDIALIBRARY_ALBUM_COMPATIBILITY_FUSION_DATA_SQL_H
