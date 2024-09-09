@@ -23,7 +23,9 @@
 namespace OHOS {
 namespace Media {
 
-// UPDATE Photos SET owner_album_id =
+// UPDATE Photos SET owner_album_id = (SELECT file_id FROM PhotoMap WHERE Photos.file_id = PhotoMap.map_asset)
+// WHERE EXISTS (SELECT 1 FROM PhotoMap WHERE Photos.file_id = PhotoMap.map_asset AND PhotoMap.map_asset
+// IN (SELECT map_asset FROM PhotoMap GROUP BY map_asset HAVING COUNT(*) = 1))
 const std::string UPDATE_ALBUM_ASSET_MAPPING_CONSISTENCY_DATA_SQL =
     "UPDATE " + PhotoColumn::PHOTOS_TABLE +
     " SET " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " =" +
@@ -51,7 +53,7 @@ const std::string DROP_INDEX_SOURCE_ALBUM_INDEX =
     "DROP INDEX IF EXISTS " + SOURCE_ALBUM_INDEX;
 
 const std::string DELETE_MATCHED_RELATIONSHIP_IN_PHOTOMAP_SQL =
-    "UPDATE photoMap SET dirty = '4' WHERE map_asset "
+    "UPDATE PhotoMap SET dirty = '4' WHERE map_asset "
     "IN (SELECT map_asset FROM PhotoMap GROUP BY map_asset HAVING COUNT(*) = 1)";
 
 const std::string FILL_ALBUM_ID_FOR_PHOTOS =
@@ -63,7 +65,7 @@ const std::string FILL_ALBUM_ID_FOR_PHOTOS =
     " AND dirty != 4 ORDER BY priority DESC LIMIT 1) WHERE file_id = new.file_id";
 
 const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
-    "CREATE TRIGGER IF NOT EXIST insert_source_photo_create_source_album_trigger AFTER INSERT ON " +
+    "CREATE TRIGGER IF NOT EXISTS insert_source_photo_create_source_album_trigger AFTER INSERT ON " +
     PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT + " = 0 " +
     " BEGIN INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
     PhotoAlbumColumns::ALBUM_TYPE + " , " +
@@ -80,35 +82,35 @@ const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     "NEW." + MediaColumn::MEDIA_OWNER_PACKAGE + " , " +
     "COALESCE((SELECT lpath from album_plugin WHERE ((bundle_name = "
     "NEW.owner_package AND COALESCE(NEW.owner_package,'')!= '') OR album_name = NEW.package_name) "
-    "and priority ='1', 'Pictures/'||NEW.package_name), 1, "
+    "and priority ='1'), '/Pictures/'||NEW.package_name), 1, "
     "strftime('%s000', 'now')" +
     ");" + FILL_ALBUM_ID_FOR_PHOTOS + "; END;";
 
-const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
-    "CREATE TRIGGER IF NOT EXISTS insert_source_photo_update_album_id_trigger AFTER INSERT ON " +
-    PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT + "> 0 AND NEW.owner_album_id = 0" +
+const std::string CREATE_INSERT_SOURCE_PHOTO_UPDATE_ALBUM_ID_TRIGGER =
+    "CREATE TRIGGER IF NOT EXISTS insert_source_photo_update_album_id_trigger AFTER INSERT ON "
+    + PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT + "> 0 AND NEW.owner_album_id = 0" +
     " BEGIN " + FILL_ALBUM_ID_FOR_PHOTOS + "; END;";
 
-const std::string QUERY_NOT_MATCHED_DATA_IN_PHOTOMAP =
+const std::string QUEYR_NOT_MATCHED_DATA_IN_PHOTOMAP   =
     "SELECT " + PhotoMap::ASSET_ID + ", " + PhotoMap::ALBUM_ID + " FROM " + PhotoMap::TABLE +
     " WHERE dirty != '4' AND " + PhotoMap::ASSET_ID + " IN (SELECT " + PhotoMap::ASSET_ID + " FROM " +
     PhotoMap::TABLE + " GROUP BY " + PhotoMap::ASSET_ID + " HAVING count(*) > 1) ORDER BY " +
     PhotoMap::ASSET_ID + " DESC";
 
-const std::string QUERY_NEW_NOT_MATCHED_DATA_IN_PHOTOMAP =
+const std::string QUEYR_NEW_NOT_MATCHED_DATA_IN_PHOTOMAP =
     "SELECT " + PhotoMap::ASSET_ID + ", " + PhotoMap::ALBUM_ID + " FROM " + PhotoMap::TABLE +
     " WHERE dirty != '4'";
 
 const std::string CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET =
     "INSERT INTO " + PhotoAlbumColumns::TABLE +
-    "(album_type, album_subtype, album_name, bundle_name, dirty, is_local, date_added, lpath, priority)"
-    " Values ('2048', '2049','其它', 'com.other.album', '1', '1', strftime('%s000', 'now'), '/Pictures/其它', '1')";
+        "(album_type, album_subtype, album_name,bundle_name, dirty, is_local, date_added, lpath, priority)"
+        " Values ('2048', '2049', '其它', 'com.other.album', '1', '1', strftime('%s000', 'now'), '/Pictures/其它', '1')";
 
 const std::string CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET =
     "INSERT INTO " + PhotoAlbumColumns::TABLE +
-    "(album_type, album_subtype, album_name, bundle_name, dirty, is_local, date_added, lpath, priority)"
-    " Values ('2048', '2049','.hiddenAlbum', 'com.hidden.album', '1', "
-    "'1', strftime('%s000', 'now'), '/Pictures/hidden', '1')";
+        "(album_type, album_subtype, album_name, bundle_name, dirty, is_local, date_added, lpath, priority)"
+        " Values ('2048', '2049', '.hiddenAlbum', 'com.hidden.album', '1', "
+        "'1', strftime('%s000', 'now'), '/Pictures/hiddenAlbum', '1')";
 } // namespace Media
 } // namespace OHOS
-#endif //OHOS_MEDIALIBRARY_ALBUM_COMPATIBILITY_FUSION_DATA_SQL_H
+#endif  // FRAMEWORKS_SERVICES_MEDIA_LIBRARY_ALBUM_COMPATIBILITY_FUSION_DATA_H
