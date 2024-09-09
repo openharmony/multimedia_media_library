@@ -73,8 +73,9 @@ const float TEST_LANDMARK_BETWEEN = 0.5;
 const float TEST_LANDMARK_ABOVE = 0.9;
 const std::string EXPECTED_PACKAGE_NAME = "wechat";
 const std::string EXPECTED_USER_COMMENT = "user_comment";
-const int64_t EXPECTED_DATE_ADDED = 1432973383179;
-const int64_t EXPECTED_DATE_TAKEN = 1432973383;
+const int64_t EXPECTED_DATE_ADDED = 1495970415378;
+const int64_t EXPECTED_DATE_TAKEN = 1495970415379;
+const std::string EXPECTED_DETAIL_TIME = "2024:09:06 17:00:01";
 const int64_t TEST_TRUE_MEDIAID = 1;
 const int64_t TEST_FALSE_MEDIAID = -1;
 const int64_t TEST_SIZE_2MB = 2 * 1024 * 1024;
@@ -99,7 +100,7 @@ const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS 
     " media_type INT, date_added BIGINT, date_taken BIGINT, duration INT, is_favorite INT default 0, " +
     " date_trashed BIGINT DEFAULT 0, hidden INT DEFAULT 0, height INT, width INT, user_comment TEXT, " +
     " orientation INT DEFAULT 0, package_name TEXT, burst_cover_level INT DEFAULT 1, burst_key TEXT, " +
-    " dirty INTEGER DEFAULT 0, subtype INT );";
+    " dirty INTEGER DEFAULT 0, subtype INT, detail_time TEXT );";
 
 const string PhotosOpenCall::CREATE_PHOTOS_ALBUM = "CREATE TABLE IF NOT EXISTS PhotoAlbum \
     (album_id INTEGER PRIMARY KEY AUTOINCREMENT, album_type INT,   \
@@ -349,6 +350,18 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_date_taken, TestSize
     int64_t dateTaken = GetInt64Val("date_taken", resultSet);
     EXPECT_EQ(dateTaken, EXPECTED_DATE_TAKEN);
     MEDIA_INFO_LOG("medialib_backup_test_valid_date_taken end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_detail_time, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_valid_detail_time start");
+    std::string queryDetailTime = "SELECT file_id, detail_time from Photos where display_name ='fake_wechat.jpg'";
+    auto resultSet = photosStorePtr-> QuerySql(queryDetailTime);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    std::string  detailTime = GetStringVal("detail_time", resultSet);
+    EXPECT_EQ(detailTime, EXPECTED_DETAIL_TIME);
+    MEDIA_INFO_LOG("medialib_backup_test_valid_detail_time end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.Level0)
