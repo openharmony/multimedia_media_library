@@ -497,7 +497,7 @@ void UpgradeRestore::RestoreFromGallery()
 {
     HasLowQualityImage();
     int32_t totalNumber =
-        this->photosRestorePtr_->GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
+        this->photosRestorePtr_->GetGalleryMediaCount(this->shouldIncludeSD_, this->hasLowQualityImage_);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset });
@@ -574,7 +574,7 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
         return result;
     }
     auto resultSet = this->photosRestorePtr_->GetGalleryMedia(
-        offset, QUERY_COUNT, this->shouldIncludeSd_, this->hasLowQualityImage_);
+        offset, QUERY_COUNT, this->shouldIncludeSD_, this->hasLowQualityImage_);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
         return result;
@@ -830,6 +830,18 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     // find album_id by lPath.
     values.PutInt("owner_album_id", this->photosRestorePtr_->FindAlbumId(fileInfo));
     return values;
+}
+
+bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
+    std::string &newPath, std::string &relativePath)
+{
+    size_t pos = 0;
+    if (!BackupFileUtils::GetPathPosByPrefixLevel(sceneCode_, srcPath, INTERNAL_PREFIX_LEVEL, pos)) {
+        return false;
+    }
+    newPath = prefix + srcPath;
+    relativePath = srcPath.substr(pos);
+    return true;
 }
 
 bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,

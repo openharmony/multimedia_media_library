@@ -977,7 +977,7 @@ static bool MoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
         predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
         predicates.And()->In(PhotoColumn::MEDIA_ID, moveAssetArray);
 
-        vector<DataShare::DataShareValuesBucket> valuesBuckets;
+        DataShare::DataShareValuesBucket valuesBuckets;
         valuesBuckets.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, targetAlbumId);
         string uri = PAH_BATCH_UPDATE_OWNER_ALBUM_ID;
         MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));

@@ -568,7 +568,7 @@ void MediaLibraryPhotoOperations::SolvePhotoAlbumInCreate(MediaLibraryCommand &c
 {
     ValuesBucket &values = cmd.GetValueBucket();
     string albumUri;
-    GetStringFromValuesBucket(values, MEDIA_DATA_DB_ALARM_ID, albumUri);
+    GetStringFromValuesBucket(values, MEDIA_DATA_DB_ALBUM_ID, albumUri);
     if (!albumUri.empty()) {
         PhotosAddAsset(stoi(MediaFileUtils::GetIdFromUri(albumUri)), to_string(fileAsset.GetId()),
             MediaFileUtils::GetExtraUri(fileAsset.GetDisplayName(), fileAsset.GetPath()));
@@ -716,7 +716,7 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
         int ownerAlbumIdIndex;
         int32_t ownerAlbumId;
         resultSet->GetColumnIndex(PhotoColumn::PHOTO_OWNER_ALBUM_ID, ownerAlbumIdIndex);
-        if (resultSet->GetString(ownerAlbumIdIndex, ownerAlbumId) != NativeRdb::E_OK) {
+        if (resultSet->GetInt(ownerAlbumIdIndex, ownerAlbumId) != NativeRdb::E_OK) {
             continue;
         }
 

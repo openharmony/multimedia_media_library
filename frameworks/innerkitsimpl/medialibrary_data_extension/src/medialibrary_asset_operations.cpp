@@ -1623,7 +1623,7 @@ int32_t MediaLibraryAssetOperations::SendModifyUserCommentNotify(MediaLibraryCom
 static int32_t GetAlbumIdByPredicates(const string &whereClause, const vector<string> &whereArgs)
 {
     size_t pos = whereClause.find(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
-    if (pos == string::nops) {
+    if (pos == string::npos) {
         MEDIA_ERR_LOG("Predicates whereClause is invalid");
         return E_ERR;
     }
