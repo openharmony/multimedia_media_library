@@ -17,6 +17,7 @@
 
 #include "notify_responsibility_chain_factory.h"
 #include "thumbnail_service.h"
+#include "medialibrary_photo_operations.h"
 #include "medialibrary_rdb_utils.h"
 #include "parameters.h"
 #include "photo_album_column.h"
@@ -96,6 +97,7 @@ void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
         }
 
         ThumbnailService::GetInstance()->DeleteAstcWithFileIdAndDateTaken(fileId, dateTaken);
+        MediaLibraryPhotoOperations::DropThumbnailSize(fileId);
     }
 }
 
