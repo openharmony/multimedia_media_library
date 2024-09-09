@@ -157,6 +157,8 @@ __attribute__((constructor)) void RegisterDataShareCreator()
 
 static void MakeRootDirs(AsyncTaskData *data)
 {
+    const unordered_set<string> DIR_CHECK_SET = { ROOT_MEDIA_DIR + BACKUP_DATA_DIR_VALUE,
+        ROOT_MEDIA_DIR + BACKUP_SINGLE_DATA_DIR_VALUE };
     for (auto &dir : PRESET_ROOT_DIRS) {
         Uri createAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
         ValuesBucket valuesBucket;
@@ -168,6 +170,7 @@ static void MakeRootDirs(AsyncTaskData *data)
         } else if (ret <= 0) {
             MEDIA_ERR_LOG("Failed to preset root dir: %{private}s", dir.c_str());
         }
+        MediaFileUtils::CheckDirStatus(DIR_CHECK_SET, ROOT_MEDIA_DIR + dir);
     }
     if (data->dataDisplay.compare(E_POLICY) == 0 && !MediaFileUtils::SetEPolicy()) {
         MEDIA_ERR_LOG("Failed to SetEPolicy fail");
