@@ -1213,12 +1213,14 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_HEAD,
     CREATE_TAB_ANALYSIS_POSE,
     CREATE_TAB_IMAGE_FACE,
+    CREATE_TAB_VIDEO_FACE,
     CREATE_TAB_FACE_TAG,
     CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
     CREATE_VISION_UPDATE_TRIGGER,
     CREATE_VISION_DELETE_TRIGGER,
     CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
     CREATE_IMAGE_FACE_INDEX,
+    CREATE_VIDEO_FACE_INDEX,
     CREATE_OBJECT_INDEX,
     CREATE_RECOMMENDATION_INDEX,
     CREATE_COMPOSITION_INDEX,
@@ -3326,6 +3328,17 @@ static void AddDetailTimeToPhotos(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddVideoFaceTable(RdbStore &store)
+{
+    const vector<string> sqls = {
+        CREATE_TAB_VIDEO_FACE,
+        CREATE_VIDEO_FACE_INDEX,
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + GEO + " INT"
+    };
+    MEDIA_INFO_LOG("Add video face table start");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_UPDATE_PHOTO_INDEX_FOR_ALBUM_COUNT_COVER) {
@@ -3362,6 +3375,10 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_DETAIL_TIME) {
         AddDetailTimeToPhotos(store);
+    }
+
+    if (oldVersion < VERSION_ADD_VIDEO_FACE_TABLE) {
+        AddVideoFaceTable(store);
     }
 
     if (oldVersion < VERSION_ADD_OWNER_ALBUM_ID) {
