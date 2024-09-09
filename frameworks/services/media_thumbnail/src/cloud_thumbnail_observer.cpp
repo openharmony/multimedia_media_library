@@ -25,6 +25,9 @@ namespace Media {
 
 static inline bool isFileIdValid(const std::string& fileId)
 {
+    if (fileId.empty()) {
+        return false;
+    }
     for (char const& ch : fileId) {
         if (std::isdigit(ch) == 0) {
             return false;
@@ -47,7 +50,7 @@ void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
             continue;
         }
         string idString = uriString.substr(pos + 1);
-        if (idString.empty() || !isFileIdValid(idString)) {
+        if (!isFileIdValid(idString)) {
             MEDIA_DEBUG_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
             continue;
         }
