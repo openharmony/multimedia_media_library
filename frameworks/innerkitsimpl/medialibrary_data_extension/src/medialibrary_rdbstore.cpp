@@ -2639,6 +2639,24 @@ void AddBurstCoverLevelAndBurstKey(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddCloudEnhancementColumns(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_CE_AVAILABLE + " INT DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_CE_STATUS_CODE + " INT ",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_STRONG_ASSOCIATION + " INT DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_ASSOCIATE_FILE_ID + " INT DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK + " INT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("start add cloud enhancement columns");
+    ExecSqls(sqls, store);
+}
+
 static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -3220,6 +3238,10 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
     
     if (oldVersion < VERSION_ADD_DETAIL_TIME) {
         AddDetailTimeToPhotos(store);
+    }
+
+    if (oldVersion < VERSION_CLOUD_ENAHCNEMENT) {
+        AddCloudEnhancementColumns(store);
     }
 }
 

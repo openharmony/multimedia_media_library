@@ -74,6 +74,7 @@ const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
     std::to_string(PhotoAlbumSubType::SCREENSHOT),
     std::to_string(PhotoAlbumSubType::CAMERA),
     std::to_string(PhotoAlbumSubType::IMAGE),
+    std::to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
     std::to_string(PhotoAlbumSubType::SOURCE_GENERIC),
 };
 
@@ -1633,6 +1634,7 @@ void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<RdbStore> 
             to_string(PhotoAlbumSubType::FAVORITE),
             to_string(PhotoAlbumSubType::SCREENSHOT),
             to_string(PhotoAlbumSubType::CAMERA),
+            to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
         }, columns);
     } else {
         albumResult = GetSystemAlbum(rdbStore, subtypes, columns);
@@ -1655,6 +1657,7 @@ void MediaLibraryRdbUtils::UpdateAllAlbums(const shared_ptr<RdbStore> &rdbStore,
         to_string(PhotoAlbumSubType::HIDDEN),
         to_string(PhotoAlbumSubType::TRASH),
         to_string(PhotoAlbumSubType::IMAGE),
+        to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
     };
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, systemAlbumsExcludeSource);
     MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore);

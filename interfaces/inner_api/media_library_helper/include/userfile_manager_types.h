@@ -110,7 +110,8 @@ enum PhotoAlbumSubType : int32_t {
     SCREENSHOT,
     CAMERA,
     IMAGE,
-    SYSTEM_END = IMAGE,
+    CLOUD_ENHANCEMENT,
+    SYSTEM_END = CLOUD_ENHANCEMENT,
     SOURCE_GENERIC = 2049,
     ANALYSIS_START = 4097,
     CLASSIFY = ANALYSIS_START,
@@ -149,6 +150,23 @@ enum class MovingPhotoEffectMode : int32_t {
     CINEMA_GRAPH,
     EFFECT_MODE_END = CINEMA_GRAPH,
     IMAGE_ONLY = 10
+};
+
+enum class CloudEnhancementTaskStage : int32_t {
+    TASK_STAGE_EXCEPTION = -1,
+    TASK_STAGE_PREPARING,
+    TASK_STAGE_UPLOADING,
+    TASK_STAGE_EXECUTING,
+    TASK_STAGE_DOWNLOADING,
+    TASK_STAGE_FAILED,
+    TASK_STAGE_COMPLETED
+};
+
+enum class CloudEnhancementState : int32_t {
+    UNAVAILABLE = 0,
+    AVAILABLE,
+    EXECUTING,
+    COMPLETED
 };
 
 const std::string URI_PARAM_API_VERSION = "api_version";
