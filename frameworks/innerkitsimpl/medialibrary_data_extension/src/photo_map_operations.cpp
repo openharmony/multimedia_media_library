@@ -92,7 +92,7 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
 
     int32_t changedRows = 0;
     vector<int32_t> updateIds;
-    if (values.empty()) {
+    if (!values.empty()) {
         bool isValid = false;
         int32_t albumId = values[0].Get(PhotoColumn::PHOTO_OWNER_ALBUM_ID, isValid);
         if (!isValid || albumId <= 0) {
