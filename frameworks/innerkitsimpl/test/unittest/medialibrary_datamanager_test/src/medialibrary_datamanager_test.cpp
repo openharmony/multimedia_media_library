@@ -75,7 +75,6 @@ namespace {
     shared_ptr<FileAsset> g_download = nullptr;
 }
 
-const int32_t E_GETROUWCOUNT_ERROR = 27394103;
 
 void MediaLibraryDataManagerUnitTest::SetUpTestCase(void)
 {
@@ -1187,10 +1186,10 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GenerateThumbnailBackgroun
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     int32_t ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_NE(ret == E_GETROUWCOUNT_ERROR, true);
+    EXPECT_EQ(ret, E_OK);
     mediaLibraryDataManager->ClearMediaLibraryMgr();
     ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_NE(ret == E_GETROUWCOUNT_ERROR, true);
+    EXPECT_EQ(ret, E_OK);
 }
 
 #ifdef DISTRIBUTED
