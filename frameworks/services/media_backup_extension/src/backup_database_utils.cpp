@@ -816,12 +816,11 @@ void BackupDatabaseUtils::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb:
 std::vector<TagPairOpt> BackupDatabaseUtils::QueryTagInfo(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
 {
     std::vector<TagPairOpt> result;
-    std::string querySql =
-    "SELECT " + ANALYSIS_COL_TAG_ID + ", " +
-    ANALYSIS_COL_GROUP_TAG +
-    " FROM " + ANALYSIS_ALBUM_TABLE +
-    " WHERE " + ANALYSIS_COL_TAG_ID + " IS NOT NULL AND " +
-    ANALYSIS_COL_TAG_ID + " != ''";
+    std::string querySql = "SELECT " + ANALYSIS_COL_TAG_ID + ", " +
+        ANALYSIS_COL_GROUP_TAG +
+        " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ANALYSIS_COL_TAG_ID + " IS NOT NULL AND " +
+        ANALYSIS_COL_TAG_ID + " != ''";
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb, querySql);
     if (resultSet == nullptr) {
@@ -888,6 +887,46 @@ void BackupDatabaseUtils::UpdateFaceGroupTagsUnion(std::shared_ptr<NativeRdb::Rd
         }
     }
 
+    UpdateGroupTagColumn(updatedPairs, mediaLibraryRdb);
+}
+
+void BackupDatabaseUtils::UpdateTagPairs(std::vector<TagPairOpt>& updatedPairs, const std::string& newGroupTag,
+    const std::vector<std::string>& tagIds)
+{
+    for (const auto& tagId : tagIds) {
+        updatedPairs.emplace_back(tagId, newGroupTag);
+    }
+}
+
+void BackupDatabaseUtils::UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
+    const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap)
+{
+    for (auto& [groupTag, tagIds] : groupTagMap) {
+        if (tagIds.size() > 1) {
+            std::string newGroupTag = BackupDatabaseUtils::JoinValues<std::string>(tagIds, "|");
+            if (newGroupTag != groupTag) {
+                UpdateTagPairs(updatedPairs, newGroupTag, tagIds);
+            }
+        }
+    }
+}
+
+    /* 双框架的group_id是合并相册之一的某一 tag_id */
+void BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
+{
+    std::vector<TagPairOpt> tagPairs = QueryTagInfo(mediaLibraryRdb);
+    std::vector<TagPairOpt> updatedPairs;
+    std::unordered_map<std::string, std::vector<std::string>> groupTagMap;
+
+    for (const auto& pair : tagPairs) {
+        if (pair.first.has_value() && pair.second.has_value()) {
+            groupTagMap[pair.second.value()].push_back(pair.first.value());
+        } else {
+            MEDIA_INFO_LOG("Found tag_id without group_tag: %{public}s", pair.first.value().c_str());
+        }
+    }
+
+    UpdateGroupTags(updatedPairs, groupTagMap);
     UpdateGroupTagColumn(updatedPairs, mediaLibraryRdb);
 }
 } // namespace Media
