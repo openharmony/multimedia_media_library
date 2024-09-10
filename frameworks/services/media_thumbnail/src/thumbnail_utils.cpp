@@ -835,7 +835,6 @@ bool ThumbnailUtils::QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore
         MEDIA_DATA_DB_DATE_TAKEN,
     };
     RdbPredicates rdbPredicates(table);
-    rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "1");
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
     shared_ptr<ResultSet> resultSet = rdbStorePtr->QueryByStep(rdbPredicates, column);
     int err = 0;

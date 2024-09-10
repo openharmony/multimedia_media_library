@@ -2195,19 +2195,23 @@ static void DeleteFiles(AsyncTaskData *data)
     }
 }
 
-int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
+void HandleAudiosResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
     vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateTakens, vector<int32_t> &outSubTypes)
 {
-    vector<string> columns = {
-        MediaColumn::MEDIA_ID,
-        MediaColumn::MEDIA_FILE_PATH,
-        MediaColumn::MEDIA_DATE_TAKEN,
-        PhotoColumn::PHOTO_SUBTYPE
-    };
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
-    if (resultSet == nullptr) {
-        return E_HAS_DB_ERROR;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        outIds.push_back(
+            to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))));
+        outPaths.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet,
+            TYPE_STRING)));
+        outDateTakens.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_TAKEN, resultSet,
+            TYPE_STRING)));
+        outSubTypes.push_back(static_cast<int32_t>(PhotoSubType::DEFAULT));
     }
+}
+
+void HandlePhotosResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
+    vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateTakens, vector<int32_t> &outSubTypes)
+{
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         outIds.push_back(
             to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))));
@@ -2217,6 +2221,33 @@ int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
             TYPE_STRING)));
         outSubTypes.push_back(
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE, resultSet, TYPE_INT32)));
+    }
+}
+
+int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
+    vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateTakens, vector<int32_t> &outSubTypes)
+{
+    vector<string> columns = {
+        MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_FILE_PATH,
+        MediaColumn::MEDIA_DATE_TAKEN
+    };
+
+    if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        columns.push_back(PhotoColumn::PHOTO_SUBTYPE);
+    }
+
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    
+    if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        HandlePhotosResultSet(resultSet, outIds, outPaths, outDateTakens, outSubTypes);
+    } else if (predicates.GetTableName() == AudioColumn::AUDIOS_TABLE) {
+        HandleAudiosResultSet(resultSet, outIds, outPaths, outDateTakens, outSubTypes);
+    } else {
+        MEDIA_WARN_LOG("Invalid table name.");
     }
     return E_OK;
 }
