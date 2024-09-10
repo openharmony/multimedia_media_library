@@ -46,6 +46,9 @@ const string PhotoAlbumColumns::ALBUM_LONGITUDE = "longitude";
 const string PhotoAlbumColumns::ALBUM_BUNDLE_NAME = "bundle_name";
 const string PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE = "local_language";
 const string PhotoAlbumColumns::ALBUM_IS_LOCAL = "is_local";
+const string PhotoAlbumColumns::ALBUM_DATE_ADDED = "date_added";
+const string PhotoAlbumColumns::ALBUM_PRIORITY = "priority";
+const string PhotoAlbumColumns::ALBUM_LPATH = "lpath";
 
 // For api9 compatibility
 const string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
@@ -124,7 +127,10 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     ALBUM_VIDEO_COUNT + " INT DEFAULT 0, " +
     ALBUM_BUNDLE_NAME + " TEXT, " +
     ALBUM_LOCAL_LANGUAGE + " TEXT, " +
-    ALBUM_IS_LOCAL + " INT) ";
+    ALBUM_IS_LOCAL + " INT, " +
+    ALBUM_DATE_ADDED + " BIGINT DEFAULT 0, " +
+    ALBUM_LPATH + " TEXT, " +
+    ALBUM_PRIORITY + " INT)";
 
 // Create indexes
 const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +
@@ -193,12 +199,10 @@ inline void SetDefaultPredicatesCondition(RdbPredicates &predicates, const int32
 
 void PhotoAlbumColumns::GetUserAlbumPredicates(const int32_t albumId, RdbPredicates &predicates, const bool hiddenState)
 {
-    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
-    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     SetDefaultPredicatesCondition(predicates, 0, hiddenState, 0, false);
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
 }
 
 void PhotoAlbumColumns::GetPortraitAlbumPredicates(const int32_t albumId, RdbPredicates &predicates,
@@ -305,12 +309,10 @@ static void GetAllImagesPredicates(RdbPredicates &predicates, const bool hiddenS
 void PhotoAlbumColumns::GetSourceAlbumPredicates(const int32_t albumId, RdbPredicates &predicates,
     const bool hiddenState)
 {
-    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
-    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     SetDefaultPredicatesCondition(predicates, 0, hiddenState, 0, false);
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
 }
 
 void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype, RdbPredicates &predicates,

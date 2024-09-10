@@ -194,9 +194,9 @@ static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData
 static int32_t GetAlbumsById(const string &fileId, list<string> &albumIdList)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    MediaLibraryCommand queryAlbumMapCmd(OperationObject::PHOTO_MAP, OperationType::QUERY);
-    queryAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(PhotoMap::ASSET_ID, fileId);
-    auto resultSet = uniStore->Query(queryAlbumMapCmd, {PhotoMap::ALBUM_ID});
+    MediaLibraryCommand queryAlbumMapCmd(OperationObject::PAH_PHOTO, OperationType::QUERY);
+    queryAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    auto resultSet = uniStore->Query(queryAlbumMapCmd, {PhotoColumn::PHOTO_OWNER_ALBUM_ID});
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("GetAlbumsById failed");
         return E_INVALID_FILEID;
@@ -210,8 +210,8 @@ static int32_t GetAlbumsById(const string &fileId, list<string> &albumIdList)
     ret = resultSet->GoToFirstRow();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to GoToFirstRow");
     do {
-        int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoMap::ALBUM_ID, resultSet,
-            TYPE_INT32));
+        int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_OWNER_ALBUM_ID,
+            resultSet, TYPE_INT32));
         albumIdList.emplace_back(to_string(albumId));
     } while (!resultSet->GoToNextRow());
     return E_OK;

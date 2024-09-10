@@ -91,7 +91,8 @@ enum class DirtyType : int32_t {
     TYPE_FDIRTY,
     TYPE_DELETED,
     TYPE_RETRY,
-    TYPE_SDIRTY
+    TYPE_SDIRTY,
+    TYPE_COPY
 };
 
 enum class SyncStatusType : int32_t {

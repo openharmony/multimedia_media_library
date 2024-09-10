@@ -61,6 +61,8 @@ public:
     EXPORT static int32_t GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
         bool isCleanImmediately, std::string &photoId);
     EXPORT static int32_t FinishRequestPicture(MediaLibraryCommand &cmd);
+    EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs);
+    EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris);
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);
@@ -108,6 +110,7 @@ private:
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
     static int32_t UpdateExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
+    static int32_t BatchSetOwnerAlbumId(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,
         const std::string &editdata, const std::string &photoStatus = "");
     static int32_t RevertToOriginalEffectMode(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
