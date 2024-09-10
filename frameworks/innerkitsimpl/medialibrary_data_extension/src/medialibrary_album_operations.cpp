@@ -926,8 +926,9 @@ void MediaLibraryAlbumOperations::DealwithNoAlbumAssets(const vector<string> &wh
 
         const std::string queryAlbum = "SELECT * FROM PhotoAlbum WHERE album_id = " + to_string(ownerAlbumId);
         auto resultSetAlbum = uniStore->QuerySql(queryAlbum);
-        if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-            string sourcePath, lPath;
+        if (resultSetAlbum == nullptr || resultSetAlbum->GoToFirstRow() != NativeRdb::E_OK) {
+            string sourcePath;
+            string lPath;
             GetStringValueFromResultSet(resultSet, PhotoColumn::PHOTO_SOURCE_PATH, sourcePath);
             bool isUserAlbum = false;
             int64_t newAlbumId = -1;
