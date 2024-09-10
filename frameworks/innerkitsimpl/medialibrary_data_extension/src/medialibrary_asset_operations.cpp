@@ -2243,9 +2243,9 @@ int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
     }
     
     if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        HandlePhotosResultSet(resultset, outIds, outPaths, outDateTakens, outSubTypes);
+        HandlePhotosResultSet(resultSet, outIds, outPaths, outDateTakens, outSubTypes);
     } else if (predicates.GetTableName() == AudioColumn::AUDIOS_TABLE) {
-        HandleAudiosResultSet(resultset, outIds, outPaths, outDateTakens, outSubTypes);
+        HandleAudiosResultSet(resultSet, outIds, outPaths, outDateTakens, outSubTypes);
     } else {
         MEDIA_WARN_LOG("Invalid table name.");
     }
