@@ -14,7 +14,7 @@
  */
 
 /**
- * @addtogroup MediaAsset
+ * @addtogroup MediaAssetManager
  * @{
  *
  * @brief Provides APIs of request capability for Media Source.
@@ -268,7 +268,7 @@ MediaLibrary_ErrorCode OH_MediaAsset_GetOrientation(OH_MediaAsset* mediaAsset, u
  *                                                1. Mandatory parameters are left unspecified.
  *                                                2. Incorrect parameter types.
  *                                                3. Parameter verification failed.
- *         {@link #MEDIA_LIBRARY_INVALID_PHOTO_KEY} if member is not a valid PhotoKey.
+ *         {@link #MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR} if internal system error.
  * @since 13
  */
 MediaLibrary_ErrorCode OH_MediaAsset_IsFavorite(OH_MediaAsset* mediaAsset, uint32_t* favorite);
@@ -283,7 +283,7 @@ MediaLibrary_ErrorCode OH_MediaAsset_IsFavorite(OH_MediaAsset* mediaAsset, uint3
  *                                                1. Mandatory parameters are left unspecified.
  *                                                2. Incorrect parameter types.
  *                                                3. Parameter verification failed.
- *         {@link #MEDIA_LIBRARY_INVALID_PHOTO_KEY} if member is not a valid PhotoKey
+ *         {@link #MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR} if internal system error.
  * @since 13
  */
 MediaLibrary_ErrorCode OH_MediaAsset_GetTitle(OH_MediaAsset* mediaAsset, const char** title);
