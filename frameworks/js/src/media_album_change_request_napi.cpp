@@ -912,8 +912,8 @@ static bool AddAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     vector<DataShare::DataShareValuesBucket> valuesBuckets;
     for (const auto& asset : changeRequest->GetAddAssetArray()) {
         DataShare::DataShareValuesBucket pair;
-        pair.Put(PhotoMap::ALBUM_ID, albumId);
-        pair.Put(PhotoMap::ASSET_ID, asset);
+        pair.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
+        pair.Put(PhotoColumn::MEDIA_ID, asset);
         valuesBuckets.push_back(pair);
     }
 
@@ -940,8 +940,8 @@ static bool RemoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     int32_t albumId = photoAlbum->GetAlbumId();
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
-    predicates.And()->In(PhotoMap::ASSET_ID, changeRequest->GetRemoveAssetArray());
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
+    predicates.And()->In(PhotoColumn::MEDIA_ID, changeRequest->GetRemoveAssetArray());
 
     Uri removeAssetsUri(PAH_PHOTO_ALBUM_REMOVE_ASSET);
     int ret = UserFileClient::Delete(removeAssetsUri, predicates);
@@ -972,37 +972,23 @@ static bool MoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
         auto targetPhotoAlbum = iter->first;
         int32_t targetAlbumId = targetPhotoAlbum->GetAlbumId();
         vector<string> moveAssetArray = iter->second;
-        // Add into target album.
-        vector<DataShare::DataShareValuesBucket> valuesBuckets;
-        for (const auto& asset : moveAssetArray) {
-            DataShare::DataShareValuesBucket pair;
-            pair.Put(PhotoMap::ALBUM_ID, targetAlbumId);
-            pair.Put(PhotoMap::ASSET_ID, asset);
-            valuesBuckets.push_back(pair);
-        }
+        // Move into target album.
+        DataShare::DataSharePredicates predicates;
+        predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
+        predicates.And()->In(PhotoColumn::MEDIA_ID, moveAssetArray);
 
-        Uri addAssetsUri(PAH_PHOTO_ALBUM_ADD_ASSET);
-        int ret = UserFileClient::BatchInsert(addAssetsUri, valuesBuckets);
+        DataShare::DataShareValuesBucket valuesBuckets;
+        valuesBuckets.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, targetAlbumId);
+        string uri = PAH_BATCH_UPDATE_OWNER_ALBUM_ID;
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri moveAssetsUri(uri);
+        int ret = UserFileClient::Update(moveAssetsUri, predicates, valuesBuckets);
         if (ret < 0) {
             context.SaveError(ret);
             NAPI_ERR_LOG("Failed to move assets into album %{public}d, err: %{public}d", targetAlbumId, ret);
             return false;
         }
         NAPI_INFO_LOG("Move %{public}d asset(s) into album %{public}d", ret, targetAlbumId);
-
-        // Remove from current album.
-        DataShare::DataSharePredicates predicates;
-        predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
-        predicates.And()->In(PhotoMap::ASSET_ID, moveAssetArray);
-
-        Uri removeAssetsUri(PAH_PHOTO_ALBUM_REMOVE_ASSET);
-        ret = UserFileClient::Delete(removeAssetsUri, predicates);
-        if (ret < 0) {
-            context.SaveError(ret);
-            NAPI_ERR_LOG("Failed to move assets from album %{public}d, err: %{public}d", albumId, ret);
-            return false;
-        }
-        NAPI_INFO_LOG("Move %{public}d asset(s) from album %{public}d", ret, albumId);
         FetchNewCount(context, targetPhotoAlbum);
     }
     FetchNewCount(context, photoAlbum);

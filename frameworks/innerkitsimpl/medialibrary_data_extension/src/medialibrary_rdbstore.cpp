@@ -18,6 +18,7 @@
 
 #include <mutex>
 
+#include "album_plugin_table_event_handler.h"
 #include "cloud_sync_helper.h"
 #include "dfx_manager.h"
 #include "dfx_timer.h"
@@ -35,6 +36,8 @@
 #ifdef DISTRIBUTED
 #include "medialibrary_device.h"
 #endif
+#include "medialibrary_album_fusion_utils.h"
+#include "medialibrary_album_compatibility_fusion_sql.h"
 #include "medialibrary_business_record_column.h"
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_errno.h"
@@ -777,6 +780,12 @@ inline void BuildInsertSystemAlbumSql(const ValuesBucket &values, const AbsRdbPr
     sql.append(");");
 }
 
+int32_t PrepareAlbumPlugin(RdbStore &store)
+{
+    AlbumPluginTableEventHandler albumPluginTableEventHander;
+    return albumPluginTableEventHander.OnCreate(store);
+}
+
 int32_t PrepareSystemAlbums(RdbStore &store)
 {
     ValuesBucket values;
@@ -1225,8 +1234,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_HIGHLIGHT_COVER_INFO_TABLE,
     CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
     CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
-    INSERT_PHOTO_INSERT_SOURCE_ALBUM,
-    INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+    CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+    CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER,
     INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
     CREATE_SOURCE_ALBUM_INDEX,
     FormMap::CREATE_FORM_MAP_TABLE,
@@ -1276,6 +1285,10 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
     }
 
     if (PrepareSystemAlbums(store) != NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
+    }
+
+    if (PrepareAlbumPlugin(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
 
@@ -2784,6 +2797,135 @@ static void UpdateDataUniqueIndex(RdbStore &store)
     MEDIA_INFO_LOG("End UpdateDataUniqueIndex");
 }
 
+static void ResetCloudCursorAfterInitFinish()
+{
+    static uint32_t baseUserRange = 200000; // uid base offset
+    uid_t uid = getuid() / baseUserRange;
+    const string paramKey = "multimedia.medialibrary.startup." + to_string(uid);
+    string value = "true";
+    int32_t maxTryTimes = 10;
+    int32_t checkTimes = 0;
+    while (checkTimes < maxTryTimes) {
+        std::string initStatus = system::GetParameter(paramKey.c_str(), "false");
+        if (!initStatus.empty() && initStatus == "true") {
+            MEDIA_INFO_LOG("Strat reset cloud cursor");
+            FileManagement::CloudSync::CloudSyncManager::GetInstance().ResetCursor();
+            MEDIA_INFO_LOG("End reset cloud cursor");
+            break;
+        }
+        checkTimes++;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
+
+static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
+{
+    if (data == nullptr) {
+        return;
+    }
+    MediaLibraryAlbumFusionUtils::SetParameterToStopSync();
+    CompensateAlbumIdData* compensateData = static_cast<CompensateAlbumIdData*>(data);
+    MEDIA_INFO_LOG("ALBUM_FUSE: Processing old data start");
+    MEDIA_INFO_LOG("ALBUM_FUSE: Compensating album id for old asset start");
+    int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t cleanDataBeginTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int32_t matchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(
+        compensateData->upgradeStore_);
+    if (matchedDataHandleResult != E_OK) {
+        MEDIA_ERR_LOG("Fatal err, handle matched relationship fail by %{public}d", matchedDataHandleResult);
+        // This should not happen, and if it does, should avoid cleaning up more data.
+        return;
+    }
+    int32_t notMatchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleNotMatchedDataFusion(
+        compensateData->upgradeStore_);
+    if (notMatchedDataHandleResult != E_OK) {
+        MEDIA_ERR_LOG("Fatal err, handle not matched relationship fail by %{public}d", notMatchedDataHandleResult);
+        // This should not happen, and if it does, avoid cleaning up more data.
+        return;
+    }
+    MEDIA_INFO_LOG("ALBUM_FUSE: End compensate album id for old asset cost %{public}ld",
+        (long)(MediaFileUtils::UTCTimeMilliSeconds() - cleanDataBeginTime));
+    MEDIA_INFO_LOG("ALBUM_FUSE: Start rebuild album and update relationship");
+    int64_t albumCleanBeginTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int32_t rebuildResult = MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(compensateData->upgradeStore_);
+    MEDIA_INFO_LOG("ALBUM_FUSE: End rebuild album and update relationship cost %{public}ld",
+        (long)(MediaFileUtils::UTCTimeMilliSeconds() - albumCleanBeginTime));
+    // Restore cloud sync
+    MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
+    ResetCloudCursorAfterInitFinish();
+    MEDIA_INFO_LOG("ALBUM_FUSE: Processing old data start end, cost %{public}ld",
+        (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
+}
+
+static void AddOwnerAlbumIdAndRefractorTrigger(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_OWNER_ALBUM_ID + " INT DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID + " TEXT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_SOURCE_PATH + " TEXT",
+        "DROP TABLE IF EXISTS album_plugin ",
+        DROP_PHOTO_ALBUM_CLEAR_MAP_SQL,
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM_SQL,
+        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM_SQL,
+        DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        DROP_INSERT_SOURCE_PHOTO_UPDATE_ALBUM_ID_TRIGGER,
+        "DROP TRIGGER IF EXISTS photos_mdirty_trigger",
+        PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
+        CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER,
+
+    };
+    MEDIA_INFO_LOG("Add owner_album_id column for Photos");
+    ExecSqls(sqls, store);
+}
+
+static void AddMergeInfoColumnForAlbum(RdbStore &store)
+{
+    const vector<string> addMergeInfoSql = {
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+        PhotoAlbumColumns::ALBUM_DATE_ADDED + " BIGINT DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+        PhotoAlbumColumns::ALBUM_PRIORITY + " INT",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+        PhotoAlbumColumns::ALBUM_LPATH + " TEXT",
+        DROP_INDEX_SOURCE_ALBUM_INDEX,
+        CREATE_SOURCE_ALBUM_INDEX,
+        CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET,
+    };
+    MEDIA_INFO_LOG("Add merge info for PhotoAlbum");
+    ExecSqls(addMergeInfoSql, store);
+    const std::string queryHiddenAlbumId =
+        "SELECT album_id FROM PhotoAlbum WHERE album_name = '.hiddenAlbum'";
+    auto resultSet = store.QuerySql(queryHiddenAlbumId);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        int32_t err = store.ExecuteSql(CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to exec: %{private}s", CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET.c_str());
+        }
+    }
+}
+
+static int32_t ReconstructMediaLibraryStorageFormat(RdbStore &store)
+{
+    MEDIA_INFO_LOG("ALBUM_FUSE: Start reconstruct medialibrary storage format task!");
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker ==  nullptr) {
+        MEDIA_ERR_LOG("Failed to get aysnc worker instance!");
+        return E_FAIL;
+    }
+    auto *taskData = new (std::nothrow) CompensateAlbumIdData(&store);
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to alloc async data for compensate album id");
+        return E_NO_MEMORY;
+    }
+    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(ReconstructMediaLibraryStorageFormatExecutor, taskData);
+    asyncWorker->AddTask(asyncTask, false);
+    return E_OK;
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -3230,13 +3372,21 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_UDAPTE_DATA_UNIQUE) {
         UpdateDataUniqueIndex(store);
     }
-    
+
     if (oldVersion < VERSION_ADD_DETAIL_TIME) {
         AddDetailTimeToPhotos(store);
     }
 
     if (oldVersion < VERSION_ADD_VIDEO_FACE_TABLE) {
         AddVideoFaceTable(store);
+    }
+
+    if (oldVersion < VERSION_ADD_OWNER_ALBUM_ID) {
+        AddOwnerAlbumIdAndRefractorTrigger(store);
+        AlbumPluginTableEventHandler albumPluginTableEventHandler;
+        albumPluginTableEventHandler.OnUpgrade(store, oldVersion, oldVersion);
+        AddMergeInfoColumnForAlbum(store);
+        ReconstructMediaLibraryStorageFormat(store);
     }
 }
 
