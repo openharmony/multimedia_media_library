@@ -772,7 +772,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNotMatchedDataFusion(NativeRdb::RdbS
     if (notMatchedMap.size() != 0) {
         HandleNotMatchedDataMigration(upgradeStore, notMatchedMap);
     }
-    MEDIA_INFO_LOG("ALBUM_FUSE: STEP_2: Start handle not matched relationship, cost %{public}ld",
+    MEDIA_INFO_LOG("ALBUM_FUSE: STEP_2: End handle not matched relationship, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
     return E_OK;
 }
@@ -1129,9 +1129,6 @@ int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(NativeRdb::RdbStore *
     int32_t rowCount = 0;
     resultSet->GetRowCount(rowCount);
     MEDIA_INFO_LOG("Begin clean duplicated album, there are %{public}d to clean", rowCount);
-    if (rowCount == 0) {
-        MEDIA_INFO_LOG("Query duplicate album, no album need to deal????");
-    }
     int32_t indexLeft = 0;
     while (indexLeft < rowCount) {
         resultSet->GoToRow(indexLeft);
