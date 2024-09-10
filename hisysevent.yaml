@@ -135,7 +135,7 @@ DATABASE_CORRUPTION_ERROR:
   DATE: { type: STRING, desc: The database corruption time }
 
 MEDIALIB_CLOUDENHANCEMENT_STAT:
-  __BASE: {type: STATISTIC, level: MINOR, desc: mediaLibrary cloud enhancement task statistics, preserve: true }
+  __BASE: {type: STATISTIC, level: CRITICAL, desc: mediaLibrary cloud enhancement task statistics, preserve: true }
   PHOTO_ID: { type: STRING, desc: photo id }
   TOTAL_TIME_COST: { type: UINT64, desc: total time cost of cloud enhancement }
   COMPLETE_TYPE: { type: STRING, desc: types of cloudenhancement task completion}

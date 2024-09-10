@@ -34,10 +34,8 @@ public:
     virtual ~BaseRestore() = default;
     virtual void StartRestore(const std::string &backupRetorePath, const std::string &upgradePath);
     virtual int32_t Init(const std::string &backupRetorePath, const std::string &upgradePath, bool isUpgrade) = 0;
-    virtual int32_t QueryTotalNumber(void) = 0;
-    virtual std::vector<FileInfo> QueryFileInfos(int32_t offset) = 0;
     virtual NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
-        int32_t sourceType) const = 0;
+        int32_t sourceType) = 0;
     virtual NativeRdb::ValuesBucket GetAudioInsertValue(const FileInfo &fileInfo, const std::string &newPath) const;
     virtual std::string GetBackupInfo();
     void StartRestoreEx(const std::string &backupRetorePath, const std::string &upgradePath,
@@ -64,6 +62,7 @@ protected:
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
     std::vector<NativeRdb::ValuesBucket> GetAudioInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos);
+    int32_t CopyFile(const std::string &srcFile, const std::string &dstFile) const;
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
@@ -74,12 +73,14 @@ protected:
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
         int64_t &rowNum);
     int32_t MoveDirectory(const std::string &srcDir, const std::string &dstDir) const;
-    bool IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+    bool IsSameAudioFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
         FileInfo &fileInfo);
-    bool HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+    bool HasSameAudioFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
         FileInfo &fileInfo);
-    bool HasSameFileForDualClone(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
-        FileInfo &fileInfo);
+    virtual bool HasSameFileForDualClone(FileInfo &fileInfo)
+    {
+        return false;
+    }
     void InsertPhotoMap(std::vector<FileInfo> &fileInfos, int64_t &mapRowNum);
     void BatchQueryPhoto(std::vector<FileInfo> &fileInfos, bool isFull, const NeedQueryMap &needQueryMap);
     void BatchInsertMap(const std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
@@ -93,7 +94,6 @@ protected:
     void UpdateFailedFiles(int32_t fileType, const std::string &filePath, int32_t errorCode);
     void UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode);
     void UpdateDuplicateNumber(int32_t fileType);
-    void GetMaxFileId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     void DeleteMoveFailedData(std::vector<std::string> &moveFailedData);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
         int32_t sceneCode);
@@ -137,8 +137,6 @@ protected:
     std::string errorInfo_;
     std::unordered_map<std::string, std::unordered_map<std::string, int32_t>> failedFilesMap_;
     int fileMinSize_ = 0;
-    int maxFileId_ = 0;
-    int maxCount_ = 0;
     int32_t sceneCode_ = -1;
     std::unordered_map<std::string, std::string> tagIdMap_;
     std::unordered_map<std::string, int32_t> portraitAlbumIdMap_;

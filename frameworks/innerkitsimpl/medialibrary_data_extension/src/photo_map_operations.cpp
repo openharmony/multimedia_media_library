@@ -50,57 +50,6 @@ using namespace OHOS::DataShare;
 
 constexpr int32_t ALBUM_IS_REMOVED = 1;
 
-static int32_t AddSingleAsset(const DataShareValuesBucket &value, vector<string> &notifyUris)
-{
-    /**
-     * Build insert sql:
-     * INSERT INTO PhotoMap (map_album, map_asset) SELECT
-     * ?, ?
-     * WHERE
-     *     (NOT EXISTS (SELECT * FROM PhotoMap WHERE map_album = ? AND map_asset = ?))
-     *     AND (EXISTS (SELECT file_id FROM Files WHERE file_id = ?))
-     *     AND (EXISTS (SELECT album_id FROM PhotoAlbum WHERE album_id = ? AND album_type = ? AND album_subtype = ?));
-     */
-    static const string INSERT_MAP_SQL = "INSERT INTO " + PhotoMap::TABLE +
-        " (" + PhotoMap::ALBUM_ID + ", " + PhotoMap::ASSET_ID + ") " +
-        "SELECT ?, ? WHERE " +
-        "(NOT EXISTS (SELECT * FROM " + PhotoMap::TABLE + " WHERE " +
-            PhotoMap::ALBUM_ID + " = ? AND " + PhotoMap::ASSET_ID + " = ?)) " +
-        "AND (EXISTS (SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
-            MediaColumn::MEDIA_ID + " = ?)) " +
-        "AND (EXISTS (SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
-            " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = ? AND " + PhotoAlbumColumns::ALBUM_TYPE + " = ? AND " +
-            PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?));";
-    bool isValid = false;
-    int32_t albumId = value.Get(PhotoMap::ALBUM_ID, isValid);
-    if (!isValid) {
-        return -EINVAL;
-    }
-    string assetUri = value.Get(PhotoMap::ASSET_ID, isValid);
-    if (!isValid) {
-        return -EINVAL;
-    }
-
-    string assetId = MediaFileUri::GetPhotoId(assetUri);
-    if (assetId.empty()) {
-        return -EINVAL;
-    }
-    vector<ValueObject> bindArgs;
-    bindArgs.emplace_back(albumId);
-    bindArgs.emplace_back(assetId);
-    bindArgs.emplace_back(albumId);
-    bindArgs.emplace_back(assetId);
-    bindArgs.emplace_back(assetId);
-    bindArgs.emplace_back(albumId);
-    bindArgs.emplace_back(PhotoAlbumType::USER);
-    bindArgs.emplace_back(PhotoAlbumSubType::USER_GENERIC);
-    int errCode =  MediaLibraryRdbStore::ExecuteForLastInsertedRowId(INSERT_MAP_SQL, bindArgs);
-    if (errCode > 0) {
-        notifyUris.push_back(assetUri);
-    }
-    return errCode;
-}
-
 static int32_t InsertAnalysisAsset(const DataShareValuesBucket &value)
 {
     /**
@@ -141,41 +90,36 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
         return E_HAS_DB_ERROR;
     }
 
-    vector<string> notifyUris;
-    TransactionOperations op(rdbStore->GetRaw());
     int32_t changedRows = 0;
-    int32_t err = op.Start();
-    if (err != E_OK) {
-        return E_HAS_DB_ERROR;
-    }
-    for (const auto &value : values) {
-        auto ret = AddSingleAsset(value, notifyUris);
-        if (ret == E_HAS_DB_ERROR) {
-            return ret;
-        }
-        if (ret > 0) {
-            changedRows++;
-        }
-    }
-    op.Finish();
+    vector<int32_t> updateIds;
     if (values.empty()) {
-        return changedRows;
-    }
+        bool isValid = false;
+        int32_t albumId = values[0].Get(PhotoColumn::PHOTO_OWNER_ALBUM_ID, isValid);
+        if (!isValid || albumId <= 0) {
+            MEDIA_WARN_LOG("Ignore failure on get album id when add assets. isValid: %{public}d, albumId: %{public}d",
+                isValid, albumId);
+            return changedRows;
+        }
 
-    bool isValid = false;
-    int32_t albumId = values[0].Get(PhotoMap::ALBUM_ID, isValid);
-    if (!isValid || albumId <= 0) {
-        MEDIA_WARN_LOG("Ignore failure on get album id when add assets. isValid: %{public}d, albumId: %{public}d",
-            isValid, albumId);
-        return changedRows;
+        changedRows = MediaLibraryRdbUtils::UpdateOwnerAlbumId(rdbStore->GetRaw(), values, updateIds);
+        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore->GetRaw(), { to_string(albumId) });
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore->GetRaw(), {
+            to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
+            to_string(PhotoAlbumSubType::FAVORITE)
+        });
+        auto watch = MediaLibraryNotify::GetInstance();
+        for (const auto &id : updateIds) {
+            string notifyUri = PhotoColumn::PHOTO_URI_PREFIX + to_string(id);
+            watch->Notify(MediaFileUtils::Encode(notifyUri), NotifyType::NOTIFY_ALBUM_ADD_ASSET, albumId);
+            watch->Notify(MediaFileUtils::Encode(notifyUri), NotifyType::NOTIFY_ALBUM_ADD_ASSET,
+                watch->GetAlbumIdBySubType(PhotoAlbumSubType::IMAGE));
+            watch->Notify(MediaFileUtils::Encode(notifyUri), NotifyType::NOTIFY_ALBUM_ADD_ASSET,
+                watch->GetAlbumIdBySubType(PhotoAlbumSubType::VIDEO));
+            watch->Notify(MediaFileUtils::Encode(notifyUri), NotifyType::NOTIFY_ALBUM_ADD_ASSET,
+                watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE));
+            watch->Notify(MediaFileUtils::Encode(notifyUri), NotifyType::NOTIFY_ADD);
+        }
     }
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore->GetRaw(), { to_string(albumId) });
-
-    auto watch = MediaLibraryNotify::GetInstance();
-    for (const auto &uri : notifyUris) {
-        watch->Notify(MediaFileUtils::Encode(uri), NotifyType::NOTIFY_ALBUM_ADD_ASSET, albumId);
-    }
-
     return changedRows;
 }
 
@@ -328,10 +272,14 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
 {
     vector<string> whereArgs = predicates.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
-    int deleteRow = MediaLibraryRdbStore::Delete(predicates);
-    if (deleteRow <= 0) {
+    int32_t deleteRow = 0;
+    vector<string> whereIdArgs = predicates.GetWhereArgs();
+    if (whereIdArgs.empty()) {
         return deleteRow;
     }
+    whereIdArgs.erase(whereIdArgs.begin());
+    deleteRow = MediaLibraryRdbUtils::UpdateRemoveAsset(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), whereIdArgs);
 
     string strAlbumId = predicates.GetWhereArgs()[0];
     if (strAlbumId.empty()) {

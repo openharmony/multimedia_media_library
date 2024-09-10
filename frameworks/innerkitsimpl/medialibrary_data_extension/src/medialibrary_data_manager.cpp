@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 #define MLOG_TAG "DataManager"
 
 #include "medialibrary_data_manager.h"
@@ -305,7 +305,6 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
         sceneCode = DfxType::START_RDB_STORE_FAIL;
         return errCode;
     }
-
     if (!MediaLibraryKvStoreManager::GetInstance().InitMonthAndYearKvStore(KvStoreRoleType::OWNER)) {
         MEDIA_ERR_LOG("failed at InitMonthAndYearKvStore");
     }
@@ -1116,7 +1115,7 @@ static string generateRegexpMatchForNumber(const int32_t num)
     return strRegexpMatch;
 }
 
-static string generateUpdateSql(const bool isCover, const string title, const int32_t mapAlbum)
+static string generateUpdateSql(const bool isCover, const string title, const int32_t ownerAlbumId)
 {
     uint32_t index = title.find_first_of("BURST");
     string globMember = title.substr(0, index) + "BURST" + generateRegexpMatchForNumber(3);
@@ -1130,14 +1129,13 @@ static string generateUpdateSql(const bool isCover, const string title, const in
             " NOT LIKE '%COVER%' THEN " + to_string(static_cast<int32_t>(BurstCoverLevelType::MEMBER)) + " ELSE " +
             to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) + " END WHERE " + MediaColumn::MEDIA_TYPE +
             " = " + to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
-            to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + MediaColumn::MEDIA_ID +
-            " IN (SELECT " + PhotoMap::ASSET_ID + " FROM " + PhotoMap::TABLE + " WHERE " + PhotoMap::ALBUM_ID + " = " +
-            to_string(mapAlbum) + ") AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globMember +
-            "') OR LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globCover + "'));";
+            to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
+            " = " + to_string(ownerAlbumId) + " AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" +
+            globMember + "') OR LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globCover + "'));";
     } else {
-        string subWhere = "FROM " + PhotoColumn::PHOTOS_TABLE + " AS p2 JOIN " + PhotoMap::TABLE + " AS p3 ON p2." +
-            MediaColumn::MEDIA_ID + " = p3." + PhotoMap::ASSET_ID + " WHERE LOWER(p2." + MediaColumn::MEDIA_TITLE +
-            ") GLOB LOWER('" + globCover + "') AND p3." + PhotoMap::ALBUM_ID + " = " + to_string(mapAlbum);
+        string subWhere = "FROM " + PhotoColumn::PHOTOS_TABLE + " AS p2 WHERE LOWER(p2." + MediaColumn::MEDIA_TITLE +
+            ") GLOB LOWER('" + globCover + "') AND p2." + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = " +
+            to_string(ownerAlbumId);
 
         updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " AS p1 SET " + PhotoColumn::PHOTO_BURST_KEY +
             " = (SELECT CASE WHEN p2." + PhotoColumn::PHOTO_BURST_KEY + " IS NOT NULL THEN p2." +
@@ -1147,9 +1145,8 @@ static string generateUpdateSql(const bool isCover, const string title, const in
             to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) + " END " + subWhere + "), " +
             PhotoColumn::PHOTO_SUBTYPE + " = (SELECT CASE WHEN COUNT(1) > 0 THEN " +
             to_string(static_cast<int32_t>(PhotoSubType::BURST)) + " ELSE p1." + PhotoColumn::PHOTO_SUBTYPE + " END " +
-            subWhere + ") WHERE p1." + MediaColumn::MEDIA_TITLE + " = '" + title + "' AND EXISTS(SELECT 1 FROM " +
-            PhotoMap::TABLE + " AS p3 WHERE p1." + MediaColumn::MEDIA_ID + " = p3." + PhotoMap::ASSET_ID + " AND p3." +
-            PhotoMap::ALBUM_ID + " = " + to_string(mapAlbum) + ");";
+            subWhere + ") WHERE p1." + MediaColumn::MEDIA_TITLE + " = '" + title + "' AND p1." +
+            PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = " + to_string(ownerAlbumId);
     }
     return updateSql;
 }
@@ -1178,12 +1175,12 @@ static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::RdbSto
         if (resultSet->GetColumnIndex(MediaColumn::MEDIA_TITLE, columnIndex) == NativeRdb::E_OK) {
             resultSet->GetString(columnIndex, title);
         }
-        int32_t mapAlbum = 0;
-        if (resultSet->GetColumnIndex(PhotoMap::ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
-            resultSet->GetInt(columnIndex, mapAlbum);
+        int32_t ownerAlbumId = 0;
+        if (resultSet->GetColumnIndex(PhotoColumn::PHOTO_OWNER_ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetInt(columnIndex, ownerAlbumId);
         }
 
-        string updateSql = generateUpdateSql(isCover, title, mapAlbum);
+        string updateSql = generateUpdateSql(isCover, title, ownerAlbumId);
         ret = rdbStore->ExecuteSql(updateSql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("rdbStore->ExecuteSql failed, ret = %{public}d", ret);
@@ -1196,9 +1193,8 @@ static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::RdbSto
 static shared_ptr<NativeRdb::ResultSet> QueryBurst(shared_ptr<NativeRdb::RdbStore> rdbStore,
     const string globNameRule1, const string globNameRule2)
 {
-    string querySql = "SELECT p1." + MediaColumn::MEDIA_TITLE + ", p2." + PhotoMap::ALBUM_ID +
-        " FROM " + PhotoColumn::PHOTOS_TABLE + " AS p1 JOIN " + PhotoMap::TABLE + " AS p2 ON p1." +
-        MediaColumn::MEDIA_ID + " = p2." + PhotoMap::ASSET_ID + " WHERE " + MediaColumn::MEDIA_TYPE + " = " +
+    string querySql = "SELECT " + MediaColumn::MEDIA_TITLE + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
+        " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_TYPE + " = " +
         to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
         to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_BURST_KEY +
         " IS NULL AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule1 + "') OR LOWER(" +
