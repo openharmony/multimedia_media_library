@@ -137,7 +137,7 @@ protected:
     std::string errorInfo_;
     std::unordered_map<std::string, std::unordered_map<std::string, int32_t>> failedFilesMap_;
     int fileMinSize_ = 0;
-    int32_t sceneCode_ = -1;
+    int32_t sceneCode_ = DEFAULT_RESTORE_ID;
     std::unordered_map<std::string, std::string> tagIdMap_;
     std::unordered_map<std::string, int32_t> portraitAlbumIdMap_;
     bool hasLowQualityImage_ = false;

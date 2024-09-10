@@ -33,6 +33,7 @@ namespace Media {
 const string DEFAULT_IMAGE_NAME = "IMG_";
 const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
+const size_t MAX_FAILED_FILES_SIZE = 100;
 const string LOW_QUALITY_PATH = "Documents/cameradata/";
 
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
@@ -372,8 +373,12 @@ std::string BackupFileUtils::GetFailedFilesStr(const std::unordered_map<std::str
     size_t index = 0;
     for (const auto &iter : failedFiles) {
         failedFilesStream << "\n\"" + iter.first;
-        index + 1 < failedFiles.size() ? failedFilesStream << "\"," : failedFilesStream << "\"";
+        index + 1 < failedFiles.size() && index + 1 < MAX_FAILED_FILES_SIZE ? failedFilesStream << "\"," :
+            failedFilesStream << "\"";
         index++;
+        if (index == MAX_FAILED_FILES_SIZE) {
+            break;
+        }
     }
     failedFilesStream << "\n]";
     return failedFilesStream.str();
@@ -401,22 +406,22 @@ bool BackupFileUtils::GetPathPosByPrefixLevel(int32_t sceneCode, const std::stri
     return true;
 }
 
-bool BackupFileUtils::ShouldIncludeSD(const std::string &prefix)
+bool BackupFileUtils::ShouldIncludeSd(const std::string &prefix)
 {
     return MediaFileUtils::IsFileExists(prefix + "/" + PHOTO_SD_DB_NAME) ||
         MediaFileUtils::IsFileExists(prefix + "/" + VIDEO_SD_DB_NAME);
 }
 
-void BackupFileUtils::DeleteSDDatabase(const std::string &prefix)
+void BackupFileUtils::DeleteSdDatabase(const std::string &prefix)
 {
-    std::vector<std::string> sdDBs = { PHOTO_SD_DB_NAME, VIDEO_SD_DB_NAME };
-    for (const auto &sdDB : sdDBs) {
-        std::string sdDBPath = prefix + "/" + sdDB;
-        if (!MediaFileUtils::IsFileExists(sdDBPath)) {
+    std::vector<std::string> sdDbs = { PHOTO_SD_DB_NAME, VIDEO_SD_DB_NAME };
+    for (const auto &sdDb : sdDbs) {
+        std::string sdDbPath = prefix + "/" + sdDb;
+        if (!MediaFileUtils::IsFileExists(sdDbPath)) {
             continue;
         }
-        if (!MediaFileUtils::DeleteFile(sdDBPath)) {
-            MEDIA_ERR_LOG("Delete SD database %{public}s failed, errno: %{public}d", sdDB.c_str(), errno);
+        if (!MediaFileUtils::DeleteFile(sdDbPath)) {
+            MEDIA_ERR_LOG("Delete Sd database %{public}s failed, errno: %{public}d", sdDb.c_str(), errno);
         }
     }
 }
