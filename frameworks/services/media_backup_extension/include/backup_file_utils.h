@@ -46,7 +46,7 @@ public:
     static std::string GetFailedFilesStr(const std::unordered_map<std::string, int32_t> &failedFiles);
     static bool GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel, size_t &pos);
     static bool ShouldIncludeSd(const std::string &prefix);
-+   static void DeleteSdDatabase(const std::string &prefix);
+    static void DeleteSdDatabase(const std::string &prefix);
     static bool IsLivePhoto(const FileInfo &fileInfo);
     static bool ConvertToMovingPhoto(FileInfo &fileInfo);
     static string ConvertLowQualityPath(int32_t sceneCode, const std::string &filePath, const string &relativePath);
