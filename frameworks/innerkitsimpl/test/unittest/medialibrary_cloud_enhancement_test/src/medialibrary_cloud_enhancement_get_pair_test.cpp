@@ -19,11 +19,11 @@
 #define MLOG_TAG "CloudEnhancementGetPairUnitTest"
 
 
-#include "cloud_enhancement_get_pair_test.h"
- 
+#include "medialibrary_cloud_enhancement_get_pair_test.h"
+
 #include <chrono>
 #include <thread>
- 
+
 #include "gmock/gmock.h"
 #include "image_source.h"
 #include "media_exif.h"
@@ -39,27 +39,25 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
-#include "multistages_capture_manager.h"
-#include "enhancement_manager.h"
+#include "medialibrary_rdb_transaction.h"
 #include "result_set_utils.h"
 #include "values_bucket.h"
 
 #define private public
 #define protected public
-#include "exif_utils.h"
 #include "file_utils.h"
+#include "enhancement_manager.h"
+#include "enhancement_service_callback.h"
 #include "enhancement_task_manager.h"
 #include "enhancement_service_adapter.h"
-#include "enhancement_service_callback.h"
 #include "enhancement_database_operations.h"
+#undef private
+#undef protected
 
 #include "media_enhance_client.h"
 #include "media_enhance_bundle.h"
 #include "media_enhance_constants.h"
 
-#undef private
-#undef protected
- 
 using namespace std;
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
@@ -797,4 +795,4 @@ HWTEST_F(MediaLibraryCloudEnhancementGetPairTest, manager_handle_get_pair_operat
     MEDIA_INFO_LOG("manager_handle_get_pair_operation_032 End");
 }
 }
-}
+}

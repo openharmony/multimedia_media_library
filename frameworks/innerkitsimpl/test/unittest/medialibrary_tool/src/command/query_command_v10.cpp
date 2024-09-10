@@ -51,6 +51,7 @@ static std::vector<std::string> QueryMediaFiles(const std::string &displayName)
             }
             queryfilePaths.push_back(path);
         } while (!resultSet->GoToNextRow());
+        resultSet->Close();
     } else {
         printf("The displayName format is not correct!\n");
     }

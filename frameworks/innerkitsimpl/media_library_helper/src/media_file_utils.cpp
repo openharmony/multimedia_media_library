@@ -444,7 +444,7 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
         return errCode;
     }
     if (absFilePath.empty()) {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path%{private}s %{public}d",
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path:%{public}s %{public}d",
                       filePath.c_str(), errno);
         return errCode;
     }

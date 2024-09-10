@@ -920,9 +920,7 @@ inline void SetDefaultPredicatesCondition(DataSharePredicates &predicates, const
 int32_t MediaLibraryNapiUtils::GetUserAlbumPredicates(
     const int32_t albumId, DataSharePredicates &predicates, const bool hiddenOnly)
 {
-    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
-    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
     SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     return E_SUCCESS;
 }
@@ -1122,9 +1120,7 @@ static int32_t GetCloudEnhancementPredicates(DataSharePredicates &predicates, co
 int32_t MediaLibraryNapiUtils::GetSourceAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates,
     const bool hiddenOnly)
 {
-    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
-    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     return E_SUCCESS;

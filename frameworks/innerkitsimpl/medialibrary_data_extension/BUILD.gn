@@ -44,11 +44,11 @@ config("media_data_extension_public_config") {
 
   include_dfx = [ "${MEDIALIB_SERVICES_PATH}/media_dfx/include" ]
 
-  include_cloud_enhancement = [ 
+  include_cloud_enhancement = [
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/enhancement_service",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/utils",
-    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/dfx",  
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/dfx",
   ]
 
   include_dirs = [
@@ -56,6 +56,8 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/config",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/event_handler",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
@@ -222,9 +224,11 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_UTILS_PATH}/src/cpu_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
     "src/background_cloud_file_processor.cpp",
+    "src/event_handler/album_plugin_table_event_handler.cpp",
     "src/hi_audit.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
+    "src/medialibrary_album_fusion_utils.cpp",
     "src/medialibrary_album_operations.cpp",
     "src/medialibrary_album_refresh.cpp",
     "src/medialibrary_analysis_album_operations.cpp",
@@ -350,10 +354,12 @@ ohos_shared_library("medialibrary_data_extension") {
     external_deps += [ "security_component_manager:libsecurity_component_sdk" ]
   }
 
-  if (defined(global_parts_info) && 
-      defined(global_parts_info.device_cloud_gateway_media_cloud_enhance_service)) {
+  if (defined(global_parts_info) &&
+      defined(
+          global_parts_info.device_cloud_gateway_media_cloud_enhance_service)) {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
-    external_deps += [ "media_cloud_enhance_service:media_cloud_enhance_client" ]
+    external_deps +=
+        [ "media_cloud_enhance_service:media_cloud_enhance_client" ]
     sources += [ "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_service/enhancement_service_callback.cpp" ]
   }
 

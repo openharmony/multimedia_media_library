@@ -28,7 +28,8 @@ enum class DirtyTypes : int32_t {
     TYPE_FDIRTY,
     TYPE_DELETED,
     TYPE_RETRY,
-    TYPE_SDIRTY
+    TYPE_SDIRTY,
+    TYPE_COPY
 };
 
 enum class ExtraChangeType : uint32_t {
@@ -120,6 +121,9 @@ public:
     static const std::string PHOTO_BURST_COVER_LEVEL EXPORT;
     static const std::string PHOTO_BURST_KEY EXPORT;
     static const std::string PHOTO_COVER_POSITION EXPORT;
+    static const std::string PHOTO_OWNER_ALBUM_ID EXPORT;
+    static const std::string PHOTO_ORIGINAL_ASSET_CLOUD_ID EXPORT;
+    static const std::string PHOTO_SOURCE_PATH EXPORT;
     static const std::string PHOTO_ORIGINAL_SUBTYPE EXPORT;
     static const std::string PHOTO_DETAIL_TIME EXPORT;
 
