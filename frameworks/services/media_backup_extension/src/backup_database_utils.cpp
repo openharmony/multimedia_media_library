@@ -20,7 +20,6 @@
 #include "backup_const_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_restore.h"
 
 namespace OHOS {
 namespace Media {
@@ -47,8 +46,7 @@ int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbSto
     config.SetBundleName(bundleName);
     config.SetReadConSize(CONNECT_SIZE);
     config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
-    int32_t haMode = MediaLibraryRestore::GetInstance().DetectHaMode(dbName);
-    config.SetHaMode(std::move(haMode));
+    config.SetHaMode(NativeRdb::HAMode::MANUAL_TRIGGER);
     config.SetAllowRebuild(true);
     if (area != DEFAULT_AREA_VERSION) {
         config.SetArea(area);
