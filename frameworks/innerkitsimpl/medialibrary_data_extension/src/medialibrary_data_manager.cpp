@@ -246,6 +246,23 @@ static void UpdateDateTakenToMillionSecond(shared_ptr<NativeRdb::RdbStore> &stor
     MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond end");
 }
 
+static void UpdateDateTakenIndex(shared_ptr<NativeRdb::RdbStore> &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::DROP_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
+        PhotoColumn::DROP_INDEX_SCHPT_READY,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::INDEX_SCHPT_READY,
+    };
+    MEDIA_INFO_LOG("update index for datetaken change start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("update index for datetaken change end");
+}
+
 static void OnUpgradeRdbStore(AsyncTaskData* data)
 {
     auto *taskData = static_cast<UpgradeRdbStoreAsyncTaskData *>(data);
@@ -254,6 +271,7 @@ static void OnUpgradeRdbStore(AsyncTaskData* data)
     MEDIA_INFO_LOG("Start MediaLibraryDataManager::UpgradeRdbStoreAsync, oldVersion:%{public}d", oldVersion);
     if (oldVersion < VERSION_ADD_DETAIL_TIME) {
         UpdateDateTakenToMillionSecond(rdbStore);
+        UpdateDateTakenIndex(rdbStore);
         ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
     }
 }

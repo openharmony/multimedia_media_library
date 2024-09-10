@@ -182,6 +182,7 @@ public:
     static const std::string DROP_INDEX_SCTHP_ADDTIME EXPORT;
     static const std::string INDEX_CAMERA_SHOT_KEY EXPORT;
     static const std::string INDEX_SCHPT_READY EXPORT;
+    static const std::string DROP_INDEX_SCHPT_READY EXPORT;
 
     // create Photo cloud sync trigger
     static const std::string CREATE_PHOTOS_DELETE_TRIGGER EXPORT;
