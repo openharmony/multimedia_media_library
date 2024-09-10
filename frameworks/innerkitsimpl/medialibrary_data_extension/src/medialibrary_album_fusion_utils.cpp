@@ -466,7 +466,7 @@ static int32_t copyMetaData(NativeRdb::RdbStore *upgradeStore, int64_t &newAsset
         MEDIA_ERR_LOG("upgradeStore->Insert failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
-    MEDIA_DEBUG_LOG("Insert copy meta data success, rowId = %{public}lld, ret = %{public}d", newAssetId, ret);
+    MEDIA_DEBUG_LOG("Insert copy meta data success, rowId = %{public}lld, ret = %{public}d", (long long)newAssetId, ret);
     return ret;
 }
 
@@ -751,7 +751,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleSingleFileCopy(NativeRdb::RdbStore *
         return err;
     }
     MEDIA_INFO_LOG("Copy file success, fileId is %{public}d, albumId is %{public}d, and copyed file id is %{public}lld",
-        assetId, ownerAlbumId, newAssetId);
+        assetId, ownerAlbumId, (long long)newAssetId);
     return E_OK;
 }
 
@@ -862,7 +862,7 @@ static int32_t CopyAlbumMetaData(NativeRdb::RdbStore *upgradeStore,
         return E_HAS_DB_ERROR;
     }
     MEDIA_ERR_LOG("Insert copyed album success,oldAlbumId is = %{public}d newAlbumId is %{public}lld",
-        oldAlbumId, newAlbumId);
+        oldAlbumId, (long long)newAlbumId);
     return ret;
 }
 
@@ -936,7 +936,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleExpiredAlbumData(NativeRdb::RdbStore
         CopyAlbumMetaData(upgradeStore, resultSet, oldAlbumId, newAlbumId);
         DeleteALbumAndUpdateRelationship(upgradeStore, oldAlbumId, newAlbumId, IsCloudAlbum(resultSet));
         MEDIA_ERR_LOG("Finish handle old album %{public}d, new inserted album id is %{public}lld",
-            oldAlbumId, newAlbumId);
+            oldAlbumId, (long long)newAlbumId);
     }
     return E_OK;
 }
@@ -1002,7 +1002,7 @@ int32_t MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(NativeRdb::RdbStore 
         return E_DB_FAIL;
     }
     MEDIA_INFO_LOG("MergeClashSourceAlbum %{public}d, target album is %{public}lld",
-        sourceAlbumId, targetAlbumId);
+        sourceAlbumId, (long long)targetAlbumId);
     DeleteALbumAndUpdateRelationship(upgradeStore, sourceAlbumId, targetAlbumId, IsCloudAlbum(resultSet));
     return E_OK;
 }
@@ -1025,11 +1025,11 @@ static int32_t MergeScreenShotAlbum(NativeRdb::RdbStore *upgradeStore, shared_pt
     if (newAlbunResultSet == nullptr || newAlbunResultSet->GoToFirstRow() != NativeRdb::E_OK) {
         // Create a new bundle name screenshot album
         CopyAlbumMetaData(upgradeStore, resultSet, oldAlbumId, newAlbumId);
-        MEDIA_INFO_LOG("Create new screenshot album, album id is %{public}lld", newAlbumId);
+        MEDIA_INFO_LOG("Create new screenshot album, album id is %{public}lld", (long long)newAlbumId);
     } else {
         GetLongValueFromResultSet(newAlbunResultSet, PhotoAlbumColumns::ALBUM_ID, newAlbumId);
     }
-    MEDIA_INFO_LOG("Begin merge screenshot album, new album is %{public}lld", newAlbumId);
+    MEDIA_INFO_LOG("Begin merge screenshot album, new album is %{public}lld", (long long)newAlbumId);
     MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(upgradeStore, resultSet, oldAlbumId, newAlbumId);
     MEDIA_INFO_LOG("End handle expired screen shot album data ");
     return E_OK;
@@ -1052,7 +1052,7 @@ static int32_t MergeScreenRecordAlbum(NativeRdb::RdbStore *upgradeStore, shared_
     if (newAlbunResultSet == nullptr || newAlbunResultSet->GoToFirstRow() != NativeRdb::E_OK) {
         // Create a new bundle name screenshot album
         CopyAlbumMetaData(upgradeStore, resultSet, oldAlbumId, newAlbumId);
-        MEDIA_INFO_LOG("Create new screenrecord album, album id is %{public}lld", newAlbumId);
+        MEDIA_INFO_LOG("Create new screenrecord album, album id is %{public}lld", (long long)newAlbumId);
     } else {
         GetLongValueFromResultSet(newAlbunResultSet, PhotoAlbumColumns::ALBUM_ID, newAlbumId);
     }
@@ -1153,7 +1153,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(NativeRdb::RdbStore *
         }
     }
     MEDIA_INFO_LOG("End clean duplicated album, cost: %{public}lld",
-        MediaFileUtils::UTCTimeMilliSeconds() - beginTime);
+        (long long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
     return E_OK;
 }
 
