@@ -175,11 +175,13 @@ enum class RequestPhotoType : int32_t {
     REQUEST_TYPE_END
 };
 
-enum class CoverSatisfiedType : int32_t {
+enum class CoverSatisfiedType : uint8_t {
     NO_SETTING = 0,
-    DEFAULT_SETTING,
-    USER_SETTING,
-    ANALYSIS_SETTING
+    DEFAULT_SETTING = 1,
+    USER_SETTING = 2,
+    USER_SETTING_EDITE = 3,
+    BEAUTY_SETTING = 4,
+    BEAUTY_SETTING_EDITE = 5
 };
 
 enum class BurstCoverLevelType : int32_t {
