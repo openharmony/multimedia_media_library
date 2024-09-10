@@ -466,7 +466,7 @@ static int32_t copyMetaData(NativeRdb::RdbStore *upgradeStore, int64_t &newAsset
         MEDIA_ERR_LOG("upgradeStore->Insert failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
-    MEDIA_DEBUG_LOG("Insert copy meta data success, rowId = %{public}lld, ret = %{public}d", (long long)newAssetId, ret);
+    MEDIA_DEBUG_LOG("Insert copy meta data success, rowId=%{public}lld, ret=%{public}d", (long long)newAssetId, ret);
     return ret;
 }
 
