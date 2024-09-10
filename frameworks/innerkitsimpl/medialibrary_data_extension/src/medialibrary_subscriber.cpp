@@ -223,7 +223,9 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
 {
     const AAFwk::Want &want = eventData.GetWant();
     std::string action = want.GetAction();
-    MEDIA_DEBUG_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
+    if (action != EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED) {
+        MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
+    }
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
         isWifiConn_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
         UpdateBackgroundTimer();
