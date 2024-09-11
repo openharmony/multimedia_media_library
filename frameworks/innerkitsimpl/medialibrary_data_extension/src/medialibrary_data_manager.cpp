@@ -949,9 +949,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             }
             break;
         }
-        case OperationObject::PHOTO_ALBUM: {
+        case OperationObject::PHOTO_ALBUM:
             return MediaLibraryAlbumOperations::HandlePhotoAlbum(cmd.GetOprnType(), value, predicates);
-        }
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
             return MediaLibraryLocationOperations::UpdateOperation(cmd);
@@ -1492,10 +1491,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::ANALYSIS_PHOTO_ALBUM:
             return QueryAnalysisAlbum(cmd, columns, predicates);
         case OperationObject::PHOTO_MAP:
-        case OperationObject::ANALYSIS_PHOTO_MAP: {
+        case OperationObject::ANALYSIS_PHOTO_MAP:
             return PhotoMapOperations::QueryPhotoAssets(
                 RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);
-        }
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO:
         case OperationObject::PAH_MOVING_PHOTO:
