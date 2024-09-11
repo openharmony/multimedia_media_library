@@ -904,9 +904,12 @@ void BackupDatabaseUtils::UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
     for (auto& [groupTag, tagIds] : groupTagMap) {
         if (tagIds.size() > 1) {
             std::string newGroupTag = BackupDatabaseUtils::JoinValues<std::string>(tagIds, "|");
-            if (newGroupTag != groupTag) {
-                UpdateTagPairs(updatedPairs, newGroupTag, tagIds);
-            }
+        } else if (tagIds.size() == 1) {
+            newGroupTag = tagIds[0];
+        }
+
+        if (newGroupTag != groupTag) {
+            UpdateTagPairs(updatedPairs, newGroupTag, tagIds);
         }
     }
 }
