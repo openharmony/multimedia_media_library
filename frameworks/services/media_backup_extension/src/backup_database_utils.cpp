@@ -900,11 +900,15 @@ void BackupDatabaseUtils::UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
     const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap)
 {
     for (auto& [groupTag, tagIds] : groupTagMap) {
+        std::string newGroupTag;
         if (tagIds.size() > 1) {
-            std::string newGroupTag = BackupDatabaseUtils::JoinValues<std::string>(tagIds, "|");
-            if (newGroupTag != groupTag) {
-                UpdateTagPairs(updatedPairs, newGroupTag, tagIds);
-            }
+            newGroupTag = BackupDatabaseUtils::JoinValues<std::string>(tagIds, "|");
+        } else if (tagIds.size() == 1) {
+            newGroupTag = tagIds[0];
+        }
+
+        if (newGroupTag != groupTag) {
+            UpdateTagPairs(updatedPairs, newGroupTag, tagIds);
         }
     }
 }
