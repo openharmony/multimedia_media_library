@@ -72,4 +72,4 @@ string EnhancementTaskManager::QueryPhotoIdByFileId(int32_t fileId)
     return "";
 }
 } // Media
-} // OHOS
+} // OHOS

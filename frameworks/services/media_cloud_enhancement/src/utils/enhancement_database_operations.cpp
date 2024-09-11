@@ -217,4 +217,4 @@ std::shared_ptr<NativeRdb::ResultSet> EnhancementDatabaseOperations::GetPair(Med
     return nullptr;
 }
 } // namespace Media
-} // namespace OHOS
+} // namespace OHOS
