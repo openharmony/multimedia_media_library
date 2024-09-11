@@ -3403,6 +3403,10 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_CLOUD_ENAHCNEMENT) {
         AddCloudEnhancementColumns(store);
     }
+
+    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_UPLOADING_MOVING_PHOTO) {
+        UpdatePhotosMdirtyTrigger(store);
+    }
 }
 
 static void UpgradeExtensionPart1(RdbStore &store, int32_t oldVersion)

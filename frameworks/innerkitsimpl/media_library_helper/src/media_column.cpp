@@ -414,7 +414,10 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
         PHOTO_SHOOTING_MODE,
         PHOTO_SHOOTING_MODE_TAG,
         PHOTO_OWNER_ALBUM_ID,
-        PHOTO_SOURCE_PATH
+        PHOTO_SOURCE_PATH,
+        MOVING_PHOTO_EFFECT_MODE,
+        PHOTO_COVER_POSITION,
+        PHOTO_ORIGINAL_SUBTYPE,
     };
 
     std::string result = "(";
