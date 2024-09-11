@@ -19,6 +19,7 @@
 #include <string>
 
 #include "rdb_store.h"
+#include "db_upgrade_utils.h"
 
 namespace OHOS::Media {
 namespace DataTransfer {
@@ -35,10 +36,6 @@ private:
     int32_t UpgradePhotosBelongsToAlbum(NativeRdb::RdbStore &store);
 
 private:
-    bool IsColumnExists(NativeRdb::RdbStore &store, const std::string &tableName, const std::string &columnName);
-    bool IsTableExists(NativeRdb::RdbStore &store, const std::string &tableName);
-
-private:
     int32_t AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store);
     int32_t AddlPathColumn(NativeRdb::RdbStore &store);
     int32_t MoveSingleRelationshipToPhotos(NativeRdb::RdbStore &store);
@@ -46,24 +43,9 @@ private:
     int32_t UpdatelPathColumn(NativeRdb::RdbStore &store);
 
 private:
-    const std::string SQL_PRAGMA_TABLE_INFO_QUERY = "\
-        SELECT \
-            name, \
-            type, \
-            [notnull], \
-            dflt_value, \
-            pk \
-        FROM \
-            pragma_table_info(?) \
-        WHERE name = ?;";
-    const std::string SQL_SQLITE_MASTER_QUERY = "\
-        SELECT \
-            type, \
-            name, \
-            tbl_name \
-        FROM sqlite_master \
-        WHERE type='table' AND \
-            tbl_name = ?;";
+    DbUpgradeUtils dbUpgradeUtils_;
+
+private:
     const std::vector<std::string> SQL_PHOTO_ALBUM_TABLE_DROP_TRIGGER = {"DROP TRIGGER IF EXISTS album_delete_trigger",
         "DROP TRIGGER IF EXISTS album_insert_cloud_sync_trigger",
         "DROP TRIGGER IF EXISTS album_modify_trigger",

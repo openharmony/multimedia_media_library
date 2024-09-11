@@ -13,11 +13,12 @@
  * limitations under the License.
  */
 #include "gallery_db_upgrade.h"
- 
+
 #include "rdb_store.h"
 #include "album_plugin_table_event_handler.h"
 #include "media_log.h"
- 
+#include "db_upgrade_utils.h"
+
 namespace OHOS::Media {
 namespace DataTransfer {
 /**
@@ -29,6 +30,26 @@ int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     AlbumPluginTableEventHandler handler;
     int32_t ret = handler.OnUpgrade(store, 0, 0);
     MEDIA_INFO_LOG("GalleryDbUpgrade::OnUpgrade end, ret: %{public}d", ret);
+    return this->AddPhotoQualityOfGalleryMedia(store);
+}
+
+/**
+ * @brief Add photo_quality of gallery_media table in gallery.db.
+ */
+int32_t GalleryDbUpgrade::AddPhotoQualityOfGalleryMedia(NativeRdb::RdbStore &store)
+{
+    if (this->dbUpgradeUtils_.IsColumnExists(store, "gallery_media", "photo_quality")) {
+        return NativeRdb::E_OK;
+    }
+    std::string sql = this->SQL_GALLERY_MEDIA_TABLE_ADD_PHOTO_QUALITY;
+    int32_t ret = store.ExecuteSql(sql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG(
+            "Media_Restore: GalleryDbUpgrade::AddPhotoQualityOfGalleryMedia failed, ret=%{public}d, sql=%{public}s",
+            ret,
+            sql.c_str());
+    }
+    MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddPhotoQualityOfGalleryMedia success");
     return ret;
 }
 }  // namespace DataTransfer

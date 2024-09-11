@@ -202,7 +202,7 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
     this->mediaLibraryRdb_->BeginTransaction();
     for (const PhotoAlbumDao::PhotoAlbumRowData &data : photoAlbums) {
         std::vector<NativeRdb::ValueObject> bindArgs = {
-            data.albumType, data.albumSubType, data.albumName, data.bundleName, data.lPath};
+            data.albumType, data.albumSubType, data.albumName, data.bundleName, data.lPath, data.priority};
         DEBUG_LOG_TO_CONSOLE(this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
         err = this->mediaLibraryRdb_->ExecuteSql(this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
         if (err != NativeRdb::E_OK) {

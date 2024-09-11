@@ -20,6 +20,7 @@
 #include "rdb_store.h"
 #include "media_log.h"
 #include "album_plugin_table_event_handler.h"
+#include "db_upgrade_utils.h"
 
 namespace OHOS::Media {
 namespace DataTransfer {
@@ -89,51 +90,11 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotosBelongsToAlbum(NativeRdb::RdbStore &
 }
 
 /**
- * @brief Check table exists or not.
- */
-bool MediaLibraryDbUpgrade::IsTableExists(NativeRdb::RdbStore &store, const std::string &tableName)
-{
-    std::string querySql = this->SQL_SQLITE_MASTER_QUERY;
-    std::vector<NativeRdb::ValueObject> bindArgs = {tableName};
-    auto resultSet = store.QuerySql(querySql, bindArgs);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return false;
-    }
-    int rowCount = 0;
-    bool isExists = !resultSet->GetRowCount(rowCount) && rowCount > 0;
-    MEDIA_INFO_LOG("Media_Restore: tableName=%{public}s, isExists:%{public}d", tableName.c_str(), isExists);
-    return isExists;
-}
-
-/**
- * @brief Check table column exists or not.
- */
-bool MediaLibraryDbUpgrade::IsColumnExists(
-    NativeRdb::RdbStore &store, const std::string &tableName, const std::string &columnName)
-{
-    std::string querySql = this->SQL_PRAGMA_TABLE_INFO_QUERY;
-    std::vector<NativeRdb::ValueObject> bindArgs = {tableName, columnName};
-    auto resultSet = store.QuerySql(querySql, bindArgs);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return false;
-    }
-    int rowCount = 0;
-    bool isExists = !resultSet->GetRowCount(rowCount) && rowCount > 0;
-    MEDIA_INFO_LOG("Media_Restore: tableName=%{public}s, columnName=%{public}s, isExists:%{public}d",
-        tableName.c_str(),
-        columnName.c_str(),
-        isExists);
-    return isExists;
-}
-
-/**
  * @brief Upgrade album_plugin table.
  */
 int32_t MediaLibraryDbUpgrade::UpgradeAlbumPlugin(NativeRdb::RdbStore &store)
 {
-    if (this->IsTableExists(store, "album_plugin")) {
+    if (this->dbUpgradeUtils_.IsTableExists(store, "album_plugin")) {
         return NativeRdb::E_OK;
     }
     AlbumPluginTableEventHandler handler;
@@ -200,7 +161,7 @@ int32_t MediaLibraryDbUpgrade::UpdatelPathColumn(NativeRdb::RdbStore &store)
  */
 int32_t MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store)
 {
-    if (this->IsColumnExists(store, "Photos", "owner_album_id")) {
+    if (this->dbUpgradeUtils_.IsColumnExists(store, "Photos", "owner_album_id")) {
         return NativeRdb::E_OK;
     }
     std::string sql = this->SQL_PHOTOS_TABLE_ADD_OWNER_ALBUM_ID;
@@ -220,7 +181,7 @@ int32_t MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store)
  */
 int32_t MediaLibraryDbUpgrade::AddlPathColumn(NativeRdb::RdbStore &store)
 {
-    if (this->IsColumnExists(store, "PhotoAlbum", "lpath")) {
+    if (this->dbUpgradeUtils_.IsColumnExists(store, "PhotoAlbum", "lpath")) {
         return NativeRdb::E_OK;
     }
     std::string sql = this->SQL_PHOTO_ALBUM_TABLE_ADD_LPATH_COLUMN;
