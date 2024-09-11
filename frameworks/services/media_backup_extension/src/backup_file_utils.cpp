@@ -38,6 +38,64 @@ const string LOW_QUALITY_PATH = "Documents/cameradata/";
 
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
 
+bool FileAccessHelper::GetValidPath(string &filePath)
+{
+    if (access(filePath.c_str(), F_OK) == 0) {
+        return true;
+    }
+
+    string resultPath = filePath;
+    int32_t pos = 0;
+    while ((pos = resultPath.find("/", pos + 1)) != string::npos) {
+        string curPath = resultPath.substr(0, pos);
+        if (!ConvertCurrentPath(curPath, resultPath)) {
+            MEDIA_ERR_LOG("convert fail, path: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
+            return false;
+        }
+    }
+
+    string curPath = resultPath;
+    if (!ConvertCurrentPath(curPath, resultPath)) {
+        MEDIA_ERR_LOG("convert fail, path: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
+        return false;
+    }
+
+    filePath = resultPath;
+    return true;
+}
+
+bool FileAccessHelper::ConvertCurrentPath(string &curPath, string &resultPath)
+{
+    if (access(curPath.c_str(), F_OK) == 0) {
+        return true;
+    }
+
+    string parentDir = filesystem::path(curPath).parent_path().string();
+    transform(curPath.begin(), curPath.end(), curPath.begin(), ::tolower);
+    {
+        std::lock_guard<std::mutex> guard(mapMutex);
+        if (pathMap.find(curPath) != pathMap.end()) {
+            resultPath.replace(0, curPath.length(), pathMap[curPath]);
+            return true;
+        }
+    }
+
+    for (const auto &entry : filesystem::directory_iterator(parentDir)) {
+        string entryPath = entry.path();
+        transform(entryPath.begin(), entryPath.end(), entryPath.begin(), ::tolower);
+        if (entryPath == curPath) {
+            resultPath.replace(0, curPath.length(), entry.path());
+            {
+                std::lock_guard<std::mutex> guard(mapMutex);
+                pathMap[curPath] = entry.path();
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
 int32_t BackupFileUtils::FillMetadata(std::unique_ptr<Metadata> &data)
 {
     int32_t err = GetFileMetadata(data);
