@@ -69,6 +69,7 @@
 #include "medialibrary_vision_operations.h"
 #include "dfx_manager.h"
 #include "moving_photo_file_utils.h"
+#include "hi_audit.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -614,6 +615,8 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
         "Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
     int32_t outRow = InsertAssetInDb(cmd, fileAsset);
+    AuditLog auditLog = { true, "USER BEHAVIOR", "ADD", "io", 1, "running", "ok" };
+    HiAudit::GetInstance().Write(auditLog);
     CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
     fileAsset.SetId(outRow);
     SolvePhotoAlbumInCreate(cmd, fileAsset);

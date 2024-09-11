@@ -37,13 +37,13 @@ struct AuditLog {
     int32_t type;
     int32_t size;
 
-    const virtual std::string TitleString() const
+    const std::string TitleString() const
     {
         return "happenTime, packageName, isForeground, cause, isUserBehavior, operationType, operationScenario,"
             "operationStatus, operationCount, extend, id, type, size\n";
     }
 
-    const virtual std::string ToString() const
+    const std::string ToString() const
     {
         return cause + ", " + std::to_string(isUserBehavior) + ", " + operationType + ", " + operationScenario +
             ", " + operationStatus + ", " + std::to_string(operationCount) + ", " + extend + ", " + id + ", " +
