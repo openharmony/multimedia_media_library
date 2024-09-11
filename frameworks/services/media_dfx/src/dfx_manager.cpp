@@ -136,7 +136,7 @@ static void LogDelete(DfxData *data)
     OHOS::Media::AuditLog auditLog;
     auditLog.isUserBehavior = true;
     auditLog.cause = "USER BEHAVIOR";
-    auditLog.operationType = "ADD";
+    auditLog.operationType = "DELETE";
     auditLog.operationScenario = "io";
     auditLog.operationCount = 1,
     auditLog.operationStatus = "running";
