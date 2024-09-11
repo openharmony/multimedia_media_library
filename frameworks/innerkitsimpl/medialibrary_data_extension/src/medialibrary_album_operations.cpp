@@ -895,7 +895,7 @@ static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUse
         return;
     }
     const std::string UPDATE_NEW_ALBUM_ID_IN_PHOTOS = "UPDATE Photos SET owner_album_id = " +
-        to_string(newAlbumId) + "WHERE file_id = " + assetId;
+        to_string(newAlbumId) + " WHERE file_id = " + assetId;
     ret = rdbStore->ExecuteSql(UPDATE_NEW_ALBUM_ID_IN_PHOTOS);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Update new album is fails");
