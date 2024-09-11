@@ -580,9 +580,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
 {
     FileAsset fileAsset;
     ValuesBucket &values = cmd.GetValueBucket();
-    string displayName;
-    string extention;
-    string title;
+    string displayName, extention, title;
     bool isContains = false;
     bool isNeedGrant = false;
     if (GetStringFromValuesBucket(values, PhotoColumn::MEDIA_NAME, displayName)) {
