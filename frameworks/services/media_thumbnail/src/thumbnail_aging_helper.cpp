@@ -129,7 +129,7 @@ int32_t ThumbnailAgingHelper::ClearLcdFromFileTable(ThumbRdbOpt &opts)
             ThumbnailUtils::CleanThumbnailInfo(opts, false, true);
         }
     }
-
+    MEDIA_INFO_LOG("Clear Lcd completed");
     return E_OK;
 }
 
