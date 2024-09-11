@@ -839,9 +839,7 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
         return E_ERR;
     }
 
-    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
-        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
+    if (sDataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("Failed to read video of moving photo, datashareHelper is nullptr");
         return E_ERR;
     }
@@ -849,7 +847,7 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
     string videoUri = uri;
     MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
     Uri openVideoUri(videoUri);
-    return dataShareHelper->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
+    return sDataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
 }
 
 std::string MediaLibraryManager::GetMovingPhotoImageUri(const string &uri)
@@ -914,16 +912,14 @@ int64_t MediaLibraryManager::GetMovingPhotoDateModified(const string &uri)
     string fileId = MediaFileUtils::GetIdFromUri(uri);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     DatashareBusinessError businessError;
-    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
-        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is null");
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("sDataShareHelper_ is null");
         return E_ERR;
     }
     vector<string> columns = {
         MediaColumn::MEDIA_DATE_MODIFIED,
     };
-    auto queryResultSet = dataShareHelper->Query(queryUri, predicates, columns, &businessError);
+    auto queryResultSet = sDataShareHelper_->Query(queryUri, predicates, columns, &businessError);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("queryResultSet is null");
         return E_ERR;
