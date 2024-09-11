@@ -80,7 +80,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         audioDbPath_ = backupRetoreDir + INTERNAL_PREFIX + "/0/" + AUDIO_DB_NAME;
         photosPreferencesPath = backupRetoreDir + "/" + galleryAppName_ + "_preferences.xml";
         // gallery db may include both internal & external, set flag to differentiate, default false
-        shouldIncludeSD_ = BackupFileUtils::ShouldIncludeSD(filePath_);
+        shouldIncludeSd_ = BackupFileUtils::ShouldIncludeSd(filePath_);
         SetParameterForClone();
 #ifdef CLOUD_SYNC_MANAGER
         FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
@@ -91,7 +91,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         externalDbPath_ = backupRetoreDir + "/" + mediaAppName_ + "/ce/databases/external.db";
         photosPreferencesPath =
             backupRetoreDir + "/" + galleryAppName_ + "/ce/shared_prefs/" + galleryAppName_ + "_preferences.xml";
-        shouldIncludeSD_ = false;
+        shouldIncludeSd_ = false;
         if (!MediaFileUtils::IsFileExists(externalDbPath_)) {
             MEDIA_ERR_LOG("External db is not exist.");
             return E_FAIL;
@@ -106,7 +106,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
             MediaLibraryDataManager::GetInstance()->ReCreateMediaDir();
         }
     }
-    MEDIA_INFO_LOG("Shoud include SD: %{public}d", static_cast<int32_t>(shouldIncludeSD_));
+    MEDIA_INFO_LOG("Shoud include Sd: %{public}d", static_cast<int32_t>(shouldIncludeSd_));
     return InitDbAndXml(photosPreferencesPath, isUpgrade);
 }
 
@@ -389,7 +389,7 @@ void UpgradeRestore::AnalyzeGallerySource()
     int32_t galleryVideoCount = BackupDatabaseUtils::QueryGalleryVideoCount(galleryRdb_);
     int32_t galleryHiddenCount = BackupDatabaseUtils::QueryGalleryHiddenCount(galleryRdb_);
     int32_t galleryTrashedCount = BackupDatabaseUtils::QueryGalleryTrashedCount(galleryRdb_);
-    int32_t gallerySDCardCount = BackupDatabaseUtils::QueryGallerySDCardCount(galleryRdb_);
+    int32_t gallerySdCardCount = BackupDatabaseUtils::QueryGallerySdCardCount(galleryRdb_);
     int32_t galleryScreenVideoCount = BackupDatabaseUtils::QueryGalleryScreenVideoCount(galleryRdb_);
     int32_t galleryFavoriteCount =  BackupDatabaseUtils::QueryGalleryFavoriteCount(galleryRdb_);
     int32_t galleryImportsCount = BackupDatabaseUtils::QueryGalleryImportsCount(galleryRdb_);
@@ -398,11 +398,11 @@ void UpgradeRestore::AnalyzeGallerySource()
     int32_t galleryBurstTotalCount = BackupDatabaseUtils::QueryGalleryBurstTotalCount(galleryRdb_);
     MEDIA_INFO_LOG("gallery analyze result: {galleryAllCount: %{public}d, galleryImageCount: %{public}d, "
         "galleryVideoCount: %{public}d, galleryHiddenCount: %{public}d, galleryTrashedCount: %{public}d, "
-        "gallerySDCardCount: %{public}d, galleryScreenVideoCount: %{public}d, galleryFavoriteCount: %{public}d, "
+        "gallerySdCardCount: %{public}d, galleryScreenVideoCount: %{public}d, galleryFavoriteCount: %{public}d, "
         "galleryImportsCount: %{public}d, galleryCloudCount: %{public}d, galleryBurstCount: cover %{public}d, "
         "total %{public}d}",
         galleryAllCount, galleryImageCount, galleryVideoCount, galleryHiddenCount, galleryTrashedCount,
-        gallerySDCardCount, galleryScreenVideoCount, galleryFavoriteCount, galleryImportsCount, galleryCloudCount,
+        gallerySdCardCount, galleryScreenVideoCount, galleryFavoriteCount, galleryImportsCount, galleryCloudCount,
         galleryBurstCoverCount, galleryBurstTotalCount);
 }
 
@@ -497,7 +497,7 @@ void UpgradeRestore::RestoreFromGallery()
 {
     HasLowQualityImage();
     int32_t totalNumber =
-        this->photosRestorePtr_->GetGalleryMediaCount(this->shouldIncludeSD_, this->hasLowQualityImage_);
+        this->photosRestorePtr_->GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset });
@@ -559,7 +559,7 @@ void UpgradeRestore::HandleRestData(void)
         MEDIA_DEBUG_LOG("Start to delete media data.");
         (void)MediaFileUtils::DeleteDir(mediaData);
     }
-    BackupFileUtils::DeleteSDDatabase(filePath_);
+    BackupFileUtils::DeleteSdDatabase(filePath_);
 
     // restore thumbnail for date fronted 500 photos
     MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
@@ -574,7 +574,7 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
         return result;
     }
     auto resultSet = this->photosRestorePtr_->GetGalleryMedia(
-        offset, QUERY_COUNT, this->shouldIncludeSD_, this->hasLowQualityImage_);
+        offset, QUERY_COUNT, this->shouldIncludeSd_, this->hasLowQualityImage_);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
         return result;

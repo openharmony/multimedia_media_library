@@ -1636,9 +1636,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_need_batch_query_photo, Te
     GTEST_LOG_(INFO) << "medialib_backup_test_need_batch_query_photo end";
 }
 
-void TestConvertPathToRealPathByStorageType(bool isSD)
+void TestConvertPathToRealPathByStorageType(bool isSd)
 {
-    std::string srcPath = isSD ? "/storage/ABCD-0000" : "/storage/emulated/0";
+    std::string srcPath = isSd ? "/storage/ABCD-0000" : "/storage/emulated/0";
     srcPath += TEST_RELATIVE_PATH;
     FileInfo fileInfo;
     fileInfo.fileSize = TEST_SIZE_2MB_BELOW;
@@ -1688,7 +1688,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_003 start";
     std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
     std::string expectedNewPath = TEST_PATH_PREFIX + srcPath;
-    TestConvertPathToRealPathByFileSize(TEST_SIZE_2MB_BELOW, srcPath, expectedNewPath); // SD, below 2MB
+    TestConvertPathToRealPathByFileSize(TEST_SIZE_2MB_BELOW, srcPath, expectedNewPath); // Sd, below 2MB
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_003 end";
 }
 
@@ -1697,7 +1697,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_004 start";
     std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
     std::string expectedNewPath = TEST_PATH_PREFIX + TEST_RELATIVE_PATH;
-    TestConvertPathToRealPathByFileSize(TEST_SIZE_2MB, srcPath, expectedNewPath); // SD, equal to 2MB
+    TestConvertPathToRealPathByFileSize(TEST_SIZE_2MB, srcPath, expectedNewPath); // Sd, equal to 2MB
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_004 end";
 }
 
@@ -1706,7 +1706,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_005 start";
     std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
     std::string expectedNewPath = TEST_PATH_PREFIX + TEST_RELATIVE_PATH;
-    TestConvertPathToRealPathByFileSize(TEST_SIZE_2MB_ABOVE, srcPath, expectedNewPath); // SD, above 2MB
+    TestConvertPathToRealPathByFileSize(TEST_SIZE_2MB_ABOVE, srcPath, expectedNewPath); // Sd, above 2MB
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_005 end";
 }
 
@@ -1731,7 +1731,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_006 start";
     std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
     std::string expectedNewPath = TEST_PATH_PREFIX + srcPath;
-    TestConvertPathToRealPathByLocalMediaId(GALLERY_HIDDEN_ID, srcPath, expectedNewPath); // SD, hidden
+    TestConvertPathToRealPathByLocalMediaId(GALLERY_HIDDEN_ID, srcPath, expectedNewPath); // Sd, hidden
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_006 end";
 }
 
@@ -1740,7 +1740,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_007 start";
     std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
     std::string expectedNewPath = TEST_PATH_PREFIX + srcPath;
-    TestConvertPathToRealPathByLocalMediaId(GALLERY_TRASHED_ID, srcPath, expectedNewPath); // SD, trashed
+    TestConvertPathToRealPathByLocalMediaId(GALLERY_TRASHED_ID, srcPath, expectedNewPath); // Sd, trashed
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_007 end";
 }
 
@@ -1780,9 +1780,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_sd_where_clause, Te
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause start";
     std::string whereClause;
-    BackupDatabaseUtils::UpdateSDWhereClause(whereClause, true);
+    BackupDatabaseUtils::UpdateSdWhereClause(whereClause, true);
     EXPECT_EQ(whereClause.empty(), true);
-    BackupDatabaseUtils::UpdateSDWhereClause(whereClause, false);
+    BackupDatabaseUtils::UpdateSdWhereClause(whereClause, false);
     EXPECT_EQ(whereClause.empty(), false);
     GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause end";
 }
