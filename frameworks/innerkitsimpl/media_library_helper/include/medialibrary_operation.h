@@ -111,6 +111,7 @@ enum class EXPORT OperationType : uint32_t {
     ALBUM_ADD_PHOTOS,
     ALBUM_REMOVE_PHOTOS,
     ALBUM_RECOVER_ASSETS,
+    ALBUM_SET_NAME,
     ALBUM_DELETE_ASSETS,                // Delete assets permanently from system
     TRASH_PHOTO,
     UPDATE_PENDING,
