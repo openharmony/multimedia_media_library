@@ -1138,7 +1138,7 @@ static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumC
             } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::GROUP_PHOTO) {
                 uri = PAH_GROUP_ANAALBUM_ALBUM_NAME;
             } else {
-                uri = PAH_UPDATE_PHOTO_ALBUM;
+                uri = PAH_SET_PHOTO_ALBUM_NAME;
             }
             property = PhotoAlbumColumns::ALBUM_NAME;
             valuesBucket.Put(property, photoAlbum->GetAlbumName());

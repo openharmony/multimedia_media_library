@@ -51,6 +51,12 @@ public:
         const int32_t &ownerAlbumId, std::shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId);
     EXPORT static int32_t CopyCloudSingleFile(NativeRdb::RdbStore *upgradeStore, const int32_t &assetId,
         const int32_t &ownerAlbumId, std::shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId);
+    EXPORT static int32_t DeleteALbumAndUpdateRelationship(NativeRdb::RdbStore *upgradeStore,
+        const int32_t &oldAlbumId, const int64_t &newAlbumId, bool isCloudAblum);
+    EXPORT static bool IsCloudAlbum(std::shared_ptr<NativeRdb::ResultSet> resultSet);
+    EXPORT static void BuildAlbumInsertValuesSetName(NativeRdb::RdbStore *upgradeStore,
+        NativeRdb::ValuesBucket &values, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        const std::string &newAlbumName);
 private:
     static int32_t HandleFirstData(NativeRdb::RdbStore *upgradeStore,
         const int32_t &assetId, const int32_t &ownerAlbumId);
