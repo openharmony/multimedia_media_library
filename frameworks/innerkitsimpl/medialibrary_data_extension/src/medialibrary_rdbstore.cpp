@@ -387,6 +387,7 @@ static int32_t DoDeleteFromPredicates(NativeRdb::RdbStore &rdb, const AbsRdbPred
         valuesBucket.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
         ret = rdb.Update(deletedRows, tableName, valuesBucket, predicates.GetWhereClause(),
             predicates.GetWhereArgs());
+        MEDIA_INFO_LOG("delete photos permanently, ret: %{public}d", ret);
     } else if (tableName == PhotoAlbumColumns::TABLE) {
         valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
         ret = rdb.Update(deletedRows, tableName, valuesBucket, predicates.GetWhereClause(),
