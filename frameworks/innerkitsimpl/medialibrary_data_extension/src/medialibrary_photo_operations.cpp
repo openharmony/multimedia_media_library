@@ -722,14 +722,14 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
 
         const std::string QUERY_LPATH_INFO = "SELECT * FROM PhotoAlbum WHERE album_id = " + to_string(ownerAlbumId);
         shared_ptr<NativeRdb::ResultSet> resultSetAlbum = rdbStore->QuerySql(QUERY_LPATH_INFO);
-        if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        if (resultSetAlbum == nullptr || resultSetAlbum->GoToFirstRow() != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Query not matched data fails on update source path");
             continue;
         }
         int lpathIndex;
         string lpath;
-        resultSet->GetColumnIndex(PhotoAlbumColumns::ALBUM_LPATH, lpathIndex);
-        if (resultSet->GetString(lpathIndex, lpath) != NativeRdb::E_OK) {
+        resultSetAlbum->GetColumnIndex(PhotoAlbumColumns::ALBUM_LPATH, lpathIndex);
+        if (resultSetAlbum->GetString(lpathIndex, lpath) != NativeRdb::E_OK) {
             continue;
         }
 
