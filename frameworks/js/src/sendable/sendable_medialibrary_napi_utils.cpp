@@ -218,6 +218,11 @@ static bool HandleSpecialDateTypePredicate(const OperationItem &item,
         operations.push_back({ item.operation, { dateType, static_cast<double>(item.GetSingle(VALUE_IDX)) } });
         return true;
     }
+    if (DATE_TRANSITION_MAP.count(dateType) != 0) {
+        dateType = DATE_TRANSITION_MAP.at(dateType);
+        operations.push_back({ item.operation, { dateType, static_cast<double>(item.GetSingle(VALUE_IDX)) } });
+        return true;
+    }
     return false;
 }
 
