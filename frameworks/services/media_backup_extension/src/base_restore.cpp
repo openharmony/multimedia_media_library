@@ -624,7 +624,8 @@ int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vec
 int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string &dstDir) const
 {
     if (!MediaFileUtils::CreateDirectory(dstDir)) {
-        MEDIA_ERR_LOG("Create dstDir %{private}s failed", dstDir.c_str());
+        MEDIA_ERR_LOG("Create dstDir %{public}s failed",
+            BackupFileUtils::GarbleFilePath(dstDir, DEFAULT_RESTORE_ID).c_str());
         return E_FAIL;
     }
     for (const auto &dirEntry : std::filesystem::directory_iterator{ srcDir }) {
@@ -632,7 +633,9 @@ int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string 
         std::string tmpFilePath = srcFilePath;
         std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
         if (MoveFile(srcFilePath, dstFilePath) != E_OK) {
-            MEDIA_ERR_LOG("Move file from %{private}s to %{private}s failed", srcFilePath.c_str(), dstFilePath.c_str());
+            MEDIA_ERR_LOG("Move file from %{public}s to %{public}s failed",
+                BackupFileUtils::GarbleFilePath(srcFilePath, sceneCode_).c_str(),
+                BackupFileUtils::GarbleFilePath(dstFilePath, DEFAULT_RESTORE_ID).c_str());
             return E_FAIL;
         }
     }

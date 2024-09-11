@@ -128,7 +128,7 @@ private:
     std::string audioDbPath_;
     std::string hiddenAlbumBucketId_;
     int32_t mediaScreenreCorderAlbumId_{-1};
-    bool shouldIncludeSD_{false};
+    bool shouldIncludeSd_{false};
     PhotoAlbumRestore photoAlbumRestore_;
     std::shared_ptr<PhotosRestore> photosRestorePtr_ = std::make_shared<PhotosRestore>(this->photoAlbumRestore_);
 };
