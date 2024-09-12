@@ -98,6 +98,9 @@
 #include "parameter.h"
 #include "parameters.h"
 #include "uuid.h"
+#ifdef HAS_THERMAL_MANAGER_PART
+#include "thermal_mgr_client.h"
+#endif
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -118,6 +121,7 @@ unique_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
 static const int32_t UUID_STR_LENGTH = 37;
+const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 2;
 
 #ifdef DISTRIBUTED
 static constexpr int MAX_QUERY_THUMBNAIL_KEY_COUNT = 20;
@@ -1515,26 +1519,16 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::FILESYSTEM_AUDIO:
         case OperationObject::PAH_MOVING_PHOTO:
             return MediaLibraryAssetOperations::QueryOperation(cmd, columns);
-        case OperationObject::VISION_START ... OperationObject::VISION_END: {
-            auto queryResult = MediaLibraryRdbStore::Query(
-                RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-            if (cmd.GetOprnObject() == OperationObject::VISION_OCR && queryResult != nullptr) {
-                queryResult = MediaLibraryVisionOperations::DealWithActiveOcrTask(
-                    queryResult, predicates, columns, cmd);
-            }
-            return queryResult;
-        }
+        case OperationObject::VISION_START ... OperationObject::VISION_END:
+            return HandleOCRVisionQuery(cmd, columns, predicates);
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
         case OperationObject::GEO_PHOTO:
-            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::SEARCH_TOTAL:
-            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
-            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::APP_URI_PERMISSION_INNER:
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
@@ -1543,6 +1537,27 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
     }
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::HandleOCRVisionQuery(
+    MediaLibraryCommand &cmd, const vector<string> &columns, const DataSharePredicates &predicates)
+{
+    auto queryResult = MediaLibraryRdbStore::Query(
+        RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+
+#ifdef HAS_THERMAL_MANAGER_PART
+    auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
+    if (static_cast<int32_t>(thermalMgrClient.GetThermalLevel()) > PROPER_DEVICE_TEMPERATURE_LEVEL) {
+        return queryResult;
+    }
+#endif
+
+    if (cmd.GetOprnObject() == OperationObject::VISION_OCR && queryResult != nullptr) {
+        queryResult = MediaLibraryVisionOperations::DealWithActiveOcrTask(
+            queryResult, predicates, columns, cmd);
+    }
+
+    return queryResult;
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryCommand &cmd,
