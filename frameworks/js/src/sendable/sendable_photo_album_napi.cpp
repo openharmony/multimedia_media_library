@@ -64,7 +64,7 @@ napi_value SendablePhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value expo
         DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
         DECLARE_NAPI_FUNCTION("getAssets", JSPhoteAccessGetPhotoAssets),
         DECLARE_NAPI_FUNCTION("convertToPhotoAlbum", ConvertToPhotoAlbum),
-        DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", PhotoAccessGetSharedPhotoAssets),
+        DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", JSPhotoAccessGetSharedPhotoAssets),
     };
     napi_define_sendable_class(env, PHOTOACCESS_PHOTO_ALBUM_CLASS.c_str(), NAPI_AUTO_LENGTH,
                                PhotoAlbumNapiConstructor, nullptr, sizeof(props) / sizeof(props[0]), props,
@@ -697,56 +697,20 @@ napi_value SendablePhotoAlbumNapi::ConvertToPhotoAlbum(napi_env env, napi_callba
     return nullValue;
 }
 
-static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
-    unique_ptr<SendablePhotoAccessHelperAsyncContext> &context)
+napi_value SendablePhotoAlbumNapi::JSPhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info)
 {
-    constexpr size_t minArgs = ARGS_ONE;
-    constexpr size_t maxArgs = ARGS_TWO;
-    CHECK_ARGS(env, SendableMediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
-        JS_ERR_PARAMETER_INVALID);
+    MediaLibraryTracer tracer;
+    tracer.Start("JSPhotoAccessGetSharedPhotoAssets");
+    unique_ptr<SendablePhotoAlbumNapiAsyncContext> asyncContext =
+        make_unique<SendablePhotoAlbumNapiAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsGetPhotoAssets(env, info, asyncContext));
 
-    /* Parse the first argument */
-    CHECK_ARGS(env, SendableMediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
-        JS_INNER_FAIL);
-    auto &predicates = context->predicates;
-    switch (context->assetType) {
-        case TYPE_AUDIO: {
-            CHECK_NULLPTR_RET(SendableMediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
-                AudioColumn::IsAudioColumn, TYPE_AUDIO));
-            break;
-        }
-        case TYPE_PHOTO: {
-            CHECK_NULLPTR_RET(SendableMediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
-                PhotoColumn::IsPhotoColumn, TYPE_PHOTO));
-            break;
-        }
-        default: {
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-            return nullptr;
-        }
-    }
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    if (context->assetType == TYPE_PHOTO) {
-        predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-        predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
-    }
+    SendablePhotoAlbumNapiAsyncContext* context =
+        static_cast<SendablePhotoAlbumNapiAsyncContext*>((asyncContext.get()));
 
-    napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
-    return result;
-}
-
-static napi_value PhotoAccessGetFileAssetsExecuteSync(napi_env env, SendablePhotoAccessHelperAsyncContext& asyncContext)
-{
-    auto context = &asyncContext;
-    if (context->assetType != TYPE_PHOTO) {
-        return nullptr;
-    }
-    string queryUri = PAH_QUERY_PHOTO;
-    SendableMediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-
-    Uri uri(queryUri);
+    Uri uri(PAH_QUERY_PHOTO_MAP);
+    ConvertColumnsForPortrait(context);
+    ConvertColumnsForFeaturedSinglePortrait(context);
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
         context->predicates, context->fetchColumn);
     CHECK_NULLPTR_RET(resultSet);
@@ -755,19 +719,15 @@ static napi_value PhotoAccessGetFileAssetsExecuteSync(napi_env env, SendablePhot
     napi_create_array(env, &jsFileArray);
 
     int count = 0;
-    while (!resultSet->GoToNextRow()) {
-        napi_value item = SendableMediaLibraryNapiUtils::GetNextRowObject(env, resultSet);
-        napi_set_element(env, jsFileArray, count++, item);
+    int err = resultSet->GoToFirstRow();
+    if (err != napi_ok) {
+        NAPI_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        return jsFileArray;
     }
+    do {
+        napi_value item = MediaLibraryNapiUtils::GetNextRowObject(env, resultSet, true);
+        napi_set_element(env, jsFileArray, count++, item);
+    } while (!resultSet->GoToNextRow());
     return jsFileArray;
-}
-
-napi_value SendablePhotoAlbumNapi::PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info)
-{
-    unique_ptr<SendablePhotoAccessHelperAsyncContext> context = make_unique<SendablePhotoAccessHelperAsyncContext>();
-    context->assetType = TYPE_PHOTO;
-    CHECK_NULLPTR_RET(ParseArgsGetAssets(env, info, context));
-
-    return PhotoAccessGetFileAssetsExecuteSync(env, *context);
 }
 } // namespace OHOS::Media
