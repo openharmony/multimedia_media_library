@@ -110,21 +110,14 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.log(TAG, `onRestore ok ${JSON.stringify(bundleVersion)}`);
     console.time(TAG + ' RESTORE');
     const backupDir = this.context.backupDir + 'restore';
-    let path:string;
     if (bundleVersion.name.startsWith(UPGRADE_NAME)) {
       await mediabackup.startRestore(UPGRADE_RESTORE, galleryAppName, mediaAppName, backupDir);
-      path = backupDir;
     } else if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
       await mediabackup.startRestore(DUAL_FRAME_CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
-      path = backupDir;
     } else {
       await mediabackup.startRestore(CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
-      path = backupDir + '/storage/media/local/files/';
     }
     console.timeEnd(TAG + ' RESTORE');
-    console.time(TAG + ' MOVE REST FILES');
-    await this.moveRestFiles(path);
-    console.timeEnd(TAG + ' MOVE REST FILES');
   }
 
   async onRestoreEx(bundleVersion: BundleVersion, bundleInfo: string): Promise<string> {
@@ -132,24 +125,17 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.time(TAG + ' RESTORE EX');
     const backupDir = this.context.backupDir + 'restore';
     let restoreExResult: string;
-    let path: string;
     if (bundleVersion.name.startsWith(UPGRADE_NAME)) {
       restoreExResult = await mediabackup.startRestoreEx(UPGRADE_RESTORE, galleryAppName, mediaAppName, backupDir);
-      path = backupDir;
     } else if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
       restoreExResult = await mediabackup.startRestoreEx(DUAL_FRAME_CLONE_RESTORE, galleryAppName, mediaAppName,
         backupDir);
-      path = backupDir;
     } else {
       restoreExResult = await mediabackup.startRestoreEx(CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
-      path = backupDir + '/storage/media/local/files/';
     }
     let restoreExInfo: string = await this.getRestoreExInfo(restoreExResult);
     console.log(TAG, `GET restoreExInfo: ${restoreExInfo}`);
     console.timeEnd(TAG + ' RESTORE EX');
-    console.time(TAG + ' MOVE REST FILES');
-    await this.moveRestFiles(path);
-    console.timeEnd(TAG + ' MOVE REST FILES');
     return restoreExInfo;
   }
 
@@ -328,69 +314,5 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       return false;
     }
     return true;
-  }
-
-  private isFileExist(filePath : string) : boolean {
-    try {
-      return fs.accessSync(filePath);
-    } catch (err) {
-      console.error(TAG, `accessSync failed, message = ${err.message}; code = ${err.code}`);
-      return false;
-    }
-  }
-
-  private async moveRestFiles(path : string) : Promise<void> {
-    console.log(TAG, 'Start to move rest files.');
-    const MOVE_ERR_CODE = 13900015;
-    let list = [];
-    try {
-      await fs.moveDir(path, documentPath, 1);
-      console.info(TAG, 'Move rest files succeed');
-    } catch (err) {
-      if (err.code === MOVE_ERR_CODE) {
-        list = err.data;
-      } else {
-        console.error(TAG, `move directory failed, message = ${err.message}; code = ${err.code}`);
-      }
-    }
-
-    for (let i = 0; i < list.length; i++) {
-      try {
-        await this.moveConflictFile(list[i].srcFile, list[i].destFile);
-      } catch (err) {
-        console.error(TAG, `MoveConflictFile failed, message = ${err.message}; code = ${err.code}`);
-      }
-    }
-  }
-
-  private async moveConflictFile(srcFile : string, dstFile : string) : Promise<void> {
-    const srcArr = srcFile.split('/');
-    const dstArr = dstFile.split('/');
-    const srcFileName = srcArr[srcArr.length - 1];
-    const dirPath = dstArr.splice(0, dstArr.length - 1).join('/');
-    let fileExt : string = '';
-    let fileNameWithoutExt = srcFileName;
-    if (srcFileName.lastIndexOf('.') !== -1) {
-      let tmpValue = srcFileName.split('.').pop();
-      if (tmpValue !== undefined) {
-        fileExt = tmpValue;
-        fileNameWithoutExt = srcFileName.slice(0, srcFileName.length - fileExt.length - 1);
-      }
-    }
-    let newFileName = srcFileName;
-    let count = 1;
-    while (this.isFileExist(`${dirPath}/${newFileName}`)) {
-      if (fileExt === '') {
-        newFileName = `${fileNameWithoutExt}(${count})`;
-      } else {
-        newFileName = `${fileNameWithoutExt}(${count}).${fileExt}`;
-      }
-      count++;
-    }
-    try {
-      await fs.moveFile(srcFile, `${dirPath}/${newFileName}`);
-    } catch (err) {
-      console.error(TAG, `moveFile file failed, message = ${err.message}; code = ${err.code}`);
-    }
   }
 }
