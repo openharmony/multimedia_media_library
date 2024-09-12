@@ -345,6 +345,7 @@ void MediaLibraryCloudEnhancementTest::SetUp()
 
 void MediaLibraryCloudEnhancementTest::TearDown(void) {}
 
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 HWTEST_F(MediaLibraryCloudEnhancementTest, manager_init_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("manager_init_001 Start");
@@ -1112,5 +1113,6 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_database_operations_inser
 
     MEDIA_INFO_LOG("enhancement_database_operations_insert_004 End");
 }
+#endif
 } // namespace Media
 } // namespace OHOS
