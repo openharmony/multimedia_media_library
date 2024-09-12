@@ -38,6 +38,7 @@
 #endif
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_album_compatibility_fusion_sql.h"
+#include "medialibrary_album_refresh.h"
 #include "medialibrary_business_record_column.h"
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_errno.h"
@@ -2850,6 +2851,7 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
     int32_t rebuildResult = MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(compensateData->upgradeStore_);
     MEDIA_INFO_LOG("ALBUM_FUSE: End rebuild album and update relationship cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - albumCleanBeginTime));
+    RefreshAlbums(true);
     // Restore cloud sync
     MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
     ResetCloudCursorAfterInitFinish();
