@@ -16,12 +16,23 @@
 #define OHOS_MEDIA_DATATRANSFER_GALLERY_DB_UPGRADE_H
 
 #include "rdb_store.h"
+#include "db_upgrade_utils.h"
 
 namespace OHOS::Media {
 namespace DataTransfer {
 class GalleryDbUpgrade {
 public:
     int32_t OnUpgrade(NativeRdb::RdbStore &store);
+
+private:
+    int32_t AddPhotoQualityOfGalleryMedia(NativeRdb::RdbStore &store);
+
+private:
+    const std::string SQL_GALLERY_MEDIA_TABLE_ADD_PHOTO_QUALITY = "\
+        ALTER TABLE gallery_media ADD COLUMN photo_quality INTEGER DEFAULT 0;";
+
+private:
+    DbUpgradeUtils dbUpgradeUtils_;
 };
 }  // namespace DataTransfer
 }  // namespace OHOS::Media
