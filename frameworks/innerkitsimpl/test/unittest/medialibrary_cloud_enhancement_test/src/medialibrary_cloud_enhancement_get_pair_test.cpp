@@ -314,6 +314,7 @@ void MediaLibraryCloudEnhancementGetPairTest::SetUp()
 
 void MediaLibraryCloudEnhancementGetPairTest::TearDown(void) {}
 
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 HWTEST_F(MediaLibraryCloudEnhancementGetPairTest, manager_handle_get_pair_operation_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("manager_handle_get_pair_operation_001 Start");
@@ -793,5 +794,6 @@ HWTEST_F(MediaLibraryCloudEnhancementGetPairTest, manager_handle_get_pair_operat
     EXPECT_EQ(resultSet, nullptr);
     MEDIA_INFO_LOG("manager_handle_get_pair_operation_032 End");
 }
+#endif
 }
 }
