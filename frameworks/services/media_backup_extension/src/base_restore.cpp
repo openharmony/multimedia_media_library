@@ -621,7 +621,7 @@ int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vec
     return errCode;
 }
 
-int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string &dstDir) const
+int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string &dstDir, bool deleteOriginalFile) const
 {
     if (!MediaFileUtils::CreateDirectory(dstDir)) {
         MEDIA_ERR_LOG("Create dstDir %{public}s failed",
@@ -632,10 +632,17 @@ int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string 
         std::string srcFilePath = dirEntry.path();
         std::string tmpFilePath = srcFilePath;
         std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
-        if (MoveFile(srcFilePath, dstFilePath) != E_OK) {
-            MEDIA_ERR_LOG("Move file from %{public}s to %{public}s failed",
+        int32_t opRet = E_FAIL;
+        if (deleteOriginalFile) {
+            opRet = this->MoveFile(srcFilePath, dstFilePath);
+        } else {
+            opRet = this->CopyFile(srcFilePath, dstFilePath);
+        }
+        if (opRet != E_OK) {
+            MEDIA_ERR_LOG("Move file from %{public}s to %{public}s failed, deleteOriginalFile=%{public}d",
                 BackupFileUtils::GarbleFilePath(srcFilePath, sceneCode_).c_str(),
-                BackupFileUtils::GarbleFilePath(dstFilePath, DEFAULT_RESTORE_ID).c_str());
+                BackupFileUtils::GarbleFilePath(dstFilePath, DEFAULT_RESTORE_ID).c_str(),
+                deleteOriginalFile);
             return E_FAIL;
         }
     }

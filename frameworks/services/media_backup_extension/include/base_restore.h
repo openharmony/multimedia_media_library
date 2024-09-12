@@ -72,7 +72,7 @@ protected:
     void SetAudioValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
         int64_t &rowNum);
-    int32_t MoveDirectory(const std::string &srcDir, const std::string &dstDir) const;
+    int32_t MoveDirectory(const std::string &srcDir, const std::string &dstDir, bool deleteOriginalFile = true) const;
     bool IsSameAudioFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
         FileInfo &fileInfo);
     bool HasSameAudioFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,

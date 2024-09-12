@@ -500,11 +500,11 @@ void CloneRestore::AnalyzeSource()
     MEDIA_INFO_LOG("analyze source later");
 }
 
-int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
+int32_t CloneRestore::MovePicture(FileInfo &fileInfo)
 {
+    bool deleteOriginalFile = fileInfo.isRelatedToPhotoMap == 1 ? false : true;
     string localPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL,
         fileInfo.cloudPath);
-    bool deleteOriginalFile = fileInfo.isRelatedToPhotoMap == 1 ? false : true;
     int32_t opRet = E_FAIL;
     if (deleteOriginalFile) {
         opRet = this->MoveFile(fileInfo.filePath, localPath);
@@ -517,23 +517,65 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
             deleteOriginalFile);
         return E_FAIL;
     }
-    BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
+    return E_OK;
+}
 
-    if (fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        string localVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(localPath);
-        if (MoveFile(MediaFileUtils::GetMovingPhotoVideoPath(fileInfo.filePath), localVideoPath) != E_OK) {
-            MEDIA_ERR_LOG("Move video of moving photo failed");
-            return E_FAIL;
-        }
-        BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified / MSEC_TO_SEC);
+int32_t CloneRestore::MoveVideo(FileInfo &fileInfo)
+{
+    if (fileInfo.subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        return E_OK;
     }
+    bool deleteOriginalFile = fileInfo.isRelatedToPhotoMap == 1 ? false : true;
+    std::string localPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL,
+        fileInfo.cloudPath);
+    std::string srcLocalVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(fileInfo.filePath);
+    std::string localVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(localPath);
+    int32_t opVideoRet = E_FAIL;
+    if (deleteOriginalFile) {
+        opVideoRet = this->MoveFile(srcLocalVideoPath, localVideoPath);
+    } else {
+        opVideoRet = this->CopyFile(srcLocalVideoPath, localVideoPath);
+    }
+    if (opVideoRet != E_OK) {
+        MEDIA_ERR_LOG("Move video of moving photo failed");
+        return E_FAIL;
+    }
+    BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified / MSEC_TO_SEC);
+    return E_OK;
+}
 
-    string srcEditDataPath = backupRestoreDir_ +
+int32_t CloneRestore::MoveEditedData(FileInfo &fileInfo)
+{
+    bool deleteOriginalFile = fileInfo.isRelatedToPhotoMap == 1 ? false : true;
+    string localPath =
+        BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL, fileInfo.cloudPath);
+    string srcEditDataPath = this->backupRestoreDir_ +
         BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL_EDIT_DATA, fileInfo.relativePath);
-    string dstEditDataPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD,
-        PrefixType::LOCAL_EDIT_DATA, fileInfo.cloudPath);
-    if (IsFilePathExist(srcEditDataPath) && MoveDirectory(srcEditDataPath, dstEditDataPath) != E_OK) {
+    string dstEditDataPath = BackupFileUtils::GetReplacedPathByPrefixType(
+        PrefixType::CLOUD, PrefixType::LOCAL_EDIT_DATA, fileInfo.cloudPath);
+    if (this->IsFilePathExist(srcEditDataPath) &&
+        this->MoveDirectory(srcEditDataPath, dstEditDataPath, deleteOriginalFile) != E_OK) {
         MEDIA_ERR_LOG("Move editData file failed");
+        return E_FAIL;
+    }
+    return E_OK;
+}
+
+int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
+{
+    // Picture files.
+    int32_t optRet = this->MovePicture(fileInfo);
+    if (optRet != E_OK) {
+        return E_FAIL;
+    }
+    // Video files.
+    optRet = this->MoveVideo(fileInfo);
+    if (optRet != E_OK) {
+        return E_FAIL;
+    }
+    // Edit Data.
+    optRet = this->MoveEditedData(fileInfo);
+    if (optRet != E_OK) {
         return E_FAIL;
     }
     return E_OK;
