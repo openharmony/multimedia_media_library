@@ -134,7 +134,7 @@ function getLabelId(hapInfo) {
     } else {
       abilitiesInfoName = abilityInfo.name;
     }
-    if (abilityInfo.name === hapInfo.mainElementName) {
+    if (abilitiesInfoName === hapInfo.mainElementName) {
       labelId = abilityInfo.labelId;
     }
   }
