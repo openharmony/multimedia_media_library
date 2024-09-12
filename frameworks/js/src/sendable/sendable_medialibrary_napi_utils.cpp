@@ -1075,7 +1075,7 @@ napi_value SendableMediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32
     double doubleVal = 0.0;
     napi_value value = nullptr;
     auto dataType = SendableMediaLibraryNapiUtils::GetTypeMap().at(name);
-    switch (dataType) {
+    switch (dataType.first) {
         case TYPE_STRING:
             status = resultSet->GetString(index, stringVal);
             napi_create_string_utf8(env, stringVal.c_str(), NAPI_AUTO_LENGTH, &value);
@@ -1097,11 +1097,27 @@ napi_value SendableMediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32
             asset->GetMemberMap().emplace(name, doubleVal);
             break;
         default:
-            NAPI_ERR_LOG("not match dataType %{public}d", dataType);
+            NAPI_ERR_LOG("not match dataType %{public}d", dataType.first);
             break;
     }
 
     return value;
+}
+
+void SendableMediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name, napi_value result,
+    int32_t index, const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
+{
+    if (TIME_COLUMN.count(name) == 0) {
+        return;
+    }
+    int64_t longVal = 0;
+    int status;
+    napi_value value = nullptr;
+    status = resultSet->GetLong(index, longVal);
+    int64_t modifieldValue = longVal / 1000;
+    napi_create_int64(env, modifieldValue, &value);
+    auto dataType = SendableMediaLibraryNapiUtils::GetTimeTypeMap().at(name);
+    napi_set_named_property(env, result, dataType.second.c_str(), value);
 }
 
 napi_value SendableMediaLibraryNapiUtils::GetNextRowObject(napi_env env,
@@ -1128,7 +1144,9 @@ napi_value SendableMediaLibraryNapiUtils::GetNextRowObject(napi_env env,
             continue;
         }
         value = SendableMediaLibraryNapiUtils::CreateValueByIndex(env, index, name, resultSet, fileAsset);
-        napi_set_named_property(env, result, name.c_str(), value);
+        auto dataType = SendableMediaLibraryNapiUtils::GetTypeMap().at(name);
+        napi_set_named_property(env, result, dataType.second.c_str(), value);
+        handleTimeInfo(env, name, result, index, resultSet);
     }
 
     string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath(), false);
