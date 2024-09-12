@@ -50,9 +50,11 @@
 #undef private
 #undef protected
 
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 #include "media_enhance_client.h"
 #include "media_enhance_bundle.h"
 #include "media_enhance_constants.h"
+#endif
 
 using namespace std;
 using namespace testing::ext;
@@ -1111,4 +1113,4 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_database_operations_inser
     MEDIA_INFO_LOG("enhancement_database_operations_insert_004 End");
 }
 } // namespace Media
-} // namespace OHOS
+} // namespace OHOS

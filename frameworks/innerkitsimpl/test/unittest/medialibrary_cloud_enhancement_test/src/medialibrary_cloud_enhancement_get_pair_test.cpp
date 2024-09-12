@@ -51,9 +51,11 @@
 #undef private
 #undef protected
 
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 #include "media_enhance_client.h"
 #include "media_enhance_bundle.h"
 #include "media_enhance_constants.h"
+#endif
 
 using namespace std;
 using namespace testing::ext;
