@@ -65,21 +65,41 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_Extract_empty_path, TestSize.Level0
     EXPECT_EQ(ret, E_IMAGE);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_empty_path, TestSize.Level0)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
     string path = "/storage/cloud/files/";
     mediaScannerDb->GetFileBasicInfo(path, data);
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
+    data->SetFilePath("");
+    // empty path ExtractAVMetadata will return E_AVMETADATA
     int32_t ret = MetadataExtractor::ExtractAVMetadata(data);
     EXPECT_EQ(ret, E_AVMETADATA);
+}
+
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_normal_path, TestSize.Level0)
+{
+    unique_ptr<Metadata> data = make_unique<Metadata>();
+    unique_ptr<MediaScannerDb> mediaScannerDb;
+    string path = "/storage/cloud/files/";
+    mediaScannerDb->GetFileBasicInfo(path, data);
+    data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
     data->SetFilePath(path);
-    ret = MetadataExtractor::ExtractAVMetadata(data);
-    EXPECT_NE(ret, E_OK);
+    int32_t ret = MetadataExtractor::ExtractAVMetadata(data);
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_nonexistent_path, TestSize.Level0)
+{
+    unique_ptr<Metadata> data = make_unique<Metadata>();
+    unique_ptr<MediaScannerDb> mediaScannerDb;
+    string path = "/storage/cloud/files/";
+    mediaScannerDb->GetFileBasicInfo(path, data);
+    data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
     data->SetFilePath("ExtractAVMetadata");
-    ret = MetadataExtractor::ExtractAVMetadata(data);
-    EXPECT_EQ((ret == E_SYSCALL || ret == E_AVMETADATA), true);
+    int32_t ret = MetadataExtractor::ExtractAVMetadata(data);
+    EXPECT_EQ(ret, E_SYSCALL);
 }
 
 HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_clone_test, TestSize.Level0)
