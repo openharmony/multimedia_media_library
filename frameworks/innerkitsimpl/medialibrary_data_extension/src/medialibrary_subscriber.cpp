@@ -442,7 +442,10 @@ bool MedialibrarySubscriber::IsDelayTaskTimeOut()
 
 void MedialibrarySubscriber::EndBackgroundOperationThread()
 {
-    isTaskWaiting_ = false;
+    {
+        std::unique_lock<std::mutex> lock(delayTaskLock_);
+        isTaskWaiting_ = false;
+    }
     delayTaskCv_.notify_all();
     if (!backgroundOperationThread_.joinable()) {
         return;
