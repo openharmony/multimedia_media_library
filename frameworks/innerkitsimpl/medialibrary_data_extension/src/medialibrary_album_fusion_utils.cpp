@@ -750,7 +750,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleSingleFileCopy(NativeRdb::RdbStore *
             isLocalAsset(resultSet), assetId);
         return err;
     }
-    MEDIA_INFO_LOG("Copy file success, fileId is %{public}d, albumId is %{public}d, and copyed file id is %{public}" PRId64,
+    MEDIA_INFO_LOG("Copy file success, fileId %{public}d, albumId %{public}d, and copyed file id %{public}" PRId64,
         assetId, ownerAlbumId, newAssetId);
     return E_OK;
 }
