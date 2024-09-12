@@ -62,7 +62,9 @@ using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 using namespace OHOS::MediaEnhance;
+#endif
 
 namespace OHOS {
 namespace Media {
