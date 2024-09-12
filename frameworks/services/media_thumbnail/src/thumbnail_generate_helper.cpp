@@ -168,18 +168,30 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts, bool
         }
     }
     ThumbnailTaskPriority priority = isCloudInsertTaskPriorityHigh ?
-        ThumbnailTaskPriority::HIGH : ThumbnailTaskPriority::LOW;
-    data.loaderOpts.loadingStates = SourceLoader::CLOUD_SOURCE_LOADING_STATES;
-    if (data.orientation != 0) {
-        data.loaderOpts.loadingStates = SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
-        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstcEx, opts, data,
+        ThumbnailTaskPriority::MID : ThumbnailTaskPriority::LOW;
+    if (priority == ThumbnailTaskPriority::MID) {
+        data.loaderOpts.loadingStates = SourceLoader::CLOUD_SOURCE_LOADING_STATES;
+        if (data.orientation != 0) {
+            data.loaderOpts.loadingStates = SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
+            IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstcEx, opts, data,
+                ThumbnailTaskType::FOREGROUND, priority);
+            return E_OK;
+        }
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc, opts, data,
+            ThumbnailTaskType::FOREGROUND, priority);
+        return E_OK;
+    } else {
+        data.loaderOpts.loadingStates = SourceLoader::CLOUD_SOURCE_LOADING_STATES;
+        if (data.orientation != 0) {
+            data.loaderOpts.loadingStates = SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
+            IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstcEx, opts, data,
+                ThumbnailTaskType::BACKGROUND, priority);
+            return E_OK;
+        }
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc, opts, data,
             ThumbnailTaskType::BACKGROUND, priority);
         return E_OK;
     }
-
-    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc, opts, data,
-        ThumbnailTaskType::BACKGROUND, priority);
-    return E_OK;
 }
 
 int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
