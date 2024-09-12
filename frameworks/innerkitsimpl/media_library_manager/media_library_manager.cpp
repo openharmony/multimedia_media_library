@@ -839,9 +839,7 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
         return E_ERR;
     }
 
-    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
-        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
+    if (sDataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("Failed to read video of moving photo, datashareHelper is nullptr");
         return E_ERR;
     }
@@ -849,7 +847,7 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
     string videoUri = uri;
     MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
     Uri openVideoUri(videoUri);
-    return dataShareHelper->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
+    return sDataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
 }
 
 std::string MediaLibraryManager::GetMovingPhotoImageUri(const string &uri)
@@ -866,6 +864,71 @@ std::string MediaLibraryManager::GetMovingPhotoImageUri(const string &uri)
         return "";
     }
     return uris[MOVING_PHOTO_IMAGE_POS];
+}
+
+static int64_t GetSandboxMovingPhotoTime(const string& uri)
+{
+    vector<string> uris;
+    if (!MediaFileUtils::SplitMovingPhotoUri(uri, uris)) {
+        return E_ERR;
+    }
+
+    AppFileService::ModuleFileUri::FileUri imageFileUri(uris[MOVING_PHOTO_IMAGE_POS]);
+    string imageRealPath = imageFileUri.GetRealPath();
+    struct stat imageStatInfo {};
+    if (stat(imageRealPath.c_str(), &imageStatInfo) != 0) {
+        MEDIA_ERR_LOG("stat image error");
+        return E_ERR;
+    }
+    int64_t imageDateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(imageStatInfo.st_mtim));
+
+    AppFileService::ModuleFileUri::FileUri videoFileUri(uris[MOVING_PHOTO_VIDEO_POS]);
+    string videoRealPath = videoFileUri.GetRealPath();
+    struct stat videoStatInfo {};
+    if (stat(videoRealPath.c_str(), &videoStatInfo) != 0) {
+        MEDIA_ERR_LOG("stat video error");
+        return E_ERR;
+    }
+    int64_t videoDateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(videoStatInfo.st_mtim));
+    return imageDateModified >= videoDateModified ? imageDateModified : videoDateModified;
+}
+
+int64_t MediaLibraryManager::GetMovingPhotoDateModified(const string &uri)
+{
+    if (uri.empty()) {
+        MEDIA_ERR_LOG("Failed to check empty uri");
+        return E_ERR;
+    }
+    if (!MediaFileUtils::IsMediaLibraryUri(uri)) {
+        return GetSandboxMovingPhotoTime(uri);
+    }
+
+    if (!CheckPhotoUri(uri)) {
+        MEDIA_ERR_LOG("Failed to check invalid uri: %{public}s", uri.c_str());
+        return E_ERR;
+    }
+    Uri queryUri(PAH_QUERY_PHOTO);
+    DataSharePredicates predicates;
+    string fileId = MediaFileUtils::GetIdFromUri(uri);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    DatashareBusinessError businessError;
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("sDataShareHelper_ is null");
+        return E_ERR;
+    }
+    vector<string> columns = {
+        MediaColumn::MEDIA_DATE_MODIFIED,
+    };
+    auto queryResultSet = sDataShareHelper_->Query(queryUri, predicates, columns, &businessError);
+    if (queryResultSet == nullptr) {
+        MEDIA_ERR_LOG("queryResultSet is null");
+        return E_ERR;
+    }
+    if (queryResultSet->GoToNextRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to GoToNextRow");
+        return E_ERR;
+    }
+    return GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, queryResultSet);
 }
 
 static int32_t UrisSourceMediaTypeClassify(const vector<string> &urisSource,
