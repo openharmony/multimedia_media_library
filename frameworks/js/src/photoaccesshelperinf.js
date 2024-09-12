@@ -126,12 +126,18 @@ function getAbilityResource(bundleInfo) {
 
 function getLabelId(hapInfo) {
   let labelId = 0;
-  for (let abilitiesInfo of hapInfo.abilitiesInfo) {
-    if (abilitiesInfo.name === hapInfo.mainElementName) {
-      labelId = abilitiesInfo.labelId;
+  for (let abilityInfo of hapInfo.abilitiesInfo) {
+    let abilitiesInfoName = '';
+    if (abilityInfo.name.includes('.')) {
+      let abilitiesInfoLength = abilityInfo.name.split('.').length;
+      abilitiesInfoName = abilityInfo.name.split('.')[abilitiesInfoLength - 1];
+    } else {
+      abilitiesInfoName = abilityInfo.name;
+    }
+    if (abilitiesInfoName === hapInfo.mainElementName) {
+      labelId = abilityInfo.labelId;
     }
   }
-
   return labelId;
 }
 
