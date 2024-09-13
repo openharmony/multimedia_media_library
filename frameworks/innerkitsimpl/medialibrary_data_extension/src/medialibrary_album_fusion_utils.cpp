@@ -986,6 +986,7 @@ int32_t MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(NativeRdb::R
         return E_DB_FAIL;
     }
     int32_t err = HandleChangeNameAlbum(upgradeStore);
+    CompensateLpathForLocalAlbum(upgradeStore);
     HandleExpiredAlbumData(upgradeStore);
     // Keep dual hidden assets dirty state synced, let cloudsync handle compensating for hidden flags
     KeepHiddenAlbumAssetSynced(upgradeStore);
@@ -1087,6 +1088,58 @@ int32_t MediaLibraryAlbumFusionUtils::HandleChangeNameAlbum(NativeRdb::RdbStore 
         }
     }
     MEDIA_INFO_LOG("End handle change name album data");
+    return E_OK;
+}
+
+int32_t MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(NativeRdb::RdbStore *upgradeStore)
+{
+    MEDIA_INFO_LOG("Begin compensate Lpath for local album");
+    if (upgradeStore == nullptr) {
+        MEDIA_ERR_LOG("invalid rdbstore or nullptr map");
+        return E_INVALID_ARGUMENTS;
+    }
+    const std::string QUERY_COMPENSATE_ALBUM_INFO =
+        "SELECT * FROM PhotoAlbum WHERE cloud_id IS NULL"
+        " AND (priority IS NULL OR lpath IS NULL) AND dirty != 4 AND album_type IN (0, 2048)";
+    shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_COMPENSATE_ALBUM_INFO);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query album info fails");
+        return E_HAS_DB_ERROR;
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int album_id = -1;
+        int32_t album_type = -1;
+        std::string album_name = "";
+        std::string bundle_name = "";
+        std::string lpath = "";
+
+        GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, album_id);
+        GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_TYPE, album_type);
+        GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_NAME, album_name);
+        GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundle_name);
+        GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_LPATH, lpath);
+
+        if (lpath.empty()) {
+            if (album_type == OHOS::Media::PhotoAlbumType::SOURCE) {
+                QuerySourceAlbumLPath(upgradeStore, lpath, bundle_name, album_name);
+            } else {
+                lpath = "/Pictures/Users/" + album_name;
+                MEDIA_INFO_LOG("Album type is user type and lPath is %{public}s!!!", lpath.c_str());
+            }
+        }
+
+        const std::string UPDATE_COMPENSATE_ALBUM_DATA =
+            "UPDATE PhotoAlbum SET lpath = '" + lpath + "', "
+            "priority = COALESCE ((SELECT priority FROM album_plugin WHERE lpath = '" + lpath + "'), 1) "
+            "WHERE album_id = " + to_string(album_id);
+        int32_t err = upgradeStore->ExecuteSql(UPDATE_COMPENSATE_ALBUM_DATA);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", UPDATE_COMPENSATE_ALBUM_DATA.c_str());
+            return err;
+        }
+    }
+    MEDIA_INFO_LOG("End compensate Lpath for local album");
     return E_OK;
 }
 

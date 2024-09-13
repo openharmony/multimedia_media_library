@@ -42,6 +42,7 @@ public:
         const int32_t &ownerAlbumId, int64_t &newAssetId);
     EXPORT static int32_t RebuildAlbumAndFillCloudValue(NativeRdb::RdbStore *upgradeStore);
     EXPORT static int32_t HandleChangeNameAlbum(NativeRdb::RdbStore *upgradeStore);
+    EXPORT static int32_t CompensateLpathForLocalAlbum(NativeRdb::RdbStore *upgradeStore);
     EXPORT static int32_t MergeClashSourceAlbum(NativeRdb::RdbStore *upgradeStore,
         std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t &sourceAlbumId, const int64_t &targetAlbumId);
     EXPORT static void SetParameterToStopSync();
