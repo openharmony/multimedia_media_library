@@ -1245,9 +1245,10 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     // Clean duplicative album and rebuild expired album
     RebuildAlbumAndFillCloudValue(upgradeStore);
     SetParameterToStartSync();
+    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
+    RefreshAlbums(true);
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
-    RefreshAlbums(true);
     return err;
 }
 } // namespace OHOS::Media
