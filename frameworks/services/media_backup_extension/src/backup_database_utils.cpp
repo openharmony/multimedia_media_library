@@ -899,14 +899,13 @@ void BackupDatabaseUtils::UpdateTagPairs(std::vector<TagPairOpt>& updatedPairs, 
 void BackupDatabaseUtils::UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
     const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap)
 {
-    for (auto& [groupTag, tagIds] : groupTagMap) {
-        std::string newGroupTag;
-        if (tagIds.size() > 1) {
-            newGroupTag = BackupDatabaseUtils::JoinValues<std::string>(tagIds, "|");
-        } else if (tagIds.size() == 1) {
-            newGroupTag = tagIds[0];
+    for (auto &[groupTag, tagIds] : groupTagMap) {
+        if (tagIds.empty()) {
+            continue;
         }
 
+        const std::string newGroupTag =
+            (tagIds.size() > 1) ? BackupDatabaseUtils::JoinValues(tagIds, "|") : tagIds.front();
         if (newGroupTag != groupTag) {
             UpdateTagPairs(updatedPairs, newGroupTag, tagIds);
         }
