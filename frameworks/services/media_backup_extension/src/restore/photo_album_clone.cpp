@@ -22,7 +22,7 @@
 #include "media_log.h"
 
 namespace OHOS::Media {
-void DEBUG_LOG_TO_CONSOLE_V2(const std::string &executeSql, std::vector<NativeRdb::ValueObject> &bindArgs)
+std::string PhotoAlbumClone::ToString(const std::vector<NativeRdb::ValueObject> &bindArgs)
 {
     std::string args;
     for (auto &arg : bindArgs) {
@@ -30,10 +30,7 @@ void DEBUG_LOG_TO_CONSOLE_V2(const std::string &executeSql, std::vector<NativeRd
         arg.GetString(tempStr);
         args += tempStr + ", ";
     }
-    MEDIA_INFO_LOG("Media_Restore: executeSql = %{public}s, \
-        bindArgs = %{public}s",
-        executeSql.c_str(),
-        args.c_str());
+    return args;
 }
 
 /**
@@ -42,11 +39,9 @@ void DEBUG_LOG_TO_CONSOLE_V2(const std::string &executeSql, std::vector<NativeRd
 int32_t PhotoAlbumClone::GetPhotoAlbumCountInOriginalDb()
 {
     std::string querySql = this->SQL_PHOTO_ALBUM_COUNT_FOR_CLONE;
-    std::vector<NativeRdb::ValueObject> bindArgs;
-    DEBUG_LOG_TO_CONSOLE_V2(querySql, bindArgs);
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to query album!");
+        MEDIA_ERR_LOG("Failed to query album! querySql = %{public}s", querySql.c_str());
         return 0;
     }
     return GetInt32Val("count", resultSet);
@@ -59,7 +54,12 @@ std::shared_ptr<NativeRdb::ResultSet> PhotoAlbumClone::GetPhotoAlbumInOriginalDb
 {
     std::string querySql = this->SQL_PHOTO_ALBUM_SELECT_FOR_CLONE;
     std::vector<NativeRdb::ValueObject> bindArgs = {offset, pageSize};
-    DEBUG_LOG_TO_CONSOLE_V2(querySql, bindArgs);
-    return this->mediaLibraryOriginalRdb_->QuerySql(querySql, bindArgs);
+    auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql, bindArgs);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to query album! querySql = %{public}s, bindArgs = %{public}s",
+            querySql.c_str(),
+            this->ToString(bindArgs).c_str());
+    }
+    return resultSet;
 }
 }  // namespace OHOS::Media
