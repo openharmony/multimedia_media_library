@@ -829,6 +829,9 @@ int32_t SetPhotoAlbumName(const ValuesBucket &values, const DataSharePredicates 
             MEDIA_INFO_LOG("Set new album name id is, %{public}s", to_string(newAlbumId).c_str());
         }
     }
+    auto watch = MediaLibraryNotify::GetInstance();
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
+        to_string(newAlbumId)), NotifyType::NOTIFY_UPDATE);
     return ALBUM_SETNAME_OK;
 }
 
