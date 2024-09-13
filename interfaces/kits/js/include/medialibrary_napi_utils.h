@@ -297,7 +297,7 @@ const std::vector<std::string> directoryEnumValues {
 };
 
 const std::vector<std::string> systemAlbumSubType {
-    "FAVORITE", "VIDEO", "HIDDEN", "TRASH", "SCREENSHOT", "CAMERA", "IMAGE"
+    "FAVORITE", "VIDEO", "HIDDEN", "TRASH", "SCREENSHOT", "CAMERA", "IMAGE", "CLOUD_ENHANCEMENT"
 };
 
 const std::vector<std::string> analysisAlbumSubType {
@@ -343,6 +343,15 @@ const std::vector<std::string> movingPhotoEffectModeEnum {
 
 const std::vector<std::string> imageFileTypeEnum {
     "JPEG", "HEIF"
+};
+
+const std::vector<std::string> cloudEnhancementTaskStageEnum {
+    "TASK_STAGE_EXCEPTION", "TASK_STAGE_PREPARING", "TASK_STAGE_UPLOADING",
+    "TASK_STAGE_EXECUTING", "TASK_STAGE_DOWNLOADING", "TASK_STAGE_FAILED", "TASK_STAGE_COMPLETED"
+};
+
+const std::vector<std::string> cloudEnhancementStateEnum {
+    "UNAVAILABLE", "AVAILABLE", "EXECUTING", "COMPLETED"
 };
 
 const std::vector<std::string> fileKeyEnumValues {
@@ -452,6 +461,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("BURST_COVER_LEVEL",         PhotoColumn::PHOTO_BURST_COVER_LEVEL),
     std::make_pair("BURST_KEY",                 PhotoColumn::PHOTO_BURST_KEY),
     std::make_pair("THUMBNAIL_READY",           PhotoColumn::PHOTO_THUMBNAIL_READY),
+    std::make_pair("CE_AVAILABLE",              PhotoColumn::PHOTO_CE_AVAILABLE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

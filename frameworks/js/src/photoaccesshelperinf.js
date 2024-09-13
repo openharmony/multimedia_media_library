@@ -782,4 +782,8 @@ export default {
   MovingPhotoEffectMode: photoAccessHelper.MovingPhotoEffectMode,
   CompleteButtonText: CompleteButtonText,
   ImageFileType: photoAccessHelper.ImageFileType,
+  CloudEnhancement: photoAccessHelper.CloudEnhancement,
+  CloudEnhancementTaskStage: photoAccessHelper.CloudEnhancementTaskStage,
+  CloudEnhancementState: photoAccessHelper.CloudEnhancementState,
+  CloudEnhancementTaskState: photoAccessHelper.CloudEnhancementTaskState,
 };
