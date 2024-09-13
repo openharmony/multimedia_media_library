@@ -41,7 +41,28 @@ static constexpr int32_t MOVING_PHOTO_PROCESS_NUM = 200;
 static constexpr int32_t DIRTY_NOT_UPLOADING = -1;
 static constexpr int32_t DEFAULT_EXTRA_DATA_SIZE = MIN_STANDARD_SIZE;
 
+static const string MOVING_PHOTO_PROCESS_FLAG = "multimedia.medialibrary.cloneFlag";
+
 bool MovingPhotoProcessor::isProcessing_ = true;
+
+static void StopCloudSync()
+{
+    string currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
+    MEDIA_INFO_LOG("Stop cloud sync for processing moving photo: %{public}s", currentTime.c_str());
+    bool retFlag = system::SetParameter(MOVING_PHOTO_PROCESS_FLAG, currentTime);
+    if (!retFlag) {
+        MEDIA_ERR_LOG("Failed to set parameter, retFlag: %{public}d", retFlag);
+    }
+}
+
+static void StartCloudSync()
+{
+    MEDIA_INFO_LOG("Reset parameter for cloud sync");
+    bool retFlag = system::SetParameter(MOVING_PHOTO_PROCESS_FLAG, "0");
+    if (!retFlag) {
+        MEDIA_ERR_LOG("Failed to set parameter for cloud sync, retFlag: %{public}d", retFlag);
+    }
+}
 
 void MovingPhotoProcessor::StartProcess()
 {
@@ -59,12 +80,16 @@ void MovingPhotoProcessor::StartProcess()
         MEDIA_DEBUG_LOG("No moving photo need to be processed");
         return;
     }
+
+    StopCloudSync();
     CompatMovingPhoto(dataList);
+    StartCloudSync();
 }
 
 void MovingPhotoProcessor::StopProcess()
 {
     isProcessing_ = false;
+    StartCloudSync();
 }
 
 shared_ptr<NativeRdb::ResultSet> MovingPhotoProcessor::QueryMovingPhoto()
