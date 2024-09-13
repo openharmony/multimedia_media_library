@@ -476,16 +476,10 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback
     auto changeRequest = asyncContext->objectInfo;
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
-    CHECK_COND_WITH_MESSAGE(env,
-        PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only user album can move assets");
 
     shared_ptr<PhotoAlbum> targetAlbum = nullptr;
     CHECK_COND_WITH_MESSAGE(
         env, ParsePhotoAlbum(env, asyncContext->argv[PARAM1], targetAlbum), "Failed to parse targetAlbum");
-    CHECK_COND_WITH_MESSAGE(env,
-        PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()),
-        "targetAlbum is not user album");
     CHECK_COND_WITH_MESSAGE(env, targetAlbum->GetAlbumId() != photoAlbum->GetAlbumId(), "targetAlbum cannot be self");
 
     vector<string> assetUriArray;
