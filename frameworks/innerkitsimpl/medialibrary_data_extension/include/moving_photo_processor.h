@@ -43,18 +43,9 @@ private:
         std::vector<MovingPhotoData> movingPhotos;
     } MovingPhotoDataList;
 
-    class CompatMovingPhotoData : public AsyncTaskData {
-    public:
-        CompatMovingPhotoData(MovingPhotoDataList dataList) : dataList_(dataList) {};
-        ~CompatMovingPhotoData() override = default;
-
-        MovingPhotoDataList dataList_;
-    };
-
     static std::shared_ptr<NativeRdb::ResultSet> QueryMovingPhoto();
     static void ParseMovingPhotoData(std::shared_ptr<NativeRdb::ResultSet>& resultSet, MovingPhotoDataList& dataList);
-    static int32_t AddTask(const MovingPhotoDataList& dataList);
-    static void CompatMovingPhotoExecutor(AsyncTaskData* data);
+    static void CompatMovingPhoto(const MovingPhotoDataList& dataList);
     static int32_t GetUpdatedMovingPhotoData(const MovingPhotoData& currentData, MovingPhotoData& newData);
     static void UpdateMovingPhotoData(const MovingPhotoData& movingPhotoData);
 
