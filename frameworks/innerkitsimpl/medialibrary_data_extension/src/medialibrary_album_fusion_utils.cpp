@@ -27,6 +27,7 @@
 #include "metadata.h"
 #include "media_file_utils.h"
 #include "medialibrary_album_compatibility_fusion_sql.h"
+#include "medialibrary_album_refresh.h"
 #include "parameters.h"
 #include "thumbnail_service.h"
 
@@ -1246,6 +1247,7 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     SetParameterToStartSync();
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
+    RefreshAlbums(true);
     return err;
 }
 } // namespace OHOS::Media
