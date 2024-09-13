@@ -16,6 +16,7 @@
 #include "backup_database_utils.h"
 
 #include <nlohmann/json.hpp>
+#include <safe_map.h>
 
 #include "backup_const_column.h"
 #include "media_file_utils.h"
@@ -37,6 +38,7 @@ const size_t LANDMARKS_SIZE = 5;
 const std::string LANDMARK_X = "x";
 const std::string LANDMARK_Y = "y";
 const std::vector<uint32_t> HEX_MAX = { 0xff, 0xffff, 0xffffff, 0xffffffff };
+static SafeMap<int32_t, int32_t> fileIdOld2NewForCloudEnhancement;
 
 int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
     const std::string &dbPath, const std::string &bundleName, bool isMediaLibrary, int32_t area)
@@ -929,6 +931,44 @@ void BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRd
 
     UpdateGroupTags(updatedPairs, groupTagMap);
     UpdateGroupTagColumn(updatedPairs, mediaLibraryRdb);
+}
+
+void BackupDatabaseUtils::UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+    const std::vector<FileInfo> &fileInfos)
+{
+    for (const FileInfo &fileInfo : fileInfos) {
+        if (fileInfo.associateFileId <= 0 || fileInfo.fileIdOld <= 0 || fileInfo.fileIdNew <= 0) {
+            continue;
+        }
+        int32_t updateAssociateId = -1;
+        bool ret = fileIdOld2NewForCloudEnhancement.Find(fileInfo.associateFileId, updateAssociateId);
+        if (!ret) {
+            fileIdOld2NewForCloudEnhancement.Insert(fileInfo.fileIdOld, fileInfo.fileIdNew);
+            continue;
+        }
+        int32_t changeRows = 0;
+        NativeRdb::ValuesBucket updatePostBucket;
+        updatePostBucket.Put(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, updateAssociateId);
+        std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+            make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
+        predicates->SetWhereClause("file_id=?");
+        predicates->SetWhereArgs({ to_string(fileInfo.fileIdNew) });
+        BackupDatabaseUtils::Update(rdbStore, changeRows, updatePostBucket, predicates);
+        if (changeRows > 0) {
+            MEDIA_INFO_LOG("update, old:%{public}d, new:%{public}d, old_associate:%{public}d, new_associate:%{public}d",
+                fileInfo.fileIdOld, fileInfo.fileIdNew, fileInfo.associateFileId, updateAssociateId);
+        }
+
+        NativeRdb::ValuesBucket updatePreBucket;
+        updatePreBucket.Put(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, fileInfo.fileIdNew);
+        predicates->SetWhereArgs({ to_string(updateAssociateId) });
+        BackupDatabaseUtils::Update(rdbStore, changeRows, updatePreBucket, predicates);
+        if (changeRows > 0) {
+            MEDIA_INFO_LOG("update, old:%{public}d, new:%{public}d, new_associate:%{public}d",
+                fileInfo.associateFileId, updateAssociateId, fileInfo.fileIdNew);
+        }
+        fileIdOld2NewForCloudEnhancement.Erase(fileInfo.associateFileId);
+    }
 }
 } // namespace Media
 } // namespace OHOS
