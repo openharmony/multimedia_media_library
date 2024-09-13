@@ -825,7 +825,7 @@ int32_t SetPhotoAlbumName(const ValuesBucket &values, const DataSharePredicates 
                 return E_HAS_DB_ERROR;
             }
             MediaLibraryAlbumFusionUtils::DeleteALbumAndUpdateRelationship(rdbStore.get(), oldAlbumId,
-                sameAlbumId, MediaLibraryAlbumFusionUtils::IsCloudAlbum(resultSet));
+                newAlbumId, MediaLibraryAlbumFusionUtils::IsCloudAlbum(resultSet));
             MEDIA_INFO_LOG("Set new album name id is, %{public}s", to_string(newAlbumId).c_str());
         }
     }
