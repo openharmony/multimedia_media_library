@@ -1373,7 +1373,6 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<RdbStor
 {
     vector<string> newWhereIdArgs;
     for (auto albumId: predicates.GetWhereArgs()) {
-        bool hasHiddenAssets = false;
         const std::string QUERY_FILE_ASSET_INFO = "SELECT * FROM Photos WHERE owner_album_id = " + albumId;
         shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
         vector<string> fileAssetsIds, fileAssetsUri;
@@ -1381,7 +1380,6 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<RdbStor
             int isHiddenAsset = 0;
             GetIntFromResultSet(resultSet, MediaColumn::MEDIA_HIDDEN, isHiddenAsset);
             if (isHiddenAsset == 1) {
-                hasHiddenAssets = true;
                 continue;
             }
             int32_t fileId = -1;
@@ -1408,11 +1406,7 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<RdbStor
             to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::TRASH),
             to_string(PhotoAlbumSubType::HIDDEN)
         });
-        if (!hasHiddenAssets) {
-            newWhereIdArgs.push_back(albumId);
-        } else {
-            MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { albumId });
-        }
+        newWhereIdArgs.push_back(albumId);
         MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), fileAssetsUri);
         MediaLibraryPhotoOperations::TrashPhotosSendNotify(fileAssetsUri);
