@@ -1657,8 +1657,8 @@ void MediaLibraryAssetOperations::SendOwnerAlbumIdNotify(MediaLibraryCommand &cm
     int32_t oriAlbumId = GetAlbumIdByPredicates(whereClause, whereArgs);
 
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(targetAlbumId),
-            to_string(oriAlbumId)});
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(targetAlbumId),
+        to_string(oriAlbumId) });
 
     auto watch = MediaLibraryNotify::GetInstance();
     NotifyType typeTarget = NotifyType::NOTIFY_ALBUM_ADD_ASSET;
