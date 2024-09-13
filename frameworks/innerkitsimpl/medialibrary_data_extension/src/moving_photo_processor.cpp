@@ -59,11 +59,7 @@ void MovingPhotoProcessor::StartProcess()
         MEDIA_DEBUG_LOG("No moving photo need to be processed");
         return;
     }
-
-    int32_t ret = AddTask(dataList);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to add moving photo task! err: %{public}d", ret);
-    }
+    CompatMovingPhoto(dataList);
 }
 
 void MovingPhotoProcessor::StopProcess()
@@ -88,6 +84,10 @@ shared_ptr<NativeRdb::ResultSet> MovingPhotoProcessor::QueryMovingPhoto()
         ->Or()
         ->EqualTo(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY))
         ->EndWrap()
+        ->And()
+        ->EqualTo(PhotoColumn::PHOTO_IS_TEMP, 0)
+        ->EqualTo(PhotoColumn::MEDIA_TIME_PENDING, 0)
+        ->EqualTo(PhotoColumn::PHOTO_QUALITY, 0)
         ->Limit(MOVING_PHOTO_PROCESS_NUM);
     return MediaLibraryRdbStore::Query(predicates, columns);
 }
@@ -115,25 +115,6 @@ void MovingPhotoProcessor::ParseMovingPhotoData(shared_ptr<NativeRdb::ResultSet>
         movingPhotoData.path = path;
         dataList.movingPhotos.push_back(movingPhotoData);
     }
-}
-
-int32_t MovingPhotoProcessor::AddTask(const MovingPhotoDataList& dataList)
-{
-    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Failed to get async worker to process moving photo");
-        return E_FAIL;
-    }
-
-    auto* taskData = new (std::nothrow) CompatMovingPhotoData(dataList);
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to alloc async data for processing moving photo");
-        return E_NO_MEMORY;
-    }
-
-    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(CompatMovingPhotoExecutor, taskData);
-    asyncWorker->AddTask(asyncTask, false);
-    return E_OK;
 }
 
 void MovingPhotoProcessor::UpdateMovingPhotoData(const MovingPhotoData& movingPhotoData)
@@ -215,11 +196,8 @@ int32_t MovingPhotoProcessor::GetUpdatedMovingPhotoData(const MovingPhotoData& c
     return E_OK;
 }
 
-void MovingPhotoProcessor::CompatMovingPhotoExecutor(AsyncTaskData* data)
+void MovingPhotoProcessor::CompatMovingPhoto(const MovingPhotoDataList& dataList)
 {
-    auto* taskData = static_cast<CompatMovingPhotoData*>(data);
-    MovingPhotoDataList dataList = taskData->dataList_;
-
     MEDIA_INFO_LOG("Start processing %{public}zu moving photos", dataList.movingPhotos.size());
     for (const auto& movingPhoto : dataList.movingPhotos) {
         MovingPhotoData newData;
