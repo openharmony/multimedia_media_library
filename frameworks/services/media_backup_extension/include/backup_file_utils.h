@@ -50,11 +50,14 @@ public:
     static bool IsLivePhoto(const FileInfo &fileInfo);
     static bool ConvertToMovingPhoto(FileInfo &fileInfo);
     static string ConvertLowQualityPath(int32_t sceneCode, const std::string &filePath, const string &relativePath);
+    static bool IsLowQualityImage(std::string &filePath, int32_t sceneCode,
+        string relativePath, bool hasLowQualityImage);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
     static int32_t CreateAssetRealName(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &name);
+    static std::shared_ptr<FileAccessHelper> fileAccessHelper_;
 };
 } // namespace Media
 } // namespace OHOS
