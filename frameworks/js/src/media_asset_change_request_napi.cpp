@@ -45,9 +45,7 @@
 #include "permission_utils.h"
 #include "photo_proxy_napi.h"
 #include "securec.h"
-#ifdef HAS_ACE_ENGINE_PART
 #include "ui_content.h"
-#endif
 #include "unique_fd.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
@@ -913,7 +911,6 @@ napi_value MediaAssetChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
             env, asyncContext, "ChangeRequestDeleteAssets", DeleteAssetsExecute, DeleteAssetsCompleteCallback);
     }
 
-#ifdef HAS_ACE_ENGINE_PART
     // Deletion control by ui extension
     CHECK_COND(env, HasWritePermission(), OHOS_PERMISSION_DENIED_CODE);
     CHECK_COND_WITH_MESSAGE(
@@ -943,10 +940,6 @@ napi_value MediaAssetChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
     CHECK_COND(env, sessionId != 0, JS_INNER_FAIL);
     callback->SetSessionId(sessionId);
     RETURN_NAPI_UNDEFINED(env);
-#else
-    NapiError::ThrowError(env, JS_INNER_FAIL, "ace_engine is not support");
-    return nullptr;
-#endif
 }
 
 napi_value MediaAssetChangeRequestNapi::JSSetEditData(napi_env env, napi_callback_info info)

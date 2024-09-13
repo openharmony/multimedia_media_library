@@ -210,7 +210,7 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
     }
 
     ImageInfo imageInfo;
-    err = imageSource->GetImageInfoFromExif(0, imageInfo);
+    err = imageSource->GetImageInfo(0, imageInfo);
     if (err == 0) {
         data->SetFileWidth(imageInfo.size.width);
         data->SetFileHeight(imageInfo.size.height);
@@ -427,6 +427,7 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
         MEDIA_ERR_LOG("Open file descriptor failed, errno = %{public}d", errno);
         return E_SYSCALL;
     }
+    
     struct stat64 st;
     if (fstat64(fd, &st) != 0) {
         MEDIA_ERR_LOG("Get file state failed for the given fd");
