@@ -1126,11 +1126,13 @@ int32_t MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(NativeRdb::Rd
             priority = 1;
         }
 
-        if (album_type == OHOS::Media::PhotoAlbumType::SOURCE) {
-            QuerySourceAlbumLPath(upgradeStore, lpath, bundle_name, album_name);
-        } else {
-            lpath = "/Pictures/Users/" + album_name;
-            MEDIA_INFO_LOG("Album type is user type and lPath is %{public}s!!!", lpath.c_str());
+        if (lpath.empty()) {
+            if (album_type == OHOS::Media::PhotoAlbumType::SOURCE) {
+                QuerySourceAlbumLPath(upgradeStore, lpath, bundle_name, album_name);
+            } else {
+                lpath = "/Pictures/Users/" + album_name;
+                MEDIA_INFO_LOG("Album type is user type and lPath is %{public}s!!!", lpath.c_str());
+            }
         }
 
         const std::string UPDATE_COMPENSATE_ALBUM_DATA =
@@ -1142,8 +1144,8 @@ int32_t MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(NativeRdb::Rd
             return err;
         }
     }
-
     MEDIA_INFO_LOG("End compensate Lpath for local album");
+    return E_OK;
 }
 
 void MediaLibraryAlbumFusionUtils::SetParameterToStopSync()
