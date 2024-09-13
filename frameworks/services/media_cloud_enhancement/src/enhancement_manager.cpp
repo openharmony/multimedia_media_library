@@ -504,7 +504,7 @@ int32_t EnhancementManager::HandleCancelOperation(MediaLibraryCommand &cmd)
             MEDIA_ERR_LOG("update ce_available error, photoId: %{public}s", photoId.c_str());
             continue;
         }
-        CloudEnhancementGetCount::GetInstance().Report("SyncCancellationType", photoId);
+        CloudEnhancementGetCount::GetInstance().RemoveStartTime(photoId);
         auto watch = MediaLibraryNotify::GetInstance();
         watch->Notify(fileId2Uri[fileId], NotifyType::NOTIFY_UPDATE);
     }
@@ -521,10 +521,7 @@ int32_t EnhancementManager::HandleCancelAllOperation()
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "cancel all tasks failed: enhancment service error");
     vector<string> taskIds;
     EnhancementTaskManager::RemoveAllEnhancementTask(taskIds);
-    if (taskIds.empty()) {
-        MEDIA_INFO_LOG("cloud enhancement tasks in cache are not processing");
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET_LOG(!taskIds.empty(), E_OK, "cloud enhancement tasks in cache are not processing");
     RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
     queryPredicates.In(PhotoColumn::PHOTO_ID, taskIds);
     vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
@@ -556,6 +553,7 @@ int32_t EnhancementManager::HandleCancelAllOperation()
             MEDIA_ERR_LOG("update ce_available error, photoId: %{public}s", photoId.c_str());
             continue;
         }
+        CloudEnhancementGetCount::GetInstance().RemoveStartTime(photoId);
         auto watch = MediaLibraryNotify::GetInstance();
         watch->Notify(uri, NotifyType::NOTIFY_UPDATE);
     }
