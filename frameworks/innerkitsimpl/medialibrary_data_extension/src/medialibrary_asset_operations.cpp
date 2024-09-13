@@ -2263,13 +2263,6 @@ static inline int32_t DeleteDbByIds(const string &table, vector<string> &ids, co
     return MediaLibraryRdbStore::Delete(predicates);
 }
 
-void RemoveTaskReport(vector<string> &photoIds)
-{
-    for (string& photoId : photoIds) {
-        CloudEnhancementGetCount::GetInstance().Report("DeleteCancellationType", photoId);
-    }
-}
-
 /**
  * @brief Delete files permanently from system.
  *
@@ -2307,7 +2300,6 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     // delete cloud enhanacement task
     vector<string> photoIds;
     EnhancementManager::GetInstance().RemoveTasksInternal(ids, photoIds);
-    RemoveTaskReport(photoIds);
 
     deletedRows = DeleteDbByIds(predicates.GetTableName(), ids, compatible);
     if (deletedRows <= 0) {
