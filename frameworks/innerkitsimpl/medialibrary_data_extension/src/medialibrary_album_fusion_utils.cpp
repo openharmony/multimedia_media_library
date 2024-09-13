@@ -1110,21 +1110,15 @@ int32_t MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(NativeRdb::Rd
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int album_id = -1;
         int32_t album_type = -1;
-        int priority = -1;
         std::string album_name = "";
         std::string bundle_name = "";
         std::string lpath = "";
 
         GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, album_id);
         GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_TYPE, album_type);
-        GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_PRIORITY, priority);
         GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_NAME, album_name);
         GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundle_name);
         GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_LPATH, lpath);
-
-        if (priority == 0) {
-            priority = 1;
-        }
 
         if (lpath.empty()) {
             if (album_type == OHOS::Media::PhotoAlbumType::SOURCE) {
@@ -1136,7 +1130,8 @@ int32_t MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(NativeRdb::Rd
         }
 
         const std::string UPDATE_COMPENSATE_ALBUM_DATA =
-            "UPDATE PhotoAlbum SET priority = " + to_string(priority) + ", lpath = '" + lpath + "' "
+            "UPDATE PhotoAlbum SET lpath = '" + lpath + "', "
+            "priority = (SELECT COALESCE ((SELECT priorty FROM album_plugin WHERE lpath = '" + lpath + "'), 1)) "
             "WHERE album_id = " + to_string(album_id);
         int32_t err = upgradeStore->ExecuteSql(UPDATE_COMPENSATE_ALBUM_DATA);
         if (err != NativeRdb::E_OK) {
