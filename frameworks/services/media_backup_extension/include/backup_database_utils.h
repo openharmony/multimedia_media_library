@@ -120,6 +120,8 @@ public:
         const std::vector<std::string>& tagIds);
     static void UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
         const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap);
+    static void UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        const std::vector<FileInfo> &fileInfos);
 
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
