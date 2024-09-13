@@ -67,6 +67,7 @@ static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {PhotoColumn::PHOTO_LONGITUDE, ResultSetDataType::TYPE_DOUBLE},
     {PhotoColumn::PHOTO_HEIGHT, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_WIDTH, ResultSetDataType::TYPE_INT32},
+    {PhotoColumn::PHOTO_EDIT_TIME, ResultSetDataType::TYPE_INT64},
     {PhotoColumn::PHOTO_SUBTYPE, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::CAMERA_SHOT_KEY, ResultSetDataType::TYPE_STRING},
     {PhotoColumn::PHOTO_USER_COMMENT, ResultSetDataType::TYPE_STRING},
@@ -84,7 +85,7 @@ static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {PhotoColumn::MOVING_PHOTO_EFFECT_MODE, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_FRONT_CAMERA, ResultSetDataType::TYPE_STRING}
 };
-    
+
 static unordered_map<string, ResultSetDataType> thumbnailColumnTypeMap = {
     {PhotoColumn::PHOTO_LCD_VISIT_TIME, ResultSetDataType::TYPE_INT64},
     {PhotoColumn::PHOTO_THUMBNAIL_READY, ResultSetDataType::TYPE_INT64},
@@ -454,6 +455,11 @@ static int32_t BuildInsertValuesBucket(NativeRdb::ValuesBucket &values, const st
         values.PutString(PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, cloudId);
         values.PutInt(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, CLOUD_COPY_DIRTY_FLAG);
+    }
+    int32_t dirty = -1;
+    GetIntValueFromResultSet(resultSet, PhotoColumn::PHOTO_DIRTY, dirty);
+    if (dirty == -1) {
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, -1);
     }
     return E_OK;
 }
