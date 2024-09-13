@@ -267,46 +267,6 @@ static void UpdateDateTakenIndex(shared_ptr<NativeRdb::RdbStore> &store)
     MEDIA_INFO_LOG("update index for datetaken change end");
 }
 
-static void OnUpgradeRdbStore(AsyncTaskData* data)
-{
-    auto *taskData = static_cast<UpgradeRdbStoreAsyncTaskData *>(data);
-    auto rdbStore = taskData->rdbStore_;
-    int32_t oldVersion = taskData->oldVersion_;
-    MEDIA_INFO_LOG("Start MediaLibraryDataManager::UpgradeRdbStoreAsync, oldVersion:%{public}d", oldVersion);
-    if (oldVersion < VERSION_ADD_DETAIL_TIME) {
-        UpdateDateTakenToMillionSecond(rdbStore);
-        UpdateDateTakenIndex(rdbStore);
-        ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
-    }
-}
-
-void MediaLibraryDataManager::UpgradeRdbStoreAsync()
-{
-    int32_t oldVersion = MediaLibraryRdbStore::GetRdbOldVersion();
-    if (oldVersion == -1 || oldVersion >= MEDIA_RDB_VERSION) {
-        MEDIA_INFO_LOG("No need to upgrade rdb, oldVersion: %{public}d", oldVersion);
-        return;
-    }
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("RdbStore is null");
-        return;
-    }
-
-    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Can not get asyncWorker");
-        return;
-    }
-    auto *taskData = new (std::nothrow) UpgradeRdbStoreAsyncTaskData(rdbStore_, oldVersion);
-    shared_ptr<MediaLibraryAsyncTask> upgradeRdbTask =
-        make_shared<MediaLibraryAsyncTask>(OnUpgradeRdbStore, taskData);
-    if (upgradeRdbTask != nullptr) {
-        asyncWorker->AddTask(upgradeRdbTask, true);
-    } else {
-        MEDIA_WARN_LOG("Can not init update rdb task");
-    }
-}
-
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
     const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode)
@@ -365,10 +325,52 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_, true);
-    UpgradeRdbStoreAsync();
+    HandleUpgradeRdbAsync();
 
     refCnt_++;
     return E_OK;
+}
+
+void MediaLibraryDataManager::HandleUpgradeRdbAsync()
+{
+    std::thread([&] {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+        if (rdbStore == nullptr) {
+            MEDIA_ERR_LOG("rdbStore is nullptr!");
+            return;
+        }
+        int32_t oldVersion = rdbStore->GetOldVersion();
+        if (oldVersion == -1 || oldVersion >= MEDIA_RDB_VERSION) {
+            MEDIA_INFO_LOG("No need to upgrade rdb, oldVersion: %{public}d", oldVersion);
+            return;
+        }
+        auto rawStore = rdbStore->GetRaw();
+        if (rawStore == nullptr) {
+            MEDIA_ERR_LOG("rawStore is nullptr!");
+        }
+        MEDIA_INFO_LOG("oldVersion:%{public}d", oldVersion);
+        // compare older version, update and set old version
+        if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
+            MediaLibraryRdbStore::CreateBurstIndex(*rawStore);
+            rdbStore->SetOldVersion(VERSION_CREATE_BURSTKEY_INDEX);
+        }
+
+        if (oldVersion < VERSION_UPDATE_BURST_DIRTY) {
+            MediaLibraryRdbStore::UpdateBurstDirty(*rawStore);
+            rdbStore->SetOldVersion(VERSION_UPDATE_BURST_DIRTY);
+        }
+
+        if (oldVersion < VERSION_UPGRADE_THUMBNAIL) {
+            MediaLibraryRdbStore::UpdateReadyOnThumbnailUpgrade(*rawStore);
+            rdbStore->SetOldVersion(VERSION_UPGRADE_THUMBNAIL);
+        }
+        if (oldVersion < VERSION_ADD_DETAIL_TIME) {
+            UpdateDateTakenToMillionSecond(rawStore);
+            UpdateDateTakenIndex(rawStore);
+            ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
+            rdbStore->SetOldVersion(VERSION_ADD_DETAIL_TIME);
+        }
+    }).detach();
 }
 
 void MediaLibraryDataManager::InitResourceInfo()

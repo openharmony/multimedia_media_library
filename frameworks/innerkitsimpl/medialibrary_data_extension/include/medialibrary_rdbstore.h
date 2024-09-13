@@ -83,6 +83,11 @@ public:
     EXPORT static int32_t QueryPragma(const std::string &key, int64_t &value);
     EXPORT static void SetRdbOldVersion(int32_t oldVersion);
     EXPORT static int32_t GetRdbOldVersion();
+    EXPORT static void SetOldVersion(int32_t oldVersion);
+    EXPORT static int32_t GetOldVersion();
+    EXPORT static void CreateBurstIndex(RdbStore &store);
+    EXPORT static void UpdateBurstDirty(RdbStore &store);
+    EXPORT static void UpdateReadyOnThumbnailUpgrade(RdbStore &store);
 
 private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
