@@ -23,6 +23,17 @@ namespace OHOS {
 namespace Media {
 
 #define EXPORT __attribute__ ((visibility ("default")))
+
+enum CloudSyncStatus : int32_t {
+    BEGIN = 0,
+    FIRST_FIVE_HUNDRED,
+    INCREMENT_DOWNLOAD,
+    TOTAL_DOWNLOAD,
+    TOTAL_DOWNLOAD_FINISH,
+    SYNC_SWITCHED_OFF,
+}
+
+const std::string CLOUDSYNC_STATUS_KEY = "";
 class CloudSyncNotifyHandler {
 public:
     CloudSyncNotifyHandler(const CloudSyncNotifyInfo &info):notifyInfo_(info) {};
