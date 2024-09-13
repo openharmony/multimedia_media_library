@@ -1131,7 +1131,7 @@ int32_t MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(NativeRdb::Rd
 
         const std::string UPDATE_COMPENSATE_ALBUM_DATA =
             "UPDATE PhotoAlbum SET lpath = '" + lpath + "', "
-            "priority = (SELECT COALESCE ((SELECT priority FROM album_plugin WHERE lpath = '" + lpath + "'), 1)) "
+            "priority = COALESCE ((SELECT priority FROM album_plugin WHERE lpath = '" + lpath + "'), 1) "
             "WHERE album_id = " + to_string(album_id);
         int32_t err = upgradeStore->ExecuteSql(UPDATE_COMPENSATE_ALBUM_DATA);
         if (err != NativeRdb::E_OK) {
