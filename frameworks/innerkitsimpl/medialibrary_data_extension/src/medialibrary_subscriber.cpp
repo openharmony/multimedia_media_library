@@ -164,7 +164,6 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
-    ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(newStatus);
     if (currentStatus_ == newStatus) {
         return;
     }
@@ -173,6 +172,7 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
         currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 
     currentStatus_ = newStatus;
+    ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(newStatus);
     EndBackgroundOperationThread();
     if (currentStatus_) {
         isTaskWaiting_ = true;
