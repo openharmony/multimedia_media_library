@@ -774,7 +774,7 @@ int32_t CheckHasSameNameAlbum(const string &newAlbumName, const shared_ptr<Nativ
         return 0;
     }
     int32_t albumId = 0;
-    if (resultSetAlbum->GoToNextRow == NativeRdb::E_OK) {
+    if (resultSetAlbum->GoToNextRow() == NativeRdb::E_OK) {
         GetIntValueFromResultSet(resultSetAlbum, PhotoAlbumColumns::ALBUM_ID, albumId);
     }
 
