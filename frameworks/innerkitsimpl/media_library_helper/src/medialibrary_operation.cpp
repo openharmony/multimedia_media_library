@@ -83,6 +83,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OperationObject::PAH_MOVING_PHOTO },
         { PAH_BATCH_THUMBNAIL_OPERATE, OperationObject::PAH_BATCH_THUMBNAIL_OPERATE },
         { CHECK_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
+        { PAH_CLOUD_ENHANCEMENT_OPERATE, OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE },
 
         // use in Vision
         { PAH_ANA_OCR, OperationObject::VISION_OCR },
@@ -278,6 +279,13 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_ADD_LOWQUALITY_IMAGE, OperationType::ADD_LOWQUALITY_IMAGE },
         { OPRN_FINISH_REQUEST_PICTURE, OperationType::FINISH_REQUEST_PICTURE },
         { OPRN_SCAN_WITHOUT_ALBUM_UPDATE, OperationType::SCAN_WITHOUT_ALBUM_UPDATE },
+        { OPRN_ENHANCEMENT_ADD, OperationType::ENHANCEMENT_ADD},
+        { OPRN_ENHANCEMENT_PRIORITIZE, OperationType::ENHANCEMENT_PRIORITIZE},
+        { OPRN_ENHANCEMENT_CANCEL, OperationType::ENHANCEMENT_CANCEL},
+        { OPRN_ENHANCEMENT_CANCEL_ALL, OperationType::ENHANCEMENT_CANCEL_ALL},
+        { OPRN_ENHANCEMENT_SYNC, OperationType::ENHANCEMENT_SYNC},
+        { OPRN_ENHANCEMENT_QUERY, OperationType::ENHANCEMENT_QUERY},
+        { OPRN_ENHANCEMENT_GET_PAIR, OperationType::ENHANCEMENT_GET_PAIR},
     };
     return oprnTypeMap;
 }

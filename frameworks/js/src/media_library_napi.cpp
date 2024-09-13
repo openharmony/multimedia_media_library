@@ -187,6 +187,8 @@ thread_local napi_ref MediaLibraryNapi::sHighlightAlbumInfoType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHighlightUserActionType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMovingPhotoEffectModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sImageFileTypeEnumEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sCloudEnhancementTaskStageEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sCloudEnhancementStateEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -370,6 +372,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("HighlightUserActionType", CreateHighlightUserActionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("MovingPhotoEffectMode", CreateMovingPhotoEffectModeEnum(env)),
         DECLARE_NAPI_PROPERTY("ImageFileType", CreateImageFileTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("CloudEnhancementTaskStage", CreateCloudEnhancementTaskStageEnum(env)),
+        DECLARE_NAPI_PROPERTY("CloudEnhancementState", CreateCloudEnhancementStateEnum(env)),
         DECLARE_NAPI_PROPERTY("AuthorizationMode", CreateAuthorizationModeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
@@ -754,7 +758,7 @@ static napi_value CreateNumberEnumProperty(napi_env env, vector<string> properti
 {
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_object(env, &result));
-    for (size_t i = 0; i < properties.size(); i++) {
+    for (int32_t i = 0; i < properties.size(); i++) {
         NAPI_CALL(env, AddIntegerNamedProperty(env, result, properties[i], i + offset));
     }
     NAPI_CALL(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &ref));
@@ -6661,6 +6665,16 @@ napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
     return CreateNumberEnumProperty(env, resourceTypeEnum, sResourceTypeEnumRef_, startIdx);
 }
 
+napi_value MediaLibraryNapi::CreateCloudEnhancementTaskStageEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, cloudEnhancementTaskStageEnum, sCloudEnhancementTaskStageEnumRef_, -1);
+}
+
+napi_value MediaLibraryNapi::CreateCloudEnhancementStateEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, cloudEnhancementStateEnum, sCloudEnhancementStateEnumRef_);
+}
+
 napi_value MediaLibraryNapi::CreateMovingPhotoEffectModeEnum(napi_env env)
 {
     napi_value result = nullptr;
@@ -7066,6 +7080,7 @@ static void RestrictAlbumSubtypeOptions(unique_ptr<MediaLibraryAsyncContext> &co
             to_string(PhotoAlbumSubType::FAVORITE),
             to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::IMAGE),
+            to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
         }));
     } else {
         context->predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));

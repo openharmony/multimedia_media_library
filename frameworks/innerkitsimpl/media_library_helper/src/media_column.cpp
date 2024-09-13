@@ -103,6 +103,11 @@ const std::string PhotoColumn::PHOTO_DETAIL_TIME = "detail_time";
 const std::string PhotoColumn::PHOTO_OWNER_ALBUM_ID = "owner_album_id";
 const std::string PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID = "original_asset_cloud_id";
 const std::string PhotoColumn::PHOTO_SOURCE_PATH = "source_path";
+const std::string PhotoColumn::PHOTO_CE_AVAILABLE = "ce_available";
+const std::string PhotoColumn::PHOTO_CE_STATUS_CODE = "ce_status_code";
+const std::string PhotoColumn::PHOTO_STRONG_ASSOCIATION = "strong_association";
+const std::string PhotoColumn::PHOTO_ASSOCIATE_FILE_ID = "associate_file_id";
+const std::string PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK = "has_cloud_watermark";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -212,7 +217,12 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_DETAIL_TIME + " TEXT, " +
     PHOTO_OWNER_ALBUM_ID + " INT DEFAULT 0, " +
     PHOTO_ORIGINAL_ASSET_CLOUD_ID + " TEXT, " +
-    PHOTO_SOURCE_PATH + " TEXT)";
+    PHOTO_SOURCE_PATH + " TEXT, " +
+    PHOTO_CE_AVAILABLE + " INT DEFAULT 0, " +
+    PHOTO_CE_STATUS_CODE + " INT, " +
+    PHOTO_STRONG_ASSOCIATION + " INT DEFAULT 0, " +
+    PHOTO_ASSOCIATE_FILE_ID + " INT DEFAULT 0, " +
+    PHOTO_HAS_CLOUD_WATERMARK + " INT DEFAULT 0) ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
     PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";
@@ -359,6 +369,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_THUMB_SIZE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_FRONT_CAMERA,
     PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY, PhotoColumn::PHOTO_COVER_POSITION,
     PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, PhotoColumn::PHOTO_DETAIL_TIME,
+    PhotoColumn::PHOTO_CE_AVAILABLE,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

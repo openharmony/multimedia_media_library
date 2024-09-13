@@ -151,6 +151,12 @@ public:
     static const std::string PHOTO_DATE_MONTH_FORMAT EXPORT;
     static const std::string PHOTO_DATE_DAY_FORMAT EXPORT;
     static const std::string PHOTO_FRONT_CAMERA EXPORT;
+    // cloud enhancement
+    static const std::string PHOTO_CE_AVAILABLE EXPORT;
+    static const std::string PHOTO_CE_STATUS_CODE EXPORT;
+    static const std::string PHOTO_STRONG_ASSOCIATION EXPORT;
+    static const std::string PHOTO_ASSOCIATE_FILE_ID EXPORT;
+    static const std::string PHOTO_HAS_CLOUD_WATERMARK EXPORT;
     // format in PhotoTable detail time
     static const std::string PHOTO_DETAIL_TIME_FORMAT EXPORT;
 

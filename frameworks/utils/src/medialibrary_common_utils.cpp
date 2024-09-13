@@ -163,6 +163,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     PhotoColumn::PHOTO_SUBTYPE,
     PhotoColumn::PHOTO_IS_TEMP,
     PhotoColumn::PHOTO_BURST_KEY,
+    PhotoColumn::PHOTO_CE_AVAILABLE,
     PhotoColumn::PHOTO_LCD_VISIT_TIME,
     PhotoColumn::PHOTO_DETAIL_TIME,
 
