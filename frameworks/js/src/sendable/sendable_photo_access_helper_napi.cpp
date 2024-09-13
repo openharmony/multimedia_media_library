@@ -1728,7 +1728,7 @@ napi_value SendablePhotoAccessHelper::PhotoAccessGetSharedPhotoAssets(napi_env e
     SendablePhotoAccessHelperAsyncContext* context =
         static_cast<SendablePhotoAccessHelperAsyncContext*>((asyncContext.get()));
     string queryUri = PAH_QUERY_PHOTO;
-    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    SendableMediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
 
     Uri uri(queryUri);
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
@@ -1745,7 +1745,7 @@ napi_value SendablePhotoAccessHelper::PhotoAccessGetSharedPhotoAssets(napi_env e
         return jsFileArray;
     }
     do {
-        napi_value item = MediaLibraryNapiUtils::GetNextRowObject(env, resultSet, true);
+        napi_value item = SendableMediaLibraryNapiUtils::GetNextRowObject(env, resultSet);
         napi_set_element(env, jsFileArray, count++, item);
     } while (!resultSet->GoToNextRow());
     return jsFileArray;
