@@ -189,6 +189,17 @@ void DEBUG_LOG_TO_CONSOLE(const std::string &executeSql, std::vector<NativeRdb::
         args.c_str());
 }
 
+std::string ToStringV2(const std::vector<NativeRdb::ValueObject> &bindArgs)
+{
+    std::string args;
+    for (auto &arg : bindArgs) {
+        std::string tempStr;
+        arg.GetString(tempStr);
+        args += tempStr + ", ";
+    }
+    return args;
+}
+
 /**
  * @brief restore the PhotoAlbum table
  */
@@ -206,6 +217,11 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
         DEBUG_LOG_TO_CONSOLE(this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
         err = this->mediaLibraryRdb_->ExecuteSql(this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
         if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Media_Restore: restore albums failed, "
+                          "err = %{public}d, executeSql = %{public}s, bindArgs = %{public}s",
+                err,
+                this->SQL_PHOTO_ALBUM_INSERT.c_str(),
+                ToStringV2(bindArgs).c_str());
             this->mediaLibraryRdb_->RollBack();
             return err;
         }

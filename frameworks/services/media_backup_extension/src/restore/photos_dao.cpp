@@ -31,9 +31,10 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileInAlbum(const FileInfo &fileInfo
     if (maxFileId <= 0) {
         return rowData;
     }
-    int videoFlag = fileInfo.fileType != MEDIA_TYPE_VIDEO ? 0 : 1;
+    // pictureFlag: 0 for video, 1 for photo; Only search for photo in this case.
+    int pictureFlag = fileInfo.fileType == MEDIA_TYPE_VIDEO ? 0 : 1;
     const std::vector<NativeRdb::ValueObject> params = {
-        fileInfo.lPath, maxFileId, fileInfo.displayName, fileInfo.fileSize, videoFlag, fileInfo.orientation};
+        fileInfo.lPath, maxFileId, fileInfo.displayName, fileInfo.fileSize, pictureFlag, fileInfo.orientation};
     std::string querySql = this->SQL_PHOTOS_FIND_SAME_FILE_IN_ALBUM;
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -53,10 +54,10 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileWithoutAlbum(const FileInfo &fil
     if (maxFileId <= 0) {
         return rowData;
     }
-    int videoFlag = fileInfo.fileType != MEDIA_TYPE_VIDEO ? 0 : 1;
-
+    // pictureFlag: 0 for video, 1 for photo; Only search for photo in this case.
+    int pictureFlag = fileInfo.fileType == MEDIA_TYPE_VIDEO ? 0 : 1;
     const std::vector<NativeRdb::ValueObject> params = {
-        maxFileId, fileInfo.displayName, fileInfo.fileSize, videoFlag, fileInfo.orientation};
+        maxFileId, fileInfo.displayName, fileInfo.fileSize, pictureFlag, fileInfo.orientation};
     std::string querySql = this->SQL_PHOTOS_FIND_SAME_FILE_WITHOUT_ALBUM;
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {

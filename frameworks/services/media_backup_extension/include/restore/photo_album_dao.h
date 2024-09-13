@@ -74,7 +74,8 @@ private:
             bundle_name, \
             lpath, \
             cloud_id, \
-            relative_path \
+            relative_path, \
+            priority \
         FROM PhotoAlbum \
         WHERE album_type != 1024 \
         ORDER BY album_id \
@@ -87,7 +88,8 @@ private:
             bundle_name, \
             lpath, \
             cloud_id, \
-            relative_path \
+            relative_path, \
+            priority \
         FROM PhotoAlbum \
         WHERE LOWER(lpath) = LOWER(?) ;";
     // The albumName of PhotoAlbum, which is not in album_plugin, should be unique.
