@@ -27,6 +27,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "moving_photo_file_utils.h"
+#include "parameters.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
@@ -112,7 +113,7 @@ shared_ptr<NativeRdb::ResultSet> MovingPhotoProcessor::QueryMovingPhoto()
         ->And()
         ->EqualTo(PhotoColumn::PHOTO_IS_TEMP, 0)
         ->EqualTo(PhotoColumn::MEDIA_TIME_PENDING, 0)
-        ->EqualTo(PhotoColumn::PHOTO_QUALITY, 0)
+        ->EqualTo(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL))
         ->Limit(MOVING_PHOTO_PROCESS_NUM);
     return MediaLibraryRdbStore::Query(predicates, columns);
 }
