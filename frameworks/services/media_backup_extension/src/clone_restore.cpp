@@ -1935,8 +1935,6 @@ std::string CloneRestore::ProcessUriAndGenNew(const std::string& tagId, const st
                 return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
                     std::to_string(fileIdNew), extraUri);
             }
-        } else {
-            MEDIA_WARN_LOG("No match for oldFileId: %{public}s, skipping.", fileIdOld.c_str());
         }
     }
     return "";
@@ -1962,8 +1960,6 @@ std::vector<ImageFaceTbl> CloneRestore::ProcessImageFaceTbls(const std::vector<I
                 ImageFaceTbl updatedFace = imageFaceTbl;
                 updatedFace.fileId = it->second;
                 imageFaceNewTbls.push_back(std::move(updatedFace));
-            } else {
-                MEDIA_WARN_LOG("No match found for oldFileId: %{public}d, skipping this record", oldFileId);
             }
         }
     }
