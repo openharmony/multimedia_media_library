@@ -300,11 +300,13 @@ function checkConfirmBoxParams(srcFileUris, photoCreationConfigs) {
 function getBundleInfo() {
   let flags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_ABILITY | // for appName
     bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_HAP_MODULE | // for appName
-    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_SIGNATURE_INFO; // for appId
+    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_SIGNATURE_INFO | // for appId
+    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION; // for appInfo
   let bundleInfo = bundleManager.getBundleInfoForSelfSync(flags);
   if (((bundleInfo === undefined) || (bundleInfo.name === undefined)) ||
       ((bundleInfo.hapModulesInfo === undefined) || (bundleInfo.hapModulesInfo.length === 0)) ||
-      ((bundleInfo.signatureInfo === undefined) || (bundleInfo.signatureInfo.appId === undefined))) {
+      ((bundleInfo.signatureInfo === undefined) || (bundleInfo.signatureInfo.appId === undefined)) ||
+    ((bundleInfo.appInfo === undefined) || (bundleInfo.appInfo.labelId === 0))) {
     console.error('photoAccessHelper failed to get bundle info.');
     return undefined;
   }
@@ -338,8 +340,10 @@ async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfig
   console.info('photoAccessHelper bundleName is ' + bundleName + '.');
   console.info('photoAccessHelper appId is ' + appId + '.');
 
+  let labelId = bundleInfo.appInfo.labelId;
+  console.info('photoAccessHelper labelId is ' + appId + '.');
+
   try {
-    let labelId = getAbilityResource(bundleInfo);
     let appName = await gContext.resourceManager.getStringValue(labelId);
     console.info('photoAccessHelper appName is ' + appName + '.');
 
@@ -372,10 +376,15 @@ async function createAssetWithShortTermPermissionOk(photoCreationConfig) {
 
   let bundleName = bundleInfo.name;
   let appId = bundleInfo.signatureInfo.appId;
+  console.info('photoAccessHelper bundleName is ' + bundleName + '.');
+  console.info('photoAccessHelper appId is ' + appId + '.');
+
+  let labelId = bundleInfo.appInfo.labelId;
+  console.info('photoAccessHelper labelId is ' + appId + '.');
   
   try {
-    let labelId = getAbilityResource(bundleInfo);
     let appName = await gContext.resourceManager.getStringValue(labelId);
+    console.info('photoAccessHelper appName is ' + appName + '.');
 
     if (photoAccessHelper.checkShortTermPermission()) {
       let photoCreationConfigs = [photoCreationConfig];
