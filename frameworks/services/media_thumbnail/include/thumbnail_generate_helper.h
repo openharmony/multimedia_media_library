@@ -46,6 +46,7 @@ private:
     static int32_t GetAvailableFile(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType,
         std::string &fileName);
     static int32_t GetThumbnailDataNeedUpgrade(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
+    static void CheckMonthAndYearKvStoreValid(ThumbRdbOpt &opts);
 };
 } // namespace Media
 } // namespace OHOS
