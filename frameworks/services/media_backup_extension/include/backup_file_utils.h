@@ -23,6 +23,15 @@
 
 namespace OHOS {
 namespace Media {
+class FileAccessHelper {
+public:
+    bool GetValidPath(std::string &filePath);
+
+private:
+    bool ConvertCurrentPath(std::string &curPath, std::string &resultPath);
+    std::map<std::string, std::string> pathMap = {};
+    std::mutex mapMutex;
+};
 class BackupFileUtils {
 public:
     static int32_t FillMetadata(std::unique_ptr<Metadata> &data);
