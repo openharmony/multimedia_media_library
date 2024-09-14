@@ -52,6 +52,7 @@ public:
 private:
     std::string FindUniqueAlbumName(const PhotoAlbumRowData &photoAlbum);
     bool CheckAlbumNameUnique(const std::string &albumName, const std::string &lPath);
+    std::string ToString(const std::vector<NativeRdb::ValueObject> &bindArgs);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;

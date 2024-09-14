@@ -415,9 +415,9 @@ static void ParsingAndFillValue(NativeRdb::ValuesBucket &values, const string &c
             break;
         }
         case ResultSetDataType::TYPE_DOUBLE: {
-            double doubleComlunValue;
-            GetDoubleValueFromResultSet(resultSet, columnName, doubleComlunValue);
-            values.PutDouble(columnName, doubleComlunValue);
+            double doubleColumnValue;
+            GetDoubleValueFromResultSet(resultSet, columnName, doubleColumnValue);
+            values.PutDouble(columnName, doubleColumnValue);
             break;
         }
         case ResultSetDataType::TYPE_STRING: {

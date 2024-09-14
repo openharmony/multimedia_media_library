@@ -39,9 +39,15 @@ public:
 
     bool HasSameAlbum(const std::string &lPath)
     {
+        if (this->photoAlbumDaoPtr_ == nullptr) {
+            return false;
+        }
         PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->photoAlbumDaoPtr_->GetPhotoAlbum(lPath);
         return !albumInfo.lPath.empty();
     }
+
+private:
+    std::string ToString(const std::vector<NativeRdb::ValueObject> &bindArgs);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryTargetRdb_;

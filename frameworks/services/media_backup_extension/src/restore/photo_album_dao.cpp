@@ -175,21 +175,7 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const Phot
     return this->GetPhotoAlbum(album.lPath);
 }
 
-void DEBUG_LOG_TO_CONSOLE(const std::string &executeSql, std::vector<NativeRdb::ValueObject> &bindArgs)
-{
-    std::string args;
-    for (auto &arg : bindArgs) {
-        std::string tempStr;
-        arg.GetString(tempStr);
-        args += tempStr + ", ";
-    }
-    MEDIA_INFO_LOG("Media_Restore: executeSql = %{public}s, \
-        bindArgs = %{public}s",
-        executeSql.c_str(),
-        args.c_str());
-}
-
-std::string ToStringV2(const std::vector<NativeRdb::ValueObject> &bindArgs)
+std::string PhotoAlbumDao::ToString(const std::vector<NativeRdb::ValueObject> &bindArgs)
 {
     std::string args;
     for (auto &arg : bindArgs) {
@@ -214,14 +200,13 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
     for (const PhotoAlbumDao::PhotoAlbumRowData &data : photoAlbums) {
         std::vector<NativeRdb::ValueObject> bindArgs = {
             data.albumType, data.albumSubType, data.albumName, data.bundleName, data.lPath, data.priority};
-        DEBUG_LOG_TO_CONSOLE(this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
         err = this->mediaLibraryRdb_->ExecuteSql(this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
         if (err != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Media_Restore: restore albums failed, "
                           "err = %{public}d, executeSql = %{public}s, bindArgs = %{public}s",
                 err,
                 this->SQL_PHOTO_ALBUM_INSERT.c_str(),
-                ToStringV2(bindArgs).c_str());
+                this->ToString(bindArgs).c_str());
             this->mediaLibraryRdb_->RollBack();
             return err;
         }
