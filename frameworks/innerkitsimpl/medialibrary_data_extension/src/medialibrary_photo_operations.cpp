@@ -577,17 +577,24 @@ void MediaLibraryPhotoOperations::SolvePhotoAlbumInCreate(MediaLibraryCommand &c
     }
 }
 
+static void SetAssetDisplayName(const string &displayName, FileAsset &fileAsset, bool &isContains)
+{
+    fileAsset.SetDisplayName(displayName);
+    isContains = true;
+}
+
 int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
 {
     FileAsset fileAsset;
     ValuesBucket &values = cmd.GetValueBucket();
-    string displayName, extention, title;
+    string displayName;
+    string extention;
+    string title;
     bool isContains = false;
     bool isNeedGrant = false;
     if (GetStringFromValuesBucket(values, PhotoColumn::MEDIA_NAME, displayName)) {
-        fileAsset.SetDisplayName(displayName);
+        SetAssetDisplayName(displayName, fileAsset, isContains);
         fileAsset.SetTimePending(UNCREATE_FILE_TIMEPENDING);
-        isContains = true;
     } else {
         CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, ASSET_EXTENTION, extention), E_HAS_DB_ERROR);
         isNeedGrant = true;
@@ -611,8 +618,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     errCode = transactionOprn.Start();
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
     errCode = isContains ? SetAssetPathInCreate(fileAsset) : SetAssetPath(fileAsset, extention);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
-        "Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Set Path, Name=%{private}s", displayName.c_str());
     int32_t outRow = InsertAssetInDb(cmd, fileAsset);
     AuditLog auditLog = { true, "USER BEHAVIOR", "ADD", "io", 1, "running", "ok" };
     HiAudit::GetInstance().Write(auditLog);
