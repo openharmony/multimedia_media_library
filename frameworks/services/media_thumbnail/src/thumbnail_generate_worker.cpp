@@ -131,8 +131,8 @@ bool ThumbnailGenerateWorker::WaitForTask(std::shared_ptr<ThumbnailGenerateThrea
         ignoreRequestId_ = 0;
         threadStatus->isThreadWaiting_ = true;
         bool ret = workerCv_.wait_for(lock, std::chrono::milliseconds(CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL), [this]() {
-            return !isThreadRunning_! || highPriorityTaskQueue_.Empty() || !midPriorityTaskQueue_.Empty() ||
-                   !lowPriorityTaskQueue_.Empty() ;
+            return !isThreadRunning_ || !highPriorityTaskQueue_.Empty() || !midPriorityTaskQueue_.Empty() ||
+                   !lowPriorityTaskQueue_.Empty();
         });
         if (!ret) {
             MEDIA_INFO_LOG("Wait for task timeout");
