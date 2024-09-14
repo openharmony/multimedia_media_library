@@ -796,6 +796,20 @@ HWTEST_F(MediaLibraryCloudEnhancementGetPairTest, manager_handle_get_pair_operat
     EXPECT_EQ(resultSet, nullptr);
     MEDIA_INFO_LOG("manager_handle_get_pair_operation_032 End");
 }
+
+HWTEST_F(MediaLibraryCloudEnhancementGetPairTest, dfx_total_time_033, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("dfx_total_time_033 Start");
+    string photoId = "1234566";
+    string type = "TestType";
+    CloudEnhancementGetCount::GetInstance().AddStartTimes(photoId);
+    EXPECT_EQ(CloudEnhancementGetCount::GetInstance().empty(), false);
+    // sleep for 1234 millseconds
+    this_theard::sleep_for(chrono::milliseconds(1234));
+    CloudEnhancementGetCount::GetInstance().Report(type, photoId);
+    EXPECT_EQ(CloudEnhancementGetCount::GetInstance().GetStartTimes().empty(), true);
+    MEDIA_INFO_LOG("dfx_total_time_033 End");
+}
 #endif
 }
 }
