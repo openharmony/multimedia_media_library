@@ -62,12 +62,14 @@ public:
     int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
     void DeleteAstcWithFileIdAndDateAdded(const std::string &fileId, const std::string &dateAdded);
-    int32_t CreateAstcCloudDownload(const std::string &id);
+    int32_t CreateAstcCloudDownload(const std::string &id, bool isCloudInsertTaskPriorityHigh = false);
     EXPORT int32_t CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
     EXPORT void CancelAstcBatchTask(int32_t requestId);
     void UpdateAstcWithNewDateAdded(const std::string &fileId, const std::string &newDateAdded,
         const std::string &formerDateAdded);
     EXPORT int32_t CheckCloudThumbnailDownloadFinish();
+    EXPORT void UpdateCurrentStatusForTask(const bool &currentStatusForTask);
+    EXPORT bool GetCurrentStatusForTask();
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();
@@ -84,6 +86,7 @@ private:
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
     Size screenSize_;
     bool isScreenSizeInit_ = false;
+    bool currentStatusForTask_ = false;
 };
 } // namespace Media
 } // namespace OHOS

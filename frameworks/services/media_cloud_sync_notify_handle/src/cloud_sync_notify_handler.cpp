@@ -18,6 +18,7 @@
 #include "notify_responsibility_chain_factory.h"
 #include "thumbnail_service.h"
 #include "medialibrary_rdb_utils.h"
+#include "parameters.h"
 #include "photo_album_column.h"
 #include "media_log.h"
 
@@ -26,6 +27,16 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 using ChangeType = DataShare::DataShareObserver::ChangeType;
+
+const int32_t CLOUD_FIRST_FIVE_HUNDRED = 1;
+const int32_t CLOUD_INCREMENT_DOWNLOAD = 2;
+const std::string CLOUDSYNC_STATUS_KEY = "persist.kernel.cloudsync.status";
+
+static bool IsCloudInsertTaskPriorityHigh()
+{
+    int32_t cloudSyncStatus = static_cast<int32_t>(system::GetParameter(CLOUDSYNC_STATUS_KEY, "0").at(0) - '0');
+    return cloudSyncStatus == CLOUD_FIRST_FIVE_HUNDRED || cloudSyncStatus == CLOUD_INCREMENT_DOWNLOAD;
+}
 
 static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
 {
@@ -42,6 +53,11 @@ static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
 
 void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
 {
+    bool isCloudInsertTaskPriorityHigh = IsCloudInsertTaskPriorityHigh();
+    if (!isCloudInsertTaskPriorityHigh && !ThumbnailService::GetInstance()->GetCurrentStatusForTask()) {
+        MEDIA_INFO_LOG("current status is not suitable for task");
+        return;
+    }
     for (auto &uri : uris) {
         string uriString = uri.ToString();
         auto pos = uriString.find_last_of('/');
@@ -54,7 +70,7 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
             continue;
         }
 
-        ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString);
+        ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString, isCloudInsertTaskPriorityHigh);
     }
 }
 
