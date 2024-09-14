@@ -37,6 +37,7 @@ const size_t MAX_FAILED_FILES_SIZE = 100;
 const string LOW_QUALITY_PATH = "Documents/cameradata/";
 
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
+std::shared_ptr<FileAccessHelper> BackupFileUtils::fileAccessHelper_ = std::make_shared<FileAccessHelper>();
 
 bool FileAccessHelper::GetValidPath(string &filePath)
 {
@@ -369,24 +370,50 @@ string BackupFileUtils::GetFileTitle(const string &displayName)
     return (pos == string::npos) ? displayName : displayName.substr(0, pos);
 }
 
+bool BackupFileUtils::IsLowQualityImage(std::string &filePath, int32_t sceneCode,
+    string relativePath, bool hasLowQualityImage)
+{
+    struct stat statInfo {};
+    std::string garbledFilePath = BackupFileUtils::GarbleFilePath(filePath, sceneCode);
+    if (!hasLowQualityImage) {
+        MEDIA_ERR_LOG("Invalid file (%{public}s), get statInfo failed, err: %{public}d", garbledFilePath.c_str(),
+            errno);
+        return false;
+    }
+    string realPath = ConvertLowQualityPath(sceneCode, filePath, relativePath);
+    if (stat(realPath.c_str(), &statInfo) == E_SUCCESS) {
+        MEDIA_INFO_LOG("Low quality image!");
+        filePath = realPath;
+    } else {
+        MEDIA_ERR_LOG("Invalid Low quality image! file:%{public}s, err:%{public}d", garbledFilePath.c_str(), errno);
+        return false;
+    }
+    if (statInfo.st_mode & S_IFDIR) {
+        MEDIA_ERR_LOG("Invalid file (%{public}s), is a directory", garbledFilePath.c_str());
+        return false;
+    }
+    if (statInfo.st_size <= 0) {
+        MEDIA_ERR_LOG("Invalid file (%{public}s), get size (%{public}lld) <= 0", garbledFilePath.c_str(),
+            (long long)statInfo.st_size);
+        return false;
+    }
+    return true;
+}
+
 bool BackupFileUtils::IsFileValid(std::string &filePath, int32_t sceneCode,
     string relativePath, bool hasLowQualityImage)
 {
     std::string garbledFilePath = BackupFileUtils::GarbleFilePath(filePath, sceneCode);
     struct stat statInfo {};
     if (stat(filePath.c_str(), &statInfo) != E_SUCCESS) {
-        if (!hasLowQualityImage) {
-            MEDIA_ERR_LOG("Invalid file (%{public}s), get statInfo failed, err: %{public}d", garbledFilePath.c_str(),
-                errno);
-            return false;
+        bool res = false;
+        if (fileAccessHelper_ != nullptr) {
+            res = fileAccessHelper_->GetValidPath(filePath);
         }
-        string realPath = ConvertLowQualityPath(sceneCode, filePath, relativePath);
-        if (stat(realPath.c_str(), &statInfo) == E_SUCCESS) {
-            MEDIA_INFO_LOG("Low quality image!");
-            filePath = realPath;
-        } else {
-            MEDIA_ERR_LOG("Invalid Low quality image!");
-            return false;
+        MEDIA_INFO_LOG("after getValidPath:%{public}s, res:%{public}d",
+            BackupFileUtils::GarbleFilePath(filePath, sceneCode).c_str(), res);
+        if (stat(filePath.c_str(), &statInfo) != E_SUCCESS) {
+            return IsLowQualityImage(filePath, sceneCode, relativePath, hasLowQualityImage);
         }
     }
     if (statInfo.st_mode & S_IFDIR) {
