@@ -51,6 +51,7 @@ namespace Media {
 using OHOS::AbilityRuntime::MediaDataShareExtAbility;
 class MediaLibraryDataManager {
 public:
+    static constexpr int32_t URI_MIN_NUM = 3;
     EXPORT MediaLibraryDataManager();
     EXPORT ~MediaLibraryDataManager();
     EXPORT static MediaLibraryDataManager* GetInstance();

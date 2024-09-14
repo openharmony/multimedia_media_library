@@ -940,6 +940,70 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
     return UpdateInternal(cmd, value, predicates);
 }
 
+static std::vector<std::string> SplitUriString(const std::string& str, char delimiter)
+{
+    std::vector<std::string> elements;
+    std::stringstream ss(str);
+    std::string item;
+    while (std::getline(ss, item, delimiter)) {
+        if (!item.empty()) {
+            elements.emplace_back(item);
+        }
+    }
+    return elements;
+}
+
+static std::string ExtractFileIdFromUri(const std::string& uri) {
+    auto uriParts = SplitUriString(uri, '/');
+    if (uriParts.size() >= MediaLibraryDataManager::URI_MIN_NUM) {
+        return uriParts[uriParts.size() - MediaLibraryDataManager::URI_MIN_NUM];
+    }
+    return "";
+}
+
+static std::string BuildWhereClause(const std::vector<std::string>& dismissAssetArray, int32_t albumId)
+{
+    std::string whereClause = MediaColumn::MEDIA_ID + " IN (";
+
+    for (size_t i = 0; i < dismissAssetArray.size(); ++i) {
+        std::string fileId = ExtractFileIdFromUri(dismissAssetArray[i]);
+        if (fileId.empty()) {
+            continue;
+        }
+
+        if (i > 0) {
+            whereClause += ",";
+        }
+
+        whereClause += "'" + fileId + "'";
+    }
+
+    whereClause += ") AND EXISTS (SELECT 1 FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID +
+        " = " + std::to_string(albumId) + " AND " +
+        ANALYSIS_ALBUM_TABLE + ".tag_id = " + VISION_IMAGE_FACE_TABLE + ".tag_id)";
+
+    return whereClause;
+}
+
+static int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
+    const DataShare::DataSharePredicates &predicates)
+{
+    const string &clause = predicates.GetWhereClause();
+    std::vector<std::string> clauses = SplitUriString(clause, ',');
+    if (clauses.empty()) {
+        MEDIA_ERR_LOG("Clause is empty, cannot extract album ID.");
+    }
+
+    std::string albumStr = clauses[0];
+    int32_t albumId = std::stoi(albumStr);
+    std::vector<std::string> uris(clauses.begin() + 1, clauses.end());
+    std::string predicate = BuildWhereClause(uris, albumId);
+    cmd.SetValueBucket(value);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(predicate);
+    return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd);
+}
+
 int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
     const DataShare::DataSharePredicates &predicates)
 {
@@ -982,7 +1046,7 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryStoryOperations::UpdateOperation(cmd);
-        
+
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             std::vector<std::string> columns;
             MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
@@ -992,6 +1056,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             return ProcessThumbnailBatchCmd(cmd, value, predicates);
         case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
             return EnhancementManager::GetInstance().HandleEnhancementUpdateOperation(cmd);
+        case OperationObject::VISION_IMAGE_FACE:
+            return HandleAnalysisFaceUpdate(cmd, value, predicates);
         default:
             break;
     }
