@@ -12,7 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include <vector>
+#include <map>
 #include "medialibrary_app_uri_permission_operations.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_rdbstore.h"
@@ -24,81 +26,73 @@
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_rdb_transaction.h"
 #include "media_file_utils.h"
+#include "medialibrary_appstate_observer.h"
+#include "datashare_predicates_objects.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::RdbDataShareAdapter;
-
+ 
 namespace OHOS {
 namespace Media {
-
+ 
 const int MediaLibraryAppUriPermissionOperations::ERROR = -1;
 const int MediaLibraryAppUriPermissionOperations::SUCCEED = 0;
 const int MediaLibraryAppUriPermissionOperations::ALREADY_EXIST = 1;
+const int MediaLibraryAppUriPermissionOperations::NO_DATA = 0;
 
 int32_t MediaLibraryAppUriPermissionOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
+    MEDIA_INFO_LOG("insert appUriPermission begin");
+    // permissionType from param
+    int permissionTypeParam = -1;
+    if (!GetIntFromValuesBucket(cmd.GetValueBucket(), AppUriPermissionColumn::PERMISSION_TYPE,
+        permissionTypeParam)) {
+        return ERROR;
+    }
+    if (!IsValidPermissionType(permissionTypeParam)) {
+        return ERROR;
+    }
     // query permission data before insert
     int queryFlag = ERROR;
     shared_ptr<ResultSet> resultSet = QueryNewData(cmd.GetValueBucket(), queryFlag);
-
+    // Update the permissionType
     if (queryFlag > 0) {
-        // permissionType from param
-        int permissionTypeParam = ERROR;
-        if (!GetIntFromValuesBucket(cmd.GetValueBucket(), AppUriPermissionColumn::PERMISSION_TYPE,
-            permissionTypeParam)) {
-            return ERROR;
-        }
-        int32_t permissionTypeDB =
-            MediaLibraryRdbStore::GetInt(resultSet, AppUriPermissionColumn::PERMISSION_TYPE);
-        if (permissionTypeParam == permissionTypeDB ||
-            permissionTypeParam == AppUriPermissionColumn::PERMISSION_TEMPORARY_READ ||
-            permissionTypeDB == AppUriPermissionColumn::PERMISSION_PERSIST_READ ||
-            permissionTypeDB == AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE) {
-            return ALREADY_EXIST;
-        }
-        // persist read instead of temporary read in database
-        ValuesBucket updateVB;
-        updateVB.PutInt(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypeParam);
-        updateVB.PutLong(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
-        int idDB = MediaLibraryRdbStore::GetInt(resultSet, AppUriPermissionColumn::ID);
-
-        OHOS::DataShare::DataSharePredicates updatePredicates;
-        updatePredicates.EqualTo(AppUriPermissionColumn::ID, idDB);
-        RdbPredicates updateRdbPredicates =
-            RdbUtils::ToPredicates(updatePredicates, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
-        int32_t updateRows = MediaLibraryRdbStore::Update(updateVB, updateRdbPredicates);
-        if (updateRows < 1) {
-            MEDIA_ERR_LOG("upgrade permissionType error");
-            return ERROR;
-        }
-        return SUCCEED;
+        return UpdatePermissionType(resultSet, permissionTypeParam);
     }
     if (queryFlag < 0) {
         return ERROR;
     }
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        return ERROR;
+    // delete the temporary permission when the app dies
+    if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
+        AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()) {
+        MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
     }
 
-    // insert data into uriPermission table
-    int64_t outRowId = ERROR;
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("get rdbStore error");
+        return ERROR;
+    }
+    // insert data
+    int64_t outRowId = -1;
     cmd.GetValueBucket().PutLong(AppUriPermissionColumn::DATE_MODIFIED,
         MediaFileUtils::UTCTimeMilliSeconds());
     int32_t errCode = rdbStore->Insert(cmd, outRowId);
     if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("insert into db failed, errCode = %{public}d", errCode);
+        MEDIA_ERR_LOG("insert into db error, errCode=%{public}d", errCode);
         return ERROR;
     }
+    MEDIA_INFO_LOG("insert appUriPermission ok");
     return SUCCEED;
 }
-
+ 
 int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
     MediaLibraryCommand &cmd, const std::vector<DataShare::DataShareValuesBucket> &values)
 {
+    MEDIA_INFO_LOG("batch insert begin");
     TransactionOperations transactionOprn(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
     int32_t errCode = transactionOprn.Start();
@@ -106,41 +100,72 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
         MEDIA_ERR_LOG("start transaction error, errCode = %{public}d", errCode);
         return ERROR;
     }
-    int insertOneFlag = ERROR;
+    std::vector<ValuesBucket> insertVector;
     for (auto it = values.begin(); it != values.end(); it++) {
         ValuesBucket value = RdbUtils::ToValuesBucket(*it);
-        cmd.SetValueBucket(value);
-        if (value.IsEmpty()) {
-            MEDIA_ERR_LOG("Input parameter is invalid");
+        int queryFlag = -1;
+        std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = QueryNewData(value, queryFlag);
+        if (queryFlag < 0) {
             return ERROR;
         }
-        insertOneFlag = HandleInsertOperation (cmd);
-        if (insertOneFlag < 0) {
-            return insertOneFlag;
+        // permissionType from param
+        int permissionTypeParam = -1;
+        if (!GetIntFromValuesBucket(value, AppUriPermissionColumn::PERMISSION_TYPE,
+            permissionTypeParam)) {
+            return ERROR;
+        }
+        if (queryFlag == 0) {
+            // delete the temporary permission when the app dies
+            if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
+                AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()) {
+                MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+            }
+            value.PutLong(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+            insertVector.push_back(value);
+        } else if (UpdatePermissionType(resultSet, permissionTypeParam) == ERROR) {
+            return ERROR;
+        }
+    }
+    if (!insertVector.empty()) {
+        int64_t outRowId = -1;
+        int32_t ret = MediaLibraryRdbStore::BatchInsert(outRowId, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE,
+            insertVector);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("batch insert err=%{public}d", ret);
+            return ERROR;
         }
     }
     transactionOprn.Finish();
+    MEDIA_INFO_LOG("batch insert ok");
     return SUCCEED;
 }
-
+ 
 int32_t MediaLibraryAppUriPermissionOperations::DeleteOperation(NativeRdb::RdbPredicates &predicates)
 {
+    MEDIA_INFO_LOG("delete begin");
     int deleteRow = MediaLibraryRdbStore::Delete(predicates);
-    return deleteRow;
+    MEDIA_INFO_LOG("deleted row=%{public}d", deleteRow);
+    return deleteRow < 0 ? ERROR : SUCCEED;
 }
-
+ 
 std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriPermissionOperations::QueryOperation(
     DataShare::DataSharePredicates &predicates, std::vector<std::string> &fetchColumns)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates,
         AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = MediaLibraryRdbStore::Query(rdbPredicates, fetchColumns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
+    if (resultSet == nullptr) {
         return nullptr;
     }
+    int32_t numRows = 0;
+    resultSet->GetRowCount(numRows);
+    if (numRows == 0) {
+        return nullptr;
+    }
+    resultSet->GoToFirstRow();
     return resultSet;
 }
-
+ 
 std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriPermissionOperations::QueryNewData(
     OHOS::NativeRdb::ValuesBucket &valueBucket, int &resultFlag)
 {
@@ -153,39 +178,37 @@ std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriPermissionOperatio
         return nullptr;
     }
     string appId = appidVO;
-
+ 
     // parse fileId
-    int fileId = ERROR;
+    int fileId = -1;
     if (!GetIntFromValuesBucket(valueBucket, AppUriPermissionColumn::FILE_ID, fileId)) {
-        MEDIA_ERR_LOG("param without fileId");
         resultFlag = ERROR;
         return nullptr;
     }
-
+ 
     // parse uriType
-    int uriType = ERROR;
+    int uriType = -1;
     if (!GetIntFromValuesBucket(valueBucket, AppUriPermissionColumn::URI_TYPE, uriType)) {
-        MEDIA_ERR_LOG("param without uriType");
         resultFlag = ERROR;
         return nullptr;
     }
-
+ 
     OHOS::DataShare::DataSharePredicates permissionPredicates;
     permissionPredicates.And()->EqualTo(AppUriPermissionColumn::FILE_ID, fileId);
     permissionPredicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, uriType);
     permissionPredicates.And()->EqualTo(AppUriPermissionColumn::APP_ID, appId);
-
+ 
     vector<string> fetchColumns;
     fetchColumns.push_back(AppUriPermissionColumn::ID);
     fetchColumns.push_back(AppUriPermissionColumn::PERMISSION_TYPE);
-
+ 
     shared_ptr<ResultSet> resultSet = QueryOperation(permissionPredicates, fetchColumns);
-    resultFlag = (resultSet == nullptr ? SUCCEED : ALREADY_EXIST);
+    resultFlag = (resultSet == nullptr ? NO_DATA : ALREADY_EXIST);
     return resultSet;
 }
-
+ 
 bool MediaLibraryAppUriPermissionOperations::GetIntFromValuesBucket(
-    OHOS::NativeRdb::ValuesBucket &valueBucket, const std::string column, int &result)
+    OHOS::NativeRdb::ValuesBucket &valueBucket, const std::string &column, int &result)
 {
     ValueObject valueObject;
     bool ret = valueBucket.GetObject(column, valueObject);
@@ -196,5 +219,86 @@ bool MediaLibraryAppUriPermissionOperations::GetIntFromValuesBucket(
     result = valueObject;
     return true;
 }
+
+int MediaLibraryAppUriPermissionOperations::UpdatePermissionType(shared_ptr<ResultSet> &resultSetDB,
+    int &permissionTypeParam)
+{
+    int32_t permissionTypeDB =
+        MediaLibraryRdbStore::GetInt(resultSetDB, AppUriPermissionColumn::PERMISSION_TYPE);
+    if (!CanOverride(permissionTypeParam, permissionTypeDB)) {
+        return ALREADY_EXIST;
+    }
+
+    // delete the temporary permission when the app dies
+    if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
+        AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()) {
+        MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+    }
+
+    // update permission type
+    ValuesBucket updateVB;
+    updateVB.PutInt(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypeParam);
+    updateVB.PutLong(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    int32_t idDB = MediaLibraryRdbStore::GetInt(resultSetDB, AppUriPermissionColumn::ID);
+
+    OHOS::DataShare::DataSharePredicates updatePredicates;
+    updatePredicates.EqualTo(AppUriPermissionColumn::ID, idDB);
+    RdbPredicates updateRdbPredicates =
+        RdbUtils::ToPredicates(updatePredicates, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    int32_t updateRows = MediaLibraryRdbStore::Update(updateVB, updateRdbPredicates);
+    if (updateRows < 1) {
+        MEDIA_ERR_LOG("upgrade permissionType error,idDB=%{public}d", idDB);
+        return ERROR;
+    }
+    MEDIA_INFO_LOG("update ok,Rows=%{public}d", updateRows);
+    return SUCCEED;
+}
+
+bool MediaLibraryAppUriPermissionOperations::IsValidPermissionType(int &permissionType)
+{
+    bool isValid = AppUriPermissionColumn::PERMISSION_TYPES_ALL.find(permissionType)
+        != AppUriPermissionColumn::PERMISSION_TYPES_ALL.end();
+    if (!isValid) {
+        MEDIA_ERR_LOG("invalid permissionType=%{public}d", permissionType);
+    }
+    return isValid;
+}
+
+bool MediaLibraryAppUriPermissionOperations::CanOverride(int &permissionTypeParam, int &permissionTypeDB)
+{
+    MEDIA_INFO_LOG("permissionTypeParam=%{public}d,permissionTypeDB=%{public}d",
+        permissionTypeParam, permissionTypeDB);
+    // Equal permissions do not need to be overridden
+    if (permissionTypeParam == permissionTypeDB) {
+        return false;
+    }
+    // temporary permission can't override persist permission
+    if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
+        AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()
+        && AppUriPermissionColumn::PERMISSION_TYPES_PERSIST.find(permissionTypeDB) !=
+        AppUriPermissionColumn::PERMISSION_TYPES_PERSIST.end()
+    ) {
+        return false;
+    }
+    // persist permission can override temporary permission
+    if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeDB) !=
+        AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()
+        && AppUriPermissionColumn::PERMISSION_TYPES_PERSIST.find(permissionTypeParam) !=
+        AppUriPermissionColumn::PERMISSION_TYPES_PERSIST.end()
+    ) {
+        return true;
+    }
+    // Temporary permissions can override each other.
+    if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
+        AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()
+        && AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeDB) !=
+        AppUriPermissionColumn::PERMISSION_TYPES_PERSIST.end()
+    ) {
+        return true;
+    }
+    // PERMISSION_PERSIST_READ_WRITE can override PERMISSION_PERSIST_READ, but not vice verse.
+    return permissionTypeParam == AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE;
+}
+
 } // namespace Media
 } // namespace OHOS

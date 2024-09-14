@@ -28,16 +28,16 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-void MediaLibrarySmartalbumOperationTest::SetUpTestCase(void) {}
+void MediaLibrarySmartalbumOperationsTest::SetUpTestCase(void) {}
 
-void MediaLibrarySmartalbumOperationTest::TearDownTestCase(void) {}
+void MediaLibrarySmartalbumOperationsTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
-void MediaLibrarySmartalbumOperationTest::SetUp() {}
+void MediaLibrarySmartalbumOperationsTest::SetUp() {}
 
-void MediaLibrarySmartalbumOperationTest::TearDown(void) {}
+void MediaLibrarySmartalbumOperationsTest::TearDown(void) {}
 
-HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_HandleSmartAlbumOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumOperationsTest, medialib_HandleSmartAlbumOperation_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
     int32_t ret = MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperation(cmd);
@@ -50,7 +50,7 @@ HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_HandleSmartAlbumOperation
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_HandleSmartAlbumOperation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumOperationsTest, medialib_HandleSmartAlbumOperation_test_002, TestSize.Level0)
 {
     MediaLibraryUnitTestUtils::InitUnistore();
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
@@ -70,7 +70,7 @@ HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_HandleSmartAlbumOperation
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_CreateSmartAlbumOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumOperationsTest, medialib_CreateSmartAlbumOperation_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     int32_t ret = MediaLibrarySmartAlbumOperations::CreateSmartAlbumOperation(cmd);
@@ -92,7 +92,7 @@ HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_CreateSmartAlbumOperation
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_CreateSmartAlbumOperation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumOperationsTest, medialib_CreateSmartAlbumOperation_test_002, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     cmd.SetTableName(MEDIALIBRARY_TABLE);
@@ -107,7 +107,7 @@ HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_CreateSmartAlbumOperation
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_DeleteSmartAlbumOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumOperationsTest, medialib_DeleteSmartAlbumOperation_test_001, TestSize.Level0)
 {
     MediaLibraryUnitTestUtils::InitUnistore();
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
@@ -122,7 +122,7 @@ HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_DeleteSmartAlbumOperation
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_DeleteSmartAlbumOperation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumOperationsTest, medialib_DeleteSmartAlbumOperation_test_002, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
     MediaLibraryUnitTestUtils::InitUnistore();

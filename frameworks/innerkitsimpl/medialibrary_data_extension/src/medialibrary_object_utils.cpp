@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "medialibrary_db_const.h"
 #define MLOG_TAG "ObjectUtils"
 
 #include "medialibrary_object_utils.h"
@@ -40,7 +41,6 @@
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
-#include "medialibrary_db_const.h"
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_smartalbum_map_operations.h"
@@ -461,7 +461,7 @@ int32_t InitQueryParentResultSet(int32_t dirId, int32_t &parentIdVal, string &di
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(dirId));
     shared_ptr<NativeRdb::ResultSet> queryParentResultSet = uniStore->Query(cmd, {});
-    if (queryParentResultSet->GoToNextRow() != NativeRdb::E_OK) {
+    if (queryParentResultSet == nullptr || queryParentResultSet->GoToNextRow() != NativeRdb::E_OK) {
         return E_SUCCESS;
     }
     int32_t colIndex = 0;
@@ -1470,6 +1470,10 @@ int32_t MediaLibraryObjectUtils::GetFileResult(shared_ptr<NativeRdb::ResultSet> 
     int errCode = E_SUCCESS;
     for (int32_t row = 0; row < count; row++) {
         unique_ptr<FileAsset> fileAsset = fetchFileResult->GetObjectFromRdb(resultSet, row);
+        if (fileAsset == nullptr) {
+            MEDIA_ERR_LOG("get fileAsset failed");
+            continue;
+        }
         if (fileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
             errCode = CopyDir(move(fileAsset), relativePath + displayName + "/");
             CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "failed to copy dir");
@@ -1509,6 +1513,7 @@ int32_t MediaLibraryObjectUtils::CopyDir(const shared_ptr<FileAsset> &srcDirAsse
     queryCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(srcDirAsset->GetId()))->And()->
         EqualTo(MEDIA_DATA_DB_IS_TRASH, "0")->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_NOFILE));
     auto resultSet = QueryWithCondition(queryCmd, {});
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "query rdbstore failed");
     auto count = 0;
     auto ret = resultSet->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "get rdbstore failed");

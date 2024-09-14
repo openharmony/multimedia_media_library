@@ -122,6 +122,7 @@ private:
         const std::unordered_set<std::string> &excludedFiles);
     NativeRdb::ValuesBucket GetInsertValue(const FaceInfo &faceInfo, bool isMap);
     void UpdateFilesWithFace(std::unordered_set<std::string> &filesWithFace, const std::vector<FaceInfo> &faceInfos);
+    bool HasLowQualityImage();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

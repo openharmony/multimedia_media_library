@@ -18,6 +18,7 @@
 #include "medialibrary_photo_operations_test.h"
 
 #include <chrono>
+#include <cstdint>
 #include <fcntl.h>
 #include <fstream>
 #include <thread>
@@ -1350,53 +1351,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_004, TestS
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestSize.Level0)
 {
-    // Last visit time test
-    MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_005");
-
-
-    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photosy.jpg");
-    EXPECT_GE(fileId, E_OK);
-    int64_t lastVisitTime = GetPhotoLastVisitTime(fileId);
-    EXPECT_GT(lastVisitTime, 0L);
-
-    MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
-    Uri uri(fileUri.ToString());
-    MediaLibraryCommand openCmd(uri, Media::OperationType::OPEN);
-
-    // Open file
-    openCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
-    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(openCmd, "rw");
-    EXPECT_GE(fd, 0);
-    int64_t openTime = GetPhotoLastVisitTime(fileId);
-    EXPECT_GT(openTime, lastVisitTime);
-
-
-    // Open thumbnail
-    openCmd.SetOprnObject(OperationObject::THUMBNAIL);
-    MediaLibraryDataManager::GetInstance()->OpenFile(openCmd, "rw");
-    int64_t openThumbnailTime = GetPhotoLastVisitTime(fileId);
-    EXPECT_EQ(openTime, openThumbnailTime);
-
-    // Update
-    MediaLibraryCommand cmd_u(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
-        MediaLibraryApi::API_10);
-    ValuesBucket values;
-    SetValuesBucketInUpdate(PhotoColumn::MEDIA_NAME, "photosy1.jpg", values);
-    cmd_u.SetValueBucket(values);
-    cmd_u.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    MediaLibraryPhotoOperations::Update(cmd_u);
-
-    // Query again
-    int64_t upLastVisitTime = GetPhotoLastVisitTime(fileId);
-    EXPECT_GT(upLastVisitTime, openThumbnailTime);
-
-    TestPhotoDeleteParamsApi10(OperationObject::FILESYSTEM_PHOTO, fileId,
-        [] (int32_t result) { EXPECT_GT(result, 0); });
-    MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_005");
-}
-
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_006, TestSize.Level0)
-{
     // Hidden time test 2
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_006");
     int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "hoho.jpg");
@@ -1446,7 +1400,54 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_006, TestS
     hidden_time = GetInt64Val(PhotoColumn::PHOTO_HIDDEN_TIME, resultSet);
     EXPECT_EQ(hidden_time, 0L);
 
-    MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_006");
+    MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_005");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_006, TestSize.Level0)
+{
+    // Last visit time test
+    MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_005");
+
+
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photosy.jpg");
+    EXPECT_GE(fileId, E_OK);
+    int64_t lastVisitTime = GetPhotoLastVisitTime(fileId);
+    EXPECT_GT(lastVisitTime, 0L);
+
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
+    Uri uri(fileUri.ToString());
+    MediaLibraryCommand openCmd(uri, Media::OperationType::OPEN);
+
+    // Open file
+    openCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(openCmd, "rw");
+    EXPECT_GE(fd, 0);
+    int64_t openTime = GetPhotoLastVisitTime(fileId);
+    EXPECT_GT(openTime, lastVisitTime);
+
+
+    // Open thumbnail
+    openCmd.SetOprnObject(OperationObject::THUMBNAIL);
+    MediaLibraryDataManager::GetInstance()->OpenFile(openCmd, "rw");
+    int64_t openThumbnailTime = GetPhotoLastVisitTime(fileId);
+    EXPECT_EQ(openTime, openThumbnailTime);
+
+    // Update
+    MediaLibraryCommand cmd_u(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    SetValuesBucketInUpdate(PhotoColumn::MEDIA_NAME, "photosy1.jpg", values);
+    cmd_u.SetValueBucket(values);
+    cmd_u.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    MediaLibraryPhotoOperations::Update(cmd_u);
+
+    // Query again
+    int64_t upLastVisitTime = GetPhotoLastVisitTime(fileId);
+    EXPECT_GT(upLastVisitTime, openThumbnailTime);
+
+    TestPhotoDeleteParamsApi10(OperationObject::FILESYSTEM_PHOTO, fileId,
+        [] (int32_t result) { EXPECT_GT(result, 0); });
+    MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_005");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_007, TestSize.Level0)
@@ -2886,24 +2887,25 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_002, Test
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_batch_update_user_comment_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_batch_update_user_comment_test_001");
+
+    // create 3 assets
     int32_t fileId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
     if (fileId1 < 0) {
         MEDIA_ERR_LOG("CreatePhoto failed, ret=%{public}d", fileId1);
         return;
     }
-
     int32_t fileId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo2.jpg");
     if (fileId2 < 0) {
         MEDIA_ERR_LOG("CreatePhoto failed, ret=%{public}d", fileId2);
         return;
     }
-
     int32_t fileId3 = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "photo3.mp4");
     if (fileId3 < 0) {
         MEDIA_ERR_LOG("CreatePhoto failed, ret=%{public}d", fileId3);
         return;
     }
 
+    // batch setUserComment for these 3 assets
     vector<string> assetsArray = { to_string(fileId1), to_string(fileId2), to_string(fileId3) };
     string newUserComment = "batch update user comment";
     DataSharePredicates predicates;

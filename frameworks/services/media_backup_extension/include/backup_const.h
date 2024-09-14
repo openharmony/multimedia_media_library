@@ -405,6 +405,11 @@ const std::string QUERY_ALL_AUDIOS_FROM_AUDIODB = "SELECT " + AUDIO_DATA + "," +
     AUDIO_DATE_TAKEN + " FROM " + DUAL_CLONE_AUDIO_FULL_TABLE;
 
 const std::string QUERY_DUAL_CLONE_AUDIO_COUNT = "SELECT count(1) as count FROM " + DUAL_CLONE_AUDIO_FULL_TABLE;
+
+const std::string ALL_PHOTOS_WHERE_CLAUSE_WITH_LOW_QUALITY = " (local_media_id != -1) AND (relative_bucket_id \
+    IS NULL OR relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) \
+    AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
+    (_size > 0 OR (_size = 0 AND photo_quality = 0)) ";
 } // namespace Media
 } // namespace OHOS
 

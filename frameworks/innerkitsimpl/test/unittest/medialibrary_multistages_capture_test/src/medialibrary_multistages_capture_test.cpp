@@ -37,6 +37,7 @@
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #include "values_bucket.h"
+
 #define private public
 #define protected public
 #include "exif_utils.h"
@@ -602,7 +603,6 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, exif_utils_location_value_to_string
     MEDIA_INFO_LOG("exif_utils_location_value_to_string_001 Start");
     double latitude = 31.2592678069444;
     EXPECT_EQ(ExifUtils::LocationValueToString(latitude), "31, 15, 33.364105");
-
     double longitude = 121.617393493611;
     EXPECT_EQ(ExifUtils::LocationValueToString(longitude), "121, 37, 2.616577");
     MEDIA_INFO_LOG("exif_utils_location_value_to_string_001 End");
@@ -613,7 +613,6 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, exif_utils_location_value_to_string
     MEDIA_INFO_LOG("exif_utils_location_value_to_string_002 Start");
     double latitude = -31.2592678069444;
     EXPECT_EQ(ExifUtils::LocationValueToString(latitude), "31, 15, 33.364105");
-
     double longitude = -121.617393493611;
     EXPECT_EQ(ExifUtils::LocationValueToString(longitude), "121, 37, 2.616577");
     MEDIA_INFO_LOG("exif_utils_location_value_to_string_002 End");

@@ -15,6 +15,7 @@
 #define MLOG_TAG "FileExtUnitTest"
 
 #include <chrono>
+#include <cstdint>
 #include <thread>
 #include "context.h"
 #include "ability_context_impl.h"
@@ -49,7 +50,7 @@ const std::string QUERY_MEDIA_VOLUME = "SELECT sum(" + MEDIA_DATA_DB_SIZE + ") A
     MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_AUDIO) + " GROUP BY " +
     MEDIA_DATA_DB_MEDIA_TYPE;
 
-shared_ptr <MediaLibraryRdbStore> rdbStorePtr = nullptr;
+shared_ptr<MediaLibraryRdbStore> rdbStorePtr = nullptr;
 
 void CleanTestTables()
 {
@@ -208,7 +209,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Delete_test_001, TestSize.Level0)
         exit(1);
     }
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
-    string selection = MEDIA_DATA_DB_ID + " = ? OR "+ MEDIA_DATA_DB_PARENT_ID + " = ?";
+    string selection = MEDIA_DATA_DB_ID + " = ? OR " + MEDIA_DATA_DB_PARENT_ID + " = ?";
     cmd.GetAbsRdbPredicates()->SetWhereClause(selection);
     vector<string> selectionArgs;
     int32_t rowId = 3;
@@ -334,7 +335,6 @@ HWTEST_F(MediaLibraryRdbTest, medialib_MediaLibraryRdbStoreObserver_test_001, Te
 }
 #endif
 
-
 HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSql_test_001, TestSize.Level0)
 {
     if (rdbStorePtr == nullptr) {
@@ -423,8 +423,8 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_001, TestSize.
     MEDIA_INFO_LOG("medialib_TransactionOperations_test_001 end");
 }
 
-void TransactionTestFunc(shared_ptr<MediaLibraryRdbStore> rdbStorePtr,
-    int* startSignal, int* endSignal, int32_t sleepTimeMs)
+void TransactionTestFunc(shared_ptr<MediaLibraryRdbStore> rdbStorePtr, int *startSignal, int *endSignal,
+    int32_t sleepTimeMs)
 {
     TransactionOperations transactionOperations(rdbStorePtr->GetRaw());
     int32_t ret = transactionOperations.Start();
@@ -521,12 +521,12 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ResetAnalysisTables_test, TestSize.Level0
     }
     // normal rdbStore_ ResetAnalysisTables will success
     rdbStorePtr->Init();
-    auto ret =MediaLibraryRdbStore::ResetAnalysisTables();
+    auto ret = MediaLibraryRdbStore::ResetAnalysisTables();
     EXPECT_EQ(ret, true);
 
     // abnormal rdbStore_ ResetAnalysisTables will fail
     rdbStorePtr->Stop();
-    ret =MediaLibraryRdbStore::ResetAnalysisTables();
+    ret = MediaLibraryRdbStore::ResetAnalysisTables();
     EXPECT_EQ(ret, false);
 }
 
@@ -537,12 +537,12 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ResetSearchTables_test, TestSize.Level0)
     }
     // normal rdbStore_ ResetSearchTables will success
     rdbStorePtr->Init();
-    auto ret =MediaLibraryRdbStore::ResetSearchTables();
+    auto ret = MediaLibraryRdbStore::ResetSearchTables();
     EXPECT_EQ(ret, true);
 
     // abnormal rdbStore_ ResetSearchTables will fail
     rdbStorePtr->Stop();
-    ret =MediaLibraryRdbStore::ResetSearchTables();
+    ret = MediaLibraryRdbStore::ResetSearchTables();
     EXPECT_EQ(ret, false);
 }
 } // namespace Media

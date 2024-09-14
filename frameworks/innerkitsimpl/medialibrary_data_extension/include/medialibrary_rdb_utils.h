@@ -24,6 +24,7 @@
 
 #include "rdb_predicates.h"
 #include "rdb_store.h"
+#include "uri.h"
 #include "userfile_manager_types.h"
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -80,7 +81,6 @@ public:
     EXPORT static bool IsInRefreshTask();
     EXPORT static int32_t GetAlbumIdsForPortrait(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         std::vector<std::string> &portraitAlbumIds);
-    EXPORT static int32_t GetAlbumSubtypeArgument(const NativeRdb::RdbPredicates &predicates);
     EXPORT static void AddVirtualColumnsOfDateType(std::vector<std::string>& columns);
     EXPORT static void AddQueryIndex(NativeRdb::AbsPredicates& predicates, const std::vector<std::string>& columns);
     EXPORT static bool HasDataToAnalysis(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);

@@ -88,7 +88,7 @@ public:
         const char* destPath, const NativeOnDataPrepared &callback) = 0;
     virtual std::string NativeRequestVideo(const char* videoUri, const NativeRequestOptions &requestOptions,
         const char* destUri, const NativeOnDataPrepared &callback) = 0;
-
+    
     virtual MediaLibrary_ErrorCode NativeRequestImageSource(OH_MediaAsset* mediaAsset,
         NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
         OH_MediaLibrary_OnImageDataPrepared callback) = 0;

@@ -48,10 +48,10 @@ enum class TestAlbumType {
     USER,
     SHOOTING_MODE_PORTRAIT,
 };
-const string TEST_BACKUP_PATH = "/data/test/backup/db";
-const string TEST_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
-const string TEST_BACKUP_DB_PATH = TEST_BACKUP_PATH + TEST_DB_PATH;
-const string TEST_FAKE_FILE_DIR = "/fake/fake/fake.fake";
+string TEST_BACKUP_PATH = "/data/test/backup/db";
+string TEST_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
+string TEST_BACKUP_DB_PATH = TEST_BACKUP_PATH + TEST_DB_PATH;
+string TEST_FAKE_FILE_DIR = "/fake/fake/fake.fake";
 const string SHOOTING_MODE_PORTRAIT_ALBUM_NAME = "1";
 const string WHERE_CLAUSE_SHOOTING_MODE = "shooting_mode = '1'";
 const string WHERE_CLAUSE_TRASHED = "date_trashed > 0";
@@ -668,7 +668,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generat
     }
     MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_001 end");
 }
-
+ 
 /**
  * @brief BurstKeyGenerator should give the different uuid for same FileInfo in Recycle Bin
  */
@@ -697,7 +697,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generat
     }
     MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_002 end");
 }
-
+ 
 /**
  * @brief BurstKeyGenerator should give the different uuid for same FileInfo in different Bucket
  */

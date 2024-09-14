@@ -73,7 +73,7 @@ export class AlbumPickerComponent extends ViewPU {
                 console.info('AlbumPickerComponent onReceive ' + n);
             }));
             SecurityUIExtensionComponent.onError((() => {
-                console.info('AlbumPickerComponent onError');
+                console.info('AlbumPickerComponent onResult');
             }));
         }), SecurityUIExtensionComponent);
         Column.pop();

@@ -103,7 +103,8 @@ int32_t TransactionOperations::BeginTransaction(bool isUpgrade)
         }
 
         int32_t errCode = rdbStore_->BeginTransaction();
-        if (errCode == SQLITE3_DATABASE_LOCKER || errCode == SQLITE3_DATABASE_LOCKER_NEW) {
+        if (errCode == NativeRdb::E_SQLITE_LOCKED || errCode == NativeRdb::E_DATABASE_BUSY ||
+            errCode == NativeRdb::E_SQLITE_BUSY) {
             curTryTime++;
             MEDIA_ERR_LOG("Sqlite database file is locked! try %{public}d times...", curTryTime);
             continue;
@@ -131,16 +132,16 @@ int32_t TransactionOperations::TransactionCommit()
 
     if (!(isInTransaction_.load()) || !(rdbStore_->IsInTransaction())) {
         MEDIA_ERR_LOG("no transaction now");
-        return E_HAS_DB_ERROR;
+        return E_OK;
     }
 
     int32_t errCode = rdbStore_->Commit();
-    isInTransaction_.store(false);
-    transactionCV_.notify_all();
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("commit failed, errCode=%{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
+    isInTransaction_.store(false);
+    transactionCV_.notify_all();
 
     if (isSkipCloudSync) {
         MEDIA_INFO_LOG("recover cloud sync for commit");

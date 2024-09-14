@@ -118,7 +118,7 @@ int Acl::InsertEntry(const AclXattrEntry &entry)
         return E_ERR;
     }
     CompareInsertEntry(entry); // must before ReCalcMaskPerm()
-
+    
     maskDemand++;
     /*
         * In either case there's no or already one ACL_MASK entry in the set,
@@ -355,7 +355,6 @@ Acl AclFromFile(const std::string& file)
         acl.DeSerialize(buf, BUF_SIZE);
         return acl;
     }
-    MEDIA_INFO_LOG("Failed to get ACL_XATTR_ACCESS from file: %{public}s", file.c_str());
     return AclFromMode(file);
 }
 

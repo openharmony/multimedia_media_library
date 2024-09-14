@@ -33,5 +33,5 @@ MEDIALIB_APP_FILE_SERVICE_PATH = "//foundation/filemanagement/app_file_service"
 MEDIALIB_ACCESS_TOKEN_PATH = "//base/security/access_token"
 
 declare_args() {
-  media_library_link_opt = false
+  link_opt = false
 }

@@ -60,7 +60,6 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("mergeAlbum", JSMergeAlbum),
             DECLARE_NAPI_FUNCTION("dismissAssets", JSDismissAssets),
             DECLARE_NAPI_FUNCTION("setIsMe", JSSetIsMe),
-            DECLARE_NAPI_FUNCTION("dismiss", JSDismiss),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -670,11 +669,10 @@ napi_value MediaAlbumChangeRequestNapi::JSDismissAssets(napi_env env, napi_callb
         return nullptr;
     }
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
-    auto type = photoAlbum->GetPhotoAlbumType();
-    auto subtype = photoAlbum->GetPhotoAlbumSubType();
-    CHECK_COND_WITH_MESSAGE(env, PhotoAlbum::IsSmartPortraitPhotoAlbum(type, subtype) ||
-        PhotoAlbum::IsSmartGroupPhotoAlbum(type, subtype) || PhotoAlbum::IsSmartClassifyAlbum(type, subtype),
-        "Only portrait, group photo and classify album can dismiss asset");
+    CHECK_COND_WITH_MESSAGE(env,
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSmartClassifyAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only portrait and classify album can dismiss asset");
 
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::DISMISS_ASSET);
     napi_value result = nullptr;
@@ -743,26 +741,6 @@ napi_value MediaAlbumChangeRequestNapi::JSSetDisplayLevel(napi_env env, napi_cal
     return result;
 }
 
-napi_value MediaAlbumChangeRequestNapi::JSDismiss(napi_env env, napi_callback_info info)
-{
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return nullptr;
-    }
-    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
-    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(
-        env, info, asyncContext, ARGS_ZERO, ARGS_ZERO) == napi_ok, "Failed to get object info");
-
-    auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
-    CHECK_COND_WITH_MESSAGE(env,
-        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only group photo can be dismissed");
-    asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::DISMISS);
-    napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
-    return result;
-}
-
 napi_value MediaAlbumChangeRequestNapi::JSSetAlbumName(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
@@ -777,9 +755,8 @@ napi_value MediaAlbumChangeRequestNapi::JSSetAlbumName(napi_env env, napi_callba
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
     CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only user album, smart portrait album and group photo can set album name");
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only user album and smart portrait album can set album name");
     photoAlbum->SetAlbumName(albumName);
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_ALBUM_NAME);
     RETURN_NAPI_UNDEFINED(env);
@@ -803,9 +780,8 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
     CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only user album, smart portrait album and group photo can set album name");
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only user album and smart portrait album can set album name");
     photoAlbum->SetCoverUri(coverUri);
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_COVER_URI);
     RETURN_NAPI_UNDEFINED(env);
@@ -1149,8 +1125,6 @@ static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumC
         case AlbumChangeOperation::SET_ALBUM_NAME:
             if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
                 uri = PAH_PORTRAIT_ANAALBUM_ALBUM_NAME;
-            } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::GROUP_PHOTO) {
-                uri = PAH_GROUP_ANAALBUM_ALBUM_NAME;
             } else {
                 uri = PAH_UPDATE_PHOTO_ALBUM;
             }
@@ -1160,8 +1134,6 @@ static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumC
         case AlbumChangeOperation::SET_COVER_URI:
             if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
                 uri = PAH_PORTRAIT_ANAALBUM_COVER_URI;
-            } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::GROUP_PHOTO) {
-                uri = PAH_GROUP_ANAALBUM_COVER_URI;
             } else {
                 uri = PAH_UPDATE_PHOTO_ALBUM;
             }
@@ -1176,11 +1148,6 @@ static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumC
         case AlbumChangeOperation::SET_IS_ME:
             uri = PAH_PORTRAIT_IS_ME;
             property = IS_ME;
-            valuesBucket.Put(property, 1);
-            break;
-        case AlbumChangeOperation::DISMISS:
-            uri = PAH_GROUP_ANAALBUM_DISMISS;
-            property = IS_REMOVED;
             valuesBucket.Put(property, 1);
             break;
         default:
@@ -1256,8 +1223,7 @@ static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)
         } else if (changeOperation == AlbumChangeOperation::SET_ALBUM_NAME ||
                    changeOperation == AlbumChangeOperation::SET_COVER_URI ||
                    changeOperation == AlbumChangeOperation::SET_IS_ME ||
-                   changeOperation == AlbumChangeOperation::SET_DISPLAY_LEVEL ||
-                   changeOperation == AlbumChangeOperation::DISMISS) {
+                   changeOperation == AlbumChangeOperation::SET_DISPLAY_LEVEL) {
             valid = SetAlbumPropertyExecute(*context, changeOperation);
         } else {
             NAPI_ERR_LOG("Invalid album change operation: %{public}d", changeOperation);

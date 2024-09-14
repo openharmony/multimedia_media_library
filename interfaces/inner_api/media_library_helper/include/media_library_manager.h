@@ -41,13 +41,6 @@ enum class PhotoPermissionType : int32_t {
     TEMPORARY_READWRITE_IMAGEVIDEO
 };
 
-enum class HideSensitiveType : int32_t {
-    ALL_DESENSITIZE = 0,
-    GEOGRAPHIC_LOCATION_DESENSITIZE,
-    SHOOTING_PARAM_DESENSITIZE,
-    NO_DESENSITIZE
-};
-
 class MediaLibraryManager {
 public:
     EXPORT MediaLibraryManager() = default;
@@ -70,6 +63,14 @@ public:
      * @version 1.0
      */
     EXPORT void InitMediaLibraryManager(const sptr<IRemoteObject> &token);
+
+    /**
+     * @brief Initializes the environment for Media Library Manager
+     *
+     * @since 1.0
+     * @version 1.0
+     */
+    EXPORT void InitMediaLibraryManager();
 
     /**
      * @brief Close an opened file
@@ -187,6 +188,14 @@ public:
     EXPORT std::string GetMovingPhotoImageUri(const string &uri);
 
     /**
+     * @brief Get date modified of moving photo
+     *
+     * @param uri asset uri of the moving photo
+     * @return if obtain success, return date_modified; Otherwise return -1
+     */
+    EXPORT int64_t GetMovingPhotoDateModified(const string &uri);
+
+    /**
      * @brief Create PhotoAssetProxy
      *
      * @param cameraShotType a parameter for input, indicates camera shot type
@@ -196,31 +205,6 @@ public:
      */
     EXPORT std::shared_ptr<PhotoAssetProxy> CreatePhotoAssetProxy(CameraShotType cameraShotType, uint32_t callingUid,
         int32_t userId);
-
-    /**
-     * @brief Check PhotoUri Permission
-     *
-     * @param tokenId a parameter for input, indicating the expected app's tokenId to check
-     * @param appid a parameter for input, indicating the expected appid to check
-     * @param urisSource a parameter for input, indicating the source of URIs expected to check
-     * @param result a parameter for output, indicating the check result (permission granted or not)
-     * @param flag a parameter for input, indicating the expected type of permission check
-     * @return If the check is successful, return 0; otherwise, return -1 for failure.
-     */
-    EXPORT int32_t CheckPhotoUriPermission(uint32_t tokenId, const string &appid,
-        const std::vector<string> &urisSource, std::vector<bool> &result, uint32_t flag);
-
-    /**
-     * @brief Grant PhotoUri Permission
-     *
-     * @param appid a parameter for input, indicating the calling appid
-     * @param uris a parameter for input, indicating the uris expected to grant permission
-     * @param photoPermissionType a parameter for input, indicating the expected grant permission type for photos
-     * @param hideSensitiveType a parameter for input, indicating the expected grant hideSensitiveType
-     * @return If the grant is successful, return 0; otherwise, return -1 for failure.
-     */
-    EXPORT int32_t GrantPhotoUriPermission(const string &appid, const std::vector<string> &uris,
-        PhotoPermissionType photoPermissionType, HideSensitiveType hideSensitiveTpye);
 
 private:
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size, bool isAstc);

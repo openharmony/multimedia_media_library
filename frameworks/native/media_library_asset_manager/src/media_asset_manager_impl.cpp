@@ -287,7 +287,10 @@ MultiStagesCapturePhotoStatus MediaAssetManagerImpl::QueryPhotoStatus(int32_t fi
 
 bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
 {
-    CHECK_AND_RETURN_RET_LOG(assetHandler != nullptr, false, "assetHandler is nullptr");
+    if (assetHandler == nullptr) {
+        MEDIA_ERR_LOG("assetHandler is nullptr");
+        return false;
+    }
 
     std::lock_guard<std::mutex> lock(assetHandler->mutex_);
     auto dataHandler = assetHandler->dataHandler;
@@ -468,6 +471,7 @@ bool MediaAssetManagerImpl::NativeCancelRequest(const std::string &requestId)
     }
     return true;
 }
+
 
 MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeRequestImageSource(OH_MediaAsset* mediaAsset,
     NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
