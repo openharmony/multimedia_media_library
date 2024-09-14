@@ -120,9 +120,6 @@ private:
     static void ProcessEditedEffectMode(MediaLibraryCommand& cmd);
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static std::shared_ptr<FileAsset> GetFileAsset(MediaLibraryCommand &cmd);
-    static void AddFileAsset(FileAsset &fileAsset, std::string &displayName, bool &isContains);
-    static void SetFileAssetDisplayName(std::string &displayName, std::string &title, std::string &extension,
-        FileAsset &fileAsset, bool &isContains);
 private:
     static std::mutex saveCameraPhotoMutex_;
     static std::condition_variable condition_;
