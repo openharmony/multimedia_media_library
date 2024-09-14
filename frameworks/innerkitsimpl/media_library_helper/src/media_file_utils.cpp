@@ -1712,4 +1712,12 @@ bool MediaFileUtils::IsMediaLibraryUri(const std::string &uri)
 {
     return !uri.empty() && uri.find(MOVING_PHOTO_URI_SPLIT) == uri.npos;
 }
+
+void MediaFileUtils::CheckDirStatus(const std::unordered_set<std::string> &dirCheckSet, const std::string &dir)
+{
+    if (dirCheckSet.count(dir) == 0) {
+        return;
+    }
+    PrintStatInformation(dir);
+}
 } // namespace OHOS::Media
