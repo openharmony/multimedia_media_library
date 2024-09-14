@@ -474,8 +474,8 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
     } else {
         data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::SDR));
     }
-    int64_t nowTime = MediaFileUtils::UTCTimeSeconds();
-    data->SetDetailTime(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, nowTime));
+    int64_t dateTaken = data->GetDateTaken() / MSEC_TO_SEC;
+    data->SetDetailTime(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken));
 }
 
 void PopulateExtractedAVLocationMeta(std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data)
