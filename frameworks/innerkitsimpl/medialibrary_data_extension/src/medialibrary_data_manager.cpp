@@ -1000,11 +1000,16 @@ static int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesB
     std::string albumStr = clauses[0];
     int32_t albumId = std::stoi(albumStr);
 
-    if (clauses.size() < 2) {
+    std::vector<std::string> uris;
+    for (size_t i = 1; i < clauses.size(); ++i) {
+        uris.push_back(clauses[i]);
+    }
+
+    if (uris.empty()) {
+        MEDIA_ERR_LOG("No URIs found after album ID.");
         return E_INVALID_FILEID;
     }
 
-    std::vector<std::string> uris(clauses.begin() + 1, clauses.end());
     std::string predicate = BuildWhereClause(uris, albumId);
     cmd.SetValueBucket(value);
     cmd.GetAbsRdbPredicates()->SetWhereClause(predicate);
