@@ -281,15 +281,7 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
         UnifyOprnObject(cmd);
         return err;
     }
-
-    // Finally, we should check the permission of medialibrary interfaces.
-    string perm = isWrite ? PERMISSION_NAME_WRITE_MEDIA : PERMISSION_NAME_READ_MEDIA;
-    err = PermissionUtils::CheckCallerPermission(perm) ? E_SUCCESS : E_PERMISSION_DENIED;
-    if (err < 0) {
-        return err;
-    }
-    UnifyOprnObject(cmd);
-    return E_SUCCESS;
+    return err;
 }
 
 static void FillV10Perms(const MediaType mediaType, const bool containsRead, const bool containsWrite,
@@ -321,16 +313,6 @@ static void FillV10Perms(const MediaType mediaType, const bool containsRead, con
     }
 }
 
-static void FillDeprecatedPerms(const bool containsRead, const bool containsWrite, vector<string> &perm)
-{
-    if (containsRead) {
-        perm.push_back(PERMISSION_NAME_READ_MEDIA);
-    }
-    if (containsWrite) {
-        perm.push_back(PERMISSION_NAME_WRITE_MEDIA);
-    }
-}
-
 static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, PermParam &permParam)
 {
     MEDIA_DEBUG_LOG("uri: %{private}s mode: %{private}s",
@@ -348,30 +330,15 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, PermParam &perm
     int32_t err = (mediaType == MEDIA_TYPE_FILE) ?
         (PermissionUtils::CheckHasPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED) :
         (PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED);
-    if (err == E_SUCCESS) {
-        return E_SUCCESS;
-    }
-    // Try to check deprecated permissions
-    perms.clear();
-    FillDeprecatedPerms(containsRead, containsWrite, perms);
-    return PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
-}
-
-static int32_t CheckPermissionForOpenFile(MediaLibraryCommand &cmd, PermParam &permParam)
-{
-    int32_t err = CheckOpenFilePermission(cmd, permParam);
-    if (err == E_PERMISSION_DENIED) {
-        MEDIA_DEBUG_LOG("do CheckUriPermission");
-        err = UriPermissionOperations::CheckUriPermission(cmd.GetUriStringWithoutSegment(), permParam.openFileNode);
-    }
     return err;
 }
+
 int32_t ReadWritePermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, PermParam &permParam)
 {
     MEDIA_DEBUG_LOG("ReadWritePermissionHandler:isOpenFile=%{public}d", permParam.isOpenFile);
     if (permParam.isOpenFile) {
         permParam.isWrite = ContainsFlag(permParam.openFileNode, 'w');
-        return CheckPermissionForOpenFile(cmd, permParam);
+        return CheckOpenFilePermission(cmd, permParam);
     }
     return CheckPermFromUri(cmd, permParam.isWrite);
 }

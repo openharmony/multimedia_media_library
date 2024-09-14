@@ -24,6 +24,58 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check set get function
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_SetGet_Test_001, TestSize.Level0)
+{
+    unique_ptr<AlbumAsset> albumAsset = make_unique<AlbumAsset>();
 
+    const int32_t TEST_ALBUM_ID = -1;
+    albumAsset->SetAlbumId(TEST_ALBUM_ID);
+    EXPECT_EQ(albumAsset->GetAlbumId(), TEST_ALBUM_ID);
+
+    string albumName = DEFAULT_ALBUM_NAME;
+    albumAsset->SetAlbumName(albumName);
+    EXPECT_EQ(albumAsset->GetAlbumName(), albumName);
+
+    string albumUri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_FILE_URI;
+    albumAsset->SetAlbumUri(albumUri);
+    EXPECT_EQ(albumAsset->GetAlbumUri(), albumUri);
+
+    const int64_t TEST_ALBUM_DATE_MODIFIED = -1;
+    albumAsset->SetAlbumDateModified(TEST_ALBUM_DATE_MODIFIED);
+    EXPECT_EQ(albumAsset->GetAlbumDateModified(), TEST_ALBUM_DATE_MODIFIED);
+
+    const int32_t TEST_COUNT = -1;
+    albumAsset->SetCount(TEST_COUNT);
+    EXPECT_EQ(albumAsset->GetCount(), TEST_COUNT);
+
+    string albumRelativePath = PIC_DIR_VALUES;
+    albumAsset->SetAlbumRelativePath(albumRelativePath);
+    EXPECT_EQ(albumAsset->GetAlbumRelativePath(), albumRelativePath);
+
+    const int32_t TEST_FILE_ID = 1;
+    string coverUri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_IMAGE_URI + "/" + to_string(TEST_FILE_ID);
+    albumAsset->SetCoverUri(coverUri);
+    EXPECT_EQ(albumAsset->GetCoverUri(), coverUri);
+
+    string albumPath = PIC_DIR_VALUES + albumName;
+    albumAsset->SetAlbumPath(albumPath);
+    EXPECT_EQ(albumAsset->GetAlbumPath(), albumPath);
+
+    bool albumVirtual = true;
+    albumAsset->SetAlbumVirtual(albumVirtual);
+    EXPECT_EQ(albumAsset->GetAlbumVirtual(), albumVirtual);
+
+    ResultNapiType resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
+    albumAsset->SetResultNapiType(resultNapiType);
+    EXPECT_EQ(albumAsset->GetResultNapiType(), resultNapiType);
+}
 } // namespace Media
 } // namespace OHOS

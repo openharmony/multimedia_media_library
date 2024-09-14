@@ -190,6 +190,7 @@ void DfxReporter::ReportDeleteBehavior(string bundleName, int32_t type, std::str
     if (bundleName == "" || path == "") {
         return;
     }
+    MEDIA_WARN_LOG("%{public}s do %{public}d on %{public}s", bundleName.c_str(), type, path.c_str());
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
         "MEDIALIB_DELETE_BEHAVIOR",

@@ -31,6 +31,8 @@
 #include "media_log.h"
 #include "upgrade_restore.h"
 #include "media_file_utils.h"
+#include "parameters.h"
+#include "cloud_sync_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
@@ -100,8 +102,7 @@ const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS 
     " (file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, title TEXT, display_name TEXT, size BIGINT," +
     " media_type INT, date_added BIGINT, date_taken BIGINT, duration INT, is_favorite INT default 0, " +
     " date_trashed BIGINT DEFAULT 0, hidden INT DEFAULT 0, height INT, width INT, user_comment TEXT, " +
-    " orientation INT DEFAULT 0, package_name TEXT, burst_cover_level INT DEFAULT 1, burst_key TEXT, " +
-    " dirty INTEGER DEFAULT 0, subtype INT );";
+    " orientation INT DEFAULT 0, package_name TEXT);";
 
 const string PhotosOpenCall::CREATE_PHOTOS_ALBUM = "CREATE TABLE IF NOT EXISTS PhotoAlbum \
     (album_id INTEGER PRIMARY KEY AUTOINCREMENT, album_type INT,   \
@@ -1255,6 +1256,17 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_empty_file, TestSiz
     MEDIA_INFO_LOG("medialib_backup_InsertAudio_empty_file end");
 }
 
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_MoveDirectory, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_MoveDirectory start");
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    string srcDir = "/data/test";
+    string dstDir = "/data/test1";
+    EXPECT_EQ(upgrade->MoveDirectory(srcDir, dstDir), 0);
+    MEDIA_INFO_LOG("medialib_backup_MoveDirectory end");
+}
+
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_BatchQueryPhoto, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_BatchQueryPhoto start");
@@ -1584,6 +1596,17 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAlbum_002, TestSize.Level
     upgrade->InsertAlbum(galleryAlbumInfos, bInsertScreenreCorderAlbum);
     EXPECT_EQ(galleryAlbumInfos[0].albumMediaName, "test1");
     MEDIA_INFO_LOG("medialib_backup_InsertAlbum_002 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_001 start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    string xmlPath = "/data/test/backup/test.xml";
+    auto res = upgrade->ParseXml(xmlPath);
+    EXPECT_EQ(res, 0);
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_001 end";
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_002, TestSize.Level0)

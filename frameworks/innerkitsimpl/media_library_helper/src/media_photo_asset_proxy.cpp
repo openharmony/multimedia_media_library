@@ -107,6 +107,7 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
         MEDIA_ERR_LOG("Failed to create Asset, burstKey is empty when CameraShotType::BURST");
         return;
     }
+
     string displayName = photoProxy->GetTitle() + "." + photoProxy->GetExtension();
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
     if ((mediaType != MEDIA_TYPE_IMAGE) && (mediaType != MEDIA_TYPE_VIDEO)) {
@@ -128,6 +129,7 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
     }
     values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
     values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
+
     string uri = PAH_CREATE_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri createUri(uri);

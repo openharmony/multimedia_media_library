@@ -138,10 +138,10 @@ bool IsCloudSourceAvailable(const std::string& path)
         MEDIA_ERR_LOG("Not real file path: errno: %{public}d, %{public}s", errno, DfxUtils::GetSafePath(path).c_str());
         return false;
     }
-
     int fd = open(absFilePath.c_str(), O_RDONLY);
     if (fd < 0) {
-        MEDIA_ERR_LOG("open cloud file fail: %{private}s, errno: %{public}d", absFilePath.c_str(), errno);
+        MEDIA_ERR_LOG("open cloud file fail: errno: %{public}d, %{public}s",
+            errno, DfxUtils::GetSafePath(path).c_str());
         return false;
     }
     close(fd);
@@ -417,9 +417,6 @@ bool SourceLoader::IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, I
         return false;
     }
 
-    // upload if minSize is larger than SHORT_SIDE_THRESHOLD and source is not from thumb
-    data_.loaderOpts.needUpload = minSize >= SHORT_SIDE_THRESHOLD && state_ != SourceState::LOCAL_THUMB
-        && state_ != SourceState::CLOUD_THUMB;
     data_.stats.sourceWidth = imageInfo.size.width;
     data_.stats.sourceHeight = imageInfo.size.height;
     return true;

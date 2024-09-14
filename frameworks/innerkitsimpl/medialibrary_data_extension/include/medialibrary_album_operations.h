@@ -43,8 +43,7 @@ struct MergeAlbumInfo {
     int rank;
     int renameOperation;
     std::string albumName;
-    int isCoverSatisfied;
-    std::string tagId;
+    uint8_t isCoverSatisfied;
 };
 class MediaLibraryAlbumOperations {
 public:

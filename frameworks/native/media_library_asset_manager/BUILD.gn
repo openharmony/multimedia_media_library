@@ -42,6 +42,7 @@ ohos_shared_library("media_library_asset_manager") {
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
+    "access_token:libaccesstoken_sdk",
     "access_token:libnativetoken_shared",
     "access_token:libtokensetproc_shared",
     "app_file_service:fileuri_native",
@@ -52,10 +53,11 @@ ohos_shared_library("media_library_asset_manager") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
+    "image_framework:image_ndk",
     "image_framework:image_source",
-    "image_framework:ohimage",
     "ipc:ipc_core",
     "napi:ace_napi",
+    "player_framework:media_client",
     "relational_store:native_rdb",
     "resource_management:librawfile",
     "safwk:system_ability_fwk",
@@ -77,7 +79,7 @@ ohos_shared_library("media_library_asset_manager") {
 
   cflags_cc = [ "-Os" ]
 
-  if (!media_library_link_opt) {
+  if (!link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true

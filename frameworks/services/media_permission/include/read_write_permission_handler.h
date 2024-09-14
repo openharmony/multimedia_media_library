@@ -26,7 +26,7 @@ class ReadWritePermissionHandler : public AbsPermissionHandler {
 public:
     ReadWritePermissionHandler()
     {
-        isDoDfx_ = true;
+        isDoDfx_ = false;
     };
     ~ReadWritePermissionHandler(){};
 private:

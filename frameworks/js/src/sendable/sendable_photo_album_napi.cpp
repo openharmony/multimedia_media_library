@@ -665,6 +665,7 @@ napi_value SendablePhotoAlbumNapi::ConvertToPhotoAlbum(napi_env env, napi_callba
         napi_value exports = nullptr;
         napi_create_object(env, &exports);
         SendablePhotoAlbumNapi::PhotoAccessInit(env, exports);
+        PhotoAlbumNapi::PhotoAccessInit(env, exports);
     }
 
     napi_value result = nullptr;

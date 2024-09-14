@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <cstdint>
+
 #include "medialibrary_common_utils_test.h"
 #include "medialibrary_errno.h"
 #define private public

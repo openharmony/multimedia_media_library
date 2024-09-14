@@ -739,16 +739,16 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
     struct dirent *ent = nullptr;
     size_t len = path.length();
     struct stat statInfo;
-
+ 
     if (len >= FILENAME_MAX - 1) {
         return ERR_INCORRECT_PATH;
     }
-
+ 
     auto fName = (char *)calloc(FILENAME_MAX, sizeof(char));
     if (fName == nullptr) {
         return ERR_MEM_ALLOC_FAIL;
     }
-
+ 
     if (strcpy_s(fName, FILENAME_MAX, path.c_str()) != ERR_SUCCESS) {
         FREE_MEMORY_AND_SET_NULL(fName);
         return ERR_MEM_ALLOC_FAIL;
@@ -764,11 +764,11 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
             err = E_STOP;
             break;
         }
-
+ 
         if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {
             continue;
         }
-
+ 
         if (strncpy_s(fName + len, FILENAME_MAX - len, ent->d_name, FILENAME_MAX - len)) {
             continue;
         }
@@ -789,16 +789,16 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
                 // might break in later pr for a rescan
                 continue;
             }
-
+ 
             (void)WalkFileTree(currentPath, albumId);
         } else {
             (void)ScanFileInTraversal(currentPath, path, parentId);
         }
     }
-
+ 
     closedir(dirPath);
     FREE_MEMORY_AND_SET_NULL(fName);
-
+ 
     return err;
 }
 

@@ -12,12 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 #ifndef IVISION_SERVICE_CV
 #define IVISION_SERVICE_CV
-
+ 
 #include "iremote_broker.h"
-
+ 
 namespace OHOS {
 namespace Media {
 class IMediaAnalysisService : public IRemoteBroker {
