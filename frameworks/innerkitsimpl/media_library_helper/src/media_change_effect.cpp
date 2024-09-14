@@ -57,4 +57,4 @@ int32_t MediaChangeEffect::TakeEffect(const string &inputPath, const string &out
 }
  
 } // end of namespace
-}
+}

@@ -335,7 +335,6 @@ HWTEST_F(MediaLibraryRdbTest, medialib_MediaLibraryRdbStoreObserver_test_001, Te
 }
 #endif
 
-
 HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSql_test_001, TestSize.Level0)
 {
     if (rdbStorePtr == nullptr) {

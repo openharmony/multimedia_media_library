@@ -29,7 +29,7 @@ struct NapiError {
     int32_t error = 0;
     std::string apiName;
     EXPORT void SetApiName(const std::string &Name);
-    void SaveError(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
+    EXPORT void SaveError(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
     EXPORT void SaveError(int32_t ret);
     EXPORT void HandleError(napi_env env, napi_value &errorObj);
     EXPORT static void ThrowError(napi_env env, int32_t err, const std::string &errMsg = "");

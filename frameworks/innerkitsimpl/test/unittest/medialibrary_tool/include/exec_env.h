@@ -24,6 +24,7 @@
 namespace OHOS {
 namespace Media {
 namespace MediaTool {
+
 struct SendParam {
     bool isCreateThumbSyncInSend = false;
     bool isRemoveOriginFileInSend = true;

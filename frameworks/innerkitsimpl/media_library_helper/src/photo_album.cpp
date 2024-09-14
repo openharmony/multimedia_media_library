@@ -182,16 +182,6 @@ bool PhotoAlbum::GetHiddenOnly() const
     return hiddenOnly_;
 }
 
-void PhotoAlbum::SetLocationOnly(const bool locationOnly)
-{
-    locationOnly_ = locationOnly;
-}
-
-bool PhotoAlbum::GetLocationOnly() const
-{
-    return locationOnly_;
-}
-
 void PhotoAlbum::SetDisplayLevel(const int32_t displayLevel)
 {
     displayLevel_ = displayLevel;
@@ -202,6 +192,16 @@ int32_t PhotoAlbum::GetDisplayLevel() const
     return displayLevel_;
 }
 
+void PhotoAlbum::SetLocationOnly(const bool locationOnly)
+{
+    locationOnly_ = locationOnly;
+}
+
+bool PhotoAlbum::GetLocationOnly() const
+{
+    return locationOnly_;
+}
+
 bool PhotoAlbum::IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
 {
     return (albumType == PhotoAlbumType::USER) && (albumSubType == PhotoAlbumSubType::USER_GENERIC);
@@ -210,11 +210,6 @@ bool PhotoAlbum::IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlb
 bool PhotoAlbum::IsSmartPortraitPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
 {
     return (albumType == PhotoAlbumType::SMART) && (albumSubType == PhotoAlbumSubType::PORTRAIT);
-}
-
-bool PhotoAlbum::IsSmartGroupPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
-{
-    return (albumType == PhotoAlbumType::SMART) && (albumSubType == PhotoAlbumSubType::GROUP_PHOTO);
 }
 
 bool PhotoAlbum::IsSmartClassifyAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)

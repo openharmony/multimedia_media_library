@@ -18,7 +18,7 @@
 #include "if_system_ability_manager.h"
 #include "system_ability_definition.h"
 #include "iservice_registry.h"
-
+ 
 namespace OHOS {
 namespace Media {
 MediaAnalysisProxy::MediaAnalysisProxy(const sptr<IRemoteObject> &object)
@@ -31,7 +31,6 @@ MediaAnalysisProxy::~MediaAnalysisProxy()
 {
     MEDIA_INFO_LOG("destroy MediaAnalysisProxy instance");
 }
-
 bool MediaAnalysisProxy::SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply,
     MessageOption &option)
 {

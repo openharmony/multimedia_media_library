@@ -53,8 +53,8 @@ HWTEST_F(MediaLibraryVisitorDbTest, Visitor_Query_Test_001, TestSize.Level0)
     int id = 1;
     int errCode = 0;
     OperationObject object = OperationObject::UNKNOWN_OBJECT;
-    DataShare::DataSharePredicates predicates;
-    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates, true)) {
+    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, true)) {
+        DataShare::DataSharePredicates predicates;
         predicates.EqualTo(MediaColumn::MEDIA_ID, id);
         vector<string> columns = {
             MEDIA_DATA_DB_ID,

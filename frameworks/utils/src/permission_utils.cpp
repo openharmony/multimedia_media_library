@@ -36,14 +36,13 @@ using namespace OHOS::Security::AccessToken;
 using namespace OHOS::AppExecFwk::Constants;
 
 const int32_t CAPACITY = 50;
+bool g_isDelayTask;
 const int32_t HDC_SHELL_UID = 2000;
 const int32_t BASE_USER_RANGE = 200000;
 
 std::mutex PermissionUtils::uninstallMutex_;
 std::list<std::pair<int32_t, BundleInfo>> PermissionUtils::bundleInfoList_ = {};
 std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> PermissionUtils::bundleInfoMap_ = {};
-
-bool g_isDelayTask;
 std::mutex addPhotoPermissionRecordLock_;
 std::thread delayTask_;
 std::vector<Security::AccessToken::AddPermParamInfo> infos_;

@@ -17,7 +17,6 @@
 #define OHOS_MEDIALIBRARY_ERRNO_H
 
 #include <errno.h>
-#include <stdint.h>
 
 namespace OHOS {
 namespace Media {

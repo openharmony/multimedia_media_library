@@ -275,7 +275,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       return false;
     }
     return !isNaN(subCountInfo[STAT_KEY_SUCCESS_COUNT]) && !isNaN(subCountInfo[STAT_KEY_DUPLICATE_COUNT]) &&
-      !isNaN(subCountInfo[STAT_KEY_FAILED_COUNT]) ;
+      !isNaN(subCountInfo[STAT_KEY_FAILED_COUNT]);
   }
 
   private isBackupInfoValid(backupInfo: string): boolean {

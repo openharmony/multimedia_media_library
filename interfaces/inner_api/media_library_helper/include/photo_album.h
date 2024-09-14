@@ -73,7 +73,7 @@ public:
 
     EXPORT void SetDisplayLevel(const int32_t displayLevel);
     EXPORT int32_t GetDisplayLevel() const;
-
+    
     EXPORT void SetLocationOnly(const bool locationOnly);
     EXPORT bool GetLocationOnly() const;
 
@@ -82,7 +82,6 @@ public:
     EXPORT static bool CheckPhotoAlbumType(const PhotoAlbumType albumType);
     EXPORT static bool CheckPhotoAlbumSubType(const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsSmartPortraitPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
-    EXPORT static bool IsSmartGroupPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsSmartClassifyAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsSourceAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsHighlightAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);

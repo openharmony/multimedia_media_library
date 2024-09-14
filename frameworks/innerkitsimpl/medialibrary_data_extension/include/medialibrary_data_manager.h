@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <shared_mutex>
 
-#include "fa_ability_context.h"
+#include "ability_context.h"
 #include "cloud_sync_observer.h"
 #include "context/context.h"
 #include "dir_asset.h"
@@ -140,6 +140,7 @@ private:
     int32_t DeleteInRdbPredicatesAnalysis(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate);
     int32_t UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
         const DataShare::DataSharePredicates &predicates);
+    void HandleOtherInitOperations();
     void InitRefreshAlbum();
     int32_t ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
         const NativeRdb::ValuesBucket &value, const DataShare::DataSharePredicates &predicates);

@@ -54,7 +54,7 @@ ohos_shared_library("native_media_library_ndk") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
-    "image_framework:ohimage",
+    "image_framework:image_ndk",
     "ipc:ipc_core",
     "napi:ace_napi",
     "player_framework:media_client",
@@ -78,7 +78,7 @@ ohos_shared_library("native_media_library_ndk") {
 
   cflags_cc = [ "-Os" ]
 
-  if (!media_library_link_opt) {
+  if (!link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
