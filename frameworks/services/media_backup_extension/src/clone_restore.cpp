@@ -1880,6 +1880,9 @@ void CloneRestore::GenNewCoverUris(const std::vector<CloneRestore::CoverUriInfo>
 
     std::vector<std::string> tagIds;
     std::string updateSql = GenCoverUriUpdateSql(tagIdToCoverInfo, oldToNewFileId, fileInfos, tagIds);
+    if (updateSql.empty()) {
+        return;
+    }
 
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updateSql);
 }
@@ -1899,6 +1902,10 @@ std::string CloneRestore::GenCoverUriUpdateSql(const std::unordered_map<std::str
             isCoverSatisfiedUpdates[tagId] = isCoverSatisfied;
             tagIds.push_back(tagId);
         }
+    }
+
+    if (coverUriUpdates.empty() || isCoverSatisfiedUpdates.empty()) {
+        return "";
     }
 
     std::string updateSql = "UPDATE AnalysisAlbum SET ";
