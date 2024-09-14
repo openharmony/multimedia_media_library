@@ -179,7 +179,8 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
                 "save moving photo video failed. file_id: %{public}d, errno=%{public}d", newFileId, errno);
         }
     }
-    MediaLibraryObjectUtils::ScanFileAsync(newFileInfo->filePath, to_string(newFileId), MediaLibraryApi::API_10);
+    MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(newFileInfo->filePath,
+        to_string(newFileId), MediaLibraryApi::API_10);
     string newFileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(newFileId),
         MediaFileUtils::GetExtraUri(newFileInfo->displayName, newFileInfo->filePath));
     vector<string> uris = { newFileUri };
