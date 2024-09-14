@@ -42,7 +42,7 @@ namespace Media {
 using namespace FileManagement::CloudSync;
 
 static constexpr int32_t DOWNLOAD_BATCH_SIZE = 2;
-static constexpr int32_t PROCESS_INTERVAL = 5 * 60 * 1000; // 5 minutes
+static constexpr int32_t PROCESS_INTERVAL = 5 * 60 * 1000;  // 5 minutes
 static constexpr int32_t DOWNLOAD_DURATION = 10 * 1000; // 10 seconds
 static constexpr int32_t UPDATE_BATCH_SIZE = 1;
 static constexpr int32_t MAX_RETRY_COUNT = 2;

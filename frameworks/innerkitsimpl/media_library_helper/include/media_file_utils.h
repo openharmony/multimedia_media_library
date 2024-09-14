@@ -118,7 +118,7 @@ public:
     EXPORT static std::string SplitByChar(const std::string &str, const char split);
     EXPORT static std::string GetExtensionFromPath(const std::string &path);
     EXPORT static int32_t OpenFile(const std::string &path, const std::string &mode,
-        const std::string &clientbundleName = "");
+        const std::string &clientBundleName = "");
     EXPORT static int32_t CreateAsset(const std::string &filePath);
     EXPORT static int32_t ModifyAsset(const std::string &oldPath, const std::string &newPath);
     EXPORT static int32_t OpenAsset(const std::string &filePath, const std::string &mode);
@@ -160,14 +160,16 @@ public:
     EXPORT static bool CheckMovingPhotoVideo(const UniqueFd &uniqueFd);
     EXPORT static bool CheckMovingPhotoVideoDuration(int32_t duration);
     EXPORT static bool CheckMovingPhotoEffectMode(int32_t effectMode);
-    EXPORT static bool GetFileSize(const std::string &filePath, size_t& size);
-    EXPORT static bool SplitMovingPhotoUri(const std::string& uri, std::vector<std::string>& ret);
-    EXPORT static bool IsMediaLibraryUri(const std::string& uri);
+    EXPORT static bool GetFileSize(const std::string &filePath, size_t &size);
+    EXPORT static bool SplitMovingPhotoUri(const std::string &uri, std::vector<std::string> &ret);
+    EXPORT static bool IsMediaLibraryUri(const std::string &uri);
     EXPORT static bool SetEPolicy();
     EXPORT static void PrintStatInformation(const std::string& path);
     EXPORT static void MediaFileDeletionRecord();
-    EXPORT static std::string DesensitizePath(const std::string &path);
     EXPORT static void SetDeletionRecord(int fd, const std::string &fileName);
+    EXPORT static void BackupPhotoDir();
+    EXPORT static void RecoverMediaTempDir();
+    EXPORT static std::string DesensitizePath(const std::string &path);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);

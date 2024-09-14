@@ -37,12 +37,10 @@ public:
 };
 
 const string ConfigTestOpenCall::CREATE_TABLE_TEST = string("CREATE TABLE IF NOT EXISTS test ") +
-    "(file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, media_type INTEGER," +
-    " date_added TEXT, display_name TEXT, thumbnail_ready TEXT, position TEXT)";
+    "(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, age INTEGER, salary REAL, blobType BLOB)";
 
 const int32_t E_THUMBNAIL_ASTC_ALL_EXIST = -2307;
 const int32_t E_THUMBNAIL_LCD_ALL_EXIST = -2308;
-const int32_t E_GETROWCOUNT_ERROR = 27394103;
 
 int ConfigTestOpenCall::OnCreate(RdbStore &store)
 {
@@ -160,7 +158,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_
     serverTest->Init(storePtr, context);
 #endif
     ret = serverTest->GenerateThumbnailBackground();
-    EXPECT_EQ(ret, E_GETROWCOUNT_ERROR);
+    EXPECT_EQ(ret, E_THUMBNAIL_LCD_ALL_EXIST);
     serverTest->ReleaseService();
 }
 
@@ -242,14 +240,14 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcBatchOnDemand_test
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
     serverTest->Init(storePtr, context);
-
+ 
     NativeRdb::RdbPredicates predicate { PhotoColumn::PHOTOS_TABLE };
     int32_t requestId = 1;
     int32_t result = serverTest->CreateAstcBatchOnDemand(predicate, requestId);
-    EXPECT_EQ(result, E_GETROWCOUNT_ERROR);
+    EXPECT_EQ(result, E_THUMBNAIL_ASTC_ALL_EXIST);
     serverTest->ReleaseService();
 }
-
+ 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CancelAstcBatchTask_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
@@ -258,7 +256,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CancelAstcBatchTask_test_001
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
     serverTest->Init(storePtr, context);
-
+ 
     NativeRdb::RdbPredicates predicate { PhotoColumn::PHOTOS_TABLE };
     int32_t requestId = 1;
     serverTest->CancelAstcBatchTask(requestId);
@@ -744,46 +742,46 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_014, Te
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_015, TestSize.Level0)
 {
-    const std::string fieldId = "a";
-    const std::string dateAdded;
+    std::string fieldId = "a";
+    std::string dateAdded;
     std::string key;
     auto res = ThumbnailUtils::GenerateKvStoreKey(fieldId, dateAdded, key);
     EXPECT_EQ(res, false);
-    const std::string fieldId2 = "aaaaaaaaaa";
-    const std::string dateAdded2 = "b";
+    std::string fieldId2 = "aaaaaaaaaa";
+    std::string dateAdded2 = "b";
     auto res2 = ThumbnailUtils::GenerateKvStoreKey(fieldId2, dateAdded2, key);
     EXPECT_EQ(res2, false);
-    const std::string fieldId3 = "a";
-    const std::string dateAdded3 = "bbbbbbbbbbbbbb";
+    std::string fieldId3 = "a";
+    std::string dateAdded3 = "bbbbbbbbbbbbbb";
     auto res3 = ThumbnailUtils::GenerateKvStoreKey(fieldId3, dateAdded3, key);
     EXPECT_EQ(res3, false);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_016, TestSize.Level0)
 {
-    const std::string fieldId = "a";
-    const std::string dateAdded;
+    std::string fieldId = "a";
+    std::string dateAdded;
     std::string key;
     auto res = ThumbnailUtils::GenerateOldKvStoreKey(fieldId, dateAdded, key);
     EXPECT_EQ(res, false);
-    const std::string fieldId2;
-    const std::string dateAdded2 = "b";
+    std::string fieldId2;
+    std::string dateAdded2 = "b";
     auto res2 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId2, dateAdded2, key);
     EXPECT_EQ(res2, false);
-    const std::string fieldId3;
-    const std::string dateAdded3;
+    std::string fieldId3;
+    std::string dateAdded3;
     auto res3 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId3, dateAdded3, key);
     EXPECT_EQ(res3, false);
-    const std::string fieldId4 = "aaaaaaaaaa";
-    const std::string dateAdded4 = "b";
+    std::string fieldId4 = "aaaaaaaaaa";
+    std::string dateAdded4 = "b";
     auto res4 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId4, dateAdded4, key);
     EXPECT_EQ(res4, false);
-    const std::string fieldId5 = "a";
-    const std::string dateAdded5 = "bbbbbbbbbbbbbb";
+    std::string fieldId5 = "a";
+    std::string dateAdded5 = "bbbbbbbbbbbbbb";
     auto res5 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId5, dateAdded5, key);
     EXPECT_EQ(res5, false);
-    const std::string fieldId6 = "a";
-    const std::string dateAdded6 = "b";
+    std::string fieldId6 = "a";
+    std::string dateAdded6 = "b";
     auto res6 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId6, dateAdded6, key);
     EXPECT_EQ(res6, true);
 }
@@ -800,7 +798,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_017, Te
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_018, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    const ThumbnailType type = ThumbnailType::LCD;
+    ThumbnailType type = ThumbnailType::LCD;
     auto res = ThumbnailUtils::DeleteAstcDataFromKvStore(opts, type);
     EXPECT_EQ(res, false);
 }
@@ -823,7 +821,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_020, Te
     Size size;
     size.height = 1;
     size.width = 0;
-    const std::string column;
+    std::string column;
     ThumbnailUtils::SetThumbnailSizeValue(values, size, column);
     NativeRdb::ValuesBucket values2;
     Size size2;
@@ -856,7 +854,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_003, T
     ConfigTestOpenCall helper;
     int errCode = 0;
     opts.store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
-    opts.table = "test";
     auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts);
     EXPECT_EQ(res, 0);
 }

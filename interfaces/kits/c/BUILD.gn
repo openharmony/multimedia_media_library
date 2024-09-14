@@ -48,7 +48,7 @@ config("media_capi_public_config") {
 ohos_shared_library("native_media_asset_manager") {
   install_enable = true
 
-  if (!media_library_link_opt) {
+  if (!link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -83,7 +83,8 @@ ohos_shared_library("native_media_asset_manager") {
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "image_framework:image_native",
-    "image_framework:ohimage",
+    "image_framework:image_ndk",
+    "media_foundation:media_foundation",
     "napi:ace_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",

@@ -17,7 +17,7 @@
         "SystemCapability.FileManagement.UserFileManager.DistributedCore",
         "SystemCapability.FileManagement.PhotoAccessHelper.Core"
       ],
-      "features": ["media_library_link_opt"],
+      "features": [],
       "adapted_system_type": [ "small", "standard" ],
       "rom": "10444KB",
       "ram": "35093KB",
@@ -55,6 +55,7 @@
           "init",
           "ipc",
           "kv_store",
+          "media_foundation",
           "memory_utils",
           "memmgr",
           "image_framework",
@@ -147,12 +148,12 @@
             {
               "header": {
                 "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
-                "header_files": [
-                  "media_asset_impl.h",
-                  "media_asset_change_request_impl.h"
-                ]
-              },
-              "name": "//foundation/multimedia/media_library/frameworks/native/c_api:native_media_library_ndk"
+                  "header_files": [
+                    "media_asset_impl.h",
+                    "media_asset_change_request_impl.h"
+                  ]
+                },
+                "name": "//foundation/multimedia/media_library/frameworks/native/c_api:native_media_library_ndk"
             },
             {
               "header": {

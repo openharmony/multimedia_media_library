@@ -38,10 +38,17 @@ using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 using namespace OHOS::RdbDataShareAdapter;
 
+constexpr int32_t NO_DB_OPERATION = -1;
 constexpr int32_t UPDATE_DB_OPERATION = 0;
 constexpr int32_t INSERT_DB_OPERATION = 1;
 constexpr int32_t PHOTOSTYPE = 1;
 constexpr int32_t AUDIOSTYPE = 2;
+
+constexpr int32_t FILE_ID_INDEX = 0;
+constexpr int32_t URI_TYPE_INDEX = 1;
+constexpr int32_t PERMISSION_TYPE_INDEX = 2;
+constexpr int32_t APP_ID_INDEX = 3;
+
 const string DB_OPERATION = "uriPermission_operation";
 
 static bool CheckMode(string& mode)
@@ -62,130 +69,40 @@ static bool CheckMode(string& mode)
     return true;
 }
 
-int32_t UriPermissionOperations::UpdateOperation(MediaLibraryCommand &cmd)
+static void DeleteAllTemporaryOperation(AsyncTaskData *data)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("UriPermission update operation, rdbStore is null.");
-        return E_HAS_DB_ERROR;
     }
-    int32_t updateRows = -1;
-    int32_t errCode = rdbStore->Update(cmd, updateRows);
-    if (errCode != NativeRdb::E_OK || updateRows < 0) {
-        MEDIA_ERR_LOG("UriPermission Update db failed, errCode = %{public}d", errCode);
-        return E_HAS_DB_ERROR;
-    }
-    return static_cast<int32_t>(updateRows);
-}
-
-int32_t UriPermissionOperations::DeleteOperation(MediaLibraryCommand &cmd)
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("UriPermission update operation, rdbStore is null.");
-        return E_HAS_DB_ERROR;
-    }
-    int32_t deleteRows = -1;
-    int32_t errCode = rdbStore->Delete(cmd, deleteRows);
-    if (errCode != NativeRdb::E_OK || deleteRows < 0) {
-        MEDIA_ERR_LOG("UriPermission delete db failed, errCode = %{public}d", errCode);
-        return E_HAS_DB_ERROR;
-    }
-    return static_cast<int32_t>(deleteRows);
-}
-
-int32_t UriPermissionOperations::InsertOperation(MediaLibraryCommand &cmd)
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("UriPermission insert operation, rdbStore is null.");
-        return E_HAS_DB_ERROR;
-    }
-    int64_t outRowId = -1;
-    int32_t errCode = rdbStore->Insert(cmd, outRowId);
-    if (errCode != NativeRdb::E_OK || outRowId < 0) {
-        MEDIA_ERR_LOG("UriPermission Insert into db failed, errCode = %{public}d", errCode);
-        return E_HAS_DB_ERROR;
-    }
-    return static_cast<int32_t>(outRowId);
-}
-
-static void BatchUpdate(MediaLibraryCommand &cmd, std::vector<string> inColumn, int32_t tableType,
-    const std::vector<DataShareValuesBucket> &values)
-{
-    bool isvaild;
-    string appid = values[0].Get(AppUriPermissionColumn::APP_ID, isvaild);
-    int32_t permissionType = values[0].Get(AppUriPermissionColumn::PERMISSION_TYPE, isvaild);
-    DataShareValuesBucket valuesBucket;
-    DataSharePredicates predicates;
-    predicates.EqualTo(AppUriPermissionColumn::APP_ID, appid);
-    predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, to_string(tableType));
-    predicates.And()->In(AppUriPermissionColumn::FILE_ID, inColumn);
-    valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
-    ValuesBucket value = RdbUtils::ToValuesBucket(valuesBucket);
-    if (value.IsEmpty()) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager Insert: Input parameter is invalid");
+    NativeRdb::RdbPredicates rdbPredicate(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    vector<string> permissionTypes;
+    permissionTypes.emplace_back(to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO)));
+    permissionTypes.emplace_back(to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO)));
+    permissionTypes.emplace_back(to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
+    rdbPredicate.And()->In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
+    int32_t ret = rdbStore->Delete(rdbPredicate);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("UriPermission table delete all temporary permission failed");
         return;
     }
-    cmd.SetValueBucket(value);
-    cmd.SetDataSharePred(predicates);
-    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
-    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    UriPermissionOperations::UpdateOperation(cmd);
+    MEDIA_INFO_LOG("UriPermission table delete all %{public}d rows temporary permission success", ret);
 }
 
-int32_t UriPermissionOperations::BatchInsertOperation(MediaLibraryCommand &cmd,
-    const std::vector<DataShareValuesBucket> &values)
+void UriPermissionOperations::DeleteAllTemporaryAsync()
 {
-    std::vector<string> photosValues;
-    std::vector<string> audiosValues;
-    bool photoNeedToUpdate = false;
-    bool audioNeedToUpdate = false;
-    bool isvaild = false;
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    TransactionOperations op(rdbStore->GetRaw());
-    int32_t err = op.Start();
-    int32_t permissionType = values[0].Get(AppUriPermissionColumn::PERMISSION_TYPE, isvaild);
-    if (permissionType == static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO)) {
-        MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return;
     }
-    for (auto val : values) {
-        if ((static_cast<int32_t>(val.Get(DB_OPERATION, isvaild)) == UPDATE_DB_OPERATION) &&
-            (static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isvaild)) == PHOTOSTYPE)) {
-            photosValues.push_back(to_string(static_cast<int32_t>(val.Get(AppUriPermissionColumn::FILE_ID, isvaild))));
-            photoNeedToUpdate = true;
-        } else if ((static_cast<int32_t>(val.Get(DB_OPERATION, isvaild)) == UPDATE_DB_OPERATION) &&
-            (static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isvaild)) == AUDIOSTYPE)) {
-            audiosValues.push_back(to_string(static_cast<int32_t>(val.Get(AppUriPermissionColumn::FILE_ID, isvaild))));
-            audioNeedToUpdate = true;
-        } else if (static_cast<int32_t>(val.Get(DB_OPERATION, isvaild)) == INSERT_DB_OPERATION) {
-            DataShareValuesBucket valuesBucket;
-            valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE,
-                static_cast<int32_t>(val.Get(AppUriPermissionColumn::PERMISSION_TYPE, isvaild)));
-            valuesBucket.Put(AppUriPermissionColumn::FILE_ID,
-                static_cast<int32_t>(val.Get(AppUriPermissionColumn::FILE_ID, isvaild)));
-            valuesBucket.Put(AppUriPermissionColumn::APP_ID,
-                static_cast<string>(val.Get(AppUriPermissionColumn::APP_ID, isvaild)));
-            valuesBucket.Put(AppUriPermissionColumn::URI_TYPE,
-                static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isvaild)));
-            valuesBucket.Put(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
-            ValuesBucket value = RdbUtils::ToValuesBucket(valuesBucket);
-            if (value.IsEmpty()) {
-                return E_INVALID_VALUES;
-            }
-            cmd.SetValueBucket(value);
-            InsertOperation(cmd);
-        }
+    shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask =
+        make_shared<MediaLibraryAsyncTask>(DeleteAllTemporaryOperation, nullptr);
+    if (notifyAsyncTask != nullptr) {
+        asyncWorker->AddTask(notifyAsyncTask, false);
+    } else {
+        MEDIA_ERR_LOG("Failed to create async task for UriPermission");
     }
-    if (photoNeedToUpdate == true) {
-        BatchUpdate(cmd, photosValues, PHOTOSTYPE, values);
-    }
-    if (audioNeedToUpdate == true) {
-        BatchUpdate(cmd, audiosValues, AUDIOSTYPE, values);
-    }
-    op.Finish();
-    return E_OK;
 }
 
 int32_t UriPermissionOperations::HandleUriPermOperations(MediaLibraryCommand &cmd)

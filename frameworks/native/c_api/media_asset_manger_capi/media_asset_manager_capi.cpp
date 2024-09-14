@@ -25,7 +25,6 @@
 #include "image_source_native_impl.h"
 
 using namespace OHOS::Media;
-
 const std::string ERROR_REQUEST_ID = "00000000-0000-0000-0000-000000000000";
 
 struct MediaAssetMangerObject : public OH_MediaAssetManager {
@@ -68,7 +67,6 @@ MediaLibrary_RequestId OH_MediaAssetManager_RequestImageForPath(OH_MediaAssetMan
     OH_MediaAssetManager_Convert(requestOptions, nativeRequestOptions);
     NativeOnDataPrepared nativeCallback = reinterpret_cast<NativeOnDataPrepared>(callback);
     CHECK_AND_RETURN_RET_LOG(nativeCallback != nullptr, requestId, "nativeCallback is null");
-
     std::string requestIdStr = managerObj->manager_->NativeRequestImage(uri, nativeRequestOptions, destPath,
         nativeCallback);
     strncpy_s(requestId.requestId, UUID_STR_LENGTH, requestIdStr.c_str(), UUID_STR_LENGTH);

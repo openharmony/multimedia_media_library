@@ -581,10 +581,16 @@ static void UvJsExecute(uv_work_t *work)
     }
 
     ThumnailUv *uvMsg = reinterpret_cast<ThumnailUv *>(work->data);
+    if (uvMsg == nullptr) {
+        delete work;
+        return;
+    }
+    if (uvMsg->request_ == nullptr) {
+        delete uvMsg;
+        delete work;
+        return;
+    }
     do {
-        if (uvMsg == nullptr || uvMsg->request_ == nullptr) {
-            break;
-        }
         napi_env env = uvMsg->request_->callback_.env_;
         if (!uvMsg->request_->NeedContinue()) {
             break;
@@ -596,6 +602,8 @@ static void UvJsExecute(uv_work_t *work)
         HandlePixelCallback(uvMsg->request_);
     } while (0);
     if (uvMsg->manager_ == nullptr) {
+        delete uvMsg;
+        delete work;
         return;
     }
     if (uvMsg->request_->GetStatus() == ThumbnailStatus::THUMB_FAST &&

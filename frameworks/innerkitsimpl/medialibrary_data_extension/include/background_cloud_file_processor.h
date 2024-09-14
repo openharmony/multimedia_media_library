@@ -85,7 +85,7 @@ private:
     static int32_t GetExtractMetadata(std::unique_ptr<Metadata> &metadata);
     static void StopUpdateData();
     static void UpdateCurrentOffset();
- 
+
     static std::recursive_mutex mutex_;
     static Utils::Timer timer_;
     static uint32_t startTimerId_;

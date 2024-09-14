@@ -25,7 +25,6 @@
 #include "parameters.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
-#include "vision_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -43,7 +42,6 @@ const std::unordered_set<OperationObject> OPERATION_OBJECT_SET = {
     OperationObject::UFM_PHOTO,
     OperationObject::UFM_AUDIO,
     OperationObject::PAH_PHOTO,
-    OperationObject::PAH_MAP,
 };
 const std::unordered_set<OperationType> OPERATION_TYPE_SET = {
     OperationType::QUERY,
@@ -51,9 +49,6 @@ const std::unordered_set<OperationType> OPERATION_TYPE_SET = {
 
 std::string GetTableNameFromOprnObject(const OperationObject& object)
 {
-    if (object == OperationObject::PAH_MAP) {
-        return PhotoColumn::PHOTOS_TABLE;
-    }
     if (TABLE_NAME_MAP.find(object) != TABLE_NAME_MAP.end()) {
         auto cmdObj = TABLE_NAME_MAP.at(object);
         return cmdObj.begin()->second;
@@ -155,7 +150,7 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
     MediaLibraryDataCallBack rdbDataCallBack;
     rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
     if (rdbStore_ == nullptr || errCode != NativeRdb::E_OK) {
-        MEDIA_WARN_LOG("Failed to get visitor RdbStore, errCode: %{public}d", errCode);
+        MEDIA_ERR_LOG("Get visitor RdbStore is failed, errCode: %{public}d", errCode);
         rdbStore_ = nullptr;
         return errCode;
     }
@@ -253,7 +248,18 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetRdbStore::Query(
     const DataShare::DataSharePredicates& predicates,
     std::vector<std::string>& columns, OperationObject& object, int& errCode)
 {
-    auto resultSet = QueryRdb(predicates, columns, object);
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("fail to acquire rdb when query");
+        return nullptr;
+    }
+    std::string tableName = GetTableNameFromOprnObject(object);
+    NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, tableName);
+    AddVirtualColumnsOfDateType(const_cast<vector<string> &>(columns));
+    if (object == OperationObject::UFM_PHOTO || object == OperationObject::PAH_PHOTO) {
+        AddQueryIndex(rdbPredicates, columns);
+    }
+    AddQueryFilter(rdbPredicates);
+    auto resultSet = rdbStore_->Query(rdbPredicates, columns);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("fail to acquire result from visitor query");
         return nullptr;
@@ -262,50 +268,7 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetRdbStore::Query(
     return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 }
 
-bool IsNumber(const string& str)
-{
-    if (str.empty()) {
-        MEDIA_ERR_LOG("IsNumber input is empty");
-        return false;
-    }
-    for (char const& c : str) {
-        if (isdigit(c) == 0) {
-            return false;
-        }
-    }
-    return true;
-}
-
-int32_t GetInt32Val(const string& column, std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
-{
-    int index;
-    int32_t value = -1;
-    int err = resultSet->GetColumnIndex(column, index);
-    if (err == E_OK) {
-        err = resultSet->GetInt(index, value);
-    }
-    return value;
-}
-
-bool MediaAssetRdbStore::IsQueryGroupPhotoAlbumAssets(const string &albumId)
-{
-    if (albumId.empty() || !IsNumber(albumId)) {
-        return false;
-    }
-    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
-    vector<string> columns = {PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE};
-    auto resultSet = rdbStore_->Query(predicates, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
-        return false;
-    }
-    int32_t albumType = GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet);
-    int32_t albumSubtype = GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet);
-    return albumType == PhotoAlbumType::SMART && albumSubtype == PhotoAlbumSubType::GROUP_PHOTO;
-}
-
-bool MediaAssetRdbStore::IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& object,
-    const DataShare::DataSharePredicates& predicates, bool isIgnoreSELinux)
+bool MediaAssetRdbStore::IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& object, bool isIgnoreSELinux)
 {
     if (access(MEDIA_DB_DIR.c_str(), E_OK) != 0) {
         return false;
@@ -323,15 +286,6 @@ bool MediaAssetRdbStore::IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& 
     OperationType type = GetOprnTypeFromUri(uri);
     if (OPERATION_TYPE_SET.count(type) == 0) {
         return false;
-    }
-    std::string tableName = GetTableNameFromOprnObject(object);
-    NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, tableName);
-    auto whereArgs = predicates.GetWhereArgs();
-    if (!whereArgs.empty()) {
-        string albumId = whereArgs[0];
-        if (IsQueryGroupPhotoAlbumAssets(albumId)) {
-            return false;
-        }
     }
     return true;
 }
@@ -374,7 +328,7 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
                     ->EqualTo(MediaColumn::MEDIA_HIDDEN, "0")
                     ->EqualTo(PhotoColumn::PHOTO_IS_TEMP, "0")
                     ->EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
-                              to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
+                        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     std::vector<std::string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_DATE_ADDED};
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     AddQueryFilter(rdbPredicates);

@@ -409,7 +409,7 @@ static int32_t HandleShortPermission(bool &need)
 {
     int32_t err = PermissionUtils::CheckPhotoCallerPermission(PERM_SHORT_TERM_WRITE_IMAGEVIDEO) ? E_SUCCESS :
         E_PERMISSION_DENIED;
-    if (err == E_SUCCESS) {
+    if (!err) {
         need = true;
     } else {
         need = false;
@@ -509,8 +509,6 @@ static int32_t HandleSpecialObjectPermission(MediaLibraryCommand &cmd, bool isWr
         return HandleMediaVolumePerm();
     } else if (obj == OperationObject::BUNDLE_PERMISSION) {
         return HandleBundlePermCheck();
-    } else if (obj == OperationObject::APP_URI_PERMISSION_INNER) {
-        return E_SUCCESS;
     }
 
     return E_NEED_FURTHER_CHECK;
@@ -600,19 +598,21 @@ static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd, const string 
         int errCode = businessError.GetCode();
         string clientAppId = GetClientAppId();
         string fileId = MediaFileUtils::GetIdFromUri(uri.ToString());
-        if (clientAppId.empty() || fileId.empty()) {
-            return false;
-        }
         DataSharePredicates predicates;
         predicates.And()->EqualTo("file_id", fileId);
         predicates.And()->EqualTo("owner_appid", clientAppId);
+        if (clientAppId.empty() || fileId.empty()) {
+            return false;
+        }
         auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
         auto count = 0;
-        queryResultSet->GetRowCount(count);
-        if (count != 0) {
-            ret = true;
-            CollectPermissionInfo(cmd, unifyMode, true,
-                PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
+        if (queryResultSet != nullptr) {
+            queryResultSet->GetRowCount(count);
+            if (count != 0) {
+                ret = true;
+                CollectPermissionInfo(cmd, unifyMode, true,
+                    PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
+            }
         }
     }
     return ret;
@@ -760,15 +760,11 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     }
 
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
-    int32_t ret = MediaLibraryDataManager::GetInstance()->InsertExt(cmd, value, result);
+    int32_t ret =  MediaLibraryDataManager::GetInstance()->InsertExt(cmd, value, result);
     if (needToResetTime) {
         AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
-        err = Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(tokenCaller,
-            PERM_SHORT_TERM_WRITE_IMAGEVIDEO, SHORT_TERM_PERMISSION_DURATION_300S);
-        if (err < 0) {
-            MEDIA_ERR_LOG("queryResultSet is nullptr! errCode: %{public}d", err);
-            return err;
-        }
+        Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(tokenCaller,
+            PERM_SHORT_TERM_WRITE_IMAGEVIDEO, THREE_HUNDERD_S);
     }
     return ret;
 }
@@ -789,8 +785,8 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     bool isMediatoolOperation = IsMediatoolOperation(cmd);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
-
     DataSharePredicates appidPredicates = predicates;
+
     if (err != E_SUCCESS) {
         if (isMediatoolOperation) {
             MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
@@ -851,6 +847,7 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     bool isMediatoolOperation = IsMediatoolOperation(cmd);
     int errCode = businessError.GetCode();
     DataSharePredicates appidPredicates = predicates;
+
     if (err != E_SUCCESS) {
         if (isMediatoolOperation) {
             MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
@@ -879,6 +876,7 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     auto count = 0;
     queryResultSet->GetRowCount(count);
     if (err < 0 && count == 0) {
+        MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
         businessError.SetCode(err);
         return nullptr;
     }

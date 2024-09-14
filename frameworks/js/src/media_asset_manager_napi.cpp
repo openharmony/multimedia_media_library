@@ -59,8 +59,8 @@ const int32_t LOW_QUALITY_IMAGE = 1;
 const int32_t HIGH_QUALITY_IMAGE = 0;
 
 const int32_t UUID_STR_LENGTH = 37;
-const int32_t MAX_URI_SIZE = 384; // 256 for display name and 128 for relative path
 const int32_t REQUEST_ID_MAX_LEN = 64;
+const int32_t MAX_URI_SIZE = 384; // 256 for display name and 128 for relative path
 
 thread_local unique_ptr<ChangeListenerNapi> g_multiStagesRequestListObj = nullptr;
 thread_local napi_ref constructor_ = nullptr;
@@ -78,9 +78,9 @@ napi_value MediaAssetManagerNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_STATIC_FUNCTION("requestImage", JSRequestImage),
             DECLARE_NAPI_STATIC_FUNCTION("requestImageData", JSRequestImageData),
             DECLARE_NAPI_STATIC_FUNCTION("requestMovingPhoto", JSRequestMovingPhoto),
-            DECLARE_NAPI_STATIC_FUNCTION("requestVideoFile", JSRequestVideoFile),
             DECLARE_NAPI_STATIC_FUNCTION("cancelRequest", JSCancelRequest),
-            DECLARE_NAPI_STATIC_FUNCTION("loadMovingPhoto", JSLoadMovingPhoto),
+            DECLARE_NAPI_STATIC_FUNCTION("requestVideoFile", JSRequestVideoFile),
+            DECLARE_NAPI_STATIC_FUNCTION("loadMovingPhoto", JSLoadMovingPhoto)
         }};
         MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
         return exports;
@@ -118,13 +118,6 @@ void MediaAssetManagerNapi::Destructor(napi_env env, void *nativeObject, void *f
     }
 }
 
-static bool HasReadPermission()
-{
-    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
-    int result = AccessTokenKit::VerifyAccessToken(tokenCaller, PERM_READ_IMAGEVIDEO);
-    return result == PermissionState::PERMISSION_GRANTED;
-}
-
 static AssetHandler* CreateAssetHandler(const std::string &photoId, const std::string &requestId,
     const std::string &uri, const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
 {
@@ -142,6 +135,13 @@ static void DeleteAssetHandlerSafe(AssetHandler *handler, napi_env env)
         delete handler;
         handler = nullptr;
     }
+}
+
+static bool HasReadPermission()
+{
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int result = AccessTokenKit::VerifyAccessToken(tokenCaller, PERM_READ_IMAGEVIDEO);
+    return result == PermissionState::PERMISSION_GRANTED;
 }
 
 static void InsertInProcessMapRecord(const std::string &requestUri, const std::string &requestId,
@@ -883,6 +883,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
             napi_get_undefined(env, &napiValueOfInfoMap);
         }
     }
+
     napi_value napiValueOfMedia = GetNapiValueOfMedia(env, dataHandler);
     if (napiValueOfMedia == nullptr) {
         napi_get_undefined(env, &napiValueOfMedia);
@@ -1077,6 +1078,7 @@ void MediaAssetManagerNapi::WriteDataToDestPath(std::string requestUri, std::str
     if (requestUri.empty() || responseUri.empty()) {
         napi_get_boolean(env, false, &result);
         NAPI_ERR_LOG("requestUri or responseUri is nullptr");
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestUri or responseUri is nullptr");
         return;
     }
     std::string tmpUri = requestUri;
@@ -1088,6 +1090,7 @@ void MediaAssetManagerNapi::WriteDataToDestPath(std::string requestUri, std::str
     if (srcFd < 0) {
         napi_get_boolean(env, false, &result);
         NAPI_ERR_LOG("get source file fd failed %{public}d", srcFd);
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "open source file error");
         return;
     }
     struct stat statSrc;
@@ -1095,6 +1098,7 @@ void MediaAssetManagerNapi::WriteDataToDestPath(std::string requestUri, std::str
         close(srcFd);
         napi_get_boolean(env, false, &result);
         NAPI_DEBUG_LOG("File get stat failed, %{public}d", errno);
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "open source file error");
         return;
     }
     int destFd = GetFdFromSandBoxUri(responseUri);
@@ -1102,6 +1106,7 @@ void MediaAssetManagerNapi::WriteDataToDestPath(std::string requestUri, std::str
         close(srcFd);
         napi_get_boolean(env, false, &result);
         NAPI_ERR_LOG("get dest fd failed %{public}d", destFd);
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "open dest file error");
         return;
     }
     SendFile(env, srcFd, destFd, result, statSrc.st_size);
@@ -1122,6 +1127,7 @@ void MediaAssetManagerNapi::SendFile(napi_env env, int srcFd, int destFd, napi_v
         close(destFd);
         napi_get_boolean(env, false, &result);
         NAPI_ERR_LOG("send file failed, %{public}d", errno);
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "send file failed");
         return;
     }
     napi_get_boolean(env, true, &result);
@@ -1184,6 +1190,22 @@ napi_value MediaAssetManagerNapi::JSCancelRequest(napi_env env, napi_callback_in
             JSCancelRequestComplete);
     }
     RETURN_NAPI_UNDEFINED(env);
+}
+
+int32_t MediaAssetManagerNapi::GetFdFromSandBoxUri(const std::string &sandBoxUri)
+{
+    AppFileService::ModuleFileUri::FileUri destUri(sandBoxUri);
+    string destPath = destUri.GetRealPath();
+    if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateFile(destPath)) {
+        NAPI_DEBUG_LOG("Create empty dest file in sandbox failed, path:%{private}s", destPath.c_str());
+        return E_ERR;
+    }
+    string absDestPath;
+    if (!PathToRealPath(destPath, absDestPath)) {
+        NAPI_DEBUG_LOG("PathToRealPath failed, path:%{private}s", destPath.c_str());
+        return E_ERR;
+    }
+    return MediaFileUtils::OpenFile(absDestPath, MEDIA_FILEMODE_WRITETRUNCATE);
 }
 
 static napi_value ParseArgsForLoadMovingPhoto(napi_env env, size_t argc, const napi_value argv[],
@@ -1249,22 +1271,6 @@ napi_value MediaAssetManagerNapi::JSLoadMovingPhoto(napi_env env, napi_callback_
     CHECK_NULLPTR_RET(ParseArgsForLoadMovingPhoto(env, asyncContext->argc, asyncContext->argv, asyncContext));
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSLoadMovingPhoto", JSLoadMovingPhotoExecute,
         JSLoadMovingPhotoComplete);
-}
-
-int32_t MediaAssetManagerNapi::GetFdFromSandBoxUri(const std::string &sandBoxUri)
-{
-    AppFileService::ModuleFileUri::FileUri destUri(sandBoxUri);
-    string destPath = destUri.GetRealPath();
-    if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateFile(destPath)) {
-        NAPI_DEBUG_LOG("Create empty dest file in sandbox failed, path:%{private}s", destPath.c_str());
-        return E_ERR;
-    }
-    string absDestPath;
-    if (!PathToRealPath(destPath, absDestPath)) {
-        NAPI_DEBUG_LOG("PathToRealPath failed, path:%{private}s", destPath.c_str());
-        return E_ERR;
-    }
-    return MediaFileUtils::OpenFile(absDestPath, MEDIA_FILEMODE_WRITETRUNCATE);
 }
 
 napi_status MediaAssetManagerNapi::CreateDataHandlerRef(napi_env env,

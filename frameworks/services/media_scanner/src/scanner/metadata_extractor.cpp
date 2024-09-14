@@ -427,7 +427,6 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
         MEDIA_ERR_LOG("Open file descriptor failed, errno = %{public}d", errno);
         return E_SYSCALL;
     }
-    
     struct stat64 st;
     if (fstat64(fd, &st) != 0) {
         MEDIA_ERR_LOG("Get file state failed for the given fd");

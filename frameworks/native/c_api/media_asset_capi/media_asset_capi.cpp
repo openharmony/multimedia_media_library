@@ -80,5 +80,6 @@ MediaLibrary_ErrorCode OH_MediaAsset_Release(OH_MediaAsset* mediaAsset)
 
     delete mediaAsset;
     mediaAsset = nullptr;
+
     return MEDIA_LIBRARY_OK;
 }
