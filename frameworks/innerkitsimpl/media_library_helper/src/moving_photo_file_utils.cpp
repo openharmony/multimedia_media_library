@@ -137,13 +137,19 @@ static int32_t WriteContentTofile(const UniqueFd& destFd, const UniqueFd& srcFd)
             return E_ERR;
         }
     }
+    if (bytesRead < 0) {
+        MEDIA_ERR_LOG("failed to read from srcFd:%{public}d, errno:%{public}d", srcFd.Get(), errno);
+        return E_ERR;
+    }
     return E_OK;
 }
 
 static int32_t AddStringToFile(const UniqueFd& destFd, const string& temp)
 {
-    if (write(destFd.Get(), temp.c_str(), temp.size()) == E_ERR) {
-        MEDIA_ERR_LOG("failed to write file errno: %{public}d", errno);
+    ssize_t ret = write(destFd.Get(), temp.c_str(), temp.size());
+    if (ret < 0 || ret != temp.size()) {
+        MEDIA_ERR_LOG("failed to write file, errno: %{public}d, ret: %{public}" PRId64, errno,
+            static_cast<int64_t>(ret));
         return E_ERR;
     }
     return E_OK;
@@ -157,15 +163,21 @@ static string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off
         return "";
     }
     char* buffer = new char[needSize + 1];
+    if (buffer == nullptr) {
+        MEDIA_ERR_LOG("failed to allocate buffer");
+        return "";
+    }
     memset_s(buffer, needSize + 1, 0, needSize + 1);
     ssize_t bytesRead;
     if ((bytesRead = read(fd.Get(), buffer, needSize)) < 0) {
         MEDIA_ERR_LOG("failed to read extra file errno: %{public}d", errno);
         delete[] buffer;
+        buffer = nullptr;
         return "";
     }
     string content(buffer, bytesRead);
     delete[] buffer;
+    buffer = nullptr;
     return content;
 }
 
@@ -173,7 +185,7 @@ static int32_t ReadExtraFile(const std::string& extraPath, map<string, string>& 
 {
     string absExtraPath;
     if (!PathToRealPath(extraPath, absExtraPath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", extraPath.c_str());
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s, errno: %{public}d", extraPath.c_str(), errno);
         return E_HAS_FS_ERROR;
     }
     UniqueFd fd(open(absExtraPath.c_str(), O_RDONLY));
@@ -230,6 +242,7 @@ static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhoto
     }
     off_t fileSize = GetFileSize(videoFd.Get());
     if (fileSize <= 0) {
+        MEDIA_ERR_LOG("failed to check fileSize: %{public}" PRId64, fileSize);
         return E_ERR;
     }
     if (AddStringToFile(livePhotoFd, GetVideoInfoTag(static_cast<size_t>(fileSize) +
@@ -245,7 +258,7 @@ int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& imagePath, const str
 {
     string absImagePath;
     if (!PathToRealPath(imagePath, absImagePath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", imagePath.c_str());
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s, errno: %{public}d", imagePath.c_str(), errno);
         return E_HAS_FS_ERROR;
     }
     string extraDir = MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(absImagePath);
@@ -382,6 +395,7 @@ int32_t MovingPhotoFileUtils::ConvertToSourceLivePhoto(const string& movingPhoto
         MEDIA_INFO_LOG("source live photo exists: %{private}s", sourceCachePath.c_str());
         return E_OK;
     }
+
     UniqueFd imageFd(open(sourceImagePath.c_str(), O_RDONLY));
     CHECK_AND_RETURN_RET_LOG(imageFd.Get() >= 0, E_HAS_FS_ERROR,
         "Failed to open source image:%{private}s, errno:%{public}d", sourceImagePath.c_str(), errno);
@@ -406,12 +420,8 @@ bool MovingPhotoFileUtils::IsLivePhoto(const string& path)
 {
     string absPath;
     if (!PathToRealPath(path, absPath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", path.c_str());
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s, errno: %{public}d", path.c_str(), errno);
         return E_HAS_FS_ERROR;
-    }
-    if (access(absPath.c_str(), F_OK) != E_OK) {
-        MEDIA_ERR_LOG("failed to open file errno: %{public}d", errno);
-        return false;
     }
     UniqueFd livePhotoFd(open(absPath.c_str(), O_RDONLY));
     if (GetFileSize(livePhotoFd.Get()) < LIVE_TAG_LEN) {
@@ -453,7 +463,7 @@ static int32_t SendLivePhoto(const UniqueFd &livePhotoFd, const string &destPath
     }
     string absDestPath;
     if (!PathToRealPath(destPath, absDestPath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", destPath.c_str());
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s, errno: %{public}d", destPath.c_str(), errno);
         return E_HAS_FS_ERROR;
     }
     UniqueFd destFd(open(absDestPath.c_str(), O_WRONLY));
@@ -524,7 +534,7 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
 {
     string absLivePhotoPath;
     if (!PathToRealPath(livePhotoPath, absLivePhotoPath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", livePhotoPath.c_str());
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s, errno: %{public}d", livePhotoPath.c_str(), errno);
         return E_HAS_FS_ERROR;
     }
     CHECK_AND_RETURN_RET_LOG(livePhotoPath.compare(movingPhotoVideoPath) != 0 &&
