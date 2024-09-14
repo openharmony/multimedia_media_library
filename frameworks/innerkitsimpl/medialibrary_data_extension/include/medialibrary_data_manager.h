@@ -110,6 +110,7 @@ public:
 private:
     int32_t InitMediaLibraryRdbStore();
     void InitResourceInfo();
+    void HandleUpgradeRdbAsync();
 
 #ifdef DISTRIBUTED
     bool QuerySync(const std::string &networkId, const std::string &tableName);
