@@ -42,6 +42,8 @@ public:
     EXPORT bool InitMonthAndYearKvStore(const KvStoreRoleType &roleType);
     EXPORT bool CloseKvStore(const KvStoreValueType &valueType);
     EXPORT void CloseAllKvStore();
+    EXPORT bool IsKvStoreValid(const KvStoreValueType &valueType);
+    EXPORT int32_t RebuildInvalidKvStore(const KvStoreValueType &valueType);
 
 private:
     MediaLibraryKvStoreManager() = default;
