@@ -830,6 +830,7 @@ void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
         }
         fileInfos[fileIndexMap.at(cloudPath)].fileIdNew = fileId;
     }
+    BackupDatabaseUtils::UpdateAssociateFileId(mediaLibraryRdb_, fileInfos);
 }
 
 void CloneRestore::BatchNotifyPhoto(const vector<FileInfo> &fileInfos)
@@ -1510,6 +1511,7 @@ void CloneRestore::SetSpecialAttributes(const string &tableName, const shared_pt
     fileInfo.lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
     fileInfo.orientation = GetInt32Val(PhotoColumn::PHOTO_ORIENTATION, resultSet);
     fileInfo.subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    fileInfo.associateFileId = GetInt32Val(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, resultSet);
     // find PhotoAlbum info in target database. PackageName and BundleName should be fixed after clone.
     fileInfo.ownerAlbumId = this->photosClone_.FindAlbumId(fileInfo);
 }

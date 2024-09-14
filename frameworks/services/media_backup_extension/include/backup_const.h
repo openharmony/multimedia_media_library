@@ -277,6 +277,10 @@ struct FileInfo {
      * @brief the field data for media_library.db # Photos # burst_key. 36 length of uuid.
      */
     std::string burstKey;
+    /**
+     *  @brief the associate file id, used for cloud enhancement pair relationship
+     */
+    int32_t associateFileId;
     std::string sourcePath;
     std::string lPath;
     int32_t ownerAlbumId;
