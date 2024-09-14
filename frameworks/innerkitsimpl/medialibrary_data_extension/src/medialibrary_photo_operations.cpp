@@ -581,21 +581,19 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
 {
     FileAsset fileAsset;
     ValuesBucket &values = cmd.GetValueBucket();
-    string displayName, extention, title;
+    string displayName;
+    string extention;
+    string title;
     bool isContains = false;
     bool isNeedGrant = false;
     if (GetStringFromValuesBucket(values, PhotoColumn::MEDIA_NAME, displayName)) {
-        fileAsset.SetDisplayName(displayName);
-        fileAsset.SetTimePending(UNCREATE_FILE_TIMEPENDING);
-        isContains = true;
+        AddFileAsset(fileAsset, displayName, isContains);
     } else {
         CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, ASSET_EXTENTION, extention), E_HAS_DB_ERROR);
         isNeedGrant = true;
         fileAsset.SetTimePending(UNOPEN_FILE_COMPONENT_TIMEPENDING);
         if (GetStringFromValuesBucket(values, PhotoColumn::MEDIA_TITLE, title)) {
-            displayName = title + "." + extention;
-            fileAsset.SetDisplayName(displayName);
-            isContains = true;
+            SetFileAssetDisplayName(displayName, title, extention, fileAsset, isContains);
         }
     }
     int32_t mediaType = 0;
@@ -2857,6 +2855,21 @@ int32_t MediaLibraryPhotoOperations::ScanFileWithoutAlbumUpdate(MediaLibraryComm
     MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId);
 
     return E_OK;
+}
+
+void MediaLibraryPhotoOperations::AddFileAsset(FileAsset &fileAsset, string &displayName, bool &isContains)
+{
+    fileAsset.SetDisplayName(displayName);
+    fileAsset.SetTimePending(UNCREATE_FILE_TIMEPENDING);
+    isContains = true;
+}
+
+void MediaLibraryPhotoOperations::SetFileAssetDisplayName(string &displayName, string &title, string &extension,
+    FileAsset &fileAsset, bool &isContains)
+{
+    displayName = title + "." + extension;
+    fileAsset.SetDisplayName(displayName);
+    isContains = true;
 }
 } // namespace Media
 } // namespace OHOS
