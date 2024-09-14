@@ -102,6 +102,8 @@ void Metadata::Init()
     memberFuncMap_[PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE] = make_pair(ResultSetDataType::TYPE_INT32,
         &Metadata::SetDynamicRangeType);
     memberFuncMap_[PhotoColumn::PHOTO_IS_TEMP] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetIsTemp);
+    memberFuncMap_[PhotoColumn::PHOTO_QUALITY] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetPhotoQuality);
+    memberFuncMap_[PhotoColumn::PHOTO_DIRTY] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetDirty);
     memberFuncMap_[PhotoColumn::PHOTO_FRONT_CAMERA] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetFrontCamera);
     memberFuncMap_[PhotoColumn::MEDIA_FILE_PATH] = make_pair(ResultSetDataType::TYPE_STRING,
@@ -545,9 +547,29 @@ void Metadata::SetIsTemp(const VariantData &isTemp)
     isTemp_ = std::get<int32_t>(isTemp);
 }
 
-int32_t Metadata::GetIsTemp()
+int32_t Metadata::GetIsTemp() const
 {
     return isTemp_;
+}
+
+void Metadata::SetPhotoQuality(const VariantData &photoQuality)
+{
+    photoQuality_ = std::get<int32_t>(photoQuality);
+}
+
+int32_t Metadata::GetPhotoQuality() const
+{
+    return photoQuality_;
+}
+
+void Metadata::SetDirty(const VariantData &dirty)
+{
+    dirty_ = std::get<int32_t>(dirty);
+}
+
+int32_t Metadata::GetDirty() const
+{
+    return dirty_;
 }
 
 void Metadata::SetFrontCamera(const VariantData &frontcamera)

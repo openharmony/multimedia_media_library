@@ -204,19 +204,13 @@ int32_t MultiStagesCaptureManager::UpdateDbInfo(MediaLibraryCommand &cmd)
 {
     MediaLibraryCommand cmdLocal (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     auto values = cmd.GetValueBucket();
-    int32_t subType = 0;
     ValueObject valueObject;
-    if (values.GetObject(PhotoColumn::PHOTO_SUBTYPE, valueObject)) {
-        valueObject.GetInt(subType);
-    }
-
     int32_t photoQuality = static_cast<int32_t>(MultiStagesPhotoQuality::LOW);
     if (values.GetObject(PhotoColumn::PHOTO_QUALITY, valueObject)) {
         valueObject.GetInt(photoQuality);
     }
-    if ((photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) && 
-        (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO))) {
-        values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
+    if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) {
+        values.PutInt(MEDIA_DATA_DB_DIRTY, -1); // prevent uploading low-quality photo
     }
     cmdLocal.SetValueBucket(values);
     cmdLocal.GetAbsRdbPredicates()->SetWhereClause(cmd.GetAbsRdbPredicates()->GetWhereClause());

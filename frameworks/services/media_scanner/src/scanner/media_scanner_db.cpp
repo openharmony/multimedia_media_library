@@ -205,6 +205,31 @@ static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &va
     HandleDateAdded(metadata, isInsert, values);
 }
 
+static void HandleMovingPhotoDirty(const Metadata &metadata, ValuesBucket &values)
+{
+    if (metadata.GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+        metadata.GetDirty() != -1) {
+        return;
+    }
+
+    if (metadata.GetPhotoQuality() != static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
+        MEDIA_DEBUG_LOG("moving photo is not high-quality");
+        return;
+    }
+
+    if (metadata.GetIsTemp() != 0) {
+        MEDIA_DEBUG_LOG("moving photo is temp, not saved");
+        return;
+    }
+
+    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(metadata.GetFilePath());
+    if (!MediaFileUtils::IsFileExists(videoPath)) {
+        MEDIA_DEBUG_LOG("video of moving photo dose not exist");
+        return;
+    }
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
+}
+
 static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &values, bool isInsert,
     bool skipPhoto = true)
 {
@@ -243,6 +268,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
 
         if (metadata.GetPhotoSubType() != 0) {
             values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
+            HandleMovingPhotoDirty(metadata, values);
         }
     } else if (mediaType == MediaType::MEDIA_TYPE_AUDIO) {
         values.PutString(AudioColumn::AUDIO_ALBUM, metadata.GetAlbum());
@@ -496,7 +522,8 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
                 MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING,
                 MediaColumn::MEDIA_DATE_ADDED, PhotoColumn::PHOTO_DATE_DAY, MediaColumn::MEDIA_OWNER_PACKAGE,
-                PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::MOVING_PHOTO_EFFECT_MODE
+                PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+                PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_QUALITY,
             };
         } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
             columns = {
