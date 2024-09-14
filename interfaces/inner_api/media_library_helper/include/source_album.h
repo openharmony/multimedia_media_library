@@ -88,7 +88,7 @@ const std::string UPDATE_ALBUM_BUNDLENAME =
 
 const std::string SOURCE_ALBUM_WHERE =
     " WHERE (" + PhotoAlbumColumns::ALBUM_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME +
-    " OR (bundle_name = NEW.owner_package and COALESCE(bundle_name, '') <>'')) AND " +
+    " OR (bundle_name = NEW.owner_package and COALESCE(NEW.owner_package, '') <>'')) AND " +
     PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC);
 
