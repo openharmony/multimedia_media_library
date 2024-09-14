@@ -208,7 +208,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
     "src/medialibrary_album_operations.cpp",
-    "src/medialibrary_analysis_album_operations.cpp",
     "src/medialibrary_app_uri_permission_operations.cpp",
     "src/medialibrary_appstate_observer.cpp",
     "src/medialibrary_asset_operations.cpp",
@@ -324,7 +323,7 @@ ohos_shared_library("medialibrary_data_extension") {
     sources += [ "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_proc_session_callback.cpp" ]
   }
 
-  if (!media_library_link_opt) {
+  if (!link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true

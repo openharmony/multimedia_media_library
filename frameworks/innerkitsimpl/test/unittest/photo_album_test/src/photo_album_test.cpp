@@ -683,7 +683,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_007, TestSize.Level0)
 }
 
 /**
- * @tc.name: photoalbum_order_album_007
+ * @tc.name: photoalbum_order_album_008
  * @tc.desc: order photo album, move the album to the end.
  *           move current album before reference album
  * @tc.type: FUNC

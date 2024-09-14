@@ -18,7 +18,7 @@ var __decorate = this && this.__decorate || function (e, o, t, i) {
     if ('object' === typeof Reflect && 'function' === typeof Reflect.decorate) {
         l = Reflect.decorate(e, o, t, i);
     } else {
-        for (var s = e.length - 1; s >= 0; s--) {
+        for (let s = e.length - 1; s >= 0; s--) {
             (n = e[s]) && (l = (r < 3 ? n(l) : r > 3 ? n(o, t, l) : n(o, t)) || l);
         }
     }
@@ -91,31 +91,53 @@ export class PhotoPickerComponent extends ViewPU {
             this.proxy.send({ albumUri: null == o ? void 0 : o.get('SET_ALBUM_URI') });
             console.info('PhotoPickerComponent onChanged: SET_ALBUM_URI');
         } else if (null == o ? void 0 : o.has('SET_MAX_SELECT_COUNT')) {
-            let e = null == o ? void 0 : o.get('SET_MAX_SELECT_COUNT');
-            let t = null == e ? void 0 : e.data;
-            this.proxy.send({
-                totalCount: null == t ? void 0 : t.get(MaxCountType.TOTAL_MAX_COUNT),
-                photoCount: null == t ? void 0 : t.get(MaxCountType.PHOTO_MAX_COUNT),
-                videoCount: null == t ? void 0 : t.get(MaxCountType.VIDEO_MAX_COUNT)
-            });
-            console.info('PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT');
+            this.onSetMaxSelectCount(o);
         } else if (null == o ? void 0 : o.has('SET_PHOTO_BROWSER_ITEM')) {
             this.onSetPhotoBrowserItem(o);
+        } else if (null == o ? void 0 : o.has('EXIT_PHOTO_BROWSER')) {
+            this.handleExitPhotoBrowser();
+        } else if (null == o ? void 0 : o.has('SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY')) {
+            this.onSetPhotoBrowserUIElementVisibility(o);
         } else {
             console.info('PhotoPickerComponent onChanged: other case');
         }
     }
 
+    onSetMaxSelectCount(o) {
+        let e = null == o ? void 0 : o.get('SET_MAX_SELECT_COUNT');
+        let t = null == e ? void 0 : e.data;
+        this.proxy.send({
+            totalCount: null == t ? void 0 : t.get(MaxCountType.TOTAL_MAX_COUNT),
+            photoCount: null == t ? void 0 : t.get(MaxCountType.PHOTO_MAX_COUNT),
+            videoCount: null == t ? void 0 : t.get(MaxCountType.VIDEO_MAX_COUNT)
+        });
+        console.info('PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT');
+    }
+
     onSetPhotoBrowserItem(o) {
         let e = null == o ? void 0 : o.get('SET_PHOTO_BROWSER_ITEM');
-        this.proxy.send({
-            itemUri: null == e ? void 0 : e.uri,
-            photoBrowserRange: null == e ? void 0 : e.photoBrowserRange
+        this.proxy.send({ 
+            itemUri: null == e ? void 0 : e.uri, 
+            photoBrowserRange: null == e ? void 0 : e.photoBrowserRange 
         });
         console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_ITEM');
     }
 
-	initialRender() {
+    handleExitPhotoBrowser() {
+        this.proxy.send({ exitPhotoBrowser: true });
+        console.info('PhotoPickerComponent onChanged: EXIT_PHOTO_BROWSER');
+    }
+
+    onSetPhotoBrowserUIElementVisibility(o) {
+        let e = null == o ? void 0 : o.get('SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY');
+        this.proxy.send({
+            elements: null == e ? void 0 : e.elements,
+            isVisible: null == e ? void 0 : e.isVisible
+        });
+        console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY');
+    }
+
+    initialRender() {
         this.observeComponentCreation2(((e, o) => {
             Row.create();
             Row.height('100%');
@@ -125,7 +147,7 @@ export class PhotoPickerComponent extends ViewPU {
             Column.width('100%');
         }), Column);
         this.observeComponentCreation2(((e, o) => {
-            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _;
+            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d;
             SecurityUIExtensionComponent.create({
                 parameters: {
                     'ability.want.params.uiExtensionTargetType': 'photoPicker',
@@ -152,7 +174,9 @@ export class PhotoPickerComponent extends ViewPU {
                     maxPhotoSelectNumber: null === (m = this.pickerOptions) || void 0 === m ? void 0 : m.maxPhotoSelectNumber,
                     maxVideoSelectNumber: null === (P = this.pickerOptions) || void 0 === P ? void 0 : P.maxVideoSelectNumber,
                     isOnItemClickedSet: !!this.onItemClicked,
-                    isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported
+                    isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported,
+                    isSlidingSelectionSupported: null === (b = this.pickerOptions) || void 0 === b ? void 0 : b.isSlidingSelectionSupported,
+                    photoBrowserCheckboxPosition: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserCheckboxPosition
                 }
             });
             SecurityUIExtensionComponent.height('100%');
@@ -307,6 +331,19 @@ let PickerController = class {
         this.data = new Map([['SET_PHOTO_BROWSER_ITEM', l]]);
         console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM ' + JSON.stringify(l));
     }
+
+    exitPhotoBrowser() {
+        this.data = new Map([['EXIT_PHOTO_BROWSER', true]]);
+        console.info('PhotoPickerComponent EXIT_PHOTO_BROWSER ');
+    }
+
+    setPhotoBrowserUIElementVisibility(e, o) {
+        let m = new PhotoBrowserUIElementVisibility;
+        m.elements = e;
+        m.isVisible = o;
+        this.data = new Map([['SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY', m]]);
+        console.info('PhotoPickerComponent SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY ' + JSON.stringify(m));
+    }
 };
 PickerController = __decorate([Observed], PickerController);
 
@@ -329,6 +366,9 @@ export class MaxSelected {
 }
 
 class PhotoBrowserRangeInfo {
+}
+
+class PhotoBrowserUIElementVisibility {
 }
 
 export var DataType;
@@ -388,5 +428,11 @@ export var PhotoBrowserRange;
     e[e.SELECTED_ONLY = 1] = 'SELECTED_ONLY';
 }(PhotoBrowserRange || (PhotoBrowserRange = {}));
 
+export var PhotoBrowserUIElement;
+!function(e) {
+    e[e.CHECKBOX = 0] = 'CHECKBOX';
+    e[e.BACK_BUTTON = 1] = 'BACK_BUTTON';
+}(PhotoBrowserUIElement || (PhotoBrowserUIElement = {}));
+
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
-    MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange };
+    MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement };

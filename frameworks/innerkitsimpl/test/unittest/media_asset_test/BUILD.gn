@@ -79,7 +79,7 @@ ohos_unittest("media_asset_test") {
     "samgr:samgr_proxy",
   ]
 
-  if (!media_library_link_opt) {
+  if (!link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true

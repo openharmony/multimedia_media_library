@@ -54,7 +54,7 @@ public:
     const std::string &GetTableName();
     NativeRdb::ValuesBucket &GetValueBucket();
     EXPORT NativeRdb::AbsRdbPredicates *GetAbsRdbPredicates();
-    EXPORT const std::string &GetOprnFileId();
+    const std::string &GetOprnFileId();
     const std::string &GetOprnDevice();
     const Uri &GetUri() const;
     const std::string &GetBundleName();
@@ -71,8 +71,8 @@ public:
     EXPORT void SetValueBucket(const NativeRdb::ValuesBucket &value);
     EXPORT void SetTableName(const std::string &tableName);
     EXPORT void SetBundleName(const std::string &bundleName);
-    EXPORT void SetDeviceName(const std::string &deviceName);
-    EXPORT void SetResult(const std::string &result);
+    void SetDeviceName(const std::string &deviceName);
+    void SetResult(const std::string &result);
 
 private:
     void ParseOprnObjectFromUri();

@@ -73,10 +73,17 @@ void MediaLibraryInotify::WatchCallBack()
     char data[READ_LEN] = {0};
     while (isWatching_) {
         int32_t len = read(inotifyFd_, data, READ_LEN);
+        if (len < static_cast<int32_t>(sizeof(struct inotify_event))) {
+            MEDIA_ERR_LOG("read event error, len: %{public}d, fd: %{public}d, error: %{public}d", len, inotifyFd_,
+                errno);
+            Restart();
+            return;
+        }
         int32_t index = 0;
         while (index < len) {
             struct inotify_event *event = reinterpret_cast<struct inotify_event *>(data + index);
-            index += static_cast<int32_t>(sizeof(struct inotify_event)) + event->len;
+            index += static_cast<int32_t>(sizeof(struct inotify_event)) +
+		    static_cast<int32_t>(event->len);
             unique_lock<mutex> lock(mutex_);
             if (watchList_.count(event->wd) == 0) {
                 continue;
@@ -104,6 +111,19 @@ void MediaLibraryInotify::WatchCallBack()
         }
     }
     isWatching_ = false;
+}
+
+void MediaLibraryInotify::Restart()
+{
+    for (auto iter = watchList_.begin(); iter != watchList_.end(); iter++) {
+        if (inotify_rm_watch(inotifyFd_, iter->first) != 0) {
+            MEDIA_ERR_LOG("rm watch fd: %{public}d, fail: %{public}d", iter->first, errno);
+        }
+    }
+    isWatching_ = false;
+    watchList_.clear();
+    inotifyFd_ = 0;
+    Init();
 }
 
 void MediaLibraryInotify::DoAging()
@@ -136,7 +156,7 @@ int32_t MediaLibraryInotify::RemoveByFileUri(const string &uri, MediaLibraryApi 
     for (auto iter = watchList_.begin(); iter != watchList_.end(); iter++) {
         if (iter->second.uri_ == uri && iter->second.api_ == api) {
             wd = iter->first;
-            MEDIA_DEBUG_LOG("remove uri:%s wd:%d path:%s",
+            MEDIA_DEBUG_LOG("remove uri:%{public}s wd:%{public}d path:%{public}s",
                 iter->second.uri_.c_str(), wd, iter->second.path_.c_str());
             break;
         }
@@ -152,7 +172,7 @@ int32_t MediaLibraryInotify::Remove(int wd)
 {
     watchList_.erase(wd);
     if (inotify_rm_watch(inotifyFd_, wd) != 0) {
-        MEDIA_ERR_LOG("rm watch fd:%d fail:%d", wd, errno);
+        MEDIA_ERR_LOG("rm watch fd:%{public}d fail:%{public}d", wd, errno);
         return E_FAIL;
     }
     return E_SUCCESS;
@@ -163,9 +183,10 @@ int32_t MediaLibraryInotify::Init()
     if (inotifyFd_ <= 0) {
         inotifyFd_ = inotify_init();
         if (inotifyFd_ < 0) {
-            MEDIA_ERR_LOG("add AddWatchList fail");
+            MEDIA_ERR_LOG("add AddWatchList fail fd: %{public}d, error: %{public}d", inotifyFd_, errno);
             return E_FAIL;
         }
+        MEDIA_INFO_LOG("init inotifyFd_: %{public}d success", inotifyFd_);
     }
     return E_SUCCESS;
 }
@@ -174,7 +195,7 @@ int32_t MediaLibraryInotify::AddWatchList(const string &path, const string &uri,
 {
     lock_guard<mutex> lock(mutex_);
     if (watchList_.size() > MAX_WATCH_LIST) {
-        MEDIA_ERR_LOG("watch list full, add uri:%s fail", uri.c_str());
+        MEDIA_ERR_LOG("watch list full, add uri:%{public}s fail", uri.c_str());
         return E_FAIL;
     }
     int32_t wd = inotify_add_watch(inotifyFd_, path.c_str(), IN_CLOSE | IN_MODIFY);

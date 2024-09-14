@@ -30,7 +30,7 @@ export struct RecentPhotoComponent {
     Row() {
       Column() {
         SecurityUIExtensionComponent({
-          bundleName: 'com.ohos.photos',
+          bundleName: 'com.huawei.hmos.photos',
           abilityName: 'RecentUIExtensionAbility',
           parameters: {
             'ability.want.params.uiExtensionType': 'recentPhoto',
@@ -101,9 +101,9 @@ export type RecentPhotoCheckResultCallback = (recentPhotoExists: boolean) => voi
 export type RecentPhotoClickCallback = (recentPhotoInfo: BaseItemInfo) => boolean;
 
 export class RecentPhotoOptions {
-  period?: number;
-  MIMEType?: photoAccessHelper.PhotoViewMIMETypes;
-  photoSource?: PhotoSource
+  public period?: number;
+  public MIMEType?: photoAccessHelper.PhotoViewMIMETypes;
+  public photoSource?: PhotoSource
 }
 
 export enum PhotoSource {

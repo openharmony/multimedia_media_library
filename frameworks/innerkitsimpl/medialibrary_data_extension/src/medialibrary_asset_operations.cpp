@@ -78,7 +78,6 @@ mutex g_uniqueNumberLock;
 const string DEFAULT_IMAGE_NAME = "IMG_";
 const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
-constexpr int32_t OWNER_PRIVIEDGE = 4;
 constexpr int32_t NO_DESENSITIZE = 3;
 
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
@@ -297,12 +296,17 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
     for (const string &dir : DELETE_DIR_LIST) {
         if (!MediaFileUtils::DeleteDir(dir)) {
             MEDIA_ERR_LOG("Delete dir %{public}s failed", dir.c_str());
+            continue;
         }
+        if (!MediaFileUtils::CreateDirectory(dir)) {
+            MEDIA_ERR_LOG("Create dir %{public}s failed", dir.c_str());
+        };
     }
-    for (auto &dir : PRESET_ROOT_DIRS) {
-        string ditPath = ROOT_MEDIA_DIR + dir;
-        MediaFileUtils::CreateDirectory(ditPath);
-    }
+
+    string photoThumbsPath = ROOT_MEDIA_DIR + ".thumbs/Photo";
+    if (!MediaFileUtils::CreateDirectory(photoThumbsPath)) {
+        MEDIA_ERR_LOG("Create dir %{public}s failed", photoThumbsPath.c_str());
+    };
 
     return E_OK;
 }
@@ -426,7 +430,6 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const stri
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryAssetOperations::GetFileAssetFromDb");
-
     if (!CheckOprnObject(oprnObject) || column.empty() || value.empty()) {
         return nullptr;
     }
@@ -623,7 +626,7 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues)
         MEDIA_DEBUG_LOG("do not have permission to set burst_key or burst_cover_level");
         return;
     }
- 
+
     string burstKey;
     ValueObject value;
     if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_BURST_KEY, value)) {
@@ -632,7 +635,7 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues)
     if (!burstKey.empty()) {
         outValues.PutString(PhotoColumn::PHOTO_BURST_KEY, burstKey);
     }
- 
+
     int32_t burstCoverLevel = 0;
     if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_BURST_COVER_LEVEL, value)) {
         value.GetInt(burstCoverLevel);
@@ -699,6 +702,23 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     cmd.SetValueBucket(assetInfo);
 }
 
+static void GetUriPermissionValuesBucket(string &tableName, ValuesBucket &valuesBucket,
+    string appId, int64_t fileId)
+{
+    TableType mediaType;
+    if (tableName == PhotoColumn::PHOTOS_TABLE) {
+        mediaType = TableType::TYPE_PHOTOS;
+    } else {
+        mediaType = TableType::TYPE_AUDIOS;
+    }
+    valuesBucket.Put(AppUriPermissionColumn::FILE_ID, static_cast<int32_t>(fileId));
+    valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, static_cast<int32_t>(mediaType));
+    valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE,
+        AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE);
+    valuesBucket.Put(AppUriPermissionColumn::APP_ID, appId);
+    valuesBucket.Put(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+}
+
 int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
     // All values inserted in this function are the base property for files
@@ -711,6 +731,11 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
         MEDIA_ERR_LOG("file %{private}s exists now", fileAsset.GetPath().c_str());
         return E_FILE_EXIST;
     }
+    int32_t callingUid = 0;
+    ValueObject value;
+    if (cmd.GetValueBucket().GetObject(MEDIA_DATA_CALLING_UID, value)) {
+        value.GetInt(callingUid);
+    }
     FillAssetInfo(cmd, fileAsset);
 
     int64_t outRowId = -1;
@@ -719,24 +744,18 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
-    string appId = PermissionUtils::GetAppIdByBundleName(cmd.GetBundleName());
+    string appId;
+    if (PermissionUtils::IsNativeSAApp()) {
+        appId = PermissionUtils::GetAppIdByBundleName(fileAsset.GetOwnerPackage(), callingUid);
+    } else {
+        appId = PermissionUtils::GetAppIdByBundleName(cmd.GetBundleName());
+    }
     auto fileId = outRowId;
     string tableName = cmd.GetTableName();
+    ValuesBucket valuesBucket;
     if (!appId.empty()) {
-        TableType mediaType;
-        if (tableName == PhotoColumn::PHOTOS_TABLE) {
-            mediaType = TableType::TYPE_PHOTOS;
-        } else {
-            mediaType = TableType::TYPE_AUDIOS;
-        }
-        ValuesBucket valuesBucket;
         int64_t tmpOutRowId = -1;
-        valuesBucket.Put(AppUriPermissionColumn::FILE_ID, static_cast<int32_t>(fileId));
-        valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, static_cast<int32_t>(mediaType));
-        valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, OWNER_PRIVIEDGE);
-        valuesBucket.Put(AppUriPermissionColumn::APP_ID, appId);
-        valuesBucket.Put(AppUriPermissionColumn::DATE_MODIFIED,
-            MediaFileUtils::UTCTimeMilliSeconds());
+        GetUriPermissionValuesBucket(tableName, valuesBucket, appId, fileId);
         MediaLibraryCommand cmd(Uri(MEDIALIBRARY_GRANT_URIPERM_URI), valuesBucket);
         errCode = rdbStore->Insert(cmd, tmpOutRowId);
         if (errCode != NativeRdb::E_OK) {
@@ -1414,7 +1433,10 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
         MEDIA_ERR_LOG("Can not get rdbstore");
         return;
     }
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, {notifyData->notifyUri});
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, {notifyData->notifyUri});
+    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {notifyData->notifyUri});
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, {notifyData->notifyUri});
 
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
@@ -1869,6 +1891,8 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_COVER_POSITION, { IsInt64 } },
     { PhotoColumn::PHOTO_IS_TEMP, { IsBool } },
     { PhotoColumn::PHOTO_DIRTY, { IsInt32 } },
+    { PhotoColumn::PHOTO_BURST_COVER_LEVEL, { IsInt32 } },
+    { PhotoColumn::PHOTO_BURST_KEY, { IsString } },
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)
@@ -2148,6 +2172,10 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateAddeds, subTypes,
         predicates.GetTableName(), deletedRows, bundleName);
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to alloc async data for Delete From Disk!");
+        return E_ERR;
+    }
     auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
     if (deleteFilesTask == nullptr) {
         MEDIA_ERR_LOG("Failed to create async task for deleting files.");

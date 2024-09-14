@@ -28,6 +28,7 @@
 #include "medialibrary_object_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_rdb_transaction.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "result_set_utils.h"
@@ -47,8 +48,6 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media {
 constexpr int32_t E_INDEX = -1;
-constexpr int32_t ALBUM_COVER_SATISFIED = 1;
-constexpr int32_t ALBUM_COVER_NOT_SATISFIED = 0;
 constexpr int32_t ALBUM_IS_ME = 1;
 constexpr int32_t ALBUM_IS_NOT_ME = 0;
 constexpr int32_t ALBUM_IS_REMOVED = 1;
@@ -190,7 +189,7 @@ static void ClearEmptyGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &cle
     ValuesBucket values;
     values.PutInt(PhotoAlbumColumns::ALBUM_COUNT, 0);
     values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, "");
-    values.PutInt(IS_COVER_SATISFIED, ALBUM_COVER_NOT_SATISFIED);
+    values.PutInt(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING));
     values.PutInt(IS_ME, ALBUM_IS_NOT_ME);
 
     RdbPredicates rdbPredicates(ANALYSIS_ALBUM_TABLE);
@@ -218,9 +217,9 @@ static string BuildUpdateGroupPhotoAlbumSql(const GroupPhotoAlbumInfo &albumInfo
     string withSql;
     string coverUriValueSql;
     string isCoverSatisfiedValueSql;
-    if (albumInfo.isCoverSatisfied == ALBUM_COVER_NOT_SATISFIED) {
+    if (albumInfo.isCoverSatisfied == static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING)) {
         coverUriValueSql = "'" + albumInfo.candidateUri + "'";
-        isCoverSatisfiedValueSql = to_string(ALBUM_COVER_NOT_SATISFIED);
+        isCoverSatisfiedValueSql = to_string(static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING));
     } else {
         string oldCoverId = MediaFileUri::GetPhotoId(albumInfo.coverUri);
         if (!oldCoverId.empty() && MediaLibraryDataManagerUtils::IsNumber(oldCoverId)) {
@@ -236,10 +235,11 @@ static string BuildUpdateGroupPhotoAlbumSql(const GroupPhotoAlbumInfo &albumInfo
             coverUriValueSql = "CASE (SELECT 1 FROM is_cover_exist) WHEN 1 THEN '" + albumInfo.coverUri +
                 "' ELSE '" + albumInfo.candidateUri + "' END";
             isCoverSatisfiedValueSql = "CASE (SELECT 1 FROM is_cover_exist) WHEN 1 THEN " +
-                to_string(albumInfo.isCoverSatisfied) + " ELSE " + to_string(ALBUM_COVER_NOT_SATISFIED) + " END";
+                to_string(albumInfo.isCoverSatisfied) + " ELSE " +
+                to_string(static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING)) + " END";
         } else {
             coverUriValueSql = "'" + albumInfo.candidateUri + "'";
-            isCoverSatisfiedValueSql = to_string(ALBUM_COVER_NOT_SATISFIED);
+            isCoverSatisfiedValueSql = to_string(static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING));
         }
     }
     string updateSql = withSql + " UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " +
@@ -283,7 +283,7 @@ static void InsertGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &insertA
         values.Put(GROUP_TAG, album.tagId);
         values.Put(IS_ME, album.isMe);
         values.Put(IS_LOCAL, LOCAL_ALBUM);
-        values.Put(IS_COVER_SATISFIED, ALBUM_COVER_NOT_SATISFIED);
+        values.Put(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING));
         insertValues.push_back(values);
     }
     Uri uri(PAH_INSERT_ANA_PHOTO_ALBUM);
@@ -524,7 +524,9 @@ static int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const Merg
     if (currentAlbum.isCoverSatisfied == targetAlbum.isCoverSatisfied) {
         candidateIds = currentFileId + ", " + targetFileId;
     } else {
-        candidateIds = currentAlbum.isCoverSatisfied == ALBUM_COVER_SATISFIED ? currentFileId : targetFileId;
+        candidateIds = currentAlbum.isCoverSatisfied != static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING) ?
+            currentFileId :
+            targetFileId;
     }
     const std::string queryAlbumInfo = "SELECT " + MediaColumn::MEDIA_ID + "," + MediaColumn::MEDIA_TITLE + "," +
         MediaColumn::MEDIA_NAME + ", MAX(" + MediaColumn::MEDIA_DATE_ADDED + ") FROM " + PhotoColumn::PHOTOS_TABLE +
@@ -607,6 +609,17 @@ static string ReorderTagId(string target, const vector<MergeAlbumInfo> &mergeAlb
     return reordererTagId;
 }
 
+int32_t GetMergeAlbumInfo(shared_ptr<ResultSet> resultSet, MergeAlbumInfo &info)
+{
+    if (GetIntValueFromResultSet(resultSet, ALBUM_ID, info.albumId) != E_OK ||
+        GetStringValueFromResultSet(resultSet, TAG_ID, info.tagId) != E_OK ||
+        GetStringValueFromResultSet(resultSet, COVER_URI, info.coverUri) != E_OK ||
+        GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, info.isCoverSatisfied) != E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -627,10 +640,7 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
     std::unordered_map<string, MergeAlbumInfo> updateMap;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         MergeAlbumInfo info;
-        if (GetIntValueFromResultSet(resultSet, ALBUM_ID, info.albumId) != E_OK ||
-            GetStringValueFromResultSet(resultSet, TAG_ID, info.tagId) != E_OK  ||
-            GetStringValueFromResultSet(resultSet, COVER_URI, info.coverUri) != E_OK ||
-            GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, info.isCoverSatisfied) != E_OK) {
+        if (GetMergeAlbumInfo(resultSet, info) != E_OK) {
             return E_HAS_DB_ERROR;
         }
         string reorderedTagId = ReorderTagId(info.tagId, mergeAlbumInfo);
@@ -652,8 +662,10 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
             } else if (GetMergeAlbumCoverUri(newInfo, info, it->second) != E_OK) {
                 return E_HAS_DB_ERROR;
             }
-            updateMap[reorderedTagId].isCoverSatisfied = static_cast<uint32_t>(info.isCoverSatisfied) |
-                it->second.isCoverSatisfied;
+            if (info.isCoverSatisfied != static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING) ||
+                it->second.isCoverSatisfied != static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING)) {
+                updateMap[reorderedTagId].isCoverSatisfied = static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING);
+            }
             updateMap[reorderedTagId].coverUri = newInfo.coverUri;
             deleteId.push_back(info.albumId);
         }
@@ -712,9 +724,9 @@ static int32_t SetGroupCoverUri(const ValuesBucket &values, const DataSharePredi
         MEDIA_ERR_LOG("invalid album cover uri");
         return E_INVALID_VALUES;
     }
-    std::string updateForSetCoverUri = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" +
-        coverUri + "', " + IS_COVER_SATISFIED + " = " + to_string(ALBUM_COVER_SATISFIED) + " WHERE " +
-        ALBUM_ID + " = " + targetAlbumId;
+    std::string updateForSetCoverUri = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" + coverUri +
+        "', " + IS_COVER_SATISFIED + " = " + to_string(static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING)) +
+        " WHERE " + ALBUM_ID + " = " + targetAlbumId;
     vector<string> updateSqls = { updateForSetCoverUri };
     err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
@@ -789,5 +801,39 @@ void MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(int32_t albu
         }
     }
     UpdateGroupPhotoAlbumInfo(updateAlbums);
+}
+
+void MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(int32_t fileId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("UpdatePortraitAlbumCoverSatisfied failed, fileId: %{public}d, rdbStore is null.", fileId);
+        return;
+    }
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        MEDIA_ERR_LOG("UpdatePortraitAlbumCoverSatisfied failed, fileId: %{public}d, rdbStorePtr is null.", fileId);
+        return;
+    }
+
+    const string coverUriPrefix = "'" + PhotoColumn::PHOTO_URI_PREFIX + to_string(fileId) + "/%'";
+
+    const string updateSql = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_COVER_SATISFIED + " = " +
+        IS_COVER_SATISFIED + " | " + to_string(static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING)) + " WHERE " +
+        PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT)) +
+        " AND " + PhotoAlbumColumns::ALBUM_COVER_URI + " LIKE " + coverUriPrefix;
+
+    TransactionOperations transactionOprn(rdbStorePtr);
+    int32_t errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Transaction Start error, fileId: %{public}d, errCode: %{public}d.", fileId, errCode);
+        return;
+    }
+    int32_t ret = rdbStorePtr->ExecuteSql(updateSql);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ExecuteSql error, fileId: %{public}d, ret: %{public}d.", fileId, ret);
+        return;
+    }
+    transactionOprn.Finish();
 }
 } // namespace OHOS::Media

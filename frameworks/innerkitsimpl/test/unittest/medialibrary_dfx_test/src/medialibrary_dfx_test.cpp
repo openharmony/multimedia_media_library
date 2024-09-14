@@ -95,13 +95,6 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_thumbnail_8K_video_test, TestSize.Lev
     EXPECT_EQ(result, BIG_VIDEO);
 }
 
-HWTEST_F(MediaLibraryDfxTest, medialib_dfx_safe_path_test, TestSize.Level0)
-{
-    std::string path = "/storage/cloud/files/DCIM/123";
-    std::string safePath = DfxUtils::GetSafePath(path);
-    ASSERT_TRUE(safePath == "*DCIM");
-}
-
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_join_strings_test, TestSize.Level0)
 {
     unordered_set<string> set {"string1", "string2"};
@@ -120,6 +113,12 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_split_string_test, TestSize.Level0)
     EXPECT_EQ(DfxUtils::SplitString("string1!string2", '!'), set);
     EXPECT_EQ(DfxUtils::SplitString("string1", ';'), unordered_set<string>{"string1"});
     EXPECT_EQ(DfxUtils::SplitString("", ';'), unordered_set<string>{});
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_one_day_report_test, TestSize.Level0)
+{
+    int64_t result = DfxManager::GetInstance()->HandleOneDayReport();
+    EXPECT_GT(result, 0);
 }
 } // namespace Media
 } // namespace OHOS

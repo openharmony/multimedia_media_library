@@ -441,10 +441,6 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
             DfxUtils::GetSafePath(opts.path).c_str());
         Media::InitializationOptions initOpts;
         auto copySource = PixelMap::Create(*data.source, initOpts);
-        if (copySource == nullptr) {
-            MEDIA_ERR_LOG("Pixelmap is nullptr!");
-            return false;
-        }
         lcdSource = std::move(copySource);
         float widthScale = (1.0f * lcdDesiredWidth) / data.source->GetWidth();
         float heightScale = (1.0f * lcdDesiredHeight) / data.source->GetHeight();
@@ -834,7 +830,7 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
         MEDIA_ERR_LOG("DoCreateAstc failed, try to load exist thumbnail failed, id: %{public}s", data.id.c_str());
         return false;
     }
-    if (data.loaderOpts.needUpload && !GenThumbnail(opts, data, ThumbnailType::THUMB)) {
+    if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
         MEDIA_ERR_LOG("DoCreateAstc GenThumbnail THUMB failed, id: %{public}s", data.id.c_str());
         return false;
     }

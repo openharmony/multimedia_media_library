@@ -17,6 +17,8 @@
 
 #include <limits>
 #include <string>
+#include <tuple>
+#include <vector>
 
 namespace OHOS {
 namespace Media {
@@ -117,7 +119,6 @@ enum PhotoAlbumSubType : int32_t {
     GEOGRAPHY_CITY,
     SHOOTING_MODE = 4101,
     PORTRAIT = 4102,
-    GROUP_PHOTO = 4103,
     HIGHLIGHT = 4104,
     HIGHLIGHT_SUGGESTIONS,
     ANALYSIS_END = HIGHLIGHT_SUGGESTIONS,
@@ -175,17 +176,19 @@ enum class RequestPhotoType : int32_t {
     REQUEST_TYPE_END
 };
 
-enum class CoverSatisfiedType : int32_t {
-    NO_SETTING = 0,
-    DEFAULT_SETTING,
-    USER_SETTING,
-    ANALYSIS_SETTING
-};
-
 enum class BurstCoverLevelType : int32_t {
     COVER = 1,
     MEMBER = 2,
     DEFAULT = COVER
+};
+
+enum class CoverSatisfiedType : uint8_t {
+    NO_SETTING = 0,
+    DEFAULT_SETTING = 1,
+    USER_SETTING = 2,
+    USER_SETTING_EDITE = 3,
+    BEAUTY_SETTING = 4,
+    BEAUTY_SETTING_EDITE = 5
 };
 } // namespace Media
 } // namespace OHOS

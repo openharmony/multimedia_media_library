@@ -20,6 +20,7 @@
 
 #include "dfx_const.h"
 #include "dfx_utils.h"
+#include "dfx_database_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "hisysevent.h"
@@ -189,6 +190,7 @@ void DfxReporter::ReportDeleteBehavior(string bundleName, int32_t type, std::str
     if (bundleName == "" || path == "") {
         return;
     }
+    MEDIA_WARN_LOG("%{public}s do %{public}d on %{public}s", bundleName.c_str(), type, path.c_str());
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
         "MEDIALIB_DELETE_BEHAVIOR",
@@ -340,6 +342,37 @@ void DfxReporter::ReportStartResult(int32_t scene, int32_t error, int32_t start)
         "TIME", cost);
     if (ret != 0) {
         MEDIA_ERR_LOG("Report startResult error:%{public}d", ret);
+    }
+}
+
+void DfxReporter::ReportPhotoRecordInfo()
+{
+    PhotoRecordInfo photoRecordInfo;
+    int32_t result = DfxDatabaseUtils::QueryPhotoRecordInfo(photoRecordInfo);
+    if (result != 0) {
+        MEDIA_ERR_LOG("QueryPhotoRecordInfo error:%{public}d", result);
+        return;
+    }
+    int32_t imageCount = photoRecordInfo.imageCount;
+    int32_t videoCount = photoRecordInfo.videoCount;
+    int32_t abnormalSizeCount = photoRecordInfo.abnormalSizeCount;
+    int32_t abnormalWidthOrHeightCount = photoRecordInfo.abnormalWidthOrHeightCount;
+    int32_t abnormalVideoDurationCount = photoRecordInfo.abnormalVideoDurationCount;
+    int32_t toBeUpdatedRecordCount = photoRecordInfo.toBeUpdatedRecordCount;
+    int64_t dbFileSize = photoRecordInfo.dbFileSize;
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_DATABASE_INFO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "DB_FILE_SIZE", dbFileSize,
+        "IMAGE_COUNT", imageCount,
+        "VIDEO_COUNT", videoCount,
+        "ABNORMAL_SIZE_COUNT", abnormalSizeCount,
+        "ABNORMAL_WIDTH_OR_HEIGHT_COUNT", abnormalWidthOrHeightCount,
+        "ABNORMAL_VIDEO_DURATION_COUNT", abnormalVideoDurationCount,
+        "ABNORMAL_COUNT_TO_UPDATE", toBeUpdatedRecordCount);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportPhotoRecordInfo error:%{public}d", ret);
     }
 }
 } // namespace Media

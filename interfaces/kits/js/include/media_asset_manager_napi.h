@@ -103,6 +103,7 @@ public:
     static MultiStagesCapturePhotoStatus QueryPhotoStatus(int fileId, const string& photoUri,
         std::string &photoId, bool hasReadPermission);
     static void NotifyMediaDataPrepared(AssetHandler *assetHandler);
+    static void DeleteInProcessMapRecord(const std::string &requestUri);
     static void NotifyDataPreparedWithoutRegister(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void OnDataPrepared(napi_env env, napi_value cb, void *context, void *data);
     static void RegisterTaskObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
@@ -122,8 +123,8 @@ private:
     static napi_value JSRequestImage(napi_env env, napi_callback_info info);
     static napi_value JSRequestImageData(napi_env env, napi_callback_info info);
     static napi_value JSRequestMovingPhoto(napi_env env, napi_callback_info info);
-    static napi_value JSRequestVideoFile(napi_env env, napi_callback_info info);
     static napi_value JSCancelRequest(napi_env env, napi_callback_info info);
+    static napi_value JSRequestVideoFile(napi_env env, napi_callback_info info);
     static napi_value JSLoadMovingPhoto(napi_env env, napi_callback_info info);
     static void ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName);
     static void CancelProcessImage(const std::string &photoId);

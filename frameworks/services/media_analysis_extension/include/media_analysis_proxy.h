@@ -41,5 +41,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-
 #endif  // OHOS_MEDIA_ANALYSIS_PROXY_H

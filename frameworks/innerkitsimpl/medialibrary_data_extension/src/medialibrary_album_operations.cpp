@@ -24,7 +24,6 @@
 #include "media_analysis_helper.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_db_const.h"
@@ -71,7 +70,6 @@ constexpr int32_t QUERY_IS_ME_VALUE = 2;
 constexpr int32_t FACE_ANALYSISED_STATE = 3;
 constexpr int32_t FACE_NO_NEED_ANALYSIS_STATE = -2;
 constexpr int32_t ALBUM_NAME_NOT_NULL_ENABLED = 1;
-constexpr int32_t ALBUM_COVER_SATISFIED = 1;
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -548,7 +546,7 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     string subtype;
     int err = GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_NAME, albumName);
     GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_SUBTYPE, subtype);
-    if (err < 0 && subtype != to_string(PORTRAIT) && subtype != to_string(GROUP_PHOTO)) {
+    if (err < 0 && subtype != to_string(PORTRAIT)) {
         return err;
     }
     int rowId;
@@ -644,8 +642,7 @@ int32_t GetStringValueFromResultSet(shared_ptr<ResultSet> resultSet, const strin
 void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePredicates &predicates)
 {
     string whereClause;
-    if (value == FIRST_PAGE) {
-        string whereClauseRelatedMe = ALBUM_ID + " IN (SELECT " + MAP_ALBUM + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
+    string whereClauseRelatedMe = "(SELECT " + MAP_ALBUM + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
             " WHERE " + MAP_ASSET + " IN ( SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
             " WHERE " + MediaColumn::MEDIA_ID + " IN (SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
             " WHERE " + MAP_ASSET + " IN (SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE " +
@@ -654,20 +651,22 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
             " = 0) AND " + MAP_ALBUM + " NOT IN (SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
             IS_ME + " = 1)" + " GROUP BY " + MAP_ALBUM + " HAVING count(" + MAP_ALBUM + ") >= " +
             to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT_RELATED_ME) + ")";
+    if (value == FIRST_PAGE) {
+        string relatedMeFirstPage = ALBUM_ID + " IN " + whereClauseRelatedMe;
         string whereClauseDisplay = USER_DISPLAY_LEVEL + " = 1";
         string whereClauseSatifyCount = COUNT + " >= " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND (" +
-        USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
+            USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (((" + USER_DISPLAY_LEVEL + " != 3 AND " +
             USER_DISPLAY_LEVEL + " !=2) OR " + USER_DISPLAY_LEVEL + " IS NULL) AND ((" +
-            whereClauseDisplay + ") OR (" + whereClauseRelatedMe + ") OR (" + whereClauseSatifyCount + "))) GROUP BY " +
+            whereClauseDisplay + ") OR (" + relatedMeFirstPage + ") OR (" + whereClauseSatifyCount + "))) GROUP BY " +
             GROUP_TAG + " ORDER BY CASE WHEN " + RENAME_OPERATION + " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == SECOND_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 2 OR (" +
             COUNT + " < " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND " + COUNT + " >= " +
             to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " AND (" + USER_DISPLAY_LEVEL + " != 1 OR " +
             USER_DISPLAY_LEVEL + " IS NULL) AND (" + USER_DISPLAY_LEVEL + " != 3 OR " + USER_DISPLAY_LEVEL +
-            " IS NULL))) GROUP BY " + GROUP_TAG + " ORDER BY CASE WHEN " + RENAME_OPERATION +
-            " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
+            " IS NULL))) AND " + ALBUM_ID + " NOT IN " + whereClauseRelatedMe + " GROUP BY " + GROUP_TAG +
+            " ORDER BY CASE WHEN " + RENAME_OPERATION + " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == FAVORITE_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 3 )GROUP BY " +
             GROUP_TAG + " ORDER BY " + RANK;
@@ -1476,7 +1475,7 @@ int32_t UpdateForMergeAlbums(const MergeAlbumInfo &updateAlbumInfo, const int32_
 
     std::string updateForMergeAlbums = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + GROUP_TAG + " = " +
         updateAlbumInfo.groupTag + "," + COUNT + " = " + to_string(updateAlbumInfo.count) + "," + IS_ME + " = " +
-        to_string(updateAlbumInfo.isMe) + "," + COVER_URI + " = '" + updateAlbumInfo.coverUri + "'," +
+        to_string(updateAlbumInfo.isMe) + "," + COVER_URI + " = " + updateAlbumInfo.coverUri + "," +
         USER_DISPLAY_LEVEL + " = " + to_string(updateAlbumInfo.userDisplayLevel) + "," + RANK + " = " +
         to_string(updateAlbumInfo.rank) + "," + USER_OPERATION + " = " + to_string(updateAlbumInfo.userOperation) +
         "," + RENAME_OPERATION + " = " + to_string(updateAlbumInfo.renameOperation) + "," + ALBUM_NAME + " = '" +
@@ -1506,6 +1505,7 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         MergeAlbumInfo albumInfo;
+        int isCoverSatisfied = 0;
         if (GetIntValueFromResultSet(resultSet, ALBUM_ID, albumInfo.albumId) != E_OK ||
             GetStringValueFromResultSet(resultSet, GROUP_TAG, albumInfo.groupTag) != E_OK ||
             GetIntValueFromResultSet(resultSet, COUNT, albumInfo.count) != E_OK ||
@@ -1516,16 +1516,64 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
             GetIntValueFromResultSet(resultSet, RANK, albumInfo.rank) != E_OK ||
             GetIntValueFromResultSet(resultSet, RENAME_OPERATION, albumInfo.renameOperation) != E_OK ||
             GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumInfo.albumName) != E_OK ||
-            GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, albumInfo.isCoverSatisfied) != E_OK) {
+            GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, isCoverSatisfied) != E_OK) {
                 MEDIA_ERR_LOG("GetMergeAlbumsInfo db fail");
                 return E_HAS_DB_ERROR;
             }
+        albumInfo.isCoverSatisfied = static_cast<uint8_t>(isCoverSatisfied);
         mergeAlbumInfo.push_back(albumInfo);
     }
     return E_OK;
 }
 
-int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumInfo &currentAlbum,
+inline string JoinCandidateIds(const vector<string> &candidateIds)
+{
+    return accumulate(candidateIds.begin() + 1, candidateIds.end(), candidateIds[0],
+        [](const string &a, const string &b) { return a + ", " + b; });
+}
+
+string GetCandidateIdsAndSetCoverSatisfied(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumInfo &currentAlbum,
+    const MergeAlbumInfo &targetAlbum, const string &currentFileId, const string &targetFileId)
+{
+    vector<string> candidateIds;
+    if (currentAlbum.isCoverSatisfied & static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING)) {
+        candidateIds.push_back(currentFileId);
+    }
+    if (targetAlbum.isCoverSatisfied & static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING)) {
+        candidateIds.push_back(targetFileId);
+    }
+    if (!candidateIds.empty()) {
+        updateAlbumInfo.isCoverSatisfied = static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING_EDITE);
+        return JoinCandidateIds(candidateIds);
+    }
+
+    if (currentAlbum.isCoverSatisfied & static_cast<uint8_t>(CoverSatisfiedType::BEAUTY_SETTING)) {
+        candidateIds.push_back(currentFileId);
+    }
+    if (targetAlbum.isCoverSatisfied & static_cast<uint8_t>(CoverSatisfiedType::BEAUTY_SETTING)) {
+        candidateIds.push_back(targetFileId);
+    }
+    if (!candidateIds.empty()) {
+        updateAlbumInfo.isCoverSatisfied = static_cast<uint8_t>(CoverSatisfiedType::BEAUTY_SETTING_EDITE);
+        return JoinCandidateIds(candidateIds);
+    }
+
+    if (currentAlbum.isCoverSatisfied & static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING)) {
+        candidateIds.push_back(currentFileId);
+    }
+    if (targetAlbum.isCoverSatisfied & static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING)) {
+        candidateIds.push_back(targetFileId);
+    }
+    if (!candidateIds.empty()) {
+        updateAlbumInfo.isCoverSatisfied = static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING);
+        return JoinCandidateIds(candidateIds);
+    }
+
+    updateAlbumInfo.isCoverSatisfied = static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING);
+    return currentFileId + ", " + targetFileId;
+}
+
+int32_t GetMergeAlbumCoverUriAndSatisfied(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumInfo &currentAlbum,
     const MergeAlbumInfo &targetAlbum)
 {
     string currentFileId = ParseFileIdFromCoverUri(currentAlbum.coverUri);
@@ -1538,12 +1586,9 @@ int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumI
         MEDIA_ERR_LOG("uniStore is nullptr! failed query get merge album cover uri");
         return E_DB_FAIL;
     }
-    string candidateIds;
-    if (currentAlbum.isCoverSatisfied == targetAlbum.isCoverSatisfied) {
-        candidateIds = currentFileId + ", " + targetFileId;
-    } else {
-        candidateIds = currentAlbum.isCoverSatisfied == ALBUM_COVER_SATISFIED ? currentFileId : targetFileId;
-    }
+    string candidateIds =
+        GetCandidateIdsAndSetCoverSatisfied(updateAlbumInfo, currentAlbum, targetAlbum, currentFileId, targetFileId);
+
     const std::string queryAlbumInfo = "SELECT " + MediaColumn::MEDIA_ID + "," + MediaColumn::MEDIA_TITLE + "," +
         MediaColumn::MEDIA_NAME + ", MAX(" + MediaColumn::MEDIA_DATE_ADDED + ") FROM " + PhotoColumn::PHOTOS_TABLE +
         " WHERE " + MediaColumn::MEDIA_ID + " IN (" + candidateIds + " )";
@@ -1570,18 +1615,17 @@ int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumI
         MEDIA_ERR_LOG("resultSet is error! failed query get merge album cover uri");
         return E_HAS_DB_ERROR;
     }
-    updateAlbumInfo.coverUri = "file://media/Photo/" + to_string(mergeFileId) + "/" + mergeTitle + "/" +
-        mergeDisplayName;
+    updateAlbumInfo.coverUri = "'file://media/Photo/" + to_string(mergeFileId) + "/" + mergeTitle + "/" +
+        mergeDisplayName + "'";
     return E_OK;
 }
 
 int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo, int32_t currentAlbumId)
 {
     MergeAlbumInfo updateAlbumInfo;
-    if (GetMergeAlbumCoverUri(updateAlbumInfo, mergeAlbumInfo[0], mergeAlbumInfo[1]) != E_OK) {
+    if (GetMergeAlbumCoverUriAndSatisfied(updateAlbumInfo, mergeAlbumInfo[0], mergeAlbumInfo[1]) != E_OK) {
         return E_HAS_DB_ERROR;
     }
-    updateAlbumInfo.isCoverSatisfied = mergeAlbumInfo[0].isCoverSatisfied | mergeAlbumInfo[1].isCoverSatisfied;
     updateAlbumInfo.count = GetMergeAlbumCount(mergeAlbumInfo[0].albumId, mergeAlbumInfo[1].albumId);
     updateAlbumInfo.groupTag = "'" + mergeAlbumInfo[0].groupTag + "|" + mergeAlbumInfo[1].groupTag + "'";
     updateAlbumInfo.isMe = (mergeAlbumInfo[0].isMe == 1 || mergeAlbumInfo[1].isMe == 1) ? 1 : 0;
@@ -1651,11 +1695,6 @@ int32_t MergeAlbum(const ValuesBucket &values)
     err = UpdateMergeAlbumsInfo(mergeAlbumInfo, currentAlbumId);
     if (err != E_OK) {
         MEDIA_ERR_LOG("MergeAlbum failed");
-        return err;
-    }
-    err = MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(mergeAlbumInfo);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("MergeGroupAlbum failed");
         return err;
     }
     vector<int32_t> changeAlbumIds = { currentAlbumId };
@@ -1896,7 +1935,7 @@ int32_t SetCoverUri(const ValuesBucket &values, const DataSharePredicates &predi
         return E_INVALID_VALUES;
     }
     std::string updateForSetCoverUri = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" + coverUri +
-        "', " + IS_COVER_SATISFIED + " = " + to_string(static_cast<int32_t>(CoverSatisfiedType::USER_SETTING)) +
+        "', " + IS_COVER_SATISFIED + " = " + to_string(static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING)) +
         " WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
         " = " + targetAlbumId + ")";
     vector<string> updateSqls = { updateForSetCoverUri };
@@ -1923,10 +1962,6 @@ int32_t MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(const OperationTyp
             return SetAlbumName(values, predicates);
         case OperationType::PORTRAIT_COVER_URI:
             return SetCoverUri(values, predicates);
-        case OperationType::DISMISS:
-        case OperationType::GROUP_ALBUM_NAME:
-        case OperationType::GROUP_COVER_URI:
-            return MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(opType, values, predicates);
         default:
             MEDIA_ERR_LOG("Unknown operation type: %{public}d", opType);
             return E_ERR;

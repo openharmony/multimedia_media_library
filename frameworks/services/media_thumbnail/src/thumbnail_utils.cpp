@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #define MLOG_TAG "Thumbnail"
 
 #include "thumbnail_utils.h"
@@ -212,7 +213,6 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     }
     PixelMapParams param;
     param.colorFormat = PixelFormat::RGBA_8888;
-    data.loaderOpts.needUpload = true;
     ConvertDecodeSize(data, {videoWidth, videoHeight}, desiredSize);
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
@@ -734,6 +734,8 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
+    rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->
+        EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     rdbPredicates.Limit(ASTC_GENERATE_COUNT_AFTER_RESTORE);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
@@ -1455,6 +1457,10 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
     SourceOptions opts;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data.data(),
         data.size(), opts, err);
+    if (imageSource == nullptr) {
+        MEDIA_ERR_LOG("imageSource is nullptr");
+        return false;
+    }
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to create image source %{public}d", err);
         return false;
@@ -1686,16 +1692,15 @@ bool ThumbnailUtils::ResizeThumb(int &width, int &height)
             width = maxLen;
             height = minLen;
         }
-    } else if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD) {
-        if (ratio > ASPECT_RATIO_THRESHOLD) {
-            int newMaxLen = static_cast<int>(minLen * ASPECT_RATIO_THRESHOLD);
-            if (height > width) {
-                width = minLen;
-                height = newMaxLen;
-            } else {
-                width = newMaxLen;
-                height = minLen;
-            }
+    }
+    if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD && ratio > ASPECT_RATIO_THRESHOLD) {
+        int newMaxLen = static_cast<int>(minLen * ASPECT_RATIO_THRESHOLD);
+        if (height > width) {
+            width = minLen;
+            height = newMaxLen;
+        } else {
+            width = newMaxLen;
+            height = minLen;
         }
     }
     return true;

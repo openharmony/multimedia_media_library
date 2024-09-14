@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 
@@ -57,7 +58,7 @@ void CreateDataHelper(int32_t systemAbilityId);
 constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 int g_albumMediaType = MEDIA_TYPE_ALBUM;
 int64_t g_oneImageSize = 0;
-const int CLEAN_TIME = 1;
+const int CLEAN_TIME = 5;
 const int SCAN_WAIT_TIME = 10;
 
 static const unsigned char FILE_CONTENT_JPG[] = {
@@ -111,13 +112,11 @@ void MediaLibraryManagerTest::TearDownTestCase(void)
     }
     sleep(CLEAN_TIME);
     ClearAllFile();
-    MEDIA_INFO_LOG("TearDownTestCase end");
+    MEDIA_INFO_LOG("TearDownTestCase end.");
 }
+
 // SetUp:Execute before each test case
-void MediaLibraryManagerTest::SetUp(void)
-{
-    system("rm -rf /storage/cloud/100/files/Photo/*");
-}
+void MediaLibraryManagerTest::SetUp(void) {}
 
 void MediaLibraryManagerTest::TearDown(void) {}
 
@@ -149,11 +148,10 @@ void ClearAllFile()
     system("rm -rf /storage/cloud/100/files/Audio/*");
     system("rm -rf /storage/cloud/100/files/Audios/*");
     system("rm -rf /storage/cloud/100/files/Camera/*");
-    system("rm -rf /storage/cloud/100/files/Docs/Documents/*");
+    system("rm -rf /storage/cloud/100/files/Documents/*");
     system("rm -rf /storage/cloud/100/files/Photo/*");
     system("rm -rf /storage/cloud/100/files/Pictures/*");
-    system("rm -rf /storage/cloud/100/files/Docs/Download/*");
-    system("rm -rf /storage/cloud/100/files/Docs/.*");
+    system("rm -rf /storage/cloud/100/files/Download/*");
     system("rm -rf /storage/cloud/100/files/Videos/*");
     system("rm -rf /storage/cloud/100/files/.*");
     system("rm -rf /data/app/el2/100/database/com.ohos.medialibrary.medialibrarydata/*");
@@ -257,8 +255,8 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_002, TestSize.Level0)
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
     EXPECT_NE((buf == nullptr), true);
     read(srcFd, buf, srcLen);
-    EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG)), true);
     free(buf);
+    EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG)), true);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
 }
 
@@ -288,8 +286,8 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_003, TestSize.Level0)
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
     EXPECT_NE((buf == nullptr), true);
     read(srcFd, buf, srcLen);
-    EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4)), true);
     free(buf);
+    EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4)), true);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
 }
 
@@ -469,16 +467,6 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_002 exit");
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetVideoFd_empty_share, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaLibraryManager_GetVideoFd_empty_share enter");
-    // empty datashare GetVideoFd will return error
-    auto photoAssetProxyPtr = make_shared<PhotoAssetProxy>();
-    auto ret = photoAssetProxyPtr->GetVideoFd();
-    EXPECT_EQ(ret, E_ERR);
-    MEDIA_INFO_LOG("MediaLibraryManager_GetVideoFd_empty_share exit");
-}
-
 /**
  * @brief verify PhotoAssetProxy::UpdatePhotoBurst
  *
@@ -509,7 +497,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
         PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY };
     DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileAsset->GetId());
- 
+
     string uriStr = URI_QUERY_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri queryFileUri(uriStr);
@@ -517,14 +505,14 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
     ASSERT_NE(resultSet, nullptr);
     ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
- 
+
     // assert
     EXPECT_EQ(2, GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet));
     EXPECT_EQ(burstKey, GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet));
- 
+
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_003 exit");
 }
- 
+
 /**
  * @brief verify PhotoAssetProxy::UpdatePhotoBurst
  *
@@ -555,7 +543,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
         PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY };
     DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileAsset->GetId());
- 
+
     string uriStr = URI_QUERY_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri queryFileUri(uriStr);
@@ -563,21 +551,12 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
     ASSERT_NE(resultSet, nullptr);
     ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
- 
+
     // assert
     EXPECT_EQ(1, GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet));
     EXPECT_EQ(burstKey, GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet));
- 
-    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_004 exit");
-}
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_NotifyVideoSaveFinished_test, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaLibraryManager_NotifyVideoSaveFinished_test enter");
-    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
-    ASSERT_NE(photoAssetProxy, nullptr);
-    photoAssetProxy->NotifyVideoSaveFinished();
-    MEDIA_INFO_LOG("MediaLibraryManager_NotifyVideoSaveFinished_test exit");
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_004 exit");
 }
 
 // Scenario1: Test when uriBatch is empty then GetBatchAstcs returns E_INVALID_URI.
@@ -642,6 +621,50 @@ HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoImageUri_002, TestSize.Level0)
     std::string uri = "mediaLibraryUri";
     std::string result = manager.GetMovingPhotoImageUri(uri);
     EXPECT_EQ(result, uri);
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetMovingPhotoDateModified_001 enter");
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
+    ASSERT_NE(photoAssetProxy, nullptr);
+    sptr<PhotoProxyTest> photoProxyTest = new (std::nothrow) PhotoProxyTest();
+    ASSERT_NE(photoProxyTest, nullptr);
+    photoProxyTest->SetFormat(PhotoFormat::JPG);
+    photoProxyTest->SetPhotoQuality(PhotoQuality::LOW);
+    photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest);
+    auto fileAsset = photoAssetProxy->GetFileAsset();
+    ASSERT_NE(fileAsset, nullptr);
+
+    string filePath = fileAsset->GetPath();
+    string displayName = fileAsset->GetDisplayName();
+    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
+    string assetUri = MediaFileUtils::GetUriByExtrConditions("file://media/Photo/",
+        to_string(fileAsset->GetId()), extrUri);
+    int32_t fd = mediaLibraryManager->OpenAsset(assetUri, MEDIA_FILEMODE_READWRITE);
+    EXPECT_NE(fd <= 0, true);
+    write(fd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
+    mediaLibraryManager->CloseAsset(assetUri, fd);
+
+    int64_t movingPhotoDateModified = mediaLibraryManager->GetMovingPhotoDateModified(assetUri);
+    EXPECT_EQ(movingPhotoDateModified > startTime, true);
+    EXPECT_EQ(movingPhotoDateModified <= MediaFileUtils::UTCTimeMilliSeconds(), true);
+    MEDIA_INFO_LOG("GetMovingPhotoDateModified_001 exit");
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetMovingPhotoDateModified_002 enter");
+    int64_t dateModified = mediaLibraryManager->GetMovingPhotoDateModified("");
+    EXPECT_EQ(dateModified, E_ERR);
+
+    dateModified = mediaLibraryManager->GetMovingPhotoDateModified("file://media/image/1/test/test.jpg");
+    EXPECT_EQ(dateModified, E_ERR);
+
+    dateModified = mediaLibraryManager->GetMovingPhotoDateModified("file://media/Photo/4096/IMG_2024_001/test.jpg");
+    EXPECT_EQ(dateModified, E_ERR);
+    MEDIA_INFO_LOG("GetMovingPhotoDateModified_002 exit");
 }
 } // namespace Media
 } // namespace OHOS

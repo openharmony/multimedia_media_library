@@ -346,9 +346,6 @@ int32_t ThumbnailService::CreateThumbnailFileScaned(const std::string &uri, cons
     err = ThumbnailGenerateHelper::CreateThumbnailFileScaned(opts, isSync);
     if (err != E_OK) {
         MEDIA_ERR_LOG("CreateThumbnailFileScaned failed : %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return err;
     }
     return E_OK;
@@ -590,6 +587,20 @@ int32_t ThumbnailService::CreateAstcCloudDownload(const string &id)
     return err;
 }
 
+void ThumbnailService::DeleteAstcWithFileIdAndDateAdded(const std::string &fileId, const std::string &dateAdded)
+{
+    ThumbnailData data;
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .row = fileId,
+        .dateAdded = dateAdded
+    };
+
+    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::DeleteMonthAndYearAstc,
+        opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
+}
+
 int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId)
 {
     CancelAstcBatchTask(requestId - 1);
@@ -610,20 +621,6 @@ void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
         return;
     }
     thumbnailWorker->IgnoreTaskByRequestId(requestId);
-}
-
-void ThumbnailService::DeleteAstcWithFileIdAndDateAdded(const std::string &fileId, const std::string &dateAdded)
-{
-    ThumbnailData data;
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .table = PhotoColumn::PHOTOS_TABLE,
-        .row = fileId,
-        .dateAdded = dateAdded
-    };
-
-    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::DeleteMonthAndYearAstc,
-        opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
 }
 
 void ThumbnailService::UpdateAstcWithNewDateAdded(const std::string &fileId, const std::string &newDateAdded,

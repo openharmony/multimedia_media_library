@@ -238,8 +238,8 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, metadata.GetShootingModeTag());
         values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, metadata.GetLastVisitTime());
         values.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, metadata.GetDynamicRangeType());
-        values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, metadata.GetFrontCamera());
         values.PutLong(PhotoColumn::PHOTO_COVER_POSITION, metadata.GetCoverPosition());
+        values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, metadata.GetFrontCamera());
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
         if (metadata.GetPhotoSubType() != 0) {
@@ -590,7 +590,7 @@ int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata
 
     vector<string> args;
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
-        if (fileId != 0) {
+        if (fileId > 0) {
             whereClause = MediaColumn::MEDIA_ID + " = ? ";
             args = { to_string(fileId) };
         } else {
@@ -1058,7 +1058,10 @@ void MediaScannerDb::UpdateAlbumInfoByMetaData(const Metadata &metadata)
             MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
             { to_string(PhotoAlbumSubType::VIDEO) }
         );
+    } else {
+        MEDIA_WARN_LOG("Invalid mediaType : %{public}d", metadata.GetFileMediaType());
     }
+
     if (!metadata.GetOwnerPackage().empty()) {
         if (metadata.GetFileId() != FILE_ID_DEFAULT) {
             std::string uri = PhotoColumn::PHOTO_URI_PREFIX + to_string(metadata.GetFileId());

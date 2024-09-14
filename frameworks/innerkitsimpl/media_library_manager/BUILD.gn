@@ -57,6 +57,7 @@ ohos_shared_library("media_library_manager") {
     "image_framework:image_native",
     "kv_store:distributeddata_inner",
     "relational_store:rdb_data_share_adapter",
+    "samgr:samgr_proxy",
   ]
 
   ldflags = [ "-Wl,--gc-sections" ]
@@ -69,7 +70,7 @@ ohos_shared_library("media_library_manager") {
 
   cflags_cc = [ "-Os" ]
 
-  if (!media_library_link_opt) {
+  if (!link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -88,8 +89,8 @@ ohos_shared_library("media_library_manager") {
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [
-      "memmgr_override:libpurgeablemem_plugin",
-      "memmgr_override:purgeable_pixelmap_builder",
+      "memmgr:libpurgeablemem_plugin",
+      "memmgr:purgeable_pixelmap_builder",
     ]
   }
 
