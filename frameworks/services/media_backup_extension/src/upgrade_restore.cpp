@@ -141,6 +141,17 @@ int32_t UpgradeRestore::InitDbAndXml(const std::string &xmlPath, bool isUpgrade)
     return E_OK;
 }
 
+bool UpgradeRestore::HasLowQualityImage()
+{
+    std::string sql = "SELECT count(1) AS count FROM gallery_media WHERE (local_media_id != -1) AND \
+        (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM \
+        garbage_album WHERE type = 1) AND _size = 0 AND photo_quality = 0";
+    int count = BackupDatabaseUtils::QueryInt(galleryRdb_, sql, CUSTOM_COUNT);
+    MEDIA_INFO_LOG("HasLowQualityImage count:%{public}d", count);
+    hasLowQualityImage_ = (count > 0);
+    return hasLowQualityImage_;
+}
+
 int UpgradeRestore::StringToInt(const std::string& str)
 {
     if (str.empty()) {
@@ -471,6 +482,7 @@ void UpgradeRestore::UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::Resul
 
 void UpgradeRestore::RestoreFromGallery()
 {
+    HasLowQualityImage();
     int32_t totalNumber = QueryTotalNumber();
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
@@ -539,7 +551,11 @@ void UpgradeRestore::HandleRestData(void)
 int32_t UpgradeRestore::QueryTotalNumber(void)
 {
     std::string querySql = QUERY_GALLERY_COUNT;
-    querySql += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
+    if (hasLowQualityImage_) {
+        querySql += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE_WITH_LOW_QUALITY;
+    } else {
+        querySql += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
+    }
     BackupDatabaseUtils::UpdateSdWhereClause(querySql, shouldIncludeSd_);
     return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
 }
@@ -553,7 +569,11 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
         return result;
     }
     std::string queryAllPhotosByCount = QUERY_ALL_PHOTOS;
-    queryAllPhotosByCount += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
+    if (hasLowQualityImage_) {
+        queryAllPhotosByCount += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE_WITH_LOW_QUALITY;
+    } else {
+        queryAllPhotosByCount += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
+    }
     BackupDatabaseUtils::UpdateSdWhereClause(queryAllPhotosByCount, shouldIncludeSd_);
     queryAllPhotosByCount += ALL_PHOTOS_ORDER_BY;
     queryAllPhotosByCount += "limit " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
@@ -772,7 +792,6 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
     values.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
-    values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     if (fileInfo.showDateToken != 0) {
         values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);

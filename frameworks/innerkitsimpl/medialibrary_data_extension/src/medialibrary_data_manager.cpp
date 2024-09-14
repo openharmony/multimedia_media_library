@@ -31,6 +31,7 @@
 #include "device_manager_callback.h"
 #endif
 #include "dfx_manager.h"
+#include "dfx_utils.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
@@ -43,7 +44,6 @@
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
 #include "medialibrary_album_operations.h"
-#include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_app_uri_permission_operations.h"
 #include "medialibrary_async_worker.h"
@@ -173,17 +173,19 @@ static void MakeRootDirs(AsyncTaskData *data)
         MEDIA_ERR_LOG("Failed to SetEPolicy fail");
     }
     MediaFileUtils::MediaFileDeletionRecord();
+    // recover temp dir
+    MediaFileUtils::RecoverMediaTempDir();
 }
 
 void MediaLibraryDataManager::ReCreateMediaDir()
 {
+    MediaFileUtils::BackupPhotoDir();
     // delete E policy dir
     for (const string &dir : E_POLICY_DIRS) {
         if (!MediaFileUtils::DeleteDir(dir)) {
-            MEDIA_ERR_LOG("Delete dir fail, dir: %{private}s", dir.c_str());
+            MEDIA_ERR_LOG("Delete dir fail, dir: %{public}s", DfxUtils::GetSafePath(dir).c_str());
         }
     }
-    
     // create C policy dir
     InitACLPermission();
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
@@ -202,6 +204,12 @@ void MediaLibraryDataManager::ReCreateMediaDir()
     } else {
         MEDIA_WARN_LOG("Can not init make root dir task");
     }
+}
+
+void MediaLibraryDataManager::HandleOtherInitOperations()
+{
+    InitRefreshAlbum();
+    UriPermissionOperations::DeleteAllTemporaryAsync();
 }
 
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
@@ -256,7 +264,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
 
-    InitRefreshAlbum();
+    HandleOtherInitOperations();
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     cloudPhotoObserver_ = std::make_shared<CloudSyncObserver>();
@@ -489,11 +497,11 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::GEO_PHOTO:
             return MediaLibraryLocationOperations::InsertOperation(cmd);
 
+        case OperationObject::SEARCH_TOTAL:
+            return MediaLibrarySearchOperations::InsertOperation(cmd);
+
         case OperationObject::PAH_FORM_MAP:
             return MediaLibraryFormMapOperations::HandleStoreFormIdOperation(cmd);
-        case OperationObject::SEARCH_TOTAL: {
-            return MediaLibrarySearchOperations::InsertOperation(cmd);
-        }
 
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
@@ -501,13 +509,12 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryStoryOperations::InsertOperation(cmd);
 
+        case OperationObject::MEDIA_APP_URI_PERMISSION:
+            return MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }
-        case OperationObject::APP_URI_PERMISSION_INNER:
-            return UriPermissionOperations::InsertOperation(cmd);
-        case OperationObject::MEDIA_APP_URI_PERMISSION:
-            return MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
+
         default:
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
                 cmd.GetOprnObject());
@@ -634,8 +641,6 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
         return PhotoMapOperations::AddPhotoAssets(values);
     } else if (cmd.GetOprnObject() == OperationObject::ANALYSIS_PHOTO_MAP) {
         return PhotoMapOperations::AddAnaLysisPhotoAssets(values);
-    } else if (cmd.GetOprnObject() == OperationObject::APP_URI_PERMISSION_INNER) {
-        return UriPermissionOperations::BatchInsertOperation(cmd, values);
     } else if (cmd.GetOprnObject() == OperationObject::MEDIA_APP_URI_PERMISSION) {
         return MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, values);
     }
@@ -772,17 +777,6 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryComma
     return E_FAIL;
 }
 
-static int32_t SolveOtherUpdateCmd(MediaLibraryCommand &cmd, bool &solved)
-{
-    switch (cmd.GetOprnObject()) {
-        case OperationObject::APP_URI_PERMISSION_INNER:
-            solved = true;
-            return UriPermissionOperations::UpdateOperation(cmd);
-        default:
-            return E_FAIL;
-    }
-}
-
 int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue,
     const DataSharePredicates &predicates)
 {
@@ -810,12 +804,6 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
         cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-
-    bool solved = false;
-    int32_t ret = SolveOtherUpdateCmd(cmd, solved);
-    if (solved) {
-        return ret;
-    }
     return UpdateInternal(cmd, value, predicates);
 }
 
@@ -825,34 +813,30 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
             auto ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
-            if (ret == E_SAME_PATH) {
-                break;
-            } else {
+            if (ret != E_SAME_PATH) {
                 return ret;
             }
+            break;
         }
         case OperationObject::FILESYSTEM_DIR:
             // supply a ModifyDirOperation here to replace
             // modify in the HandleDirOperations in Insert function, if need
             break;
-        case OperationObject::FILESYSTEM_ALBUM: {
+        case OperationObject::FILESYSTEM_ALBUM:
             return MediaLibraryAlbumOperations::ModifyAlbumOperation(cmd);
-        }
         case OperationObject::PAH_PHOTO:
         case OperationObject::FILESYSTEM_PHOTO:
-        case OperationObject::FILESYSTEM_AUDIO: {
+        case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
-        }
         case OperationObject::ANALYSIS_PHOTO_ALBUM: {
-            if ((cmd.GetOprnType() >= OperationType::PORTRAIT_DISPLAY_LEVEL &&
-                 cmd.GetOprnType() <= OperationType::GROUP_COVER_URI)) {
+            if (cmd.GetOprnType() >= OperationType::PORTRAIT_DISPLAY_LEVEL &&
+                cmd.GetOprnType() <= OperationType::PORTRAIT_COVER_URI) {
                 return MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(cmd.GetOprnType(), value, predicates);
             }
             break;
         }
-        case OperationObject::PHOTO_ALBUM: {
+        case OperationObject::PHOTO_ALBUM:
             return MediaLibraryAlbumOperations::HandlePhotoAlbum(cmd.GetOprnType(), value, predicates);
-        }
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
             return MediaLibraryLocationOperations::UpdateOperation(cmd);
@@ -862,7 +846,6 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryStoryOperations::UpdateOperation(cmd);
-        
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             std::vector<std::string> columns;
             MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
@@ -960,7 +943,7 @@ static void CacheAging()
 
         struct stat statInfo {};
         if (stat(filePath.c_str(), &statInfo) != 0) {
-            MEDIA_WARN_LOG("skip %{private}s , stat errno: %{public}d", filePath.c_str(), errno);
+            MEDIA_WARN_LOG("skip %{private}s, stat errno: %{public}d", filePath.c_str(), errno);
             continue;
         }
         time_t timeModified = statInfo.st_mtime;
@@ -1016,7 +999,7 @@ static string generateRegexpMatchForNumber(const int32_t num)
 
 static string generateUpdateSql(const bool isCover, const string title, const int32_t mapAlbum)
 {
-    int32_t index = title.find_first_of("BURST");
+    uint32_t index = title.find_first_of("BURST");
     string globMember = title.substr(0, index) + "BURST" + generateRegexpMatchForNumber(3);
     string globCover = globMember + "_COVER";
     string updateSql;
@@ -1363,21 +1346,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
     return QueryInternal(cmd, columns, predicates);
 }
 
-shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
-    const vector<string> &columns, const DataSharePredicates &predicates)
-{
-    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
-    int32_t albumSubtype = MediaLibraryRdbUtils::GetAlbumSubtypeArgument(rdbPredicates);
-    MEDIA_DEBUG_LOG("Query analysis album of subtype: %{public}d", albumSubtype);
-    if (albumSubtype == PhotoAlbumSubType::GROUP_PHOTO) {
-        return MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
-    }
-    if (CheckIsPortraitAlbum(cmd)) {
-        return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
-    }
-    return MediaLibraryRdbStore::Query(rdbPredicates, columns);
-}
-
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
@@ -1390,8 +1358,12 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return MediaLibrarySearchOperations::QueryIndexConstructProgress();
         case OperationObject::PHOTO_ALBUM:
             return MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
-        case OperationObject::ANALYSIS_PHOTO_ALBUM:
-            return QueryAnalysisAlbum(cmd, columns, predicates);
+        case OperationObject::ANALYSIS_PHOTO_ALBUM: {
+            if (CheckIsPortraitAlbum(cmd)) {
+                return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
+            }
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        }
         case OperationObject::PHOTO_MAP:
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             return PhotoMapOperations::QueryPhotoAssets(
@@ -1420,8 +1392,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
-            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-        case OperationObject::APP_URI_PERMISSION_INNER:
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
             return MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);

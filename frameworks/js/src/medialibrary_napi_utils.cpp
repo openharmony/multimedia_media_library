@@ -16,6 +16,7 @@
 
 #include "medialibrary_napi_utils.h"
 
+#include <cctype>
 #include "basic/result_set.h"
 #include "datashare_predicates.h"
 #include "location_column.h"
@@ -248,17 +249,30 @@ string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
     return id;
 }
 
-int32_t MediaLibraryNapiUtils::GetFileIdFromAssetUri(const string &uri)
+int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
 {
-    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos) {
-        std::string tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
-        return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
+    const static int ERROR = -1;
+    if (PhotoColumn::PHOTO_URI_PREFIX.size() >= uri.size()) {
+        NAPI_ERR_LOG("photo uri is too short");
+        return ERROR;
     }
-    if (uri.find(AudioColumn::AUDIO_URI_PREFIX) == string::npos) {
-        std::string tmp = uri.substr(AudioColumn::AUDIO_URI_PREFIX.size());
-        return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
+    if (uri.substr(0, PhotoColumn::PHOTO_URI_PREFIX.size()) !=
+        PhotoColumn::PHOTO_URI_PREFIX) {
+        NAPI_ERR_LOG("only photo uri is valid");
+        return ERROR;
     }
-    return -1;
+    std::string tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
+ 
+    std::string fileIdStr = tmp.substr(0, tmp.find_first_of('/'));
+    if (fileIdStr.empty()) {
+        NAPI_ERR_LOG("intercepted fileId is empty");
+        return ERROR;
+    }
+    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)) {
+        return std::stoi(fileIdStr);
+    }
+    NAPI_ERR_LOG("asset fileId is invalid");
+    return ERROR;
 }
 
 MediaType MediaLibraryNapiUtils::GetMediaTypeFromUri(const string &uri)
@@ -1486,6 +1500,10 @@ napi_status MediaLibraryNapiUtils::ParsePredicates(napi_env env, const napi_valu
 {
     JSProxy::JSProxy<DataShareAbsPredicates> *jsProxy = nullptr;
     napi_unwrap(env, arg, reinterpret_cast<void **>(&jsProxy));
+    if (jsProxy == nullptr) {
+        NAPI_ERR_LOG("jsProxy is invalid");
+        return napi_invalid_arg;
+    }
     shared_ptr<DataShareAbsPredicates> predicate = jsProxy->GetInstance();
     CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType) == TRUE,
         napi_invalid_arg, "invalid predicate");

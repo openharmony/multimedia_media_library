@@ -32,6 +32,8 @@ public:
         const std::vector<std::string> &columns);
     static int32_t AddAnaLysisPhotoAssets(const std::vector<DataShare::DataShareValuesBucket> &values);
     static int32_t DismissAssets(NativeRdb::RdbPredicates &predicates);
+private:
+    static int32_t AddSingleAsset(const DataShare::DataShareValuesBucket &value);
 };
 } // namespace OHOS::Media
 #endif // OHOS_PHOTO_MAP_OPERATIONS_H

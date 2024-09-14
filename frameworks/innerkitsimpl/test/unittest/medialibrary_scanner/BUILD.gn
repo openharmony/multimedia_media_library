@@ -62,7 +62,7 @@ ohos_executable("scanner") {
     cflags_cc = [ "-Os" ]
   }
 
-  if (!media_library_link_opt) {
+  if (!link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true

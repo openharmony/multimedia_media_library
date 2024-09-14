@@ -96,7 +96,7 @@ int32_t BaseRestore::Init(void)
     int32_t sceneCode = 0;
     int32_t errCode = MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context, nullptr, sceneCode);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("When restore, InitMedialibraryMgr fail, errcode = %{public}d", errCode);
+        MEDIA_ERR_LOG("When restore, InitMediaLibraryMgr fail, errcode = %{public}d", errCode);
         return errCode;
     }
     migrateDatabaseNumber_ = 0;
@@ -173,12 +173,23 @@ int32_t BaseRestore::MoveFile(const std::string &srcFile, const std::string &dst
     return E_OK;
 }
 
+bool BaseRestore::IsFileValid(FileInfo &fileInfo, const int32_t sceneCode)
+{
+    if (!BackupFileUtils::IsFileValid(fileInfo.filePath, DUAL_FRAME_CLONE_RESTORE_ID,
+        fileInfo.relativePath, hasLowQualityImage_)) {
+        MEDIA_ERR_LOG("File is not valid: %{public}s, errno=%{public}d.",
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(), errno);
+        return false;
+    }
+    return true;
+}
+
 vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t sceneCode, std::vector<FileInfo> &fileInfos,
     int32_t sourceType)
 {
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        if (!MediaFileUtils::IsFileValid(fileInfos[i].filePath)) {
+        if (!IsFileValid(fileInfos[i], sceneCode)) {
             MEDIA_WARN_LOG("File is not exist, filePath = %{public}s.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::FILE_INVALID);
@@ -318,7 +329,13 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
     value.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
     value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
-    value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
+    if (fileInfo.fileSize != 0) {
+        value.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
+    } else {
+        MEDIA_WARN_LOG("DB file size is zero!");
+        value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
+        fileInfo.fileSize = data->GetFileSize();
+    }
     value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
     value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
     value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, data->GetDateTaken());

@@ -37,6 +37,7 @@ using NotifyDataMap = unordered_map<NotifyType, list<Uri>>;
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::instance_;
 mutex MediaLibraryNotify::mutex_;
 unordered_map<string, NotifyDataMap> MediaLibraryNotify::nfListMap_ = {};
+Utils::Timer MediaLibraryNotify::timer_("on_notify");
 uint32_t MediaLibraryNotify::timerId_ = 0;
 
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
@@ -55,7 +56,7 @@ shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
     }
     return instance_;
 }
-MediaLibraryNotify::MediaLibraryNotify() : timer_("on_notify") {};
+MediaLibraryNotify::MediaLibraryNotify() = default;
 
 MediaLibraryNotify::~MediaLibraryNotify()
 {

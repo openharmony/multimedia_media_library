@@ -107,6 +107,7 @@ protected:
     bool NeedQueryByPhotoRelatedType(const FileInfo &fileInfo, PhotoRelatedType photoRelatedType,
         const std::unordered_set<std::string> &needQuerySet);
     void UpdateFaceAnalysisStatus();
+    bool IsFileValid(FileInfo &fileInfo, const int32_t sceneCode);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;
@@ -141,6 +142,7 @@ protected:
     std::unordered_map<std::string, std::string> tagIdMap_;
     std::unordered_map<std::string, std::string> groupTagMap_;
     std::unordered_map<std::string, int32_t> portraitAlbumIdMap_;
+    bool hasLowQualityImage_ = false;
 };
 } // namespace Media
 } // namespace OHOS

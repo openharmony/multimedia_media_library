@@ -29,7 +29,6 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_album_operations.h"
-#include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
@@ -44,6 +43,7 @@
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_uripermission_operations.h"
+#include "medialibrary_vision_operations.h"
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
 #include "permission_utils.h"
@@ -57,8 +57,10 @@
 #include "userfile_manager_types.h"
 #include "value_object.h"
 #include "values_bucket.h"
+#include "vision_column.h"
+#include "vision_face_tag_column.h"
 #include "medialibrary_formmap_operations.h"
-#include "medialibrary_vision_operations.h"
+#include "dfx_const.h"
 #include "dfx_manager.h"
 
 using namespace OHOS::DataShare;
@@ -350,10 +352,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
 
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         int32_t changedRows = 0;
-        std::vector<string> perms = { PERM_READ_IMAGEVIDEO, PERM_WRITE_IMAGEVIDEO };
-        if (PermissionUtils::CheckHasPermission(perms)) {
-            cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
-        }
+        cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
         changedRows = MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
         if (changedRows <= 0) {
             MEDIA_ERR_LOG("update lastVisitTime Failed, changedRows = %{public}d.", changedRows);
@@ -1587,9 +1586,9 @@ bool MediaLibraryPhotoOperations::CheckCacheCmd(MediaLibraryCommand& cmd, int32_
         MEDIA_ERR_LOG("Failed to get cache file name");
         return false;
     }
+
     string cacheMimeType = MimeTypeUtils::GetMimeTypeFromExtension(MediaFileUtils::GetExtensionFromPath(cacheFileName));
     string assetMimeType = MimeTypeUtils::GetMimeTypeFromExtension(MediaFileUtils::GetExtensionFromPath(displayName));
-
     if (cacheMimeType.compare(assetMimeType) != 0) {
         MEDIA_ERR_LOG("cache mime type %{public}s mismatches the asset %{public}s",
             cacheMimeType.c_str(), assetMimeType.c_str());
@@ -1784,6 +1783,40 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     return AddFiltersToPhoto(sourcePath, assetPath, editData, fileAsset->GetId());
 }
 
+static void UpdatePortraitAlbumCoverSatisfied(int32_t fileId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("UpdatePortraitAlbumCoverSatisfied failed, fileId: %{public}d, rdbStore is null.", fileId);
+        return;
+    }
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        MEDIA_ERR_LOG("UpdatePortraitAlbumCoverSatisfied failed, fileId: %{public}d, rdbStorePtr is null.", fileId);
+        return;
+    }
+
+    const string coverUriPrefix = "'" + PhotoColumn::PHOTO_URI_PREFIX + to_string(fileId) + "/%'";
+
+    const string updateSql = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_COVER_SATISFIED + " = " +
+        IS_COVER_SATISFIED + " | " + to_string(static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING)) + " WHERE " +
+        PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT)) +
+        " AND " + PhotoAlbumColumns::ALBUM_COVER_URI + " LIKE " + coverUriPrefix;
+
+    TransactionOperations transactionOprn(rdbStorePtr);
+    int32_t errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Transaction Start error, fileId: %{public}d, errCode: %{public}d.", fileId, errCode);
+        return;
+    }
+    int32_t ret = rdbStorePtr->ExecuteSql(updateSql);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ExecuteSql error, fileId: %{public}d, ret: %{public}d.", fileId, ret);
+        return;
+    }
+    transactionOprn.Finish();
+}
+
 int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand& cmd,
     const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
 {
@@ -1809,7 +1842,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     errCode = UpdateEditTime(id, MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d", id);
     ScanFile(assetPath, false, true, true);
-    MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(id);
+    UpdatePortraitAlbumCoverSatisfied(id);
     NotifyFormMap(id, assetPath, false);
     MediaLibraryVisionOperations::EditCommitOperation(cmd);
     return E_OK;

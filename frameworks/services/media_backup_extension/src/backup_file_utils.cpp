@@ -33,6 +33,7 @@ const string DEFAULT_IMAGE_NAME = "IMG_";
 const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
 const size_t MAX_FAILED_FILES_SIZE = 100;
+const string LOW_QUALITY_PATH = "Documents/cameradata/";
 
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
 
@@ -54,6 +55,28 @@ int32_t BackupFileUtils::FillMetadata(std::unique_ptr<Metadata> &data)
         return err;
     }
     return E_OK;
+}
+
+string BackupFileUtils::ConvertLowQualityPath(int32_t sceneCode, const std::string &filePath,
+    const string &relativePath)
+{
+    string result = filePath;
+    size_t displayNameIndex = result.rfind("/");
+    if (displayNameIndex == string::npos) {
+        return result;
+    }
+    std::string displayName = result.substr(displayNameIndex + 1);
+    size_t dotPos = displayName.find_last_of(".");
+    if (dotPos != string::npos) {
+        displayName.replace(dotPos, displayName.length() - dotPos, ".camera");
+    }
+    size_t pos = result.find(relativePath);
+    if (pos == string::npos) {
+        return result;
+    }
+    string publicPath = result.substr(0, pos + 1);
+    result = publicPath + LOW_QUALITY_PATH + displayName;
+    return result;
 }
 
 int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
@@ -266,14 +289,25 @@ void BackupFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
     }
 }
 
-bool BackupFileUtils::IsFileValid(const std::string &filePath, int32_t sceneCode)
+bool BackupFileUtils::IsFileValid(std::string &filePath, int32_t sceneCode,
+    string relativePath, bool hasLowQualityImage)
 {
     std::string garbledFilePath = BackupFileUtils::GarbleFilePath(filePath, sceneCode);
     struct stat statInfo {};
     if (stat(filePath.c_str(), &statInfo) != E_SUCCESS) {
-        MEDIA_ERR_LOG("Invalid file (%{public}s), get statInfo failed, err: %{public}d", garbledFilePath.c_str(),
-            errno);
-        return false;
+        if (!hasLowQualityImage) {
+            MEDIA_ERR_LOG("Invalid file (%{public}s), get statInfo failed, err: %{public}d", garbledFilePath.c_str(),
+                errno);
+            return false;
+        }
+        string realPath = ConvertLowQualityPath(sceneCode, filePath, relativePath);
+        if (stat(realPath.c_str(), &statInfo) == E_SUCCESS) {
+            MEDIA_INFO_LOG("Low quality image!");
+            filePath = realPath;
+        } else {
+            MEDIA_ERR_LOG("Invalid Low quality image!");
+            return false;
+        }
     }
     if (statInfo.st_mode & S_IFDIR) {
         MEDIA_ERR_LOG("Invalid file (%{public}s), is a directory", garbledFilePath.c_str());

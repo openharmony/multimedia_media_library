@@ -30,7 +30,7 @@ ohos_static_library("medialibrary_common_utils") {
     "hitrace:hitrace_meter",
   ]
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
-  if (!media_library_link_opt) {
+  if (!link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -67,7 +67,7 @@ ohos_static_library("permission_utils") {
     "ipc:ipc_core",
     "samgr:samgr_proxy",
   ]
-  if (!media_library_link_opt) {
+  if (!link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -95,7 +95,7 @@ ohos_static_library("post_event_utils") {
     "hisysevent:libhisysevent",
     "ipc:ipc_core",
   ]
-  if (!media_library_link_opt) {
+  if (!link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true

@@ -112,6 +112,7 @@ int32_t MediaScannerManager::ScanFileSyncWithoutAlbumUpdate(const std::string &p
     if (isForceScan) {
         scanner.SetForceScan(true);
     }
+    scanner.SetFileId(fileId);
     scanner.SetIsSkipAlbumUpdate(true);
     scanner.Scan();
 

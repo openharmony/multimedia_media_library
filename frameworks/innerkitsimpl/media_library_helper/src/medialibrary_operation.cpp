@@ -23,7 +23,6 @@
 #include "media_app_uri_permission_column.h"
 #include "media_column.h"
 #include "medialibrary_db_const.h"
-#include "media_app_uri_permission_column.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "search_column.h"
@@ -262,9 +261,6 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_SET_LOCATION, OperationType::SET_LOCATION },
         { OPRN_CANCEL_PROCESS_IMAGE, OperationType::CANCEL_PROCESS_IMAGE },
         { OPRN_LOG_MOVING_PHOTO, OperationType::LOG_MOVING_PHOTO },
-        { OPRN_GROUP_DISMISS, OperationType::DISMISS },
-        { OPRN_GROUP_ALBUM_NAME, OperationType::GROUP_ALBUM_NAME },
-        { OPRN_GROUP_COVER_URI, OperationType::GROUP_COVER_URI },
         { OPRN_ADD_FILTERS, OperationType::ADD_FILTERS },
         { OPRN_DISCARD_CAMERA_PHOTO, OperationType::DISCARD_CAMERA_PHOTO },
         { OPRN_SAVE_CAMERA_PHOTO, OperationType::SAVE_CAMERA_PHOTO },

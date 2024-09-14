@@ -383,6 +383,5 @@ const DataSharePredicates &MediaLibraryCommand::GetDataSharePred() const
 {
     return *datasharePred_;
 }
-
 } // namespace Media
 } // namespace OHOS

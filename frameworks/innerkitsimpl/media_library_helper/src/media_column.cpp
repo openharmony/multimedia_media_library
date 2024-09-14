@@ -94,10 +94,10 @@ const std::string PhotoColumn::PHOTO_THUMB_SIZE = "thumb_size";
 const std::string PhotoColumn::PHOTO_HAS_ASTC = "has_astc"; // This attribute has been replaced by "thumbnail_ready"
 const std::string PhotoColumn::PHOTO_IS_TEMP = "is_temp";
 const std::string PhotoColumn::PHOTO_THUMBNAIL_READY = "thumbnail_ready";
+const std::string PhotoColumn::PHOTO_COVER_POSITION = "cover_position";
 const std::string PhotoColumn::PHOTO_FRONT_CAMERA = "front_camera";
 const std::string PhotoColumn::PHOTO_BURST_COVER_LEVEL = "burst_cover_level";
 const std::string PhotoColumn::PHOTO_BURST_KEY = "burst_key";
-const std::string PhotoColumn::PHOTO_COVER_POSITION = "cover_position";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -220,8 +220,8 @@ const std::string PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX = "DROP INDEX IF EXIS
 
 const std::string PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX = BaseColumn::CreateIndex() +
     PHOTO_SCHPT_MEDIA_TYPE_INDEX + " ON " + PHOTOS_TABLE +
-    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
-    "," + MEDIA_DATE_TRASHED + ", " + PHOTO_IS_TEMP + "," + MEDIA_TYPE + "," + PHOTO_BURST_COVER_LEVEL +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
+    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + MEDIA_TYPE + "," + PHOTO_BURST_COVER_LEVEL +
     "," + MEDIA_DATE_ADDED + " DESC);";
 
 const std::string PhotoColumn::CREATE_HIDDEN_TIME_INDEX = BaseColumn::CreateIndex() +
@@ -261,8 +261,9 @@ const std::string PhotoColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn:
 // Create indexes
 const std::string PhotoColumn::INDEX_SCTHP_ADDTIME =
     BaseColumn::CreateIndex() + PHOTO_SCHPT_ADDED_INDEX + " ON " + PHOTOS_TABLE +
-    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
-    "," + MEDIA_DATE_TRASHED + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + MEDIA_DATE_ADDED + " DESC);";
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN + "," +
+    MEDIA_TIME_PENDING + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + MEDIA_DATE_ADDED + " DESC, " +
+    MEDIA_ID + " DESC);";
 
 const std::string PhotoColumn::DROP_INDEX_SCTHP_ADDTIME = BaseColumn::DropIndex() + PHOTO_SCHPT_ADDED_INDEX;
 
@@ -329,8 +330,8 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_DATE_DAY, PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_CLEAN_FLAG,
     PhotoColumn::PHOTO_SHOOTING_MODE, PhotoColumn::PHOTO_SHOOTING_MODE_TAG, PhotoColumn::PHOTO_THUMB_STATUS,
     PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_LCD_SIZE,
-    PhotoColumn::PHOTO_THUMB_SIZE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_FRONT_CAMERA,
-    PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY, PhotoColumn::PHOTO_COVER_POSITION,
+    PhotoColumn::PHOTO_THUMB_SIZE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_COVER_POSITION,
+    PhotoColumn::PHOTO_FRONT_CAMERA, PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
@@ -465,6 +466,6 @@ const std::string PhotoColumn::PHOTOS_QUERY_FILTER =
     MediaColumn::MEDIA_HIDDEN + " = 0" + " AND " +
     MediaColumn::MEDIA_TIME_PENDING + " = 0" + " AND " +
     PhotoColumn::PHOTO_IS_TEMP + " = 0" + " AND " +
-    PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 ";
+    PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + std::to_string(static_cast<int32_t>(BurstCoverLevelType::COVER));
 }  // namespace Media
 }  // namespace OHOS
