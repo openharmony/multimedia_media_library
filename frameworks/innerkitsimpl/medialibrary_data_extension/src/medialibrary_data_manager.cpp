@@ -953,7 +953,8 @@ static std::vector<std::string> SplitUriString(const std::string& str, char deli
     return elements;
 }
 
-static std::string ExtractFileIdFromUri(const std::string& uri) {
+static std::string ExtractFileIdFromUri(const std::string& uri)
+{
     auto uriParts = SplitUriString(uri, '/');
     if (uriParts.size() >= MediaLibraryDataManager::URI_MIN_NUM) {
         return uriParts[uriParts.size() - MediaLibraryDataManager::URI_MIN_NUM];
@@ -1004,25 +1005,37 @@ static int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesB
     return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd);
 }
 
-int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
-    const DataShare::DataSharePredicates &predicates)
+static int32_t HandleFilesystemOperations(MediaLibraryCommand &cmd)
 {
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
-            auto ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
+            int32_t ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
             if (ret == E_SAME_PATH) {
-                break;
+                return E_OK;
             } else {
                 return ret;
             }
         }
         case OperationObject::FILESYSTEM_DIR:
-            // supply a ModifyDirOperation here to replace
-            // modify in the HandleDirOperations in Insert function, if need
-            break;
+            // ModifyDirOperation can be placed here, if needed
+            return E_OK;
+
         case OperationObject::FILESYSTEM_ALBUM: {
             return MediaLibraryAlbumOperations::ModifyAlbumOperation(cmd);
         }
+        default:
+            return E_OK;
+    }
+}
+
+int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
+    const DataShare::DataSharePredicates &predicates)
+{
+    int32_t result = HandleFilesystemOperations(cmd);
+    if (result != E_OK) {
+        return result;
+    }
+    switch (cmd.GetOprnObject()) {
         case OperationObject::PAH_PHOTO:
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO: {
@@ -1040,13 +1053,11 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
             return MediaLibraryLocationOperations::UpdateOperation(cmd);
-
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryStoryOperations::UpdateOperation(cmd);
-
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             std::vector<std::string> columns;
             MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
