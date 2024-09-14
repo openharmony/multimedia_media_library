@@ -994,10 +994,16 @@ static int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesB
     std::vector<std::string> clauses = SplitUriString(clause, ',');
     if (clauses.empty()) {
         MEDIA_ERR_LOG("Clause is empty, cannot extract album ID.");
+        return E_INVALID_FILEID;
     }
 
     std::string albumStr = clauses[0];
     int32_t albumId = std::stoi(albumStr);
+
+    if (clauses.size() < 2) {
+        return E_INVALID_FILEID;
+    }
+
     std::vector<std::string> uris(clauses.begin() + 1, clauses.end());
     std::string predicate = BuildWhereClause(uris, albumId);
     cmd.SetValueBucket(value);
@@ -1009,7 +1015,7 @@ static int32_t HandleFilesystemOperations(MediaLibraryCommand &cmd)
 {
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
-            int32_t ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
+            auto ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
             if (ret == E_SAME_PATH) {
                 return E_OK;
             } else {
@@ -1017,7 +1023,8 @@ static int32_t HandleFilesystemOperations(MediaLibraryCommand &cmd)
             }
         }
         case OperationObject::FILESYSTEM_DIR:
-            // ModifyDirOperation can be placed here, if needed
+            // supply a ModifyDirOperation here to replace
+            // modify in the HandleDirOperations in Insert function, if need
             return E_OK;
 
         case OperationObject::FILESYSTEM_ALBUM: {
