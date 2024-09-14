@@ -43,7 +43,7 @@ public:
         this->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(this->mediaLibraryRdb_);
     }
 
-    void DEBUG_LOG_TO_CONSOLE(std::vector<GalleryAlbumRowData> &galleryAlbumInfos)
+    void TRACE_LOG(std::vector<GalleryAlbumRowData> &galleryAlbumInfos)
     {
         MEDIA_INFO_LOG(
             "Media_Restore: galleryAlbumInfos size : %{public}d", static_cast<int32_t>(galleryAlbumInfos.size()));
@@ -61,7 +61,7 @@ public:
         }
     }
 
-    void DEBUG_LOG_TO_CONSOLE(std::vector<PhotoAlbumDao::PhotoAlbumRowData> &albumInfos)
+    void TRACE_LOG(std::vector<PhotoAlbumDao::PhotoAlbumRowData> &albumInfos)
     {
         MEDIA_INFO_LOG("Media_Restore: albumInfos size : %{public}d", static_cast<int32_t>(albumInfos.size()));
         for (auto &info : albumInfos) {
@@ -86,14 +86,14 @@ public:
     {
         // fetch all albums from galleryRdb
         std::vector<GalleryAlbumRowData> galleryAlbumInfos = this->GetGalleryAlbums();
-        DEBUG_LOG_TO_CONSOLE(galleryAlbumInfos);
+        TRACE_LOG(galleryAlbumInfos);
         // fetch all albums from mediaLibraryRdb
         std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfos = this->photoAlbumDaoPtr_->GetPhotoAlbums();
-        DEBUG_LOG_TO_CONSOLE(albumInfos);
+        TRACE_LOG(albumInfos);
         // compare albums to find the album that need to be restored
         std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfosToRestore =
             this->GetAlbumsToRestore(albumInfos, galleryAlbumInfos);
-        DEBUG_LOG_TO_CONSOLE(albumInfosToRestore);
+        TRACE_LOG(albumInfosToRestore);
         // restore albums
         return this->photoAlbumDaoPtr_->RestoreAlbums(albumInfosToRestore);
     }

@@ -268,7 +268,7 @@ void CloneRestore::RestorePhoto()
     ReportPortraitCloneStat(sceneCode_);
 }
 
-void DEBUG_LOG_TO_CONSOLE(const std::string &tableName, vector<AlbumInfo> &albumInfos)
+void TRACE_LOG(const std::string &tableName, vector<AlbumInfo> &albumInfos)
 {
     for (auto &albumInfo : albumInfos) {
         MEDIA_INFO_LOG("Media_Restore: tableName %{public}s, \
@@ -309,7 +309,7 @@ void CloneRestore::RestoreAlbum()
             "QueryAlbumTotalNumber, tableName=%{public}s, totalNumber=%{public}d", tableName.c_str(), totalNumber);
         for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
             vector<AlbumInfo> albumInfos = QueryAlbumInfos(tableName, offset);
-            DEBUG_LOG_TO_CONSOLE(tableName, albumInfos);
+            TRACE_LOG(tableName, albumInfos);
             InsertAlbum(albumInfos, tableName);
         }
     }
