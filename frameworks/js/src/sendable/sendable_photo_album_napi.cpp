@@ -725,7 +725,7 @@ napi_value SendablePhotoAlbumNapi::JSPhotoAccessGetSharedPhotoAssets(napi_env en
         return jsFileArray;
     }
     do {
-        napi_value item = MediaLibraryNapiUtils::GetNextRowObject(env, resultSet, true);
+        napi_value item = SendableMediaLibraryNapiUtils::GetNextRowObject(env, resultSet);
         napi_set_element(env, jsFileArray, count++, item);
     } while (!resultSet->GoToNextRow());
     return jsFileArray;
