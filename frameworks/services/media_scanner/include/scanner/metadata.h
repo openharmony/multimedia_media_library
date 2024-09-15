@@ -155,7 +155,13 @@ public:
     int32_t GetFrameIndex() const;
 
     EXPORT void SetIsTemp(const VariantData &isTemp);
-    EXPORT int32_t GetIsTemp();
+    EXPORT int32_t GetIsTemp() const;
+
+    EXPORT void SetPhotoQuality(const VariantData &photoQuality);
+    EXPORT int32_t GetPhotoQuality() const;
+
+    EXPORT void SetDirty(const VariantData &dirty);
+    EXPORT int32_t GetDirty() const;
 
     EXPORT void SetDetailTime(const VariantData &detailTime);
     EXPORT std::string GetDetailTime() const;
@@ -247,6 +253,9 @@ private:
     int32_t frameIndex_ = 0;
 
     int32_t isTemp_;
+    int32_t photoQuality_;
+    int32_t dirty_;
+
      // front camera
     std::string frontcamera_;
 
