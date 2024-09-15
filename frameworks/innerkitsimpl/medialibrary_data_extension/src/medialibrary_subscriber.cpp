@@ -52,6 +52,7 @@
 #include "dfx_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_rdb_utils.h"
+#include "moving_photo_processor.h"
 #include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
 
@@ -376,6 +377,10 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DoUpdateBurstFromGallery faild");
     }
+
+    // compat old-version moving photo
+    MovingPhotoProcessor::StartProcess();
+
     MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
     auto watch = MediaLibraryInotify::GetInstance();
     if (watch != nullptr) {
@@ -385,6 +390,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
 
 void MedialibrarySubscriber::StopBackgroundOperation()
 {
+    MovingPhotoProcessor::StopProcess();
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
 }
 

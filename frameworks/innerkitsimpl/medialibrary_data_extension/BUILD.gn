@@ -259,6 +259,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_uripermission_operations.cpp",
     "src/medialibrary_urisensitive_operations.cpp",
     "src/medialibrary_vision_operations.cpp",
+    "src/moving_photo_processor.cpp",
     "src/photo_map_operations.cpp",
     "src/picture_data_operations.cpp",
     "src/picture_handle_service.cpp",
