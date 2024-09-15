@@ -236,7 +236,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/photo_map_operations.cpp",
     "src/trash_async_worker.cpp",
     "src/zip_util.cpp",
-
   ]
   sources += media_scan_source
   sources += media_thumbnail_source
