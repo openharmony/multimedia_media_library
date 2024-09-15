@@ -114,8 +114,14 @@ shared_ptr<NativeRdb::ResultSet> MovingPhotoProcessor::QueryMovingPhoto()
         ->EndWrap()
         ->And()
         ->EqualTo(PhotoColumn::PHOTO_IS_TEMP, 0)
+        ->And()
         ->EqualTo(PhotoColumn::MEDIA_TIME_PENDING, 0)
+        ->And()
+        ->BeginWrap()
         ->EqualTo(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL))
+        ->Or()
+        ->IsNull(PhotoColumn::PHOTO_QUALITY)
+        ->EndWrap()
         ->Limit(MOVING_PHOTO_PROCESS_NUM);
     return MediaLibraryRdbStore::Query(predicates, columns);
 }
