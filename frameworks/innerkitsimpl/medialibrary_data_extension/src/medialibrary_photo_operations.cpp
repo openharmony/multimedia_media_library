@@ -601,8 +601,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         fileAsset.SetTimePending(UNOPEN_FILE_COMPONENT_TIMEPENDING);
         if (GetStringFromValuesBucket(values, PhotoColumn::MEDIA_TITLE, title)) {
             displayName = title + "." + extention;
-            fileAsset.SetDisplayName(displayName);
-            isContains = true;
+            SetAssetDisplayName(displayName, fileAsset, isContains);
         }
     }
     int32_t mediaType = 0;
