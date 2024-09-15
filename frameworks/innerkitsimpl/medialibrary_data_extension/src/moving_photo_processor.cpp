@@ -38,7 +38,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-static constexpr int32_t MOVING_PHOTO_PROCESS_NUM = 200;
+static constexpr int32_t MOVING_PHOTO_PROCESS_NUM = 100;
 static constexpr int32_t DIRTY_NOT_UPLOADING = -1;
 static constexpr int32_t DEFAULT_EXTRA_DATA_SIZE = MIN_STANDARD_SIZE;
 
