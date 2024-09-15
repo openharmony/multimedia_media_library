@@ -104,7 +104,6 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_005, TestSize.Level0)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_MovingPhotoProcessor_test_001, TestSize.Level0)
 {
-    MovingPhotoProcessor::isProcessing_ = true;
     MovingPhotoProcessor::StartProcess();
     EXPECT_EQ(MovingPhotoProcessor::isProcessing_, false); // no moving photo to process
     MovingPhotoProcessor::StopProcess();
