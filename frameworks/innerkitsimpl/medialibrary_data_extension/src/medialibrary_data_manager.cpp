@@ -226,48 +226,6 @@ void MediaLibraryDataManager::HandleOtherInitOperations()
     UriSensitiveOperations::DeleteAllSensitiveAsync();
 }
 
-static int32_t ExecSqls(const vector<string> &sqls, shared_ptr<NativeRdb::RdbStore> &store)
-{
-    int32_t err = NativeRdb::E_OK;
-    for (const auto &sql : sqls) {
-        err = store->ExecuteSql(sql);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to exec: %{private}s", sql.c_str());
-            continue;
-        }
-    }
-    return NativeRdb::E_OK;
-}
-
-static void UpdateDateTakenToMillionSecond(shared_ptr<NativeRdb::RdbStore> &store)
-{
-    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond start");
-    const vector<string> updateSql = {
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
-            MediaColumn::MEDIA_DATE_TAKEN + " = " + MediaColumn::MEDIA_DATE_TAKEN +  "*1000 WHERE " +
-            MediaColumn::MEDIA_DATE_TAKEN + " < 1e10",
-    };
-    ExecSqls(updateSql, store);
-    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond end");
-}
-
-static void UpdateDateTakenIndex(shared_ptr<NativeRdb::RdbStore> &store)
-{
-    const vector<string> sqls = {
-        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
-        PhotoColumn::DROP_PHOTO_FAVORITE_INDEX,
-        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
-        PhotoColumn::DROP_INDEX_SCHPT_READY,
-        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
-        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
-        PhotoColumn::INDEX_SCTHP_ADDTIME,
-        PhotoColumn::INDEX_SCHPT_READY,
-    };
-    MEDIA_INFO_LOG("update index for datetaken change start");
-    ExecSqls(sqls, store);
-    MEDIA_INFO_LOG("update index for datetaken change end");
-}
-
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
     const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode)
@@ -348,6 +306,7 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync()
         auto rawStore = rdbStore->GetRaw();
         if (rawStore == nullptr) {
             MEDIA_ERR_LOG("rawStore is nullptr!");
+            return;
         }
         MEDIA_INFO_LOG("oldVersion:%{public}d", oldVersion);
         // compare older version, update and set old version
@@ -366,11 +325,13 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync()
             rdbStore->SetOldVersion(VERSION_UPGRADE_THUMBNAIL);
         }
         if (oldVersion < VERSION_ADD_DETAIL_TIME) {
-            UpdateDateTakenToMillionSecond(rawStore);
-            UpdateDateTakenIndex(rawStore);
+            MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(*rawStore);
+            MediaLibraryRdbStore::UpdateDateTakenIndex(*rawStore);
             ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
             rdbStore->SetOldVersion(VERSION_ADD_DETAIL_TIME);
         }
+
+        rdbStore->SetOldVersion(MEDIA_RDB_VERSION);
     }).detach();
 }
 
