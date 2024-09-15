@@ -44,12 +44,12 @@ static constexpr int32_t DEFAULT_EXTRA_DATA_SIZE = MIN_STANDARD_SIZE;
 
 static const string MOVING_PHOTO_PROCESS_FLAG = "multimedia.medialibrary.cloneFlag";
 
-bool MovingPhotoProcessor::isProcessing_ = true;
+bool MovingPhotoProcessor::isProcessing_ = false;
 
 static void StopCloudSync()
 {
     string currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
-    MEDIA_INFO_LOG("Stop cloud sync for processing moving photo: %{public}s", currentTime.c_str());
+    MEDIA_DEBUG_LOG("Stop cloud sync for processing moving photo: %{public}s", currentTime.c_str());
     bool retFlag = system::SetParameter(MOVING_PHOTO_PROCESS_FLAG, currentTime);
     if (!retFlag) {
         MEDIA_ERR_LOG("Failed to set parameter, retFlag: %{public}d", retFlag);
@@ -58,7 +58,7 @@ static void StopCloudSync()
 
 static void StartCloudSync()
 {
-    MEDIA_INFO_LOG("Reset parameter for cloud sync");
+    MEDIA_DEBUG_LOG("Reset parameter for cloud sync");
     bool retFlag = system::SetParameter(MOVING_PHOTO_PROCESS_FLAG, "0");
     if (!retFlag) {
         MEDIA_ERR_LOG("Failed to set parameter for cloud sync, retFlag: %{public}d", retFlag);
@@ -68,7 +68,6 @@ static void StartCloudSync()
 void MovingPhotoProcessor::StartProcess()
 {
     MEDIA_DEBUG_LOG("Start processing moving photo task");
-    isProcessing_ = true;
     auto resultSet = QueryMovingPhoto();
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to query moving photo");
@@ -82,6 +81,7 @@ void MovingPhotoProcessor::StartProcess()
         return;
     }
 
+    isProcessing_ = true;
     StopCloudSync();
     CompatMovingPhoto(dataList);
     StartCloudSync();
@@ -89,8 +89,10 @@ void MovingPhotoProcessor::StartProcess()
 
 void MovingPhotoProcessor::StopProcess()
 {
-    isProcessing_ = false;
-    StartCloudSync();
+    if (isProcessing_) {
+        isProcessing_ = false;
+        StartCloudSync();
+    }
 }
 
 shared_ptr<NativeRdb::ResultSet> MovingPhotoProcessor::QueryMovingPhoto()
@@ -226,6 +228,10 @@ void MovingPhotoProcessor::CompatMovingPhoto(const MovingPhotoDataList& dataList
 {
     MEDIA_INFO_LOG("Start processing %{public}zu moving photos", dataList.movingPhotos.size());
     for (const auto& movingPhoto : dataList.movingPhotos) {
+        if (!isProcessing_) {
+            MEDIA_INFO_LOG("stop compating moving photo");
+            return;
+        }
         MovingPhotoData newData;
         if (GetUpdatedMovingPhotoData(movingPhoto, newData) != E_OK) {
             MEDIA_INFO_LOG("Failed to get updated data of moving photo, id: %{public}d", movingPhoto.fileId);
