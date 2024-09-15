@@ -139,5 +139,30 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchQuery_test_
     EXPECT_EQ(dataBatch.size(), 4);
     dataBatch.clear();
 }
+
+HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_RebuildKvStore_test_005, TestSize.Level0)
+{
+    if (kvStorePtr_ == nullptr) {
+        return;
+    }
+    auto monthKvStorePtr = std::make_shared<MediaLibraryKvStore>();
+    int errCode = monthKvStorePtr->Init(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC, TEST_PATH);
+    if (errCode != E_OK) {
+        return;
+    }
+    errCode = monthKvStorePtr->RebuildKvStore(KvStoreValueType::MONTH_ASTC, TEST_PATH);
+    EXPECT_EQ(errCode, E_OK);
+
+    auto yearKvStorePtr = std::make_shared<MediaLibraryKvStore>();
+    errCode = yearKvStorePtr->Init(KvStoreRoleType::OWNER, KvStoreValueType::YEAR_ASTC, TEST_PATH);
+    if (errCode != E_OK) {
+        return;
+    }
+    errCode = yearKvStorePtr->RebuildKvStore(KvStoreValueType::YEAR_ASTC, TEST_PATH);
+    EXPECT_EQ(errCode, E_OK);
+
+    errCode = kvStorePtr_->RebuildKvStore(KvStoreValueType::MONTH_ASTC_OLD_VERSION, TEST_PATH);
+    EXPECT_EQ(errCode, E_ERR);
+}
 } // namespace Media
 } // namespace OHOS
