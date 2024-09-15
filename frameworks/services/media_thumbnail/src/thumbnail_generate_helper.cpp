@@ -148,7 +148,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts)
+int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts, bool isCloudInsertTaskPriorityHigh)
 {
     ThumbnailData data;
     ThumbnailUtils::RecordStartGenerateStats(data.stats, GenerateScene::CLOUD, LoadSourceType::LOCAL_PHOTO);
@@ -170,16 +170,18 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts)
             MEDIA_ERR_LOG("RdbStore lcd size failed! %{public}d", err);
         }
     }
+    ThumbnailTaskPriority priority = isCloudInsertTaskPriorityHigh ?
+        ThumbnailTaskPriority::HIGH : ThumbnailTaskPriority::LOW;
     data.loaderOpts.loadingStates = SourceLoader::CLOUD_SOURCE_LOADING_STATES;
     if (data.orientation != 0) {
         data.loaderOpts.loadingStates = SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
-        IThumbnailHelper::AddThumbnailGenerateTask(
-            IThumbnailHelper::CreateAstcEx, opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstcEx, opts, data,
+            ThumbnailTaskType::BACKGROUND, priority);
         return E_OK;
     }
 
-    IThumbnailHelper::AddThumbnailGenerateTask(
-        IThumbnailHelper::CreateAstc, opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
+    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc, opts, data,
+        ThumbnailTaskType::BACKGROUND, priority);
     return E_OK;
 }
 
