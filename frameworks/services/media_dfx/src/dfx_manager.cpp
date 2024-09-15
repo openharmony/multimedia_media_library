@@ -25,6 +25,7 @@
 #include "vision_aesthetics_score_column.h"
 #include "preferences.h"
 #include "preferences_helper.h"
+#include "hi_audit.h"
 
 using namespace std;
 
@@ -129,6 +130,20 @@ static void LogDelete(DfxData *data)
     int32_t size = taskData->size_;
     std::shared_ptr<DfxReporter> dfxReporter = taskData->dfxReporter_;
     MEDIA_INFO_LOG("id: %{public}s, type: %{public}d, size: %{public}d", id.c_str(), type, size);
+
+    OHOS::Media::AuditLog auditLog;
+    auditLog.isUserBehavior = true;
+    auditLog.cause = "USER BEHAVIOR";
+    auditLog.operationType = "DELETE";
+    auditLog.operationScenario = "io";
+    auditLog.operationCount = 1,
+    auditLog.operationStatus = "running";
+    auditLog.extend = "OK",
+    auditLog.id = id;
+    auditLog.type = type;
+    auditLog.size = size;
+    OHOS::Media::HiAudit::GetInstance().Write(auditLog);
+
     std::vector<std::string> uris = taskData->uris_;
     if (!uris.empty()) {
         for (auto& uri: uris) {
