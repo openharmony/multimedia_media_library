@@ -117,8 +117,7 @@ const std::string RDB_CONFIG = "/data/storage/el2/base/preferences/rdb_config.xm
 const std::string RDB_OLD_VERSION = "rdb_old_version";
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
-int32_t MediaLibraryRdbStore::oldVersion_ = -1;
-int32_t g_oldVersion = -1;
+int32_t oldVersion_ = -1;
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
     int32_t startNumber;
@@ -226,6 +225,35 @@ void MediaLibraryRdbStore::UpdateReadyOnThumbnailUpgrade(RdbStore &store)
     MEDIA_INFO_LOG("start update ready for thumbnail upgrade");
     ExecSqls(sqls, store);
     MEDIA_INFO_LOG("finish update ready for thumbnail upgrade");
+}
+
+void MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(RdbStore &store)
+{
+    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond start");
+    const vector<string> updateSql = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
+            MediaColumn::MEDIA_DATE_TAKEN + " = " + MediaColumn::MEDIA_DATE_TAKEN +  "*1000 WHERE " +
+            MediaColumn::MEDIA_DATE_TAKEN + " < 1e10",
+    };
+    ExecSqls(updateSql, store);
+    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond end");
+}
+
+void MediaLibraryRdbStore::UpdateDateTakenIndex(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::DROP_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
+        PhotoColumn::DROP_INDEX_SCHPT_READY,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::INDEX_SCHPT_READY,
+    };
+    MEDIA_INFO_LOG("update index for datetaken change start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("update index for datetaken change end");
 }
 
 int32_t MediaLibraryRdbStore::Init()
@@ -1270,6 +1298,7 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         return NativeRdb::E_ERROR;
     }
 
+    MediaLibraryRdbStore::SetOldVersion(MEDIA_RDB_VERSION);
     return NativeRdb::E_OK;
 }
 
@@ -3539,9 +3568,9 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataCallBack::OnUpgrade");
-    g_oldVersion = oldVersion;
-    
-    MediaLibraryRdbStore::SetOldVersion(oldVersion);
+    if (MediaLibraryRdbStore::GetOldVersion() == -1) {
+        MediaLibraryRdbStore::SetOldVersion(oldVersion);
+    }
     MEDIA_INFO_LOG("OnUpgrade old:%{public}d, new:%{public}d", oldVersion, newVersion);
     g_upgradeErr = false;
     if (oldVersion < VERSION_ADD_CLOUD) {
@@ -3624,9 +3653,9 @@ int32_t MediaLibraryRdbStore::GetOldVersion()
         NativePreferences::PreferencesHelper::GetPreferences(RDB_CONFIG, errCode);
     if (!prefs) {
         MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-        return g_oldVersion;
+        return oldVersion_;
     }
-    return prefs->GetInt(RDB_OLD_VERSION, g_oldVersion);
+    return prefs->GetInt(RDB_OLD_VERSION, oldVersion_);
 }
 
 bool MediaLibraryRdbStore::HasColumnInTable(RdbStore &store, const string &columnName, const string &tableName)
@@ -3650,16 +3679,6 @@ void MediaLibraryRdbStore::AddColumnIfNotExists(
         string sql = "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnType;
         store.ExecuteSql(sql);
     }
-}
-
-void MediaLibraryRdbStore::SetRdbOldVersion(int32_t oldVersion)
-{
-    oldVersion_ = oldVersion;
-}
-
-int32_t MediaLibraryRdbStore::GetRdbOldVersion()
-{
-    return oldVersion_;
 }
 
 #ifdef DISTRIBUTED
