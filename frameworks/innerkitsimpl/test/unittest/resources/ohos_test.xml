@@ -130,4 +130,11 @@
             <option name="push" value="thumbnail_testfile/CreateImageLcdTest_001.jpg -> /data/test/res/1.jpg" src="res"/>
         </preparer>
     </target>
+    <target name="medialibrary_multistages_capture_test">
+        <preparer>
+            <option name="shell" value="rm -rf /data/test/res"/>
+            <option name="push" value="thumbnail_testfile/CreateImageLcdTest_001.jpg -> /data/test/res" src="res"/>
+            <option name="shell" value="mv /data/test/res/CreateImageLcdTest_001.jpg /data/test/res/no_gps.jpg"/>
+        </preparer>
+    </target>
 </configuration>
