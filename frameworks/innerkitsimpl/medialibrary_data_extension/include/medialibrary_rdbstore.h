@@ -81,19 +81,18 @@ public:
     static void AddColumnIfNotExists(
         RdbStore &store, const std::string &columnName, const std::string &columnType, const std::string &tableName);
     EXPORT static int32_t QueryPragma(const std::string &key, int64_t &value);
-    EXPORT static void SetRdbOldVersion(int32_t oldVersion);
-    EXPORT static int32_t GetRdbOldVersion();
     EXPORT static void SetOldVersion(int32_t oldVersion);
     EXPORT static int32_t GetOldVersion();
     EXPORT static void CreateBurstIndex(RdbStore &store);
     EXPORT static void UpdateBurstDirty(RdbStore &store);
     EXPORT static void UpdateReadyOnThumbnailUpgrade(RdbStore &store);
+    EXPORT static void UpdateDateTakenToMillionSecond(RdbStore &store);
+    EXPORT static void UpdateDateTakenIndex(RdbStore &store);
 
 private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
-    static int32_t oldVersion_;
 #ifdef DISTRIBUTED
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
 #endif
