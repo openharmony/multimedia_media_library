@@ -838,7 +838,6 @@ bool UpgradeRestore::HasSameFileForDualClone(FileInfo &fileInfo)
     int32_t fileId = rowData.fileId;
     std::string cloudPath = rowData.data;
     if (fileId <= 0 || cloudPath.empty()) {
-        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d, %{public}s", fileId, cloudPath.c_str());
         return false;
     }
     fileInfo.fileIdNew = fileId;
