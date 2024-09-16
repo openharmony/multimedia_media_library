@@ -28,7 +28,6 @@ namespace OHOS::Media {
 EXPORT const std::string MOVING_PHOTO_URI_SPLIT = ";";
 EXPORT const uint8_t MOVING_PHOTO_IMAGE_POS = 0;
 EXPORT const uint8_t MOVING_PHOTO_VIDEO_POS = 1;
-EXPORT const std::string E_POLICY = "E";
 EXPORT const std::string MEDIA_FILEMODE_READONLY = "r";
 EXPORT const std::string MEDIA_FILEMODE_WRITEONLY = "w";
 EXPORT const std::string MEDIA_FILEMODE_READWRITE = "rw";
@@ -163,7 +162,6 @@ public:
     EXPORT static bool GetFileSize(const std::string &filePath, size_t& size);
     EXPORT static bool SplitMovingPhotoUri(const std::string& uri, std::vector<std::string>& ret);
     EXPORT static bool IsMediaLibraryUri(const std::string& uri);
-    EXPORT static bool SetEPolicy();
     EXPORT static void PrintStatInformation(const std::string& path);
     EXPORT static void MediaFileDeletionRecord();
     EXPORT static void SetDeletionRecord(int fd, const std::string &fileName);
