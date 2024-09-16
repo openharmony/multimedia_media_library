@@ -69,7 +69,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { GRANT_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
 
         // use in Query...
-        { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
+        { MEDIATYPE_DIRECTORY_OBJ, OperationObject::FILESYSTEM_DIR },
         { MEDIA_DATA_DB_THUMBNAIL, OperationObject::THUMBNAIL },
         { SMARTALBUMASSETS_VIEW_NAME, OperationObject::SMART_ALBUM_ASSETS },
         { ASSETMAP_VIEW_NAME, OperationObject::ASSETMAP },
@@ -136,7 +136,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::SMART_ALBUM_MAP, { { OperationType::UNKNOWN_TYPE, SMARTALBUM_MAP_TABLE } } },
         { OperationObject::SMART_ALBUM_ASSETS, { { OperationType::UNKNOWN_TYPE, SMARTALBUMASSETS_VIEW_NAME } } },
         { OperationObject::ASSETMAP, { { OperationType::UNKNOWN_TYPE, ASSETMAP_VIEW_NAME } } },
-        { OperationObject::FILESYSTEM_DIR, { { OperationType::QUERY, MEDIATYPE_DIRECTORY_TABLE } } },
+        { OperationObject::FILESYSTEM_DIR, { { OperationType::QUERY, MEDIATYPE_DIRECTORY_OBJ } } },
 #ifdef MEDIALIBRARY_COMPATIBILITY
         { OperationObject::FILESYSTEM_ALBUM, { { OperationType::QUERY, PhotoAlbumColumns::TABLE } } },
 #else

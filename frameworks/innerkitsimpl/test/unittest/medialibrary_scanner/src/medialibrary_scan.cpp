@@ -30,6 +30,7 @@ int main()
 #include "medialibrary_type_const.h"
 #include "nativetoken_kit.h"
 #include "token_setproc.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS;

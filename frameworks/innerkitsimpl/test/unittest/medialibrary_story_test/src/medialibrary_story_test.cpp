@@ -23,6 +23,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
+#include "userfilemgr_uri.h"
 #include "story_album_column.h"
 #include "story_cover_info_column.h"
 #include "story_play_info_column.h"

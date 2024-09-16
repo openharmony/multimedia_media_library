@@ -16,6 +16,7 @@
 #define MLOG_TAG "MediaToolPermissionHandler"
 
 #include "media_tool_permission_handler.h"
+#include "userfilemgr_uri.h"
 
 namespace OHOS::Media {
 

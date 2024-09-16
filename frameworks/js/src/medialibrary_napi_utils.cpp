@@ -35,6 +35,7 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_napi_enum_comm.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "moving_photo_napi.h"
@@ -48,6 +49,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_pose_column.h"
 #include "vision_image_face_column.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
