@@ -613,6 +613,13 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileInfo.subtype);
     // use owner_album_id to mark the album id which the photo is in.
     values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, fileInfo.ownerAlbumId);
+    // Only SOURCE album has package_name and owner_package.
+    values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, fileInfo.packageName);
+    values.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, fileInfo.bundleName);
+    if (fileInfo.packageName.empty() && fileInfo.bundleName.empty()) {
+        // package_name and owner_package are empty, clear owner_appid
+        values.PutString(MediaColumn::MEDIA_OWNER_APPID, "");
+    }
 
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_,
         PhotoColumn::PHOTOS_TABLE);
