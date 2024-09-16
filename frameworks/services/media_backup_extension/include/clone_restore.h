@@ -165,7 +165,7 @@ private:
     std::string ProcessUriAndGenNew(const std::string& tagId, const std::string& oldCoverUri,
         const std::unordered_map<std::string, int32_t>& oldToNewFileId, const std::vector<FileInfo>& fileInfos);
     int32_t MovePicture(FileInfo &fileInfo);
-    int32_t MoveVideo(FileInfo &fileInfo);
+    int32_t MoveMovingPhotoVideo(FileInfo &fileInfo);
     int32_t MoveEditedData(FileInfo &fileInfo);
 
     template<typename T>
