@@ -31,6 +31,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_notify.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;

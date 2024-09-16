@@ -38,6 +38,7 @@
 #include "multistages_capture_request_task_manager.h"
 #include "request_policy.h"
 #include "result_set_utils.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 #ifdef ABILITY_CAMERA_SUPPORT

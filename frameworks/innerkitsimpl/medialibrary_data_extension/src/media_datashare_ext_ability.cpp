@@ -62,6 +62,7 @@
 #include "grant_permission_handler.h"
 #include "read_write_permission_handler.h"
 #include "db_permission_handler.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;

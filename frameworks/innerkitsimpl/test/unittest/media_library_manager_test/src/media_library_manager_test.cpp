@@ -35,6 +35,7 @@
 #include "scanner_utils.h"
 #include "system_ability_definition.h"
 #include "thumbnail_const.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS;

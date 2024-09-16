@@ -29,6 +29,7 @@
 #include "mimetype_utils.h"
 #include "result_set_utils.h"
 #include "scanner_utils.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
