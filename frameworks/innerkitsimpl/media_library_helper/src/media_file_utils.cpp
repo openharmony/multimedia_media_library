@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <unordered_map>
+#include <utime.h>
 
 #include "avmetadatahelper.h"
 #include "el5_filekey_manager_kit.h"
@@ -1724,5 +1725,48 @@ void MediaFileUtils::CheckDirStatus(const std::unordered_set<std::string> &dirCh
         return;
     }
     PrintStatInformation(dir);
+}
+
+int32_t MediaFileUtils::CreateDirectoryAndCopyFiles(const std::string &srcDir, const std::string &dstDir)
+{
+    if (!MediaFileUtils::IsFileExists(srcDir)) {
+        MEDIA_WARN_LOG("%{public}s doesn't exist, skip.", srcDir.c_str());
+        return E_OK;
+    }
+    if (!MediaFileUtils::IsDirectory(srcDir)) {
+        MEDIA_WARN_LOG("%{public}s is not an directory, skip.", srcDir.c_str());
+        return E_OK;
+    }
+    if (!MediaFileUtils::CreateDirectory(dstDir)) {
+        MEDIA_ERR_LOG("Create dstDir %{public}s failed", dstDir.c_str());
+        return E_FAIL;
+    }
+    for (const auto &dirEntry : std::filesystem::directory_iterator{srcDir}) {
+        std::string srcFilePath = dirEntry.path();
+        std::string tmpFilePath = srcFilePath;
+        std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
+        if (!MediaFileUtils::CopyFileUtil(srcFilePath, dstFilePath)) {
+            MEDIA_ERR_LOG("Copy file from %{public}s to %{public}s failed.",
+                srcFilePath.c_str(),
+                dstFilePath.c_str());
+            return E_FAIL;
+        }
+    }
+    return E_OK;
+}
+
+void MediaFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
+{
+    if (modifiedTime <= 0) {
+        MEDIA_ERR_LOG("ModifyTime error!");
+        return;
+    }
+    struct utimbuf buf;
+    buf.actime = modifiedTime; // second
+    buf.modtime = modifiedTime; // second
+    int ret = utime(path.c_str(), &buf);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Modify file failed: %{public}d", ret);
+    }
 }
 } // namespace OHOS::Media
