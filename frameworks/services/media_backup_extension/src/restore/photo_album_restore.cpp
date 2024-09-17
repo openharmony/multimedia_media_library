@@ -71,7 +71,10 @@ std::vector<PhotoAlbumDao::PhotoAlbumRowData> PhotoAlbumRestore::GetAlbumsToRest
     for (const auto &album : photoAlbums) {
         uniquePaths.insert(album.lPath);
     }
-    // filter gallery_media by lPath
+    // filter gallery_media by lPath, find the albums that need to be restored
+    // Note 1, the album with the same lPath is considered to be the same album.
+    // Note 2, the lPath is case-sensitively matched here,
+    // for case-insensitive matching is performed in the SQL excution at the end.
     std::vector<PhotoAlbumRestore::GalleryAlbumRowData> filteredAlbums;
     std::copy_if(galleryAlbums.begin(),
         galleryAlbums.end(),

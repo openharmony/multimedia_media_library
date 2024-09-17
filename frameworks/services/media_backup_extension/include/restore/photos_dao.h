@@ -78,7 +78,7 @@ private:
         ( \
             SELECT album_id \
             FROM PhotoAlbum \
-            WHERE lpath = ? \
+            WHERE LOWER(lpath) = LOWER(?) \
         ) \
         AS a \
         INNER JOIN \

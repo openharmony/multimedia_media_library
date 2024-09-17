@@ -386,6 +386,10 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!BackupFileUtils::IsFileValid(fileInfos[i].filePath, CLONE_RESTORE_ID)) {
+            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, filePath: %{public}s",
+                sceneCode,
+                sourceType,
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::FILE_INVALID);
             continue;
         }
@@ -609,6 +613,13 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileInfo.subtype);
     // use owner_album_id to mark the album id which the photo is in.
     values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, fileInfo.ownerAlbumId);
+    // Only SOURCE album has package_name and owner_package.
+    values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, fileInfo.packageName);
+    values.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, fileInfo.bundleName);
+    if (fileInfo.packageName.empty() && fileInfo.bundleName.empty()) {
+        // package_name and owner_package are empty, clear owner_appid
+        values.PutString(MediaColumn::MEDIA_OWNER_APPID, "");
+    }
 
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_,
         PhotoColumn::PHOTOS_TABLE);
@@ -1195,8 +1206,10 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
     }
     fileInfo.fileSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
     if (fileInfo.fileSize <= 0) {
-        MEDIA_ERR_LOG("File size is invalid: %{public}lld, filePath: %{public}s", (long long)fileInfo.fileSize,
-            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
+        MEDIA_ERR_LOG("File is invalid: fileSize: %{public}lld, filePath: %{public}s, tableName : %{public}s",
+            (long long)fileInfo.fileSize,
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
+            tableName.c_str());
         UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::FILE_INVALID);
         return false;
     }
@@ -1367,28 +1380,11 @@ string CloneRestore::GetBackupInfoByCount(int32_t photoCount, int32_t videoCount
     return jsonObject.dump();
 }
 
-void MEDIA_LOG_TO_DEBUG(std::vector<FileInfo> fileInfos)
-{
-    for (auto &fileInfo : fileInfos) {
-        MEDIA_INFO_LOG("Media_Restore: fileId: %{public}d, \
-            displayName: %{public}s, \
-            bundleName: %{public}s, \
-            lPath: %{public}s, \
-            isRelatedToPhotoMap: %{public}d",
-            fileInfo.fileIdOld,
-            fileInfo.displayName.c_str(),
-            fileInfo.bundleName.c_str(),
-            fileInfo.lPath.c_str(),
-            fileInfo.isRelatedToPhotoMap);
-    }
-}
-
 void CloneRestore::RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap)
 {
     MEDIA_INFO_LOG(
         "start restore photo, offset: %{public}d, isRelatedToPhotoMap: %{public}d", offset, isRelatedToPhotoMap);
     vector<FileInfo> fileInfos = QueryFileInfos(offset, isRelatedToPhotoMap);
-    MEDIA_LOG_TO_DEBUG(fileInfos);
     InsertPhoto(fileInfos);
     BatchNotifyPhoto(fileInfos);
     MEDIA_INFO_LOG("end restore photo, offset: %{public}d", offset);
@@ -1515,6 +1511,8 @@ void CloneRestore::SetSpecialAttributes(const string &tableName, const shared_pt
     fileInfo.associateFileId = GetInt32Val(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, resultSet);
     // find PhotoAlbum info in target database. PackageName and BundleName should be fixed after clone.
     fileInfo.ownerAlbumId = this->photosClone_.FindAlbumId(fileInfo);
+    fileInfo.packageName = this->photosClone_.FindPackageName(fileInfo);
+    fileInfo.bundleName = this->photosClone_.FindBundleName(fileInfo);
 }
 
 bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInfo)
