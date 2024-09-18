@@ -233,6 +233,7 @@ int32_t MovingPhotoProcessor::GetUpdatedMovingPhotoData(const MovingPhotoData& c
 void MovingPhotoProcessor::CompatMovingPhoto(const MovingPhotoDataList& dataList)
 {
     MEDIA_INFO_LOG("Start processing %{public}zu moving photos", dataList.movingPhotos.size());
+    int32_t count = 0;
     for (const auto& movingPhoto : dataList.movingPhotos) {
         if (!isProcessing_) {
             MEDIA_INFO_LOG("stop compating moving photo");
@@ -244,7 +245,9 @@ void MovingPhotoProcessor::CompatMovingPhoto(const MovingPhotoDataList& dataList
             continue;
         }
         UpdateMovingPhotoData(newData);
+        count += 1;
     }
+    MEDIA_INFO_LOG("Finish processing %{public}d moving photos", count);
 }
 } // namespace Media
 } // namespace OHOS

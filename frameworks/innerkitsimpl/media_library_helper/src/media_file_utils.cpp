@@ -32,7 +32,6 @@
 #include <utime.h>
 
 #include "avmetadatahelper.h"
-#include "el5_filekey_manager_kit.h"
 #include "directory_ex.h"
 #include "hmdfs.h"
 #include "ipc_skeleton.h"
@@ -478,17 +477,6 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
     close(dest);
 
     return errCode;
-}
-
-bool MediaFileUtils::SetEPolicy()
-{
-    MEDIA_INFO_LOG("SetEPolicy for directory");
-    int ret = Security::AccessToken::El5FilekeyManagerKit::SetFilePathPolicy();
-    if (ret != 0) {
-        MEDIA_ERR_LOG("SetEPolicy fail of %{public}d", ret);
-        return false;
-    }
-    return true;
 }
 
 void MediaFileUtils::SetDeletionRecord(int fd, const string &fileName)

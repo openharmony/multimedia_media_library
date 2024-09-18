@@ -525,7 +525,7 @@ int32_t CloneRestore::MovePicture(FileInfo &fileInfo)
     return E_OK;
 }
 
-int32_t CloneRestore::MoveVideo(FileInfo &fileInfo)
+int32_t CloneRestore::MoveMovingPhotoVideo(FileInfo &fileInfo)
 {
     if (fileInfo.subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
         return E_OK;
@@ -534,6 +534,10 @@ int32_t CloneRestore::MoveVideo(FileInfo &fileInfo)
     std::string localPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL,
         fileInfo.cloudPath);
     std::string srcLocalVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(fileInfo.filePath);
+    if (!MediaFileUtils::IsFileExists(srcLocalVideoPath)) {
+        MEDIA_WARN_LOG("video of moving photo does not exist: %{private}s", srcLocalVideoPath.c_str());
+        return E_OK;
+    }
     std::string localVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(localPath);
     int32_t opVideoRet = E_FAIL;
     if (deleteOriginalFile) {
@@ -573,8 +577,8 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
     if (optRet != E_OK) {
         return E_FAIL;
     }
-    // Video files.
-    optRet = this->MoveVideo(fileInfo);
+    // Video files of moving photo.
+    optRet = this->MoveMovingPhotoVideo(fileInfo);
     if (optRet != E_OK) {
         return E_FAIL;
     }
