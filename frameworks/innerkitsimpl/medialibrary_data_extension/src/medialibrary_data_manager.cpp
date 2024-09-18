@@ -1880,6 +1880,12 @@ void MediaLibraryDataManager::SetStartupParameter()
     if (!retFlag) {
         MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
     }
+    // init backup param
+    std::string backupParam = "persist.multimedia.medialibrary.rdb_switch_status";
+    ret = system::SetParameter(backupParam, "0");
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Failed to set parameter backup, ret:%{public}d", ret);
+    }
 }
 
 int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
