@@ -232,6 +232,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_DELETE, OperationType::DELETE },
         { OPRN_QUERY, OperationType::QUERY },
         { OPRN_UPDATE, OperationType::UPDATE },
+        { OPRN_ALBUM_SET_NAME, OperationType::ALBUM_SET_NAME },
         { OPRN_ALBUM_ADD_PHOTOS, OperationType::ALBUM_ADD_PHOTOS },
         { OPRN_ALBUM_REMOVE_PHOTOS, OperationType::ALBUM_REMOVE_PHOTOS },
         { OPRN_RECOVER_PHOTOS, OperationType::ALBUM_RECOVER_ASSETS },
