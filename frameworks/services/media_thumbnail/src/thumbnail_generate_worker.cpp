@@ -79,6 +79,8 @@ int32_t ThumbnailGenerateWorker::ReleaseTaskQueue(const ThumbnailTaskPriority &t
 {
     if (taskPriority == ThumbnailTaskPriority::HIGH) {
         highPriorityTaskQueue_.Clear();
+    } else if (taskPriority == ThumbnailTaskPriority::MID) {
+        midPriorityTaskQueue_.Clear();
     } else if (taskPriority == ThumbnailTaskPriority::LOW) {
         lowPriorityTaskQueue_.Clear();
     } else {
@@ -94,6 +96,8 @@ int32_t ThumbnailGenerateWorker::AddTask(
     IncreaseRequestIdTaskNum(task);
     if (taskPriority == ThumbnailTaskPriority::HIGH) {
         highPriorityTaskQueue_.Push(task);
+    } else if (taskPriority == ThumbnailTaskPriority::MID) {
+        midPriorityTaskQueue_.Push(task);
     } else if (taskPriority == ThumbnailTaskPriority::LOW) {
         lowPriorityTaskQueue_.Push(task);
     } else {
@@ -108,7 +112,7 @@ int32_t ThumbnailGenerateWorker::AddTask(
 
 void ThumbnailGenerateWorker::IgnoreTaskByRequestId(int32_t requestId)
 {
-    if (highPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty()) {
+    if (highPriorityTaskQueue_.Empty() && midPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty()) {
         MEDIA_INFO_LOG("task queue empty, no need to ignore task requestId: %{public}d", requestId);
         return;
     }
@@ -122,11 +126,13 @@ void ThumbnailGenerateWorker::IgnoreTaskByRequestId(int32_t requestId)
 bool ThumbnailGenerateWorker::WaitForTask(std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus)
 {
     std::unique_lock<std::mutex> lock(workerLock_);
-    if (highPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty() && isThreadRunning_) {
+    if (highPriorityTaskQueue_.Empty() && midPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty() &&
+        isThreadRunning_) {
         ignoreRequestId_ = 0;
         threadStatus->isThreadWaiting_ = true;
         bool ret = workerCv_.wait_for(lock, std::chrono::milliseconds(CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL), [this]() {
-            return !isThreadRunning_ || !highPriorityTaskQueue_.Empty() || !lowPriorityTaskQueue_.Empty();
+            return !isThreadRunning_ || !highPriorityTaskQueue_.Empty() || !midPriorityTaskQueue_.Empty() ||
+                   !lowPriorityTaskQueue_.Empty();
         });
         if (!ret) {
             MEDIA_INFO_LOG("Wait for task timeout");
@@ -149,6 +155,16 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
         }
         std::shared_ptr<ThumbnailGenerateTask> task;
         if (!highPriorityTaskQueue_.Empty() && highPriorityTaskQueue_.Pop(task) && task != nullptr) {
+            if (NeedIgnoreTask(task->data_->requestId_)) {
+                continue;
+            }
+            task->executor_(task->data_);
+            ++(threadStatus->taskNum_);
+            DecreaseRequestIdTaskNum(task);
+            continue;
+        }
+
+        if (!midPriorityTaskQueue_.Empty() && midPriorityTaskQueue_.Pop(task) && task != nullptr) {
             if (NeedIgnoreTask(task->data_->requestId_)) {
                 continue;
             }
@@ -246,7 +262,7 @@ void ThumbnailGenerateWorker::ClearWorkerThreads()
 bool ThumbnailGenerateWorker::IsAllThreadWaiting()
 {
     std::unique_lock<std::mutex> lock(workerLock_);
-    if (!highPriorityTaskQueue_.Empty() || !lowPriorityTaskQueue_.Empty()) {
+    if (!highPriorityTaskQueue_.Empty() || !midPriorityTaskQueue_.Empty() || !lowPriorityTaskQueue_.Empty()) {
         MEDIA_INFO_LOG("task queue is not empty, no need to clear worker threads, taskType:%{public}d", taskType_);
         return false;
     }

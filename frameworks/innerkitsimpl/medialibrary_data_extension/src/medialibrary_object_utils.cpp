@@ -855,6 +855,30 @@ void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id
     }
 }
 
+void MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(const string &path, const string &id, MediaLibraryApi api)
+{
+    string tableName;
+    if (MediaFileUtils::IsFileTablePath(path)) {
+        tableName = MEDIALIBRARY_TABLE;
+    } else if (MediaFileUtils::IsPhotoTablePath(path)) {
+        tableName = PhotoColumn::PHOTOS_TABLE;
+    } else {
+        tableName = AudioColumn::AUDIOS_TABLE;
+    }
+
+    InvalidateThumbnail(id, tableName);
+
+    shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
+    if (scanFileCb == nullptr) {
+        MEDIA_ERR_LOG("Failed to create scan file callback object");
+        return ;
+    }
+    int ret = MediaScannerManager::GetInstance()->ScanFileSyncWithoutAlbumUpdate(path, scanFileCb, api, true);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Scan file failed!");
+    }
+}
+
 int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
 {
     string strFileId = cmd.GetOprnFileId();

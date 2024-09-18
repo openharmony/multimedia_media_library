@@ -568,7 +568,7 @@ public:
             {MEDIA_DATA_DB_HEIGHT, {TYPE_INT32, "height"}},
             {MEDIA_DATA_DB_DATE_TAKEN, {TYPE_INT64, "dateTaken"}},
             {MEDIA_DATA_DB_ORIENTATION, {TYPE_INT32, "orientation"}},
-            {MEDIA_DATA_DB_IS_FAV, {TYPE_INT32, "isFavourite"}},
+            {MEDIA_DATA_DB_IS_FAV, {TYPE_INT32, "isFavorite"}},
             {MEDIA_DATA_DB_TITLE, {TYPE_STRING, "title"}},
             {MEDIA_DATA_DB_POSITION, {TYPE_INT32, "position"}},
             {MEDIA_DATA_DB_DATE_TRASHED, {TYPE_INT64, "dateTrashedMs"}},

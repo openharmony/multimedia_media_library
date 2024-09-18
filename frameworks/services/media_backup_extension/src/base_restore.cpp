@@ -694,7 +694,6 @@ bool BaseRestore::HasSameAudioFile(const std::shared_ptr<NativeRdb::RdbStore> &r
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     if (fileId <= 0 || cloudPath.empty()) {
-        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d", fileId);
         return false;
     }
     fileInfo.fileIdNew = fileId;

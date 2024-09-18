@@ -51,6 +51,7 @@ namespace Media {
 using OHOS::AbilityRuntime::MediaDataShareExtAbility;
 class MediaLibraryDataManager {
 public:
+    static constexpr uint32_t URI_MIN_NUM = 3;
     EXPORT MediaLibraryDataManager();
     EXPORT ~MediaLibraryDataManager();
     EXPORT static MediaLibraryDataManager* GetInstance();
@@ -109,6 +110,7 @@ public:
 private:
     int32_t InitMediaLibraryRdbStore();
     void InitResourceInfo();
+    void HandleUpgradeRdbAsync();
 
 #ifdef DISTRIBUTED
     bool QuerySync(const std::string &networkId, const std::string &tableName);

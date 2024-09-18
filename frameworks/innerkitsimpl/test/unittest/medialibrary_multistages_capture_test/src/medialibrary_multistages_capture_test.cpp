@@ -713,10 +713,10 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdatePhotoQuality_001, TestSize.Le
     MEDIA_INFO_LOG("UpdatePhotoQuality_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_normal_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_normal_001, TestSize.Level1)
 {
     // test 1 PhotoColumn::PHOTO_SUBTYPE + PhotoSubType::MOVING_PHOTO
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_normal_001 Start");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_normal_001 Start");
     auto fileId = PrepareForFirstVisit();
     EXPECT_GT(fileId, 0);
 
@@ -726,14 +726,14 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_normal_0
     bucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     cmd.SetValueBucket(bucket);
 
-    auto ret = instance.UpdateLowQualityDbInfo(cmd);
+    auto ret = instance.UpdateDbInfo(cmd);
     EXPECT_EQ(ret, 0);
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_normal_001 End");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_normal_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_normal_002, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_normal_002, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_normal_002 Start");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_normal_002 Start");
     // test 2 PhotoColumn::PHOTO_SUBTYPE + !PhotoSubType::MOVING_PHOTO
     auto fileId = PrepareForFirstVisit();
     EXPECT_GT(fileId, 0);
@@ -744,14 +744,14 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_normal_0
     bucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::CAMERA));
     cmd.SetValueBucket(bucket);
 
-    auto ret = instance.UpdateLowQualityDbInfo(cmd);
+    auto ret = instance.UpdateDbInfo(cmd);
     EXPECT_EQ(ret, 0);
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_normal_002 End");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_normal_002 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_empty_bucket_003, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_empty_bucket_003, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_empty_bucket_003 Start");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_empty_bucket_003 Start");
     // test3 empty bucket
     auto fileId = PrepareForFirstVisit();
     EXPECT_GT(fileId, 0);
@@ -761,14 +761,14 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_empty_bu
     MediaLibraryCommand cmd (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     cmd.SetValueBucket(bucket);
 
-    auto ret = instance.UpdateLowQualityDbInfo(cmd);
+    auto ret = instance.UpdateDbInfo(cmd);
     EXPECT_EQ(ret, 0);
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_empty_bucket_003 End");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_empty_bucket_003 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_nodata_004, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_nodata_004, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_nodata_004 Start");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_nodata_004 Start");
     // no data
     ValuesBucket bucket;
     MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
@@ -776,9 +776,9 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_nodata_0
     bucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     cmd.SetValueBucket(bucket);
 
-    auto ret = instance.UpdateLowQualityDbInfo(cmd);
+    auto ret = instance.UpdateDbInfo(cmd);
     EXPECT_NE(ret, 0);
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_nodata_004 End");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_nodata_004 End");
 }
 
 HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_001, TestSize.Level1)

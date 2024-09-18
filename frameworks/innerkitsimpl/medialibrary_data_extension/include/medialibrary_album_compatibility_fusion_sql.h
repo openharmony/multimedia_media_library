@@ -59,7 +59,8 @@ const std::string DELETE_MATCHED_RELATIONSHIP_IN_PHOTOMAP_SQL =
 const std::string FILL_ALBUM_ID_FOR_PHOTOS =
     "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = " +
     "(SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
-    " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " AND " +
+    " WHERE (" + PhotoAlbumColumns::ALBUM_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME +
+    " OR bundle_name = NEW.owner_package) AND " +
     PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) +
     " AND dirty != 4 ORDER BY priority DESC LIMIT 1) WHERE file_id = new.file_id";

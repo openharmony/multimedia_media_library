@@ -39,7 +39,7 @@ struct AuditLog {
 
     const std::string TitleString() const
     {
-        return "happenTime, packageName, isForeground, cause, isUserBehavior, operationType, operationScenario,"
+        return "happenTime, packageName, isForeground, cause, isUserBehavior, operationType, operationScenario, "
             "operationStatus, operationCount, extend, id, type, size\n";
     }
 

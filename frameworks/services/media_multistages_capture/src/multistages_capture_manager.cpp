@@ -200,17 +200,17 @@ void MultiStagesCaptureManager::DealHighQualityPicture(const std::string &imageI
     pictureManagerThread->InsertPictureData(imageId, picturePair, HIGH_QUALITY_PICTURE);
 }
 
-int32_t MultiStagesCaptureManager::UpdateLowQualityDbInfo(MediaLibraryCommand &cmd)
+int32_t MultiStagesCaptureManager::UpdateDbInfo(MediaLibraryCommand &cmd)
 {
     MediaLibraryCommand cmdLocal (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     auto values = cmd.GetValueBucket();
-    int32_t subType = 0;
     ValueObject valueObject;
-    if (values.GetObject(PhotoColumn::PHOTO_SUBTYPE, valueObject)) {
-        valueObject.GetInt(subType);
+    int32_t photoQuality = static_cast<int32_t>(MultiStagesPhotoQuality::LOW);
+    if (values.GetObject(PhotoColumn::PHOTO_QUALITY, valueObject)) {
+        valueObject.GetInt(photoQuality);
     }
-    if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
+    if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) {
+        values.PutInt(MEDIA_DATA_DB_DIRTY, -1); // prevent uploading low-quality photo
     }
     cmdLocal.SetValueBucket(values);
     cmdLocal.GetAbsRdbPredicates()->SetWhereClause(cmd.GetAbsRdbPredicates()->GetWhereClause());
@@ -271,7 +271,7 @@ void MultiStagesCaptureManager::AddImage(int32_t fileId, const string &photoId, 
 void MultiStagesCaptureManager::AddImage(MediaLibraryCommand &cmd)
 {
     MEDIA_DEBUG_LOG("calling addImage");
-    UpdateLowQualityDbInfo(cmd);
+    UpdateDbInfo(cmd);
     auto values = cmd.GetValueBucket();
     ValueObject valueObject;
     int32_t photoQuality = static_cast<int32_t>(MultiStagesPhotoQuality::LOW);

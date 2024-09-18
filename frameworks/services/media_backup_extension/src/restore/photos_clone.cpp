@@ -74,11 +74,12 @@ std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetPhotosNotInPhotoMap(int32_
 int32_t PhotosClone::FindAlbumId(const FileInfo &fileInfo)
 {
     if (fileInfo.lPath.empty()) {
+        MEDIA_ERR_LOG("Media_Restore: FindAlbumId-lPath is empty, lPath=%{public}s", fileInfo.lPath.c_str());
         return 0;
     }
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->photoAlbumDaoPtr_->GetPhotoAlbum(fileInfo.lPath);
     if (albumInfo.lPath.empty()) {
-        MEDIA_ERR_LOG("albumInfo is empty, lPath=%{public}s, albumInfo = %{public}s",
+        MEDIA_ERR_LOG("Media_Restore: albumInfo is empty, lPath=%{public}s, albumInfo = %{public}s",
             fileInfo.lPath.c_str(),
             this->photoAlbumDaoPtr_->ToString(albumInfo).c_str());
     }
@@ -91,6 +92,7 @@ int32_t PhotosClone::FindAlbumId(const FileInfo &fileInfo)
 std::string PhotosClone::FindPackageName(const FileInfo &fileInfo)
 {
     if (fileInfo.lPath.empty()) {
+        MEDIA_ERR_LOG("Media_Restore: FindPackageName-lPath is empty, lPath=%{public}s", fileInfo.lPath.c_str());
         return "";
     }
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->photoAlbumDaoPtr_->GetPhotoAlbum(fileInfo.lPath);
@@ -98,6 +100,12 @@ std::string PhotosClone::FindPackageName(const FileInfo &fileInfo)
         MEDIA_ERR_LOG("albumInfo is empty, lPath=%{public}s, albumInfo = %{public}s",
             fileInfo.lPath.c_str(),
             this->photoAlbumDaoPtr_->ToString(albumInfo).c_str());
+        return "";
+    }
+    // Only provide the package name of the SOURCE album.
+    if (albumInfo.albumType != static_cast<int32_t>(PhotoAlbumType::SOURCE) ||
+        albumInfo.albumSubType != static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC)) {
+        return "";
     }
     return albumInfo.albumName;
 }
@@ -108,6 +116,7 @@ std::string PhotosClone::FindPackageName(const FileInfo &fileInfo)
 std::string PhotosClone::FindBundleName(const FileInfo &fileInfo)
 {
     if (fileInfo.lPath.empty()) {
+        MEDIA_ERR_LOG("Media_Restore: FindBundleName-lPath is empty, lPath=%{public}s", fileInfo.lPath.c_str());
         return "";
     }
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->photoAlbumDaoPtr_->GetPhotoAlbum(fileInfo.lPath);
@@ -115,6 +124,12 @@ std::string PhotosClone::FindBundleName(const FileInfo &fileInfo)
         MEDIA_ERR_LOG("albumInfo is empty, lPath=%{public}s, albumInfo = %{public}s",
             fileInfo.lPath.c_str(),
             this->photoAlbumDaoPtr_->ToString(albumInfo).c_str());
+        return "";
+    }
+    // Only provide the bundle name of the SOURCE album.
+    if (albumInfo.albumType != static_cast<int32_t>(PhotoAlbumType::SOURCE) ||
+        albumInfo.albumSubType != static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC)) {
+        return "";
     }
     return albumInfo.bundleName;
 }
@@ -158,7 +173,7 @@ std::string PhotosClone::ToString(const std::vector<NativeRdb::ValueObject> &val
 }
 
 /**
- * @brief generate a uuid without '-'
+ * @brief generate a uuid
  *
  * @return std::string uuid with 32 characters
  */
@@ -187,7 +202,7 @@ int32_t PhotosClone::FixDuplicateBurstKeyInDifferentAlbum()
         int32_t ret = this->mediaLibraryTargetRdb_->ExecuteSql(executeSql, bindArgs);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Media_Restore: FixDuplicateBurstKeyInDifferentAlbum failed,"
-                              " ret=%{public}d, sql=%{public}s, bindArgs=%{public}s",
+                          " ret=%{public}d, sql=%{public}s, bindArgs=%{public}s",
                 ret,
                 executeSql.c_str(),
                 this->ToString(bindArgs).c_str());

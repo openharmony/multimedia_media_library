@@ -38,6 +38,7 @@ public:
     EXPORT void AddStartTime(const std::string &photoId);
     EXPORT void RemoveStartTime(const std::string &photoId);
     EXPORT void Report(const std::string &completedType, const std::string &photoId);
+    EXPORT std::unordered_map<std::string, int64_t> GetStartTimes();
 
 private:
     CloudEnhancementGetCount();
