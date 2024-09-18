@@ -158,6 +158,7 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
         currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 
     currentStatus_ = newStatus;
+    ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(newStatus);
     if (currentStatus_) {
         DoBackgroundOperation();
     } else {

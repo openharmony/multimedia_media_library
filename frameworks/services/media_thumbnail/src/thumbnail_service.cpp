@@ -574,15 +574,18 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateAstcCloudDownload(const string &id)
+int32_t ThumbnailService::CreateAstcCloudDownload(const string &id, bool isCloudInsertTaskPriorityHigh)
 {
+    if (!isCloudInsertTaskPriorityHigh && !currentStatusForTask_) {
+        return E_CLOUD_NOT_SUITABLE_FOR_TASK;
+    }
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE,
         .fileId = id,
     };
 
-    int err = ThumbnailGenerateHelper::CreateAstcCloudDownload(opts);
+    int err = ThumbnailGenerateHelper::CreateAstcCloudDownload(opts, isCloudInsertTaskPriorityHigh);
     if (err != E_OK) {
         MEDIA_ERR_LOG("CreateAstcCloudDownload failed : %{public}d", err);
         return err;
@@ -648,6 +651,16 @@ int32_t ThumbnailService::CheckCloudThumbnailDownloadFinish()
         return E_CLOUD_THUMBNAIL_NOT_DOWNLOAD_FINISH;
     }
     return E_OK;
+}
+
+void ThumbnailService::UpdateCurrentStatusForTask(const bool &currentStatusForTask)
+{
+    currentStatusForTask_ = currentStatusForTask;
+}
+
+bool ThumbnailService::GetCurrentStatusForTask()
+{
+    return currentStatusForTask_;
 }
 } // namespace Media
 } // namespace OHOS
