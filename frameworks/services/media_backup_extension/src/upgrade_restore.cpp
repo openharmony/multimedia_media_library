@@ -339,6 +339,16 @@ void UpgradeRestore::AnalyzeSource()
     MEDIA_INFO_LOG("end AnalyzeSource.");
 }
 
+void UpgradeRestore::AnalyzeGalleryErrorSource()
+{
+    if (galleryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
+        return;
+    }
+    BackupDatabaseUtils::QueryGalleryDuplicateDataCount(galleryRdb_);
+    BackupDatabaseUtils::QueryGalleryDuplicateDataInfo(galleryRdb_);
+}
+
 void UpgradeRestore::AnalyzeGallerySource()
 {
     if (galleryRdb_ == nullptr) {
