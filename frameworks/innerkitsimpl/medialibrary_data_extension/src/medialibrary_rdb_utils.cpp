@@ -1489,6 +1489,22 @@ int32_t MediaLibraryRdbUtils::UpdateOwnerAlbumId(const shared_ptr<RdbStore> &rdb
     return updateRows + changedRowsNoNeedCopy;
 }
 
+static void QueryAnalysisAlbumId(const shared_ptr<RdbStore> &rdbStore, const RdbPredicates predicates,
+    vector<string> &albumId)
+{
+    const vector<string> columns = {
+        "Distinct " + PhotoMap::ALBUM_ID
+    };
+    auto resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_WARN_LOG("Failed to Query Analysis Album ID");
+        return;
+    }
+    while (resultSet->GoToNextRow() == E_OK) {
+        albumId.push_back(to_string(GetIntValFromColumn(resultSet, 0)));
+    }
+}
+
 void MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(const shared_ptr<RdbStore> &rdbStore, const vector<string> &uris)
 {
     MediaLibraryTracer tracer;
@@ -1509,7 +1525,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(const shared_ptr<RdbStore> &
         if (idArgs.size() == ALBUM_UPDATE_THRESHOLD || i == uris.size() - 1) {
             RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
             predicates.In(PhotoMap::ASSET_ID, idArgs);
-            QueryAlbumId(rdbStore, predicates, albumIds);
+            QueryAnalysisAlbumId(rdbStore, predicates, albumIds);
             idArgs.clear();
         }
     }
