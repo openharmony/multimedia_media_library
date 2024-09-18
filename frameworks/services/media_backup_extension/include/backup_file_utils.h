@@ -23,6 +23,15 @@
 
 namespace OHOS {
 namespace Media {
+class FileAccessHelper {
+public:
+    bool GetValidPath(std::string &filePath);
+
+private:
+    bool ConvertCurrentPath(std::string &curPath, std::string &resultPath);
+    std::map<std::string, std::string> pathMap = {};
+    std::mutex mapMutex;
+};
 class BackupFileUtils {
 public:
     static int32_t FillMetadata(std::unique_ptr<Metadata> &data);
@@ -49,11 +58,14 @@ public:
     static bool ShouldIncludeSd(const std::string &prefix);
     static void DeleteSdDatabase(const std::string &prefix);
     static string ConvertLowQualityPath(int32_t sceneCode, const std::string &filePath, const string &relativePath);
+    static bool IsLowQualityImage(std::string &filePath, int32_t sceneCode,
+        string relativePath, bool hasLowQualityImage);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
     static int32_t CreateAssetRealName(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &name);
+    static std::shared_ptr<FileAccessHelper> fileAccessHelper_;
 };
 } // namespace Media
 } // namespace OHOS

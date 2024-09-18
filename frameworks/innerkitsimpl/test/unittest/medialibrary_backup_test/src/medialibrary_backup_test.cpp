@@ -2319,5 +2319,28 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_portrait, TestSize
     ClearData(rdbStore);
     MEDIA_INFO_LOG("medialib_backup_test_restore_portrait end");
 }
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_file_access_helper, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_file_access_helper start");
+    string backupFilePath = "/data/test/Pictures/Camera/Flower.png";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/data/test/Pictures/Camera/"), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(backupFilePath), true);
+
+    string lowerCasePath = "/data/test/pictures/camera/flower.png";
+    EXPECT_EQ(-1, access(lowerCasePath.c_str(), F_OK));
+
+    std::shared_ptr<FileAccessHelper> fileAccessHelper_ = std::make_shared<FileAccessHelper>();
+    string resultPath = lowerCasePath;
+    bool res = fileAccessHelper_->GetValidPath(resultPath);
+    EXPECT_EQ(true, res);
+    EXPECT_EQ(backupFilePath, resultPath);
+
+    resultPath = "/data/test/Pictures/Camera/FlowerNOT.png";
+    res = fileAccessHelper_->GetValidPath(resultPath);
+    EXPECT_EQ(false, res);
+
+    MEDIA_INFO_LOG("medialib_backup_test_file_access_helper end");
+}
 } // namespace Media
 } // namespace OHOS
