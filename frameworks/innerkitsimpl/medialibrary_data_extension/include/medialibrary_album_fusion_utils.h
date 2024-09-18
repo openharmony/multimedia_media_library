@@ -58,6 +58,7 @@ public:
     EXPORT static void BuildAlbumInsertValuesSetName(NativeRdb::RdbStore *upgradeStore,
         NativeRdb::ValuesBucket &values, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::string &newAlbumName);
+    EXPORT static int32_t RefreshAllAlbums();
 private:
     static int32_t HandleFirstData(NativeRdb::RdbStore *upgradeStore,
         const int32_t &assetId, const int32_t &ownerAlbumId);
