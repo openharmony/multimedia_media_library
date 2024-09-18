@@ -435,8 +435,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUriForPhotos(co
     return rdbStore_->QuerySql(sql, args);
 }
 
-
-int32_t MediaLibraryRdbStore::UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows)
+int32_t MediaLibraryRdbStore::UpdateLastVisitTime(const std::string &id)
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
@@ -444,9 +443,12 @@ int32_t MediaLibraryRdbStore::UpdateLastVisitTime(MediaLibraryCommand &cmd, int3
     }
     MediaLibraryTracer tracer;
     tracer.Start("UpdateLastVisitTime");
-    cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
-    int32_t ret = rdbStore_->Update(changedRows, cmd.GetTableName(), cmd.GetValueBucket(),
-        cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
+    ValuesBucket values;
+    int32_t changedRows = 0;
+    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+    string whereClause = MediaColumn::MEDIA_ID + " = ?";
+    vector<string> whereArgs = {id};
+    int32_t ret = rdbStore_->Update(changedRows, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
     if (ret != NativeRdb::E_OK || changedRows <= 0) {
         MEDIA_ERR_LOG("rdbStore_->UpdateLastVisitTime failed, changedRows = %{public}d, ret = %{public}d",
             changedRows, ret);
