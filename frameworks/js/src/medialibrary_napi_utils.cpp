@@ -1357,6 +1357,21 @@ void MediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name
     napi_set_named_property(env, result, dataType.second.c_str(), value);
 }
 
+static handleThumbnailReady(napi_env env, const std::string& name, napi_value result, int32_t index,
+    const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
+{
+    if (name != "thumbnailReady") {
+        return;
+    }
+    int64_t longVal = 0;
+    int status;
+    napi_value value = nullptr;
+    status = resultSet->GetLong(index, longVal);
+    bool result = longVal ? true : false;
+    napi_create_int32(env, result, &value);
+    napi_set_named_property(env, result, "thumbnailReady", value);
+}
+
 napi_value MediaLibraryNapiUtils::GetNextRowObject(napi_env env, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
     bool isShared)
 {
@@ -1385,6 +1400,7 @@ napi_value MediaLibraryNapiUtils::GetNextRowObject(napi_env env, shared_ptr<Nati
         std::string tmpName = isShared ? dataType.second : name;
         napi_set_named_property(env, result, tmpName.c_str(), value);
         handleTimeInfo(env, name, result, index, resultSet);
+        handleThumbnailReady(env, name, result, index, resultSet);
     }
     string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath(), false);
     MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()), "", MEDIA_API_VERSION_V10, extrUri);
