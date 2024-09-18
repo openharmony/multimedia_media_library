@@ -331,6 +331,11 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync()
             ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
             rdbStore->SetOldVersion(VERSION_ADD_DETAIL_TIME);
         }
+        if (oldVersion < VERSION_MOVE_AUDIOS) {
+            MediaLibraryAudioOperations::MoveToMusic();
+            MediaLibraryRdbStore::ClearAudios(*rawStore);
+            rdbStore->SetOldVersion(VERSION_MOVE_AUDIOS);
+        }
 
         rdbStore->SetOldVersion(MEDIA_RDB_VERSION);
     }).detach();

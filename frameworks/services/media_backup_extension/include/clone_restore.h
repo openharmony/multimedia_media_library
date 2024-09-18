@@ -107,10 +107,6 @@ private:
     bool ParseResultSet(const std::string &tableName, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         FileInfo &fileInfo);
     void InsertAudio(std::vector<FileInfo> &fileInfos);
-    std::vector<NativeRdb::ValuesBucket> GetInsertValues(const std::string &tableName, int32_t sceneCode,
-        std::vector<FileInfo> &fileInfos, int32_t sourceType, const std::unordered_set<int32_t> &excludedFileIdSet);
-    NativeRdb::ValuesBucket GetInsertValue(const std::string &tableName, const FileInfo &fileInfo,
-        const std::string &newPath, int32_t sourceType) const;
     int32_t QueryTotalNumberByMediaType(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
         MediaType mediaType);
     std::string GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount);
