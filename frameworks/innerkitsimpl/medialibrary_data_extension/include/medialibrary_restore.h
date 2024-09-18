@@ -38,6 +38,7 @@ public:
 private:
 #ifdef CLOUD_SYNC_MANAGER
     void StopCloudSync();
+    void StartCloudSync();
 #endif
     void DoRdbBackup();
     void ResetHAModeSwitchStatus();
