@@ -30,7 +30,7 @@ public:
     static int32_t CreateThumbnailFileScaned(ThumbRdbOpt &opts, bool isSync);
     static int32_t CreateThumbnailBackground(ThumbRdbOpt &opts);
     static int32_t CreateAstcBackground(ThumbRdbOpt &opts);
-    static int32_t CreateAstcCloudDownload(ThumbRdbOpt &opts);
+    static int32_t CreateAstcCloudDownload(ThumbRdbOpt &opts, bool isCloudInsertTaskPriorityHigh = false);
     static int32_t CreateLcdBackground(ThumbRdbOpt &opts);
     EXPORT static int32_t UpgradeThumbnailBackground(ThumbRdbOpt &opts);
     EXPORT static int32_t RestoreAstcDualFrame(ThumbRdbOpt &opts);
