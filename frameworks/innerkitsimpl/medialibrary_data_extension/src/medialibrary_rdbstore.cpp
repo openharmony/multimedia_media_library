@@ -38,6 +38,7 @@
 #endif
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_album_compatibility_fusion_sql.h"
+#include "medialibrary_album_refresh.h"
 #include "medialibrary_business_record_column.h"
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_errno.h"
@@ -66,6 +67,8 @@
 #include "dfx_const.h"
 #include "dfx_timer.h"
 #include "vision_multi_crop_column.h"
+#include "preferences.h"
+#include "preferences_helper.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -109,9 +112,12 @@ const std::string PIC_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE;
 
 const std::string AUDIO_EXTENSION_VALUES = DIR_ALL_AUDIO_CONTAINER_TYPE;
 
+const std::string RDB_CONFIG = "/data/storage/el2/base/preferences/rdb_config.xml";
+
+const std::string RDB_OLD_VERSION = "rdb_old_version";
+
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
-int32_t MediaLibraryRdbStore::oldVersion_ = -1;
-int32_t g_oldVersion = -1;
+int32_t oldVersion_ = -1;
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
     int32_t startNumber;
@@ -179,7 +185,7 @@ static int32_t ExecSqls(const vector<string> &sqls, RdbStore &store)
     return NativeRdb::E_OK;
 }
 
-static void CreateBurstIndex(RdbStore &store)
+void MediaLibraryRdbStore::CreateBurstIndex(RdbStore &store)
 {
     const vector<string> sqls = {
         PhotoColumn::DROP_SCHPT_DAY_INDEX,
@@ -199,7 +205,7 @@ static void CreateBurstIndex(RdbStore &store)
     MEDIA_INFO_LOG("end create idx_burstkey");
 }
 
-static void UpdateBurstDirty(RdbStore &store)
+void MediaLibraryRdbStore::UpdateBurstDirty(RdbStore &store)
 {
     const vector<string> sqls = {
         "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_DIRTY + " = " +
@@ -211,7 +217,7 @@ static void UpdateBurstDirty(RdbStore &store)
     MEDIA_INFO_LOG("end UpdateBurstDirty");
 }
 
-static void UpdateReadyOnThumbnailUpgrade(RdbStore &store)
+void MediaLibraryRdbStore::UpdateReadyOnThumbnailUpgrade(RdbStore &store)
 {
     const vector<string> sqls = {
         PhotoColumn::UPDATE_READY_ON_THUMBNAIL_UPGRADE,
@@ -221,45 +227,33 @@ static void UpdateReadyOnThumbnailUpgrade(RdbStore &store)
     MEDIA_INFO_LOG("finish update ready for thumbnail upgrade");
 }
 
-static void UpgradeRdbStore(AsyncTaskData *data)
+void MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(RdbStore &store)
 {
-    if (MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() == nullptr) {
-        MEDIA_ERR_LOG("MediaDataAbility insert functionality is null.");
-        return;
-    }
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("MediaDataAbility insert functionality rdbStore is null.");
-        return;
-    }
-
-    if (g_oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
-        CreateBurstIndex(*rdbStore);
-    }
-
-    if (g_oldVersion < VERSION_UPDATE_BURST_DIRTY) {
-        UpdateBurstDirty(*rdbStore);
-    }
-
-    if (g_oldVersion < VERSION_UPGRADE_THUMBNAIL) {
-        UpdateReadyOnThumbnailUpgrade(*rdbStore);
-    }
+    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond start");
+    const vector<string> updateSql = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
+            MediaColumn::MEDIA_DATE_TAKEN + " = " + MediaColumn::MEDIA_DATE_TAKEN +  "*1000 WHERE " +
+            MediaColumn::MEDIA_DATE_TAKEN + " < 1e10",
+    };
+    ExecSqls(updateSql, store);
+    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond end");
 }
 
-static void UpgradeRdbStoreAsync()
+void MediaLibraryRdbStore::UpdateDateTakenIndex(RdbStore &store)
 {
-    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Failed to get async worker instance!");
-        return;
-    }
-    shared_ptr<MediaLibraryAsyncTask> upgradeRdbStoreTask =
-        make_shared<MediaLibraryAsyncTask>(UpgradeRdbStore, nullptr);
-    if (upgradeRdbStoreTask != nullptr) {
-        asyncWorker->AddTask(upgradeRdbStoreTask, false);
-    } else {
-        MEDIA_ERR_LOG("Failed to create async task for upgradeRdbStoreTask!");
-    }
+    const vector<string> sqls = {
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::DROP_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
+        PhotoColumn::DROP_INDEX_SCHPT_READY,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::INDEX_SCHPT_READY,
+    };
+    MEDIA_INFO_LOG("update index for datetaken change start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("update index for datetaken change end");
 }
 
 int32_t MediaLibraryRdbStore::Init()
@@ -280,10 +274,6 @@ int32_t MediaLibraryRdbStore::Init()
         return errCode;
     }
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), SUCCESS");
-    // add process for which cost long time
-    if (g_oldVersion != -1 && g_oldVersion < MEDIA_RDB_VERSION) {
-        UpgradeRdbStoreAsync();
-    }
     return E_OK;
 }
 
@@ -1308,6 +1298,7 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         return NativeRdb::E_ERROR;
     }
 
+    MediaLibraryRdbStore::SetOldVersion(MEDIA_RDB_VERSION);
     return NativeRdb::E_OK;
 }
 
@@ -2871,6 +2862,8 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
     // Restore cloud sync
     MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
     ResetCloudCursorAfterInitFinish();
+    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
+    RefreshAlbums(true);
     MEDIA_INFO_LOG("ALBUM_FUSE: Processing old data start end, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
 }
@@ -3410,6 +3403,10 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_CLOUD_ENAHCNEMENT) {
         AddCloudEnhancementColumns(store);
     }
+
+    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_UPLOADING_MOVING_PHOTO) {
+        UpdatePhotosMdirtyTrigger(store);
+    }
 }
 
 static void UpgradeExtensionPart1(RdbStore &store, int32_t oldVersion)
@@ -3575,8 +3572,9 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataCallBack::OnUpgrade");
-    g_oldVersion = oldVersion;
-    MediaLibraryRdbStore::SetRdbOldVersion(oldVersion);
+    if (MediaLibraryRdbStore::GetOldVersion() == -1) {
+        MediaLibraryRdbStore::SetOldVersion(oldVersion);
+    }
     MEDIA_INFO_LOG("OnUpgrade old:%{public}d, new:%{public}d", oldVersion, newVersion);
     g_upgradeErr = false;
     if (oldVersion < VERSION_ADD_CLOUD) {
@@ -3639,6 +3637,31 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     return NativeRdb::E_OK;
 }
 
+void MediaLibraryRdbStore::SetOldVersion(int32_t oldVersion)
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_CONFIG, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    prefs->PutInt(RDB_OLD_VERSION, oldVersion);
+    prefs->FlushSync();
+}
+
+int32_t MediaLibraryRdbStore::GetOldVersion()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_CONFIG, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return oldVersion_;
+    }
+    return prefs->GetInt(RDB_OLD_VERSION, oldVersion_);
+}
+
 bool MediaLibraryRdbStore::HasColumnInTable(RdbStore &store, const string &columnName, const string &tableName)
 {
     string querySql = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM pragma_table_info('" + tableName + "') WHERE name = '" +
@@ -3660,16 +3683,6 @@ void MediaLibraryRdbStore::AddColumnIfNotExists(
         string sql = "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnType;
         store.ExecuteSql(sql);
     }
-}
-
-void MediaLibraryRdbStore::SetRdbOldVersion(int32_t oldVersion)
-{
-    oldVersion_ = oldVersion;
-}
-
-int32_t MediaLibraryRdbStore::GetRdbOldVersion()
-{
-    return oldVersion_;
 }
 
 #ifdef DISTRIBUTED

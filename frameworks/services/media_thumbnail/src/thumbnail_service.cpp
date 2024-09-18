@@ -697,16 +697,24 @@ static bool IsAstcChangeOldKeyToNewKeySuccess(std::shared_ptr<MediaLibraryKvStor
     return isChangeKeySuccess;
 }
 
-static void PerformKvStoreChangeKeyTask(std::shared_ptr<ThumbnailTaskData> &data)
+void ThumbnailService::AstcChangeKeyFromDateAddedToDateTaken()
 {
+    if (rdbStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("RdbStorePtr is null");
+        return;
+    }
     vector<ThumbnailData> infos;
-    if (!ThumbnailUtils::QueryOldKeyAstcInfos(data->opts_.store, PhotoColumn::PHOTOS_TABLE, infos)) {
+    if (!ThumbnailUtils::QueryOldKeyAstcInfos(rdbStorePtr_, PhotoColumn::PHOTOS_TABLE, infos)) {
         return;
     }
     MEDIA_INFO_LOG("Old key astc data size: %{public}d", static_cast<int>(infos.size()));
     if (infos.empty()) {
         return;
     }
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+    };
 
     auto monthKvStore = MediaLibraryKvStoreManager::GetInstance()
         .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
@@ -730,29 +738,10 @@ static void PerformKvStoreChangeKeyTask(std::shared_ptr<ThumbnailTaskData> &data
         if (!IsAstcChangeOldKeyToNewKeySuccess(monthKvStore, yearKvStore, oldKey, newKey)) {
             monthKvStore->Delete(oldKey);
             yearKvStore->Delete(oldKey);
-            UpdateThumbnailReadyToFailed(data->opts_, infos[i].id);
+            UpdateThumbnailReadyToFailed(opts, infos[i].id);
         }
     }
     MEDIA_INFO_LOG("PerformKvStoreChangeKeyTask End");
-}
-
-void ThumbnailService::AstcChangeKeyFromDateAddedToDateTaken()
-{
-    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
-        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::BACKGROUND);
-    if (thumbnailWorker == nullptr || rdbStorePtr_ == nullptr) {
-        MEDIA_ERR_LOG("thumbnailWorker or rdbStorePtr_ is null");
-        return;
-    }
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .table = PhotoColumn::PHOTOS_TABLE,
-    };
-    ThumbnailData data;
-    std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(opts, data);
-    std::shared_ptr<ThumbnailGenerateTask> kvStoreChangeKeyTask =
-        std::make_shared<ThumbnailGenerateTask>(PerformKvStoreChangeKeyTask, taskData);
-    thumbnailWorker->AddTask(kvStoreChangeKeyTask, ThumbnailTaskPriority::HIGH);
 }
 
 void ThumbnailService::UpdateCurrentStatusForTask(const bool &currentStatusForTask)

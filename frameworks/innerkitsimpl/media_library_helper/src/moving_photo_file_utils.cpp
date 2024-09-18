@@ -538,8 +538,7 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
         return E_HAS_FS_ERROR;
     }
     CHECK_AND_RETURN_RET_LOG(livePhotoPath.compare(movingPhotoVideoPath) != 0 &&
-        livePhotoPath.compare(extraDataPath) != 0, E_INVALID_VALUES,
-        "Failed to check dest path of moving photo");
+        livePhotoPath.compare(extraDataPath) != 0, E_INVALID_VALUES, "Failed to check dest path");
     UniqueFd livePhotoFd(open(absLivePhotoPath.c_str(), O_RDONLY));
     CHECK_AND_RETURN_RET_LOG(livePhotoFd.Get() >= 0, E_HAS_FS_ERROR,
         "Failed to open live photo:%{private}s, errno:%{public}d", absLivePhotoPath.c_str(), errno);
@@ -555,6 +554,7 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
         "Failed to lseek live tag, errno:%{public}d", errno);
     CHECK_AND_RETURN_RET_LOG(read(livePhotoFd.Get(), liveTag, LIVE_TAG_LEN) != -1, E_HAS_FS_ERROR,
         "Failed to read live tag, errno:%{public}d", errno);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::StartsWith(liveTag, LIVE_TAG), E_INVALID_VALUES, "Invalid live photo");
 
     int64_t extraDataSize = 0;
     int32_t err = GetExtraDataSize(livePhotoFd, extraDataSize);

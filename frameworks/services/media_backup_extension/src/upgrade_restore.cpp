@@ -549,6 +549,9 @@ int32_t UpgradeRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
 void UpgradeRestore::HandleRestData(void)
 {
     MEDIA_INFO_LOG("Start to handle rest data in native.");
+    // restore thumbnail for date fronted 500 photos
+    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
+
     std::string photoData = appDataPath_ + "/" + galleryAppName_;
     std::string mediaData = appDataPath_ + "/" + mediaAppName_;
     if (MediaFileUtils::IsFileExists(photoData)) {
@@ -560,9 +563,6 @@ void UpgradeRestore::HandleRestData(void)
         (void)MediaFileUtils::DeleteDir(mediaData);
     }
     BackupFileUtils::DeleteSdDatabase(filePath_);
-
-    // restore thumbnail for date fronted 500 photos
-    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
 }
 
 std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
@@ -838,7 +838,6 @@ bool UpgradeRestore::HasSameFileForDualClone(FileInfo &fileInfo)
     int32_t fileId = rowData.fileId;
     std::string cloudPath = rowData.data;
     if (fileId <= 0 || cloudPath.empty()) {
-        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d, %{public}s", fileId, cloudPath.c_str());
         return false;
     }
     fileInfo.fileIdNew = fileId;

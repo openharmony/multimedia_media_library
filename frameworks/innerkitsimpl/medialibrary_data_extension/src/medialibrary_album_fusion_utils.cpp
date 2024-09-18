@@ -27,8 +27,11 @@
 #include "metadata.h"
 #include "media_file_utils.h"
 #include "medialibrary_album_compatibility_fusion_sql.h"
+#include "medialibrary_album_refresh.h"
 #include "parameters.h"
 #include "thumbnail_service.h"
+#include "photo_file_operation.h"
+#include "photo_burst_operation.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -83,7 +86,8 @@ static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::MOVING_PHOTO_EFFECT_MODE, ResultSetDataType::TYPE_INT32},
-    {PhotoColumn::PHOTO_FRONT_CAMERA, ResultSetDataType::TYPE_STRING}
+    {PhotoColumn::PHOTO_FRONT_CAMERA, ResultSetDataType::TYPE_STRING},
+    {PhotoColumn::PHOTO_BURST_COVER_LEVEL, ResultSetDataType::TYPE_INT32},
 };
 
 static unordered_map<string, ResultSetDataType> thumbnailColumnTypeMap = {
@@ -240,20 +244,6 @@ static inline void buildTargetFilePath(const std::string &srcPath, std::string &
     std::string currentTime = std::to_string(MediaFileUtils::UTCTimeMilliSeconds());
     std::string timeStamp = currentTime.substr(currentTime.length() - TIME_STAMP_OFFSET, TIME_STAMP_OFFSET);
     targetPath = srcPath.substr(0, underlineIndex + 1) + timeStamp + srcPath.substr(dotIndex);
-}
-
-static int32_t CopyOriginPhoto(const std::string &srcPath, std::string &targetPath)
-{
-    if (srcPath.empty() || !MediaFileUtils::IsFileExists((srcPath)) || !MediaFileUtils::IsFileValid(srcPath)) {
-        MEDIA_ERR_LOG("source file invalid!");
-        return E_INVALID_PATH;
-    }
-    if (!MediaFileUtils::CopyFileUtil(srcPath, targetPath) || !MediaFileUtils::IsFileExists((targetPath))) {
-        MEDIA_ERR_LOG("CopyFile failed, filePath: %{public}s, errmsg: %{public}s", srcPath.c_str(),
-            strerror(errno));
-        return E_RENAME_FILE_FAIL;
-    }
-    return E_OK;
 }
 
 static std::string getThumbnailPathFromOrignalPath(std::string srcPath)
@@ -414,9 +404,9 @@ static void ParsingAndFillValue(NativeRdb::ValuesBucket &values, const string &c
             break;
         }
         case ResultSetDataType::TYPE_DOUBLE: {
-            double doubleComlunValue;
-            GetDoubleValueFromResultSet(resultSet, columnName, doubleComlunValue);
-            values.PutDouble(columnName, doubleComlunValue);
+            double doubleColumnValue;
+            GetDoubleValueFromResultSet(resultSet, columnName, doubleColumnValue);
+            values.PutDouble(columnName, doubleColumnValue);
             break;
         }
         case ResultSetDataType::TYPE_STRING: {
@@ -573,11 +563,20 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(NativeRdb::RdbStore *u
     }
     MEDIA_INFO_LOG("begin copy local file, scrPath is %{public}s, and target path is %{public}s",
         srcPath.c_str(), targetPath.c_str());
-    int32_t err = CopyOriginPhoto(srcPath, targetPath);
+    // Copy photo files, supporting copy moving photo's video and extraData folder.
+    int32_t err = PhotoFileOperation().CopyPhoto(resultSet, targetPath);
     if (err != E_OK) {
+        MEDIA_ERR_LOG("CopyPhoto failed, srcPath = %{public}s, targetPath = %{public}s, ret = %{public}d",
+            srcPath.c_str(),
+            targetPath.c_str(),
+            err);
         return err;
     }
     NativeRdb::ValuesBucket values;
+    std::string burstKey = PhotoBurstOperation().FindBurstKey(*upgradeStore, resultSet, ownerAlbumId);
+    if (!burstKey.empty()) {
+        values.PutString(PhotoColumn::PHOTO_BURST_KEY, burstKey);
+    }
     err = BuildInsertValuesBucket(values, targetPath, resultSet, false);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Insert meta data fail and delete migrated file %{public}s ", targetPath.c_str());
@@ -1303,6 +1302,8 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     // Clean duplicative album and rebuild expired album
     RebuildAlbumAndFillCloudValue(upgradeStore);
     SetParameterToStartSync();
+    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
+    RefreshAlbums(true);
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
     return err;

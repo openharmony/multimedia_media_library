@@ -66,5 +66,9 @@ void CloudEnhancementGetCount::Report(const std::string &completedType, const st
     PostEventUtils::GetInstance().PostStatProcess(StatType::CLOUD_ENHANCEMENT_GET_COUNT_STAT, map);
 }
 
+std::unordered_map<std::string, int64_t> CloudEnhancementGetCount::GetStartTimes()
+{
+    return startTimes_;
+}
 } // namespace Media
-} // namespace OHOS
+} // namespace OHOS

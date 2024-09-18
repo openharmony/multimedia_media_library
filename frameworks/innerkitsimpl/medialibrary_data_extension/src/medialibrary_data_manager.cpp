@@ -226,88 +226,6 @@ void MediaLibraryDataManager::HandleOtherInitOperations()
     UriSensitiveOperations::DeleteAllSensitiveAsync();
 }
 
-static int32_t ExecSqls(const vector<string> &sqls, shared_ptr<NativeRdb::RdbStore> &store)
-{
-    int32_t err = NativeRdb::E_OK;
-    for (const auto &sql : sqls) {
-        err = store->ExecuteSql(sql);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to exec: %{private}s", sql.c_str());
-            continue;
-        }
-    }
-    return NativeRdb::E_OK;
-}
-
-static void UpdateDateTakenToMillionSecond(shared_ptr<NativeRdb::RdbStore> &store)
-{
-    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond start");
-    const vector<string> updateSql = {
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
-            MediaColumn::MEDIA_DATE_TAKEN + " = " + MediaColumn::MEDIA_DATE_TAKEN +  "*1000 WHERE " +
-            MediaColumn::MEDIA_DATE_TAKEN + " < 1e10",
-    };
-    ExecSqls(updateSql, store);
-    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond end");
-}
-
-static void UpdateDateTakenIndex(shared_ptr<NativeRdb::RdbStore> &store)
-{
-    const vector<string> sqls = {
-        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
-        PhotoColumn::DROP_PHOTO_FAVORITE_INDEX,
-        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
-        PhotoColumn::DROP_INDEX_SCHPT_READY,
-        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
-        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
-        PhotoColumn::INDEX_SCTHP_ADDTIME,
-        PhotoColumn::INDEX_SCHPT_READY,
-    };
-    MEDIA_INFO_LOG("update index for datetaken change start");
-    ExecSqls(sqls, store);
-    MEDIA_INFO_LOG("update index for datetaken change end");
-}
-
-static void OnUpgradeRdbStore(AsyncTaskData* data)
-{
-    auto *taskData = static_cast<UpgradeRdbStoreAsyncTaskData *>(data);
-    auto rdbStore = taskData->rdbStore_;
-    int32_t oldVersion = taskData->oldVersion_;
-    MEDIA_INFO_LOG("Start MediaLibraryDataManager::UpgradeRdbStoreAsync, oldVersion:%{public}d", oldVersion);
-    if (oldVersion < VERSION_ADD_DETAIL_TIME) {
-        UpdateDateTakenToMillionSecond(rdbStore);
-        UpdateDateTakenIndex(rdbStore);
-        ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
-    }
-}
-
-void MediaLibraryDataManager::UpgradeRdbStoreAsync()
-{
-    int32_t oldVersion = MediaLibraryRdbStore::GetRdbOldVersion();
-    if (oldVersion == -1 || oldVersion >= MEDIA_RDB_VERSION) {
-        MEDIA_INFO_LOG("No need to upgrade rdb, oldVersion: %{public}d", oldVersion);
-        return;
-    }
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("RdbStore is null");
-        return;
-    }
-
-    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Can not get asyncWorker");
-        return;
-    }
-    auto *taskData = new (std::nothrow) UpgradeRdbStoreAsyncTaskData(rdbStore_, oldVersion);
-    shared_ptr<MediaLibraryAsyncTask> upgradeRdbTask =
-        make_shared<MediaLibraryAsyncTask>(OnUpgradeRdbStore, taskData);
-    if (upgradeRdbTask != nullptr) {
-        asyncWorker->AddTask(upgradeRdbTask, true);
-    } else {
-        MEDIA_WARN_LOG("Can not init update rdb task");
-    }
-}
-
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
     const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode)
@@ -366,10 +284,55 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_, true);
-    UpgradeRdbStoreAsync();
+    HandleUpgradeRdbAsync();
 
     refCnt_++;
     return E_OK;
+}
+
+void MediaLibraryDataManager::HandleUpgradeRdbAsync()
+{
+    std::thread([&] {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+        if (rdbStore == nullptr) {
+            MEDIA_ERR_LOG("rdbStore is nullptr!");
+            return;
+        }
+        int32_t oldVersion = rdbStore->GetOldVersion();
+        if (oldVersion == -1 || oldVersion >= MEDIA_RDB_VERSION) {
+            MEDIA_INFO_LOG("No need to upgrade rdb, oldVersion: %{public}d", oldVersion);
+            return;
+        }
+        auto rawStore = rdbStore->GetRaw();
+        if (rawStore == nullptr) {
+            MEDIA_ERR_LOG("rawStore is nullptr!");
+            return;
+        }
+        MEDIA_INFO_LOG("oldVersion:%{public}d", oldVersion);
+        // compare older version, update and set old version
+        if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
+            MediaLibraryRdbStore::CreateBurstIndex(*rawStore);
+            rdbStore->SetOldVersion(VERSION_CREATE_BURSTKEY_INDEX);
+        }
+
+        if (oldVersion < VERSION_UPDATE_BURST_DIRTY) {
+            MediaLibraryRdbStore::UpdateBurstDirty(*rawStore);
+            rdbStore->SetOldVersion(VERSION_UPDATE_BURST_DIRTY);
+        }
+
+        if (oldVersion < VERSION_UPGRADE_THUMBNAIL) {
+            MediaLibraryRdbStore::UpdateReadyOnThumbnailUpgrade(*rawStore);
+            rdbStore->SetOldVersion(VERSION_UPGRADE_THUMBNAIL);
+        }
+        if (oldVersion < VERSION_ADD_DETAIL_TIME) {
+            MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(*rawStore);
+            MediaLibraryRdbStore::UpdateDateTakenIndex(*rawStore);
+            ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
+            rdbStore->SetOldVersion(VERSION_ADD_DETAIL_TIME);
+        }
+
+        rdbStore->SetOldVersion(MEDIA_RDB_VERSION);
+    }).detach();
 }
 
 void MediaLibraryDataManager::InitResourceInfo()
@@ -940,14 +903,89 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
     return UpdateInternal(cmd, value, predicates);
 }
 
-int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
+static std::vector<std::string> SplitUriString(const std::string& str, char delimiter)
+{
+    std::vector<std::string> elements;
+    std::stringstream ss(str);
+    std::string item;
+    while (std::getline(ss, item, delimiter)) {
+        if (!item.empty()) {
+            elements.emplace_back(item);
+        }
+    }
+    return elements;
+}
+
+static std::string ExtractFileIdFromUri(const std::string& uri)
+{
+    auto uriParts = SplitUriString(uri, '/');
+    if (uriParts.size() >= MediaLibraryDataManager::URI_MIN_NUM) {
+        return uriParts[uriParts.size() - MediaLibraryDataManager::URI_MIN_NUM];
+    }
+    return "";
+}
+
+static std::string BuildWhereClause(const std::vector<std::string>& dismissAssetArray, int32_t albumId)
+{
+    std::string whereClause = MediaColumn::MEDIA_ID + " IN (";
+
+    for (size_t i = 0; i < dismissAssetArray.size(); ++i) {
+        std::string fileId = ExtractFileIdFromUri(dismissAssetArray[i]);
+        if (fileId.empty()) {
+            continue;
+        }
+
+        if (i > 0) {
+            whereClause += ",";
+        }
+
+        whereClause += "'" + fileId + "'";
+    }
+
+    whereClause += ") AND EXISTS (SELECT 1 FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID +
+        " = " + std::to_string(albumId) + " AND " +
+        ANALYSIS_ALBUM_TABLE + ".tag_id = " + VISION_IMAGE_FACE_TABLE + ".tag_id)";
+
+    return whereClause;
+}
+
+static int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
     const DataShare::DataSharePredicates &predicates)
+{
+    const string &clause = predicates.GetWhereClause();
+    std::vector<std::string> clauses = SplitUriString(clause, ',');
+    if (clauses.empty()) {
+        MEDIA_ERR_LOG("Clause is empty, cannot extract album ID.");
+        return E_INVALID_FILEID;
+    }
+
+    std::string albumStr = clauses[0];
+    int32_t albumId = std::stoi(albumStr);
+
+    std::vector<std::string> uris;
+    for (size_t i = 1; i < clauses.size(); ++i) {
+        uris.push_back(clauses[i]);
+    }
+
+    if (uris.empty()) {
+        MEDIA_ERR_LOG("No URIs found after album ID.");
+        return E_INVALID_FILEID;
+    }
+
+    std::string predicate = BuildWhereClause(uris, albumId);
+    cmd.SetValueBucket(value);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(predicate);
+    return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd);
+}
+
+static int32_t HandleFilesystemOperations(MediaLibraryCommand &cmd)
 {
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
             auto ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
             if (ret == E_SAME_PATH) {
-                break;
+                return E_OK;
             } else {
                 return ret;
             }
@@ -955,10 +993,24 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::FILESYSTEM_DIR:
             // supply a ModifyDirOperation here to replace
             // modify in the HandleDirOperations in Insert function, if need
-            break;
+            return E_OK;
+
         case OperationObject::FILESYSTEM_ALBUM: {
             return MediaLibraryAlbumOperations::ModifyAlbumOperation(cmd);
         }
+        default:
+            return E_OK;
+    }
+}
+
+int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
+    const DataShare::DataSharePredicates &predicates)
+{
+    int32_t result = HandleFilesystemOperations(cmd);
+    if (result != E_OK) {
+        return result;
+    }
+    switch (cmd.GetOprnObject()) {
         case OperationObject::PAH_PHOTO:
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO: {
@@ -976,13 +1028,11 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
             return MediaLibraryLocationOperations::UpdateOperation(cmd);
-
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryStoryOperations::UpdateOperation(cmd);
-        
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             std::vector<std::string> columns;
             MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
@@ -992,6 +1042,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             return ProcessThumbnailBatchCmd(cmd, value, predicates);
         case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
             return EnhancementManager::GetInstance().HandleEnhancementUpdateOperation(cmd);
+        case OperationObject::VISION_IMAGE_FACE:
+            return HandleAnalysisFaceUpdate(cmd, value, predicates);
         default:
             break;
     }
