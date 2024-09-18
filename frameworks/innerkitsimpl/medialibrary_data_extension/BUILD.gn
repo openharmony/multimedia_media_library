@@ -205,6 +205,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
     "src/background_cloud_file_processor.cpp",
+    "src/hi_audit.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
     "src/medialibrary_album_operations.cpp",
@@ -234,6 +235,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_vision_operations.cpp",
     "src/photo_map_operations.cpp",
     "src/trash_async_worker.cpp",
+    "src/zip_util.cpp",
   ]
   sources += media_scan_source
   sources += media_thumbnail_source
@@ -299,6 +301,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
     "window_manager:libdm",
+    "zlib:shared_libz",
   ]
 
   public_external_deps = [ "e2fsprogs:libext2_uuid" ]
