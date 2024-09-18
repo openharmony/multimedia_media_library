@@ -765,7 +765,7 @@ int32_t CheckHasSameNameAlbum(const string &newAlbumName, const shared_ptr<Nativ
     int32_t albumType, albumSubType;
     GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_TYPE, albumType);
     GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_SUBTYPE, albumSubType);
-    const std::string QUERY_ALBUM_INFO = 
+    const std::string QUERY_ALBUM_INFO =
         "SELECT * FROM PhotoAlbum WHERE album_name = '" + newAlbumName + "' AND dirty = 4 AND album_type = " +
         to_string(albumType) + " AND album_subtype = " + to_string(albumSubType);
     shared_ptr<NativeRdb::ResultSet> resultSetAlbum = rdbStore->QuerySql(QUERY_ALBUM_INFO);
@@ -787,7 +787,6 @@ int32_t SetPhotoAlbumName(const ValuesBucket &values, const DataSharePredicates 
     shared_ptr<NativeRdb::RdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
     if (rdbStore == nullptr || rdbPredicates.GetWhereArgs().empty()) {
-        MEDIA_ERR_LOG("set album name: uniStore is nullptr or id is empty! failed query album order");
         return E_DB_FAIL;
     }
     int32_t oldAlbumId = atoi(rdbPredicates.GetWhereArgs()[0].c_str());
