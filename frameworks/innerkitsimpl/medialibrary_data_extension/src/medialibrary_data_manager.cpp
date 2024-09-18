@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 #define MLOG_TAG "DataManager"
 
 #include "medialibrary_data_manager.h"
@@ -79,6 +79,7 @@
 #include "medialibrary_search_operations.h"
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
+#include "enhancement_manager.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "photo_map_operations.h"
@@ -98,6 +99,9 @@
 #include "parameter.h"
 #include "parameters.h"
 #include "uuid.h"
+#ifdef HAS_THERMAL_MANAGER_PART
+#include "thermal_mgr_client.h"
+#endif
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -118,6 +122,7 @@ unique_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
 static const int32_t UUID_STR_LENGTH = 37;
+const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 2;
 
 #ifdef DISTRIBUTED
 static constexpr int MAX_QUERY_THUMBNAIL_KEY_COUNT = 20;
@@ -221,70 +226,6 @@ void MediaLibraryDataManager::HandleOtherInitOperations()
     UriSensitiveOperations::DeleteAllSensitiveAsync();
 }
 
-static int32_t ExecSqls(const vector<string> &sqls, shared_ptr<NativeRdb::RdbStore> &store)
-{
-    int32_t err = NativeRdb::E_OK;
-    for (const auto &sql : sqls) {
-        err = store->ExecuteSql(sql);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to exec: %{private}s", sql.c_str());
-            continue;
-        }
-    }
-    return NativeRdb::E_OK;
-}
-
-static void UpdateDateTakenToMillionSecond(shared_ptr<NativeRdb::RdbStore> &store)
-{
-    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond start");
-    const vector<string> updateSql = {
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
-            MediaColumn::MEDIA_DATE_TAKEN + " = " + MediaColumn::MEDIA_DATE_TAKEN +  "*1000 WHERE " +
-            MediaColumn::MEDIA_DATE_TAKEN + " < 1e10",
-    };
-    ExecSqls(updateSql, store);
-    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond end");
-}
-
-static void OnUpgradeRdbStore(AsyncTaskData* data)
-{
-    auto *taskData = static_cast<UpgradeRdbStoreAsyncTaskData *>(data);
-    auto rdbStore = taskData->rdbStore_;
-    int32_t oldVersion = taskData->oldVersion_;
-    MEDIA_INFO_LOG("Start MediaLibraryDataManager::UpgradeRdbStoreAsync, oldVersion:%{public}d", oldVersion);
-    if (oldVersion < VERSION_ADD_DETAIL_TIME) {
-        UpdateDateTakenToMillionSecond(rdbStore);
-        ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
-    }
-}
-
-void MediaLibraryDataManager::UpgradeRdbStoreAsync()
-{
-    int32_t oldVersion = MediaLibraryRdbStore::GetRdbOldVersion();
-    if (oldVersion == -1 || oldVersion >= MEDIA_RDB_VERSION) {
-        MEDIA_INFO_LOG("No need to upgrade rdb, oldVersion: %{public}d", oldVersion);
-        return;
-    }
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("RdbStore is null");
-        return;
-    }
-
-    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Can not get asyncWorker");
-        return;
-    }
-    auto *taskData = new (std::nothrow) UpgradeRdbStoreAsyncTaskData(rdbStore_, oldVersion);
-    shared_ptr<MediaLibraryAsyncTask> upgradeRdbTask =
-        make_shared<MediaLibraryAsyncTask>(OnUpgradeRdbStore, taskData);
-    if (upgradeRdbTask != nullptr) {
-        asyncWorker->AddTask(upgradeRdbTask, true);
-    } else {
-        MEDIA_WARN_LOG("Can not init update rdb task");
-    }
-}
-
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
     const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode)
@@ -304,7 +245,6 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
         sceneCode = DfxType::START_RDB_STORE_FAIL;
         return errCode;
     }
-
     if (!MediaLibraryKvStoreManager::GetInstance().InitMonthAndYearKvStore(KvStoreRoleType::OWNER)) {
         MEDIA_ERR_LOG("failed at InitMonthAndYearKvStore");
     }
@@ -344,10 +284,55 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_, true);
-    UpgradeRdbStoreAsync();
+    HandleUpgradeRdbAsync();
 
     refCnt_++;
     return E_OK;
+}
+
+void MediaLibraryDataManager::HandleUpgradeRdbAsync()
+{
+    std::thread([&] {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+        if (rdbStore == nullptr) {
+            MEDIA_ERR_LOG("rdbStore is nullptr!");
+            return;
+        }
+        int32_t oldVersion = rdbStore->GetOldVersion();
+        if (oldVersion == -1 || oldVersion >= MEDIA_RDB_VERSION) {
+            MEDIA_INFO_LOG("No need to upgrade rdb, oldVersion: %{public}d", oldVersion);
+            return;
+        }
+        auto rawStore = rdbStore->GetRaw();
+        if (rawStore == nullptr) {
+            MEDIA_ERR_LOG("rawStore is nullptr!");
+            return;
+        }
+        MEDIA_INFO_LOG("oldVersion:%{public}d", oldVersion);
+        // compare older version, update and set old version
+        if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
+            MediaLibraryRdbStore::CreateBurstIndex(*rawStore);
+            rdbStore->SetOldVersion(VERSION_CREATE_BURSTKEY_INDEX);
+        }
+
+        if (oldVersion < VERSION_UPDATE_BURST_DIRTY) {
+            MediaLibraryRdbStore::UpdateBurstDirty(*rawStore);
+            rdbStore->SetOldVersion(VERSION_UPDATE_BURST_DIRTY);
+        }
+
+        if (oldVersion < VERSION_UPGRADE_THUMBNAIL) {
+            MediaLibraryRdbStore::UpdateReadyOnThumbnailUpgrade(*rawStore);
+            rdbStore->SetOldVersion(VERSION_UPGRADE_THUMBNAIL);
+        }
+        if (oldVersion < VERSION_ADD_DETAIL_TIME) {
+            MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(*rawStore);
+            MediaLibraryRdbStore::UpdateDateTakenIndex(*rawStore);
+            ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
+            rdbStore->SetOldVersion(VERSION_ADD_DETAIL_TIME);
+        }
+
+        rdbStore->SetOldVersion(MEDIA_RDB_VERSION);
+    }).detach();
 }
 
 void MediaLibraryDataManager::InitResourceInfo()
@@ -551,9 +536,11 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::FILESYSTEM_DIR:
             return MediaLibraryDirOperations::HandleDirOperation(cmd);
 
-        case OperationObject::SMART_ALBUM:
+        case OperationObject::SMART_ALBUM: {
+            string packageName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+            MEDIA_INFO_LOG("%{public}s call smart album insert!", packageName.c_str());
             return MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperation(cmd);
-
+        }
         case OperationObject::SMART_ALBUM_MAP:
             return MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd);
 
@@ -916,14 +903,89 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
     return UpdateInternal(cmd, value, predicates);
 }
 
-int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
+static std::vector<std::string> SplitUriString(const std::string& str, char delimiter)
+{
+    std::vector<std::string> elements;
+    std::stringstream ss(str);
+    std::string item;
+    while (std::getline(ss, item, delimiter)) {
+        if (!item.empty()) {
+            elements.emplace_back(item);
+        }
+    }
+    return elements;
+}
+
+static std::string ExtractFileIdFromUri(const std::string& uri)
+{
+    auto uriParts = SplitUriString(uri, '/');
+    if (uriParts.size() >= MediaLibraryDataManager::URI_MIN_NUM) {
+        return uriParts[uriParts.size() - MediaLibraryDataManager::URI_MIN_NUM];
+    }
+    return "";
+}
+
+static std::string BuildWhereClause(const std::vector<std::string>& dismissAssetArray, int32_t albumId)
+{
+    std::string whereClause = MediaColumn::MEDIA_ID + " IN (";
+
+    for (size_t i = 0; i < dismissAssetArray.size(); ++i) {
+        std::string fileId = ExtractFileIdFromUri(dismissAssetArray[i]);
+        if (fileId.empty()) {
+            continue;
+        }
+
+        if (i > 0) {
+            whereClause += ",";
+        }
+
+        whereClause += "'" + fileId + "'";
+    }
+
+    whereClause += ") AND EXISTS (SELECT 1 FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID +
+        " = " + std::to_string(albumId) + " AND " +
+        ANALYSIS_ALBUM_TABLE + ".tag_id = " + VISION_IMAGE_FACE_TABLE + ".tag_id)";
+
+    return whereClause;
+}
+
+static int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
     const DataShare::DataSharePredicates &predicates)
+{
+    const string &clause = predicates.GetWhereClause();
+    std::vector<std::string> clauses = SplitUriString(clause, ',');
+    if (clauses.empty()) {
+        MEDIA_ERR_LOG("Clause is empty, cannot extract album ID.");
+        return E_INVALID_FILEID;
+    }
+
+    std::string albumStr = clauses[0];
+    int32_t albumId = std::stoi(albumStr);
+
+    std::vector<std::string> uris;
+    for (size_t i = 1; i < clauses.size(); ++i) {
+        uris.push_back(clauses[i]);
+    }
+
+    if (uris.empty()) {
+        MEDIA_ERR_LOG("No URIs found after album ID.");
+        return E_INVALID_FILEID;
+    }
+
+    std::string predicate = BuildWhereClause(uris, albumId);
+    cmd.SetValueBucket(value);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(predicate);
+    return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd);
+}
+
+static int32_t HandleFilesystemOperations(MediaLibraryCommand &cmd)
 {
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
             auto ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
             if (ret == E_SAME_PATH) {
-                break;
+                return E_OK;
             } else {
                 return ret;
             }
@@ -931,10 +993,24 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::FILESYSTEM_DIR:
             // supply a ModifyDirOperation here to replace
             // modify in the HandleDirOperations in Insert function, if need
-            break;
+            return E_OK;
+
         case OperationObject::FILESYSTEM_ALBUM: {
             return MediaLibraryAlbumOperations::ModifyAlbumOperation(cmd);
         }
+        default:
+            return E_OK;
+    }
+}
+
+int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
+    const DataShare::DataSharePredicates &predicates)
+{
+    int32_t result = HandleFilesystemOperations(cmd);
+    if (result != E_OK) {
+        return result;
+    }
+    switch (cmd.GetOprnObject()) {
         case OperationObject::PAH_PHOTO:
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO: {
@@ -947,19 +1023,16 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             }
             break;
         }
-        case OperationObject::PHOTO_ALBUM: {
+        case OperationObject::PHOTO_ALBUM:
             return MediaLibraryAlbumOperations::HandlePhotoAlbum(cmd.GetOprnType(), value, predicates);
-        }
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
             return MediaLibraryLocationOperations::UpdateOperation(cmd);
-
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryStoryOperations::UpdateOperation(cmd);
-        
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             std::vector<std::string> columns;
             MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
@@ -967,6 +1040,10 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         }
         case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE:
             return ProcessThumbnailBatchCmd(cmd, value, predicates);
+        case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
+            return EnhancementManager::GetInstance().HandleEnhancementUpdateOperation(cmd);
+        case OperationObject::VISION_IMAGE_FACE:
+            return HandleAnalysisFaceUpdate(cmd, value, predicates);
         default:
             break;
     }
@@ -1111,9 +1188,9 @@ static string generateRegexpMatchForNumber(const int32_t num)
     return strRegexpMatch;
 }
 
-static string generateUpdateSql(const bool isCover, const string title, const int32_t mapAlbum)
+static string generateUpdateSql(const bool isCover, const string title, const int32_t ownerAlbumId)
 {
-    int32_t index = title.find_first_of("BURST");
+    uint32_t index = title.find_first_of("BURST");
     string globMember = title.substr(0, index) + "BURST" + generateRegexpMatchForNumber(3);
     string globCover = globMember + "_COVER";
     string updateSql;
@@ -1125,14 +1202,13 @@ static string generateUpdateSql(const bool isCover, const string title, const in
             " NOT LIKE '%COVER%' THEN " + to_string(static_cast<int32_t>(BurstCoverLevelType::MEMBER)) + " ELSE " +
             to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) + " END WHERE " + MediaColumn::MEDIA_TYPE +
             " = " + to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
-            to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + MediaColumn::MEDIA_ID +
-            " IN (SELECT " + PhotoMap::ASSET_ID + " FROM " + PhotoMap::TABLE + " WHERE " + PhotoMap::ALBUM_ID + " = " +
-            to_string(mapAlbum) + ") AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globMember +
-            "') OR LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globCover + "'));";
+            to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
+            " = " + to_string(ownerAlbumId) + " AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" +
+            globMember + "') OR LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globCover + "'));";
     } else {
-        string subWhere = "FROM " + PhotoColumn::PHOTOS_TABLE + " AS p2 JOIN " + PhotoMap::TABLE + " AS p3 ON p2." +
-            MediaColumn::MEDIA_ID + " = p3." + PhotoMap::ASSET_ID + " WHERE LOWER(p2." + MediaColumn::MEDIA_TITLE +
-            ") GLOB LOWER('" + globCover + "') AND p3." + PhotoMap::ALBUM_ID + " = " + to_string(mapAlbum);
+        string subWhere = "FROM " + PhotoColumn::PHOTOS_TABLE + " AS p2 WHERE LOWER(p2." + MediaColumn::MEDIA_TITLE +
+            ") GLOB LOWER('" + globCover + "') AND p2." + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = " +
+            to_string(ownerAlbumId);
 
         updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " AS p1 SET " + PhotoColumn::PHOTO_BURST_KEY +
             " = (SELECT CASE WHEN p2." + PhotoColumn::PHOTO_BURST_KEY + " IS NOT NULL THEN p2." +
@@ -1142,9 +1218,8 @@ static string generateUpdateSql(const bool isCover, const string title, const in
             to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) + " END " + subWhere + "), " +
             PhotoColumn::PHOTO_SUBTYPE + " = (SELECT CASE WHEN COUNT(1) > 0 THEN " +
             to_string(static_cast<int32_t>(PhotoSubType::BURST)) + " ELSE p1." + PhotoColumn::PHOTO_SUBTYPE + " END " +
-            subWhere + ") WHERE p1." + MediaColumn::MEDIA_TITLE + " = '" + title + "' AND EXISTS(SELECT 1 FROM " +
-            PhotoMap::TABLE + " AS p3 WHERE p1." + MediaColumn::MEDIA_ID + " = p3." + PhotoMap::ASSET_ID + " AND p3." +
-            PhotoMap::ALBUM_ID + " = " + to_string(mapAlbum) + ");";
+            subWhere + ") WHERE p1." + MediaColumn::MEDIA_TITLE + " = '" + title + "' AND p1." +
+            PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = " + to_string(ownerAlbumId);
     }
     return updateSql;
 }
@@ -1173,12 +1248,12 @@ static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::RdbSto
         if (resultSet->GetColumnIndex(MediaColumn::MEDIA_TITLE, columnIndex) == NativeRdb::E_OK) {
             resultSet->GetString(columnIndex, title);
         }
-        int32_t mapAlbum = 0;
-        if (resultSet->GetColumnIndex(PhotoMap::ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
-            resultSet->GetInt(columnIndex, mapAlbum);
+        int32_t ownerAlbumId = 0;
+        if (resultSet->GetColumnIndex(PhotoColumn::PHOTO_OWNER_ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetInt(columnIndex, ownerAlbumId);
         }
 
-        string updateSql = generateUpdateSql(isCover, title, mapAlbum);
+        string updateSql = generateUpdateSql(isCover, title, ownerAlbumId);
         ret = rdbStore->ExecuteSql(updateSql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("rdbStore->ExecuteSql failed, ret = %{public}d", ret);
@@ -1191,9 +1266,8 @@ static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::RdbSto
 static shared_ptr<NativeRdb::ResultSet> QueryBurst(shared_ptr<NativeRdb::RdbStore> rdbStore,
     const string globNameRule1, const string globNameRule2)
 {
-    string querySql = "SELECT p1." + MediaColumn::MEDIA_TITLE + ", p2." + PhotoMap::ALBUM_ID +
-        " FROM " + PhotoColumn::PHOTOS_TABLE + " AS p1 JOIN " + PhotoMap::TABLE + " AS p2 ON p1." +
-        MediaColumn::MEDIA_ID + " = p2." + PhotoMap::ASSET_ID + " WHERE " + MediaColumn::MEDIA_TYPE + " = " +
+    string querySql = "SELECT " + MediaColumn::MEDIA_TITLE + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
+        " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_TYPE + " = " +
         to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
         to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_BURST_KEY +
         " IS NULL AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule1 + "') OR LOWER(" +
@@ -1352,6 +1426,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(MediaLibraryCommand &
     auto absResultSet = QueryRdb(cmd, columns, predicates, errCode);
     if (absResultSet == nullptr) {
         errCode = (errCode != E_OK) ? errCode : E_FAIL;
+        MEDIA_ERR_LOG("Query rdb failed, errCode: %{public}d", errCode);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
             {KEY_OPT_TYPE, OptType::QUERY}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
@@ -1490,42 +1565,54 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::ANALYSIS_PHOTO_ALBUM:
             return QueryAnalysisAlbum(cmd, columns, predicates);
         case OperationObject::PHOTO_MAP:
-        case OperationObject::ANALYSIS_PHOTO_MAP: {
+        case OperationObject::ANALYSIS_PHOTO_MAP:
             return PhotoMapOperations::QueryPhotoAssets(
                 RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);
-        }
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO:
         case OperationObject::PAH_MOVING_PHOTO:
             return MediaLibraryAssetOperations::QueryOperation(cmd, columns);
-        case OperationObject::VISION_START ... OperationObject::VISION_END: {
-            auto queryResult = MediaLibraryRdbStore::Query(
-                RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-            if (cmd.GetOprnObject() == OperationObject::VISION_OCR && queryResult != nullptr) {
-                queryResult = MediaLibraryVisionOperations::DealWithActiveOcrTask(
-                    queryResult, predicates, columns, cmd);
-            }
-            return queryResult;
-        }
+        case OperationObject::VISION_START ... OperationObject::VISION_END:
+            return HandleOCRVisionQuery(cmd, columns, predicates);
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
         case OperationObject::GEO_PHOTO:
-            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::SEARCH_TOTAL:
-            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
-            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::APP_URI_PERMISSION_INNER:
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
             return MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
+        case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
+            return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
     }
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::HandleOCRVisionQuery(
+    MediaLibraryCommand &cmd, const vector<string> &columns, const DataSharePredicates &predicates)
+{
+    auto queryResult = MediaLibraryRdbStore::Query(
+        RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+
+#ifdef HAS_THERMAL_MANAGER_PART
+    auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
+    if (static_cast<int32_t>(thermalMgrClient.GetThermalLevel()) > PROPER_DEVICE_TEMPERATURE_LEVEL) {
+        return queryResult;
+    }
+#endif
+
+    if (cmd.GetOprnObject() == OperationObject::VISION_OCR && queryResult != nullptr) {
+        queryResult = MediaLibraryVisionOperations::DealWithActiveOcrTask(
+            queryResult, predicates, columns, cmd);
+    }
+
+    return queryResult;
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryCommand &cmd,

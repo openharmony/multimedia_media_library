@@ -24,10 +24,14 @@
 #include "backup_const.h"
 #include "rdb_helper.h"
 #include "result_set.h"
+#include "medialibrary_errno.h"
+#include "medialibrary_rdb_utils.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
 using FileIdPair = std::pair<int32_t, int32_t>;
+using TagPairOpt = std::pair<std::optional<std::string>, std::optional<std::string>>;
 class BackupDatabaseUtils {
 public:
     static int32_t InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
@@ -47,7 +51,7 @@ public:
     static int32_t QueryGalleryHiddenCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static int32_t QueryGalleryTrashedCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static int32_t QueryGalleryCloneCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
-    static int32_t QueryGallerySDCardCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
+    static int32_t QueryGallerySdCardCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static int32_t QueryGalleryScreenVideoCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static int32_t QueryGalleryCloudCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static int32_t QueryGalleryFavoriteCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
@@ -66,7 +70,7 @@ public:
     static int32_t QueryUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &type);
     static std::string GarbleInfoName(const std::string &infoName);
     static void UpdateSelection(std::string &selection, const std::string &selectionToAdd, bool needWrap = false);
-    static void UpdateSDWhereClause(std::string &querySql, bool shouldIncludeSD);
+    static void UpdateSdWhereClause(std::string &querySql, bool shouldIncludeSd);
     static int32_t GetBlob(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet,
         std::vector<uint8_t> &blobVal);
     static std::string GetLandmarksStr(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet);
@@ -84,8 +88,6 @@ public:
     static float GetLandmarksScale(int32_t width, int32_t height);
     static bool IsLandmarkValid(const FaceInfo &faceInfo, float landmarkX, float landmarkY);
     static bool IsValInBound(float val, float minVal, float maxVal);
-    static void UpdateGroupTag(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
-        const std::unordered_map<std::string, std::string> &groupTagMap);
     static std::vector<std::pair<std::string, std::string>> GetColumnInfoPairs(
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName);
     static std::vector<std::string> GetCommonColumnInfos(std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
@@ -107,11 +109,29 @@ public:
     static void UpdateFaceAnalysisTblStatus(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void DeleteExistingImageFaceData(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
         const std::vector<FileIdPair>& fileIdPair);
+    static std::vector<TagPairOpt> QueryTagInfo(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet,
+        TagPairOpt& tagPair);
+    static void UpdateGroupTagColumn(const std::vector<TagPairOpt>& updatedPairs,
+        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void UpdateFaceGroupTagsUnion(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void UpdateTagPairs(std::vector<TagPairOpt>& updatedPairs, const std::string& newGroupTag,
+        const std::vector<std::string>& tagIds);
+    static void UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
+        const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap);
+    static void UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        const std::vector<FileInfo> &fileInfos);
 
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
     template <typename T>
     static std::string JoinSQLValues(const std::vector<T>& values, std::string_view delimiter);
+    template <typename T>
+    struct always_false : std::false_type {};
+    template <typename T>
+    static std::optional<T> GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        const std::string &columnName);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
@@ -168,6 +188,38 @@ std::string BackupDatabaseUtils::JoinValues(const std::vector<T>& values, std::s
         }
     }
     return ss.str();
+}
+
+template<typename T>
+std::optional<T> BackupDatabaseUtils::GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    const std::string &columnName)
+{
+    int32_t columnIndex;
+    int32_t err = resultSet->GetColumnIndex(columnName, columnIndex);
+    if (err != E_OK) {
+        return std::nullopt;
+    }
+
+    bool isNull = false;
+    int32_t errCode = resultSet->IsColumnNull(columnIndex, isNull);
+    if (errCode || isNull) {
+        return std::nullopt;
+    }
+
+    T value;
+    if constexpr (std::is_same_v<T, int32_t>) {
+        errCode = resultSet->GetInt(columnIndex, value);
+    } else if constexpr (std::is_same_v<T, int64_t>) {
+        errCode = resultSet->GetLong(columnIndex, value);
+    } else if constexpr (std::is_same_v<T, double>) {
+        errCode = resultSet->GetDouble(columnIndex, value);
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        errCode = resultSet->GetString(columnIndex, value);
+    } else {
+        static_assert(always_false<T>::value, "Unsupported type for GetOptionalValue");
+    }
+
+    return errCode ? std::nullopt : std::optional<T>(value);
 }
 } // namespace Media
 } // namespace OHOS

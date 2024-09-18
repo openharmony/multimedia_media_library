@@ -135,6 +135,9 @@ public:
 
     EXPORT void SetPhotoSubType(const VariantData &photoSubType);
     EXPORT int32_t GetPhotoSubType() const;
+    
+    EXPORT void SetMovingPhotoEffectMode(const VariantData &movingPhotoEffectMode);
+    EXPORT int32_t GetMovingPhotoEffectMode() const;
 
     EXPORT void SetFrontCamera(const VariantData &forntcamera);
     EXPORT std::string GetFrontCamera() const;
@@ -152,7 +155,13 @@ public:
     int32_t GetFrameIndex() const;
 
     EXPORT void SetIsTemp(const VariantData &isTemp);
-    EXPORT int32_t GetIsTemp();
+    EXPORT int32_t GetIsTemp() const;
+
+    EXPORT void SetPhotoQuality(const VariantData &photoQuality);
+    EXPORT int32_t GetPhotoQuality() const;
+
+    EXPORT void SetDirty(const VariantData &dirty);
+    EXPORT int32_t GetDirty() const;
 
     EXPORT void SetDetailTime(const VariantData &detailTime);
     EXPORT std::string GetDetailTime() const;
@@ -226,6 +235,8 @@ private:
     // photo subtype
     int32_t photoSubType_ = 0;
 
+    int32_t movingPhotoEffectMode_ = 0;
+
     bool forAdd_ = false;
     std::string tableName_;
 
@@ -242,6 +253,9 @@ private:
     int32_t frameIndex_ = 0;
 
     int32_t isTemp_;
+    int32_t photoQuality_;
+    int32_t dirty_;
+
      // front camera
     std::string frontcamera_;
 

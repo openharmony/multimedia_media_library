@@ -23,6 +23,15 @@
 
 namespace OHOS {
 namespace Media {
+class FileAccessHelper {
+public:
+    bool GetValidPath(std::string &filePath);
+
+private:
+    bool ConvertCurrentPath(std::string &curPath, std::string &resultPath);
+    std::map<std::string, std::string> pathMap = {};
+    std::mutex mapMutex;
+};
 class BackupFileUtils {
 public:
     static int32_t FillMetadata(std::unique_ptr<Metadata> &data);
@@ -39,20 +48,25 @@ public:
     static void ModifyFile(const std::string path, int64_t modifiedTime);
     static std::string GetFileNameFromPath(const string &path);
     static std::string GetFileTitle(const string &displayName);
-    static bool IsFileValid(const std::string &filePath, int32_t sceneCode);
+    static bool IsFileValid(std::string &filePath, int32_t sceneCode,
+        string relativePath = "", bool hasLowQualityImage = false);
     static std::string GetDetailsPath(const std::string &type,
         const std::unordered_map<std::string, int32_t> &failedFiles);
     static std::string GetFailedFilesStr(const std::unordered_map<std::string, int32_t> &failedFiles);
     static bool GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel, size_t &pos);
-    static bool ShouldIncludeSD(const std::string &prefix);
-    static void DeleteSDDatabase(const std::string &prefix);
+    static bool ShouldIncludeSd(const std::string &prefix);
+    static void DeleteSdDatabase(const std::string &prefix);
     static bool IsLivePhoto(const FileInfo &fileInfo);
     static bool ConvertToMovingPhoto(FileInfo &fileInfo);
+    static string ConvertLowQualityPath(int32_t sceneCode, const std::string &filePath, const string &relativePath);
+    static bool IsLowQualityImage(std::string &filePath, int32_t sceneCode,
+        string relativePath, bool hasLowQualityImage);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
     static int32_t CreateAssetRealName(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &name);
+    static std::shared_ptr<FileAccessHelper> fileAccessHelper_;
 };
 } // namespace Media
 } // namespace OHOS

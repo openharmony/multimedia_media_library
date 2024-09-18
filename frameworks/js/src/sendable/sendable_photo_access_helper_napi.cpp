@@ -779,6 +779,8 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     if (context->assetType == TYPE_PHOTO) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
         predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
+        predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+            to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     }
 
     napi_value result = nullptr;

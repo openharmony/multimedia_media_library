@@ -16,11 +16,13 @@
 #include "media_access_helper_capi.h"
 
 #include "media_log.h"
-#include "media_asset_change_request_impl.h"
+#include "oh_media_asset_change_request.h"
 
 MediaLibrary_ErrorCode OH_MediaAccessHelper_ApplyChanges(OH_MediaAssetChangeRequest* changeRequest)
 {
     CHECK_AND_RETURN_RET_LOG(changeRequest != nullptr, MEDIA_LIBRARY_PARAMETER_ERROR, "changeRequest is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(changeRequest->request_ != nullptr, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED,
+        "request_ is nullptr!");
 
-    return changeRequest->ApplyChanges();
+    return changeRequest->request_->ApplyChanges();
 }

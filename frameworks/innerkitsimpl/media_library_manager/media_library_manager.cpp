@@ -218,14 +218,12 @@ int32_t MediaLibraryManager::OpenAsset(string &uri, const string openMode)
         return E_ERR;
     }
 
-    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
-        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
+    if (sDataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("Failed to open Asset, datashareHelper is nullptr");
         return E_ERR;
     }
     Uri openUri(uri);
-    return dataShareHelper->OpenFile(openUri, openMode);
+    return sDataShareHelper_->OpenFile(openUri, openMode);
 }
 
 int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
@@ -299,7 +297,7 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
 }
 
 std::shared_ptr<DataShareResultSet> GetResultSetFromPhotos(const string &value, vector<string> &columns,
-    sptr<IRemoteObject> &token)
+    sptr<IRemoteObject> &token, shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
 {
     if (!CheckPhotoUri(value)) {
         MEDIA_ERR_LOG("Failed to check invalid uri: %{public}s", value.c_str());
@@ -310,8 +308,6 @@ std::shared_ptr<DataShareResultSet> GetResultSetFromPhotos(const string &value, 
     string fileId = MediaFileUtils::GetIdFromUri(value);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     DatashareBusinessError businessError;
-    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
-        DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     if (dataShareHelper == nullptr) {
         MEDIA_ERR_LOG("datashareHelper is nullptr");
         return nullptr;
@@ -323,7 +319,7 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
     vector<string> &columns)
 {
     if (columnName == MEDIA_DATA_DB_URI) {
-        return GetResultSetFromPhotos(value, columns, token_);
+        return GetResultSetFromPhotos(value, columns, token_, sDataShareHelper_);
     }
     Uri uri(MEDIALIBRARY_MEDIA_PREFIX);
     DataSharePredicates predicates;
@@ -919,9 +915,7 @@ int32_t MediaLibraryManager::ReadPrivateMovingPhoto(const string &uri)
         return E_ERR;
     }
 
-    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
-        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
+    if (sDataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("Failed to read video of moving photo, datashareHelper is nullptr");
         return E_ERR;
     }
@@ -929,7 +923,7 @@ int32_t MediaLibraryManager::ReadPrivateMovingPhoto(const string &uri)
     string movingPhotoUri = uri;
     MediaFileUtils::UriAppendKeyValue(movingPhotoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_PRIVATE_LIVE_PHOTO);
     Uri openMovingPhotoUri(movingPhotoUri);
-    return dataShareHelper->OpenFile(openMovingPhotoUri, MEDIA_FILEMODE_READONLY);
+    return sDataShareHelper_->OpenFile(openMovingPhotoUri, MEDIA_FILEMODE_READONLY);
 }
 
 std::string MediaLibraryManager::GetMovingPhotoImageUri(const string &uri)

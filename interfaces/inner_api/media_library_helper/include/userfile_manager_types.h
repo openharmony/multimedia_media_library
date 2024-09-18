@@ -110,7 +110,8 @@ enum PhotoAlbumSubType : int32_t {
     SCREENSHOT,
     CAMERA,
     IMAGE,
-    SYSTEM_END = IMAGE,
+    CLOUD_ENHANCEMENT,
+    SYSTEM_END = CLOUD_ENHANCEMENT,
     SOURCE_GENERIC = 2049,
     ANALYSIS_START = 4097,
     CLASSIFY = ANALYSIS_START,
@@ -151,6 +152,23 @@ enum class MovingPhotoEffectMode : int32_t {
     IMAGE_ONLY = 10
 };
 
+enum class CloudEnhancementTaskStage : int32_t {
+    TASK_STAGE_EXCEPTION = -1,
+    TASK_STAGE_PREPARING,
+    TASK_STAGE_UPLOADING,
+    TASK_STAGE_EXECUTING,
+    TASK_STAGE_DOWNLOADING,
+    TASK_STAGE_FAILED,
+    TASK_STAGE_COMPLETED
+};
+
+enum class CloudEnhancementState : int32_t {
+    UNAVAILABLE = 0,
+    AVAILABLE,
+    EXECUTING,
+    COMPLETED
+};
+
 const std::string URI_PARAM_API_VERSION = "api_version";
 
 enum class MediaLibraryApi : uint32_t {
@@ -188,21 +206,9 @@ enum class CoverSatisfiedType : uint8_t {
     NO_SETTING = 0,
     DEFAULT_SETTING = 1,
     USER_SETTING = 2,
-    ANALYSIS_SETTING = 4
-};
-
-enum ImageFileType : int32_t {
-    JPEG = 1,
-    HEIF = 2
-};
-
-const std::string MIME_TYPE_JPEG = "image/jpeg";
-
-const std::string MIME_TYPE_HEIF = "image/heif";
-
-const std::unordered_map<ImageFileType, std::string> IMAGE_FILE_TYPE_MAP = {
-    {JPEG, MIME_TYPE_JPEG},
-    {HEIF, MIME_TYPE_HEIF},
+    USER_SETTING_EDITE = 3,
+    BEAUTY_SETTING = 4,
+    BEAUTY_SETTING_EDITE = 5
 };
 } // namespace Media
 } // namespace OHOS

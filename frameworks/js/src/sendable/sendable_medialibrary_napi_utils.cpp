@@ -208,12 +208,18 @@ static bool HandleSpecialDateTypePredicate(const OperationItem &item,
 {
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
-    vector<string>dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED };
+    vector<string>dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_DATE_TAKEN };
     string dateType = item.GetSingle(FIELD_IDX);
     auto it = find(dateTypes.begin(), dateTypes.end(), dateType);
     if (it != dateTypes.end() && item.operation != DataShare::ORDER_BY_ASC &&
         item.operation != DataShare::ORDER_BY_DESC) {
         dateType += "_s";
+        operations.push_back({ item.operation, { dateType, static_cast<double>(item.GetSingle(VALUE_IDX)) } });
+        return true;
+    }
+    if (DATE_TRANSITION_MAP.count(dateType) != 0) {
+        dateType = DATE_TRANSITION_MAP.at(dateType);
         operations.push_back({ item.operation, { dateType, static_cast<double>(item.GetSingle(VALUE_IDX)) } });
         return true;
     }
@@ -825,14 +831,14 @@ inline void SetDefaultPredicatesCondition(DataSharePredicates &predicates, const
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(isHidden));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(timePending));
     predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(isTemp));
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
 }
 
 int32_t SendableMediaLibraryNapiUtils::GetUserAlbumPredicates(
     const int32_t albumId, DataSharePredicates &predicates, const bool hiddenOnly)
 {
-    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
-    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
     SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     return E_SUCCESS;
 }
@@ -985,6 +991,8 @@ static int32_t GetTrashPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     predicates.EndWrap();
     return E_SUCCESS;
 }
@@ -1019,9 +1027,7 @@ static int32_t GetAllImagesPredicates(DataSharePredicates &predicates, const boo
 int32_t SendableMediaLibraryNapiUtils::GetSourceAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates,
     const bool hiddenOnly)
 {
-    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
-    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     return E_SUCCESS;
@@ -1114,18 +1120,18 @@ void SendableMediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::stri
     napi_set_named_property(env, result, dataType.second.c_str(), value);
 }
 
-static handleThumbnailReady(napi_env env, const std::string& name, napi_value result, int32_t index,
+static void handleThumbnailReady(napi_env env, const std::string& name, napi_value result, int32_t index,
     const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
 {
-    if (name != "thumbnailReady") {
+    if (name != "thumbnail_ready") {
         return;
     }
     int64_t longVal = 0;
     int status;
     napi_value value = nullptr;
     status = resultSet->GetLong(index, longVal);
-    bool result = longVal ? true : false;
-    napi_create_int32(env, result, &value);
+    bool resultVal = longVal > 0;
+    napi_create_int32(env, resultVal, &value);
     napi_set_named_property(env, result, "thumbnailReady", value);
 }
 

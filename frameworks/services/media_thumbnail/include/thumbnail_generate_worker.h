@@ -39,6 +39,7 @@ enum class ThumbnailTaskType {
 
 enum class ThumbnailTaskPriority {
     HIGH,
+    MID,
     LOW,
 };
 
@@ -66,6 +67,15 @@ public:
     std::shared_ptr<ThumbnailTaskData> data_;
 };
 
+class ThumbnailGenerateThreadStatus {
+public:
+    ThumbnailGenerateThreadStatus(int threadId) : threadId_(threadId) {}
+    ~ThumbnailGenerateThreadStatus() = default;
+    int threadId_;
+    bool isThreadWaiting_ = false;
+    int32_t taskNum_ = 0;
+};
+
 class ThumbnailGenerateWorker {
 public:
     EXPORT ThumbnailGenerateWorker() = default;
@@ -78,8 +88,8 @@ public:
     EXPORT void TryCloseTimer();
 
 private:
-    void StartWorker();
-    void WaitForTask();
+    void StartWorker(std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus);
+    bool WaitForTask(std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus);
 
     bool NeedIgnoreTask(int32_t requestId);
     void IncreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task);
@@ -88,16 +98,19 @@ private:
     void ClearWorkerThreads();
     void TryClearWorkerThreads();
     void RegisterWorkerTimer();
+    bool IsAllThreadWaiting();
 
     ThumbnailTaskType taskType_;
 
     std::atomic<bool> isThreadRunning_ = false;
     std::list<std::thread> threads_;
+    std::list<std::shared_ptr<ThumbnailGenerateThreadStatus>> threadsStatus_;
 
     std::mutex workerLock_;
     std::condition_variable workerCv_;
 
     SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> highPriorityTaskQueue_;
+    SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> midPriorityTaskQueue_;
     SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> lowPriorityTaskQueue_;
 
     std::atomic<int32_t> ignoreRequestId_ = 0;

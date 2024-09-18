@@ -39,6 +39,7 @@ const std::string OPRN_ANALYSIS_INDEX = "analysis_index";
 const std::string OPRN_HIDE = "hide";
 const std::string OPRN_BATCH_UPDATE_FAV = "batch_update_favorite";
 const std::string OPRN_BATCH_UPDATE_USER_COMMENT = "batch_update_user_comment";
+const std::string OPRN_BATCH_UPDATE_OWNER_ALBUM_ID = "batch_update_owner_album_id";
 const std::string OPRN_QUERY_HIDDEN = "query_hidden";
 const std::string OPRN_STORE_FORM_ID = "store_form_id";
 const std::string OPRN_REMOVE_FORM_ID = "remove_form_id";
@@ -77,6 +78,13 @@ const std::string OPRN_GROUP_ALBUM_NAME = "group_album_name";
 const std::string OPRN_GROUP_COVER_URI = "group_cover_uri";
 const std::string OPRN_SCAN_WITHOUT_ALBUM_UPDATE = "scan_without_album_update";
 const std::string OPRN_ADD_LOWQUALITY_IMAGE = "add_lowquality_image";
+const std::string OPRN_ENHANCEMENT_ADD = "add_enhancement";
+const std::string OPRN_ENHANCEMENT_PRIORITIZE = "prioritize_enhancement";
+const std::string OPRN_ENHANCEMENT_CANCEL = "cancel_enhancement";
+const std::string OPRN_ENHANCEMENT_CANCEL_ALL = "cancel_all_enhancement";
+const std::string OPRN_ENHANCEMENT_SYNC = "sync_all_enhancement";
+const std::string OPRN_ENHANCEMENT_QUERY = "query_enhancement";
+const std::string OPRN_ENHANCEMENT_GET_PAIR = "get_pair_enhancement";
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
 const std::string MEDIA_PHOTOOPRN = "photo_operation";
@@ -232,6 +240,7 @@ const std::string PAH_MULTISTAGES_CAPTURE = "phaccess_multistages_capture_operat
 const std::string PAH_HIGHLIGHT_COVER = "phaccess_highlight_cover_operation";
 const std::string PAH_HIGHLIGHT_PLAY = "phaccess_highlight_play_operation";
 const std::string PAH_BATCH_THUMBNAIL_OPERATE = "phaccess_batch_thumbnail_operation";
+const std::string PAH_CLOUD_ENHANCEMENT_OPERATE = "cloud_enhancement_operation";
 const std::string SEARCH_INDEX_CONSTRUCTION_STATUS = "phaccess_search_index_construction_operation";
 const std::string PAH_ANA_MULTI_CROP = "phaccess_ana_multi_crop_operation";
 
@@ -251,6 +260,8 @@ const std::string PAH_ADD_FILTERS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/
 const std::string PAH_BATCH_UPDATE_FAVORITE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_FAV;
 const std::string PAH_BATCH_UPDATE_USER_COMMENT =
     MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_USER_COMMENT;
+const std::string PAH_BATCH_UPDATE_OWNER_ALBUM_ID =
+    MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_OWNER_ALBUM_ID;
 const std::string PAH_GET_ANALYSIS_INDEX = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_ANALYSIS_INDEX;
 const std::string PAH_DISCARD_CAMERA_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_DISCARD_CAMERA_PHOTO;
 const std::string PAH_SAVE_CAMERA_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SAVE_CAMERA_PHOTO;
@@ -337,10 +348,27 @@ const std::string PAH_QUERY_HIGHLIGHT_COVER = MEDIALIBRARY_DATA_URI + "/" + PAH_
 const std::string PAH_QUERY_HIGHLIGHT_PLAY = MEDIALIBRARY_DATA_URI + "/" + PAH_HIGHLIGHT_PLAY + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_TOTAL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_TOTAL + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_MULTI_CROP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MULTI_CROP + "/" + OPRN_QUERY;
+const std::string PAH_UPDATE_ANA_FACE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_FACE + "/" + OPRN_UPDATE;
 
 // PhotoAccessHelper moving photo
 const std::string PAH_MOVING_PHOTO_SCAN = MEDIALIBRARY_DATA_URI + "/" + MEDIA_MOVING_PHOTO_OPRN_KEYWORD + "/" +
     OPRN_MOVING_PHOTO_SCAN;
+
+// PhotoAccessHelper cloud enhancement
+const std::string PAH_CLOUD_ENHANCEMENT_ADD = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_ADD;
+const std::string PAH_CLOUD_ENHANCEMENT_PRIORITIZE = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_PRIORITIZE;
+const std::string PAH_CLOUD_ENHANCEMENT_CANCEL = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_CANCEL;
+const std::string PAH_CLOUD_ENHANCEMENT_CANCEL_ALL = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_CANCEL_ALL;
+const std::string PAH_CLOUD_ENHANCEMENT_SYNC = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_SYNC;
+const std::string PAH_CLOUD_ENHANCEMENT_QUERY = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_QUERY;
+const std::string PAH_CLOUD_ENHANCEMENT_GET_PAIR = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_GET_PAIR;
 
 // mediatool operation constants
 const std::string TOOL_PHOTO = "mediatool_photo_operation";

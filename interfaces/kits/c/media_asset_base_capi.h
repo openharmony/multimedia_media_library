@@ -83,6 +83,15 @@ typedef struct OH_MediaAssetManager OH_MediaAssetManager;
 typedef struct OH_MediaAssetChangeRequest OH_MediaAssetChangeRequest;
 
 /**
+ * @brief Define Moving Photo
+ *
+ * This structure provides the ability to obtain information about moving photo.
+ *
+ * @since 13
+ */
+typedef struct OH_MovingPhoto OH_MovingPhoto;
+
+/**
  * @brief Define Media Asset
  *
  * This structure provides the ability to encapsulate file asset attributes.
@@ -154,6 +163,11 @@ typedef enum MediaLibrary_ErrorCode {
 
     /**
      * @error Internal system error.
+     * It is recommended to retry and check the logs.
+     * Possible causes:
+     * 1. Database corrupted.
+     * 2. The file system is abnormal.
+     * 3. The IPC request timed out.
      */
     MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR = 23800301,
 } MediaLibrary_ErrorCode;
@@ -271,19 +285,36 @@ typedef enum MediaLibrary_MediaContentType {
 typedef void (*OH_MediaLibrary_OnDataPrepared)(int32_t result, MediaLibrary_RequestId requestId);
 
 /**
- * @brief Called when a requested source is prepared.
+ * @brief Called when a requested image source is prepared.
  *
- * This function is called when the requested source is prepared.
+ * This function is called when the requested image source is prepared.
  *
- * @param result Results {@link MediaLibrary_ErrorCode} of the processing of the requested resources.
- * @param requestId the {@link MediaLibrary_RequestId}.
+ * @param result results {@link MediaLibrary_ErrorCode} of the processing of the requested resources.
+ * @param requestId indicates the {@link MediaLibrary_RequestId} of the request.
  * @param mediaQuality the {@link MediaLibrary_MediaQuality} of the requested source.
  * @param type the {@link MediaLibrary_MediaContentType} of the requested source.
+ * @param imageSourceNative it used to obtain {@link OH_ImageSourceNative} information when image source is prepared.
  * @since 12
  */
 typedef void (*OH_MediaLibrary_OnImageDataPrepared)(MediaLibrary_ErrorCode result,
     MediaLibrary_RequestId requestId, MediaLibrary_MediaQuality mediaQuality, MediaLibrary_MediaContentType type,
     OH_ImageSourceNative* imageSourceNative);
+
+/**
+ * @brief Called when a requested moving photo is prepared.
+ *
+ * This function is called when the requested moving photo is prepared.
+ *
+ * @param result results {@link MediaLibrary_ErrorCode} of the processing of the requested resources.
+ * @param requestId indicates the {@link MediaLibrary_RequestId} of the request.
+ * @param mediaQuality the {@link MediaLibrary_MediaQuality} of the requested source.
+ * @param type the {@link MediaLibrary_MediaContentType} of the requested source.
+ * @param movingPhoto it used to obtain {@link OH_MovingPhoto} information when the data is prepared.
+ * @since 13
+ */
+typedef void (*OH_MediaLibrary_OnMovingPhotoDataPrepared)(MediaLibrary_ErrorCode result,
+    MediaLibrary_RequestId requestId, MediaLibrary_MediaQuality mediaQuality, MediaLibrary_MediaContentType type,
+    OH_MovingPhoto* movingPhoto);
 
 #ifdef __cplusplus
 }

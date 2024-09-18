@@ -216,7 +216,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     ConvertDecodeSize(data, {videoWidth, videoHeight}, desiredSize);
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
-    data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
+    data.source = avMetadataHelper->FetchFrameYuv(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
         param);
     if (data.source == nullptr) {
         DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
@@ -835,7 +835,6 @@ bool ThumbnailUtils::QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore
         MEDIA_DATA_DB_DATE_TAKEN,
     };
     RdbPredicates rdbPredicates(table);
-    rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "1");
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
     shared_ptr<ResultSet> resultSet = rdbStorePtr->QueryByStep(rdbPredicates, column);
     int err = 0;

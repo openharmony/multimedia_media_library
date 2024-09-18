@@ -76,24 +76,35 @@ public:
     static std::string GetString(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &column);
     EXPORT static bool ResetAnalysisTables();
     EXPORT static bool ResetSearchTables();
-    EXPORT static int32_t UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows);
+    EXPORT static int32_t UpdateLastVisitTime(const std::string &id);
     EXPORT static bool HasColumnInTable(RdbStore &store, const std::string &columnName, const std::string &tableName);
     static void AddColumnIfNotExists(
         RdbStore &store, const std::string &columnName, const std::string &columnType, const std::string &tableName);
     EXPORT static int32_t QueryPragma(const std::string &key, int64_t &value);
-    EXPORT static void SetRdbOldVersion(int32_t oldVersion);
-    EXPORT static int32_t GetRdbOldVersion();
+    EXPORT static void SetOldVersion(int32_t oldVersion);
+    EXPORT static int32_t GetOldVersion();
+    EXPORT static void CreateBurstIndex(RdbStore &store);
+    EXPORT static void UpdateBurstDirty(RdbStore &store);
+    EXPORT static void UpdateReadyOnThumbnailUpgrade(RdbStore &store);
+    EXPORT static void UpdateDateTakenToMillionSecond(RdbStore &store);
+    EXPORT static void UpdateDateTakenIndex(RdbStore &store);
 
 private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
-    static int32_t oldVersion_;
 #ifdef DISTRIBUTED
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
 #endif
     std::string bundleName_ {BUNDLE_NAME};
     NativeRdb::RdbStoreConfig config_ {""};
+};
+
+class CompensateAlbumIdData : public AsyncTaskData {
+public:
+    CompensateAlbumIdData(NativeRdb::RdbStore *store) : upgradeStore_(store){};
+    virtual ~CompensateAlbumIdData() override = default;
+    NativeRdb::RdbStore *upgradeStore_;
 };
 
 class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {

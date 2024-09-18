@@ -31,7 +31,8 @@ public:
     EXPORT MultiStagesCaptureDeferredProcSessionCallback();
     EXPORT ~MultiStagesCaptureDeferredProcSessionCallback();
 
-    void OnProcessImageDone(const std::string &imageId, const uint8_t *addr, const long bytes) override;
+    void OnProcessImageDone(const std::string &imageId, const uint8_t *addr, const long bytes,
+        bool isCloudEnhancementAvailable) override;
     void OnProcessImageDone(const std::string &imageId, std::shared_ptr<Media::Picture> picture) override;
     void OnDeliveryLowQualityImage(const std::string &imageId, std::shared_ptr<Media::Picture> picture) override;
     EXPORT void OnError(const std::string &imageId, const CameraStandard::DpsErrorCode error) override;
@@ -39,6 +40,7 @@ public:
 
 private:
     EXPORT int32_t UpdatePhotoQuality(const std::string &photoId);
+    EXPORT void UpdateCEAvailable(const std::string &photoId);
     void NotifyIfTempFile(std::shared_ptr<NativeRdb::ResultSet> resultSet);
 };
 } // namespace Media

@@ -143,18 +143,6 @@ void MultiStagesCaptureManager::SaveLowQualityImageInfo(MediaLibraryCommand &cmd
     if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
         valueObject.GetInt(fileId);
     }
-
-    string path = MediaLibraryFormMapOperations::GetFilePathById(ToString(fileId));
-    string uri = MediaLibraryFormMapOperations::GetUriByFileId(fileId, path.c_str());
-    auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
-    }
-
-    //如果存在低质量图触发前一个落盘/20S超时落盘/二阶段图像到来落盘
-    if (pictureManagerThread->IsExsitDataForPictureType(LOW_QUALITY_PICTURE)) {
-        pictureManagerThread->SaveLowQualityPicture();
-    }
 }
 
 // 低质量入缓存
@@ -162,9 +150,10 @@ void MultiStagesCaptureManager::DealLowQualityPicture(const std::string &imageId
     std::shared_ptr<Media::Picture> picture, bool isEdited)
 {
     auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
+    if (pictureManagerThread == nullptr) {
+        return;
     }
+    pictureManagerThread->Start();
     if (pictureManagerThread->IsExsitPictureByImageId(imageId)) {
         return;
     }
@@ -195,9 +184,10 @@ void MultiStagesCaptureManager::DealHighQualityPicture(const std::string &imageI
 {
     MEDIA_INFO_LOG("photoid: %{public}s", imageId.c_str());
     auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
+    if (pictureManagerThread == nullptr) {
+        return;
     }
+    pictureManagerThread->Start();
     // 将低质量图存入缓存
     time_t currentTime;
     if ((currentTime = time(NULL)) == -1) {
@@ -210,17 +200,17 @@ void MultiStagesCaptureManager::DealHighQualityPicture(const std::string &imageI
     pictureManagerThread->InsertPictureData(imageId, picturePair, HIGH_QUALITY_PICTURE);
 }
 
-int32_t MultiStagesCaptureManager::UpdateLowQualityDbInfo(MediaLibraryCommand &cmd)
+int32_t MultiStagesCaptureManager::UpdateDbInfo(MediaLibraryCommand &cmd)
 {
     MediaLibraryCommand cmdLocal (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     auto values = cmd.GetValueBucket();
-    int32_t subType = 0;
     ValueObject valueObject;
-    if (values.GetObject(PhotoColumn::PHOTO_SUBTYPE, valueObject)) {
-        valueObject.GetInt(subType);
+    int32_t photoQuality = static_cast<int32_t>(MultiStagesPhotoQuality::LOW);
+    if (values.GetObject(PhotoColumn::PHOTO_QUALITY, valueObject)) {
+        valueObject.GetInt(photoQuality);
     }
-    if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
+    if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) {
+        values.PutInt(MEDIA_DATA_DB_DIRTY, -1); // prevent uploading low-quality photo
     }
     cmdLocal.SetValueBucket(values);
     cmdLocal.GetAbsRdbPredicates()->SetWhereClause(cmd.GetAbsRdbPredicates()->GetWhereClause());
@@ -281,7 +271,7 @@ void MultiStagesCaptureManager::AddImage(int32_t fileId, const string &photoId, 
 void MultiStagesCaptureManager::AddImage(MediaLibraryCommand &cmd)
 {
     MEDIA_DEBUG_LOG("calling addImage");
-    UpdateLowQualityDbInfo(cmd);
+    UpdateDbInfo(cmd);
     auto values = cmd.GetValueBucket();
     ValueObject valueObject;
     int32_t photoQuality = static_cast<int32_t>(MultiStagesPhotoQuality::LOW);
@@ -294,9 +284,10 @@ void MultiStagesCaptureManager::AddImage(MediaLibraryCommand &cmd)
         valueObject.GetString(photoId);
     }
     auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
+    if (pictureManagerThread == nullptr) {
+        return;
     }
+    pictureManagerThread->Start();
     if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL) ||
         pictureManagerThread->IsExsitPictureByImageId(photoId)) {
         pictureManagerThread->SavePictureWithImageId(photoId);

@@ -18,6 +18,7 @@
 
 #include <mutex>
 
+#include "album_plugin_table_event_handler.h"
 #include "cloud_sync_helper.h"
 #include "dfx_manager.h"
 #include "dfx_timer.h"
@@ -35,6 +36,9 @@
 #ifdef DISTRIBUTED
 #include "medialibrary_device.h"
 #endif
+#include "medialibrary_album_fusion_utils.h"
+#include "medialibrary_album_compatibility_fusion_sql.h"
+#include "medialibrary_album_refresh.h"
 #include "medialibrary_business_record_column.h"
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_errno.h"
@@ -63,6 +67,8 @@
 #include "dfx_const.h"
 #include "dfx_timer.h"
 #include "vision_multi_crop_column.h"
+#include "preferences.h"
+#include "preferences_helper.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -106,9 +112,12 @@ const std::string PIC_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE;
 
 const std::string AUDIO_EXTENSION_VALUES = DIR_ALL_AUDIO_CONTAINER_TYPE;
 
+const std::string RDB_CONFIG = "/data/storage/el2/base/preferences/rdb_config.xml";
+
+const std::string RDB_OLD_VERSION = "rdb_old_version";
+
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
-int32_t MediaLibraryRdbStore::oldVersion_ = -1;
-int32_t g_oldVersion = -1;
+int32_t oldVersion_ = -1;
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
     int32_t startNumber;
@@ -142,8 +151,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     string name = MEDIA_DATA_ABILITY_DB_NAME;
     int32_t errCode = 0;
     string realPath = RdbSqlUtils::GetDefaultDatabasePath(databaseDir, name, errCode);
-    int32_t haMode = MediaLibraryRestore::GetInstance().DetectHaMode(realPath);
-    config_.SetHaMode(move(haMode));
+    config_.SetHaMode(HAMode::MANUAL_TRIGGER);
     config_.SetAllowRebuild(true);
     config_.SetName(move(name));
     config_.SetPath(move(realPath));
@@ -177,7 +185,7 @@ static int32_t ExecSqls(const vector<string> &sqls, RdbStore &store)
     return NativeRdb::E_OK;
 }
 
-static void CreateBurstIndex(RdbStore &store)
+void MediaLibraryRdbStore::CreateBurstIndex(RdbStore &store)
 {
     const vector<string> sqls = {
         PhotoColumn::DROP_SCHPT_DAY_INDEX,
@@ -197,7 +205,7 @@ static void CreateBurstIndex(RdbStore &store)
     MEDIA_INFO_LOG("end create idx_burstkey");
 }
 
-static void UpdateBurstDirty(RdbStore &store)
+void MediaLibraryRdbStore::UpdateBurstDirty(RdbStore &store)
 {
     const vector<string> sqls = {
         "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_DIRTY + " = " +
@@ -209,7 +217,7 @@ static void UpdateBurstDirty(RdbStore &store)
     MEDIA_INFO_LOG("end UpdateBurstDirty");
 }
 
-static void UpdateReadyOnThumbnailUpgrade(RdbStore &store)
+void MediaLibraryRdbStore::UpdateReadyOnThumbnailUpgrade(RdbStore &store)
 {
     const vector<string> sqls = {
         PhotoColumn::UPDATE_READY_ON_THUMBNAIL_UPGRADE,
@@ -219,45 +227,33 @@ static void UpdateReadyOnThumbnailUpgrade(RdbStore &store)
     MEDIA_INFO_LOG("finish update ready for thumbnail upgrade");
 }
 
-static void UpgradeRdbStore(AsyncTaskData *data)
+void MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(RdbStore &store)
 {
-    if (MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() == nullptr) {
-        MEDIA_ERR_LOG("MediaDataAbility insert functionality is null.");
-        return;
-    }
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("MediaDataAbility insert functionality rdbStore is null.");
-        return;
-    }
-
-    if (g_oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
-        CreateBurstIndex(*rdbStore);
-    }
-
-    if (g_oldVersion < VERSION_UPDATE_BURST_DIRTY) {
-        UpdateBurstDirty(*rdbStore);
-    }
-
-    if (g_oldVersion < VERSION_UPGRADE_THUMBNAIL) {
-        UpdateReadyOnThumbnailUpgrade(*rdbStore);
-    }
+    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond start");
+    const vector<string> updateSql = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
+            MediaColumn::MEDIA_DATE_TAKEN + " = " + MediaColumn::MEDIA_DATE_TAKEN +  "*1000 WHERE " +
+            MediaColumn::MEDIA_DATE_TAKEN + " < 1e10",
+    };
+    ExecSqls(updateSql, store);
+    MEDIA_INFO_LOG("UpdateDateTakenToMillionSecond end");
 }
 
-static void UpgradeRdbStoreAsync()
+void MediaLibraryRdbStore::UpdateDateTakenIndex(RdbStore &store)
 {
-    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Failed to get async worker instance!");
-        return;
-    }
-    shared_ptr<MediaLibraryAsyncTask> upgradeRdbStoreTask =
-        make_shared<MediaLibraryAsyncTask>(UpgradeRdbStore, nullptr);
-    if (upgradeRdbStoreTask != nullptr) {
-        asyncWorker->AddTask(upgradeRdbStoreTask, false);
-    } else {
-        MEDIA_ERR_LOG("Failed to create async task for upgradeRdbStoreTask!");
-    }
+    const vector<string> sqls = {
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::DROP_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
+        PhotoColumn::DROP_INDEX_SCHPT_READY,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::INDEX_SCHPT_READY,
+    };
+    MEDIA_INFO_LOG("update index for datetaken change start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("update index for datetaken change end");
 }
 
 int32_t MediaLibraryRdbStore::Init()
@@ -278,10 +274,6 @@ int32_t MediaLibraryRdbStore::Init()
         return errCode;
     }
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), SUCCESS");
-    // add process for which cost long time
-    if (g_oldVersion != -1 && g_oldVersion < MEDIA_RDB_VERSION) {
-        UpgradeRdbStoreAsync();
-    }
     return E_OK;
 }
 
@@ -385,6 +377,7 @@ static int32_t DoDeleteFromPredicates(NativeRdb::RdbStore &rdb, const AbsRdbPred
         valuesBucket.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
         ret = rdb.Update(deletedRows, tableName, valuesBucket, predicates.GetWhereClause(),
             predicates.GetWhereArgs());
+        MEDIA_INFO_LOG("delete photos permanently, ret: %{public}d", ret);
     } else if (tableName == PhotoAlbumColumns::TABLE) {
         valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
         ret = rdb.Update(deletedRows, tableName, valuesBucket, predicates.GetWhereClause(),
@@ -489,8 +482,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUriForPhotos(co
     return resultSet;
 }
 
-
-int32_t MediaLibraryRdbStore::UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows)
+int32_t MediaLibraryRdbStore::UpdateLastVisitTime(const string &id)
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
@@ -498,9 +490,12 @@ int32_t MediaLibraryRdbStore::UpdateLastVisitTime(MediaLibraryCommand &cmd, int3
     }
     MediaLibraryTracer tracer;
     tracer.Start("UpdateLastVisitTime");
-    cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
-    int32_t ret = rdbStore_->Update(changedRows, cmd.GetTableName(), cmd.GetValueBucket(),
-        cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
+    ValuesBucket values;
+    int32_t changedRows = 0;
+    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+    string whereClause = MediaColumn::MEDIA_ID + " = ?";
+    vector<string> whereArgs = {id};
+    int32_t ret = rdbStore_->Update(changedRows, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
     if (ret != NativeRdb::E_OK || changedRows <= 0) {
         MEDIA_ERR_LOG("rdbStore_->UpdateLastVisitTime failed, changedRows = %{public}d, ret = %{public}d",
             changedRows, ret);
@@ -773,6 +768,12 @@ inline void BuildInsertSystemAlbumSql(const ValuesBucket &values, const AbsRdbPr
     sql.append(" WHERE NOT EXISTS (");
     MediaLibraryRdbStore::BuildQuerySql(predicates, { PhotoAlbumColumns::ALBUM_ID }, bindArgs, sql);
     sql.append(");");
+}
+
+int32_t PrepareAlbumPlugin(RdbStore &store)
+{
+    AlbumPluginTableEventHandler albumPluginTableEventHander;
+    return albumPluginTableEventHander.OnCreate(store);
 }
 
 int32_t PrepareSystemAlbums(RdbStore &store)
@@ -1202,12 +1203,14 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_HEAD,
     CREATE_TAB_ANALYSIS_POSE,
     CREATE_TAB_IMAGE_FACE,
+    CREATE_TAB_VIDEO_FACE,
     CREATE_TAB_FACE_TAG,
     CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
     CREATE_VISION_UPDATE_TRIGGER,
     CREATE_VISION_DELETE_TRIGGER,
     CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
     CREATE_IMAGE_FACE_INDEX,
+    CREATE_VIDEO_FACE_INDEX,
     CREATE_OBJECT_INDEX,
     CREATE_RECOMMENDATION_INDEX,
     CREATE_COMPOSITION_INDEX,
@@ -1221,8 +1224,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_HIGHLIGHT_COVER_INFO_TABLE,
     CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
     CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
-    INSERT_PHOTO_INSERT_SOURCE_ALBUM,
-    INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+    CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+    CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER,
     INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
     CREATE_SOURCE_ALBUM_INDEX,
     FormMap::CREATE_FORM_MAP_TABLE,
@@ -1275,6 +1278,10 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         return NativeRdb::E_ERROR;
     }
 
+    if (PrepareAlbumPlugin(store) != NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
+    }
+
     if (PrepareDir(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
@@ -1291,6 +1298,7 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         return NativeRdb::E_ERROR;
     }
 
+    MediaLibraryRdbStore::SetOldVersion(MEDIA_RDB_VERSION);
     return NativeRdb::E_OK;
 }
 
@@ -2637,6 +2645,24 @@ void AddBurstCoverLevelAndBurstKey(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddCloudEnhancementColumns(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_CE_AVAILABLE + " INT DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_CE_STATUS_CODE + " INT ",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_STRONG_ASSOCIATION + " INT DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_ASSOCIATE_FILE_ID + " INT DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK + " INT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("start add cloud enhancement columns");
+    ExecSqls(sqls, store);
+}
+
 static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -2778,6 +2804,137 @@ static void UpdateDataUniqueIndex(RdbStore &store)
         ReportFailInfo();
     }
     MEDIA_INFO_LOG("End UpdateDataUniqueIndex");
+}
+
+static void ResetCloudCursorAfterInitFinish()
+{
+    static uint32_t baseUserRange = 200000; // uid base offset
+    uid_t uid = getuid() / baseUserRange;
+    const string paramKey = "multimedia.medialibrary.startup." + to_string(uid);
+    string value = "true";
+    int32_t maxTryTimes = 10;
+    int32_t checkTimes = 0;
+    while (checkTimes < maxTryTimes) {
+        std::string initStatus = system::GetParameter(paramKey.c_str(), "false");
+        if (!initStatus.empty() && initStatus == "true") {
+            MEDIA_INFO_LOG("Strat reset cloud cursor");
+            FileManagement::CloudSync::CloudSyncManager::GetInstance().ResetCursor();
+            MEDIA_INFO_LOG("End reset cloud cursor");
+            break;
+        }
+        checkTimes++;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
+
+static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
+{
+    if (data == nullptr) {
+        return;
+    }
+    MediaLibraryAlbumFusionUtils::SetParameterToStopSync();
+    CompensateAlbumIdData* compensateData = static_cast<CompensateAlbumIdData*>(data);
+    MEDIA_INFO_LOG("ALBUM_FUSE: Processing old data start");
+    MEDIA_INFO_LOG("ALBUM_FUSE: Compensating album id for old asset start");
+    int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t cleanDataBeginTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int32_t matchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(
+        compensateData->upgradeStore_);
+    if (matchedDataHandleResult != E_OK) {
+        MEDIA_ERR_LOG("Fatal err, handle matched relationship fail by %{public}d", matchedDataHandleResult);
+        // This should not happen, and if it does, should avoid cleaning up more data.
+        return;
+    }
+    int32_t notMatchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleNotMatchedDataFusion(
+        compensateData->upgradeStore_);
+    if (notMatchedDataHandleResult != E_OK) {
+        MEDIA_ERR_LOG("Fatal err, handle not matched relationship fail by %{public}d", notMatchedDataHandleResult);
+        // This should not happen, and if it does, avoid cleaning up more data.
+        return;
+    }
+    MEDIA_INFO_LOG("ALBUM_FUSE: End compensate album id for old asset cost %{public}ld",
+        (long)(MediaFileUtils::UTCTimeMilliSeconds() - cleanDataBeginTime));
+    MEDIA_INFO_LOG("ALBUM_FUSE: Start rebuild album and update relationship");
+    int64_t albumCleanBeginTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int32_t rebuildResult = MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(compensateData->upgradeStore_);
+    MEDIA_INFO_LOG("ALBUM_FUSE: End rebuild album and update relationship cost %{public}ld",
+        (long)(MediaFileUtils::UTCTimeMilliSeconds() - albumCleanBeginTime));
+    // Restore cloud sync
+    MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
+    ResetCloudCursorAfterInitFinish();
+    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
+    RefreshAlbums(true);
+    MEDIA_INFO_LOG("ALBUM_FUSE: Processing old data start end, cost %{public}ld",
+        (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
+}
+
+static void AddOwnerAlbumIdAndRefractorTrigger(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_OWNER_ALBUM_ID + " INT DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID + " TEXT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_SOURCE_PATH + " TEXT",
+        "DROP TABLE IF EXISTS album_plugin ",
+        DROP_PHOTO_ALBUM_CLEAR_MAP_SQL,
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM_SQL,
+        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM_SQL,
+        DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        DROP_INSERT_SOURCE_PHOTO_UPDATE_ALBUM_ID_TRIGGER,
+        "DROP TRIGGER IF EXISTS photos_mdirty_trigger",
+        PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
+        CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER,
+
+    };
+    MEDIA_INFO_LOG("Add owner_album_id column for Photos");
+    ExecSqls(sqls, store);
+}
+
+static void AddMergeInfoColumnForAlbum(RdbStore &store)
+{
+    const vector<string> addMergeInfoSql = {
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+        PhotoAlbumColumns::ALBUM_DATE_ADDED + " BIGINT DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+        PhotoAlbumColumns::ALBUM_PRIORITY + " INT",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+        PhotoAlbumColumns::ALBUM_LPATH + " TEXT",
+        DROP_INDEX_SOURCE_ALBUM_INDEX,
+        CREATE_SOURCE_ALBUM_INDEX,
+        CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET,
+    };
+    MEDIA_INFO_LOG("Add merge info for PhotoAlbum");
+    ExecSqls(addMergeInfoSql, store);
+    const std::string queryHiddenAlbumId =
+        "SELECT album_id FROM PhotoAlbum WHERE album_name = '.hiddenAlbum'";
+    auto resultSet = store.QuerySql(queryHiddenAlbumId);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        int32_t err = store.ExecuteSql(CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to exec: %{private}s", CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET.c_str());
+        }
+    }
+}
+
+static int32_t ReconstructMediaLibraryStorageFormat(RdbStore &store)
+{
+    MEDIA_INFO_LOG("ALBUM_FUSE: Start reconstruct medialibrary storage format task!");
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker ==  nullptr) {
+        MEDIA_ERR_LOG("Failed to get aysnc worker instance!");
+        return E_FAIL;
+    }
+    auto *taskData = new (std::nothrow) CompensateAlbumIdData(&store);
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to alloc async data for compensate album id");
+        return E_NO_MEMORY;
+    }
+    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(ReconstructMediaLibraryStorageFormatExecutor, taskData);
+    asyncWorker->AddTask(asyncTask, false);
+    return E_OK;
 }
 
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
@@ -3182,6 +3339,17 @@ static void AddDetailTimeToPhotos(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddVideoFaceTable(RdbStore &store)
+{
+    const vector<string> sqls = {
+        CREATE_TAB_VIDEO_FACE,
+        CREATE_VIDEO_FACE_INDEX,
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + GEO + " INT"
+    };
+    MEDIA_INFO_LOG("Add video face table start");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_UPDATE_PHOTO_INDEX_FOR_ALBUM_COUNT_COVER) {
@@ -3215,9 +3383,29 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_UDAPTE_DATA_UNIQUE) {
         UpdateDataUniqueIndex(store);
     }
-    
+
     if (oldVersion < VERSION_ADD_DETAIL_TIME) {
         AddDetailTimeToPhotos(store);
+    }
+
+    if (oldVersion < VERSION_ADD_VIDEO_FACE_TABLE) {
+        AddVideoFaceTable(store);
+    }
+
+    if (oldVersion < VERSION_ADD_OWNER_ALBUM_ID) {
+        AddOwnerAlbumIdAndRefractorTrigger(store);
+        AlbumPluginTableEventHandler albumPluginTableEventHandler;
+        albumPluginTableEventHandler.OnUpgrade(store, oldVersion, oldVersion);
+        AddMergeInfoColumnForAlbum(store);
+        ReconstructMediaLibraryStorageFormat(store);
+    }
+
+    if (oldVersion < VERSION_CLOUD_ENAHCNEMENT) {
+        AddCloudEnhancementColumns(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_UPLOADING_MOVING_PHOTO) {
+        UpdatePhotosMdirtyTrigger(store);
     }
 }
 
@@ -3384,8 +3572,9 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataCallBack::OnUpgrade");
-    g_oldVersion = oldVersion;
-    MediaLibraryRdbStore::SetRdbOldVersion(oldVersion);
+    if (MediaLibraryRdbStore::GetOldVersion() == -1) {
+        MediaLibraryRdbStore::SetOldVersion(oldVersion);
+    }
     MEDIA_INFO_LOG("OnUpgrade old:%{public}d, new:%{public}d", oldVersion, newVersion);
     g_upgradeErr = false;
     if (oldVersion < VERSION_ADD_CLOUD) {
@@ -3448,6 +3637,31 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     return NativeRdb::E_OK;
 }
 
+void MediaLibraryRdbStore::SetOldVersion(int32_t oldVersion)
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_CONFIG, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    prefs->PutInt(RDB_OLD_VERSION, oldVersion);
+    prefs->FlushSync();
+}
+
+int32_t MediaLibraryRdbStore::GetOldVersion()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_CONFIG, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return oldVersion_;
+    }
+    return prefs->GetInt(RDB_OLD_VERSION, oldVersion_);
+}
+
 bool MediaLibraryRdbStore::HasColumnInTable(RdbStore &store, const string &columnName, const string &tableName)
 {
     string querySql = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM pragma_table_info('" + tableName + "') WHERE name = '" +
@@ -3469,16 +3683,6 @@ void MediaLibraryRdbStore::AddColumnIfNotExists(
         string sql = "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnType;
         store.ExecuteSql(sql);
     }
-}
-
-void MediaLibraryRdbStore::SetRdbOldVersion(int32_t oldVersion)
-{
-    oldVersion_ = oldVersion;
-}
-
-int32_t MediaLibraryRdbStore::GetRdbOldVersion()
-{
-    return oldVersion_;
 }
 
 #ifdef DISTRIBUTED

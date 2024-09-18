@@ -39,6 +39,9 @@ public:
     MediaLibrary_ErrorCode NativeRequestImageSource(OH_MediaAsset* mediaAsset,
         NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
         OH_MediaLibrary_OnImageDataPrepared callback) override;
+    MediaLibrary_ErrorCode NativeRequestMovingPhoto(OH_MediaAsset* mediaAsset,
+        NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
+        OH_MediaLibrary_OnMovingPhotoDataPrepared callback) override;
 
 private:
     void CreateDataHelper(int32_t systemAbilityId);

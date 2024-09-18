@@ -72,8 +72,10 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, MEMBER_TYPE_INT32 },
     { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_COVER_POSITION, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_CE_AVAILABLE, MEMBER_TYPE_INT32 },
     { AudioColumn::AUDIO_ALBUM, MEMBER_TYPE_STRING },
     { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_OWNER_ALBUM_ID, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_BURST_KEY, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_BURST_COVER_LEVEL, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_THUMBNAIL_READY, MEMBER_TYPE_INT64 }
@@ -137,6 +139,7 @@ protected:
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset,
         const std::string &extraUri = "");
+    static void SendOwnerAlbumIdNotify(MediaLibraryCommand &cmd);
     static int32_t SendModifyUserCommentNotify(MediaLibraryCommand &cmd, int32_t rowId,
         const std::string &extraUri = "");
     static int32_t SetPendingStatus(MediaLibraryCommand &cmd);

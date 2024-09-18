@@ -44,7 +44,7 @@ struct MergeAlbumInfo {
     int rank;
     int renameOperation;
     std::string albumName;
-    int isCoverSatisfied;
+    uint8_t isCoverSatisfied;
     std::string tagId;
 };
 class MediaLibraryAlbumOperations {
@@ -65,6 +65,7 @@ public:
         const DataShare::DataSharePredicates &predicates, std::shared_ptr<int> countPtr = nullptr);
     static std::shared_ptr<NativeRdb::ResultSet> QueryPortraitAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
+    static void DealwithNoAlbumAssets(const std::vector<std::string> &whereArgs);
 };
 } // namespace Media
 } // namespace OHOS

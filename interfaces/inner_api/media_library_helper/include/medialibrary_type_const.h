@@ -91,7 +91,41 @@ enum class DirtyType : int32_t {
     TYPE_FDIRTY,
     TYPE_DELETED,
     TYPE_RETRY,
-    TYPE_SDIRTY
+    TYPE_SDIRTY,
+    TYPE_COPY
+};
+
+enum class CloudEnhancementAvailableType : int32_t {
+    NOT_SUPPORT = 0,
+    SUPPORT,
+    PROCESSING,
+    FAILED_RETRY,
+    FAILED,
+    SUCCESS,
+    EDIT,
+    TRASH,
+};
+
+enum class CEErrorCodeType : int32_t {
+    // failed retry
+    LIMIT_USAGE = 100,
+    LIMIT_REQUEST,
+    TASK_CACHE_TIMEOUT,
+    NETWORK_UNAVAILABLE,
+    TEMPERATURES_GUARD,
+    NETWORK_WEAK,
+    // failed
+    EXECUTE_FAILED,
+    // failed retry
+    DO_AUTH_FAILED,
+    TASK_CANNOT_EXECUTE,
+    // failed
+    NON_RECOVERABLE = 200,
+};
+
+enum class StrongAssociationType : int32_t {
+    NORMAL = 0,
+    CLOUD_ENHANCEMENT
 };
 
 enum class SyncStatusType : int32_t {
@@ -199,6 +233,7 @@ const std::string BACKUP_SINGLE_DATA_DIR_VALUE = ".backup/";
 const std::string THUMB_DIR_VALUE = ".thumbs/Photo";
 const std::string EDIT_DATA_DIR_VALUE = ".editData";
 const std::string MEDIALIBRARY_TEMP_DIR = ".medialibrarytemp";
+const std::string CLOUD_ENHANCEMENT_WATER_MARK_DIR = "/sys_prod/resource/camera";
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
