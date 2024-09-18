@@ -20,6 +20,7 @@
 #include "database_adapter.h"
 #include "image_packer.h"
 #include "exif_utils.h"
+#include "medialibrary_asset_operations.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_command.h"
 #include "medialibrary_errno.h"
@@ -103,7 +104,7 @@ shared_ptr<OHOS::NativeRdb::ResultSet> MultiStagesCaptureManager::HandleMultiSta
             break;
         }
         case OperationType::SET_LOCATION: {
-            MEDIA_DEBUG_LOG("calling setLocation");
+            UpdateLocation(cmd.GetValueBucket());
             break;
         }
         case OperationType::CANCEL_PROCESS_IMAGE: {
@@ -222,25 +223,57 @@ int32_t MultiStagesCaptureManager::UpdateDbInfo(MediaLibraryCommand &cmd)
     return result;
 }
 
-void MultiStagesCaptureManager::UpdateLocation(int32_t fileId, const string &path, double longitude, double latitude)
+void MultiStagesCaptureManager::UpdateLocation(const NativeRdb::ValuesBucket &values)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateLocation");
+    double longitude = 0;
+    ValueObject valueObject;
+    if (values.GetObject(PhotoColumn::PHOTO_LONGITUDE, valueObject)) {
+        valueObject.GetDouble(longitude);
+    }
+    double latitude = 0;
+    if (values.GetObject(PhotoColumn::PHOTO_LATITUDE, valueObject)) {
+        valueObject.GetDouble(latitude);
+    }
+
+    string path = "";
+    if (values.GetObject(MediaColumn::MEDIA_FILE_PATH, valueObject)) {
+        valueObject.GetString(path);
+    }
+
+    // update exif info
+    auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("write gps info fail");
+        return;
+    }
+
+    string originPath = MediaLibraryAssetOperations::GetEditDataSourcePath(path);
+    if (MediaFileUtils::IsFileExists(originPath)) {
+        // write gps info if this photo was edited.
+        auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("write origin file gps info fail");
+            return;
+        }
+    }
+
+    int32_t fileId = 0;
+    if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
+        valueObject.GetInt(fileId);
+    }
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    string where = MEDIA_DATA_DB_ID + " = ? ";
-    vector<string> whereArgs { fileId };
-    cmd.GetAbsRdbPredicates()->SetWhereClause(where);
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
-    ValuesBucket values;
-    values.PutDouble(MEDIA_DATA_DB_LATITUDE, latitude);
-    values.PutDouble(MEDIA_DATA_DB_LONGITUDE, longitude);
-    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    ValuesBucket updateValues;
+    updateValues.PutDouble(MEDIA_DATA_DB_LATITUDE, latitude);
+    updateValues.PutDouble(MEDIA_DATA_DB_LONGITUDE, longitude);
+    cmd.SetValueBucket(updateValues);
 
     auto result = DatabaseAdapter::Update(cmd);
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("update fail fileId: %{public}d", fileId);
     }
-
-    // update exif info
-    ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
 }
 
 void MultiStagesCaptureManager::AddImageInternal(int32_t fileId, const string &photoId, int32_t deferredProcType,
