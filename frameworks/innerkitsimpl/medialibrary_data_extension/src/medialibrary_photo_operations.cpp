@@ -18,6 +18,7 @@
 #include <memory>
 #include <mutex>
 #include <nlohmann/json.hpp>
+#include <thread>
 
 #include "abs_shared_result_set.h"
 #include "file_asset.h"
@@ -313,6 +314,19 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     PhotoColumn::PHOTO_SUBTYPE,
 };
 
+static void UpdateLastVisitTime(MediaLibraryCommand &cmd, const string &id)
+{
+    if (cmd.GetTableName() != PhotoColumn::PHOTOS_TABLE) {
+        return;
+    }
+    thread([=] {
+        int32_t changedRows = MediaLibraryRdbStore::UpdateLastVisitTime(id);
+        if (changedRows <= 0) {
+            MEDIA_ERR_LOG("update lastVisitTime Failed, changedRows = %{public}d.", changedRows);
+        }
+    }).detach();
+}
+
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
@@ -350,15 +364,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         fileAsset->SetPath(MediaFileUtils::GetMovingPhotoVideoPath(fileAsset->GetPath()));
         isMovingPhotoVideo = true;
     }
-
-    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        int32_t changedRows = 0;
-        cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
-        changedRows = MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
-        if (changedRows <= 0) {
-            MEDIA_ERR_LOG("update lastVisitTime Failed, changedRows = %{public}d.", changedRows);
-        }
-    }
+    UpdateLastVisitTime(cmd, id);
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10, isMovingPhotoVideo);
     }
