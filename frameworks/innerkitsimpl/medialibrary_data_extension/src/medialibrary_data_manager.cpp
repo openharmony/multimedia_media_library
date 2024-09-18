@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <shared_mutex>
 #include <unordered_set>
+#include <sstream>
 
 #include "ability_scheduler_interface.h"
 #include "abs_rdb_predicates.h"
@@ -953,6 +954,12 @@ static std::string BuildWhereClause(const std::vector<std::string>& dismissAsset
 static int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
     const DataShare::DataSharePredicates &predicates)
 {
+    string keyOperation = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
+    if (!keyOperation.empty() && keyOperation != OPRN_DISMISS_ASSET) {
+        cmd.SetValueBucket(value);
+        return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd);
+    }
+
     const string &clause = predicates.GetWhereClause();
     std::vector<std::string> clauses = SplitUriString(clause, ',');
     if (clauses.empty()) {
@@ -961,7 +968,12 @@ static int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesB
     }
 
     std::string albumStr = clauses[0];
-    int32_t albumId = std::stoi(albumStr);
+    int32_t albumId {0};
+    std::stringstream ss(albumStr);
+    if (!(ss >> albumId)) {
+        MEDIA_ERR_LOG("Unable to convert albumId string to integer.");
+        return E_INVALID_FILEID;
+    }
 
     std::vector<std::string> uris;
     for (size_t i = 1; i < clauses.size(); ++i) {
