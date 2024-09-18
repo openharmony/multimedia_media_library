@@ -41,6 +41,7 @@
 #include "medialibrary_subscriber.h"
 #include "medialibrary_uripermission_operations.h"
 #include "multistages_capture_manager.h"
+#include "enhancement_manager.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "os_account_manager.h"
@@ -178,6 +179,8 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     }
 
     MultiStagesCaptureManager::GetInstance().Init();
+
+    EnhancementManager::GetInstance().Init();
 
     Media::MedialibrarySubscriber::Subscribe();
     dataManager->SetStartupParameter();
@@ -458,6 +461,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::VISION_LABEL,
         OperationObject::VISION_VIDEO_LABEL,
         OperationObject::VISION_IMAGE_FACE,
+        OperationObject::VISION_VIDEO_FACE,
         OperationObject::VISION_FACE_TAG,
         OperationObject::VISION_OBJECT,
         OperationObject::VISION_RECOMMENDATION,
@@ -478,6 +482,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
         OperationObject::INDEX_CONSTRUCTION_STATUS,
         OperationObject::MEDIA_APP_URI_PERMISSION,
+        OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);

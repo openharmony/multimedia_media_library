@@ -28,7 +28,8 @@ enum class DirtyTypes : int32_t {
     TYPE_FDIRTY,
     TYPE_DELETED,
     TYPE_RETRY,
-    TYPE_SDIRTY
+    TYPE_SDIRTY,
+    TYPE_COPY
 };
 
 enum class ExtraChangeType : uint32_t {
@@ -120,6 +121,9 @@ public:
     static const std::string PHOTO_BURST_COVER_LEVEL EXPORT;
     static const std::string PHOTO_BURST_KEY EXPORT;
     static const std::string PHOTO_COVER_POSITION EXPORT;
+    static const std::string PHOTO_OWNER_ALBUM_ID EXPORT;
+    static const std::string PHOTO_ORIGINAL_ASSET_CLOUD_ID EXPORT;
+    static const std::string PHOTO_SOURCE_PATH EXPORT;
     static const std::string PHOTO_ORIGINAL_SUBTYPE EXPORT;
     static const std::string PHOTO_DETAIL_TIME EXPORT;
 
@@ -147,6 +151,12 @@ public:
     static const std::string PHOTO_DATE_MONTH_FORMAT EXPORT;
     static const std::string PHOTO_DATE_DAY_FORMAT EXPORT;
     static const std::string PHOTO_FRONT_CAMERA EXPORT;
+    // cloud enhancement
+    static const std::string PHOTO_CE_AVAILABLE EXPORT;
+    static const std::string PHOTO_CE_STATUS_CODE EXPORT;
+    static const std::string PHOTO_STRONG_ASSOCIATION EXPORT;
+    static const std::string PHOTO_ASSOCIATE_FILE_ID EXPORT;
+    static const std::string PHOTO_HAS_CLOUD_WATERMARK EXPORT;
     // format in PhotoTable detail time
     static const std::string PHOTO_DETAIL_TIME_FORMAT EXPORT;
 
@@ -178,6 +188,7 @@ public:
     static const std::string DROP_INDEX_SCTHP_ADDTIME EXPORT;
     static const std::string INDEX_CAMERA_SHOT_KEY EXPORT;
     static const std::string INDEX_SCHPT_READY EXPORT;
+    static const std::string DROP_INDEX_SCHPT_READY EXPORT;
 
     // create Photo cloud sync trigger
     static const std::string CREATE_PHOTOS_DELETE_TRIGGER EXPORT;

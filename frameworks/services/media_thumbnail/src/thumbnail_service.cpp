@@ -413,7 +413,7 @@ int32_t ThumbnailService::GenerateThumbnailBackground()
             }
         }
 
-        if (tableName != AudioColumn::AUDIOS_TABLE) {
+        if (tableName == PhotoColumn::PHOTOS_TABLE) {
             err = ThumbnailGenerateHelper::CreateLcdBackground(opts);
             if (err != E_OK) {
                 MEDIA_ERR_LOG("CreateLcdBackground failed : %{public}d", err);
@@ -574,15 +574,18 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateAstcCloudDownload(const string &id)
+int32_t ThumbnailService::CreateAstcCloudDownload(const string &id, bool isCloudInsertTaskPriorityHigh)
 {
+    if (!isCloudInsertTaskPriorityHigh && !currentStatusForTask_) {
+        return E_CLOUD_NOT_SUITABLE_FOR_TASK;
+    }
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE,
         .fileId = id,
     };
 
-    int err = ThumbnailGenerateHelper::CreateAstcCloudDownload(opts);
+    int err = ThumbnailGenerateHelper::CreateAstcCloudDownload(opts, isCloudInsertTaskPriorityHigh);
     if (err != E_OK) {
         MEDIA_ERR_LOG("CreateAstcCloudDownload failed : %{public}d", err);
         return err;
@@ -674,7 +677,7 @@ static bool IsAstcChangeOldKeyToNewKeySuccess(std::shared_ptr<MediaLibraryKvStor
     }
     std::vector<uint8_t> monthValue;
     std::vector<uint8_t> yearValue;
-    if (yearKvStore->Query(newKey, monthValue) == E_OK) {
+    if (yearKvStore->Query(newKey, yearValue) == E_OK) {
         MEDIA_INFO_LOG("NewKey Astc exists, fileID %{public}s", newKey.c_str());
         monthKvStore->Delete(oldKey);
         yearKvStore->Delete(oldKey);
@@ -682,28 +685,36 @@ static bool IsAstcChangeOldKeyToNewKeySuccess(std::shared_ptr<MediaLibraryKvStor
     }
     bool isChangeKeySuccess = true;
     if (monthKvStore->Query(oldKey, monthValue) != E_OK || monthKvStore->Insert(newKey, monthValue) != E_OK ||
-        monthKvStore->Delete(oldKey)) {
+        monthKvStore->Delete(oldKey) != E_OK) {
         MEDIA_ERR_LOG("MonthValue update failed, fileID %{public}s", newKey.c_str());
         isChangeKeySuccess = false;
     }
     if (yearKvStore->Query(oldKey, yearValue) != E_OK || yearKvStore->Insert(newKey, yearValue) != E_OK ||
-        yearKvStore->Delete(oldKey)) {
+        yearKvStore->Delete(oldKey) != E_OK) {
         MEDIA_ERR_LOG("YearValue update failed, fileID %{public}s", newKey.c_str());
         isChangeKeySuccess = false;
     }
     return isChangeKeySuccess;
 }
 
-static void PerformKvStoreChangeKeyTask(std::shared_ptr<ThumbnailTaskData> &data)
+void ThumbnailService::AstcChangeKeyFromDateAddedToDateTaken()
 {
+    if (rdbStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("RdbStorePtr is null");
+        return;
+    }
     vector<ThumbnailData> infos;
-    if (!ThumbnailUtils::QueryOldKeyAstcInfos(data->opts_.store, PhotoColumn::PHOTOS_TABLE, infos)) {
+    if (!ThumbnailUtils::QueryOldKeyAstcInfos(rdbStorePtr_, PhotoColumn::PHOTOS_TABLE, infos)) {
         return;
     }
     MEDIA_INFO_LOG("Old key astc data size: %{public}d", static_cast<int>(infos.size()));
     if (infos.empty()) {
         return;
     }
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+    };
 
     auto monthKvStore = MediaLibraryKvStoreManager::GetInstance()
         .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
@@ -725,29 +736,22 @@ static void PerformKvStoreChangeKeyTask(std::shared_ptr<ThumbnailTaskData> &data
             continue;
         }
         if (!IsAstcChangeOldKeyToNewKeySuccess(monthKvStore, yearKvStore, oldKey, newKey)) {
-            UpdateThumbnailReadyToFailed(data->opts_, infos[i].id);
+            monthKvStore->Delete(oldKey);
+            yearKvStore->Delete(oldKey);
+            UpdateThumbnailReadyToFailed(opts, infos[i].id);
         }
     }
     MEDIA_INFO_LOG("PerformKvStoreChangeKeyTask End");
 }
 
-void ThumbnailService::AstcChangeKeyFromDateAddedToDateTaken()
+void ThumbnailService::UpdateCurrentStatusForTask(const bool &currentStatusForTask)
 {
-    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
-        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::BACKGROUND);
-    if (thumbnailWorker == nullptr || rdbStorePtr_ == nullptr) {
-        MEDIA_ERR_LOG("thumbnailWorker or rdbStorePtr_ is null");
-        return;
-    }
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .table = PhotoColumn::PHOTOS_TABLE,
-    };
-    ThumbnailData data;
-    std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(opts, data);
-    std::shared_ptr<ThumbnailGenerateTask> kvStoreChangeKeyTask =
-        std::make_shared<ThumbnailGenerateTask>(PerformKvStoreChangeKeyTask, taskData);
-    thumbnailWorker->AddTask(kvStoreChangeKeyTask, ThumbnailTaskPriority::HIGH);
+    currentStatusForTask_ = currentStatusForTask;
+}
+
+bool ThumbnailService::GetCurrentStatusForTask()
+{
+    return currentStatusForTask_;
 }
 } // namespace Media
 } // namespace OHOS

@@ -29,19 +29,14 @@
 namespace OHOS {
 namespace Media {
 namespace {
-    using HAMode                        = NativeRdb::HAMode;
-    const std::string PARAM_KEY         = "persist.multimedia.medialibrary.rdb_hamode";
     const std::string SWITCH_STATUS_KEY = "persist.multimedia.medialibrary.rdb_switch_status";
     const std::string CLOUD_STOP_FLAG_K = "persist.kernel.medialibrarydata.stopflag";
     const std::string CLOUD_STOP_FLAG_V = "1";
-    constexpr int32_t PARAM_LEN         = 2;
     constexpr int PARAMETER_E_OK        = 0;
     constexpr int WAIT_SECONDS          = 120;
-    constexpr int MAX_FILE_SIZE         = 200 * 1024 * 1024;
     enum HA_SWITCH_STATUS : uint32_t {
         HA_SWITCH_READY = 0,
-        HA_SWITCHING,
-        HA_SWITCH_DONE
+        HA_SWITCHING = 1
     };
 } // namespace
 
@@ -51,59 +46,10 @@ MediaLibraryRestore &MediaLibraryRestore::GetInstance()
     return instance;
 }
 
-int32_t MediaLibraryRestore::DetectHaMode(const std::string &dbPath)
-{
-    // parameter first priority
-    // db not exits, set hamode is main_replica mode
-    // db exists, set hdmode is trigger
-    ReadHAModeFromPara();
-    if (haMode_ == HAMode::MAIN_REPLICA) {
-        return haMode_;
-    }
-    // parameter is not main_replica mode, set default trigger mode
-    haMode_ = HAMode::MANUAL_TRIGGER;
-
-    bool isDbExists = MediaFileUtils::IsFileExists(dbPath);
-    if (isDbExists) {
-        size_t size = -1;
-        bool valid = MediaFileUtils::GetFileSize(dbPath, size);
-        if (valid && size <= MAX_FILE_SIZE) {
-            MEDIA_INFO_LOG("MediaLibraryRestore::GetHaMode file size < 200M");
-            haMode_ = HAMode::MAIN_REPLICA;
-            SaveHAModeToPara();
-            SaveHAModeSwitchStatusToPara(HA_SWITCH_DONE);
-        }
-    } else {
-        MEDIA_INFO_LOG("Db File [%{public}s] is not exists", dbPath.c_str());
-        haMode_ = HAMode::MAIN_REPLICA;
-        SaveHAModeToPara();
-        SaveHAModeSwitchStatusToPara(HA_SWITCH_DONE);
-    }
-    MEDIA_INFO_LOG("MediaLibraryRestore::GetHaMode = [%{public}d]", haMode_);
-    return haMode_;
-}
-
-void MediaLibraryRestore::SaveHAModeToPara()
-{
-    int ret = SetParameter(PARAM_KEY.c_str(), std::to_string(haMode_).c_str());
-    CHECK_AND_RETURN_LOG((ret == PARAMETER_E_OK), "MediaLibraryRestore::GetHaMode SetParameter hamode error");
-}
-
 void MediaLibraryRestore::SaveHAModeSwitchStatusToPara(const uint32_t &status)
 {
     int ret = SetParameter(SWITCH_STATUS_KEY.c_str(), std::to_string(status).c_str());
-    CHECK_AND_RETURN_LOG((ret == PARAMETER_E_OK), "MediaLibraryRestore::GetHaMode SetParameter switch error");
-}
-
-void MediaLibraryRestore::ReadHAModeFromPara()
-{
-    haMode_ = HAMode::MANUAL_TRIGGER;
-    char ha[PARAM_LEN] = {0};
-    int ret = GetParameter(PARAM_KEY.c_str(), std::to_string(haMode_).c_str(), ha, PARAM_LEN);
-    if (ret > PARAMETER_E_OK) {
-        haMode_ = std::stoi(ha);
-        MEDIA_INFO_LOG("GetParameter haMode_ = [%{public}d]", haMode_);
-    }
+    CHECK_AND_RETURN_LOG((ret == PARAMETER_E_OK), "MediaLibraryRestore SetParameter switch error");
 }
 
 void MediaLibraryRestore::CheckRestore(const int32_t &errCode)
@@ -112,14 +58,12 @@ void MediaLibraryRestore::CheckRestore(const int32_t &errCode)
     if (errCode != NativeRdb::E_SQLITE_CORRUPT) {
         return;
     }
+    MEDIA_INFO_LOG("Restore is called");
+    CHECK_AND_RETURN_LOG((!isRestoring_), "RdbStore is restoring");
 
     std::string date = DfxUtils::GetCurrentDateMillisecond();
     VariantMap map = {{KEY_DB_CORRUPT, std::move(date)}};
     PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_CORRUPT_ERR, map);
-
-    MEDIA_INFO_LOG("Restore is called");
-    CHECK_AND_RETURN_LOG((!isRestoring_), "RdbStore is restoring");
-    CHECK_AND_RETURN_LOG((haMode_ == HAMode::MAIN_REPLICA), "RdbStore is not double write mode");
 
     isRestoring_ = true;
     std::thread([&] {
@@ -140,9 +84,10 @@ void MediaLibraryRestore::CheckRestore(const int32_t &errCode)
 #ifdef CLOUD_SYNC_MANAGER
 void MediaLibraryRestore::StopCloudSync()
 {
+    CHECK_AND_RETURN_LOG((isBackuping_.load()), "StopCloudSync: backuping is false, return");
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryRestore::StopCloudSync");
-    FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync(BUNDLE_NAME);
+    FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync(BUNDLE_NAME, true);
     uint32_t times = 0;
     int ret = WaitParameter(CLOUD_STOP_FLAG_K.c_str(), CLOUD_STOP_FLAG_V.c_str(), WAIT_SECONDS);
     if (ret == PARAMETER_E_OK) {
@@ -150,63 +95,73 @@ void MediaLibraryRestore::StopCloudSync()
         return;
     }
     isBackuping_ = false;
-    MEDIA_INFO_LOG("StopCloudSync error end");
+    MEDIA_INFO_LOG("StopCloudSync timeout error, set backup false");
 }
 #endif
 
-void MediaLibraryRestore::DoRdbHAModeSwitch()
+void MediaLibraryRestore::CheckBackup()
 {
-    MEDIA_INFO_LOG("DoRdbModeSwitch is called");
-    CHECK_AND_RETURN_LOG((haMode_ == HAMode::MANUAL_TRIGGER), "RdbStore is not trigger mode [%{public}d]", haMode_);
-    CHECK_AND_RETURN_LOG((!isRestoring_), "RdbStore is restoring");
-    CHECK_AND_RETURN_LOG((!isBackuping_.load()), "RdbStore is backuping");
+    MEDIA_INFO_LOG("CheckBackup is called");
+    CHECK_AND_RETURN_LOG((!isRestoring_), "CheckBackup: is restoring, return");
+    CHECK_AND_RETURN_LOG((!isBackuping_.load()), "CheckBackup: is backuping, return");
 
+    auto rdb = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    CHECK_AND_RETURN_LOG((rdb != nullptr), "CheckBackup: rdbStore is nullptr");
+    if (!rdb->IsSlaveDiffFromMaster()) {
+        MEDIA_INFO_LOG("CheckBackup: isSlaveDiffFromMaster [false], return");
+        return;
+    }
+    MEDIA_INFO_LOG("CheckBackup: isSlaveDiffFromMaster [true]");
+    DoRdbBackup();
+}
+
+void MediaLibraryRestore::ResetHAModeSwitchStatus()
+{
+    auto switchStatus = HA_SWITCH_READY;
+    SaveHAModeSwitchStatusToPara(std::move(switchStatus));
+    isBackuping_ = false;
+}
+
+void MediaLibraryRestore::DoRdbBackup()
+{
     isBackuping_ = true;
     CHECK_AND_RETURN_LOG((!isWaiting_.load()), "waiting stop cloudsync");
     SaveHAModeSwitchStatusToPara(HA_SWITCHING);
     std::thread([&] {
-        MEDIA_INFO_LOG("Backup [start]");
+        MEDIA_INFO_LOG("DoRdbBackup: Backup [start]");
 #ifdef CLOUD_SYNC_MANAGER
-        MEDIA_INFO_LOG("Call CloudSync start");
+        MEDIA_INFO_LOG("DoRdbBackup: Call CloudSync start [isBackuping=%{public}d]", isBackuping_.load());
         isWaiting_ = true;
         StopCloudSync();
         isWaiting_ = false;
-        MEDIA_INFO_LOG("Call CloudSync end");
+        MEDIA_INFO_LOG("DoRdbBackup: Call CloudSync end");
         if (!isBackuping_.load()) {
-            SaveHAModeSwitchStatusToPara(HA_SWITCH_READY);
+            ResetHAModeSwitchStatus();
+            MEDIA_INFO_LOG("DoRdbBackup: isbackuping fasle, return");
             return;
         }
 #endif
         auto rdb = MediaLibraryDataManager::GetInstance()->rdbStore_;
         if (rdb == nullptr) {
-            SaveHAModeSwitchStatusToPara(HA_SWITCH_READY);
-            isBackuping_ = false;
-            MEDIA_ERR_LOG("DoRdbHAModeSwitch rdbStore is nullptr");
+            ResetHAModeSwitchStatus();
+            MEDIA_ERR_LOG("DoRdbBackup: rdbStore is nullptr");
             return;
         }
 
         if (isInterrupting_.load() || !isBackuping_.load()) {
-            SaveHAModeSwitchStatusToPara(HA_SWITCH_READY);
-            isBackuping_ = false;
+            ResetHAModeSwitchStatus();
+            MEDIA_INFO_LOG("DoRdbBackup: Interrupt or isbackuping false, return");
             return;
         }
         MediaLibraryTracer tracer;
-        tracer.Start("MediaLibraryRestore::DoRdbHAModeSwitch Backup");
+        tracer.Start("MediaLibraryRestore::DoRdbBackup Backup");
         int errCode = rdb->Backup("");
-        MEDIA_INFO_LOG("Backup [end]. errCode = %{public}d", errCode);
-        if (errCode != NativeRdb::E_OK) {
-            SaveHAModeSwitchStatusToPara(HA_SWITCH_READY);
-            isBackuping_ = false;
-            return;
-        }
-        haMode_ = HAMode::MAIN_REPLICA;
-        SaveHAModeToPara();
-        SaveHAModeSwitchStatusToPara(HA_SWITCH_DONE);
-        isBackuping_ = false;
+        MEDIA_INFO_LOG("DoRdbBackup: Backup [end]. errCode = %{public}d", errCode);
+        ResetHAModeSwitchStatus();
     }).detach();
 }
 
-void MediaLibraryRestore::InterruptRdbHAModeSwitch()
+void MediaLibraryRestore::InterruptBackup()
 {
     if (!isBackuping_.load()) {
         MEDIA_INFO_LOG("rdb is not backuping, no need to interrupt");
@@ -214,18 +169,18 @@ void MediaLibraryRestore::InterruptRdbHAModeSwitch()
     }
     if (isWaiting_.load()) {
         isBackuping_ = false;
-        MEDIA_INFO_LOG("InterruptRdbHAModeSwitch, waiting");
+        MEDIA_INFO_LOG("InterruptBackup: isWaiting, return");
         return;
     }
     auto rdb = MediaLibraryDataManager::GetInstance()->rdbStore_;
-    CHECK_AND_RETURN_LOG((rdb != nullptr), "[InterruptRdbHAModeSwitch] rdbStore is nullptr");
+    CHECK_AND_RETURN_LOG((rdb != nullptr), "[InterruptBackup] rdbStore is nullptr");
     isInterrupting_ = true;
     int errCode = rdb->InterruptBackup();
     isInterrupting_ = false;
     isBackuping_ = false;
     MEDIA_INFO_LOG("InterruptBackup [end]. errCode = %{public}d", errCode);
     if (errCode == NativeRdb::E_OK) {
-        SaveHAModeSwitchStatusToPara(HA_SWITCH_READY);
+        ResetHAModeSwitchStatus();
     }
 }
 
@@ -249,20 +204,9 @@ bool MediaLibraryRestore::IsBackuping() const
     return isBackuping_;
 }
 
-int32_t MediaLibraryRestore::GetHaMode() const
-{
-    return haMode_;
-}
-
 bool MediaLibraryRestore::IsWaiting() const
 {
     return isWaiting_;
-}
-
-void MediaLibraryRestore::ResetHaMode()
-{
-    haMode_ = HAMode::SINGLE;
-    SaveHAModeToPara();
 }
 } // namespace Media
 } // namespace OHOS

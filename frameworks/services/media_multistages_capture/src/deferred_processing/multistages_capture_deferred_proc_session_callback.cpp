@@ -95,6 +95,21 @@ int32_t MultiStagesCaptureDeferredProcSessionCallback::UpdatePhotoQuality(const 
     return updatePhotoIdResult;
 }
 
+void MultiStagesCaptureDeferredProcSessionCallback::UpdateCEAvailable(const string& photoId)
+{
+    MediaLibraryCommand updateCEAvailableCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    NativeRdb::ValuesBucket updateCEAvailable;
+    updateCEAvailableCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
+    updateCEAvailable.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
+        static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
+    updateCEAvailableCmd.SetValueBucket(updateCEAvailable);
+    auto ceAvailableResult = DatabaseAdapter::Update(updateCEAvailableCmd);
+    if (ceAvailableResult < 0) {
+        MEDIA_WARN_LOG("update CE available fail, photoId: %{public}s", photoId.c_str());
+        return;
+    }
+}
+
 int32_t QuerySubType(const string &photoId)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
@@ -205,10 +220,6 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnDeliveryLowQualityImage(co
         MEDIA_INFO_LOG("OnDeliveryLowQualityImage picture is null");
         return;
     }
-    auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
-    }
 
     MediaLibraryTracer tracer;
     tracer.Start("OnDeliveryLowQualityImage " + imageId);
@@ -239,22 +250,17 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnDeliveryLowQualityImage(co
 }
 
 void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const string &imageId, const uint8_t *addr,
-    const long bytes)
+    const long bytes, bool isCloudEnhancementAvailable)
 {
-    if (addr == nullptr || bytes == 0) {
-        MEDIA_ERR_LOG("addr is nullptr or bytes(%{public}ld) is 0", bytes);
-        return;
-    }
-
-    if (!MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(imageId)) {
-        MEDIA_ERR_LOG("this photo was delete or err photoId: %{public}s", imageId.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG((addr != nullptr) && (bytes != 0), "addr is nullptr or bytes(%{public}ld) is 0", bytes);
+    CHECK_AND_RETURN_LOG(MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(imageId),
+        "this photo was delete or err photoId: %{public}s", imageId.c_str());
     MediaLibraryTracer tracer;
     tracer.Start("OnProcessImageDone " + imageId);
 
     // 1. 分段式拍照已经处理完成，保存全质量图
-    MEDIA_INFO_LOG("photoid: %{public}s, bytes: %{public}ld enter", imageId.c_str(), bytes);
+    MEDIA_INFO_LOG("photoid: %{public}s, bytes: %{public}ld, isCloudEnhancementAvailable: %{public}s enter",
+        imageId.c_str(), bytes, isCloudEnhancementAvailable?"true":"false");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
     string where = PhotoColumn::PHOTO_ID + " = ? ";
     vector<string> whereArgs { imageId };
@@ -286,6 +292,10 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
 
     // 2. 更新数据库 photoQuality 到高质量
     UpdatePhotoQuality(imageId);
+    // 3. update cloud enhancement avaiable
+    if (isCloudEnhancementAvailable) {
+        UpdateCEAvailable(imageId);
+    }
 
     NotifyIfTempFile(resultSet);
 

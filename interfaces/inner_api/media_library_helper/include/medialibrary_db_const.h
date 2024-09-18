@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 108;
+const int32_t MEDIA_RDB_VERSION = 112;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -135,6 +135,10 @@ enum {
     VERSION_UPDATE_BURST_DIRTY = 106,
     VERSION_UDAPTE_DATA_UNIQUE = 107,
     VERSION_ADD_DETAIL_TIME = 108,
+    VERSION_ADD_VIDEO_FACE_TABLE = 109,
+    VERSION_ADD_OWNER_ALBUM_ID = 110,
+    VERSION_CLOUD_ENAHCNEMENT = 111,
+    VERSION_UPDATE_MDIRTY_TRIGGER_FOR_UPLOADING_MOVING_PHOTO = 112,
 };
 
 enum {
@@ -391,7 +395,6 @@ const std::string MEDIA_DB_DIR = "/data/medialibrary/database";
 // requestId for generating thumbnail in batches
 const std::string THUMBNAIL_BATCH_GENERATE_REQUEST_ID = "thumbnail_request_id";
 const std::string IMAGE_FILE_TYPE = "image_file_type";
-
 } // namespace Media
 } // namespace OHOS
 

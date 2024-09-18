@@ -14,6 +14,7 @@
  */
 #define MLOG_TAG "FileNotify"
 #include "medialibrary_notify.h"
+#include "medialibrary_async_worker.h"
 #include "data_ability_helper_impl.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -34,6 +35,7 @@ using namespace std;
 namespace OHOS::Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
 using NotifyDataMap = unordered_map<NotifyType, list<Uri>>;
+static const int32_t WAIT_TIME = 2;
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::instance_;
 mutex MediaLibraryNotify::mutex_;
 unordered_map<string, NotifyDataMap> MediaLibraryNotify::nfListMap_ = {};
@@ -192,9 +194,9 @@ static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData
 static int32_t GetAlbumsById(const string &fileId, list<string> &albumIdList)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    MediaLibraryCommand queryAlbumMapCmd(OperationObject::PHOTO_MAP, OperationType::QUERY);
-    queryAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(PhotoMap::ASSET_ID, fileId);
-    auto resultSet = uniStore->Query(queryAlbumMapCmd, {PhotoMap::ALBUM_ID});
+    MediaLibraryCommand queryAlbumMapCmd(OperationObject::PAH_PHOTO, OperationType::QUERY);
+    queryAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    auto resultSet = uniStore->Query(queryAlbumMapCmd, {PhotoColumn::PHOTO_OWNER_ALBUM_ID});
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("GetAlbumsById failed");
         return E_INVALID_FILEID;
@@ -208,8 +210,8 @@ static int32_t GetAlbumsById(const string &fileId, list<string> &albumIdList)
     ret = resultSet->GoToFirstRow();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to GoToFirstRow");
     do {
-        int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoMap::ALBUM_ID, resultSet,
-            TYPE_INT32));
+        int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_OWNER_ALBUM_ID,
+            resultSet, TYPE_INT32));
         albumIdList.emplace_back(to_string(albumId));
     } while (!resultSet->GoToNextRow());
     return E_OK;
@@ -276,7 +278,7 @@ int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyTyp
         MediaLibraryNotify::timer_.Register(PushNotification, MNOTIFY_TIME_INTERVAL);
         MediaLibraryNotify::timer_.Setup();
     }
-    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    unique_ptr<NotifyTaskWorker> &asyncWorker = NotifyTaskWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ASYNC_WORKER_IS_NULL, "AsyncWorker is null");
     auto *taskData = new (nothrow) NotifyTaskData(uri, notifyType, albumId, hiddenOnly);
     CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_NOTIFY_TASK_DATA_IS_NULL, "taskData is null");
@@ -284,7 +286,7 @@ int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyTyp
         uri.c_str(), notifyType, albumId);
     shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(AddNfListMap, taskData);
     if (notifyAsyncTask != nullptr) {
-        asyncWorker->AddTask(notifyAsyncTask, true);
+        asyncWorker->AddTask(notifyAsyncTask);
     }
     return E_OK;
 }
@@ -400,5 +402,79 @@ void MediaLibraryNotify::GetNotifyUris(const AbsRdbPredicates &predicates, vecto
             }
         }
     } while (count > 0);
+}
+
+NotifyTaskWorker::NotifyTaskWorker() : isThreadRunning_(false)
+{}
+
+NotifyTaskWorker::~NotifyTaskWorker()
+{
+    isThreadRunning_ = false;
+    if (thread_.joinable()) {
+        thread_.join();
+    }
+}
+
+void NotifyTaskWorker::StartThread()
+{
+    MEDIA_INFO_LOG("Start notify thread");
+    isThreadRunning_ = true;
+    thread_ = std::thread([this]() { this->StartWorker(); });
+    thread_.detach();
+}
+
+int32_t NotifyTaskWorker::AddTask(const shared_ptr<MediaLibraryAsyncTask> &task)
+{
+    lock_guard<mutex> lockGuard(taskLock_);
+    taskQueue_.push(task);
+    if (isThreadRunning_) {
+        taskCv_.notify_all();
+    } else {
+        StartThread();
+    }
+    return 0;
+}
+
+shared_ptr<MediaLibraryAsyncTask> NotifyTaskWorker::GetTask()
+{
+    lock_guard<mutex> lockGuard(taskLock_);
+    if (taskQueue_.empty()) {
+        return nullptr;
+    }
+    shared_ptr<MediaLibraryAsyncTask> task = taskQueue_.front();
+    taskQueue_.pop();
+    return task;
+}
+
+bool NotifyTaskWorker::IsQueueEmpty()
+{
+    lock_guard<mutex> lock_Guard(taskLock_);
+    return taskQueue_.empty();
+}
+
+bool NotifyTaskWorker::WaitForTask()
+{
+    std::unique_lock<std::mutex> lock(cvLock_);
+    return taskCv_.wait_for(lock, std::chrono::minutes(WAIT_TIME),
+        [this]() { return !IsQueueEmpty(); });
+}
+
+void NotifyTaskWorker::StartWorker()
+{
+    string name("NotifyTaskWorker");
+    pthread_setname_np(pthread_self(), name.c_str());
+    while (true) {
+        if (WaitForTask()) {
+            shared_ptr<MediaLibraryAsyncTask> task = GetTask();
+            if (task != nullptr) {
+                task->executor_(task->data_);
+                task = nullptr;
+            }
+        } else {
+            MEDIA_INFO_LOG("Notify queue is empty, end thread");
+            isThreadRunning_ = false;
+            return;
+        }
+    }
 }
 } // namespace OHOS::Media

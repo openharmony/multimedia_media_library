@@ -52,6 +52,7 @@
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
+#include "enhancement_manager.h"
 #include "permission_utils.h"
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
@@ -80,6 +81,7 @@ const string DEFAULT_IMAGE_NAME = "IMG_";
 const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
 constexpr int32_t NO_DESENSITIZE = 3;
+const string PHOTO_ALBUM_URI_PREFIX = "file://media/PhotoAlbum/";
 
 constexpr int32_t ORIENTATION_0 = 1;
 constexpr int32_t ORIENTATION_90 = 6;
@@ -616,16 +618,15 @@ static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &file
         appId = PermissionUtils::GetAppIdByBundleName(cmd.GetBundleName());
     }
     outValues.PutString(MediaColumn::MEDIA_OWNER_APPID, appId);
-
-    if (!cmd.GetBundleName().empty()) {
-        string packageName;
-        ValueObject valuePackageName;
-        if (cmd.GetValueBucket().GetObject(MEDIA_DATA_DB_PACKAGE_NAME, valuePackageName)) {
-            valuePackageName.GetString(packageName);
-        }
-        if (packageName.empty()) {
-            packageName = GetAssetPackageName(fileAsset, cmd.GetBundleName());
-        }
+    string packageName;
+    ValueObject valuePackageName;
+    if (cmd.GetValueBucket().GetObject(MEDIA_DATA_DB_PACKAGE_NAME, valuePackageName)) {
+        valuePackageName.GetString(packageName);
+    }
+    if (packageName.empty() && !cmd.GetBundleName().empty()) {
+        packageName = GetAssetPackageName(fileAsset, cmd.GetBundleName());
+    }
+    if (!packageName.empty()) {
         outValues.PutString(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
     }
 }
@@ -1620,6 +1621,53 @@ int32_t MediaLibraryAssetOperations::SendModifyUserCommentNotify(MediaLibraryCom
     return E_OK;
 }
 
+static int32_t GetAlbumIdByPredicates(const string &whereClause, const vector<string> &whereArgs)
+{
+    size_t pos = whereClause.find(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
+    if (pos == string::npos) {
+        MEDIA_ERR_LOG("Predicates whereClause is invalid");
+        return E_ERR;
+    }
+    size_t argsIndex = 0;
+    for (size_t i = 0; i < pos; ++i) {
+        if (whereClause[i] == '?') {
+            argsIndex++;
+        }
+    }
+    if (argsIndex > whereArgs.size() - 1) {
+        MEDIA_ERR_LOG("whereArgs is invalid");
+        return E_ERR;
+    }
+    auto albumId = whereArgs[argsIndex];
+    if (MediaLibraryDataManagerUtils::IsNumber(albumId)) {
+        return std::atoi(albumId.c_str());
+    }
+    return E_ERR;
+}
+
+void MediaLibraryAssetOperations::SendOwnerAlbumIdNotify(MediaLibraryCommand &cmd)
+{
+    ValueObject value;
+    int32_t targetAlbumId = 0;
+    if (!cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_OWNER_ALBUM_ID, value)) {
+        return;
+    }
+    value.GetInt(targetAlbumId);
+    auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
+    int32_t oriAlbumId = GetAlbumIdByPredicates(whereClause, whereArgs);
+
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(targetAlbumId),
+        to_string(oriAlbumId) });
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    NotifyType typeTarget = NotifyType::NOTIFY_ALBUM_ADD_ASSET;
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PHOTO_ALBUM_URI_PREFIX, to_string(targetAlbumId)), typeTarget);
+    NotifyType typeOri = NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PHOTO_ALBUM_URI_PREFIX, to_string(oriAlbumId)), typeOri);
+}
+
 int32_t MediaLibraryAssetOperations::SetPendingTrue(const shared_ptr<FileAsset> &fileAsset)
 {
     // time_pending = 0, means file is created, not allowed
@@ -1957,6 +2005,8 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_IS_TEMP, { IsBool } },
     { PhotoColumn::PHOTO_DIRTY, { IsInt32 } },
     { PhotoColumn::PHOTO_DETAIL_TIME, { IsStringNotNull } },
+    { PhotoColumn::PHOTO_OWNER_ALBUM_ID, { IsInt32 } },
+    { PhotoColumn::PHOTO_CE_AVAILABLE, { IsInt32 } },
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)
@@ -2146,19 +2196,23 @@ static void DeleteFiles(AsyncTaskData *data)
     }
 }
 
-int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
+void HandleAudiosResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
     vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateTakens, vector<int32_t> &outSubTypes)
 {
-    vector<string> columns = {
-        MediaColumn::MEDIA_ID,
-        MediaColumn::MEDIA_FILE_PATH,
-        MediaColumn::MEDIA_DATE_TAKEN,
-        PhotoColumn::PHOTO_SUBTYPE
-    };
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
-    if (resultSet == nullptr) {
-        return E_HAS_DB_ERROR;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        outIds.push_back(
+            to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))));
+        outPaths.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet,
+            TYPE_STRING)));
+        outDateTakens.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_TAKEN, resultSet,
+            TYPE_STRING)));
+        outSubTypes.push_back(static_cast<int32_t>(PhotoSubType::DEFAULT));
     }
+}
+
+void HandlePhotosResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
+    vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateTakens, vector<int32_t> &outSubTypes)
+{
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         outIds.push_back(
             to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))));
@@ -2168,6 +2222,33 @@ int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
             TYPE_STRING)));
         outSubTypes.push_back(
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE, resultSet, TYPE_INT32)));
+    }
+}
+
+int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
+    vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateTakens, vector<int32_t> &outSubTypes)
+{
+    vector<string> columns = {
+        MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_FILE_PATH,
+        MediaColumn::MEDIA_DATE_TAKEN
+    };
+
+    if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        columns.push_back(PhotoColumn::PHOTO_SUBTYPE);
+    }
+
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    
+    if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        HandlePhotosResultSet(resultSet, outIds, outPaths, outDateTakens, outSubTypes);
+    } else if (predicates.GetTableName() == AudioColumn::AUDIOS_TABLE) {
+        HandleAudiosResultSet(resultSet, outIds, outPaths, outDateTakens, outSubTypes);
+    } else {
+        MEDIA_WARN_LOG("Invalid table name.");
     }
     return E_OK;
 }
@@ -2211,13 +2292,14 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     vector<int32_t> subTypes;
     int32_t deletedRows = 0;
     GetIdsAndPaths(predicates, ids, paths, dateTakens, subTypes);
-    if (ids.empty()) {
-        MEDIA_ERR_LOG("Failed to delete files in db, ids size: 0");
-        return deletedRows;
-    }
+    CHECK_AND_RETURN_RET_LOG(!ids.empty(), deletedRows, "Failed to delete files in db, ids size: 0");
 
     // notify deferred processing session to remove image
     MultiStagesCaptureManager::GetInstance().RemoveImages(predicates, false);
+
+    // delete cloud enhanacement task
+    vector<string> photoIds;
+    EnhancementManager::GetInstance().RemoveTasksInternal(ids, photoIds);
 
     deletedRows = DeleteDbByIds(predicates.GetTableName(), ids, compatible);
     if (deletedRows <= 0) {

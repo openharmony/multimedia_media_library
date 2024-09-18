@@ -83,6 +83,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OperationObject::PAH_MOVING_PHOTO },
         { PAH_BATCH_THUMBNAIL_OPERATE, OperationObject::PAH_BATCH_THUMBNAIL_OPERATE },
         { CHECK_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
+        { PAH_CLOUD_ENHANCEMENT_OPERATE, OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE },
 
         // use in Vision
         { PAH_ANA_OCR, OperationObject::VISION_OCR },
@@ -91,6 +92,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ANA_ATTS, OperationObject::VISION_AESTHETICS },
         { PAH_ANA_TOTAL, OperationObject::VISION_TOTAL },
         { VISION_IMAGE_FACE_TABLE, OperationObject::VISION_IMAGE_FACE },
+        { VISION_VIDEO_FACE_TABLE, OperationObject::VISION_VIDEO_FACE },
         { VISION_FACE_TAG_TABLE, OperationObject::VISION_FACE_TAG },
         { VISION_SALIENCY_TABLE, OperationObject::VISION_SALIENCY },
         { PAH_ANA_FACE, OperationObject::VISION_IMAGE_FACE },
@@ -172,6 +174,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::VISION_POSE, { { OperationType::UNKNOWN_TYPE, VISION_POSE_TABLE } } },
         { OperationObject::VISION_TOTAL, { { OperationType::UNKNOWN_TYPE, VISION_TOTAL_TABLE } } },
         { OperationObject::VISION_IMAGE_FACE, { { OperationType::UNKNOWN_TYPE, VISION_IMAGE_FACE_TABLE } } },
+        { OperationObject::VISION_VIDEO_FACE, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_FACE_TABLE } } },
         { OperationObject::VISION_FACE_TAG, { { OperationType::UNKNOWN_TYPE, VISION_FACE_TAG_TABLE } } },
         { OperationObject::GEO_DICTIONARY, { { OperationType::UNKNOWN_TYPE, GEO_DICTIONARY_TABLE } } },
         { OperationObject::GEO_KNOWLEDGE, { { OperationType::UNKNOWN_TYPE, GEO_KNOWLEDGE_TABLE } } },
@@ -256,6 +259,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_SUBMIT_CACHE, OperationType::SUBMIT_CACHE },
         { OPRN_BATCH_UPDATE_FAV, OperationType::BATCH_UPDATE_FAV },
         { OPRN_BATCH_UPDATE_USER_COMMENT, OperationType::BATCH_UPDATE_USER_COMMENT },
+        { OPRN_BATCH_UPDATE_OWNER_ALBUM_ID, OperationType::BATCH_UPDATE_OWNER_ALBUM_ID },
         { OPRN_SET_PHOTO_QUALITY, OperationType::SET_PHOTO_QUALITY },
         { OPRN_ADD_IMAGE, OperationType::ADD_IMAGE },
         { OPRN_PROCESS_IMAGE, OperationType::PROCESS_IMAGE },
@@ -275,6 +279,13 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_ADD_LOWQUALITY_IMAGE, OperationType::ADD_LOWQUALITY_IMAGE },
         { OPRN_FINISH_REQUEST_PICTURE, OperationType::FINISH_REQUEST_PICTURE },
         { OPRN_SCAN_WITHOUT_ALBUM_UPDATE, OperationType::SCAN_WITHOUT_ALBUM_UPDATE },
+        { OPRN_ENHANCEMENT_ADD, OperationType::ENHANCEMENT_ADD},
+        { OPRN_ENHANCEMENT_PRIORITIZE, OperationType::ENHANCEMENT_PRIORITIZE},
+        { OPRN_ENHANCEMENT_CANCEL, OperationType::ENHANCEMENT_CANCEL},
+        { OPRN_ENHANCEMENT_CANCEL_ALL, OperationType::ENHANCEMENT_CANCEL_ALL},
+        { OPRN_ENHANCEMENT_SYNC, OperationType::ENHANCEMENT_SYNC},
+        { OPRN_ENHANCEMENT_QUERY, OperationType::ENHANCEMENT_QUERY},
+        { OPRN_ENHANCEMENT_GET_PAIR, OperationType::ENHANCEMENT_GET_PAIR},
     };
     return oprnTypeMap;
 }

@@ -43,26 +43,51 @@ export struct PhotoPickerComponent {
       this.proxy.send({'albumUri': data?.get('SET_ALBUM_URI') as string});
       console.info('PhotoPickerComponent onChanged: SET_ALBUM_URI');
     } else if (data?.has('SET_MAX_SELECT_COUNT')) {
-      let maxSelected: MaxSelected = data?.get('SET_MAX_SELECT_COUNT') as MaxSelected;
-      let map: Map<MaxCountType, number> | undefined = maxSelected?.data;
-      this.proxy.send({'totalCount': map?.get(MaxCountType.TOTAL_MAX_COUNT),
-        'photoCount': map?.get(MaxCountType.PHOTO_MAX_COUNT), 'videoCount': map?.get(MaxCountType.VIDEO_MAX_COUNT)});
-      console.info('PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT');
+      this.onSetMaxSelectCount(data);
     } else if (data?.has('SET_PHOTO_BROWSER_ITEM')) {
       this.onSetPhotoBrowserItem(data);
+    } else if (data?.has('EXIT_PHOTO_BROWSER')) {
+      this.handleExitPhotoBrowser();
+    } else if (data?.has('SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY')) {
+      this.onSetPhotoBrowserUIElementVisibility(data);
     } else {
       console.info('PhotoPickerComponent onChanged: other case');
     }
   }
 
-  private onSetPhotoBrowserItem(data?: 
-    Map<string, Array<string> | string | MaxSelected | PhotoBrowserRangeInfo>): void {
+  private onSetMaxSelectCount(data?: Map<string, Object>): void{
+    let maxSelected: MaxSelected = data?.get('SET_MAX_SELECT_COUNT') as MaxSelected;
+    let map: Map<MaxCountType, number> | undefined = maxSelected?.data;
+    this.proxy.send({
+      'totalCount': map?.get(MaxCountType.TOTAL_MAX_COUNT), 
+      'photoCount': map?.get(MaxCountType.PHOTO_MAX_COUNT), 
+      'videoCount': map?.get(MaxCountType.VIDEO_MAX_COUNT)
+    });
+    console.info('PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT');
+  }
+
+  private onSetPhotoBrowserItem(data?: Map<string, Object>): void {
     let photoBrowserRangeInfo: PhotoBrowserRangeInfo = data?.get('SET_PHOTO_BROWSER_ITEM') as PhotoBrowserRangeInfo;
     this.proxy?.send({
       'itemUri': photoBrowserRangeInfo?.uri, 
       'photoBrowserRange': photoBrowserRangeInfo?.photoBrowserRange
     });
     console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_ITEM');
+  }
+
+  private handleExitPhotoBrowser(): void{
+    this.proxy.send({'exitPhotoBrowser': true});
+    console.info('PhotoPickerComponent onChanged: EXIT_PHOTO_BROWSER');
+  }
+
+  private onSetPhotoBrowserUIElementVisibility(data?: Map<string, Object>): void{
+    let photoBrowserUIElementVisibility: PhotoBrowserUIElementVisibility =
+      data?.get('SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY') as PhotoBrowserUIElementVisibility;
+    this.proxy?.send({
+      'elements': photoBrowserUIElementVisibility?.elements, 
+      'isVisible': photoBrowserUIElementVisibility?.isVisible
+    });
+    console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY');
   }
 
   build() {
@@ -94,7 +119,9 @@ export struct PhotoPickerComponent {
             maxPhotoSelectNumber: this.pickerOptions?.maxPhotoSelectNumber as number,
             maxVideoSelectNumber: this.pickerOptions?.maxVideoSelectNumber as number,
             isOnItemClickedSet: this.onItemClicked? true : false,
-            isPreviewForSingleSelectionSupported: this.pickerOptions?.isPreviewForSingleSelectionSupported as boolean
+            isPreviewForSingleSelectionSupported: this.pickerOptions?.isPreviewForSingleSelectionSupported as boolean,
+            isSlidingSelectionSupported: this.pickerOptions?.isSlidingSelectionSupported as boolean,
+            photoBrowserCheckboxPosition: this.pickerOptions?.photoBrowserCheckboxPosition as [number, number]
           }
         }).height('100%').width('100%').onRemoteReady((proxy) => {
           this.proxy = proxy;
@@ -232,7 +259,7 @@ export struct PhotoPickerComponent {
 
 @Observed
 export class PickerController {
-  data?: Map<string, Array<string> | string | MaxSelected | PhotoBrowserRangeInfo>;
+  data?: Map<string, Object>;
 
   setData(type: DataType, data: Object) {
     if (!data) {
@@ -272,6 +299,20 @@ export class PickerController {
     this.data = new Map([['SET_PHOTO_BROWSER_ITEM', photoBrowserRangeInfo]]);
     console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM' + JSON.stringify(photoBrowserRangeInfo));
   }
+
+  exitPhotoBrowser(){
+    this.data = new Map([['EXIT_PHOTO_BROWSER', true]]);
+    console.info('PhotoPickerComponent EXIT_PHOTO_BROWSER');
+  }
+
+  setPhotoBrowserUIElementVisibility(elements: Array<PhotoBrowserUIElement>, isVisible?: boolean){
+    let photoBrowserUIElementVisibility: PhotoBrowserUIElementVisibility = new PhotoBrowserUIElementVisibility();
+    photoBrowserUIElementVisibility.elements = elements;
+    photoBrowserUIElementVisibility.isVisible = isVisible;
+    this.data = new Map([['SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY', photoBrowserUIElementVisibility]]);
+    console.info('PhotoPickerComponent SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY ' +
+      JSON.stringify(photoBrowserUIElementVisibility));
+  }
 }
 
 export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
@@ -285,6 +326,8 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   selectMode?: SelectMode;
   maxPhotoSelectNumber?: number;
   maxVideoSelectNumber?: number;
+  isSlidingSelectionSupported?: boolean;
+  photoBrowserCheckboxPosition?: [number, number];
 }
 
 export class BaseItemInfo {
@@ -316,6 +359,11 @@ export class MaxSelected {
 class PhotoBrowserRangeInfo {
   uri?: string;
   photoBrowserRange?: PhotoBrowserRange;
+}
+
+class PhotoBrowserUIElementVisibility {
+  elements?: Array<PhotoBrowserUIElement>;
+  isVisible?: boolean;
 }
 
 export enum DataType {
@@ -364,4 +412,9 @@ export enum MaxCountType {
 export enum PhotoBrowserRange {
   ALL = 0,
   SELECTED_ONLY = 1
+}
+
+export enum PhotoBrowserUIElement {
+  CHECKBOX = 0,
+  BACK_BUTTON = 1
 }

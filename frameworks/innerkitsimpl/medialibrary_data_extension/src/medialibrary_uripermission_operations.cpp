@@ -188,7 +188,7 @@ static void QueryUriPermission(MediaLibraryCommand &cmd, const std::vector<DataS
         return;
     }
     cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
-    for (const auto val : values) {
+    for (const auto &val : values) {
         predicateInColumns.push_back(static_cast<string>(val.Get(AppUriPermissionColumn::FILE_ID, isValid)));
     }
     predicates.In(AppUriPermissionColumn::FILE_ID, predicateInColumns);
@@ -254,7 +254,7 @@ static void FilterNotExistUri(const std::vector<DataShareValuesBucket> &values, 
     vector<string> photosColumns;
     vector<string> audioColumns;
     bool isValid;
-    for (const auto val : values) {
+    for (const auto &val : values) {
         if (static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isValid)) == PHOTOSTYPE) {
             photosColumns.push_back(val.Get(AppUriPermissionColumn::FILE_ID, isValid));
         } else if (static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isValid)) == AUDIOSTYPE) {
@@ -297,7 +297,7 @@ static void FilterNotExistUri(const std::vector<DataShareValuesBucket> &values, 
 static void GetAllUriDbOperation(const vector<DataShareValuesBucket> &values, vector<int32_t> &dbOperation,
     std::shared_ptr<OHOS::NativeRdb::ResultSet> &queryResult)
 {
-    for (const auto val : values) {
+    for (const auto &val : values) {
         dbOperation.push_back(INSERT_DB_OPERATION);
     }
     if ((queryResult == nullptr) || (queryResult->GoToFirstRow() != NativeRdb::E_OK)) {
@@ -354,7 +354,7 @@ static int32_t ValueBucketCheck(const std::vector<DataShareValuesBucket> &values
     if (values.empty()) {
         return E_ERR;
     }
-    for (const auto val : values) {
+    for (const auto &val : values) {
         val.Get(AppUriPermissionColumn::FILE_ID, isValidArr[FILE_ID_INDEX]);
         val.Get(AppUriPermissionColumn::URI_TYPE, isValidArr[URI_TYPE_INDEX]);
         val.Get(AppUriPermissionColumn::PERMISSION_TYPE, isValidArr[PERMISSION_TYPE_INDEX]);
@@ -383,6 +383,17 @@ static void InsertValueBucketPrepare(const std::vector<DataShareValuesBucket> &v
     batchInsertBucket.push_back(insertValues);
 }
 
+static void GrantPermissionPrepareHandle(MediaLibraryCommand &cmd, const std::vector<DataShareValuesBucket> &values,
+    std::vector<int32_t>& dbOperation, std::shared_ptr<OHOS::NativeRdb::ResultSet>& resultSet)
+{
+    bool isValid = false;
+    int32_t permissionType = values.at(0).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
+    AppstateOberserverBuild(permissionType);
+    QueryUriPermission(cmd, values, resultSet);
+    GetAllUriDbOperation(values, dbOperation, resultSet);
+    FilterNotExistUri(values, dbOperation);
+}
+
 int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
     const std::vector<DataShareValuesBucket> &values)
 {
@@ -396,16 +407,12 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
     bool needToInsert = false;
     bool isValid = false;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    TransactionOperations op(rdbStore->GetRaw());
-    if (ValueBucketCheck(values) != E_OK) {
+    if (ValueBucketCheck(values) != E_OK || rdbStore == nullptr) {
         return E_ERR;
     }
     string appid = values.at(0).Get(AppUriPermissionColumn::APP_ID, isValid);
     int32_t permissionType = values.at(0).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
-    AppstateOberserverBuild(permissionType);
-    QueryUriPermission(cmd, values, resultSet);
-    GetAllUriDbOperation(values, dbOperation, resultSet);
-    FilterNotExistUri(values, dbOperation);
+    GrantPermissionPrepareHandle(cmd, values, dbOperation, resultSet);
     for (size_t i = 0; i < values.size(); i++) {
         int32_t fileId = std::stoi((static_cast<string>(values.at(i).Get(AppUriPermissionColumn::FILE_ID, isValid))));
         int32_t uriType = values.at(i).Get(AppUriPermissionColumn::URI_TYPE, isValid);
@@ -420,7 +427,11 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
             InsertValueBucketPrepare(values, fileId, uriType, batchInsertBucket);
         }
     }
-    int32_t err = op.Start();
+    TransactionOperations op(rdbStore->GetRaw());
+    if (op.Start() != E_OK) {
+        MEDIA_ERR_LOG("TransactionOperations start error!");
+        return E_ERR;
+    }
     if (photoNeedToUpdate) {
         BatchUpdate(cmd, photosValues, PHOTOSTYPE, values);
     }

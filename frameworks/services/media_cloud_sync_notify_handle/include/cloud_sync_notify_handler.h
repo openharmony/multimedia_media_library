@@ -23,6 +23,21 @@ namespace OHOS {
 namespace Media {
 
 #define EXPORT __attribute__ ((visibility ("default")))
+
+/**
+ * @brief 云同步状态枚举
+ */
+enum CloudSyncStatus : int32_t {
+    BEGIN = 0,                                   // 退出华为账号
+    FIRST_FIVE_HUNDRED,                          // 端云下行前500张
+    INCREMENT_DOWNLOAD,                          // 增量任务
+    TOTAL_DOWNLOAD,                              // 全量任务
+    TOTAL_DOWNLOAD_FINISH,                       // 全量下行云缩略图任务结束
+    SYNC_SWITCHED_OFF,                           // 关闭同步开关
+};
+
+const std::string CLOUDSYNC_STATUS_KEY = "persist.kernel.cloudsync.status";
+
 class CloudSyncNotifyHandler {
 public:
     CloudSyncNotifyHandler(const CloudSyncNotifyInfo &info):notifyInfo_(info) {};

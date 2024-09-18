@@ -22,6 +22,7 @@
 #include "location_column.h"
 #include "ipc_skeleton.h"
 #include "js_proxy.h"
+#include "cloud_enhancement_napi.h"
 #include "highlight_album_napi.h"
 #include "media_asset_change_request_napi.h"
 #include "media_assets_change_request_napi.h"
@@ -35,6 +36,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
+#include "medialibrary_type_const.h"
 #include "moving_photo_napi.h"
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
@@ -295,12 +297,18 @@ static bool HandleSpecialDateTypePredicate(const OperationItem &item,
 {
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
-    vector<string>dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED };
+    vector<string>dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_DATE_TAKEN};
     string dateType = item.GetSingle(FIELD_IDX);
     auto it = find(dateTypes.begin(), dateTypes.end(), dateType);
     if (it != dateTypes.end() && item.operation != DataShare::ORDER_BY_ASC &&
         item.operation != DataShare::ORDER_BY_DESC) {
         dateType += "_s";
+        operations.push_back({ item.operation, { dateType, static_cast<double>(item.GetSingle(VALUE_IDX)) } });
+        return true;
+    }
+    if (DATE_TRANSITION_MAP.count(dateType) != 0) {
+        dateType = DATE_TRANSITION_MAP.at(dateType);
         operations.push_back({ item.operation, { dateType, static_cast<double>(item.GetSingle(VALUE_IDX)) } });
         return true;
     }
@@ -917,9 +925,7 @@ inline void SetDefaultPredicatesCondition(DataSharePredicates &predicates, const
 int32_t MediaLibraryNapiUtils::GetUserAlbumPredicates(
     const int32_t albumId, DataSharePredicates &predicates, const bool hiddenOnly)
 {
-    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
-    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
     SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     return E_SUCCESS;
 }
@@ -1105,12 +1111,21 @@ static int32_t GetAllImagesPredicates(DataSharePredicates &predicates, const boo
     return E_SUCCESS;
 }
 
+static int32_t GetCloudEnhancementPredicates(DataSharePredicates &predicates, const bool hiddenOnly)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
+    predicates.EqualTo(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
+        to_string(static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT)));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
+    predicates.EndWrap();
+    return E_SUCCESS;
+}
+
 int32_t MediaLibraryNapiUtils::GetSourceAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates,
     const bool hiddenOnly)
 {
-    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
-    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     return E_SUCCESS;
@@ -1140,6 +1155,9 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
         }
         case PhotoAlbumSubType::IMAGE: {
             return GetAllImagesPredicates(predicates, hiddenOnly);
+        }
+        case PhotoAlbumSubType::CLOUD_ENHANCEMENT: {
+            return GetCloudEnhancementPredicates(predicates, hiddenOnly);
         }
         default: {
             NAPI_ERR_LOG("Unsupported photo album subtype: %{public}d", subType);
@@ -1357,18 +1375,18 @@ void MediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name
     napi_set_named_property(env, result, dataType.second.c_str(), value);
 }
 
-static handleThumbnailReady(napi_env env, const std::string& name, napi_value result, int32_t index,
+static void handleThumbnailReady(napi_env env, const std::string& name, napi_value result, int32_t index,
     const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
 {
-    if (name != "thumbnailReady") {
+    if (name != "thumbnail_ready") {
         return;
     }
     int64_t longVal = 0;
     int status;
     napi_value value = nullptr;
     status = resultSet->GetLong(index, longVal);
-    bool result = longVal ? true : false;
-    napi_create_int32(env, result, &value);
+    bool resultVal = longVal > 0;
+    napi_create_int32(env, resultVal, &value);
     napi_set_named_property(env, result, "thumbnailReady", value);
 }
 
@@ -1399,6 +1417,9 @@ napi_value MediaLibraryNapiUtils::GetNextRowObject(napi_env env, shared_ptr<Nati
         auto dataType = MediaLibraryNapiUtils::GetTypeMap().at(name);
         std::string tmpName = isShared ? dataType.second : name;
         napi_set_named_property(env, result, tmpName.c_str(), value);
+        if (!isShared) {
+            continue;
+        }
         handleTimeInfo(env, name, result, index, resultSet);
         handleThumbnailReady(env, name, result, index, resultSet);
     }
@@ -1553,7 +1574,8 @@ napi_value MediaLibraryNapiUtils::GetUriArrayFromAssets(
 
 void MediaLibraryNapiUtils::FixSpecialDateType(string &selections)
 {
-    vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED };
+    vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_DATE_TAKEN };
     for (string dateType : dateTypes) {
         string date2Second = dateType + "_s";
         auto pos = selections.find(dateType);
@@ -1715,6 +1737,10 @@ template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<Media
     napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext>& asyncContext,
     const size_t minArgs, const size_t maxArgs);
 
+template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<CloudEnhancementAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<CloudEnhancementAsyncContext>& asyncContext,
+    const size_t minArgs, const size_t maxArgs);
+
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaLibraryAsyncContext>(napi_env env,
     unique_ptr<MediaLibraryAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
@@ -1761,6 +1787,10 @@ template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MovingPhotoAsyncC
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAssetManagerAsyncContext>(napi_env env,
     unique_ptr<MediaAssetManagerAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<CloudEnhancementAsyncContext>(napi_env env,
+    unique_ptr<CloudEnhancementAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
 template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,

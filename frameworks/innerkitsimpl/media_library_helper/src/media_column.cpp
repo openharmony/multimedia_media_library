@@ -100,6 +100,14 @@ const std::string PhotoColumn::PHOTO_BURST_KEY = "burst_key";
 const std::string PhotoColumn::PHOTO_COVER_POSITION = "cover_position";
 const std::string PhotoColumn::PHOTO_ORIGINAL_SUBTYPE = "original_subtype";
 const std::string PhotoColumn::PHOTO_DETAIL_TIME = "detail_time";
+const std::string PhotoColumn::PHOTO_OWNER_ALBUM_ID = "owner_album_id";
+const std::string PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID = "original_asset_cloud_id";
+const std::string PhotoColumn::PHOTO_SOURCE_PATH = "source_path";
+const std::string PhotoColumn::PHOTO_CE_AVAILABLE = "ce_available";
+const std::string PhotoColumn::PHOTO_CE_STATUS_CODE = "ce_status_code";
+const std::string PhotoColumn::PHOTO_STRONG_ASSOCIATION = "strong_association";
+const std::string PhotoColumn::PHOTO_ASSOCIATE_FILE_ID = "associate_file_id";
+const std::string PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK = "has_cloud_watermark";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -206,7 +214,15 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_IS_TEMP + " INT DEFAULT 0," +
     PHOTO_BURST_COVER_LEVEL + " INT DEFAULT 1, " +
     PHOTO_BURST_KEY + " TEXT, " +
-    PHOTO_DETAIL_TIME + " TEXT)";
+    PHOTO_DETAIL_TIME + " TEXT, " +
+    PHOTO_OWNER_ALBUM_ID + " INT DEFAULT 0, " +
+    PHOTO_ORIGINAL_ASSET_CLOUD_ID + " TEXT, " +
+    PHOTO_SOURCE_PATH + " TEXT, " +
+    PHOTO_CE_AVAILABLE + " INT DEFAULT 0, " +
+    PHOTO_CE_STATUS_CODE + " INT, " +
+    PHOTO_STRONG_ASSOCIATION + " INT DEFAULT 0, " +
+    PHOTO_ASSOCIATE_FILE_ID + " INT DEFAULT 0, " +
+    PHOTO_HAS_CLOUD_WATERMARK + " INT DEFAULT 0) ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
     PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";
@@ -233,7 +249,7 @@ const std::string PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX = BaseColumn::Creat
     PHOTO_SCHPT_MEDIA_TYPE_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
     "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + MEDIA_TYPE + "," + PHOTO_BURST_COVER_LEVEL +
-    "," + MEDIA_DATE_ADDED + " DESC);";
+    "," + MEDIA_DATE_TAKEN + " DESC);";
 
 const std::string PhotoColumn::CREATE_HIDDEN_TIME_INDEX = BaseColumn::CreateIndex() +
     PHOTO_HIDDEN_TIME_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_HIDDEN_TIME + " DESC)";
@@ -250,7 +266,7 @@ const std::string PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX =
     BaseColumn::CreateIndex() + PHOTO_FAVORITE_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
     "," + MEDIA_DATE_TRASHED + "," + PHOTO_IS_TEMP + "," + MEDIA_IS_FAV + "," + PHOTO_BURST_COVER_LEVEL +
-    "," + MEDIA_DATE_ADDED + " DESC);";
+    "," + MEDIA_DATE_TAKEN + " DESC);";
 
 const std::string PhotoColumn::DROP_PHOTO_FAVORITE_INDEX = BaseColumn::DropIndex() + PHOTO_FAVORITE_INDEX;
 
@@ -273,7 +289,7 @@ const std::string PhotoColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn:
 const std::string PhotoColumn::INDEX_SCTHP_ADDTIME =
     BaseColumn::CreateIndex() + PHOTO_SCHPT_ADDED_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN + "," +
-    MEDIA_TIME_PENDING + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + MEDIA_DATE_ADDED + " DESC, " +
+    MEDIA_TIME_PENDING + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + MEDIA_DATE_TAKEN + " DESC, " +
     MEDIA_ID + " DESC);";
 
 const std::string PhotoColumn::DROP_INDEX_SCTHP_ADDTIME = BaseColumn::DropIndex() + PHOTO_SCHPT_ADDED_INDEX;
@@ -286,7 +302,9 @@ const std::string PhotoColumn::INDEX_SCHPT_READY =
     BaseColumn::CreateIndex() + PHOTO_SCHPT_READY_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
     "," + MEDIA_DATE_TRASHED + ", " + PHOTO_IS_TEMP + "," + PHOTO_THUMBNAIL_READY +
-    "," + MEDIA_DATE_ADDED + " DESC);";
+    "," + MEDIA_DATE_TAKEN + " DESC);";
+
+const std::string PhotoColumn::DROP_INDEX_SCHPT_READY = BaseColumn::DropIndex() + PHOTO_SCHPT_READY_INDEX;
 
 const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         "CREATE TRIGGER IF NOT EXISTS photos_delete_trigger AFTER UPDATE ON " +
@@ -351,6 +369,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_THUMB_SIZE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_FRONT_CAMERA,
     PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY, PhotoColumn::PHOTO_COVER_POSITION,
     PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, PhotoColumn::PHOTO_DETAIL_TIME,
+    PhotoColumn::PHOTO_CE_AVAILABLE,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
@@ -394,6 +413,11 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
         PHOTO_DATE_DAY,
         PHOTO_SHOOTING_MODE,
         PHOTO_SHOOTING_MODE_TAG,
+        PHOTO_OWNER_ALBUM_ID,
+        PHOTO_SOURCE_PATH,
+        MOVING_PHOTO_EFFECT_MODE,
+        PHOTO_COVER_POSITION,
+        PHOTO_ORIGINAL_SUBTYPE,
     };
 
     std::string result = "(";

@@ -15,9 +15,11 @@
 
 #include "cloud_sync_notify_handler.h"
 
+#include "medialibrary_album_fusion_utils.h"
 #include "notify_responsibility_chain_factory.h"
 #include "thumbnail_service.h"
 #include "medialibrary_rdb_utils.h"
+#include "parameters.h"
 #include "photo_album_column.h"
 #include "media_log.h"
 
@@ -27,9 +29,18 @@ namespace OHOS {
 namespace Media {
 using ChangeType = DataShare::DataShareObserver::ChangeType;
 
+const std::string INVALID_ZERO_ID = "0";
+
+static bool IsCloudInsertTaskPriorityHigh()
+{
+    int32_t cloudSyncStatus = static_cast<int32_t>(system::GetParameter(CLOUDSYNC_STATUS_KEY, "0").at(0) - '0');
+    return cloudSyncStatus == CloudSyncStatus::FIRST_FIVE_HUNDRED ||
+        cloudSyncStatus == CloudSyncStatus::INCREMENT_DOWNLOAD;
+}
+
 static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
 {
-    if (cloudNotifyInfo.empty() || cloudNotifyInfo == "0") {
+    if (cloudNotifyInfo.empty()) {
         return false;
     }
     for (char const& ch : cloudNotifyInfo) {
@@ -42,6 +53,11 @@ static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
 
 void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
 {
+    bool isCloudInsertTaskPriorityHigh = IsCloudInsertTaskPriorityHigh();
+    if (!isCloudInsertTaskPriorityHigh && !ThumbnailService::GetInstance()->GetCurrentStatusForTask()) {
+        MEDIA_INFO_LOG("current status is not suitable for task");
+        return;
+    }
     for (auto &uri : uris) {
         string uriString = uri.ToString();
         auto pos = uriString.find_last_of('/');
@@ -49,12 +65,12 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
             continue;
         }
         string idString = uriString.substr(pos + 1);
-        if (!IsCloudNotifyInfoValid(idString)) {
+        if (idString.compare(INVALID_ZERO_ID) == 0 || !IsCloudNotifyInfoValid(idString)) {
             MEDIA_WARN_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
             continue;
         }
 
-        ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString);
+        ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString, isCloudInsertTaskPriorityHigh);
     }
 }
 
@@ -153,6 +169,12 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
 
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos) {
         ThumbnailObserverOnChange(notifyInfo_.uris, notifyInfo_.type);
+    }
+
+    if (uriString.find("file://cloudsync/Photo/RebuildCloudData/") != string::npos) {
+        MEDIA_INFO_LOG("Get cloud rebuild cloud data notification : %{public}s",
+            "file://cloudsync/Photo/RebuildCloudData/");
+        MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
     }
 
     shared_ptr<BaseHandler> chain = nullptr;

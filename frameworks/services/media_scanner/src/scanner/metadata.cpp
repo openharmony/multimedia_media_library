@@ -97,9 +97,13 @@ void Metadata::Init()
     memberFuncMap_[PhotoColumn::MEDIA_OWNER_PACKAGE] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetOwnerPackage);
     memberFuncMap_[PhotoColumn::PHOTO_SUBTYPE] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetPhotoSubType);
+    memberFuncMap_[PhotoColumn::MOVING_PHOTO_EFFECT_MODE] = make_pair(ResultSetDataType::TYPE_INT32,
+        &Metadata::SetMovingPhotoEffectMode);
     memberFuncMap_[PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE] = make_pair(ResultSetDataType::TYPE_INT32,
         &Metadata::SetDynamicRangeType);
     memberFuncMap_[PhotoColumn::PHOTO_IS_TEMP] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetIsTemp);
+    memberFuncMap_[PhotoColumn::PHOTO_QUALITY] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetPhotoQuality);
+    memberFuncMap_[PhotoColumn::PHOTO_DIRTY] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetDirty);
     memberFuncMap_[PhotoColumn::PHOTO_FRONT_CAMERA] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetFrontCamera);
     memberFuncMap_[PhotoColumn::MEDIA_FILE_PATH] = make_pair(ResultSetDataType::TYPE_STRING,
@@ -448,6 +452,16 @@ int32_t Metadata::GetPhotoSubType() const
     return photoSubType_;
 }
 
+void Metadata::SetMovingPhotoEffectMode(const VariantData &movingPhotoEffectMode)
+{
+    movingPhotoEffectMode_ = std::get<int32_t>(movingPhotoEffectMode);
+}
+
+int32_t Metadata::GetMovingPhotoEffectMode() const
+{
+    return movingPhotoEffectMode_;
+}
+
 void Metadata::SetTableName(const string &tableName)
 {
     tableName_ = tableName;
@@ -533,9 +547,29 @@ void Metadata::SetIsTemp(const VariantData &isTemp)
     isTemp_ = std::get<int32_t>(isTemp);
 }
 
-int32_t Metadata::GetIsTemp()
+int32_t Metadata::GetIsTemp() const
 {
     return isTemp_;
+}
+
+void Metadata::SetPhotoQuality(const VariantData &photoQuality)
+{
+    photoQuality_ = std::get<int32_t>(photoQuality);
+}
+
+int32_t Metadata::GetPhotoQuality() const
+{
+    return photoQuality_;
+}
+
+void Metadata::SetDirty(const VariantData &dirty)
+{
+    dirty_ = std::get<int32_t>(dirty);
+}
+
+int32_t Metadata::GetDirty() const
+{
+    return dirty_;
 }
 
 void Metadata::SetFrontCamera(const VariantData &frontcamera)

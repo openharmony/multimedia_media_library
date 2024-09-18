@@ -127,7 +127,14 @@ function getAbilityResource(bundleInfo) {
 function getLabelId(hapInfo) {
   let labelId = 0;
   for (let abilityInfo of hapInfo.abilitiesInfo) {
-    if (abilityInfo.name === hapInfo.mainElementName) {
+    let abilitiesInfoName = '';
+    if (abilityInfo.name.includes('.')) {
+      let abilitiesInfoLength = abilityInfo.name.split('.').length;
+      abilitiesInfoName = abilityInfo.name.split('.')[abilitiesInfoLength - 1];
+    } else {
+      abilitiesInfoName = abilityInfo.name;
+    }
+    if (abilitiesInfoName === hapInfo.mainElementName) {
       labelId = abilityInfo.labelId;
     }
   }
@@ -293,11 +300,13 @@ function checkConfirmBoxParams(srcFileUris, photoCreationConfigs) {
 function getBundleInfo() {
   let flags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_ABILITY | // for appName
     bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_HAP_MODULE | // for appName
-    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_SIGNATURE_INFO; // for appId
+    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_SIGNATURE_INFO | // for appId
+    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION; // for appInfo
   let bundleInfo = bundleManager.getBundleInfoForSelfSync(flags);
   if (((bundleInfo === undefined) || (bundleInfo.name === undefined)) ||
       ((bundleInfo.hapModulesInfo === undefined) || (bundleInfo.hapModulesInfo.length === 0)) ||
-      ((bundleInfo.signatureInfo === undefined) || (bundleInfo.signatureInfo.appId === undefined))) {
+      ((bundleInfo.signatureInfo === undefined) || (bundleInfo.signatureInfo.appId === undefined)) ||
+    ((bundleInfo.appInfo === undefined) || (bundleInfo.appInfo.labelId === 0))) {
     console.error('photoAccessHelper failed to get bundle info.');
     return undefined;
   }
@@ -331,8 +340,10 @@ async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfig
   console.info('photoAccessHelper bundleName is ' + bundleName + '.');
   console.info('photoAccessHelper appId is ' + appId + '.');
 
+  let labelId = bundleInfo.appInfo.labelId;
+  console.info('photoAccessHelper labelId is ' + appId + '.');
+
   try {
-    let labelId = getAbilityResource(bundleInfo);
     let appName = await gContext.resourceManager.getStringValue(labelId);
     console.info('photoAccessHelper appName is ' + appName + '.');
 
@@ -365,10 +376,15 @@ async function createAssetWithShortTermPermissionOk(photoCreationConfig) {
 
   let bundleName = bundleInfo.name;
   let appId = bundleInfo.signatureInfo.appId;
+  console.info('photoAccessHelper bundleName is ' + bundleName + '.');
+  console.info('photoAccessHelper appId is ' + appId + '.');
+
+  let labelId = bundleInfo.appInfo.labelId;
+  console.info('photoAccessHelper labelId is ' + appId + '.');
   
   try {
-    let labelId = getAbilityResource(bundleInfo);
     let appName = await gContext.resourceManager.getStringValue(labelId);
+    console.info('photoAccessHelper appName is ' + appName + '.');
 
     if (photoAccessHelper.checkShortTermPermission()) {
       let photoCreationConfigs = [photoCreationConfig];
@@ -758,6 +774,7 @@ export default {
   DeliveryMode: photoAccessHelper.DeliveryMode,
   SourceMode: photoAccessHelper.SourceMode,
   AuthorizationMode: photoAccessHelper.AuthorizationMode,
+  CompatibleMode: photoAccessHelper.CompatibleMode,
   BaseSelectOptions: BaseSelectOptions,
   PhotoSelectOptions: PhotoSelectOptions,
   PhotoSelectResult: PhotoSelectResult,
@@ -774,4 +791,8 @@ export default {
   MovingPhotoEffectMode: photoAccessHelper.MovingPhotoEffectMode,
   CompleteButtonText: CompleteButtonText,
   ImageFileType: photoAccessHelper.ImageFileType,
+  CloudEnhancement: photoAccessHelper.CloudEnhancement,
+  CloudEnhancementTaskStage: photoAccessHelper.CloudEnhancementTaskStage,
+  CloudEnhancementState: photoAccessHelper.CloudEnhancementState,
+  CloudEnhancementTaskState: photoAccessHelper.CloudEnhancementTaskState,
 };

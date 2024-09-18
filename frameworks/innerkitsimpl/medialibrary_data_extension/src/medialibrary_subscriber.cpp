@@ -37,6 +37,7 @@
 #include "thermal_mgr_client.h"
 #endif
 
+#include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
@@ -51,6 +52,7 @@
 #include "dfx_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_rdb_utils.h"
+#include "moving_photo_processor.h"
 #include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
 
@@ -152,10 +154,10 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 {
     if (isScreenOff_ && isCharging_) {
         DfxManager::GetInstance()->HandleHalfDayMissions();
-        MediaLibraryRestore::GetInstance().DoRdbHAModeSwitch();
+        MediaLibraryRestore::GetInstance().CheckBackup();
     }
     if (!isScreenOff_ || !isCharging_) {
-        MediaLibraryRestore::GetInstance().InterruptRdbHAModeSwitch();
+        MediaLibraryRestore::GetInstance().InterruptBackup();
     }
 }
 
@@ -171,6 +173,7 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
         currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 
     currentStatus_ = newStatus;
+    ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(newStatus);
     EndBackgroundOperationThread();
     if (currentStatus_) {
         isTaskWaiting_ = true;
@@ -221,7 +224,9 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
 {
     const AAFwk::Want &want = eventData.GetWant();
     std::string action = want.GetAction();
-    MEDIA_DEBUG_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
+    if (action != EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED) {
+        MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
+    }
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
         isWifiConn_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
         UpdateBackgroundTimer();
@@ -373,6 +378,10 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         MEDIA_ERR_LOG("DoUpdateBurstFromGallery faild");
     }
 
+    // compat old-version moving photo
+    MovingPhotoProcessor::StartProcess();
+
+    MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
     auto watch = MediaLibraryInotify::GetInstance();
     if (watch != nullptr) {
         watch->DoAging();
@@ -381,6 +390,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
 
 void MedialibrarySubscriber::StopBackgroundOperation()
 {
+    MovingPhotoProcessor::StopProcess();
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
 }
 
@@ -438,7 +448,10 @@ bool MedialibrarySubscriber::IsDelayTaskTimeOut()
 
 void MedialibrarySubscriber::EndBackgroundOperationThread()
 {
-    isTaskWaiting_ = false;
+    {
+        std::unique_lock<std::mutex> lock(delayTaskLock_);
+        isTaskWaiting_ = false;
+    }
     delayTaskCv_.notify_all();
     if (!backgroundOperationThread_.joinable()) {
         return;

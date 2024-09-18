@@ -476,16 +476,10 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback
     auto changeRequest = asyncContext->objectInfo;
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
-    CHECK_COND_WITH_MESSAGE(env,
-        PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only user album can move assets");
 
     shared_ptr<PhotoAlbum> targetAlbum = nullptr;
     CHECK_COND_WITH_MESSAGE(
         env, ParsePhotoAlbum(env, asyncContext->argv[PARAM1], targetAlbum), "Failed to parse targetAlbum");
-    CHECK_COND_WITH_MESSAGE(env,
-        PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()),
-        "targetAlbum is not user album");
     CHECK_COND_WITH_MESSAGE(env, targetAlbum->GetAlbumId() != photoAlbum->GetAlbumId(), "targetAlbum cannot be self");
 
     vector<string> assetUriArray;
@@ -912,8 +906,8 @@ static bool AddAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     vector<DataShare::DataShareValuesBucket> valuesBuckets;
     for (const auto& asset : changeRequest->GetAddAssetArray()) {
         DataShare::DataShareValuesBucket pair;
-        pair.Put(PhotoMap::ALBUM_ID, albumId);
-        pair.Put(PhotoMap::ASSET_ID, asset);
+        pair.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
+        pair.Put(PhotoColumn::MEDIA_ID, asset);
         valuesBuckets.push_back(pair);
     }
 
@@ -940,8 +934,8 @@ static bool RemoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     int32_t albumId = photoAlbum->GetAlbumId();
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
-    predicates.And()->In(PhotoMap::ASSET_ID, changeRequest->GetRemoveAssetArray());
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
+    predicates.And()->In(PhotoColumn::MEDIA_ID, changeRequest->GetRemoveAssetArray());
 
     Uri removeAssetsUri(PAH_PHOTO_ALBUM_REMOVE_ASSET);
     int ret = UserFileClient::Delete(removeAssetsUri, predicates);
@@ -972,37 +966,23 @@ static bool MoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
         auto targetPhotoAlbum = iter->first;
         int32_t targetAlbumId = targetPhotoAlbum->GetAlbumId();
         vector<string> moveAssetArray = iter->second;
-        // Add into target album.
-        vector<DataShare::DataShareValuesBucket> valuesBuckets;
-        for (const auto& asset : moveAssetArray) {
-            DataShare::DataShareValuesBucket pair;
-            pair.Put(PhotoMap::ALBUM_ID, targetAlbumId);
-            pair.Put(PhotoMap::ASSET_ID, asset);
-            valuesBuckets.push_back(pair);
-        }
+        // Move into target album.
+        DataShare::DataSharePredicates predicates;
+        predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
+        predicates.And()->In(PhotoColumn::MEDIA_ID, moveAssetArray);
 
-        Uri addAssetsUri(PAH_PHOTO_ALBUM_ADD_ASSET);
-        int ret = UserFileClient::BatchInsert(addAssetsUri, valuesBuckets);
+        DataShare::DataShareValuesBucket valuesBuckets;
+        valuesBuckets.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, targetAlbumId);
+        string uri = PAH_BATCH_UPDATE_OWNER_ALBUM_ID;
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri moveAssetsUri(uri);
+        int ret = UserFileClient::Update(moveAssetsUri, predicates, valuesBuckets);
         if (ret < 0) {
             context.SaveError(ret);
             NAPI_ERR_LOG("Failed to move assets into album %{public}d, err: %{public}d", targetAlbumId, ret);
             return false;
         }
         NAPI_INFO_LOG("Move %{public}d asset(s) into album %{public}d", ret, targetAlbumId);
-
-        // Remove from current album.
-        DataShare::DataSharePredicates predicates;
-        predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
-        predicates.And()->In(PhotoMap::ASSET_ID, moveAssetArray);
-
-        Uri removeAssetsUri(PAH_PHOTO_ALBUM_REMOVE_ASSET);
-        ret = UserFileClient::Delete(removeAssetsUri, predicates);
-        if (ret < 0) {
-            context.SaveError(ret);
-            NAPI_ERR_LOG("Failed to move assets from album %{public}d, err: %{public}d", albumId, ret);
-            return false;
-        }
-        NAPI_INFO_LOG("Move %{public}d asset(s) from album %{public}d", ret, albumId);
         FetchNewCount(context, targetPhotoAlbum);
     }
     FetchNewCount(context, photoAlbum);
@@ -1088,6 +1068,33 @@ static bool OrderAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
     return true;
 }
 
+static void UpdateTabAnalysisImageFace(std::shared_ptr<PhotoAlbum>& photoAlbum,
+    MediaAlbumChangeRequestAsyncContext& context)
+{
+    if (photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::PORTRAIT) {
+        return;
+    }
+
+    string updateUri = PAH_UPDATE_ANA_FACE;
+    Uri updateFaceUri(updateUri);
+
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(MediaAlbumChangeRequestNapi::TAG_ID,
+        std::to_string(MediaAlbumChangeRequestNapi::PORTRAIT_REMOVED));
+
+    DataShare::DataSharePredicates updatePredicates;
+    std::vector<std::string> dismissAssetArray = context.objectInfo->GetDismissAssetArray();
+    std::string selection = std::to_string(photoAlbum->GetAlbumId());
+    for (size_t i = 0; i < dismissAssetArray.size(); ++i) {
+        selection += "," + dismissAssetArray[i];
+    }
+    updatePredicates.SetWhereClause(selection);
+    int updatedRows = UserFileClient::Update(updateFaceUri, updatePredicates, updateValues);
+    if (updatedRows <= 0) {
+        NAPI_WARN_LOG("Failed to update tab_analysis_image_face, err: %{public}d", updatedRows);
+    }
+}
+
 static bool DismissAssetExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -1103,12 +1110,18 @@ static bool DismissAssetExecute(MediaAlbumChangeRequestAsyncContext& context)
     predicates.And()->EqualTo(ALBUM_SUBTYPE, to_string(photoAlbum->GetPhotoAlbumSubType()));
 
     auto deletedRows = UserFileClient::Delete(uri, predicates);
-    context.objectInfo->ClearDismissAssetArray();
     if (deletedRows < 0) {
         context.SaveError(deletedRows);
         NAPI_ERR_LOG("Failed to dismiss asset err: %{public}d", deletedRows);
         return false;
     }
+
+    /* 只针对人像相册更新 tab_analysis_image_face 表 */
+    if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
+        UpdateTabAnalysisImageFace(photoAlbum, context);
+    }
+
+    context.objectInfo->ClearDismissAssetArray();
     return true;
 }
 
