@@ -66,6 +66,7 @@ private:
         std::string &relativePath) override;
     void AnalyzeSource() override;
     void AnalyzeGallerySource();
+    void AnalyzeGalleryErrorSource();
     void AnalyzeExternalSource();
     void HandleCloneBatch(int32_t offset, int32_t maxId);
     void UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int32_t &number);

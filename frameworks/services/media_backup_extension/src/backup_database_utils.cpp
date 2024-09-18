@@ -19,6 +19,7 @@
 #include <safe_map.h>
 
 #include "backup_const_column.h"
+#include "backup_file_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 
@@ -255,6 +256,48 @@ int32_t BackupDatabaseUtils::QueryExternalVideoCount(std::shared_ptr<NativeRdb::
     static string QUERY_EXTERNAL_VIDEO_COUNT =
         "SELECT count(1) AS count FROM files WHERE  media_type = 3 AND _size > 0";
     return QueryInt(externalRdb, QUERY_EXTERNAL_VIDEO_COUNT, CUSTOM_COUNT);
+}
+
+int32_t BackupDatabaseUtils::QueryGalleryDupcateData(std::shared_ptr<NativeRdb::RdbStore> galleryRdb, int32_t sceneCode)
+{
+    QueryGalleryDuplicateDataCount(galleryRdb);
+    QueryGalleryDuplicateDataInfo(galleryRdb);
+}
+
+void BackupDatabaseUtils::QueryGalleryDuplicateDataCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
+{
+    static string QUERY_GALLERY_DUPLICATE_DATA_COUNT = "SELECT count(DISTINCT _data) as count, count(1) as total"
+        " FROM gallery_media WHERE _data IN (SELECT _data FROM gallery_media GROUP BY _data HAVING count(1) > 1)";
+    auto resultSet = GetQueryResultSet(galleryRdb, QUERY_GALLERY_DUPLICATE_DATA_COUNT);
+    if (resultSet == nullptr) {
+        return;
+    }
+    int32_t count = GetInt32Val("count", resultSet);
+    int32_t total = GetInt32Val("total", resultSet);
+    MEDIA_INFO_LOG("Duplicate data count: %{public}d, total: %{public}d", count, total);
+}
+
+void BackupDatabaseUtils::QueryGalleryDuplicateDataInfo(std::shared_ptr<NativeRdb::RdbStore> galleryRdb,
+    int32_t sceneCode)
+{
+    static string QUERY_GALLERY_DUPLICATE_DATA_INFO = "SELECT _data, count(1) as count, local_media_id, _size,"
+        " relative_bucket_id, photo_quality, storage_id FROM gallery_media GROUP BY _data HAVING count > 1 LIMIT 5";
+    auto resultSet = GetQueryResultSet(galleryRdb, QUERY_GALLERY_DUPLICATE_DATA_INFO);
+    if (resultSet == nullptr) {
+        return;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string data = GetStringVal("_data", resultSet);
+        int32_t count = GetInt32Val("count", resultSet);
+        int32_t localMediaId = GetInt32Val("local_media_id", resultSet);
+        int32_t relativeBucketId = GetInt32Val("relative_bucket_id", resultSet);
+        int32_t photoQuality = GetInt32Val("photo_quality", resultSet);
+        int32_t storageId = GetStringVal("storage_id", resultSet);
+        MEDIA_INFO_LOG("Duplicate data: %{public}s, count: %{public}d, localMediaId: %{public}d, "
+            "relativeBucketId: %{public}d, photoQuality: %{public}d, storageId: %{public}d,",
+            BackupFileUtils::GarbleFilePath(data, sceneCode).c_str(), count, localMediaId, relativeBucketId,
+            photoQuality, storageId);
+    }
 }
 
 std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::GetQueryResultSet(

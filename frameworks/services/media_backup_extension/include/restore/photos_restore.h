@@ -92,6 +92,8 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             (1 = ? OR storage_id IN (0, 65537) ) \
+        GROUP BY _data \
+        HAVING MIN(ROWID) \
         ORDER BY _id ASC ;";
     const std::string SQL_GALLERY_MEDIA_QUERY_FOR_RESTORE = "\
         SELECT \
@@ -135,6 +137,8 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             (1 = ? OR storage_id IN (0, 65537) ) \
+        GROUP BY _data \
+        HAVING MIN(ROWID) \
         ORDER BY _id ASC \
         LIMIT ?, ?;";
 };
