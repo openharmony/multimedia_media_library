@@ -100,7 +100,10 @@ config("napi_config") {
 }
 
 config("public_napi_config") {
-  include_dirs = [ "${MEDIALIB_INTERFACES_PATH}/kits/js/include" ]
+  include_dirs = [
+    "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js/include/napi",
+  ]
 }
 
 ohos_shared_library("medialibrary_nutils") {

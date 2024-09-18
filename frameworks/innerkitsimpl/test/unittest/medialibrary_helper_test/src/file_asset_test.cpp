@@ -23,6 +23,7 @@
 #include "medialibrary_errno.h"
 #include "scanner_utils.h"
 #include "userfile_manager_types.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace testing::ext;

@@ -47,6 +47,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_napi_enum_comm.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_peer_info.h"
 #include "medialibrary_tracer.h"
@@ -77,6 +78,7 @@
 #include "delete_callback.h"
 #include "window.h"
 #include "permission_utils.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;

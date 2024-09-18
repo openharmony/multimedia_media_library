@@ -30,6 +30,7 @@
 #include "permission_utils.h"
 #include "result_set_utils.h"
 #include "rdb_utils.h"
+#include "userfilemgr_uri.h"
 
 namespace OHOS {
 namespace Media {

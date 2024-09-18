@@ -42,6 +42,7 @@
 #include "notify_handler.h"
 #include "uri_convert_handler.h"
 #include "userfile_manager_types.h"
+#include "userfilemgr_uri.h"
 
 namespace OHOS::Media {
 using namespace std;

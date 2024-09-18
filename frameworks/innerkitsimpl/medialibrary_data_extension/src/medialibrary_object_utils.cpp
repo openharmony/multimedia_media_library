@@ -60,6 +60,7 @@
 #include "medialibrary_tracer.h"
 #include "picture_handle_service.h"
 #include "post_event_utils.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

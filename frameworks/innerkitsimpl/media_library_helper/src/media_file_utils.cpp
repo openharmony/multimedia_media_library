@@ -44,6 +44,7 @@
 #include "mimetype_utils.h"
 #include "medialibrary_tracer.h"
 #include "string_ex.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 
