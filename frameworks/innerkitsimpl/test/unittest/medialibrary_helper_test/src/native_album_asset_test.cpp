@@ -18,6 +18,7 @@
 #include "native_album_asset.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_type_const.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace testing::ext;

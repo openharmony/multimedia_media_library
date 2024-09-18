@@ -28,6 +28,8 @@
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #undef private
+#include "userfilemgr_uri.h"
+
 using namespace std;
 using namespace testing::ext;
 

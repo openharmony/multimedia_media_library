@@ -39,6 +39,7 @@
 #include "moving_photo.h"
 #include "image_source_native.h"
 #include "media_userfile_client.h"
+#include "userfilemgr_uri.h"
 
 namespace OHOS {
 namespace Media {

@@ -69,6 +69,7 @@
 #include "dfx_manager.h"
 #include "dfx_const.h"
 #include "moving_photo_file_utils.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

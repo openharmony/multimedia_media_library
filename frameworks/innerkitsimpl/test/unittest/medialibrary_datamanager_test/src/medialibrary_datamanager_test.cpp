@@ -38,6 +38,7 @@
 #define private public
 #include "medialibrary_data_manager.h"
 #undef private
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -248,7 +249,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryDirTable_Test_001, Te
     DataShare::DataSharePredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     predicates.SetWhereClause(prefix);
-    Uri queryFileUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIATYPE_DIRECTORY_TABLE));
+    Uri queryFileUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIATYPE_DIRECTORY_OBJ));
     int errCode = 0;
     MediaLibraryCommand cmd(queryFileUri, Media::OperationType::QUERY);
     auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);

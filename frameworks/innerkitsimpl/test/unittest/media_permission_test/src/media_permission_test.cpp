@@ -34,6 +34,7 @@
 #include "ability_context_impl.h"
 #include "get_self_permissions.h"
 #include "medialibrary_unittest_utils.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace testing::ext;

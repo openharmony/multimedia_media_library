@@ -28,6 +28,7 @@
 #include "media_volume.h"
 #include "scanner_utils.h"
 #include "system_ability_definition.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS;

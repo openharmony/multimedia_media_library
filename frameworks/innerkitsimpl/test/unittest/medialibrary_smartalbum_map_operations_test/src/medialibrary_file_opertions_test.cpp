@@ -20,6 +20,7 @@
 #define private public
 #include "medialibrary_file_operations.h"
 #undef private
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS;
