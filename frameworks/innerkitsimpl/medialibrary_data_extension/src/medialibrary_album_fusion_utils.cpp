@@ -24,6 +24,7 @@
 
 #include "medialibrary_type_const.h"
 #include "medialibrary_formmap_operations.h"
+#include "medialibrary_notify.h"
 #include "metadata.h"
 #include "media_file_utils.h"
 #include "medialibrary_album_compatibility_fusion_sql.h"
@@ -1293,6 +1294,25 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(NativeRdb::RdbStor
     return E_OK;
 }
 
+int32_t MediaLibraryAlbumFusionUtils::RefreshAllAlbums()
+{
+    MEDIA_INFO_LOG("Froce refresh all albums start");
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
+        return E_ERR;
+    }
+    watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
+    MEDIA_INFO_LOG("Froce refresh all albums end");
+    return E_OK;
+}
+
 int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
@@ -1324,8 +1344,7 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     // Clean duplicative album and rebuild expired album
     RebuildAlbumAndFillCloudValue(upgradeStore);
     SetParameterToStartSync();
-    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
-    RefreshAlbums(true);
+    RefreshAllAlbums();
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
     return err;
