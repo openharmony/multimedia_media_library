@@ -2144,15 +2144,6 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbSt
         if (ret != E_SUCCESS) {
             break;
         }
-        vector<string> subtype = { std::to_string(PhotoAlbumSubType::SHOOTING_MODE) };
-        ret = RefreshAnalysisPhotoAlbums(rdbStore, refreshProcessHandler, subtype);
-        if (ret == E_EMPTY_ALBUM_ID) {
-            ret = E_SUCCESS;
-            continue;
-        }
-        if (ret != E_SUCCESS) {
-            break;
-        }
         isRefresh = true;
     }
 
