@@ -2872,8 +2872,7 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
     // Restore cloud sync
     MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
     ResetCloudCursorAfterInitFinish();
-    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
-    RefreshAlbums(true);
+    MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
     MEDIA_INFO_LOG("ALBUM_FUSE: Processing old data start end, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
 }
