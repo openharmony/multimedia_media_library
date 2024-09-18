@@ -807,6 +807,28 @@ static void QuerySourceAlbumLPath(NativeRdb::RdbStore *upgradeStore,
     MEDIA_ERR_LOG("Album lPath is %{public}s", lPath.c_str());
 }
 
+void MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(NativeRdb::RdbStore *upgradeStore,
+    NativeRdb::ValuesBucket &values, shared_ptr<NativeRdb::ResultSet> &resultSet, const string &newAlbumName)
+{
+    MEDIA_INFO_LOG("Begin build inset values Meta Data on set user album name!");
+    if (newAlbumName == "") {
+        return;
+    }
+    for (auto it = albumColumnTypeMap.begin(); it != albumColumnTypeMap.end(); ++it) {
+        string columnName = it->first;
+        ResultSetDataType columnType = it->second;
+        ParsingAndFillValue(values, columnName, columnType, resultSet);
+    }
+
+    std::string lPath = "/Pictures/Users/" + newAlbumName;
+    values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, 1);
+    values.PutString(PhotoAlbumColumns::ALBUM_LPATH, lPath);
+    values.PutString(PhotoAlbumColumns::ALBUM_NAME, newAlbumName);
+    int64_t albumDataAdded = 0;
+    GetLongValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_DATE_ADDED, albumDataAdded);
+    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, albumDataAdded);
+}
+
 static int32_t BuildAlbumInsertValues(NativeRdb::RdbStore *upgradeStore, NativeRdb::ValuesBucket &values,
     const int32_t &oldAlbumId, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
@@ -871,7 +893,7 @@ static int32_t CopyAlbumMetaData(NativeRdb::RdbStore *upgradeStore,
     return ret;
 }
 
-static int32_t DeleteALbumAndUpdateRelationship(NativeRdb::RdbStore *upgradeStore,
+int32_t MediaLibraryAlbumFusionUtils::DeleteALbumAndUpdateRelationship(NativeRdb::RdbStore *upgradeStore,
     const int32_t &oldAlbumId, const int64_t &newAlbumId, bool isCloudAblum)
 {
     if (upgradeStore == nullptr) {
@@ -913,7 +935,7 @@ static int32_t DeleteALbumAndUpdateRelationship(NativeRdb::RdbStore *upgradeStor
     return E_OK;
 }
 
-static inline bool IsCloudAlbum(shared_ptr<NativeRdb::ResultSet> resultSet)
+bool MediaLibraryAlbumFusionUtils::IsCloudAlbum(shared_ptr<NativeRdb::ResultSet> resultSet)
 {
     string cloudId = "";
     GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_CLOUD_ID, cloudId);
