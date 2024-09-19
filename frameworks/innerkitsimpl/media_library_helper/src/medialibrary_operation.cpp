@@ -69,7 +69,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { GRANT_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
 
         // use in Query...
-        { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
+        { MEDIATYPE_DIRECTORY_OBJ, OperationObject::FILESYSTEM_DIR },
         { MEDIA_DATA_DB_THUMBNAIL, OperationObject::THUMBNAIL },
         { SMARTALBUMASSETS_VIEW_NAME, OperationObject::SMART_ALBUM_ASSETS },
         { ASSETMAP_VIEW_NAME, OperationObject::ASSETMAP },
@@ -136,7 +136,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::SMART_ALBUM_MAP, { { OperationType::UNKNOWN_TYPE, SMARTALBUM_MAP_TABLE } } },
         { OperationObject::SMART_ALBUM_ASSETS, { { OperationType::UNKNOWN_TYPE, SMARTALBUMASSETS_VIEW_NAME } } },
         { OperationObject::ASSETMAP, { { OperationType::UNKNOWN_TYPE, ASSETMAP_VIEW_NAME } } },
-        { OperationObject::FILESYSTEM_DIR, { { OperationType::QUERY, MEDIATYPE_DIRECTORY_TABLE } } },
+        { OperationObject::FILESYSTEM_DIR, { { OperationType::QUERY, MEDIATYPE_DIRECTORY_OBJ } } },
 #ifdef MEDIALIBRARY_COMPATIBILITY
         { OperationObject::FILESYSTEM_ALBUM, { { OperationType::QUERY, PhotoAlbumColumns::TABLE } } },
 #else
@@ -232,6 +232,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_DELETE, OperationType::DELETE },
         { OPRN_QUERY, OperationType::QUERY },
         { OPRN_UPDATE, OperationType::UPDATE },
+        { OPRN_ALBUM_SET_NAME, OperationType::ALBUM_SET_NAME },
         { OPRN_ALBUM_ADD_PHOTOS, OperationType::ALBUM_ADD_PHOTOS },
         { OPRN_ALBUM_REMOVE_PHOTOS, OperationType::ALBUM_REMOVE_PHOTOS },
         { OPRN_RECOVER_PHOTOS, OperationType::ALBUM_RECOVER_ASSETS },
@@ -286,6 +287,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_ENHANCEMENT_SYNC, OperationType::ENHANCEMENT_SYNC},
         { OPRN_ENHANCEMENT_QUERY, OperationType::ENHANCEMENT_QUERY},
         { OPRN_ENHANCEMENT_GET_PAIR, OperationType::ENHANCEMENT_GET_PAIR},
+        { OPRN_SAVE_PICTURE, OperationType::SAVE_PICTURE},
     };
     return oprnTypeMap;
 }

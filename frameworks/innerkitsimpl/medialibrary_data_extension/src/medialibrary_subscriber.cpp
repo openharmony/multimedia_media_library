@@ -55,6 +55,7 @@
 #include "moving_photo_processor.h"
 #include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "userfilemgr_uri.h"
 
 #ifdef HAS_WIFI_MANAGER_PART
 #include "wifi_device.h"

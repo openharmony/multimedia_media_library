@@ -20,11 +20,10 @@
 
 #include "medialibrary_type_const.h"
 #include "media_column.h"
-#include "userfilemgr_uri.h"
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 113;
+const int32_t MEDIA_RDB_VERSION = 114;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -139,7 +138,8 @@ enum {
     VERSION_ADD_OWNER_ALBUM_ID = 110,
     VERSION_CLOUD_ENAHCNEMENT = 111,
     VERSION_UPDATE_MDIRTY_TRIGGER_FOR_UPLOADING_MOVING_PHOTO = 112,
-    VERSION_ADD_INDEX_FOR_FILEID = 113,
+    VERSION_MOVE_AUDIOS = 113,
+    VERSION_ADD_INDEX_FOR_FILEID = 114,
 };
 
 enum {
@@ -210,26 +210,6 @@ const std::string URI_TYPE_PHOTO = "Photo";
 const std::string URI_TYPE_AUDIO_V10 = "Audio";
 const std::string URI_TYPE_PHOTO_ALBUM = "PhotoAlbum";
 constexpr int64_t AGING_TIME = 30LL * 60 * 60 * 24 * 1000;
-
-const std::string MEDIALIBRARY_SMARTALBUM_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_TABLE;
-const std::string MEDIALIBRARY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_MAP_TABLE;
-const std::string MEDIALIBRARY_CATEGORY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/"
-                                                             + CATEGORY_SMARTALBUM_MAP_TABLE;
-const std::string MEDIALIBRARY_DIRECTORY_URI = MEDIALIBRARY_DATA_URI + "/" + MEDIATYPE_DIRECTORY_TABLE;
-const std::string MEDIALIBRARY_BUNDLEPERM_URI = MEDIALIBRARY_DATA_URI + "/" + BUNDLE_PERMISSION_INSERT;
-
-const std::string MEDIALIBRARY_CHECK_URIPERM_URI = MEDIALIBRARY_DATA_URI + "/" + CHECK_URI_PERMISSION;
-const std::string MEDIALIBRARY_GRANT_URIPERM_URI = MEDIALIBRARY_DATA_URI + "/" + GRANT_URI_PERMISSION;
-
-const std::string MEDIALIBRARY_AUDIO_URI = MEDIALIBRARY_DATA_URI + '/' + "audio";
-const std::string MEDIALIBRARY_VIDEO_URI = MEDIALIBRARY_DATA_URI + '/' + "video";
-const std::string MEDIALIBRARY_IMAGE_URI = MEDIALIBRARY_DATA_URI + '/' + "image";
-const std::string MEDIALIBRARY_FILE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "file";
-const std::string MEDIALIBRARY_ALBUM_URI  =  MEDIALIBRARY_DATA_URI + '/' + "album";
-const std::string MEDIALIBRARY_SMARTALBUM_CHANGE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "smartalbum";
-const std::string MEDIALIBRARY_DEVICE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "device";
-const std::string MEDIALIBRARY_SMART_URI = MEDIALIBRARY_DATA_URI + '/' + "smart";
-const std::string MEDIALIBRARY_REMOTEFILE_URI = MEDIALIBRARY_DATA_URI + '/' + "remotfile";
 
 const std::string MEDIA_DATA_DB_ID = "file_id";
 const std::string MEDIA_DATA_DB_URI = "uri";

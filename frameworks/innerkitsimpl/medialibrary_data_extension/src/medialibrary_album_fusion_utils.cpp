@@ -24,6 +24,7 @@
 
 #include "medialibrary_type_const.h"
 #include "medialibrary_formmap_operations.h"
+#include "medialibrary_notify.h"
 #include "metadata.h"
 #include "media_file_utils.h"
 #include "medialibrary_album_compatibility_fusion_sql.h"
@@ -502,14 +503,20 @@ static int32_t UpdateRelationship(NativeRdb::RdbStore *upgradeStore, const int32
     return E_OK;
 }
 
-static int32_t GenerateThumbnail(const int32_t &assetId, const std::string &targetPath, const std::string &displayName)
+static int32_t GenerateThumbnail(const int32_t &assetId, const std::string &targetPath,
+    shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     if (ThumbnailService::GetInstance() == nullptr) {
         return E_FAIL;
     }
-    std::string uri = "file://media/photo/" + to_string(assetId) + MediaFileUtils::GetExtraUri(displayName, targetPath);
+    std::string displayName = "";
+    GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_NAME, displayName);
+    int64_t dateTaken = 0;
+    GetLongValueFromResultSet(resultSet, MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
+    std::string uri = PHOTO_URI_PREFIX + to_string(assetId) + MediaFileUtils::GetExtraUri(displayName, targetPath) +
+        "?api_version=10&date_taken=" + to_string(dateTaken);
     MEDIA_INFO_LOG("Begin generate thumbnail %{public}s, ", uri.c_str());
-    int32_t err = ThumbnailService::GetInstance()->CreateThumbnailFileScaned(uri, targetPath, true);
+    int32_t err = ThumbnailService::GetInstance()->CreateThumbnailFileScaned(uri, targetPath, false);
     if (err != E_SUCCESS) {
         MEDIA_ERR_LOG("ThumbnailService CreateThumbnailFileScaned failed : %{public}d", err);
     }
@@ -593,11 +600,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(NativeRdb::RdbStore *u
     if (err != E_OK) {
         return E_OK;
     }
-    std::string displayName = "";
-    ValueObject valueObject;
-    values.GetObject(MediaColumn::MEDIA_NAME, valueObject);
-    valueObject.GetString(displayName);
-    GenerateThumbnail(newAssetId, targetPath, displayName);
+    GenerateThumbnail(newAssetId, targetPath, resultSet);
     UpdateCoverInfoForAlbum(upgradeStore, assetId, ownerAlbumId, newAssetId, targetPath);
     return E_OK;
 }
@@ -807,6 +810,28 @@ static void QuerySourceAlbumLPath(NativeRdb::RdbStore *upgradeStore,
     MEDIA_ERR_LOG("Album lPath is %{public}s", lPath.c_str());
 }
 
+void MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(NativeRdb::RdbStore *upgradeStore,
+    NativeRdb::ValuesBucket &values, shared_ptr<NativeRdb::ResultSet> &resultSet, const string &newAlbumName)
+{
+    MEDIA_INFO_LOG("Begin build inset values Meta Data on set user album name!");
+    if (newAlbumName == "") {
+        return;
+    }
+    for (auto it = albumColumnTypeMap.begin(); it != albumColumnTypeMap.end(); ++it) {
+        string columnName = it->first;
+        ResultSetDataType columnType = it->second;
+        ParsingAndFillValue(values, columnName, columnType, resultSet);
+    }
+
+    std::string lPath = "/Pictures/Users/" + newAlbumName;
+    values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, 1);
+    values.PutString(PhotoAlbumColumns::ALBUM_LPATH, lPath);
+    values.PutString(PhotoAlbumColumns::ALBUM_NAME, newAlbumName);
+    int64_t albumDataAdded = 0;
+    GetLongValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_DATE_ADDED, albumDataAdded);
+    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, albumDataAdded);
+}
+
 static int32_t BuildAlbumInsertValues(NativeRdb::RdbStore *upgradeStore, NativeRdb::ValuesBucket &values,
     const int32_t &oldAlbumId, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
@@ -871,7 +896,7 @@ static int32_t CopyAlbumMetaData(NativeRdb::RdbStore *upgradeStore,
     return ret;
 }
 
-static int32_t DeleteALbumAndUpdateRelationship(NativeRdb::RdbStore *upgradeStore,
+int32_t MediaLibraryAlbumFusionUtils::DeleteALbumAndUpdateRelationship(NativeRdb::RdbStore *upgradeStore,
     const int32_t &oldAlbumId, const int64_t &newAlbumId, bool isCloudAblum)
 {
     if (upgradeStore == nullptr) {
@@ -913,7 +938,7 @@ static int32_t DeleteALbumAndUpdateRelationship(NativeRdb::RdbStore *upgradeStor
     return E_OK;
 }
 
-static inline bool IsCloudAlbum(shared_ptr<NativeRdb::ResultSet> resultSet)
+bool MediaLibraryAlbumFusionUtils::IsCloudAlbum(shared_ptr<NativeRdb::ResultSet> resultSet)
 {
     string cloudId = "";
     GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_CLOUD_ID, cloudId);
@@ -1271,6 +1296,25 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(NativeRdb::RdbStor
     return E_OK;
 }
 
+int32_t MediaLibraryAlbumFusionUtils::RefreshAllAlbums()
+{
+    MEDIA_INFO_LOG("Froce refresh all albums start");
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
+        return E_ERR;
+    }
+    watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
+    MEDIA_INFO_LOG("Froce refresh all albums end");
+    return E_OK;
+}
+
 int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
@@ -1302,8 +1346,7 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     // Clean duplicative album and rebuild expired album
     RebuildAlbumAndFillCloudValue(upgradeStore);
     SetParameterToStartSync();
-    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
-    RefreshAlbums(true);
+    RefreshAllAlbums();
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
     return err;

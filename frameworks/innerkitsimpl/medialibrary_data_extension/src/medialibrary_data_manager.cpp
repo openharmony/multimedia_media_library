@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <shared_mutex>
 #include <unordered_set>
+#include <sstream>
 
 #include "ability_scheduler_interface.h"
 #include "abs_rdb_predicates.h"
@@ -182,7 +183,7 @@ static void MakeRootDirs(AsyncTaskData *data)
         }
         MediaFileUtils::CheckDirStatus(DIR_CHECK_SET, ROOT_MEDIA_DIR + dir);
     }
-    if (data->dataDisplay.compare(E_POLICY) == 0 && !MediaFileUtils::SetEPolicy()) {
+    if (data->dataDisplay.compare(E_POLICY) == 0 && !PermissionUtils::SetEPolicy()) {
         MEDIA_ERR_LOG("Failed to SetEPolicy fail");
     }
     MediaFileUtils::MediaFileDeletionRecord();
@@ -329,6 +330,11 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync()
             MediaLibraryRdbStore::UpdateDateTakenIndex(*rawStore);
             ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
             rdbStore->SetOldVersion(VERSION_ADD_DETAIL_TIME);
+        }
+        if (oldVersion < VERSION_MOVE_AUDIOS) {
+            MediaLibraryAudioOperations::MoveToMusic();
+            MediaLibraryRdbStore::ClearAudios(*rawStore);
+            rdbStore->SetOldVersion(VERSION_MOVE_AUDIOS);
         }
 
         rdbStore->SetOldVersion(MEDIA_RDB_VERSION);
@@ -953,6 +959,12 @@ static std::string BuildWhereClause(const std::vector<std::string>& dismissAsset
 static int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
     const DataShare::DataSharePredicates &predicates)
 {
+    string keyOperation = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
+    if (keyOperation.empty() || keyOperation != UPDATE_DISMISS_ASSET) {
+        cmd.SetValueBucket(value);
+        return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd);
+    }
+
     const string &clause = predicates.GetWhereClause();
     std::vector<std::string> clauses = SplitUriString(clause, ',');
     if (clauses.empty()) {
@@ -961,7 +973,12 @@ static int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesB
     }
 
     std::string albumStr = clauses[0];
-    int32_t albumId = std::stoi(albumStr);
+    int32_t albumId {0};
+    std::stringstream ss(albumStr);
+    if (!(ss >> albumId)) {
+        MEDIA_ERR_LOG("Unable to convert albumId string to integer.");
+        return E_INVALID_FILEID;
+    }
 
     std::vector<std::string> uris;
     for (size_t i = 1; i < clauses.size(); ++i) {
@@ -1879,6 +1896,12 @@ void MediaLibraryDataManager::SetStartupParameter()
     bool retFlag = system::SetParameter(CLONE_FLAG, currentTime);
     if (!retFlag) {
         MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+    }
+    // init backup param
+    std::string backupParam = "persist.multimedia.medialibrary.rdb_switch_status";
+    ret = system::SetParameter(backupParam, "0");
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Failed to set parameter backup, ret:%{public}d", ret);
     }
 }
 

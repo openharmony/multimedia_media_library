@@ -97,6 +97,16 @@ void MediaLibraryRestore::StopCloudSync()
     isBackuping_ = false;
     MEDIA_INFO_LOG("StopCloudSync timeout error, set backup false");
 }
+
+void MediaLibraryRestore::StartCloudSync()
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRestore::StartCloudSync");
+    int32_t ret = FileManagement::CloudSync::CloudSyncManager::GetInstance().StartSync(BUNDLE_NAME);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("StartCloudSync fail, errcode=%{public}d", ret);
+    }
+}
 #endif
 
 void MediaLibraryRestore::CheckBackup()
@@ -158,6 +168,9 @@ void MediaLibraryRestore::DoRdbBackup()
         int errCode = rdb->Backup("");
         MEDIA_INFO_LOG("DoRdbBackup: Backup [end]. errCode = %{public}d", errCode);
         ResetHAModeSwitchStatus();
+#ifdef CLOUD_SYNC_MANAGER
+        StartCloudSync();
+#endif
     }).detach();
 }
 

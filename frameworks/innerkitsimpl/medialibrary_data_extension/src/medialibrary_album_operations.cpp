@@ -24,6 +24,7 @@
 #include "media_analysis_helper.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_album_refresh.h"
@@ -73,6 +74,7 @@ constexpr int32_t FACE_ANALYSISED_STATE = 3;
 constexpr int32_t FACE_NO_NEED_ANALYSIS_STATE = -2;
 constexpr int32_t ALBUM_NAME_NOT_NULL_ENABLED = 1;
 constexpr int32_t ALBUM_PRIORITY_DEFAULT = 1;
+constexpr int32_t ALBUM_SETNAME_OK = 1;
 const std::string ALBUM_LPATH_PREFIX = "/Pictures/Users/";
 const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
 
@@ -767,22 +769,83 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryC
     return MediaLibraryRdbStore::Query(*(cmd.GetAbsRdbPredicates()), columns);
 }
 
-int32_t PrepareUpdateValues(const ValuesBucket &values, ValuesBucket &updateValues)
+int32_t CheckHasSameNameAlbum(const string &newAlbumName, const shared_ptr<NativeRdb::ResultSet> &resultSet,
+    NativeRdb::ValuesBucket &values, const shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
-    // Collect albumName if exists and check
-    string albumName;
-    if (GetStringObject(values, PhotoAlbumColumns::ALBUM_NAME, albumName) == E_OK) {
-        int32_t err = MediaFileUtils::CheckAlbumName(albumName);
+    int32_t albumType, albumSubType;
+    GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_TYPE, albumType);
+    GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_SUBTYPE, albumSubType);
+    const std::string QUERY_ALBUM_INFO =
+        "SELECT * FROM PhotoAlbum WHERE album_name = '" + newAlbumName + "' AND dirty = 4 AND album_type = " +
+        to_string(albumType) + " AND album_subtype = " + to_string(albumSubType);
+    shared_ptr<NativeRdb::ResultSet> resultSetAlbum = rdbStore->QuerySql(QUERY_ALBUM_INFO);
+    if (resultSetAlbum == nullptr) {
+        MEDIA_ERR_LOG("Has Same Album: Query not matched data fails");
+        return 0;
+    }
+    int32_t albumId = 0;
+    if (resultSetAlbum->GoToNextRow() == NativeRdb::E_OK) {
+        GetIntValueFromResultSet(resultSetAlbum, PhotoAlbumColumns::ALBUM_ID, albumId);
+    }
+
+    values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY));
+    return albumId;
+}
+
+int32_t SetPhotoAlbumName(const ValuesBucket &values, const DataSharePredicates &predicates)
+{
+    shared_ptr<NativeRdb::RdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
+    if (rdbStore == nullptr || rdbPredicates.GetWhereArgs().empty()) {
+        return E_DB_FAIL;
+    }
+    int32_t oldAlbumId = atoi(rdbPredicates.GetWhereArgs()[0].c_str());
+    const std::string QUERY_ALBUM_INFO =
+        "SELECT * FROM PhotoAlbum WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(oldAlbumId);
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_ALBUM_INFO);
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    string newAlbumName;
+    if (GetStringObject(values, PhotoAlbumColumns::ALBUM_NAME, newAlbumName) == E_OK) {
+        int32_t err = MediaFileUtils::CheckAlbumName(newAlbumName);
         if (err < 0) {
             return err;
         }
-        updateValues.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
     }
+    int64_t newAlbumId = -1;
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        NativeRdb::ValuesBucket valuesNew;
+        valuesNew.PutString(PhotoAlbumColumns::ALBUM_NAME, newAlbumName);
+        MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(rdbStore.get(), valuesNew, resultSet, newAlbumName);
+        int32_t sameAlbumId = CheckHasSameNameAlbum(newAlbumName, resultSet, valuesNew, rdbStore);
+        if (sameAlbumId != 0) {
+            int changeRows = 0;
+            RdbPredicates rdbPredicatesNew(PhotoAlbumColumns::TABLE);
+            rdbPredicatesNew.EqualTo(PhotoAlbumColumns::ALBUM_ID, sameAlbumId);
+            rdbStore->Update(changeRows, valuesNew, rdbPredicatesNew);
+            MediaLibraryAlbumFusionUtils::DeleteALbumAndUpdateRelationship(rdbStore.get(), oldAlbumId,
+                sameAlbumId, false);
+            return changeRows;
+        } else {
+            int32_t ret = rdbStore.get()->Insert(newAlbumId, PhotoAlbumColumns::TABLE, valuesNew);
+            if (ret != NativeRdb::E_OK) {
+                MEDIA_ERR_LOG("Insert copyed album failed, ret = %{public}d", ret);
+                return E_HAS_DB_ERROR;
+            }
+            MediaLibraryAlbumFusionUtils::DeleteALbumAndUpdateRelationship(rdbStore.get(), oldAlbumId,
+                newAlbumId, MediaLibraryAlbumFusionUtils::IsCloudAlbum(resultSet));
+            MEDIA_INFO_LOG("Set new album name id is, %{public}s", to_string(newAlbumId).c_str());
+        }
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
+        to_string(newAlbumId)), NotifyType::NOTIFY_UPDATE);
+    return ALBUM_SETNAME_OK;
+}
 
-    // Collect lpath
-    string lpath;
-    updateValues.PutString(PhotoAlbumColumns::ALBUM_LPATH, ALBUM_LPATH_PREFIX + albumName);
-
+int32_t PrepareUpdateValues(const ValuesBucket &values, ValuesBucket &updateValues)
+{
     // Collect coverUri if exists
     string coverUri;
     if (GetStringObject(values, PhotoAlbumColumns::ALBUM_COVER_URI, coverUri) == E_OK) {
@@ -798,6 +861,17 @@ int32_t PrepareUpdateValues(const ValuesBucket &values, ValuesBucket &updateValu
 
 int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &predicates)
 {
+    // Set album name: delete old and build new one
+    string albumName;
+    if (GetStringObject(values, PhotoAlbumColumns::ALBUM_NAME, albumName) == E_OK) {
+        int32_t err = MediaFileUtils::CheckAlbumName(albumName);
+        if (err < 0) {
+            return err;
+        }
+        int setNameRet = SetPhotoAlbumName(values, predicates);
+        return setNameRet;
+    }
+
     ValuesBucket rdbValues;
     int32_t err = PrepareUpdateValues(values, rdbValues);
     if (err < 0) {
@@ -2068,6 +2142,8 @@ int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opTyp
             return AgingPhotoAssets(countPtr);
         case OperationType::ALBUM_ORDER:
             return OrderSingleAlbum(values);
+        case OperationType::ALBUM_SET_NAME:
+            return SetPhotoAlbumName(values, predicates);
         default:
             MEDIA_ERR_LOG("Unknown operation type: %{public}d", opType);
             return E_ERR;

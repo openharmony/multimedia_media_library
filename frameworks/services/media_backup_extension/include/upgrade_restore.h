@@ -36,7 +36,6 @@ public:
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
         int32_t sourceType) override;
     std::vector<FileInfo> QueryFileInfosFromExternal(int32_t offset, int32_t maxId, bool isCamera);
-    std::vector<FileInfo> QueryAudioFileInfosFromExternal(int32_t offset);
     std::vector<FileInfo> QueryAudioFileInfosFromAudio(int32_t offset);
     int32_t QueryNotSyncTotalNumber(int32_t offset, bool isCamera);
     void InitGarbageAlbum();
@@ -58,7 +57,6 @@ private:
     bool ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
     void RestoreFromGallery();
     void RestoreFromExternal(bool isCamera);
-    void RestoreAudioFromExternal();
     void RestoreAudioFromFile();
     bool IsValidDir(const std::string &path);
     void RestoreBatch(int32_t offset);
@@ -67,6 +65,8 @@ private:
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath) override;
     void AnalyzeSource() override;
+    void AnalyzeGalleryErrorSource();
+    void AnalyzeGalleryDuplicateData();
     void AnalyzeGallerySource();
     void AnalyzeExternalSource();
     void HandleCloneBatch(int32_t offset, int32_t maxId);

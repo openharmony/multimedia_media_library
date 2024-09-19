@@ -44,6 +44,7 @@ const std::string OPRN_QUERY_HIDDEN = "query_hidden";
 const std::string OPRN_STORE_FORM_ID = "store_form_id";
 const std::string OPRN_REMOVE_FORM_ID = "remove_form_id";
 const std::string OPRN_ALBUM_ADD_PHOTOS = "add_photos";
+const std::string OPRN_ALBUM_SET_NAME = "set_album_name";
 const std::string OPRN_ALBUM_REMOVE_PHOTOS = "remove_photos";
 const std::string OPRN_RECOVER_PHOTOS = "recover_photos";
 const std::string OPRN_DELETE_PHOTOS = "delete_photos_permanently";   // Delete photos permanently from system
@@ -59,6 +60,7 @@ const std::string OPRN_PORTRAIT_IS_ME = "is_me";
 const std::string OPRN_PORTRAIT_ALBUM_NAME = "album_name";
 const std::string OPRN_PORTRAIT_MERGE_ALBUM = "merge_album";
 const std::string OPRN_DISMISS_ASSET = "dismiss_asset";
+const std::string UPDATE_DISMISS_ASSET = "dismiss_asset_update";
 const std::string OPRN_PORTRAIT_COVER_URI = "cover_uri";
 const std::string OPRN_SUBMIT_CACHE = "operation_submit_cache";
 const std::string OPRN_ADD_IMAGE = "add_image";
@@ -72,6 +74,7 @@ const std::string OPRN_STOP_GENERATE_THUMBNAILS = "stop_generate_thumbnails";
 const std::string OPRN_ADD_FILTERS = "add_filters";
 const std::string OPRN_DISCARD_CAMERA_PHOTO = "discard_camera_photo";
 const std::string OPRN_SAVE_CAMERA_PHOTO = "save_camera_photo";
+const std::string OPRN_SAVE_PICTURE = "save_picture";
 const std::string OPRN_REMOVE_MSC_TASK = "remove_msc_task"; // remove multistages capture task
 const std::string OPRN_GROUP_DISMISS = "dismiss";
 const std::string OPRN_GROUP_ALBUM_NAME = "group_album_name";
@@ -267,6 +270,7 @@ const std::string PAH_DISCARD_CAMERA_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_P
 const std::string PAH_SAVE_CAMERA_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SAVE_CAMERA_PHOTO;
 const std::string PAH_SCAN_WITHOUT_ALBUM_UPDATE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" +
     OPRN_SCAN_WITHOUT_ALBUM_UPDATE;
+const std::string PATH_SAVE_PICTURE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SAVE_PICTURE;
 
 // MultiStages capture related operation uri
 const std::string PAH_SET_PHOTO_QUALITY = MEDIALIBRARY_DATA_URI + "/ "+ PAH_PHOTO + "/" + OPRN_SET_PHOTO_QUALITY;
@@ -290,6 +294,7 @@ const std::string PAH_ADD_LOWQUALITY_IMAGE = MEDIALIBRARY_DATA_URI + "/" +
 const std::string PAH_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_CREATE;
 const std::string PAH_DELETE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_DELETE;
 const std::string PAH_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_UPDATE;
+const std::string PAH_SET_PHOTO_ALBUM_NAME = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_ALBUM_SET_NAME;
 const std::string PAH_QUERY_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_HIDDEN_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_QUERY_HIDDEN;
 const std::string PAH_PHOTO_ALBUM_ADD_ASSET = MEDIALIBRARY_DATA_URI + "/" + PAH_MAP + "/" +
@@ -402,6 +407,23 @@ const std::string LOG_MOVING_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MISC_OPERATIO
 const std::string OPRN_FINISH_REQUEST_PICTURE = "finish_request_picture";
 const std::string PAH_FINISH_REQUEST_PICTURE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/"
     + OPRN_FINISH_REQUEST_PICTURE;
+
+const std::string MEDIATYPE_DIRECTORY_OBJ = "MediaTypeDirectory";
+const std::string MEDIALIBRARY_DIRECTORY_URI = MEDIALIBRARY_DATA_URI + "/" + MEDIATYPE_DIRECTORY_OBJ;
+const std::string MEDIALIBRARY_BUNDLEPERM_URI = MEDIALIBRARY_DATA_URI + "/" + BUNDLE_PERMISSION_INSERT;
+
+const std::string MEDIALIBRARY_CHECK_URIPERM_URI = MEDIALIBRARY_DATA_URI + "/" + CHECK_URI_PERMISSION;
+const std::string MEDIALIBRARY_GRANT_URIPERM_URI = MEDIALIBRARY_DATA_URI + "/" + GRANT_URI_PERMISSION;
+
+const std::string MEDIALIBRARY_AUDIO_URI = MEDIALIBRARY_DATA_URI + '/' + "audio";
+const std::string MEDIALIBRARY_VIDEO_URI = MEDIALIBRARY_DATA_URI + '/' + "video";
+const std::string MEDIALIBRARY_IMAGE_URI = MEDIALIBRARY_DATA_URI + '/' + "image";
+const std::string MEDIALIBRARY_FILE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "file";
+const std::string MEDIALIBRARY_ALBUM_URI  =  MEDIALIBRARY_DATA_URI + '/' + "album";
+const std::string MEDIALIBRARY_SMARTALBUM_CHANGE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "smartalbum";
+const std::string MEDIALIBRARY_DEVICE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "device";
+const std::string MEDIALIBRARY_SMART_URI = MEDIALIBRARY_DATA_URI + '/' + "smart";
+const std::string MEDIALIBRARY_REMOTEFILE_URI = MEDIALIBRARY_DATA_URI + '/' + "remotfile";
 } // namespace Media
 } // namespace OHOS
 

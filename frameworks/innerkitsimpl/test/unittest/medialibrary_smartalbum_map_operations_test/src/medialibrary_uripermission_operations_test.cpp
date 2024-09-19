@@ -18,6 +18,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "ability_context_impl.h"
 #include "uri.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS;

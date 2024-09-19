@@ -22,6 +22,8 @@
 #include "medialibrary_object_utils.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_uripermission_operations.h"
+#include "userfilemgr_uri.h"
+
 using  namespace std;
 using namespace OHOS;
 using namespace testing::ext;
