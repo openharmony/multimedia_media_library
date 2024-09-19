@@ -1297,7 +1297,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(NativeRdb::RdbStor
 static int32_t TransferMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
 {
     const std::string QUERY_SCREEN_RECORD_ALBUM =
-        "SELECT album_id FROM PhotoAlbum WHERE lpath ='/Pictures/Screenrecords' AND dirty <>4";
+        "SELECT album_id FROM PhotoAlbum WHERE bundle_name ='com.huawei.hmos.screenrecorder' AND dirty <>4";
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_SCREEN_RECORD_ALBUM);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_INFO_LOG("No screen record album");
@@ -1315,9 +1315,9 @@ static int32_t TransferMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
     }
     const std::string TRANSFER_MISS_MATCH_ASSET =
         "UPDATE Photos SET owner_album_id = "
-        "(SELECT album_id FROM PhotoAlbum WHERE lpath ='/Pictures/Screenrecords' AND dirty <>4) WHERE owner_album_id = "
-        "(SELECT album_id FROM PhotoAlbum WHERE lpath ='/Pictures/Screenshots' AND dirty <>4) "
-        " AND media_type =2";
+        "(SELECT album_id FROM PhotoAlbum WHERE bundle_name ='com.huawei.hmos.screenrecorder' AND dirty <>4) "
+        "WHERE owner_album_id = (SELECT album_id FROM PhotoAlbum WHERE "
+        "bundle_name ='com.huawei.hmos.screenshot' AND dirty <>4) AND media_type =2";
     int32_t err = upgradeStore->ExecuteSql(TRANSFER_MISS_MATCH_ASSET);
         if (err != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s",
@@ -1335,7 +1335,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleMissMatchScreenRecord(NativeRdb::Rdb
     }
     const std::string QUERY_MISS_MATCHED_RECORDS =
         "SELECT file_id FROM Photos WHERE owner_album_id = "
-        "(SELECT album_id FROM PhotoAlbum WHERE lpath ='/Pictures/Screenshots' AND dirty <>4) "
+        "(SELECT album_id FROM PhotoAlbum WHERE bundle_name ='com.huawei.hmos.screenshot' AND dirty <>4) "
         " AND media_type =2";
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_MISS_MATCHED_RECORDS);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -1394,6 +1394,7 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     HandleNoOwnerData(upgradeStore);
     // Clean duplicative album and rebuild expired album
     RebuildAlbumAndFillCloudValue(upgradeStore);
+    HandleMissMatchScreenRecord(upgradeStore);
     SetParameterToStartSync();
     RefreshAllAlbums();
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
