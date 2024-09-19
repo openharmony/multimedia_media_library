@@ -217,7 +217,9 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!IsFileValid(fileInfos[i], sceneCode)) {
-            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::FILE_INVALID);
+            if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
+                UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::FILE_INVALID);
+            }
             continue;
         }
         std::string cloudPath;

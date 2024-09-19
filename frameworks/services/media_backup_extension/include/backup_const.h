@@ -470,6 +470,8 @@ const std::string ALL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND (relati
     relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) AND _size > 0 \
     AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' ";
 
+const std::string ALL_PHOTOS_GROUP_BY = " GROUP BY _data HAVING MIN(ROWID) ";
+
 const std::string ALL_PHOTOS_ORDER_BY = " ORDER BY _id ASC ";
 
 const std::string EXCLUDE_SD = " (storage_id IN (0, 65537)) ";

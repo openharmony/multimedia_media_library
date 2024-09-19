@@ -77,7 +77,7 @@ private:
 
 private:
     const std::string SQL_GALLERY_MEDIA_QUERY_COUNT = "\
-        SELECT COUNT(1) AS count \
+        SELECT COUNT(DISTINCT _data) AS count \
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
@@ -135,6 +135,8 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             (1 = ? OR storage_id IN (0, 65537) ) \
+        GROUP BY _data \
+        HAVING MIN(gallery_media.ROWID) \
         ORDER BY _id ASC \
         LIMIT ?, ?;";
 };
