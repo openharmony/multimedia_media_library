@@ -164,7 +164,7 @@ export struct PhotoPickerComponent {
     console.info('PhotoPickerComponent onReceive' + JSON.stringify(wantParam));
   }
 
-  private handleOtherOnReceive(wantParam: Record<string, Object>): void {
+  private handleOtherOnReceive(wantParam: Record<string, Object>): void{
     let dataType = wantParam.dataType as string;
     if (dataType === 'exceedMaxSelected') {
       if (this.onExceedMaxSelected) {
