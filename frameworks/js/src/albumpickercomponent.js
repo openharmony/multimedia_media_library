@@ -50,7 +50,8 @@ export class AlbumPickerComponent extends ViewPU {
             Column.width('100%');
         }), Column);
         this.observeComponentCreation2(((e, o) => {
-            var n, m;
+            var n;
+            var m;
             SecurityUIExtensionComponent.create({
                 parameters: {
                     'ability.want.params.uiExtensionTargetType': 'photoPicker',
@@ -65,23 +66,7 @@ export class AlbumPickerComponent extends ViewPU {
                 console.info('AlbumPickerComponent onRemoteReady');
             }));
             SecurityUIExtensionComponent.onReceive((e => {
-                let o = e;
-                let n = o.dataType;
-                if ('selectAlbum' === n) {
-                    if (this.onAlbumClick) {
-                        let e = new AlbumInfo;
-                        e.uri = o.albumUri;
-                        e.albumName = o.albumName;
-                        this.onAlbumClick(e);
-                    }
-                } else if ('emptyAreaClick' === n) {
-                    if (this.onEmptyAreaClick) {
-                        this.onEmptyAreaClick();
-                    }
-                } else {
-                    console.info('AlbumPickerComponent onReceive: other case');
-                }
-                console.info('AlbumPickerComponent onReceive ' + n);
+                this.handleOnRecevie(e);
             }));
             SecurityUIExtensionComponent.onError((() => {
                 console.info('AlbumPickerComponent onError');
@@ -89,6 +74,26 @@ export class AlbumPickerComponent extends ViewPU {
         }), SecurityUIExtensionComponent);
         Column.pop();
         Row.pop();
+    }
+
+    handleOnRecevie(e) {
+        let o = e;
+        let n = o.dataType;
+        if ('selectAlbum' === n) {
+            if (this.onAlbumClick) {
+                let e = new AlbumInfo;
+                e.uri = o.albumUri;
+                e.albumName = o.albumName;
+                this.onAlbumClick(e);
+            }
+        } else if ('emptyAreaClick' === n) {
+            if (this.onEmptyAreaClick) {
+                this.onEmptyAreaClick();
+            }
+        } else {
+            console.info('AlbumPickerComponent onReceive: other case');
+        }
+        console.info('AlbumPickerComponent onReceive ' + n);
     }
 
     rerender() {

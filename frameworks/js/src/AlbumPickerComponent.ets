@@ -36,22 +36,7 @@ export struct AlbumPickerComponent {
           console.info('AlbumPickerComponent onRemoteReady');
         }).onReceive((data) => {
           let wantParam: Record<string, Object> = data as Record<string, Object>;
-          let dataType = wantParam['dataType'] as string;
-          if (dataType === 'selectAlbum') {
-            if (this.onAlbumClick) {
-              let albumInfo: AlbumInfo = new AlbumInfo();
-              albumInfo.uri = wantParam['albumUri'] as string;
-              albumInfo.albumName = wantParam['albumName'] as string;
-              this.onAlbumClick(albumInfo);
-            }
-          } else if (dataType === 'emptyAreaClick') {
-            if (this.onEmptyAreaClick) {
-              this.onEmptyAreaClick();
-            }
-          } else {
-            console.info('AlbumPickerComponent onReceive: other case');
-          }
-          console.info('AlbumPickerComponent onReceive ' + dataType);
+          this.handleOnReceive(wantParam);
         }).onError(() => {
           console.info('AlbumPickerComponent onError');
         });
@@ -60,6 +45,25 @@ export struct AlbumPickerComponent {
     }
     .height('100%')
   }
+}
+
+private handleOnReceive(wantParam: Record<string, Object>): void {
+  let dataType = wantParam.dataType. as string;
+  if (dataType === 'selectAlbum') {
+    if (this.onAlbumClick) {
+      let albumInfo: AlbumInfo = new AlbumInfo();
+      albumInfo.uri = wantParam.albumUri as string;
+      albumInfo.albumName = wantParam.albumName. as string;
+      this.onAlbumClick(albumInfo);
+    }
+  } else if (dataType === 'emptyAreaClick') {
+    if (this.onEmptyAreaClick) {
+      this.onEmptyAreaClick();
+    }
+  } else {
+    console.info('AlbumPickerComponent onReceive: other case');
+  }
+  console.info('AlbumPickerComponent onReceive ' + dataType);
 }
 
 export type EmptyAreaClickCallback = () => void;
