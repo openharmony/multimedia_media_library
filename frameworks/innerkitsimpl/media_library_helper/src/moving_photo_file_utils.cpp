@@ -538,8 +538,7 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
         return E_HAS_FS_ERROR;
     }
     CHECK_AND_RETURN_RET_LOG(livePhotoPath.compare(movingPhotoVideoPath) != 0 &&
-        livePhotoPath.compare(extraDataPath) != 0, E_INVALID_VALUES,
-        "Failed to check dest path of moving photo");
+        livePhotoPath.compare(extraDataPath) != 0, E_INVALID_VALUES, "Failed to check dest path");
     UniqueFd livePhotoFd(open(absLivePhotoPath.c_str(), O_RDONLY));
     CHECK_AND_RETURN_RET_LOG(livePhotoFd.Get() >= 0, E_HAS_FS_ERROR,
         "Failed to open live photo:%{private}s, errno:%{public}d", absLivePhotoPath.c_str(), errno);
