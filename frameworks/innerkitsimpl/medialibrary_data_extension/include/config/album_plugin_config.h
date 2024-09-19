@@ -46,7 +46,7 @@ const std::string BRAND_NAME_UPPER_FIRST = std::string() + static_cast<char>(CHA
     static_cast<char>(CHAR_LOWCASE_I);
 const std::string LPATH_SCREEN_SHOTS = "/Pictures/Screenshots";
 const std::string LPATH_SCREEN_RECORDS = "/Pictures/Screenrecords";
-const std::string BUNDLE_NAME_SCREEN_RECORDS = "com." + BRAND_NAME + ".homs.screenshot";
+const std::string BUNDLE_NAME_SCREEN_RECORDS = "com." + BRAND_NAME + ".homs.screenrecorder";
 const std::string ALBUM_NAME_SCREEN_RECORDS = "屏幕录制";
 const std::vector<AlbumPluginRowData> ALBUM_PLUGIN_DATA = {
     {"/DCIM/Camera", "相机", "Camera", "com." + BRAND_NAME + ".hmos.camera", "default-album-1", ".Camera"},
