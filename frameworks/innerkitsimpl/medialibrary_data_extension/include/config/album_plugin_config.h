@@ -67,6 +67,7 @@ const std::vector<AlbumPluginRowData> ALBUM_PLUGIN_DATA = {
     {"/Video", "视频", "Videos", "", "", ".Videos"},
     {"/Pictures/VideoEditor", "视频编辑", "Video Editor", "", "", ".VideoEditor"},
     {"/Pictures/Collage", "拼图", "Collages", "", "", ".Collage"},
+    {"/Pictures/Browser", "浏览器", "Browser", "com.huawei.hmos.browser", "", ".Browser"},
     {"/Pictures/FromOtherDevices", "其他设备保存", "From other devices", "", "", ".FromOtherDevices"},
     {"/" + BRAND_NAME_UPPER_FIRST + "/preset", "预置图片", "Preset images", "", "", ".preset"},
     {"/" + BRAND_NAME_UPPER_FIRST + " Share",
