@@ -71,6 +71,7 @@ private:
     static int32_t HandleNewCloudDirtyData(NativeRdb::RdbStore *upgradeStore,
         std::multimap<int32_t, std::vector<int32_t>> &notMatchedMap);
     static int32_t HandleDuplicateAlbum(NativeRdb::RdbStore *upgradeStore);
+    static int32_t HandleMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore);
 };
 }
 }

@@ -1296,6 +1296,57 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(NativeRdb::RdbStor
     return E_OK;
 }
 
+static int32_t TransferMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
+{
+    const std::string QUERY_SCREEN_RECORD_ALBUM =
+        "SELECT album_id FROM PhotoAlbum WHERE bundle_name ='com.huawei.hmos.screenrecorder' AND dirty <>4";
+    shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_SCREEN_RECORD_ALBUM);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_INFO_LOG("No screen record album");
+        const std::string CREATE_SCREEN_RECORDS_ALBUM =
+            "INSERT INTO " + PhotoAlbumColumns::TABLE +
+            "(album_type, album_subtype, album_name,bundle_name, dirty, is_local, date_added, lpath, priority)"
+            " Values ('2048', '2049', '屏幕录制', 'com.huawei.hmos.screenrecorder', '1', '1',"
+            " strftime('%s000', 'now'), '/Pictures/Screenrecords', '1')";
+        int32_t err = upgradeStore->ExecuteSql(CREATE_SCREEN_RECORDS_ALBUM);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s",
+                CREATE_SCREEN_RECORDS_ALBUM.c_str());
+            return err;
+        }
+    }
+    const std::string TRANSFER_MISS_MATCH_ASSET =
+        "UPDATE Photos SET owner_album_id = "
+        "(SELECT album_id FROM PhotoAlbum WHERE bundle_name ='com.huawei.hmos.screenrecorder' AND dirty <>4) "
+        "WHERE owner_album_id = (SELECT album_id FROM PhotoAlbum WHERE "
+        "bundle_name ='com.huawei.hmos.screenshot' AND dirty <>4) AND media_type =2";
+    int32_t err = upgradeStore->ExecuteSql(TRANSFER_MISS_MATCH_ASSET);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s",
+                TRANSFER_MISS_MATCH_ASSET.c_str());
+            return err;
+    }
+    return E_OK;
+}
+ 
+int32_t MediaLibraryAlbumFusionUtils::HandleMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
+{
+    if (upgradeStore == nullptr) {
+        MEDIA_ERR_LOG("invalid rdbstore");
+        return E_INVALID_ARGUMENTS;
+    }
+    const std::string QUERY_MISS_MATCHED_RECORDS =
+        "SELECT file_id FROM Photos WHERE owner_album_id = "
+        "(SELECT album_id FROM PhotoAlbum WHERE bundle_name ='com.huawei.hmos.screenshot' AND dirty <>4) "
+        " AND media_type =2";
+    shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_MISS_MATCHED_RECORDS);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_INFO_LOG("No miss matched screen record");
+        return E_OK;
+    }
+    return TransferMissMatchScreenRecord(upgradeStore);
+}
+
 int32_t MediaLibraryAlbumFusionUtils::RefreshAllAlbums()
 {
     MEDIA_INFO_LOG("Froce refresh all albums start");
@@ -1345,6 +1396,7 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     HandleNoOwnerData(upgradeStore);
     // Clean duplicative album and rebuild expired album
     RebuildAlbumAndFillCloudValue(upgradeStore);
+    HandleMissMatchScreenRecord(upgradeStore);
     SetParameterToStartSync();
     RefreshAllAlbums();
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
