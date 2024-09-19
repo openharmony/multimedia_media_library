@@ -19,7 +19,6 @@
 #include <safe_map.h>
 
 #include "backup_const_column.h"
-#include "backup_file_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 
