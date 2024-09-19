@@ -2009,10 +2009,11 @@ int RefreshPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     vector<string> albumIds;
     int ret = GetAllRefreshAlbumIds(rdbStore, albumIds);
     if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("Failed to get refresh album ids");
         return ret;
     }
     if (albumIds.empty()) {
-        MEDIA_DEBUG_LOG("albumIds is empty");
+        MEDIA_INFO_LOG("albumIds is empty");
         return E_EMPTY_ALBUM_ID;
     }
     MEDIA_INFO_LOG("Start refreshing photo albums, number of albums to refresh: %{public}zu", albumIds.size());
