@@ -45,7 +45,7 @@ static std::string GetDUALBundleName(bool bLower = false)
 
 const std::string SCREEN_SHOT_AND_RECORDER = "截屏录屏";
 const std::string VIDEO_SCREEN_RECORDER_NAME = "屏幕录制";
-const std::string VIDEO_SCREEN_RECORDER = "com."+ GetDUALBundleName(true) +".ohos.screenrecorder";
+const std::string VIDEO_SCREEN_RECORDER = "com."+ GetDUALBundleName(true) +".hmos.screenrecorder";
 
 static inline const std::unordered_map<std::string, std::pair<std::string, std::string>> ALBUM_PART_MAP = {
     {"/", {"根目录", "rootdirectory"}},
@@ -119,7 +119,7 @@ static inline const std::unordered_map<std::string, std::pair<std::string, std::
 static inline const std::unordered_map<std::string, std::pair<std::string, std::string>> ALBUM_WHITE_LIST_MAP = {
     {"相机", {"相机", "com."+ GetDUALBundleName(true) +".hmos.camera"}},
     {"华为分享", {"华为分享", "com."+ GetDUALBundleName(true) +".hmos.instantshare"}},
-    {"截屏录屏", {"截图", "com."+ GetDUALBundleName(true) +".ohos.screenshot"}},
+    {"截屏录屏", {"截图", "com."+ GetDUALBundleName(true) +".hmos.screenshot"}},
     {"小红书", {"小红书", "com.xingxi.xhs_hos"}},
     {"微博", {"微博", "com.sina.weibo.stage"}},
     {"搜狐新闻", {"搜狐新闻", "com.sohu.harmonynews"}},
