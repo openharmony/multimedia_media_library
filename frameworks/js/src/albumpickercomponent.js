@@ -19,12 +19,14 @@ export class AlbumPickerComponent extends ViewPU {
         'function' === typeof i && (this.paramsGenerator_ = i);
         this.albumPickerOptions = void 0;
         this.onAlbumClick = void 0;
+        this.onEmptyAreaClick = void 0;
         this.setInitiallyProvidedValue(o);
     }
 
     setInitiallyProvidedValue(e) {
         void 0 !== e.albumPickerOptions && (this.albumPickerOptions = e.albumPickerOptions);
         void 0 !== e.onAlbumClick && (this.onAlbumClick = e.onAlbumClick);
+        void 0 !== e.onEmptyAreaClick && (this.onEmptyAreaClick = e.onEmptyAreaClick);
     }
 
     updateStateVars(e) {
@@ -49,11 +51,13 @@ export class AlbumPickerComponent extends ViewPU {
         }), Column);
         this.observeComponentCreation2(((e, o) => {
             var n;
+            var m;
             SecurityUIExtensionComponent.create({
                 parameters: {
                     'ability.want.params.uiExtensionTargetType': 'photoPicker',
                     targetPage: 'albumPage',
-                    themeColorMode: null === (n = this.albumPickerOptions) || void 0 === n ? void 0 : n.themeColorMode
+                    themeColorMode: null === (n = this.albumPickerOptions) || void 0 === n ? void 0 : n.themeColorMode,
+                    filterType: null === (m = this.albumPickerOptions) || void 0 === m ? void 0 : m.filterType
                 }
             });
             SecurityUIExtensionComponent.height('100%');
@@ -62,15 +66,7 @@ export class AlbumPickerComponent extends ViewPU {
                 console.info('AlbumPickerComponent onRemoteReady');
             }));
             SecurityUIExtensionComponent.onReceive((e => {
-                let o = e;
-                let n = o.dataType;
-                if ('selectAlbum' === n && this.onAlbumClick) {
-                    let e = new AlbumInfo;
-                    e.uri = o.albumUri;
-                    e.albumName = o.albumName;
-                    this.onAlbumClick(e);
-                }
-                console.info('AlbumPickerComponent onReceive ' + n);
+                this.handleOnRecevie(e);
             }));
             SecurityUIExtensionComponent.onError((() => {
                 console.info('AlbumPickerComponent onError');
@@ -78,6 +74,26 @@ export class AlbumPickerComponent extends ViewPU {
         }), SecurityUIExtensionComponent);
         Column.pop();
         Row.pop();
+    }
+
+    handleOnRecevie(e) {
+        let o = e;
+        let n = o.dataType;
+        if ('selectAlbum' === n) {
+            if (this.onAlbumClick) {
+                let e = new AlbumInfo;
+                e.uri = o.albumUri;
+                e.albumName = o.albumName;
+                this.onAlbumClick(e);
+            }
+        } else if ('emptyAreaClick' === n) {
+            if (this.onEmptyAreaClick) {
+                this.onEmptyAreaClick();
+            }
+        } else {
+            console.info('AlbumPickerComponent onReceive: other case');
+        }
+        console.info('AlbumPickerComponent onReceive ' + n);
     }
 
     rerender() {
