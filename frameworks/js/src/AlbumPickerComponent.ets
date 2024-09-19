@@ -14,11 +14,13 @@
  */
 
 import { PickerColorMode } from '@ohos.file.PhotoPickerComponent';
+import photoAccessHelper from '@ohos.file.photoAccessHelper';
 
 @Component
 export struct AlbumPickerComponent {
   albumPickerOptions?: AlbumPickerOptions | undefined;
   onAlbumClick?: (albumInfo: AlbumInfo) => boolean;
+  onEmptyAreaClick?: EmptyAreaClickCallback;
 
   build() {
     Row() {
@@ -28,6 +30,7 @@ export struct AlbumPickerComponent {
             'ability.want.params.uiExtensionTargetType':'photoPicker',
             targetPage: 'albumPage',
             themeColorMode: this.albumPickerOptions?.themeColorMode,
+            filterType: this.albumPickerOptions?.filterType,
           }
         }).height('100%').width('100%').onRemoteReady((proxy) => {
           console.info('AlbumPickerComponent onRemoteReady');
@@ -41,6 +44,12 @@ export struct AlbumPickerComponent {
               albumInfo.albumName = wantParam['albumName'] as string;
               this.onAlbumClick(albumInfo);
             }
+          } else if (dataType === 'emptyAreaClick') {
+            if (this.onEmptyAreaClick) {
+              this.onEmptyAreaClick();
+            }
+          } else {
+            console.info('AlbumPickerComponent onReceive: other case');
           }
           console.info('AlbumPickerComponent onReceive ' + dataType);
         }).onError(() => {
@@ -53,8 +62,11 @@ export struct AlbumPickerComponent {
   }
 }
 
+export type EmptyAreaClickCallback = () => void;
+
 export class AlbumPickerOptions {
   public themeColorMode?: PickerColorMode;
+  public filterType?: photoAccessHelper.PhotoViewMIMETypes;
 }
 
 export class AlbumInfo {

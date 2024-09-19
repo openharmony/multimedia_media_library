@@ -28,6 +28,9 @@ export struct PhotoPickerComponent {
   onExitPhotoBrowser?: (photoBrowserInfo: PhotoBrowserInfo) => boolean;
   onPickerControllerReady?: () => void;
   onPhotoBrowserChanged?: (browserItemInfo: BaseItemInfo) => boolean;
+  onSelectedItemsDeleted?: ItemsDeletedCallback;
+  onExceedMaxSelected?: ExceedMaxSelectedCallback;
+  onCurrentAlbumDeleted?: CurrentAlbumDeletedCallback;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
   private proxy: UIExtensionProxy | undefined;
 
@@ -155,9 +158,29 @@ export struct PhotoPickerComponent {
     } else if (dataType === 'onPhotoBrowserChanged') {
       this.handlePhotoBrowserChange(wantParam);
     } else {
+      this.handleOtherOnReceive(wantParam);
       console.info('PhotoPickerComponent onReceive: other case');
     }
     console.info('PhotoPickerComponent onReceive' + JSON.stringify(wantParam));
+  }
+
+  private handleOtherOnReceive(wantParam: Record<string, Object>): void {
+    let dataType = wantParam['dataType'] as string;
+    if (dataType === 'exceedMaxSelected') {
+      if (this.onExceedMaxSelected) {
+        this.onExceedMaxSelected(wantParam['maxCountType'] as MaxCountType);
+      }
+    } else if (dataType === 'selectedItemsDeleted') {
+      if (this.onSelectedItemsDeleted) {
+        this.onSelectedItemsDeleted(wantParam['selectedItemInfos'] as Array<ItemInfo>);
+      }
+    } else if (dataType === 'currentAlbumDeleted') {
+      if (this.onCurrentAlbumDeleted) {
+        this.onCurrentAlbumDeleted();
+      }
+    } else {
+      console.info('PhotoPickerComponent onReceive: other case');
+    }
   }
 
   private handleSelectOrDeselect(wantParam: Record<string, Object>): void {
@@ -256,6 +279,12 @@ export struct PhotoPickerComponent {
     return filterType;
   }
 }
+
+export type ItemsDeletedCallback = (itemInfos: Array<ItemInfo>) => void;
+
+export type ExceedMaxSelectedCallback = (maxCountType: MaxCountType) => void;
+
+export type CurrentAlbumDeletedCallback = () => void;
 
 @Observed
 export class PickerController {
