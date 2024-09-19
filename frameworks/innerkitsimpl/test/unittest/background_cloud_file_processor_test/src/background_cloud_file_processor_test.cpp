@@ -179,6 +179,7 @@ void BackgroundCloudFileProcessorTest::SetUpTestCase()
 
     BackgroundCloudFileProcessor::processInterval_ = 50;  // 50 milliseconds
     BackgroundCloudFileProcessor::downloadDuration_ = 40; // 40 milliseconds
+    BackgroundCloudFileProcessor::isDownload_ = true;
 }
 
 void BackgroundCloudFileProcessorTest::TearDownTestCase()
@@ -187,6 +188,7 @@ void BackgroundCloudFileProcessorTest::TearDownTestCase()
     ClearTables();
     BackgroundCloudFileProcessor::processInterval_ = PROCESS_INTERVAL;
     BackgroundCloudFileProcessor::downloadDuration_ = DOWNLOAD_DURATION;
+    BackgroundCloudFileProcessor::isDownload_ = false;
 }
 
 void BackgroundCloudFileProcessorTest::SetUp()
