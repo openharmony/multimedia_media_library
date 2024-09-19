@@ -125,7 +125,8 @@ private:
             SELECT 0 AS map_album \
             ORDER BY map_album DESC \
             LIMIT 1 \
-        );";
+        ) \
+        WHERE COALESCE(owner_album_id, 0)=0;";
     const std::vector<std::string> SQL_PHOTO_MAP_TABLE_DROP_TRIGGER_ARRAY = {
         "DROP TRIGGER IF EXISTS album_map_delete_search_trigger;",
         "DROP TRIGGER IF EXISTS album_map_delete_trigger;",

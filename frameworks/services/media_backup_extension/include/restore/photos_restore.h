@@ -66,6 +66,20 @@ private:
     PhotoAlbumDao::PhotoAlbumRowData BuildAlbumInfoOfRecorders();
     PhotoAlbumDao::PhotoAlbumRowData BuildAlbumInfoByLPath(const std::string &lPath);
     PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(const FileInfo &fileInfo);
+    std::string ToLower(const std::string &str)
+    {
+        std::string lowerStr;
+        std::transform(
+            str.begin(), str.end(), std::back_inserter(lowerStr), [](unsigned char c) { return std::tolower(c); });
+        return lowerStr;
+    }
+    std::string ToString(const FileInfo &fileInfo)
+    {
+        return "FileInfo[ fileId: " + std::to_string(fileInfo.fileIdOld) + ", displayName: " + fileInfo.displayName +
+               ", bundleName: " + fileInfo.bundleName + ", lPath: " + fileInfo.lPath +
+               ", size: " + std::to_string(fileInfo.fileSize) + ", fileType: " + std::to_string(fileInfo.fileType) +
+               " ]";
+    }
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
@@ -91,6 +105,7 @@ private:
             ) AND \
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
+            COALESCE(_data, '') <> '' AND \
             (1 = ? OR storage_id IN (0, 65537) ) \
         ORDER BY _id ASC ;";
     const std::string SQL_GALLERY_MEDIA_QUERY_FOR_RESTORE = "\
@@ -134,6 +149,7 @@ private:
             ) AND \
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
+            COALESCE(_data, '') <> '' AND \
             (1 = ? OR storage_id IN (0, 65537) ) \
         GROUP BY _data \
         HAVING MIN(gallery_media.ROWID) \
