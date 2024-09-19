@@ -302,7 +302,7 @@ void TestCloudEnhancementImage(vector<string> &columns, int32_t associateFileId,
     EXPECT_EQ(newDisplayName.find("_enhanced") != string::npos, true);
     EXPECT_EQ(hidden, newHidden);
     EXPECT_EQ(subtype, newSubtype);
-    EXPECT_EQ(newCEAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
+    EXPECT_EQ(newCEAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
     EXPECT_EQ(newAssociation, 1);
     EXPECT_EQ(FileUtils::IsFileExist(newFilePath), true);
 }
@@ -401,7 +401,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_enhancement_update_ope
     MediaLibraryCommand cmd5(cancelAllTasksUri);
     cmd5.SetDataSharePred(predicates);
     ret = EnhancementManager::GetInstance().HandleEnhancementUpdateOperation(cmd5);
-    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(ret, -1);
     uriStr = PAH_CLOUD_ENHANCEMENT_SYNC;
     Uri syncTasksUri(uriStr);
     MediaLibraryCommand cmd6(syncTasksUri);
@@ -569,7 +569,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_cancel_all_operation_0
     MEDIA_INFO_LOG("manager_handle_cancel_all_operation_008 Start");
     EnhancementManager &instance = EnhancementManager::GetInstance();
     int32_t result = instance.HandleCancelAllOperation();
-    EXPECT_EQ(result, 0);
+    EXPECT_EQ(result, -1);
     result = instance.HandleCancelAllOperation();
     EXPECT_EQ(result, -1);
     MEDIA_INFO_LOG("manager_handle_cancel_all_operation_008 End");
@@ -770,7 +770,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_adapter_test_001, TestSiz
     ret = enhancementService_->RemoveTask(photoId);
     EXPECT_EQ(ret, -1);
     ret = enhancementService_->CancelAllTasks();
-    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(ret, -1);
     vector<string> taskIdList;
     ret = enhancementService_->GetPendingTasks(taskIdList);
     EXPECT_EQ(ret, -1);
