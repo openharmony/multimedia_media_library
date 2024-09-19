@@ -84,11 +84,6 @@ const string DEFAULT_AUDIO_NAME = "AUD_";
 constexpr int32_t NO_DESENSITIZE = 3;
 const string PHOTO_ALBUM_URI_PREFIX = "file://media/PhotoAlbum/";
 
-constexpr int32_t ORIENTATION_0 = 1;
-constexpr int32_t ORIENTATION_90 = 6;
-constexpr int32_t ORIENTATION_180 = 3;
-constexpr int32_t ORIENTATION_270 = 8;
-
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
     int errCode = E_ERR;
@@ -986,65 +981,6 @@ int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
     values.PutString(MediaColumn::MEDIA_TITLE, newTitle);
     values.PutString(MediaColumn::MEDIA_NAME, newDisplayName);
     isNameChanged = true;
-    return E_OK;
-}
-
-static const std::unordered_map<int, int> ORIENTATION_MAP = {
-    {0, ORIENTATION_0},
-    {90, ORIENTATION_90},
-    {180, ORIENTATION_180},
-    {270, ORIENTATION_270}
-};
-
-int32_t MediaLibraryAssetOperations::UpdateAllExif(MediaLibraryCommand &cmd,
-    const shared_ptr<FileAsset> &fileAsset)
-{
-    if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("fileAsset is null");
-        return E_INVALID_VALUES;
-    }
-    MEDIA_INFO_LOG("Update image exlf information, DisplayName=%{private}s, Orientation=%{private}d",
-        fileAsset->GetDisplayName().c_str(), fileAsset->GetOrientation());
-    ValuesBucket &values = cmd.GetValueBucket();
-    ValueObject valueObject;
-    if (!(values.GetObject(PhotoColumn::PHOTO_ORIENTATION, valueObject))) {
-        return E_OK;
-    }
-    int32_t cmdOrientation;
-    valueObject.GetInt(cmdOrientation);
-
-    string exifStr = fileAsset->GetAllExif();
-    if (exifStr.size() == 0) {
-        return E_INVALID_VALUES;
-    }
-    nlohmann::json exifJson = nlohmann::json::parse(exifStr);
-    exifJson["Orientation"] = cmdOrientation;
-    exifStr = exifJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
-    values.PutString(PhotoColumn::PHOTO_ALL_EXIF, exifStr);
-
-    uint32_t err = 0;
-    SourceOptions opts;
-    string filePath = fileAsset->GetFilePath();
-    string extension = MediaFileUtils::GetExtensionFromPath(filePath);
-    opts.formatHint = "image/" + extension;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(filePath, opts, err);
-    if (err != 0 || imageSource == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain image exif, err = %{public}d", err);
-        return E_INVALID_VALUES;
-    }
-
-    auto imageSourceOrientation = ORIENTATION_MAP.find(cmdOrientation);
-    if (imageSourceOrientation == ORIENTATION_MAP.end()) {
-        MEDIA_ERR_LOG("imageSourceOrientation value is invalid.");
-        return E_INVALID_VALUES;
-    }
-
-    err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_ORIENTATION,
-        std::to_string(imageSourceOrientation->second), filePath);
-    if (err != 0) {
-        MEDIA_ERR_LOG("Modify image property allexif failed, err = %{public}d", err);
-        return E_INVALID_VALUES;
-    }
     return E_OK;
 }
 
