@@ -1182,6 +1182,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
             return DiscardCameraPhoto(cmd);
         case OperationType::SAVE_CAMERA_PHOTO:
             return SaveCameraPhoto(cmd);
+        case OperationType::SAVE_PICTURE:
+            return ForceSavePicture(cmd);
         default:
             return UpdateFileAsset(cmd);
     }
@@ -2187,6 +2189,25 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
         shared_ptr<FileAsset> fileAsset = GetFileAsset(cmd);
         return AddFiltersExecute(cmd, fileAsset, "");
     }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
+{
+    MEDIA_DEBUG_LOG("ForceSavePicture");
+    int fileType = std::atoi(cmd.GetQuerySetParam(IMAGE_FILE_TYPE).c_str());
+    int fileId = std::atoi(cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID).c_str());
+    string uri = cmd.GetQuerySetParam("uri");
+    string path = MediaFileUri::GetPathFromUri(uri, true);
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetId(fileId);
+    fileAsset->SetFilePath(path);
+    auto res = SavePicture(fileType, fileAsset);
+    if (res != E_OK) {
+        MEDIA_ERR_LOG("save picture fail");
+        return res;
+    }
+    MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId);
     return E_OK;
 }
 
