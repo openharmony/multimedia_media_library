@@ -503,14 +503,21 @@ static int32_t UpdateRelationship(NativeRdb::RdbStore *upgradeStore, const int32
     return E_OK;
 }
 
-static int32_t GenerateThumbnail(const int32_t &assetId, const std::string &targetPath, const std::string &displayName)
+static int32_t GenerateThumbnail(const int32_t &assetId, const std::string &targetPath,
+    shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     if (ThumbnailService::GetInstance() == nullptr) {
         return E_FAIL;
     }
-    std::string uri = "file://media/photo/" + to_string(assetId) + MediaFileUtils::GetExtraUri(displayName, targetPath);
+    std::string displayName = "";
+    GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_NAME, displayName);
+    int64_t dateTaken = 0;
+    GetLongValueFromResultSet(resultSet, MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
+    std::string uri = PHOTO_URI_PREFIX + to_string(assetId) +
+    MediaFileUtils::GetExtraUri(displayName, targetPath) +
+    "?api_version=10&date_taken=" + to_string(dateTaken);
     MEDIA_INFO_LOG("Begin generate thumbnail %{public}s, ", uri.c_str());
-    int32_t err = ThumbnailService::GetInstance()->CreateThumbnailFileScaned(uri, targetPath, true);
+    int32_t err = ThumbnailService::GetInstance()->CreateThumbnailFileScaned(uri, targetPath, false);
     if (err != E_SUCCESS) {
         MEDIA_ERR_LOG("ThumbnailService CreateThumbnailFileScaned failed : %{public}d", err);
     }
@@ -594,11 +601,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(NativeRdb::RdbStore *u
     if (err != E_OK) {
         return E_OK;
     }
-    std::string displayName = "";
-    ValueObject valueObject;
-    values.GetObject(MediaColumn::MEDIA_NAME, valueObject);
-    valueObject.GetString(displayName);
-    GenerateThumbnail(newAssetId, targetPath, displayName);
+    GenerateThumbnail(newAssetId, targetPath, resultSet);
     UpdateCoverInfoForAlbum(upgradeStore, assetId, ownerAlbumId, newAssetId, targetPath);
     return E_OK;
 }
