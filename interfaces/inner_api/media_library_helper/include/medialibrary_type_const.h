@@ -104,6 +104,7 @@ enum class CloudEnhancementAvailableType : int32_t {
     SUCCESS,
     EDIT,
     TRASH,
+    FINISH = 120,
 };
 
 enum class CEErrorCodeType : int32_t {
