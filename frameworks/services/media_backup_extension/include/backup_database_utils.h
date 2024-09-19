@@ -61,8 +61,10 @@ public:
     static int32_t QueryExternalImageCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
     static int32_t QueryExternalVideoCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
     static int32_t QueryExternalAudioCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
-    static void QueryGalleryDuplicateDataCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
-    static void QueryGalleryDuplicateDataInfo(std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
+    static void QueryGalleryDuplicateDataCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb, int32_t &count,
+        int32_t &total);
+    static std::shared_ptr<NativeRdb::ResultSet> QueryGalleryDuplicateDataInfo(
+        std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
     static std::shared_ptr<NativeRdb::ResultSet> GetQueryResultSet(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::string &querySql, const std::vector<std::string> &sqlArgs = {});
     static std::unordered_map<std::string, std::string> GetColumnInfoMap(
