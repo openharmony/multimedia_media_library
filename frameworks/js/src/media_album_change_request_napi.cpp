@@ -1077,7 +1077,7 @@ static void UpdateTabAnalysisImageFace(std::shared_ptr<PhotoAlbum>& photoAlbum,
 
     std::string updateUri = PAH_UPDATE_ANA_FACE;
     MediaLibraryNapiUtils::UriAppendKeyValue(updateUri, API_VERSION, std::to_string(MEDIA_API_VERSION_V10));
-    MediaLibraryNapiUtils::UriAppendKeyValue(updateUri, MEDIA_OPERN_KEYWORD, OPRN_DISMISS_ASSET);
+    MediaLibraryNapiUtils::UriAppendKeyValue(updateUri, MEDIA_OPERN_KEYWORD, UPDATE_DISMISS_ASSET);
     Uri updateFaceUri(updateUri);
 
     DataShare::DataShareValuesBucket updateValues;
