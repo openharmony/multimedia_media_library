@@ -135,7 +135,7 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
         }
     }
     assetInfo.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
-        static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
+        static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
     assetInfo.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
         static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT));
     assetInfo.PutInt(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, sourceFileId);
