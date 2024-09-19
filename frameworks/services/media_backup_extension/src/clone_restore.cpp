@@ -1169,6 +1169,10 @@ void CloneRestore::RestoreAudio(void)
         MEDIA_ERR_LOG("Prepare common column info failed");
         return;
     }
+    if (!MediaFileUtils::IsFileExists(RESTORE_MUSIC_LOCAL_DIR)) {
+        MEDIA_INFO_LOG("music dir is not exists!!!");
+        MediaFileUtils::CreateDirectory(RESTORE_MUSIC_LOCAL_DIR);
+    }
     int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
     MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
