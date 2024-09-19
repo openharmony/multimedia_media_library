@@ -47,6 +47,7 @@ group("test") {
     "unittest/medialibrary_queryperf_test:unittest",
     "unittest/medialibrary_rdb_callback_test:unittest",
     "unittest/medialibrary_rdb_test:unittest",
+    "unittest/medialibrary_restore_test:unittest",
     "unittest/medialibrary_scanner_db_test:unittest",
     "unittest/medialibrary_scanner_test:unittest",
     "unittest/medialibrary_search_test:unittest",
