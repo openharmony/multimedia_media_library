@@ -60,6 +60,7 @@ const std::string OPRN_PORTRAIT_IS_ME = "is_me";
 const std::string OPRN_PORTRAIT_ALBUM_NAME = "album_name";
 const std::string OPRN_PORTRAIT_MERGE_ALBUM = "merge_album";
 const std::string OPRN_DISMISS_ASSET = "dismiss_asset";
+const std::string UPDATE_DISMISS_ASSET = "dismiss_asset_update";
 const std::string OPRN_PORTRAIT_COVER_URI = "cover_uri";
 const std::string OPRN_SUBMIT_CACHE = "operation_submit_cache";
 const std::string OPRN_ADD_IMAGE = "add_image";
