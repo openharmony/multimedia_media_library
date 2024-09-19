@@ -955,7 +955,7 @@ static int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesB
     const DataShare::DataSharePredicates &predicates)
 {
     string keyOperation = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
-    if (!keyOperation.empty() && keyOperation != OPRN_DISMISS_ASSET) {
+    if (keyOperation.empty() || keyOperation != UPDATE_DISMISS_ASSET) {
         cmd.SetValueBucket(value);
         return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd);
     }
