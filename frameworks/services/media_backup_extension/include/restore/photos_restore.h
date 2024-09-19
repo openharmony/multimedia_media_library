@@ -136,7 +136,7 @@ private:
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             (1 = ? OR storage_id IN (0, 65537) ) \
         GROUP BY _data \
-        HAVING MIN(ROWID) \
+        HAVING MIN(gallery_media.ROWID) \
         ORDER BY _id ASC \
         LIMIT ?, ?;";
 };
