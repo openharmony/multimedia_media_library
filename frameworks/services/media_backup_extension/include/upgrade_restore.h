@@ -65,9 +65,9 @@ private:
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath) override;
     void AnalyzeSource() override;
-    void AnalyzeGallerySource();
     void AnalyzeGalleryErrorSource();
     void AnalyzeGalleryDuplicateData();
+    void AnalyzeGallerySource();
     void AnalyzeExternalSource();
     void HandleCloneBatch(int32_t offset, int32_t maxId);
     void UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int32_t &number);

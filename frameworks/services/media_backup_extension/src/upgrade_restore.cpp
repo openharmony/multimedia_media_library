@@ -364,10 +364,11 @@ void UpgradeRestore::AnalyzeGalleryDuplicateData()
         int32_t count = GetInt32Val("count", resultSet);
         int32_t localMediaId = GetInt32Val("local_media_id", resultSet);
         int32_t relativeBucketId = GetInt32Val("relative_bucket_id", resultSet);
-        int32_t storageId = GetStringVal("storage_id", resultSet);
+        int32_t storageId = GetInt32Val("storage_id", resultSet);
         MEDIA_INFO_LOG("Duplicate data: %{public}s, count: %{public}d, localMediaId: %{public}d, relativeBucketId: "
-            "%{public}d, storageId: %{public}d,", BackupFileUtils::GarbleFilePath(data, sceneCode_).c_str(), count,
-            localMediaId, relativeBucketId, storageId);
+            "%{public}d, storageId: %{public}d,", BackupFileUtils::GarbleFilePath(data, DEFAULT_RESTORE_ID).c_str(),
+            count, localMediaId, relativeBucketId, storageId);
+    }
 }
 
 void UpgradeRestore::AnalyzeGallerySource()
