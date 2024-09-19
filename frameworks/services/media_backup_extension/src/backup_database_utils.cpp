@@ -48,6 +48,8 @@ int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbSto
     config.SetBundleName(bundleName);
     config.SetReadConSize(CONNECT_SIZE);
     config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
+    config.SetHaMode(NativeRdb::HAMode::MANUAL_TRIGGER);
+    config.SetAllowRebuild(true);
     if (area != DEFAULT_AREA_VERSION) {
         config.SetArea(area);
     }

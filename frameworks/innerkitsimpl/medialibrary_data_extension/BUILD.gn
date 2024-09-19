@@ -226,6 +226,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_object_utils.cpp",
     "src/medialibrary_photo_operations.cpp",
     "src/medialibrary_rdbstore.cpp",
+    "src/medialibrary_restore.cpp",
     "src/medialibrary_search_operations.cpp",
     "src/medialibrary_smartalbum_map_operations.cpp",
     "src/medialibrary_smartalbum_operations.cpp",
@@ -307,6 +308,11 @@ ohos_shared_library("medialibrary_data_extension") {
   public_external_deps = [ "e2fsprogs:libext2_uuid" ]
 
   defines = []
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.filemanagement_dfs_service)) {
+    defines += [ "CLOUD_SYNC_MANAGER" ]
+    external_deps += [ "dfs_service:cloudsync_kit_inner" ]
+  }
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
   if (defined(medialibrary_mtp_enable)) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]

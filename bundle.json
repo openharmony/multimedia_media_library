@@ -86,7 +86,10 @@
       },
       "build": {
         "group_type": {
-          "base_group": [],
+          "base_group": [
+            "//foundation/multimedia/media_library/etc/param:media_library_para",
+            "//foundation/multimedia/media_library/etc/param:media_library_para_dac"
+          ],
           "fwk_group": [
             "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary",
             "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_js",
