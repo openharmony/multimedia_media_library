@@ -230,11 +230,11 @@ export class PhotoPickerComponent extends ViewPU {
         let o = e.dataType;
         if ('exceedMaxSelected' === o) {
             if (this.onExceedMaxSelected) {
-                this.onExceedMaxSelected(e['maxCountType']);
+                this.onExceedMaxSelected(e.maxCountType);
             }
         } else if ('selectedItemsDeleted' === o) {
             if (this.onSelectedItemsDeleted) {
-                this.onSelectedItemsDeleted(e['selectedItemInfos']);
+                this.onSelectedItemsDeleted(e.selectedItemInfos);
             }
         } else if ('currentAlbumDeleted' === o) {
             if (this.onCurrentAlbumDeleted) {

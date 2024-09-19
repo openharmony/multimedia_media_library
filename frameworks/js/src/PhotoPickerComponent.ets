@@ -165,14 +165,14 @@ export struct PhotoPickerComponent {
   }
 
   private handleOtherOnReceive(wantParam: Record<string, Object>): void {
-    let dataType = wantParam['dataType'] as string;
+    let dataType = wantParam.dataType as string;
     if (dataType === 'exceedMaxSelected') {
       if (this.onExceedMaxSelected) {
-        this.onExceedMaxSelected(wantParam['maxCountType'] as MaxCountType);
+        this.onExceedMaxSelected(wantParam.maxCountType as MaxCountType);
       }
     } else if (dataType === 'selectedItemsDeleted') {
       if (this.onSelectedItemsDeleted) {
-        this.onSelectedItemsDeleted(wantParam['selectedItemInfos'] as Array<ItemInfo>);
+        this.onSelectedItemsDeleted(wantParam.selectedItemInfos as Array<ItemInfo>);
       }
     } else if (dataType === 'currentAlbumDeleted') {
       if (this.onCurrentAlbumDeleted) {
