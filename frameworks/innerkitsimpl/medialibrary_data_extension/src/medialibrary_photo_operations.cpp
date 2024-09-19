@@ -1434,6 +1434,27 @@ int32_t MediaLibraryPhotoOperations::RevertToOrigin(MediaLibraryCommand &cmd)
     return errCode;
 }
 
+void ResetOcrInfo(const int32_t &fileId)
+{
+    auto mediaLibraryRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (mediaLibraryRdbStore == nullptr) {
+        MEDIA_ERR_LOG("MediaLibrary rdbStore is nullptr!");
+        return;
+    }
+    auto rdbStore = mediaLibraryRdbStore->GetRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr!");
+        return;
+    }
+    string sqlDeleteOcr = "DELETE FROM " + VISION_OCR_TABLE + " WHERE file_id = " + to_string(fileId) + ";" +
+        " UPDATE " + VISION_TOTAL_TABLE + " SET ocr = 0 WHERE file_id = " + to_string(fileId) + ";";
+
+    int ret = rdbStore->ExecuteSql(sqlDeleteOcr);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Update ocr info failed, ret = %{public}d, file id is %{public}d", ret, fileId);
+    }
+}
+
 int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset)
 {
     int32_t errCode = CheckFileAssetStatus(fileAsset);
@@ -1456,6 +1477,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update edit time, fileId=%{public}d",
         fileId);
 
+    ResetOcrInfo(fileId);
     if (MediaFileUtils::IsFileExists(editDataPath)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(editDataPath), E_HAS_FS_ERROR,
             "Failed to delete edit data, path:%{private}s", editDataPath.c_str());
@@ -1853,6 +1875,8 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
 
     errCode = UpdateEditTime(id, MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d", id);
+    
+    ResetOcrInfo(id);
     ScanFile(assetPath, false, true, true);
     UpdatePortraitAlbumCoverSatisfied(id);
     NotifyFormMap(id, assetPath, false);
