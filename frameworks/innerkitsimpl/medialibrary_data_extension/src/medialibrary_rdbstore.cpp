@@ -2348,10 +2348,10 @@ static void UpdatePhotosMdirtyTrigger(RdbStore& store)
 static void AddIndexForFileId(RdbStore& store)
 {
     const vector<string> sqls = {
-        "CREATE INDEX IF NOT EXISTS idx_fileid_for_search_index ON tab_analysis_search_index ( file_id )",
-        "CREATE INDEX IF NOT EXISTS idx_fileid_for_analysis_total ON tab_analysis_total ( file_id )",
-        "CREATE INDEX IF NOT EXISTS idx_fileid_for_photo_map ON PhotoMap ( map_asset )",
-        "CREATE INDEX IF NOT EXISTS idx_fileid_for_analysis_photo_map ON AnalysisPhotoMap ( map_asset )",
+        "CREATE INDEX IF NOT EXISTS idx_fileid_for_search_index ON tab_analysis_search_index ( file_id );",
+        "CREATE INDEX IF NOT EXISTS idx_fileid_for_analysis_total ON tab_analysis_total ( file_id );",
+        "CREATE INDEX IF NOT EXISTS idx_fileid_for_photo_map ON PhotoMap ( map_asset );",
+        "CREATE INDEX IF NOT EXISTS idx_fileid_for_analysis_photo_map ON AnalysisPhotoMap ( map_asset );",
     };
     MEDIA_INFO_LOG("start AddIndexForFileId");
     ExecSqls(sqls, store);
@@ -3430,7 +3430,7 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
     }
 
     if (oldVersion < VERSION_ADD_INDEX_FOR_FILEID) {
-        UpdatePhotosMdirtyTrigger(store);
+        AddIndexForFileId(store);
     }
 }
 
