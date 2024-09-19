@@ -121,17 +121,33 @@ PhotoAlbumDao::PhotoAlbumRowData PhotosRestore::FindAlbumInfo(const FileInfo &fi
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo;
     // Scenario 1, WHEN FileInfo is in /Pictures/Screenshots and Video type, THEN redirect to /Pictures/Screenrecords
-    if (fileInfo.lPath == AlbumPlugin::LPATH_SCREEN_SHOTS && fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
-        std::string lPath = AlbumPlugin::LPATH_SCREEN_RECORDS;
+    std::string lPathForScreenshot =
+        fileInfo.lPath.empty() ? this->ParseSourcePathToLPath(fileInfo.sourcePath) : fileInfo.lPath;
+    if (fileInfo.lPath.empty() && !lPathForScreenshot.empty()) {
+        MEDIA_INFO_LOG(
+            "Media_Restore: fix lPath of screenshots album."
+            "fileInfo.lPath: %{public}s, lPathForScreenshot: %{public}s, lowercase: %{public}s, Object: %{public}s",
+            fileInfo.lPath.c_str(),
+            lPathForScreenshot.c_str(),
+            this->ToLower(lPathForScreenshot).c_str(),
+            this->ToString(fileInfo).c_str());
+    }
+    if (this->ToLower(lPathForScreenshot) == this->ToLower(AlbumPlugin::LPATH_SCREEN_SHOTS) &&
+        fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
+        MEDIA_INFO_LOG("Media_Restore: screenshots redirect to screenrecords, fileInfo.lPath: %{public}s, "
+                       "lPathForScreenshot: %{public}s, Object: %{public}s",
+            fileInfo.lPath.c_str(),
+            lPathForScreenshot.c_str(),
+            this->ToString(fileInfo).c_str());
         albumInfo = this->BuildAlbumInfoOfRecorders();
         albumInfo = this->photoAlbumDaoPtr_->GetOrCreatePhotoAlbum(albumInfo);
         return albumInfo;
     }
     // Scenario 2, WHEN FileInfo is in hidden album, THEN override lPath to the folder in sourcePath.
     // Scenario 3, WHEN FileInfo is not belongs to any album, THEN override lPath to the folder in sourcePath.
-    if (fileInfo.lPath.empty() || fileInfo.lPath == GALLERT_HIDDEN_ALBUM) {
-        std::string lPath = this->ParseSourcePathToLPath(fileInfo.sourcePath);
-        albumInfo = this->BuildAlbumInfoByLPath(lPath);
+    if (fileInfo.lPath.empty() || this->ToLower(fileInfo.lPath) == this->ToLower(GALLERT_HIDDEN_ALBUM)) {
+        std::string lPathFromSourcePath = this->ParseSourcePathToLPath(fileInfo.sourcePath);
+        albumInfo = this->BuildAlbumInfoByLPath(lPathFromSourcePath);
         albumInfo = this->photoAlbumDaoPtr_->GetOrCreatePhotoAlbum(albumInfo);
         return albumInfo;
     }

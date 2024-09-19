@@ -19,6 +19,7 @@
 
 #include "backup_const.h"
 #include "rdb_store.h"
+#include "media_log.h"
 
 namespace OHOS::Media {
 class PhotosDao {
@@ -47,9 +48,11 @@ public:
     {
         PhotosRowData rowData;
         if (maxFileId <= 0) {
+            MEDIA_INFO_LOG("Media_Restore: maxFileId is ZERO: %{public}d", maxFileId);
             return rowData;
         }
         if (fileInfo.lPath.empty()) {
+            MEDIA_WARN_LOG("Media_Restore: lPath is empty, FindSameFileWithoutAlbum.");
             return this->FindSameFileWithoutAlbum(fileInfo, maxFileId);
         }
         return this->FindSameFileInAlbum(fileInfo, maxFileId);
