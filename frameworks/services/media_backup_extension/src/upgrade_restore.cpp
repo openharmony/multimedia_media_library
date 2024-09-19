@@ -334,6 +334,7 @@ void UpgradeRestore::RestorePhoto()
 void UpgradeRestore::AnalyzeSource()
 {
     MEDIA_INFO_LOG("start AnalyzeSource.");
+    AnalyzeGalleryErrorSource();
     AnalyzeGallerySource();
     AnalyzeExternalSource();
     MEDIA_INFO_LOG("end AnalyzeSource.");
@@ -345,8 +346,28 @@ void UpgradeRestore::AnalyzeGalleryErrorSource()
         MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
         return;
     }
-    BackupDatabaseUtils::QueryGalleryDuplicateDataCount(galleryRdb_);
-    BackupDatabaseUtils::QueryGalleryDuplicateDataInfo(galleryRdb_);
+    AnalyzeGalleryDuplicateData();
+}
+
+void UpgradeRestore::AnalyzeGalleryDuplicateData()
+{
+    int32_t count = 0;
+    int32_t total = 0;
+    BackupDatabaseUtils::QueryGalleryDuplicateDataCount(galleryRdb_, count, total);
+    MEDIA_INFO_LOG("Duplicate data count: %{public}d, total: %{public}d", count, total);
+    auto resultSet = BackupDatabaseUtils::QueryGalleryDuplicateDataInfo(galleryRdb_);
+    if (resultSet == nullptr) {
+        return;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string data = GetStringVal("_data", resultSet);
+        int32_t count = GetInt32Val("count", resultSet);
+        int32_t localMediaId = GetInt32Val("local_media_id", resultSet);
+        int32_t relativeBucketId = GetInt32Val("relative_bucket_id", resultSet);
+        int32_t storageId = GetStringVal("storage_id", resultSet);
+        MEDIA_INFO_LOG("Duplicate data: %{public}s, count: %{public}d, localMediaId: %{public}d, relativeBucketId: "
+            "%{public}d, storageId: %{public}d,", BackupFileUtils::GarbleFilePath(data, sceneCode_).c_str(), count,
+            localMediaId, relativeBucketId, storageId);
 }
 
 void UpgradeRestore::AnalyzeGallerySource()
