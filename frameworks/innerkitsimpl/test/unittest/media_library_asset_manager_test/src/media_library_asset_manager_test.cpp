@@ -33,6 +33,7 @@
 #include "media_asset_manager_capi.h"
 #include "oh_media_asset.h"
 #include "media_asset.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS;

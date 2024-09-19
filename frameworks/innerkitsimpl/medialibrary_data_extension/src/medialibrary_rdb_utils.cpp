@@ -1489,6 +1489,22 @@ int32_t MediaLibraryRdbUtils::UpdateOwnerAlbumId(const shared_ptr<RdbStore> &rdb
     return updateRows + changedRowsNoNeedCopy;
 }
 
+static void QueryAnalysisAlbumId(const shared_ptr<RdbStore> &rdbStore, const RdbPredicates predicates,
+    vector<string> &albumId)
+{
+    const vector<string> columns = {
+        "Distinct " + PhotoMap::ALBUM_ID
+    };
+    auto resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_WARN_LOG("Failed to Query Analysis Album ID");
+        return;
+    }
+    while (resultSet->GoToNextRow() == E_OK) {
+        albumId.push_back(to_string(GetIntValFromColumn(resultSet, 0)));
+    }
+}
+
 void MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(const shared_ptr<RdbStore> &rdbStore, const vector<string> &uris)
 {
     MediaLibraryTracer tracer;
@@ -1509,7 +1525,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(const shared_ptr<RdbStore> &
         if (idArgs.size() == ALBUM_UPDATE_THRESHOLD || i == uris.size() - 1) {
             RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
             predicates.In(PhotoMap::ASSET_ID, idArgs);
-            QueryAlbumId(rdbStore, predicates, albumIds);
+            QueryAnalysisAlbumId(rdbStore, predicates, albumIds);
             idArgs.clear();
         }
     }
@@ -1993,10 +2009,11 @@ int RefreshPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     vector<string> albumIds;
     int ret = GetAllRefreshAlbumIds(rdbStore, albumIds);
     if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("Failed to get refresh album ids");
         return ret;
     }
     if (albumIds.empty()) {
-        MEDIA_DEBUG_LOG("albumIds is empty");
+        MEDIA_INFO_LOG("albumIds is empty");
         return E_EMPTY_ALBUM_ID;
     }
     MEDIA_INFO_LOG("Start refreshing photo albums, number of albums to refresh: %{public}zu", albumIds.size());
@@ -2133,15 +2150,6 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbSt
     while (IsNeedRefreshAlbum()) {
         SetNeedRefreshAlbum(false);
         ret = RefreshPhotoAlbums(rdbStore, refreshProcessHandler);
-        if (ret == E_EMPTY_ALBUM_ID) {
-            ret = E_SUCCESS;
-            continue;
-        }
-        if (ret != E_SUCCESS) {
-            break;
-        }
-        vector<string> subtype = { std::to_string(PhotoAlbumSubType::SHOOTING_MODE) };
-        ret = RefreshAnalysisPhotoAlbums(rdbStore, refreshProcessHandler, subtype);
         if (ret == E_EMPTY_ALBUM_ID) {
             ret = E_SUCCESS;
             continue;

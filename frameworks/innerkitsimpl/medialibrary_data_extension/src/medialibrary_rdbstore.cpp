@@ -256,6 +256,16 @@ void MediaLibraryRdbStore::UpdateDateTakenIndex(RdbStore &store)
     MEDIA_INFO_LOG("update index for datetaken change end");
 }
 
+void MediaLibraryRdbStore::ClearAudios(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "DELETE From Audios",
+    };
+    MEDIA_INFO_LOG("clear audios start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("clear audios end");
+}
+
 int32_t MediaLibraryRdbStore::Init()
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
@@ -2874,8 +2884,7 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
     // Restore cloud sync
     MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
     ResetCloudCursorAfterInitFinish();
-    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
-    RefreshAlbums(true);
+    MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
     MEDIA_INFO_LOG("ALBUM_FUSE: Processing old data start end, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
 }

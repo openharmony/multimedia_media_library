@@ -196,11 +196,12 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
         return;
     }
     MultiStagesCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), isEdited);
-    MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
 
     // 2. 更新数据库 photoQuality 到高质量
     int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
     UpdatePhotoQuality(imageId);
+
+    MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
 
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId);
     MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS));
@@ -288,7 +289,6 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
             static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL));
         return;
     }
-    MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
 
     // 2. 更新数据库 photoQuality 到高质量
     UpdatePhotoQuality(imageId);
@@ -297,6 +297,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
         UpdateCEAvailable(imageId);
     }
 
+    MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
     NotifyIfTempFile(resultSet);
 
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId);

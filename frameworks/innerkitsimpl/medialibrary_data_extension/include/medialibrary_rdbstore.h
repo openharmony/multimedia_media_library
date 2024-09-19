@@ -88,6 +88,7 @@ public:
     EXPORT static void UpdateReadyOnThumbnailUpgrade(RdbStore &store);
     EXPORT static void UpdateDateTakenToMillionSecond(RdbStore &store);
     EXPORT static void UpdateDateTakenIndex(RdbStore &store);
+    EXPORT static void ClearAudios(RdbStore &store);
 
 private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);

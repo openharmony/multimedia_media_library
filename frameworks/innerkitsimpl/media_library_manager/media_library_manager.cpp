@@ -50,6 +50,7 @@
 #include "system_ability_definition.h"
 #include "thumbnail_const.h"
 #include "unique_fd.h"
+#include "userfilemgr_uri.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"

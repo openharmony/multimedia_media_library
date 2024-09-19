@@ -223,9 +223,11 @@ int32_t UpgradeRestore::ParseXml(string path)
 
 void UpgradeRestore::RestoreAudio(void)
 {
-    if (sceneCode_ == UPGRADE_RESTORE_ID) {
-        RestoreAudioFromExternal();
-    } else {
+    if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
+        if (!MediaFileUtils::IsFileExists(RESTORE_MUSIC_LOCAL_DIR)) {
+            MEDIA_INFO_LOG("music dir is not exists!!!");
+            MediaFileUtils::CreateDirectory(RESTORE_MUSIC_LOCAL_DIR);
+        }
         RestoreAudioFromFile();
     }
     (void)NativeRdb::RdbHelper::DeleteRdbStore(externalDbPath_);
@@ -243,27 +245,10 @@ void UpgradeRestore::RestoreAudioFromFile()
     ffrt::wait();
 }
 
-void UpgradeRestore::RestoreAudioFromExternal(void)
-{
-    MEDIA_INFO_LOG("start restore audio from external");
-    int32_t totalNumber = BackupDatabaseUtils::QueryInt(externalRdb_, QUERY_AUDIO_COUNT, CUSTOM_COUNT);
-    MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset });
-    }
-    ffrt::wait();
-}
-
 void UpgradeRestore::RestoreAudioBatch(int32_t offset)
 {
     MEDIA_INFO_LOG("start restore audio from external, offset: %{public}d", offset);
-    std::vector<FileInfo> infos;
-    if (sceneCode_ == UPGRADE_RESTORE_ID) {
-        infos = QueryAudioFileInfosFromExternal(offset);
-    } else {
-        infos = QueryAudioFileInfosFromAudio(offset);
-    }
-
+    std::vector<FileInfo> infos = QueryAudioFileInfosFromAudio(offset);
     InsertAudio(sceneCode_, infos);
 }
 
@@ -309,30 +294,6 @@ bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::
     return true;
 }
 
-std::vector<FileInfo> UpgradeRestore::QueryAudioFileInfosFromExternal(int32_t offset)
-{
-    std::vector<FileInfo> result;
-    result.reserve(QUERY_COUNT);
-    if (externalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("externalRdb_ is nullptr, Maybe init failed.");
-        return result;
-    }
-    std::string queryAllAudioByCount = QUERY_ALL_AUDIOS_FROM_EXTERNAL + "limit " + std::to_string(offset) + ", " +
-        std::to_string(QUERY_COUNT);
-    auto resultSet = externalRdb_->QuerySql(queryAllAudioByCount);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return result;
-    }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        FileInfo tmpInfo;
-        if (ParseResultSetFromExternal(resultSet, tmpInfo, DUAL_MEDIA_TYPE::AUDIO_TYPE)) {
-            result.emplace_back(tmpInfo);
-        }
-    }
-    return result;
-}
-
 void UpgradeRestore::RestorePhoto()
 {
     AnalyzeSource();
@@ -373,9 +334,41 @@ void UpgradeRestore::RestorePhoto()
 void UpgradeRestore::AnalyzeSource()
 {
     MEDIA_INFO_LOG("start AnalyzeSource.");
+    AnalyzeGalleryErrorSource();
     AnalyzeGallerySource();
     AnalyzeExternalSource();
     MEDIA_INFO_LOG("end AnalyzeSource.");
+}
+
+void UpgradeRestore::AnalyzeGalleryErrorSource()
+{
+    if (galleryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
+        return;
+    }
+    AnalyzeGalleryDuplicateData();
+}
+
+void UpgradeRestore::AnalyzeGalleryDuplicateData()
+{
+    int32_t count = 0;
+    int32_t total = 0;
+    BackupDatabaseUtils::QueryGalleryDuplicateDataCount(galleryRdb_, count, total);
+    MEDIA_INFO_LOG("Duplicate data count: %{public}d, total: %{public}d", count, total);
+    auto resultSet = BackupDatabaseUtils::QueryGalleryDuplicateDataInfo(galleryRdb_);
+    if (resultSet == nullptr) {
+        return;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string data = GetStringVal("_data", resultSet);
+        int32_t count = GetInt32Val("count", resultSet);
+        int32_t localMediaId = GetInt32Val("local_media_id", resultSet);
+        int32_t relativeBucketId = GetInt32Val("relative_bucket_id", resultSet);
+        int32_t storageId = GetInt32Val("storage_id", resultSet);
+        MEDIA_INFO_LOG("Duplicate data: %{public}s, count: %{public}d, localMediaId: %{public}d, relativeBucketId: "
+            "%{public}d, storageId: %{public}d,", BackupFileUtils::GarbleFilePath(data, DEFAULT_RESTORE_ID).c_str(),
+            count, localMediaId, relativeBucketId, storageId);
+    }
 }
 
 void UpgradeRestore::AnalyzeGallerySource()

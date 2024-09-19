@@ -30,6 +30,7 @@
 #ifdef MEDIALIBRARY_SECURITY_OPEN
 #include "sec_comp_kit.h"
 #endif
+#include "userfilemgr_uri.h"
 
 using namespace std;
 
