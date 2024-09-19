@@ -1131,6 +1131,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoMap::CREATE_TABLE,
     PhotoMap::CREATE_NEW_TRIGGER,
     PhotoMap::CREATE_DELETE_TRIGGER,
+    PhotoMap::CREATE_IDX_FILEID_FOR_PHOTO_MAP,
     TriggerDeleteAlbumClearMap(),
     TriggerDeletePhotoClearMap(),
     CREATE_TAB_ANALYSIS_OCR,
@@ -1172,6 +1173,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_KNOWLEDGE_INDEX,
     CREATE_CITY_NAME_INDEX,
     CREATE_LOCATION_KEY_INDEX,
+    CREATE_IDX_FILEID_FOR_ANALYSIS_TOTAL,
+    CREATE_IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP,
 
     // search
     CREATE_SEARCH_TOTAL_TABLE,
@@ -1179,6 +1182,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_SEARCH_UPDATE_TRIGGER,
     CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
     CREATE_SEARCH_DELETE_TRIGGER,
+    CREATE_IDX_FILEID_FOR_SEARCH_INDEX,
     CREATE_ALBUM_MAP_INSERT_SEARCH_TRIGGER,
     CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER,
     CREATE_ALBUM_UPDATE_SEARCH_TRIGGER,
@@ -2259,6 +2263,18 @@ static void UpdatePhotosMdirtyTrigger(RdbStore& store)
     }
 }
 
+static void AddIndexForFileId(RdbStore& store)
+{
+    const vector<string> sqls = {
+        CREATE_IDX_FILEID_FOR_SEARCH_INDEX,
+        CREATE_IDX_FILEID_FOR_ANALYSIS_TOTAL,
+        PhotoMap::CREATE_IDX_FILEID_FOR_PHOTO_MAP,
+        CREATE_IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP,
+    };
+    MEDIA_INFO_LOG("start AddIndexForFileId");
+    ExecSqls(sqls, store);
+}
+
 static void UpdateAlbumRefreshTable(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2964,6 +2980,13 @@ static void AddPortraitCoverSelectionColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_INDEX_FOR_FILEID) {
+        AddIndexForFileId(store);
+    }
+}
+
 static void UpgradeExtensionPart1(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
@@ -3029,6 +3052,8 @@ static void UpgradeExtensionPart1(RdbStore &store, int32_t oldVersion)
     }
 
     // VERSION_UPDATE_BURST_DIRTY = 98 move to UpgradeRdbStoreAsync(), avoid to cost for long time.
+
+    UpgradeExtensionPart2(store, oldVersion);
 }
 
 static void CreatePhotosExtTable(RdbStore &store)

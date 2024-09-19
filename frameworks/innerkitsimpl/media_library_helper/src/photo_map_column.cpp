@@ -57,4 +57,7 @@ const string PhotoMap::CREATE_DELETE_TRIGGER =
     to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) + " AND " + "old." +
     PhotoMap::DIRTY + " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
     "; SELECT cloud_sync_func(); END;";
+
+const string PhotoMap::CREATE_IDX_FILEID_FOR_PHOTO_MAP = CreateIndex() +
+    "idx_fileid_for_photo_map ON PhotoMap ( map_asset );";
 } // namespace OHOS::Media
