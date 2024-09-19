@@ -287,6 +287,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_ENHANCEMENT_SYNC, OperationType::ENHANCEMENT_SYNC},
         { OPRN_ENHANCEMENT_QUERY, OperationType::ENHANCEMENT_QUERY},
         { OPRN_ENHANCEMENT_GET_PAIR, OperationType::ENHANCEMENT_GET_PAIR},
+        { OPRN_SAVE_PICTURE, OperationType::SAVE_PICTURE},
     };
     return oprnTypeMap;
 }

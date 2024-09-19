@@ -120,6 +120,7 @@ private:
     static void ProcessEditedEffectMode(MediaLibraryCommand& cmd);
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static std::shared_ptr<FileAsset> GetFileAsset(MediaLibraryCommand &cmd);
+    static int32_t ForceSavePicture(MediaLibraryCommand& cmd);
 private:
     static std::mutex saveCameraPhotoMutex_;
     static std::condition_variable condition_;
