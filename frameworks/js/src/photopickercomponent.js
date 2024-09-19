@@ -41,6 +41,9 @@ export class PhotoPickerComponent extends ViewPU {
         this.onExitPhotoBrowser = void 0;
         this.onPickerControllerReady = void 0;
         this.onPhotoBrowserChanged = void 0;
+        this.onSelectedItemsDeleted = void 0;
+        this.onExceedMaxSelected = void 0;
+        this.onCurrentAlbumDeleted = void 0;
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
         this.setInitiallyProvidedValue(o);
@@ -56,6 +59,9 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.onExitPhotoBrowser && (this.onExitPhotoBrowser = e.onExitPhotoBrowser);
         void 0 !== e.onPhotoBrowserChanged && (this.onPhotoBrowserChanged = e.onPhotoBrowserChanged);
         void 0 !== e.onPickerControllerReady && (this.onPickerControllerReady = e.onPickerControllerReady);
+        void 0 !== e.onSelectedItemsDeleted && (this.onSelectedItemsDeleted = e.onSelectedItemsDeleted);
+        void 0 !== e.onExceedMaxSelected && (this.onExceedMaxSelected = e.onExceedMaxSelected);
+        void 0 !== e.onCurrentAlbumDeleted && (this.onCurrentAlbumDeleted = e.onCurrentAlbumDeleted);
         this.__pickerController.set(e.pickerController);
         void 0 !== e.proxy && (this.proxy = e.proxy);
     }
@@ -214,9 +220,29 @@ export class PhotoPickerComponent extends ViewPU {
         } else if ('onPhotoBrowserChanged' === o) {
             this.handlePhotoBrowserChange(e);
         } else {
+            this.handleOtherOnReceive(e);
             console.info('PhotoPickerComponent onReceive: other case');
         }
         console.info('PhotoPickerComponent onReceive' + JSON.stringify(e));
+    }
+
+    handleOtherOnReceive(e) {
+        let o = e.dataType;
+        if ('exceedMaxSelected' === o) {
+            if (this.onExceedMaxSelected) {
+                this.onExceedMaxSelected(e['maxCountType']);
+            }
+        } else if ('selectedItemsDeleted' === o) {
+            if (this.onSelectedItemsDeleted) {
+                this.onSelectedItemsDeleted(e['selectedItemInfos']);
+            }
+        } else if ('currentAlbumDeleted' === o) {
+            if (this.onCurrentAlbumDeleted) {
+                this.onCurrentAlbumDeleted();
+            }
+        } else {
+            console.info('PhotoPickerComponent onReceive: other case');
+        }
     }
 
     handleSelectOrDeselect(e) {
