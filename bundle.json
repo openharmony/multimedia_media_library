@@ -139,20 +139,11 @@
                   "media_access_helper_capi.h",
                   "media_asset_capi.h",
                   "media_asset_change_request_capi.h",
-                  "media_asset_manager_capi.h"
+                  "media_asset_manager_capi.h",
+                  "moving_photo_capi.h"
                 ]
               },
               "name": "//foundation/multimedia/media_library/interfaces/kits/c:native_media_asset_manager"
-            },
-            {
-              "header": {
-                "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
-                "header_files": [
-                  "media_asset_impl.h",
-                  "media_asset_change_request_impl.h"
-                ]
-              },
-              "name": "//foundation/multimedia/media_library/frameworks/native/c_api:native_media_library_ndk"
             },
             {
               "header": {

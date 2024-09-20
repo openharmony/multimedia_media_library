@@ -16,24 +16,24 @@
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_ASSET_HELPER_H
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_ASSET_HELPER_H
 
-#include "media_photo_asset_proxy.h"
-#include "media_asset_impl.h"
+#include "media_asset_base_capi.h"
 
 namespace OHOS {
 namespace Media {
 
 class MediaAssetHelper {
 public:
-    MediaAssetHelper() = default;
-    ~MediaAssetHelper() = default;
-    static MediaAssetHelper* GetInstance();
-    OH_MediaAsset* GetMediaAsset(std::string uri, int32_t cameraShotType, std::string burstKey);
+    virtual ~MediaAssetHelper() = default;
 
+    virtual OH_MediaAsset* GetMediaAsset(std::string uri, int32_t cameraShotType, std::string burstKey) = 0;
+};
+
+class __attribute__((visibility("default"))) MediaAssetHelperFactory {
+public:
+    static std::shared_ptr<MediaAssetHelper> CreateMediaAssetHelper();
 private:
-    void InitFileAsset(std::shared_ptr<FileAsset> fileAsset);
-    std::shared_ptr<DataShare::DataShareResultSet> QueryFileAsset(int32_t mediaId);
-    void UpdateFileAsset(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
-        std::shared_ptr<FileAsset> fileAsset);
+    MediaAssetHelperFactory() = default;
+    ~MediaAssetHelperFactory() = default;
 };
 
 } // Media
