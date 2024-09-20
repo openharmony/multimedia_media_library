@@ -25,6 +25,8 @@ const std::string OCR_VERSION = "ocr_version";
 const std::string OCR_TEXT_MSG = "ocr_text_msg";
 const std::string OCR_WIDTH = "width";
 const std::string OCR_HEIGHT = "height";
+const std::string OCR_CARD_TEXT = "ocr_card_text";
+const std::string OCR_CARD_TEXT_MSG = "ocr_card_text_msg";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_OCR_COLUMN_H
