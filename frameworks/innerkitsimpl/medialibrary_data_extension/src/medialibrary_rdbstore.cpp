@@ -60,6 +60,7 @@
 #include "result_set_utils.h"
 #include "source_album.h"
 #include "vision_column.h"
+#include "vision_ocr_column.h"
 #include "form_map.h"
 #include "search_column.h"
 #include "shooting_mode_column.h"
@@ -3371,6 +3372,16 @@ static void AddVideoFaceTable(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddOCRCardColumns(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_OCR_TABLE + " ADD COLUMN " + OCR_CARD_TEXT + " TEXT",
+        "ALTER TABLE " + VISION_OCR_TABLE + " ADD COLUMN " + OCR_CARD_TEXT_MSG + " TEXT",
+    };
+    MEDIA_INFO_LOG("Add video face table start");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_UPDATE_PHOTO_INDEX_FOR_ALBUM_COUNT_COVER) {
@@ -3431,6 +3442,10 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_INDEX_FOR_FILEID) {
         AddIndexForFileId(store);
+    }
+
+    if (oldVersion < VERSION_ADD_OCR_CARD_COLUMNS) {
+        AddOCRCardColumns(store);
     }
 }
 
