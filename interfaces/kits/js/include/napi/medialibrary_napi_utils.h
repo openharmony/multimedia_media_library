@@ -291,7 +291,7 @@ public:
             {PhotoColumn::PHOTO_SUBTYPE, {TYPE_INT32, "subtype"}},
             {PhotoColumn::MOVING_PHOTO_EFFECT_MODE, {TYPE_INT32, "movingPhotoEffectMode"}},
             {PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, {TYPE_INT32, "dynamicRangeType"}},
-            {PhotoColumn::PHOTO_THUMBNAIL_READY, {TYPE_INT64, "thumbnailReady"}},
+            {PhotoColumn::PHOTO_THUMBNAIL_READY, {TYPE_INT64, "thumbnailModifiedMs"}},
             {PhotoColumn::PHOTO_LCD_SIZE, {TYPE_STRING, "lcdSize"}},
             {PhotoColumn::PHOTO_THUMB_SIZE, {TYPE_STRING, "thmSize"}},
             {MEDIA_DATA_DB_COUNT, {TYPE_INT32, "count"}},
