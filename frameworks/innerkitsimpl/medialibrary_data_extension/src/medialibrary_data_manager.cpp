@@ -1884,6 +1884,12 @@ void MediaLibraryDataManager::SetStartupParameter()
     } else {
         MEDIA_INFO_LOG("Set startup success: %{public}s", to_string(uid).c_str());
     }
+    // init backup param
+    std::string backupParam = "persist.multimedia.medialibrary.rdb_switch_status";
+    ret = system::SetParameter(backupParam, "0");
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Failed to set parameter backup, ret:%{public}d", ret);
+    }
     std::string nextFlag = "persist.update.hmos_to_next_flag";
     auto isUpgrade = system::GetParameter(nextFlag, "");
     MEDIA_INFO_LOG("isUpgrade:%{public}s", isUpgrade.c_str());
@@ -1896,12 +1902,6 @@ void MediaLibraryDataManager::SetStartupParameter()
     bool retFlag = system::SetParameter(CLONE_FLAG, currentTime);
     if (!retFlag) {
         MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
-    }
-    // init backup param
-    std::string backupParam = "persist.multimedia.medialibrary.rdb_switch_status";
-    ret = system::SetParameter(backupParam, "0");
-    if (ret != 0) {
-        MEDIA_ERR_LOG("Failed to set parameter backup, ret:%{public}d", ret);
     }
 }
 
