@@ -172,7 +172,7 @@ export struct PhotoPickerComponent {
       }
     } else if (dataType === 'selectedItemsDeleted') {
       if (this.onSelectedItemsDeleted) {
-        this.onSelectedItemsDeleted(wantParam.selectedItemInfos as Array<ItemInfo>);
+        this.onSelectedItemsDeleted(wantParam.selectedItemInfos as Array<BaseItemInfo>);
       }
     } else if (dataType === 'currentAlbumDeleted') {
       if (this.onCurrentAlbumDeleted) {
@@ -280,9 +280,9 @@ export struct PhotoPickerComponent {
   }
 }
 
-export type ItemsDeletedCallback = (itemInfos: Array<ItemInfo>) => void;
+export type ItemsDeletedCallback = (baseItemInfos: Array<BaseItemInfo>) => void;
 
-export type ExceedMaxSelectedCallback = (maxCountType: MaxCountType) => void;
+export type ExceedMaxSelectedCallback = (exceedMaxCountType: MaxCountType) => void;
 
 export type CurrentAlbumDeletedCallback = () => void;
 
