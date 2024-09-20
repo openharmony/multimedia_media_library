@@ -726,7 +726,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNotMatchedDataMigration(NativeRdb::R
         handledCount++;
         HandleRestData(upgradeStore, it->first, it->second, handledCount);
     }
-    MEDIA_INFO_LOG("handled %{public}d items", handledCount);
+    MEDIA_INFO_LOG("handled %{public}d not matched items", handledCount);
     // Put no relationship asset into other album
     HandleNoOwnerData(upgradeStore);
     return E_OK;
@@ -1021,6 +1021,7 @@ int32_t MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(NativeRdb::R
     // Keep dual hidden assets dirty state synced, let cloudsync handle compensating for hidden flags
     KeepHiddenAlbumAssetSynced(upgradeStore);
     RemediateErrorSourceAlbumSubType(upgradeStore);
+    HandleMissMatchScreenRecord(upgradeStore);
     MEDIA_INFO_LOG("End rebuild album table and compensate loss value");
     return E_OK;
 }
@@ -1298,6 +1299,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(NativeRdb::RdbStor
 
 static int32_t TransferMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
 {
+    MEDIA_INFO_LOG("Transfer miss matched screeRecord begin");
     const std::string QUERY_SCREEN_RECORD_ALBUM =
         "SELECT album_id FROM PhotoAlbum WHERE bundle_name ='com.huawei.hmos.screenrecorder' AND dirty <>4";
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_SCREEN_RECORD_ALBUM);
@@ -1319,13 +1321,14 @@ static int32_t TransferMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
         "UPDATE Photos SET owner_album_id = "
         "(SELECT album_id FROM PhotoAlbum WHERE bundle_name ='com.huawei.hmos.screenrecorder' AND dirty <>4) "
         "WHERE owner_album_id = (SELECT album_id FROM PhotoAlbum WHERE "
-        "bundle_name ='com.huawei.hmos.screenshot' AND dirty <>4) AND media_type =2";
+        "bundle_name ='com.huawei.hmos.screenshot' AND dirty <>'4' limit 1) AND media_type =2";
     int32_t err = upgradeStore->ExecuteSql(TRANSFER_MISS_MATCH_ASSET);
         if (err != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s",
                 TRANSFER_MISS_MATCH_ASSET.c_str());
             return err;
     }
+    MEDIA_INFO_LOG("Transfer miss matched screenRecord end");
     return E_OK;
 }
  
@@ -1396,7 +1399,6 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     HandleNoOwnerData(upgradeStore);
     // Clean duplicative album and rebuild expired album
     RebuildAlbumAndFillCloudValue(upgradeStore);
-    HandleMissMatchScreenRecord(upgradeStore);
     SetParameterToStartSync();
     RefreshAllAlbums();
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
