@@ -147,6 +147,7 @@ void MediaLibraryRestore::DoRdbBackup()
         MEDIA_INFO_LOG("DoRdbBackup: Call CloudSync end");
         if (!isBackuping_.load()) {
             ResetHAModeSwitchStatus();
+            StartCloudSync();
             MEDIA_INFO_LOG("DoRdbBackup: isbackuping fasle, return");
             return;
         }
@@ -154,12 +155,18 @@ void MediaLibraryRestore::DoRdbBackup()
         auto rdb = MediaLibraryDataManager::GetInstance()->rdbStore_;
         if (rdb == nullptr) {
             ResetHAModeSwitchStatus();
+#ifdef CLOUD_SYNC_MANAGER
+            StartCloudSync();
+#endif
             MEDIA_ERR_LOG("DoRdbBackup: rdbStore is nullptr");
             return;
         }
 
         if (isInterrupting_.load() || !isBackuping_.load()) {
             ResetHAModeSwitchStatus();
+#ifdef CLOUD_SYNC_MANAGER
+            StartCloudSync();
+#endif
             MEDIA_INFO_LOG("DoRdbBackup: Interrupt or isbackuping false, return");
             return;
         }
