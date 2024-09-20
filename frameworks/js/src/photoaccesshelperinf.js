@@ -342,11 +342,14 @@ async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfig
 
   let labelId = bundleInfo.appInfo.labelId;
   console.info('photoAccessHelper labelId is ' + appId + '.');
+  let appName = '此应用';
 
   try {
-    let appName = await gContext.resourceManager.getStringValue(labelId);
+    appName = await gContext.resourceManager.getStringValue(labelId);
+  } catch (error) {
+    return errorResult(new BusinessError(error.message, error.code), null);
+  } finally {
     console.info('photoAccessHelper appName is ' + appName + '.');
-
     // only promise type
     return new Promise((resolve, reject) => {
       photoAccessHelper.showAssetsCreationDialog(getContext(this), srcFileUris, photoCreationConfigs, bundleName,
@@ -354,8 +357,6 @@ async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfig
           showAssetsCreationDialogResult(result, reject, resolve);
       });
     });
-  } catch (error) {
-    return errorResult(new BusinessError(error.message, error.code), null);
   }
 }
 
