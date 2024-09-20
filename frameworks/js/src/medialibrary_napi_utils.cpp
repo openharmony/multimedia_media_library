@@ -1221,7 +1221,7 @@ string MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(shared_ptr<DataShare::Da
         jsonArray.push_back(jsonObject);
     }
  
-    return jsonArray.dump();
+    return jsonArray.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
 }
 
 string MediaLibraryNapiUtils::GetStringValueByColumn(shared_ptr<DataShare::DataShareResultSet> resultSet,
