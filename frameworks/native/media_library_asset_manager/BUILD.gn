@@ -18,6 +18,11 @@ ohos_shared_library("media_library_asset_manager") {
   install_enable = true
 
   sources = [
+    "${MEDIALIB_NATIVE_PATH}/c_api/media_asset_change_request_impl.cpp",
+    "${MEDIALIB_NATIVE_PATH}/c_api/media_asset_helper_impl.cpp",
+    "${MEDIALIB_NATIVE_PATH}/c_api/media_asset_impl.cpp",
+    "${MEDIALIB_NATIVE_PATH}/c_api/media_userfile_client.cpp",
+    "${MEDIALIB_NATIVE_PATH}/c_api/moving_photo_impl.cpp",
     "./src/media_asset_data_handler_capi.cpp",
     "./src/media_asset_manager_impl.cpp",
   ]
@@ -27,7 +32,6 @@ ohos_shared_library("media_library_asset_manager") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
-    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/c",
     "${MEDIALIB_NATIVE_PATH}/c_api/common",
   ]
@@ -36,15 +40,19 @@ ohos_shared_library("media_library_asset_manager") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/media_library_manager:media_library_manager",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-    "${MEDIALIB_NATIVE_PATH}/c_api:native_media_library_ndk",
+    "${MEDIALIB_UTILS_PATH}:permission_utils",
   ]
 
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
+    "ability_runtime:app_context",
+    "access_token:libaccesstoken_sdk",
     "access_token:libnativetoken_shared",
+    "access_token:libprivacy_sdk",
     "access_token:libtokensetproc_shared",
     "app_file_service:fileuri_native",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
@@ -57,6 +65,7 @@ ohos_shared_library("media_library_asset_manager") {
     "ipc:ipc_core",
     "napi:ace_napi",
     "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
     "resource_management:librawfile",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",

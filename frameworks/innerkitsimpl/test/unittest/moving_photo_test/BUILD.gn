@@ -17,11 +17,11 @@ import("//foundation/multimedia/media_library/media_library.gni")
 group("unittest") {
   testonly = true
 
-  deps = [ ":media_asset_test" ]
+  deps = [ ":moving_photo_test" ]
 }
 
-ohos_unittest("media_asset_test") {
-  module_out_path = "media_library/media_asset_test"
+ohos_unittest("moving_photo_test") {
+  module_out_path = "media_library/moving_photo_test"
 
   include_dirs = [
     "./include",
@@ -37,12 +37,15 @@ ohos_unittest("media_asset_test") {
     "//third_party/json/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/native/include",
     "${MEDIALIB_IMAGE_FRAMEWORK_PATH}/interfaces/kits/native/include/image",
+    "${MEDIALIB_ROOT_PATH}/frameworks/services/media_thumbnail/include",
+    "${MEDIALIB_ROOT_PATH}/interfaces/inner_api/media_library_helper/include",
     "${MEDIALIB_NATIVE_PATH}/c_api/common",
+    "${MEDIALIB_ROOT_PATH}/frameworks/innerkitsimpl/media_library_helper/include",
   ]
 
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
-    "./src/media_asset_test.cpp",
+    "./src/moving_photo_test.cpp",
   ]
 
   deps = [

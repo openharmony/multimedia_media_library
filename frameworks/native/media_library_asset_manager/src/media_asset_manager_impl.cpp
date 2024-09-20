@@ -34,7 +34,9 @@
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_tracer.h"
 #include "file_asset.h"
-#include "media_asset_impl.h"
+#include "oh_media_asset.h"
+#include "oh_moving_photo.h"
+#include "moving_photo.h"
 #include "image_source_native.h"
 #include "media_userfile_client.h"
 
@@ -223,6 +225,11 @@ static AssetHandler* InsertDataHandler(NativeNotifyMode notifyMode,
             asyncContext->onRequestImageDataPreparedHandler, asyncContext->returnDataType, asyncContext->requestUri,
             asyncContext->destUri, asyncContext->requestOptions.sourceMode);
         mediaAssetDataHandler->SetPhotoQuality(static_cast<int32_t>(asyncContext->photoQuality));
+    } else if (asyncContext->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO) {
+        mediaAssetDataHandler = make_shared<CapiMediaAssetDataHandler>(
+            asyncContext->onRequestMovingPhotoDataPreparedHandler, asyncContext->returnDataType,
+            asyncContext->requestUri, asyncContext->destUri, asyncContext->requestOptions.sourceMode);
+        mediaAssetDataHandler->SetPhotoQuality(static_cast<int32_t>(asyncContext->photoQuality));
     } else {
         mediaAssetDataHandler = make_shared<CapiMediaAssetDataHandler>(
         asyncContext->onDataPreparedHandler, asyncContext->returnDataType, asyncContext->requestUri,
@@ -328,6 +335,20 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
             auto status = imageSource != nullptr ? MEDIA_LIBRARY_OK : MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
             dataHandler->onRequestImageDataPreparedHandler_(status, requestId, quality,
                 MEDIA_LIBRARY_COMPRESSED, imageSource);
+        }
+    } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_MOVING_PHOTO) {
+        MediaLibrary_RequestId requestId;
+        strncpy_s(requestId.requestId, UUID_STR_LENGTH, assetHandler->requestId.c_str(), UUID_STR_LENGTH);
+        if (dataHandler->onRequestMovingPhotoDataPreparedHandler_ != nullptr) {
+            int32_t photoQuality = static_cast<int32_t>(MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS);
+            MediaLibrary_MediaQuality quality = (dataHandler->GetPhotoQuality() == photoQuality)
+                ? MEDIA_LIBRARY_QUALITY_FULL
+                : MEDIA_LIBRARY_QUALITY_FAST;
+            auto movingPhotoImpl = MovingPhotoFactory::CreateMovingPhoto(assetHandler->requestUri);
+            auto movingPhoto = new OH_MovingPhoto(movingPhotoImpl);
+            auto status = movingPhoto != nullptr ? MEDIA_LIBRARY_OK : MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+            dataHandler->onRequestMovingPhotoDataPreparedHandler_(status, requestId, quality,
+                MEDIA_LIBRARY_COMPRESSED, movingPhoto);
         }
     } else {
         MEDIA_ERR_LOG("Return mode type invalid %{public}d", dataHandler->GetReturnDataType());
@@ -474,7 +495,7 @@ MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeRequestImageSource(OH_MediaA
     OH_MediaLibrary_OnImageDataPrepared callback)
 {
     MEDIA_INFO_LOG("MediaAssetManagerImpl::NativeRequestImageSource Called");
-    std::shared_ptr<FileAsset> fileAsset_ = mediaAsset->GetFileAssetInstance();
+    std::shared_ptr<FileAsset> fileAsset_ = mediaAsset->mediaAsset_->GetFileAssetInstance();
     MediaLibraryTracer tracer;
     tracer.Start("NativeRequestImageSource");
 
@@ -511,6 +532,62 @@ MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeRequestImageSource(OH_MediaA
     bool isSuccess = false;
     asyncContext->requestId = GenerateRequestId();
     isSuccess = OnHandleRequestImage(asyncContext);
+    if (isSuccess) {
+        strncpy_s(requestId->requestId, UUID_STR_LENGTH, (asyncContext->requestId.c_str()), UUID_STR_LENGTH);
+        return MEDIA_LIBRARY_OK;
+    } else {
+        strncpy_s(requestId->requestId, UUID_STR_LENGTH, (ERROR_REQUEST_ID.c_str()), UUID_STR_LENGTH);
+        return MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED;
+    }
+}
+
+MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeRequestMovingPhoto(OH_MediaAsset* mediaAsset,
+    NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
+    OH_MediaLibrary_OnMovingPhotoDataPrepared callback)
+{
+    std::shared_ptr<FileAsset> fileAsset_ = mediaAsset->mediaAsset_->GetFileAssetInstance();
+    MediaLibraryTracer tracer;
+    tracer.Start("NativeRequestMovingPhoto");
+
+    std::unique_ptr<RequestSourceAsyncContext> asyncContext = std::make_unique<RequestSourceAsyncContext>();
+    asyncContext->callingPkgName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    asyncContext->requestUri = fileAsset_->GetUri();
+    asyncContext->fileId = fileAsset_->GetId();
+    asyncContext->displayName = fileAsset_->GetDisplayName();
+    asyncContext->requestOptions.deliveryMode = requestOptions.deliveryMode;
+    asyncContext->requestOptions.sourceMode = NativeSourceMode::EDITED_MODE;
+    asyncContext->returnDataType = ReturnDataType::TYPE_MOVING_PHOTO;
+    asyncContext->onRequestMovingPhotoDataPreparedHandler = callback;
+
+    if (sDataShareHelper_ == nullptr) {
+        CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
+        CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ == nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
+            "sDataShareHelper_ is null");
+    }
+
+    if (asyncContext->requestUri.length() > MAX_URI_SIZE) {
+        MEDIA_ERR_LOG("Request image uri lens out of limit requestUri lens: %{public}zu",
+            asyncContext->requestUri.length());
+        strncpy_s(requestId->requestId, UUID_STR_LENGTH, (ERROR_REQUEST_ID.c_str()), UUID_STR_LENGTH);
+        return MEDIA_LIBRARY_PARAMETER_ERROR;
+    }
+
+    if (MediaFileUtils::GetMediaType(asyncContext->displayName) != MEDIA_TYPE_IMAGE) {
+        MEDIA_ERR_LOG("Request image file type invalid");
+        strncpy_s(requestId->requestId, UUID_STR_LENGTH, (ERROR_REQUEST_ID.c_str()), UUID_STR_LENGTH);
+        return MEDIA_LIBRARY_PARAMETER_ERROR;
+    }
+
+    bool isSuccess = false;
+    asyncContext->requestId = GenerateRequestId();
+    isSuccess = OnHandleRequestImage(asyncContext);
+    string uri = LOG_MOVING_PHOTO;
+    Uri logMovingPhotoUri(uri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    string result;
+    valuesBucket.Put("package_name", asyncContext->callingPkgName);
+    valuesBucket.Put("adapted", asyncContext->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO);
+    UserFileClient::InsertExt(logMovingPhotoUri, valuesBucket, result);
     if (isSuccess) {
         strncpy_s(requestId->requestId, UUID_STR_LENGTH, (asyncContext->requestId.c_str()), UUID_STR_LENGTH);
         return MEDIA_LIBRARY_OK;
