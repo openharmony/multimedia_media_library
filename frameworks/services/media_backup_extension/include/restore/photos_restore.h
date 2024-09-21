@@ -63,7 +63,6 @@ public:
 
 private:
     std::string ParseSourcePathToLPath(const std::string &sourcePath);
-    PhotoAlbumDao::PhotoAlbumRowData BuildAlbumInfoOfRecorders();
     PhotoAlbumDao::PhotoAlbumRowData BuildAlbumInfoByLPath(const std::string &lPath);
     PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(const FileInfo &fileInfo);
     std::string ToLower(const std::string &str)

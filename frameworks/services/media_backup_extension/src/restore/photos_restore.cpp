@@ -35,6 +35,10 @@ std::shared_ptr<NativeRdb::ResultSet> PhotosRestore::GetGalleryMedia(
     int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
     int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag, offset, pageSize};
+    if (this->galleryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
+        return nullptr;
+    }
     return this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_FOR_RESTORE, params);
 }
 
@@ -46,6 +50,10 @@ int32_t PhotosRestore::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQua
     int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
     int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag};
+    if (this->galleryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
+        return 0;
+    }
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_COUNT, params);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return 0;
@@ -73,22 +81,6 @@ std::string PhotosRestore::ParseSourcePathToLPath(const std::string &sourcePath)
         }
     }
     return result;
-}
-
-/**
- * @brief Build PhotoAlbumRowData for ScreenRecorder.
- */
-PhotoAlbumDao::PhotoAlbumRowData PhotosRestore::BuildAlbumInfoOfRecorders()
-{
-    PhotoAlbumDao::PhotoAlbumRowData albumInfo;
-    // bind albumName and bundleName by lPath.
-    albumInfo.albumName = AlbumPlugin::ALBUM_NAME_SCREEN_RECORDS;
-    albumInfo.bundleName = AlbumPlugin::BUNDLE_NAME_SCREEN_RECORDS;
-    albumInfo.lPath = AlbumPlugin::LPATH_SCREEN_RECORDS;
-    albumInfo.albumType = static_cast<int32_t>(PhotoAlbumType::SOURCE);
-    albumInfo.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC);
-    albumInfo.priority = 1;
-    return albumInfo;
 }
 
 /**
@@ -139,7 +131,7 @@ PhotoAlbumDao::PhotoAlbumRowData PhotosRestore::FindAlbumInfo(const FileInfo &fi
             fileInfo.lPath.c_str(),
             lPathForScreenshot.c_str(),
             this->ToString(fileInfo).c_str());
-        albumInfo = this->BuildAlbumInfoOfRecorders();
+        albumInfo = this->photoAlbumDaoPtr_->BuildAlbumInfoOfRecorders();
         albumInfo = this->photoAlbumDaoPtr_->GetOrCreatePhotoAlbum(albumInfo);
         return albumInfo;
     }
