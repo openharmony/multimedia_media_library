@@ -6140,7 +6140,6 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
     }
     context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
-    resultSet->Close();
 }
 
 static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyncContext& asyncContext)
@@ -6182,7 +6181,6 @@ static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyn
             break;
         }
     }
-    resultSet->Close();
     return (i == len) ? jsFileArray : nullptr;
 }
 
@@ -6230,7 +6228,6 @@ static napi_value PhotoAccessGetFileAssetsExecuteSync(napi_env env, MediaLibrary
         napi_value item = MediaLibraryNapiUtils::GetNextRowObject(env, resultSet);
         napi_set_element(env, jsFileArray, count++, item);
     }
-    resultSet->Close();
     return jsFileArray;
 }
 
