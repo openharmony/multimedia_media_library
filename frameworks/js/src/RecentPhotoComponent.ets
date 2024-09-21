@@ -83,7 +83,7 @@ export struct RecentPhotoComponent {
     } else if (dataType === 'checkInfo') {
       if (this.onRecentPhotoCheckInfo) {
         let info: RecentPhotoInfo = new RecentPhotoInfo();
-        info.identifier = wantParam.identifier as number;
+        info.identifier = wantParam.identifier as string;
         info.dateTaken = wantParam.dateTaken as number;
         this.onRecentPhotoCheckInfo(wantParam.isExist as boolean, info);
       }
@@ -118,7 +118,7 @@ export class RecentPhotoOptions {
 
 export class RecentPhotoInfo {
   dateTaken?: number;
-  identifier?: number;
+  identifier?: string;
 }
 
 export enum PhotoSource {
