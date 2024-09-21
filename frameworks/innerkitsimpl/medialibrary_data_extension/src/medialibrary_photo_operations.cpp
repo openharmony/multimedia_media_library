@@ -1099,7 +1099,7 @@ static int32_t CreateImageSource(
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::UpdateAllExif(
+int32_t MediaLibraryPhotoOperations::UpdateOrientationAllExif(
     MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset, string &currentOrientation)
 {
     std::unique_ptr<ImageSource> imageSource;
@@ -1150,7 +1150,7 @@ int32_t MediaLibraryPhotoOperations::UpdateAllExif(
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::UpdateExif(MediaLibraryCommand &cmd,
+int32_t MediaLibraryPhotoOperations::UpdateOrientationExif(MediaLibraryCommand &cmd,
     const shared_ptr<FileAsset> &fileAsset, bool &orientationUpdated, string &currentOrientation)
 {
     if (fileAsset == nullptr) {
@@ -1167,7 +1167,7 @@ int32_t MediaLibraryPhotoOperations::UpdateExif(MediaLibraryCommand &cmd,
         MEDIA_ERR_LOG("Only images support rotation.");
         return E_INVALID_VALUES;
     }
-    int32_t errCode = UpdateAllExif(cmd, fileAsset, currentOrientation);
+    int32_t errCode = UpdateOrientationAllExif(cmd, fileAsset, currentOrientation);
     if (errCode == E_OK && !currentOrientation.empty()) {
         orientationUpdated = true;
     }
@@ -1216,17 +1216,16 @@ static void RevertOrientation(const shared_ptr<FileAsset> &fileAsset, string &cu
     }
 
     std::unique_ptr<ImageSource> imageSource;
-    uint32_t err = E_OK;
-    if (CreateImageSource(fileAsset, imageSource) != E_OK) {
-        MEDIA_ERR_LOG("Modify image property all exif failed, err = %{public}d", err);
+    uint32_t err = CreateImageSource(fileAsset, imageSource);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to obtain image exif information, err = %{public}d", err);
         return;
     }
 
     err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_ORIENTATION,
         currentOrientation, fileAsset->GetFilePath());
     if (err != E_OK) {
-        MEDIA_ERR_LOG("Modify image property all exif failed, err = %{public}d", err);
-        return;
+        MEDIA_ERR_LOG("Rollback of exlf information failed, err = %{public}d", err);
     }
 }
 
@@ -1254,7 +1253,7 @@ void MediaLibraryPhotoOperations::CreateThumbnailFileScan(const shared_ptr<FileA
         auto watch = MediaLibraryNotify::GetInstance();
         ScanFile(fileAsset->GetPath(), true, false, true);
         watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-            to_string(fileAsset->GetId()), extraUri), NotifyType::NOTIFY_THUMB_ADD);
+            to_string(fileAsset->GetId()), extraUri), NotifyType::NOTIFY_THUMB_UPDATE);
     }
     if (isNeedScan) {
         ScanFile(fileAsset->GetPath(), true, true, true);
@@ -1289,7 +1288,7 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
 
     bool orientationUpdated = false;
     string currentOrientation = "";
-    errCode = UpdateExif(cmd, fileAsset, orientationUpdated, currentOrientation);
+    errCode = UpdateOrientationExif(cmd, fileAsset, orientationUpdated, currentOrientation);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update allexif failed, allexif=%{private}s",
         fileAsset->GetAllExif().c_str());
 
