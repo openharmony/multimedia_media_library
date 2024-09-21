@@ -18,20 +18,27 @@
 
 #include <string>
 
+#include "base_restore.h"
+
 namespace OHOS {
 namespace Media {
 class BackupRestoreService {
 public:
     virtual ~BackupRestoreService() = default;
     static BackupRestoreService &GetInstance(void);
+    void Init(int32_t sceneCode, const std::string &galleryAppName = "", const std::string &mediaAppName = "",
+        const std::string &backupDir = "");
     void StartRestore(int32_t sceneCode, const std::string &galleryAppName, const std::string &mediaAppName,
         const std::string &backupDir);
     void StartRestoreEx(int32_t sceneCode, const std::string &galleryAppName, const std::string &mediaAppName,
         const std::string &backupDir, std::string &restoreExInfo);
     void GetBackupInfo(int32_t sceneCode, std::string &backupInfo);
+    void GetProgressInfo(std::string &progressInfo);
 
 private:
     BackupRestoreService() = default;
+    std::string serviceBackupDir_;
+    std::unique_ptr<BaseRestore> restoreService_;
 };
 } // namespace Media
 } // namespace OHOS

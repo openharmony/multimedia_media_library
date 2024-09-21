@@ -65,6 +65,7 @@ private:
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath) override;
     void AnalyzeSource() override;
+    void AnalyzeTotalSource() override;
     void AnalyzeGalleryErrorSource();
     void AnalyzeGalleryDuplicateData();
     void AnalyzeGallerySource();
@@ -108,6 +109,7 @@ private:
     void UpdateFaceAnalysisStatus();
     void UpdateDualCloneFaceAnalysisStatus();
     bool HasLowQualityImage();
+    int32_t QueryTotalNumberByMediaType(int32_t mediaType);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

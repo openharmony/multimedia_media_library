@@ -54,6 +54,7 @@ private:
         std::string dbName = "") override;
     bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
     void AnalyzeSource() override;
+    void AnalyzeTotalSource() override;
     void RestoreAlbum(void);
     void RestoreAudio(void) override;
     void InsertPhoto(std::vector<FileInfo> &fileInfos);

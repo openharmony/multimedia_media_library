@@ -125,6 +125,10 @@ const std::string STAT_KEY_DUPLICATE_COUNT = "duplicateCount";
 const std::string STAT_KEY_FAILED_COUNT = "failedCount";
 const std::string STAT_KEY_DETAILS = "details";
 const std::string STAT_KEY_NUMBER = "number";
+const std::string STAT_KEY_PROGRESS_INFO = "progressInfo";
+const std::string STAT_KEY_NAME = "name";
+const std::string STAT_KEY_PROCESSED = "processed";
+const std::string STAT_KEY_TOTAL = "total";
 const std::string STAT_VALUE_ERROR_INFO = "ErrorInfo";
 const std::string STAT_VALUE_COUNT_INFO = "CountInfo";
 const std::string STAT_TYPE_PHOTO = "photo";
@@ -331,6 +335,12 @@ struct SubCountInfo {
     SubCountInfo(int64_t successCount, int64_t duplicateCount,
         const std::unordered_map<std::string, int32_t> &failedFiles)
         : successCount(successCount), duplicateCount(duplicateCount), failedFiles(failedFiles) {}
+};
+
+struct SubProcessInfo {
+    uint64_t processed {0};
+    uint64_t total {0};
+    SubProcessInfo(uint64_t processed, uint64_t total) : processed(processed), total(total) {}
 };
 
 struct PortraitAlbumInfo {

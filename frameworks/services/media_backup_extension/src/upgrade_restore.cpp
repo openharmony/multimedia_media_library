@@ -436,7 +436,7 @@ void UpgradeRestore::HandleClone()
     for (int32_t offset = 0; offset < totalNumber; offset += PRE_CLONE_PHOTO_BATCH_COUNT) {
         ffrt::submit([this, offset, maxId]() {
                 HandleCloneBatch(offset, maxId);
-            }, { &offset });
+            }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
 }
@@ -497,7 +497,8 @@ void UpgradeRestore::RestoreFromGallery()
         this->photosRestorePtr_->GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset });
+        ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset }, {},
+            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
 }
@@ -523,7 +524,7 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset, maxId, isCamera, type]() {
                 RestoreExternalBatch(offset, maxId, isCamera, type);
-            }, { &offset });
+            }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
 }
@@ -1283,6 +1284,44 @@ void UpgradeRestore::UpdateDualCloneFaceAnalysisStatus()
     BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
+}
+
+int32_t UpgradeRestore::QueryTotalNumberByMediaType(int32_t mediaType)
+{
+    std::string querySql = "SELECT COUNT(DISTINCT _data) AS count \
+        FROM gallery_media \
+            LEFT JOIN gallery_album \
+            ON gallery_media.albumId=gallery_album.albumId \
+        WHERE (local_media_id != -1) AND \
+            (relative_bucket_id IS NULL OR \
+                relative_bucket_id NOT IN ( \
+                    SELECT DISTINCT relative_bucket_id \
+                    FROM garbage_album \
+                    WHERE type = 1 \
+                ) \
+            ) AND \
+            (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
+            _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
+            (1 = ? OR storage_id IN (0, 65537) ) AND \
+            media_type = ? \
+        ORDER BY _id ASC ;";
+    std::vector<std::string> queryArgs = { std::to_string(static_cast<int32_t>(shouldIncludeSd_)),
+        std::to_string(static_cast<int32_t>(hasLowQualityImage_)), std::to_string(mediaType) };
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql, queryArgs);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return 0;
+    }
+    return GetInt32Val(CUSTOM_COUNT, resultSet);
+}
+
+void UpgradeRestore::AnalyzeTotalSource()
+{
+    photoTotalNumber_ = QueryTotalNumberByMediaType(DUAL_MEDIA_TYPE::IMAGE_TYPE);
+    videoTotalNumber_ = QueryTotalNumberByMediaType(DUAL_MEDIA_TYPE::VIDEO_TYPE);
+    audioTotalNumber_ = sceneCode_ == UPGRADE_RESTORE_ID ? 0 :
+        BackupDatabaseUtils::QueryInt(audioRdb_, QUERY_DUAL_CLONE_AUDIO_COUNT, CUSTOM_COUNT);
+    MEDIA_INFO_LOG("total photo: %{public}lld, video: %{public}lld, audio: %{public}lld",
+        (long long)photoTotalNumber_, (long long)videoTotalNumber_, (long long)audioTotalNumber_);
 }
 } // namespace Media
 } // namespace OHOS
