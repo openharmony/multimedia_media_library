@@ -1304,8 +1304,8 @@ int32_t UpgradeRestore::QueryTotalNumberByMediaType(int32_t mediaType)
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             (1 = ? OR storage_id IN (0, 65537) ) AND \
             media_type = ? ";
-    querySql += hasLowQualityImage_ ?  " AND (_size > 0 OR (_size = 0 AND photo_quality = 0)) " :
-         " AND _size > 0 ";
+    querySql += hasLowQualityImage_ ? " AND (_size > 0 OR (_size = 0 AND photo_quality = 0)) " :
+        " AND _size > 0 ";
     std::vector<std::string> queryArgs = { std::to_string(static_cast<int32_t>(shouldIncludeSd_)),
         std::to_string(mediaType) };
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql, queryArgs);
