@@ -87,7 +87,8 @@ int32_t FileUtils::SaveImage(const string &filePath, void *output, size_t writeS
     return ret;
 }
 
-int32_t FileUtils::SavePicture(const string &imageId, std::shared_ptr<Media::Picture> &picture, bool isEdited)
+int32_t FileUtils::SavePicture(const string &imageId, std::shared_ptr<Media::Picture> &picture,
+    bool isEdited, bool isLowQualityPicture)
 {
     MediaLibraryTracer tracer;
     // 通过imageid获取fileid 获取uri
@@ -118,6 +119,13 @@ int32_t FileUtils::SavePicture(const string &imageId, std::shared_ptr<Media::Pic
     if (mime_type == "") {
         mime_type = "image/jpeg";
     }
+    size_t size = -1;
+    MediaFileUtils::GetFileSize(sourcePath, size);
+
+    if (isLowQualityPicture && size > 0) {
+        return -1;
+    }
+
     int ret = DealPicture(mime_type, sourcePath, picture);
     if (ret < 0) {
         return ret;
