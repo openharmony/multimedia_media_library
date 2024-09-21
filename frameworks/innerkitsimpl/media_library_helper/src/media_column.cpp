@@ -369,7 +369,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_THUMB_SIZE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_FRONT_CAMERA,
     PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY, PhotoColumn::PHOTO_COVER_POSITION,
     PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, PhotoColumn::PHOTO_DETAIL_TIME,
-    PhotoColumn::PHOTO_CE_AVAILABLE,
+    PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_OWNER_ALBUM_ID,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
