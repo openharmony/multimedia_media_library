@@ -366,6 +366,10 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
             continue;
         }
         string dirPath = RESTORE_MUSIC_LOCAL_DIR + fileInfos[i].displayName;
+        if (MediaFileUtils::IsFileExists(dirPath)) {
+            MEDIA_INFO_LOG("dirPath %{private}s already exists.", dirPath.c_str());
+            continue;
+        }
         int32_t moveErrCode = BackupFileUtils::MoveFile(fileInfos[i].filePath, dirPath, sceneCode);
         if (moveErrCode != E_SUCCESS) {
             MEDIA_ERR_LOG("MoveFile failed, filePath: %{public}s, errCode: %{public}d, errno: %{public}d",
