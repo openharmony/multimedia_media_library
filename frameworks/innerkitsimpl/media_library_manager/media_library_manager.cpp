@@ -51,6 +51,7 @@
 #include "thumbnail_const.h"
 #include "unique_fd.h"
 #include "userfilemgr_uri.h"
+#include "moving_photo_file_utils.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -888,7 +889,7 @@ int32_t MediaLibraryManager::OpenReadOnlyAppSandboxVideo(const string& uri)
     return fd;
 }
 
-int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
+int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, const string &option)
 {
     if (!MediaFileUtils::IsMediaLibraryUri(uri)) {
         return OpenReadOnlyAppSandboxVideo(uri);
@@ -904,9 +905,41 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
     }
 
     string videoUri = uri;
-    MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
+    MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, option);
     Uri openVideoUri(videoUri);
     return sDataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
+}
+
+int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
+{
+    return ReadMovingPhotoVideo(uri, OPEN_MOVING_PHOTO_VIDEO);
+}
+
+int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, off_t &offset)
+{
+    int32_t fd = ReadMovingPhotoVideo(uri, OPEN_MOVING_PHOTO_VIDEO_CLOUD);
+    if (fd < 0) {
+        MEDIA_ERR_LOG("Failed to open video of moving photo: %{public}d", fd);
+        return E_ERR;
+    }
+
+    if (!MediaFileUtils::IsMediaLibraryUri(uri)) {
+        return fd;
+    }
+
+    int64_t liveSize = 0;
+    if (MovingPhotoFileUtils::GetLivePhotoSize(fd, liveSize) != E_OK) {
+        return fd;
+    }
+
+    struct stat st;
+    if (fstat(fd, &st) != E_OK || st.st_size < liveSize + PLAY_INFO_LEN + VERSION_TAG_LEN) {
+        MEDIA_ERR_LOG("video size is wrong");
+        return E_ERR;
+    }
+    offset = st.st_size - liveSize - PLAY_INFO_LEN - VERSION_TAG_LEN;
+    MEDIA_INFO_LOG("offset is %{public}ld", offset);
+    return fd;
 }
 
 int32_t MediaLibraryManager::ReadPrivateMovingPhoto(const string &uri)

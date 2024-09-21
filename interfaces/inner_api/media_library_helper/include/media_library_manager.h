@@ -187,6 +187,15 @@ public:
     EXPORT int32_t ReadMovingPhotoVideo(const string &uri);
 
     /**
+     * @brief Open video of moving photo to read, support cloud open
+     *
+     * @param uri asset uri of the moving photo
+     * @param offset offset of the video in fd
+     * @return read fd for success and <-1> for fail
+     */
+    EXPORT int32_t ReadMovingPhotoVideo(const string &uri, off_t &offset);
+
+    /**
      * @brief Open private moving photo to read
      *
      * @param uri asset uri of the moving photo
@@ -252,6 +261,7 @@ public:
     EXPORT static int64_t GetSandboxMovingPhotoTime(const string& uri);
 
 private:
+    int32_t ReadMovingPhotoVideo(const string &uri, const string &option);
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size, bool isAstc);
     static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, const string &path, bool isAstc);
     static unique_ptr<PixelMap> DecodeThumbnail(UniqueFd &uniqueFd, const Size& size);
