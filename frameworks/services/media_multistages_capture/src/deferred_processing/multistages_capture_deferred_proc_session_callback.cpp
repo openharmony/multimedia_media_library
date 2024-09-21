@@ -226,12 +226,23 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnDeliveryLowQualityImage(co
         MEDIA_INFO_LOG("OnDeliveryLowQualityImage picture is null");
         return;
     }
-
     MediaLibraryTracer tracer;
     tracer.Start("OnDeliveryLowQualityImage " + imageId);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = PhotoColumn::PHOTO_ID + " = ? ";
-    vector<string> whereArgs { imageId };
+    int slashIndex = imageId.rfind("/");
+    string where = "";
+    vector<string> whereArgs;
+    string photoId = "";
+    if (slashIndex != string::npos) {
+        string fileId = MediaFileUtils::GetIdFromUri(imageId);
+        where = PhotoColumn::MEDIA_ID + " = ? ";
+        whereArgs = { fileId };
+        photoId = fileId + "_";
+    } else {
+        where = PhotoColumn::PHOTO_ID + " = ? ";
+        whereArgs = { imageId };
+        photoId = imageId;
+    }
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
@@ -248,10 +259,10 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnDeliveryLowQualityImage(co
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
-        FileUtils::SavePicture(imageId, picture, isEdited);
+        FileUtils::SavePicture(photoId, picture, isEdited);
         return;
     }
-    MultiStagesCaptureManager::GetInstance().DealLowQualityPicture(imageId, std::move(picture), isEdited);
+    MultiStagesCaptureManager::GetInstance().DealLowQualityPicture(photoId, std::move(picture), isEdited);
     MEDIA_INFO_LOG("save low quality image end");
 }
 
