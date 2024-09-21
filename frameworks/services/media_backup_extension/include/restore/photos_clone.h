@@ -56,6 +56,7 @@ public:
     std::shared_ptr<NativeRdb::ResultSet> GetPhotosNotInPhotoMap(int32_t offset, int32_t pageSize);
     int32_t GetPhotosRowCountInPhotoMap();
     int32_t GetPhotosRowCountNotInPhotoMap();
+    std::string FindlPath(const FileInfo &fileInfo);
     int32_t FindAlbumId(const FileInfo &fileInfo);
     std::string FindPackageName(const FileInfo &info);
     std::string FindBundleName(const FileInfo &info);
@@ -64,10 +65,13 @@ private:
     enum { UUID_STR_LENGTH = 37 };
 
 private:
+    PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(const FileInfo &fileInfo);
     int32_t FixDuplicateBurstKeyInDifferentAlbum();
     std::vector<PhotosDao::PhotosRowData> FindDuplicateBurstKey();
     std::string ToString(const std::vector<NativeRdb::ValueObject> &values);
     std::string GenerateUuid();
+    std::string ToString(const FileInfo &fileInfo);
+    std::string ToLower(const std::string &str);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryTargetRdb_;

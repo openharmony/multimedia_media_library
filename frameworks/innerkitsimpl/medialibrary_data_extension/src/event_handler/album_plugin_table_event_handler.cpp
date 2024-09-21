@@ -19,7 +19,6 @@
 
 #include "album_plugin_table_event_handler.h"
 #include "album_plugin_config.h"
-#include "medialibrary_album_compatibility_fusion_sql.h"
 #include "rdb_store.h"
 #include "rdb_errno.h"
 #include "result_set_utils.h"
@@ -77,6 +76,17 @@ int32_t AlbumPluginTableEventHandler::InitiateData(NativeRdb::RdbStore &store)
     return NativeRdb::E_OK;
 }
 
+int32_t AlbumPluginTableEventHandler::GetAlbumPluginDataCount(NativeRdb::RdbStore &store)
+{
+    std::string querySql = this->SQL_SELECT_DATA_COUNT;
+    auto resultSet = store.QuerySql(querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_WARN_LOG("resultSet is null! querySql = %{public}s", querySql.c_str());
+        return 0;
+    }
+    return GetInt32Val("count", resultSet);
+}
+
 /**
  * @brief execute sql while database created
  * @param store rdb store
@@ -91,8 +101,6 @@ int32_t AlbumPluginTableEventHandler::OnCreate(NativeRdb::RdbStore &store)
         return NativeRdb::E_ERROR;
     }
     MEDIA_INFO_LOG("OnCreate end create %{public}s table.", TABLE_NAME.c_str());
-    store.ExecuteSql(CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET);
-    store.ExecuteSql(CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET);
     return NativeRdb::E_OK;
 }
 
@@ -103,10 +111,16 @@ int32_t AlbumPluginTableEventHandler::OnCreate(NativeRdb::RdbStore &store)
 int32_t AlbumPluginTableEventHandler::OnUpgrade(NativeRdb::RdbStore &store, int oldVersion, int newVersion)
 {
     MEDIA_INFO_LOG("OnUpgrade begin upgrade %{public}s table.", TABLE_NAME.c_str());
-    // if table is exists, do not need to create again
+    // if table is exists and has data, do not need to create again
     if (this->IsTableCreated(store, TABLE_NAME)) {
-        MEDIA_INFO_LOG("OnUpgrade check table %{public}s is exists", TABLE_NAME.c_str());
-        return NativeRdb::E_OK;
+        int32_t count = this->GetAlbumPluginDataCount(store);
+        if (count > 0) {
+            MEDIA_INFO_LOG("OnUpgrade check table %{public}s is exists, and has data %{public}d, "
+                           "no need to create again.",
+                TABLE_NAME.c_str(),
+                count);
+            return NativeRdb::E_OK;
+        }
     }
     int32_t ret = OnCreate(store);
     MEDIA_INFO_LOG("OnUpgrade end upgrade %{public}s table.", TABLE_NAME.c_str());
