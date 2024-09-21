@@ -1751,6 +1751,7 @@ napi_value SendablePhotoAccessHelper::PhotoAccessGetSharedPhotoAssets(napi_env e
         napi_value item = SendableMediaLibraryNapiUtils::GetNextRowObject(env, resultSet);
         napi_set_element(env, jsFileArray, count++, item);
     } while (!resultSet->GoToNextRow());
+    resultSet->Close();
     return jsFileArray;
 }
 } // namespace Media
