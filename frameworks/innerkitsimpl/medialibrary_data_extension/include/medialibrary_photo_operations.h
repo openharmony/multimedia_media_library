@@ -57,7 +57,7 @@ public:
         const uint8_t *addr, const long bytes, int32_t fileId);
     EXPORT static int32_t AddFiltersToPicture(std::shared_ptr<Media::Picture>& inPicture,
         const std::string &outputPath, std::string &editdata, const std::string &mime_type);
-    EXPORT static int32_t SavePicture(const int32_t &fileType, const std::shared_ptr<FileAsset> &fileAsset);
+    EXPORT static int32_t SavePicture(const int32_t &fileType, const int32_t &fileId);
     EXPORT static int32_t GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
         bool isCleanImmediately, std::string &photoId);
     EXPORT static int32_t FinishRequestPicture(MediaLibraryCommand &cmd);
@@ -126,6 +126,7 @@ private:
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static std::shared_ptr<FileAsset> GetFileAsset(MediaLibraryCommand &cmd);
     static int32_t ForceSavePicture(MediaLibraryCommand& cmd);
+    static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension);
 private:
     static std::mutex saveCameraPhotoMutex_;
     static std::condition_variable condition_;
