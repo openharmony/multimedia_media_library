@@ -54,7 +54,6 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
     backupRestoreDir_ = backupRetoreDir;
     int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     if (errorCode == E_OK) {
-        AnalyzeTotalSource();
         RestorePhoto();
         RestoreAudio();
         MEDIA_INFO_LOG("migrate database number: %{public}lld, file number: %{public}lld (%{public}lld + "
@@ -1004,7 +1003,7 @@ int32_t BaseRestore::GetUniqueId(int32_t fileType)
 std::string BaseRestore::GetProgressInfo()
 {
     nlohmann::json progressInfoJson;
-    for (const auto &type : STAT_TYPES) {
+    for (const auto &type : STAT_PROGRESS_TYPES) {
         SubProcessInfo subProcessInfo = GetSubProcessInfo(type);
         progressInfoJson[STAT_KEY_PROGRESS_INFO].push_back(GetSubProcessInfoJson(type, subProcessInfo));
     }
@@ -1013,22 +1012,19 @@ std::string BaseRestore::GetProgressInfo()
 
 SubProcessInfo BaseRestore::GetSubProcessInfo(const std::string &type)
 {
-    std::unordered_map<std::string, int32_t> failedFiles = GetFailedFiles(type);
-    uint64_t total;
     uint64_t success;
     uint64_t duplicate;
-    uint64_t failed = static_cast<uint64_t>(failedFiles.size());
-    if (type == STAT_TYPE_PHOTO) {
-        success = migrateFileNumber_ - migrateVideoFileNumber_;
-        duplicate = migratePhotoDuplicateNumber_;
-        total = photoTotalNumber_;
-    } else if (type == STAT_TYPE_VIDEO) {
-        success = migrateVideoFileNumber_;
-        duplicate = migrateVideoDuplicateNumber_;
-        total = videoTotalNumber_;
+    uint64_t failed;
+    uint64_t total;
+    if (type == STAT_TYPE_PHOTO_VIDEO) {
+        success = migrateFileNumber_;
+        duplicate = migratePhotoDuplicateNumber_ + migrateVideoDuplicateNumber_;
+        failed = static_cast<uint64_t>(GetFailedFiles(STAT_TYPE_PHOTO).size() + GetFailedFiles(STAT_TYPE_VIDEO).size());
+        total = totalNumber_;
     } else {
         success = migrateAudioFileNumber_;
         duplicate = migrateAudioDuplicateNumber_;
+        failed = static_cast<uint64_t>(GetFailedFiles(type).size());
         total = audioTotalNumber_;
     }
     uint64_t processed = success + duplicate + failed;

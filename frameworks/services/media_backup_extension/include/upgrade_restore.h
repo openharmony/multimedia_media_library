@@ -65,7 +65,6 @@ private:
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath) override;
     void AnalyzeSource() override;
-    void AnalyzeTotalSource() override;
     void AnalyzeGalleryErrorSource();
     void AnalyzeGalleryDuplicateData();
     void AnalyzeGallerySource();

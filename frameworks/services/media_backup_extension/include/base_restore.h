@@ -54,7 +54,6 @@ protected:
         std::string dbName = "") = 0;
     virtual bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) = 0;
     virtual void AnalyzeSource() = 0;
-    virtual void AnalyzeTotalSource() = 0;
     virtual bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath);
     virtual bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
@@ -116,8 +115,7 @@ protected:
     std::atomic<uint64_t> migrateVideoFileNumber_{0};
     std::atomic<uint64_t> migrateAudioDatabaseNumber_{0};
     std::atomic<uint64_t> migrateAudioFileNumber_{0};
-    std::atomic<uint64_t> photoTotalNumber_{0};
-    std::atomic<uint64_t> videoTotalNumber_{0};
+    std::atomic<uint64_t> totalNumber_{0};
     std::atomic<uint64_t> audioTotalNumber_{0};
     std::atomic<uint64_t> migratePhotoDuplicateNumber_{0};
     std::atomic<uint64_t> migrateVideoDuplicateNumber_{0};

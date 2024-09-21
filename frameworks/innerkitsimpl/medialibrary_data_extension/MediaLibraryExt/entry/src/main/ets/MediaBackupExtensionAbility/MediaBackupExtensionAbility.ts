@@ -50,6 +50,7 @@ const STAT_VALUE_COUNT_INFO = 'CountInfo';
 const STAT_TYPE_PHOTO = 'photo';
 const STAT_TYPE_VIDEO = 'video';
 const STAT_TYPE_AUDIO = 'audio';
+const STAT_TYPE_PHOTO_VIDEO = 'photo&video';
 const STAT_TYPES = [STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO];
 const RESULT_INFO_NUM = 2;
 const JS_TYPE_STRING = 'string';
@@ -107,12 +108,7 @@ const DEFAULT_BACKUP_INFO = [
 const DEFAULT_PROGRESS_INFO = {
   'progressInfo': [
   {
-    'name': STAT_TYPE_PHOTO,
-    'processed': 0,
-    'total': 0
-  },
-  {
-    'name': STAT_TYPE_VIDEO,
+    'name': STAT_TYPE_PHOTO_VIDEO,
     'processed': 0,
     'total': 0
   },

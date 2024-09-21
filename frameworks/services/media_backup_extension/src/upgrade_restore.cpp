@@ -136,7 +136,6 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
             return E_FAIL;
         }
     }
-    HasLowQualityImage(); // moved to init, used in query total number
     ParseXml(xmlPath);
     this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     this->photosRestorePtr_->OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
@@ -242,6 +241,8 @@ void UpgradeRestore::RestoreAudioFromFile()
     MEDIA_INFO_LOG("start restore audio from audio_MediaInfo0");
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(audioRdb_, QUERY_DUAL_CLONE_AUDIO_COUNT, CUSTOM_COUNT);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
+    audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
+    MEDIA_INFO_LOG("Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -494,9 +495,12 @@ void UpgradeRestore::UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::Resul
 
 void UpgradeRestore::RestoreFromGallery()
 {
+    HasLowQualityImage();
     int32_t totalNumber =
         this->photosRestorePtr_->GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
+    totalNumber_ += static_cast<uint64_t>(totalNumber);
+    MEDIA_INFO_LOG("Update totalNumber_: %{public}lld", (long long)totalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -522,6 +526,8 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
     int32_t type = isCamera ? SourceType::EXTERNAL_CAMERA : SourceType::EXTERNAL_OTHERS;
     int32_t totalNumber = QueryNotSyncTotalNumber(maxId, isCamera);
     MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
+    totalNumber_ += static_cast<uint64_t>(totalNumber);
+    MEDIA_INFO_LOG("Update totalNumber_: %{public}lld", (long long)totalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset, maxId, isCamera, type]() {
                 RestoreExternalBatch(offset, maxId, isCamera, type);
@@ -1285,45 +1291,6 @@ void UpgradeRestore::UpdateDualCloneFaceAnalysisStatus()
     BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
-}
-
-int32_t UpgradeRestore::QueryTotalNumberByMediaType(int32_t mediaType)
-{
-    std::string querySql = "SELECT COUNT(DISTINCT _data) AS count \
-        FROM gallery_media \
-            LEFT JOIN gallery_album \
-            ON gallery_media.albumId=gallery_album.albumId \
-        WHERE (local_media_id != -1) AND \
-            (relative_bucket_id IS NULL OR \
-                relative_bucket_id NOT IN ( \
-                    SELECT DISTINCT relative_bucket_id \
-                    FROM garbage_album \
-                    WHERE type = 1 \
-                ) \
-            ) AND \
-            _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) AND \
-            media_type = ? ";
-    querySql += hasLowQualityImage_ ? " AND (_size > 0 OR (_size = 0 AND photo_quality = 0)) " :
-        " AND _size > 0 ";
-    std::vector<std::string> queryArgs = { std::to_string(static_cast<int32_t>(shouldIncludeSd_)),
-        std::to_string(mediaType) };
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql, queryArgs);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
-    return GetInt32Val(CUSTOM_COUNT, resultSet);
-}
-
-void UpgradeRestore::AnalyzeTotalSource()
-{
-    MEDIA_INFO_LOG("start AnalyzeTotalSource.");
-    photoTotalNumber_ = QueryTotalNumberByMediaType(DUAL_MEDIA_TYPE::IMAGE_TYPE);
-    videoTotalNumber_ = QueryTotalNumberByMediaType(DUAL_MEDIA_TYPE::VIDEO_TYPE);
-    audioTotalNumber_ = sceneCode_ == UPGRADE_RESTORE_ID ? 0 :
-        BackupDatabaseUtils::QueryInt(audioRdb_, QUERY_DUAL_CLONE_AUDIO_COUNT, CUSTOM_COUNT);
-    MEDIA_INFO_LOG("total photo: %{public}lld, video: %{public}lld, audio: %{public}lld",
-        (long long)photoTotalNumber_, (long long)videoTotalNumber_, (long long)audioTotalNumber_);
 }
 } // namespace Media
 } // namespace OHOS
