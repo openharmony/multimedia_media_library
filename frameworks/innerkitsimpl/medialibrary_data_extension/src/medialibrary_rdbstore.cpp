@@ -284,6 +284,11 @@ int32_t MediaLibraryRdbStore::Init()
         MEDIA_ERR_LOG("GetRdbStore is failed ");
         return errCode;
     }
+    int version = 0;
+    if (rdbStore_->GetVersion(version) != NativeRdb::E_OK) {
+        MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), rdb version is not exist, OnCreate");
+        rdbDataCallBack.OnCreate(*rdbStore_);
+    }
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), SUCCESS");
     return E_OK;
 }

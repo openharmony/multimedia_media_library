@@ -577,7 +577,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryDataManager::SolveInsertCmdSub(MediaLibraryCommand &cmd)
 {
-    if (MediaLibraryRestore::GetInstance().IsBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()) {
+    if (MediaLibraryRestore::GetInstance().IsRealBackuping()) {
         MEDIA_INFO_LOG("[SolveInsertCmdSub] rdb is backuping");
         return E_FAIL;
     }
@@ -848,7 +848,7 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
 int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryCommand &cmd,
     NativeRdb::RdbPredicates &rdbPredicate)
 {
-    if (MediaLibraryRestore::GetInstance().IsBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()) {
+    if (MediaLibraryRestore::GetInstance().IsRealBackuping()) {
         MEDIA_INFO_LOG("[DeleteInRdbPredicatesAnalysis] rdb is backuping");
         return E_FAIL;
     }
