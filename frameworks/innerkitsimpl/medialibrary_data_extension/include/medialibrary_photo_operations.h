@@ -128,6 +128,8 @@ private:
     static int32_t ForceSavePicture(MediaLibraryCommand& cmd);
     static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension);
 private:
+    static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension, const std::string mimeType);
+    static void UpdateEditDataPath(std::string filePath, const std::string &extension);
     static std::mutex saveCameraPhotoMutex_;
     static std::condition_variable condition_;
     static std::string lastPhotoId_;

@@ -65,6 +65,7 @@ public:
     void DealLowQualityPicture(const std::string &imageId, std::shared_ptr<Media::Picture> picture,
         bool isEdited = false);
     void SaveLowQualityImageInfo(MediaLibraryCommand &cmd);
+    void SaveLowQualityPicture(const std::string &imageId);
 
     EXPORT bool IsPhotoDeleted(const std::string &photoId);
 
