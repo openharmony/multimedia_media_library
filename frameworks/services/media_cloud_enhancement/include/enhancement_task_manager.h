@@ -40,6 +40,8 @@ public:
     EXPORT static void RemoveAllEnhancementTask(std::vector<std::string> &taskIds);
     EXPORT static bool InProcessingTask(const std::string &photoId);
     EXPORT static std::string QueryPhotoIdByFileId(int32_t fileId);
+    EXPORT static void SetTaskRequestCount(const std::string &photoId, int32_t count);
+    EXPORT static int32_t GetTaskRequestCount(const std::string &photoId);
 
 private:
     // key: photo_id

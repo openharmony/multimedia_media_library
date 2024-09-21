@@ -56,6 +56,7 @@ void EnhancementServiceCallback::OnSuccess(string taskId, MediaEnhanceBundle& bu
     CHECK_AND_RETURN_LOG(!taskId.empty(), "enhancement callback error: taskId is empty");
     vector<RawData> resultBuffers = bundle.GetResultBuffers();
     CHECK_AND_RETURN_LOG(!resultBuffers.empty(), "enhancement callback error: resultBuffers is empty");
+    EnhancementTaskManager::SetTaskRequestCount(taskId, 1);
     MEDIA_INFO_LOG("callback start, photo_id: %{public}s", taskId.c_str());
     // query 100 per
     string where = PhotoColumn::PHOTO_ID + " = ? ";
@@ -81,11 +82,6 @@ void EnhancementServiceCallback::OnSuccess(string taskId, MediaEnhanceBundle& bu
         sourceFilePath, sourceDisplayName, sourceSubtype, hidden);
     int32_t newFileId = SaveCloudEnhancementPhoto(info, resultBuffers.front());
     CHECK_AND_RETURN_LOG(newFileId > 0, "invalid file id");
-    RdbPredicates updatePredicates(PhotoColumn::PHOTOS_TABLE);
-    string clause = MediaColumn::MEDIA_ID + " = ? ";
-    vector<string> args { sourceFileId };
-    updatePredicates.SetWhereClause(clause);
-    updatePredicates.SetWhereArgs(args);
     ValuesBucket rdbValues;
     rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
         static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
@@ -93,7 +89,12 @@ void EnhancementServiceCallback::OnSuccess(string taskId, MediaEnhanceBundle& bu
         static_cast<int32_t>(StrongAssociationType::NORMAL));
     rdbValues.PutInt(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, newFileId);
     int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates);
-    CHECK_AND_RETURN_LOG(ret == E_OK, "enhancement callback error: update source photo failed. ret: %{public}d", ret);
+    if (ret != E_OK) {
+        MEDIA_INFO_LOG("update source photo failed. ret: %{public}d, photoId: %{public}s", ret, taskId.c_str());
+        ret = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates);
+    }
+    CHECK_AND_RETURN_LOG(ret == E_OK, "update source photo again failed. ret: %{public}d, photoId: %{public}s",
+        ret, taskId.c_str());
     EnhancementTaskManager::RemoveEnhancementTask(taskId);
     CloudEnhancementGetCount::GetInstance().Report("SuccessType", taskId);
     string fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(sourceFileId),
@@ -226,11 +227,8 @@ void EnhancementServiceCallback::OnFailed(string taskId, MediaEnhanceBundle& bun
         "status code is invalid, task id:%{public}s, statusCode: %{public}d", taskId.c_str(), statusCode);
 
     MEDIA_INFO_LOG("callback start, photo_id: %{public}s enter, status code: %{public}d", taskId.c_str(), statusCode);
-    string where = PhotoColumn::PHOTO_ID + " = ? ";
-    vector<string> whereArgs { taskId };
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
-    servicePredicates.SetWhereClause(where);
-    servicePredicates.SetWhereArgs(whereArgs);
+    servicePredicates.EqualTo(PhotoColumn::PHOTO_ID, taskId);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
         MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_CE_AVAILABLE};
     auto resultSet = MediaLibraryRdbStore::Query(servicePredicates, columns);
@@ -254,6 +252,8 @@ void EnhancementServiceCallback::OnFailed(string taskId, MediaEnhanceBundle& bun
             static_cast<int32_t>(CloudEnhancementAvailableType::FAILED_RETRY));
     }
     valueBucket.Put(PhotoColumn::PHOTO_CE_STATUS_CODE, statusCode);
+    servicePredicates.NotEqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
+        static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
     int32_t changedRows = MediaLibraryRdbStore::Update(valueBucket, servicePredicates);
     CHECK_AND_RETURN_LOG(changedRows > 0, "enhancement callback error: db CE_AVAILABLE status update failed");
     EnhancementTaskManager::RemoveEnhancementTask(taskId);
