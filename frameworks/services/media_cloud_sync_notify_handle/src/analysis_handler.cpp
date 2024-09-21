@@ -28,7 +28,7 @@ namespace OHOS {
 namespace Media {
 
 using ChangeType = DataShare::DataShareObserver::ChangeType;
- 
+
 static vector<string> GetFileIds(const CloudSyncHandleData &handleData)
 {
     vector<string> fileIds;
@@ -43,7 +43,7 @@ static vector<string> GetFileIds(const CloudSyncHandleData &handleData)
     }
     return fileIds;
 }
- 
+
 static shared_ptr<ResultSet> GetUpdateAnalysisAlbumsInfo(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const vector<string> &fileIds)
 {
@@ -53,7 +53,7 @@ static shared_ptr<ResultSet> GetUpdateAnalysisAlbumsInfo(const shared_ptr<Native
     };
     RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
     predicates.In(PhotoMap::ASSET_ID, fileIds);
- 
+
     return rdbStore->Query(predicates, columns);
 }
 
@@ -67,12 +67,12 @@ static list<Uri> UpdateAnalysisAlbumsForCloudSync(const shared_ptr<NativeRdb::Rd
             ANALYSIS_PHOTO_MAP_TABLE + "." + PhotoMap::ALBUM_ID, resultSet, TYPE_STRING)));
     }
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIds, fileIds);
- 
+
     list<Uri> sendUris;
     for (auto albumId : albumIds) {
         sendUris.push_back(Uri(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX + albumId));
     }
- 
+
     return sendUris;
 }
 
@@ -90,7 +90,7 @@ static void AddNewNotify(CloudSyncHandleData &handleData, const list<Uri> &sendU
     }
     return;
 }
- 
+
 void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
@@ -125,11 +125,11 @@ void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
             AddNewNotify(newHandleData, sendUris);
         }
     }
- 
+
     if (nextHandler_ != nullptr) {
         nextHandler_->Handle(newHandleData);
     }
-    return ;
+    refreshAlbumsFunc_(true);
 }
 } //namespace Media
 } //namespace OHOS

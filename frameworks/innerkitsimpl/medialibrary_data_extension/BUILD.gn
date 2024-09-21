@@ -211,6 +211,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_album_operations.cpp",
     "src/medialibrary_app_uri_permission_operations.cpp",
     "src/medialibrary_appstate_observer.cpp",
+    "src/medialibrary_album_refresh.cpp",
     "src/medialibrary_asset_operations.cpp",
     "src/medialibrary_audio_operations.cpp",
     "src/medialibrary_bundle_manager.cpp",
