@@ -542,6 +542,10 @@ int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string 
             BackupFileUtils::GarbleFilePath(dstDir, DEFAULT_RESTORE_ID).c_str());
         return E_FAIL;
     }
+    if (!MediaFileUtils::IsFileExists(srcDir)) {
+        MEDIA_WARN_LOG("%{public}s doesn't exist, skip.", srcDir.c_str());
+        return E_OK;
+    }
     for (const auto &dirEntry : std::filesystem::directory_iterator{ srcDir }) {
         std::string srcFilePath = dirEntry.path();
         std::string tmpFilePath = srcFilePath;
