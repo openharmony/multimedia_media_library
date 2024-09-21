@@ -150,7 +150,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnError(const string &imageI
 }
 
 void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std::string &imageId,
-    std::shared_ptr<Media::Picture> picture)
+    std::shared_ptr<Media::Picture> picture, bool isCloudEnhancementAvailable)
 {
     MediaLibraryTracer tracer;
     tracer.Start("OnProcessImageDone " + imageId);
@@ -160,7 +160,8 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
         return;
     }
     // 1. 分段式拍照已经处理完成，保存全质量图
-    MEDIA_INFO_LOG("photoid: %{public}s enter", imageId.c_str());
+    MEDIA_INFO_LOG("yuv photoid: %{public}s, isCloudEnhancementAvailable: %{public}s enter", imageId.c_str(),
+        isCloudEnhancementAvailable?"true":"false");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
     string where = PhotoColumn::PHOTO_ID + " = ? ";
     vector<string> whereArgs { imageId };
@@ -199,6 +200,10 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
     // 2. 更新数据库 photoQuality 到高质量
     int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
     UpdatePhotoQuality(imageId);
+    // 3. update cloud enhancement available
+    if (isCloudEnhancementAvailable) {
+        UpdateCEAvailable(imageId);
+    }
 
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
 
@@ -207,7 +212,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
 
     // delete raw file
     MultiStagesCaptureManager::GetInstance().RemoveImage(imageId, false);
-    MEDIA_INFO_LOG("success photoid: %{public}s", imageId.c_str());
+    MEDIA_INFO_LOG("yuv success photoid: %{public}s", imageId.c_str());
 }
 
 void MultiStagesCaptureDeferredProcSessionCallback::OnDeliveryLowQualityImage(const std::string &imageId,
@@ -220,12 +225,23 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnDeliveryLowQualityImage(co
         MEDIA_INFO_LOG("OnDeliveryLowQualityImage picture is null");
         return;
     }
-
     MediaLibraryTracer tracer;
     tracer.Start("OnDeliveryLowQualityImage " + imageId);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = PhotoColumn::PHOTO_ID + " = ? ";
-    vector<string> whereArgs { imageId };
+    int slashIndex = imageId.rfind("/");
+    string where = "";
+    vector<string> whereArgs;
+    string photoId = "";
+    if (slashIndex != string::npos) {
+        string fileId = MediaFileUtils::GetIdFromUri(imageId);
+        where = PhotoColumn::MEDIA_ID + " = ? ";
+        whereArgs = { fileId };
+        photoId = fileId + "_";
+    } else {
+        where = PhotoColumn::PHOTO_ID + " = ? ";
+        whereArgs = { imageId };
+        photoId = imageId;
+    }
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,

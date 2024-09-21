@@ -355,6 +355,7 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     PhotoColumn::PHOTO_SUBTYPE,
     PhotoColumn::PHOTO_COVER_POSITION,
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+    PhotoColumn::PHOTO_BURST_COVER_LEVEL,
 };
 
 bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
@@ -832,20 +833,16 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::SaveCameraPhoto");
-    MEDIA_INFO_LOG("start");
+    MEDIA_INFO_LOG("start SaveCameraPhoto");
     string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
     if (fileId.empty()) {
         MEDIA_ERR_LOG("get fileId fail");
         return 0;
     }
-    vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
-        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED };
-    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
-        PhotoColumn::MEDIA_ID, fileId, OperationObject::FILESYSTEM_PHOTO, columns);
 
     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
     if (!fileType.empty()) {
-        SavePicture(stoi(fileType), fileAsset);
+        SavePicture(stoi(fileType), stoi(fileId));
     }
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
@@ -881,9 +878,16 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     }
 
     string needScanStr = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
-    string path = MediaFileUri::GetPathFromUri(uri, true);
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId,
+                                                         OperationObject::FILESYSTEM_PHOTO, PHOTO_COLUMN_VECTOR);
+    string path = fileAsset->GetPath();
+    int32_t burstCoverLevel = fileAsset->GetBurstCoverLevel();
     if (!path.empty()) {
-        ScanFile(path, false, true, true, stoi(fileId));
+        if (burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
+            ScanFile(path, false, true, true, stoi(fileId));
+        } else {
+            MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, true, true, stoi(fileId));
+        }
     }
     MEDIA_INFO_LOG("Success, updatedRows: %{public}d, needScanStr: %{public}s", updatedRows, needScanStr.c_str());
     return updatedRows;
@@ -1453,6 +1457,7 @@ int32_t MediaLibraryPhotoOperations::OpenEditOperation(MediaLibraryCommand &cmd,
 
 const static vector<string> EDITED_COLUMN_VECTOR = {
     PhotoColumn::MEDIA_FILE_PATH,
+    MediaColumn::MEDIA_NAME,
     PhotoColumn::PHOTO_EDIT_TIME,
     PhotoColumn::MEDIA_TIME_PENDING,
     PhotoColumn::MEDIA_DATE_TRASHED,
@@ -2410,15 +2415,8 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     int fileType = std::atoi(cmd.GetQuerySetParam(IMAGE_FILE_TYPE).c_str());
     int fileId = std::atoi(cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID).c_str());
     string uri = cmd.GetQuerySetParam("uri");
+    SavePicture(fileType, fileId);
     string path = MediaFileUri::GetPathFromUri(uri, true);
-    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
-    fileAsset->SetId(fileId);
-    fileAsset->SetFilePath(path);
-    auto res = SavePicture(fileType, fileAsset);
-    if (res != E_OK) {
-        MEDIA_ERR_LOG("save picture fail");
-        return res;
-    }
     MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId);
     return E_OK;
 }

@@ -33,7 +33,8 @@ public:
 
     void OnProcessImageDone(const std::string &imageId, const uint8_t *addr, const long bytes,
         bool isCloudEnhancementAvailable) override;
-    void OnProcessImageDone(const std::string &imageId, std::shared_ptr<Media::Picture> picture) override;
+    void OnProcessImageDone(const std::string &imageId, std::shared_ptr<Media::Picture> picture,
+        bool isCloudEnhancementAvailable) override;
     void OnDeliveryLowQualityImage(const std::string &imageId, std::shared_ptr<Media::Picture> picture) override;
     EXPORT void OnError(const std::string &imageId, const CameraStandard::DpsErrorCode error) override;
     void OnStateChanged(const CameraStandard::DpsStatusCode state) override;

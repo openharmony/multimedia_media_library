@@ -98,8 +98,6 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     readoffset += UINT32_LEN;
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture auxiliaryPictureSize: %{public}d",
         auxiliaryPictureSize);
-
-    // 获取Picture的序列化MessageParcel对象
     uint8_t *pictureParcelData = static_cast<uint8_t *>(malloc(dataSize));
     if (pictureParcelData == nullptr) {
         return E_ERR;
