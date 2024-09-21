@@ -100,7 +100,7 @@ const std::string MIME_TYPE_JPEG = "image/jpeg";
 const std::string MIME_TYPE_HEIF = "image/heif";
 
 const std::string EXTENSION_JPEG = ".jpg";
- 
+
 const std::string EXTENSION_HEIF = ".heic";
 
 const std::unordered_map<ImageFileType, std::string> IMAGE_FILE_TYPE_MAP = {
@@ -1774,7 +1774,7 @@ void MediaLibraryPhotoOperations::UpdateEditDataPath(std::string filePath, const
     if (pos != string::npos) {
         tempOutputPath.replace(pos, extension.length(), extension);
         rename(editDataPath.c_str(), tempOutputPath.c_str());
-        MEDIA_ERR_LOG("rename, src: %{public}s, dest: %{public}s",
+        MEDIA_DEBUG_LOG("rename, src: %{public}s, dest: %{public}s",
             editDataPath.c_str(), tempOutputPath.c_str());
     }
 }
