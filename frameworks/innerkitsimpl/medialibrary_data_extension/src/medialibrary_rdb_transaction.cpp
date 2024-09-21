@@ -73,7 +73,7 @@ int32_t TransactionOperations::BeginTransaction(bool isUpgrade)
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
     }
-    MEDIA_DEBUG_LOG("Start transaction");
+    MEDIA_INFO_LOG("Start transaction");
 
     unique_lock<mutex> cvLock(transactionMutex_);
     if (isInTransaction_.load()) {
