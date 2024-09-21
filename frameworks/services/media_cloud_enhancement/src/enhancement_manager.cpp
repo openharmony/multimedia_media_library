@@ -445,7 +445,8 @@ int32_t EnhancementManager::HandlePrioritizeOperation(MediaLibraryCommand &cmd)
             photoId.c_str());
         return E_ERR;
     }
-    if (!EnhancementTaskManager::InProcessingTask(photoId)) {
+    if (!EnhancementTaskManager::InProcessingTask(photoId) ||
+        EnhancementTaskManager::GetTaskRequestCount(photoId) != 0) {
         MEDIA_INFO_LOG("cloud enhancement task in cache not processing, photoId: %{public}s",
             photoId.c_str());
         return E_ERR;
@@ -454,10 +455,7 @@ int32_t EnhancementManager::HandlePrioritizeOperation(MediaLibraryCommand &cmd)
     mediaEnhanceBundle.PutInt(MediaEnhanceBundleKey::TRIGGER_TYPE, TaskTriggerType::TRIGGER_HIGH_LEVEL);
 
     int32_t ret = enhancementService_->AddTask(photoId, mediaEnhanceBundle);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("enhancment service error, photoId: %{public}s", photoId.c_str());
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "enhancment service error, photoId: %{public}s", photoId.c_str());
     return ret;
 #else
     MEDIA_ERR_LOG("not supply cloud enhancement service");
