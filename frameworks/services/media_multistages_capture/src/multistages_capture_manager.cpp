@@ -180,6 +180,17 @@ bool MultiStagesCaptureManager::IsHighQualityPhotoExist(const std::string &uri)
     return MediaFileUtils::IsFileExists(filePathTemp) || MediaFileUtils::IsFileExists(filePath);
 }
 
+void MultiStagesCaptureManager::SaveLowQualityPicture(const std::string &imageId)
+{
+    MEDIA_INFO_LOG("photoid: %{public}s", imageId.c_str());
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread == nullptr) {
+        return;
+    }
+    pictureManagerThread->Start();
+    pictureManagerThread->SaveLowQualityPicture(imageId);
+}
+
 // 高质量编辑图片存20S
 void MultiStagesCaptureManager::DealHighQualityPicture(const std::string &imageId,
     std::shared_ptr<Media::Picture> picture, bool isEdited)
@@ -322,8 +333,7 @@ void MultiStagesCaptureManager::AddImage(MediaLibraryCommand &cmd)
         return;
     }
     pictureManagerThread->Start();
-    if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL) ||
-        pictureManagerThread->IsExsitPictureByImageId(photoId)) {
+    if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
         pictureManagerThread->SavePictureWithImageId(photoId);
         UpdatePictureQuality(photoId);
         return;

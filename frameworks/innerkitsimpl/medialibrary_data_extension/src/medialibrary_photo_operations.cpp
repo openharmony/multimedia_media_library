@@ -99,9 +99,18 @@ const std::string MIME_TYPE_JPEG = "image/jpeg";
 
 const std::string MIME_TYPE_HEIF = "image/heif";
 
+const std::string EXTENSION_JPEG = ".jpg";
+ 
+const std::string EXTENSION_HEIF = ".heic";
+
 const std::unordered_map<ImageFileType, std::string> IMAGE_FILE_TYPE_MAP = {
     {JPEG, MIME_TYPE_JPEG},
     {HEIF, MIME_TYPE_HEIF},
+};
+
+const std::unordered_map<ImageFileType, std::string> IMAGE_EXTENSION_MAP = {
+    {JPEG, EXTENSION_JPEG},
+    {HEIF, EXTENSION_HEIF},
 };
 shared_ptr<PhotoEditingRecord> PhotoEditingRecord::instance_ = nullptr;
 mutex PhotoEditingRecord::mutex_;
@@ -1691,13 +1700,13 @@ static int32_t UpdateMimeType(const int32_t &fileId, const std::string mimeType)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Failed to get rdbStore when updating effect mode");
+        MEDIA_ERR_LOG("Failed to get rdbStore when updating mime type");
         return E_HAS_DB_ERROR;
     }
     MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
     ValuesBucket updateValues;
-    updateValues.PutString(MediaColumn::MEDIA_MIME_TYPE, mimeType);
+
     updateCmd.SetValueBucket(updateValues);
     int32_t updateRows = -1;
     int32_t errCode = rdbStore->Update(updateCmd, updateRows);
@@ -1706,6 +1715,63 @@ static int32_t UpdateMimeType(const int32_t &fileId, const std::string mimeType)
         return E_HAS_DB_ERROR;
     }
     return E_OK;
+}
+
+static void GetModityExtensionPath(std::string &path, std::string &modifyFilePath, const std::string &extension)
+{
+    size_t pos = path.find_last_of('.');
+    modifyFilePath = path.substr(0, pos) + extension;
+}
+ 
+int32_t MediaLibraryPhotoOperations::UpdateExtension(const int32_t &fileId, const std::string &extension,
+    const std::string mimeType)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Failed to get rdbStore when updating mime type");
+        return E_HAS_DB_ERROR;
+    }
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileId),
+                                                         OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
+    std::string filePath = fileAsset->GetFilePath();
+    std::string displayName = fileAsset->GetDisplayName();
+    std::string modifyFilePath;
+    std::string modifyDisplayName;
+    GetModityExtensionPath(filePath, modifyFilePath, extension);
+    GetModityExtensionPath(displayName, modifyDisplayName, extension);
+    MEDIA_DEBUG_LOG("modifyFilePath:%{public}s", modifyFilePath.c_str());
+    MEDIA_DEBUG_LOG("modifyDisplayName:%{public}s", modifyDisplayName.c_str());
+    if ((modifyFilePath == filePath) && (modifyDisplayName == displayName)) {
+        return E_OK;
+    }
+    UpdateEditDataPath(filePath, extension);
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    ValuesBucket updateValues;
+    updateValues.PutString(MediaColumn::MEDIA_FILE_PATH, modifyFilePath);
+    updateValues.PutString(MediaColumn::MEDIA_NAME, modifyDisplayName);
+    updateValues.PutString(MediaColumn::MEDIA_MIME_TYPE, mimeType);
+    updateCmd.SetValueBucket(updateValues);
+    int32_t updateRows = -1;
+    int32_t errCode = rdbStore->Update(updateCmd, updateRows);
+    if (errCode != NativeRdb::E_OK || updateRows < 0) {
+        MEDIA_ERR_LOG("Update extension failed. errCode:%{public}d, updateRows:%{public}d.", errCode, updateRows);
+        return E_HAS_DB_ERROR;
+    }
+    return E_OK;
+}
+
+void MediaLibraryPhotoOperations::UpdateEditDataPath(std::string filePath, const std::string &extension)
+{
+    string editDataPath = GetEditDataDirPath(filePath);
+    string tempOutputPath = editDataPath;
+    size_t pos = tempOutputPath.find_last_of('.');
+    if (pos != string::npos) {
+        tempOutputPath.replace(pos, extension.length(), extension);
+        rename(editDataPath.c_str(), tempOutputPath.c_str());
+        MEDIA_ERR_LOG("rename, src: %{public}s, dest: %{public}s",
+            editDataPath.c_str(), tempOutputPath.c_str());
+    }
 }
 
 int32_t MediaLibraryPhotoOperations::CommitEditInsert(MediaLibraryCommand &cmd)
@@ -2356,11 +2422,9 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId);
     return E_OK;
 }
-
-int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const std::shared_ptr<FileAsset> &fileAsset)
+int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const int32_t &fileId)
 {
-    int32_t fileId = fileAsset->GetId();
-    MEDIA_DEBUG_LOG("fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
+    MEDIA_DEBUG_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
 
     auto pictureManagerThread = PictureManagerThread::GetInstance();
     if (pictureManagerThread == nullptr) {
@@ -2374,6 +2438,21 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
         return E_FILE_EXIST;
     }
 
+    ImageFileType type = static_cast<ImageFileType>(fileType);
+    auto itr = IMAGE_FILE_TYPE_MAP.find(type);
+    if (itr == IMAGE_FILE_TYPE_MAP.end()) {
+        MEDIA_ERR_LOG("fileType : %{public} is not support", fileType);
+        return E_INVALID_ARGUMENTS;
+    }
+    std::string format = itr->second;
+    auto extensionItr = IMAGE_EXTENSION_MAP.find(type);
+    if (itr == IMAGE_EXTENSION_MAP.end()) {
+        MEDIA_ERR_LOG("fileType : %{public} is not support", fileType);
+        return E_INVALID_ARGUMENTS;
+    }
+    std::string extension = extensionItr->second;
+    UpdateExtension(fileId, extension, format);
+
     MEDIA_INFO_LOG("SaveCameraPhotoPicture::begin");
     {
         unique_lock<mutex> locker(saveCameraPhotoMutex_);
@@ -2383,19 +2462,13 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
             MEDIA_INFO_LOG("SaveCameraPhotoPicture::Wait wait for lock timeout");
         }
     }
-
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileId),
+                                                         OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
     string assetPath = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
 
-    ImageFileType type = static_cast<ImageFileType>(fileType);
-    auto itr = IMAGE_FILE_TYPE_MAP.find(type);
-    if (itr == IMAGE_FILE_TYPE_MAP.end()) {
-        MEDIA_ERR_LOG("fileType : %{public} is not support", fileType);
-        return E_INVALID_ARGUMENTS;
-    }
-    std::string format = itr->second;
     FileUtils::DealPicture(format, assetPath, picture);
-    UpdateMimeType(fileId, format);
+
     if (pictureManagerThread != nullptr) {
         pictureManagerThread->FinishAccessingPicture(photoId);
         pictureManagerThread->DeleteDataWithImageId(lastPhotoId_, LOW_QUALITY_PICTURE);
