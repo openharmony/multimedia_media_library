@@ -319,7 +319,7 @@ static void UpdateLastVisitTime(MediaLibraryCommand &cmd, const string &id)
     if (cmd.GetTableName() != PhotoColumn::PHOTOS_TABLE) {
         return;
     }
-    thread([=] {
+    std::thread([=] {
         int32_t changedRows = MediaLibraryRdbStore::UpdateLastVisitTime(id);
         if (changedRows <= 0) {
             MEDIA_ERR_LOG("update lastVisitTime Failed, changedRows = %{public}d.", changedRows);
@@ -1448,7 +1448,7 @@ void ResetOcrInfo(const int32_t &fileId)
     }
     string sqlDeleteOcr = "DELETE FROM " + VISION_OCR_TABLE + " WHERE file_id = " + to_string(fileId) + ";" +
         " UPDATE " + VISION_TOTAL_TABLE + " SET ocr = 0 WHERE file_id = " + to_string(fileId) + ";";
-
+ 
     int ret = rdbStore->ExecuteSql(sqlDeleteOcr);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Update ocr info failed, ret = %{public}d, file id is %{public}d", ret, fileId);
@@ -1476,7 +1476,6 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     errCode = UpdateEditTime(fileId, 0);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update edit time, fileId=%{public}d",
         fileId);
-
     ResetOcrInfo(fileId);
     if (MediaFileUtils::IsFileExists(editDataPath)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(editDataPath), E_HAS_FS_ERROR,
@@ -1875,7 +1874,6 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
 
     errCode = UpdateEditTime(id, MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d", id);
-    
     ResetOcrInfo(id);
     ScanFile(assetPath, false, true, true);
     UpdatePortraitAlbumCoverSatisfied(id);
