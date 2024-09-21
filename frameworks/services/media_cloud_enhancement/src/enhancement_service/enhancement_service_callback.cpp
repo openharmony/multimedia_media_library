@@ -227,11 +227,8 @@ void EnhancementServiceCallback::OnFailed(string taskId, MediaEnhanceBundle& bun
         "status code is invalid, task id:%{public}s, statusCode: %{public}d", taskId.c_str(), statusCode);
 
     MEDIA_INFO_LOG("callback start, photo_id: %{public}s enter, status code: %{public}d", taskId.c_str(), statusCode);
-    string where = PhotoColumn::PHOTO_ID + " = ? ";
-    vector<string> whereArgs { taskId };
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
-    servicePredicates.SetWhereClause(where);
-    servicePredicates.SetWhereArgs(whereArgs);
+    servicePredicates.EqualTo(PhotoColumn::PHOTO_ID, taskId);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
         MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_CE_AVAILABLE};
     auto resultSet = MediaLibraryRdbStore::Query(servicePredicates, columns);
