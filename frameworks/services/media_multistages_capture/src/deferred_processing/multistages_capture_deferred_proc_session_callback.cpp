@@ -185,8 +185,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     string mime_type = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
-    // 如果有低质量图，落盘处理
-    MultiStagesCaptureManager::GetInstance().DealLowQualityPicture(imageId, picture, isEdited);
+    MultiStagesCaptureManager::GetInstance().SaveLowQualityPicture(imageId);
     // 裸picture落盘处理
     int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(isEdited,
         data, picture, fileId, mime_type);
@@ -258,11 +257,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnDeliveryLowQualityImage(co
     int32_t photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
-    if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
-        FileUtils::SavePicture(photoId, picture, isEdited);
-        return;
-    }
-    MultiStagesCaptureManager::GetInstance().DealLowQualityPicture(photoId, std::move(picture), isEdited);
+    MultiStagesCaptureManager::GetInstance().DealLowQualityPicture(imageId, std::move(picture), isEdited);
     MEDIA_INFO_LOG("save low quality image end");
 }
 
