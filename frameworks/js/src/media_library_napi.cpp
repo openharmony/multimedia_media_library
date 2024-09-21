@@ -2530,6 +2530,7 @@ static napi_value GetSharedPhotoAssets(const napi_env& env, vector<string>& file
             return nullptr;
         }
     } while (result->GoToNextRow() == E_OK);
+    result->Close();
     return value;
 }
 
@@ -2567,6 +2568,7 @@ static napi_value GetSharedAlbumAssets(const napi_env& env, vector<string>& albu
             return nullptr;
         }
     } while (result->GoToNextRow() == E_OK);
+    result->Close();
     return value;
 }
 
