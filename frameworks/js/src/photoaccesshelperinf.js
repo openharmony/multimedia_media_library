@@ -345,16 +345,14 @@ async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfig
   let appName = '';
 
   try {
-    appName = await gContext.resourceManager.getStringValue(labelId);
-    if (appName === '') {
-      let modeleName = '';
-      for (let hapInfo of bundleInfo.hapModulesInfo) {
-        if (labelId === hapInfo.labelId) {
-          modeleName = hapInfo.name;
-        }
+    let modeleName = '';
+    for (let hapInfo of bundleInfo.hapModulesInfo) {
+      if (labelId === hapInfo.labelId) {
+        modeleName = hapInfo.name;
       }
-      appName = await gContext.createModuleContext(modeleName).resourceManager.getStringValue(labelId);
     }
+    console.info('photoAccessHelper modeleName is ' + modeleName + '.');
+    appName = await gContext.createModuleContext(modeleName).resourceManager.getStringValue(labelId);
     console.info('photoAccessHelper appName is ' + appName + '.');
     // only promise type
     return new Promise((resolve, reject) => {
