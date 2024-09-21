@@ -190,9 +190,6 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
     sceneCode_ = CLONE_RESTORE_ID;
     int32_t errorCode = Init(backupRestoreDir, upgradePath, true);
     if (errorCode == E_OK) {
-        CheckTableColumnStatus(mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
-        CheckTableColumnStatus(mediaRdb_, CLONE_TABLE_LISTS_AUDIO);
-        AnalyzeTotalSource();
         RestoreGallery();
         RestoreMusic();
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
@@ -255,6 +252,8 @@ void CloneRestore::RestorePhoto()
     // Scenario 1, clone photos from PhotoAlbum, PhotoMap and Photos.
     int totalNumberInPhotoMap = this->photosClone_.GetPhotosRowCountInPhotoMap();
     MEDIA_INFO_LOG("GetPhotosRowCountInPhotoMap, totalNumber = %{public}d", totalNumberInPhotoMap);
+    totalNumber_ += static_cast<uint64_t>(totalNumberInPhotoMap);
+    MEDIA_INFO_LOG("Update totalNumber_: %{public}lld", (long long)totalNumber_);
     for (int32_t offset = 0; offset < totalNumberInPhotoMap; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestorePhotoBatch(offset, 1); }, {&offset}, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -263,6 +262,8 @@ void CloneRestore::RestorePhoto()
     // Scenario 2, clone photos from Photos only.
     int32_t totalNumber = this->photosClone_.GetPhotosRowCountNotInPhotoMap();
     MEDIA_INFO_LOG("QueryTotalNumberNot, totalNumber = %{public}d", totalNumber);
+    totalNumber_ += static_cast<uint64_t>(totalNumber);
+    MEDIA_INFO_LOG("Update totalNumber_: %{public}lld", (long long)totalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestorePhotoBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -1098,6 +1099,7 @@ void CloneRestore::PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t e
 
 void CloneRestore::RestoreGallery()
 {
+    CheckTableColumnStatus(mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
     // Upgrade original MediaLibrary Database
     DataTransfer::MediaLibraryDbUpgrade medialibraryDbUpgrade;
     medialibraryDbUpgrade.OnUpgrade(*this->mediaRdb_);
@@ -1156,6 +1158,7 @@ bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
 
 void CloneRestore::RestoreMusic()
 {
+    CheckTableColumnStatus(mediaRdb_, CLONE_TABLE_LISTS_AUDIO);
     RestoreAudio();
     MEDIA_INFO_LOG("migrate database audio number: %{public}lld, file number: %{public}lld, duplicate number: "
         "%{public}lld", (long long)migrateAudioDatabaseNumber_, (long long)migrateAudioFileNumber_,
@@ -1183,6 +1186,8 @@ void CloneRestore::RestoreAudio(void)
     }
     int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
     MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
+    audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
+    MEDIA_INFO_LOG("Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -2065,16 +2070,6 @@ void CloneRestore::AppendExtraWhereClause(std::string& whereClause, const std::s
         whereClause += whereClause.empty() ? "" : " AND ";
         whereClause += it->second;
     }
-}
-
-void CloneRestore::AnalyzeTotalSource()
-{
-    MEDIA_INFO_LOG("start AnalyzeTotalSource.");
-    photoTotalNumber_ = QueryTotalNumberByMediaType(mediaRdb_, PhotoColumn::PHOTOS_TABLE, MediaType::MEDIA_TYPE_IMAGE);
-    videoTotalNumber_ = QueryTotalNumberByMediaType(mediaRdb_, PhotoColumn::PHOTOS_TABLE, MediaType::MEDIA_TYPE_VIDEO);
-    audioTotalNumber_ = QueryTotalNumberByMediaType(mediaRdb_, AudioColumn::AUDIOS_TABLE, MediaType::MEDIA_TYPE_AUDIO);
-    MEDIA_INFO_LOG("total photo: %{public}lld, video: %{public}lld, audio: %{public}lld",
-        (long long)photoTotalNumber_, (long long)videoTotalNumber_, (long long)audioTotalNumber_);
 }
 } // namespace Media
 } // namespace OHOS
