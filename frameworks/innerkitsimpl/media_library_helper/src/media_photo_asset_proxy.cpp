@@ -352,7 +352,9 @@ int32_t PhotoAssetProxy::UpdatePhotoQuality(shared_ptr<DataShare::DataShareHelpe
     predicates.SetWhereArgs({ to_string(fileId) });
 
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoColumn::PHOTO_ID, photoProxy->GetPhotoId());
+    string photoId = (photoProxy->GetPhotoId() == "" || subType == static_cast<int32_t>(PhotoSubType::BURST)) ?
+        (to_string(fileId) + "_") : photoProxy->GetPhotoId();
+    valuesBucket.Put(PhotoColumn::PHOTO_ID, photoId);
     valuesBucket.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, static_cast<int32_t>(photoProxy->GetDeferredProcType()));
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
     valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(subType));
