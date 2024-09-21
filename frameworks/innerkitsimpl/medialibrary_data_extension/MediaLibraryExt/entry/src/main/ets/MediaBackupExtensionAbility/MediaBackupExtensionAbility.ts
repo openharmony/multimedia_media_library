@@ -41,10 +41,10 @@ const STAT_KEY_DUPLICATE_COUNT = 'duplicateCount';
 const STAT_KEY_FAILED_COUNT = 'failedCount';
 const STAT_KEY_DETAILS = 'details';
 const STAT_KEY_NUMBER = 'number';
-const STAT_KEY_PROGRESS_INFO = "progressInfo";
-const STAT_KEY_NAME = "name";
-const STAT_KEY_PROCESSED = "processed";
-const STAT_KEY_TOTAL = "total";
+const STAT_KEY_PROGRESS_INFO = 'progressInfo';
+const STAT_KEY_NAME = 'name';
+const STAT_KEY_PROCESSED = 'processed';
+const STAT_KEY_TOTAL = 'total';
 const STAT_VALUE_ERROR_INFO = 'ErrorInfo';
 const STAT_VALUE_COUNT_INFO = 'CountInfo';
 const STAT_TYPE_PHOTO = 'photo';
@@ -109,17 +109,17 @@ const DEFAULT_PROGRESS_INFO = {
   {
     'name': STAT_TYPE_PHOTO,
     'processed': 0,
-    'number': 0
+    'total': 0
   },
   {
     'name': STAT_TYPE_VIDEO,
     'processed': 0,
-    'number': 0
+    'total': 0
   },
   {
     'name': STAT_TYPE_AUDIO,
     'processed': 0,
-    'number': 0
+    'total': 0
   }]
 };
 
@@ -168,7 +168,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     let progressInfo: string = mediabackup.getProgressInfo();
     if (progressInfo.length === 0 || !this.isProgressInfoValid(progressInfo)) {
       console.error(TAG, 'progressInfo is empty or invalid, return default');
-      return JSON.stringify(DEFAULT_PROGRESS_INFO);
+      progressInfo = JSON.stringify(DEFAULT_PROGRESS_INFO);
     }
     console.log(TAG, `GET progressInfo: ${progressInfo}`);
     return progressInfo;
