@@ -41,6 +41,7 @@ public:
         std::string &restoreExInfo);
     std::string GetRestoreExInfo();
     void ReportPortraitStat(int32_t sceneCode);
+    std::string GetProgressInfo();
 
 protected:
     int32_t Init(void);
@@ -53,6 +54,7 @@ protected:
         std::string dbName = "") = 0;
     virtual bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) = 0;
     virtual void AnalyzeSource() = 0;
+    virtual void AnalyzeTotalSource() = 0;
     virtual bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath);
     virtual bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
@@ -105,13 +107,18 @@ protected:
         const std::unordered_set<std::string> &needQuerySet);
     int32_t GetUniqueId(int32_t fileType);
     bool IsFileValid(FileInfo &fileInfo, const int32_t sceneCode);
+    SubProcessInfo GetSubProcessInfo(const std::string &type);
+    nlohmann::json GetSubProcessInfoJson(const std::string &type, const SubProcessInfo &subProcessInfo);
 
 protected:
-    std::atomic<uint64_t> migrateDatabaseNumber_;
-    std::atomic<uint64_t> migrateFileNumber_;
-    std::atomic<uint64_t> migrateVideoFileNumber_;
-    std::atomic<uint64_t> migrateAudioDatabaseNumber_;
-    std::atomic<uint64_t> migrateAudioFileNumber_;
+    std::atomic<uint64_t> migrateDatabaseNumber_{0};
+    std::atomic<uint64_t> migrateFileNumber_{0};
+    std::atomic<uint64_t> migrateVideoFileNumber_{0};
+    std::atomic<uint64_t> migrateAudioDatabaseNumber_{0};
+    std::atomic<uint64_t> migrateAudioFileNumber_{0};
+    std::atomic<uint64_t> photoTotalNumber_{0};
+    std::atomic<uint64_t> videoTotalNumber_{0};
+    std::atomic<uint64_t> audioTotalNumber_{0};
     std::atomic<uint64_t> migratePhotoDuplicateNumber_{0};
     std::atomic<uint64_t> migrateVideoDuplicateNumber_{0};
     std::atomic<uint64_t> migrateAudioDuplicateNumber_{0};
@@ -119,10 +126,10 @@ protected:
     std::atomic<uint64_t> migratePortraitFaceNumber_{0};
     std::atomic<uint64_t> migratePortraitAlbumNumber_{0};
     std::atomic<uint64_t> migratePortraitTotalTimeCost_{0};
-    std::atomic<uint32_t> imageNumber_;
-    std::atomic<uint32_t> videoNumber_;
+    std::atomic<uint32_t> imageNumber_{0};
+    std::atomic<uint32_t> videoNumber_{0};
     std::atomic<uint64_t> migrateDatabaseMapNumber_{0};
-    std::atomic<uint32_t> audioNumber_;
+    std::atomic<uint32_t> audioNumber_{0};
     std::string dualDirName_ = "";
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::string backupRestoreDir_;

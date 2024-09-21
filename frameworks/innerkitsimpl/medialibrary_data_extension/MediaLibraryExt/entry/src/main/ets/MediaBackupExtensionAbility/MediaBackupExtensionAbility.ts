@@ -41,6 +41,10 @@ const STAT_KEY_DUPLICATE_COUNT = 'duplicateCount';
 const STAT_KEY_FAILED_COUNT = 'failedCount';
 const STAT_KEY_DETAILS = 'details';
 const STAT_KEY_NUMBER = 'number';
+const STAT_KEY_PROGRESS_INFO = "progressInfo";
+const STAT_KEY_NAME = "name";
+const STAT_KEY_PROCESSED = "processed";
+const STAT_KEY_TOTAL = "total";
 const STAT_VALUE_ERROR_INFO = 'ErrorInfo';
 const STAT_VALUE_COUNT_INFO = 'CountInfo';
 const STAT_TYPE_PHOTO = 'photo';
@@ -100,6 +104,24 @@ const DEFAULT_BACKUP_INFO = [
     'number': 0
   }
 ];
+const DEFAULT_PROGRESS_INFO = {
+  'progressInfo': [
+  {
+    'name': STAT_TYPE_PHOTO,
+    'processed': 0,
+    'number': 0
+  },
+  {
+    'name': STAT_TYPE_VIDEO,
+    'processed': 0,
+    'number': 0
+  },
+  {
+    'name': STAT_TYPE_AUDIO,
+    'processed': 0,
+    'number': 0
+  }]
+};
 
 export default class MediaBackupExtAbility extends BackupExtensionAbility {
   async onBackup() : Promise<void> {
@@ -110,13 +132,8 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.log(TAG, `onRestore ok ${JSON.stringify(bundleVersion)}`);
     console.time(TAG + ' RESTORE');
     const backupDir = this.context.backupDir + 'restore';
-    if (bundleVersion.name.startsWith(UPGRADE_NAME)) {
-      await mediabackup.startRestore(UPGRADE_RESTORE, galleryAppName, mediaAppName, backupDir);
-    } else if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
-      await mediabackup.startRestore(DUAL_FRAME_CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
-    } else {
-      await mediabackup.startRestore(CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
-    }
+    let sceneCode: number = this.getSceneCode(bundleVersion);
+    await mediabackup.startRestore(sceneCode, galleryAppName, mediaAppName, backupDir);
     console.timeEnd(TAG + ' RESTORE');
   }
 
@@ -124,15 +141,8 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.log(TAG, `onRestoreEx ok ${JSON.stringify(bundleVersion)}, ${JSON.stringify(bundleInfo)}`);
     console.time(TAG + ' RESTORE EX');
     const backupDir = this.context.backupDir + 'restore';
-    let restoreExResult: string;
-    if (bundleVersion.name.startsWith(UPGRADE_NAME)) {
-      restoreExResult = await mediabackup.startRestoreEx(UPGRADE_RESTORE, galleryAppName, mediaAppName, backupDir);
-    } else if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
-      restoreExResult = await mediabackup.startRestoreEx(DUAL_FRAME_CLONE_RESTORE, galleryAppName, mediaAppName,
-        backupDir);
-    } else {
-      restoreExResult = await mediabackup.startRestoreEx(CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
-    }
+    let sceneCode: number = this.getSceneCode(bundleVersion);
+    let restoreExResult: string = await mediabackup.startRestoreEx(sceneCode, galleryAppName, mediaAppName, backupDir);
     let restoreExInfo: string = await this.getRestoreExInfo(restoreExResult);
     console.log(TAG, `GET restoreExInfo: ${restoreExInfo}`);
     console.timeEnd(TAG + ' RESTORE EX');
@@ -151,6 +161,17 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     }
     console.log(TAG, `GET backupInfo: ${backupInfo}`);
     return backupInfo;
+  }
+
+  onProcess(): string {
+    console.log(TAG, 'onProcess ok');
+    let progressInfo: string = mediabackup.getProgressInfo();
+    if (progressInfo.length === 0 || !this.isProgressInfoValid(progressInfo)) {
+      console.error(TAG, 'progressInfo is empty or invalid, return default');
+      return JSON.stringify(DEFAULT_PROGRESS_INFO);
+    }
+    console.log(TAG, `GET progressInfo: ${progressInfo}`);
+    return progressInfo;
   }
 
   private async getRestoreExInfo(restoreExResult: string): Promise<string> {
@@ -261,7 +282,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       return false;
     }
     return !isNaN(subCountInfo[STAT_KEY_SUCCESS_COUNT]) && !isNaN(subCountInfo[STAT_KEY_DUPLICATE_COUNT]) &&
-      !isNaN(subCountInfo[STAT_KEY_FAILED_COUNT]) ;
+      !isNaN(subCountInfo[STAT_KEY_FAILED_COUNT]);
   }
 
   private isBackupInfoValid(backupInfo: string): boolean {
@@ -314,5 +335,42 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       return false;
     }
     return true;
+  }
+
+  private isProgressInfoValid(progressInfo: string): boolean {
+    try {
+      let jsonObject = JSON.parse(progressInfo);
+      if (!this.hasKey(jsonObject, STAT_KEY_PROGRESS_INFO)) {
+        return false;
+      }
+      let subProcessInfos = jsonObject[STAT_KEY_PROGRESS_INFO];
+      for (let subProcessInfo of subProcessInfos) {
+        if (!this.isSubProcessInfoValid(subProcessInfo)) {
+          return false;
+        }
+      }
+      return true;
+    } catch (err) {
+      console.error(TAG, `isProgressInfoValid error message: ${err.message}, code: ${err.code}`);
+      return false;
+    }
+  }
+
+  private isSubProcessInfoValid(subProcessInfo: JSON): boolean {
+    if (!this.hasKey(subProcessInfo, STAT_KEY_NAME) || !this.hasKey(subProcessInfo, STAT_KEY_PROCESSED) ||
+      !this.hasKey(subProcessInfo, STAT_KEY_TOTAL)) {
+      return false;
+    }
+    return !isNaN(subProcessInfo[STAT_KEY_PROCESSED]) && !isNaN(subProcessInfo[STAT_KEY_TOTAL]);
+  }
+
+  private getSceneCode(bundleVersion: BundleVersion): number {
+    if (bundleVersion.name.startsWith(UPGRADE_NAME)) {
+      return UPGRADE_RESTORE;
+    }
+    if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
+      return DUAL_FRAME_CLONE_RESTORE;
+    }
+    return CLONE_RESTORE;
   }
 }

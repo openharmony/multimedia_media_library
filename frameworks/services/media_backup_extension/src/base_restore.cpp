@@ -54,6 +54,7 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
     backupRestoreDir_ = backupRetoreDir;
     int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     if (errorCode == E_OK) {
+        AnalyzeTotalSource();
         RestorePhoto();
         RestoreAudio();
         MEDIA_INFO_LOG("migrate database number: %{public}lld, file number: %{public}lld (%{public}lld + "
@@ -765,6 +766,7 @@ SubCountInfo BaseRestore::GetSubCountInfo(const std::string &type)
 
 std::unordered_map<std::string, int32_t> BaseRestore::GetFailedFiles(const std::string &type)
 {
+    std::lock_guard<mutex> lock(failedFilesMutex_);
     std::unordered_map<std::string, int32_t> failedFiles;
     auto iter = failedFilesMap_.find(type);
     if (iter != failedFilesMap_.end()) {
@@ -997,6 +999,51 @@ int32_t BaseRestore::GetUniqueId(int32_t fileType)
             MEDIA_ERR_LOG("Unsupported file type: %{public}d", fileType);
     }
     return uniqueId;
+}
+
+std::string BaseRestore::GetProgressInfo()
+{
+    nlohmann::json progressInfoJson;
+    for (const auto &type : STAT_TYPES) {
+        SubProcessInfo subProcessInfo = GetSubProcessInfo(type);
+        progressInfoJson[STAT_KEY_PROGRESS_INFO].push_back(GetSubProcessInfoJson(type, subProcessInfo));
+    }
+    return progressInfoJson.dump();
+}
+
+SubProcessInfo BaseRestore::GetSubProcessInfo(const std::string &type)
+{
+    std::unordered_map<std::string, int32_t> failedFiles = GetFailedFiles(type);
+    uint64_t total;
+    uint64_t success;
+    uint64_t duplicate;
+    uint64_t failed = static_cast<uint64_t>(failedFiles.size());
+    if (type == STAT_TYPE_PHOTO) {
+        success = migrateFileNumber_ - migrateVideoFileNumber_;
+        duplicate = migratePhotoDuplicateNumber_;
+        total = photoTotalNumber_;
+    } else if (type == STAT_TYPE_VIDEO) {
+        success = migrateVideoFileNumber_;
+        duplicate = migrateVideoDuplicateNumber_;
+        total = videoTotalNumber_;
+    } else {
+        success = migrateAudioFileNumber_;
+        duplicate = migrateAudioDuplicateNumber_;
+        total = audioTotalNumber_;
+    }
+    uint64_t processed = success + duplicate + failed;
+    MEDIA_INFO_LOG("%{public}s success: %{public}lld, duplicate: %{public}lld, failed: %{pubic}lld", type.c_str(),
+        (long long)success, (long long)duplicate, (long long)failed);
+    return SubProcessInfo(processed, total);
+}
+
+nlohmann::json BaseRestore::GetSubProcessInfoJson(const std::string &type, const SubProcessInfo &subProcessInfo)
+{
+    nlohmann::json subProcessInfoJson;
+    subProcessInfoJson[STAT_KEY_NAME] = type;
+    subProcessInfoJson[STAT_KEY_PROCESSED] = subProcessInfo.processed;
+    subProcessInfoJson[STAT_KEY_TOTAL] = subProcessInfo.total;
+    return subProcessInfoJson;
 }
 } // namespace Media
 } // namespace OHOS
