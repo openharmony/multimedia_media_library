@@ -532,6 +532,9 @@ int32_t UpgradeRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
 void UpgradeRestore::HandleRestData(void)
 {
     MEDIA_INFO_LOG("Start to handle rest data in native.");
+    // restore thumbnail for date fronted 500 photos
+    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
+
     std::string photoData = appDataPath_ + "/" + galleryAppName_;
     std::string mediaData = appDataPath_ + "/" + mediaAppName_;
     if (MediaFileUtils::IsFileExists(photoData)) {
@@ -543,9 +546,6 @@ void UpgradeRestore::HandleRestData(void)
         MediaFileUtils::DeleteDir(mediaData);
     }
     BackupFileUtils::DeleteSdDatabase(filePath_);
-
-    // restore thumbnail for date fronted 500 photos
-    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
 }
 
 int32_t UpgradeRestore::QueryTotalNumber(void)
