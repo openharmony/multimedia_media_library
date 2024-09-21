@@ -226,6 +226,8 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
         MEDIA_ERR_LOG("Init remote medialibrary rdb fail, err = %{public}d", err);
         return E_FAIL;
     }
+    this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
+    this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -246,7 +248,6 @@ void CloneRestore::RestorePhoto()
         return;
     }
     // The begining of the restore process
-    this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
     // Start clone restore
     // Scenario 1, clone photos from PhotoAlbum, PhotoMap and Photos.
     int totalNumberInPhotoMap = this->photosClone_.GetPhotosRowCountInPhotoMap();
@@ -290,7 +291,6 @@ void TRACE_LOG(const std::string &tableName, vector<AlbumInfo> &albumInfos)
 void CloneRestore::RestoreAlbum()
 {
     MEDIA_INFO_LOG("Start clone restore: albums");
-    this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
     for (const auto &tableName : CLONE_ALBUMS) {
         if (!IsReadyForRestore(tableName)) {
             MEDIA_ERR_LOG("Column status of %{public}s is not ready for restore album, quit",
@@ -404,7 +404,11 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
 }
 
 void CloneRestore::HandleRestData(void)
-{}
+{
+    MEDIA_INFO_LOG("Start to handle rest data in native.");
+    // restore thumbnail for date fronted 500 photos
+    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
+}
 
 vector<FileInfo> CloneRestore::QueryFileInfos(int32_t offset, int32_t isRelatedToPhotoMap)
 {
@@ -1464,6 +1468,7 @@ void CloneRestore::SetSpecialAttributes(const string &tableName, const shared_pt
     fileInfo.subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
     fileInfo.associateFileId = GetInt32Val(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, resultSet);
     // find PhotoAlbum info in target database. PackageName and BundleName should be fixed after clone.
+    fileInfo.lPath = this->photosClone_.FindlPath(fileInfo);
     fileInfo.ownerAlbumId = this->photosClone_.FindAlbumId(fileInfo);
     fileInfo.packageName = this->photosClone_.FindPackageName(fileInfo);
     fileInfo.bundleName = this->photosClone_.FindBundleName(fileInfo);
