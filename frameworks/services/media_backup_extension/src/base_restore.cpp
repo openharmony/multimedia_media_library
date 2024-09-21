@@ -1032,7 +1032,7 @@ SubProcessInfo BaseRestore::GetSubProcessInfo(const std::string &type)
         total = audioTotalNumber_;
     }
     uint64_t processed = success + duplicate + failed;
-    MEDIA_INFO_LOG("%{public}s success: %{public}lld, duplicate: %{public}lld, failed: %{pubic}lld", type.c_str(),
+    MEDIA_INFO_LOG("%{public}s success: %{public}lld, duplicate: %{public}lld, failed: %{public}lld", type.c_str(),
         (long long)success, (long long)duplicate, (long long)failed);
     return SubProcessInfo(processed, total);
 }

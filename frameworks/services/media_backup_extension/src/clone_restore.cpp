@@ -1139,6 +1139,7 @@ bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("Destination file path %{public}s exists, create new path failed",
                 BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
+            fileInfo.cloudPath.clear();
             UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::GET_PATH_FAILED);
             return false;
         }
@@ -1217,6 +1218,8 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
     fileInfo.fileType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
     fileInfo.oldPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     if (!ConvertPathToRealPath(fileInfo.oldPath, filePath_, fileInfo.filePath, fileInfo.relativePath)) {
+        MEDIA_ERR_LOG("Convert to real path failed, file path: %{public}s",
+            BackupFileUtils::GarbleFilePath(fileInfo.oldPath, DEFAULT_RESTORE_ID, garbagePath_).c_str());
         UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
@@ -2066,6 +2069,7 @@ void CloneRestore::AppendExtraWhereClause(std::string& whereClause, const std::s
 
 void CloneRestore::AnalyzeTotalSource()
 {
+    MEDIA_INFO_LOG("start AnalyzeTotalSource.");
     photoTotalNumber_ = QueryTotalNumberByMediaType(mediaRdb_, PhotoColumn::PHOTOS_TABLE, MediaType::MEDIA_TYPE_IMAGE);
     videoTotalNumber_ = QueryTotalNumberByMediaType(mediaRdb_, PhotoColumn::PHOTOS_TABLE, MediaType::MEDIA_TYPE_VIDEO);
     audioTotalNumber_ = QueryTotalNumberByMediaType(mediaRdb_, AudioColumn::AUDIOS_TABLE, MediaType::MEDIA_TYPE_AUDIO);
