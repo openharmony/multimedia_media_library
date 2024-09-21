@@ -25,6 +25,7 @@ export struct RecentPhotoComponent {
   public recentPhotoOptions: RecentPhotoOptions | undefined;
   public onRecentPhotoCheckResult?: RecentPhotoCheckResultCallback;
   public onRecentPhotoClick?: RecentPhotoClickCallback;
+  public onRecentPhotoCheckInfo?: RecentPhotoCheckInfoCallback;
 
   build() {
     Row() {
@@ -79,6 +80,13 @@ export struct RecentPhotoComponent {
       } else {
         console.warn('RecentPhotoComponent onReceive data type is invalid.');
       }
+    } else if (dataType === 'checkInfo') {
+      if (this.onRecentPhotoCheckInfo) {
+        let info: RecentPhotoInfo = new RecentPhotoInfo();
+        info.identifier = wantParam.identifier as string;
+        info.dateTaken = wantParam.dateTaken as number;
+        this.onRecentPhotoCheckInfo(wantParam.isExist as boolean, info);
+      }
     }
   }
 
@@ -100,10 +108,17 @@ export type RecentPhotoCheckResultCallback = (recentPhotoExists: boolean) => voi
 
 export type RecentPhotoClickCallback = (recentPhotoInfo: BaseItemInfo) => boolean;
 
+export type RecentPhotoCheckInfoCallback = (recentPhotoExists: boolean, info: RecentPhotoInfo) => void;
+
 export class RecentPhotoOptions {
   period?: number;
   MIMEType?: photoAccessHelper.PhotoViewMIMETypes;
   photoSource?: PhotoSource
+}
+
+export class RecentPhotoInfo {
+  dateTaken?: number;
+  identifier?: string;
 }
 
 export enum PhotoSource {
