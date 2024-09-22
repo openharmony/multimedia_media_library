@@ -137,6 +137,8 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
         }
     }
     ParseXml(xmlPath);
+    this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
+    this->photosRestorePtr_->OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -303,11 +305,9 @@ void UpgradeRestore::RestorePhoto()
     DataTransfer::GalleryDbUpgrade galleryDbUpgrade;
     galleryDbUpgrade.OnUpgrade(*this->galleryRdb_);
     // restore PhotoAlbum
-    this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     this->photoAlbumRestore_.Restore();
     RestoreFromGalleryPortraitAlbum();
     // restore Photos
-    this->photosRestorePtr_->OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     RestoreFromGallery();
     StopParameterForClone(sceneCode_);
     MEDIA_INFO_LOG("migrate from gallery number: %{public}lld, file number: %{public}lld",

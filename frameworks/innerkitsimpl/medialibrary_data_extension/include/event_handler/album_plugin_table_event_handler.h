@@ -31,6 +31,7 @@ public:
 private:
     int32_t InitiateData(NativeRdb::RdbStore &store);
     bool IsTableCreated(NativeRdb::RdbStore &store, const std::string &tableName);
+    int32_t GetAlbumPluginDataCount(NativeRdb::RdbStore &store);
 
 private:
     const std::string TABLE_NAME = "album_plugin";
@@ -56,6 +57,7 @@ private:
                 dual_album_name, \
                 priority \
         ) VALUES (?, ?, ?, ?, ?, ?, ?);";
+    const std::string SQL_SELECT_DATA_COUNT = "SELECT COUNT(1) AS count FROM album_plugin;";
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_ALBUM_PLUGIN_TABLE_EVENT_HANDLER_H

@@ -84,7 +84,7 @@ std::string PhotoBurstOperation::ToString(const std::vector<NativeRdb::ValueObje
     for (auto &value : values) {
         std::string str;
         value.GetString(str);
-        result.emplace_back(str);
+        result.emplace_back(str + ", ");
     }
     return std::accumulate(result.begin(), result.end(), std::string());
 }

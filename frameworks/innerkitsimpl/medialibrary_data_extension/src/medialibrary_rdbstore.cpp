@@ -784,7 +784,11 @@ inline void BuildInsertSystemAlbumSql(const ValuesBucket &values, const AbsRdbPr
 int32_t PrepareAlbumPlugin(RdbStore &store)
 {
     AlbumPluginTableEventHandler albumPluginTableEventHander;
-    return albumPluginTableEventHander.OnCreate(store);
+    int32_t ret = albumPluginTableEventHander.OnCreate(store);
+    // after initiate album_plugin table, add 2 default album into PhotoAlbum.
+    store.ExecuteSql(CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET);
+    store.ExecuteSql(CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET);
+    return ret;
 }
 
 int32_t PrepareSystemAlbums(RdbStore &store)
