@@ -116,6 +116,25 @@ static unordered_map<string, ResultSetDataType> albumColumnTypeMap = {
     {PhotoAlbumColumns::ALBUM_IS_LOCAL, ResultSetDataType::TYPE_INT32},
 };
 
+int32_t MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(NativeRdb::RdbStore *upgradeStore)
+{
+    MEDIA_INFO_LOG("ALBUM_FUSE: STEP_0: Start remove misadded hidden data");
+    if (upgradeStore == nullptr) {
+        MEDIA_INFO_LOG("fail to get rdbstore");
+        return E_DB_FAIL;
+    }
+    int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int32_t err = upgradeStore->ExecuteSql(DROP_UNWANTED_ALBUM_RELATIONSHIP_FOR_HIDDEN_ALBUM_ASSET);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to drop unwanted album relationship for .hiddenAlbum! Failed to exec: %{public}s",
+            DROP_UNWANTED_ALBUM_RELATIONSHIP_FOR_HIDDEN_ALBUM_ASSET.c_str());
+        return err;
+    }
+    MEDIA_INFO_LOG("ALBUM_FUSE: STEP_0: End remove misadded hidden data, cost %{public}ld",
+        (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
+    return E_OK;
+}
+
 int32_t MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(NativeRdb::RdbStore *upgradeStore)
 {
     MEDIA_INFO_LOG("ALBUM_FUSE: STEP_1: Start handle matched relationship");
@@ -1025,7 +1044,7 @@ int32_t MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(NativeRdb::R
     // Keep dual hidden assets dirty state synced, let cloudsync handle compensating for hidden flags
     KeepHiddenAlbumAssetSynced(upgradeStore);
     RemediateErrorSourceAlbumSubType(upgradeStore);
-    HandleMissMatchScreenRecord(upgradeStore);
+    HandleMisMatchScreenRecord(upgradeStore);
     MEDIA_INFO_LOG("End rebuild album table and compensate loss value");
     return E_OK;
 }
@@ -1301,7 +1320,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(NativeRdb::RdbStor
     return E_OK;
 }
 
-static int32_t TransferMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
+static int32_t TransferMisMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
 {
     MEDIA_INFO_LOG("Transfer miss matched screeRecord begin");
     const std::string QUERY_SCREEN_RECORD_ALBUM =
@@ -1336,7 +1355,7 @@ static int32_t TransferMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
     return E_OK;
 }
  
-int32_t MediaLibraryAlbumFusionUtils::HandleMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
+int32_t MediaLibraryAlbumFusionUtils::HandleMisMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
 {
     if (upgradeStore == nullptr) {
         MEDIA_ERR_LOG("invalid rdbstore");
@@ -1351,7 +1370,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleMissMatchScreenRecord(NativeRdb::Rdb
         MEDIA_INFO_LOG("No miss matched screen record");
         return E_OK;
     }
-    return TransferMissMatchScreenRecord(upgradeStore);
+    return TransferMisMatchScreenRecord(upgradeStore);
 }
 
 int32_t MediaLibraryAlbumFusionUtils::RefreshAllAlbums()

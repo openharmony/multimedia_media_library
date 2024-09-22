@@ -34,6 +34,7 @@ namespace OHOS {
 namespace Media {
 class MediaLibraryAlbumFusionUtils {
 public:
+    EXPORT static int32_t RemoveMisAddedHiddenData(NativeRdb::RdbStore *upgradeStore);
     EXPORT static int32_t HandleMatchedDataFusion(NativeRdb::RdbStore *upgradeStore);
     EXPORT static int32_t HandleNotMatchedDataFusion(NativeRdb::RdbStore *upgradeStore);
     EXPORT static int32_t HandleNotMatchedDataMigration(NativeRdb::RdbStore *upgradeStore,
@@ -71,7 +72,7 @@ private:
     static int32_t HandleNewCloudDirtyData(NativeRdb::RdbStore *upgradeStore,
         std::multimap<int32_t, std::vector<int32_t>> &notMatchedMap);
     static int32_t HandleDuplicateAlbum(NativeRdb::RdbStore *upgradeStore);
-    static int32_t HandleMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore);
+    static int32_t HandleMisMatchScreenRecord(NativeRdb::RdbStore *upgradeStore);
 };
 }
 }
