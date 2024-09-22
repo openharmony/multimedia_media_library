@@ -2864,6 +2864,10 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
     MEDIA_INFO_LOG("ALBUM_FUSE: Processing old data start");
     MEDIA_INFO_LOG("ALBUM_FUSE: Compensating album id for old asset start");
     int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
+
+    CHECK_AND_PRINT_LOG(MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(compensateData->upgradeStore_) == E_OK,
+        "Failed to remove misadded hidden data");
+
     int64_t cleanDataBeginTime = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t matchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(
         compensateData->upgradeStore_);
