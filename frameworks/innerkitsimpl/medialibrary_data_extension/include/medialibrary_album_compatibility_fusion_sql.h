@@ -112,6 +112,21 @@ const std::string CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET =
         "(album_type, album_subtype, album_name, bundle_name, dirty, is_local, date_added, lpath, priority)"
         " Values ('2048', '2049', '.hiddenAlbum', 'com.hidden.album', '1', "
         "'1', strftime('%s000', 'now'), '/Pictures/hiddenAlbum', '1')";
+
+const std::string SELECT_HIDDEN_ALBUM_ID =
+    "(SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
+        PhotoAlbumColumns::ALBUM_NAME + " = '.hiddenAlbum' AND " + PhotoAlbumColumns::ALBUM_DIRTY +
+        " <> 4 AND " + PhotoAlbumColumns::ALBUM_TYPE + " = '2048')";
+
+const std::string SELECT_ALL_HIDDEN_ALBUM_ASSET_ID =
+    "(SELECT " + PhotoMap::ASSET_ID + " FROM " + PhotoMap::TABLE + " WHERE " +
+        PhotoMap::ALBUM_ID + " = " + SELECT_HIDDEN_ALBUM_ID + ")";
+
+const std::string DROP_UNWANTED_ALBUM_RELATIONSHIP_FOR_HIDDEN_ALBUM_ASSET =
+    "UPDATE " + PhotoMap::TABLE + " SET " + PhotoMap::DIRTY + " = 4 " +
+        "WHERE " + PhotoMap::ASSET_ID + " in " + SELECT_ALL_HIDDEN_ALBUM_ASSET_ID +
+        " AND " + PhotoMap::ALBUM_ID + " <> " + SELECT_HIDDEN_ALBUM_ID;
+
 } // namespace Media
 } // namespace OHOS
 #endif  // OHOS_MEDIALIBRARY_ALBUM_COMPATIBILITY_FUSION_DATA_SQL_H
