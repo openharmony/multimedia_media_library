@@ -40,7 +40,6 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_source_loading.h"
-#include "image_format_convert.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -810,12 +809,6 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
     data.loaderOpts.decodeInThumbSize = true;
     if (data.source != nullptr && data.source->IsHdr()) {
         data.source->ToSdr();
-        if (data.mediaType == MEDIA_TYPE_VIDEO) {
-            uint32_t ret = ImageFormatConvert::ConvertImageFormat(data.source, PixelFormat::RGBA_8888);
-            if (ret != E_OK) {
-                MEDIA_ERR_LOG("DoCreateLcdAndThumbnail: source ConvertImageFormat fail");
-            }
-        }
     }
     if (!ThumbnailUtils::ScaleThumbnailFromSource(data, false)) {
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
@@ -824,12 +817,6 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
     
     if (data.orientation != 0 && data.sourceEx != nullptr && data.sourceEx->IsHdr()) {
         data.sourceEx->ToSdr();
-        if (data.mediaType == MEDIA_TYPE_VIDEO) {
-            uint32_t ret = ImageFormatConvert::ConvertImageFormat(data.sourceEx, PixelFormat::RGBA_8888);
-            if (ret != E_OK) {
-                MEDIA_ERR_LOG("DoCreateLcdAndThumbnail: sourceEx ConvertImageFormat fail");
-            }
-        }
     }
     if (data.orientation != 0 && !ThumbnailUtils::ScaleThumbnailFromSource(data, true)) {
         MEDIA_ERR_LOG("Fail to scale from LCD_EX to THM_EX, path: %{public}s",
