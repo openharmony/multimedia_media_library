@@ -108,7 +108,7 @@ void SolveAlbumNotify(std::shared_ptr<TestObserver> obs, const std::string& asse
         return;
     }
 
-    std::copy(static_cast<char*>(obs->changeInfo_.data_), static_cast<char*>(obs->changeInfo_.data_) +
+    std::copy(static_cast<const char*>(obs->changeInfo_.data_), static_cast<const char*>(obs->changeInfo_.data_) +
         obs->changeInfo_.size_, data.begin());
     std::shared_ptr<MessageParcel> parcel = std::make_shared<MessageParcel>();
 
