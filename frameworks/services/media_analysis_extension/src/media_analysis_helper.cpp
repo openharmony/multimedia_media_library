@@ -40,6 +40,12 @@ void MediaAnalysisHelper::StartMediaAnalysisServiceAsync(int32_t code, const std
     std::thread(&StartMediaAnalysisServiceInternal, code, option, fileIds).detach();
 }
 
+void MediaAnalysisHelper::AsyncStartMediaAnalysisService(int32_t code, const std::vector<std::string> &albumIds)
+{
+    MessageOption option(MessageOption::TF_ASYNC);
+    std::thread(&StartMediaAnalysisServiceInternal, code, option, albumIds).detach();
+}
+
 void MediaAnalysisHelper::StartMediaAnalysisServiceInternal(int32_t code, MessageOption option,
     std::vector<std::string> fileIds)
 {
