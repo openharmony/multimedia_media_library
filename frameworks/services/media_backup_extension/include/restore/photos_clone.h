@@ -84,7 +84,8 @@ private:
             ON PhotoAlbum.album_id=PhotoMap.map_album \
             INNER JOIN Photos \
             ON PhotoMap.map_asset=Photos.file_id \
-        WHERE Photos.position IN (1, 3);";
+        WHERE Photos.position IN (1, 3) AND \
+            (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum');";
     std::string SQL_PHOTOS_TABLE_QUERY_IN_PHOTO_MAP = "\
         SELECT PhotoAlbum.lpath, \
             Photos.* \
@@ -93,13 +94,17 @@ private:
             ON PhotoAlbum.album_id=PhotoMap.map_album \
             INNER JOIN Photos \
             ON PhotoMap.map_asset=Photos.file_id \
-        WHERE Photos.position IN (1, 3) \
+        WHERE Photos.position IN (1, 3) AND \
+            (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum') \
         ORDER BY Photos.file_id \
         LIMIT ?, ? ;";
     std::string SQL_PHOTOS_TABLE_COUNT_NOT_IN_PHOTO_MAP = "\
         SELECT COUNT(1) AS count \
         FROM Photos \
-        WHERE position IN (1, 3);";
+            LEFT JOIN PhotoAlbum \
+            ON Photos.owner_album_id = PhotoAlbum.album_id \
+        WHERE position IN (1, 3) AND \
+            (COALESCE(PhotoAlbum.album_type,0) != 2048 OR COALESCE(PhotoAlbum.album_name,'') != '.hiddenAlbum');";
     std::string SQL_PHOTOS_TABLE_QUERY_NOT_IN_PHOTO_MAP = "\
         SELECT \
             PhotoAlbum.lpath, \
@@ -107,7 +112,8 @@ private:
         FROM Photos \
             LEFT JOIN PhotoAlbum \
             ON Photos.owner_album_id=PhotoAlbum.album_id \
-        WHERE position IN (1, 3) \
+        WHERE position IN (1, 3) AND \
+            (COALESCE(PhotoAlbum.album_type,0) != 2048 OR COALESCE(PhotoAlbum.album_name,'') != '.hiddenAlbum') \
         ORDER BY Photos.file_id \
         LIMIT ?, ? ;";
     std::string SQL_PHOTOS_TABLE_BURST_KEY_DUPLICATE_QUERY = "\
