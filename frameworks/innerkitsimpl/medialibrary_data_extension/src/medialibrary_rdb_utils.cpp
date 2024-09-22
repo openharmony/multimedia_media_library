@@ -751,15 +751,18 @@ static int32_t RefreshAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
         MEDIA_DEBUG_LOG("Execute sql %{private}s success", sql.c_str());
         refreshProcessHandler(PhotoAlbumType::SYSTEM, subtype, albumId);
     }
+    return E_SUCCESS;
+}
 
+static void DeleteAllAlbumId(const shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
     string updateRefreshTableSql = "DELETE FROM " + ALBUM_REFRESH_TABLE;
     int32_t ret = rdbStore->ExecuteSql(updateRefreshTableSql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to execute sql:%{private}s", updateRefreshTableSql.c_str());
-        return E_HAS_DB_ERROR;
+        return;
     }
-    MEDIA_DEBUG_LOG("Delete AlbumRefreshTable success");
-    return E_SUCCESS;
+    MEDIA_INFO_LOG("Delete AlbumRefreshTable success");
 }
 
 static int32_t GetAllRefreshAlbumIds(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
@@ -799,6 +802,7 @@ static int32_t GetAllRefreshAlbumIds(const shared_ptr<NativeRdb::RdbStore> &rdbS
         }
         albumIds.push_back(to_string(refreshAlbumId));
     }
+    DeleteAllAlbumId(rdbStore);
     return E_SUCCESS;
 }
 

@@ -1074,7 +1074,7 @@ int32_t MediaFileUtils::CreateAsset(const string &filePath)
     }
 
     if (IsFileExists(filePath)) {
-        MEDIA_ERR_LOG("the file exists path: %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("the file exists path: %{public}s", filePath.c_str());
         return E_FILE_EXIST;
     }
 
