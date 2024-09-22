@@ -1014,6 +1014,14 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
     return SetPortraitCover(coverResult, albumResult, values, newCount);
 }
 
+static void RefreshHighlightAlbum(int32_t albumId)
+{
+    vector<string> albumIds;
+    albumIds.push_back(to_string(albumId));
+    MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+        static_cast<int32_t>(Media::MediaAnalysisProxy::ActivateServiceType::HIGHLIGHT_COVER_GENERATE), albumIds);
+}
+
 static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const shared_ptr<ResultSet> &albumResult, ValuesBucket &values, PhotoAlbumSubType subtype, const bool hiddenState)
 {
@@ -1041,8 +1049,10 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
         return E_HAS_DB_ERROR;
     }
     int32_t newCount = SetCount(fileResult, albumResult, values, hiddenState, subtype);
-    if (subtype != PhotoAlbumSubType::HIGHLIGHT) {
+    if (subtype != PhotoAlbumSubType::HIGHLIGHT && subtype != PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
         SetCover(fileResult, albumResult, values, hiddenState, subtype);
+    } else {
+        RefreshHighlightAlbum(GetAlbumId(albumResult));
     }
     if (hiddenState == 0 && (subtype < PhotoAlbumSubType::ANALYSIS_START ||
         subtype > PhotoAlbumSubType::ANALYSIS_END)) {
