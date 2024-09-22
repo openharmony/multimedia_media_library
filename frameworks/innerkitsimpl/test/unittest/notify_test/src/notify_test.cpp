@@ -13,6 +13,10 @@
  * limitations under the License.
  */
 #define MLOG_TAG "NotifyTest"
+#include <memory>
+#include <vector>
+#include <algorithm>
+#include <string>
 
 #include "notify_test.h"
 
@@ -99,25 +103,27 @@ void CheckFileNotify(NotifyType notifyType)
     }
 }
 
-void SolveAlbumNotify(shared_ptr<TestObserver> obs, string assetStr)
+void SolveAlbumNotify(std::shared_ptr<TestObserver> obs, const std::string& assetStr)
 {
-    uint8_t *data = new (nothrow) uint8_t[obs->changeInfo_.size_];
-    if (data == nullptr) {
+    std::vector<uint8_t> data(obs->changeInfo_.size_);
+    if (data.empty()) {
         return;
     }
-    int copyRet = memcpy_s(data, obs->changeInfo_.size_, obs->changeInfo_.data_, obs->changeInfo_.size_);
-    if (copyRet != 0) {
-        return;
-    }
-    shared_ptr<MessageParcel> parcel = make_shared<MessageParcel>();
-    if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(data), obs->changeInfo_.size_)) {
+
+    std::copy(obs->changeInfo_.data_, obs->changeInfo_.data_ + obs->changeInfo_.size_, data.begin());
+
+    std::shared_ptr<MessageParcel> parcel = std::make_shared<MessageParcel>();
+
+    if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(data.data()), obs->changeInfo_.size_)) {
         uint32_t len = 0;
         if (!parcel->ReadUint32(len)) {
             return;
         }
+
         EXPECT_EQ(len, LIST_SIZE);
+
         for (uint32_t i = 0; i < len; i++) {
-            string subUri = parcel->ReadString();
+            std::string subUri = parcel->ReadString();
             if (subUri.empty()) {
                 return;
             }
