@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #define MLOG_TAG "NotifyTest"
+#include <cstring>
 
 #include "notify_test.h"
 
