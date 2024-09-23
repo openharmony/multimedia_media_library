@@ -69,6 +69,8 @@ private:
     static int32_t CommitEditInsertExecute(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &editData);
     static int32_t DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t RevertMovingPhotoVideo(const std::shared_ptr<FileAsset> &fileAsset,
+        const std::string &path, const std::string &sourceVideoPath, int32_t subtype);
     static int32_t ParseMediaAssetEditData(MediaLibraryCommand &cmd, std::string &editData);
     static bool IsSetEffectMode(MediaLibraryCommand &cmd);
     static bool IsContainsData(MediaLibraryCommand &cm);
@@ -77,6 +79,8 @@ private:
     static int32_t SaveEditDataCamera(MediaLibraryCommand &cmd, const std::string &assetPath,
         std::string &editData);
     static int32_t SaveSourceAndEditData(const std::shared_ptr<FileAsset> &fileAsset, const std::string &editData);
+    static int32_t SaveSourceVideoFile(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
+        const std::string &assetPath);
     static int32_t AddFiltersExecute(MediaLibraryCommand& cmd, const std::shared_ptr<FileAsset>& fileAsset,
         const std::string &cachePath);
     static int32_t SubmitEditCacheExecute(MediaLibraryCommand &cmd,
@@ -84,11 +88,13 @@ private:
     static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
     static int32_t SubmitEffectModeExecute(MediaLibraryCommand &cmd);
+    static int32_t SubmitEditMovingPhotoExecute(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t GetMovingPhotoCachePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         std::string &imageCachePath, std::string &videoCachePath);
     static bool CheckCacheCmd(MediaLibraryCommand &cmd, int32_t subtype, const std::string &displayName);
     static int32_t MoveCacheFile(MediaLibraryCommand &cmd, int32_t subtype,
         const std::string &cachePath, const std::string &destPath);
+    static int32_t UpdateMovingPhotoSubtype(int32_t fileId, int32_t currentPhotoSubType);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,

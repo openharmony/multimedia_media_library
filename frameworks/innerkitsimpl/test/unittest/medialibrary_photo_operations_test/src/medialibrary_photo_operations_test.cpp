@@ -338,13 +338,16 @@ inline int32_t CreatePhotoApi9(int mediaType, const string &displayName, const s
     return ret;
 }
 
-inline int32_t CreatePhotoApi10(int mediaType, const string &displayName)
+int32_t CreatePhotoApi10(int mediaType, const string &displayName, bool isMovingPhoto = false)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
     ValuesBucket values;
     values.PutString(MediaColumn::MEDIA_NAME, displayName);
     values.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
+    if (isMovingPhoto) {
+        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    }
     cmd.SetValueBucket(values);
     int32_t ret = MediaLibraryPhotoOperations::Create(cmd);
     if (ret < 0) {
@@ -378,7 +381,7 @@ string GetFilePath(int fileId)
     return path;
 }
 
-int32_t MakePhotoUnpending(int fileId)
+int32_t MakePhotoUnpending(int fileId, bool isMovingPhoto = false)
 {
     if (fileId < 0) {
         MEDIA_ERR_LOG("this file id %{private}d is invalid", fileId);
@@ -394,6 +397,15 @@ int32_t MakePhotoUnpending(int fileId)
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("Can not create asset");
         return errCode;
+    }
+
+    if (isMovingPhoto) {
+        string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
+        errCode = MediaFileUtils::CreateAsset(videoPath);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("Can not create video asset");
+            return errCode;
+        }
     }
 
     if (g_rdbStore == nullptr) {
@@ -434,6 +446,62 @@ int32_t SetPendingOnly(int32_t pendingTime, int64_t fileId)
     return E_OK;
 }
 
+int32_t OpenCacheFile(bool isVideo, string &fileName)
+{
+    string extension = isVideo ? ".mp4" : ".jpg";
+    fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + extension;
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    if (fd <= 0) {
+        MEDIA_ERR_LOG("Open file failed, fd=%{public}d", fd);
+    }
+    close(fd);
+    return fd;
+}
+
+int32_t MovingPhotoEditByCache(int32_t fileId, string &fileName, string &videoFileName, bool isGraffiti = false)
+{
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
+    valuesBucket.Put(CACHE_FILE_NAME, fileName);
+    if (!isGraffiti) {
+        valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, videoFileName);
+    }
+    valuesBucket.Put(COMPATIBLE_FORMAT, "compatibleFormat");
+    valuesBucket.Put(FORMAT_VERSION, "formatVersion");
+    valuesBucket.Put(EDIT_DATA, "data");
+
+    MediaLibraryCommand submitCacheCmd(OperationObject::FILESYSTEM_PHOTO,
+        OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    return MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
+}
+
+int32_t UpdateEditTime(int64_t fileId, int64_t time)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    MediaLibraryCommand updatePendingCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updatePendingCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    ValuesBucket updateValues;
+    updateValues.PutLong(PhotoColumn::PHOTO_EDIT_TIME, time);
+    updatePendingCmd.SetValueBucket(updateValues);
+    int32_t rowId = 0;
+    int32_t result = rdbStore->Update(updatePendingCmd, rowId);
+    if (result != NativeRdb::E_OK || rowId <= 0) {
+        MEDIA_ERR_LOG("Update File pending failed. Result %{public}d.", result);
+        return E_HAS_DB_ERROR;
+    }
+
+    return E_OK;
+}
+
 int32_t SetDefaultPhotoApi9(int mediaType, const string &displayName, const string &relativePath)
 {
     int fileId = CreatePhotoApi9(mediaType, displayName, relativePath);
@@ -448,14 +516,14 @@ int32_t SetDefaultPhotoApi9(int mediaType, const string &displayName, const stri
     return fileId;
 }
 
-int32_t SetDefaultPhotoApi10(int mediaType, const string &displayName)
+int32_t SetDefaultPhotoApi10(int mediaType, const string &displayName, bool isMovingPhoto = false)
 {
-    int fileId = CreatePhotoApi10(mediaType, displayName);
+    int fileId = CreatePhotoApi10(mediaType, displayName, isMovingPhoto);
     if (fileId < 0) {
         MEDIA_ERR_LOG("create photo failed, res=%{public}d", fileId);
         return fileId;
     }
-    int32_t errCode = MakePhotoUnpending(fileId);
+    int32_t errCode = MakePhotoUnpending(fileId, isMovingPhoto);
     if (errCode != E_OK) {
         return errCode;
     }
@@ -2269,6 +2337,49 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_001
     MEDIA_INFO_LOG("end tdd photo_oprn_revert_edit_insert_test_001");
 }
 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_revert_edit_insert_test_002");
+
+    int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
+        return;
+    }
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::REVERT_EDIT,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    int32_t ret = SetPendingOnly(0, fileId);
+    EXPECT_EQ(ret, 0);
+    cmd.SetValueBucket(values);
+    EXPECT_EQ(MediaLibraryPhotoOperations::RevertToOrigin(cmd), E_OK);
+
+    // open photo and video file
+    string fileName;
+    int32_t fd = OpenCacheFile(false, fileName);
+    EXPECT_GE(fd, 0);
+
+    string videoFileName;
+    int32_t videoFd = OpenCacheFile(false, videoFileName);
+    EXPECT_GE(videoFd, 0);
+
+    // edit by cache
+    ret = MovingPhotoEditByCache(fileId, fileName, videoFileName);
+    EXPECT_EQ(ret, E_FILE_OPER_FAIL); // when write moving photo to photo directory, check moving photo failed
+
+    UpdateEditTime(fileId, MediaFileUtils::UTCTimeSeconds());
+    EXPECT_EQ(MediaLibraryPhotoOperations::RevertToOrigin(cmd), E_OK);
+
+    // graffiti edit by cache
+    ret = MovingPhotoEditByCache(fileId, fileName, videoFileName, true);
+    EXPECT_EQ(ret, fileId);
+    EXPECT_EQ(MediaLibraryPhotoOperations::RevertToOrigin(cmd), E_OK);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_revert_edit_insert_test_002");
+}
+
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd photo_edit_record_test_001");
@@ -2824,6 +2935,55 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_004, Tes
     EXPECT_LT(ret, 0);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_004");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_005");
+
+    // create asset
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    // open photo and video cache file
+    string fileName;
+    int32_t fd = OpenCacheFile(false, fileName);
+    EXPECT_GE(fd, 0);
+
+    string videoFileName;
+    int32_t videoFd = OpenCacheFile(false, videoFileName);
+    EXPECT_GE(videoFd, 0);
+
+    // edit by cache
+    int ret = MovingPhotoEditByCache(fileId, fileName, videoFileName);
+    EXPECT_EQ(ret, E_FILE_OPER_FAIL); // when write moving photo to photo directory, check moving photo failed
+    
+    MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_005");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_006");
+
+    // create asset
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    // open photo and video cache file
+    string fileName;
+    int32_t fd = OpenCacheFile(false, fileName);
+    EXPECT_GE(fd, 0);
+
+    // edit by cache
+    int ret = MovingPhotoEditByCache(fileId, fileName, fileName, true);
+    EXPECT_EQ(ret, fileId);
+    MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_006");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_001, TestSize.Level0)
