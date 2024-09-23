@@ -37,6 +37,14 @@ const std::string CREATE_GEO_KNOWLEDGE_TABLE =
     FEATURE_NAME + " TEXT, " +
     CITY_NAME + " TEXT, " +
     ADDRESS_DESCRIPTION + " TEXT, " +
+    AOI + " Text, " +
+    POI + " Text, " +
+    FIRST_AOI + " Text, " +
+    FIRST_POI + " Text, " +
+    LOCATION_VERSION + " Text, " +
+    FIRST_AOI_CATEGORY + " Text, " +
+    FIRST_POI_CATEGORY + " Text, " +
+    FILE_ID + " Text, " +
     LOCATION_TYPE + " TEXT) ";
 
 const std::string CREATE_GEO_DICTIONARY_TABLE =
@@ -56,8 +64,10 @@ const std::string CREATE_LOCATION_KEY_INDEX =
 const std::string CREATE_DICTIONARY_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + DICTIONARY_INDEX + " ON " +
     GEO_DICTIONARY_TABLE + " (" + CITY_ID + "," + LANGUAGE + ")";
 
-const std::string CREATE_KNOWLEDGE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + KNOWLEDG_INDEX + " ON " +
-    GEO_KNOWLEDGE_TABLE + " (" +  LATITUDE + "," + LONGITUDE + "," + LANGUAGE + ")";
+const std::string DROP_KNOWLEDGE_INDEX = "DROP INDEX IF EXISTS " + KNOWLEDG_INDEX;
+
+const std::string CREATE_NEW_KNOWLEDGE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + KNOWLEDG_INDEX + " ON " +
+    GEO_KNOWLEDGE_TABLE + " (" +  FILE_ID + ")";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_LOCATION_DB_SQLS_H
