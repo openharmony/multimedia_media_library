@@ -216,7 +216,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     ConvertDecodeSize(data, {videoWidth, videoHeight}, desiredSize);
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
-    data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
+    data.source = avMetadataHelper->FetchFrameYuv(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
         param);
     if (data.source == nullptr) {
         DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
@@ -1238,7 +1238,9 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
         MEDIA_ERR_LOG("thumbnail center crop failed [%{private}s]", data.id.c_str());
         return false;
     }
-    data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    if (data.source->GetPixelFormat() != PixelFormat::YCBCR_P010) {
+        data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    }
     if (data.orientation != 0) {
         if (data.isLocalFile) {
             Media::InitializationOptions opts;
