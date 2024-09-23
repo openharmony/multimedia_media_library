@@ -192,6 +192,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
     if (errorCode == E_OK) {
         RestoreGallery();
         RestoreMusic();
+        MEDIA_INFO_LOG("Start update unique number");
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, audioNumber_, AUDIO_ASSET_TYPE);
@@ -1111,8 +1112,11 @@ void CloneRestore::RestoreGallery()
         (long long)(migrateFileNumber_ - migrateVideoFileNumber_), (long long)migrateVideoFileNumber_,
         (long long)migratePhotoDuplicateNumber_, (long long)migrateVideoDuplicateNumber_,
         (long long)migrateDatabaseAlbumNumber_, (long long)migrateDatabaseMapNumber_);
+    MEDIA_INFO_LOG("Start update all albums");
     MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
+    MEDIA_INFO_LOG("Start update group tags");
     BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
+    MEDIA_INFO_LOG("Start notify");
     NotifyAlbum();
 }
 

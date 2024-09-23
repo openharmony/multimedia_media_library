@@ -64,10 +64,13 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
             (long long)migratePhotoDuplicateNumber_, (long long)migrateVideoDuplicateNumber_,
             (long long)migrateAudioDatabaseNumber_, (long long)migrateAudioFileNumber_,
             (long long)migrateAudioDuplicateNumber_, (long long) migrateDatabaseMapNumber_);
+        MEDIA_INFO_LOG("Start update all albums");
         MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
+        MEDIA_INFO_LOG("Start update unique number");
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, audioNumber_, AUDIO_ASSET_TYPE);
+        MEDIA_INFO_LOG("Start notify");
         auto watch = MediaLibraryNotify::GetInstance();
         if (watch == nullptr) {
             MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
@@ -1043,6 +1046,7 @@ nlohmann::json BaseRestore::GetSubProcessInfoJson(const std::string &type, const
     subProcessInfoJson[STAT_KEY_NAME] = type;
     subProcessInfoJson[STAT_KEY_PROCESSED] = subProcessInfo.processed;
     subProcessInfoJson[STAT_KEY_TOTAL] = subProcessInfo.total;
+    subProcessInfoJson[STAT_KEY_IS_PERCENTAGE] = true;
     return subProcessInfoJson;
 }
 } // namespace Media

@@ -129,6 +129,7 @@ const std::string STAT_KEY_PROGRESS_INFO = "progressInfo";
 const std::string STAT_KEY_NAME = "name";
 const std::string STAT_KEY_PROCESSED = "processed";
 const std::string STAT_KEY_TOTAL = "total";
+const std::string STAT_KEY_IS_PERCENTAGE = "isPercentage";
 const std::string STAT_VALUE_ERROR_INFO = "ErrorInfo";
 const std::string STAT_VALUE_COUNT_INFO = "CountInfo";
 const std::string STAT_TYPE_PHOTO = "photo";
