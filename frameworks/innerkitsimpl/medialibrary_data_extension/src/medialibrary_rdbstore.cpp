@@ -3442,7 +3442,7 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
         UpdateVideoLabelTableForSubLabelType(store);
     }
 
-    // VERSION_UPGRADE_THUMBNAIL = 101 move to UpgradeRdbStoreAsync(), avoid to cost for long time.
+    // VERSION_UPGRADE_THUMBNAIL move to HandleUpgradeRdbAsync()
 
     if (oldVersion < VISION_UPDATE_DATA_ADDED_INDEX) {
         UpdateDataAddedIndexWithFileId(store);
