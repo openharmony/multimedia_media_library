@@ -190,6 +190,9 @@ public:
     EXPORT int32_t GetMovingPhotoEffectMode() const;
     EXPORT void SetMovingPhotoEffectMode(int32_t effectMode);
 
+    EXPORT int32_t GetSupportWatermarkType() const;
+    EXPORT void SetSupportWatermarkType(int32_t watermarkType);
+
     EXPORT int64_t GetCoverPosition() const;
     EXPORT void SetCoverPosition(int64_t coverPosition);
 

@@ -191,6 +191,7 @@ thread_local napi_ref MediaLibraryNapi::sMovingPhotoEffectModeEnumRef_ = nullptr
 thread_local napi_ref MediaLibraryNapi::sImageFileTypeEnumEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sCloudEnhancementTaskStageEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sCloudEnhancementStateEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sSupportWatermarkTypeEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -377,6 +378,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("CloudEnhancementTaskStage", CreateCloudEnhancementTaskStageEnum(env)),
         DECLARE_NAPI_PROPERTY("CloudEnhancementState", CreateCloudEnhancementStateEnum(env)),
         DECLARE_NAPI_PROPERTY("AuthorizationMode", CreateAuthorizationModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("WatermarkType", CreateSupportWatermarkTypeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -6692,6 +6694,11 @@ napi_value MediaLibraryNapi::CreateMovingPhotoEffectModeEnum(napi_env env)
     CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sMovingPhotoEffectModeEnumRef_),
         JS_INNER_FAIL);
     return result;
+}
+
+napi_value MediaLibraryNapi::CreateSupportWatermarkTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, watermarkTypeEnum, sSupportWatermarkTypeEnumRef_);
 }
 
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,

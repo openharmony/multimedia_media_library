@@ -2702,6 +2702,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::PHOTO_USER_COMMENT,
         PhotoColumn::CAMERA_SHOT_KEY,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+        PhotoColumn::SUPPORT_WATERMARK_TYPE,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
     };
