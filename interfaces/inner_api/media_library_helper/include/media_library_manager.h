@@ -187,7 +187,7 @@ public:
     EXPORT int32_t ReadMovingPhotoVideo(const string &uri);
 
     /**
-     * @brief Open video of moving photo to read in the cloud
+     * @brief Open video of moving photo to read, support cloud file
      *
      * @param uri asset uri of the moving photo
      * @param offset offset of the video in fd

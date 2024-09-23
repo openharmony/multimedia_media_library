@@ -315,6 +315,8 @@ static int32_t MergeFile(const UniqueFd& imageFd, const UniqueFd& videoFd, const
 
 uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetFrameIndex");
     uint32_t index{0};
     if (fd < 0) {
         MEDIA_ERR_LOG("file is error");
@@ -333,6 +335,7 @@ uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
         MEDIA_ERR_LOG("failed to get frame index");
         return index;
     }
+    tracer.Finish();
     return index;
 }
 

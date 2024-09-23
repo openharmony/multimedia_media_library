@@ -938,7 +938,7 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, off_t &offs
         return E_ERR;
     }
     offset = st.st_size - liveSize - PLAY_INFO_LEN - LIVE_TAG_LEN;
-    MEDIA_DEBUG_LOG("offset is %{public}ld", offset);
+    MEDIA_DEBUG_LOG("offset is %{public}" PRId64, offset);
     return fd;
 }
 
