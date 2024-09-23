@@ -455,17 +455,17 @@ int32_t MovingPhotoFileUtils::GetLivePhotoSize(int32_t fd, int64_t &liveSize)
         return E_ERR;
     }
     if (lseek(fd, -LIVE_TAG_LEN, SEEK_END) == E_ERR) {
-        MEDIA_ERR_LOG("failed to lseek file errno: %{public}d", errno);
+        MEDIA_ERR_LOG("failed to lseek file, errno: %{public}d", errno);
         return E_ERR;
     }
     char buffer[LIVE_TAG_LEN + 1];
     ssize_t bytesRead = read(fd, buffer, LIVE_TAG_LEN);
     if (bytesRead == E_ERR) {
-        MEDIA_ERR_LOG("failed to read file errno: %{public}d", errno);
+        MEDIA_ERR_LOG("failed to read file, errno: %{public}d", errno);
         return E_ERR;
     }
     buffer[bytesRead] = '\0';
-    for (uint16_t i = 0; i < LIVE_TAG.size(); i++) {
+    for (size_t i = 0; i < LIVE_TAG.size(); i++) {
         if (LIVE_TAG[i] != buffer[i]) {
             return E_ERR;
         }

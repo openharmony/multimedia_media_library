@@ -43,6 +43,7 @@
 #include "medialibrary_type_const.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
+#include "moving_photo_file_utils.h"
 #include "post_proc.h"
 #include "permission_utils.h"
 #include "result_set_utils.h"
@@ -51,7 +52,6 @@
 #include "thumbnail_const.h"
 #include "unique_fd.h"
 #include "userfilemgr_uri.h"
-#include "moving_photo_file_utils.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -933,12 +933,12 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, off_t &offs
     }
 
     struct stat st;
-    if (fstat(fd, &st) != E_OK || st.st_size < liveSize + PLAY_INFO_LEN + VERSION_TAG_LEN) {
+    if (fstat(fd, &st) != E_OK || st.st_size < liveSize + PLAY_INFO_LEN + LIVE_TAG_LEN) {
         MEDIA_ERR_LOG("video size is wrong");
         return E_ERR;
     }
-    offset = st.st_size - liveSize - PLAY_INFO_LEN - VERSION_TAG_LEN;
-    MEDIA_INFO_LOG("offset is %{public}ld", offset);
+    offset = st.st_size - liveSize - PLAY_INFO_LEN - LIVE_TAG_LEN;
+    MEDIA_DEBUG_LOG("offset is %{public}ld", offset);
     return fd;
 }
 
