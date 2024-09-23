@@ -1012,20 +1012,24 @@ std::string BaseRestore::GetProgressInfo()
 
 SubProcessInfo BaseRestore::GetSubProcessInfo(const std::string &type)
 {
-    uint64_t success;
-    uint64_t duplicate;
-    uint64_t failed;
-    uint64_t total;
+    uint64_t success = 0;
+    uint64_t duplicate = 0;
+    uint64_t failed = 0;
+    uint64_t total = 0;
     if (type == STAT_TYPE_PHOTO_VIDEO) {
         success = migrateFileNumber_;
         duplicate = migratePhotoDuplicateNumber_ + migrateVideoDuplicateNumber_;
         failed = static_cast<uint64_t>(GetFailedFiles(STAT_TYPE_PHOTO).size() + GetFailedFiles(STAT_TYPE_VIDEO).size());
         total = totalNumber_;
-    } else {
+    } else if (type == STAT_TYPE_AUDIO) {
         success = migrateAudioFileNumber_;
         duplicate = migrateAudioDuplicateNumber_;
         failed = static_cast<uint64_t>(GetFailedFiles(type).size());
         total = audioTotalNumber_;
+    } else {
+        otherTotalNumber_++; // make sure progressInfo changes as update and rest goes on
+        success = otherTotalNumber_;
+        total = otherTotalNumber_;
     }
     uint64_t processed = success + duplicate + failed;
     MEDIA_INFO_LOG("%{public}s success: %{public}lld, duplicate: %{public}lld, failed: %{public}lld", type.c_str(),
