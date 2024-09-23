@@ -53,6 +53,7 @@
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "parameters.h"
+#include "parameter.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "post_event_utils.h"
@@ -2835,23 +2836,21 @@ static void UpdateDataUniqueIndex(RdbStore &store)
 
 static void ResetCloudCursorAfterInitFinish()
 {
+    MEDIA_INFO_LOG("Try reset cloud cursor after storage reconstruct");
     static uint32_t baseUserRange = 200000; // uid base offset
     uid_t uid = getuid() / baseUserRange;
     const string paramKey = "multimedia.medialibrary.startup." + to_string(uid);
-    string value = "true";
     int32_t maxTryTimes = 10;
-    int32_t checkTimes = 0;
-    while (checkTimes < maxTryTimes) {
-        std::string initStatus = system::GetParameter(paramKey.c_str(), "false");
-        if (!initStatus.empty() && initStatus == "true") {
-            MEDIA_INFO_LOG("Strat reset cloud cursor");
-            FileManagement::CloudSync::CloudSyncManager::GetInstance().ResetCursor();
-            MEDIA_INFO_LOG("End reset cloud cursor");
-            break;
-        }
-        checkTimes++;
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+    if (WaitParameter(paramKey.c_str(), "true", maxTryTimes) == E_OK) {
+        MEDIA_INFO_LOG("medialibrary init finish start reset cloud cursor");
+        FileManagement::CloudSync::CloudSyncManager::GetInstance().ResetCursor();
+        MEDIA_INFO_LOG("End reset cloud cursor");
+    } else {
+        MEDIA_INFO_LOG("try max time start reset cloud cursor");
+        FileManagement::CloudSync::CloudSyncManager::GetInstance().ResetCursor();
+        MEDIA_INFO_LOG("End reset cloud cursor");
     }
+    MEDIA_INFO_LOG("Reset cloud cursor after storage reconstruct end");
 }
 
 static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
