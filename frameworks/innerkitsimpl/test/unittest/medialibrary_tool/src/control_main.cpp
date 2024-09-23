@@ -97,7 +97,8 @@ int32_t ControlMain::Main(const std::vector<std::string> &args)
             MEDIA_ERR_LOG("Create command failed, res: %{public}d", res);
             break;
         }
-        MEDIA_INFO_LOG("Mediatool main, env:{%{private}s}", env.ToStr().c_str());
+        MEDIA_INFO_LOG("Mediatool command prepare done, start to execute env:{%{public}s}",
+            env.ToStr().c_str());
         res = cmd->Start(env);
         if (res != Media::E_OK) {
             MEDIA_ERR_LOG("Mediatool main error, res: %{public}d", res);

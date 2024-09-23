@@ -192,6 +192,7 @@ static bool InitToken(const sptr<IRemoteObject> &token)
 
 int32_t UserFileClientEx::Init()
 {
+    MEDIA_INFO_LOG("Mediatool IPC connect start");
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saManager == nullptr) {
         MEDIA_ERR_LOG("get system ability mgr failed.");
