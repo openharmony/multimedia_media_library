@@ -1671,6 +1671,12 @@ bool MediaFileUtils::CheckMovingPhotoEffectMode(int32_t effectMode)
         effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY);
 }
 
+bool MediaFileUtils::CheckSupportWatermarkType(int32_t watermarkType)
+{
+    return watermarkType >= static_cast<int32_t>(WatermarkType::BRAND_COMMON) &&
+        watermarkType <= static_cast<int32_t>(WatermarkType::BRAND);
+}
+
 bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
 {
     struct stat statbuf;

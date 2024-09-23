@@ -789,6 +789,7 @@ export default {
   MediaAssetManager: photoAccessHelper.MediaAssetManager,
   MovingPhoto: photoAccessHelper.MovingPhoto,
   MovingPhotoEffectMode: photoAccessHelper.MovingPhotoEffectMode,
+  WatermarkType: photoAccessHelper.WatermarkType,
   CompleteButtonText: CompleteButtonText,
   ImageFileType: photoAccessHelper.ImageFileType,
   CloudEnhancement: photoAccessHelper.CloudEnhancement,
