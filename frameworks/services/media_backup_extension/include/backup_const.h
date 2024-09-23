@@ -135,8 +135,9 @@ const std::string STAT_TYPE_PHOTO = "photo";
 const std::string STAT_TYPE_VIDEO = "video";
 const std::string STAT_TYPE_AUDIO = "audio";
 const std::string STAT_TYPE_PHOTO_VIDEO = "photo&video";
+const std::string STAT_TYPE_OTHER = "other";
 const std::vector<std::string> STAT_TYPES = { STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO };
-const std::vector<std::string> STAT_PROGRESS_TYPES = { STAT_TYPE_PHOTO_VIDEO, STAT_TYPE_AUDIO };
+const std::vector<std::string> STAT_PROGRESS_TYPES = { STAT_TYPE_PHOTO_VIDEO, STAT_TYPE_AUDIO, STAT_TYPE_OTHER };
 
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
