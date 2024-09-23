@@ -1216,6 +1216,14 @@ void MediaLibraryAlbumFusionUtils::SetParameterToStartSync()
     }
 }
 
+static std::string ToLower(const std::string &str)
+{
+    std::string lowerStr;
+    std::transform(
+        str.begin(), str.end(), std::back_inserter(lowerStr), [](unsigned char c) { return std::tolower(c); });
+    return lowerStr;
+}
+
 int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(NativeRdb::RdbStore *upgradeStore)
 {
     if (upgradeStore == nullptr) {
@@ -1230,10 +1238,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(NativeRdb::RdbStore *
         "(a1.priority is null OR a1.priority ='1') order by "
         "album_name asc, album_subtype desc, cloud_id desc, count desc";
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_DUPLICATE_ALBUM);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query duplicate album fail");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_DB_FAIL, "Query duplicate album fail");
     int32_t rowCount = 0;
     resultSet->GetRowCount(rowCount);
     MEDIA_INFO_LOG("Begin clean duplicated album, there are %{public}d to clean", rowCount);
@@ -1244,6 +1249,8 @@ int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(NativeRdb::RdbStore *
         std::string targetAlbumName = "";
         GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, targetAlbumId);
         GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_NAME, targetAlbumName);
+        MEDIA_INFO_LOG("Clean duplicated album, targetAlbumId is: %{public}d ,target album name is %{public}s",
+            targetAlbumId, targetAlbumName.c_str());
         int32_t indexRight = ++indexLeft;
         std::string sourceAlbumName = "";
         while (indexRight < rowCount) {
@@ -1251,7 +1258,9 @@ int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(NativeRdb::RdbStore *
             int32_t sourceAlbumId = -1;
             GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, sourceAlbumId);
             GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_NAME, sourceAlbumName);
-            if (targetAlbumName == sourceAlbumName) {
+            MEDIA_INFO_LOG("Clean duplicated album, sourceAlbumId is %{public}d ,source album name is %{public}s",
+                sourceAlbumId, sourceAlbumName.c_str());
+            if (ToLower(targetAlbumName) == ToLower(sourceAlbumName)) {
                 DeleteALbumAndUpdateRelationship(upgradeStore, sourceAlbumId, targetAlbumId, IsCloudAlbum(resultSet));
                 indexRight++;
             } else {
