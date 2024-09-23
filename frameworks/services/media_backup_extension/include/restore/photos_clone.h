@@ -104,7 +104,7 @@ private:
             LEFT JOIN PhotoAlbum \
             ON Photos.owner_album_id = PhotoAlbum.album_id \
         WHERE position IN (1, 3) AND \
-            (COALESCE(PhotoAlbum.album_type,0) != 2048 OR COALESCE(PhotoAlbum.album_name,'') != '.hiddenAlbum');";
+            (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum');";
     std::string SQL_PHOTOS_TABLE_QUERY_NOT_IN_PHOTO_MAP = "\
         SELECT \
             PhotoAlbum.lpath, \
@@ -113,7 +113,7 @@ private:
             LEFT JOIN PhotoAlbum \
             ON Photos.owner_album_id=PhotoAlbum.album_id \
         WHERE position IN (1, 3) AND \
-            (COALESCE(PhotoAlbum.album_type,0) != 2048 OR COALESCE(PhotoAlbum.album_name,'') != '.hiddenAlbum') \
+            (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum') \
         ORDER BY Photos.file_id \
         LIMIT ?, ? ;";
     std::string SQL_PHOTOS_TABLE_BURST_KEY_DUPLICATE_QUERY = "\
