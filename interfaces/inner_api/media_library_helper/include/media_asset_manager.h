@@ -23,7 +23,6 @@
 #include "datashare_helper.h"
 #include "media_asset_data_handler_capi.h"
 #include "media_asset_base_capi.h"
-#include "image_source_native.h"
 
 namespace OHOS {
 namespace Media {
@@ -48,6 +47,7 @@ struct RequestSourceAsyncContext {
     NativeRequestOptions requestOptions;
     ReturnDataType returnDataType;
     OH_MediaLibrary_OnImageDataPrepared onRequestImageDataPreparedHandler;
+    OH_MediaLibrary_OnMovingPhotoDataPrepared onRequestMovingPhotoDataPreparedHandler;
     MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     bool needsExtraInfo;
 };
@@ -92,6 +92,9 @@ public:
     virtual MediaLibrary_ErrorCode NativeRequestImageSource(OH_MediaAsset* mediaAsset,
         NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
         OH_MediaLibrary_OnImageDataPrepared callback) = 0;
+    virtual MediaLibrary_ErrorCode NativeRequestMovingPhoto(OH_MediaAsset* mediaAsset,
+        NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
+        OH_MediaLibrary_OnMovingPhotoDataPrepared callback) = 0;
 };
 
 class __attribute__((visibility("default"))) MediaAssetManagerFactory {

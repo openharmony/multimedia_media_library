@@ -12,17 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef MOVING_PHOTO_TEST_H
+#define MOVING_PHOTO_TEST_H
 
-#include "media_access_helper_capi.h"
+#include <gtest/gtest.h>
 
-#include "media_log.h"
-#include "oh_media_asset_change_request.h"
+namespace OHOS {
+namespace Media {
+class MovingPhotoTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp() override;
+    void TearDown() override;
+    void FreeCharPointer(const char *freeCharPointer);
+};
+} // namespace Media
+} // namespace OHOS
 
-MediaLibrary_ErrorCode OH_MediaAccessHelper_ApplyChanges(OH_MediaAssetChangeRequest* changeRequest)
-{
-    CHECK_AND_RETURN_RET_LOG(changeRequest != nullptr, MEDIA_LIBRARY_PARAMETER_ERROR, "changeRequest is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(changeRequest->request_ != nullptr, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED,
-        "request_ is nullptr!");
-
-    return changeRequest->request_->ApplyChanges();
-}
+#endif // MOVING_PHOTO_TEST_H
