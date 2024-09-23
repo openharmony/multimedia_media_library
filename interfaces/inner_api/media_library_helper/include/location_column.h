@@ -52,6 +52,13 @@ const std::string DICTIONARY_INDEX = "dictionary_index";
 const std::string KNOWLEDG_INDEX = "knowledge_index";
 const std::string LOCATION_CITY_NAME_INDEX = "idx_city_name_index";
 const std::string LOCATION_LOCATION_KEY_INDEX = "idx_location_key_index";
+const std::string AOI = "aoi";
+const std::string POI = "poi";
+const std::string FIRST_AOI = "first_aoi";
+const std::string FIRST_POI = "first_poi";
+const std::string LOCATION_VERSION = "location_version";
+const std::string FIRST_AOI_CATEGORY = "first_aoi_category";
+const std::string FIRST_POI_CATEGORY = "first_poi_category";
 
 const std::string URI_GEO_DICTIONARY = MEDIALIBRARY_DATA_URI + "/" + GEO_DICTIONARY_TABLE;
 const std::string URI_GEO_KEOWLEDGE = MEDIALIBRARY_DATA_URI + "/" + GEO_KNOWLEDGE_TABLE;

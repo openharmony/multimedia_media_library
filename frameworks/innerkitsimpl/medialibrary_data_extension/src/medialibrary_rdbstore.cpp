@@ -1246,7 +1246,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_SOURCE_ALBUM_INDEX,
     FormMap::CREATE_FORM_MAP_TABLE,
     CREATE_DICTIONARY_INDEX,
-    CREATE_KNOWLEDGE_INDEX,
+    DROP_KNOWLEDGE_INDEX,
+    CREATE_NEW_KNOWLEDGE_INDEX,
     CREATE_CITY_NAME_INDEX,
     CREATE_LOCATION_KEY_INDEX,
 
@@ -2329,7 +2330,8 @@ static void UpdateGeoTables(RdbStore &store)
         "ALTER TABLE tab_geo_dictionary RENAME TO " +  GEO_DICTIONARY_TABLE,
         "ALTER TABLE tab_geo_knowledge RENAME TO " +  GEO_KNOWLEDGE_TABLE,
         CREATE_DICTIONARY_INDEX,
-        CREATE_KNOWLEDGE_INDEX,
+        DROP_KNOWLEDGE_INDEX,
+        CREATE_NEW_KNOWLEDGE_INDEX,
         CREATE_CITY_NAME_INDEX,
         CREATE_LOCATION_KEY_INDEX,
     };
@@ -2474,6 +2476,22 @@ void AddIsLocalAlbum(RdbStore &store)
         ADD_PHOTO_ALBUM_IS_LOCAL,
     };
     MEDIA_INFO_LOG("start add islocal column");
+    ExecSqls(sqls, store);
+}
+
+void UpdateAOI(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + AOI + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + POI + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FIRST_AOI + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FIRST_POI + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + LOCATION_VERSION + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FIRST_AOI_CATEGORY + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FIRST_POI_CATEGORY + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FILE_ID + " TEXT ",
+    };
+    MEDIA_INFO_LOG("start init aoi info of geo db");
     ExecSqls(sqls, store);
 }
 
@@ -3389,6 +3407,29 @@ static void AddOCRCardColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_CLOUD_ENAHCNEMENT) {
+        AddCloudEnhancementColumns(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_UPLOADING_MOVING_PHOTO) {
+        UpdatePhotosMdirtyTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_INDEX_FOR_FILEID) {
+        AddIndexForFileId(store);
+    }
+
+    if (oldVersion < VERSION_ADD_OCR_CARD_COLUMNS) {
+        AddOCRCardColumns(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_AOI) {
+        UpdateAOI(store);
+    }
+}
+
 static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_UPDATE_PHOTO_INDEX_FOR_ALBUM_COUNT_COVER) {
@@ -3439,21 +3480,8 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
         ReconstructMediaLibraryStorageFormat(store);
     }
 
-    if (oldVersion < VERSION_CLOUD_ENAHCNEMENT) {
-        AddCloudEnhancementColumns(store);
-    }
-
-    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_UPLOADING_MOVING_PHOTO) {
-        UpdatePhotosMdirtyTrigger(store);
-    }
-
-    if (oldVersion < VERSION_ADD_INDEX_FOR_FILEID) {
-        AddIndexForFileId(store);
-    }
-
-    if (oldVersion < VERSION_ADD_OCR_CARD_COLUMNS) {
-        AddOCRCardColumns(store);
-    }
+    UpgradeExtensionPart3(store, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 static void UpgradeExtensionPart1(RdbStore &store, int32_t oldVersion)
