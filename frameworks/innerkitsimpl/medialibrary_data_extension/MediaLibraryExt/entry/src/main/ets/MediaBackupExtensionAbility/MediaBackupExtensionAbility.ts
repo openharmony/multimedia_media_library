@@ -45,6 +45,7 @@ const STAT_KEY_PROGRESS_INFO = 'progressInfo';
 const STAT_KEY_NAME = 'name';
 const STAT_KEY_PROCESSED = 'processed';
 const STAT_KEY_TOTAL = 'total';
+const STAT_KEY_IS_PERCENTAGE = 'isPercentage';
 const STAT_VALUE_ERROR_INFO = 'ErrorInfo';
 const STAT_VALUE_COUNT_INFO = 'CountInfo';
 const STAT_TYPE_PHOTO = 'photo';
@@ -55,6 +56,7 @@ const STAT_TYPE_OTHER = 'other';
 const STAT_TYPES = [STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO];
 const RESULT_INFO_NUM = 2;
 const JS_TYPE_STRING = 'string';
+const JS_TYPE_BOOLEAN = 'boolean';
 const DEFAULT_RESTORE_EX_INFO = {
   'resultInfo':
   [
@@ -111,17 +113,20 @@ const DEFAULT_PROGRESS_INFO = {
   {
     'name': STAT_TYPE_PHOTO_VIDEO,
     'processed': 0,
-    'total': 0
+    'total': 0,
+    'isPercentage': true
   },
   {
     'name': STAT_TYPE_AUDIO,
     'processed': 0,
-    'total': 0
+    'total': 0,
+    'isPercentage': true
   },
   {
     'name': STAT_TYPE_OTHER,
     'processed': 0,
-    'total': 0
+    'total': 0,
+    'isPercentage': true
   }]
 };
 
@@ -360,10 +365,11 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
 
   private isSubProcessInfoValid(subProcessInfo: JSON): boolean {
     if (!this.hasKey(subProcessInfo, STAT_KEY_NAME) || !this.hasKey(subProcessInfo, STAT_KEY_PROCESSED) ||
-      !this.hasKey(subProcessInfo, STAT_KEY_TOTAL)) {
+      !this.hasKey(subProcessInfo, STAT_KEY_TOTAL) || !this.hasKey(subProcessInfo, STAT_KEY_IS_PERCENTAGE)) {
       return false;
     }
-    return !isNaN(subProcessInfo[STAT_KEY_PROCESSED]) && !isNaN(subProcessInfo[STAT_KEY_TOTAL]);
+    return !isNaN(subProcessInfo[STAT_KEY_PROCESSED]) && !isNaN(subProcessInfo[STAT_KEY_TOTAL]) &&
+      this.checkType(typeof subProcessInfo[STAT_KEY_IS_PERCENTAGE], JS_TYPE_BOOLEAN);
   }
 
   private getSceneCode(bundleVersion: BundleVersion): number {

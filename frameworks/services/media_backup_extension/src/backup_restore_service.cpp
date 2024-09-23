@@ -109,7 +109,7 @@ void BackupRestoreService::GetBackupInfo(int32_t sceneCode, std::string &backupI
 
 void BackupRestoreService::GetProgressInfo(std::string &progressInfo)
 {
-    MEDIA_INFO_LOG("Start get pregressInfo");
+    MEDIA_INFO_LOG("Start get progressInfo");
     if (restoreService_ == nullptr) {
         MEDIA_WARN_LOG("Media restore service not created.");
         progressInfo = "";
