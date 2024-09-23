@@ -423,6 +423,7 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
 bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     data.loaderOpts.decodeInThumbSize = false;
+    data.loaderOpts.isHdr = true;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("load source is nullptr path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
         return false;
@@ -446,7 +447,7 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
         float heightScale = (1.0f * lcdDesiredHeight) / data.source->GetHeight();
         lcdSource->scale(widthScale, heightScale);
     }
-    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO)) {
+    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO, false, false)) {
         MEDIA_ERR_LOG("CompressImage faild");
         return false;
     }
@@ -788,6 +789,9 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
     }
 
     data.loaderOpts.decodeInThumbSize = true;
+    if (data.source != nullptr && data.source->IsHdr()) {
+        data.source->ToSdr();
+    }
     if (!ThumbnailUtils::ScaleThumbnailFromSource(data, false)) {
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
