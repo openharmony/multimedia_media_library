@@ -40,6 +40,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_source_loading.h"
+#include "image_format_convert.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -660,6 +661,15 @@ bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const Thumbna
     return true;
 }
 
+void PixelMapYuv10ToRGBA_8888(std::shared_ptr<PixelMap> &source)
+{
+    uint32_t ret = ImageFormatConvert::ConvertImageFormat(source, PixelFormat::RGBA_8888);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("DoCreateLcdAndThumbnail: source ConvertImageFormat fail");
+    }
+    source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+}
+
 bool IThumbnailHelper::UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
     if (opts.store == nullptr) {
@@ -728,6 +738,12 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("DoCreateThumbnail failed, try to load source failed, id: %{public}s", data.id.c_str());
         return false;
+    }
+    if (data.source != nullptr && data.source->IsHdr()) {
+        data.source->ToSdr();
+        if (data.mediaType == MEDIA_TYPE_VIDEO) {
+            PixelMapYuv10ToRGBA_8888(data.source);
+        }
     }
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
@@ -809,6 +825,9 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
     data.loaderOpts.decodeInThumbSize = true;
     if (data.source != nullptr && data.source->IsHdr()) {
         data.source->ToSdr();
+        if (data.mediaType == MEDIA_TYPE_VIDEO) {
+            PixelMapYuv10ToRGBA_8888(data.source);
+        }
     }
     if (!ThumbnailUtils::ScaleThumbnailFromSource(data, false)) {
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
@@ -817,6 +836,9 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
     
     if (data.orientation != 0 && data.sourceEx != nullptr && data.sourceEx->IsHdr()) {
         data.sourceEx->ToSdr();
+        if (data.mediaType == MEDIA_TYPE_VIDEO) {
+            PixelMapYuv10ToRGBA_8888(data.sourceEx);
+        }
     }
     if (data.orientation != 0 && !ThumbnailUtils::ScaleThumbnailFromSource(data, true)) {
         MEDIA_ERR_LOG("Fail to scale from LCD_EX to THM_EX, path: %{public}s",
