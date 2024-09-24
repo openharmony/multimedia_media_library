@@ -356,6 +356,7 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     PhotoColumn::PHOTO_COVER_POSITION,
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
     PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+    PhotoColumn::PHOTO_POSITION,
 };
 
 bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
@@ -369,14 +370,20 @@ static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<Fi
     bool& isMovingPhotoVideo)
 {
     string movingPhotoOprnKey = cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD);
-    if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO) {
+    if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO ||
+        movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO_CLOUD) {
         CHECK_AND_RETURN_RET_LOG(CheckOpenMovingPhoto(fileAsset->GetPhotoSubType(),
             fileAsset->GetMovingPhotoEffectMode(), cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD)),
             E_INVALID_VALUES,
             "Non-moving photo is requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
             id.c_str(), fileAsset->GetPhotoSubType());
-        fileAsset->SetPath(MediaFileUtils::GetMovingPhotoVideoPath(fileAsset->GetPath()));
+        string imagePath = fileAsset->GetPath();
+        fileAsset->SetPath(MediaFileUtils::GetMovingPhotoVideoPath(imagePath));
         isMovingPhotoVideo = true;
+        if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO_CLOUD && fileAsset->GetPosition() == POSITION_CLOUD) {
+            fileAsset->SetPath(imagePath);
+            isMovingPhotoVideo = false;
+        }
     } else if (movingPhotoOprnKey == OPEN_PRIVATE_LIVE_PHOTO) {
         CHECK_AND_RETURN_RET_LOG(fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO),
             E_INVALID_VALUES,
