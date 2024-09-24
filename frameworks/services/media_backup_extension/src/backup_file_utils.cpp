@@ -160,7 +160,7 @@ int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
     if (dateModified != 0 && data->GetFileDateModified() == 0) {
         data->SetFileDateModified(dateModified);
     }
-    string extension = ScannerUtils::GetFileExtension(path);
+    string extension = ScannerUtils::GetFileExtension(data->GetFileName()); // in case when trashed or hidden
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     data->SetFileExtension(extension);
     data->SetFileMimeType(mimeType);
