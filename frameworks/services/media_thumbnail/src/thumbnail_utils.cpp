@@ -826,39 +826,6 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
     return true;
 }
 
-bool ThumbnailUtils::QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
-    const std::string &table, std::vector<ThumbnailData> &infos)
-{
-    vector<string> column = {
-        MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_DATE_ADDED,
-        MEDIA_DATA_DB_DATE_TAKEN,
-    };
-    RdbPredicates rdbPredicates(table);
-    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
-    shared_ptr<ResultSet> resultSet = rdbStorePtr->QueryByStep(rdbPredicates, column);
-    int err = 0;
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
-        if (err == E_EMPTY_VALUES_BUCKET) {
-            return true;
-        }
-        return false;
-    }
-    err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
-
-    ThumbnailData data;
-    do {
-        ParseQueryResult(resultSet, data, err);
-        infos.push_back(data);
-    } while (resultSet->GoToNextRow() == E_OK);
-    return true;
-}
-
 bool ThumbnailUtils::QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count,
     int &err)
 {
