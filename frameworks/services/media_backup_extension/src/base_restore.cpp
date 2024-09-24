@@ -307,6 +307,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     data->SetFilePath(fileInfo.filePath);
     data->SetFileMediaType(fileInfo.fileType);
     data->SetFileDateModified(fileInfo.dateModified);
+    data->SetFileName(fileInfo.displayName);
     BackupFileUtils::FillMetadata(data);
     MediaType mediaType = data->GetFileMediaType();
 
