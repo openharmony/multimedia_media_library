@@ -120,6 +120,7 @@ public:
     static const std::string PHOTO_COVER_POSITION EXPORT;
     static const std::string PHOTO_BURST_COVER_LEVEL EXPORT;
     static const std::string PHOTO_BURST_KEY EXPORT;
+    static const std::string PHOTO_ORIGINAL_SUBTYPE EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;

@@ -199,6 +199,16 @@ static void UpdateBurstDirty(RdbStore &store)
     MEDIA_INFO_LOG("end UpdateBurstDirty");
 }
 
+static void AddOriginalSubtype(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_ORIGINAL_SUBTYPE + " INT"
+    };
+    MEDIA_INFO_LOG("start add original_subtype column");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeRdbStore(AsyncTaskData *data)
 {
     if (MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() == nullptr) {
@@ -217,6 +227,10 @@ static void UpgradeRdbStore(AsyncTaskData *data)
 
     if (g_oldVersion < VERSION_UPDATE_BURST_DIRTY) {
         UpdateBurstDirty(*rdbStore);
+    }
+
+    if (g_oldVersion < VERSION_ADD_ORIGINAL_SUBTYPE) {
+        AddOriginalSubtype(*rdbStore);
     }
 }
 
