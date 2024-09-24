@@ -126,7 +126,6 @@ private:
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static std::shared_ptr<FileAsset> GetFileAsset(MediaLibraryCommand &cmd);
     static int32_t ForceSavePicture(MediaLibraryCommand& cmd);
-    static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension);
 private:
     static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension, const std::string mimeType);
     static void UpdateEditDataPath(std::string filePath, const std::string &extension);
