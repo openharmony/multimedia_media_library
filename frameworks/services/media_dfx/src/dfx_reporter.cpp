@@ -21,6 +21,7 @@
 #include "dfx_const.h"
 #include "dfx_utils.h"
 #include "dfx_database_utils.h"
+#include "medialibrary_errno.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "hisysevent.h"
@@ -419,6 +420,24 @@ void DfxReporter::ReportPhotoRecordInfo()
     if (ret != 0) {
         MEDIA_ERR_LOG("ReportPhotoRecordInfo error:%{public}d", ret);
     }
+}
+
+int32_t DfxReporter::ReportMedialibraryAPI(const string& callerPackage, const string& saveUri)
+{
+    string currentDate = DfxUtils::GetCurrentDate();
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_DEPRECATED_API_USAGE",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "DATE", currentDate,
+        "CALLER_APP_PACKAGE", callerPackage,
+        "SAVE_URI", saveUri,
+        "READ_URI", "");
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportMedialibraryAPI failed, ret: %{public}d", ret);
+        return E_FAIL;
+    }
+    return E_SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS
