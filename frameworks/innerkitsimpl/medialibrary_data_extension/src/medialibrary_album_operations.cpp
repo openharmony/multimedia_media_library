@@ -677,14 +677,14 @@ void GetAlbumNameNotNullPredicates(int32_t value, DataShare::DataSharePredicates
     predicates.SetWhereClause(selection);
 }
 
-void GetIsMeInnerJoinPredicates(RdbPredicates &rdbPredicates)
+void GetIsMeLeftJoinPredicates(RdbPredicates &rdbPredicates)
 {
     std::string onClause = ANALYSIS_ALBUM_TABLE + "." + ALBUM_ID + " = " +
         ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM;
-    rdbPredicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
+    rdbPredicates.LeftOuterJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
     onClause = ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ASSET + " = " +
         PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID;
-    rdbPredicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ onClause });
+    rdbPredicates.LeftOuterJoin(PhotoColumn::PHOTOS_TABLE)->On({ onClause });
 }
 
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortraitAlbum(MediaLibraryCommand &cmd,
@@ -722,7 +722,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
     auto rdbPredicates = RdbUtils::ToPredicates(predicatesPortrait, ANALYSIS_ALBUM_TABLE);
     if (whereClause.find(IS_ME) != string::npos &&
         GetPortraitSubtype(IS_ME, whereClause, whereArgs) == QUERY_PROB_IS_ME_VALUE) {
-        GetIsMeInnerJoinPredicates(rdbPredicates);
+        GetIsMeLeftJoinPredicates(rdbPredicates);
         std::vector<std::string> ismeColumns;
         for (auto &item : columns) {
             if (item.find(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, 0) == string::npos) {
@@ -732,6 +732,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
         ismeColumns.push_back(ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_DATE_MODIFIED);
         ismeColumns.push_back("CAST(" + ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_DATE_MODIFIED +
             " / 1000 AS BIGINT) AS date_modified_s");
+        MEDIA_INFO_LOG("start query prob is me!!!");
         return MediaLibraryRdbStore::Query(rdbPredicates, ismeColumns);
     }
     return MediaLibraryRdbStore::Query(rdbPredicates, columns);
