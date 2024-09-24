@@ -938,6 +938,10 @@ static bool HasSameLpath(const string &lPath, const string &assetId)
 
 static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUserAlbum, int64_t &newAlbumId)
 {
+    if (lPath.empty()) {
+        MEDIA_ERR_LOG("lPath empyt, cannot recover album");
+        return;
+    }
     if (HasSameLpath(lPath, assetId)) {
         MEDIA_ERR_LOG("Has same lpath, no need to build new one");
         return;
