@@ -60,9 +60,10 @@ int32_t AbsPermissionHandler::ExecuteCheckPermissionWithDfx(MediaLibraryCommand 
         MEDIA_DEBUG_LOG("dfx begin");
         bool permGranted = err == E_SUCCESS;
         PermissionUsedType type = PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE;
-        PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, permGranted, type);
         if (permParam.isWrite) {
             PermissionUtils::CollectPermissionInfo(PERM_WRITE_IMAGEVIDEO, permGranted, type);
+        } else {
+            PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, permGranted, type);
         }
         MEDIA_DEBUG_LOG("dfx end");
     }
