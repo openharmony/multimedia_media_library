@@ -306,7 +306,7 @@ function getBundleInfo() {
   let bundleInfo = bundleManager.getBundleInfoForSelfSync(flags);
   if (((bundleInfo === undefined) || (bundleInfo.name === undefined)) ||
       ((bundleInfo.hapModulesInfo === undefined) || (bundleInfo.hapModulesInfo.length === 0)) ||
-      ((bundleInfo.signatureInfo === undefined) || (bundleInfo.signatureInfo.appId === undefined))
+      ((bundleInfo.signatureInfo === undefined) || (bundleInfo.signatureInfo.appId === undefined)) ||
       ((bundleInfo.appInfo === undefined) || (bundleInfo.appInfo.appId === 0))) {
     console.error('photoAccessHelper failed to get bundle info.');
     return undefined;
@@ -385,6 +385,9 @@ async function createAssetWithShortTermPermissionOk(photoCreationConfig) {
 
   let bundleName = bundleInfo.name;
   let appId = bundleInfo.signatureInfo.appId;
+  console.info('photoAccessHelper bundleName is ' + bundleName + '.');
+  console.info('photoAccessHelper appId is ' + appId + '.');
+  
   let labelId = bundleInfo.appInfo.labelId;
   console.info('photoAccessHelper labelId is ' + labelId + '.');
   let appName = '';
