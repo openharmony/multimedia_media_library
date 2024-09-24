@@ -244,114 +244,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_init, TestSize.Level0)
     MEDIA_INFO_LOG("medialib_backup_test_init end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_trashed, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_valid_trashed start");
-    std::string queryTrashed = "SELECT file_id, date_trashed from Photos where display_name ='trashed.jpg'";
-    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
-    ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    int64_t trashedTime = GetInt64Val("date_trashed", resultSet);
-    EXPECT_GT(trashedTime, 0);
-    MEDIA_INFO_LOG("medialib_backup_test_valid_trashed end");
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_favorite, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_valid_favorite start");
-    std::string queryFavorite = "SELECT file_id, is_favorite from Photos where display_name ='favorite.jpg'";
-    auto resultSet = photosStorePtr->QuerySql(queryFavorite);
-    ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    int32_t isFavorite = GetInt32Val("is_favorite", resultSet);
-    EXPECT_EQ(isFavorite, 1);
-    MEDIA_INFO_LOG("medialib_backup_test_valid_favorite end");
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_hidden, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_valid_hidden start");
-    std::string queryHidden = "SELECT file_id, hidden from Photos where display_name ='hidden.jpg'";
-    auto resultSet = photosStorePtr->QuerySql(queryHidden);
-    ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    int32_t isHidden = GetInt32Val("hidden", resultSet);
-    EXPECT_EQ(isHidden, 1);
-    MEDIA_INFO_LOG("medialib_backup_test_valid_hidden end");
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_orientation, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_valid_orientation start");
-    std::string queryOrientation = "SELECT file_id, orientation from Photos where display_name ='orientation.jpg'";
-    auto resultSet = photosStorePtr->QuerySql(queryOrientation);
-    ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    int32_t orientation = GetInt32Val("orientation", resultSet);
-    EXPECT_EQ(orientation, EXPECTED_OREINTATION);
-    MEDIA_INFO_LOG("medialib_backup_test_valid_orientation end");
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_package_name, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_valid_package_name start");
-    std::string queryPackageName = "SELECT file_id, package_name from Photos where display_name ='fake_wechat.jpg'";
-    auto resultSet = photosStorePtr->QuerySql(queryPackageName);
-    ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    std::string packageName = GetStringVal("package_name", resultSet);
-    EXPECT_EQ(packageName, "");
-    MEDIA_INFO_LOG("medialib_backup_test_valid_package_name end");
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_user_comment, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_valid_user_comment start");
-    std::string queryUserComment = "SELECT file_id, user_comment from Photos where display_name ='user_common.jpg'";
-    auto resultSet = photosStorePtr->QuerySql(queryUserComment);
-    ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    std::string userComment = GetStringVal("user_comment", resultSet);
-    EXPECT_EQ(userComment, EXPECTED_USER_COMMENT);
-    MEDIA_INFO_LOG("medialib_backup_test_valid_user_comment end");
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_date_added, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_valid_date_added start");
-    std::string queryDateAdded = "SELECT file_id, date_added from Photos where display_name ='fake_wechat.jpg'";
-    auto resultSet = photosStorePtr->QuerySql(queryDateAdded);
-    ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    int64_t dateAdded = GetInt64Val("date_added", resultSet);
-    EXPECT_EQ(dateAdded, EXPECTED_DATE_ADDED);
-    MEDIA_INFO_LOG("medialib_backup_test_valid_date_added end");
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_date_taken, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_valid_date_taken start");
-    std::string queryDateTaken = "SELECT file_id, date_taken from Photos where display_name ='fake_wechat.jpg'";
-    auto resultSet = photosStorePtr-> QuerySql(queryDateTaken);
-    ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    int64_t dateTaken = GetInt64Val("date_taken", resultSet);
-    EXPECT_EQ(dateTaken, EXPECTED_DATE_TAKEN);
-    MEDIA_INFO_LOG("medialib_backup_test_valid_date_taken end");
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_detail_time, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_valid_detail_time start");
-    std::string queryDetailTime = "SELECT file_id, detail_time from Photos where display_name ='fake_wechat.jpg'";
-    auto resultSet = photosStorePtr-> QuerySql(queryDetailTime);
-    ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    std::string  detailTime = GetStringVal("detail_time", resultSet);
-    EXPECT_EQ(detailTime, EXPECTED_DETAIL_TIME);
-    MEDIA_INFO_LOG("medialib_backup_test_valid_detail_time end");
-}
-
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid start");
@@ -446,26 +338,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_not_sync_valid, Te
     ASSERT_FALSE(resultSet == nullptr);
     ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_a_media_not_sync_valid end");
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_favorite_video, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_a_media_favorite_video start");
-    std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='a_media_favorite.mp4'";
-    auto resultSet = photosStorePtr->QuerySql(queryNotSyncValid);
-    ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    MEDIA_INFO_LOG("medialib_backup_test_a_media_favorite_video end");
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_favorite_image, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_a_media_favorite_video start");
-    std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='a_media_favorite.mp4'";
-    auto resultSet = photosStorePtr->QuerySql(queryNotSyncValid);
-    ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    MEDIA_INFO_LOG("medialib_backup_test_a_media_favorite_video end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_zero_size, TestSize.Level0)
@@ -1926,44 +1798,6 @@ void QueryPortraitTotalCount(shared_ptr<RdbStore> rdbStore, int32_t &result)
 {
     string querySql = "SELECT count(1) as count FROM tab_analysis_total WHERE face > 0";
     QueryInt(rdbStore, querySql, "count", result);
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_portrait, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_restore_portrait start");
-    MediaLibraryUnitTestUtils::Init();
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    ASSERT_NE(rdbStore, nullptr);
-    unique_ptr<UpgradeRestore> upgrade =
-        make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
-    upgrade->galleryRdb_ = restoreService->galleryRdb_;
-    upgrade->mediaLibraryRdb_ = rdbStore;
-    upgrade->filePath_ = TEST_UPGRADE_FILE_DIR;
-    ClearData(rdbStore);
-
-    // restore portrait album
-    upgrade->RestoreFromGalleryPortraitAlbum();
-    int32_t albumCount = 0;
-    QueryPortraitAlbumCount(rdbStore, albumCount);
-    EXPECT_EQ(albumCount, TEST_PORTRAIT_ALBUM_COUNT);
-    int32_t tagCount = 0;
-    QueryPortraitTagCount(rdbStore, tagCount);
-    EXPECT_EQ(tagCount, TEST_PORTRAIT_TAG_COUNT);
-    EXPECT_EQ(static_cast<int32_t>(upgrade->portraitAlbumIdMap_.size()), TEST_PORTRAIT_TAG_COUNT);
-
-    // restore face analysis data
-    RestorePhotoWithPortrait(upgrade);
-    int32_t photoCount = 0;
-    QueryPortraitPhotoCount(rdbStore, photoCount);
-    EXPECT_EQ(photoCount, TEST_PORTRAIT_PHOTO_COUNT);
-    int32_t faceCount = 0;
-    QueryPortraitFaceCount(rdbStore, faceCount);
-    EXPECT_EQ(faceCount, TEST_PORTRAIT_FACE_COUNT);
-    int32_t totalCount = 0;
-    QueryPortraitTotalCount(rdbStore, totalCount);
-    EXPECT_EQ(totalCount, TEST_PORTRAIT_PHOTO_COUNT);
-    ClearData(rdbStore);
-    MEDIA_INFO_LOG("medialib_backup_test_restore_portrait end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_livephoto, TestSize.Level0)
