@@ -306,7 +306,7 @@ function getBundleInfo() {
   if (((bundleInfo === undefined) || (bundleInfo.name === undefined)) ||
       ((bundleInfo.hapModulesInfo === undefined) || (bundleInfo.hapModulesInfo.length === 0)) ||
       ((bundleInfo.signatureInfo === undefined) || (bundleInfo.signatureInfo.appId === undefined)) ||
-    ((bundleInfo.appInfo === undefined) || (bundleInfo.appInfo.labelId === 0))) {
+      ((bundleInfo.appInfo === undefined) || (bundleInfo.appInfo.labelId === 0))) {
     console.error('photoAccessHelper failed to get bundle info.');
     return undefined;
   }
@@ -342,9 +342,17 @@ async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfig
 
   let labelId = bundleInfo.appInfo.labelId;
   console.info('photoAccessHelper labelId is ' + appId + '.');
+  let appName = '';
 
   try {
-    let appName = await gContext.resourceManager.getStringValue(labelId);
+    let modeleName = '';
+    for (let hapInfo of bundleInfo.hapModulesInfo) {
+      if (labelId === hapInfo.labelId) {
+        modeleName = hapInfo.name;
+      }
+    }
+    console.info('photoAccessHelper modeleName is ' + modeleName + '.');
+    appName = await gContext.createModuleContext(modeleName).resourceManager.getStringValue(labelId);
     console.info('photoAccessHelper appName is ' + appName + '.');
 
     // only promise type
@@ -381,9 +389,17 @@ async function createAssetWithShortTermPermissionOk(photoCreationConfig) {
 
   let labelId = bundleInfo.appInfo.labelId;
   console.info('photoAccessHelper labelId is ' + appId + '.');
+  let appName = '';
 
   try {
-    let appName = await gContext.resourceManager.getStringValue(labelId);
+    let modeleName = '';
+    for (let hapInfo of bundleInfo.hapModulesInfo) {
+      if (labelId === hapInfo.labelId) {
+        modeleName = hapInfo.name;
+      }
+    }
+    console.info('photoAccessHelper modeleName is ' + modeleName + '.');
+    appName = await gContext.createModuleContext(modeleName).resourceManager.getStringValue(labelId);
     console.info('photoAccessHelper appName is ' + appName + '.');
     
     if (photoAccessHelper.checkShortTermPermission()) {
