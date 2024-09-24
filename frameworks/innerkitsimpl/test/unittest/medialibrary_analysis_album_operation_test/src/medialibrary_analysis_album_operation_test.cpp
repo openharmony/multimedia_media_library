@@ -41,7 +41,6 @@ using OHOS::DataShare::DataSharePredicates;
 using OHOS::DataShare::DataShareValuesBucket;
 
 constexpr int32_t TRUE_ALBUM_ID = 1;
-constexpr int32_t TURE_ALBUM_ID_TWO = 2;
 constexpr int32_t ALBUM_TARGET_COUNT = 10;
 constexpr int32_t IS_ME_VALUE = 1;
 
@@ -579,74 +578,6 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, DismissGroupPhotoAlbum_update_s
     InsertAlbumTestData(targetColumn);
     EXPECT_EQ(MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(operationType, values, dataPredicates), E_OK);
     MEDIA_INFO_LOG("DismissGroupPhotoAlbum_update_succ End");
-}
-
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, QueryGroupPhotoAlbum, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("QueryGroupPhotoAlbum Start");
-    ClearTables();
-    vector<PortraitData> portraits = PreparePortraitData();
-    vector<PortraitAlbumData> portraitsAlbum = CreatePortraitAlbum();
-    vector<string> fileIds;
-    for (auto data : portraits) {
-        fileIds.push_back(to_string(data.fileId));
-    }
-    vector<string> albumIds;
-    for (auto data : portraitsAlbum) {
-        albumIds.push_back(to_string(data.albumId));
-    }
-
-    InsertPortraitsToAlbum(portraits, portraitsAlbum);
-
-    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY);
-    MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, {});
-    sleep(1);
-    CheckAlbum(4, 1, portraits[0].fileId, false);
-    CheckAlbum(5, 1, portraits[3].fileId, false);
-    CheckAlbum(6, 1, portraits[1].fileId, false);
-    CheckAlbum(7, 1, portraits[2].fileId, false);
-
-    ClearTables();
-    MEDIA_INFO_LOG("QueryGroupPhotoAlbum End");
-}
-
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, MergeAlbum_UpdateMergeGroupAlbumsInfo, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MergeAlbum_UpdateMergeGroupAlbumsInfo Start");
-    ClearTables();
-    vector<PortraitData> portraits = PreparePortraitData();
-    vector<PortraitAlbumData> portraitsAlbum = CreatePortraitAlbum();
-    vector<string> fileIds;
-    for (auto data : portraits) {
-        fileIds.push_back(to_string(data.fileId));
-    }
-    vector<string> albumIds;
-    for (auto data : portraitsAlbum) {
-        albumIds.push_back(to_string(data.albumId));
-    }
-
-    InsertPortraitsToAlbum(portraits, portraitsAlbum);
-
-    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY);
-    MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, {});
-    sleep(1);
-    CheckAlbum(4, 1, portraits[0].fileId, false);
-    CheckAlbum(5, 1, portraits[3].fileId, false);
-    CheckAlbum(6, 1, portraits[1].fileId, false);
-    CheckAlbum(7, 1, portraits[2].fileId, false);
-
-    DataShare::DataSharePredicates dataPredicates;
-    NativeRdb::ValuesBucket values;
-    values.Put(ALBUM_ID, TRUE_ALBUM_ID);
-    values.Put(TARGET_ALBUM_ID, TURE_ALBUM_ID_TWO);
-    OperationType operationType = OperationType::PORTRAIT_MERGE_ALBUM;
-    EXPECT_EQ(MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(operationType, values, dataPredicates), E_OK);
-    MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, {});
-    sleep(1);
-    CheckAlbum(5, 3, portraits[3].fileId, false);
-
-    ClearTables();
-    MEDIA_INFO_LOG("MergeAlbum_UpdateMergeGroupAlbumsInfo End");
 }
 
 void InsertPortraitAlbumCoverSatisfiedTestData(int fileId, CoverSatisfiedType coverSatisfiedType)

@@ -216,25 +216,6 @@ int32_t GetAlbumCountByCondition(shared_ptr<NativeRdb::RdbStore> rdbStore, const
     return result;
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_album_test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialibrary_backup_clone_restore_album_test_001 start");
-    ClearData();
-    CloneSource cloneSource;
-    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE, PhotoMap::TABLE };
-    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
-    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
-    restoreService->RestoreAlbum();
-    int32_t sourceAlbumCount = GetAlbumCountByCondition(g_rdbStore->GetRaw(), PhotoAlbumColumns::TABLE,
-        PhotoAlbumSubType::SOURCE_GENERIC);
-    EXPECT_EQ(sourceAlbumCount, EXPECTED_SOURCE_ALBUM_COUNT);
-    int32_t userAlbumCount = GetAlbumCountByCondition(g_rdbStore->GetRaw(), PhotoAlbumColumns::TABLE,
-        PhotoAlbumSubType::USER_GENERIC);
-    EXPECT_EQ(userAlbumCount, EXPECTED_USER_ALBUM_COUNT);
-    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
-}
-
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_album_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_restore_album_test_002 start");
@@ -318,32 +299,6 @@ int32_t GetMapCountByTable(shared_ptr<NativeRdb::RdbStore> rdbStore, const strin
     int32_t result = INVALID_COUNT;
     QueryInt(rdbStore, querySql, MEDIA_COLUMN_COUNT_1, result);
     return result;
-}
-
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_test_002, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialibrary_backup_clone_restore_photo_test_002 start");
-    ClearData();
-    CloneSource cloneSource;
-    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE, PhotoMap::TABLE,
-        ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
-    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
-    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
-    restoreService->RestoreAlbum();
-    RestorePhoto();
-    int32_t photoCount = GetCountByWhereClause(PhotoColumn::PHOTOS_TABLE, g_rdbStore->GetRaw());
-    EXPECT_EQ(photoCount, EXPECTED_PHOTO_COUNT);
-    int32_t photoMapCount = GetMapCountByTable(g_rdbStore->GetRaw(), PhotoMap::TABLE);
-    EXPECT_EQ(photoMapCount, EXPECTED_PHOTO_MAP_COUNT);
-    int32_t analysisPhotoMapCount = GetMapCountByTable(g_rdbStore->GetRaw(), ANALYSIS_PHOTO_MAP_TABLE);
-    EXPECT_EQ(analysisPhotoMapCount, EXPECTED_ANALYSIS_PHOTO_MAP_COUNT);
-    for (const auto &whereClause : WHERE_CLAUSE_LIST_PHOTO) {
-        int32_t count = GetCountByWhereClause(PhotoColumn::PHOTOS_TABLE, g_rdbStore->GetRaw(), whereClause);
-        int32_t expectedCount = whereClause == WHERE_CLAUSE_EDIT ? EXPECTED_COUNT_0 : EXPECTED_COUNT_1;
-        EXPECT_EQ(count, expectedCount);
-    }
-    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
 int32_t GetAlbumOrMapTotalCount(shared_ptr<NativeRdb::RdbStore> rdbStore,

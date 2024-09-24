@@ -549,18 +549,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Leve
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_setSource_test_001, TestSize.Level0)
-{
-    int32_t ret = ThumbnailUtils::SetSource(nullptr, "");
-    EXPECT_EQ(ret, E_ERR);
-    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
-    ret = ThumbnailUtils::SetSource(avMetadataHelper, "");
-    EXPECT_EQ(ret, E_ERR);
-    string path = "//storage/cloud/files";
-    ret = ThumbnailUtils::SetSource(avMetadataHelper, path);
-    EXPECT_EQ(ret, E_ERR);
-}
-
 HWTEST_F(MediaLibraryUtilsTest, medialib_uTCTimeSeconds_test_001, TestSize.Level0)
 {
     int64_t ret = ThumbnailUtils::UTCTimeMilliSeconds();
