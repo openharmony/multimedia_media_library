@@ -2237,6 +2237,21 @@ int32_t MediaLibraryPhotoOperations::ParseMediaAssetEditData(MediaLibraryCommand
     return E_OK;
 }
 
+void MediaLibraryPhotoOperations::ParseCloudEnhancementEditData(string& editData)
+{
+    if (!nlohmann::json::accept(editData)) {
+        MEDIA_WARN_LOG("Failed to verify the editData format, editData is: %{private}s",
+            editData.c_str());
+        return;
+    }
+    string editDataJsonStr;
+    nlohmann::json jsonObject = nlohmann::json::parse(editData);
+    editDataJsonStr = jsonObject[EDIT_DATA];
+    nlohmann::json editDataJson = nlohmann::json::parse(editDataJsonStr);
+    string editDataStr = editDataJson.dump();
+    editData = editDataStr;
+}
+
 bool MediaLibraryPhotoOperations::IsSetEffectMode(MediaLibraryCommand &cmd)
 {
     int32_t effectMode;
@@ -2527,6 +2542,35 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
         MediaLibraryObjectUtils::ScanFileAsync(assetPath, to_string(fileAsset->GetId()), MediaLibraryApi::API_10);
     }
     return ret;
+}
+
+int32_t MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(int32_t fileId,
+    const string& assetPath, const string& editDataCameraSourcePath, const string& mimeType)
+{
+    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
+    string editDataDirPath = GetEditDataDirPath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(!editDataDirPath.empty(), E_INVALID_URI, "Can not get editdata dir path");
+    string sourcePath = GetEditDataSourcePath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Can not get edit source path");
+
+    // copy source.jpg
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(editDataDirPath), E_HAS_FS_ERROR,
+        "Can not create dir %{private}s, errno:%{public}d", editDataDirPath.c_str(), errno);
+    bool copyResult = MediaFileUtils::CopyFileUtil(assetPath, sourcePath);
+    if (!copyResult) {
+        MEDIA_ERR_LOG("copy to source.jpg failed. errno=%{public}d, path: %{public}s", errno, assetPath.c_str());
+    }
+    string editData;
+    MediaFileUtils::ReadStrFromFile(editDataCameraSourcePath, editData);
+    ParseCloudEnhancementEditData(editData);
+    string editDataCameraDestPath = PhotoFileUtils::GetEditDataCameraPath(assetPath);
+    copyResult = MediaFileUtils::CopyFileUtil(editDataCameraSourcePath, editDataCameraDestPath);
+    if (!copyResult) {
+        MEDIA_ERR_LOG("copy editDataCamera failed. errno=%{public}d, path: %{public}s", errno,
+            editDataCameraSourcePath.c_str());
+    }
+    // normal
+    return AddFiltersToPhoto(sourcePath, assetPath, editData);
 }
 
 int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand& cmd,
