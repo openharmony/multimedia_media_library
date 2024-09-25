@@ -46,6 +46,7 @@ const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
 const std::string RESTORE_AUDIO_LOCAL_DIR = "/storage/media/local/files/Audio";
+const std::string RESTORE_MUSIC_LOCAL_DIR = "/storage/media/local/files/Docs/Music/";
 const std::string UPGRADE_FILE_DIR = "/storage/media/local/files/data";
 const std::string GARBLE_DUAL_FRAME_CLONE_DIR = "/storage/media/local/files/data/storage/emulated";
 const std::string GARBLE = "***";
@@ -389,14 +390,6 @@ const std::string QUERY_GALLERY_ALBUM_INFO = "SELECT " + GALLERY_ALBUM +
                                      GALLERY_ALBUM + ".lPath = garbage_album.nick_dir WHERE " + GALLERY_ALBUM +
                                      ".lPath != '" + GALLERT_IMPORT + "'" + " AND " + GALLERY_ALBUM +
                                      ".lPath != '" + GALLERT_HIDDEN_ALBUM + "'";
-
-const std::string QUERY_AUDIO_COUNT = "SELECT count(1) as count FROM files WHERE media_type = 2 AND _size > 0 \
-    AND _data LIKE '/storage/emulated/0/Music%'";
-
-const std::string QUERY_ALL_AUDIOS_FROM_EXTERNAL = "SELECT " + EXTERNAL_IS_FAVORITE + "," + EXTERNAL_DATE_MODIFIED +
-    "," + EXTERNAL_DATE_ADDED + "," + EXTERNAL_FILE_DATA + "," + EXTERNAL_TITLE + "," + EXTERNAL_DISPLAY_NAME + "," +
-    EXTERNAL_FILE_SIZE + "," + EXTERNAL_DURATION + "," + EXTERNAL_MEDIA_TYPE + " FROM files WHERE media_type = 2 AND \
-    _size > 0 AND _data LIKE '/storage/emulated/0/Music%'";
 
 const std::string DUAL_CLONE_AUDIO_FULL_TABLE = "mediainfo INNER JOIN mediafile ON mediainfo." + AUDIO_DATA +
     " = '/storage/emulated/0'||mediafile.filepath";

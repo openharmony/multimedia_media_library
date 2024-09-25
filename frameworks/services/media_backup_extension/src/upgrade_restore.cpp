@@ -223,9 +223,11 @@ int32_t UpgradeRestore::ParseXml(const std::string &path)
 
 void UpgradeRestore::RestoreAudio(void)
 {
-    if (sceneCode_ == UPGRADE_RESTORE_ID) {
-        RestoreAudioFromExternal();
-    } else {
+    if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
+        if (!MediaFileUtils::IsFileExists(RESTORE_MUSIC_LOCAL_DIR)) {
+            MEDIA_INFO_LOG("music dir is not exists!!!");
+            MediaFileUtils::CreateDirectory(RESTORE_MUSIC_LOCAL_DIR);
+        }
         RestoreAudioFromFile();
     }
     (void)NativeRdb::RdbHelper::DeleteRdbStore(externalDbPath_);
@@ -243,27 +245,10 @@ void UpgradeRestore::RestoreAudioFromFile()
     ffrt::wait();
 }
 
-void UpgradeRestore::RestoreAudioFromExternal(void)
-{
-    MEDIA_INFO_LOG("start restore audio from external");
-    int32_t totalNumber = BackupDatabaseUtils::QueryInt(externalRdb_, QUERY_AUDIO_COUNT, CUSTOM_COUNT);
-    MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset });
-    }
-    ffrt::wait();
-}
-
 void UpgradeRestore::RestoreAudioBatch(int32_t offset)
 {
     MEDIA_INFO_LOG("start restore audio from external, offset: %{public}d", offset);
-    std::vector<FileInfo> infos;
-    if (sceneCode_ == UPGRADE_RESTORE_ID) {
-        infos = QueryAudioFileInfosFromExternal(offset);
-    } else {
-        infos = QueryAudioFileInfosFromAudio(offset);
-    }
-
+    std::vector<FileInfo> infos = QueryAudioFileInfosFromAudio(offset);
     InsertAudio(sceneCode_, infos);
 }
 
@@ -307,30 +292,6 @@ bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::
     info.isFavorite = 0;
     info.recycledTime = 0;
     return true;
-}
-
-std::vector<FileInfo> UpgradeRestore::QueryAudioFileInfosFromExternal(int32_t offset)
-{
-    std::vector<FileInfo> result;
-    result.reserve(QUERY_COUNT);
-    if (externalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("externalRdb_ is nullptr, Maybe init failed.");
-        return result;
-    }
-    std::string queryAllAudioByCount = QUERY_ALL_AUDIOS_FROM_EXTERNAL + "limit " + std::to_string(offset) + ", " +
-        std::to_string(QUERY_COUNT);
-    auto resultSet = externalRdb_->QuerySql(queryAllAudioByCount);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return result;
-    }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        FileInfo tmpInfo;
-        if (ParseResultSetFromExternal(resultSet, tmpInfo, DUAL_MEDIA_TYPE::AUDIO_TYPE)) {
-            result.emplace_back(tmpInfo);
-        }
-    }
-    return result;
 }
 
 void UpgradeRestore::RestorePhoto(void)
