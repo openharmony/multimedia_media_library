@@ -821,7 +821,7 @@ int32_t SetPhotoAlbumName(const ValuesBucket &values, const DataSharePredicates 
         int32_t sameAlbumId = CheckHasSameNameAlbum(newAlbumName, resultSet, valuesNew, rdbStore);
         if (sameAlbumId != 0) {
             int changeRows = 0;
-            values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY));
+            valuesNew.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY));
             RdbPredicates rdbPredicatesNew(PhotoAlbumColumns::TABLE);
             rdbPredicatesNew.EqualTo(PhotoAlbumColumns::ALBUM_ID, sameAlbumId);
             rdbStore->Update(changeRows, valuesNew, rdbPredicatesNew);
@@ -829,7 +829,7 @@ int32_t SetPhotoAlbumName(const ValuesBucket &values, const DataSharePredicates 
                 sameAlbumId, false);
             return changeRows;
         } else {
-            values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
+            valuesNew.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
             int32_t ret = rdbStore.get()->Insert(newAlbumId, PhotoAlbumColumns::TABLE, valuesNew);
             if (ret != NativeRdb::E_OK) {
                 return E_HAS_DB_ERROR;
