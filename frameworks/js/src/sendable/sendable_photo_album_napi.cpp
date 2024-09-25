@@ -62,7 +62,7 @@ napi_value SendablePhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value expo
         DECLARE_NAPI_GETTER("albumSubtype", JSGetPhotoAlbumSubType),
         DECLARE_NAPI_GETTER("coverUri", JSGetCoverUri),
         DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
-        DECLARE_NAPI_FUNCTION("getAssets", JSPhoteAccessGetPhotoAssets),
+        DECLARE_NAPI_FUNCTION("getAssets", JSPhotoAccessGetPhotoAssets),
         DECLARE_NAPI_FUNCTION("convertToPhotoAlbum", ConvertToPhotoAlbum),
         DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", JSPhotoAccessGetSharedPhotoAssets),
     };
@@ -558,7 +558,7 @@ static void JSGetPhotoAssetsCallbackComplete(napi_env env, napi_status status, v
     delete context;
 }
 
-napi_value SendablePhotoAlbumNapi::JSPhoteAccessGetPhotoAssets(napi_env env, napi_callback_info info)
+napi_value SendablePhotoAlbumNapi::JSPhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info)
 {
     unique_ptr<SendablePhotoAlbumNapiAsyncContext> asyncContext = make_unique<SendablePhotoAlbumNapiAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsGetPhotoAssets(env, info, asyncContext));

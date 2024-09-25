@@ -102,7 +102,7 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
             DECLARE_NAPI_FUNCTION("addAssets", PhotoAccessHelperAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", PhotoAccessHelperRemoveAssets),
-            DECLARE_NAPI_FUNCTION("getAssets", JSPhoteAccessGetPhotoAssets),
+            DECLARE_NAPI_FUNCTION("getAssets", JSPhotoAccessGetPhotoAssets),
             DECLARE_NAPI_FUNCTION("recoverAssets", PhotoAccessHelperRecoverPhotos),
             DECLARE_NAPI_FUNCTION("deleteAssets", PhotoAccessHelperDeletePhotos),
             DECLARE_NAPI_FUNCTION("setCoverUri", PhotoAccessHelperSetCoverUri),
@@ -1132,7 +1132,7 @@ napi_value PhotoAlbumNapi::JSGetPhotoAssets(napi_env env, napi_callback_info inf
         JSGetPhotoAssetsCallbackComplete);
 }
 
-napi_value PhotoAlbumNapi::JSPhoteAccessGetPhotoAssets(napi_env env, napi_callback_info info)
+napi_value PhotoAlbumNapi::JSPhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info)
 {
     unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsGetPhotoAssets(env, info, asyncContext));
