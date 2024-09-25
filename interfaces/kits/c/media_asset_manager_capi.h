@@ -23,7 +23,7 @@
  */
 
 /**
- * @file media_asset_manager.h
+ * @file media_asset_manager_capi.h
  *
  * @brief Defines the media asset manager APIs.
  *
