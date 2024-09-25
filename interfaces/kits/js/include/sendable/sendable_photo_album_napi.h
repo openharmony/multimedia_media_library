@@ -81,6 +81,7 @@ private:
 
     EXPORT static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
     EXPORT static napi_value ConvertToPhotoAlbum(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetFaceId(napi_env env, napi_callback_info info);
 
     napi_env env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;
@@ -99,6 +100,7 @@ struct SendablePhotoAlbumNapiAsyncContext : public NapiError {
     std::vector<DataShare::DataShareValuesBucket> valuesBuckets;
     std::string networkId;
     std::string uri;
+    std::string faceTag;
     std::unique_ptr<FetchResult<FileAsset>> fetchResult;
     ResultNapiType resultNapiType;
 
