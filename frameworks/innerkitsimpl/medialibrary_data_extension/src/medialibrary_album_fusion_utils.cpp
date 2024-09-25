@@ -33,6 +33,7 @@
 #include "thumbnail_service.h"
 #include "photo_file_operation.h"
 #include "photo_burst_operation.h"
+#include "photo_displayname_operation.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -444,10 +445,31 @@ static void ParsingAndFillValue(NativeRdb::ValuesBucket &values, const string &c
     }
 }
 
-static int32_t BuildInsertValuesBucket(NativeRdb::ValuesBucket &values, const std::string &targetPath,
-    shared_ptr<NativeRdb::ResultSet> &resultSet, bool isCopyThumbnail)
+struct MediaAssetCopyInfo {
+    std::string targetPath;
+    bool isCopyThumbnail;
+    int32_t ownerAlbumId;
+    MediaAssetCopyInfo(const std::string& targetPath, bool isCopyThumbnail, int32_t ownerAlbumId)
+        : targetPath(targetPath), isCopyThumbnail(isCopyThumbnail), ownerAlbumId(ownerAlbumId) {}
+};
+ 
+static int32_t BuildInsertValuesBucket(NativeRdb::RdbStore &rdbStore, NativeRdb::ValuesBucket &values,
+    shared_ptr<NativeRdb::ResultSet> &resultSet, const MediaAssetCopyInfo &copyInfo)
 {
+    std::string targetPath = copyInfo.targetPath;
+    bool isCopyThumbnail = copyInfo.isCopyThumbnail;
+    int32_t ownerAlbumId = copyInfo.ownerAlbumId;
     values.PutString(MediaColumn::MEDIA_FILE_PATH, targetPath);
+    std::string uniqueDisplayName = PhotoDisplayNameOperation().FindDisplayName(rdbStore, resultSet, ownerAlbumId);
+    if (!uniqueDisplayName.empty()) {
+        values.PutString(MediaColumn::MEDIA_NAME, uniqueDisplayName);
+    } else {
+        MEDIA_ERR_LOG("Failed to get unique display name");
+    }
+    std::string burstKey = PhotoBurstOperation().FindBurstKey(rdbStore, resultSet, ownerAlbumId, uniqueDisplayName);
+    if (!burstKey.empty()) {
+        values.PutString(PhotoColumn::PHOTO_BURST_KEY, burstKey);
+    }
     for (auto it = commonColumnTypeMap.begin(); it != commonColumnTypeMap.end(); ++it) {
         string columnName = it->first;
         ResultSetDataType columnType = it->second;
@@ -602,12 +624,9 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(NativeRdb::RdbStore *u
             err);
         return err;
     }
+    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId);
     NativeRdb::ValuesBucket values;
-    std::string burstKey = PhotoBurstOperation().FindBurstKey(*upgradeStore, resultSet, ownerAlbumId);
-    if (!burstKey.empty()) {
-        values.PutString(PhotoColumn::PHOTO_BURST_KEY, burstKey);
-    }
-    err = BuildInsertValuesBucket(values, targetPath, resultSet, false);
+    err = BuildInsertValuesBucket(*upgradeStore, values, resultSet, copyInfo);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Insert meta data fail and delete migrated file %{public}s ", targetPath.c_str());
         DeleteFile(targetPath);
@@ -651,8 +670,9 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(NativeRdb::RdbStore *u
     if (err != E_OK) {
         return err;
     }
+    MediaAssetCopyInfo copyInfo(targetPath, true, ownerAlbumId);
     NativeRdb::ValuesBucket values;
-    err = BuildInsertValuesBucket(values, targetPath, resultSet, true);
+    err = BuildInsertValuesBucket(*upgradeStore, values, resultSet, copyInfo);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Build meta data fail and delete migrated file %{public}s ", targetPath.c_str());
         DeleteThumbnail(targetPath);

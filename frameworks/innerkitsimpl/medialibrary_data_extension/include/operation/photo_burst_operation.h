@@ -33,7 +33,7 @@ private:
 
 public:
     std::string FindBurstKey(NativeRdb::RdbStore &rdbStore, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        const int32_t targetAlbumId);
+        const int32_t targetAlbumId, const std::string &uniqueDisplayName);
 
 private:
     std::string FindBurstKey(NativeRdb::RdbStore &rdbStore, const PhotoAssetInfo &photoAssetInfo);
@@ -44,7 +44,7 @@ private:
     std::string QueryBurstKeyFromDB(NativeRdb::RdbStore &rdbStore, const PhotoAssetInfo &photoAssetInfo);
 
 private:
-    enum { UUID_STR_LENGTH = 37 };
+    enum { UUID_STR_LENGTH = 37, DISPLAY_NAME_PREFIX_LENGTH = 20 };
     const std::string TITLE_KEY_WORDS_OF_BURST = "_BURST";
     std::string SQL_PHOTOS_TABLE_QUERY_BURST_KEY = "\
         SELECT \
