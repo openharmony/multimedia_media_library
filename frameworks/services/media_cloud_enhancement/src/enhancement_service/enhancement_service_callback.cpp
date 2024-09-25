@@ -31,6 +31,9 @@
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_notify.h"
+#include "photo_file_utils.h"
+#include "medialibrary_photo_operations.h"
+#include "mimetype_utils.h"
 
 using namespace std;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
@@ -155,10 +158,7 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
     shared_ptr<CloudEnhancementFileInfo> newFileInfo = make_shared<CloudEnhancementFileInfo>(0, newFilePath,
         newDisplayName, info->subtype, info->hidden);
     newFileId = CreateCloudEnhancementPhoto(info->fileId, newFileInfo);
-    if (newFileId <= 0) {
-        MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", newFileId);
-        return newFileId;
-    }
+    CHECK_AND_RETURN_RET_LOG(newFileId > 0, newFileId, "insert file in db failed, error = %{public}d", newFileId);
     const uint8_t *addr = rawData.GetBuffer();
     const uint32_t bytes = rawData.GetSize();
     if (addr == nullptr || bytes == 0) {
@@ -166,11 +166,8 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
         return E_ERR;
     }
     int32_t ret = FileUtils::SaveImage(newFileInfo->filePath, (void*)addr, static_cast<size_t>(bytes));
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("save cloud enhancement image failed. ret=%{public}d, errno=%{public}d",
-            ret, errno);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "save cloud enhancement image failed. ret=%{public}d, errno=%{public}d",
+        ret, errno);
     if (info->subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
         string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(info->filePath);
         string newVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(newFileInfo->filePath);
@@ -179,6 +176,13 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
             MEDIA_ERR_LOG(
                 "save moving photo video failed. file_id: %{public}d, errno=%{public}d", newFileId, errno);
         }
+    }
+    string editDataCameraSourcePath = PhotoFileUtils::GetEditDataCameraPath(info->filePath);
+    if (MediaFileUtils::IsFileExists(editDataCameraSourcePath)) {
+        string extension = MediaFileUtils::GetExtensionFromPath(info->filePath);
+        string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
+        MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(newFileId,
+            newFileInfo->filePath, editDataCameraSourcePath, mimeType);
     }
     MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(newFileInfo->filePath,
         to_string(newFileId), MediaLibraryApi::API_10);
