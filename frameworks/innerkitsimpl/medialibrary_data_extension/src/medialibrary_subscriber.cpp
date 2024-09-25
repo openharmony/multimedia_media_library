@@ -39,6 +39,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
+#include "medialibrary_restore.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
@@ -143,6 +144,10 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 {
     if (isScreenOff_ && isCharging_) {
         DfxManager::GetInstance()->HandleHalfDayMissions();
+        MediaLibraryRestore::GetInstance().CheckBackup();
+    }
+    if (!isScreenOff_ || !isCharging_) {
+        MediaLibraryRestore::GetInstance().InterruptBackup();
     }
 }
 
@@ -176,6 +181,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             break;
         case StatusEventType::SCREEN_ON:
             isScreenOff_ = false;
+            CheckHalfDayMissions();
             break;
         case StatusEventType::CHARGING:
             isCharging_ = true;
@@ -183,6 +189,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             break;
         case StatusEventType::DISCHARGING:
             isCharging_ = false;
+            CheckHalfDayMissions();
             break;
         case StatusEventType::BATTERY_CHANGED:
             isPowerSufficient_ = want.GetIntParam(COMMON_EVENT_KEY_BATTERY_CAPACITY,
