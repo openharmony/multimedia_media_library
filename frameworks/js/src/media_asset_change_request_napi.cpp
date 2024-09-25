@@ -1472,7 +1472,10 @@ napi_value MediaAssetChangeRequestNapi::AddMovingPhotoVideoResource(napi_env env
     CHECK_COND_WITH_MESSAGE(env, napi_typeof(env, value, &valueType) == napi_ok, "Failed to get napi type");
     if (valueType == napi_string) { // addResource by file uri
         CHECK_COND(env, ParseFileUri(env, value, MediaType::MEDIA_TYPE_VIDEO, asyncContext), OHOS_INVALID_PARAM_CODE);
-        CHECK_COND(env, MediaFileUtils::CheckMovingPhotoVideo(asyncContext->realPath), OHOS_INVALID_PARAM_CODE);
+        if (!MediaFileUtils::CheckMovingPhotoVideo(asyncContext->realPath)) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check video resource of moving photo");
+            return nullptr;
+        }
         changeRequest->movingPhotoVideoRealPath_ = asyncContext->realPath;
         changeRequest->movingPhotoVideoResourceMode_ = AddResourceMode::FILE_URI;
     } else { // addResource by ArrayBuffer
@@ -1485,8 +1488,11 @@ napi_value MediaAssetChangeRequestNapi::AddMovingPhotoVideoResource(napi_env env
             "Failed to get data buffer");
         CHECK_COND_WITH_MESSAGE(env, changeRequest->movingPhotoVideoBufferSize_ > 0,
             "Failed to check size of data buffer");
-        CHECK_COND(env, CheckMovingPhotoVideo(changeRequest->movingPhotoVideoDataBuffer_,
-            changeRequest->movingPhotoVideoBufferSize_), OHOS_INVALID_PARAM_CODE);
+        if (!CheckMovingPhotoVideo(changeRequest->movingPhotoVideoDataBuffer_,
+            changeRequest->movingPhotoVideoBufferSize_)) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check video resource of moving photo");
+            return nullptr;
+        }
         changeRequest->movingPhotoVideoResourceMode_ = AddResourceMode::DATA_BUFFER;
     }
 
