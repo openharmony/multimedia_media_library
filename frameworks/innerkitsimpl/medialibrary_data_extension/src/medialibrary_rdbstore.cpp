@@ -2497,6 +2497,16 @@ void UpdateAOI(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void UpdateVideoFaceTable(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "DROP TABLE IF EXISTS " + VISION_IMAGE_FACE_TABLE,
+        CREATE_TAB_VIDEO_FACE,
+    };
+    MEDIA_INFO_LOG("start update video face db");
+    ExecSqls(sqls, store);
+}
+
 void AddStoryTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
@@ -3429,6 +3439,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_AOI) {
         UpdateAOI(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_VIDEO_FACE_TABLE) {
+        UpdateVideoFaceTable(store);
     }
 }
 
