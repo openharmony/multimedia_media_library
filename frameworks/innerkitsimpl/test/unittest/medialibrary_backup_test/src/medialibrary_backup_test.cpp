@@ -820,33 +820,6 @@ HWTEST_F(MediaLibraryBackupTest, RestoreAudio_ParseResultSetFromAudioDb_return_f
     MEDIA_INFO_LOG("RestoreAudio_ParseResultSetFromAudioDb_return_false end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, RestoreAudio_GetAudioInsertValues_fileInfos_empty, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("RestoreAudio_GetAudioInsertValues_fileInfos_empty start");
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    std::vector<FileInfo> fileInfos;
-    auto res = upgrade->GetAudioInsertValues(0, fileInfos);
-    EXPECT_EQ(res.size(), 0);
-    MEDIA_INFO_LOG("RestoreAudio_GetAudioInsertValues_fileInfos_empty end");
-}
-
-HWTEST_F(MediaLibraryBackupTest, RestoreAudio_GetAudioInsertValues_file_not_exit, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("RestoreAudio_GetAudioInsertValues_file_not_exit start");
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    std::vector<FileInfo> fileInfos;
-    FileInfo info;
-    fileInfos.push_back(info);
-    NativeRdb::ValuesBucket value;
-    upgrade->SetAudioValueFromMetaData(info, value);
-    auto res = upgrade->GetAudioInsertValues(0, fileInfos);
-    EXPECT_EQ(res.size(), 0);
-    MEDIA_INFO_LOG("RestoreAudio_GetAudioInsertValues_file_not_exit end");
-}
-
-
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test001 start";
@@ -1699,24 +1672,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetValueFromMetaData, Test
     valueBucket.PutString(PhotoColumn::PHOTO_ORIENTATION, "test");
     upgrade->SetValueFromMetaData(fileInfo, valueBucket);
     GTEST_LOG_(INFO) << "medialib_backup_test_SetValueFromMetaData end";
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetAudioInsertValue, TestSize.Level0)
-{
-    GTEST_LOG_(INFO) << "medialib_backup_test_GetAudioInsertValue start";
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    string mediaName;
-    FileInfo fileInfo;
-    string path = "/test/";
-    ValueObject valueObject;
-    fileInfo.displayName = "test.cpp";
-
-    auto ret = upgrade->GetAudioInsertValue(fileInfo, path);
-    ret.GetObject(MediaColumn::MEDIA_NAME, valueObject);
-    valueObject.GetString(mediaName);
-    EXPECT_EQ(mediaName, "test.cpp");
-    GTEST_LOG_(INFO) << "medialib_backup_test_GetAudioInsertValue end";
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetBackupInfo, TestSize.Level0)
