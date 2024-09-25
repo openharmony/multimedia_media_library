@@ -44,7 +44,7 @@ public:
     bool Init();
 
     EXPORT int32_t UpdateLowQualityDbInfo(MediaLibraryCommand &cmd);
-    void UpdateLocation(int32_t fileId, const std::string &path, double longitude, double latitude);
+    void UpdateLocation(const NativeRdb::ValuesBucket &values);
 
     std::shared_ptr<OHOS::NativeRdb::ResultSet> HandleMultiStagesOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);

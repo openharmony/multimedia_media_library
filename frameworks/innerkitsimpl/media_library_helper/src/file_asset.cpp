@@ -306,22 +306,22 @@ void FileAsset::SetFavorite(bool isFavorite)
     member_[MEDIA_DATA_DB_IS_FAV] = isFavorite;
 }
 
-int64_t FileAsset::GetLatitude()
+double FileAsset::GetLatitude()
 {
-    return GetInt64Member(MEDIA_DATA_DB_LATITUDE);
+    return GetDoubleMember(MEDIA_DATA_DB_LATITUDE);
 }
 
-void FileAsset::SetLatitude(int64_t latitude)
+void FileAsset::SetLatitude(double latitude)
 {
     member_[MEDIA_DATA_DB_LATITUDE] = latitude;
 }
 
-int64_t FileAsset::GetLongitude()
+double FileAsset::GetLongitude()
 {
-    return GetInt64Member(MEDIA_DATA_DB_LONGITUDE);
+    return GetDoubleMember(MEDIA_DATA_DB_LONGITUDE);
 }
 
-void FileAsset::SetLongitude(int64_t longitude)
+void FileAsset::SetLongitude(double longitude)
 {
     member_[MEDIA_DATA_DB_LONGITUDE] = longitude;
 }
@@ -592,6 +592,11 @@ int32_t FileAsset::GetInt32Member(const string &name) const
 int64_t FileAsset::GetInt64Member(const string &name) const
 {
     return (member_.count(name) > 0) ? get<int64_t>(member_.at(name)) : DEFAULT_INT64;
+}
+
+double FileAsset::GetDoubleMember(const string &name) const
+{
+    return (member_.count(name) > 0) ? get<double>(member_.at(name)) : DEFAULT_DOUBLE;
 }
 
 int32_t FileAsset::GetPhotoIndex() const
