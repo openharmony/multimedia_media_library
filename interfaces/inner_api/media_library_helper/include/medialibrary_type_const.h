@@ -131,6 +131,7 @@ enum class MultiStagesPhotoQuality : int32_t {
 
 constexpr int32_t DEFAULT_INT32 = 0;
 constexpr int64_t DEFAULT_INT64 = 0;
+constexpr int64_t DEFAULT_DOUBLE = 0;
 const std::string DEFAULT_STR = "";
 const bool DEFAULT_BOOL = false;
 const std::string DEFAULT_MEDIA_PATH = "";

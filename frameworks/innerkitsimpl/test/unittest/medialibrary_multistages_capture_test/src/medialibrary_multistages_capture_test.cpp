@@ -782,11 +782,83 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_nodata_0
 
 HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_001, TestSize.Level1)
 {
+    MEDIA_INFO_LOG("WriteGpsExifInfo_test_001 start");
+
     string path = "/valid/path";
     double longitude = 0.0;
     double latitude = 0.0;
     auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
     EXPECT_EQ(ret, -1);
+
+    MEDIA_INFO_LOG("WriteGpsExifInfo_test_001 end");
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("WriteGpsExifInfo_test_002 start");
+    string path = "/data/test/res/no_gps.jpg";
+    double longitude = 12.334455f;
+    double latitude = 35.667788f;
+    auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
+    EXPECT_EQ(ret, E_OK);
+
+    // check result
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    string propertyStr;
+    string refStr;
+    auto err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
+    auto refErr = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF, refStr);
+    EXPECT_EQ(err, 0);
+    EXPECT_EQ(refErr, 0);
+    EXPECT_EQ(propertyStr, "12, 20, 4.038");
+    EXPECT_EQ(refStr, "E");
+
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE, propertyStr);
+    refErr = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF, refStr);
+    EXPECT_EQ(err, 0);
+    EXPECT_EQ(refErr, 0);
+    EXPECT_EQ(propertyStr, "35, 40, 4.037");
+    EXPECT_EQ(refStr, "N");
+
+    MEDIA_INFO_LOG("WriteGpsExifInfo_test_002 end");
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("WriteGpsExifInfo_test_003 start");
+    string path = "/data/test/res/no_gps.jpg";
+    double longitude = -120.334455f;
+    double latitude = -33.667788f;
+    auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
+    EXPECT_EQ(ret, E_OK);
+
+    // check result
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    string propertyStr;
+    string refStr;
+    auto err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
+    auto refErr = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF, refStr);
+    EXPECT_EQ(err, 0);
+    EXPECT_EQ(refErr, 0);
+    EXPECT_EQ(propertyStr, "120, 20, 4.038");
+    EXPECT_EQ(refStr, "W");
+
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE, propertyStr);
+    refErr = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF, refStr);
+    EXPECT_EQ(err, 0);
+    EXPECT_EQ(refErr, 0);
+    EXPECT_EQ(propertyStr, "33, 40, 4.037");
+    EXPECT_EQ(refStr, "S");
+
+    MEDIA_INFO_LOG("WriteGpsExifInfo_test_003 end");
 }
 
 HWTEST_F(MediaLibraryMultiStagesCaptureTest, IsPhotoDeleted_test_001, TestSize.Level1)
