@@ -859,6 +859,27 @@ int32_t PrepareUpdateValues(const ValuesBucket &values, ValuesBucket &updateValu
     return E_OK;
 }
 
+void GetOldAlbumName(const DataSharePredicates &predicates, string &oldAlbumName)
+{
+    shared_ptr<NativeRdb::RdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
+    if (rdbStore == nullptr || rdbPredicates.GetWhereArgs().empty()) {
+        return;
+    }
+    int32_t oriAlbumId = atoi(rdbPredicates.GetWhereArgs()[0].c_str());
+    const std::string QUERY_ALBUM_INFO =
+        "SELECT * FROM PhotoAlbum WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(oriAlbumId);
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_ALBUM_INFO);
+    if (resultSet == nullptr) {
+        return;
+    }
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_NAME, oldAlbumName);
+    } else {
+        MEDIA_ERR_LOG("Get old album name fail");
+    }
+}
+
 int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &predicates)
 {
     // Set album name: delete old and build new one
@@ -868,8 +889,14 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
         if (err < 0) {
             return err;
         }
-        int setNameRet = SetPhotoAlbumName(values, predicates);
-        return setNameRet;
+        string oldAlbumName = "";
+        GetOldAlbumName(predicates, oldAlbumName);
+        if (oldAlbumName != albumName) {
+            int setNameRet = SetPhotoAlbumName(values, predicates);
+            return setNameRet;
+        } else {
+            MEDIA_ERR_LOG("Has same name when update album");
+        }
     }
 
     ValuesBucket rdbValues;
