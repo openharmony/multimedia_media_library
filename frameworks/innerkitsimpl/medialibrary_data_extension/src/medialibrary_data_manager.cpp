@@ -279,9 +279,51 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_, true);
-
+    HandleUpgradeRdbAsync();
     refCnt_++;
     return E_OK;
+}
+
+void MediaLibraryDataManager::HandleUpgradeRdbAsync()
+{
+    std::thread([&] {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+        if (rdbStore == nullptr) {
+            MEDIA_ERR_LOG("rdbStore is nullptr!");
+            return;
+        }
+        int32_t oldVersion = rdbStore->GetOldVersion();
+        if (oldVersion == -1 || oldVersion >= MEDIA_RDB_VERSION) {
+            MEDIA_INFO_LOG("No need to upgrade rdb, oldVersion: %{public}d", oldVersion);
+            return;
+        }
+        auto rawStore = rdbStore->GetRaw();
+        if (rawStore == nullptr) {
+            MEDIA_ERR_LOG("rawStore is nullptr!");
+            return;
+        }
+        MEDIA_INFO_LOG("oldVersion:%{public}d", oldVersion);
+        // compare older version, update and set old version
+        if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
+            MediaLibraryRdbStore::CreateBurstIndex(*rawStore);
+            rdbStore->SetOldVersion(VERSION_CREATE_BURSTKEY_INDEX);
+        }
+
+        if (oldVersion < VERSION_UPDATE_BURST_DIRTY) {
+            MediaLibraryRdbStore::UpdateBurstDirty(*rawStore);
+            rdbStore->SetOldVersion(VERSION_UPDATE_BURST_DIRTY);
+        }
+
+        if (oldVersion < VERSION_ADD_ORIGINAL_SUBTYPE) {
+            MediaLibraryRdbStore::AddOriginalSubtype(*rawStore);
+            rdbStore->SetOldVersion(VERSION_ADD_ORIGINAL_SUBTYPE);
+        }
+        if (oldVersion < VERSION_MOVE_AUDIOS) {
+            MediaLibraryAudioOperations::MoveToMusic();
+            MediaLibraryRdbStore::ClearAudios(*rawStore);
+            rdbStore->SetOldVersion(VERSION_MOVE_AUDIOS);
+        }
+    }).detach();
 }
 
 void MediaLibraryDataManager::InitResourceInfo()
