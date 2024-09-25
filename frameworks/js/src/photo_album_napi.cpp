@@ -107,6 +107,7 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("deleteAssets", PhotoAccessHelperDeletePhotos),
             DECLARE_NAPI_FUNCTION("setCoverUri", PhotoAccessHelperSetCoverUri),
             DECLARE_NAPI_FUNCTION("getAssetsSync", JSPhotoAccessGetPhotoAssetsSync),
+            DECLARE_NAPI_FUNCTION("getFaceId", PhotoAccessHelperGetFaceId),
         }
     };
 
@@ -1383,5 +1384,76 @@ napi_value PhotoAlbumNapi::PhotoAccessHelperSetCoverUri(napi_env env, napi_callb
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSCommitModify", JSCommitModifyExecute,
         JSCommitModifyCompleteCallback);
+}
+
+static void PhotoAccessHelperGetFaceIdExec(napi_env env, void *data)
+{
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    PhotoAlbumSubType albumSubType = context->objectInfo->GetPhotoAlbumInstance()->GetPhotoAlbumSubType();
+    if (albumSubType != PhotoAlbumSubType::PORTRAIT && albumSubType != PhotoAlbumSubType::GROUP_PHOTO) {
+        NAPI_WARN_LOG("albumSubType: %{public}d, not support getFaceId", albumSubType);
+        return;
+    }
+
+    Uri uri(PAH_QUERY_ANA_PHOTO_ALBUM);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, context->objectInfo->GetAlbumId());
+    vector<string> fetchColumn = { GROUP_TAG };
+    int errCode = 0;
+
+    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
+        if (errCode == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(E_FAIL);
+        }
+        NAPI_ERR_LOG("get face id failed, errCode is %{public}d", errCode);
+        return;
+    }
+
+    context->faceTag = GetStringVal(GROUP_TAG, resultSet);
+}
+
+static void GetFaceIdCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+    } else {
+        CHECK_ARGS_RET_VOID(env,
+            napi_create_string_utf8(env, context->faceTag.c_str(), NAPI_AUTO_LENGTH, &jsContext->data), JS_INNER_FAIL);
+        jsContext->status = true;
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef, context->work,
+            *jsContext);
+    }
+    delete context;
+}
+
+napi_value PhotoAlbumNapi::PhotoAccessHelperGetFaceId(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "Only system apps can get the Face ID of the album");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, 0, 0),
+        JS_ERR_PARAMETER_INVALID);
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSAnalysisAlbumGetFaceId",
+        PhotoAccessHelperGetFaceIdExec, GetFaceIdCompleteCallback);
 }
 } // namespace OHOS::Media
