@@ -859,8 +859,8 @@ static bool CreateAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool FetchNewCount(MediaAlbumChangeRequestAsyncContext& context, shared_ptr<PhotoAlbum>& album)
 {
-    if (album == nullptr || !PhotoAlbum::IsUserPhotoAlbum(album->GetPhotoAlbumType(), album->GetPhotoAlbumSubType())) {
-        NAPI_ERR_LOG("Only user album can add or remove assets");
+    if (album == nullptr) {
+        NAPI_ERR_LOG("Album is empty when fetch new count");
         context.SaveError(E_FAIL);
         return false;
     }
