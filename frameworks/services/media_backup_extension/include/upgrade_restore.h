@@ -108,7 +108,6 @@ private:
     void UpdateFaceAnalysisStatus();
     void UpdateDualCloneFaceAnalysisStatus();
     bool HasLowQualityImage();
-    int32_t QueryTotalNumberByMediaType(int32_t mediaType);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
