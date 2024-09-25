@@ -840,12 +840,12 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::SaveCameraPhoto");
-    MEDIA_INFO_LOG("start SaveCameraPhoto");
     string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
     if (fileId.empty()) {
-        MEDIA_ERR_LOG("get fileId fail");
+        MEDIA_ERR_LOG("SaveCameraPhoto, get fileId fail");
         return 0;
     }
+    MEDIA_INFO_LOG("start SaveCameraPhoto, fileId: %{public}s", fileId.c_str());
 
     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
     if (!fileType.empty()) {
@@ -873,9 +873,9 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
         ValuesBucket valuesBucketDirty;
         valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-        int32_t updatedDirtyRows = MediaLibraryRdbStore::Update(values, predicates);
+        int32_t updatedDirtyRows = MediaLibraryRdbStore::Update(valuesBucketDirty, predicates);
         if (updatedDirtyRows < 0) {
-            MEDIA_INFO_LOG("update temp flag fail.");
+            MEDIA_INFO_LOG("update dirty flag fail.");
         }
     }
     string uri = cmd.GetQuerySetParam(PhotoColumn::MEDIA_FILE_PATH);
@@ -896,7 +896,8 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
             MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, true, true, stoi(fileId));
         }
     }
-    MEDIA_INFO_LOG("Success, updatedRows: %{public}d, needScanStr: %{public}s", updatedRows, needScanStr.c_str());
+    MEDIA_INFO_LOG("SaveCameraPhoto Success, updatedRows: %{public}d, needScanStr: %{public}s",
+        updatedRows, needScanStr.c_str());
     return updatedRows;
 }
 

@@ -140,6 +140,7 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
         values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
             photoProxy->IsCoverPhoto() ? static_cast<int32_t>(BurstCoverLevelType::COVER)
                                        : static_cast<int32_t>(BurstCoverLevelType::MEMBER));
+        values.Put(PhotoColumn::PHOTO_DIRTY, -1);
     }
     values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
     values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
@@ -364,7 +365,8 @@ int32_t PhotoAssetProxy::UpdatePhotoQuality(shared_ptr<DataShare::DataShareHelpe
     if (changeRows < 0) {
         MEDIA_ERR_LOG("update fail, error: %{public}d", changeRows);
     }
-    MEDIA_INFO_LOG("photoId: %{public}s, fileId: %{public}d", photoProxy->GetPhotoId().c_str(), fileId);
+    MEDIA_INFO_LOG("UpdatePhotoQuality photoId: %{public}s, fileId: %{public}d",
+        photoProxy->GetPhotoId().c_str(), fileId);
     return changeRows;
 }
 
@@ -425,7 +427,7 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
 
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAssetProxy::AddPhotoProxy " + photoProxy->GetPhotoId());
-    MEDIA_INFO_LOG("photoId: %{public}s", photoProxy->GetPhotoId().c_str());
+    MEDIA_INFO_LOG("AddPhotoProxy, photoId: %{public}s", photoProxy->GetPhotoId().c_str());
     tracer.Start("PhotoAssetProxy CreatePhotoAsset");
     CreatePhotoAsset(photoProxy);
     if (cameraShotType_ == CameraShotType::VIDEO) {
