@@ -302,8 +302,12 @@ void UpgradeRestore::RestorePhoto()
     InitGarbageAlbum();
     HandleClone();
     // upgrade gallery.db
-    DataTransfer::GalleryDbUpgrade galleryDbUpgrade;
-    galleryDbUpgrade.OnUpgrade(*this->galleryRdb_);
+    if (this->galleryRdb_ != nullptr) {
+        DataTransfer::GalleryDbUpgrade galleryDbUpgrade;
+        galleryDbUpgrade.OnUpgrade(*this->galleryRdb_);
+    } else {
+        MEDIA_WARN_LOG("galleryRdb_ is nullptr, Maybe init failed, skip gallery db upgrade.");
+    }
     // restore PhotoAlbum
     this->photoAlbumRestore_.Restore();
     RestoreFromGalleryPortraitAlbum();
