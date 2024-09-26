@@ -2500,7 +2500,7 @@ void UpdateAOI(RdbStore &store)
 void UpdateVideoFaceTable(RdbStore &store)
 {
     const vector<string> sqls = {
-        "DROP TABLE IF EXISTS " + VISION_IMAGE_FACE_TABLE,
+        "DROP TABLE IF EXISTS " + VISION_VIDEO_FACE_TABLE,
         CREATE_TAB_VIDEO_FACE,
     };
     MEDIA_INFO_LOG("start update video face db");
