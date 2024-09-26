@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 117;
+const int32_t MEDIA_RDB_VERSION = 118;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -143,6 +143,7 @@ enum {
     VERSION_ADD_OCR_CARD_COLUMNS = 115,
     VERSION_UPDATE_AOI = 116,
     VERSION_UPDATE_VIDEO_FACE_TABLE = 117,
+    VERSION_ADD_SUPPORT_WATERMARK_TYPE = 118,
 };
 
 enum {
