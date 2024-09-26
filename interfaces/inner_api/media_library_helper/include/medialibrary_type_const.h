@@ -236,11 +236,12 @@ const std::string THUMB_DIR_VALUE = ".thumbs/Photo";
 const std::string EDIT_DATA_DIR_VALUE = ".editData";
 const std::string MEDIALIBRARY_TEMP_DIR = ".medialibrarytemp";
 const std::string CLOUD_ENHANCEMENT_WATER_MARK_DIR = "/sys_prod/resource/camera";
+const std::string CACHE_DIR_VALUE = ".cache";
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
     PHOTO_BUCKET + "/", AUDIO_BUCKET + "/", BACKUP_DATA_DIR_VALUE, EDIT_DATA_DIR_VALUE + "/",
-    BACKUP_SINGLE_DATA_DIR_VALUE
+    BACKUP_SINGLE_DATA_DIR_VALUE, CACHE_DIR_VALUE
 };
 
 const std::vector<std::string> E_POLICY_DIRS = {
