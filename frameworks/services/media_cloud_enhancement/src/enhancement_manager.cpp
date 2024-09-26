@@ -32,6 +32,7 @@
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_notify.h"
 #include "userfilemgr_uri.h"
+#include "medialibrary_async_worker.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -47,6 +48,7 @@ const string FILE_TPYE = "fileType";
 const string IS_HDR_VIVID = "isHdrVivid";
 const string HAS_WATER_MARK_INFO = "hasCloudWaterMark";
 const string CLOUD_WATER_MARK_INFO = "cloudWaterMarkInfo";
+const int32_t NO = 0;
 const int32_t YES = 1;
 const string JPEG_STR = "image/jpeg";
 const string HEIF_STR = "image/heif";
@@ -57,12 +59,7 @@ const unordered_map<string, string> CLOUD_ENHANCEMENT_MIME_TYPE_MAP = {
     { HEIF_STR, HEIF_TYPE },
 };
 
-EnhancementManager::EnhancementManager()
-{
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    enhancementService_ = make_shared<EnhancementServiceAdapter>();
-#endif
-}
+EnhancementManager::EnhancementManager() {}
 
 EnhancementManager::~EnhancementManager() {}
 
@@ -70,6 +67,22 @@ EnhancementManager& EnhancementManager::GetInstance()
 {
     static EnhancementManager instance;
     return instance;
+}
+
+
+bool EnhancementManager::LoadService()
+{
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    if (enhancementService_ == nullptr) {
+        enhancementService_ = make_shared<EnhancementServiceAdapter>();
+    }
+    if (enhancementService_ == nullptr) {
+        return false;
+    }
+    return true;
+#else
+    return false;
+#endif
 }
 
 static int32_t CheckResultSet(shared_ptr<ResultSet> &resultSet)
@@ -85,7 +98,7 @@ static int32_t CheckResultSet(shared_ptr<ResultSet> &resultSet)
         return ret;
     }
     if (count <= 0) {
-        MEDIA_ERR_LOG("Failed to get count, count: %{public}d", count);
+        MEDIA_INFO_LOG("Failed to get count, count: %{public}d", count);
         return E_FAIL;
     }
     return E_OK;
@@ -93,7 +106,7 @@ static int32_t CheckResultSet(shared_ptr<ResultSet> &resultSet)
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 static void FillBundleWithWaterMarkInfo(MediaEnhanceBundle &mediaEnhanceBundle,
-    const string &mimeType, int32_t dynamicRangeType)
+    const string &mimeType, int32_t dynamicRangeType, const bool hasCloudWaterMark)
 {
     string filePath = CLOUD_ENHANCEMENT_WATER_MARK_DIR + "/" + "cloud_watermark_param.json";
     string metaDataStr;
@@ -115,7 +128,7 @@ static void FillBundleWithWaterMarkInfo(MediaEnhanceBundle &mediaEnhanceBundle,
     }
     metaData[FILE_TPYE] = CLOUD_ENHANCEMENT_MIME_TYPE_MAP.at(mimeType);
     metaData[IS_HDR_VIVID] = to_string(dynamicRangeType);
-    metaData[HAS_WATER_MARK_INFO] = to_string(YES);
+    metaData[HAS_WATER_MARK_INFO] = hasCloudWaterMark ? to_string(YES) : to_string(NO);
     for (auto& item : jsonObject[CLOUD_WATER_MARK_INFO].items()) {
         item.value() = to_string(item.value().get<int>());
     }
@@ -125,6 +138,30 @@ static void FillBundleWithWaterMarkInfo(MediaEnhanceBundle &mediaEnhanceBundle,
     mediaEnhanceBundle.PutString(MediaEnhanceBundleKey::METADATA, metaDataJson); // meta data
 }
 #endif
+
+static void InitCloudEnhancementAsync(AsyncTaskData *data)
+{
+    EnhancementManager::GetInstance().Init();
+}
+
+bool EnhancementManager::InitAsync()
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_INFO_LOG("can not get async worker");
+        return false;
+    }
+
+    shared_ptr<MediaLibraryAsyncTask> asyncTask = make_shared<MediaLibraryAsyncTask>(InitCloudEnhancementAsync,
+        nullptr);
+    if (asyncTask == nullptr) {
+        MEDIA_ERR_LOG("InitCloudEnhancementAsync create task fail");
+        return false;
+    }
+    MEDIA_INFO_LOG("InitCloudEnhancementAsync add task success");
+    asyncWorker->AddTask(asyncTask, false);
+    return true;
+}
 
 bool EnhancementManager::Init()
 {
@@ -153,11 +190,9 @@ bool EnhancementManager::Init()
         MEDIA_INFO_LOG("restart and submit: fileId: %{public}d, photoId: %{public}s", fileId, photoId.c_str());
         MediaEnhanceBundle mediaEnhanceBundle;
         mediaEnhanceBundle.PutInt(MediaEnhanceBundleKey::TRIGGER_TYPE, TaskTriggerType::TRIGGER_HIGH_LEVEL);
-        if (hasCloudWatermark == YES) {
-            FillBundleWithWaterMarkInfo(mediaEnhanceBundle, mimeType, dynamicRangeType);
-        }
-        int32_t ret = enhancementService_->AddTask(photoId, mediaEnhanceBundle);
-        if (ret != E_OK) {
+        FillBundleWithWaterMarkInfo(mediaEnhanceBundle, mimeType, dynamicRangeType,
+            hasCloudWatermark == YES ? true : false);
+        if (!LoadService() || enhancementService_->AddTask(photoId, mediaEnhanceBundle) != E_OK) {
             MEDIA_ERR_LOG("enhancment service error, photo_id: %{public}s", photoId.c_str());
             continue;
         }
@@ -180,7 +215,7 @@ void EnhancementManager::CancelTasksInternal(const vector<string> &fileIds, vect
             MEDIA_INFO_LOG("task in cache not processing, file_id: %{public}d", fileId);
             continue;
         }
-        if (enhancementService_->CancelTask(photoId) != E_OK) {
+        if (!LoadService() || enhancementService_->CancelTask(photoId) != E_OK) {
             MEDIA_ERR_LOG("enhancment service error, photo_id: %{public}s", photoId.c_str());
             continue;
         }
@@ -189,7 +224,7 @@ void EnhancementManager::CancelTasksInternal(const vector<string> &fileIds, vect
         MEDIA_INFO_LOG("cancel task successful, photo_id: %{public}s", photoId.c_str());
     }
     RdbPredicates updatePredicates(PhotoColumn::PHOTOS_TABLE);
-    updatePredicates.In(PhotoColumn::PHOTO_ID, photoIds);
+    updatePredicates.In(MediaColumn::MEDIA_ID, fileIds);
     updatePredicates.And();
     updatePredicates.BeginWrap();
     updatePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
@@ -228,7 +263,7 @@ void EnhancementManager::RemoveTasksInternal(const vector<string> &fileIds, vect
     CHECK_AND_RETURN_LOG(CheckResultSet(resultSet) == E_OK, "result set is invalid");
     while (resultSet->GoToNextRow() == E_OK) {
         string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
-        if (enhancementService_->RemoveTask(photoId) != E_OK) {
+        if (!LoadService() || enhancementService_->RemoveTask(photoId) != E_OK) {
             MEDIA_ERR_LOG("enhancment service error, photo_id: %{public}s", photoId.c_str());
             continue;
         }
@@ -339,8 +374,7 @@ int32_t EnhancementManager::AddServiceTask(MediaEnhanceBundle &mediaEnhanceBundl
         MEDIA_ERR_LOG("begin transaction error, photoId: %{public}s", photoId.c_str());
         return E_ERR;
     }
-    errCode = enhancementService_->AddTask(photoId, mediaEnhanceBundle);
-    if (errCode != E_OK) {
+    if (!LoadService() || enhancementService_->AddTask(photoId, mediaEnhanceBundle) != E_OK) {
         MEDIA_ERR_LOG("enhancment service error, photoId: %{public}s", photoId.c_str());
         transactionOprn.Finish();
         return E_ERR;
@@ -403,9 +437,7 @@ int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const b
         }
         MediaEnhanceBundle mediaEnhanceBundle;
         mediaEnhanceBundle.PutInt(MediaEnhanceBundleKey::TRIGGER_TYPE, TaskTriggerType::TRIGGER_HIGH_LEVEL);
-        if (hasCloudWatermark) {
-            FillBundleWithWaterMarkInfo(mediaEnhanceBundle, mimeType, dynamicRangeType);
-        }
+        FillBundleWithWaterMarkInfo(mediaEnhanceBundle, mimeType, dynamicRangeType, hasCloudWatermark);
         vector<string> taskUris;
         taskUris.push_back(fileId2Uri[fileId]);
         mediaEnhanceBundle.SetUrls(taskUris);
@@ -454,6 +486,9 @@ int32_t EnhancementManager::HandlePrioritizeOperation(MediaLibraryCommand &cmd)
     MediaEnhanceBundle mediaEnhanceBundle;
     mediaEnhanceBundle.PutInt(MediaEnhanceBundleKey::TRIGGER_TYPE, TaskTriggerType::TRIGGER_HIGH_LEVEL);
 
+    if (!LoadService()) {
+        return E_ERR;
+    }
     int32_t ret = enhancementService_->AddTask(photoId, mediaEnhanceBundle);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "enhancment service error, photoId: %{public}s", photoId.c_str());
     return ret;
@@ -486,8 +521,7 @@ int32_t EnhancementManager::HandleCancelOperation(MediaLibraryCommand &cmd)
                 photoId.c_str());
             continue;
         }
-        int32_t ret = enhancementService_->CancelTask(photoId);
-        if (ret != E_OK) {
+        if (!LoadService() || enhancementService_->CancelTask(photoId) != E_OK) {
             MEDIA_ERR_LOG("enhancment service error, photoId: %{public}s", photoId.c_str());
             continue;
         }
@@ -516,6 +550,7 @@ int32_t EnhancementManager::HandleCancelOperation(MediaLibraryCommand &cmd)
 int32_t EnhancementManager::HandleCancelAllOperation()
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    CHECK_AND_RETURN_LOG(LoadService(), E_ERR, "Load Service Error");
     int32_t ret = enhancementService_->CancelAllTasks();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "cancel all tasks failed: enhancment service error");
     vector<string> taskIds;
@@ -568,8 +603,7 @@ int32_t EnhancementManager::HandleSyncOperation()
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     MEDIA_INFO_LOG("photos start, begin to sync photos cloud enhancement available");
     vector<string> taskIdList;
-    int32_t ret = enhancementService_->GetPendingTasks(taskIdList);
-    if (ret != E_OK) {
+    if (!LoadService() || enhancementService_->GetPendingTasks(taskIdList) != E_OK) {
         MEDIA_ERR_LOG("sync tasks failed: enhancment service error");
         return E_ERR;
     }
