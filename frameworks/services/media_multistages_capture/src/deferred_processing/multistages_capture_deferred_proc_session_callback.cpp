@@ -52,21 +52,18 @@ void MultiStagesCaptureDeferredProcSessionCallback::NotifyIfTempFile(shared_ptr<
         MEDIA_WARN_LOG("resultSet is nullptr");
         return;
     }
-    int32_t isTemp = GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet);
-    if (!isTemp) {
-        return;
-    }
     string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
-    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
-        static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
 
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch != nullptr) {
-        watch->Notify(notifyUri, NOTIFY_UPDATE);
+        string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
+        auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
+            static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
+        MEDIA_DEBUG_LOG("notify %{public}s", MediaFileUtils::GetUriWithoutDisplayname(notifyUri).c_str());
+        watch->Notify(MediaFileUtils::GetUriWithoutDisplayname(notifyUri), NOTIFY_UPDATE);
     }
 }
 
@@ -79,7 +76,7 @@ int32_t MultiStagesCaptureDeferredProcSessionCallback::UpdatePhotoQuality(const 
     updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
     updateCmd.SetValueBucket(updateValues);
     updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
-    int32_t updatePhotoIdResult = DatabaseAdapter::Update(updateCmd);
+    int32_t updatePhotoQualityResult = DatabaseAdapter::Update(updateCmd);
 
     updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, false);
     updateCmd.GetAbsRdbPredicates()->NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
@@ -87,12 +84,12 @@ int32_t MultiStagesCaptureDeferredProcSessionCallback::UpdatePhotoQuality(const 
     NativeRdb::ValuesBucket updateValuesDirty;
     updateValuesDirty.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
     updateCmd.SetValueBucket(updateValuesDirty);
-    auto isTempResult = DatabaseAdapter::Update(updateCmd);
-    if (isTempResult < 0) {
-        MEDIA_WARN_LOG("update temp flag fail, photoId: %{public}s", photoId.c_str());
+    auto isDirtyResult = DatabaseAdapter::Update(updateCmd);
+    if (isDirtyResult < 0) {
+        MEDIA_WARN_LOG("update dirty flag fail, photoId: %{public}s", photoId.c_str());
     }
 
-    return updatePhotoIdResult;
+    return updatePhotoQualityResult;
 }
 
 void MultiStagesCaptureDeferredProcSessionCallback::UpdateCEAvailable(const string& photoId)
@@ -168,7 +165,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::PHOTO_SUBTYPE,  MediaColumn::MEDIA_MIME_TYPE};
+        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_MIME_TYPE};
     tracer.Start("Query");
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
@@ -206,6 +203,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
     }
 
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
+    NotifyIfTempFile(resultSet);
 
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId);
     MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS));

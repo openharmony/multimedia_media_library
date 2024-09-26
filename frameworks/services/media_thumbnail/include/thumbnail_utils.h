@@ -137,8 +137,6 @@ public:
         LoadSourceType sourceType);
     EXPORT static void RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats);
 
-    EXPORT static bool QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
-        const std::string &table, std::vector<ThumbnailData> &infos);
     EXPORT static bool GenerateOldKvStoreKey(const std::string &fieldId, const std::string &dateAdded,
         std::string &key);
     EXPORT static bool GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key);

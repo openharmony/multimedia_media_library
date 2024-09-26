@@ -291,6 +291,7 @@ struct FileInfo {
      *   0 - not related, 1 - related.
      */
     int32_t isRelatedToPhotoMap = 0;
+    bool needMove {true};
 };
 
 struct AlbumInfo {

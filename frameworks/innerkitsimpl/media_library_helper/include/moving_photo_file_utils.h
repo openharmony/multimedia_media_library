@@ -56,6 +56,7 @@ public:
     EXPORT static bool IsMovingPhoto(int32_t subtype, int32_t effectMode, int32_t originalSubtype);
     EXPORT static bool IsGraffiti(int32_t subtype, int32_t originalSubtype);
     EXPORT static bool IsLivePhoto(const std::string &path);
+    EXPORT static int32_t GetLivePhotoSize(int32_t fd, int64_t &liveSize);
     EXPORT static int32_t GetExtraDataLen(const std::string &imagePath, const std::string &videoPath,
         uint32_t frameIndex, off_t &fileSize);
     EXPORT static uint32_t GetFrameIndex(int64_t time, const int32_t fd);

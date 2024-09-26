@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 117;
+const int32_t MEDIA_RDB_VERSION = 118;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -142,7 +142,8 @@ enum {
     VERSION_ADD_INDEX_FOR_FILEID = 114,
     VERSION_ADD_OCR_CARD_COLUMNS = 115,
     VERSION_UPDATE_AOI = 116,
-    VERSION_ADD_SUPPORT_WATERMARK_TYPE = 117,
+    VERSION_UPDATE_VIDEO_FACE_TABLE = 117,
+    VERSION_ADD_SUPPORT_WATERMARK_TYPE = 118,
 };
 
 enum {
@@ -372,6 +373,7 @@ const std::string CACHE_MOVING_PHOTO_VIDEO_NAME = "cache_moving_photo_video_name
 // moving photo param
 const std::string OPEN_MOVING_PHOTO_VIDEO = "open_video"; // MEDIA_MOVING_PHOTO_OPRN_KEYWORD=OPEN_MOVING_PHOTO_VIDEO
 const std::string OPEN_PRIVATE_LIVE_PHOTO = "open_private_live_photo";
+const std::string OPEN_MOVING_PHOTO_VIDEO_CLOUD = "open_moving_photo_video_cloud";
 
 // db sandbox directory
 const std::string MEDIA_DB_DIR = "/data/medialibrary/database";
