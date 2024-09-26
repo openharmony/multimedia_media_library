@@ -28,19 +28,13 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-enum InsertType {
-    PHOTOS = 0,
-    PHOTO_ALBUM,
-    PHOTO_MAP,
-    ANALYSIS_ALBUM,
-    ANALYSIS_PHOTO_MAP,
-    AUDIOS,
-};
 const unordered_map<string, string> TABLE_CREATE_MAP = {
     { PhotoColumn::PHOTOS_TABLE, PhotoColumn::CREATE_PHOTO_TABLE },
     { PhotoAlbumColumns::TABLE, PhotoAlbumColumns::CREATE_TABLE },
     { PhotoMap::TABLE, PhotoMap::CREATE_TABLE },
     { ANALYSIS_ALBUM_TABLE, CREATE_ANALYSIS_ALBUM_FOR_ONCREATE },
+    { VISION_FACE_TAG_TABLE, CREATE_FACE_TAG_TBL_FOR_ONCREATE },
+    { VISION_IMAGE_FACE_TABLE, CREATE_IMG_FACE_TBL_FOR_ONCREATE },
     { ANALYSIS_PHOTO_MAP_TABLE, CREATE_ANALYSIS_ALBUM_MAP },
     { AudioColumn::AUDIOS_TABLE, AudioColumn::CREATE_AUDIO_TABLE },
 };
@@ -49,6 +43,8 @@ const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { PhotoAlbumColumns::TABLE, InsertType::PHOTO_ALBUM },
     { PhotoMap::TABLE, InsertType::PHOTO_MAP },
     { ANALYSIS_ALBUM_TABLE, InsertType::ANALYSIS_ALBUM },
+    { VISION_FACE_TAG_TABLE, InsertType::FACE_TAG_TBL },
+    { VISION_IMAGE_FACE_TABLE, InsertType::IMG_FACE_TBL },
     { ANALYSIS_PHOTO_MAP_TABLE, InsertType::ANALYSIS_PHOTO_MAP },
     { AudioColumn::AUDIOS_TABLE, InsertType::AUDIOS },
 };
@@ -132,7 +128,7 @@ void CloneSource::Insert(const vector<string> &tableList)
     }
 }
 
-void CloneSource::InsertByType(int32_t insertType)
+void CloneSource::InsertByType(InsertType insertType)
 {
     switch (insertType) {
         case InsertType::PHOTOS: {
@@ -149,6 +145,14 @@ void CloneSource::InsertByType(int32_t insertType)
         }
         case InsertType::ANALYSIS_ALBUM: {
             InsertAnalysisAlbum();
+            break;
+        }
+        case InsertType::FACE_TAG_TBL: {
+            InsertFaceTag();
+            break;
+        }
+        case InsertType::IMG_FACE_TBL: {
+            InsertImgFaceTbl();
             break;
         }
         case InsertType::ANALYSIS_PHOTO_MAP: {
@@ -223,6 +227,25 @@ void CloneSource::InsertAnalysisAlbum()
 {
     // album_id, album_type, album_subtype, album_name
     cloneStorePtr_->ExecuteSql(INSERT_ANALYSIS_ALBUM + VALUES_BEGIN + "1, 4096, 4101, '1'" + VALUES_END);
+    cloneStorePtr_->ExecuteSql("INSERT INTO " + ANALYSIS_ALBUM_TABLE + "("
+        "album_type, album_subtype, album_name, tag_id, cover_uri, is_cover_satisfied) "
+        "VALUES (4096, 4102, 'Test Portrait Album', 'test_tag_id', 'test_cover_uri', 1)");
+}
+
+void CloneSource::InsertFaceTag()
+{
+    // insert data into VISION_FACE_TAG_TABLE
+    cloneStorePtr_->ExecuteSql(
+        "INSERT INTO " + VISION_FACE_TAG_TABLE + "(tag_id, tag_name, center_features, tag_version, analysis_version) "
+        "VALUES ('test_tag_id', 'Test Face Tag', 'test_center_features', 1, 1)");
+}
+
+void CloneSource::InsertImgFaceTbl()
+{
+    // insert data into VISION_IMAGE_FACE_TABLE
+    cloneStorePtr_->ExecuteSql(
+        "INSERT INTO " + VISION_IMAGE_FACE_TABLE + " (file_id, face_id, tag_id, scale_x, scale_y) "
+        "VALUES (1, 'test_face_id', 'test_tag_id', 1.0, 1.0)");
 }
 
 void CloneSource::InsertAnalysisPhotoMap()
