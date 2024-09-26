@@ -2049,6 +2049,8 @@ static bool SetFavoriteExecute(MediaAssetChangeRequestAsyncContext& context)
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     valuesBucket.Put(PhotoColumn::MEDIA_IS_FAV, fileAsset->IsFavorite() ? YES : NO);
+    NAPI_INFO_LOG("update asset %{public}d favorite to %{public}d", fileAsset->GetId(),
+        fileAsset->IsFavorite() ? YES : NO);
     return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
 }
 
