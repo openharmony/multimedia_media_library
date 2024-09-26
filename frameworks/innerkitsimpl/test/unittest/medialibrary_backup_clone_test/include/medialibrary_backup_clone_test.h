@@ -19,15 +19,24 @@
 #include "gtest/gtest.h"
 #include "rdb_helper.h"
 #include "result_set_utils.h"
+#include "backup_const.h"
 
 namespace OHOS {
 namespace Media {
 class MediaLibraryBackupCloneTest : public testing::Test {
 public:
+    static constexpr int32_t FILE_INFO_NEW_ID = 101;
+    static constexpr int32_t PORTRAIT_SUBTYPE = 4102;
+
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
+    static void VerifyPortraitAlbumRestore(const std::shared_ptr<NativeRdb::RdbStore>& db);
+    static void VerifyPortraitClusteringRestore(const std::shared_ptr<NativeRdb::RdbStore>& db);
+    static void SetupMockImgFaceData(std::vector<FileInfo>& fileInfos);
+    static void VerifyImageFaceRestore(const std::shared_ptr<NativeRdb::RdbStore>& db,
+        const std::vector<FileInfo>& fileInfos);
 };
 } // namespace Media
 } // namespace OHOS
