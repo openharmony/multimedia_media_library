@@ -84,7 +84,8 @@ bool FileAccessHelper::ConvertCurrentPath(string &curPath, string &resultPath)
         MEDIA_WARN_LOG("%{public}s doesn't exist, skip.", parentDir.c_str());
         return false;
     }
-    for (const auto &entry : filesystem::directory_iterator(parentDir)) {
+    for (const auto &entry : filesystem::directory_iterator(parentDir,
+        std::filesystem::directory_options::skip_permission_denied)) {
         string entryPath = entry.path();
         transform(entryPath.begin(), entryPath.end(), entryPath.begin(), ::tolower);
         if (entryPath == curPath) {
