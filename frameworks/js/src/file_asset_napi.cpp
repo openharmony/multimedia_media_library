@@ -2279,6 +2279,8 @@ static void FavoriteByUpdate(FileAssetAsyncContext *context)
         uriString = URI_UPDATE_AUDIO;
     }
     valuesBucket.Put(MEDIA_DATA_DB_IS_FAV, (context->isFavorite ? IS_FAV : NOT_FAV));
+    NAPI_INFO_LOG("Update asset %{public}d favorite to %{public}d", context->objectPtr->GetId(),
+        context->isFavorite ? IS_FAV : NOT_FAV);
     DataSharePredicates predicates;
     int32_t fileId = context->objectPtr->GetId();
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
@@ -2925,6 +2927,8 @@ static void UserFileMgrFavoriteExecute(napi_env env, void *data)
     DataShareValuesBucket valuesBucket;
     int32_t changedRows;
     valuesBucket.Put(MediaColumn::MEDIA_IS_FAV, context->isFavorite ? IS_FAV : NOT_FAV);
+    NAPI_INFO_LOG("update asset %{public}d favorite to %{public}d", context->objectPtr->GetId(),
+        context->isFavorite ? IS_FAV : NOT_FAV);
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
 
@@ -3807,6 +3811,8 @@ static void PhotoAccessHelperFavoriteExecute(napi_env env, void *data)
     DataShareValuesBucket valuesBucket;
     int32_t changedRows = 0;
     valuesBucket.Put(MediaColumn::MEDIA_IS_FAV, context->isFavorite ? IS_FAV : NOT_FAV);
+    NAPI_INFO_LOG("update asset %{public}d favorite to %{public}d", context->objectPtr->GetId(),
+        context->isFavorite ? IS_FAV : NOT_FAV);
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
 
