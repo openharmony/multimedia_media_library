@@ -217,11 +217,6 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!IsFileValid(fileInfos[i], sceneCode)) {
-            fileInfos[i].needMove = false;
-            if (fileInfos[i].fileSize == 0) {
-                MEDIA_ERR_LOG("this is file size is 0");
-                continue;
-            }
             if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
                 UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::FILE_INVALID);
             }
@@ -232,7 +227,6 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfos[i].displayName), cloudPath);
         if (errCode != E_OK) {
-            fileInfos[i].needMove = false;
             MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d", errCode);
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::GET_PATH_FAILED);
             continue;
@@ -241,7 +235,6 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
         SetValueFromMetaData(fileInfos[i], value);
         if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID && this->HasSameFileForDualClone(fileInfos[i])) {
-            fileInfos[i].needMove = false;
             RemoveDuplicateDualCloneFiles(fileInfos[i]);
             MEDIA_WARN_LOG("File %{public}s already exists.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
@@ -458,9 +451,6 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
 {
     vector<std::string> moveFailedData;
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        if (!fileInfos[i].needMove) {
-            continue;
-        }
         if (!IsFileValid(fileInfos[i], sceneCode)) {
             continue;
         }
