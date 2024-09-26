@@ -1619,7 +1619,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::HandleOCRVisionQuery(
 
 #ifdef HAS_THERMAL_MANAGER_PART
     auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
-    if (static_cast<int32_t>(thermalMgrClient.GetThermalLevel()) > PROPER_DEVICE_TEMPERATURE_LEVEL) {
+    if (static_cast<int32_t>(thermalMgrClient.GetThermalLevel()) >= PROPER_DEVICE_TEMPERATURE_LEVEL) {
         return queryResult;
     }
 #endif
