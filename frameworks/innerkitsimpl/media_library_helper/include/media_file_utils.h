@@ -93,6 +93,9 @@ public:
     EXPORT static std::string GetTitleFromDisplayName(const std::string &displayName);
     EXPORT static bool IsDirectory(const std::string &dirName, std::shared_ptr<int> errCodePtr = nullptr);
     EXPORT static bool MoveFile(const std::string &oldPath, const std::string &newPath);
+    EXPORT static bool CopyDirAndDelSrc(const std::string &srcPath, const std::string &destPath,
+        unsigned short curRecursionDepth = 0);
+    EXPORT static bool CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile);
     EXPORT static bool CopyFileUtil(const std::string &filePath, const std::string &newPath);
     EXPORT static bool WriteStrToFile(const std::string &filePath, const std::string &str);
     EXPORT static bool ReadStrFromFile(const std::string &filePath, std::string &fileContent);
