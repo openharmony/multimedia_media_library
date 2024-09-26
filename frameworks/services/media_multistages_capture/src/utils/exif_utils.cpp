@@ -19,6 +19,7 @@
 #include "media_exif.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 
@@ -29,6 +30,8 @@ const double TIMER_MULTIPLIER = 60.0;
 
 int32_t ExifUtils::WriteGpsExifInfo(const string &path, double longitude, double latitude)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("WriteGpsExifInfo");
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
@@ -45,19 +48,17 @@ int32_t ExifUtils::WriteGpsExifInfo(const string &path, double longitude, double
     }
 
     ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF,
-        longitude > 0.0 ? "N" : "S", path);
+        longitude > 0.0 ? "E" : "W", path);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("modify image property longitude ref fail %{public}d", ret);
     }
 
-    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE,
-        LocationValueToString(latitude), path);
+    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE, LocationValueToString(latitude), path);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("modify image property latitude fail %{public}d", ret);
     }
 
-    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF,
-        latitude > 0.0 ? "E" : "W", path);
+    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF, latitude > 0.0 ? "N" : "S", path);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("modify image property latitude ref fail %{public}d", ret);
     }
