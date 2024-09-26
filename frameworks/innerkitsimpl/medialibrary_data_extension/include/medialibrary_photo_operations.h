@@ -61,6 +61,8 @@ public:
     EXPORT static int32_t GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
         bool isCleanImmediately, std::string &photoId);
     EXPORT static int32_t FinishRequestPicture(MediaLibraryCommand &cmd);
+    EXPORT static int32_t AddFiltersForCloudEnhancementPhoto(int32_t fileId, const std::string& assetPath,
+        const std::string& editDataCameraSourcePath, const std::string& mimeType);
     EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs);
     EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris);
 private:
@@ -84,6 +86,7 @@ private:
     static int32_t RevertMovingPhotoVideo(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &path, const std::string &sourceVideoPath, int32_t subtype);
     static int32_t ParseMediaAssetEditData(MediaLibraryCommand &cmd, std::string &editData);
+    static void ParseCloudEnhancementEditData(std::string& editData);
     static void CreateThumbnailFileScan(const std::shared_ptr<FileAsset> &fileAsset, std::string &extraUri,
         bool orientationUpdated, bool isNeedScan);
     static bool IsSetEffectMode(MediaLibraryCommand &cmd);
@@ -126,7 +129,6 @@ private:
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static std::shared_ptr<FileAsset> GetFileAsset(MediaLibraryCommand &cmd);
     static int32_t ForceSavePicture(MediaLibraryCommand& cmd);
-    static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension);
 private:
     static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension, const std::string mimeType);
     static void UpdateEditDataPath(std::string filePath, const std::string &extension);

@@ -315,6 +315,8 @@ static int32_t MergeFile(const UniqueFd& imageFd, const UniqueFd& videoFd, const
 
 uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetFrameIndex");
     uint32_t index{0};
     if (fd < 0) {
         MEDIA_ERR_LOG("file is error");
@@ -333,6 +335,7 @@ uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
         MEDIA_ERR_LOG("failed to get frame index");
         return index;
     }
+    tracer.Finish();
     return index;
 }
 
@@ -446,6 +449,32 @@ bool MovingPhotoFileUtils::IsLivePhoto(const string& path)
         }
     }
     return true;
+}
+
+int32_t MovingPhotoFileUtils::GetLivePhotoSize(int32_t fd, int64_t &liveSize)
+{
+    if (fd < 0) {
+        MEDIA_ERR_LOG("invalid live photo fd");
+        return E_ERR;
+    }
+    if (lseek(fd, -LIVE_TAG_LEN, SEEK_END) == E_ERR) {
+        MEDIA_ERR_LOG("failed to lseek file, errno: %{public}d", errno);
+        return E_ERR;
+    }
+    char buffer[LIVE_TAG_LEN + 1];
+    ssize_t bytesRead = read(fd, buffer, LIVE_TAG_LEN);
+    if (bytesRead == E_ERR) {
+        MEDIA_ERR_LOG("failed to read file, errno: %{public}d", errno);
+        return E_ERR;
+    }
+    buffer[bytesRead] = '\0';
+    for (size_t i = 0; i < LIVE_TAG.size(); i++) {
+        if (LIVE_TAG[i] != buffer[i]) {
+            return E_ERR;
+        }
+    }
+    liveSize = atoi(buffer + LIVE_TAG.length());
+    return E_OK;
 }
 
 static int32_t SendLivePhoto(const UniqueFd &livePhotoFd, const string &destPath, int64_t sizeToSend, off_t &offset)

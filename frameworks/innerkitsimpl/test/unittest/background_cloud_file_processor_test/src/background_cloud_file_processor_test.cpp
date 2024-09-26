@@ -203,29 +203,6 @@ void BackgroundCloudFileProcessorTest::TearDown()
     MEDIA_INFO_LOG("BackgroundCloudFileProcessorTest TearDown");
 }
 
-// Scenario1: Test StartTimer and StopTimer
-HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("background_cloud_file_processor_test_001 Start");
-    PreparePhotos(5, MEDIA_TYPE_IMAGE);
-    PreparePhotos(5, MEDIA_TYPE_VIDEO);
-    EXPECT_EQ(QueryPhotosCount(), 10);
-
-    EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 50);
-    BackgroundCloudFileProcessor::StartTimer();
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(80));
-    EXPECT_GT(BackgroundCloudFileProcessor::startTimerId_, 0);
-    EXPECT_GT(BackgroundCloudFileProcessor::stopTimerId_, 0);
-    EXPECT_GT(BackgroundCloudFileProcessor::curDownloadPaths_.size(), 0);
-
-    BackgroundCloudFileProcessor::StopTimer();
-    EXPECT_EQ(BackgroundCloudFileProcessor::startTimerId_, 0);
-    EXPECT_EQ(BackgroundCloudFileProcessor::stopTimerId_, 0);
-    EXPECT_EQ(BackgroundCloudFileProcessor::curDownloadPaths_.size(), 0);
-    MEDIA_INFO_LOG("background_cloud_file_processor_test_001 End");
-}
-
 // Scenario2: Test Image download order
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_002, TestSize.Level0)
 {

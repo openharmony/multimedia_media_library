@@ -28,6 +28,7 @@ using namespace OHOS::Media::MediaTool;
 constexpr int32_t SHELL_UID = 2000;
 int main(int argc, char *argv[])
 {
+    MEDIA_INFO_LOG("mediatool main start");
     int32_t id = getuid();
     if (id != 0 && id != SHELL_UID) {
         MEDIA_ERR_LOG("Invalid uid");

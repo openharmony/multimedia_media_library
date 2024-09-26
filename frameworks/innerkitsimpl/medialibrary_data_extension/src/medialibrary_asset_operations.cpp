@@ -668,6 +668,23 @@ static void HandleIsTemp(MediaLibraryCommand &cmd, ValuesBucket &outValues)
     return;
 }
 
+static void HandleDirty(MediaLibraryCommand &cmd, ValuesBucket &outValues)
+{
+    if (!PermissionUtils::IsNativeSAApp()) {
+        MEDIA_DEBUG_LOG("do not have permission to set dirty");
+        return;
+    }
+
+    int32_t dirty = 1;
+    ValueObject value;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_DIRTY, value)) {
+        value.GetInt(dirty);
+    }
+    if (dirty != 1) {
+        outValues.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
+    }
+}
+
 static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
     // Fill basic file information into DB
@@ -695,6 +712,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
         HandleIsTemp(cmd, assetInfo);
         HandleBurstPhoto(cmd, assetInfo);
+        HandleDirty(cmd, assetInfo);
     }
 
     HandleCallingPackage(cmd, fileAsset, assetInfo);

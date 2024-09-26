@@ -62,9 +62,10 @@ napi_value SendablePhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value expo
         DECLARE_NAPI_GETTER("albumSubtype", JSGetPhotoAlbumSubType),
         DECLARE_NAPI_GETTER("coverUri", JSGetCoverUri),
         DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
-        DECLARE_NAPI_FUNCTION("getAssets", JSPhoteAccessGetPhotoAssets),
+        DECLARE_NAPI_FUNCTION("getAssets", JSPhotoAccessGetPhotoAssets),
         DECLARE_NAPI_FUNCTION("convertToPhotoAlbum", ConvertToPhotoAlbum),
         DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", JSPhotoAccessGetSharedPhotoAssets),
+        DECLARE_NAPI_FUNCTION("getFaceId", PhotoAccessHelperGetFaceId),
     };
     napi_define_sendable_class(env, PHOTOACCESS_PHOTO_ALBUM_CLASS.c_str(), NAPI_AUTO_LENGTH,
                                PhotoAlbumNapiConstructor, nullptr, sizeof(props) / sizeof(props[0]), props,
@@ -558,7 +559,7 @@ static void JSGetPhotoAssetsCallbackComplete(napi_env env, napi_status status, v
     delete context;
 }
 
-napi_value SendablePhotoAlbumNapi::JSPhoteAccessGetPhotoAssets(napi_env env, napi_callback_info info)
+napi_value SendablePhotoAlbumNapi::JSPhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info)
 {
     unique_ptr<SendablePhotoAlbumNapiAsyncContext> asyncContext = make_unique<SendablePhotoAlbumNapiAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsGetPhotoAssets(env, info, asyncContext));
@@ -730,5 +731,76 @@ napi_value SendablePhotoAlbumNapi::JSPhotoAccessGetSharedPhotoAssets(napi_env en
     } while (!resultSet->GoToNextRow());
     resultSet->Close();
     return jsFileArray;
+}
+
+static void PhotoAccessHelperGetFaceIdExec(napi_env env, void *data)
+{
+    auto *context = static_cast<SendablePhotoAlbumNapiAsyncContext *>(data);
+    auto jsContext = make_unique<SendableJSAsyncContextOutput>();
+    jsContext->status = false;
+
+    PhotoAlbumSubType albumSubType = context->objectInfo->GetPhotoAlbumInstance()->GetPhotoAlbumSubType();
+    if (albumSubType != PhotoAlbumSubType::PORTRAIT && albumSubType != PhotoAlbumSubType::GROUP_PHOTO) {
+        NAPI_WARN_LOG("albumSubType: %{public}d, not support getFaceId", albumSubType);
+        return;
+    }
+
+    Uri uri(PAH_QUERY_ANA_PHOTO_ALBUM);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, context->objectInfo->GetAlbumId());
+    vector<string> fetchColumn = { GROUP_TAG };
+    int errCode = 0;
+
+    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
+        if (errCode == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(E_FAIL);
+        }
+        NAPI_ERR_LOG("get face id failed, errCode is %{public}d", errCode);
+        return;
+    }
+
+    context->faceTag = GetStringVal(GROUP_TAG, resultSet);
+}
+
+static void GetFaceIdCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<SendablePhotoAlbumNapiAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto jsContext = make_unique<SendableJSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+    } else {
+        CHECK_ARGS_RET_VOID(env,
+            napi_create_string_utf8(env, context->faceTag.c_str(), NAPI_AUTO_LENGTH, &jsContext->data), JS_INNER_FAIL);
+        jsContext->status = true;
+    }
+
+    if (context->work != nullptr) {
+        SendableMediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef, context->work,
+            *jsContext);
+    }
+    delete context;
+}
+
+napi_value SendablePhotoAlbumNapi::PhotoAccessHelperGetFaceId(napi_env env, napi_callback_info info)
+{
+    if (!SendableMediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "Only system apps can get the Face ID of the album");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<SendablePhotoAlbumNapiAsyncContext>();
+
+    CHECK_ARGS(env, SendableMediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, 0, 0),
+        JS_ERR_PARAMETER_INVALID);
+
+    return SendableMediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSAnalysisAlbumGetFaceId",
+        PhotoAccessHelperGetFaceIdExec, GetFaceIdCompleteCallback);
 }
 } // namespace OHOS::Media

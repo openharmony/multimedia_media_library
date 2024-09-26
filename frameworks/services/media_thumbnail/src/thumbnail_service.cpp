@@ -116,59 +116,6 @@ static void UpdateAstcInfo(ThumbRdbOpt &opts, std::string id)
     }
 }
 
-static void PerformKvStoreUpdateTask(std::shared_ptr<ThumbnailTaskData> &data)
-{
-    vector<ThumbnailData> infos;
-    if (!ThumbnailUtils::QueryOldAstcInfos(data->opts_.store, PhotoColumn::PHOTOS_TABLE, infos)) {
-        return;
-    }
-    MEDIA_INFO_LOG("Old astc data size: %{public}d", static_cast<int>(infos.size()));
-    if (infos.empty()) {
-        return;
-    }
-
-    std::shared_ptr<MediaLibraryKvStore> monthOldKvStore = std::make_shared<MediaLibraryKvStore>();
-    int32_t status = monthOldKvStore->Init(
-        KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC_OLD_VERSION, KV_STORE_OWNER_DIR_OLD_VERSION);
-    auto monthNewKvStore = MediaLibraryKvStoreManager::GetInstance()
-        .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
-    if (status != E_OK || monthNewKvStore == nullptr) {
-        MEDIA_ERR_LOG("Init month kvStore failed, status %{public}d", status);
-        return;
-    }
-    std::shared_ptr<MediaLibraryKvStore> yearOldKvStore = std::make_shared<MediaLibraryKvStore>();
-    status = yearOldKvStore->Init(
-        KvStoreRoleType::OWNER, KvStoreValueType::YEAR_ASTC_OLD_VERSION, KV_STORE_OWNER_DIR_OLD_VERSION);
-    auto yearNewKvStore = MediaLibraryKvStoreManager::GetInstance()
-        .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::YEAR_ASTC);
-    if (status != E_OK || yearNewKvStore == nullptr) {
-        MEDIA_ERR_LOG("Init year kvStore failed, status %{public}d", status);
-        return;
-    }
-    for (uint32_t i = 0; i < infos.size(); i++) {
-        std::string oldKey;
-        std::string newKey;
-        if (!ThumbnailUtils::GenerateOldKvStoreKey(infos[i].id, infos[i].dateAdded, oldKey) ||
-            !ThumbnailUtils::GenerateKvStoreKey(infos[i].id, infos[i].dateAdded, newKey)) {
-            continue;
-        }
-        std::vector<uint8_t> monthValue;
-        if (monthOldKvStore->Query(oldKey, monthValue) != E_OK || monthNewKvStore->Insert(newKey, monthValue) != E_OK) {
-            MEDIA_ERR_LOG("MonthValue update failed, fileID %{public}s", infos[i].id.c_str());
-            continue;
-        }
-        std::vector<uint8_t> yearValue;
-        if (yearOldKvStore->Query(oldKey, yearValue) != E_OK || yearNewKvStore->Insert(newKey, yearValue) != E_OK) {
-            MEDIA_ERR_LOG("YearValue update failed, fileID %{public}s", infos[i].id.c_str());
-            continue;
-        }
-        UpdateAstcInfo(data->opts_, infos[i].id);
-    }
-    monthOldKvStore->Close();
-    yearOldKvStore->Close();
-    MEDIA_INFO_LOG("PerformKvStoreUpdateTask End");
-}
-
 void ThumbnailService::Init(const shared_ptr<RdbStore> &rdbStore,
 #ifdef DISTRIBUTED
     const shared_ptr<SingleKvStore> &kvStore,
@@ -186,22 +133,6 @@ void ThumbnailService::Init(const shared_ptr<RdbStore> &rdbStore,
     } else {
         isScreenSizeInit_ = true;
     }
-
-    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
-        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::BACKGROUND);
-    if (thumbnailWorker == nullptr || rdbStorePtr_ == nullptr) {
-        MEDIA_ERR_LOG("thumbnailWorker or rdbStorePtr_ is null");
-        return;
-    }
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .table = PhotoColumn::PHOTOS_TABLE,
-    };
-    ThumbnailData data;
-    std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(opts, data);
-    std::shared_ptr<ThumbnailGenerateTask> kvStoreUpdateTask =
-        std::make_shared<ThumbnailGenerateTask>(PerformKvStoreUpdateTask, taskData);
-    thumbnailWorker->AddTask(kvStoreUpdateTask, ThumbnailTaskPriority::HIGH);
 }
 
 void ThumbnailService::ReleaseService()

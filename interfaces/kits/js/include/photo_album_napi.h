@@ -90,7 +90,7 @@ private:
     EXPORT static napi_value JSPhotoAccessGetAlbumCount(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSPhotoAccessGetAlbumImageCount(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSPhotoAccessGetAlbumVideoCount(napi_env env, napi_callback_info info);
-    EXPORT static napi_value JSPhoteAccessGetPhotoAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSPhotoAccessGetPhotoAssetsSync(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
@@ -98,6 +98,7 @@ private:
     EXPORT static napi_value PhotoAccessHelperRemoveAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperRecoverPhotos(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperDeletePhotos(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetFaceId(napi_env env, napi_callback_info info);
 
     napi_env env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;
@@ -117,6 +118,7 @@ struct PhotoAlbumNapiAsyncContext : public NapiError {
     std::vector<DataShare::DataShareValuesBucket> valuesBuckets;
     std::string networkId;
     std::string uri;
+    std::string faceTag;
     std::unique_ptr<FetchResult<FileAsset>> fetchResult;
     ResultNapiType resultNapiType;
 

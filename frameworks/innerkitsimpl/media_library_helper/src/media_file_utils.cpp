@@ -1499,6 +1499,20 @@ string MediaFileUtils::GetUriByExtrConditions(const string &prefix, const string
     return prefix + fileId + suffix;
 }
 
+std::string MediaFileUtils::GetUriWithoutDisplayname(const string &uri)
+{
+    if (uri.empty()) {
+        return uri;
+    }
+
+    auto index = uri.rfind("/");
+    if (index == string::npos) {
+        return uri;
+    }
+
+    return uri.substr(0, index);
+}
+
 string MediaFileUtils::Encode(const string &uri)
 {
     const unordered_set<char> uriCompentsSet = {

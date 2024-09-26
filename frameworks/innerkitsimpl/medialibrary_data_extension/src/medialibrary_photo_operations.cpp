@@ -356,6 +356,7 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     PhotoColumn::PHOTO_COVER_POSITION,
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
     PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+    PhotoColumn::PHOTO_POSITION,
 };
 
 bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
@@ -369,14 +370,20 @@ static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<Fi
     bool& isMovingPhotoVideo)
 {
     string movingPhotoOprnKey = cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD);
-    if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO) {
+    if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO ||
+        movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO_CLOUD) {
         CHECK_AND_RETURN_RET_LOG(CheckOpenMovingPhoto(fileAsset->GetPhotoSubType(),
             fileAsset->GetMovingPhotoEffectMode(), cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD)),
             E_INVALID_VALUES,
             "Non-moving photo is requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
             id.c_str(), fileAsset->GetPhotoSubType());
-        fileAsset->SetPath(MediaFileUtils::GetMovingPhotoVideoPath(fileAsset->GetPath()));
+        string imagePath = fileAsset->GetPath();
+        fileAsset->SetPath(MediaFileUtils::GetMovingPhotoVideoPath(imagePath));
         isMovingPhotoVideo = true;
+        if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO_CLOUD && fileAsset->GetPosition() == POSITION_CLOUD) {
+            fileAsset->SetPath(imagePath);
+            isMovingPhotoVideo = false;
+        }
     } else if (movingPhotoOprnKey == OPEN_PRIVATE_LIVE_PHOTO) {
         CHECK_AND_RETURN_RET_LOG(fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO),
             E_INVALID_VALUES,
@@ -833,12 +840,12 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::SaveCameraPhoto");
-    MEDIA_INFO_LOG("start SaveCameraPhoto");
     string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
     if (fileId.empty()) {
-        MEDIA_ERR_LOG("get fileId fail");
+        MEDIA_ERR_LOG("SaveCameraPhoto, get fileId fail");
         return 0;
     }
+    MEDIA_INFO_LOG("start SaveCameraPhoto, fileId: %{public}s", fileId.c_str());
 
     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
     if (!fileType.empty()) {
@@ -866,9 +873,9 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
         ValuesBucket valuesBucketDirty;
         valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-        int32_t updatedDirtyRows = MediaLibraryRdbStore::Update(values, predicates);
+        int32_t updatedDirtyRows = MediaLibraryRdbStore::Update(valuesBucketDirty, predicates);
         if (updatedDirtyRows < 0) {
-            MEDIA_INFO_LOG("update temp flag fail.");
+            MEDIA_INFO_LOG("update dirty flag fail.");
         }
     }
     string uri = cmd.GetQuerySetParam(PhotoColumn::MEDIA_FILE_PATH);
@@ -889,7 +896,8 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
             MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, true, true, stoi(fileId));
         }
     }
-    MEDIA_INFO_LOG("Success, updatedRows: %{public}d, needScanStr: %{public}s", updatedRows, needScanStr.c_str());
+    MEDIA_INFO_LOG("SaveCameraPhoto Success, updatedRows: %{public}d, needScanStr: %{public}s",
+        updatedRows, needScanStr.c_str());
     return updatedRows;
 }
 
@@ -2230,6 +2238,21 @@ int32_t MediaLibraryPhotoOperations::ParseMediaAssetEditData(MediaLibraryCommand
     return E_OK;
 }
 
+void MediaLibraryPhotoOperations::ParseCloudEnhancementEditData(string& editData)
+{
+    if (!nlohmann::json::accept(editData)) {
+        MEDIA_WARN_LOG("Failed to verify the editData format, editData is: %{private}s",
+            editData.c_str());
+        return;
+    }
+    string editDataJsonStr;
+    nlohmann::json jsonObject = nlohmann::json::parse(editData);
+    editDataJsonStr = jsonObject[EDIT_DATA];
+    nlohmann::json editDataJson = nlohmann::json::parse(editDataJsonStr);
+    string editDataStr = editDataJson.dump();
+    editData = editDataStr;
+}
+
 bool MediaLibraryPhotoOperations::IsSetEffectMode(MediaLibraryCommand &cmd)
 {
     int32_t effectMode;
@@ -2520,6 +2543,35 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
         MediaLibraryObjectUtils::ScanFileAsync(assetPath, to_string(fileAsset->GetId()), MediaLibraryApi::API_10);
     }
     return ret;
+}
+
+int32_t MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(int32_t fileId,
+    const string& assetPath, const string& editDataCameraSourcePath, const string& mimeType)
+{
+    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
+    string editDataDirPath = GetEditDataDirPath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(!editDataDirPath.empty(), E_INVALID_URI, "Can not get editdata dir path");
+    string sourcePath = GetEditDataSourcePath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Can not get edit source path");
+
+    // copy source.jpg
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(editDataDirPath), E_HAS_FS_ERROR,
+        "Can not create dir %{private}s, errno:%{public}d", editDataDirPath.c_str(), errno);
+    bool copyResult = MediaFileUtils::CopyFileUtil(assetPath, sourcePath);
+    if (!copyResult) {
+        MEDIA_ERR_LOG("copy to source.jpg failed. errno=%{public}d, path: %{public}s", errno, assetPath.c_str());
+    }
+    string editData;
+    MediaFileUtils::ReadStrFromFile(editDataCameraSourcePath, editData);
+    ParseCloudEnhancementEditData(editData);
+    string editDataCameraDestPath = PhotoFileUtils::GetEditDataCameraPath(assetPath);
+    copyResult = MediaFileUtils::CopyFileUtil(editDataCameraSourcePath, editDataCameraDestPath);
+    if (!copyResult) {
+        MEDIA_ERR_LOG("copy editDataCamera failed. errno=%{public}d, path: %{public}s", errno,
+            editDataCameraSourcePath.c_str());
+    }
+    // normal
+    return AddFiltersToPhoto(sourcePath, assetPath, editData);
 }
 
 int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand& cmd,
