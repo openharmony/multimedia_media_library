@@ -44,6 +44,7 @@ enum class AssetChangeOperation {
     SET_TITLE,
     SET_USER_COMMENT,
     SET_MOVING_PHOTO_EFFECT_MODE,
+    SET_SUPPORT_WATERMARK_TYPE,
     SET_PHOTO_QUALITY_AND_PHOTOID,
     SET_LOCATION,
     SET_CAMERA_SHOT_KEY,
@@ -132,6 +133,7 @@ private:
     EXPORT static napi_value JSAddResource(napi_env env, napi_callback_info info);
     EXPORT static napi_value AddMovingPhotoVideoResource(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetEffectMode(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetSupportWatermarkType(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetLocation(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetCameraShotKey(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSaveCameraPhoto(napi_env env, napi_callback_info info);

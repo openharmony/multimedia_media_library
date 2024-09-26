@@ -2725,6 +2725,16 @@ static void AddCloudEnhancementColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddSupportWatermarkType(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::SUPPORT_WATERMARK_TYPE + " INT "
+    };
+    MEDIA_INFO_LOG("start add support_watermark_type column");
+    ExecSqls(sqls, store);
+}
+
 static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -3447,6 +3457,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_VIDEO_FACE_TABLE) {
         UpdateVideoFaceTable(store);
+    }
+
+    if (oldVersion < VERSION_ADD_SUPPORT_WATERMARK_TYPE) {
+        AddSupportWatermarkType(store);
     }
 }
 
