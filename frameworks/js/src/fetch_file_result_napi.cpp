@@ -907,7 +907,7 @@ napi_value FetchFileResultNapi::JSClose(napi_env env, napi_callback_info info)
     if ((status == napi_ok) && (obj != nullptr)) {
         napi_create_int32(env, E_SUCCESS, &jsResult);
     } else {
-        NAPI_INFO_LOG("JSClose obj == nullptr");
+        NAPI_DEBUG_LOG("JSClose obj == nullptr");
     }
 
     NAPI_DEBUG_LOG("JSClose OUT!");
