@@ -253,8 +253,8 @@ private:
     int32_t frameIndex_ = 0;
 
     int32_t isTemp_;
-    int32_t photoQuality_;
-    int32_t dirty_;
+    int32_t photoQuality_ = 0;
+    int32_t dirty_ = 0;
 
      // front camera
     std::string frontcamera_;

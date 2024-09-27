@@ -206,13 +206,13 @@ int32_t MovingPhotoProcessor::GetUpdatedMovingPhotoData(const MovingPhotoData& c
 
     if (!MediaFileUtils::GetFileSize(videoPath, videoSize) || videoSize == 0) {
         MEDIA_WARN_LOG("Failed to get video of moving photo, id: %{public}d", currentData.fileId);
-        newData.size = imageSize;
+        newData.size = static_cast<int64_t>(imageSize);
         newData.subtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
         return E_OK;
     }
 
     if (MediaFileUtils::GetFileSize(extraDataPath, extraSize) && extraSize > 0) {
-        newData.size = imageSize + videoSize + extraSize;
+        newData.size = static_cast<int64_t>(imageSize + videoSize + extraSize);
         return E_OK;
     }
     string extraDataDir = MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(imagePath);
@@ -226,7 +226,7 @@ int32_t MovingPhotoProcessor::GetUpdatedMovingPhotoData(const MovingPhotoData& c
         MEDIA_ERR_LOG("Failed to write extraData, errno:%{public}d", errno);
         return E_HAS_FS_ERROR;
     }
-    newData.size = imageSize + videoSize + DEFAULT_EXTRA_DATA_SIZE;
+    newData.size = static_cast<int64_t>(imageSize + videoSize + DEFAULT_EXTRA_DATA_SIZE);
     return E_OK;
 }
 
