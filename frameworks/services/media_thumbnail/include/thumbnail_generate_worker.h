@@ -15,7 +15,7 @@
 
 #ifndef FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_THUMBNAIL_GENERATE_WORKER_H
 #define FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_THUMBNAIL_GENERATE_WORKER_H
-333
+
 #include <atomic>
 #include <condition_variable>
 #include <list>
@@ -39,6 +39,7 @@ enum class ThumbnailTaskType {
 
 enum class ThumbnailTaskPriority {
     HIGH,
+    MID,
     LOW,
 };
 
@@ -98,6 +99,7 @@ private:
     std::condition_variable workerCv_;
 
     SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> highPriorityTaskQueue_;
+    SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> midPriorityTaskQueue_;
     SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> lowPriorityTaskQueue_;
 
     std::atomic<int32_t> ignoreRequestId_ = 0;
