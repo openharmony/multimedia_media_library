@@ -1083,10 +1083,16 @@ static void CheckAccessTokenPermissionExecute(uint32_t tokenId, uint32_t checkFl
     int checkWriteResult = -1;
     if (checkFlag == URI_PERMISSION_FLAG_READ) {
         checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, readPermmisionMap[mediaType]);
+        if (checkReadResult != PermissionState::PERMISSION_GRANTED) {
+            checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
+        }
     } else if (checkFlag == URI_PERMISSION_FLAG_WRITE) {
         checkWriteResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
     } else if (checkFlag == URI_PERMISSION_FLAG_READWRITE) {
         checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, readPermmisionMap[mediaType]);
+        if (checkReadResult != PermissionState::PERMISSION_GRANTED) {
+            checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
+        }
         checkWriteResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
     }
     isReadable = checkReadResult == PermissionState::PERMISSION_GRANTED;
