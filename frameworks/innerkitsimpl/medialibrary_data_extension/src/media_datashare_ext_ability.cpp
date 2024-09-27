@@ -181,7 +181,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 
     MultiStagesCaptureManager::GetInstance().Init();
 
-    EnhancementManager::GetInstance().Init();
+    EnhancementManager::GetInstance().InitAsync();
 
     Media::MedialibrarySubscriber::Subscribe();
     dataManager->SetStartupParameter();

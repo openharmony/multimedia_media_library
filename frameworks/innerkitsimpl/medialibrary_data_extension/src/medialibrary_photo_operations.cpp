@@ -2247,10 +2247,16 @@ void MediaLibraryPhotoOperations::ParseCloudEnhancementEditData(string& editData
     }
     string editDataJsonStr;
     nlohmann::json jsonObject = nlohmann::json::parse(editData);
-    editDataJsonStr = jsonObject[EDIT_DATA];
-    nlohmann::json editDataJson = nlohmann::json::parse(editDataJsonStr);
-    string editDataStr = editDataJson.dump();
-    editData = editDataStr;
+    if (jsonObject.contains(EDIT_DATA)) {
+        editDataJsonStr = jsonObject[EDIT_DATA];
+        nlohmann::json editDataJson = nlohmann::json::parse(editDataJsonStr, nullptr, false);
+        if (editDataJson.is_discarded()) {
+            MEDIA_INFO_LOG("editDataJson parse failed");
+            return;
+        }
+        string editDataStr = editDataJson.dump();
+        editData = editDataStr;
+    }
 }
 
 bool MediaLibraryPhotoOperations::IsSetEffectMode(MediaLibraryCommand &cmd)

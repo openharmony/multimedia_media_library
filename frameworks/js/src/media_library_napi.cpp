@@ -762,8 +762,8 @@ static napi_value CreateNumberEnumProperty(napi_env env, vector<string> properti
 {
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_object(env, &result));
-    for (int32_t i = 0; i < properties.size(); i++) {
-        NAPI_CALL(env, AddIntegerNamedProperty(env, result, properties[i], i + offset));
+    for (size_t i = 0; i < properties.size(); i++) {
+        NAPI_CALL(env, AddIntegerNamedProperty(env, result, properties[i], static_cast<int32_t>(i) + offset));
     }
     NAPI_CALL(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &ref));
     return result;
