@@ -293,7 +293,9 @@ napi_value AttachFileAssetFunc(napi_env env, void *value, void *)
     }
     auto transferFileAsset = reinterpret_cast<TransferFileAsset*>(value);
     std::shared_ptr<FileAsset> fileAsset = std::move(transferFileAsset->fileAsset);
-    delete transferFileAsset;
+    if (!transferFileAsset) {
+        delete transferFileAsset;
+    }
     NAPI_ASSERT(env, fileAsset != nullptr, "AttachFileAssetFunc fileAsset is null");
     napi_value result = FileAssetNapi::AttachCreateFileAsset(env, fileAsset);
     NAPI_ASSERT(env, result != nullptr, "AttachFileAssetFunc result is null");
