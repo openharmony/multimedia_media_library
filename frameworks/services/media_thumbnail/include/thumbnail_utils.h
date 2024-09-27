@@ -45,9 +45,9 @@ struct ThumbRdbOpt {
     EXPORT std::string row;
     EXPORT std::string uri;
     EXPORT std::string dateAdded;
+    EXPORT std::string dateTaken;
     EXPORT std::string fileUri;
     EXPORT std::string fileId;
-    EXPORT std::string dateTaken;
     EXPORT Size screenSize;
 };
 
