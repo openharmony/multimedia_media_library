@@ -1075,7 +1075,7 @@ void MediaScannerDb::UpdateAlbumInfo(const std::vector<std::string> &subtypes,
 void MediaScannerDb::UpdateAlbumInfoByMetaData(const Metadata &metadata)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
+    if (rdbStore == nullptr || rdbStore->GetRaw() == nullptr) {
         MEDIA_ERR_LOG("rdbstore is nullptr");
         return;
     }
