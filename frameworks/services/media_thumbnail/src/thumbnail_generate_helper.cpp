@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-222
+
 #define MLOG_TAG "Thumbnail"
 
 #include "thumbnail_generate_helper.h"
@@ -167,18 +167,19 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts, bool
         }
     }
     ThumbnailTaskPriority priority = isCloudInsertTaskPriorityHigh ?
-        ThumbnailTaskPriority::HIGH : ThumbnailTaskPriority::LOW;
+        ThumbnailTaskPriority::MID : ThumbnailTaskPriority::LOW;
+    ThumbnailTaskType taskType = isCloudInsertTaskPriorityHigh ?
+        ThumbnailTaskType::FOREGROUND : ThumbnailTaskType::BACKGROUND;
+        
     data.loaderOpts.loadingStates = SourceLoader::CLOUD_SOURCE_LOADING_STATES;
     if (data.orientation != 0) {
         data.loaderOpts.loadingStates = SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
-        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstcEx, opts, data,
-            ThumbnailTaskType::BACKGROUND, priority);
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstcEx, opts, data, taskType, priority);
         return E_OK;
     }
-
-    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc, opts, data,
-        ThumbnailTaskType::BACKGROUND, priority);
+    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc, opts, data, taskType, priority);
     return E_OK;
+}
 }
 
 int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
