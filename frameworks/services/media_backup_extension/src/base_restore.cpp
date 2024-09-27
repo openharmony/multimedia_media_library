@@ -22,6 +22,7 @@
 #include "backup_database_utils.h"
 #include "backup_dfx_utils.h"
 #include "backup_file_utils.h"
+#include "directory_ex.h"
 #include "extension_context.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -302,7 +303,14 @@ static void SetCoverPosition(const FileInfo &fileInfo,
         uint32_t version = 0;
         uint32_t frameIndex = 0;
         bool hasCinemagraphInfo = false;
-        UniqueFd extraDataFd(open(fileInfo.extraDataPath.c_str(), O_RDONLY));
+        string absExtraDataPath;
+        if (!PathToRealPath(fileInfo.extraDataPath, absExtraDataPath)) {
+            MEDIA_ERR_LOG("file is not real path: %{private}s, errno: %{public}d",
+                fileInfo.extraDataPath.c_str(), errno);
+            value.PutLong(PhotoColumn::PHOTO_COVER_POSITION, static_cast<int64_t>(coverPosition));
+            return;
+        }
+        UniqueFd extraDataFd(open(absExtraDataPath.c_str(), O_RDONLY));
         (void)MovingPhotoFileUtils::GetVersionAndFrameNum(extraDataFd.Get(), version, frameIndex, hasCinemagraphInfo);
         (void)MovingPhotoFileUtils::GetCoverPosition(fileInfo.movingPhotoVideoPath,
             frameIndex, coverPosition, Scene::AV_META_SCENE_CLONE);
