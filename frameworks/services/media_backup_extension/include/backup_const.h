@@ -44,6 +44,7 @@ constexpr int32_t GARBAGE_PHOTO_SIZE = 2048;
 constexpr int32_t LIVE_PHOTO_TYPE = 50;
 constexpr size_t GARBLE_UNIT = 2;
 constexpr uint32_t COVER_URI_NUM = 3;
+constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
