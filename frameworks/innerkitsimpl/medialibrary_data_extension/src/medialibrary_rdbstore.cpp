@@ -3469,6 +3469,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
         UpdateVideoFaceTable(store);
     }
 
+    if (oldVersion < VERSION_ADD_SUPPORT_WATERMARK_TYPE) {
+        AddSupportWatermarkType(store);
+    }
+
     if (oldVersion < VERSION_FIX_PHOTO_SCHPT_MEDIA_TYPE_INDEX) {
         FixPhotoSchptMediaTypeIndex(store);
     }
