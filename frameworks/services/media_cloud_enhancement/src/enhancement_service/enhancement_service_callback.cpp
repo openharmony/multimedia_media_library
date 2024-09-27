@@ -86,24 +86,24 @@ void EnhancementServiceCallback::OnSuccess(string taskId, MediaEnhanceBundle& bu
     int32_t newFileId = SaveCloudEnhancementPhoto(info, resultBuffers.front());
     CHECK_AND_RETURN_LOG(newFileId > 0, "invalid file id");
     ValuesBucket rdbValues;
-    rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
-        static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
+    rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
     rdbValues.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
         static_cast<int32_t>(StrongAssociationType::NORMAL));
     rdbValues.PutInt(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, newFileId);
+    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    int32_t errCode = transactionOprn.Start();
+    CHECK_AND_RETURN_LOG(errCode == E_OK,
+        "update source photo transaction start failed, photoId: %{public}s", taskId.c_str());
     int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates);
-    if (ret != E_OK) {
-        MEDIA_INFO_LOG("update source photo failed. ret: %{public}d, photoId: %{public}s", ret, taskId.c_str());
-        ret = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates);
-    }
-    CHECK_AND_RETURN_LOG(ret == E_OK, "update source photo again failed. ret: %{public}d, photoId: %{public}s",
+    CHECK_AND_PRINT_LOG(ret == E_OK, "update source photo failed. ret: %{public}d, photoId: %{public}s",
         ret, taskId.c_str());
+    transactionOprn.Finish();
     EnhancementTaskManager::RemoveEnhancementTask(taskId);
     CloudEnhancementGetCount::GetInstance().Report("SuccessType", taskId);
     string fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(sourceFileId),
         MediaFileUtils::GetExtraUri(sourceDisplayName, sourceFilePath));
     auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(fileUri, NotifyType::NOTIFY_ADD);
+    watch->Notify(fileUri, NotifyType::NOTIFY_UPDATE);
     MEDIA_INFO_LOG("callback success, photo_id: %{public}s", taskId.c_str());
 }
 
