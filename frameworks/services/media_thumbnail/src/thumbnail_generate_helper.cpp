@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #define MLOG_TAG "Thumbnail"
 
 #include "thumbnail_generate_helper.h"
@@ -179,7 +178,6 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts, bool
     }
     IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc, opts, data, taskType, priority);
     return E_OK;
-}
 }
 
 int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
