@@ -2878,6 +2878,16 @@ static void UpdateDataUniqueIndex(RdbStore &store)
     MEDIA_INFO_LOG("End UpdateDataUniqueIndex");
 }
 
+static void FixPhotoSchptMediaTypeIndex(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+    };
+    MEDIA_INFO_LOG("Fix idx_schpt_media_type index");
+    ExecSqls(executeSqlStrs, store);
+    MEDIA_INFO_LOG("End fix idx_schpt_media_type index.");
+}
+
 static void ResetCloudCursorAfterInitFinish()
 {
     MEDIA_INFO_LOG("Try reset cloud cursor after storage reconstruct");
@@ -3461,6 +3471,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_SUPPORT_WATERMARK_TYPE) {
         AddSupportWatermarkType(store);
+    }
+
+    if (oldVersion < VERSION_FIX_PHOTO_SCHPT_MEDIA_TYPE_INDEX) {
+        FixPhotoSchptMediaTypeIndex(store);
     }
 }
 
