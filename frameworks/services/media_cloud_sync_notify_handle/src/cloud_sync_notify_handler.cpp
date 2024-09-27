@@ -28,10 +28,7 @@ namespace OHOS {
 namespace Media {
 using ChangeType = DataShare::DataShareObserver::ChangeType;
 
-const int32_t CLOUD_FIRST_FIVE_HUNDRED = 1;
-const int32_t CLOUD_INCREMENT_DOWNLOAD = 2;
-const std::string CLOUDSYNC_STATUS_KEY = "persist.kernel.cloudsync.status";
-//1
+1111
 
 static bool IsCloudInsertTaskPriorityHigh()
 {
