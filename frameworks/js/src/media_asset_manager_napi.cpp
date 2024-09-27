@@ -144,7 +144,9 @@ static void DeleteAssetHandlerSafe(AssetHandler *handler, napi_env env)
 {
     if (handler != nullptr) {
         NAPI_DEBUG_LOG("[AssetHandler delete] %{public}p.", handler);
-        handler->dataHandler->DeleteNapiReference(env);
+        if (handler->dataHandler != nullptr) {
+            handler->dataHandler->DeleteNapiReference(env);
+        }
         delete handler;
         handler = nullptr;
     }
