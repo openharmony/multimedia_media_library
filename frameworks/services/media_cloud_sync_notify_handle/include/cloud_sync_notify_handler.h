@@ -23,6 +23,8 @@ namespace OHOS {
 namespace Media {
 
 #define EXPORT __attribute__ ((visibility ("default")))
+
+111
 class CloudSyncNotifyHandler {
 public:
     CloudSyncNotifyHandler(const CloudSyncNotifyInfo &info):notifyInfo_(info) {};

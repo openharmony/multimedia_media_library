@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+222
 #define MLOG_TAG "Thumbnail"
 
 #include "thumbnail_generate_helper.h"
