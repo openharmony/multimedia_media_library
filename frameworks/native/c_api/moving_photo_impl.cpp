@@ -117,7 +117,7 @@ int32_t MovingPhotoImpl::RequestContentToSandbox()
         MediaFileUtils::UriAppendKeyValue(movingPhotoUri, MEDIA_OPERN_KEYWORD, SOURCE_REQUEST);
     }
 
-    if (destImageUri_ && sizeof(destImageUri_) > 0) {
+    if (destImageUri_ && strlen(destImageUri_) > 0) {
         MEDIA_DEBUG_LOG("Sandbox image movingPhotoUri = %{public}s, destImageUri_ = %{public}s",
             movingPhotoUri.c_str(), destImageUri_);
         int32_t imageFd = OpenReadOnlyFile(movingPhotoUri, true);
@@ -289,7 +289,7 @@ int32_t MovingPhotoImpl::RequestContentToArrayBuffer()
         return E_HAS_FS_ERROR;
     }
 
-    if (fileLen > SIZE_MAX) {
+    if (static_cast<uint64_t>(fileLen) > static_cast<uint64_t>(SIZE_MAX)) {
         MEDIA_ERR_LOG("File length is too large to fit in a size_t, length: %{public}zu",
             static_cast<size_t>(fileLen));
         return E_HAS_FS_ERROR;
