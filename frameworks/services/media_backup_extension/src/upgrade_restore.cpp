@@ -94,7 +94,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         shouldIncludeSd_ = false;
         if (!MediaFileUtils::IsFileExists(externalDbPath_)) {
             MEDIA_ERR_LOG("External db is not exist.");
-            return E_FAIL;
+            return EXTERNAL_DB_NOT_EXIST;
         }
         int32_t externalErr = BackupDatabaseUtils::InitDb(externalRdb_, EXTERNAL_DB_NAME, externalDbPath_,
             mediaAppName_, false);

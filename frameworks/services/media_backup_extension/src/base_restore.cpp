@@ -75,7 +75,9 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
         }
         watch->Notify(PhotoColumn::DEFAULT_PHOTO_URI, NotifyType::NOTIFY_ADD);
     } else {
-        SetErrorCode(RestoreError::INIT_FAILED);
+        if (errorCode != EXTERNAL_DB_NOT_EXIST) {
+            SetErrorCode(RestoreError::INIT_FAILED);
+        }
     }
     HandleRestData();
 }
