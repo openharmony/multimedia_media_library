@@ -127,10 +127,10 @@ public:
     EXPORT std::pair<std::string, int> GetPhotoIdAndQuality() const;
     EXPORT void SetPhotoIdAndQuality(const std::string &photoId, int photoQuality);
 
-    EXPORT void SetLatitude(int64_t latitude);
-    EXPORT int64_t GetLatitude();
-    EXPORT void SetLongitude(int64_t longitude);
-    EXPORT int64_t GetLongitude();
+    EXPORT void SetLatitude(double latitude);
+    EXPORT double GetLatitude();
+    EXPORT void SetLongitude(double longitude);
+    EXPORT double GetLongitude();
 
     EXPORT const std::string &GetSelfId() const;
     EXPORT void SetSelfId(const std::string &selfId);
@@ -200,6 +200,7 @@ private:
     const std::string &GetStrMember(const std::string &name) const;
     int32_t GetInt32Member(const std::string &name) const;
     int64_t GetInt64Member(const std::string &name) const;
+    double GetDoubleMember(const std::string &name) const;
 
     std::string albumUri_;
     ResultNapiType resultNapiType_;
