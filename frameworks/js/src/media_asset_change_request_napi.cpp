@@ -1065,8 +1065,8 @@ napi_value MediaAssetChangeRequestNapi::JSSetLocation(napi_env env, napi_callbac
     double latitude;
     double longitude;
     MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO);
-    MediaLibraryNapiUtils::GetDouble(env, asyncContext->argv[0], latitude);
-    MediaLibraryNapiUtils::GetDouble(env, asyncContext->argv[1], longitude);
+    MediaLibraryNapiUtils::GetDouble(env, asyncContext->argv[0], longitude);
+    MediaLibraryNapiUtils::GetDouble(env, asyncContext->argv[1], latitude);
     asyncContext->objectInfo->fileAsset_->SetLongitude(longitude);
     asyncContext->objectInfo->fileAsset_->SetLatitude(latitude);
     asyncContext->objectInfo->assetChangeOperations_.push_back(AssetChangeOperation::SET_LOCATION);
@@ -2075,6 +2075,8 @@ static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext& context)
     DataShare::DataShareValuesBucket valuesBucket;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset->GetId());
+    valuesBucket.Put(PhotoColumn::MEDIA_FILE_PATH, fileAsset->GetPath());
     valuesBucket.Put(PhotoColumn::PHOTO_LATITUDE, fileAsset->GetLatitude());
     valuesBucket.Put(PhotoColumn::PHOTO_LONGITUDE, fileAsset->GetLongitude());
     return UpdateAssetProperty(context, PAH_SET_LOCATION, predicates, valuesBucket);
