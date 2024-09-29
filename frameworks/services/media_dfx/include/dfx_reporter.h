@@ -47,6 +47,7 @@ public:
         const int32_t& totalDownload);
     static void ReportStartResult(int32_t scene, int32_t errorCode, int32_t startTime);
     void ReportPhotoRecordInfo();
+    static int32_t ReportMedialibraryAPI(const std::string& callerPackage, const std::string& saveUri);
 };
 } // namespace Media
 } // namespace OHOS
