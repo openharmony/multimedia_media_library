@@ -268,6 +268,17 @@ void MediaLibraryRdbStore::ClearAudios(RdbStore &store)
     MEDIA_INFO_LOG("clear audios end");
 }
 
+void MediaLibraryRdbStore::UpdateIndexForCover(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+    };
+    MEDIA_INFO_LOG("update index for photo album cover start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("update index for photo album cover end");
+}
+
 int32_t MediaLibraryRdbStore::Init()
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
