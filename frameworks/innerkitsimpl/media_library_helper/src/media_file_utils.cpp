@@ -416,7 +416,7 @@ bool MediaFileUtils::CopyDirAndDelSrc(const std::string &srcPath, const std::str
     unsigned short curRecursionDepth)
 {
     if (curRecursionDepth > MAX_RECURSION_DEPTH) {
-        MEDIA_ERR_LOG("curRecursionDepth:%{public}d>=MAX_RECURSION_DEPTH", curRecursionDepth);
+        MEDIA_ERR_LOG("curRecursionDepth:%{public}d>MAX_RECURSION_DEPTH", curRecursionDepth);
         return false;
     }
     ++curRecursionDepth;
@@ -452,11 +452,7 @@ bool MediaFileUtils::CopyDirAndDelSrc(const std::string &srcPath, const std::str
         }
     }
 
-    if (ret) {
-        ret = DeleteDir(srcPath);
-    } else {
-        closedir(srcDir);
-    }
+    closedir(srcDir);
     MEDIA_INFO_LOG("srcPath:%{private}s,destPath:%{private}s,coypPathAndDelSrcRet:%{public}d",
         srcPath.c_str(), destPath.c_str(), ret);
     return ret;
