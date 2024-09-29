@@ -337,6 +337,10 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync()
             MediaLibraryRdbStore::ClearAudios(*rawStore);
             rdbStore->SetOldVersion(VERSION_MOVE_AUDIOS);
         }
+        if (oldVersion < VERSION_UPDATE_INDEX_FOR_COVER) {
+            MediaLibraryRdbStore::UpdateIndexForCover(*rawStore);
+            rdbStore->SetOldVersion(VERSION_UPDATE_INDEX_FOR_COVER);
+        }
 
         rdbStore->SetOldVersion(MEDIA_RDB_VERSION);
     }).detach();
