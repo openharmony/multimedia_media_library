@@ -19,7 +19,6 @@
 
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
-#include "backup_restore_service.h"
 #include "clone_source.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_rdb_utils.h"
@@ -30,6 +29,8 @@
 #include "media_file_utils.h"
 #define private public
 #define protected public
+#include "backup_restore_service.h"
+#include "base_restore.h"
 #include "clone_restore.h"
 #undef private
 #undef protected
