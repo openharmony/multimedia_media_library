@@ -363,6 +363,27 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     SetCoverPosition(fileInfo, data, value);
 }
 
+void BaseRestore::CreateDir(std::string &dir)
+{
+    if (!MediaFileUtils::IsFileExists(dir)) {
+        MediaFileUtils::CreateDirectory(dir);
+    }
+}
+
+void BaseRestore::RecursiveCreateDir(std::string &relativePath, std::string &suffix)
+{
+    CreateDir(relativePath);
+    size_t pos = suffix.find('/');
+    if (pos == std::string::npos) {
+        MEDIA_ERR_LOG("Recursive completion, return.");
+        return;
+    }
+    std::string prefix = suffix.substr(0, pos + 1);
+    std::string suffixTmp = suffix.erase(0, prefix.length());
+    prefix = relativePath + prefix;
+    RecursiveCreateDir(prefix, suffixTmp);
+}
+
 void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfos)
 {
     if (fileInfos.empty()) {
@@ -375,19 +396,25 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
         if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath)) {
             continue;
         }
-        string dirPath = RESTORE_MUSIC_LOCAL_DIR + fileInfos[i].displayName;
-        if (MediaFileUtils::IsFileExists(dirPath)) {
-            MEDIA_INFO_LOG("dirPath %{private}s already exists.", dirPath.c_str());
+        string relativePath0 = RESTORE_MUSIC_LOCAL_DIR;
+        string relativePath1 = fileInfos[i].relativePath;
+        if (relativePath1[0] == '/') {
+            relativePath1.erase(0, 1);
+        }
+        string dstPath = RESTORE_MUSIC_LOCAL_DIR + relativePath1;
+        RecursiveCreateDir(relativePath0, relativePath1);
+        if (MediaFileUtils::IsFileExists(dstPath)) {
+            MEDIA_INFO_LOG("dstPath %{private}s already exists.", dstPath.c_str());
             continue;
         }
-        int32_t moveErrCode = BackupFileUtils::MoveFile(fileInfos[i].filePath, dirPath, sceneCode);
+        int32_t moveErrCode = BackupFileUtils::MoveFile(fileInfos[i].filePath, dstPath, sceneCode);
         if (moveErrCode != E_SUCCESS) {
             MEDIA_ERR_LOG("MoveFile failed, filePath: %{public}s, errCode: %{public}d, errno: %{public}d",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(), moveErrCode, errno);
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::MOVE_FAILED);
             continue;
         }
-        BackupFileUtils::ModifyFile(dirPath, fileInfos[i].dateModified / MSEC_TO_SEC);
+        BackupFileUtils::ModifyFile(dstPath, fileInfos[i].dateModified / MSEC_TO_SEC);
         fileMoveCount++;
     }
     migrateAudioFileNumber_ += fileMoveCount;
