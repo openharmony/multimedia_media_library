@@ -45,6 +45,8 @@ constexpr int32_t LIVE_PHOTO_TYPE = 50;
 constexpr size_t GARBLE_UNIT = 2;
 constexpr uint32_t COVER_URI_NUM = 3;
 constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
+constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
+constexpr uint32_t THUMBNAIL_NUM = 500;
 
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
@@ -125,12 +127,22 @@ const std::string STAT_KEY_DUPLICATE_COUNT = "duplicateCount";
 const std::string STAT_KEY_FAILED_COUNT = "failedCount";
 const std::string STAT_KEY_DETAILS = "details";
 const std::string STAT_KEY_NUMBER = "number";
+const std::string STAT_KEY_PROGRESS_INFO = "progressInfo";
+const std::string STAT_KEY_NAME = "name";
+const std::string STAT_KEY_PROCESSED = "processed";
+const std::string STAT_KEY_TOTAL = "total";
+const std::string STAT_KEY_IS_PERCENTAGE = "isPercentage";
 const std::string STAT_VALUE_ERROR_INFO = "ErrorInfo";
 const std::string STAT_VALUE_COUNT_INFO = "CountInfo";
 const std::string STAT_TYPE_PHOTO = "photo";
 const std::string STAT_TYPE_VIDEO = "video";
 const std::string STAT_TYPE_AUDIO = "audio";
+const std::string STAT_TYPE_PHOTO_VIDEO = "photo&video";
+const std::string STAT_TYPE_UPDATE = "update";
+const std::string STAT_TYPE_OTHER = "other";
 const std::vector<std::string> STAT_TYPES = { STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO };
+const std::vector<std::string> STAT_PROGRESS_TYPES = { STAT_TYPE_PHOTO_VIDEO, STAT_TYPE_AUDIO, STAT_TYPE_UPDATE,
+    STAT_TYPE_OTHER };
 
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
@@ -190,6 +202,11 @@ enum RestoreError {
 enum class PhotoRelatedType {
     PHOTO_MAP = 0,
     PORTRAIT,
+};
+
+enum ProcessStatus {
+    STOP = 0,
+    START,
 };
 
 const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
@@ -331,6 +348,12 @@ struct SubCountInfo {
     SubCountInfo(int64_t successCount, int64_t duplicateCount,
         const std::unordered_map<std::string, int32_t> &failedFiles)
         : successCount(successCount), duplicateCount(duplicateCount), failedFiles(failedFiles) {}
+};
+
+struct SubProcessInfo {
+    uint64_t processed {0};
+    uint64_t total {0};
+    SubProcessInfo(uint64_t processed, uint64_t total) : processed(processed), total(total) {}
 };
 
 struct PortraitAlbumInfo {

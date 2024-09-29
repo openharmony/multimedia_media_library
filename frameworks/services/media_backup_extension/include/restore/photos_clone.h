@@ -40,9 +40,11 @@ public:
         return 0;
     }
 
-    int32_t OnStop()
+    int32_t OnStop(std::atomic<uint64_t> &totalNumber, std::atomic<int32_t> &processStatus)
     {
-        this->FixDuplicateBurstKeyInDifferentAlbum();
+        processStatus = ProcessStatus::START;
+        this->FixDuplicateBurstKeyInDifferentAlbum(totalNumber);
+        processStatus = ProcessStatus::STOP;
         return 0;
     }
 
@@ -66,7 +68,7 @@ private:
 
 private:
     PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(const FileInfo &fileInfo);
-    int32_t FixDuplicateBurstKeyInDifferentAlbum();
+    int32_t FixDuplicateBurstKeyInDifferentAlbum(std::atomic<uint64_t> &totalNumber);
     std::vector<PhotosDao::PhotosRowData> FindDuplicateBurstKey();
     std::string ToString(const std::vector<NativeRdb::ValueObject> &values);
     std::string GenerateUuid();
