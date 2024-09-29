@@ -205,8 +205,8 @@ enum class PhotoRelatedType {
 };
 
 enum ProcessStatus {
-    START = 0,
-    STOP,
+    STOP = 0,
+    START,
 };
 
 const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
