@@ -1062,6 +1062,16 @@ static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
     context->selectionArgs.emplace_back(to_string(MEDIA_TYPE_ALBUM));
 }
 
+static void LogMedialibraryAPI(const string& saveUri)
+{
+    string logMedialibraryAPI = MEDIALIBRARY_DATA_URI + "/" + MISC_OPERATION + "/" + "log_medialibrary_api";
+    Uri logUri(logMedialibraryAPI);
+    DataShare::DataShareValuesBucket valuesBucket;
+    string result;
+    valuesBucket.Put("saveUri", saveUri);
+    UserFileClient::InsertExt(logUri, valuesBucket, result);
+}
+
 static void GetFileAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -1082,6 +1092,8 @@ static void GetFileAssetsExecute(napi_env env, void *data)
     context->predicates.SetWhereClause(context->selection);
     context->predicates.SetWhereArgs(context->selectionArgs);
     context->predicates.SetOrder(context->order);
+
+    LogMedialibraryAPI("");
 
     string queryUri = MEDIALIBRARY_DATA_URI;
     if (!context->networkId.empty()) {
@@ -2150,6 +2162,7 @@ static void JSCreateAssetExecute(napi_env env, void *data)
 #else
             getFileAssetById(index, "", context);
 #endif
+            LogMedialibraryAPI(context->fileAsset->GetUri());
         }
     }
 }
@@ -4367,10 +4380,7 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
     }
     context->error = JS_E_RELATIVEPATH;
     int32_t srcFd = open(realPath.c_str(), O_RDWR);
-    if (srcFd == -1) {
-        NAPI_ERR_LOG("src path open fail, %{public}d", errno);
-        return;
-    }
+    CHECK_IF_EQUAL(srcFd != -1, "src path open fail, %{public}d", errno);
     struct stat statSrc;
     if (fstat(srcFd, &statSrc) == -1) {
         close(srcFd);
@@ -4387,6 +4397,7 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
         return;
     }
     SetFileAssetByIdV9(index, "", context);
+    LogMedialibraryAPI(context->fileAsset->GetUri());
     CHECK_NULL_PTR_RETURN_VOID(context->fileAsset, "JSGetStoreMediaAssetExecute: context->fileAsset is nullptr");
     Uri openFileUri(context->fileAsset->GetUri());
     int32_t destFd = UserFileClient::OpenFile(openFileUri, MEDIA_FILEMODE_READWRITE);

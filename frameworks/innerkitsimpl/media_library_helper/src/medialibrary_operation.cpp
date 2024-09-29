@@ -288,6 +288,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_ENHANCEMENT_QUERY, OperationType::ENHANCEMENT_QUERY},
         { OPRN_ENHANCEMENT_GET_PAIR, OperationType::ENHANCEMENT_GET_PAIR},
         { OPRN_SAVE_PICTURE, OperationType::SAVE_PICTURE},
+        { "log_medialibrary_api", OperationType::LOG_MEDIALIBRARY_API},
     };
     return oprnTypeMap;
 }

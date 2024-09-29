@@ -164,6 +164,7 @@ enum class EXPORT OperationType : uint32_t {
     ENHANCEMENT_SYNC,
     ENHANCEMENT_GET_PAIR,
     SAVE_PICTURE,
+    LOG_MEDIALIBRARY_API,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()
