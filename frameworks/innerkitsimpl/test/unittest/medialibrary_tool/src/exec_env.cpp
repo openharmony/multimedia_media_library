@@ -67,6 +67,7 @@ std::string ExecEnv::ToStr() const
         AppendStr(str, "isOnlyDeleteDb", deleteParam.isOnlyDeleteDb);
     }
     AppendStr(str, "workPath", workPath);
+    AppendStr(str, "isRoot", isRoot);
     return str;
 }
 } // namespace MediaTool
