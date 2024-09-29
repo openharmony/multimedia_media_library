@@ -455,6 +455,7 @@ static int32_t UpdateFavoriteAssetsInfoUtil(const int32_t fileAssetId, const boo
 {
     ValuesBucket values;
     values.PutInt(MEDIA_DATA_DB_IS_FAV, isFavorites ? 1 : 0);
+    MEDIA_INFO_LOG("Update asset %{public}d favorite to %{public}d", fileAssetId, isFavorites ? 1 : 0);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
     return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, to_string(fileAssetId));
 }
