@@ -242,7 +242,7 @@ void UpgradeRestore::RestoreAudioFromFile()
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(audioRdb_, QUERY_DUAL_CLONE_AUDIO_COUNT, CUSTOM_COUNT);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
-    MEDIA_INFO_LOG("Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
+    MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -500,7 +500,7 @@ void UpgradeRestore::RestoreFromGallery()
         this->photosRestorePtr_->GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
-    MEDIA_INFO_LOG("Update totalNumber_: %{public}lld", (long long)totalNumber_);
+    MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -527,7 +527,7 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
     int32_t totalNumber = QueryNotSyncTotalNumber(maxId, isCamera);
     MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
-    MEDIA_INFO_LOG("Update totalNumber_: %{public}lld", (long long)totalNumber_);
+    MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset, maxId, isCamera, type]() {
                 RestoreExternalBatch(offset, maxId, isCamera, type);
@@ -554,8 +554,7 @@ int32_t UpgradeRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
 void UpgradeRestore::HandleRestData(void)
 {
     MEDIA_INFO_LOG("Start to handle rest data in native.");
-    // restore thumbnail for date fronted 500 photos
-    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
+    RestoreThumbnail();
 
     std::string photoData = appDataPath_ + "/" + galleryAppName_;
     std::string mediaData = appDataPath_ + "/" + mediaAppName_;

@@ -192,10 +192,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
     if (errorCode == E_OK) {
         RestoreGallery();
         RestoreMusic();
-        MEDIA_INFO_LOG("Start update unique number");
-        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
-        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
-        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, audioNumber_, AUDIO_ASSET_TYPE);
+        UpdateDatabase();
         (void)NativeRdb::RdbHelper::DeleteRdbStore(dbPath_);
     } else {
         SetErrorCode(RestoreError::INIT_FAILED);
@@ -254,7 +251,7 @@ void CloneRestore::RestorePhoto()
     int totalNumberInPhotoMap = this->photosClone_.GetPhotosRowCountInPhotoMap();
     MEDIA_INFO_LOG("GetPhotosRowCountInPhotoMap, totalNumber = %{public}d", totalNumberInPhotoMap);
     totalNumber_ += static_cast<uint64_t>(totalNumberInPhotoMap);
-    MEDIA_INFO_LOG("Update totalNumber_: %{public}lld", (long long)totalNumber_);
+    MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     for (int32_t offset = 0; offset < totalNumberInPhotoMap; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestorePhotoBatch(offset, 1); }, {&offset}, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -264,13 +261,13 @@ void CloneRestore::RestorePhoto()
     int32_t totalNumber = this->photosClone_.GetPhotosRowCountNotInPhotoMap();
     MEDIA_INFO_LOG("QueryTotalNumberNot, totalNumber = %{public}d", totalNumber);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
-    MEDIA_INFO_LOG("Update totalNumber_: %{public}lld", (long long)totalNumber_);
+    MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestorePhotoBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
-    this->photosClone_.OnStop();
+    this->photosClone_.OnStop(otherTotalNumber_, otherProcessStatus_);
 
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
@@ -1112,12 +1109,8 @@ void CloneRestore::RestoreGallery()
         (long long)(migrateFileNumber_ - migrateVideoFileNumber_), (long long)migrateVideoFileNumber_,
         (long long)migratePhotoDuplicateNumber_, (long long)migrateVideoDuplicateNumber_,
         (long long)migrateDatabaseAlbumNumber_, (long long)migrateDatabaseMapNumber_);
-    MEDIA_INFO_LOG("Start update all albums");
-    MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
     MEDIA_INFO_LOG("Start update group tags");
     BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
-    MEDIA_INFO_LOG("Start notify");
-    NotifyAlbum();
 }
 
 bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
@@ -1191,7 +1184,7 @@ void CloneRestore::RestoreAudio(void)
     int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
     MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
     audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
-    MEDIA_INFO_LOG("Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
+    MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -1365,11 +1358,11 @@ void CloneRestore::RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap
     vector<FileInfo> fileInfos = QueryFileInfos(offset, isRelatedToPhotoMap);
     InsertPhoto(fileInfos);
     BatchNotifyPhoto(fileInfos);
-    MEDIA_INFO_LOG("end restore photo, offset: %{public}d", offset);
     RestoreImageFaceInfo(fileInfos);
 
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
+    MEDIA_INFO_LOG("end restore photo, offset: %{public}d", offset);
 }
 
 void CloneRestore::RestoreAudioBatch(int32_t offset)
@@ -1631,7 +1624,7 @@ void CloneRestore::InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAl
             tagIds.emplace_back(album.tagId.value());
         }
     }
-    MEDIA_INFO_LOG("Total albums: %zu, Albums with names: %zu, Albums with tagIds: %zu",
+    MEDIA_INFO_LOG("Total albums: %{public}zu, Albums with names: %{public}zu, Albums with tagIds: %{public}zu",
                    analysisAlbumTbl.size(), albumNames.size(), tagIds.size());
 
     if (!BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(albumNames, tagIds, mediaLibraryRdb_)) {
@@ -1780,6 +1773,11 @@ void CloneRestore::RestoreImageFaceInfo(std::vector<FileInfo> &fileInfos)
     querySql += " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdOldInClause;
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(mediaRdb_, querySql, CUSTOM_COUNT);
     MEDIA_INFO_LOG("QueryImageFaceTotalNumber, totalNumber = %{public}d", totalNumber);
+    if (totalNumber == 0) {
+        int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+        migratePortraitTotalTimeCost_ += end - start;
+        return;
+    }
 
     std::vector<std::string> commonColumn = BackupDatabaseUtils::GetCommonColumnInfos(mediaRdb_, mediaLibraryRdb_,
         VISION_IMAGE_FACE_TABLE);

@@ -108,6 +108,12 @@ protected:
     bool IsFileValid(FileInfo &fileInfo, const int32_t sceneCode);
     SubProcessInfo GetSubProcessInfo(const std::string &type);
     nlohmann::json GetSubProcessInfoJson(const std::string &type, const SubProcessInfo &subProcessInfo);
+    void UpdateDatabase();
+    void NotifyAlbum();
+    void GetUpdateTotalCount();
+    void GetUpdateAllAlbumsCount();
+    void GetUpdateUniqueNumberCount();
+    void RestoreThumbnail();
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};
@@ -117,7 +123,10 @@ protected:
     std::atomic<uint64_t> migrateAudioFileNumber_{0};
     std::atomic<uint64_t> totalNumber_{0};
     std::atomic<uint64_t> audioTotalNumber_{0};
+    std::atomic<uint64_t> updateTotalNumber_{0};
     std::atomic<uint64_t> otherTotalNumber_{0};
+    std::atomic<uint64_t> updateProcessedNumber_{0};
+    std::atomic<uint64_t> otherProcessedNumber_{0};
     std::atomic<uint64_t> migratePhotoDuplicateNumber_{0};
     std::atomic<uint64_t> migrateVideoDuplicateNumber_{0};
     std::atomic<uint64_t> migrateAudioDuplicateNumber_{0};
@@ -129,6 +138,8 @@ protected:
     std::atomic<uint32_t> videoNumber_{0};
     std::atomic<uint64_t> migrateDatabaseMapNumber_{0};
     std::atomic<uint32_t> audioNumber_{0};
+    std::atomic<int32_t> updateProcessStatus_{ProcessStatus::STOP};
+    std::atomic<int32_t> otherProcessStatus_{ProcessStatus::STOP};
     std::string dualDirName_ = "";
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::string backupRestoreDir_;

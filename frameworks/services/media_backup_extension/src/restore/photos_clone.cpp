@@ -236,9 +236,11 @@ std::string PhotosClone::GenerateUuid()
 /**
  * @brief Fix Duplicate burst_key in Photos, which is used in different PhotoAlbum.
  */
-int32_t PhotosClone::FixDuplicateBurstKeyInDifferentAlbum()
+int32_t PhotosClone::FixDuplicateBurstKeyInDifferentAlbum(std::atomic<uint64_t> &totalNumber)
 {
     std::vector<PhotosDao::PhotosRowData> duplicateBurstKeyList = this->FindDuplicateBurstKey();
+    totalNumber += static_cast<uint64_t>(duplicateBurstKeyList.size());
+    MEDIA_INFO_LOG("onProcess Update otherTotalNumber_: %{public}lld", (long long)totalNumber);
     std::string executeSql = this->SQL_PHOTOS_TABLE_BURST_KEY_UPDATE;
     for (auto &info : duplicateBurstKeyList) {
         std::string burstKeyNew = this->GenerateUuid();
