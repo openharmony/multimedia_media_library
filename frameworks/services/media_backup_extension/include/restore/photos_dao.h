@@ -48,7 +48,6 @@ public:
     {
         PhotosRowData rowData;
         if (maxFileId <= 0) {
-            MEDIA_INFO_LOG("Media_Restore: maxFileId is ZERO: %{public}d", maxFileId);
             return rowData;
         }
         if (fileInfo.lPath.empty()) {

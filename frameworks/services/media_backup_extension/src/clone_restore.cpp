@@ -410,8 +410,7 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
 void CloneRestore::HandleRestData(void)
 {
     MEDIA_INFO_LOG("Start to handle rest data in native.");
-    // restore thumbnail for date fronted 500 photos
-    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
+    RestoreThumbnail();
 }
 
 vector<FileInfo> CloneRestore::QueryFileInfos(int32_t offset, int32_t isRelatedToPhotoMap)

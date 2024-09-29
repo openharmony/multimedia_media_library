@@ -94,6 +94,7 @@ PhotosDao::PhotosBasicInfo PhotosDao::GetBasicInfo()
     }
     basicInfo.maxFileId = GetInt32Val("max_file_id", resultSet);
     basicInfo.count = GetInt32Val("count", resultSet);
+    MEDIA_INFO_LOG("Media_Restore: max_file_id: %{public}d, count: %{public}d", basicInfo.maxFileId, basicInfo.count);
     return basicInfo;
 }
 }  // namespace OHOS::Media
