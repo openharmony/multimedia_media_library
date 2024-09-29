@@ -106,6 +106,8 @@ protected:
         const std::unordered_set<std::string> &needQuerySet);
     int32_t GetUniqueId(int32_t fileType);
     bool IsFileValid(FileInfo &fileInfo, const int32_t sceneCode);
+    void CreateDir(std::string &dir);
+    void RecursiveCreateDir(std::string &relativePath, std::string &suffix);
     SubProcessInfo GetSubProcessInfo(const std::string &type);
     nlohmann::json GetSubProcessInfoJson(const std::string &type, const SubProcessInfo &subProcessInfo);
     void UpdateDatabase();
