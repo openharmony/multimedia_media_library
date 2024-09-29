@@ -78,6 +78,8 @@ const int32_t WIFI_STATE_CONNECTED = 4;
 
 const int32_t DELAY_TASK_TIME = 30000;
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
+const int32_t MB_SHIFT = 20;
+const int32_t MAX_FILE_SIZE_MB = 200;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
@@ -151,9 +153,35 @@ bool MedialibrarySubscriber::Subscribe(void)
     return EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber);
 }
 
+static void UploadDBFile()
+{
+    MEDIA_INFO_LOG("UploadDBFile begin");
+    static const std::string databaseDir = MEDIA_DB_DIR + "/rdb";
+    static const std::vector<std::string> dbFileName = { "/media_library.db",
+                                                         "/media_library.db-shm",
+                                                         "/media_library.db-wal" };
+    static const std::string destPath = "/data/storage/el2/log/logpack";
+    std::uintmax_t totalFileSize = 0;
+    for (auto &filePath : dbFileName) {
+        totalFileSize += std::filesystem::file_size(databaseDir + filePath);
+    }
+    totalFileSize >>= MB_SHIFT; // Convert bytes to MB
+    MEDIA_INFO_LOG("The database file totalFileSize is %{public}jd MB", totalFileSize);
+    if (totalFileSize > MAX_FILE_SIZE_MB) {
+        MEDIA_INFO_LOG("DB file over 200MB are not uploaded, totalFileSize is %{public}jd MB", totalFileSize);
+        return ;
+    }
+    for (auto &filePath : dbFileName) {
+        CHECK_AND_RETURN_LOG(!MediaFileUtils::CopyFileUtil(databaseDir + filePath, destPath + filePath),
+            "Failed to copy DB file to logpack");
+    }
+    MEDIA_INFO_LOG("UploadDBFile end");
+}
+
 void MedialibrarySubscriber::CheckHalfDayMissions()
 {
     if (isScreenOff_ && isCharging_) {
+        UploadDBFile();
         DfxManager::GetInstance()->HandleHalfDayMissions();
         MediaLibraryRestore::GetInstance().CheckBackup();
     }
