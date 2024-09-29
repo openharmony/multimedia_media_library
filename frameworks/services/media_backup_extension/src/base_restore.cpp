@@ -30,6 +30,7 @@
 #include "media_file_utils.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_asset_operations.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_type_const.h"
@@ -64,19 +65,7 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
             (long long)migratePhotoDuplicateNumber_, (long long)migrateVideoDuplicateNumber_,
             (long long)migrateAudioDatabaseNumber_, (long long)migrateAudioFileNumber_,
             (long long)migrateAudioDuplicateNumber_, (long long) migrateDatabaseMapNumber_);
-        MEDIA_INFO_LOG("Start update all albums");
-        MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
-        MEDIA_INFO_LOG("Start update unique number");
-        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
-        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
-        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, audioNumber_, AUDIO_ASSET_TYPE);
-        MEDIA_INFO_LOG("Start notify");
-        auto watch = MediaLibraryNotify::GetInstance();
-        if (watch == nullptr) {
-            MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
-            return;
-        }
-        watch->Notify(PhotoColumn::DEFAULT_PHOTO_URI, NotifyType::NOTIFY_ADD);
+        UpdateDatabase();
     } else {
         if (errorCode != EXTERNAL_DB_NOT_EXIST) {
             SetErrorCode(RestoreError::INIT_FAILED);
@@ -1029,14 +1018,18 @@ SubProcessInfo BaseRestore::GetSubProcessInfo(const std::string &type)
         duplicate = migrateAudioDuplicateNumber_;
         failed = static_cast<uint64_t>(GetFailedFiles(type).size());
         total = audioTotalNumber_;
+    } else if (type == STAT_TYPE_UPDATE) {
+        updateProcessedNumber_ +=
+            updateProcessStatus_ == ProcessStatus::START && updateProcessedNumber_ < updateTotalNumber_ ? 1 : 0;
+        success = updateProcessedNumber_;
+        total = updateTotalNumber_;
     } else {
-        otherTotalNumber_++; // make sure progressInfo changes as update and rest goes on
-        success = otherTotalNumber_;
-        total = otherTotalNumber_;
+        otherProcessedNumber_ +=
+            otherProcessStatus_ == ProcessStatus::START && otherProcessedNumber_ < otherTotalNumber_ ? 1 : 0;
+        success = otherProcessedNumber_;
+        total = otherTotalNumber_; // make sure progressInfo changes as update and rest goes on
     }
     uint64_t processed = success + duplicate + failed;
-    MEDIA_INFO_LOG("%{public}s success: %{public}lld, duplicate: %{public}lld, failed: %{public}lld", type.c_str(),
-        (long long)success, (long long)duplicate, (long long)failed);
     return SubProcessInfo(processed, total);
 }
 
@@ -1046,8 +1039,68 @@ nlohmann::json BaseRestore::GetSubProcessInfoJson(const std::string &type, const
     subProcessInfoJson[STAT_KEY_NAME] = type;
     subProcessInfoJson[STAT_KEY_PROCESSED] = subProcessInfo.processed;
     subProcessInfoJson[STAT_KEY_TOTAL] = subProcessInfo.total;
-    subProcessInfoJson[STAT_KEY_IS_PERCENTAGE] = true;
+    subProcessInfoJson[STAT_KEY_IS_PERCENTAGE] = false;
     return subProcessInfoJson;
+}
+
+void BaseRestore::UpdateDatabase()
+{
+    GetUpdateTotalCount();
+    updateProcessStatus_ = ProcessStatus::START;
+    MEDIA_INFO_LOG("Start update all albums");
+    MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
+    MEDIA_INFO_LOG("Start update unique number");
+    BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
+    BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
+    BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, audioNumber_, AUDIO_ASSET_TYPE);
+    MEDIA_INFO_LOG("Start notify");
+    NotifyAlbum();
+    updateProcessStatus_ = ProcessStatus::STOP;
+}
+
+void BaseRestore::NotifyAlbum()
+{
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
+        return;
+    }
+    watch->Notify(PhotoColumn::DEFAULT_PHOTO_URI, NotifyType::NOTIFY_ADD);
+}
+
+void BaseRestore::GetUpdateTotalCount()
+{
+    GetUpdateAllAlbumsCount();
+    GetUpdateUniqueNumberCount();
+}
+
+void BaseRestore::GetUpdateAllAlbumsCount()
+{
+    const std::vector<std::string> ALBUM_TABLE_LIST = { "PhotoAlbum", "AnalysisAlbum" };
+    int32_t albumTotalCount = 0;
+    for (const auto &tableName : ALBUM_TABLE_LIST) {
+        std::string querySql = "SELECT count(1) as count FROM " + tableName;
+        albumTotalCount += BackupDatabaseUtils::QueryInt(mediaLibraryRdb_, querySql, CUSTOM_COUNT);
+    }
+    updateTotalNumber_ += static_cast<uint64_t>(albumTotalCount);
+    MEDIA_INFO_LOG("onProcess Update updateTotalNumber_: %{public}lld", (long long)updateTotalNumber_);
+}
+
+void BaseRestore::GetUpdateUniqueNumberCount()
+{
+    updateTotalNumber_ += UNIQUE_NUMBER_NUM;
+    MEDIA_INFO_LOG("onProcess Update updateTotalNumber_: %{public}lld", (long long)updateTotalNumber_);
+}
+
+void BaseRestore::RestoreThumbnail()
+{
+    // restore thumbnail for date fronted 500 photos
+    MEDIA_INFO_LOG("Start RestoreThumbnail");
+    otherProcessStatus_ = ProcessStatus::START;
+    otherTotalNumber_ += THUMBNAIL_NUM;
+    MEDIA_INFO_LOG("onProcess Update otherTotalNumber_: %{public}lld", (long long)otherTotalNumber_);
+    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
+    otherProcessStatus_ = ProcessStatus::STOP;
 }
 } // namespace Media
 } // namespace OHOS

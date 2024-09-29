@@ -45,6 +45,8 @@ constexpr int32_t LIVE_PHOTO_TYPE = 50;
 constexpr size_t GARBLE_UNIT = 2;
 constexpr uint32_t COVER_URI_NUM = 3;
 constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
+constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
+constexpr uint32_t THUMBNAIL_NUM = 500;
 
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
@@ -136,9 +138,11 @@ const std::string STAT_TYPE_PHOTO = "photo";
 const std::string STAT_TYPE_VIDEO = "video";
 const std::string STAT_TYPE_AUDIO = "audio";
 const std::string STAT_TYPE_PHOTO_VIDEO = "photo&video";
+const std::string STAT_TYPE_UPDATE = "update";
 const std::string STAT_TYPE_OTHER = "other";
 const std::vector<std::string> STAT_TYPES = { STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO };
-const std::vector<std::string> STAT_PROGRESS_TYPES = { STAT_TYPE_PHOTO_VIDEO, STAT_TYPE_AUDIO, STAT_TYPE_OTHER };
+const std::vector<std::string> STAT_PROGRESS_TYPES = { STAT_TYPE_PHOTO_VIDEO, STAT_TYPE_AUDIO, STAT_TYPE_UPDATE,
+    STAT_TYPE_OTHER };
 
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
@@ -198,6 +202,11 @@ enum RestoreError {
 enum class PhotoRelatedType {
     PHOTO_MAP = 0,
     PORTRAIT,
+};
+
+enum ProcessStatus {
+    START = 0,
+    STOP,
 };
 
 const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
