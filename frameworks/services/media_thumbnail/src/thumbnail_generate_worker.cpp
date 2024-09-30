@@ -68,6 +68,8 @@ int32_t ThumbnailGenerateWorker::ReleaseTaskQueue(const ThumbnailTaskPriority &t
 {
     if (taskPriority == ThumbnailTaskPriority::HIGH) {
         highPriorityTaskQueue_.Clear();
+    } else if (taskPriority == ThumbnailTaskPriority::MID) {
+        midPriorityTaskQueue_.Clear();
     } else if (taskPriority == ThumbnailTaskPriority::LOW) {
         lowPriorityTaskQueue_.Clear();
     } else {
@@ -83,6 +85,8 @@ int32_t ThumbnailGenerateWorker::AddTask(
     IncreaseRequestIdTaskNum(task);
     if (taskPriority == ThumbnailTaskPriority::HIGH) {
         highPriorityTaskQueue_.Push(task);
+    } else if (taskPriority == ThumbnailTaskPriority::MID) {
+        midPriorityTaskQueue_.Clear();
     } else if (taskPriority == ThumbnailTaskPriority::LOW) {
         lowPriorityTaskQueue_.Push(task);
     } else {
@@ -103,7 +107,7 @@ int32_t ThumbnailGenerateWorker::AddTask(
 
 void ThumbnailGenerateWorker::IgnoreTaskByRequestId(int32_t requestId)
 {
-    if (highPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty()) {
+    if (highPriorityTaskQueue_.Empty() && midPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty()) {
         MEDIA_INFO_LOG("task queue empty, no need to ignore task requestId: %{public}d", requestId);
         return;
     }
@@ -118,7 +122,8 @@ void ThumbnailGenerateWorker::WaitForTask()
 {
     std::unique_lock<std::mutex> lock(workerLock_);
     RegisterWorkerTimer();
-    if (highPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty() && isThreadRunning_) {
+    if (highPriorityTaskQueue_.Empty() && midPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty()
+        && isThreadRunning_) {
         ignoreRequestId_ = 0;
         workerCv_.wait(lock);
     }
@@ -140,6 +145,15 @@ void ThumbnailGenerateWorker::StartWorker()
             continue;
         }
 
+        if (!midPriorityTaskQueue_.Empty() && midPriorityTaskQueue_.Pop(task) && task != nullptr) {
+            if (NeedIgnoreTask(task->data_->requestId_)) {
+                continue;
+            }
+            task->executor_(task->data_);
+            DecreaseRequestIdTaskNum(task);
+            continue;
+        }
+        
         if (!lowPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Pop(task) && task != nullptr) {
             if (NeedIgnoreTask(task->data_->requestId_)) {
                 continue;
