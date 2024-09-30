@@ -650,6 +650,14 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues)
     if (burstCoverLevel != 0) {
         outValues.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, burstCoverLevel);
     }
+
+    int32_t dirty = static_cast<int32_t>(DirtyTypes::TYPE_NEW);
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_DIRTY, value)) {
+        value.GetInt(dirty);
+    }
+    if (dirty != static_cast<int32_t>(DirtyTypes::TYPE_NEW)) {
+        outValues.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
+    }
 }
 
 static void HandleIsTemp(MediaLibraryCommand &cmd, ValuesBucket &outValues)
@@ -666,23 +674,6 @@ static void HandleIsTemp(MediaLibraryCommand &cmd, ValuesBucket &outValues)
     }
     outValues.PutBool(PhotoColumn::PHOTO_IS_TEMP, isTemp);
     return;
-}
-
-static void HandleDirty(MediaLibraryCommand &cmd, ValuesBucket &outValues)
-{
-    if (!PermissionUtils::IsNativeSAApp()) {
-        MEDIA_DEBUG_LOG("do not have permission to set dirty");
-        return;
-    }
-
-    int32_t dirty = 1;
-    ValueObject value;
-    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_DIRTY, value)) {
-        value.GetInt(dirty);
-    }
-    if (dirty != 1) {
-        outValues.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
-    }
 }
 
 static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
@@ -711,8 +702,9 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
         HandleIsTemp(cmd, assetInfo);
-        HandleBurstPhoto(cmd, assetInfo);
-        HandleDirty(cmd, assetInfo);
+        if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
+            HandleBurstPhoto(cmd, assetInfo);
+        }
     }
 
     HandleCallingPackage(cmd, fileAsset, assetInfo);
