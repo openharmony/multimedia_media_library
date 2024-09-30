@@ -575,7 +575,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_parseQueryResult_test_001, TestSize.Lev
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
     rdbPredicates.Limit(0);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    ThumbnailUtils::ParseQueryResult(resultSet, data, err);
+    ThumbnailUtils::ParseQueryResult(resultSet, data, err, column);
     EXPECT_NE(err, 0);
 }
 
