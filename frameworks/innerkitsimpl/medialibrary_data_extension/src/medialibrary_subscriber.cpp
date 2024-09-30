@@ -171,6 +171,10 @@ static void UploadDBFile()
         MEDIA_INFO_LOG("DB file over 200MB are not uploaded, totalFileSize is %{public}jd MB", totalFileSize);
         return ;
     }
+    if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateDirectory(destPath)) {
+        MEDIA_ERR_LOG("Create dir failed, dir=%{private}s", destPath.c_str());
+        return ;
+    }
     for (auto &filePath : dbFileName) {
         CHECK_AND_RETURN_LOG(!MediaFileUtils::CopyFileUtil(databaseDir + filePath, destPath + filePath),
             "Failed to copy DB file to logpack");
