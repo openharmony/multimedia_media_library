@@ -228,6 +228,28 @@ void MediaLibraryDataManager::HandleOtherInitOperations()
     UriSensitiveOperations::DeleteAllSensitiveAsync();
 }
 
+static int32_t ExcuteAsyncWork()
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return E_ERR;
+    }
+    AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskData");
+        return E_ERR;
+    }
+    taskData->dataDisplay = E_POLICY;
+    shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, taskData);
+    if (makeRootDirTask != nullptr) {
+        asyncWorker->AddTask(makeRootDirTask, true);
+    } else {
+        MEDIA_WARN_LOG("Can not init make root dir task");
+    }
+    return E_OK;
+}
+
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
     const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode)
@@ -254,31 +276,15 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     errCode = InitDeviceData();
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitDeviceData");
 #endif
-
     MimeTypeUtils::InitMimeTypeMap();
     errCode = MakeDirQuerySetMap(dirQuerySetMap_);
     CHECK_AND_WARN_LOG(errCode == E_OK, "failed at MakeDirQuerySetMap");
-
     InitACLPermission();
     InitDatabaseACLPermission();
-
-    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Can not get asyncWorker");
-        return E_ERR;
-    }
-    AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
-    taskData->dataDisplay = E_POLICY;
-    shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, taskData);
-    if (makeRootDirTask != nullptr) {
-        asyncWorker->AddTask(makeRootDirTask, true);
-    } else {
-        MEDIA_WARN_LOG("Can not init make root dir task");
-    }
-
+    errCode = ExcuteAsyncWork();
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at ExcuteAsyncWork");
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
-
     HandleOtherInitOperations();
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
