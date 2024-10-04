@@ -25,6 +25,7 @@
 #include "medialibrary_common_utils.h"
 #include "media_file_uri.h"
 #include "permission_utils.h"
+#include "medialibrary_data_manager_utils.h"
 
 namespace OHOS {
 using namespace std;
@@ -49,6 +50,11 @@ static inline vector<string> FuzzVectorString(const uint8_t *data, size_t size)
     return {FuzzString(data, size)};
 }
 
+static inline vector<uint8_t> FuzzVectorUint8(const uint8_t *data, size_t size)
+{
+    return {*data};
+}
+
 static void ScanTest(const uint8_t *data, size_t size)
 {
     auto scannerManager = Media::MediaScannerManager::GetInstance();
@@ -62,6 +68,7 @@ static void CommonUtilsTest(const uint8_t *data, size_t size)
     Media::MediaLibraryCommonUtils::CheckWhereClause(FuzzString(data, size));
     string key;
     Media::MediaLibraryCommonUtils::GenKeySHA256(FuzzString(data, size), key);
+    Media::MediaLibraryCommonUtils::GenKeySHA256(FuzzVectorUint8(data, size), key);
     string selection;
     Media::MediaLibraryCommonUtils::AppendSelections(selection);
 }
