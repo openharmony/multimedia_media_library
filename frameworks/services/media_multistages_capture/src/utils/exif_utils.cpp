@@ -36,7 +36,7 @@ int32_t ExifUtils::WriteGpsExifInfo(const string &path, double longitude, double
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     if (imageSource == nullptr) {
-        MEDIA_ERR_LOG("imageSource is nullptr");
+        MEDIA_ERR_LOG("imageSource is nullptr err: %{public}d", errorCode);
         return E_ERR;
     }
 

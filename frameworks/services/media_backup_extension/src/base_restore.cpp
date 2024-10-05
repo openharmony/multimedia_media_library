@@ -462,7 +462,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
             BackupFileUtils::GarbleFilePath(localPath, sceneCode).c_str(), errCode, errno);
         return false;
     }
-    BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified);
+    BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
 
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
         string tmpVideoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(fileInfo.cloudPath);
@@ -476,7 +476,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
             (void)MediaFileUtils::DeleteFile(localPath);
             return false;
         }
-        BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified);
+        BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified / MSEC_TO_SEC);
         return MoveExtraData(fileInfo, sceneCode);
     }
     return true;
