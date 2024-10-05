@@ -247,8 +247,8 @@ static bool AppendValidOrderClause(MediaLibraryCommand &cmd, RdbPredicates &pred
     constexpr int32_t FIELD_IDX = 0;
     const auto &items = cmd.GetDataSharePred().GetOperationList();
     int32_t count = 0;
-    string columnName = " (" + MediaColumn::MEDIA_DATE_ADDED + ", " + MediaColumn::MEDIA_ID + ") ";
-    string value = " (SELECT " + MediaColumn::MEDIA_DATE_ADDED + ", " + MediaColumn::MEDIA_ID + " FROM " +
+    string columnName = " (" + MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_ID + ") ";
+    string value = " (SELECT " + MediaColumn::MEDIA_DATE_TAKEN + ", " + MediaColumn::MEDIA_ID + " FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " + photoId + ") ";
     string whereClause = predicates.GetWhereClause();
     for (const auto &item : items) {
