@@ -109,6 +109,8 @@ protected:
     void CreateDir(std::string &dir);
     void RecursiveCreateDir(std::string &relativePath, std::string &suffix);
     SubProcessInfo GetSubProcessInfo(const std::string &type);
+    void UpdateProcessedNumber(const std::atomic<int32_t> &processStatus, std::atomic<uint64_t> &processedNumber,
+        const std::atomic<uint64_t> &totalNumber);
     nlohmann::json GetSubProcessInfoJson(const std::string &type, const SubProcessInfo &subProcessInfo);
     void UpdateDatabase();
     void NotifyAlbum();
