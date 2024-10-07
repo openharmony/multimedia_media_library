@@ -1019,18 +1019,26 @@ SubProcessInfo BaseRestore::GetSubProcessInfo(const std::string &type)
         failed = static_cast<uint64_t>(GetFailedFiles(type).size());
         total = audioTotalNumber_;
     } else if (type == STAT_TYPE_UPDATE) {
-        updateProcessedNumber_ +=
-            updateProcessStatus_ == ProcessStatus::START && updateProcessedNumber_ < updateTotalNumber_ ? 1 : 0;
+        UpdateProcessedNumber(updateProcessStatus_, updateProcessedNumber_, updateTotalNumber_);
         success = updateProcessedNumber_;
         total = updateTotalNumber_;
     } else {
-        otherProcessedNumber_ +=
-            otherProcessStatus_ == ProcessStatus::START && otherProcessedNumber_ < otherTotalNumber_ ? 1 : 0;
+        UpdateProcessedNumber(otherProcessStatus_, otherProcessedNumber_, otherTotalNumber_);
         success = otherProcessedNumber_;
         total = otherTotalNumber_; // make sure progressInfo changes as update and rest goes on
     }
     uint64_t processed = success + duplicate + failed;
     return SubProcessInfo(processed, total);
+}
+
+void BaseRestore::UpdateProcessedNumber(const std::atomic<int32_t> &processStatus,
+    std::atomic<uint64_t> &processedNumber, const std::atomic<uint64_t> &totalNumber)
+{
+    if (processStatus == ProcessStatus::STOP) {
+        processedNumber = totalNumber.load();
+        return;
+    }
+    processedNumber += processedNumber < totalNumber ? 1 : 0;
 }
 
 nlohmann::json BaseRestore::GetSubProcessInfoJson(const std::string &type, const SubProcessInfo &subProcessInfo)
@@ -1045,8 +1053,8 @@ nlohmann::json BaseRestore::GetSubProcessInfoJson(const std::string &type, const
 
 void BaseRestore::UpdateDatabase()
 {
-    GetUpdateTotalCount();
     updateProcessStatus_ = ProcessStatus::START;
+    GetUpdateTotalCount();
     MEDIA_INFO_LOG("Start update all albums");
     MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
     MEDIA_INFO_LOG("Start update unique number");

@@ -107,6 +107,8 @@ protected:
     int32_t GetUniqueId(int32_t fileType);
     bool IsFileValid(FileInfo &fileInfo, const int32_t sceneCode);
     SubProcessInfo GetSubProcessInfo(const std::string &type);
+    void UpdateProcessedNumber(const std::atomic<int32_t> &processStatus, std::atomic<uint64_t> &processedNumber,
+        const std::atomic<uint64_t> &totalNumber);
     nlohmann::json GetSubProcessInfoJson(const std::string &type, const SubProcessInfo &subProcessInfo);
     void UpdateDatabase();
     void NotifyAlbum();
