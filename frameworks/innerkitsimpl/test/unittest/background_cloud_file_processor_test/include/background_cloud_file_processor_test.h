@@ -25,6 +25,9 @@ public:
     static void TearDownTestCase();
     void SetUp() override;
     void TearDown() override;
+
+private:
+    static bool isBackgroundDownload_;
 };
 } // namespace OHOS::Media
 #endif // BACKGROUND_CLOUD_FILE_PROCESSOR_TEST_H
