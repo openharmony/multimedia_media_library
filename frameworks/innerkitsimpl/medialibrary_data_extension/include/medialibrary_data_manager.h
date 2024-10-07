@@ -106,6 +106,7 @@ public:
     EXPORT void SetStartupParameter();
     EXPORT void ReCreateMediaDir();
     EXPORT int32_t CheckCloudThumbnailDownloadFinish();
+    EXPORT void UploadDBFileInner();
 
 private:
     int32_t InitMediaLibraryRdbStore();
