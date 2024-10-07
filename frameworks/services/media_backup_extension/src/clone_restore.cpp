@@ -1899,8 +1899,7 @@ std::string CloneRestore::GenCoverUriUpdateSql(const std::unordered_map<std::str
     for (const auto& [tagId, isCoverSatisfied] : isCoverSatisfiedUpdates) {
         if (isCoverSatisfied != INVALID_COVER_SATISFIED_STATUS) {
             hasValidIsCoverSatisfied = true;
-            isCoverSatisfiedSql += "WHEN tag_id = '" + tagId + "' THEN " +
-            std::to_string(isCoverSatisfied) + " ";
+            isCoverSatisfiedSql += "WHEN tag_id = '" + tagId + "' THEN " + std::to_string(isCoverSatisfied) + " ";
         }
     }
 
