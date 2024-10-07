@@ -215,11 +215,11 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
             fileInfos[i].needMove = false;
             if (fileInfos[i].fileSize == 0) {
                 MEDIA_ERR_LOG("this is file size is 0");
-                continue;
             }
-            if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
-                UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::FILE_INVALID);
-            }
+            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, filePath: %{public}s",
+                sceneCode,
+                sourceType,
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
         std::string cloudPath;
@@ -261,17 +261,11 @@ static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::Valu
         int64_t dateModified = metadata->GetFileDateModified();
         if (dateModified == 0) {
             dateAdded = MediaFileUtils::UTCTimeMilliSeconds();
-            MEDIA_WARN_LOG("Invalid dateAdded time, use current time instead: %{public}lld",
-                static_cast<long long>(dateAdded));
         } else {
             dateAdded = dateModified;
-            MEDIA_WARN_LOG("Invalid dateAdded time, use dateModified instead: %{public}lld",
-                static_cast<long long>(dateAdded));
         }
     } else {
         dateAdded = dateTaken;
-        MEDIA_WARN_LOG("Invalid dateAdded time, use dateTaken instead: %{public}lld",
-            static_cast<long long>(dateAdded));
     }
     value.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
 }
