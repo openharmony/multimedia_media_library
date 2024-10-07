@@ -39,6 +39,8 @@ using namespace testing::ext;
 static shared_ptr<MediaLibraryRdbStore> rdbStore;
 static std::atomic<int> num{ 0 };
 
+bool BackgroundCloudFileProcessorTest::isBackgroundDownload_ = false;
+
 int32_t ExecSqls(const vector<string> &sqls)
 {
     EXPECT_NE((rdbStore == nullptr), true);
@@ -179,6 +181,7 @@ void BackgroundCloudFileProcessorTest::SetUpTestCase()
 
     BackgroundCloudFileProcessor::processInterval_ = 50;  // 50 milliseconds
     BackgroundCloudFileProcessor::downloadDuration_ = 40; // 40 milliseconds
+    isBackgroundDownload_ = BackgroundCloudFileProcessor::isDownload_;
     BackgroundCloudFileProcessor::isDownload_ = true;
 }
 
@@ -188,7 +191,7 @@ void BackgroundCloudFileProcessorTest::TearDownTestCase()
     ClearTables();
     BackgroundCloudFileProcessor::processInterval_ = PROCESS_INTERVAL;
     BackgroundCloudFileProcessor::downloadDuration_ = DOWNLOAD_DURATION;
-    BackgroundCloudFileProcessor::isDownload_ = false;
+    BackgroundCloudFileProcessor::isDownload_ = isBackgroundDownload_;
 }
 
 void BackgroundCloudFileProcessorTest::SetUp()
