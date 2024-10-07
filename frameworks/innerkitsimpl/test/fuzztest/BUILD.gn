@@ -28,6 +28,8 @@ group("media_library_fuzztest") {
     "medialibraryextensionregisterobserver_fuzzer:MediaLibraryExtensionRegisterObserverFuzzTest",
     "medialibraryextensionunregisterobserver_fuzzer:MediaLibraryExtensionUnregisterObserverFuzzTest",
     "medialibraryextensionupdate_fuzzer:MediaLibraryExtensionUpdateFuzzTest",
+    "medialibrarymediaphotoassetproxy_fuzzer:MediaLibraryMediaPhotoAssetProxyFuzzTest",
+    "medialibraryrestore_fuzzer:MediaLibraryRestoreFuzzTest",
     "medialibrarythumbnail_fuzzer:MediaLibraryThumbnailFuzzTest",
     "medialibraryutil_fuzzer:MediaLibraryUtilFuzzTest",
   ]
