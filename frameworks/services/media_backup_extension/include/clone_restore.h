@@ -188,6 +188,7 @@ private:
     std::vector<CoverUriInfo> coverUriInfo_;
     PhotoAlbumClone photoAlbumClone_;
     PhotosClone photosClone_;
+    static constexpr int32_t INVALID_COVER_SATISFIED_STATUS = -1;
 };
 
 template<typename T>
