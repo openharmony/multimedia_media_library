@@ -1568,7 +1568,7 @@ int32_t MediaLibraryAssetOperations::SendModifyUserCommentNotify(MediaLibraryCom
     return E_OK;
 }
 
-static int32_t GetAlbumIdByPredicates(const string &whereClause, const vector<string> &whereArgs)
+int32_t MediaLibraryAssetOperations::GetAlbumIdByPredicates(const string &whereClause, const vector<string> &whereArgs)
 {
     size_t pos = whereClause.find(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
     if (pos == string::npos) {
