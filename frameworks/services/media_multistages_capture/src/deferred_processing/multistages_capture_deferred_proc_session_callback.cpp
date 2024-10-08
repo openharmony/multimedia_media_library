@@ -185,7 +185,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
     tracer.Finish();
     int32_t isTemp = GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet);
     if (isTemp) {
-        MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false);
+        MultiStagesCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false);
         UpdateHighQualityPictureInfo(imageId, isCloudEnhancementAvailable);
         return;
     }
