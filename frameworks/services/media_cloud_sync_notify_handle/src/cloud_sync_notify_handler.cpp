@@ -28,14 +28,11 @@ namespace OHOS {
 namespace Media {
 using ChangeType = DataShare::DataShareObserver::ChangeType;
 
-const int32_t CLOUD_FIRST_FIVE_HUNDRED = 1;
-const int32_t CLOUD_INCREMENT_DOWNLOAD = 2;
-const std::string CLOUDSYNC_STATUS_KEY = "persist.kernel.cloudsync.status";
-
 static bool IsCloudInsertTaskPriorityHigh()
 {
     int32_t cloudSyncStatus = static_cast<int32_t>(system::GetParameter(CLOUDSYNC_STATUS_KEY, "0").at(0) - '0');
-    return cloudSyncStatus == CLOUD_FIRST_FIVE_HUNDRED || cloudSyncStatus == CLOUD_INCREMENT_DOWNLOAD;
+    return cloudSyncStatus == CloudSyncStatus::FIRST_FIVE_HUNDRED ||
+        cloudSyncStatus == CloudSyncStatus::INCREMENT_DOWNLOAD;
 }
 
 static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
