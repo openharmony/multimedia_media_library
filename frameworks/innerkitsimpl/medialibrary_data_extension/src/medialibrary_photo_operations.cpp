@@ -1214,13 +1214,13 @@ bool IsSystemAlbumMovement(MediaLibraryCommand &cmd)
 void GetSystemMoveAssets(AbsRdbPredicates &predicates)
 {
     const vector<string> &whereUriArgs = predicates.GetWhereArgs();
+    if (whereUriArgs.size() <= 1) {
+        MEDIA_ERR_LOG("Move vector empty when move from system album");
+    }
     vector<string> whereIdArgs;
-    whereIdArgs.reserve(whereUriArgs.size());
-    for (const auto &arg : whereUriArgs) {
-        if (!MediaFileUtils::StartsWith(arg, PhotoColumn::PHOTO_URI_PREFIX)) {
-            continue;
-        }
-        whereIdArgs.push_back(MediaFileUri::GetPhotoId(arg));
+    whereIdArgs.reserve(whereUriArgs.size() - 1);
+    for (int i = 1; i < whereUriArgs.size(); ++i) {
+        whereIdArgs.push_back(MediaFileUri::GetPhotoId(whereUriArgs[i]));
     }
     predicates.SetWhereArgs(whereIdArgs);
 }
@@ -1276,12 +1276,15 @@ int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &c
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_TYPE, PhotoColumn::MEDIA_NAME };
     MediaLibraryRdbStore::ReplacePredicatesUriToId(*(cmd.GetAbsRdbPredicates()));
+
+    // Check if move from system album
     if (IsSystemAlbumMovement(cmd)) {
         MEDIA_INFO_LOG("Move assets from system album");
         GetSystemMoveAssets(*(cmd.GetAbsRdbPredicates()));
         int32_t updateSysRows = UpdateSystemRows(cmd);
         return updateSysRows;
     }
+
     int32_t errCode = GetFileAssetVectorFromDb(*(cmd.GetAbsRdbPredicates()),
         OperationObject::FILESYSTEM_PHOTO, fileAssetVector, columns);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
