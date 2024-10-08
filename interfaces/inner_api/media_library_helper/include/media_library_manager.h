@@ -34,6 +34,7 @@ using namespace OHOS::DataShare;
  * @since 1.0
  * @version 1.0
  */
+
 enum class PhotoPermissionType : int32_t {
     TEMPORARY_READ_IMAGEVIDEO = 0,
     PERSIST_READ_IMAGEVIDEO,
@@ -70,6 +71,14 @@ public:
      * @version 1.0
      */
     EXPORT void InitMediaLibraryManager(const sptr<IRemoteObject> &token);
+
+    /**
+     * @brief Initializes the environment for Media Library Manager
+     *
+     * @since 1.0
+     * @version 1.0
+     */
+    EXPORT void InitMediaLibraryManager();
 
     /**
      * @brief Close an opened file
