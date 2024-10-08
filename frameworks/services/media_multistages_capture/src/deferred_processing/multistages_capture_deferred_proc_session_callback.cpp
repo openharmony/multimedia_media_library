@@ -185,7 +185,8 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
     tracer.Finish();
     int32_t isTemp = GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet);
     if (isTemp) {
-        UpdatePhotoQuality(imageId);
+        MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false);
+        UpdateHighQualityPictureInfo(imageId, isCloudEnhancementAvailable);
         return;
     }
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
@@ -202,14 +203,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
         return;
     }
     MultiStagesCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), isEdited);
-
-    // 2. 更新数据库 photoQuality 到高质量
-    UpdatePhotoQuality(imageId);
-    // 3. update cloud enhancement available
-    if (isCloudEnhancementAvailable) {
-        UpdateCEAvailable(imageId);
-    }
-
+    UpdateHighQualityPictureInfo(imageId, isCloudEnhancementAvailable);
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
     NotifyIfTempFile(resultSet);
 
@@ -246,6 +240,17 @@ void MultiStagesCaptureDeferredProcSessionCallback::GetCommandByImageId(const st
     }
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+}
+
+void MultiStagesCaptureDeferredProcSessionCallback::UpdateHighQualityPictureInfo(const std::string &imageId,
+    bool isCloudEnhancementAvailable)
+{
+    // 2. 更新数据库 photoQuality 到高质量
+    UpdatePhotoQuality(imageId);
+    // 3. update cloud enhancement avaiable
+    if (isCloudEnhancementAvailable) {
+        UpdateCEAvailable(imageId);
+    }
 }
 
 void MultiStagesCaptureDeferredProcSessionCallback::OnDeliveryLowQualityImage(const std::string &imageId,
