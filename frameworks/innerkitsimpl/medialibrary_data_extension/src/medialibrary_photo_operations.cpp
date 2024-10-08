@@ -1216,11 +1216,12 @@ void GetSystemMoveAssets(AbsRdbPredicates &predicates)
     const vector<string> &whereUriArgs = predicates.GetWhereArgs();
     if (whereUriArgs.size() <= 1) {
         MEDIA_ERR_LOG("Move vector empty when move from system album");
+        return;
     }
     vector<string> whereIdArgs;
     whereIdArgs.reserve(whereUriArgs.size() - 1);
     for (int i = 1; i < whereUriArgs.size(); ++i) {
-        whereIdArgs.push_back(MediaFileUri::GetPhotoId(whereUriArgs[i]));
+        whereIdArgs.push_back(whereUriArgs[i]);
     }
     predicates.SetWhereArgs(whereIdArgs);
 }
@@ -1261,6 +1262,7 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
     int32_t changedRows = MediaLibraryRdbStore::Update(values, predicates);
     if (changedRows < 0) {
         MEDIA_ERR_LOG("Update owner albun id fail when move from system album");
+        return changedRows;
     }
 
     for (const auto &oriAlbumId: ownerAlbumIds) {
@@ -1268,6 +1270,7 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
         UpdateAlbumOnMoveAssets(oriAlbumId, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
     }
     UpdateAlbumOnMoveAssets(targetAlbumId, NotifyType::NOTIFY_ALBUM_ADD_ASSET);
+    return changedRows;
 }
 
 int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &cmd)
