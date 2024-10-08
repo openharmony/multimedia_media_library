@@ -15,7 +15,7 @@
 
 #include "media_analysis_helper.h"
 
-#include <thread>
+#include <future>
 
 #include "media_analysis_callback_stub.h"
 #include "media_file_uri.h"
@@ -37,7 +37,9 @@ void MediaAnalysisHelper::StartMediaAnalysisServiceAsync(int32_t code, const std
         }
     }
     MessageOption option(MessageOption::TF_ASYNC);
-    std::thread(&StartMediaAnalysisServiceInternal, code, option, fileIds).detach();
+    std::async(std::launch::async, [code, option = std::move(option), fileIds = std::move(fileIds)] {
+        StartMediaAnalysisServiceInternal(code, option, fileIds);
+    });
 }
 
 void MediaAnalysisHelper::AsyncStartMediaAnalysisService(int32_t code, const std::vector<std::string> &albumIds)
@@ -68,7 +70,7 @@ void MediaAnalysisHelper::StartPortraitCoverSelectionAsync(const std::string alb
         return;
     }
 
-    std::thread(&AnalysePortraitCover, albumId).detach();
+    std::async(std::launch::async, [albumId = std::move(albumId)] { AnalysePortraitCover(albumId); });
 }
 
 void MediaAnalysisHelper::AnalysePortraitCover(const std::string albumId)
@@ -93,6 +95,31 @@ void MediaAnalysisHelper::AnalysePortraitCover(const std::string albumId)
     if (!mediaAnalysisProxy.SendTransactCmd(code, data, reply, option)) {
         MEDIA_ERR_LOG("Actively Calling Analysis For Portrait Cover Selection failed");
     }
+}
+
+bool MediaAnalysisHelper::ParseGeoInfo(const std::vector<std::string> &geoInfo)
+{
+    MessageParcel data;
+    MediaAnalysisProxy mediaAnalysisProxy(nullptr);
+
+    if (!data.WriteInterfaceToken(mediaAnalysisProxy.GetDescriptor())) {
+        MEDIA_ERR_LOG("Parse Geographic Information Write InterfaceToken failed");
+        return false;
+    }
+
+    if (!data.WriteStringVector(geoInfo)) {
+        MEDIA_ERR_LOG("Parse Geographic Information Write fileId, latitude, longitude failed");
+        return false;
+    }
+
+    int32_t code = IMediaAnalysisService::ActivateServiceType::PARSE_GEO_INFO;
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    if (!mediaAnalysisProxy.SendTransactCmd(code, data, reply, option)) {
+        MEDIA_ERR_LOG("Actively Calling Analysis For Parse Geographic Information failed");
+        return false;
+    }
+    return true;
 }
 } // namespace Media
 } // namespace OHOS
