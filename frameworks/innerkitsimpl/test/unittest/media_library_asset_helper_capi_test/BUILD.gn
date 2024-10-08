@@ -26,6 +26,7 @@ ohos_unittest("media_library_asset_helper_capi_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/device_manage",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
     "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/include",
+    "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
     "../get_self_permissions/include",
     "./include",
@@ -37,12 +38,13 @@ ohos_unittest("media_library_asset_helper_capi_test") {
   ]
 
   sources = [
-    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
-    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "../get_self_permissions/src/get_self_permissions.cpp",
     "./src/media_library_asset_helper_capi_test.cpp",
   ]
+
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library_packages",
     "${MEDIALIB_INNERKITS_PATH}/media_library_manager:media_library_manager",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
     "${MEDIALIB_INTERFACES_PATH}/kits/c:native_media_asset_manager",
@@ -55,27 +57,29 @@ ohos_unittest("media_library_asset_helper_capi_test") {
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken_shared",
+    "access_token:libprivacy_sdk",
+    "access_token:libtokensetproc_shared",
+    "app_file_service:fileuri_native",
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
+    "data_share:datashare_consumer",
     "data_share:datashare_provider",
     "device_manager:devicemanagersdk",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "image_framework:image_native",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
-    "napi:ace_napi",
     "napi:ace_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "resource_management:librawfile",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
-
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
 }
