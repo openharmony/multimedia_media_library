@@ -1521,7 +1521,8 @@ void CloneRestore::RestoreFromGalleryPortraitAlbum()
         for (const auto& album : analysisAlbumTbl) {
             if (album.tagId.has_value() && album.coverUri.has_value()) {
                 coverUriInfo_.emplace_back(album.tagId.value(),
-                    std::make_pair(album.coverUri.value(), album.isCoverSatisfied.value()));
+                    std::make_pair(album.coverUri.value(),
+                    album.isCoverSatisfied.value_or(INVALID_COVER_SATISFIED_STATUS)));
             }
         }
 
@@ -1890,19 +1891,28 @@ std::string CloneRestore::GenCoverUriUpdateSql(const std::unordered_map<std::str
     for (const auto& [tagId, newUri] : coverUriUpdates) {
         updateSql += "WHEN tag_id = '" + tagId + "' THEN '" + newUri + "' ";
     }
-    updateSql += "ELSE cover_uri END, ";
+    updateSql += "ELSE cover_uri END";
 
-    updateSql += "is_cover_satisfied = CASE ";
+    bool hasValidIsCoverSatisfied = false;
+    std::string isCoverSatisfiedSql = ", is_cover_satisfied = CASE ";
     for (const auto& [tagId, isCoverSatisfied] : isCoverSatisfiedUpdates) {
-        updateSql += "WHEN tag_id = '" + tagId + "' THEN " + std::to_string(isCoverSatisfied) + " ";
+        if (isCoverSatisfied != INVALID_COVER_SATISFIED_STATUS) {
+            hasValidIsCoverSatisfied = true;
+            isCoverSatisfiedSql += "WHEN tag_id = '" + tagId + "' THEN " + std::to_string(isCoverSatisfied) + " ";
+        }
     }
 
-    updateSql += "ELSE is_cover_satisfied END ";
+    isCoverSatisfiedSql += "ELSE is_cover_satisfied END ";
+    if (hasValidIsCoverSatisfied) {
+        updateSql += isCoverSatisfiedSql;
+    }
+
     updateSql += "WHERE tag_id IN ('" +
         BackupDatabaseUtils::JoinValues(tagIds, "','") + "')";
 
     return updateSql;
 }
+
 std::string CloneRestore::ProcessUriAndGenNew(const std::string& tagId, const std::string& oldCoverUri,
     const std::unordered_map<std::string, int32_t>& oldToNewFileId, const std::vector<FileInfo>& fileInfos)
 {
