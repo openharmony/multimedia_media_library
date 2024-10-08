@@ -155,31 +155,39 @@ bool MedialibrarySubscriber::Subscribe(void)
 
 static void UploadDBFile()
 {
-    MEDIA_INFO_LOG("UploadDBFile begin");
+    int64_t begin = MediaFileUtils::UTCTimeMilliSeconds();
     static const std::string databaseDir = MEDIA_DB_DIR + "/rdb";
     static const std::vector<std::string> dbFileName = { "/media_library.db",
                                                          "/media_library.db-shm",
                                                          "/media_library.db-wal" };
     static const std::string destPath = "/data/storage/el2/log/logpack";
-    std::uintmax_t totalFileSize = 0;
-    for (auto &filePath : dbFileName) {
-        totalFileSize += std::filesystem::file_size(databaseDir + filePath);
+    int64_t totalFileSize = 0;
+    for (auto &dbName : dbFileName) {
+        string dbPath = databaseDir + dbName;
+        struct stat statInfo {};
+        if (stat(dbPath.c_str(), &statInfo) != 0) {
+            continue;
+        }
+        totalFileSize += statInfo.st_size;
     }
     totalFileSize >>= MB_SHIFT; // Convert bytes to MB
-    MEDIA_INFO_LOG("The database file totalFileSize is %{public}jd MB", totalFileSize);
     if (totalFileSize > MAX_FILE_SIZE_MB) {
-        MEDIA_INFO_LOG("DB file over 200MB are not uploaded, totalFileSize is %{public}jd MB", totalFileSize);
+        MEDIA_WARN_LOG("DB file over 200MB are not uploaded, totalFileSize is %{public}ld MB", (long)totalFileSize);
         return ;
     }
     if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateDirectory(destPath)) {
         MEDIA_ERR_LOG("Create dir failed, dir=%{private}s", destPath.c_str());
         return ;
     }
-    for (auto &filePath : dbFileName) {
-        CHECK_AND_RETURN_LOG(!MediaFileUtils::CopyFileUtil(databaseDir + filePath, destPath + filePath),
-            "Failed to copy DB file to logpack");
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    if (dataManager == nullptr) {
+        MEDIA_ERR_LOG("dataManager is nullptr");
+        return;
     }
-    MEDIA_INFO_LOG("UploadDBFile end");
+    dataManager->UploadDBFileInner();
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("Handle %{public}ld MB DBFile success, cost %{public}ld ms", (long)totalFileSize,
+        (long)(end - begin));
 }
 
 void MedialibrarySubscriber::CheckHalfDayMissions()
