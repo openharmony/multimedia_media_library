@@ -394,7 +394,6 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
                 sceneCode,
                 sourceType,
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
-            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::FILE_INVALID);
             continue;
         }
         if (!PrepareCloudPath(PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
@@ -1230,7 +1229,6 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
             (long long)fileInfo.fileSize,
             BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
             tableName.c_str());
-        UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::FILE_INVALID);
         return false;
     }
 
@@ -1269,7 +1267,8 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
     unordered_set<int32_t> excludedFileIdSet;
     for (auto& fileInfo : fileInfos) {
         if (!BackupFileUtils::IsFileValid(fileInfo.filePath, CLONE_RESTORE_ID)) {
-            UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::FILE_INVALID);
+            MEDIA_ERR_LOG("File is invalid: filePath: %{public}s",
+                BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
             continue;
         }
         if (!PrepareCloudPath(AudioColumn::AUDIOS_TABLE, fileInfo)) {
