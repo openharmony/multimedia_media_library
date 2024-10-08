@@ -1790,6 +1790,7 @@ void MediaLibraryPhotoOperations::UpdateEditDataPath(std::string filePath, const
 void MediaLibraryPhotoOperations::DeleteAbnormalFile(std::string &assetPath, const int32_t &fileId,
     const std::string &oldFilePath)
 {
+    MEDIA_INFO_LOG("DeleteAbnormalFile fileId:%{public}d, assetPath = %{public}s", fileId, assetPath.c_str());
     MediaLibraryObjectUtils::ScanFileAsync(assetPath, to_string(fileId), MediaLibraryApi::API_10);
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH};
@@ -1805,7 +1806,7 @@ void MediaLibraryPhotoOperations::DeleteAbnormalFile(std::string &assetPath, con
     }
     int32_t fileIdTemp = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     string filePathTemp = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    MEDIA_INFO_LOG("GetIdByPathFromDb fileId:%{public}d, filePathTemp = %{public}s", fileIdTemp, filePathTemp.c_str());
+    MEDIA_INFO_LOG("DeleteAbnormalFile fileId:%{public}d, filePathTemp = %{public}s", fileIdTemp, filePathTemp.c_str());
     auto oldFileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileIdTemp),
                                            OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
     if (oldFileAsset != nullptr) {
