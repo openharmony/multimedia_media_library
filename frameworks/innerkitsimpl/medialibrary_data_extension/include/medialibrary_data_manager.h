@@ -130,8 +130,6 @@ private:
     void InitDatabaseACLPermission();
     std::shared_ptr<NativeRdb::ResultSet> QueryInternal(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns, const DataShare::DataSharePredicates &predicates);
-    std::shared_ptr<NativeRdb::ResultSet> HandleOCRVisionQuery(MediaLibraryCommand &cmd,
-        const std::vector<std::string> &columns, const DataShare::DataSharePredicates &predicates);
 #ifdef DISTRIBUTED
     int32_t LcdDistributeAging();
     int32_t DistributeDeviceAging();
