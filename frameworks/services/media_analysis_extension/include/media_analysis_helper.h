@@ -27,6 +27,7 @@ class MediaAnalysisHelper {
 public:
     static void StartMediaAnalysisServiceAsync(int32_t code, const std::vector<std::string> &uris = {});
     static void StartMediaAnalysisServiceSync(int32_t code, const std::vector<std::string> &fileIds = {});
+    static void AsyncStartMediaAnalysisService(int32_t code, const std::vector<std::string> &albumIds = {});
     static void StartPortraitCoverSelectionAsync(const std::string albumId);
 
 private:
