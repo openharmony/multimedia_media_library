@@ -156,7 +156,6 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     packOption.format = mime_type;
     packOption.needsPackProperties = true;
     packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
-    packOption.isEditScene = false;
     size_t lastSlash = path.rfind('/');
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && path.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", path.c_str());
