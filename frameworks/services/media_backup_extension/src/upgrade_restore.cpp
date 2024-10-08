@@ -286,7 +286,7 @@ bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::
     info.fileType = MediaType::MEDIA_TYPE_AUDIO;
     info.oldPath = GetStringVal(AUDIO_DATA, resultSet);
     if (!ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", info.oldPath.c_str());
+        MEDIA_ERR_LOG("Invalid path: %{public}s.", BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str());
         UpdateFailedFiles(info.fileType, info.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
@@ -603,7 +603,7 @@ bool UpgradeRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb::Res
     }
     info.fileType = MediaType::MEDIA_TYPE_AUDIO;
     if (!BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", info.oldPath.c_str());
+        MEDIA_ERR_LOG("Invalid path: %{public}s.", BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str());
         UpdateFailedFiles(info.fileType, info.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
@@ -683,7 +683,7 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     if (sceneCode_ == UPGRADE_RESTORE_ID ?
         !BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath) :
         !ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath, info)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", info.oldPath.c_str());
+        MEDIA_ERR_LOG("Invalid path: %{public}s.", BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str());
         UpdateFailedFiles(info.fileType, info.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
