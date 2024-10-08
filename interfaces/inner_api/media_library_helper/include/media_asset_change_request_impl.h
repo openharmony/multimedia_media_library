@@ -53,34 +53,27 @@ public:
 private:
     bool IsMovingPhoto();
     bool CheckWriteOperation(MediaLibrary_ResourceType resourceType);
-    bool CheckMovingPhotoResource(MediaLibrary_ResourceType resourceType);
     bool ContainsResource(MediaLibrary_ResourceType resourceType);
     bool Contains(AssetChangeOperation changeOperation);
     int32_t OpenWriteCacheHandler(bool isMovingPhotoVideo = false);
     uint32_t FetchAddCacheFileId();
     bool ChangeOperationExecute(AssetChangeOperation option);
     bool CheckChangeOperations();
-    bool CheckMovingPhotoWriteOperation();
     bool SubmitCacheExecute();
     bool AddResourceExecute();
     bool SaveCameraPhotoExecute();
     bool DiscardCameraPhotoExecute();
     bool HasWritePermission();
     bool WriteBySecurityComponent();
-    bool IsCreation();
-    int32_t CopyToMediaLibrary(bool isCreation, AddResourceMode mode);
+    int32_t CopyToMediaLibrary(AddResourceMode mode);
     int32_t CreateAssetBySecurityComponent(std::string& assetUri);
-    int32_t CopyMovingPhotoVideo(const std::string& assetUri);
     int32_t CopyFileToMediaLibrary(const OHOS::UniqueFd& destFd, bool isMovingPhotoVideo = false);
     int32_t CopyDataBufferToMediaLibrary(const OHOS::UniqueFd& destFd, bool isMovingPhotoVideo = false);
-    void SetNewFileAsset(int32_t id, const std::string& uri);
     bool SendToCacheFile(const OHOS::UniqueFd& destFd, bool isMovingPhotoVideo = false);
-    bool IsSetEffectMode();
-    int32_t SubmitCache(bool isCreation, bool isSetEffectMode);
+    int32_t SubmitCache();
     int32_t SendFile(const OHOS::UniqueFd& srcFd, const OHOS::UniqueFd& destFd);
     int32_t PutMediaAssetEditData(OHOS::DataShare::DataShareValuesBucket& valuesBucket);
     bool HasAddResource(MediaLibrary_ResourceType resourceType);
-    bool AddMovingPhotoVideoExecute();
     bool AddResourceByMode(const OHOS::UniqueFd& uniqueFd, AddResourceMode mode,
         bool isMovingPhotoVideo = false);
     bool WriteCacheByArrayBuffer(const OHOS::UniqueFd& destFd, bool isMovingPhotoVideo = false);

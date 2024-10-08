@@ -576,6 +576,8 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_008, TestSi
     fileAsset_->SetDisplayName(displayName);
     ret = OH_MediaAssetManager_RequestImage(manager, mediaAsset, requestOptions, &requestID, callback);
     EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
+    ret = OH_MediaAssetManager_Release(manager);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_OK);
 }
 
 /**
@@ -633,6 +635,8 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_009, TestSi
     fileAsset_->SetDisplayName(displayName);
     ret = OH_MediaAssetManager_RequestMovingPhoto(manager, mediaAsset, requestOptions, &requestID, callback);
     EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
+    ret = OH_MediaAssetManager_Release(manager);
+    EXPECT_EQ(ret, MEDIA_LIBRARY_OK);
 }
 } // namespace Media
 } // namespace OHOS

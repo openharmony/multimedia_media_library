@@ -94,10 +94,9 @@ MediaLibrary_ErrorCode MediaAssetChangeRequestImpl::GetWriteCacheHandler(int32_t
         MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED, "Not supported!");
 
     int32_t ret = OpenWriteCacheHandler();
-    if (ret < 0) {
-        MEDIA_ERR_LOG("Failed to open write cache handler,ret: %{public}d", ret);
-        return MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= 0,
+        MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED, "Failed to open write cache handler,ret: %{public}d", ret);
+
     *fd = ret;
     RecordChangeOperation(AssetChangeOperation::GET_WRITE_CACHE_HANDLER);
     return MEDIA_LIBRARY_OK;
@@ -141,29 +140,12 @@ MediaLibrary_ErrorCode MediaAssetChangeRequestImpl::AddResourceWithUri(MediaLibr
 
     auto fileAsset = mediaAsset_->GetFileAssetInstance();
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED, "fileAsset get failed!");
+    CHECK_AND_RETURN_RET_LOG(!IsMovingPhoto(), MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED,
+        "not support edit moving photo with uri");
 
-    if ((fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) &&
-        resourceType == static_cast<int32_t>(MediaLibrary_ResourceType::MEDIA_LIBRARY_VIDEO_RESOURCE)) {
-        if ((MediaType::MEDIA_TYPE_VIDEO) != MediaFileUtils::GetMediaType(realPath)) {
-            MEDIA_ERR_LOG("Invalid file type");
-            return MEDIA_LIBRARY_PARAMETER_ERROR;
-        }
-        if (!(MediaFileUtils::CheckMovingPhotoVideo(realPath))) {
-            MEDIA_ERR_LOG("invalid param code");
-            return MEDIA_LIBRARY_NO_SUCH_FILE;
-        }
+    CHECK_AND_RETURN_RET_LOG(fileAsset->GetMediaType() == MediaFileUtils::GetMediaType(realPath),
+        MEDIA_LIBRARY_PARAMETER_ERROR, "Invalid file type");
 
-        movingPhotoVideoRealPath_ = realPath;
-        movingPhotoVideoResourceMode_ = AddResourceMode::FILE_URI;
-        RecordChangeOperation(AssetChangeOperation::ADD_RESOURCE);
-        addResourceTypes_.push_back(MediaLibrary_ResourceType::MEDIA_LIBRARY_VIDEO_RESOURCE);
-        return MEDIA_LIBRARY_OK;
-    }
-
-    if (fileAsset->GetMediaType() != MediaFileUtils::GetMediaType(realPath)) {
-        MEDIA_ERR_LOG("Invalid file type");
-        return MEDIA_LIBRARY_PARAMETER_ERROR;
-    }
     realPath_ = realPath;
     addResourceMode_ = AddResourceMode::FILE_URI;
     RecordChangeOperation(AssetChangeOperation::ADD_RESOURCE);
@@ -218,10 +200,9 @@ MediaLibrary_ErrorCode MediaAssetChangeRequestImpl::ApplyChanges()
         }
 
         bool valid = ChangeOperationExecute(changeOperation);
-        if (!valid) {
-            MEDIA_ERR_LOG("Failed to apply asset change request, operation: %{public}d", changeOperation);
-            return MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED;
-        }
+        CHECK_AND_RETURN_RET_LOG(valid, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED,
+            "Failed to apply asset change request, operation: %{public}d", changeOperation);
+
         appliedOperations.insert(changeOperation);
     }
     assetChangeOperations_.clear();
@@ -241,27 +222,12 @@ bool MediaAssetChangeRequestImpl::IsMovingPhoto()
 
 bool MediaAssetChangeRequestImpl::CheckWriteOperation(MediaLibrary_ResourceType resourceType)
 {
-    if (IsMovingPhoto()) {
-        CHECK_AND_RETURN_RET_LOG(CheckMovingPhotoResource(resourceType), false,
-            "Failed to check resource to add for moving photo");
-        return true;
-    }
-
-    if (Contains(AssetChangeOperation::CREATE_FROM_URI) ||
-        Contains(AssetChangeOperation::GET_WRITE_CACHE_HANDLER) ||
+    if (Contains(AssetChangeOperation::GET_WRITE_CACHE_HANDLER) ||
         Contains(AssetChangeOperation::ADD_RESOURCE)) {
         MEDIA_ERR_LOG("The previous asset creation/modification request has not been applied");
         return false;
     }
     return true;
-}
-
-bool MediaAssetChangeRequestImpl::CheckMovingPhotoResource(MediaLibrary_ResourceType resourceType)
-{
-    bool isResourceTypeVaild = !ContainsResource(resourceType);
-    int addResourceTimes =
-        count(assetChangeOperations_.begin(), assetChangeOperations_.end(), AssetChangeOperation::ADD_RESOURCE);
-    return isResourceTypeVaild && addResourceTimes <= 1;
 }
 
 bool MediaAssetChangeRequestImpl::ContainsResource(MediaLibrary_ResourceType resourceType)
@@ -291,10 +257,7 @@ int32_t MediaAssetChangeRequestImpl::OpenWriteCacheHandler(bool isMovingPhotoVid
     Uri openCacheUri(uri);
     int32_t ret = UserFileClient::OpenFile(openCacheUri, MEDIA_FILEMODE_WRITEONLY);
     CHECK_AND_RETURN_RET_LOG(ret != E_PERMISSION_DENIED, ret, "Open cache file failed, permission denied");
-
-    if (ret < 0) {
-        MEDIA_ERR_LOG("Open cache file failed, ret: %{public}d", ret);
-    }
+    CHECK_AND_PRINT_LOG(ret >= 0, "Open cache file failed, ret: %{public}d", ret);
 
     if (isMovingPhotoVideo) {
         cacheMovingPhotoVideoName_ = cacheFileName;
@@ -311,13 +274,6 @@ uint32_t MediaAssetChangeRequestImpl::FetchAddCacheFileId()
 
 void MediaAssetChangeRequestImpl::RecordChangeOperation(AssetChangeOperation changeOperation)
 {
-    if ((changeOperation == AssetChangeOperation::GET_WRITE_CACHE_HANDLER ||
-        changeOperation == AssetChangeOperation::ADD_RESOURCE ||
-        changeOperation == AssetChangeOperation::ADD_FILTERS) &&
-        Contains(AssetChangeOperation::CREATE_FROM_SCRATCH)) {
-        assetChangeOperations_.insert(assetChangeOperations_.begin() + 1, changeOperation);
-        return;
-    }
     assetChangeOperations_.push_back(changeOperation);
 }
 
@@ -325,56 +281,11 @@ bool MediaAssetChangeRequestImpl::CheckChangeOperations()
 {
     CHECK_AND_RETURN_RET_LOG(assetChangeOperations_.size() != 0, false, "None request to apply");
 
-    bool isCreateFromScratch = Contains(AssetChangeOperation::CREATE_FROM_SCRATCH);
-    bool isCreateFromUri = Contains(AssetChangeOperation::CREATE_FROM_URI);
-    bool containsEdit = Contains(AssetChangeOperation::SET_EDIT_DATA);
-    bool containsGetHandler = Contains(AssetChangeOperation::GET_WRITE_CACHE_HANDLER);
-    bool containsAddResource = Contains(AssetChangeOperation::ADD_RESOURCE);
-    bool isSaveCameraPhoto = Contains(AssetChangeOperation::SAVE_CAMERA_PHOTO);
-    if ((isCreateFromScratch || containsEdit) && !containsGetHandler && !containsAddResource && !isSaveCameraPhoto) {
-        MEDIA_ERR_LOG("Cannot create or edit asset without data to write");
-        return false;
-    }
-
-    if (containsEdit && (isCreateFromScratch || isCreateFromUri)) {
-        MEDIA_ERR_LOG("Cannot create together with edit");
-        return false;
-    }
-
     auto fileAsset = mediaAsset_->GetFileAssetInstance();
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, false, "fileAsset is null");
+    CHECK_AND_RETURN_RET_LOG(fileAsset->GetId() > 0, false, "Invalid asset change request");
 
-    AssetChangeOperation firstOperation = assetChangeOperations_.front();
-    if (fileAsset->GetId() <= 0 && firstOperation != AssetChangeOperation::CREATE_FROM_SCRATCH &&
-        firstOperation != AssetChangeOperation::CREATE_FROM_URI) {
-        MEDIA_ERR_LOG("Invalid asset change request");
-        return false;
-    }
-
-    bool isMovingPhoto = IsMovingPhoto();
-    if (isMovingPhoto && !CheckMovingPhotoWriteOperation()) {
-        MEDIA_ERR_LOG("Invalid write operation for moving photo");
-        return false;
-    }
     return true;
-}
-
-bool MediaAssetChangeRequestImpl::CheckMovingPhotoWriteOperation()
-{
-    if (!Contains(AssetChangeOperation::ADD_RESOURCE)) {
-        return true;
-    }
-
-    if (!Contains(AssetChangeOperation::CREATE_FROM_SCRATCH)) {
-        MEDIA_ERR_LOG("Moving photo is not supported to edit now");
-        return false;
-    }
-
-    int addResourceTimes =
-        count(assetChangeOperations_.begin(), assetChangeOperations_.end(), AssetChangeOperation::ADD_RESOURCE);
-    bool isImageExist = ContainsResource(MediaLibrary_ResourceType::MEDIA_LIBRARY_IMAGE_RESOURCE);
-    bool isVideoExist = ContainsResource(MediaLibrary_ResourceType::MEDIA_LIBRARY_VIDEO_RESOURCE);
-    return addResourceTimes == 2 && isImageExist && isVideoExist; // must add resource 2 times with image and video
 }
 
 bool MediaAssetChangeRequestImpl::ChangeOperationExecute(AssetChangeOperation option)
@@ -401,46 +312,27 @@ bool MediaAssetChangeRequestImpl::ChangeOperationExecute(AssetChangeOperation op
 
 bool MediaAssetChangeRequestImpl::SubmitCacheExecute()
 {
-    bool isCreation = IsCreation();
-    bool isSetEffectMode = IsSetEffectMode();
-    int32_t ret = SubmitCache(isCreation, isSetEffectMode);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("Failed to write cache, ret: %{public}d", ret);
-        return false;
-    }
+    int32_t ret = SubmitCache();
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, false, "Failed to write cache, ret: %{public}d", ret);
+
     return true;
 }
 
 bool MediaAssetChangeRequestImpl::AddResourceExecute()
 {
-    if (IsMovingPhoto() && movingPhotoVideoResourceMode_ != AddResourceMode::FILE_URI) {
-        MEDIA_ERR_LOG("not support edit moving photo with buffer");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(!IsMovingPhoto(), false, "not support edit moving photo with buffer or uri");
+
     if (!HasWritePermission()) {
         return WriteBySecurityComponent();
     }
 
-    if (IsMovingPhoto() && HasAddResource(MediaLibrary_ResourceType::MEDIA_LIBRARY_VIDEO_RESOURCE) &&
-        !AddMovingPhotoVideoExecute()) {
-        MEDIA_ERR_LOG("Faild to write cache file for video of moving photo");
-        return false;
-    }
-
-    if (IsMovingPhoto() && !HasAddResource(MediaLibrary_ResourceType::MEDIA_LIBRARY_IMAGE_RESOURCE)) {
-        return SubmitCacheExecute();
-    }
     int32_t cacheFd = OpenWriteCacheHandler();
-    if (cacheFd < 0) {
-        MEDIA_ERR_LOG("Failed to open write cache handler, err: %{public}d", cacheFd);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(cacheFd >= 0, false, "Failed to open write cache handler, err: %{public}d", cacheFd);
+
     OHOS::UniqueFd uniqueFd(cacheFd);
     AddResourceMode mode = addResourceMode_;
-    if (!AddResourceByMode(uniqueFd, mode)) {
-        MEDIA_ERR_LOG("Faild to write cache file");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(AddResourceByMode(uniqueFd, mode), false, "Faild to write cache file");
+
     return SubmitCacheExecute();
 }
 
@@ -491,10 +383,8 @@ bool MediaAssetChangeRequestImpl::DiscardCameraPhotoExecute()
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(uri);
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
-    if (changedRows < 0) {
-        MEDIA_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(changedRows >= 0, false,
+        "Failed to update property of asset, err: %{public}d", changedRows);
     return true;
 }
 
@@ -507,62 +397,27 @@ bool MediaAssetChangeRequestImpl::HasWritePermission()
 
 bool MediaAssetChangeRequestImpl::WriteBySecurityComponent()
 {
-    bool isCreation = IsCreation();
-    int32_t ret = E_FAIL;
-    bool isCreateFromUri = find(assetChangeOperations_.begin(), assetChangeOperations_.end(),
-        AssetChangeOperation::CREATE_FROM_URI) != assetChangeOperations_.end();
-    if (isCreateFromUri) {
-        ret = CopyToMediaLibrary(isCreation, AddResourceMode::FILE_URI);
-    } else {
-        ret = CopyToMediaLibrary(isCreation, addResourceMode_);
-    }
-    if (ret < 0) {
-        MEDIA_ERR_LOG("Failed to write by security component, ret: %{public}d", ret);
-        return false;
-    }
+    int32_t ret = CopyToMediaLibrary(addResourceMode_);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, false,
+        "Failed to write by security component, ret: %{public}d", ret);
+
     return true;
 }
 
-bool MediaAssetChangeRequestImpl::IsCreation()
-{
-    bool isCreateFromScratch = find(assetChangeOperations_.begin(), assetChangeOperations_.end(),
-        AssetChangeOperation::CREATE_FROM_SCRATCH) != assetChangeOperations_.end();
-    bool isCreateFromUri = find(assetChangeOperations_.begin(), assetChangeOperations_.end(),
-        AssetChangeOperation::CREATE_FROM_URI) != assetChangeOperations_.end();
-    return isCreateFromScratch || isCreateFromUri;
-}
-
-int32_t MediaAssetChangeRequestImpl::CopyToMediaLibrary(bool isCreation, AddResourceMode mode)
+int32_t MediaAssetChangeRequestImpl::CopyToMediaLibrary(AddResourceMode mode)
 {
     auto fileAsset = mediaAsset_->GetFileAssetInstance();
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_FAIL, "fileAsset is null");
 
     int32_t ret = E_ERR;
-    int32_t id = 0;
-    string assetUri;
-    if (isCreation) {
-        ret = CreateAssetBySecurityComponent(assetUri);
-        CHECK_AND_RETURN_RET_LOG(ret > 0, (ret == 0 ? E_ERR : ret), "Failed to create asset by security component");
-        id = ret;
-    } else {
-        assetUri = fileAsset->GetUri();
-    }
+    string assetUri = fileAsset->GetUri();
     CHECK_AND_RETURN_RET_LOG(!assetUri.empty(), E_ERR, "Failed to check empty asset uri");
-
-    if (IsMovingPhoto()) {
-        ret = CopyMovingPhotoVideo(assetUri);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("Failed to copy data to moving photo video with error: %{public}d", ret);
-            return ret;
-        }
-    }
+    CHECK_AND_RETURN_RET_LOG(!IsMovingPhoto(), E_ERR, "not support edit moving photo with buffer or uri");
 
     Uri uri(assetUri);
     OHOS::UniqueFd destFd(UserFileClient::OpenFile(uri, MEDIA_FILEMODE_WRITEONLY));
-    if (destFd.Get() < 0) {
-        MEDIA_ERR_LOG("Failed to open %{public}s with error: %{public}d", assetUri.c_str(), destFd.Get());
-        return destFd.Get();
-    }
+    CHECK_AND_RETURN_RET_LOG(destFd.Get() >= 0, destFd.Get(),
+        "Failed to open %{public}s with error: %{public}d", assetUri.c_str(), destFd.Get());
 
     if (mode == AddResourceMode::FILE_URI) {
         ret = CopyFileToMediaLibrary(destFd);
@@ -573,9 +428,6 @@ int32_t MediaAssetChangeRequestImpl::CopyToMediaLibrary(bool isCreation, AddReso
         return E_INVALID_VALUES;
     }
 
-    if (ret == E_OK && isCreation) {
-        SetNewFileAsset(id, assetUri);
-    }
     return ret;
 }
 
@@ -596,29 +448,6 @@ int32_t MediaAssetChangeRequestImpl::CreateAssetBySecurityComponent(string& asse
     return UserFileClient::InsertExt(createAssetUri, creationValuesBucket_, assetUri);
 }
 
-int32_t MediaAssetChangeRequestImpl::CopyMovingPhotoVideo(const string& assetUri)
-{
-    CHECK_AND_RETURN_RET_LOG(!assetUri.empty(), E_INVALID_URI, "Failed to check empty asset uri");
-
-    string videoUri = assetUri;
-    MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
-    Uri uri(videoUri);
-    int videoFd = UserFileClient::OpenFile(uri, MEDIA_FILEMODE_WRITEONLY);
-    CHECK_AND_RETURN_RET_LOG(videoFd >= 0, videoFd, "Failed to open video of moving photo with write-only mode");
-
-    int32_t ret = E_ERR;
-    OHOS::UniqueFd uniqueFd(videoFd);
-    if (movingPhotoVideoResourceMode_ == AddResourceMode::FILE_URI) {
-        ret = CopyFileToMediaLibrary(uniqueFd, true);
-    } else if (movingPhotoVideoResourceMode_ == AddResourceMode::DATA_BUFFER) {
-        ret = CopyDataBufferToMediaLibrary(uniqueFd, true);
-    } else {
-        MEDIA_ERR_LOG("Invalid mode: %{public}d", movingPhotoVideoResourceMode_);
-        return E_INVALID_VALUES;
-    }
-    return ret;
-}
-
 int32_t MediaAssetChangeRequestImpl::CopyFileToMediaLibrary(const OHOS::UniqueFd& destFd, bool isMovingPhotoVideo)
 {
     string srcRealPath = isMovingPhotoVideo ? movingPhotoVideoRealPath_ : realPath_;
@@ -629,15 +458,12 @@ int32_t MediaAssetChangeRequestImpl::CopyFileToMediaLibrary(const OHOS::UniqueFd
         srcRealPath.c_str());
 
     OHOS::UniqueFd srcFd(open(absFilePath.c_str(), O_RDONLY));
-    if (srcFd.Get() < 0) {
-        MEDIA_ERR_LOG("Failed to open %{public}s, errno=%{public}d", absFilePath.c_str(), errno);
-        return srcFd.Get();
-    }
+    CHECK_AND_RETURN_RET_LOG(srcFd.Get() >= 0, srcFd.Get(),
+        "Failed to open %{public}s, errno=%{public}d", absFilePath.c_str(), errno);
 
     int32_t err = SendFile(srcFd, destFd);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to send file from %{public}d to %{public}d", srcFd.Get(), destFd.Get());
-    }
+    CHECK_AND_PRINT_LOG(err == E_OK, "Failed to send file from %{public}d to %{public}d", srcFd.Get(), destFd.Get());
+
     return err;
 }
 
@@ -649,62 +475,32 @@ int32_t MediaAssetChangeRequestImpl::CopyDataBufferToMediaLibrary(const OHOS::Un
     void* dataBuffer = isMovingPhotoVideo ? movingPhotoVideoDataBuffer_ : dataBuffer_;
     while (offset < length) {
         ssize_t written = write(destFd.Get(), (char*)dataBuffer + offset, length - offset);
-        if (written < 0) {
-            MEDIA_ERR_LOG("Failed to copy data buffer, return %{public}d", static_cast<int>(written));
-            return written;
-        }
+        CHECK_AND_RETURN_RET_LOG(written >= 0, written,
+            "Failed to copy data buffer, return %{public}d", static_cast<int>(written));
+
         offset += static_cast<size_t>(written);
     }
     return E_OK;
-}
-
-void MediaAssetChangeRequestImpl::SetNewFileAsset(int32_t id, const string& uri)
-{
-    auto fileAsset = mediaAsset_->GetFileAssetInstance();
-    if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("fileAsset is nullptr");
-        return;
-    }
-
-    if (id <= 0 || uri.empty()) {
-        MEDIA_ERR_LOG("Failed to check file_id: %{public}d and uri: %{public}s", id, uri.c_str());
-        return;
-    }
-    fileAsset->SetId(id);
-    fileAsset->SetUri(uri);
-    fileAsset->SetTimePending(0);
 }
 
 bool MediaAssetChangeRequestImpl::SendToCacheFile(const OHOS::UniqueFd& destFd, bool isMovingPhotoVideo)
 {
     string realPath = isMovingPhotoVideo ? movingPhotoVideoRealPath_ : realPath_;
     string absFilePath;
-    if (!OHOS::PathToRealPath(realPath, absFilePath)) {
-        MEDIA_ERR_LOG("Not real path %{public}s, errno=%{public}d", realPath.c_str(), errno);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(OHOS::PathToRealPath(realPath, absFilePath), false,
+        "Not real path %{public}s, errno=%{public}d", realPath.c_str(), errno);
 
     OHOS::UniqueFd srcFd(open(absFilePath.c_str(), O_RDONLY));
-    if (srcFd.Get() < 0) {
-        MEDIA_ERR_LOG("Failed to open file, errno=%{public}d", errno);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(srcFd.Get() >= 0, false, "Failed to open file, errno=%{public}d", errno);
 
     int32_t err = SendFile(srcFd, destFd);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to send file from %{public}d to %{public}d", srcFd.Get(), destFd.Get());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false,
+        "Failed to send file from %{public}d to %{public}d", srcFd.Get(), destFd.Get());
+
     return true;
 }
 
-bool MediaAssetChangeRequestImpl::IsSetEffectMode()
-{
-    return find(assetChangeOperations_.begin(), assetChangeOperations_.end(),
-        AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE) != assetChangeOperations_.end();
-}
-
-int32_t MediaAssetChangeRequestImpl::SubmitCache(bool isCreation, bool isSetEffectMode)
+int32_t MediaAssetChangeRequestImpl::SubmitCache()
 {
     auto fileAsset = mediaAsset_->GetFileAssetInstance();
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_FAIL, "fileAsset is null");
@@ -716,34 +512,14 @@ int32_t MediaAssetChangeRequestImpl::SubmitCache(bool isCreation, bool isSetEffe
     Uri submitCacheUri(uri);
     string assetUri;
     int32_t ret;
-    if (isCreation) {
-        bool isValid = false;
-        string displayName = creationValuesBucket_.Get(MEDIA_DATA_DB_NAME, isValid);
-        CHECK_AND_RETURN_RET_LOG(
-            isValid && MediaFileUtils::CheckDisplayName(displayName) == E_OK, E_FAIL, "Failed to check displayName");
+    OHOS::DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset->GetId());
+    valuesBucket.Put(CACHE_FILE_NAME, cacheFileName_);
+    ret = PutMediaAssetEditData(valuesBucket);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to put editData");
 
-        creationValuesBucket_.Put(CACHE_FILE_NAME, cacheFileName_);
-        if (IsMovingPhoto()) {
-            creationValuesBucket_.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
-        }
-        ret = UserFileClient::InsertExt(submitCacheUri, creationValuesBucket_, assetUri);
-    } else {
-        OHOS::DataShare::DataShareValuesBucket valuesBucket;
-        valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset->GetId());
-        valuesBucket.Put(CACHE_FILE_NAME, cacheFileName_);
-        ret = PutMediaAssetEditData(valuesBucket);
-        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to put editData");
+    ret = UserFileClient::Insert(submitCacheUri, valuesBucket);
 
-        if (isSetEffectMode) {
-            valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset->GetMovingPhotoEffectMode());
-            valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
-        }
-        ret = UserFileClient::Insert(submitCacheUri, valuesBucket);
-    }
-
-    if (ret > 0 && isCreation) {
-        SetNewFileAsset(ret, assetUri);
-    }
     cacheFileName_.clear();
     cacheMovingPhotoVideoName_.clear();
     return ret;
@@ -751,27 +527,20 @@ int32_t MediaAssetChangeRequestImpl::SubmitCache(bool isCreation, bool isSetEffe
 
 int32_t MediaAssetChangeRequestImpl::SendFile(const OHOS::UniqueFd& srcFd, const OHOS::UniqueFd& destFd)
 {
-    if (srcFd.Get() < 0 || destFd.Get() < 0) {
-        MEDIA_ERR_LOG("Failed to check srcFd: %{public}d and destFd: %{public}d", srcFd.Get(), destFd.Get());
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG((srcFd.Get() >= 0 && destFd.Get() >= 0), E_ERR,
+        "Failed to check srcFd: %{public}d and destFd: %{public}d", srcFd.Get(), destFd.Get());
 
     struct stat statSrc {};
     int32_t status = fstat(srcFd.Get(), &statSrc);
-    if (status != 0) {
-        MEDIA_ERR_LOG("Failed to get file stat, errno=%{public}d", errno);
-        return status;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == 0, status, "Failed to get file stat, errno=%{public}d", errno);
 
     off_t offset = 0;
     off_t fileSize = statSrc.st_size;
     while (offset < fileSize) {
         ssize_t sent = sendfile(destFd.Get(), srcFd.Get(), &offset, fileSize - offset);
-        if (sent < 0) {
-            MEDIA_ERR_LOG("Failed to sendfile with errno=%{public}d, srcFd=%{public}d, destFd=%{public}d", errno,
-                srcFd.Get(), destFd.Get());
-            return sent;
-        }
+        CHECK_AND_RETURN_RET_LOG(sent >= 0, sent,
+            "Failed to sendfile with errno=%{public}d, srcFd=%{public}d, destFd=%{public}d",
+            errno, srcFd.Get(), destFd.Get());
     }
 
     return E_OK;
@@ -779,9 +548,7 @@ int32_t MediaAssetChangeRequestImpl::SendFile(const OHOS::UniqueFd& srcFd, const
 
 int32_t MediaAssetChangeRequestImpl::PutMediaAssetEditData(OHOS::DataShare::DataShareValuesBucket& valuesBucket)
 {
-    if (editData_ == nullptr) {
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET(editData_ != nullptr, E_OK);
 
     string compatibleFormat = editData_->GetCompatibleFormat();
     CHECK_AND_RETURN_RET_LOG(!compatibleFormat.empty(), E_FAIL, "Failed to check compatibleFormat");
@@ -802,24 +569,6 @@ bool MediaAssetChangeRequestImpl::HasAddResource(MediaLibrary_ResourceType resou
 {
     return find(addResourceTypes_.begin(), addResourceTypes_.end(), resourceType) !=
         addResourceTypes_.end();
-}
-
-bool MediaAssetChangeRequestImpl::AddMovingPhotoVideoExecute()
-{
-    CHECK_AND_RETURN_RET_LOG(movingPhotoVideoResourceMode_ == AddResourceMode::FILE_URI, false,
-        "not support edit moving photo with buffer");
-    int32_t cacheVideoFd = OpenWriteCacheHandler(true);
-    if (cacheVideoFd < 0) {
-        MEDIA_ERR_LOG("Failed to open cache moving photo video, err: %{public}d", cacheVideoFd);
-        return false;
-    }
-    OHOS::UniqueFd uniqueFd(cacheVideoFd);
-    AddResourceMode mode = movingPhotoVideoResourceMode_;
-    if (!AddResourceByMode(uniqueFd, mode, true)) {
-        MEDIA_ERR_LOG("Faild to write cache file");
-        return false;
-    }
-    return true;
 }
 
 bool MediaAssetChangeRequestImpl::AddResourceByMode(const OHOS::UniqueFd& uniqueFd,
@@ -843,10 +592,9 @@ bool MediaAssetChangeRequestImpl::WriteCacheByArrayBuffer(const OHOS::UniqueFd& 
     void* dataBuffer = isMovingPhotoVideo ? movingPhotoVideoDataBuffer_ : dataBuffer_;
     while (offset < length) {
         ssize_t written = write(destFd.Get(), (char*)dataBuffer + offset, length - offset);
-        if (written < 0) {
-            MEDIA_ERR_LOG("Failed to write data buffer to cache file, return %{public}d", static_cast<int>(written));
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(written >= 0, false,
+            "Failed to write data buffer to cache file, return %{public}d", static_cast<int>(written));
+
         offset += static_cast<size_t>(written);
     }
     return true;
