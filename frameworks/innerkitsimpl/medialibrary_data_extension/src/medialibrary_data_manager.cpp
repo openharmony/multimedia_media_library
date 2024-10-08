@@ -1972,5 +1972,29 @@ int32_t MediaLibraryDataManager::CheckCloudThumbnailDownloadFinish()
 
     return thumbnailService_->CheckCloudThumbnailDownloadFinish();
 }
+
+void MediaLibraryDataManager::UploadDBFileInner()
+{
+    lock_guard<shared_mutex> lock(mgrSharedMutex_);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr!");
+        return;
+    }
+    auto rawStore = rdbStore->GetRaw();
+    if (rawStore == nullptr) {
+        MEDIA_ERR_LOG("rawStore is nullptr!");
+        return;
+    }
+
+    std::string destPath = "/data/storage/el2/log/logpack/media_library.db";
+    std::string tmpPath = MEDIA_DB_DIR + "/rdb/media_library_tmp.db";
+    int32_t errCode = rawStore->Backup(tmpPath);
+    if (errCode != 0) {
+        MEDIA_ERR_LOG("rdb backup fail: %{public}d", errCode);
+        return;
+    }
+    MediaFileUtils::CopyFileUtil(tmpPath, destPath);
+}
 }  // namespace Media
 }  // namespace OHOS
