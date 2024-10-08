@@ -119,33 +119,35 @@ int32_t FileUtils::SavePicture(const string &imageId, std::shared_ptr<Media::Pic
     if (mime_type == "") {
         mime_type = "image/jpeg";
     }
-    size_t size = -1;
-    MediaFileUtils::GetFileSize(sourcePath, size);
+    size_t sizeHeic = -1;
+    size_t pos = sourcePath.find_last_of('.');
+    string pathPos = sourcePath.substr(0, pos);
+    string pathHeic = pathPos + ".heic";
+    MediaFileUtils::GetFileSize(pathHeic, sizeHeic);
+    size_t sizeJpeg = -1;
+    string pathJpeg = pathPos + ".jpeg";
+    MediaFileUtils::GetFileSize(pathJpeg, sizeJpeg);
 
-    if (isLowQualityPicture && size > 0) {
+    if (isLowQualityPicture && (sizeHeic > 0 || sizeJpeg > 0)) {
         return -1;
     }
 
     int ret = DealPicture(mime_type, sourcePath, picture);
-    if (ret < 0) {
-        return ret;
-    }
-    MediaLibraryObjectUtils::ScanFileAsync(sourcePath, to_string(fileId), MediaLibraryApi::API_10);
-    return 0;
+    return ret;
 }
 
 int32_t FileUtils::SavePicture(const string &path, std::shared_ptr<Media::Picture> &picture,
     const std::string &mime_type, bool isEdited)
 {
-    MEDIA_INFO_LOG("SavePicture width %{public}d, heigh %{public}d",
-        picture->GetMainPixel()->GetWidth(), picture->GetMainPixel()->GetHeight());
+    MEDIA_INFO_LOG("SavePicture width %{public}d, heigh %{public}d, mime_type %{public}sd",
+        picture->GetMainPixel()->GetWidth(), picture->GetMainPixel()->GetHeight(), mime_type.c_str());
     return DealPicture(mime_type, path, picture);
 }
 
 int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &path,
     std::shared_ptr<Media::Picture> &picture)
 {
-    MEDIA_DEBUG_LOG("DealPicture");
+    MEDIA_DEBUG_LOG("DealPicture %{public}s", path.c_str());
     if (picture == nullptr) {
         return -1;
     }
@@ -154,6 +156,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     packOption.format = mime_type;
     packOption.needsPackProperties = true;
     packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
+    packOption.isEditScene = false;
     size_t lastSlash = path.rfind('/');
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && path.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", path.c_str());

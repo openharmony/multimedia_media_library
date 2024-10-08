@@ -58,6 +58,7 @@ State PictureManagerThread::State() const
 void PictureManagerThread::Start()
 {
     MEDIA_INFO_LOG("enter ");
+    unique_lock<mutex> locker(runningMutex_);
     if (pictureDataOperations_ == nullptr) {
         pictureDataOperations_ = new PictureDataOperations();
     }
