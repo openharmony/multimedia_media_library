@@ -70,6 +70,7 @@ void ThumbnailGenerateWorkerManager::ClearAllTask()
     thumbnailWorkerMap_.Iterate([](ThumbnailTaskType taskType, ThumbnailWorkerPtr &ptr) {
         if (ptr != nullptr) {
             ptr->ReleaseTaskQueue(ThumbnailTaskPriority::HIGH);
+            ptr->ReleaseTaskQueue(ThumbnailTaskPriority::MID);
             ptr->ReleaseTaskQueue(ThumbnailTaskPriority::LOW);
         }
     });

@@ -194,7 +194,6 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
         case StatusEventType::BATTERY_CHANGED:
             isPowerSufficient_ = want.GetIntParam(COMMON_EVENT_KEY_BATTERY_CAPACITY,
                 COMMON_EVENT_KEY_GET_DEFAULT_PARAM) >= PROPER_DEVICE_BATTERY_CAPACITY;
-            ThumbnailGenerateWorkerManager::GetInstance().TryCloseThumbnailWorkerTimer();
             break;
         case StatusEventType::THERMAL_LEVEL_CHANGED:
             isDeviceTemperatureProper_ = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
@@ -403,6 +402,8 @@ void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleNam
 
 void MedialibrarySubscriber::UpdateBackgroundTimer()
 {
+    ThumbnailGenerateWorkerManager::GetInstance().TryCloseThumbnailWorkerTimer();
+
     std::lock_guard<std::mutex> lock(mutex_);
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_ && isWifiConn_;
     if (timerStatus_ == newStatus) {
