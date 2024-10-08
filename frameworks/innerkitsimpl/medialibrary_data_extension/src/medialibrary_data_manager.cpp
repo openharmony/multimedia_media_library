@@ -1617,7 +1617,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::PAH_MOVING_PHOTO:
             return MediaLibraryAssetOperations::QueryOperation(cmd, columns);
         case OperationObject::VISION_START ... OperationObject::VISION_END:
-            return HandleOCRVisionQuery(cmd, columns, predicates);
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
         case OperationObject::GEO_PHOTO:
@@ -1636,27 +1636,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
     }
-}
-
-shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::HandleOCRVisionQuery(
-    MediaLibraryCommand &cmd, const vector<string> &columns, const DataSharePredicates &predicates)
-{
-    auto queryResult = MediaLibraryRdbStore::Query(
-        RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-
-#ifdef HAS_THERMAL_MANAGER_PART
-    auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
-    if (static_cast<int32_t>(thermalMgrClient.GetThermalLevel()) >= PROPER_DEVICE_TEMPERATURE_LEVEL) {
-        return queryResult;
-    }
-#endif
-
-    if (cmd.GetOprnObject() == OperationObject::VISION_OCR && queryResult != nullptr) {
-        queryResult = MediaLibraryVisionOperations::DealWithActiveOcrTask(
-            queryResult, predicates, columns, cmd);
-    }
-
-    return queryResult;
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryCommand &cmd,
