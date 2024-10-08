@@ -82,6 +82,7 @@ using namespace OHOS::RdbDataShareAdapter;
 namespace OHOS {
 namespace Media {
 static const string ANALYSIS_HAS_DATA = "1";
+const string PHOTO_ALBUM_URI_PREFIX_V0 = "file://media/PhotoAlbum/";
 constexpr int SAVE_PHOTO_WAIT_MS = 300;
 constexpr int TASK_NUMBER_MAX = 5;
 
@@ -1182,12 +1183,111 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationExif(MediaLibraryCommand &
     return errCode;
 }
 
+void UpdateAlbumOnMoveAssets(const int32_t &albumId, const NotifyType &type)
+{
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(albumId) });
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(albumId) });
+    auto watch = MediaLibraryNotify::GetInstance();
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PHOTO_ALBUM_URI_PREFIX_V0, to_string(albumId)), type);
+}
+
+bool IsSystemAlbumMovement(MediaLibraryCommand &cmd)
+{
+    auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
+    int32_t oriAlbumId = MediaLibraryAssetOperations::GetAlbumIdByPredicates(whereClause, whereArgs);
+    PhotoAlbumType type;
+    PhotoAlbumSubType subType;
+    CHECK_AND_RETURN_RET_LOG(GetAlbumTypeSubTypeById(to_string(oriAlbumId), type, subType) == E_SUCCESS, false,
+        "move assets invalid album uri");
+    
+    if ((!PhotoAlbum::CheckPhotoAlbumType(type)) || (!PhotoAlbum::CheckPhotoAlbumSubType(subType))) {
+        MEDIA_ERR_LOG("album id %{private}s type:%d subtype:%d", to_string(oriAlbumId).c_str(), type, subType);
+        return false;
+    }
+
+    return type == PhotoAlbumType::SYSTEM;
+}
+
+void GetSystemMoveAssets(AbsRdbPredicates &predicates)
+{
+    const vector<string> &whereUriArgs = predicates.GetWhereArgs();
+    if (whereUriArgs.size() <= 1) {
+        MEDIA_ERR_LOG("Move vector empty when move from system album");
+        return;
+    }
+    vector<string> whereIdArgs;
+    whereIdArgs.reserve(whereUriArgs.size() - 1);
+    for (int i = 1; i < whereUriArgs.size(); ++i) {
+        whereIdArgs.push_back(whereUriArgs[i]);
+    }
+    predicates.SetWhereArgs(whereIdArgs);
+}
+
+int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
+{
+    std::set<int32_t> ownerAlbumIds;
+    vector<string> assetString;
+    auto assetVector = cmd.GetAbsRdbPredicates()->GetWhereArgs();
+    for (const auto &fileAsset : assetVector) {
+        assetString.push_back(fileAsset);
+    }
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.And()->In(PhotoColumn::MEDIA_ID, assetString);
+    vector<string> columns = { PhotoColumn::PHOTO_OWNER_ALBUM_ID };
+    auto resultSetQuery = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSetQuery == nullptr) {
+        MEDIA_ERR_LOG("album id is not exist");
+        return E_INVALID_ARGUMENTS;
+    }
+    while (resultSetQuery->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t albumId = 0;
+        albumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSetQuery);
+        ownerAlbumIds.insert(albumId);
+    }
+
+    ValueObject value;
+    int32_t targetAlbumId = 0;
+    if (!cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_OWNER_ALBUM_ID, value)) {
+        MEDIA_ERR_LOG("get owner album id fail when move from system album");
+        return E_INVALID_ARGUMENTS;
+    }
+    value.GetInt(targetAlbumId);
+
+    ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(targetAlbumId));
+    int32_t changedRows = MediaLibraryRdbStore::Update(values, predicates);
+    if (changedRows < 0) {
+        MEDIA_ERR_LOG("Update owner albun id fail when move from system album");
+        return changedRows;
+    }
+
+    for (const auto &oriAlbumId: ownerAlbumIds) {
+        MEDIA_INFO_LOG("System album move assets target album id is: %{public}s", to_string(oriAlbumId).c_str());
+        UpdateAlbumOnMoveAssets(oriAlbumId, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+    }
+    UpdateAlbumOnMoveAssets(targetAlbumId, NotifyType::NOTIFY_ALBUM_ADD_ASSET);
+    return changedRows;
+}
+
 int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &cmd)
 {
     vector<shared_ptr<FileAsset>> fileAssetVector;
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_TYPE, PhotoColumn::MEDIA_NAME };
     MediaLibraryRdbStore::ReplacePredicatesUriToId(*(cmd.GetAbsRdbPredicates()));
+
+    // Check if move from system album
+    if (IsSystemAlbumMovement(cmd)) {
+        MEDIA_INFO_LOG("Move assets from system album");
+        GetSystemMoveAssets(*(cmd.GetAbsRdbPredicates()));
+        int32_t updateSysRows = UpdateSystemRows(cmd);
+        return updateSysRows;
+    }
+
     int32_t errCode = GetFileAssetVectorFromDb(*(cmd.GetAbsRdbPredicates()),
         OperationObject::FILESYSTEM_PHOTO, fileAssetVector, columns);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
