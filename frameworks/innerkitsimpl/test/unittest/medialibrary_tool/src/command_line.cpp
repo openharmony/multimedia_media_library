@@ -49,18 +49,20 @@ const std::string SEND_CREATE_UNREMOVE_ORIGIN_FILE = "-urf";
 
 const std::string DELETE_ONLY_DATABASE = "-db";
 
-static inline void ShowUsage()
+static void ShowUsage(bool isRoot)
 {
     std::string str;
     str.append("usage:\n");
-    str.append("  send file from path to medialibrary\n");
-    str.append("    command: send path (file path or dir path)\n");
-    str.append("  receive file from medialibrary to path\n");
-    str.append("    command: recv uri path | recv all path\n");
-    str.append("  list file in medialibrary\n");
-    str.append("    command: list uri | list all\n");
-    str.append("  delete database and files in medialibrary\n");
-    str.append("    command: delete all\n");
+    if (isRoot) {
+        str.append("  send file from path to medialibrary\n");
+        str.append("    command: send path (file path or dir path)\n");
+        str.append("  receive file from medialibrary to path\n");
+        str.append("    command: recv uri path | recv all path\n");
+        str.append("  list file in medialibrary\n");
+        str.append("    command: list uri | list all\n");
+        str.append("  delete database and files in medialibrary\n");
+        str.append("    command: delete all\n");
+    }
     str.append("  query displayname in medialibrary\n");
     str.append("    command: query display_name\n");
     printf("%s", str.c_str());
@@ -281,7 +283,7 @@ static void PutExtraString(ExecEnv &env, size_t start, size_t end = 0)
 int32_t CommandLine::Parser(ExecEnv &env)
 {
     if (env.args.size() < MEDIATOOL_ARG_MIN) {
-        ShowUsage();
+        ShowUsage(env.isRoot);
         return Media::E_ERR;
     }
     std::string cmd = env.args[MEDIATOOL_ARG_CMD];
@@ -308,7 +310,7 @@ int32_t CommandLine::Parser(ExecEnv &env)
         env.optArgs.displayName = optFirst;
         env.optArgs.cmdType = OptCmdType::TYPE_QUERY;
     } else {
-        ShowUsage();
+        ShowUsage(env.isRoot);
         return Media::E_ERR;
     }
     if (!Check(env)) {
