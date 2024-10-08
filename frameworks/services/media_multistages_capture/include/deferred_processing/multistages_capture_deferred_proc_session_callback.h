@@ -43,7 +43,8 @@ public:
 private:
     EXPORT int32_t UpdatePhotoQuality(const std::string &photoId);
     EXPORT void UpdateCEAvailable(const std::string &photoId);
-    EXPORT void GetCommandByImageId(const std::string &imageId, MediaLibraryCommand &cmd, string &photoId);
+    void GetCommandByImageId(const std::string &imageId, MediaLibraryCommand &cmd, string &photoId);
+    void UpdateHighQualityPictureInfo(const std::string &imageId, bool isCloudEnhancementAvailable);
     void NotifyIfTempFile(std::shared_ptr<NativeRdb::ResultSet> resultSet);
 };
 } // namespace Media
