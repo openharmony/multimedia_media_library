@@ -99,6 +99,8 @@ public:
         std::string &filePath);
     EXPORT static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
         const bool compatible = false);
+    EXPORT static int32_t GetAlbumIdByPredicates(const std::string &whereClause,
+        const std::vector<std::string> &whereArgs);
     EXPORT static std::string GetEditDataSourcePath(const std::string &path);
 
 protected:
