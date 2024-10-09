@@ -1115,8 +1115,7 @@ bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
 {
     fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
     if (fileInfo.cloudPath.empty()) {
-        MEDIA_ERR_LOG("Get cloudPath empty, path: %{public}s",
-            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
+        MEDIA_ERR_LOG("Get cloudPath empty");
         return false;
     }
     if (IsSameFileForClone(tableName, fileInfo)) {
