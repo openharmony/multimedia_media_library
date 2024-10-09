@@ -19,6 +19,7 @@
 #include <dirent.h>
 #include <memory>
 #include <mutex>
+#include <sstream>
 
 #include "directory_ex.h"
 #include "file_asset.h"
@@ -627,7 +628,7 @@ static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &file
     }
 }
 
-static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues)
+static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, const std::string displayName)
 {
     if (!PermissionUtils::IsNativeSAApp()) {
         MEDIA_DEBUG_LOG("do not have permission to set burst_key or burst_cover_level");
@@ -650,6 +651,21 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues)
     if (burstCoverLevel != 0) {
         outValues.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, burstCoverLevel);
     }
+
+    int32_t dirty = static_cast<int32_t>(DirtyTypes::TYPE_NEW);
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_DIRTY, value)) {
+        value.GetInt(dirty);
+    }
+    if (dirty != static_cast<int32_t>(DirtyTypes::TYPE_NEW)) {
+        outValues.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
+    }
+    stringstream result;
+    for (int i = 0; i < displayName.length(); i++) {
+        if (isdigit(displayName[i])) {
+            result << displayName[i];
+        }
+    }
+    outValues.Put(PhotoColumn::PHOTO_ID, result.str());
 }
 
 static void HandleIsTemp(MediaLibraryCommand &cmd, ValuesBucket &outValues)
@@ -694,7 +710,9 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
         HandleIsTemp(cmd, assetInfo);
-        HandleBurstPhoto(cmd, assetInfo);
+        if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
+            HandleBurstPhoto(cmd, assetInfo, displayName);
+        }
     }
 
     HandleCallingPackage(cmd, fileAsset, assetInfo);
@@ -1558,7 +1576,7 @@ int32_t MediaLibraryAssetOperations::SendModifyUserCommentNotify(MediaLibraryCom
     return E_OK;
 }
 
-static int32_t GetAlbumIdByPredicates(const string &whereClause, const vector<string> &whereArgs)
+int32_t MediaLibraryAssetOperations::GetAlbumIdByPredicates(const string &whereClause, const vector<string> &whereArgs)
 {
     size_t pos = whereClause.find(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
     if (pos == string::npos) {
@@ -1941,6 +1959,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_FIRST_VISIT_TIME, { IsInt64 } },
     { PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, { IsInt32 } },
     { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, { IsInt32 } },
+    { PhotoColumn::SUPPORT_WATERMARK_TYPE, { IsInt32 } },
     { PhotoColumn::PHOTO_COVER_POSITION, { IsInt64 } },
     { PhotoColumn::PHOTO_IS_TEMP, { IsBool } },
     { PhotoColumn::PHOTO_DIRTY, { IsInt32 } },

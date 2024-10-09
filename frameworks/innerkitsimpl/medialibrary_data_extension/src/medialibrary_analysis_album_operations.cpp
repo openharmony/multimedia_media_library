@@ -58,6 +58,10 @@ constexpr int32_t QUERY_GROUP_PHOTO_ALBUM_RELATED_TO_ME = 1;
 const string GROUP_PHOTO_TAG = "group_photo_tag";
 const string GROUP_PHOTO_IS_ME = "group_photo_is_me";
 const string GROUP_PHOTO_ALBUM_NAME = "album_name";
+const string GROUP_MERGE_SQL_PRE = "SELECT " + ALBUM_ID + ", " + COVER_URI + ", " + IS_COVER_SATISFIED + ", "
+    + TAG_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_SUBTYPE + " = " + to_string(GROUP_PHOTO) +
+    " AND (INSTR(" + TAG_ID + ", '";
+
 static std::mutex updateGroupPhotoAlbumMutex;
 
 static int32_t ExecSqls(const vector<string> &sqls, const shared_ptr<MediaLibraryUnistore> &store)
@@ -650,14 +654,17 @@ int32_t GetMergeAlbumInfo(shared_ptr<ResultSet> resultSet, MergeAlbumInfo &info)
 
 int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo)
 {
+    if (mergeAlbumInfo.size() <= 1) {
+        MEDIA_ERR_LOG("mergeAlbumInfo size is not enough.");
+        return E_INVALID_VALUES;
+    }
+
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("UniStore is nullptr! Query album order failed.");
         return E_DB_FAIL;
     }
-    string queryTagId = "SELECT " + ALBUM_ID + ", " + COVER_URI + ", " + IS_COVER_SATISFIED + ", " + TAG_ID +
-        " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_SUBTYPE + " = " + to_string(GROUP_PHOTO) +
-        " AND (INSTR(" + TAG_ID + ", '" + mergeAlbumInfo[0].groupTag + "') > 0 OR INSTR(" + TAG_ID + ", '" +
+    string queryTagId = GROUP_MERGE_SQL_PRE + mergeAlbumInfo[0].groupTag + "') > 0 OR INSTR(" + TAG_ID + ", '" +
         mergeAlbumInfo[1].groupTag + "') > 0)";
     auto resultSet = uniStore->QuerySql(queryTagId);
     if (resultSet == nullptr) {

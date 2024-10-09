@@ -912,7 +912,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_create_cloud_enh
     ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
 
     int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
-    EXPECT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
+    EXPECT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
 
     MEDIA_INFO_LOG("enhancement_callback_create_cloud_enhancement_photo_003 End");
 }

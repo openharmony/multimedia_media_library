@@ -315,6 +315,7 @@ private:
     EXPORT static napi_value CreateHighlightAlbumInfoTypeEnum(napi_env env);
     EXPORT static napi_value CreateHighlightUserActionTypeEnum(napi_env env);
     EXPORT static napi_value CreateMovingPhotoEffectModeEnum(napi_env env);
+    EXPORT static napi_value CreateSupportWatermarkTypeEnum(napi_env env);
     EXPORT static napi_value CreateImageFileTypeEnum(napi_env env);
     EXPORT static napi_value CreateCloudEnhancementTaskStageEnum(napi_env env);
     EXPORT static napi_value CreateCloudEnhancementStateEnum(napi_env env);
@@ -375,6 +376,7 @@ private:
     static thread_local napi_ref sCloudEnhancementTaskStageEnumRef_;
     static thread_local napi_ref sCloudEnhancementStateEnumRef_;
     static thread_local napi_ref sAuthorizationModeEnumRef_;
+    static thread_local napi_ref sSupportWatermarkTypeEnumRef_;
 
     static std::mutex sOnOffMutex_;
 };

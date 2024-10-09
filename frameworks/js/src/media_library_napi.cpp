@@ -191,6 +191,7 @@ thread_local napi_ref MediaLibraryNapi::sMovingPhotoEffectModeEnumRef_ = nullptr
 thread_local napi_ref MediaLibraryNapi::sImageFileTypeEnumEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sCloudEnhancementTaskStageEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sCloudEnhancementStateEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sSupportWatermarkTypeEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -377,6 +378,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("CloudEnhancementTaskStage", CreateCloudEnhancementTaskStageEnum(env)),
         DECLARE_NAPI_PROPERTY("CloudEnhancementState", CreateCloudEnhancementStateEnum(env)),
         DECLARE_NAPI_PROPERTY("AuthorizationMode", CreateAuthorizationModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("WatermarkType", CreateSupportWatermarkTypeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -760,8 +762,8 @@ static napi_value CreateNumberEnumProperty(napi_env env, vector<string> properti
 {
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_object(env, &result));
-    for (int32_t i = 0; i < properties.size(); i++) {
-        NAPI_CALL(env, AddIntegerNamedProperty(env, result, properties[i], i + offset));
+    for (size_t i = 0; i < properties.size(); i++) {
+        NAPI_CALL(env, AddIntegerNamedProperty(env, result, properties[i], static_cast<int32_t>(i) + offset));
     }
     NAPI_CALL(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &ref));
     return result;
@@ -1060,6 +1062,16 @@ static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
     context->selectionArgs.emplace_back(to_string(MEDIA_TYPE_ALBUM));
 }
 
+static void LogMedialibraryAPI(const string& saveUri)
+{
+    string logMedialibraryAPI = MEDIALIBRARY_DATA_URI + "/" + MISC_OPERATION + "/" + "log_medialibrary_api";
+    Uri logUri(logMedialibraryAPI);
+    DataShare::DataShareValuesBucket valuesBucket;
+    string result;
+    valuesBucket.Put("saveUri", saveUri);
+    UserFileClient::InsertExt(logUri, valuesBucket, result);
+}
+
 static void GetFileAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -1080,6 +1092,8 @@ static void GetFileAssetsExecute(napi_env env, void *data)
     context->predicates.SetWhereClause(context->selection);
     context->predicates.SetWhereArgs(context->selectionArgs);
     context->predicates.SetOrder(context->order);
+
+    LogMedialibraryAPI("");
 
     string queryUri = MEDIALIBRARY_DATA_URI;
     if (!context->networkId.empty()) {
@@ -2148,6 +2162,7 @@ static void JSCreateAssetExecute(napi_env env, void *data)
 #else
             getFileAssetById(index, "", context);
 #endif
+            LogMedialibraryAPI(context->fileAsset->GetUri());
         }
     }
 }
@@ -2530,6 +2545,7 @@ static napi_value GetSharedPhotoAssets(const napi_env& env, vector<string>& file
             return nullptr;
         }
     } while (result->GoToNextRow() == E_OK);
+    result->Close();
     return value;
 }
 
@@ -2567,6 +2583,7 @@ static napi_value GetSharedAlbumAssets(const napi_env& env, vector<string>& albu
             return nullptr;
         }
     } while (result->GoToNextRow() == E_OK);
+    result->Close();
     return value;
 }
 
@@ -4363,10 +4380,7 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
     }
     context->error = JS_E_RELATIVEPATH;
     int32_t srcFd = open(realPath.c_str(), O_RDWR);
-    if (srcFd == -1) {
-        NAPI_ERR_LOG("src path open fail, %{public}d", errno);
-        return;
-    }
+    CHECK_IF_EQUAL(srcFd != -1, "src path open fail, %{public}d", errno);
     struct stat statSrc;
     if (fstat(srcFd, &statSrc) == -1) {
         close(srcFd);
@@ -4383,6 +4397,7 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
         return;
     }
     SetFileAssetByIdV9(index, "", context);
+    LogMedialibraryAPI(context->fileAsset->GetUri());
     CHECK_NULL_PTR_RETURN_VOID(context->fileAsset, "JSGetStoreMediaAssetExecute: context->fileAsset is nullptr");
     Uri openFileUri(context->fileAsset->GetUri());
     int32_t destFd = UserFileClient::OpenFile(openFileUri, MEDIA_FILEMODE_READWRITE);
@@ -6140,7 +6155,6 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
     }
     context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
-    resultSet->Close();
 }
 
 static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyncContext& asyncContext)
@@ -6182,7 +6196,6 @@ static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyn
             break;
         }
     }
-    resultSet->Close();
     return (i == len) ? jsFileArray : nullptr;
 }
 
@@ -6230,7 +6243,6 @@ static napi_value PhotoAccessGetFileAssetsExecuteSync(napi_env env, MediaLibrary
         napi_value item = MediaLibraryNapiUtils::GetNextRowObject(env, resultSet);
         napi_set_element(env, jsFileArray, count++, item);
     }
-    resultSet->Close();
     return jsFileArray;
 }
 
@@ -6693,6 +6705,11 @@ napi_value MediaLibraryNapi::CreateMovingPhotoEffectModeEnum(napi_env env)
     CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sMovingPhotoEffectModeEnumRef_),
         JS_INNER_FAIL);
     return result;
+}
+
+napi_value MediaLibraryNapi::CreateSupportWatermarkTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, watermarkTypeEnum, sSupportWatermarkTypeEnumRef_);
 }
 
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,

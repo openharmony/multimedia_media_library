@@ -147,7 +147,7 @@ static int32_t WriteContentTofile(const UniqueFd& destFd, const UniqueFd& srcFd)
 static int32_t AddStringToFile(const UniqueFd& destFd, const string& temp)
 {
     ssize_t ret = write(destFd.Get(), temp.c_str(), temp.size());
-    if (ret < 0 || ret != temp.size()) {
+    if (ret < 0 || static_cast<size_t>(ret) != temp.size()) {
         MEDIA_ERR_LOG("failed to write file, errno: %{public}d, ret: %{public}" PRId64, errno,
             static_cast<int64_t>(ret));
         return E_ERR;
@@ -162,7 +162,7 @@ static string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off
         MEDIA_ERR_LOG("failed to lseek extra file errno: %{public}d", errno);
         return "";
     }
-    char* buffer = new char[needSize + 1];
+    char* buffer = new (std::nothrow) char[needSize + 1];
     if (buffer == nullptr) {
         MEDIA_ERR_LOG("failed to allocate buffer");
         return "";
@@ -315,6 +315,8 @@ static int32_t MergeFile(const UniqueFd& imageFd, const UniqueFd& videoFd, const
 
 uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetFrameIndex");
     uint32_t index{0};
     if (fd < 0) {
         MEDIA_ERR_LOG("file is error");
@@ -333,6 +335,7 @@ uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
         MEDIA_ERR_LOG("failed to get frame index");
         return index;
     }
+    tracer.Finish();
     return index;
 }
 
@@ -350,12 +353,18 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         livePhotoPath = cachePath;
         return E_OK;
     }
-    UniqueFd imageFd(open(imagePath.c_str(), O_RDONLY));
+    string absImagePath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(imagePath, absImagePath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", imagePath.c_str(), errno);
+    UniqueFd imageFd(open(absImagePath.c_str(), O_RDONLY));
     if (imageFd.Get() == E_ERR) {
         MEDIA_ERR_LOG("failed to open image file");
         return E_ERR;
     }
-    UniqueFd videoFd(open(videoPath.c_str(), O_RDONLY));
+    string absVideoPath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(videoPath, absVideoPath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", videoPath.c_str(), errno);
+    UniqueFd videoFd(open(absVideoPath.c_str(), O_RDONLY));
     if (videoFd.Get() == E_ERR) {
         MEDIA_ERR_LOG("failed to open video file");
         return E_ERR;
@@ -364,7 +373,10 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         MEDIA_ERR_LOG("Failed to create file, path:%{private}s", cachePath.c_str());
         return E_ERR;
     }
-    UniqueFd livePhotoFd(open(cachePath.c_str(), O_WRONLY | O_TRUNC));
+    string absCachePath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(cachePath, absCachePath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", cachePath.c_str(), errno);
+    UniqueFd livePhotoFd(open(absCachePath.c_str(), O_WRONLY | O_TRUNC));
     if (livePhotoFd.Get() == E_ERR) {
         MEDIA_ERR_LOG("failed to open live photo file");
         return E_ERR;
@@ -373,7 +385,7 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         MEDIA_ERR_LOG("failed to MergeFile file");
         return E_ERR;
     }
-    livePhotoPath = cachePath;
+    livePhotoPath = absCachePath;
     return E_OK;
 }
 
@@ -395,24 +407,32 @@ int32_t MovingPhotoFileUtils::ConvertToSourceLivePhoto(const string& movingPhoto
         MEDIA_INFO_LOG("source live photo exists: %{private}s", sourceCachePath.c_str());
         return E_OK;
     }
-
-    UniqueFd imageFd(open(sourceImagePath.c_str(), O_RDONLY));
+    string absSourceImagePath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(sourceImagePath, absSourceImagePath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", sourceImagePath.c_str(), errno);
+    UniqueFd imageFd(open(absSourceImagePath.c_str(), O_RDONLY));
     CHECK_AND_RETURN_RET_LOG(imageFd.Get() >= 0, E_HAS_FS_ERROR,
         "Failed to open source image:%{private}s, errno:%{public}d", sourceImagePath.c_str(), errno);
-    UniqueFd videoFd(open(sourceVideoPath.c_str(), O_RDONLY));
+    string absSourceVideoPath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(sourceVideoPath, absSourceVideoPath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", sourceVideoPath.c_str(), errno);
+    UniqueFd videoFd(open(absSourceVideoPath.c_str(), O_RDONLY));
     CHECK_AND_RETURN_RET_LOG(videoFd.Get() >= 0, E_HAS_FS_ERROR,
         "Failed to open source video:%{private}s, errno:%{public}d", sourceVideoPath.c_str(), errno);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateAsset(sourceCachePath) == E_OK, E_HAS_FS_ERROR,
         "Failed to create source live photo:%{private}s, errno:%{public}d", sourceCachePath.c_str(), errno);
-    UniqueFd livePhotoFd(open(sourceCachePath.c_str(), O_WRONLY | O_TRUNC));
+    string absSourceCachePath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(sourceCachePath, absSourceCachePath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", sourceCachePath.c_str(), errno);
+    UniqueFd livePhotoFd(open(absSourceCachePath.c_str(), O_WRONLY | O_TRUNC));
     CHECK_AND_RETURN_RET_LOG(livePhotoFd.Get() >= 0, E_HAS_FS_ERROR,
-        "Failed to open source live photo:%{private}s, errno:%{public}d", sourceCachePath.c_str(), errno);
+        "Failed to open source live photo:%{private}s, errno:%{public}d", absSourceCachePath.c_str(), errno);
 
     if (MergeFile(imageFd, videoFd, livePhotoFd, extraDataPath, 0) != E_OK) {
         MEDIA_ERR_LOG("Failed to merge file of sourve live photo");
         return E_ERR;
     }
-    sourceLivePhotoPath = sourceCachePath;
+    sourceLivePhotoPath = absSourceCachePath;
     return E_OK;
 }
 
@@ -446,6 +466,32 @@ bool MovingPhotoFileUtils::IsLivePhoto(const string& path)
         }
     }
     return true;
+}
+
+int32_t MovingPhotoFileUtils::GetLivePhotoSize(int32_t fd, int64_t &liveSize)
+{
+    if (fd < 0) {
+        MEDIA_ERR_LOG("invalid live photo fd");
+        return E_ERR;
+    }
+    if (lseek(fd, -LIVE_TAG_LEN, SEEK_END) == E_ERR) {
+        MEDIA_ERR_LOG("failed to lseek file, errno: %{public}d", errno);
+        return E_ERR;
+    }
+    char buffer[LIVE_TAG_LEN + 1];
+    ssize_t bytesRead = read(fd, buffer, LIVE_TAG_LEN);
+    if (bytesRead == E_ERR) {
+        MEDIA_ERR_LOG("failed to read file, errno: %{public}d", errno);
+        return E_ERR;
+    }
+    buffer[bytesRead] = '\0';
+    for (size_t i = 0; i < LIVE_TAG.size(); i++) {
+        if (LIVE_TAG[i] != buffer[i]) {
+            return E_ERR;
+        }
+    }
+    liveSize = atoi(buffer + LIVE_TAG.length());
+    return E_OK;
 }
 
 static int32_t SendLivePhoto(const UniqueFd &livePhotoFd, const string &destPath, int64_t sizeToSend, off_t &offset)

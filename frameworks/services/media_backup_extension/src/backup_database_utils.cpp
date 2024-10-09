@@ -774,6 +774,10 @@ bool BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(const std::vector<std::st
 
 void BackupDatabaseUtils::ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql)
 {
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return;
+    }
     int ret = rdbStore->ExecuteSql(sql);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to execute SQL: %{public}s", sql.c_str());

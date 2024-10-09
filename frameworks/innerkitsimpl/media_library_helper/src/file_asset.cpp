@@ -517,6 +517,16 @@ void FileAsset::SetMovingPhotoEffectMode(int32_t effectMode)
     member_[PhotoColumn::MOVING_PHOTO_EFFECT_MODE] = effectMode;
 }
 
+int32_t FileAsset::GetSupportWatermarkType() const
+{
+    return GetInt32Member(PhotoColumn::SUPPORT_WATERMARK_TYPE);
+}
+
+void FileAsset::SetSupportWatermarkType(int32_t watermarkType)
+{
+    member_[PhotoColumn::SUPPORT_WATERMARK_TYPE] = watermarkType;
+}
+
 int64_t FileAsset::GetCoverPosition() const
 {
     return GetInt64Member(PhotoColumn::PHOTO_COVER_POSITION);

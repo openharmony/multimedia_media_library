@@ -71,6 +71,7 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_SUBTYPE, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, MEMBER_TYPE_INT32 },
     { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::SUPPORT_WATERMARK_TYPE, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_COVER_POSITION, MEMBER_TYPE_INT64 },
     { PhotoColumn::PHOTO_CE_AVAILABLE, MEMBER_TYPE_INT32 },
     { AudioColumn::AUDIO_ALBUM, MEMBER_TYPE_STRING },
@@ -78,7 +79,8 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_OWNER_ALBUM_ID, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_BURST_KEY, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_BURST_COVER_LEVEL, MEMBER_TYPE_INT32 },
-    { PhotoColumn::PHOTO_THUMBNAIL_READY, MEMBER_TYPE_INT64 }
+    { PhotoColumn::PHOTO_THUMBNAIL_READY, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_POSITION, MEMBER_TYPE_INT32 },
 };
 
 class MediaLibraryAssetOperations {
@@ -97,6 +99,8 @@ public:
         std::string &filePath);
     EXPORT static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
         const bool compatible = false);
+    EXPORT static int32_t GetAlbumIdByPredicates(const std::string &whereClause,
+        const std::vector<std::string> &whereArgs);
     EXPORT static std::string GetEditDataSourcePath(const std::string &path);
 
 protected:

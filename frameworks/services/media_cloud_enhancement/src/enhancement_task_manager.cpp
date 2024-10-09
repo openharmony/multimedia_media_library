@@ -71,5 +71,22 @@ string EnhancementTaskManager::QueryPhotoIdByFileId(int32_t fileId)
     }
     return "";
 }
+
+void EnhancementTaskManager::SetTaskRequestCount(const string &photoId, int32_t count)
+{
+    unique_lock<mutex> lock(mutex_);
+    if (taskInProcess_.find(photoId) != taskInProcess_.end()) {
+        taskInProcess_[photoId]->requestCount = count;
+    }
+}
+
+int32_t EnhancementTaskManager::GetTaskRequestCount(const string &photoId)
+{
+    unique_lock<mutex> lock(mutex_);
+    if (taskInProcess_.find(photoId) != taskInProcess_.end()) {
+        return taskInProcess_[photoId]->requestCount;
+    }
+    return -1;
+}
 } // Media
 } // OHOS

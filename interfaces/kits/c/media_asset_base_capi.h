@@ -26,7 +26,7 @@
  */
 
 /**
- * @file media_asset_manager.h
+ * @file media_asset_base_capi.h
  *
  * @brief Defines the structure and enumeration for Media Asset Manager.
  *

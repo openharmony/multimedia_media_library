@@ -36,25 +36,8 @@
 namespace OHOS {
 namespace Media {
 namespace MediaTool {
-constexpr int32_t SHELL_UID = 2000;
-static int32_t InitPermission()
-{
-    std::vector<std::string> perms;
-    perms.emplace_back("ohos.permission.READ_AUDIO");
-    perms.emplace_back("ohos.permission.WRITE_AUDIO");
-    perms.emplace_back("ohos.permission.READ_IMAGEVIDEO");
-    perms.emplace_back("ohos.permission.WRITE_IMAGEVIDEO");
-    perms.emplace_back("ohos.permission.MEDIA_LOCATION");
-    perms.emplace_back("ohos.permission.FILE_ACCESS_MANAGER");
-    perms.emplace_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
-    uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaTool", perms, tokenId);
-    if (tokenId == 0) {
-        printf("%s set access token permisson failed.\n", STR_FAIL.c_str());
-        return Media::E_ERR;
-    }
-    return Media::E_OK;
-}
+
+constexpr int32_t ROOT_UID = 0;
 
 static void Finish()
 {
@@ -68,7 +51,8 @@ static int32_t Init(ExecEnv &env, const std::vector<std::string> &args)
     getcwd(buffer.data(), PATH_MAX);
     env.workPath.append(buffer.data());
     env.workPath = IncludeTrailingPathDelimiter(env.workPath);
-    return getuid() == SHELL_UID ? Media::E_OK : InitPermission();
+    env.isRoot = getuid() == ROOT_UID;
+    return Media::E_OK;
 }
 
 int32_t ControlMain::Main(const std::vector<std::string> &args)
@@ -97,7 +81,8 @@ int32_t ControlMain::Main(const std::vector<std::string> &args)
             MEDIA_ERR_LOG("Create command failed, res: %{public}d", res);
             break;
         }
-        MEDIA_INFO_LOG("Mediatool main, env:{%{private}s}", env.ToStr().c_str());
+        MEDIA_INFO_LOG("Mediatool command prepare done, start to execute env:{%{public}s}",
+            env.ToStr().c_str());
         res = cmd->Start(env);
         if (res != Media::E_OK) {
             MEDIA_ERR_LOG("Mediatool main error, res: %{public}d", res);

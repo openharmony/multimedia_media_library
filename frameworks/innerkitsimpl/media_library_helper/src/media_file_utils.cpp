@@ -55,7 +55,7 @@ static const mode_t CHOWN_RO_USR_GRP = 0644;
 constexpr size_t DISPLAYNAME_MAX = 255;
 const int32_t OPEN_FDS = 64;
 const std::string PATH_PARA = "path=";
-constexpr size_t EMPTY_DIR_ENTRY_COUNT = 2;  // Empty dir has 2 entry: . and ..
+constexpr unsigned short MAX_RECURSION_DEPTH = 4;
 constexpr size_t DEFAULT_TIME_SIZE = 32;
 const int32_t HMFS_MONITOR_FL = 2;
 const std::string LISTENING_BASE_PATH = "/storage/media/local/files/";
@@ -287,16 +287,18 @@ bool MediaFileUtils::IsDirEmpty(const string &path)
             path.c_str(), errno);
         return false;
     }
-    size_t entCount = 0;
-    while (readdir(dir) != nullptr) {
-        if (++entCount > EMPTY_DIR_ENTRY_COUNT) {
+    bool ret = true;
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            ret = false;
             break;
         }
     }
     if (closedir(dir) < 0) {
         MEDIA_ERR_LOG("Fail to closedir: %{private}s, errno: %{public}d.", path.c_str(), errno);
     }
-    return entCount <= EMPTY_DIR_ENTRY_COUNT;
+    return ret;
 }
 
 string MediaFileUtils::GetFileName(const string &filePath)
@@ -377,6 +379,85 @@ bool MediaFileUtils::DeleteDir(const string &dirName)
     return errRet;
 }
 
+bool MediaFileUtils::CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile)
+{
+    if (IsFileExists(destFile)) {
+        MEDIA_INFO_LOG("destFile:%{private}s already exists", destFile.c_str());
+        if (!DeleteFile(destFile)) {
+            MEDIA_ERR_LOG("delete destFile:%{private}s error", destFile.c_str());
+        }
+    }
+    if (!CreateFile(destFile)) {
+        MEDIA_ERR_LOG("create destFile:%{private}s failed", destFile.c_str());
+        return false;
+    }
+    if (CopyFileUtil(srcFile, destFile)) {
+        if (!DeleteFile(srcFile)) {
+            MEDIA_ERR_LOG("delete srcFile:%{private}s failed", srcFile.c_str());
+        }
+        return true;
+    } else {
+        bool delDestFileRet = DeleteFile(destFile);
+        MEDIA_ERR_LOG("copy srcFile:%{private}s failed,delDestFileRet:%{public}d", srcFile.c_str(), delDestFileRet);
+        return false;
+    }
+}
+
+/**
+ * @brief Copy the contents of srcPath to destPath, delete the successfully copied files and directories.
+ *
+ * @param srcPath must be a directory.
+ * @param destPath must be a directory.
+ * @param curRecursionDepth current recursion depth. The maximum value is {@code MAX_RECURSION_DEPTH}.
+ * @return true: all contents of {@code srcPath} are successfully copied to {@code destPath}.
+ *         false: as long as there is one item of {@code srcPath} is not successfully copied to {@code destPath}.
+ */
+bool MediaFileUtils::CopyDirAndDelSrc(const std::string &srcPath, const std::string &destPath,
+    unsigned short curRecursionDepth)
+{
+    if (curRecursionDepth > MAX_RECURSION_DEPTH) {
+        MEDIA_ERR_LOG("curRecursionDepth:%{public}d>MAX_RECURSION_DEPTH", curRecursionDepth);
+        return false;
+    }
+    ++curRecursionDepth;
+    bool ret = true;
+    DIR* srcDir = opendir(srcPath.c_str());
+    if (srcDir == nullptr) {
+        MEDIA_ERR_LOG("open srcDir:%{private}s failed,errno:%{public}d", srcPath.c_str(), errno);
+        return false;
+    }
+    if (!IsFileExists(destPath)) {
+        if (!CreateDirectory(destPath)) {
+            MEDIA_ERR_LOG("create destPath:%{private}s failed", srcPath.c_str());
+            closedir(srcDir);
+            return false;
+        }
+    }
+    struct dirent* entry;
+    while ((entry = readdir(srcDir))!= nullptr) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        string srcSubPath = srcPath + SLASH_STR + (entry->d_name);
+        string destSubPath = destPath + SLASH_STR + (entry->d_name);
+        if (entry->d_type == DT_DIR) {
+            ret = CopyDirAndDelSrc(srcSubPath, destSubPath, curRecursionDepth) && ret;
+            continue;
+        }
+        if (entry->d_type == DT_REG) {
+            ret = CopyFileAndDelSrc(srcSubPath, destSubPath) && ret;
+        } else {
+            MEDIA_ERR_LOG("unknown file type,srcSubPath:%{private}s", srcSubPath.c_str());
+            ret = false;
+        }
+    }
+
+    closedir(srcDir);
+    MEDIA_INFO_LOG("srcPath:%{private}s,destPath:%{private}s,coypPathAndDelSrcRet:%{public}d",
+        srcPath.c_str(), destPath.c_str(), ret);
+    return ret;
+}
+
 void MediaFileUtils::BackupPhotoDir()
 {
     string dirPath = ROOT_MEDIA_DIR + PHOTO_BUCKET;
@@ -385,7 +466,7 @@ void MediaFileUtils::BackupPhotoDir()
         MEDIA_INFO_LOG("backup for: %{private}s", dirPath.c_str());
         string suffixName = dirPath.substr(ROOT_MEDIA_DIR.length());
         CreateDirectory(ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR);
-        MoveFile(dirPath, ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR + SLASH_STR + suffixName);
+        CopyDirAndDelSrc(dirPath, ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR + SLASH_STR + suffixName);
     }
 }
 
@@ -412,7 +493,7 @@ void MediaFileUtils::RecoverMediaTempDir()
                 return;
             }
             string suffixName = fullPath.substr((recoverPath).length());
-            MoveFile(fullPath, ROOT_MEDIA_DIR + PHOTO_BUCKET + SLASH_STR + suffixName);
+            CopyDirAndDelSrc(fullPath, ROOT_MEDIA_DIR + PHOTO_BUCKET + suffixName);
         }
         DeleteDir(ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR);
         closedir(dir);
@@ -1499,6 +1580,20 @@ string MediaFileUtils::GetUriByExtrConditions(const string &prefix, const string
     return prefix + fileId + suffix;
 }
 
+std::string MediaFileUtils::GetUriWithoutDisplayname(const string &uri)
+{
+    if (uri.empty()) {
+        return uri;
+    }
+
+    auto index = uri.rfind("/");
+    if (index == string::npos) {
+        return uri;
+    }
+
+    return uri.substr(0, index);
+}
+
 string MediaFileUtils::Encode(const string &uri)
 {
     const unordered_set<char> uriCompentsSet = {
@@ -1669,6 +1764,12 @@ bool MediaFileUtils::CheckMovingPhotoEffectMode(int32_t effectMode)
     return (effectMode >= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START) &&
         effectMode <= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_END)) ||
         effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY);
+}
+
+bool MediaFileUtils::CheckSupportWatermarkType(int32_t watermarkType)
+{
+    return watermarkType >= static_cast<int32_t>(WatermarkType::BRAND_COMMON) &&
+        watermarkType <= static_cast<int32_t>(WatermarkType::BRAND);
 }
 
 bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)

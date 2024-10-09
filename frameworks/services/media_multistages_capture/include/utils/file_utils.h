@@ -28,7 +28,7 @@ public:
     ~FileUtils();
     EXPORT static int32_t SaveImage(const std::string &filePath, void *output, size_t writeSize);
     EXPORT static int32_t SavePicture(const std::string &imageId,
-        std::shared_ptr<Media::Picture> &picture, bool isEdited = false);
+        std::shared_ptr<Media::Picture> &picture, bool isEdited, bool isLowQualityPicure = false);
     EXPORT static int32_t SavePicture(const std::string &path, std::shared_ptr<Media::Picture> &picture,
         const std::string &mime_type, bool isEdited = false);
     EXPORT static int DealPicture(const std::string &mime_type, const std::string &path,

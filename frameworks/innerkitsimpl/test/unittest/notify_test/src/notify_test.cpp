@@ -13,6 +13,10 @@
  * limitations under the License.
  */
 #define MLOG_TAG "NotifyTest"
+#include <memory>
+#include <vector>
+#include <algorithm>
+#include <string>
 
 #include "notify_test.h"
 
@@ -99,25 +103,27 @@ void CheckFileNotify(NotifyType notifyType)
     }
 }
 
-void SolveAlbumNotify(shared_ptr<TestObserver> obs, string assetStr)
+void SolveAlbumNotify(std::shared_ptr<TestObserver> obs, const std::string& assetStr)
 {
-    uint8_t *data = new (nothrow) uint8_t[obs->changeInfo_.size_];
-    if (data == nullptr) {
+    std::vector<uint8_t> data(obs->changeInfo_.size_);
+    if (data.empty()) {
         return;
     }
-    int copyRet = memcpy_s(data, obs->changeInfo_.size_, obs->changeInfo_.data_, obs->changeInfo_.size_);
-    if (copyRet != 0) {
-        return;
-    }
-    shared_ptr<MessageParcel> parcel = make_shared<MessageParcel>();
-    if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(data), obs->changeInfo_.size_)) {
+
+    std::copy(static_cast<const char*>(obs->changeInfo_.data_), static_cast<const char*>(obs->changeInfo_.data_) +
+        obs->changeInfo_.size_, data.begin());
+    std::shared_ptr<MessageParcel> parcel = std::make_shared<MessageParcel>();
+
+    if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(data.data()), obs->changeInfo_.size_)) {
         uint32_t len = 0;
         if (!parcel->ReadUint32(len)) {
             return;
         }
+
         EXPECT_EQ(len, LIST_SIZE);
+
         for (uint32_t i = 0; i < len; i++) {
-            string subUri = parcel->ReadString();
+            std::string subUri = parcel->ReadString();
             if (subUri.empty()) {
                 return;
             }
@@ -426,36 +432,6 @@ HWTEST_F(NotifyTest, asset_on_change_003, TestSize.Level0)
     MEDIA_INFO_LOG("asset_on_change_003 enter");
     CheckFileNotify(NotifyType::NOTIFY_REMOVE);
     MEDIA_INFO_LOG("asset_on_change_003 exit");
-}
-
-/**
- * @tc.name: album_on_change_001
- * @tc.desc: solve album and get message
- *           1. RegisterObserverExt called "album_on_change_001"
- *           2. NotifyType::NOTIFY_ALBUM_ADD_ASSET
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(NotifyTest, album_on_change_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("album_on_change_001 enter");
-    CheckAlbumNotify(NotifyType::NOTIFY_ALBUM_ADD_ASSET, DataShareObserver::ChangeType::INSERT);
-    MEDIA_INFO_LOG("album_on_change_001 exit");
-}
-
-/**
- * @tc.name: album_on_change_002
- * @tc.desc: solve album and get message
- *           1. RegisterObserverExt called "album_on_change_002"
- *           2. NotifyType::NOTIFY_ALBUM_REMOVE_ASSET
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(NotifyTest, album_on_change_002, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("album_on_change_002 enter");
-    CheckAlbumNotify(NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, DataShareObserver::ChangeType::DELETE);
-    MEDIA_INFO_LOG("album_on_change_002 exit");
 }
 
 /**

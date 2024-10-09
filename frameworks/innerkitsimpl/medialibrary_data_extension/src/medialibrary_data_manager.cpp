@@ -33,10 +33,13 @@
 #include "device_manager_callback.h"
 #endif
 #include "dfx_manager.h"
+#include "dfx_reporter.h"
 #include "dfx_utils.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
+#include "location_column.h"
+#include "media_analysis_helper.h"
 #include "media_column.h"
 #include "media_datashare_ext_ability.h"
 #include "media_directory_type_column.h"
@@ -227,6 +230,28 @@ void MediaLibraryDataManager::HandleOtherInitOperations()
     UriSensitiveOperations::DeleteAllSensitiveAsync();
 }
 
+static int32_t ExcuteAsyncWork()
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return E_ERR;
+    }
+    AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskData");
+        return E_ERR;
+    }
+    taskData->dataDisplay = E_POLICY;
+    shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, taskData);
+    if (makeRootDirTask != nullptr) {
+        asyncWorker->AddTask(makeRootDirTask, true);
+    } else {
+        MEDIA_WARN_LOG("Can not init make root dir task");
+    }
+    return E_OK;
+}
+
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
     const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode)
@@ -253,31 +278,15 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     errCode = InitDeviceData();
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitDeviceData");
 #endif
-
     MimeTypeUtils::InitMimeTypeMap();
     errCode = MakeDirQuerySetMap(dirQuerySetMap_);
     CHECK_AND_WARN_LOG(errCode == E_OK, "failed at MakeDirQuerySetMap");
-
     InitACLPermission();
     InitDatabaseACLPermission();
-
-    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Can not get asyncWorker");
-        return E_ERR;
-    }
-    AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
-    taskData->dataDisplay = E_POLICY;
-    shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, taskData);
-    if (makeRootDirTask != nullptr) {
-        asyncWorker->AddTask(makeRootDirTask, true);
-    } else {
-        MEDIA_WARN_LOG("Can not init make root dir task");
-    }
-
+    errCode = ExcuteAsyncWork();
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at ExcuteAsyncWork");
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
-
     HandleOtherInitOperations();
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
@@ -335,6 +344,10 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync()
             MediaLibraryAudioOperations::MoveToMusic();
             MediaLibraryRdbStore::ClearAudios(*rawStore);
             rdbStore->SetOldVersion(VERSION_MOVE_AUDIOS);
+        }
+        if (oldVersion < VERSION_UPDATE_INDEX_FOR_COVER) {
+            MediaLibraryRdbStore::UpdateIndexForCover(*rawStore);
+            rdbStore->SetOldVersion(VERSION_UPDATE_INDEX_FOR_COVER);
         }
 
         rdbStore->SetOldVersion(MEDIA_RDB_VERSION);
@@ -612,19 +625,31 @@ int32_t MediaLibraryDataManager::SolveInsertCmdSub(MediaLibraryCommand &cmd)
 
 static int32_t LogMovingPhoto(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue)
 {
-    bool inValid = false;
-    bool adapted = bool(dataShareValue.Get("adapted", inValid));
-    if (!inValid) {
+    bool isValid = false;
+    bool adapted = bool(dataShareValue.Get("adapted", isValid));
+    if (!isValid) {
         MEDIA_ERR_LOG("Invalid adapted value");
+        return E_ERR;
     }
     string packageName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-    if (!inValid) {
-        MEDIA_ERR_LOG("Invalid package name");
-    } else if (packageName.empty()) {
+    if (packageName.empty()) {
         MEDIA_WARN_LOG("Package name is empty, adapted: %{public}d", static_cast<int>(adapted));
     }
     DfxManager::GetInstance()->HandleAdaptationToMovingPhoto(packageName, adapted);
     return E_OK;
+}
+
+static int32_t LogMedialibraryAPI(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue)
+{
+    string packageName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    bool isValid = false;
+    string saveUri = string(dataShareValue.Get("saveUri", isValid));
+    CHECK_AND_RETURN_RET_LOG(isValid, E_FAIL, "Invalid saveUri value");
+    int32_t ret = DfxReporter::ReportMedialibraryAPI(packageName, saveUri);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("Log medialibrary API failed");
+    }
+    return ret;
 }
 
 static int32_t SolveOtherInsertCmd(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue,
@@ -636,6 +661,10 @@ static int32_t SolveOtherInsertCmd(MediaLibraryCommand &cmd, const DataShareValu
             if (cmd.GetOprnType() == OperationType::LOG_MOVING_PHOTO) {
                 solved = true;
                 return LogMovingPhoto(cmd, dataShareValue);
+            }
+            if (cmd.GetOprnType() == OperationType::LOG_MEDIALIBRARY_API) {
+                solved = true;
+                return LogMedialibraryAPI(cmd, dataShareValue);
             }
             return E_OK;
         }
@@ -1567,6 +1596,54 @@ shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
     return MediaLibraryRdbStore::Query(rdbPredicates, columns);
 }
 
+shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, const vector<string> &columns)
+{
+    auto queryResult = MediaLibraryRdbStore::Query(rdbPredicates, columns);
+    if (queryResult == nullptr) {
+        MEDIA_ERR_LOG("Query Geographic Information Failed, queryResult is nullptr");
+        return queryResult;
+    }
+
+    const vector<string> &whereArgs = rdbPredicates.GetWhereArgs();
+    if (whereArgs.empty() || whereArgs.front().empty()) {
+        MEDIA_ERR_LOG("Query Geographic Information can not get fileId");
+        return queryResult;
+    }
+
+    string fileId = whereArgs.front();
+    if (queryResult->GoToNextRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Query Geographic Information Failed, fileId: %{public}s", fileId.c_str());
+        return queryResult;
+    }
+
+    string latitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, queryResult);
+    string longitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult);
+    string addressDescription = GetStringVal(ADDRESS_DESCRIPTION, queryResult);
+
+    MEDIA_DEBUG_LOG(
+        "QueryGeo, fileId: %{public}s, latitude: %{public}s, longitude: %{public}s, addressDescription: %{public}s",
+        fileId.c_str(), latitude.c_str(), longitude.c_str(), addressDescription.c_str());
+
+    if (!latitude.empty() && !longitude.empty() && addressDescription.empty()) {
+        std::future<bool> futureResult = std::async(std::launch::async, [&]() {
+            return MediaAnalysisHelper::ParseGeoInfo({ fileId, latitude, longitude });
+        });
+
+        bool parseResult = false;
+        const int timeout = 5;
+        if (std::future_status::ready == futureResult.wait_for(std::chrono::seconds(timeout))) {
+            parseResult = futureResult.get();
+        }
+
+        if (parseResult) {
+            queryResult = MediaLibraryRdbStore::Query(rdbPredicates, columns);
+        }
+        MEDIA_INFO_LOG("ParseGeoInfo completed, fileId: %{public}s, parseResult: %{public}d", fileId.c_str(),
+            parseResult);
+    }
+    return queryResult;
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
@@ -1590,7 +1667,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::PAH_MOVING_PHOTO:
             return MediaLibraryAssetOperations::QueryOperation(cmd, columns);
         case OperationObject::VISION_START ... OperationObject::VISION_END:
-            return HandleOCRVisionQuery(cmd, columns, predicates);
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
         case OperationObject::GEO_PHOTO:
@@ -1605,31 +1682,12 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
         case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
             return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
+        case OperationObject::ANALYSIS_ADDRESS:
+            return QueryGeo(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
     }
-}
-
-shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::HandleOCRVisionQuery(
-    MediaLibraryCommand &cmd, const vector<string> &columns, const DataSharePredicates &predicates)
-{
-    auto queryResult = MediaLibraryRdbStore::Query(
-        RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-
-#ifdef HAS_THERMAL_MANAGER_PART
-    auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
-    if (static_cast<int32_t>(thermalMgrClient.GetThermalLevel()) > PROPER_DEVICE_TEMPERATURE_LEVEL) {
-        return queryResult;
-    }
-#endif
-
-    if (cmd.GetOprnObject() == OperationObject::VISION_OCR && queryResult != nullptr) {
-        queryResult = MediaLibraryVisionOperations::DealWithActiveOcrTask(
-            queryResult, predicates, columns, cmd);
-    }
-
-    return queryResult;
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryCommand &cmd,
@@ -1944,6 +2002,30 @@ int32_t MediaLibraryDataManager::CheckCloudThumbnailDownloadFinish()
     }
 
     return thumbnailService_->CheckCloudThumbnailDownloadFinish();
+}
+
+void MediaLibraryDataManager::UploadDBFileInner()
+{
+    lock_guard<shared_mutex> lock(mgrSharedMutex_);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr!");
+        return;
+    }
+    auto rawStore = rdbStore->GetRaw();
+    if (rawStore == nullptr) {
+        MEDIA_ERR_LOG("rawStore is nullptr!");
+        return;
+    }
+
+    std::string destPath = "/data/storage/el2/log/logpack/media_library.db";
+    std::string tmpPath = MEDIA_DB_DIR + "/rdb/media_library_tmp.db";
+    int32_t errCode = rawStore->Backup(tmpPath);
+    if (errCode != 0) {
+        MEDIA_ERR_LOG("rdb backup fail: %{public}d", errCode);
+        return;
+    }
+    MediaFileUtils::CopyFileUtil(tmpPath, destPath);
 }
 }  // namespace Media
 }  // namespace OHOS

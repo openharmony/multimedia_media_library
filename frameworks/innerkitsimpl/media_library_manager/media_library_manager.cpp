@@ -43,6 +43,7 @@
 #include "medialibrary_type_const.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
+#include "moving_photo_file_utils.h"
 #include "post_proc.h"
 #include "permission_utils.h"
 #include "result_set_utils.h"
@@ -888,7 +889,7 @@ int32_t MediaLibraryManager::OpenReadOnlyAppSandboxVideo(const string& uri)
     return fd;
 }
 
-int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
+int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, const string &option)
 {
     if (!MediaFileUtils::IsMediaLibraryUri(uri)) {
         return OpenReadOnlyAppSandboxVideo(uri);
@@ -904,9 +905,41 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
     }
 
     string videoUri = uri;
-    MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
+    MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, option);
     Uri openVideoUri(videoUri);
     return sDataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
+}
+
+int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
+{
+    return ReadMovingPhotoVideo(uri, OPEN_MOVING_PHOTO_VIDEO);
+}
+
+int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, off_t &offset)
+{
+    int32_t fd = ReadMovingPhotoVideo(uri, OPEN_MOVING_PHOTO_VIDEO_CLOUD);
+    if (fd < 0) {
+        MEDIA_ERR_LOG("Failed to open video of moving photo: %{public}d", fd);
+        return E_ERR;
+    }
+
+    if (!MediaFileUtils::IsMediaLibraryUri(uri)) {
+        return fd;
+    }
+
+    int64_t liveSize = 0;
+    if (MovingPhotoFileUtils::GetLivePhotoSize(fd, liveSize) != E_OK) {
+        return fd;
+    }
+
+    struct stat st;
+    if (fstat(fd, &st) != E_OK || st.st_size < liveSize + PLAY_INFO_LEN + LIVE_TAG_LEN) {
+        MEDIA_ERR_LOG("video size is wrong");
+        return E_ERR;
+    }
+    offset = st.st_size - liveSize - PLAY_INFO_LEN - LIVE_TAG_LEN;
+    MEDIA_DEBUG_LOG("offset is %{public}" PRId64, offset);
+    return fd;
 }
 
 int32_t MediaLibraryManager::ReadPrivateMovingPhoto(const string &uri)
@@ -1050,10 +1083,16 @@ static void CheckAccessTokenPermissionExecute(uint32_t tokenId, uint32_t checkFl
     int checkWriteResult = -1;
     if (checkFlag == URI_PERMISSION_FLAG_READ) {
         checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, readPermmisionMap[mediaType]);
+        if (checkReadResult != PermissionState::PERMISSION_GRANTED) {
+            checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
+        }
     } else if (checkFlag == URI_PERMISSION_FLAG_WRITE) {
         checkWriteResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
     } else if (checkFlag == URI_PERMISSION_FLAG_READWRITE) {
         checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, readPermmisionMap[mediaType]);
+        if (checkReadResult != PermissionState::PERMISSION_GRANTED) {
+            checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
+        }
         checkWriteResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
     }
     isReadable = checkReadResult == PermissionState::PERMISSION_GRANTED;

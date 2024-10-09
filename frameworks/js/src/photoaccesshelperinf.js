@@ -342,11 +342,18 @@ async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfig
 
   let labelId = bundleInfo.appInfo.labelId;
   console.info('photoAccessHelper labelId is ' + appId + '.');
+  let appName = '';
 
   try {
-    let appName = await gContext.resourceManager.getStringValue(labelId);
+    let modeleName = '';
+    for (let hapInfo of bundleInfo.hapModulesInfo) {
+      if (labelId === hapInfo.labelId) {
+        modeleName = hapInfo.name;
+      }
+    }
+    console.info('photoAccessHelper modeleName is ' + modeleName + '.');
+    appName = await gContext.createModuleContext(modeleName).resourceManager.getStringValue(labelId);
     console.info('photoAccessHelper appName is ' + appName + '.');
-
     // only promise type
     return new Promise((resolve, reject) => {
       photoAccessHelper.showAssetsCreationDialog(getContext(this), srcFileUris, photoCreationConfigs, bundleName,
@@ -381,9 +388,17 @@ async function createAssetWithShortTermPermissionOk(photoCreationConfig) {
 
   let labelId = bundleInfo.appInfo.labelId;
   console.info('photoAccessHelper labelId is ' + appId + '.');
+  let appName = '';
   
   try {
-    let appName = await gContext.resourceManager.getStringValue(labelId);
+    let modeleName = '';
+    for (let hapInfo of bundleInfo.hapModulesInfo) {
+      if (labelId === hapInfo.labelId) {
+        modeleName = hapInfo.name;
+      }
+    }
+    console.info('photoAccessHelper modeleName is ' + modeleName + '.');
+    appName = await gContext.createModuleContext(modeleName).resourceManager.getStringValue(labelId);
     console.info('photoAccessHelper appName is ' + appName + '.');
 
     if (photoAccessHelper.checkShortTermPermission()) {
@@ -789,6 +804,7 @@ export default {
   MediaAssetManager: photoAccessHelper.MediaAssetManager,
   MovingPhoto: photoAccessHelper.MovingPhoto,
   MovingPhotoEffectMode: photoAccessHelper.MovingPhotoEffectMode,
+  WatermarkType: photoAccessHelper.WatermarkType,
   CompleteButtonText: CompleteButtonText,
   ImageFileType: photoAccessHelper.ImageFileType,
   CloudEnhancement: photoAccessHelper.CloudEnhancement,

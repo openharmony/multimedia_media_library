@@ -264,8 +264,8 @@ const std::string CREATE_TAB_VIDEO_FACE = "CREATE TABLE IF NOT EXISTS " + VISION
     ROLL + " BLOB, " +
     PROB + " BLOB, " +
     TOTAL_FACES + " INTEGER, " +
-    FRAME_ID + " INT, " +
-    FRAME_TIMESTAMP + " INT, " +
+    FRAME_ID + " BLOB, " +
+    FRAME_TIMESTAMP + " BLOB, " +
     TRACKS + " TEXT, " +
     ALGO_VERSION + " TEXT, " +
     FEATURES + " BLOB, " +

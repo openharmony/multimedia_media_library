@@ -535,7 +535,8 @@ int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts)
         info.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::RESTORE, LoadSourceType::LOCAL_PHOTO);
         std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(opts, info);
-        ffrt::submit(std::bind(&IThumbnailHelper::CreateThumbnail, taskData));
+        ffrt::submit(std::bind(&IThumbnailHelper::CreateThumbnail, taskData), {}, {},
+            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
     MEDIA_INFO_LOG("create astc for restored dual frame photos finished");

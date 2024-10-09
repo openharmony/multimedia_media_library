@@ -147,6 +147,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setLocation", JSSetLocation),
             DECLARE_NAPI_FUNCTION("addResource", JSAddResource),
             DECLARE_NAPI_FUNCTION("setEffectMode", JSSetEffectMode),
+            DECLARE_NAPI_FUNCTION("setSupportWatermarkType", JSSetSupportWatermarkType),
             DECLARE_NAPI_FUNCTION("setCameraShotKey", JSSetCameraShotKey),
             DECLARE_NAPI_FUNCTION("saveCameraPhoto", JSSaveCameraPhoto),
             DECLARE_NAPI_FUNCTION("discardCameraPhoto", JSDiscardCameraPhoto),
@@ -1230,6 +1231,29 @@ napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callb
     RETURN_NAPI_UNDEFINED(env);
 }
 
+napi_value MediaAssetChangeRequestNapi::JSSetSupportWatermarkType(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    int32_t watermarkType;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, watermarkType) == napi_ok,
+        "Failed to parse watermark type");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckSupportWatermarkType(watermarkType),
+        "Failed to check watermark type");
+
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_INNER_FAIL);
+    changeRequest->GetFileAssetInstance()->SetSupportWatermarkType(watermarkType);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_SUPPORT_WATERMARK_TYPE);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 napi_value MediaAssetChangeRequestNapi::JSSetCameraShotKey(napi_env env, napi_callback_info info)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -1472,7 +1496,10 @@ napi_value MediaAssetChangeRequestNapi::AddMovingPhotoVideoResource(napi_env env
     CHECK_COND_WITH_MESSAGE(env, napi_typeof(env, value, &valueType) == napi_ok, "Failed to get napi type");
     if (valueType == napi_string) { // addResource by file uri
         CHECK_COND(env, ParseFileUri(env, value, MediaType::MEDIA_TYPE_VIDEO, asyncContext), OHOS_INVALID_PARAM_CODE);
-        CHECK_COND(env, MediaFileUtils::CheckMovingPhotoVideo(asyncContext->realPath), OHOS_INVALID_PARAM_CODE);
+        if (!MediaFileUtils::CheckMovingPhotoVideo(asyncContext->realPath)) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check video resource of moving photo");
+            return nullptr;
+        }
         changeRequest->movingPhotoVideoRealPath_ = asyncContext->realPath;
         changeRequest->movingPhotoVideoResourceMode_ = AddResourceMode::FILE_URI;
     } else { // addResource by ArrayBuffer
@@ -1485,8 +1512,11 @@ napi_value MediaAssetChangeRequestNapi::AddMovingPhotoVideoResource(napi_env env
             "Failed to get data buffer");
         CHECK_COND_WITH_MESSAGE(env, changeRequest->movingPhotoVideoBufferSize_ > 0,
             "Failed to check size of data buffer");
-        CHECK_COND(env, CheckMovingPhotoVideo(changeRequest->movingPhotoVideoDataBuffer_,
-            changeRequest->movingPhotoVideoBufferSize_), OHOS_INVALID_PARAM_CODE);
+        if (!CheckMovingPhotoVideo(changeRequest->movingPhotoVideoDataBuffer_,
+            changeRequest->movingPhotoVideoBufferSize_)) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check video resource of moving photo");
+            return nullptr;
+        }
         changeRequest->movingPhotoVideoResourceMode_ = AddResourceMode::DATA_BUFFER;
     }
 
@@ -2049,6 +2079,8 @@ static bool SetFavoriteExecute(MediaAssetChangeRequestAsyncContext& context)
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     valuesBucket.Put(PhotoColumn::MEDIA_IS_FAV, fileAsset->IsFavorite() ? YES : NO);
+    NAPI_INFO_LOG("update asset %{public}d favorite to %{public}d", fileAsset->GetId(),
+        fileAsset->IsFavorite() ? YES : NO);
     return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
 }
 
@@ -2132,6 +2164,19 @@ static bool SetEffectModeExecute(MediaAssetChangeRequestAsyncContext& context)
     auto fileAsset = changeRequest->GetFileAssetInstance();
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset->GetMovingPhotoEffectMode());
+    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+}
+
+static bool SetSupportWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetSupportWatermarkTypeExecute");
+
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    valuesBucket.Put(PhotoColumn::SUPPORT_WATERMARK_TYPE, fileAsset->GetSupportWatermarkType());
     return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
 }
 
@@ -2293,6 +2338,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_ORIENTATION, SetOrientationExecute },
     { AssetChangeOperation::SET_USER_COMMENT, SetUserCommentExecute },
     { AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE, SetEffectModeExecute },
+    { AssetChangeOperation::SET_SUPPORT_WATERMARK_TYPE, SetSupportWatermarkTypeExecute },
     { AssetChangeOperation::SET_PHOTO_QUALITY_AND_PHOTOID, SetPhotoQualityExecute },
     { AssetChangeOperation::SET_LOCATION, SetLocationExecute },
     { AssetChangeOperation::SET_CAMERA_SHOT_KEY, SetCameraShotKeyExecute },

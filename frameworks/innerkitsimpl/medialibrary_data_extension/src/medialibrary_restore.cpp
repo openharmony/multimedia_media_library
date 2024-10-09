@@ -14,16 +14,15 @@
  */
 #define MLOG_TAG "MediaLibraryRestore"
 
+#include "acl.h"
 #include "medialibrary_restore.h"
 #include "dfx_utils.h"
-#include "iservice_registry.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_tracer.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "parameter.h"
 #include "post_event_utils.h"
-#include "system_ability_definition.h"
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
 #endif
@@ -99,15 +98,6 @@ void MediaLibraryRestore::CheckRestore(const int32_t &errCode)
 #ifdef CLOUD_SYNC_MANAGER
 void MediaLibraryRestore::StopCloudSync()
 {
-    MEDIA_INFO_LOG("StopCloudSync: Call CloudSync start [isBackuping=%{public}d]", isBackuping_.load());
-    auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    CHECK_AND_RETURN_LOG((samgr != nullptr), "StopCloudSync: samgr is nullptr, return");
-    auto ability = samgr->GetSystemAbility(FILEMANAGEMENT_CLOUD_SYNC_SERVICE_SA_ID);
-    if (ability == nullptr) {
-        MEDIA_INFO_LOG("StopCloudSync: cloud sync service is not exist, return");
-        return;
-    }
-    MEDIA_INFO_LOG("StopCloudSync: cloud sync service is exist, start to stop cloud sync");
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryRestore::StopCloudSync");
     FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync(BUNDLE_NAME, true);
@@ -180,6 +170,9 @@ void MediaLibraryRestore::DoRdbBackup()
         MediaLibraryRestore::GetInstance().isDoingBackup_ = true;
         int errCode = rdb->Backup("");
         MediaLibraryRestore::GetInstance().isDoingBackup_ = false;
+        if (errCode == NativeRdb::E_OK) {
+            Acl::AclSetSlaveDatabase();
+        }
         MEDIA_INFO_LOG("DoRdbBackup: Backup [end]. errCode = %{public}d", errCode);
         MediaLibraryRestore::GetInstance().ResetHAModeSwitchStatus();
         if (errCode != NativeRdb::E_BACKUP_INTERRUPT) {

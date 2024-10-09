@@ -152,6 +152,13 @@ enum class MovingPhotoEffectMode : int32_t {
     IMAGE_ONLY = 10
 };
 
+enum class WatermarkType : int32_t {
+    DEFAULT = 0,
+    BRAND_COMMON,
+    COMMON,
+    BRAND
+};
+
 enum class CloudEnhancementTaskStage : int32_t {
     TASK_STAGE_EXCEPTION = -1,
     TASK_STAGE_PREPARING,

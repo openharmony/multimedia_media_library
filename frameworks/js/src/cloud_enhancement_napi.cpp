@@ -538,6 +538,8 @@ static void FillTaskStageWithClientQuery(CloudEnhancementAsyncContext* context, 
         context->expectedDuration_ = queryResult.GetInt(QueryConstants::EXECUTE_TIME);
     } else if (currentState == QueryConstants::EN_DOWNLOADING) {
         context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_DOWNLOADING;
+        context->transferredFileSize_ = queryResult.GetInt(QueryConstants::DOWNLOAD_PROGRESS);
+        context->totalFileSize_ = queryResult.GetInt(QueryConstants::DOWNLOAD_SIZE);
     }
 #endif
 }
@@ -801,4 +803,4 @@ napi_value CloudEnhancementNapi::JSGetCloudEnhancementPair(napi_env env, napi_ca
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetCloudEnhancementPair",
         GetCloudEnhancementPairExecute, GetCloudEnhancementPairCompleteCallback);
 }
-} // namespace OHOS::Media
+} // namespace OHOS::Media

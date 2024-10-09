@@ -26,6 +26,7 @@ constexpr int32_t E_OK = 0;
 
 constexpr int RDB_TRANSACTION_WAIT_MS = 1000;
 std::mutex TransactionOperations::transactionMutex_;
+std::mutex TransactionOperations::storeMutex_;
 std::condition_variable TransactionOperations::transactionCV_;
 std::atomic<bool> TransactionOperations::isInTransaction_(false);
 constexpr int32_t MAX_TRY_TIMES = 30;
@@ -67,14 +68,8 @@ void TransactionOperations::Finish()
     }
 }
 
-int32_t TransactionOperations::BeginTransaction(bool isUpgrade)
+int32_t TransactionOperations::PrepareForTransaction(bool isUpgrade)
 {
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return E_HAS_DB_ERROR;
-    }
-    MEDIA_DEBUG_LOG("Start transaction");
-
     unique_lock<mutex> cvLock(transactionMutex_);
     if (isInTransaction_.load()) {
         transactionCV_.wait_for(cvLock, chrono::milliseconds(RDB_TRANSACTION_WAIT_MS),
@@ -85,40 +80,56 @@ int32_t TransactionOperations::BeginTransaction(bool isUpgrade)
     int maxTryTimes = isUpgrade ? MAX_TRY_TIMES_FOR_UPGRADE : MAX_TRY_TIMES;
     while (curTryTime < maxTryTimes) {
         if (rdbStore_->IsInTransaction()) {
-            if (!isInTransaction_.load()) {
-                MEDIA_INFO_LOG("Stop cloud sync");
-                FileManagement::CloudSync::CloudSyncManager::GetInstance()
-                    .StopSync("com.ohos.medialibrary.medialibrarydata");
-                isSkipCloudSync = true;
-            }
             this_thread::sleep_for(chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
             if (isInTransaction_.load() || rdbStore_->IsInTransaction()) {
                 curTryTime++;
-                MEDIA_INFO_LOG("RdbStore is in transaction, try %{public}d times...", curTryTime);
+                MEDIA_INFO_LOG("RdbStore is in transaction, the first:%{public}d, the second:%{public}d, \
+                    try %{public}d times...", isInTransaction_.load(), rdbStore_->IsInTransaction(), curTryTime);
                 continue;
             }
         }
-
-        int32_t errCode = rdbStore_->BeginTransaction();
-        if (errCode == NativeRdb::E_SQLITE_LOCKED || errCode == NativeRdb::E_DATABASE_BUSY ||
-            errCode == NativeRdb::E_SQLITE_BUSY) {
+        int32_t errCode = E_OK;
+        {
+            unique_lock<mutex> uniqueLock(storeMutex_);
+            errCode = rdbStore_->BeginTransaction();
+            if (errCode == NativeRdb::E_OK) {
+                isInTransaction_.store(true);
+                return E_OK;
+            }
+        }
+        if (errCode == NativeRdb::E_SQLITE_BUSY) {
+            MEDIA_INFO_LOG("Stop cloud sync, try %{public}d times...", curTryTime);
+            FileManagement::CloudSync::CloudSyncManager::GetInstance()
+                .StopSync("com.ohos.medialibrary.medialibrarydata");
+            isSkipCloudSync = true;
+            curTryTime++;
+            continue;
+        }
+        if (errCode == NativeRdb::E_SQLITE_LOCKED || errCode == NativeRdb::E_DATABASE_BUSY) {
             curTryTime++;
             MEDIA_ERR_LOG("Sqlite database file is locked! try %{public}d times...", curTryTime);
             continue;
-        } else if (errCode != NativeRdb::E_OK) {
+        } else {
             MEDIA_ERR_LOG("Start Transaction failed, errCode=%{public}d", errCode);
             isInTransaction_.store(false);
             transactionCV_.notify_one();
             MediaLibraryRestore::GetInstance().CheckRestore(errCode);
             return E_HAS_DB_ERROR;
-        } else {
-            isInTransaction_.store(true);
-            return E_OK;
         }
     }
 
     MEDIA_ERR_LOG("RdbStore is still in transaction after try %{public}d times, abort.", maxTryTimes);
     return E_HAS_DB_ERROR;
+}
+
+int32_t TransactionOperations::BeginTransaction(bool isUpgrade)
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+    MEDIA_INFO_LOG("Start transaction");
+    return PrepareForTransaction(isUpgrade);
 }
 
 int32_t TransactionOperations::TransactionCommit()
@@ -133,12 +144,24 @@ int32_t TransactionOperations::TransactionCommit()
         return E_OK;
     }
 
-    int32_t errCode = rdbStore_->Commit();
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("commit failed, errCode=%{public}d", errCode);
-        return E_HAS_DB_ERROR;
+    int curTryTime = 0;
+    {
+        unique_lock<mutex> uniqueLock(storeMutex_);
+        while (curTryTime <= MAX_TRY_TIMES) {
+            int32_t errCode = rdbStore_->Commit();
+            if (errCode == NativeRdb::E_OK) {
+                isInTransaction_.store(false);
+                break;
+            } else if (errCode == NativeRdb::E_SQLITE_LOCKED || errCode == NativeRdb::E_DATABASE_BUSY) {
+                this_thread::sleep_for(chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
+                curTryTime++;
+                MEDIA_ERR_LOG("commit rdb busy now, trytime is :%{public}d", curTryTime);
+            } else {
+                MEDIA_ERR_LOG("commit failed, errCode=%{public}d", errCode);
+                return E_HAS_DB_ERROR;
+            }
+        }
     }
-    isInTransaction_.store(false);
     transactionCV_.notify_all();
 
     if (isSkipCloudSync) {
@@ -162,8 +185,27 @@ int32_t TransactionOperations::TransactionRollback()
         return E_HAS_DB_ERROR;
     }
 
-    int32_t errCode = rdbStore_->RollBack();
-    isInTransaction_.store(false);
+    int curTryTime = 0;
+    int32_t errCode = E_OK;
+    {
+        unique_lock<mutex> uniqueLock(storeMutex_);
+        while (curTryTime <= MAX_TRY_TIMES) {
+            int32_t errCode = rdbStore_->RollBack();
+            isInTransaction_.store(false);
+            if (errCode == NativeRdb::E_OK) {
+                MEDIA_INFO_LOG("rollback success!");
+                break;
+            } else if (errCode == NativeRdb::E_SQLITE_LOCKED || errCode == NativeRdb::E_DATABASE_BUSY) {
+                this_thread::sleep_for(chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
+                curTryTime++;
+                MEDIA_ERR_LOG("rollback rdb busy now, trytime is :%{public}d", curTryTime);
+            } else {
+                MEDIA_ERR_LOG("rollback failed, errCode=%{public}d", errCode);
+                break;
+            }
+        }
+    }
+
     transactionCV_.notify_all();
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rollback failed, errCode=%{public}d", errCode);
