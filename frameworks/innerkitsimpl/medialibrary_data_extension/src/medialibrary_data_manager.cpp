@@ -1616,12 +1616,9 @@ shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, co
         return queryResult;
     }
 
-    string latitude = get<string>(
-        ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, queryResult, TYPE_STRING));
-    string longitude = get<string>(
-        ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult, TYPE_STRING));
-    string addressDescription =
-        get<string>(ResultSetUtils::GetValFromColumn(ADDRESS_DESCRIPTION, queryResult, TYPE_STRING));
+    string latitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, queryResult);
+    string longitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult);
+    string addressDescription = GetStringVal(ADDRESS_DESCRIPTION, queryResult);
 
     MEDIA_DEBUG_LOG(
         "QueryGeo, fileId: %{public}s, latitude: %{public}s, longitude: %{public}s, addressDescription: %{public}s",

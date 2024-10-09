@@ -15,7 +15,7 @@
 
 #include "media_analysis_helper.h"
 
-#include <future>
+#include <thread>
 
 #include "media_analysis_callback_stub.h"
 #include "media_file_uri.h"
@@ -37,9 +37,7 @@ void MediaAnalysisHelper::StartMediaAnalysisServiceAsync(int32_t code, const std
         }
     }
     MessageOption option(MessageOption::TF_ASYNC);
-    std::async(std::launch::async, [code, option = std::move(option), fileIds = std::move(fileIds)] {
-        StartMediaAnalysisServiceInternal(code, option, fileIds);
-    });
+    std::thread(&StartMediaAnalysisServiceInternal, code, option, fileIds).detach();
 }
 
 void MediaAnalysisHelper::AsyncStartMediaAnalysisService(int32_t code, const std::vector<std::string> &albumIds)
@@ -70,7 +68,7 @@ void MediaAnalysisHelper::StartPortraitCoverSelectionAsync(const std::string alb
         return;
     }
 
-    std::async(std::launch::async, [albumId = std::move(albumId)] { AnalysePortraitCover(albumId); });
+    std::thread(&AnalysePortraitCover, albumId).detach();
 }
 
 void MediaAnalysisHelper::AnalysePortraitCover(const std::string albumId)
