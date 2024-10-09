@@ -102,6 +102,7 @@ public:
     static const std::string SUPPORT_WATERMARK_TYPE EXPORT;
     static const std::string PHOTO_HAS_ASTC EXPORT; // This attribute has been replaced by "thumbnail_ready"
     static const std::string PHOTO_THUMBNAIL_READY EXPORT;
+    static const std::string PHOTO_THUMBNAIL_VISIBLE EXPORT;
 
     static const std::string PHOTO_SYNCING EXPORT;
     static const std::string PHOTO_DATE_YEAR EXPORT;

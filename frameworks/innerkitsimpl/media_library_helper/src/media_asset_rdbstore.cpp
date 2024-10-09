@@ -180,6 +180,7 @@ void AddVirtualColumnsOfDateType(vector<string>& columns)
 void AddQueryIndex(AbsPredicates& predicates, const vector<string>& columns)
 {
     auto it = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT);
+    predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_READY_INDEX);
     if (it == columns.end()) {
         return;
     }
@@ -402,6 +403,7 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
     DataShare::DataSharePredicates predicates;
     predicates.And()->OrderByDesc(MediaColumn::MEDIA_DATE_TAKEN)
                     ->Limit(count, start)
+                    ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, "1")
                     ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0")
                     ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0")
                     ->EqualTo(MediaColumn::MEDIA_HIDDEN, "0")

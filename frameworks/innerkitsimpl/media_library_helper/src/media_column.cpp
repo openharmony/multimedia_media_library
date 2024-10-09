@@ -94,6 +94,7 @@ const std::string PhotoColumn::PHOTO_THUMB_SIZE = "thumb_size";
 const std::string PhotoColumn::PHOTO_HAS_ASTC = "has_astc"; // This attribute has been replaced by "thumbnail_ready"
 const std::string PhotoColumn::PHOTO_IS_TEMP = "is_temp";
 const std::string PhotoColumn::PHOTO_THUMBNAIL_READY = "thumbnail_ready";
+const std::string PhotoColumn::PHOTO_THUMBNAIL_VISIBLE = "thumbnail_visible";
 const std::string PhotoColumn::PHOTO_FRONT_CAMERA = "front_camera";
 const std::string PhotoColumn::PHOTO_BURST_COVER_LEVEL = "burst_cover_level";
 const std::string PhotoColumn::PHOTO_BURST_KEY = "burst_key";
@@ -224,6 +225,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_STRONG_ASSOCIATION + " INT DEFAULT 0, " +
     PHOTO_ASSOCIATE_FILE_ID + " INT DEFAULT 0, " +
     PHOTO_HAS_CLOUD_WATERMARK + " INT DEFAULT 0, " +
+    PHOTO_THUMBNAIL_VISIBLE + " INT DEFAULT 0, " +
     SUPPORT_WATERMARK_TYPE + " INT) ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
@@ -302,8 +304,8 @@ const std::string PhotoColumn::INDEX_CAMERA_SHOT_KEY =
 
 const std::string PhotoColumn::INDEX_SCHPT_READY =
     BaseColumn::CreateIndex() + PHOTO_SCHPT_READY_INDEX + " ON " + PHOTOS_TABLE +
-    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
-    "," + MEDIA_DATE_TRASHED + ", " + PHOTO_IS_TEMP + "," + PHOTO_THUMBNAIL_READY +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + PHOTO_THUMBNAIL_VISIBLE + "," + MEDIA_DATE_TRASHED +
+    "," + MEDIA_TIME_PENDING + ", " + MEDIA_HIDDEN + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
     "," + MEDIA_DATE_TAKEN + " DESC);";
 
 const std::string PhotoColumn::DROP_INDEX_SCHPT_READY = BaseColumn::DropIndex() + PHOTO_SCHPT_READY_INDEX;
@@ -372,6 +374,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY, PhotoColumn::PHOTO_COVER_POSITION,
     PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, PhotoColumn::PHOTO_DETAIL_TIME,
     PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::SUPPORT_WATERMARK_TYPE,
+    PhotoColumn::PHOTO_THUMBNAIL_VISIBLE,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
