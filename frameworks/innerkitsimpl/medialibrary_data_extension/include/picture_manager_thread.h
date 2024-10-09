@@ -62,6 +62,7 @@ private:
     void Run();
     std::unique_ptr<std::thread> thread_ = nullptr;
     std::mutex threadMutex_;
+    std::mutex runningMutex_;
     std::condition_variable condition_;
     std::atomic_bool pauseFlag_; // 暂停标识
     std::atomic_bool stopFlag_; // 停止标识

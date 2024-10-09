@@ -19,6 +19,7 @@
 #include <dirent.h>
 #include <memory>
 #include <mutex>
+#include <sstream>
 
 #include "directory_ex.h"
 #include "file_asset.h"
@@ -627,7 +628,7 @@ static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &file
     }
 }
 
-static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues)
+static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, const std::string displayName)
 {
     if (!PermissionUtils::IsNativeSAApp()) {
         MEDIA_DEBUG_LOG("do not have permission to set burst_key or burst_cover_level");
@@ -658,6 +659,13 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues)
     if (dirty != static_cast<int32_t>(DirtyTypes::TYPE_NEW)) {
         outValues.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
     }
+    stringstream result;
+    for (int i = 0; i < displayName.length(); i++) {
+        if (isdigit(displayName[i])) {
+            result << displayName[i];
+        }
+    }
+    outValues.Put(PhotoColumn::PHOTO_ID, result.str());
 }
 
 static void HandleIsTemp(MediaLibraryCommand &cmd, ValuesBucket &outValues)
@@ -703,7 +711,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
         HandleIsTemp(cmd, assetInfo);
         if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
-            HandleBurstPhoto(cmd, assetInfo);
+            HandleBurstPhoto(cmd, assetInfo, displayName);
         }
     }
 

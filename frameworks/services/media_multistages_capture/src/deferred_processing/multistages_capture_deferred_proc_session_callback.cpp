@@ -146,6 +146,18 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnError(const string &imageI
     }
 }
 
+std::shared_ptr<NativeRdb::ResultSet> QueryPhotoData(const std::string &imageId)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+    string where = PhotoColumn::PHOTO_ID + " = ? ";
+    vector<string> whereArgs { imageId };
+    cmd.GetAbsRdbPredicates()->SetWhereClause(where);
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
+        MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_IS_TEMP};
+    return DatabaseAdapter::Query(cmd, columns);
+}
+
 void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std::string &imageId,
     std::shared_ptr<Media::Picture> picture, bool isCloudEnhancementAvailable)
 {
@@ -159,15 +171,8 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
     // 1. 分段式拍照已经处理完成，保存全质量图
     MEDIA_INFO_LOG("yuv photoid: %{public}s, isCloudEnhancementAvailable: %{public}s enter", imageId.c_str(),
         isCloudEnhancementAvailable?"true":"false");
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = PhotoColumn::PHOTO_ID + " = ? ";
-    vector<string> whereArgs { imageId };
-    cmd.GetAbsRdbPredicates()->SetWhereClause(where);
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
-    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_MIME_TYPE};
     tracer.Start("Query");
-    auto resultSet = DatabaseAdapter::Query(cmd, columns);
+    auto resultSet = QueryPhotoData(imageId);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         tracer.Finish();
         MEDIA_INFO_LOG("result set is empty.");
@@ -178,11 +183,16 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
         return;
     }
     tracer.Finish();
+    int32_t isTemp = GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet);
+    if (isTemp) {
+        MultiStagesCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false);
+        UpdateHighQualityPictureInfo(imageId, isCloudEnhancementAvailable);
+        return;
+    }
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     string mime_type = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
-    MultiStagesCaptureManager::GetInstance().SaveLowQualityPicture(imageId);
     // 裸picture落盘处理
     int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(isEdited,
         data, picture, fileId, mime_type);
@@ -193,15 +203,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
         return;
     }
     MultiStagesCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), isEdited);
-
-    // 2. 更新数据库 photoQuality 到高质量
-    int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-    UpdatePhotoQuality(imageId);
-    // 3. update cloud enhancement available
-    if (isCloudEnhancementAvailable) {
-        UpdateCEAvailable(imageId);
-    }
-
+    UpdateHighQualityPictureInfo(imageId, isCloudEnhancementAvailable);
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
     NotifyIfTempFile(resultSet);
 
@@ -211,6 +213,44 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const std
     // delete raw file
     MultiStagesCaptureManager::GetInstance().RemoveImage(imageId, false);
     MEDIA_INFO_LOG("yuv success photoid: %{public}s", imageId.c_str());
+}
+
+void MultiStagesCaptureDeferredProcSessionCallback::GetCommandByImageId(const std::string &imageId,
+    MediaLibraryCommand &cmd, string &photoId)
+{
+    size_t slashIndex = imageId.rfind("/");
+    string where = "";
+    vector<string> whereArgs;
+    if (slashIndex != string::npos) {
+        string displayName = imageId.substr(slashIndex + 1);
+        stringstream result;
+        for (size_t i = 0; i < displayName.length(); i++) {
+            if (isdigit(displayName[i])) {
+                result << displayName[i];
+            }
+        }
+        string fileId = MediaFileUtils::GetIdFromUri(imageId);
+        where = PhotoColumn::MEDIA_ID + " = ? ";
+        whereArgs = { fileId };
+        photoId = result.str();
+    } else {
+        where = PhotoColumn::PHOTO_ID + " = ? ";
+        whereArgs = { imageId };
+        photoId = imageId;
+    }
+    cmd.GetAbsRdbPredicates()->SetWhereClause(where);
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+}
+
+void MultiStagesCaptureDeferredProcSessionCallback::UpdateHighQualityPictureInfo(const std::string &imageId,
+    bool isCloudEnhancementAvailable)
+{
+    // 2. 更新数据库 photoQuality 到高质量
+    UpdatePhotoQuality(imageId);
+    // 3. update cloud enhancement avaiable
+    if (isCloudEnhancementAvailable) {
+        UpdateCEAvailable(imageId);
+    }
 }
 
 void MultiStagesCaptureDeferredProcSessionCallback::OnDeliveryLowQualityImage(const std::string &imageId,
@@ -226,22 +266,8 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnDeliveryLowQualityImage(co
     MediaLibraryTracer tracer;
     tracer.Start("OnDeliveryLowQualityImage " + imageId);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    int slashIndex = imageId.rfind("/");
-    string where = "";
-    vector<string> whereArgs;
     string photoId = "";
-    if (slashIndex != string::npos) {
-        string fileId = MediaFileUtils::GetIdFromUri(imageId);
-        where = PhotoColumn::MEDIA_ID + " = ? ";
-        whereArgs = { fileId };
-        photoId = fileId + "_";
-    } else {
-        where = PhotoColumn::PHOTO_ID + " = ? ";
-        whereArgs = { imageId };
-        photoId = imageId;
-    }
-    cmd.GetAbsRdbPredicates()->SetWhereClause(where);
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+    GetCommandByImageId(imageId, cmd, photoId);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
         PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_QUALITY};
     tracer.Start("Query");

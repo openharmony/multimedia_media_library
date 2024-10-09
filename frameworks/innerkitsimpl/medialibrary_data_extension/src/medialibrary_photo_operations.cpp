@@ -1836,7 +1836,7 @@ static void GetModityExtensionPath(std::string &path, std::string &modifyFilePat
 }
  
 int32_t MediaLibraryPhotoOperations::UpdateExtension(const int32_t &fileId, const std::string &extension,
-    const std::string mimeType)
+    const std::string mimeType, std::string &oldFilePath)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -1870,6 +1870,7 @@ int32_t MediaLibraryPhotoOperations::UpdateExtension(const int32_t &fileId, cons
         MEDIA_ERR_LOG("Update extension failed. errCode:%{public}d, updateRows:%{public}d.", errCode, updateRows);
         return E_HAS_DB_ERROR;
     }
+    oldFilePath = filePath;
     return E_OK;
 }
 
@@ -1883,6 +1884,36 @@ void MediaLibraryPhotoOperations::UpdateEditDataPath(std::string filePath, const
         rename(editDataPath.c_str(), tempOutputPath.c_str());
         MEDIA_DEBUG_LOG("rename, src: %{public}s, dest: %{public}s",
             editDataPath.c_str(), tempOutputPath.c_str());
+    }
+}
+
+void MediaLibraryPhotoOperations::DeleteAbnormalFile(std::string &assetPath, const int32_t &fileId,
+    const std::string &oldFilePath)
+{
+    MEDIA_INFO_LOG("DeleteAbnormalFile fileId:%{public}d, assetPath = %{public}s", fileId, assetPath.c_str());
+    MediaLibraryObjectUtils::ScanFileAsync(assetPath, to_string(fileId), MediaLibraryApi::API_10);
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH};
+    string whereClause = MediaColumn::MEDIA_FILE_PATH + "= ?";
+    vector<string> args = {oldFilePath};
+    predicates.SetWhereClause(whereClause);
+    predicates.SetWhereArgs(args);
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MediaFileUtils::DeleteFile(oldFilePath);
+        DeleteRevertMessage(oldFilePath);
+        return;
+    }
+    int32_t fileIdTemp = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    string filePathTemp = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    MEDIA_INFO_LOG("DeleteAbnormalFile fileId:%{public}d, filePathTemp = %{public}s", fileIdTemp, filePathTemp.c_str());
+    auto oldFileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileIdTemp),
+                                           OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
+    if (oldFileAsset != nullptr) {
+        int32_t deleteRow = DeletePhoto(oldFileAsset, MediaLibraryApi::API_10);
+        if (deleteRow < 0) {
+            MEDIA_ERR_LOG("delete photo failed, deleteRow=%{public}d", deleteRow);
+        }
     }
 }
 
@@ -2577,19 +2608,10 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
         return E_INVALID_ARGUMENTS;
     }
     std::string extension = extensionItr->second;
-    UpdateExtension(fileId, extension, format);
-
-    MEDIA_INFO_LOG("SaveCameraPhotoPicture::begin");
-    {
-        unique_lock<mutex> locker(saveCameraPhotoMutex_);
-        bool ret = condition_.wait_for(locker, chrono::milliseconds(SAVE_PHOTO_WAIT_MS),
-            [pictureManagerThread]() { return pictureManagerThread->GetPendingTaskSize() < TASK_NUMBER_MAX; });
-        if (!ret) {
-            MEDIA_INFO_LOG("SaveCameraPhotoPicture::Wait wait for lock timeout");
-        }
-    }
-    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileId),
-                                                         OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
+    std::string oldFilePath = "";
+    int32_t updateResult = UpdateExtension(fileId, extension, format, oldFilePath);
+    auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileId),
+                                        OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
     string assetPath = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
 
@@ -2600,6 +2622,12 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
         pictureManagerThread->DeleteDataWithImageId(lastPhotoId_, LOW_QUALITY_PICTURE);
     }
     lastPhotoId_ = photoId;
+    // 删除已经存在的异常后缀的图片
+    size_t size = -1;
+    MediaFileUtils::GetFileSize(oldFilePath, size);
+    if (updateResult == E_OK && oldFilePath != "" && size > 0) {
+        DeleteAbnormalFile(assetPath, fileId, oldFilePath);
+    }
     return E_OK;
 }
 
