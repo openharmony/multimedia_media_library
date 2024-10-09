@@ -1115,8 +1115,8 @@ bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
 {
     fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
     if (fileInfo.cloudPath.empty()) {
-        MEDIA_ERR_LOG("Get cloudPath empty");
-        UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::PATH_INVALID);
+        MEDIA_ERR_LOG("Get cloudPath empty, path: %{public}s",
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
         return false;
     }
     if (IsSameFileForClone(tableName, fileInfo)) {
@@ -1134,18 +1134,18 @@ bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfo.fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfo.displayName), fileInfo.cloudPath);
         if (errCode != E_OK) {
-            MEDIA_ERR_LOG("Destination file path %{public}s exists, create new path failed",
+            MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d, path: %{public}s", errCode,
                 BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
             fileInfo.cloudPath.clear();
-            UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::GET_PATH_FAILED);
             return false;
         }
     }
     if (BackupFileUtils::PreparePath(BackupFileUtils::GetReplacedPathByPrefixType(
         PrefixType::CLOUD, PrefixType::LOCAL, fileInfo.cloudPath)) != E_OK) {
-        MEDIA_ERR_LOG("Prepare cloudPath failed");
+        MEDIA_ERR_LOG("Prepare cloudPath failed, path: %{public}s, cloudPath: %{public}s",
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
+            BackupFileUtils::GarbleFilePath(fileInfo.cloudPath, DEFAULT_RESTORE_ID, garbagePath_).c_str());
         fileInfo.cloudPath.clear();
-        UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::GET_PATH_FAILED);
         return false;
     }
     return true;
@@ -1220,7 +1220,6 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
     if (!ConvertPathToRealPath(fileInfo.oldPath, filePath_, fileInfo.filePath, fileInfo.relativePath)) {
         MEDIA_ERR_LOG("Convert to real path failed, file path: %{public}s",
             BackupFileUtils::GarbleFilePath(fileInfo.oldPath, DEFAULT_RESTORE_ID, garbagePath_).c_str());
-        UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
     fileInfo.fileSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
