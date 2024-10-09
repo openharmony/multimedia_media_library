@@ -25,6 +25,7 @@ ohos_unittest("medialibrary_location_unittest") {
     "./include",
     "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_GLOBAL_PATH}/i18n/frameworks/intl/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
   ]
 
@@ -53,6 +54,7 @@ ohos_unittest("medialibrary_location_unittest") {
     "data_share:datashare_common",
     "data_share:datashare_provider",
     "hilog:libhilog",
+    "i18n:intl_util",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",

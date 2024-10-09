@@ -28,7 +28,9 @@ class MediaAnalysisHelper {
 public:
     EXPORT static void StartMediaAnalysisServiceAsync(int32_t code, const std::vector<std::string> &uris = {});
     EXPORT static void StartMediaAnalysisServiceSync(int32_t code, const std::vector<std::string> &fileIds = {});
+    EXPORT static void AsyncStartMediaAnalysisService(int32_t code, const std::vector<std::string> &albumIds = {});
     static void StartPortraitCoverSelectionAsync(const std::string albumId);
+    static bool ParseGeoInfo(const std::vector<std::string> &geoInfo);
 
 private:
     static void StartMediaAnalysisServiceInternal(int32_t code, MessageOption option,

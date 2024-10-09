@@ -38,6 +38,7 @@ public:
 private:
     const static int32_t SAID = 10120;
     static inline BrokerDelegator<MediaAnalysisProxy> delegator_;
+    static std::mutex mutex_;
 };
 } // namespace Media
 } // namespace OHOS

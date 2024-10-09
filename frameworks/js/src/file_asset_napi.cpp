@@ -293,7 +293,9 @@ napi_value AttachFileAssetFunc(napi_env env, void *value, void *)
     }
     auto transferFileAsset = reinterpret_cast<TransferFileAsset*>(value);
     std::shared_ptr<FileAsset> fileAsset = std::move(transferFileAsset->fileAsset);
-    delete transferFileAsset;
+    if (!transferFileAsset) {
+        delete transferFileAsset;
+    }
     NAPI_ASSERT(env, fileAsset != nullptr, "AttachFileAssetFunc fileAsset is null");
     napi_value result = FileAssetNapi::AttachCreateFileAsset(env, fileAsset);
     NAPI_ASSERT(env, result != nullptr, "AttachFileAssetFunc result is null");
@@ -1962,7 +1964,7 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
     { ANALYSIS_OCR, { OCR, PAH_QUERY_ANA_OCR, { OCR_TEXT, OCR_TEXT_MSG, OCR_WIDTH, OCR_HEIGHT } } },
     { ANALYSIS_FACE, { FACE, PAH_QUERY_ANA_FACE, { FACE_ID, TAG_ID, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT,
         LANDMARKS, PITCH, YAW, ROLL, PROB, TOTAL_FACES, FEATURES, FACE_OCCLUSION, BEAUTY_BOUNDER_X, BEAUTY_BOUNDER_Y,
-        BEAUTY_BOUNDER_WIDTH, BEAUTY_BOUNDER_HEIGHT} } },
+        BEAUTY_BOUNDER_WIDTH, BEAUTY_BOUNDER_HEIGHT, FACE_AESTHETICS_SCORE} } },
     { ANALYSIS_OBJECT, { OBJECT, PAH_QUERY_ANA_OBJECT, { OBJECT_ID, OBJECT_LABEL, OBJECT_SCALE_X, OBJECT_SCALE_Y,
         OBJECT_SCALE_WIDTH, OBJECT_SCALE_HEIGHT, PROB, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
     { ANALYSIS_RECOMMENDATION, { RECOMMENDATION, PAH_QUERY_ANA_RECOMMENDATION, { RECOMMENDATION_ID,
@@ -1976,7 +1978,8 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
     { ANALYSIS_SALIENCY, { SALIENCY, PAH_QUERY_ANA_SAL, { SALIENCY_X, SALIENCY_Y } } },
     { ANALYSIS_DETAIL_ADDRESS, { DETAIL_ADDRESS, PAH_QUERY_ANA_ADDRESS, { PhotoColumn::PHOTOS_TABLE + "." + LATITUDE,
         PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, LANGUAGE, COUNTRY, ADMIN_AREA, SUB_ADMIN_AREA, LOCALITY,
-        SUB_LOCALITY, THOROUGHFARE, SUB_THOROUGHFARE, FEATURE_NAME, CITY_NAME, ADDRESS_DESCRIPTION, LOCATION_TYPE} } },
+        SUB_LOCALITY, THOROUGHFARE, SUB_THOROUGHFARE, FEATURE_NAME, CITY_NAME, ADDRESS_DESCRIPTION, LOCATION_TYPE,
+        AOI, POI, FIRST_AOI, FIRST_POI, LOCATION_VERSION, FIRST_AOI_CATEGORY, FIRST_POI_CATEGORY, FILE_ID} } },
     { ANALYSIS_HUMAN_FACE_TAG, { FACE_TAG, PAH_QUERY_ANA_FACE_TAG, { VISION_FACE_TAG_TABLE + "." + TAG_ID, TAG_NAME,
         USER_OPERATION, GROUP_TAG, RENAME_OPERATION, CENTER_FEATURES, USER_DISPLAY_LEVEL, TAG_ORDER, IS_ME, COVER_URI,
         COUNT, PORTRAIT_DATE_MODIFY, ALBUM_TYPE, IS_REMOVED } } },
@@ -2281,6 +2284,8 @@ static void FavoriteByUpdate(FileAssetAsyncContext *context)
         uriString = URI_UPDATE_AUDIO;
     }
     valuesBucket.Put(MEDIA_DATA_DB_IS_FAV, (context->isFavorite ? IS_FAV : NOT_FAV));
+    NAPI_INFO_LOG("Update asset %{public}d favorite to %{public}d", context->objectPtr->GetId(),
+        context->isFavorite ? IS_FAV : NOT_FAV);
     DataSharePredicates predicates;
     int32_t fileId = context->objectPtr->GetId();
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
@@ -2702,6 +2707,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::PHOTO_USER_COMMENT,
         PhotoColumn::CAMERA_SHOT_KEY,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+        PhotoColumn::SUPPORT_WATERMARK_TYPE,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
     };
@@ -3016,6 +3022,8 @@ static void UserFileMgrFavoriteExecute(napi_env env, void *data)
     DataShareValuesBucket valuesBucket;
     int32_t changedRows;
     valuesBucket.Put(MediaColumn::MEDIA_IS_FAV, context->isFavorite ? IS_FAV : NOT_FAV);
+    NAPI_INFO_LOG("update asset %{public}d favorite to %{public}d", context->objectPtr->GetId(),
+        context->isFavorite ? IS_FAV : NOT_FAV);
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
 
@@ -3895,6 +3903,8 @@ static void PhotoAccessHelperFavoriteExecute(napi_env env, void *data)
     DataShareValuesBucket valuesBucket;
     int32_t changedRows = 0;
     valuesBucket.Put(MediaColumn::MEDIA_IS_FAV, context->isFavorite ? IS_FAV : NOT_FAV);
+    NAPI_INFO_LOG("update asset %{public}d favorite to %{public}d", context->objectPtr->GetId(),
+        context->isFavorite ? IS_FAV : NOT_FAV);
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
 

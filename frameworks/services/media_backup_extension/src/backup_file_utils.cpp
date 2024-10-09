@@ -80,8 +80,12 @@ bool FileAccessHelper::ConvertCurrentPath(string &curPath, string &resultPath)
             return true;
         }
     }
-
-    for (const auto &entry : filesystem::directory_iterator(parentDir)) {
+    if (!MediaFileUtils::IsFileExists(parentDir)) {
+        MEDIA_WARN_LOG("%{public}s doesn't exist, skip.", parentDir.c_str());
+        return false;
+    }
+    for (const auto &entry : filesystem::directory_iterator(parentDir,
+        std::filesystem::directory_options::skip_permission_denied)) {
         string entryPath = entry.path();
         transform(entryPath.begin(), entryPath.end(), entryPath.begin(), ::tolower);
         if (entryPath == curPath) {
@@ -157,7 +161,7 @@ int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
     if (dateModified != 0 && data->GetFileDateModified() == 0) {
         data->SetFileDateModified(dateModified);
     }
-    string extension = ScannerUtils::GetFileExtension(path);
+    string extension = ScannerUtils::GetFileExtension(data->GetFileName()); // in case when trashed or hidden
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     data->SetFileExtension(extension);
     data->SetFileMimeType(mimeType);

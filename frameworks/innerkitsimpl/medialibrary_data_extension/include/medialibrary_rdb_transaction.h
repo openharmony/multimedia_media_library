@@ -49,6 +49,7 @@ private:
     int32_t BeginTransaction(bool isUpgrade = false);
     int32_t TransactionCommit();
     int32_t TransactionRollback();
+    int32_t PrepareForTransaction(bool isUpgrade);
 
     std::shared_ptr<OHOS::NativeRdb::RdbStore> rdbStore_;
     bool isStart = false;
@@ -58,6 +59,7 @@ private:
     static std::mutex transactionMutex_;
     static std::condition_variable transactionCV_;
     static std::atomic<bool> isInTransaction_;
+    static std::mutex storeMutex_;
 };
 } // namespace OHOS::Media
 

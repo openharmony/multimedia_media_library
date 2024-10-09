@@ -206,10 +206,10 @@ static void ExtractDateTakenMetadata(unique_ptr<ImageSource>& imageSource, uniqu
     string dateString;
     string timeString;
     int64_t int64Time = 0;
+    int32_t offsetTime = 0;
+    string offsetString;
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL, timeString);
     if (err == E_OK && !timeString.empty()) {
-        string offsetString;
-        int32_t offsetTime = 0;
         err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_OFFSET_TIME_ORIGINAL, offsetString);
         if (err == E_OK && offsetTimeToSeconds(offsetString, offsetTime) == E_OK) {
             int64Time = (convertUTCTimeStrToTimeStamp(timeString) + offsetTime) * MSEC_TO_SEC;
@@ -217,6 +217,20 @@ static void ExtractDateTakenMetadata(unique_ptr<ImageSource>& imageSource, uniqu
         } else {
             int64Time = (convertTimeStrToTimeStamp(timeString)) * MSEC_TO_SEC;
             MEDIA_DEBUG_LOG("Set date_taken from DateTimeOriginal in exif");
+        }
+        setSubSecondTime(imageSource, int64Time);
+        data->SetDateTaken(int64Time);
+        return;
+    }
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME, timeString);
+    if (err == E_OK && !timeString.empty()) {
+        err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_OFFSET_TIME_ORIGINAL, offsetString);
+        if (err == E_OK && offsetTimeToSeconds(offsetString, offsetTime) == E_OK) {
+            int64Time = (convertUTCTimeStrToTimeStamp(timeString) + offsetTime) * MSEC_TO_SEC;
+            MEDIA_DEBUG_LOG("Set date_taken from DateTime and OffsetTimeOriginal in exif");
+        } else {
+            int64Time = (convertTimeStrToTimeStamp(timeString)) * MSEC_TO_SEC;
+            MEDIA_DEBUG_LOG("Set date_taken from DateTime in exif");
         }
         setSubSecondTime(imageSource, int64Time);
         data->SetDateTaken(int64Time);

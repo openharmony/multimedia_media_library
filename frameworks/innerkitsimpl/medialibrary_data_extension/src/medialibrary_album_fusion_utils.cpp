@@ -33,6 +33,7 @@
 #include "thumbnail_service.h"
 #include "photo_file_operation.h"
 #include "photo_burst_operation.h"
+#include "photo_displayname_operation.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -89,6 +90,7 @@ static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {PhotoColumn::MOVING_PHOTO_EFFECT_MODE, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_FRONT_CAMERA, ResultSetDataType::TYPE_STRING},
     {PhotoColumn::PHOTO_BURST_COVER_LEVEL, ResultSetDataType::TYPE_INT32},
+    {PhotoColumn::SUPPORT_WATERMARK_TYPE, ResultSetDataType::TYPE_INT32},
 };
 
 static unordered_map<string, ResultSetDataType> thumbnailColumnTypeMap = {
@@ -115,6 +117,25 @@ static unordered_map<string, ResultSetDataType> albumColumnTypeMap = {
     {PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE, ResultSetDataType::TYPE_STRING},
     {PhotoAlbumColumns::ALBUM_IS_LOCAL, ResultSetDataType::TYPE_INT32},
 };
+
+int32_t MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(NativeRdb::RdbStore *upgradeStore)
+{
+    MEDIA_INFO_LOG("ALBUM_FUSE: STEP_0: Start remove misadded hidden data");
+    if (upgradeStore == nullptr) {
+        MEDIA_INFO_LOG("fail to get rdbstore");
+        return E_DB_FAIL;
+    }
+    int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int32_t err = upgradeStore->ExecuteSql(DROP_UNWANTED_ALBUM_RELATIONSHIP_FOR_HIDDEN_ALBUM_ASSET);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to drop unwanted album relationship for .hiddenAlbum! Failed to exec: %{public}s",
+            DROP_UNWANTED_ALBUM_RELATIONSHIP_FOR_HIDDEN_ALBUM_ASSET.c_str());
+        return err;
+    }
+    MEDIA_INFO_LOG("ALBUM_FUSE: STEP_0: End remove misadded hidden data, cost %{public}ld",
+        (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
+    return E_OK;
+}
 
 int32_t MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(NativeRdb::RdbStore *upgradeStore)
 {
@@ -269,6 +290,10 @@ int32_t CopyDirectory(const std::string &srcDir, const std::string &dstDir)
         MEDIA_ERR_LOG("Create dstDir %{public}s failed", dstDir.c_str());
         return E_FAIL;
     }
+    if (!MediaFileUtils::IsFileExists(srcDir)) {
+        MEDIA_WARN_LOG("%{public}s doesn't exist, skip.", srcDir.c_str());
+        return E_OK;
+    }
     for (const auto &dirEntry : std::filesystem::directory_iterator{ srcDir }) {
         std::string srcFilePath = dirEntry.path();
         std::string tmpFilePath = srcFilePath;
@@ -421,10 +446,31 @@ static void ParsingAndFillValue(NativeRdb::ValuesBucket &values, const string &c
     }
 }
 
-static int32_t BuildInsertValuesBucket(NativeRdb::ValuesBucket &values, const std::string &targetPath,
-    shared_ptr<NativeRdb::ResultSet> &resultSet, bool isCopyThumbnail)
+struct MediaAssetCopyInfo {
+    std::string targetPath;
+    bool isCopyThumbnail;
+    int32_t ownerAlbumId;
+    MediaAssetCopyInfo(const std::string& targetPath, bool isCopyThumbnail, int32_t ownerAlbumId)
+        : targetPath(targetPath), isCopyThumbnail(isCopyThumbnail), ownerAlbumId(ownerAlbumId) {}
+};
+ 
+static int32_t BuildInsertValuesBucket(NativeRdb::RdbStore &rdbStore, NativeRdb::ValuesBucket &values,
+    shared_ptr<NativeRdb::ResultSet> &resultSet, const MediaAssetCopyInfo &copyInfo)
 {
+    std::string targetPath = copyInfo.targetPath;
+    bool isCopyThumbnail = copyInfo.isCopyThumbnail;
+    int32_t ownerAlbumId = copyInfo.ownerAlbumId;
     values.PutString(MediaColumn::MEDIA_FILE_PATH, targetPath);
+    std::string uniqueDisplayName = PhotoDisplayNameOperation().FindDisplayName(rdbStore, resultSet, ownerAlbumId);
+    if (!uniqueDisplayName.empty()) {
+        values.PutString(MediaColumn::MEDIA_NAME, uniqueDisplayName);
+    } else {
+        MEDIA_ERR_LOG("Failed to get unique display name");
+    }
+    std::string burstKey = PhotoBurstOperation().FindBurstKey(rdbStore, resultSet, ownerAlbumId, uniqueDisplayName);
+    if (!burstKey.empty()) {
+        values.PutString(PhotoColumn::PHOTO_BURST_KEY, burstKey);
+    }
     for (auto it = commonColumnTypeMap.begin(); it != commonColumnTypeMap.end(); ++it) {
         string columnName = it->first;
         ResultSetDataType columnType = it->second;
@@ -579,12 +625,9 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(NativeRdb::RdbStore *u
             err);
         return err;
     }
+    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId);
     NativeRdb::ValuesBucket values;
-    std::string burstKey = PhotoBurstOperation().FindBurstKey(*upgradeStore, resultSet, ownerAlbumId);
-    if (!burstKey.empty()) {
-        values.PutString(PhotoColumn::PHOTO_BURST_KEY, burstKey);
-    }
-    err = BuildInsertValuesBucket(values, targetPath, resultSet, false);
+    err = BuildInsertValuesBucket(*upgradeStore, values, resultSet, copyInfo);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Insert meta data fail and delete migrated file %{public}s ", targetPath.c_str());
         DeleteFile(targetPath);
@@ -628,8 +671,9 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(NativeRdb::RdbStore *u
     if (err != E_OK) {
         return err;
     }
+    MediaAssetCopyInfo copyInfo(targetPath, true, ownerAlbumId);
     NativeRdb::ValuesBucket values;
-    err = BuildInsertValuesBucket(values, targetPath, resultSet, true);
+    err = BuildInsertValuesBucket(*upgradeStore, values, resultSet, copyInfo);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Build meta data fail and delete migrated file %{public}s ", targetPath.c_str());
         DeleteThumbnail(targetPath);
@@ -1021,7 +1065,7 @@ int32_t MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(NativeRdb::R
     // Keep dual hidden assets dirty state synced, let cloudsync handle compensating for hidden flags
     KeepHiddenAlbumAssetSynced(upgradeStore);
     RemediateErrorSourceAlbumSubType(upgradeStore);
-    HandleMissMatchScreenRecord(upgradeStore);
+    HandleMisMatchScreenRecord(upgradeStore);
     MEDIA_INFO_LOG("End rebuild album table and compensate loss value");
     return E_OK;
 }
@@ -1193,6 +1237,14 @@ void MediaLibraryAlbumFusionUtils::SetParameterToStartSync()
     }
 }
 
+static std::string ToLower(const std::string &str)
+{
+    std::string lowerStr;
+    std::transform(
+        str.begin(), str.end(), std::back_inserter(lowerStr), [](unsigned char c) { return std::tolower(c); });
+    return lowerStr;
+}
+
 int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(NativeRdb::RdbStore *upgradeStore)
 {
     if (upgradeStore == nullptr) {
@@ -1207,10 +1259,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(NativeRdb::RdbStore *
         "(a1.priority is null OR a1.priority ='1') order by "
         "album_name asc, album_subtype desc, cloud_id desc, count desc";
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_DUPLICATE_ALBUM);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query duplicate album fail");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_DB_FAIL, "Query duplicate album fail");
     int32_t rowCount = 0;
     resultSet->GetRowCount(rowCount);
     MEDIA_INFO_LOG("Begin clean duplicated album, there are %{public}d to clean", rowCount);
@@ -1221,6 +1270,8 @@ int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(NativeRdb::RdbStore *
         std::string targetAlbumName = "";
         GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, targetAlbumId);
         GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_NAME, targetAlbumName);
+        MEDIA_INFO_LOG("Clean duplicated album, targetAlbumId is: %{public}d ,target album name is %{public}s",
+            targetAlbumId, targetAlbumName.c_str());
         int32_t indexRight = ++indexLeft;
         std::string sourceAlbumName = "";
         while (indexRight < rowCount) {
@@ -1228,7 +1279,9 @@ int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(NativeRdb::RdbStore *
             int32_t sourceAlbumId = -1;
             GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, sourceAlbumId);
             GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_NAME, sourceAlbumName);
-            if (targetAlbumName == sourceAlbumName) {
+            MEDIA_INFO_LOG("Clean duplicated album, sourceAlbumId is %{public}d ,source album name is %{public}s",
+                sourceAlbumId, sourceAlbumName.c_str());
+            if (ToLower(targetAlbumName) == ToLower(sourceAlbumName)) {
                 DeleteALbumAndUpdateRelationship(upgradeStore, sourceAlbumId, targetAlbumId, IsCloudAlbum(resultSet));
                 indexRight++;
             } else {
@@ -1297,7 +1350,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(NativeRdb::RdbStor
     return E_OK;
 }
 
-static int32_t TransferMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
+static int32_t TransferMisMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
 {
     MEDIA_INFO_LOG("Transfer miss matched screeRecord begin");
     const std::string QUERY_SCREEN_RECORD_ALBUM =
@@ -1332,7 +1385,7 @@ static int32_t TransferMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
     return E_OK;
 }
  
-int32_t MediaLibraryAlbumFusionUtils::HandleMissMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
+int32_t MediaLibraryAlbumFusionUtils::HandleMisMatchScreenRecord(NativeRdb::RdbStore *upgradeStore)
 {
     if (upgradeStore == nullptr) {
         MEDIA_ERR_LOG("invalid rdbstore");
@@ -1347,7 +1400,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleMissMatchScreenRecord(NativeRdb::Rdb
         MEDIA_INFO_LOG("No miss matched screen record");
         return E_OK;
     }
-    return TransferMissMatchScreenRecord(upgradeStore);
+    return TransferMisMatchScreenRecord(upgradeStore);
 }
 
 int32_t MediaLibraryAlbumFusionUtils::RefreshAllAlbums()

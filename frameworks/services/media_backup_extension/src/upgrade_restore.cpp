@@ -22,6 +22,7 @@
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
 #include "ffrt.h"
+#include "ffrt_inner.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -52,6 +53,7 @@ constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 const std::string INTERNAL_PREFIX = "/storage/emulated";
+constexpr int32_t MAX_THREAD_NUM = 4;
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -94,7 +96,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         shouldIncludeSd_ = false;
         if (!MediaFileUtils::IsFileExists(externalDbPath_)) {
             MEDIA_ERR_LOG("External db is not exist.");
-            return E_FAIL;
+            return EXTERNAL_DB_NOT_EXIST;
         }
         int32_t externalErr = BackupDatabaseUtils::InitDb(externalRdb_, EXTERNAL_DB_NAME, externalDbPath_,
             mediaAppName_, false);
@@ -137,6 +139,8 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
         }
     }
     ParseXml(xmlPath);
+    this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
+    this->photosRestorePtr_->OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -239,8 +243,11 @@ void UpgradeRestore::RestoreAudioFromFile()
     MEDIA_INFO_LOG("start restore audio from audio_MediaInfo0");
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(audioRdb_, QUERY_DUAL_CLONE_AUDIO_COUNT, CUSTOM_COUNT);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
+    audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
+    MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset });
+        ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset }, {},
+            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
 }
@@ -281,7 +288,7 @@ bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::
     info.fileType = MediaType::MEDIA_TYPE_AUDIO;
     info.oldPath = GetStringVal(AUDIO_DATA, resultSet);
     if (!ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", info.oldPath.c_str());
+        MEDIA_ERR_LOG("Invalid path: %{public}s.", BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str());
         UpdateFailedFiles(info.fileType, info.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
@@ -300,14 +307,16 @@ void UpgradeRestore::RestorePhoto()
     InitGarbageAlbum();
     HandleClone();
     // upgrade gallery.db
-    DataTransfer::GalleryDbUpgrade galleryDbUpgrade;
-    galleryDbUpgrade.OnUpgrade(*this->galleryRdb_);
+    if (this->galleryRdb_ != nullptr) {
+        DataTransfer::GalleryDbUpgrade galleryDbUpgrade;
+        galleryDbUpgrade.OnUpgrade(*this->galleryRdb_);
+    } else {
+        MEDIA_WARN_LOG("galleryRdb_ is nullptr, Maybe init failed, skip gallery db upgrade.");
+    }
     // restore PhotoAlbum
-    this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     this->photoAlbumRestore_.Restore();
     RestoreFromGalleryPortraitAlbum();
     // restore Photos
-    this->photosRestorePtr_->OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     RestoreFromGallery();
     StopParameterForClone(sceneCode_);
     MEDIA_INFO_LOG("migrate from gallery number: %{public}lld, file number: %{public}lld",
@@ -432,7 +441,7 @@ void UpgradeRestore::HandleClone()
     for (int32_t offset = 0; offset < totalNumber; offset += PRE_CLONE_PHOTO_BATCH_COUNT) {
         ffrt::submit([this, offset, maxId]() {
                 HandleCloneBatch(offset, maxId);
-            }, { &offset });
+            }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
 }
@@ -492,8 +501,12 @@ void UpgradeRestore::RestoreFromGallery()
     int32_t totalNumber =
         this->photosRestorePtr_->GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
+    totalNumber_ += static_cast<uint64_t>(totalNumber);
+    MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
+    ffrt_set_cpu_worker_max_num(ffrt::qos_default, MAX_THREAD_NUM);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset });
+        ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset }, {},
+            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
 }
@@ -516,10 +529,13 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
     int32_t type = isCamera ? SourceType::EXTERNAL_CAMERA : SourceType::EXTERNAL_OTHERS;
     int32_t totalNumber = QueryNotSyncTotalNumber(maxId, isCamera);
     MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
+    totalNumber_ += static_cast<uint64_t>(totalNumber);
+    MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
+    ffrt_set_cpu_worker_max_num(ffrt::qos_default, MAX_THREAD_NUM);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset, maxId, isCamera, type]() {
                 RestoreExternalBatch(offset, maxId, isCamera, type);
-            }, { &offset });
+            }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
 }
@@ -542,8 +558,7 @@ int32_t UpgradeRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
 void UpgradeRestore::HandleRestData(void)
 {
     MEDIA_INFO_LOG("Start to handle rest data in native.");
-    // restore thumbnail for date fronted 500 photos
-    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
+    RestoreThumbnail();
 
     std::string photoData = appDataPath_ + "/" + galleryAppName_;
     std::string mediaData = appDataPath_ + "/" + mediaAppName_;
@@ -592,7 +607,7 @@ bool UpgradeRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb::Res
     }
     info.fileType = MediaType::MEDIA_TYPE_AUDIO;
     if (!BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", info.oldPath.c_str());
+        MEDIA_ERR_LOG("Invalid path: %{public}s.", BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str());
         UpdateFailedFiles(info.fileType, info.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
@@ -672,7 +687,7 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     if (sceneCode_ == UPGRADE_RESTORE_ID ?
         !BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath) :
         !ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath, info)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", info.oldPath.c_str());
+        MEDIA_ERR_LOG("Invalid path: %{public}s.", BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str());
         UpdateFailedFiles(info.fileType, info.oldPath, RestoreError::PATH_INVALID);
         return false;
     }

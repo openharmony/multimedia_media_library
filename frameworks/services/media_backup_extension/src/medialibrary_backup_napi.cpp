@@ -53,6 +53,7 @@ napi_value MediaLibraryBackupNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("startRestore", JSStartRestore),
         DECLARE_NAPI_FUNCTION("startRestoreEx", JSStartRestoreEx),
         DECLARE_NAPI_FUNCTION("getBackupInfo", JSGetBackupInfo),
+        DECLARE_NAPI_FUNCTION("getProgressInfo", JSGetProgressInfo),
     };
 
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(media_library_properties) /
@@ -268,6 +269,19 @@ napi_value MediaLibraryBackupNapi::JSGetBackupInfo(napi_env env, napi_callback_i
     std::string backupInfo;
     BackupRestoreService::GetInstance().GetBackupInfo(sceneCode, backupInfo);
     CHECK_ARGS(env, napi_create_string_utf8(env, backupInfo.c_str(), NAPI_AUTO_LENGTH, &result), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value MediaLibraryBackupNapi::JSGetProgressInfo(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    if (CheckPermission() != E_OK) {
+        return result;
+    }
+
+    std::string progressInfo;
+    BackupRestoreService::GetInstance().GetProgressInfo(progressInfo);
+    CHECK_ARGS(env, napi_create_string_utf8(env, progressInfo.c_str(), NAPI_AUTO_LENGTH, &result), JS_INNER_FAIL);
     return result;
 }
 } // namespace Media

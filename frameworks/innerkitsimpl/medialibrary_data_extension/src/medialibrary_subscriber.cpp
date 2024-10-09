@@ -78,6 +78,8 @@ const int32_t WIFI_STATE_CONNECTED = 4;
 
 const int32_t DELAY_TASK_TIME = 30000;
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
+const int32_t MB_SHIFT = 20;
+const int32_t MAX_FILE_SIZE_MB = 200;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
@@ -151,9 +153,47 @@ bool MedialibrarySubscriber::Subscribe(void)
     return EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber);
 }
 
+static void UploadDBFile()
+{
+    int64_t begin = MediaFileUtils::UTCTimeMilliSeconds();
+    static const std::string databaseDir = MEDIA_DB_DIR + "/rdb";
+    static const std::vector<std::string> dbFileName = { "/media_library.db",
+                                                         "/media_library.db-shm",
+                                                         "/media_library.db-wal" };
+    static const std::string destPath = "/data/storage/el2/log/logpack";
+    int64_t totalFileSize = 0;
+    for (auto &dbName : dbFileName) {
+        string dbPath = databaseDir + dbName;
+        struct stat statInfo {};
+        if (stat(dbPath.c_str(), &statInfo) != 0) {
+            continue;
+        }
+        totalFileSize += statInfo.st_size;
+    }
+    totalFileSize >>= MB_SHIFT; // Convert bytes to MB
+    if (totalFileSize > MAX_FILE_SIZE_MB) {
+        MEDIA_WARN_LOG("DB file over 200MB are not uploaded, totalFileSize is %{public}ld MB", (long)totalFileSize);
+        return ;
+    }
+    if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateDirectory(destPath)) {
+        MEDIA_ERR_LOG("Create dir failed, dir=%{private}s", destPath.c_str());
+        return ;
+    }
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    if (dataManager == nullptr) {
+        MEDIA_ERR_LOG("dataManager is nullptr");
+        return;
+    }
+    dataManager->UploadDBFileInner();
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("Handle %{public}ld MB DBFile success, cost %{public}ld ms", (long)totalFileSize,
+        (long)(end - begin));
+}
+
 void MedialibrarySubscriber::CheckHalfDayMissions()
 {
     if (isScreenOff_ && isCharging_) {
+        UploadDBFile();
         DfxManager::GetInstance()->HandleHalfDayMissions();
         MediaLibraryRestore::GetInstance().CheckBackup();
     }

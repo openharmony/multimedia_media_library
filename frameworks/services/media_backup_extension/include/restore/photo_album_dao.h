@@ -42,6 +42,7 @@ public:
     PhotoAlbumRowData GetPhotoAlbum(const std::string &lPath);
     PhotoAlbumRowData GetOrCreatePhotoAlbum(const PhotoAlbumRowData &album);
     int32_t RestoreAlbums(std::vector<PhotoAlbumRowData> &photoAlbums);
+    PhotoAlbumRowData BuildAlbumInfoOfRecorders();
     std::string ToString(const PhotoAlbumRowData &albumInfo)
     {
         return "albumId: " + std::to_string(albumInfo.albumId) + ", albumType: " + std::to_string(albumInfo.albumType) +

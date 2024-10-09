@@ -144,7 +144,9 @@ static void DeleteAssetHandlerSafe(AssetHandler *handler, napi_env env)
 {
     if (handler != nullptr) {
         NAPI_DEBUG_LOG("[AssetHandler delete] %{public}p.", handler);
-        handler->dataHandler->DeleteNapiReference(env);
+        if (handler->dataHandler != nullptr) {
+            handler->dataHandler->DeleteNapiReference(env);
+        }
         delete handler;
         handler = nullptr;
     }
@@ -168,41 +170,43 @@ static void InsertInProcessMapRecord(const std::string &requestUri, const std::s
 {
     std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     std::map<std::string, AssetHandler*> assetHandler;
-    if (inProcessUriMap.find(requestUri) != inProcessUriMap.end()) {
-        assetHandler = inProcessUriMap[requestUri];
+    auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(requestUri);
+    if (inProcessUriMap.find(uriLocal) != inProcessUriMap.end()) {
+        assetHandler = inProcessUriMap[uriLocal];
         assetHandler[requestId] = handler;
-        inProcessUriMap[requestUri] = assetHandler;
+        inProcessUriMap[uriLocal] = assetHandler;
     } else {
         assetHandler[requestId] = handler;
-        inProcessUriMap[requestUri] = assetHandler;
+        inProcessUriMap[uriLocal] = assetHandler;
     }
 }
 
 static void DeleteInProcessMapRecord(const std::string &requestUri, const std::string &requestId)
 {
     std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
-    if (inProcessUriMap.find(requestUri) == inProcessUriMap.end()) {
+    auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(requestUri);
+    if (inProcessUriMap.find(uriLocal) == inProcessUriMap.end()) {
         return;
     }
 
-    std::map<std::string, AssetHandler*> assetHandlers = inProcessUriMap[requestUri];
+    std::map<std::string, AssetHandler*> assetHandlers = inProcessUriMap[uriLocal];
     if (assetHandlers.find(requestId) == assetHandlers.end()) {
         return;
     }
 
     assetHandlers.erase(requestId);
     if (!assetHandlers.empty()) {
-        inProcessUriMap[requestUri] = assetHandlers;
+        inProcessUriMap[uriLocal] = assetHandlers;
         return;
     }
 
-    inProcessUriMap.erase(requestUri);
+    inProcessUriMap.erase(uriLocal);
 
-    if (multiStagesObserverMap.find(requestUri) != multiStagesObserverMap.end()) {
-        UserFileClient::UnregisterObserverExt(Uri(requestUri),
-            static_cast<std::shared_ptr<DataShare::DataShareObserver>>(multiStagesObserverMap[requestUri]));
+    if (multiStagesObserverMap.find(uriLocal) != multiStagesObserverMap.end()) {
+        UserFileClient::UnregisterObserverExt(Uri(uriLocal),
+            static_cast<std::shared_ptr<DataShare::DataShareObserver>>(multiStagesObserverMap[uriLocal]));
     }
-    multiStagesObserverMap.erase(requestUri);
+    multiStagesObserverMap.erase(uriLocal);
 }
 
 static int32_t IsInProcessInMapRecord(const std::string &requestId, AssetHandler* &handler)
@@ -278,9 +282,10 @@ static ProgressHandler* InsertProgressHandler(napi_env env, MediaAssetManagerAsy
 
 static void DeleteDataHandler(NotifyMode notifyMode, const std::string &requestUri, const std::string &requestId)
 {
+    auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(requestUri);
     NAPI_INFO_LOG("Rmv %{public}d, %{public}s, %{public}s", notifyMode, requestUri.c_str(), requestId.c_str());
     if (notifyMode == NotifyMode::WAIT_FOR_HIGH_QUALITY) {
-        DeleteInProcessMapRecord(requestUri, requestId);
+        DeleteInProcessMapRecord(uriLocal, requestId);
     }
     inProcessFastRequests.Erase(requestId);
 }
@@ -291,7 +296,7 @@ MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId
     photoId = "";
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    std::vector<std::string> fetchColumn { PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_ID };
+    std::vector<std::string> fetchColumn { PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_ID};
     string queryUri;
     if (hasReadPermission) {
         queryUri = PAH_QUERY_PHOTO;
@@ -306,7 +311,6 @@ MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId
         NAPI_ERR_LOG("query resultSet is nullptr");
         return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     }
-
     int indexOfPhotoId = -1;
     resultSet->GetColumnIndex(PhotoColumn::PHOTO_ID, indexOfPhotoId);
     resultSet->GetString(indexOfPhotoId, photoId);
@@ -631,12 +635,14 @@ static std::string GenerateRequestId()
 void MediaAssetManagerNapi::RegisterTaskObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
 {
     auto dataObserver = std::make_shared<MultiStagesTaskObserver>(asyncContext->fileId);
+    auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(asyncContext->photoUri);
+    NAPI_INFO_LOG("uri: %{public}s, %{public}s", asyncContext->photoUri.c_str(), uriLocal.c_str());
     Uri uri(asyncContext->photoUri);
     std::unique_lock<std::mutex> registerLock(registerTaskLock);
-    if (multiStagesObserverMap.find(asyncContext->photoUri) == multiStagesObserverMap.end()) {
-        UserFileClient::RegisterObserverExt(uri,
+    if (multiStagesObserverMap.find(uriLocal) == multiStagesObserverMap.end()) {
+        UserFileClient::RegisterObserverExt(Uri(uriLocal),
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
-        multiStagesObserverMap.insert(std::make_pair(asyncContext->photoUri, dataObserver));
+        multiStagesObserverMap.insert(std::make_pair(uriLocal, dataObserver));
     }
     registerLock.unlock();
 
@@ -1344,9 +1350,9 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         NAPI_DEBUG_LOG("ignore notify change, type: %{public}d", changeInfo.changeType_);
         return;
     }
-
     for (auto &uri : changeInfo.uris_) {
         string uriString = uri.ToString();
+        NAPI_DEBUG_LOG("%{public}s", uriString.c_str());
         std::string photoId = "";
         if (MediaAssetManagerNapi::QueryPhotoStatus(fileId_, uriString, photoId, true) !=
             MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {

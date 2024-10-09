@@ -46,7 +46,7 @@ void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<Pictu
         time_t now = time(nullptr);
         if (((iter->second)->expireTime_ < now) && ((iter->second)->isCleanImmediately_)) {
             if (pictureType == LOW_QUALITY_PICTURE) {
-                FileUtils::SavePicture(iter->first, (iter->second)->picture_);
+                FileUtils::SavePicture(iter->first, (iter->second)->picture_, false, true);
             }
             MEDIA_INFO_LOG("enter CleanDateByPictureMap %{public}s enter", (iter->first).c_str());
             iter->second = nullptr;
@@ -171,10 +171,10 @@ void PictureDataOperations::SavePictureWithImageId(const std::string& imageId)
         pictureType = (PictureType)(pictureType - 1)) {
         switch (pictureType) {
             case LOW_QUALITY_PICTURE:
-                isSuccess = SavePicture(imageId, lowQualityPictureMap_);
+                isSuccess = SavePicture(imageId, lowQualityPictureMap_, true);
                 break;
             case HIGH_QUALITY_PICTURE:
-                isSuccess = SavePicture(imageId, highQualityPictureMap_);
+                isSuccess = SavePicture(imageId, highQualityPictureMap_, false);
                 break;
             default:
                 break;
@@ -257,12 +257,12 @@ void PictureDataOperations::SaveLowQualityPicture(const std::string& imageId)
 {
     MEDIA_DEBUG_LOG("enter ");
     enum PictureType pictureType;
-    bool isSuccess = SavePicture(imageId, lowQualityPictureMap_);
+    bool isSuccess = SavePicture(imageId, lowQualityPictureMap_, true);
 }
 
 // 落盘低质量图，包括低质量裸图
 bool PictureDataOperations::SavePicture(const std::string& imageId,
-    std::map<std::string, sptr<PicturePair>>& pictureMap)
+    std::map<std::string, sptr<PicturePair>>& pictureMap, bool isLowQualityPicture)
 {
     MEDIA_DEBUG_LOG("enter photoId: %{public}s", imageId.c_str());
     lock_guard<mutex> lock(pictureMapMutex_);
@@ -277,8 +277,8 @@ bool PictureDataOperations::SavePicture(const std::string& imageId,
         iter = pictureMap.find(imageId);
     }
     if (iter != pictureMap.end()) {
-        FileUtils::SavePicture(iter->first, (iter->second)->picture_);
-        MEDIA_INFO_LOG("Save Low Quality file Success, photoId: %{public}s", imageId.c_str());
+        FileUtils::SavePicture(iter->first, (iter->second)->picture_, false, isLowQualityPicture);
+        MEDIA_INFO_LOG("SavePicture, photoId: %{public}s", imageId.c_str());
         // 落盘后清除缓存数据
         pictureMap.erase(iter);
         isSuccess = true;
@@ -292,7 +292,7 @@ void PictureDataOperations::SavePictureExecutor(AsyncTaskData *data)
     auto picturePair = taskData->picturePair_;
 
     MEDIA_DEBUG_LOG("SavePictureExecutor %{public}d ", taskSize);
-    FileUtils::SavePicture(picturePair->photoId_, picturePair->picture_);
+    FileUtils::SavePicture(picturePair->photoId_, picturePair->picture_, false, true);
     picturePair->isCleanImmediately_ = true;
     taskSize --;
 }

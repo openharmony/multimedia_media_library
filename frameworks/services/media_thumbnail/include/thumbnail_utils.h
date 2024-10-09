@@ -45,9 +45,9 @@ struct ThumbRdbOpt {
     EXPORT std::string row;
     EXPORT std::string uri;
     EXPORT std::string dateAdded;
+    EXPORT std::string dateTaken;
     EXPORT std::string fileUri;
     EXPORT std::string fileId;
-    EXPORT std::string dateTaken;
     EXPORT Size screenSize;
 };
 
@@ -137,8 +137,6 @@ public:
         LoadSourceType sourceType);
     EXPORT static void RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats);
 
-    EXPORT static bool QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
-        const std::string &table, std::vector<ThumbnailData> &infos);
     EXPORT static bool GenerateOldKvStoreKey(const std::string &fieldId, const std::string &dateAdded,
         std::string &key);
     EXPORT static bool GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key);
@@ -159,7 +157,7 @@ private:
     EXPORT static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     EXPORT static int64_t UTCTimeMilliSeconds();
     EXPORT static void ParseQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        ThumbnailData &data, int &err);
+        ThumbnailData &data, int &err, const std::vector<std::string> &column);
     EXPORT static void ParseStringResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         int index, std::string &data, int &err);
 

@@ -40,9 +40,11 @@ public:
         return 0;
     }
 
-    int32_t OnStop()
+    int32_t OnStop(std::atomic<uint64_t> &totalNumber, std::atomic<int32_t> &processStatus)
     {
-        this->FixDuplicateBurstKeyInDifferentAlbum();
+        processStatus = ProcessStatus::START;
+        this->FixDuplicateBurstKeyInDifferentAlbum(totalNumber);
+        processStatus = ProcessStatus::STOP;
         return 0;
     }
 
@@ -56,6 +58,7 @@ public:
     std::shared_ptr<NativeRdb::ResultSet> GetPhotosNotInPhotoMap(int32_t offset, int32_t pageSize);
     int32_t GetPhotosRowCountInPhotoMap();
     int32_t GetPhotosRowCountNotInPhotoMap();
+    std::string FindlPath(const FileInfo &fileInfo);
     int32_t FindAlbumId(const FileInfo &fileInfo);
     std::string FindPackageName(const FileInfo &info);
     std::string FindBundleName(const FileInfo &info);
@@ -64,10 +67,13 @@ private:
     enum { UUID_STR_LENGTH = 37 };
 
 private:
-    int32_t FixDuplicateBurstKeyInDifferentAlbum();
+    PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(const FileInfo &fileInfo);
+    int32_t FixDuplicateBurstKeyInDifferentAlbum(std::atomic<uint64_t> &totalNumber);
     std::vector<PhotosDao::PhotosRowData> FindDuplicateBurstKey();
     std::string ToString(const std::vector<NativeRdb::ValueObject> &values);
     std::string GenerateUuid();
+    std::string ToString(const FileInfo &fileInfo);
+    std::string ToLower(const std::string &str);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryTargetRdb_;
@@ -84,7 +90,8 @@ private:
             ON PhotoAlbum.album_id=PhotoMap.map_album \
             INNER JOIN Photos \
             ON PhotoMap.map_asset=Photos.file_id \
-        WHERE Photos.position IN (1, 3);";
+        WHERE Photos.position IN (1, 3) AND \
+            (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum');";
     std::string SQL_PHOTOS_TABLE_QUERY_IN_PHOTO_MAP = "\
         SELECT PhotoAlbum.lpath, \
             Photos.* \
@@ -93,13 +100,17 @@ private:
             ON PhotoAlbum.album_id=PhotoMap.map_album \
             INNER JOIN Photos \
             ON PhotoMap.map_asset=Photos.file_id \
-        WHERE Photos.position IN (1, 3) \
+        WHERE Photos.position IN (1, 3) AND \
+            (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum') \
         ORDER BY Photos.file_id \
         LIMIT ?, ? ;";
     std::string SQL_PHOTOS_TABLE_COUNT_NOT_IN_PHOTO_MAP = "\
         SELECT COUNT(1) AS count \
         FROM Photos \
-        WHERE position IN (1, 3);";
+            LEFT JOIN PhotoAlbum \
+            ON Photos.owner_album_id = PhotoAlbum.album_id \
+        WHERE position IN (1, 3) AND \
+            (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum');";
     std::string SQL_PHOTOS_TABLE_QUERY_NOT_IN_PHOTO_MAP = "\
         SELECT \
             PhotoAlbum.lpath, \
@@ -107,7 +118,8 @@ private:
         FROM Photos \
             LEFT JOIN PhotoAlbum \
             ON Photos.owner_album_id=PhotoAlbum.album_id \
-        WHERE position IN (1, 3) \
+        WHERE position IN (1, 3) AND \
+            (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum') \
         ORDER BY Photos.file_id \
         LIMIT ?, ? ;";
     std::string SQL_PHOTOS_TABLE_BURST_KEY_DUPLICATE_QUERY = "\

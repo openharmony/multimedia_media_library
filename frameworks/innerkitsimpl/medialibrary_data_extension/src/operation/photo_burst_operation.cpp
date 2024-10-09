@@ -21,6 +21,7 @@
 #include <sstream>
 #include <vector>
 #include <numeric>
+#include <algorithm>
 
 #include "rdb_store.h"
 #include "result_set_utils.h"
@@ -33,16 +34,18 @@ namespace OHOS::Media {
  * @brief Find burstKey from the given albumId, only for BURST photo.
  * @return burstKey, if found; empty string, otherwise.
  */
-std::string PhotoBurstOperation::FindBurstKey(
-    NativeRdb::RdbStore &rdbStore, const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t targetAlbumId)
+std::string PhotoBurstOperation::FindBurstKey(NativeRdb::RdbStore &rdbStore,
+    const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t targetAlbumId,
+    const std::string &uniqueDisplayName)
 {
-    if (resultSet == nullptr || targetAlbumId <= 0) {
+    if (resultSet == nullptr || targetAlbumId <= 0 || uniqueDisplayName.empty()) {
         MEDIA_ERR_LOG("Media_Operation: FindBurstKey: resultSet is null or targetAlbumId is invalid");
         return "";
     }
     // Build the photo asset info.
     PhotoBurstOperation::PhotoAssetInfo photoAssetInfo;
-    photoAssetInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    photoAssetInfo.displayName =
+        uniqueDisplayName.empty() ? GetStringVal(MediaColumn::MEDIA_NAME, resultSet) : uniqueDisplayName;
     photoAssetInfo.subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
     photoAssetInfo.ownerAlbumId = targetAlbumId;
     photoAssetInfo.burstGroupName = this->FindBurstGroupName(photoAssetInfo.displayName);
@@ -84,7 +87,7 @@ std::string PhotoBurstOperation::ToString(const std::vector<NativeRdb::ValueObje
     for (auto &value : values) {
         std::string str;
         value.GetString(str);
-        result.emplace_back(str);
+        result.emplace_back(str + ", ");
     }
     return std::accumulate(result.begin(), result.end(), std::string());
 }
@@ -112,9 +115,11 @@ std::string PhotoBurstOperation::FindBurstGroupName(const std::string &displayNa
 {
     auto pos = displayName.find(this->TITLE_KEY_WORDS_OF_BURST);
     if (pos == std::string::npos) {
+        MEDIA_ERR_LOG("Media_Operation: FindBurstGroupName: cannot find _BURST in displayName. displayName: %{public}s",
+            displayName.c_str());
         return "";
     }
-    return displayName.substr(0, pos + this->TITLE_KEY_WORDS_OF_BURST.size());
+    return displayName.substr(0, std::min<int32_t>(pos, DISPLAY_NAME_PREFIX_LENGTH) + 1);
 }
 
 std::string PhotoBurstOperation::QueryBurstKeyFromDB(

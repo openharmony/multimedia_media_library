@@ -19,7 +19,6 @@
 
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
-#include "backup_restore_service.h"
 #include "clone_source.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_rdb_utils.h"
@@ -30,6 +29,8 @@
 #include "media_file_utils.h"
 #define private public
 #define protected public
+#include "backup_restore_service.h"
+#include "base_restore.h"
 #include "clone_restore.h"
 #undef private
 #undef protected
@@ -216,25 +217,6 @@ int32_t GetAlbumCountByCondition(shared_ptr<NativeRdb::RdbStore> rdbStore, const
     return result;
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_album_test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialibrary_backup_clone_restore_album_test_001 start");
-    ClearData();
-    CloneSource cloneSource;
-    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE, PhotoMap::TABLE };
-    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
-    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
-    restoreService->RestoreAlbum();
-    int32_t sourceAlbumCount = GetAlbumCountByCondition(g_rdbStore->GetRaw(), PhotoAlbumColumns::TABLE,
-        PhotoAlbumSubType::SOURCE_GENERIC);
-    EXPECT_EQ(sourceAlbumCount, EXPECTED_SOURCE_ALBUM_COUNT);
-    int32_t userAlbumCount = GetAlbumCountByCondition(g_rdbStore->GetRaw(), PhotoAlbumColumns::TABLE,
-        PhotoAlbumSubType::USER_GENERIC);
-    EXPECT_EQ(userAlbumCount, EXPECTED_USER_ALBUM_COUNT);
-    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
-}
-
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_album_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_restore_album_test_002 start");
@@ -318,32 +300,6 @@ int32_t GetMapCountByTable(shared_ptr<NativeRdb::RdbStore> rdbStore, const strin
     int32_t result = INVALID_COUNT;
     QueryInt(rdbStore, querySql, MEDIA_COLUMN_COUNT_1, result);
     return result;
-}
-
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_test_002, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialibrary_backup_clone_restore_photo_test_002 start");
-    ClearData();
-    CloneSource cloneSource;
-    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE, PhotoMap::TABLE,
-        ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
-    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
-    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
-    restoreService->RestoreAlbum();
-    RestorePhoto();
-    int32_t photoCount = GetCountByWhereClause(PhotoColumn::PHOTOS_TABLE, g_rdbStore->GetRaw());
-    EXPECT_EQ(photoCount, EXPECTED_PHOTO_COUNT);
-    int32_t photoMapCount = GetMapCountByTable(g_rdbStore->GetRaw(), PhotoMap::TABLE);
-    EXPECT_EQ(photoMapCount, EXPECTED_PHOTO_MAP_COUNT);
-    int32_t analysisPhotoMapCount = GetMapCountByTable(g_rdbStore->GetRaw(), ANALYSIS_PHOTO_MAP_TABLE);
-    EXPECT_EQ(analysisPhotoMapCount, EXPECTED_ANALYSIS_PHOTO_MAP_COUNT);
-    for (const auto &whereClause : WHERE_CLAUSE_LIST_PHOTO) {
-        int32_t count = GetCountByWhereClause(PhotoColumn::PHOTOS_TABLE, g_rdbStore->GetRaw(), whereClause);
-        int32_t expectedCount = whereClause == WHERE_CLAUSE_EDIT ? EXPECTED_COUNT_0 : EXPECTED_COUNT_1;
-        EXPECT_EQ(count, expectedCount);
-    }
-    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
 int32_t GetAlbumOrMapTotalCount(shared_ptr<NativeRdb::RdbStore> rdbStore,
@@ -653,6 +609,174 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generat
         }
     }
     MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_003 end");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_portrait_album_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_portrait_album_test_001");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { ANALYSIS_ALBUM_TABLE };
+    Init(cloneSource, TEST_DB_PATH, tableList);
+
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+    restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    restoreService->RestoreFromGalleryPortraitAlbum();
+
+    VerifyPortraitAlbumRestore(restoreService->mediaLibraryRdb_);
+}
+
+void MediaLibraryBackupCloneTest::VerifyPortraitAlbumRestore(const std::shared_ptr<NativeRdb::RdbStore>& db)
+{
+    std::string querySql = "SELECT * FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE album_type = " + std::to_string(SMART) +
+        " AND album_subtype = " + std::to_string(PORTRAIT);
+
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = db->QuerySql(querySql);
+    ASSERT_NE(resultSet, nullptr);
+
+    EXPECT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
+
+    int index;
+    std::string columnValue;
+
+    (void)resultSet->GetColumnIndex("album_name", index);
+    resultSet->GetString(index, columnValue);
+    EXPECT_EQ(columnValue, "Test Portrait Album");
+
+    (void)resultSet->GetColumnIndex("tag_id", index);
+    resultSet->GetString(index, columnValue);
+    EXPECT_EQ(columnValue, "test_tag_id");
+
+    (void)resultSet->GetColumnIndex("cover_uri", index);
+    resultSet->GetString(index, columnValue);
+    EXPECT_EQ(columnValue, "test_cover_uri");
+
+    (void)resultSet->GetColumnIndex("is_cover_satisfied", index);
+    int isCoverSatisfied;
+    resultSet->GetInt(index, isCoverSatisfied);
+    EXPECT_EQ(isCoverSatisfied, 1);
+
+    EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_portrait_clustering_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_portrait_clustering_test_001");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_FACE_TAG_TABLE };
+    Init(cloneSource, TEST_DB_PATH, tableList);
+
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+    restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    restoreService->RestorePortraitClusteringInfo();
+
+    VerifyPortraitClusteringRestore(restoreService->mediaLibraryRdb_);
+}
+
+void MediaLibraryBackupCloneTest::VerifyPortraitClusteringRestore(const std::shared_ptr<NativeRdb::RdbStore>& db)
+{
+    std::string querySql = "SELECT * FROM " + VISION_FACE_TAG_TABLE;
+
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = db->QuerySql(querySql);
+    ASSERT_NE(resultSet, nullptr);
+
+    EXPECT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
+
+    int index;
+    std::string stringValue;
+    int intValue;
+
+    (void)resultSet->GetColumnIndex(FACE_TAG_COL_TAG_ID, index);
+    resultSet->GetString(index, stringValue);
+    EXPECT_EQ(stringValue, "test_tag_id");
+
+    (void)resultSet->GetColumnIndex(FACE_TAG_COL_TAG_NAME, index);
+    resultSet->GetString(index, stringValue);
+    EXPECT_EQ(stringValue, "Test Face Tag");
+
+    (void)resultSet->GetColumnIndex(FACE_TAG_COL_CENTER_FEATURES, index);
+    resultSet->GetString(index, stringValue);
+    EXPECT_EQ(stringValue, "test_center_features");
+
+    (void)resultSet->GetColumnIndex(FACE_TAG_COL_TAG_VERSION, index);
+    resultSet->GetInt(index, intValue);
+    EXPECT_EQ(intValue, 1);
+
+    (void)resultSet->GetColumnIndex(FACE_TAG_COL_ANALYSIS_VERSION, index);
+    resultSet->GetInt(index, intValue);
+    EXPECT_EQ(intValue, 1);
+    EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_image_face_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_image_face_test_001");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_IMAGE_FACE_TABLE };
+    Init(cloneSource, TEST_DB_PATH, tableList);
+
+    std::vector<FileInfo> fileInfos;
+    SetupMockImgFaceData(fileInfos);
+
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+    restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    restoreService->RestoreImageFaceInfo(fileInfos);
+
+    VerifyImageFaceRestore(restoreService->mediaLibraryRdb_, fileInfos);
+
+    ClearCloneSource(cloneSource, TEST_DB_PATH);
+}
+
+void MediaLibraryBackupCloneTest::SetupMockImgFaceData(std::vector<FileInfo>& fileInfos)
+{
+    FileInfo fileInfo;
+    fileInfo.fileIdOld = 1;
+    fileInfo.fileIdNew = FILE_INFO_NEW_ID;
+    fileInfos.push_back(fileInfo);
+}
+
+void MediaLibraryBackupCloneTest::VerifyImageFaceRestore(const std::shared_ptr<NativeRdb::RdbStore>& db,
+    const std::vector<FileInfo>& fileInfos)
+{
+    std::string querySql = "SELECT * FROM " + VISION_IMAGE_FACE_TABLE +
+        " WHERE " + IMAGE_FACE_COL_FILE_ID + " = " + std::to_string(fileInfos[0].fileIdNew);
+
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = db->QuerySql(querySql);
+    ASSERT_NE(resultSet, nullptr);
+
+    EXPECT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
+
+    int index;
+    int intValue;
+    std::string stringValue;
+    double doubleValue;
+
+    (void)resultSet->GetColumnIndex(IMAGE_FACE_COL_FILE_ID, index);
+    resultSet->GetInt(index, intValue);
+    EXPECT_EQ(intValue, fileInfos[0].fileIdNew);
+
+    (void)resultSet->GetColumnIndex(IMAGE_FACE_COL_FACE_ID, index);
+    resultSet->GetString(index, stringValue);
+    EXPECT_EQ(stringValue, "test_face_id");
+
+    (void)resultSet->GetColumnIndex(IMAGE_FACE_COL_TAG_ID, index);
+    resultSet->GetString(index, stringValue);
+    EXPECT_EQ(stringValue, "test_tag_id");
+
+    (void)resultSet->GetColumnIndex(IMAGE_FACE_COL_SCALE_X, index);
+    resultSet->GetDouble(index, doubleValue);
+    EXPECT_DOUBLE_EQ(doubleValue, 1.0);
+
+    (void)resultSet->GetColumnIndex(IMAGE_FACE_COL_SCALE_Y, index);
+    resultSet->GetDouble(index, doubleValue);
+    EXPECT_DOUBLE_EQ(doubleValue, 1.0);
+    EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
 }
 } // namespace Media
 } // namespace OHOS

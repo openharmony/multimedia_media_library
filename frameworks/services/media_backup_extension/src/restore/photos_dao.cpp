@@ -36,6 +36,10 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileInAlbum(const FileInfo &fileInfo
     const std::vector<NativeRdb::ValueObject> params = {
         fileInfo.lPath, maxFileId, fileInfo.displayName, fileInfo.fileSize, pictureFlag, fileInfo.orientation};
     std::string querySql = this->SQL_PHOTOS_FIND_SAME_FILE_IN_ALBUM;
+    if (this->mediaLibraryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
+        return rowData;
+    }
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return rowData;
@@ -59,6 +63,10 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileWithoutAlbum(const FileInfo &fil
     const std::vector<NativeRdb::ValueObject> params = {
         maxFileId, fileInfo.displayName, fileInfo.fileSize, pictureFlag, fileInfo.orientation};
     std::string querySql = this->SQL_PHOTOS_FIND_SAME_FILE_WITHOUT_ALBUM;
+    if (this->mediaLibraryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
+        return rowData;
+    }
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return rowData;
@@ -73,14 +81,20 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileWithoutAlbum(const FileInfo &fil
  */
 PhotosDao::PhotosBasicInfo PhotosDao::GetBasicInfo()
 {
-    std::string querySql = this->SQL_PHOTOS_BASIC_INFO;
-    auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql);
     PhotosDao::PhotosBasicInfo basicInfo = {0, 0};
+    std::string querySql = this->SQL_PHOTOS_BASIC_INFO;
+    if (this->mediaLibraryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
+        return basicInfo;
+    }
+    auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_WARN_LOG("Media_Restore: GetBasicInfo resultSet is null. querySql: %{public}s", querySql.c_str());
         return basicInfo;
     }
     basicInfo.maxFileId = GetInt32Val("max_file_id", resultSet);
     basicInfo.count = GetInt32Val("count", resultSet);
+    MEDIA_INFO_LOG("Media_Restore: max_file_id: %{public}d, count: %{public}d", basicInfo.maxFileId, basicInfo.count);
     return basicInfo;
 }
 }  // namespace OHOS::Media

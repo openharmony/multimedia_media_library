@@ -53,6 +53,7 @@
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "parameters.h"
+#include "parameter.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "post_event_utils.h"
@@ -267,6 +268,17 @@ void MediaLibraryRdbStore::ClearAudios(RdbStore &store)
     MEDIA_INFO_LOG("clear audios end");
 }
 
+void MediaLibraryRdbStore::UpdateIndexForCover(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+    };
+    MEDIA_INFO_LOG("update index for photo album cover start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("update index for photo album cover end");
+}
+
 int32_t MediaLibraryRdbStore::Init()
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
@@ -285,8 +297,12 @@ int32_t MediaLibraryRdbStore::Init()
         return errCode;
     }
     int version = 0;
-    if (rdbStore_->GetVersion(version) != NativeRdb::E_OK) {
-        MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), rdb version is not exist, OnCreate");
+    NativeRdb::RebuiltType rebuilt;
+    bool isRebuilt = rdbStore_->GetRebuilt(rebuilt) == NativeRdb::E_OK && rebuilt == NativeRdb::RebuiltType::REBUILT;
+    bool isInitVersion = rdbStore_->GetVersion(version) == NativeRdb::E_OK && version == 0;
+    if (isRebuilt || isInitVersion) {
+        MEDIA_INFO_LOG("MediaLibraryRdbStore::Init, OnCreate, isRebuilt: %{public}d isInitVersion: %{public}d",
+            static_cast<uint32_t>(isRebuilt), static_cast<uint32_t>(isInitVersion));
         rdbDataCallBack.OnCreate(*rdbStore_);
     }
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), SUCCESS");
@@ -789,7 +805,11 @@ inline void BuildInsertSystemAlbumSql(const ValuesBucket &values, const AbsRdbPr
 int32_t PrepareAlbumPlugin(RdbStore &store)
 {
     AlbumPluginTableEventHandler albumPluginTableEventHander;
-    return albumPluginTableEventHander.OnCreate(store);
+    int32_t ret = albumPluginTableEventHander.OnCreate(store);
+    // after initiate album_plugin table, add 2 default album into PhotoAlbum.
+    store.ExecuteSql(CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET);
+    store.ExecuteSql(CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET);
+    return ret;
 }
 
 int32_t PrepareSystemAlbums(RdbStore &store)
@@ -1205,6 +1225,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoMap::CREATE_TABLE,
     PhotoMap::CREATE_NEW_TRIGGER,
     PhotoMap::CREATE_DELETE_TRIGGER,
+    PhotoMap::CREATE_IDX_FILEID_FOR_PHOTO_MAP,
     TriggerDeleteAlbumClearMap(),
     TriggerDeletePhotoClearMap(),
     CREATE_TAB_ANALYSIS_OCR,
@@ -1246,9 +1267,12 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_SOURCE_ALBUM_INDEX,
     FormMap::CREATE_FORM_MAP_TABLE,
     CREATE_DICTIONARY_INDEX,
-    CREATE_KNOWLEDGE_INDEX,
+    DROP_KNOWLEDGE_INDEX,
+    CREATE_NEW_KNOWLEDGE_INDEX,
     CREATE_CITY_NAME_INDEX,
     CREATE_LOCATION_KEY_INDEX,
+    CREATE_IDX_FILEID_FOR_ANALYSIS_TOTAL,
+    CREATE_IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP,
 
     // search
     CREATE_SEARCH_TOTAL_TABLE,
@@ -1256,6 +1280,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_SEARCH_UPDATE_TRIGGER,
     CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
     CREATE_SEARCH_DELETE_TRIGGER,
+    CREATE_IDX_FILEID_FOR_SEARCH_INDEX,
     CREATE_ALBUM_MAP_INSERT_SEARCH_TRIGGER,
     CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER,
     CREATE_ALBUM_UPDATE_SEARCH_TRIGGER,
@@ -2329,7 +2354,8 @@ static void UpdateGeoTables(RdbStore &store)
         "ALTER TABLE tab_geo_dictionary RENAME TO " +  GEO_DICTIONARY_TABLE,
         "ALTER TABLE tab_geo_knowledge RENAME TO " +  GEO_KNOWLEDGE_TABLE,
         CREATE_DICTIONARY_INDEX,
-        CREATE_KNOWLEDGE_INDEX,
+        DROP_KNOWLEDGE_INDEX,
+        CREATE_NEW_KNOWLEDGE_INDEX,
         CREATE_CITY_NAME_INDEX,
         CREATE_LOCATION_KEY_INDEX,
     };
@@ -2354,10 +2380,10 @@ static void UpdatePhotosMdirtyTrigger(RdbStore& store)
 static void AddIndexForFileId(RdbStore& store)
 {
     const vector<string> sqls = {
-        "CREATE INDEX IF NOT EXISTS idx_fileid_for_search_index ON tab_analysis_search_index ( file_id );",
-        "CREATE INDEX IF NOT EXISTS idx_fileid_for_analysis_total ON tab_analysis_total ( file_id );",
-        "CREATE INDEX IF NOT EXISTS idx_fileid_for_photo_map ON PhotoMap ( map_asset );",
-        "CREATE INDEX IF NOT EXISTS idx_fileid_for_analysis_photo_map ON AnalysisPhotoMap ( map_asset );",
+        CREATE_IDX_FILEID_FOR_SEARCH_INDEX,
+        CREATE_IDX_FILEID_FOR_ANALYSIS_TOTAL,
+        PhotoMap::CREATE_IDX_FILEID_FOR_PHOTO_MAP,
+        CREATE_IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP,
     };
     MEDIA_INFO_LOG("start AddIndexForFileId");
     ExecSqls(sqls, store);
@@ -2474,6 +2500,34 @@ void AddIsLocalAlbum(RdbStore &store)
         ADD_PHOTO_ALBUM_IS_LOCAL,
     };
     MEDIA_INFO_LOG("start add islocal column");
+    ExecSqls(sqls, store);
+}
+
+void UpdateAOI(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + AOI + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + POI + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FIRST_AOI + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FIRST_POI + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + LOCATION_VERSION + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FIRST_AOI_CATEGORY + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FIRST_POI_CATEGORY + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FILE_ID + " TEXT ",
+        DROP_KNOWLEDGE_INDEX,
+        CREATE_NEW_KNOWLEDGE_INDEX,
+    };
+    MEDIA_INFO_LOG("start init aoi info of geo db");
+    ExecSqls(sqls, store);
+}
+
+void UpdateVideoFaceTable(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "DROP TABLE IF EXISTS " + VISION_VIDEO_FACE_TABLE,
+        CREATE_TAB_VIDEO_FACE,
+    };
+    MEDIA_INFO_LOG("start update video face db");
     ExecSqls(sqls, store);
 }
 
@@ -2691,6 +2745,16 @@ static void AddCloudEnhancementColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddSupportWatermarkType(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::SUPPORT_WATERMARK_TYPE + " INT "
+    };
+    MEDIA_INFO_LOG("start add support_watermark_type column");
+    ExecSqls(sqls, store);
+}
+
 static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -2834,25 +2898,33 @@ static void UpdateDataUniqueIndex(RdbStore &store)
     MEDIA_INFO_LOG("End UpdateDataUniqueIndex");
 }
 
+static void FixPhotoSchptMediaTypeIndex(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+    };
+    MEDIA_INFO_LOG("Fix idx_schpt_media_type index");
+    ExecSqls(executeSqlStrs, store);
+    MEDIA_INFO_LOG("End fix idx_schpt_media_type index.");
+}
+
 static void ResetCloudCursorAfterInitFinish()
 {
+    MEDIA_INFO_LOG("Try reset cloud cursor after storage reconstruct");
     static uint32_t baseUserRange = 200000; // uid base offset
     uid_t uid = getuid() / baseUserRange;
     const string paramKey = "multimedia.medialibrary.startup." + to_string(uid);
-    string value = "true";
     int32_t maxTryTimes = 10;
-    int32_t checkTimes = 0;
-    while (checkTimes < maxTryTimes) {
-        std::string initStatus = system::GetParameter(paramKey.c_str(), "false");
-        if (!initStatus.empty() && initStatus == "true") {
-            MEDIA_INFO_LOG("Strat reset cloud cursor");
-            FileManagement::CloudSync::CloudSyncManager::GetInstance().ResetCursor();
-            MEDIA_INFO_LOG("End reset cloud cursor");
-            break;
-        }
-        checkTimes++;
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+    if (WaitParameter(paramKey.c_str(), "true", maxTryTimes) == E_OK) {
+        MEDIA_INFO_LOG("medialibrary init finish start reset cloud cursor");
+        FileManagement::CloudSync::CloudSyncManager::GetInstance().ResetCursor();
+        MEDIA_INFO_LOG("End reset cloud cursor");
+    } else {
+        MEDIA_INFO_LOG("try max time start reset cloud cursor");
+        FileManagement::CloudSync::CloudSyncManager::GetInstance().ResetCursor();
+        MEDIA_INFO_LOG("End reset cloud cursor");
     }
+    MEDIA_INFO_LOG("Reset cloud cursor after storage reconstruct end");
 }
 
 static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
@@ -2865,6 +2937,10 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
     MEDIA_INFO_LOG("ALBUM_FUSE: Processing old data start");
     MEDIA_INFO_LOG("ALBUM_FUSE: Compensating album id for old asset start");
     int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
+
+    CHECK_AND_PRINT_LOG(MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(compensateData->upgradeStore_) == E_OK,
+        "Failed to remove misadded hidden data");
+
     int64_t cleanDataBeginTime = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t matchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(
         compensateData->upgradeStore_);
@@ -3387,6 +3463,41 @@ static void AddOCRCardColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_CLOUD_ENAHCNEMENT) {
+        AddCloudEnhancementColumns(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_UPLOADING_MOVING_PHOTO) {
+        UpdatePhotosMdirtyTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_INDEX_FOR_FILEID) {
+        AddIndexForFileId(store);
+    }
+
+    if (oldVersion < VERSION_ADD_OCR_CARD_COLUMNS) {
+        AddOCRCardColumns(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_AOI) {
+        UpdateAOI(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_VIDEO_FACE_TABLE) {
+        UpdateVideoFaceTable(store);
+    }
+
+    if (oldVersion < VERSION_ADD_SUPPORT_WATERMARK_TYPE) {
+        AddSupportWatermarkType(store);
+    }
+
+    if (oldVersion < VERSION_FIX_PHOTO_SCHPT_MEDIA_TYPE_INDEX) {
+        FixPhotoSchptMediaTypeIndex(store);
+    }
+}
+
 static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_UPDATE_PHOTO_INDEX_FOR_ALBUM_COUNT_COVER) {
@@ -3397,7 +3508,7 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
         UpdateVideoLabelTableForSubLabelType(store);
     }
 
-    // VERSION_UPGRADE_THUMBNAIL = 101 move to UpgradeRdbStoreAsync(), avoid to cost for long time.
+    // VERSION_UPGRADE_THUMBNAIL move to HandleUpgradeRdbAsync()
 
     if (oldVersion < VISION_UPDATE_DATA_ADDED_INDEX) {
         UpdateDataAddedIndexWithFileId(store);
@@ -3437,21 +3548,8 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
         ReconstructMediaLibraryStorageFormat(store);
     }
 
-    if (oldVersion < VERSION_CLOUD_ENAHCNEMENT) {
-        AddCloudEnhancementColumns(store);
-    }
-
-    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_UPLOADING_MOVING_PHOTO) {
-        UpdatePhotosMdirtyTrigger(store);
-    }
-
-    if (oldVersion < VERSION_ADD_INDEX_FOR_FILEID) {
-        AddIndexForFileId(store);
-    }
-
-    if (oldVersion < VERSION_ADD_OCR_CARD_COLUMNS) {
-        AddOCRCardColumns(store);
-    }
+    UpgradeExtensionPart3(store, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 static void UpgradeExtensionPart1(RdbStore &store, int32_t oldVersion)

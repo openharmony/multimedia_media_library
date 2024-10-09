@@ -20,6 +20,9 @@
 #include "rdb_store.h"
 #include "media_log.h"
 #include "result_set_utils.h"
+#include "album_plugin_config.h"
+#include "userfile_manager_types.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS::Media {
 std::string StringUtils::ToLower(const std::string &str)
@@ -37,6 +40,10 @@ bool PhotoAlbumDao::CheckAlbumNameUnique(const std::string &albumName, const std
 {
     std::vector<NativeRdb::ValueObject> bindArgs = {albumName, lPath};
     std::string querySql = this->SQL_PHOTO_ALBUM_CHECK_ALBUM_NAME_UNIQUE;
+    if (this->mediaLibraryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
+        return true;
+    }
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, bindArgs);
     if (resultSet == nullptr || resultSet->GoToNextRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Query resultSql is null.");
@@ -89,6 +96,10 @@ std::vector<PhotoAlbumDao::PhotoAlbumRowData> PhotoAlbumDao::GetPhotoAlbums()
     int pageSize = 200;
     do {
         std::vector<NativeRdb::ValueObject> bindArgs = {offset, pageSize};
+        if (this->mediaLibraryRdb_ == nullptr) {
+            MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
+            break;
+        }
         auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, bindArgs);
         if (resultSet == nullptr) {
             MEDIA_ERR_LOG("Query resultSql is null.");
@@ -129,9 +140,14 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
     // query the PhotoAlbum info by lPath from PhotoAlbum table
     std::vector<NativeRdb::ValueObject> bindArgs = {lPath};
     std::string querySql = this->SQL_PHOTO_ALBUM_SELECT_BY_LPATH;
+    if (this->mediaLibraryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
+        return albumRowData;
+    }
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, bindArgs);
     if (resultSet == nullptr || resultSet->GoToNextRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
+        MEDIA_WARN_LOG("Media_Restore: can not find the PhotoAlbum info by lPath [%{public}s] in PhotoAlbum table.",
+            lPath.c_str());
         return albumRowData;
     }
     albumRowData.albumId = GetInt32Val(this->FIELD_NAME_ALBUM_ID, resultSet);
@@ -164,6 +180,10 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const Phot
     std::string uniqueAlbumName = this->FindUniqueAlbumName(album);
     std::vector<NativeRdb::ValueObject> bindArgs = {
         album.albumType, album.albumSubType, uniqueAlbumName, album.bundleName, album.lPath, album.priority};
+    if (this->mediaLibraryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
+        return result;
+    }
     auto err = this->mediaLibraryRdb_->ExecuteSql(this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("INSERT INTO PhotoAlbum failed, err = %{public}d", err);
@@ -196,6 +216,10 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
         return NativeRdb::E_OK;
     }
     int32_t err = NativeRdb::E_OK;
+    if (this->mediaLibraryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
+        return E_FAIL;
+    }
     this->mediaLibraryRdb_->BeginTransaction();
     for (const PhotoAlbumDao::PhotoAlbumRowData &data : photoAlbums) {
         std::vector<NativeRdb::ValueObject> bindArgs = {
@@ -214,5 +238,21 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
     this->mediaLibraryRdb_->Commit();
     MEDIA_INFO_LOG("restore albums success, %{public}d albums", static_cast<int32_t>(photoAlbums.size()));
     return NativeRdb::E_OK;
+}
+
+/**
+ * @brief Build PhotoAlbumRowData for ScreenRecorder.
+ */
+PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::BuildAlbumInfoOfRecorders()
+{
+    PhotoAlbumRowData albumInfo;
+    // bind albumName and bundleName by lPath.
+    albumInfo.albumName = AlbumPlugin::ALBUM_NAME_SCREEN_RECORDS;
+    albumInfo.bundleName = AlbumPlugin::BUNDLE_NAME_SCREEN_RECORDS;
+    albumInfo.lPath = AlbumPlugin::LPATH_SCREEN_RECORDS;
+    albumInfo.albumType = static_cast<int32_t>(PhotoAlbumType::SOURCE);
+    albumInfo.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC);
+    albumInfo.priority = 1;
+    return albumInfo;
 }
 }  // namespace OHOS::Media

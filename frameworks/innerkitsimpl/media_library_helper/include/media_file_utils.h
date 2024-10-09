@@ -93,6 +93,9 @@ public:
     EXPORT static std::string GetTitleFromDisplayName(const std::string &displayName);
     EXPORT static bool IsDirectory(const std::string &dirName, std::shared_ptr<int> errCodePtr = nullptr);
     EXPORT static bool MoveFile(const std::string &oldPath, const std::string &newPath);
+    EXPORT static bool CopyDirAndDelSrc(const std::string &srcPath, const std::string &destPath,
+        unsigned short curRecursionDepth = 0);
+    EXPORT static bool CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile);
     EXPORT static bool CopyFileUtil(const std::string &filePath, const std::string &newPath);
     EXPORT static bool WriteStrToFile(const std::string &filePath, const std::string &str);
     EXPORT static bool ReadStrFromFile(const std::string &filePath, std::string &fileContent);
@@ -159,6 +162,7 @@ public:
     EXPORT static bool CheckMovingPhotoVideo(const UniqueFd &uniqueFd);
     EXPORT static bool CheckMovingPhotoVideoDuration(int32_t duration);
     EXPORT static bool CheckMovingPhotoEffectMode(int32_t effectMode);
+    EXPORT static bool CheckSupportWatermarkType(int32_t watermarkType);
     EXPORT static bool GetFileSize(const std::string &filePath, size_t& size);
     EXPORT static bool SplitMovingPhotoUri(const std::string& uri, std::vector<std::string>& ret);
     EXPORT static bool IsMediaLibraryUri(const std::string& uri);
@@ -171,6 +175,7 @@ public:
     EXPORT static void CheckDirStatus(const std::unordered_set<std::string> &dirCheckSet, const std::string &dir);
     EXPORT static int32_t CreateDirectoryAndCopyFiles(const std::string &srcDir, const std::string &dstDir);
     EXPORT static void ModifyFile(const std::string path, int64_t modifiedTime);
+    EXPORT static std::string GetUriWithoutDisplayname(const std::string &uri);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);

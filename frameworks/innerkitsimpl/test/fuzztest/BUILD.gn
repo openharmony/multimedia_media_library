@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Copyright (c) 2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,7 +15,10 @@ import("//foundation/multimedia/media_library/media_library.gni")
 group("media_library_fuzztest") {
   testonly = true
   deps = [
+    "medialibraryappuripermissionoperations_fuzzer:MediaLibraryAppUriPermissionOperationsFuzzTest",
+    "medialibraryappurisensitiveoperations_fuzzer:MediaLibraryAppUriSensitiveOperationsFuzzTest",
     "medialibrarycommon_fuzzer:MediaLibraryCommonFuzzTest",
+    "medialibraryenhancement_fuzzer:MediaLibraryEnhancementFuzzTest",
     "medialibraryextension_fuzzer:MediaLibraryExtensionFuzzTest",
     "medialibraryextensionbatchinsert_fuzzer:MediaLibraryExtensionBatchInsertFuzzTest",
     "medialibraryextensiondelete_fuzzer:MediaLibraryExtensionDeleteFuzzTest",
@@ -27,7 +30,11 @@ group("media_library_fuzztest") {
     "medialibraryextensionregisterobserver_fuzzer:MediaLibraryExtensionRegisterObserverFuzzTest",
     "medialibraryextensionunregisterobserver_fuzzer:MediaLibraryExtensionUnregisterObserverFuzzTest",
     "medialibraryextensionupdate_fuzzer:MediaLibraryExtensionUpdateFuzzTest",
+    "medialibrarymediaphotoassetproxy_fuzzer:MediaLibraryMediaPhotoAssetProxyFuzzTest",
+    "medialibraryrestore_fuzzer:MediaLibraryRestoreFuzzTest",
     "medialibrarythumbnail_fuzzer:MediaLibraryThumbnailFuzzTest",
+    "medialibraryuripermissionoperations_fuzzer:MediaLibraryUriPermissionOperationsFuzzTest",
+    "medialibraryurisensitiveoperations_fuzzer:MediaLibraryUriSensitiveOperationsFuzzTest",
     "medialibraryutil_fuzzer:MediaLibraryUtilFuzzTest",
   ]
 }

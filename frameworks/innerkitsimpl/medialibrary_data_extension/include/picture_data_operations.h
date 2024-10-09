@@ -108,7 +108,8 @@ public:
     int32_t AddSavePictureTask(sptr<PicturePair>& picturePair);
     int32_t GetPendingTaskSize();
 private:
-    bool SavePicture(const std::string& imageId, std::map<std::string, sptr<PicturePair>>& pictureMap);
+    bool SavePicture(const std::string& imageId, std::map<std::string, sptr<PicturePair>>& pictureMap,
+        bool isLowQualityPicture);
     void CleanHighQualityPictureDataInternal(const std::string& imageId, sptr<PicturePair>& picturePair,
         std::list<std::string>& pictureImageIdList);
 

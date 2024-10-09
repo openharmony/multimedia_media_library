@@ -455,7 +455,7 @@ static void GetMovingPhotoFileInfo(const string &imagePath, int64_t &movingPhoto
     string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(imagePath);
     string extraDataPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(imagePath);
     GetFileInfo(imagePath, imageSize, imageDateModified);
-    GetFileInfo(videoPath, imageSize, imageDateModified);
+    GetFileInfo(videoPath, videoSize, videoDateModified);
     (void)MediaFileUtils::GetFileSize(extraDataPath, extraDataSize);
     movingPhotoSize = imageSize + videoSize + static_cast<int64_t>(extraDataSize);
     movingPhotoDateModified = imageDateModified >= videoDateModified ? imageDateModified : videoDateModified;
@@ -504,6 +504,8 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
         data_->SetForAdd(true);
     }
 
+    // file path
+    data_->SetFilePath(path_);
     // may need isPending here
     if (IsFileNotChanged(data_, statInfo) && !isForceScan_) {
         scannedIds_.insert(make_pair(data_->GetTableName(), data_->GetFileId()));
@@ -515,8 +517,6 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
         return E_SCANNED;
     }
 
-    // file path
-    data_->SetFilePath(path_);
     if (data_->GetFileId() == FILE_ID_DEFAULT) {
         data_->SetFileName(ScannerUtils::GetFileNameFromUri(path_));
     }
