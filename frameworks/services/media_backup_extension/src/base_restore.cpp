@@ -49,6 +49,8 @@ namespace Media {
 const std::string DATABASE_PATH = "/data/storage/el2/database/rdb/media_library.db";
 const std::string singleDirName = "A";
 const std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
+const int32_t UNIQUEID_OFFSET_CLONE = 10000000;
+const int32_t UNIQUEID_OFFSET_UPGRADE = 20000000;
 
 void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::string &upgradePath)
 {
@@ -1009,6 +1011,14 @@ int32_t BaseRestore::GetUniqueId(int32_t fileType)
         }
         default:
             MEDIA_ERR_LOG("Unsupported file type: %{public}d", fileType);
+    }
+    if (uniqueId == -1) {
+        return uniqueId;
+    }
+    if (sceneCode_ == UPGRADE_RESTORE_ID) {
+        uniqueId += UNIQUEID_OFFSET_UPGRADE;
+    } else {
+        uniqueId += UNIQUEID_OFFSET_CLONE;
     }
     return uniqueId;
 }
