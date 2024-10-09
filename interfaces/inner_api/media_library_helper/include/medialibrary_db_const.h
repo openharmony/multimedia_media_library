@@ -380,6 +380,11 @@ const std::string OPEN_MOVING_PHOTO_VIDEO_CLOUD = "open_moving_photo_video_cloud
 // db sandbox directory
 const std::string MEDIA_DB_DIR = "/data/medialibrary/database";
 
+// slave medialibrary db file path
+const std::string MEDIA_DB_FILE_SLAVE = "/data/storage/el2/database/rdb/media_library_slave.db";
+const std::string MEDIA_DB_FILE_SLAVE_SHM = "/data/storage/el2/database/rdb/media_library_slave.db-shm";
+const std::string MEDIA_DB_FILE_SLAVE_WAL = "/data/storage/el2/database/rdb/media_library_slave.db-wal";
+
 // requestId for generating thumbnail in batches
 const std::string THUMBNAIL_BATCH_GENERATE_REQUEST_ID = "thumbnail_request_id";
 const std::string IMAGE_FILE_TYPE = "image_file_type";

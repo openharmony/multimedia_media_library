@@ -346,6 +346,47 @@ int32_t Acl::AclSetDatabase()
     return E_OK;
 }
 
+bool IsDirExist(const std::string &path)
+{
+    DIR *dir = opendir(path.c_str());
+    if (dir == nullptr) {
+        MEDIA_ERR_LOG("Failed to open dir:%{private}s, errno: %{public}d, Just return dir NOT empty.",
+            path.c_str(), errno);
+        return false;
+    }
+    if (closedir(dir) < 0) {
+        MEDIA_ERR_LOG("Failed to closedir: %{private}s, errno: %{public}d.", path.c_str(), errno);
+        return false;
+    }
+    return true;
+}
+
+int32_t Acl::AclSetSlaveDatabase()
+{
+    if (!IsDirExist(MEDIA_DB_DIR)) {
+        MEDIA_ERR_LOG("Media database directory is not exist");
+        return E_ERR;
+    }
+
+    if (EnableAcl(MEDIA_DB_FILE_SLAVE, ACL_XATTR_ACCESS, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
+        ACL_PERM::Value::EXECUTE, DDMS_ACL_GROUP) != E_OK) {
+        MEDIA_ERR_LOG("Failed to set the acl permission for the DB file");
+        return E_ERR;
+    }
+    if (EnableAcl(MEDIA_DB_FILE_SLAVE_SHM, ACL_XATTR_ACCESS, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
+        ACL_PERM::Value::EXECUTE, DDMS_ACL_GROUP) != E_OK) {
+        MEDIA_ERR_LOG("Failed to set the acl permission for the DB file");
+        return E_ERR;
+    }
+    if (EnableAcl(MEDIA_DB_FILE_SLAVE_WAL, ACL_XATTR_ACCESS, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
+        ACL_PERM::Value::EXECUTE, DDMS_ACL_GROUP) != E_OK) {
+        MEDIA_ERR_LOG("Failed to set the acl permission for the DB file");
+        return E_ERR;
+    }
+
+    return E_OK;
+}
+
 Acl AclFromFile(const std::string& file)
 {
     Acl acl;

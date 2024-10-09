@@ -14,6 +14,7 @@
  */
 #define MLOG_TAG "MediaLibraryRestore"
 
+#include "acl.h"
 #include "medialibrary_restore.h"
 #include "dfx_utils.h"
 #include "medialibrary_data_manager.h"
@@ -173,6 +174,9 @@ void MediaLibraryRestore::DoRdbBackup()
         MediaLibraryTracer tracer;
         tracer.Start("MediaLibraryRestore::DoRdbBackup Backup");
         int errCode = rdb->Backup("");
+        if (errCode == NativeRdb::E_OK) {
+            Acl::AclSetSlaveDatabase();
+        }
         MEDIA_INFO_LOG("DoRdbBackup: Backup [end]. errCode = %{public}d", errCode);
         ResetHAModeSwitchStatus();
 #ifdef CLOUD_SYNC_MANAGER
