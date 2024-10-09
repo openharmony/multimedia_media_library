@@ -433,7 +433,8 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
     if (cameraShotType_ == CameraShotType::VIDEO) {
         return;
     }
-    if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW || photoProxy->GetFormat() == PhotoFormat::YUV) {
+    if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW ||
+        (photoProxy->GetFormat() == PhotoFormat::YUV && subType_ != PhotoSubType::BURST)) {
         UpdatePhotoQuality(dataShareHelper_, photoProxy, fileId_, static_cast<int32_t>(cameraShotType_));
     }
     if (photoProxy->GetFormat() == PhotoFormat::YUV) {

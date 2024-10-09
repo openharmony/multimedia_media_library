@@ -130,8 +130,10 @@ private:
     static std::shared_ptr<FileAsset> GetFileAsset(MediaLibraryCommand &cmd);
     static int32_t ForceSavePicture(MediaLibraryCommand& cmd);
 private:
-    static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension, const std::string mimeType);
+    static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension,
+        const std::string mimeType, std::string &oldFilePath);
     static void UpdateEditDataPath(std::string filePath, const std::string &extension);
+    static void DeleteAbnormalFile(std::string &assetPath, const int32_t &fileId, const std::string &oldFilePath);
     static std::mutex saveCameraPhotoMutex_;
     static std::condition_variable condition_;
     static std::string lastPhotoId_;
