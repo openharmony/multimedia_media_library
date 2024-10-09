@@ -94,5 +94,30 @@ void MediaAnalysisHelper::AnalysePortraitCover(const std::string albumId)
         MEDIA_ERR_LOG("Actively Calling Analysis For Portrait Cover Selection failed");
     }
 }
+
+bool MediaAnalysisHelper::ParseGeoInfo(const std::vector<std::string> &geoInfo)
+{
+    MessageParcel data;
+    MediaAnalysisProxy mediaAnalysisProxy(nullptr);
+
+    if (!data.WriteInterfaceToken(mediaAnalysisProxy.GetDescriptor())) {
+        MEDIA_ERR_LOG("Parse Geographic Information Write InterfaceToken failed");
+        return false;
+    }
+
+    if (!data.WriteStringVector(geoInfo)) {
+        MEDIA_ERR_LOG("Parse Geographic Information Write fileId, latitude, longitude failed");
+        return false;
+    }
+
+    int32_t code = IMediaAnalysisService::ActivateServiceType::PARSE_GEO_INFO;
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    if (!mediaAnalysisProxy.SendTransactCmd(code, data, reply, option)) {
+        MEDIA_ERR_LOG("Actively Calling Analysis For Parse Geographic Information failed");
+        return false;
+    }
+    return true;
+}
 } // namespace Media
 } // namespace OHOS
