@@ -356,7 +356,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_QueryGeo_Test_001, TestSize.Level0)
         PhotoColumn::PHOTO_LONGITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LONGITUDE + " AND " + GEO_KNOWLEDGE_TABLE +
         "." + LANGUAGE + " = \"" + language + "\"" };
     predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(clause);
-    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, to_string(fileId));
     int errCode = 0;
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
     EXPECT_NE(queryResultSet, nullptr);
