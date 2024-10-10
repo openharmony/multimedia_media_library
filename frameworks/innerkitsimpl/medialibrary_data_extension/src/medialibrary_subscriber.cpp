@@ -42,6 +42,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
+#include "medialibrary_meta_recovery.h"
 #include "medialibrary_restore.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -206,13 +207,13 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
+
     if (currentStatus_ == newStatus) {
         return;
     }
 
     MEDIA_INFO_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
         currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
-
     currentStatus_ = newStatus;
     ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(newStatus);
     EndBackgroundOperationThread();
@@ -405,6 +406,9 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         return;
     }
 
+    // check metadata recovery state
+    MediaLibraryMetaRecovery::GetInstance().CheckRecoveryState();
+
     // delete temporary photos
     DeleteTemporaryPhotos();
 
@@ -493,6 +497,7 @@ void MedialibrarySubscriber::EndBackgroundOperationThread()
         std::unique_lock<std::mutex> lock(delayTaskLock_);
         isTaskWaiting_ = false;
     }
+    MediaLibraryMetaRecovery::GetInstance().InterruptRecovery();
     delayTaskCv_.notify_all();
     if (!backgroundOperationThread_.joinable()) {
         return;

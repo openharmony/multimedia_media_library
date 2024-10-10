@@ -204,15 +204,21 @@ public:
 
     EXPORT int32_t GetCEAvailable() const;
     EXPORT void SetCEAvailable(int32_t ceAvailable);
-    
+
     EXPORT int32_t GetSupportedWatermarkType() const;
     EXPORT void SetSupportedWatermarkType(int32_t watermarkType);
-private:
-    const std::string &GetStrMember(const std::string &name) const;
-    int32_t GetInt32Member(const std::string &name) const;
-    int64_t GetInt64Member(const std::string &name) const;
-    double GetDoubleMember(const std::string &name) const;
 
+    EXPORT const std::string &GetStrMember(const std::string &name) const;
+    EXPORT int32_t GetInt32Member(const std::string &name) const;
+    EXPORT int64_t GetInt64Member(const std::string &name) const;
+    EXPORT double GetDoubleMember(const std::string &name) const;
+    EXPORT void SetMemberValue(const std::string &name,
+                               const std::variant<int32_t, int64_t, std::string, double> &value)
+    {
+        member_[name] = value;
+    }
+
+private:
     std::string albumUri_;
     ResultNapiType resultNapiType_;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> member_;

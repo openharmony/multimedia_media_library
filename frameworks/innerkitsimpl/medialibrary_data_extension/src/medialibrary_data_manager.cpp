@@ -68,6 +68,7 @@
 #include "medialibrary_inotify.h"
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_location_operations.h"
+#include "medialibrary_meta_recovery.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
@@ -320,6 +321,11 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     HandleUpgradeRdbAsync();
 
     refCnt_++;
+    // TEMP: avoid Process backup call StartAsyncRecovery
+    // Should remove this judgment at refactor in OpenHarmony5.1
+    if (extensionContext != nullptr) {
+        MediaLibraryMetaRecovery::GetInstance().StartAsyncRecovery();
+    }
     return E_OK;
 }
 

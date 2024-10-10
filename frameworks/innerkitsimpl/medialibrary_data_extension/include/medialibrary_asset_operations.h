@@ -30,6 +30,7 @@
 #include "media_column.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_command.h"
+#include "photo_album.h"
 #include "value_object.h"
 #include "values_bucket.h"
 
@@ -81,6 +82,39 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_THUMBNAIL_READY, MEMBER_TYPE_INT64 },
     { PhotoColumn::PHOTO_POSITION, MEMBER_TYPE_INT32 },
     { PhotoColumn::SUPPORTED_WATERMARK_TYPE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_SOURCE_PATH, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_DIRTY, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_CLOUD_ID, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_META_DATE_MODIFIED, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_SYNC_STATUS, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_CLOUD_VERSION, MEMBER_TYPE_INT64 },
+    { PhotoColumn::CAMERA_SHOT_KEY, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_USER_COMMENT, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_DATE_YEAR, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_DATE_MONTH, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_DATE_DAY, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_SHOOTING_MODE, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_SHOOTING_MODE_TAG, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_LAST_VISIT_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_HIDDEN_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_THUMB_STATUS, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_CLEAN_FLAG, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_ID, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_QUALITY, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_FIRST_VISIT_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_LCD_SIZE, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_THUMB_SIZE, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_FRONT_CAMERA, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_IS_TEMP, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_CE_STATUS_CODE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_STRONG_ASSOCIATION, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_DETAIL_TIME, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_METADATA_FLAGS, MEMBER_TYPE_INT32 }
 };
 
 class MediaLibraryAssetOperations {
@@ -99,9 +133,14 @@ public:
         std::string &filePath);
     EXPORT static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
         const bool compatible = false);
+    EXPORT static std::string GetEditDataSourcePath(const std::string &path);
     EXPORT static int32_t GetAlbumIdByPredicates(const std::string &whereClause,
         const std::vector<std::string> &whereArgs);
-    EXPORT static std::string GetEditDataSourcePath(const std::string &path);
+
+    EXPORT static int32_t CheckExist(std::string &path);
+    EXPORT static int32_t QueryTotalPhoto(std::vector<std::shared_ptr<FileAsset>> &fileAssetVector, int32_t batchSize);
+    EXPORT static int32_t QueryTotalAlbum(std::vector<std::shared_ptr<PhotoAlbum>> &PhotoAlbumVector);
+    EXPORT static std::shared_ptr<FileAsset> QuerySinglePhoto(int32_t rowId);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
