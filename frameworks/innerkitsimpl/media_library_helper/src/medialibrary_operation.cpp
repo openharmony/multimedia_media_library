@@ -95,6 +95,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { VISION_VIDEO_FACE_TABLE, OperationObject::VISION_VIDEO_FACE },
         { VISION_FACE_TAG_TABLE, OperationObject::VISION_FACE_TAG },
         { VISION_SALIENCY_TABLE, OperationObject::VISION_SALIENCY },
+        { VISION_ANALYSIS_ALBUM_TOTAL_TABLE, OperationObject::VISION_ANALYSIS_ALBUM_TOTAL },
         { PAH_ANA_FACE, OperationObject::VISION_IMAGE_FACE },
         { PAH_ANA_OBJECT, OperationObject::VISION_OBJECT },
         { PAH_ANA_RECOMMENDATION, OperationObject::VISION_RECOMMENDATION },
@@ -183,6 +184,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::ANALYSIS_PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
         { OperationObject::PAH_FORM_MAP, { { OperationType::UNKNOWN_TYPE, FormMap::FORM_MAP_TABLE } } },
         { OperationObject::ANALYSIS_ADDRESS, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
+        { OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
+            { { OperationType::UNKNOWN_TYPE, VISION_ANALYSIS_ALBUM_TOTAL_TABLE } } },
 
         // search
         { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },
