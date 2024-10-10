@@ -17,6 +17,7 @@
 
 #include "photos_restore.h"
 #include "backup_const.h"
+#include "backup_file_utils.h"
 #include "userfile_manager_types.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
@@ -263,5 +264,53 @@ int64_t PhotosRestore::FindDateTrashed(const FileInfo &fileInfo)
         MEDIA_WARN_LOG("the file :%{public}s is trash.", BackupFileUtils::GarbleFileName(fileName).c_str());
     }
     return fileInfo.recycledTime;
+}
+
+/**
+ * @brief Get duplicate data in gallery db.
+ */
+void PhotosRestore::GetDuplicateData(int32_t duplicateDataCount)
+{
+    if (duplicateDataCount <= 0) {
+        return;
+    }
+    std::string querySql = this->SQL_GALLERY_MEDIA_QUERY_DUPLICATE_DATA;
+    int rowCount = 0;
+    int offset = 0;
+    int pageSize = 200;
+    do {
+        std::vector<NativeRdb::ValueObject> params = {offset, pageSize};
+        if (this->galleryRdb_ == nullptr) {
+            MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
+            break;
+        }
+        auto resultSet = this->galleryRdb_->QuerySql(querySql, params);
+        if (resultSet == nullptr) {
+            MEDIA_ERR_LOG("Query resultSql is null.");
+            break;
+        }
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            std::string data = GetStringVal(GALLERY_FILE_DATA, resultSet);
+            int32_t count = GetInt32Val(CUSTOM_COUNT, resultSet);
+            this->duplicateDataUsedCountMap_[data] = 0;
+            MEDIA_INFO_LOG("Get duplicate data: %{public}s, count: %{public}d",
+                BackupFileUtils::GarbleFilePath(data, DEFAULT_RESTORE_ID).c_str(), count);
+        }
+        // Check if there are more rows to fetch.
+        resultSet->GetRowCount(rowCount);
+        offset += pageSize;
+    } while (rowCount > 0);
+}
+
+/**
+ * @brief Check if it is duplicate data in gallery db.
+ */
+bool PhotosRestore::IsDuplicateData(const std::string &data)
+{
+    if (this->duplicateDataUsedCountMap_.count(data) == 0) {
+        return false;
+    }
+    this->duplicateDataUsedCountMap_[data]++;
+    return this->duplicateDataUsedCountMap_.at(data) > 1;
 }
 }  // namespace OHOS::Media
