@@ -18,6 +18,7 @@
 #include "medialibrary_data_manager.h"
 
 #include <cstdlib>
+#include <future>
 #include <shared_mutex>
 #include <unordered_set>
 #include <sstream>
