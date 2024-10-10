@@ -321,7 +321,7 @@ const std::string INIT_TAB_ANALYSIS_ALBUM_TOTAL = "INSERT INTO " + VISION_ANALYS
     LABEL + ", " +
     FACE + ") " +
     "SELECT " + FILE_ID +
-    ", NULL, NULL, NULL, NULL" +
+    ", 0, 0, 0, 0" +
     " FROM " + VISION_TOTAL_TABLE;
 
 
@@ -357,7 +357,7 @@ const std::string CREATE_TOTAL_INSERT_TRIGGER_FOR_ADD_ANALYSIS_ALBUM_TOTAL =
     LABEL + ", " +
     FACE + ") " +
     " VALUES (" +
-    " NEW.file_id, NULL, NULL, NULL, NULL );" +
+    " NEW.file_id, 0, 0, 0, 0);" +
     " END;";
 
 const std::string CREATE_VISION_UPDATE_TRIGGER_FOR_UPDATE_ANALYSIS_ALBUM_TOTAL_STATUS =
