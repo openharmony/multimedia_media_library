@@ -90,6 +90,7 @@ public:
     EXPORT static void UpdateDateTakenIndex(RdbStore &store);
     EXPORT static void ClearAudios(RdbStore &store);
     EXPORT static void UpdateIndexForCover(RdbStore &store);
+    EXPORT static int32_t ReconstructMediaLibraryStorageFormat(RdbStore &store);
 
 private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
