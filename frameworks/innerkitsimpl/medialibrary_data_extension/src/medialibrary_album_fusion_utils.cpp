@@ -796,6 +796,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(NativeRdb::RdbStore *u
         DeleteThumbnail(targetPath);
         return err;
     }
+    ThumbnailService::GetInstance()->CreateAstcCloudDownload(to_string(newAssetId, true));
     err = UpdateRelationship(upgradeStore, assetId, newAssetId, ownerAlbumId, false);
     if (err != E_OK) {
         return err;
