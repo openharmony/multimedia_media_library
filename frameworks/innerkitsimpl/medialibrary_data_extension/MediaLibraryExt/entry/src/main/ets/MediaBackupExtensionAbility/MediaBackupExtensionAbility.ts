@@ -54,6 +54,7 @@ const STAT_TYPE_AUDIO = 'audio';
 const STAT_TYPE_PHOTO_VIDEO = 'photo&video';
 const STAT_TYPE_UPDATE = 'update';
 const STAT_TYPE_OTHER = 'other';
+const STAT_TYPE_ONGOING = 'ongoing';
 const STAT_TYPES = [STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO];
 const RESULT_INFO_NUM = 2;
 const JS_TYPE_STRING = 'string';
@@ -131,6 +132,12 @@ const DEFAULT_PROGRESS_INFO = {
   },
   {
     'name': STAT_TYPE_OTHER,
+    'processed': 0,
+    'total': 0,
+    'isPercentage': false
+  },
+  {
+    'name': STAT_TYPE_ONGOING,
     'processed': 0,
     'total': 0,
     'isPercentage': false

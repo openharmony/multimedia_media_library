@@ -25,6 +25,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_notify.h"
+#include "medialibrary_rdbstore.h"
 #include "metadata.h"
 #include "media_file_utils.h"
 #include "medialibrary_album_compatibility_fusion_sql.h"
@@ -45,7 +46,13 @@ constexpr int32_t POSITION_BOTH_FLAG = 3;
 constexpr int32_t CLOUD_COPY_DIRTY_FLAG = 7;
 
 constexpr int32_t TIME_STAMP_OFFSET = 5;
+constexpr int32_t MAX_RETRY_TIMES = 100;
+constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // in milliseconds.
 const std::string ALBUM_FUSION_FLAG = "multimedia.medialibrary.cloneFlag";
+const std::string ALBUM_FUSION_UPGRADE_STATUS_FLAG = "persist.multimedia.medialibrary.albumFusion.status";
+const int32_t ALBUM_FUSION_UPGRADE_SUCCESS = 1;
+const int32_t ALBUM_FUSION_UPGRADE_FAIL = 0;
+const int32_t ALBUM_FUSION_BATCH_COUNT = 200;
 
 static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {MediaColumn::MEDIA_SIZE, ResultSetDataType::TYPE_INT64},
@@ -83,7 +90,6 @@ static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {PhotoColumn::PHOTO_DATE_MONTH, ResultSetDataType::TYPE_STRING},
     {PhotoColumn::PHOTO_DATE_DAY, ResultSetDataType::TYPE_STRING},
     {PhotoColumn::PHOTO_HIDDEN_TIME, ResultSetDataType::TYPE_INT64},
-    {PhotoColumn::PHOTO_QUALITY, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_FIRST_VISIT_TIME, ResultSetDataType::TYPE_INT64},
     {PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, ResultSetDataType::TYPE_INT32},
@@ -137,6 +143,92 @@ int32_t MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(NativeRdb::RdbSto
     return E_OK;
 }
 
+static int32_t BeginTransactionWithRetry(NativeRdb::RdbStore *upgradeStore)
+{
+    int retryTime = 0;
+    int maxTryTimes = MAX_RETRY_TIMES;
+    while (retryTime < maxTryTimes) {
+        if (upgradeStore->IsInTransaction()) {
+            this_thread::sleep_for(chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
+            if (upgradeStore->IsInTransaction()) {
+                retryTime++;
+                MEDIA_INFO_LOG("RdbStore is in transaction, %{public}d,try %{public}d times...",
+                    upgradeStore->IsInTransaction(), retryTime);
+                continue;
+            }
+        }
+        int32_t errCode = upgradeStore->BeginTransaction();
+        if (errCode == NativeRdb::E_OK) {
+            MEDIA_INFO_LOG("Begin Transaction success!");
+            return E_OK;
+        } else if (errCode == NativeRdb::E_SQLITE_LOCKED || errCode == NativeRdb::E_DATABASE_BUSY ||
+            errCode == NativeRdb::E_SQLITE_BUSY) {
+            retryTime++;
+            MEDIA_ERR_LOG("Sqlite database file is busy or locked! try %{public}d times...", retryTime);
+            continue;
+        } else {
+            MEDIA_ERR_LOG("Start Transaction failed, errCode=%{public}d", errCode);
+            return E_HAS_DB_ERROR;
+        }
+    }
+    return E_HAS_DB_ERROR;
+}
+ 
+static int32_t PrepareTempUpgradeTable(NativeRdb::RdbStore *upgradeStore, int32_t &matchedCount)
+{
+    int32_t err = upgradeStore->ExecuteSql(DROP_TEMP_UPGRADE_PHOTO_MAP_TABLE);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", DROP_TEMP_UPGRADE_PHOTO_MAP_TABLE.c_str());
+        return err;
+    }
+    MEDIA_INFO_LOG("ALBUM_FUSE begin exec: %{public}s", CREATE_TEMP_UPGRADE_PHOTO_MAP_TABLE.c_str());
+    err = upgradeStore->ExecuteSql(CREATE_TEMP_UPGRADE_PHOTO_MAP_TABLE);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", CREATE_TEMP_UPGRADE_PHOTO_MAP_TABLE.c_str());
+        return err;
+    }
+    auto resultSet = upgradeStore->QuerySql(QUERY_MATCHED_COUNT);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Query matched data fails");
+        return E_DB_FAIL;
+    }
+    resultSet->GetInt(0, matchedCount);
+    MEDIA_INFO_LOG("ALBUM_FUSE: There are %{public}d matched items", matchedCount);
+    err = upgradeStore->ExecuteSql(CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_MAP_ASSET);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_MAP_ASSET.c_str());
+        return err;
+    }
+    err = upgradeStore->ExecuteSql(CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_PHOTO_MAP);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_PHOTO_MAP.c_str());
+        return err;
+    }
+    return E_OK;
+}
+ 
+static int32_t IfHandledDataCountMatched(NativeRdb::RdbStore *upgradeStore, int32_t &exceptCount)
+{
+    if (upgradeStore == nullptr) {
+        MEDIA_INFO_LOG("fail to get rdbstore");
+        return E_DB_FAIL;
+    }
+    MEDIA_INFO_LOG("ALBUM_FUSE: STEP_1: Check if compensate matched data owner_album_id success");
+    int32_t updatedSuccessCount = 0;
+    auto resultSet = upgradeStore->QuerySql(QUERY_SUCCESS_MATCHED_COUNT);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Query matched data fails");
+        return E_DB_FAIL;
+    }
+    resultSet->GetInt(0, updatedSuccessCount);
+    MEDIA_INFO_LOG("ALBUM_FUSE: STEP_1: There are %{public}d items update success", updatedSuccessCount);
+    if (updatedSuccessCount >= exceptCount) {
+        MEDIA_INFO_LOG("Handled count matches!");
+        return E_OK;
+    }
+    return E_DB_FAIL;
+}
+ 
 int32_t MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(NativeRdb::RdbStore *upgradeStore)
 {
     MEDIA_INFO_LOG("ALBUM_FUSE: STEP_1: Start handle matched relationship");
@@ -145,16 +237,42 @@ int32_t MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(NativeRdb::RdbStor
         return E_DB_FAIL;
     }
     int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
-    int32_t err = upgradeStore->ExecuteSql(UPDATE_ALBUM_ASSET_MAPPING_CONSISTENCY_DATA_SQL);
+    int32_t matchedCount = 0;
+    int32_t err = PrepareTempUpgradeTable(upgradeStore, matchedCount);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Prepare temp upgrade table fails");
+        return err;
+    }
+    err = BeginTransactionWithRetry(upgradeStore);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Fatal error! Failed to begin transaction err: %{public}d", err);
+        return err;
+    }
+    MEDIA_INFO_LOG("ALBUM_FUSE: execute update!");
+    err = upgradeStore->ExecuteSql(UPDATE_ALBUM_ASSET_MAPPING_CONSISTENCY_DATA_SQL);
+    MEDIA_INFO_LOG("ALBUM_FUSE: execute finish!");
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s",
             UPDATE_ALBUM_ASSET_MAPPING_CONSISTENCY_DATA_SQL.c_str());
         return err;
     }
+    upgradeStore->Commit();
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("commit failed, errCode=%{public}d", err);
+        return E_HAS_DB_ERROR;
+    }
+    if (IfHandledDataCountMatched(upgradeStore, matchedCount) != E_OK) {
+        MEDIA_ERR_LOG("Handled count not match, may has other transaction!");
+        return E_HAS_DB_ERROR;
+    }
     err = upgradeStore->ExecuteSql(DELETE_MATCHED_RELATIONSHIP_IN_PHOTOMAP_SQL);
     if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s",
-            DELETE_MATCHED_RELATIONSHIP_IN_PHOTOMAP_SQL.c_str());
+        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", DELETE_MATCHED_RELATIONSHIP_IN_PHOTOMAP_SQL.c_str());
+        return err;
+    }
+    err = upgradeStore->ExecuteSql(DROP_TEMP_UPGRADE_PHOTO_MAP_TABLE);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", DROP_TEMP_UPGRADE_PHOTO_MAP_TABLE.c_str());
         return err;
     }
     MEDIA_INFO_LOG("ALBUM_FUSE: STEP_1: End handle matched relationship, cost %{public}ld",
@@ -182,11 +300,12 @@ int32_t MediaLibraryAlbumFusionUtils::QueryNoMatchedMap(NativeRdb::RdbStore *upg
     }
     std::string queryNotMatchedDataSql = "";
     if (isUpgrade) {
-        queryNotMatchedDataSql = QUERY_NOT_MATCHED_DATA_IN_PHOTOMAP;
+        queryNotMatchedDataSql = QUERY_NOT_MATCHED_DATA_IN_PHOTOMAP_BY_PAGE;
     } else {
-        queryNotMatchedDataSql = QUERY_NEW_NOT_MATCHED_DATA_IN_PHOTOMAP;
+        queryNotMatchedDataSql = QUERY_NEW_NOT_MATCHED_DATA_IN_PHOTOMAP_BY_PAGE;
     }
     auto resultSet = upgradeStore->QuerySql(queryNotMatchedDataSql);
+    MEDIA_INFO_LOG("query sql is %{public}s", queryNotMatchedDataSql.c_str());
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query not matched data fails");
         return E_DB_FAIL;
@@ -197,7 +316,7 @@ int32_t MediaLibraryAlbumFusionUtils::QueryNoMatchedMap(NativeRdb::RdbStore *upg
         MEDIA_INFO_LOG("Already matched, no need to handle");
         return E_OK;
     }
-    MEDIA_INFO_LOG("There are %{public}d assets need to handle", notMatchedCount);
+    MEDIA_INFO_LOG("There are %{public}d assets need to copy", notMatchedCount);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int colIndex = -1;
         int32_t assetId = 0;
@@ -213,31 +332,6 @@ int32_t MediaLibraryAlbumFusionUtils::QueryNoMatchedMap(NativeRdb::RdbStore *upg
         AddToMap(notMathedMap, assetId, albumId);
     }
     return E_OK;
-}
-
-int32_t MediaLibraryAlbumFusionUtils::HandleFirstData(NativeRdb::RdbStore *upgradeStore,
-    const int32_t &assetId, const int32_t &ownerAlbumId)
-{
-    if (upgradeStore == nullptr) {
-        MEDIA_INFO_LOG("fail to get rdbstore");
-        return E_DB_FAIL;
-    }
-    MEDIA_INFO_LOG("begin handle first data, assetId is %{public}d target album id is %{public}d",
-        assetId, ownerAlbumId);
-    const std::string UPDATE_FIRST_NOT_MATCHED_ALBUM_ID_SQL =
-    "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = '" +
-        to_string(ownerAlbumId) + "' WHERE " + PhotoColumn::MEDIA_ID + " = '" + to_string(assetId) + "'";
-    int32_t err = upgradeStore->ExecuteSql(UPDATE_FIRST_NOT_MATCHED_ALBUM_ID_SQL);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s",
-            UPDATE_ALBUM_ASSET_MAPPING_CONSISTENCY_DATA_SQL.c_str());
-        return err;
-    }
-    const std::string DROP_HANDLED_MAP_RELATIONSHIP =
-    "UPDATE PhotoMap SET dirty = '4' WHERE " + PhotoMap::ASSET_ID + " = '" + to_string(assetId) +
-        "' AND " + PhotoMap::ALBUM_ID + " = '" + to_string(ownerAlbumId) + "'";
-    err = upgradeStore->ExecuteSql(DROP_HANDLED_MAP_RELATIONSHIP);
-    return err;
 }
 
 static bool isLocalAsset(shared_ptr<NativeRdb::ResultSet> &resultSet)
@@ -453,7 +547,26 @@ struct MediaAssetCopyInfo {
     MediaAssetCopyInfo(const std::string& targetPath, bool isCopyThumbnail, int32_t ownerAlbumId)
         : targetPath(targetPath), isCopyThumbnail(isCopyThumbnail), ownerAlbumId(ownerAlbumId) {}
 };
- 
+
+static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& resultSet,
+    NativeRdb::ValuesBucket& values)
+{
+    int32_t dirty = -1;
+    GetIntValueFromResultSet(resultSet, PhotoColumn::PHOTO_DIRTY, dirty);
+    int32_t photoQuality = 0;
+    GetIntValueFromResultSet(resultSet, PhotoColumn::PHOTO_QUALITY, photoQuality);
+    if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) {
+        photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL);
+        dirty = static_cast<int32_t>(DirtyType::TYPE_NEW);
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
+    }
+    values.PutInt(PhotoColumn::PHOTO_QUALITY, photoQuality);
+    if (dirty == -1 && photoQuality != static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) {
+        MEDIA_WARN_LOG("Status error, dirty is -1, cannot upload");
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, -1);
+    }
+}
+
 static int32_t BuildInsertValuesBucket(NativeRdb::RdbStore &rdbStore, NativeRdb::ValuesBucket &values,
     shared_ptr<NativeRdb::ResultSet> &resultSet, const MediaAssetCopyInfo &copyInfo)
 {
@@ -493,11 +606,7 @@ static int32_t BuildInsertValuesBucket(NativeRdb::RdbStore &rdbStore, NativeRdb:
         values.PutInt(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, CLOUD_COPY_DIRTY_FLAG);
     }
-    int32_t dirty = -1;
-    GetIntValueFromResultSet(resultSet, PhotoColumn::PHOTO_DIRTY, dirty);
-    if (dirty == -1) {
-        values.PutInt(PhotoColumn::PHOTO_DIRTY, -1);
-    }
+    HandleLowQualityAssetValuesBucket(resultSet, values);
     return E_OK;
 }
 
@@ -635,6 +744,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(NativeRdb::RdbStore *u
     }
     err = copyMetaData(upgradeStore, newAssetId, values);
     if (err != E_OK) {
+        MEDIA_ERR_LOG("Insert meta data fail and delete migrated file err %{public}d ", err);
         // If insert fails, delete the moved file to avoid wasted space
         DeleteFile(targetPath);
         return err;
@@ -730,7 +840,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleRestData(NativeRdb::RdbStore *upgrad
     if (isLocalAsset(resultSet)) {
         MEDIA_INFO_LOG("file is local asset %{public}d", assetId);
         // skip first one, already handled
-        for (size_t i = 1; i < restOwnerAlbumIds.size(); i++) {
+        for (size_t i = 0; i < restOwnerAlbumIds.size(); i++) {
             int32_t err = CopyLocalSingleFile(upgradeStore, assetId, restOwnerAlbumIds[i], resultSet, newAssetId);
             if (err != E_OK) {
                 MEDIA_WARN_LOG("Copy file fails, fileId is %{public}d", assetId);
@@ -743,7 +853,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleRestData(NativeRdb::RdbStore *upgrad
     } else {
         MEDIA_INFO_LOG("file is cloud asset %{public}d", assetId);
         // skip first one, already handled
-        for (size_t i = 1; i < restOwnerAlbumIds.size(); i++) {
+        for (size_t i = 0; i < restOwnerAlbumIds.size(); i++) {
             int32_t err = CopyCloudSingleFile(upgradeStore, assetId, restOwnerAlbumIds[i], resultSet, newAssetId);
             if (err != E_OK) {
                 MEDIA_WARN_LOG("Copy cloud file fails, fileId is %{public}d", assetId);
@@ -766,8 +876,6 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNotMatchedDataMigration(NativeRdb::R
     }
     static int handledCount = 0;
     for (auto it = notMathedMap.begin(); it != notMathedMap.end(); ++it) {
-        HandleFirstData(upgradeStore, it->first, it->second[0]);
-        handledCount++;
         HandleRestData(upgradeStore, it->first, it->second, handledCount);
     }
     MEDIA_INFO_LOG("handled %{public}d not matched items", handledCount);
@@ -802,9 +910,30 @@ int32_t MediaLibraryAlbumFusionUtils::HandleSingleFileCopy(NativeRdb::RdbStore *
             isLocalAsset(resultSet), assetId);
         return err;
     }
-    MEDIA_INFO_LOG("Copy file success, fileId %{public}d, albumId %{public}d, and copyed file id %{public}" PRId64,
-        assetId, ownerAlbumId, newAssetId);
+    MEDIA_INFO_LOG("Copy file success, fileId is %{public}d, albumId is %{public}d,"
+        "and copyed file id is %{public}" PRId64, assetId, ownerAlbumId, newAssetId);
     return E_OK;
+}
+
+static int32_t QueryTotalNumberNeedToHandle(NativeRdb::RdbStore *upgradeStore, const std::string &querySql)
+{
+    int32_t rowCount = 0;
+    if (upgradeStore == nullptr) {
+        MEDIA_INFO_LOG("fail to get rdbstore");
+        return rowCount;
+    }
+    if (querySql.empty()) {
+        return rowCount;
+    }
+    shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_INFO_LOG("No need to update cover_uri");
+        return rowCount;
+    }
+    if (resultSet->GetInt(0, rowCount) != NativeRdb::E_OK) {
+        return rowCount;
+    }
+    return rowCount;
 }
 
 int32_t MediaLibraryAlbumFusionUtils::HandleNotMatchedDataFusion(NativeRdb::RdbStore *upgradeStore)
@@ -815,16 +944,23 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNotMatchedDataFusion(NativeRdb::RdbS
         return E_DB_FAIL;
     }
     int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int32_t totalNumber = QueryTotalNumberNeedToHandle(upgradeStore, QUERY_NOT_MATCHED_COUNT_IN_PHOTOMAP);
+    MEDIA_INFO_LOG("QueryTotalNumberNeedToHandle, totalNumber=%{public}d", totalNumber);
     std::multimap<int32_t, vector<int32_t>> notMatchedMap;
-    int32_t err = QueryNoMatchedMap(upgradeStore, notMatchedMap, true);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Fatal error! Failed to query not matched map data");
-        return err;
+    for (int32_t offset = 0; offset < totalNumber; offset += ALBUM_FUSION_BATCH_COUNT) {
+        MEDIA_INFO_LOG("ALBUM_FUSE: handle batch clean, offset: %{public}d", offset);
+        notMatchedMap.clear();
+        int32_t err = QueryNoMatchedMap(upgradeStore, notMatchedMap, true);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Fatal error! Failed to query not matched map data");
+            break;
+        }
+        if (notMatchedMap.size() != 0) {
+            MEDIA_INFO_LOG("There are %{public}d items need to migrate", (int)notMatchedMap.size());
+            HandleNotMatchedDataMigration(upgradeStore, notMatchedMap);
+        }
     }
-    if (notMatchedMap.size() != 0) {
-        HandleNotMatchedDataMigration(upgradeStore, notMatchedMap);
-    }
-    MEDIA_INFO_LOG("ALBUM_FUSE: STEP_2: End handle not matched relationship, cost %{public}ld",
+    MEDIA_INFO_LOG("ALBUM_FUSE: STEP_2: end handle not matched relationship, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
     return E_OK;
 }
@@ -920,6 +1056,26 @@ static int32_t BuildAlbumInsertValues(NativeRdb::RdbStore *upgradeStore, NativeR
     return E_OK;
 }
 
+static int64_t QueryExistsAlbumId(NativeRdb::RdbStore *upgradeStore,
+    NativeRdb::ValuesBucket values, int64_t &newAlbumId)
+{
+    std::string lPath = "";
+    ValueObject valueObject;
+    if (values.GetObject(PhotoAlbumColumns::ALBUM_LPATH, valueObject)) {
+        valueObject.GetString(lPath);
+    }
+    std::string queryExistsAlbumId = "SELECT album_id from PhotoAlbum where lpath ='" + lPath + "' and dirty !='4'";
+    shared_ptr<NativeRdb::ResultSet> existsAlbumResult = upgradeStore->QuerySql(queryExistsAlbumId);
+    if (existsAlbumResult != nullptr && existsAlbumResult->GoToFirstRow() == NativeRdb::E_OK) {
+        if (existsAlbumResult->GetLong(0, newAlbumId)!= NativeRdb::E_OK) {
+            return E_HAS_DB_ERROR;
+        }
+        MEDIA_INFO_LOG("There is an album matches new scheme, no need to insert, "
+            "albumId : %{public}" PRId64, newAlbumId);
+    }
+    return E_OK;
+}
+
 static int32_t CopyAlbumMetaData(NativeRdb::RdbStore *upgradeStore,
     std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t &oldAlbumId, int64_t &newAlbumId)
 {
@@ -932,8 +1088,12 @@ static int32_t CopyAlbumMetaData(NativeRdb::RdbStore *upgradeStore,
     int32_t err = BuildAlbumInsertValues(upgradeStore, values, oldAlbumId, resultSet);
     int32_t ret = upgradeStore->Insert(newAlbumId, PhotoAlbumColumns::TABLE, values);
     if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Insert copyed album failed, ret = %{public}d", ret);
-        return E_HAS_DB_ERROR;
+        if (ret == NativeRdb::E_SQLITE_CONSTRAINT) {
+            QueryExistsAlbumId(upgradeStore, values, newAlbumId);
+        } else {
+            MEDIA_ERR_LOG("Insert copyed album failed, ret = %{public}d", ret);
+            return E_HAS_DB_ERROR;
+        }
     }
     MEDIA_ERR_LOG("Insert copyed album success,oldAlbumId is = %{public}d newAlbumId is %{public}" PRId64,
         oldAlbumId, newAlbumId);
@@ -1096,14 +1256,14 @@ static int32_t MergeScreenShotAlbum(NativeRdb::RdbStore *upgradeStore, shared_pt
     const std::string QUERY_NEW_SCREEN_SHOT_ALBUM_INFO =
         "SELECT * FROM PhotoAlbum WHERE album_type = 2048 AND bundle_name = 'com.huawei.hmos.screenshot'"
         " AND lpath IS NULL AND dirty != 4";
-    shared_ptr<NativeRdb::ResultSet> newAlbunResultSet = upgradeStore->QuerySql(QUERY_NEW_SCREEN_SHOT_ALBUM_INFO);
+    shared_ptr<NativeRdb::ResultSet> newAlbumResultSet = upgradeStore->QuerySql(QUERY_NEW_SCREEN_SHOT_ALBUM_INFO);
     MEDIA_INFO_LOG("Begin merge screenshot album, old album is %{public}d", oldAlbumId);
-    if (newAlbunResultSet == nullptr || newAlbunResultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (newAlbumResultSet == nullptr || newAlbumResultSet->GoToFirstRow() != NativeRdb::E_OK) {
         // Create a new bundle name screenshot album
         CopyAlbumMetaData(upgradeStore, resultSet, oldAlbumId, newAlbumId);
         MEDIA_INFO_LOG("Create new screenshot album, album id is %{public}" PRId64, newAlbumId);
     } else {
-        GetLongValueFromResultSet(newAlbunResultSet, PhotoAlbumColumns::ALBUM_ID, newAlbumId);
+        GetLongValueFromResultSet(newAlbumResultSet, PhotoAlbumColumns::ALBUM_ID, newAlbumId);
     }
     MEDIA_INFO_LOG("Begin merge screenshot album, new album is %{public}" PRId64, newAlbumId);
     MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(upgradeStore, resultSet, oldAlbumId, newAlbumId);
@@ -1124,13 +1284,13 @@ static int32_t MergeScreenRecordAlbum(NativeRdb::RdbStore *upgradeStore, shared_
     const std::string QUERY_NEW_SCREEN_RECORD_ALBUM_INFO =
         "SELECT * FROM PhotoAlbum WHERE album_type = 2048 AND bundle_name = 'com.huawei.hmos.screenrecorder'"
         " AND lpath IS NULL AND dirty != 4";
-    shared_ptr<NativeRdb::ResultSet> newAlbunResultSet = upgradeStore->QuerySql(QUERY_NEW_SCREEN_RECORD_ALBUM_INFO);
-    if (newAlbunResultSet == nullptr || newAlbunResultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    shared_ptr<NativeRdb::ResultSet> newAlbumResultSet = upgradeStore->QuerySql(QUERY_NEW_SCREEN_RECORD_ALBUM_INFO);
+    if (newAlbumResultSet == nullptr || newAlbumResultSet->GoToFirstRow() != NativeRdb::E_OK) {
         // Create a new bundle name screenshot album
         CopyAlbumMetaData(upgradeStore, resultSet, oldAlbumId, newAlbumId);
         MEDIA_INFO_LOG("Create new screenrecord album, album id is %{public}" PRId64, newAlbumId);
     } else {
-        GetLongValueFromResultSet(newAlbunResultSet, PhotoAlbumColumns::ALBUM_ID, newAlbumId);
+        GetLongValueFromResultSet(newAlbumResultSet, PhotoAlbumColumns::ALBUM_ID, newAlbumId);
     }
     MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(upgradeStore, resultSet, oldAlbumId, newAlbumId);
     MEDIA_INFO_LOG("End merge screenrecord album");
@@ -1235,6 +1395,32 @@ void MediaLibraryAlbumFusionUtils::SetParameterToStartSync()
     if (!retFlag) {
         MEDIA_ERR_LOG("Failed to Set parameter for album fusion, retFlag:%{public}d", retFlag);
     }
+}
+
+int32_t MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus()
+{
+    std::string albumFuseUpgradeStatus = system::GetParameter(ALBUM_FUSION_UPGRADE_STATUS_FLAG, "1");
+    MEDIA_ERR_LOG("Current album upgrade status :%{public}s", albumFuseUpgradeStatus.c_str());
+    if (albumFuseUpgradeStatus == "1") {
+        return ALBUM_FUSION_UPGRADE_SUCCESS;
+    } else {
+        return ALBUM_FUSION_UPGRADE_FAIL;
+    }
+}
+ 
+int32_t MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(int32_t upgradeStatus)
+{
+    if (upgradeStatus != ALBUM_FUSION_UPGRADE_SUCCESS && upgradeStatus != ALBUM_FUSION_UPGRADE_FAIL) {
+        MEDIA_ERR_LOG("Invalid parameter for album fusion upgrade status :%{public}d", upgradeStatus);
+        return E_INVALID_ARGUMENTS;
+    }
+    MEDIA_INFO_LOG("Set parameter for album fusion upgrade status :%{public}d", upgradeStatus);
+    bool retFlag = system::SetParameter(ALBUM_FUSION_UPGRADE_STATUS_FLAG, to_string(upgradeStatus));
+    if (!retFlag) {
+        MEDIA_ERR_LOG("Failed to set parameter, retFlag:%{public}d", retFlag);
+        return E_INVALID_MODE;
+    }
+    return E_OK;
 }
 
 static std::string ToLower(const std::string &str)
@@ -1406,12 +1592,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleMisMatchScreenRecord(NativeRdb::RdbS
 int32_t MediaLibraryAlbumFusionUtils::RefreshAllAlbums()
 {
     MEDIA_INFO_LOG("Froce refresh all albums start");
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    MediaLibraryRdbUtils::UpdateAllAlbums(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
         MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
@@ -1433,19 +1614,32 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
             return E_DB_FAIL;
         }
     }
+    auto upgradeStorePtr = rdbStore->GetRaw();
+    NativeRdb::RdbStore *upgradeStore = upgradeStorePtr.get();
+    if (GetAlbumFuseUpgradeStatus() != ALBUM_FUSION_UPGRADE_SUCCESS) {
+        MEDIA_ERR_LOG("ALBUM_FUSE: First upgrade fails, perform upgrade again.");
+        RdbStore &store = *upgradeStore;
+        MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(store);
+        return E_OK;
+    }
     int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data start!");
     SetParameterToStopSync();
-    auto upgradeStorePtr = rdbStore->GetRaw();
-    NativeRdb::RdbStore *upgradeStore = upgradeStorePtr.get();
+    int32_t totalNumber = QueryTotalNumberNeedToHandle(upgradeStore, QUERY_NEW_NOT_MATCHED_COUNT_IN_PHOTOMAP);
+    MEDIA_INFO_LOG("QueryTotalNumberNeedToHandle, totalNumber=%{public}d", totalNumber);
     std::multimap<int32_t, vector<int32_t>> notMatchedMap;
-    int32_t err = QueryNoMatchedMap(upgradeStore, notMatchedMap, false);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Fatal error! Failed to query not matched map data");
-        return err;
-    }
-    if (notMatchedMap.size() != 0) {
-        HandleNewCloudDirtyData(upgradeStore, notMatchedMap);
+    for (int32_t offset = 0; offset < totalNumber; offset += ALBUM_FUSION_BATCH_COUNT) {
+        MEDIA_INFO_LOG("DATA_CLEAN: handle batch clean, offset: %{public}d", offset);
+        notMatchedMap.clear();
+        int32_t err = QueryNoMatchedMap(upgradeStore, notMatchedMap, false);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Fatal error! Failed to query not matched map data");
+            break;
+        }
+        if (notMatchedMap.size() != 0) {
+            MEDIA_INFO_LOG("There are %{public}d items need to migrate", (int)notMatchedMap.size());
+            HandleNewCloudDirtyData(upgradeStore, notMatchedMap);
+        }
     }
     HandleDuplicateAlbum(upgradeStore);
     // Put no relationship asset into other album
@@ -1456,6 +1650,6 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     RefreshAllAlbums();
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
-    return err;
+    return E_OK;
 }
 } // namespace OHOS::Media

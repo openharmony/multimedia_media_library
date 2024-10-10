@@ -60,9 +60,9 @@ public:
         NativeRdb::ValuesBucket &values, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::string &newAlbumName);
     EXPORT static int32_t RefreshAllAlbums();
+    EXPORT static int32_t GetAlbumFuseUpgradeStatus();
+    EXPORT static int32_t SetAlbumFuseUpgradeStatus(int32_t upgradeStatus);
 private:
-    static int32_t HandleFirstData(NativeRdb::RdbStore *upgradeStore,
-        const int32_t &assetId, const int32_t &ownerAlbumId);
     static int32_t HandleRestData(NativeRdb::RdbStore *upgradeStore, const int32_t &assetId,
         const std::vector<int32_t> &restOwnerAlbumIds, int32_t &handledCount);
     static int32_t HandleNoOwnerData(NativeRdb::RdbStore *upgradeStore);

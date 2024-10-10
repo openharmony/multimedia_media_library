@@ -146,7 +146,8 @@ enum {
     VERSION_ADD_SUPPORT_WATERMARK_TYPE = 118,
     VERSION_FIX_PHOTO_SCHPT_MEDIA_TYPE_INDEX = 119,
     VERSION_UPDATE_INDEX_FOR_COVER = 120,
-    VERSION_ADD_THUMBNAIL_VISIBLE = 121,
+    VERSION_ADD_ANALYSIS_ALBUM_TOTAL_TABLE = 121,
+    VERSION_ADD_THUMBNAIL_VISIBLE = 122,
 };
 
 enum {
@@ -380,6 +381,11 @@ const std::string OPEN_MOVING_PHOTO_VIDEO_CLOUD = "open_moving_photo_video_cloud
 
 // db sandbox directory
 const std::string MEDIA_DB_DIR = "/data/medialibrary/database";
+
+// slave medialibrary db file path
+const std::string MEDIA_DB_FILE_SLAVE = "/data/storage/el2/database/rdb/media_library_slave.db";
+const std::string MEDIA_DB_FILE_SLAVE_SHM = "/data/storage/el2/database/rdb/media_library_slave.db-shm";
+const std::string MEDIA_DB_FILE_SLAVE_WAL = "/data/storage/el2/database/rdb/media_library_slave.db-wal";
 
 // requestId for generating thumbnail in batches
 const std::string THUMBNAIL_BATCH_GENERATE_REQUEST_ID = "thumbnail_request_id";

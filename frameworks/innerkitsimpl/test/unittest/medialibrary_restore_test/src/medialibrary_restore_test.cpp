@@ -129,13 +129,6 @@ void WaitForBackup()
     }
 }
 
-void WaitForStopCloud()
-{
-    while (MediaLibraryRestore::GetInstance().IsWaiting()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_2));
-    }
-}
-
 const NativeRdb::RdbStoreConfig GetConfig()
 {
     NativeRdb::RdbStoreConfig config(DB_PATH);
@@ -248,7 +241,6 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_003, testing::ex
 
     std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_1));
     MediaLibraryRestore::GetInstance().InterruptBackup();
-    WaitForStopCloud();
     EXPECT_EQ(MediaLibraryRestore::GetInstance().IsBackuping(), false);
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_2));
     ASSERT_TRUE(rdb->IsSlaveDiffFromMaster());
