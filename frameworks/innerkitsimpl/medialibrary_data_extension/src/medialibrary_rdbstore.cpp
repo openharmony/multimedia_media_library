@@ -296,6 +296,15 @@ int32_t MediaLibraryRdbStore::Init()
         MEDIA_ERR_LOG("GetRdbStore is failed ");
         return errCode;
     }
+    int version = 0;
+    NativeRdb::RebuiltType rebuilt;
+    bool isRebuilt = rdbStore_->GetRebuilt(rebuilt) == NativeRdb::E_OK && rebuilt == NativeRdb::RebuiltType::REBUILT;
+    bool isInitVersion = rdbStore_->GetVersion(version) == NativeRdb::E_OK && version == 0;
+    if (isRebuilt || isInitVersion) {
+        MEDIA_INFO_LOG("MediaLibraryRdbStore::Init, OnCreate, isRebuilt: %{public}d isInitVersion: %{public}d",
+            static_cast<uint32_t>(isRebuilt), static_cast<uint32_t>(isInitVersion));
+        rdbDataCallBack.OnCreate(*rdbStore_);
+    }
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), SUCCESS");
     return E_OK;
 }
@@ -1264,6 +1273,9 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_LOCATION_KEY_INDEX,
     CREATE_IDX_FILEID_FOR_ANALYSIS_TOTAL,
     CREATE_IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP,
+    CREATE_TAB_ANALYSIS_ALBUM_TOTAL,
+    CREATE_TOTAL_INSERT_TRIGGER_FOR_ADD_ANALYSIS_ALBUM_TOTAL,
+    CREATE_VISION_UPDATE_TRIGGER_FOR_UPDATE_ANALYSIS_ALBUM_TOTAL_STATUS,
 
     // search
     CREATE_SEARCH_TOTAL_TABLE,
@@ -2899,6 +2911,18 @@ static void FixPhotoSchptMediaTypeIndex(RdbStore &store)
     MEDIA_INFO_LOG("End fix idx_schpt_media_type index.");
 }
 
+static void AddAnalysisAlbumTotalTable(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        CREATE_TAB_ANALYSIS_ALBUM_TOTAL,
+        INIT_TAB_ANALYSIS_ALBUM_TOTAL,
+        CREATE_TOTAL_INSERT_TRIGGER_FOR_ADD_ANALYSIS_ALBUM_TOTAL,
+        CREATE_VISION_UPDATE_TRIGGER_FOR_UPDATE_ANALYSIS_ALBUM_TOTAL_STATUS,
+    };
+    MEDIA_INFO_LOG("Start add analysis album total table");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void ResetCloudCursorAfterInitFinish()
 {
     MEDIA_INFO_LOG("Try reset cloud cursor after storage reconstruct");
@@ -2924,20 +2948,24 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
         return;
     }
     MediaLibraryAlbumFusionUtils::SetParameterToStopSync();
+    MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(0); // 0: set upgrade status fail
     CompensateAlbumIdData* compensateData = static_cast<CompensateAlbumIdData*>(data);
     MEDIA_INFO_LOG("ALBUM_FUSE: Processing old data start");
     MEDIA_INFO_LOG("ALBUM_FUSE: Compensating album id for old asset start");
     int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
-
     CHECK_AND_PRINT_LOG(MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(compensateData->upgradeStore_) == E_OK,
         "Failed to remove misadded hidden data");
-
     int64_t cleanDataBeginTime = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t matchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(
         compensateData->upgradeStore_);
     if (matchedDataHandleResult != E_OK) {
         MEDIA_ERR_LOG("Fatal err, handle matched relationship fail by %{public}d", matchedDataHandleResult);
-        // This should not happen, and if it does, should avoid cleaning up more data.
+        // This should not happen, try again
+        matchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(
+            compensateData->upgradeStore_);
+        if (matchedDataHandleResult != E_OK) {
+            MEDIA_ERR_LOG("Fatal err, handle not matched relationship again by %{public}d", matchedDataHandleResult);
+        }
         return;
     }
     int32_t notMatchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleNotMatchedDataFusion(
@@ -2956,9 +2984,10 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - albumCleanBeginTime));
     // Restore cloud sync
     MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
+    MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(1); // 1: set upgrade status success
     ResetCloudCursorAfterInitFinish();
     MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
-    MEDIA_INFO_LOG("ALBUM_FUSE: Processing old data start end, cost %{public}ld",
+    MEDIA_INFO_LOG("ALBUM_FUSE: Processing old data end, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
 }
 
@@ -3013,7 +3042,7 @@ static void AddMergeInfoColumnForAlbum(RdbStore &store)
     }
 }
 
-static int32_t ReconstructMediaLibraryStorageFormat(RdbStore &store)
+int32_t MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(RdbStore &store)
 {
     MEDIA_INFO_LOG("ALBUM_FUSE: Start reconstruct medialibrary storage format task!");
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
@@ -3506,6 +3535,11 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
         FixPhotoSchptMediaTypeIndex(store);
     }
 
+    if (oldVersion < VERSION_ADD_ANALYSIS_ALBUM_TOTAL_TABLE) {
+        AddAnalysisAlbumTotalTable(store);
+
+    }
+
     if (oldVersion < VERSION_ADD_THUMBNAIL_VISIBLE) {
         AddThumbnailVisible(store);
     }
@@ -3558,7 +3592,7 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
         AlbumPluginTableEventHandler albumPluginTableEventHandler;
         albumPluginTableEventHandler.OnUpgrade(store, oldVersion, oldVersion);
         AddMergeInfoColumnForAlbum(store);
-        ReconstructMediaLibraryStorageFormat(store);
+        MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(store);
     }
 
     UpgradeExtensionPart3(store, oldVersion);

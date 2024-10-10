@@ -18,6 +18,7 @@
 #include "medialibrary_data_manager.h"
 
 #include <cstdlib>
+#include <future>
 #include <shared_mutex>
 #include <unordered_set>
 #include <sstream>
@@ -38,6 +39,8 @@
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
+#include "location_column.h"
+#include "media_analysis_helper.h"
 #include "media_column.h"
 #include "media_datashare_ext_ability.h"
 #include "media_directory_type_column.h"
@@ -588,7 +591,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryDataManager::SolveInsertCmdSub(MediaLibraryCommand &cmd)
 {
-    if (MediaLibraryRestore::GetInstance().IsBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()) {
+    if (MediaLibraryRestore::GetInstance().IsRealBackuping()) {
         MEDIA_INFO_LOG("[SolveInsertCmdSub] rdb is backuping");
         return E_FAIL;
     }
@@ -875,7 +878,7 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
 int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryCommand &cmd,
     NativeRdb::RdbPredicates &rdbPredicate)
 {
-    if (MediaLibraryRestore::GetInstance().IsBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()) {
+    if (MediaLibraryRestore::GetInstance().IsRealBackuping()) {
         MEDIA_INFO_LOG("[DeleteInRdbPredicatesAnalysis] rdb is backuping");
         return E_FAIL;
     }
@@ -1594,6 +1597,54 @@ shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
     return MediaLibraryRdbStore::Query(rdbPredicates, columns);
 }
 
+shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, const vector<string> &columns)
+{
+    auto queryResult = MediaLibraryRdbStore::Query(rdbPredicates, columns);
+    if (queryResult == nullptr) {
+        MEDIA_ERR_LOG("Query Geographic Information Failed, queryResult is nullptr");
+        return queryResult;
+    }
+
+    const vector<string> &whereArgs = rdbPredicates.GetWhereArgs();
+    if (whereArgs.empty() || whereArgs.front().empty()) {
+        MEDIA_ERR_LOG("Query Geographic Information can not get fileId");
+        return queryResult;
+    }
+
+    string fileId = whereArgs.front();
+    if (queryResult->GoToNextRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Query Geographic Information Failed, fileId: %{public}s", fileId.c_str());
+        return queryResult;
+    }
+
+    string latitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, queryResult);
+    string longitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult);
+    string addressDescription = GetStringVal(ADDRESS_DESCRIPTION, queryResult);
+
+    MEDIA_DEBUG_LOG(
+        "QueryGeo, fileId: %{public}s, latitude: %{public}s, longitude: %{public}s, addressDescription: %{public}s",
+        fileId.c_str(), latitude.c_str(), longitude.c_str(), addressDescription.c_str());
+
+    if (!latitude.empty() && !longitude.empty() && addressDescription.empty()) {
+        std::future<bool> futureResult = std::async(std::launch::async, [&]() {
+            return MediaAnalysisHelper::ParseGeoInfo({ fileId, latitude, longitude });
+        });
+
+        bool parseResult = false;
+        const int timeout = 5;
+        if (std::future_status::ready == futureResult.wait_for(std::chrono::seconds(timeout))) {
+            parseResult = futureResult.get();
+        }
+
+        if (parseResult) {
+            queryResult = MediaLibraryRdbStore::Query(rdbPredicates, columns);
+        }
+        MEDIA_INFO_LOG("ParseGeoInfo completed, fileId: %{public}s, parseResult: %{public}d", fileId.c_str(),
+            parseResult);
+    }
+    return queryResult;
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
@@ -1632,6 +1683,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
         case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
             return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
+        case OperationObject::ANALYSIS_ADDRESS:
+            return QueryGeo(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);

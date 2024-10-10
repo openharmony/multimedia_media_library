@@ -63,6 +63,7 @@ enum class EXPORT OperationObject : uint32_t {
     VISION_TOTAL,
     VISION_IMAGE_FACE,
     VISION_VIDEO_FACE,
+    VISION_ANALYSIS_ALBUM_TOTAL,
     VISION_FACE_TAG,
     VISION_SALIENCY,
     VISION_HEAD,
@@ -90,6 +91,7 @@ enum class EXPORT OperationObject : uint32_t {
     REQUEST_PICTURE,
     PHOTO_REQUEST_PICTURE_BUFFER,
     PAH_CLOUD_ENHANCEMENT_OPERATE,
+    ANALYSIS_ADDRESS,
 };
 
 enum class EXPORT OperationType : uint32_t {

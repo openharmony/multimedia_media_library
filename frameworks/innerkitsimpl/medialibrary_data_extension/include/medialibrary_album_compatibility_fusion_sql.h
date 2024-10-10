@@ -23,19 +23,26 @@
 namespace OHOS {
 namespace Media {
 
-// UPDATE Photos SET owner_album_id = (SELECT file_id FROM PhotoMap WHERE Photos.file_id = PhotoMap.map_asset)
-// WHERE EXISTS (SELECT 1 FROM PhotoMap WHERE Photos.file_id = PhotoMap.map_asset AND PhotoMap.map_asset
-// IN (SELECT map_asset FROM PhotoMap GROUP BY map_asset HAVING COUNT(*) = 1))
+const std::string CREATE_TEMP_UPGRADE_PHOTO_MAP_TABLE =
+    "CREATE TABLE IF NOT EXISTS temp_upgrade_photo_map AS SELECT MIN(map_album) AS map_album, map_asset FROM PhotoMap "
+    "INNER JOIN Photos ON PhotoMap.map_asset=Photos.file_id where COALESCE(owner_album_id, 0) = 0 GROUP BY map_asset;";
+ 
+const std::string QUERY_MATCHED_COUNT =
+    "SELECT COUNT(1) from temp_upgrade_photo_map";
+ 
+const std::string QUERY_SUCCESS_MATCHED_COUNT =
+    "SELECT COUNT(1) from Photos where owner_album_id != 0";
+
+const std::string CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_MAP_ASSET =
+    "CREATE INDEX IF NOT EXISTS unique_temp_upgrade_index_on_map_asset ON temp_upgrade_photo_map (map_asset);";
+ 
+const std::string CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_PHOTO_MAP =
+    "CREATE UNIQUE INDEX IF NOT EXISTS unique_temp_upgrade_index_on_photo_map ON "
+    "temp_upgrade_photo_map (map_album, map_asset);";
+
 const std::string UPDATE_ALBUM_ASSET_MAPPING_CONSISTENCY_DATA_SQL =
-    "UPDATE " + PhotoColumn::PHOTOS_TABLE +
-    " SET " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " =" +
-    " (SELECT " + PhotoMap::ALBUM_ID + " FROM " + PhotoMap::TABLE +
-    " WHERE Photos." + PhotoColumn::MEDIA_ID + " = PhotoMap." + PhotoMap::ASSET_ID +
-    " ) WHERE EXISTS ( SELECT 1 FROM " + PhotoMap::TABLE +
-    " WHERE Photos." + PhotoColumn::MEDIA_ID + " = " +
-    " PhotoMap." + PhotoMap::ASSET_ID + " AND PhotoMap." + PhotoMap::ASSET_ID + " IN (" +
-    " SELECT " + PhotoMap::ASSET_ID + " FROM " + PhotoMap::TABLE + " GROUP BY " +
-    PhotoMap::ASSET_ID + " HAVING COUNT(*) = 1));";
+    "UPDATE Photos SET owner_album_id =(SELECT map_album FROM temp_upgrade_photo_map WHERE file_id=map_asset "
+    "UNION SELECT 0 AS map_album ORDER BY map_album DESC LIMIT 1) WHERE COALESCE(owner_album_id, 0)=0;";
 
 const std::string DROP_PHOTO_ALBUM_CLEAR_MAP_SQL =
     "DROP TRIGGER IF EXISTS photo_album_clear_map";
@@ -53,8 +60,12 @@ const std::string DROP_INDEX_SOURCE_ALBUM_INDEX =
     "DROP INDEX IF EXISTS " + SOURCE_ALBUM_INDEX;
 
 const std::string DELETE_MATCHED_RELATIONSHIP_IN_PHOTOMAP_SQL =
-    "UPDATE PhotoMap SET dirty = '4' WHERE map_asset "
-    "IN (SELECT map_asset FROM PhotoMap GROUP BY map_asset HAVING COUNT(*) = 1)";
+    "UPDATE PhotoMap SET dirty = '4' WHERE EXISTS (SELECT 1 FROM temp_upgrade_photo_map "
+    " WHERE PhotoMap.map_album=temp_upgrade_photo_map.map_album AND "
+    " PhotoMap.map_asset=temp_upgrade_photo_map.map_asset);";
+
+const std::string DROP_TEMP_UPGRADE_PHOTO_MAP_TABLE =
+    "DROP TABLE IF EXISTS temp_upgrade_photo_map;";
 
 const std::string FILL_ALBUM_ID_FOR_PHOTOS =
     "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = " +
@@ -92,15 +103,19 @@ const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
     PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT + "> 0 AND NEW.owner_album_id = 0" +
     " BEGIN " + FILL_ALBUM_ID_FOR_PHOTOS + "; END;";
 
-const std::string QUERY_NOT_MATCHED_DATA_IN_PHOTOMAP   =
+const std::string QUERY_NOT_MATCHED_DATA_IN_PHOTOMAP_BY_PAGE =
     "SELECT " + PhotoMap::ASSET_ID + ", " + PhotoMap::ALBUM_ID + " FROM " + PhotoMap::TABLE +
-    " WHERE dirty != '4' AND " + PhotoMap::ASSET_ID + " IN (SELECT " + PhotoMap::ASSET_ID + " FROM " +
-    PhotoMap::TABLE + " GROUP BY " + PhotoMap::ASSET_ID + " HAVING count(*) > 1) ORDER BY " +
-    PhotoMap::ASSET_ID + " DESC";
+    " WHERE dirty <>4 and dirty<>6 LIMIT 0, 200";
 
-const std::string QUERY_NEW_NOT_MATCHED_DATA_IN_PHOTOMAP =
+const std::string QUERY_NEW_NOT_MATCHED_DATA_IN_PHOTOMAP_BY_PAGE =
     "SELECT " + PhotoMap::ASSET_ID + ", " + PhotoMap::ALBUM_ID + " FROM " + PhotoMap::TABLE +
-    " WHERE dirty != '4'";
+    " WHERE dirty =6 LIMIT 0, 200";
+
+const std::string QUERY_NOT_MATCHED_COUNT_IN_PHOTOMAP =
+    "SELECT count(1) FROM PhotoMap WHERE dirty <>4 and dirty<>6";
+
+const std::string QUERY_NEW_NOT_MATCHED_COUNT_IN_PHOTOMAP =
+    "SELECT count(1) FROM PhotoMap WHERE dirty =6";
 
 const std::string CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET =
     "INSERT INTO " + PhotoAlbumColumns::TABLE +

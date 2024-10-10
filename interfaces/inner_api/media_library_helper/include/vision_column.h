@@ -37,6 +37,7 @@ const std::string VISION_POSE_TABLE = "tab_analysis_pose";
 const std::string VISION_TOTAL_TABLE = "tab_analysis_total";
 const std::string VISION_IMAGE_FACE_TABLE = "tab_analysis_image_face";
 const std::string VISION_VIDEO_FACE_TABLE = "tab_analysis_video_face";
+const std::string VISION_ANALYSIS_ALBUM_TOTAL_TABLE = "tab_analysis_album_total";
 const std::string VISION_FACE_TAG_TABLE = "tab_analysis_face_tag";
 const std::string ANALYSIS_ALBUM_TABLE = "AnalysisAlbum";
 const std::string ANALYSIS_PHOTO_MAP_TABLE = "AnalysisPhotoMap";
@@ -60,6 +61,7 @@ const std::string URI_FACE_TAG = MEDIALIBRARY_DATA_URI + "/" + VISION_FACE_TAG_T
 const std::string URI_HEAD = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_HEAD;
 const std::string URI_POSE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_POSE;
 const std::string URI_MULTI_CROP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MULTI_CROP;
+const std::string URI_ANALYSIS_ALBUM_TOTAL = MEDIALIBRARY_DATA_URI + "/" + VISION_ANALYSIS_ALBUM_TOTAL_TABLE;
 } // namespace Media
 } // namespace OHOS
 #endif // MEDIALIBRARY_VISION_COLUMN_H
