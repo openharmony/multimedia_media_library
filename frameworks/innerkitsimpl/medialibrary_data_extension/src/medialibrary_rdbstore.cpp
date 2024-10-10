@@ -296,6 +296,15 @@ int32_t MediaLibraryRdbStore::Init()
         MEDIA_ERR_LOG("GetRdbStore is failed ");
         return errCode;
     }
+    int version = 0;
+    NativeRdb::RebuiltType rebuilt;
+    bool isRebuilt = rdbStore_->GetRebuilt(rebuilt) == NativeRdb::E_OK && rebuilt == NativeRdb::RebuiltType::REBUILT;
+    bool isInitVersion = rdbStore_->GetVersion(version) == NativeRdb::E_OK && version == 0;
+    if (isRebuilt || isInitVersion) {
+        MEDIA_INFO_LOG("MediaLibraryRdbStore::Init, OnCreate, isRebuilt: %{public}d isInitVersion: %{public}d",
+            static_cast<uint32_t>(isRebuilt), static_cast<uint32_t>(isInitVersion));
+        rdbDataCallBack.OnCreate(*rdbStore_);
+    }
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), SUCCESS");
     return E_OK;
 }

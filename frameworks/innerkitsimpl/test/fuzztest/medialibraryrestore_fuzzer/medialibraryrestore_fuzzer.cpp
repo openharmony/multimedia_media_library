@@ -100,13 +100,6 @@ void WaitForBackup()
     }
 }
 
-void WaitForStopCloud()
-{
-    while (Media::MediaLibraryRestore::GetInstance().IsWaiting()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_2));
-    }
-}
-
 const NativeRdb::RdbStoreConfig GetConfig()
 {
     NativeRdb::RdbStoreConfig config(DB_PATH);
@@ -141,7 +134,6 @@ static void MediaLibraryRestoreTest(const uint8_t *data, size_t size)
     Media::MediaLibraryRestore::GetInstance().IsRestoring();
     std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_1));
     Media::MediaLibraryRestore::GetInstance().InterruptBackup();
-    WaitForStopCloud();
 
     NativeRdb::RdbHelper::DeleteRdbStore(config);
 }
