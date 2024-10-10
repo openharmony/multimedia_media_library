@@ -254,6 +254,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(NativeRdb::RdbStor
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s",
             UPDATE_ALBUM_ASSET_MAPPING_CONSISTENCY_DATA_SQL.c_str());
+        upgradeStore->Commit();
         return err;
     }
     upgradeStore->Commit();
