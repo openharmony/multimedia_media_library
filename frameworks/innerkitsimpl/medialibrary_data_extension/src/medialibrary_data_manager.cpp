@@ -224,6 +224,27 @@ void MediaLibraryDataManager::ReCreateMediaDir()
     }
 }
 
+static int32_t ReconstructMediaLibraryPhotoMap()
+{
+    if(system::GetParameter("persist.multimedia.medialibrary.albumFusion.status", "1") == "1") {
+        return E_OK;
+    }
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Failed to get rdbstore, try again!");
+        rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+        if (rdbStore == nullptr) {
+            MEDIA_ERR_LOG("Fatal error! Failed to get rdbstore, new cloud data is not processed!!");
+            return E_DB_FAIL;
+        }
+    }
+    auto upgradeStorePtr = rdbStore->GetRaw();
+    NativeRdb::RdbStore *upgradeStore = upgradeStorePtr.get();
+    RdbStore &store = *upgradeStore;
+    MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(store);
+    return E_OK;
+}
+
 void MediaLibraryDataManager::HandleOtherInitOperations()
 {
     InitRefreshAlbum();
@@ -288,6 +309,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at ExcuteAsyncWork");
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
+    ReconstructMediaLibraryPhotoMap();
     HandleOtherInitOperations();
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
