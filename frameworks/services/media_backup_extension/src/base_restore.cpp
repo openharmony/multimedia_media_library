@@ -400,7 +400,9 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
         string dstPath = RESTORE_MUSIC_LOCAL_DIR + relativePath1;
         RecursiveCreateDir(relativePath0, relativePath1);
         if (MediaFileUtils::IsFileExists(dstPath)) {
-            MEDIA_INFO_LOG("dstPath %{private}s already exists.", dstPath.c_str());
+            MEDIA_INFO_LOG("dstPath %{public}s already exists.",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+            UpdateDuplicateNumber(fileInfos[i].fileType)
             continue;
         }
         int32_t moveErrCode = BackupFileUtils::MoveFile(fileInfos[i].filePath, dstPath, sceneCode);
