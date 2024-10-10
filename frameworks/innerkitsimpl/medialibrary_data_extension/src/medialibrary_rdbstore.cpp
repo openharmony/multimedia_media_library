@@ -3569,7 +3569,8 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
         AlbumPluginTableEventHandler albumPluginTableEventHandler;
         albumPluginTableEventHandler.OnUpgrade(store, oldVersion, oldVersion);
         AddMergeInfoColumnForAlbum(store);
-        MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(store);
+        MEDIA_INFO_LOG("ALBUM_FUSE: set album fuse upgrade status");
+        MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(0);
     }
 
     UpgradeExtensionPart3(store, oldVersion);
