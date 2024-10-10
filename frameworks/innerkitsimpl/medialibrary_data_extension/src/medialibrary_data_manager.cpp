@@ -226,7 +226,7 @@ void MediaLibraryDataManager::ReCreateMediaDir()
 
 static int32_t ReconstructMediaLibraryPhotoMap()
 {
-    if(system::GetParameter("persist.multimedia.medialibrary.albumFusion.status", "1") == "1") {
+    if (system::GetParameter("persist.multimedia.medialibrary.albumFusion.status", "1") == "1") {
         return E_OK;
     }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
