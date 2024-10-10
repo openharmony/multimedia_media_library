@@ -402,7 +402,7 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
         if (MediaFileUtils::IsFileExists(dstPath)) {
             MEDIA_INFO_LOG("dstPath %{public}s already exists.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
-            UpdateDuplicateNumber(fileInfos[i].fileType)
+            UpdateDuplicateNumber(fileInfos[i].fileType);
             continue;
         }
         int32_t moveErrCode = BackupFileUtils::MoveFile(fileInfos[i].filePath, dstPath, sceneCode);
@@ -1055,10 +1055,14 @@ SubProcessInfo BaseRestore::GetSubProcessInfo(const std::string &type)
         UpdateProcessedNumber(updateProcessStatus_, updateProcessedNumber_, updateTotalNumber_);
         success = updateProcessedNumber_;
         total = updateTotalNumber_;
-    } else {
+    } else if (type == STAT_TYPE_OTHER) {
         UpdateProcessedNumber(otherProcessStatus_, otherProcessedNumber_, otherTotalNumber_);
         success = otherProcessedNumber_;
-        total = otherTotalNumber_; // make sure progressInfo changes as update and rest goes on
+        total = otherTotalNumber_;
+    } else {
+        ongoingTotalNumber_++;
+        success = ongoingTotalNumber_;
+        total = ongoingTotalNumber_; // make sure progressInfo changes as process goes on
     }
     uint64_t processed = success + duplicate + failed;
     return SubProcessInfo(processed, total);
