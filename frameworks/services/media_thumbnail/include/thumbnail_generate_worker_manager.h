@@ -42,9 +42,9 @@ public:
 
 private:
     ThumbnailGenerateWorkerManager() = default;
-    ~ThumbnailGenerateWorkerManager();
+    EXPORT ~ThumbnailGenerateWorkerManager();
 
-    int32_t InitThumbnailWorker(const ThumbnailTaskType &taskType);
+    EXPORT int32_t InitThumbnailWorker(const ThumbnailTaskType &taskType);
 
     SafeMap<ThumbnailTaskType, ThumbnailWorkerPtr> thumbnailWorkerMap_;
 
