@@ -134,6 +134,14 @@ void ClearVideoFaceData()
     MediaLibraryDataManager::GetInstance()->Delete(videoFaceCmd, predicates);
 }
 
+void ClearAnalysisAlbumTotalData()
+{
+    DataShare::DataSharePredicates predicates;
+    Uri analysisAlbumTotalUri(URI_ANALYSIS_ALBUM_TOTAL);
+    MediaLibraryCommand analysisAlbumTotalCmd(analysisAlbumTotalUri);
+    MediaLibraryDataManager::GetInstance()->Delete(analysisAlbumTotalCmd, predicates);
+}
+
 void ClearAnalysisAlbum()
 {
     auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
@@ -176,12 +184,14 @@ void MediaLibraryVisionTest::SetUpTestCase(void)
     ClearAnalysisAlbum();
     ClearPhotos();
     ClearVideoFaceData();
+    ClearAnalysisAlbumTotalData();
 }
 
 void MediaLibraryVisionTest::TearDownTestCase(void)
 {
     CleanVisionData();
     ClearVideoFaceData();
+    ClearAnalysisAlbumTotalData();
     MEDIA_INFO_LOG("Vision_Test::End");
 }
 
@@ -190,6 +200,7 @@ void MediaLibraryVisionTest::SetUp(void)
     MEDIA_INFO_LOG("SetUp");
     CleanVisionData();
     ClearVideoFaceData();
+    ClearAnalysisAlbumTotalData();
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
@@ -601,6 +612,117 @@ HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_001, TestSize.Level0)
     resultSet->GetInt(0, status);
     resultSet->GetInt(1, ocr);
     MEDIA_INFO_LOG("Vision_Total_Test_001::key = %{public}d, value = %{public}d End", status, ocr);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_Total_Test_002::Start");
+    Uri totalUri(URI_TOTAL);
+    MediaLibraryCommand cmd(totalUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 234);
+    valuesBucket.Put(STATUS, 0);
+    valuesBucket.Put(OCR, 1);
+    valuesBucket.Put(LABEL, 0);
+    valuesBucket.Put(AESTHETICS_SCORE, 1);
+    valuesBucket.Put(FACE, 0);
+    valuesBucket.Put(OBJECT, 1);
+    valuesBucket.Put(RECOMMENDATION, 0);
+    valuesBucket.Put(SEGMENTATION, 0);
+    valuesBucket.Put(COMPOSITION, 0);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    Uri albumTotalUri(URI_ANALYSIS_ALBUM_TOTAL);
+    MediaLibraryCommand albumTotalCmd(albumTotalUri);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 234);
+    vector<string> columns;
+    columns.push_back(STATUS);
+    columns.push_back(FILE_ID);
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(albumTotalCmd, columns, predicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    int count;
+    resultSet->GetRowCount(count);
+    EXPECT_GT(count, 0);
+    MEDIA_INFO_LOG("Vision_Total_Test_002::count = %{public}d. End", count);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_Total_Test_003::Start");
+    Uri totalUri(URI_TOTAL);
+    MediaLibraryCommand cmd(totalUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 345);
+    valuesBucket.Put(STATUS, 0);
+    valuesBucket.Put(OCR, 1);
+    valuesBucket.Put(LABEL, 0);
+    valuesBucket.Put(AESTHETICS_SCORE, 1);
+    valuesBucket.Put(FACE, 0);
+    valuesBucket.Put(OBJECT, 1);
+    valuesBucket.Put(RECOMMENDATION, 1);
+    valuesBucket.Put(SEGMENTATION, 0);
+    valuesBucket.Put(COMPOSITION, 0);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(STATUS, -1);
+    DataShare::DataSharePredicates predicates;
+    vector<string> inValues;
+    inValues.push_back("345");
+    predicates.In(FILE_ID, inValues);
+    auto ret = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
+    EXPECT_EQ(ret, 1);
+    Uri albumTotalUri(URI_ANALYSIS_ALBUM_TOTAL);
+    MediaLibraryCommand albumTotalCmd(albumTotalUri);
+    DataShare::DataSharePredicates predicates1;
+    predicates1.EqualTo(FILE_ID, 234);
+    vector<string> columns;
+    columns.push_back(STATUS);
+    columns.push_back(FILE_ID);
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(albumTotalCmd, columns, predicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    int count;
+    resultSet->GetRowCount(count);
+    EXPECT_GT(count, 0);
+    resultSet->GoToFirstRow();
+    int status;
+    resultSet->GetInt(0, status);
+    EXPECT_EQ(status, -1);
+    MEDIA_INFO_LOG("Vision_Total_Test_003::status = %{public}d End", status);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_Analysis_Album_Total_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_Analysis_Album_Total_Test_001::Start");
+    Uri albumTotalUri(URI_ANALYSIS_ALBUM_TOTAL);
+    MediaLibraryCommand cmd(albumTotalUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 123);
+    valuesBucket.Put(STATUS, 0);
+    valuesBucket.Put(LABEL, 0);
+    valuesBucket.Put(FACE, 1);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(STATUS, 0);
+    vector<string> columns;
+    columns.push_back(STATUS);
+    columns.push_back(FACE);
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    int count;
+    resultSet->GetRowCount(count);
+    EXPECT_GT(count, 0);
+    resultSet->GoToFirstRow();
+    int status;
+    int face;
+    resultSet->GetInt(0, status);
+    resultSet->GetInt(1, face);
+    MEDIA_INFO_LOG("Vision_Analysis_Album_Total_Test_001::key = %{public}d End", status);
 }
 
 HWTEST_F(MediaLibraryVisionTest, Vision_InsertImageFace_Test_001, TestSize.Level0)
