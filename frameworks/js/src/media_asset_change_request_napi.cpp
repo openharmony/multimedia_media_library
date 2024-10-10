@@ -147,11 +147,11 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setLocation", JSSetLocation),
             DECLARE_NAPI_FUNCTION("addResource", JSAddResource),
             DECLARE_NAPI_FUNCTION("setEffectMode", JSSetEffectMode),
-            DECLARE_NAPI_FUNCTION("setSupportWatermarkType", JSSetSupportWatermarkType),
             DECLARE_NAPI_FUNCTION("setCameraShotKey", JSSetCameraShotKey),
             DECLARE_NAPI_FUNCTION("saveCameraPhoto", JSSaveCameraPhoto),
             DECLARE_NAPI_FUNCTION("discardCameraPhoto", JSDiscardCameraPhoto),
             DECLARE_NAPI_FUNCTION("setOrientation", JSSetOrientation),
+            DECLARE_NAPI_FUNCTION("setSupportedWatermarkType", JSSetSupportedWatermarkType),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -1231,29 +1231,6 @@ napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callb
     RETURN_NAPI_UNDEFINED(env);
 }
 
-napi_value MediaAssetChangeRequestNapi::JSSetSupportWatermarkType(napi_env env, napi_callback_info info)
-{
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return nullptr;
-    }
-
-    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
-    int32_t watermarkType;
-    CHECK_COND_WITH_MESSAGE(env,
-        MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, watermarkType) == napi_ok,
-        "Failed to parse watermark type");
-    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
-    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckSupportWatermarkType(watermarkType),
-        "Failed to check watermark type");
-
-    auto changeRequest = asyncContext->objectInfo;
-    CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_INNER_FAIL);
-    changeRequest->GetFileAssetInstance()->SetSupportWatermarkType(watermarkType);
-    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_SUPPORT_WATERMARK_TYPE);
-    RETURN_NAPI_UNDEFINED(env);
-}
-
 napi_value MediaAssetChangeRequestNapi::JSSetCameraShotKey(napi_env env, napi_callback_info info)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -1312,6 +1289,29 @@ napi_value MediaAssetChangeRequestNapi::JSDiscardCameraPhoto(napi_env env, napi_
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
     changeRequest->RecordChangeOperation(AssetChangeOperation::DISCARD_CAMERA_PHOTO);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSSetSupportedWatermarkType(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    int32_t watermarkType;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, watermarkType) == napi_ok,
+        "Failed to parse watermark type");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckSupportedWatermarkType(watermarkType),
+        "Failed to check watermark type");
+
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_INNER_FAIL);
+    changeRequest->GetFileAssetInstance()->SetSupportedWatermarkType(watermarkType);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_SUPPORTED_WATERMARK_TYPE);
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -2167,19 +2167,6 @@ static bool SetEffectModeExecute(MediaAssetChangeRequestAsyncContext& context)
     return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
 }
 
-static bool SetSupportWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext& context)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("SetSupportWatermarkTypeExecute");
-
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    valuesBucket.Put(PhotoColumn::SUPPORT_WATERMARK_TYPE, fileAsset->GetSupportWatermarkType());
-    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
-}
-
 static bool SetPhotoQualityExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -2328,6 +2315,19 @@ static bool DiscardCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& conte
     return true;
 }
 
+static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetSupportedWatermarkTypeExecute");
+
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    valuesBucket.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, fileAsset->GetSupportedWatermarkType());
+    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+}
+
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAsyncContext&)> EXECUTE_MAP = {
     { AssetChangeOperation::CREATE_FROM_URI, CreateFromFileUriExecute },
     { AssetChangeOperation::GET_WRITE_CACHE_HANDLER, SubmitCacheExecute },
@@ -2338,13 +2338,13 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_ORIENTATION, SetOrientationExecute },
     { AssetChangeOperation::SET_USER_COMMENT, SetUserCommentExecute },
     { AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE, SetEffectModeExecute },
-    { AssetChangeOperation::SET_SUPPORT_WATERMARK_TYPE, SetSupportWatermarkTypeExecute },
     { AssetChangeOperation::SET_PHOTO_QUALITY_AND_PHOTOID, SetPhotoQualityExecute },
     { AssetChangeOperation::SET_LOCATION, SetLocationExecute },
     { AssetChangeOperation::SET_CAMERA_SHOT_KEY, SetCameraShotKeyExecute },
     { AssetChangeOperation::SAVE_CAMERA_PHOTO, SaveCameraPhotoExecute },
     { AssetChangeOperation::ADD_FILTERS, AddFiltersExecute },
     { AssetChangeOperation::DISCARD_CAMERA_PHOTO, DiscardCameraPhotoExecute },
+    { AssetChangeOperation::SET_SUPPORTED_WATERMARK_TYPE, SetSupportedWatermarkTypeExecute },
 };
 
 static void ApplyAssetChangeRequestExecute(napi_env env, void* data)

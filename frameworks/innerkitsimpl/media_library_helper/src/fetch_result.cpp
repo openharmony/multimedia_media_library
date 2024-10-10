@@ -82,7 +82,6 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_LCD_SIZE, TYPE_STRING},
         { PhotoColumn::PHOTO_THUMB_SIZE, TYPE_STRING},
         { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, TYPE_INT32},
-        { PhotoColumn::SUPPORT_WATERMARK_TYPE, TYPE_INT32},
         { PhotoColumn::PHOTO_FRONT_CAMERA, TYPE_STRING},
         { PhotoColumn::PHOTO_COVER_POSITION, TYPE_INT64 },
         { PhotoColumn::PHOTO_BURST_COVER_LEVEL, TYPE_INT32 },
@@ -91,6 +90,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_THUMBNAIL_READY, TYPE_INT64 },
         { PhotoColumn::PHOTO_DETAIL_TIME, TYPE_STRING },
         { PhotoColumn::PHOTO_OWNER_ALBUM_ID, TYPE_INT32 },
+        { PhotoColumn::SUPPORTED_WATERMARK_TYPE, TYPE_INT32},
     };
     return RESULT_TYPE_MAP;
 }

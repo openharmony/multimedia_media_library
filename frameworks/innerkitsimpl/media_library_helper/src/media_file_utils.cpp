@@ -1766,12 +1766,6 @@ bool MediaFileUtils::CheckMovingPhotoEffectMode(int32_t effectMode)
         effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY);
 }
 
-bool MediaFileUtils::CheckSupportWatermarkType(int32_t watermarkType)
-{
-    return watermarkType >= static_cast<int32_t>(WatermarkType::BRAND_COMMON) &&
-        watermarkType <= static_cast<int32_t>(WatermarkType::BRAND);
-}
-
 bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
 {
     struct stat statbuf;
@@ -1858,5 +1852,11 @@ void MediaFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
     if (ret != 0) {
         MEDIA_ERR_LOG("Modify file failed: %{public}d", ret);
     }
+}
+
+bool MediaFileUtils::CheckSupportedWatermarkType(int32_t watermarkType)
+{
+    return watermarkType >= static_cast<int32_t>(WatermarkType::BRAND_COMMON) &&
+        watermarkType <= static_cast<int32_t>(WatermarkType::BRAND);
 }
 } // namespace OHOS::Media

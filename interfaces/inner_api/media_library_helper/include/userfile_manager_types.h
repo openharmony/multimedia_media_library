@@ -152,13 +152,6 @@ enum class MovingPhotoEffectMode : int32_t {
     IMAGE_ONLY = 10
 };
 
-enum class WatermarkType : int32_t {
-    DEFAULT = 0,
-    BRAND_COMMON,
-    COMMON,
-    BRAND
-};
-
 enum class CloudEnhancementTaskStage : int32_t {
     TASK_STAGE_EXCEPTION = -1,
     TASK_STAGE_PREPARING,
@@ -216,6 +209,13 @@ enum class CoverSatisfiedType : uint8_t {
     USER_SETTING_EDITE = 3,
     BEAUTY_SETTING = 4,
     BEAUTY_SETTING_EDITE = 5
+};
+
+enum class WatermarkType : int32_t {
+    DEFAULT = 0,
+    BRAND_COMMON,
+    COMMON,
+    BRAND
 };
 } // namespace Media
 } // namespace OHOS
