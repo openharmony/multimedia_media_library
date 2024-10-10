@@ -1274,11 +1274,16 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
         }
         string localPath = RESTORE_MUSIC_LOCAL_DIR + fileInfo.displayName;
         if (MediaFileUtils::IsFileExists(localPath)) {
-            MEDIA_INFO_LOG("localPath %{private}s already exists.", localPath.c_str());
+            MEDIA_INFO_LOG("localPath %{public}s already exists.",
+                BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
+            UpdateDuplicateNumber(fileInfo.fileType);
             continue;
         }
-        if (MoveFile(fileInfo.filePath, localPath) != E_OK) {
-            MEDIA_ERR_LOG("Move audio file failed");
+        int32_t moveErrCode = MoveFile(fileInfo.filePath, localPath);
+        if (moveErrCode != E_OK) {
+            MEDIA_ERR_LOG("MoveFile failed, filePath: %{public}s, errCode: %{public}d, errno: %{public}d",
+                BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(), moveErrCode,
+                errno);
             UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::MOVE_FAILED);
             excludedFileIdSet.insert(fileInfo.fileIdOld);
             continue;
