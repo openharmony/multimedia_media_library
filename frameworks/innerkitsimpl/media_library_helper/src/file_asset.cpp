@@ -517,16 +517,6 @@ void FileAsset::SetMovingPhotoEffectMode(int32_t effectMode)
     member_[PhotoColumn::MOVING_PHOTO_EFFECT_MODE] = effectMode;
 }
 
-int32_t FileAsset::GetSupportWatermarkType() const
-{
-    return GetInt32Member(PhotoColumn::SUPPORT_WATERMARK_TYPE);
-}
-
-void FileAsset::SetSupportWatermarkType(int32_t watermarkType)
-{
-    member_[PhotoColumn::SUPPORT_WATERMARK_TYPE] = watermarkType;
-}
-
 int64_t FileAsset::GetCoverPosition() const
 {
     return GetInt64Member(PhotoColumn::PHOTO_COVER_POSITION);
@@ -575,6 +565,16 @@ const std::string &FileAsset::GetDetailTime() const
 void FileAsset::SetDetailTime(const string &detailTime)
 {
     member_[PhotoColumn::PHOTO_DETAIL_TIME] = detailTime;
+}
+
+int32_t FileAsset::GetSupportedWatermarkType() const
+{
+    return GetInt32Member(PhotoColumn::SUPPORTED_WATERMARK_TYPE);
+}
+
+void FileAsset::SetSupportedWatermarkType(int32_t watermarkType)
+{
+    member_[PhotoColumn::SUPPORTED_WATERMARK_TYPE] = watermarkType;
 }
 
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
