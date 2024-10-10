@@ -305,6 +305,25 @@ const std::string CREATE_ANALYSIS_ALBUM_MAP = "CREATE TABLE IF NOT EXISTS " + AN
     MAP_ASSET + " INT, " +
     "PRIMARY KEY (" + MAP_ALBUM + "," + MAP_ASSET + ")) ";
 
+const std::string CREATE_TAB_ANALYSIS_ALBUM_TOTAL = "CREATE TABLE IF NOT EXISTS " +
+    VISION_ANALYSIS_ALBUM_TOTAL_TABLE + " (" +
+    ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    FILE_ID + " INT, " +
+    STATUS + " INT, " +
+    GEO + " INT, " +
+    LABEL + " INT, " +
+    FACE + " INT) ";
+
+const std::string INIT_TAB_ANALYSIS_ALBUM_TOTAL = "INSERT INTO " + VISION_ANALYSIS_ALBUM_TOTAL_TABLE + " (" +
+    FILE_ID + ", " +
+    STATUS + ", " +
+    GEO + ", " +
+    LABEL + ", " +
+    FACE + ") " +
+    "SELECT " + FILE_ID +
+    ", NULL, NULL, NULL, NULL" +
+    " FROM " + VISION_TOTAL_TABLE;
+
 
 const std::string INIT_TAB_ANALYSIS_TOTAL = "INSERT INTO " + VISION_TOTAL_TABLE + " (" +
     FILE_ID + ", " +
@@ -327,6 +346,28 @@ const std::string CREATE_VISION_DELETE_TRIGGER = "CREATE TRIGGER IF NOT EXISTS d
     " SET " + STATUS + " = -1 " +
     " WHERE " + FILE_ID +
     " = OLD.file_id;" +
+    " END;";
+
+const std::string CREATE_TOTAL_INSERT_TRIGGER_FOR_ADD_ANALYSIS_ALBUM_TOTAL =
+    "CREATE TRIGGER IF NOT EXISTS insert_vision_total_trigger AFTER INSERT ON " +
+    VISION_TOTAL_TABLE + " FOR EACH ROW " +
+    " BEGIN " +
+   " INSERT INTO " + VISION_ANALYSIS_ALBUM_TOTAL_TABLE +" (" +
+    FILE_ID + ", " + STATUS + ", " + GEO + ", " +
+    LABEL + ", " +
+    FACE + ") " +
+    " VALUES (" +
+    " NEW.file_id, NULL, NULL, NULL, NULL );" +
+    " END;";
+
+const std::string CREATE_VISION_UPDATE_TRIGGER_FOR_UPDATE_ANALYSIS_ALBUM_TOTAL_STATUS =
+    "CREATE TRIGGER IF NOT EXISTS update_total_vision_trigger AFTER UPDATE OF status ON " +
+    VISION_TOTAL_TABLE + " FOR EACH ROW " +
+    " WHEN NEW.status = -1" +
+    " BEGIN " +
+    " UPDATE " + VISION_ANALYSIS_ALBUM_TOTAL_TABLE +
+    " SET " + STATUS + " = -1" +
+    " WHERE file_id = OLD.file_id;" +
     " END;";
 
 const std::string CREATE_VISION_UPDATE_TRIGGER = "CREATE TRIGGER IF NOT EXISTS update_vision_trigger AFTER UPDATE ON " +
