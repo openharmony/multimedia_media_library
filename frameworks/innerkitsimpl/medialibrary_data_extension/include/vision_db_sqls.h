@@ -309,10 +309,10 @@ const std::string CREATE_TAB_ANALYSIS_ALBUM_TOTAL = "CREATE TABLE IF NOT EXISTS 
     VISION_ANALYSIS_ALBUM_TOTAL_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     FILE_ID + " INT, " +
-    STATUS + " INT, " +
-    GEO + " INT, " +
-    LABEL + " INT, " +
-    FACE + " INT) ";
+    STATUS + " INT DEFAULT 0, " +
+    GEO + " INT DEFAULT 0, " +
+    LABEL + " INT DEFAULT 0, " +
+    FACE + " INT DEFAULT 0) ";
 
 const std::string INIT_TAB_ANALYSIS_ALBUM_TOTAL = "INSERT INTO " + VISION_ANALYSIS_ALBUM_TOTAL_TABLE + " (" +
     FILE_ID + ", " +
