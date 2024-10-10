@@ -254,6 +254,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(NativeRdb::RdbStor
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s",
             UPDATE_ALBUM_ASSET_MAPPING_CONSISTENCY_DATA_SQL.c_str());
+        upgradeStore->Commit();
         return err;
     }
     upgradeStore->Commit();
@@ -796,6 +797,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(NativeRdb::RdbStore *u
         DeleteThumbnail(targetPath);
         return err;
     }
+    ThumbnailService::GetInstance()->CreateAstcCloudDownload(to_string(newAssetId), true);
     err = UpdateRelationship(upgradeStore, assetId, newAssetId, ownerAlbumId, false);
     if (err != E_OK) {
         return err;
