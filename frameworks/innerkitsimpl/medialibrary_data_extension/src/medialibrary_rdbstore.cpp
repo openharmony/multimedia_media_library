@@ -1264,6 +1264,9 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_LOCATION_KEY_INDEX,
     CREATE_IDX_FILEID_FOR_ANALYSIS_TOTAL,
     CREATE_IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP,
+    CREATE_TAB_ANALYSIS_ALBUM_TOTAL,
+    CREATE_TOTAL_INSERT_TRIGGER_FOR_ADD_ANALYSIS_ALBUM_TOTAL,
+    CREATE_VISION_UPDATE_TRIGGER_FOR_UPDATE_ANALYSIS_ALBUM_TOTAL_STATUS,
 
     // search
     CREATE_SEARCH_TOTAL_TABLE,
@@ -2899,6 +2902,18 @@ static void FixPhotoSchptMediaTypeIndex(RdbStore &store)
     MEDIA_INFO_LOG("End fix idx_schpt_media_type index.");
 }
 
+static void AddAnalysisAlbumTotalTable(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        CREATE_TAB_ANALYSIS_ALBUM_TOTAL,
+        INIT_TAB_ANALYSIS_ALBUM_TOTAL,
+        CREATE_TOTAL_INSERT_TRIGGER_FOR_ADD_ANALYSIS_ALBUM_TOTAL,
+        CREATE_VISION_UPDATE_TRIGGER_FOR_UPDATE_ANALYSIS_ALBUM_TOTAL_STATUS,
+    };
+    MEDIA_INFO_LOG("Start add analysis album total table");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void ResetCloudCursorAfterInitFinish()
 {
     MEDIA_INFO_LOG("Try reset cloud cursor after storage reconstruct");
@@ -3486,6 +3501,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_FIX_PHOTO_SCHPT_MEDIA_TYPE_INDEX) {
         FixPhotoSchptMediaTypeIndex(store);
+    }
+
+    if (oldVersion < VERSION_ADD_ANALYSIS_ALBUM_TOTAL_TABLE) {
+        AddAnalysisAlbumTotalTable(store);
     }
 }
 
