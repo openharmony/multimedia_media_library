@@ -27,11 +27,11 @@ namespace Media {
     
 class CloudThumbnailObserver : public DataShare::DataShareObserver {
 public:
-    CloudThumbnailObserver() = default;
+    EXPORT CloudThumbnailObserver() = default;
 
-    ~CloudThumbnailObserver() = default;
+    EXPORT ~CloudThumbnailObserver() = default;
 
-    void OnChange(const ChangeInfo &changeInfo) override;
+    EXPORT void OnChange(const ChangeInfo &changeInfo) override;
 };
 
 } // namespace Media
