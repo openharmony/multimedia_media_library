@@ -49,6 +49,7 @@
 #include "media_container_types.h"
 #include "media_scanner.h"
 #include "media_scanner_manager.h"
+#include "medialibrary_meta_recovery.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
@@ -1194,6 +1195,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC,
     PhotoColumn::CREATE_PHOTOS_UPDATE_CLOUD_SYNC,
+    PhotoColumn::CREATE_PHOTOS_METADATA_DIRTY_TRIGGER,
     AudioColumn::CREATE_AUDIO_TABLE,
     CREATE_SMARTALBUM_TABLE,
     CREATE_SMARTALBUMMAP_TABLE,
@@ -1314,8 +1316,15 @@ static int32_t ExecuteSql(RdbStore &store)
 int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 {
     MEDIA_INFO_LOG("Rdb OnCreate");
+    NativeRdb::RebuiltType rebuilt = NativeRdb::RebuiltType::NONE;
+    store.GetRebuilt(rebuilt);
     if (ExecuteSql(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
+    }
+
+    if (rebuilt == NativeRdb::RebuiltType::REBUILT) {
+        // set Rebuilt flag
+        MediaLibraryMetaRecovery::GetInstance().SetRdbRebuiltStatus(true);
     }
 
     if (PrepareSystemAlbums(store) != NativeRdb::E_OK) {
@@ -2389,6 +2398,16 @@ static void AddIndexForFileId(RdbStore& store)
         CREATE_IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP,
     };
     MEDIA_INFO_LOG("start AddIndexForFileId");
+    ExecSqls(sqls, store);
+}
+
+static void AddMetaRecovery(RdbStore& store)
+{
+    const vector<string> sqls = {"ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+        " ADD COLUMN " + PhotoColumn::PHOTO_METADATA_FLAGS + " INT DEFAULT 0",
+        PhotoColumn::CREATE_PHOTOS_METADATA_DIRTY_TRIGGER,
+    };
+    MEDIA_INFO_LOG("start AddMetaRecovery");
     ExecSqls(sqls, store);
 }
 
@@ -3541,6 +3560,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_THUMBNAIL_VISIBLE) {
         AddThumbnailVisible(store);
+    }
+
+    if (oldVersion < VERSION_ADD_METARECOVERY) {
+        AddMetaRecovery(store);
     }
 }
 

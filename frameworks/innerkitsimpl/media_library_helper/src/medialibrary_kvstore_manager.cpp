@@ -166,6 +166,7 @@ bool MediaLibraryKvStoreManager::IsKvStoreValid(const KvStoreValueType &valueTyp
 int32_t MediaLibraryKvStoreManager::RebuildInvalidKvStore(const KvStoreValueType &valueType)
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    kvStoreMap_.Erase(valueType);
     KvStoreSharedPtr ptr = std::make_shared<MediaLibraryKvStore>();
     return ptr->RebuildKvStore(valueType, KV_STORE_OWNER_DIR);
 }

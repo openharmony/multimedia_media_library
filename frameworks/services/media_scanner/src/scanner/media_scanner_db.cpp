@@ -27,6 +27,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_rdb_transaction.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_type_const.h"
@@ -409,7 +410,8 @@ static inline void GetUriStringInUpdate(MediaType mediaType, MediaLibraryApi api
  * @param metadata The metadata object which has the information about the file
  * @return string The mediatypeUri corresponding to the given metadata
  */
-string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableName, MediaLibraryApi api, bool skipPhoto)
+string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableName, MediaLibraryApi api,
+    bool skipPhoto)
 {
     int32_t updateCount(0);
     ValuesBucket values;
@@ -434,6 +436,12 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableNam
     if (rdbStore == nullptr) {
         return "";
     }
+    TransactionOperations transactionOprn(rdbStore->GetRaw());
+    int32_t errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("transaction operation start failed, error=%{public}d", errCode);
+        return "";
+    }
     auto rdbStorePtr = rdbStore->GetRaw();
     if (rdbStorePtr == nullptr) {
         return "";
@@ -453,6 +461,8 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableNam
         }
         return "";
     }
+    transactionOprn.Finish();
+
     if (mediaTypeUri.empty()) {
         return "";
     }
