@@ -219,7 +219,7 @@ void DfxReporter::ReportThumbnailGeneration(const ThumbnailData::GenerateStats &
         "TOTAL_COST", static_cast<int32_t>(stats.totalCost),
         "ERROR_CODE", stats.errorCode);
     if (ret != 0) {
-        MEDIA_DEBUG_LOG("ReportThumbnailGeneration error:%{public}d", ret);
+        MEDIA_ERR_LOG("ReportThumbnailGeneration error:%{public}d", ret);
     }
 }
 
