@@ -2022,7 +2022,11 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
     }
     int fileId = context->objectInfo->GetFileId();
     Uri uri (uriStr);
-    predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, to_string(fileId));
+    if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
+        predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, to_string(fileId));
+    } else {
+        predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    }
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
     context->analysisData = context->analysisType == ANALYSIS_FACE ?
@@ -2032,7 +2036,7 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
         Uri uri(PAH_QUERY_ANA_TOTAL);
         DataShare::DataSharePredicates predicates;
         std::vector<std::string> fetchColumn = { fieldStr };
-        predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, to_string(fileId));
+        predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
         auto fieldValue = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
         string value = MediaLibraryNapiUtils::ParseResultSet2JsonStr(fieldValue, fetchColumn);
         if (strstr(value.c_str(), ANALYSIS_INIT_VALUE.c_str()) == NULL) {
