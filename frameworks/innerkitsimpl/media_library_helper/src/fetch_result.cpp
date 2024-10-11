@@ -90,6 +90,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_THUMBNAIL_READY, TYPE_INT64 },
         { PhotoColumn::PHOTO_DETAIL_TIME, TYPE_STRING },
         { PhotoColumn::PHOTO_OWNER_ALBUM_ID, TYPE_INT32 },
+        { PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, TYPE_INT32 },
         { PhotoColumn::SUPPORTED_WATERMARK_TYPE, TYPE_INT32},
     };
     return RESULT_TYPE_MAP;
