@@ -426,11 +426,11 @@ napi_status GetCompatibleMode(napi_env env, const napi_value arg, const string &
 {
     bool present = false;
     napi_value property = nullptr;
-    int mode = static_cast<int>(CompatibleMode::COMPATIBLE_FORMAT_MODE);
+    int mode = static_cast<int>(CompatibleMode::ORIGINAL_FORMAT_MODE);
     CHECK_STATUS_RET(napi_has_named_property(env, arg, propName.c_str(), &present), "Failed to check property name");
     if (!present) {
         NAPI_INFO_LOG("compatible mode is null");
-        compatibleMode = CompatibleMode::COMPATIBLE_FORMAT_MODE;
+        compatibleMode = CompatibleMode::ORIGINAL_FORMAT_MODE;
         return napi_ok;
     }
     CHECK_STATUS_RET(napi_get_named_property(env, arg, propName.c_str(), &property), "Failed to get property");
