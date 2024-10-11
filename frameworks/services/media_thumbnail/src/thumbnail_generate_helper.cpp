@@ -43,7 +43,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-const int FFRT_MAX_RESTORE_ASTC_THREADS = 8;
+const int FFRT_MAX_RESTORE_ASTC_THREADS = 4;
 
 int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bool isSync)
 {
