@@ -263,20 +263,11 @@ void BackupDatabaseUtils::QueryGalleryDuplicateDataCount(std::shared_ptr<NativeR
     static string QUERY_GALLERY_DUPLICATE_DATA_COUNT = "SELECT count(DISTINCT _data) as count, count(1) as total"
         " FROM gallery_media WHERE _data IN (SELECT _data FROM gallery_media GROUP BY _data HAVING count(1) > 1)";
     auto resultSet = GetQueryResultSet(galleryRdb, QUERY_GALLERY_DUPLICATE_DATA_COUNT);
-    if (resultSet == nullptr) {
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return;
     }
     count = GetInt32Val("count", resultSet);
     total = GetInt32Val("total", resultSet);
-}
-
-std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::QueryGalleryDuplicateDataInfo(
-    std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    // query top 5 duplicate data
-    static string QUERY_GALLERY_DUPLICATE_DATA_INFO = "SELECT _data, count(1) as count, local_media_id, _size,"
-        " relative_bucket_id, storage_id FROM gallery_media GROUP BY _data HAVING count > 1 ORDER BY count LIMIT 5";
-    return GetQueryResultSet(galleryRdb, QUERY_GALLERY_DUPLICATE_DATA_INFO);
 }
 
 std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::GetQueryResultSet(

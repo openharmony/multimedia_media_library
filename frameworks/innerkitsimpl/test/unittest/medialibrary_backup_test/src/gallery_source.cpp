@@ -78,6 +78,7 @@ void GallerySource::Init(const string &dbPath)
     InitGalleryMediaTwo();
     InitGalleryMediaThree();
     InitGalleryMediaFour();
+    InitGalleryMediaFive();
     InitGarbageAlbum();
     InitGalleryAlbumOne();
     InitGalleryAlbumTwo();
@@ -274,6 +275,21 @@ void GallerySource::InitGalleryMediaFour()
         "'Y_1', NULL, 'Y_1.jpg', 0, -1035207678, 0, 1, 65537, 3968, 2976, NULL, " +
         "-370356531, 1491269475663, 0, 0, '/storage/emulated/0/Pictures/Y/Y_1.jpg', 0, '3275', 0, "+
         "1495970415377, 1495970415377, '2024:09:06 17:00:00')");
+}
+
+void GallerySource::InitGalleryMediaFive()
+{
+    // duplicate data
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(36, 30, ") +
+        "'/storage/emulated/0/A/media/Rocket/test/duplicate_data.mp4', 10865209, 1708600079, 1708600079," +
+        "'duplicate_data', 'NULL', 'duplicate_data.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
+        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/duplicate_data.mp4', \
+        0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00')");
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(37, 31, ") +
+        "'/storage/emulated/0/A/media/Rocket/test/duplicate_data.mp4', 10865209, 1708600079, 1708600079," +
+        "'duplicate_data', 'NULL', 'duplicate_data.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
+        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/duplicate_data.mp4', \
+        0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00')");
 }
 
 void GallerySource::InitGarbageAlbum()

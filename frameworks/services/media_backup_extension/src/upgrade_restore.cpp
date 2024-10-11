@@ -364,20 +364,7 @@ void UpgradeRestore::AnalyzeGalleryDuplicateData()
     int32_t total = 0;
     BackupDatabaseUtils::QueryGalleryDuplicateDataCount(galleryRdb_, count, total);
     MEDIA_INFO_LOG("Duplicate data count: %{public}d, total: %{public}d", count, total);
-    auto resultSet = BackupDatabaseUtils::QueryGalleryDuplicateDataInfo(galleryRdb_);
-    if (resultSet == nullptr) {
-        return;
-    }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        std::string data = GetStringVal("_data", resultSet);
-        int32_t count = GetInt32Val("count", resultSet);
-        int32_t localMediaId = GetInt32Val("local_media_id", resultSet);
-        int32_t relativeBucketId = GetInt32Val("relative_bucket_id", resultSet);
-        int32_t storageId = GetInt32Val("storage_id", resultSet);
-        MEDIA_INFO_LOG("Duplicate data: %{public}s, count: %{public}d, localMediaId: %{public}d, relativeBucketId: "
-            "%{public}d, storageId: %{public}d,", BackupFileUtils::GarbleFilePath(data, DEFAULT_RESTORE_ID).c_str(),
-            count, localMediaId, relativeBucketId, storageId);
-    }
+    this->photosRestorePtr_->GetDuplicateData(count);
 }
 
 void UpgradeRestore::AnalyzeGallerySource()
@@ -670,6 +657,11 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
 {
     // only parse image and video
     info.oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
+    if (this->photosRestorePtr_->IsDuplicateData(info.oldPath)) {
+        MEDIA_ERR_LOG("Data duplicate and already used, path: %{public}s",
+            BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str());
+        return false;
+    }
     int32_t mediaType = GetInt32Val(GALLERY_MEDIA_TYPE, resultSet);
     if (mediaType != DUAL_MEDIA_TYPE::IMAGE_TYPE && mediaType != DUAL_MEDIA_TYPE::VIDEO_TYPE) {
         MEDIA_ERR_LOG("Invalid media type: %{public}d, path: %{public}s", mediaType,

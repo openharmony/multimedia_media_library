@@ -15,10 +15,9 @@
 #ifndef OHOS_MEDIA_PHOTOS_RESTORE
 #define OHOS_MEDIA_PHOTOS_RESTORE
 
+#include <mutex>
 #include <string>
-
 #include "rdb_store.h"
-#include "backup_const.h"
 #include "photo_album_restore.h"
 #include "photos_dao.h"
 #include "photo_album_dao.h"
@@ -49,6 +48,8 @@ public:
     std::shared_ptr<NativeRdb::ResultSet> GetGalleryMedia(
         int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage);
     int32_t GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQualityImage);
+    void GetDuplicateData(int32_t duplicateDataCount);
+    bool IsDuplicateData(const std::string &data);
 
 public:
     std::string FindlPath(const FileInfo &fileInfo);
@@ -87,10 +88,12 @@ private:
     PhotoAlbumRestore photoAlbumRestore_;
     std::shared_ptr<PhotosDao> photosDaoPtr_ = nullptr;
     std::shared_ptr<PhotoAlbumDao> photoAlbumDaoPtr_;
+    std::mutex duplicateDataUsedCountMutex_;
+    std::unordered_map<std::string, int32_t> duplicateDataUsedCountMap_;
 
 private:
     const std::string SQL_GALLERY_MEDIA_QUERY_COUNT = "\
-        SELECT COUNT(DISTINCT _data) AS count \
+        SELECT COUNT(1) AS count \
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
@@ -150,9 +153,13 @@ private:
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
             (1 = ? OR storage_id IN (0, 65537) ) \
-        GROUP BY _data \
-        HAVING MIN(gallery_media.ROWID) \
         ORDER BY _id ASC \
+        LIMIT ?, ?;";
+    const std::string SQL_GALLERY_MEDIA_QUERY_DUPLICATE_DATA = "\
+        SELECT _data, count(1) as count \
+        FROM gallery_media \
+        GROUP BY _data \
+        HAVING count(1) > 1 \
         LIMIT ?, ?;";
 };
 }  // namespace OHOS::Media
