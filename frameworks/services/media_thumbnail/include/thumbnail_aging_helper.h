@@ -52,7 +52,8 @@ private:
     EXPORT static int32_t GetDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount);
     EXPORT static int32_t GetAgingDistributeLcdData(ThumbRdbOpt &opts,
         int LcdLimit, std::vector<ThumbnailData> &outDatas);
-    EXPORT static int32_t GetLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &outLcdCount);
+    EXPORT static int32_t GetLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts,
+        int &outLcdCount);
 };
 } // namespace Media
 } // namespace OHOS
