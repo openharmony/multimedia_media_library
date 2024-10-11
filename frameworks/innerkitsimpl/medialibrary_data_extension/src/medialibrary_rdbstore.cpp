@@ -2748,13 +2748,13 @@ static void AddCloudEnhancementColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-static void AddSupportWatermarkType(RdbStore &store)
+static void AddSupportedWatermarkType(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
-            PhotoColumn::SUPPORT_WATERMARK_TYPE + " INT "
+            PhotoColumn::SUPPORTED_WATERMARK_TYPE + " INT "
     };
-    MEDIA_INFO_LOG("start add support_watermark_type column");
+    MEDIA_INFO_LOG("start add supported_watermark_type column");
     ExecSqls(sqls, store);
 }
 
@@ -3527,8 +3527,8 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
         UpdateVideoFaceTable(store);
     }
 
-    if (oldVersion < VERSION_ADD_SUPPORT_WATERMARK_TYPE) {
-        AddSupportWatermarkType(store);
+    if (oldVersion < VERSION_ADD_SUPPORTED_WATERMARK_TYPE) {
+        AddSupportedWatermarkType(store);
     }
 
     if (oldVersion < VERSION_FIX_PHOTO_SCHPT_MEDIA_TYPE_INDEX) {
@@ -3537,7 +3537,6 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_ANALYSIS_ALBUM_TOTAL_TABLE) {
         AddAnalysisAlbumTotalTable(store);
-
     }
 
     if (oldVersion < VERSION_ADD_THUMBNAIL_VISIBLE) {
@@ -3592,7 +3591,8 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
         AlbumPluginTableEventHandler albumPluginTableEventHandler;
         albumPluginTableEventHandler.OnUpgrade(store, oldVersion, oldVersion);
         AddMergeInfoColumnForAlbum(store);
-        MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(store);
+        MEDIA_INFO_LOG("ALBUM_FUSE: set album fuse upgrade status");
+        MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(0);
     }
 
     UpgradeExtensionPart3(store, oldVersion);
