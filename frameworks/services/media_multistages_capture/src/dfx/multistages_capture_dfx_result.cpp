@@ -26,14 +26,14 @@ MultiStagesCaptureDfxResult::MultiStagesCaptureDfxResult() {}
 
 MultiStagesCaptureDfxResult::~MultiStagesCaptureDfxResult() {}
 
-void MultiStagesCaptureDfxResult::Report(const std::string &photoId, const int32_t result)
+void MultiStagesCaptureDfxResult::Report(const std::string &photoId, const int32_t result, const int32_t mediaType)
 {
     MEDIA_INFO_LOG("Report photo: %{public}s, result: %{public}d", photoId.c_str(), result);
     if (photoId.empty()) {
         MEDIA_ERR_LOG("photo id is empty");
         return;
     }
-    VariantMap map = {{KEY_PHOTO_ID, photoId}, {KEY_RESULT, result}};
+    VariantMap map = {{KEY_PHOTO_ID, photoId}, {KEY_RESULT, result}, {KEY_MEDIA_TYPE, mediaType}};
     PostEventUtils::GetInstance().PostStatProcess(StatType::MSC_RESULT_STAT, map);
 }
 

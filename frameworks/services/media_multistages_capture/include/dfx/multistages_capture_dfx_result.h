@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,6 +26,13 @@ enum class MultiStagesCaptureResultErrCode : int32_t {
     SUCCESS = MULTISTAGES_CAPTURE_RESULT_ERR_CODE_BASE,
     SAVE_IMAGE_FAIL,
     SQL_ERR,
+    SAVE_VIDEO_FAIL,
+    DELETE_TEMP_VIDEO_FAIL,
+};
+ 
+enum class MultiStagesCaptureMediaType : int32_t {
+    Photo,
+    Video,
 };
 
 class MultiStagesCaptureDfxResult {
@@ -33,7 +40,7 @@ public:
     MultiStagesCaptureDfxResult();
     ~MultiStagesCaptureDfxResult();
 
-    EXPORT static void Report(const std::string &photoId, const int32_t result);
+    EXPORT static void Report(const std::string &photoId, const int32_t result, const int32_t mediaType);
 };
 
 } // namespace Media

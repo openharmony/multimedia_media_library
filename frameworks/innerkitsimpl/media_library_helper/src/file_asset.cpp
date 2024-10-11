@@ -326,6 +326,16 @@ void FileAsset::SetLongitude(double longitude)
     member_[MEDIA_DATA_DB_LONGITUDE] = longitude;
 }
 
+void FileAsset::SetPhotoId(const string &photoId)
+{
+    member_[MEDIA_DATA_DB_PHOTO_ID] = photoId;
+}
+ 
+string FileAsset::GetPhotoId() const
+{
+    return GetStrMember(MEDIA_DATA_DB_PHOTO_ID);
+}
+
 void FileAsset::SetPhotoIdAndQuality(const string &photoId, int photoQuality)
 {
     member_[MEDIA_DATA_DB_PHOTO_ID] = photoId;

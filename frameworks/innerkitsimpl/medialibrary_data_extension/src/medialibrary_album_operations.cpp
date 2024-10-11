@@ -1079,7 +1079,7 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 
     MediaLibraryAlbumOperations::DealwithNoAlbumAssets(rdbPredicates.GetWhereArgs());
     // notify deferred processing session to restore image
-    MultiStagesCaptureManager::GetInstance().RestoreImages(rdbPredicates);
+    MultiStagesCaptureManager::RestorePhotos(rdbPredicates);
 
     ValuesBucket rdbValues;
     rdbValues.PutInt(MediaColumn::MEDIA_DATE_TRASHED, 0);
