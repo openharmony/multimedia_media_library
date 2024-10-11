@@ -353,12 +353,12 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_zero_size, TestSiz
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_duplicate_data, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_duplicate_data start");
-    ASSET_NE(restoreService->photosRestorePtr_, nullptr);
+    ASSERT_NE(restoreService->photosRestorePtr_, nullptr);
     restoreService->photosRestorePtr_->galleryRdb_ = restoreService->galleryRdb_;
-    ASSET_NE(restoreService->photosRestorePtr_->galleryRdb_, nullptr);
+    ASSERT_NE(restoreService->photosRestorePtr_->galleryRdb_, nullptr);
     restoreService->AnalyzeGalleryErrorSource();
     size_t count = restoreService->photosRestorePtr_->duplicateDataUsedCountMap_.size();
-    MEDIA_INFO_LOG("count: %{public}d", count);
+    MEDIA_INFO_LOG("count: %{public}zu", count);
     EXPECT_GT(count, 0); // has duplicate data
 
     string dataPath = "/storage/emulated/0/A/media/Rocket/test/duplicate_data.mp4";
