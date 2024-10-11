@@ -3483,6 +3483,24 @@ static void AddOCRCardColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddThumbnailVisible(RdbStore& store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_THUMBNAIL_VISIBLE +
+        " INT DEFAULT 0",
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE +
+        " SET thumbnail_visible = "
+        " CASE "
+            " WHEN thumbnail_ready > 0 THEN 1 "
+            " ELSE 0 "
+        " END ",
+        PhotoColumn::DROP_INDEX_SCHPT_READY,
+        PhotoColumn::INDEX_SCHPT_READY,
+    };
+    MEDIA_INFO_LOG("Add video face table start");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CLOUD_ENAHCNEMENT) {
@@ -3519,6 +3537,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_ANALYSIS_ALBUM_TOTAL_TABLE) {
         AddAnalysisAlbumTotalTable(store);
+    }
+
+    if (oldVersion < VERSION_ADD_THUMBNAIL_VISIBLE) {
+        AddThumbnailVisible(store);
     }
 }
 

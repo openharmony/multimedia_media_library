@@ -402,6 +402,7 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
     DataShare::DataSharePredicates predicates;
     predicates.And()->OrderByDesc(MediaColumn::MEDIA_DATE_TAKEN)
                     ->Limit(count, start)
+                    ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, "1")
                     ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0")
                     ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0")
                     ->EqualTo(MediaColumn::MEDIA_HIDDEN, "0")
