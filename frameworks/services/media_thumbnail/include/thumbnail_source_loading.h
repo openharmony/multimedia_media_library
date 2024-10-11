@@ -171,11 +171,11 @@ public:
     bool RunLoading();
 
 private:
-    void SetCurrentStateFunction();
-    bool IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, ImageInfo& imageInfo);
-    bool CreateSourcePixelMap();
-    bool CreateImagePixelMap(const std::string &sourcePath);
-    bool CreateVideoFramePixelMap();
+    EXPORT void SetCurrentStateFunction();
+    EXPORT bool IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, ImageInfo& imageInfo);
+    EXPORT bool CreateSourcePixelMap();
+    EXPORT bool CreateImagePixelMap(const std::string &sourcePath);
+    EXPORT bool CreateVideoFramePixelMap();
 
     bool IsFinal();
 
