@@ -44,7 +44,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-const int FFRT_MAX_RESTORE_ASTC_THREADS = 8;
+const int FFRT_MAX_RESTORE_ASTC_THREADS = 4;
 const std::string SQL_REFRESH_THUMBNAIL_READY =
     " Update " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_THUMBNAIL_READY + " = 7 " +
     " WHERE " + PhotoColumn::PHOTO_THUMBNAIL_READY + " != 0; END;";
