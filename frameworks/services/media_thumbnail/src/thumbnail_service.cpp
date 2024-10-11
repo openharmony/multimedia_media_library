@@ -413,7 +413,7 @@ int32_t ThumbnailService::GenerateThumbnailBackground()
             }
         }
 
-        if (tableName != AudioColumn::AUDIOS_TABLE) {
+        if (tableName == PhotoColumn::PHOTOS_TABLE) {
             err = ThumbnailGenerateHelper::CreateLcdBackground(opts);
             if (err != E_OK) {
                 MEDIA_ERR_LOG("CreateLcdBackground failed : %{public}d", err);

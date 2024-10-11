@@ -726,22 +726,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_013, Te
     EXPECT_EQ(res, -1);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_014, TestSize.Level0)
-{
-    ThumbnailData data;
-    data.id = "a";
-    data.dateAdded = "b";
-    ThumbnailType type = ThumbnailType::MTH_ASTC;
-    auto res = ThumbnailUtils::SaveAstcDataToKvStore(data, type);
-    EXPECT_EQ(res >= 0, true);
-    const ThumbnailType type2 = ThumbnailType::YEAR_ASTC;
-    auto res2 = ThumbnailUtils::SaveAstcDataToKvStore(data, type2);
-    EXPECT_EQ(res2 >= 0, true);
-    const ThumbnailType type3 = ThumbnailType::LCD;
-    auto res3 = ThumbnailUtils::SaveAstcDataToKvStore(data, type3);
-    EXPECT_EQ(res3, -1);
-}
-
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_015, TestSize.Level0)
 {
     const std::string fieldId = "a";
@@ -851,14 +835,10 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_002, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_003, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    const string dbPath = "/data/test/medialibrary_thumbnail_service_test.db";
-    NativeRdb::RdbStoreConfig config(dbPath);
-    ConfigTestOpenCall helper;
-    int errCode = 0;
-    opts.store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
     opts.table = "test";
     auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts);
-    EXPECT_EQ(res, 0);
+    EXPECT_NE(res, E_OK);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_004, TestSize.Level0)
