@@ -16,7 +16,6 @@
 #define OHOS_MEDIA_PHOTOS_RESTORE
 
 #include <string>
-// #include <unordered_map>
 
 #include "rdb_store.h"
 #include "photo_album_restore.h"
