@@ -800,4 +800,5 @@ export default {
   CloudEnhancementTaskStage: photoAccessHelper.CloudEnhancementTaskStage,
   CloudEnhancementState: photoAccessHelper.CloudEnhancementState,
   CloudEnhancementTaskState: photoAccessHelper.CloudEnhancementTaskState,
+  VideoEnhancementType: photoAccessHelper.VideoEnhancementType,
 };

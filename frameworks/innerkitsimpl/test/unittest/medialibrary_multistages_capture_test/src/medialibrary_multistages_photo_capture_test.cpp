@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#define MLOG_TAG "MultiStagesCaptureUnitTest"
+#define MLOG_TAG "MultiStagesPhotoCaptureUnitTest"
 
 #include "medialibrary_multistages_capture_test.h"
 
@@ -42,15 +42,15 @@
 #define protected public
 #include "exif_utils.h"
 #include "file_utils.h"
-#include "mock_deferred_processing_adapter.h"
-#include "multistages_capture_deferred_proc_session_callback.h"
+#include "mock_deferred_photo_proc_adapter.h"
+#include "multistages_capture_deferred_photo_proc_session_callback.h"
 #include "multistages_capture_dfx_first_visit.h"
 #include "multistages_capture_dfx_result.h"
 #include "multistages_capture_dfx_total_time.h"
 #include "multistages_capture_dfx_request_policy.h"
 #include "multistages_capture_dfx_trigger_ratio.h"
 #include "multistages_capture_request_task_manager.h"
-#include "multistages_capture_manager.h"
+#include "multistages_photo_capture_manager.h"
 #undef private
 #undef protected
 
@@ -276,7 +276,7 @@ int32_t PrepareForFirstVisit()
 }
 } // namespace
 
-void MediaLibraryMultiStagesCaptureTest::SetUpTestCase(void)
+void MediaLibraryMultiStagesPhotoCaptureTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
@@ -287,7 +287,7 @@ void MediaLibraryMultiStagesCaptureTest::SetUpTestCase(void)
     SetTables();
 }
 
-void MediaLibraryMultiStagesCaptureTest::TearDownTestCase(void)
+void MediaLibraryMultiStagesPhotoCaptureTest::TearDownTestCase(void)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MediaLibraryUnitTestUtils::Init();
@@ -302,7 +302,7 @@ void MediaLibraryMultiStagesCaptureTest::TearDownTestCase(void)
 }
 
 // SetUp:Execute before each test case
-void MediaLibraryMultiStagesCaptureTest::SetUp()
+void MediaLibraryMultiStagesPhotoCaptureTest::SetUp()
 {
     if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
@@ -311,25 +311,25 @@ void MediaLibraryMultiStagesCaptureTest::SetUp()
     ClearAndRestart();
 }
 
-void MediaLibraryMultiStagesCaptureTest::TearDown(void) {}
+void MediaLibraryMultiStagesPhotoCaptureTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_result_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_result_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_result_001 Start");
-    MultiStagesCaptureDfxResult::Report("123456", 0);
+    MultiStagesCaptureDfxResult::Report("123456", 0, static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
 
     MEDIA_INFO_LOG("dfx_result_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_result_invalid_param_002, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_result_invalid_param_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_result_invalid_param_002 Start");
-    MultiStagesCaptureDfxResult::Report("", 0);
+    MultiStagesCaptureDfxResult::Report("", 0, static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
 
     MEDIA_INFO_LOG("dfx_result_invalid_param_002 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_total_time_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_total_time_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_total_time_001 Start");
     string photoId = "1234566";
@@ -344,7 +344,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_total_time_001, TestSize.Level1
     MEDIA_INFO_LOG("dfx_total_time_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_total_time_two_start_002, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_total_time_two_start_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_total_time_two_start_002 Start");
     string photoId = "1234566";
@@ -368,7 +368,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_total_time_two_start_002, TestS
     MEDIA_INFO_LOG("dfx_total_time_two_start_002 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_total_time_remove_start_time_003, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_total_time_remove_start_time_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_total_time_remove_start_time_003 Start");
 
@@ -385,7 +385,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_total_time_remove_start_time_00
     MEDIA_INFO_LOG("dfx_total_time_remove_start_time_003 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_total_time_invalid_param_004, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_total_time_invalid_param_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_total_time_invalid_param_004 Start");
     string photoId = "";
@@ -400,7 +400,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_total_time_invalid_param_004, T
     MEDIA_INFO_LOG("dfx_total_time_invalid_param_004 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_request_policy_get_count_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_request_policy_get_count_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_request_policy_get_count_001 Start");
     RequestCount requestCount { 0, 0, 0 };
@@ -429,7 +429,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_request_policy_get_count_001, T
     MEDIA_INFO_LOG("dfx_request_policy_get_count_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_request_policy_set_policy_002, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_request_policy_set_policy_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_request_policy_set_policy_002 Start");
 
@@ -474,7 +474,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_request_policy_set_policy_002, 
     MEDIA_INFO_LOG("dfx_request_policy_set_policy_002 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_first_visit_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_first_visit_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_first_visit_001 Start");
     auto fileId = PrepareForFirstVisit();
@@ -492,7 +492,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_first_visit_001, TestSize.Level
     MEDIA_INFO_LOG("dfx_first_visit_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_first_visit_invalid_param_002, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_first_visit_invalid_param_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_first_visit_invalid_param_002 Start");
     auto fileId = PrepareForFirstVisit();
@@ -514,7 +514,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_first_visit_invalid_param_002, 
     MEDIA_INFO_LOG("dfx_first_visit_invalid_param_002 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_trigger_ratio_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_trigger_ratio_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_trigger_ratio_001 Start");
     MultiStagesCaptureDfxTriggerRatio &instance = MultiStagesCaptureDfxTriggerRatio::GetInstance();
@@ -539,34 +539,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_trigger_ratio_001, TestSize.Lev
     MEDIA_INFO_LOG("dfx_trigger_ratio_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_get_photo_id_001, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("manager_get_photo_id_001 Start");
-    auto fileId = PrepareForFirstVisit();
-    EXPECT_GT(fileId, 0);
-
-    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
-
-    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
-    vector<shared_ptr<MultiStagesPhotoInfo>> photosInfo = instance.GetPhotosInfo(predicates);
-    EXPECT_EQ(photosInfo.size(), 1);
-    EXPECT_EQ(photosInfo[0]->photoId, PHOTO_ID_FOR_TEST);
-    EXPECT_EQ(photosInfo[0]->photoQuality, static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
-    EXPECT_EQ(photosInfo[0]->fileId, fileId);
-    MEDIA_INFO_LOG("manager_get_photo_id_001 End");
-}
-
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_get_photo_id_not_exist_002, TestSize.Level1)
-{
-    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
-    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, 2);
-    vector<shared_ptr<MultiStagesPhotoInfo>> photosInfo = instance.GetPhotosInfo(predicates);
-    EXPECT_EQ(photosInfo.size(), 0);
-}
-
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_photo_id_add_and_rmv_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, manager_photo_id_add_and_rmv_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("manager_photo_id_add_and_rmv_001 Start");
     string photoId = "202312251533001";
@@ -598,7 +571,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_photo_id_add_and_rmv_001, T
     MEDIA_INFO_LOG("manager_photo_id_add_and_rmv_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, exif_utils_location_value_to_string_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, exif_utils_location_value_to_string_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("exif_utils_location_value_to_string_001 Start");
     double latitude = 31.2592678069444;
@@ -608,7 +581,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, exif_utils_location_value_to_string
     MEDIA_INFO_LOG("exif_utils_location_value_to_string_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, exif_utils_location_value_to_string_002, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, exif_utils_location_value_to_string_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("exif_utils_location_value_to_string_002 Start");
     double latitude = -31.2592678069444;
@@ -618,13 +591,14 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, exif_utils_location_value_to_string
     MEDIA_INFO_LOG("exif_utils_location_value_to_string_002 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, session_callback_on_error_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, session_callback_on_error_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("session_callback_on_error_001 Start");
     auto fileId = PrepareForFirstVisit();
     EXPECT_GT(fileId, 0);
 
-    MultiStagesCaptureDeferredProcSessionCallback *callback = new MultiStagesCaptureDeferredProcSessionCallback();
+    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
+        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
     callback->OnError(PHOTO_ID_FOR_TEST, CameraStandard::ERROR_IMAGE_PROC_FAILED);
     delete callback;
 
@@ -643,13 +617,13 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, session_callback_on_error_001, Test
     MEDIA_INFO_LOG("session_callback_on_error_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, deferred_proc_adapter_null_session_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, deferred_proc_adapter_null_session_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("deferred_proc_adapter_null_session_001 Start");
-    std::shared_ptr<DeferredProcessingAdapter> deferredProcSession = make_shared<DeferredProcessingAdapter>();
+    std::shared_ptr<DeferredPhotoProcessingAdapter> deferredProcSession = make_shared<DeferredPhotoProcessingAdapter>();
 
     // test deferredProcSession_ is nullptr;
-    deferredProcSession->deferredProcSession_ = nullptr;
+    deferredProcSession->deferredPhotoProcSession_ = nullptr;
 
     deferredProcSession->BeginSynchronize();
     deferredProcSession->EndSynchronize();
@@ -659,7 +633,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, deferred_proc_adapter_null_session_
     MEDIA_INFO_LOG("deferred_proc_adapter_null_session_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, file_utils_save_file_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, file_utils_save_file_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("file_utils_save_file_001 Start");
     const string testFileName = "/data/test/test.jpg";
@@ -672,26 +646,27 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, file_utils_save_file_001, TestSize.
     MEDIA_INFO_LOG("file_utils_save_file_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_add_image_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, manager_add_image_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("manager_add_image_001 Start");
     auto fileId = PrepareForFirstVisit();
     EXPECT_GT(fileId, 0);
 
-    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
+    MultiStagesPhotoCaptureManager &instance = MultiStagesPhotoCaptureManager::GetInstance();
     instance.AddImage(fileId, PHOTO_ID_FOR_TEST, 0);
     EXPECT_EQ(MultiStagesCaptureRequestTaskManager::fileId2PhotoId_.count(fileId), 1);
     EXPECT_EQ(MultiStagesCaptureRequestTaskManager::photoIdInProcess_.count(PHOTO_ID_FOR_TEST), 1);
     MEDIA_INFO_LOG("manager_add_image_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdatePhotoQuality_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdatePhotoQuality_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("UpdatePhotoQuality_001 Start");
     auto fileId = PrepareForFirstVisit();
     EXPECT_GT(fileId, 0);
 
-    MultiStagesCaptureDeferredProcSessionCallback *callback = new MultiStagesCaptureDeferredProcSessionCallback();
+    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
+        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
     auto result = callback->UpdatePhotoQuality(PHOTO_ID_FOR_TEST);
     EXPECT_EQ(result, E_OK);
 
@@ -712,7 +687,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdatePhotoQuality_001, TestSize.Le
     MEDIA_INFO_LOG("UpdatePhotoQuality_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_normal_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdateDbInfoTest_normal_001, TestSize.Level1)
 {
     // test 1 PhotoColumn::PHOTO_SUBTYPE + PhotoSubType::MOVING_PHOTO
     MEDIA_INFO_LOG("UpdateDbInfoTest_normal_001 Start");
@@ -720,7 +695,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_normal_001, TestSi
     EXPECT_GT(fileId, 0);
 
     ValuesBucket bucket;
-    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
+    MultiStagesPhotoCaptureManager &instance = MultiStagesPhotoCaptureManager::GetInstance();
     MediaLibraryCommand cmd (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     bucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     cmd.SetValueBucket(bucket);
@@ -730,7 +705,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_normal_001, TestSi
     MEDIA_INFO_LOG("UpdateDbInfoTest_normal_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_normal_002, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdateDbInfoTest_normal_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("UpdateDbInfoTest_normal_002 Start");
     // test 2 PhotoColumn::PHOTO_SUBTYPE + !PhotoSubType::MOVING_PHOTO
@@ -738,7 +713,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_normal_002, TestSi
     EXPECT_GT(fileId, 0);
 
     ValuesBucket bucket;
-    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
+    MultiStagesPhotoCaptureManager &instance = MultiStagesPhotoCaptureManager::GetInstance();
     MediaLibraryCommand cmd (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     bucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::CAMERA));
     cmd.SetValueBucket(bucket);
@@ -748,7 +723,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_normal_002, TestSi
     MEDIA_INFO_LOG("UpdateDbInfoTest_normal_002 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_empty_bucket_003, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdateDbInfoTest_empty_bucket_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("UpdateDbInfoTest_empty_bucket_003 Start");
     // test3 empty bucket
@@ -756,7 +731,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_empty_bucket_003, 
     EXPECT_GT(fileId, 0);
 
     ValuesBucket bucket;
-    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
+    MultiStagesPhotoCaptureManager &instance = MultiStagesPhotoCaptureManager::GetInstance();
     MediaLibraryCommand cmd (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     cmd.SetValueBucket(bucket);
 
@@ -765,12 +740,12 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_empty_bucket_003, 
     MEDIA_INFO_LOG("UpdateDbInfoTest_empty_bucket_003 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_nodata_004, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdateDbInfoTest_nodata_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("UpdateDbInfoTest_nodata_004 Start");
     // no data
     ValuesBucket bucket;
-    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
+    MultiStagesPhotoCaptureManager &instance = MultiStagesPhotoCaptureManager::GetInstance();
     MediaLibraryCommand cmd (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     bucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     cmd.SetValueBucket(bucket);
@@ -780,7 +755,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_nodata_004, TestSi
     MEDIA_INFO_LOG("UpdateDbInfoTest_nodata_004 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, WriteGpsExifInfo_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("WriteGpsExifInfo_test_001 start");
 
@@ -793,7 +768,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_001, TestSize
     MEDIA_INFO_LOG("WriteGpsExifInfo_test_001 end");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_002, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, WriteGpsExifInfo_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("WriteGpsExifInfo_test_002 start");
     string path = "/data/test/res/no_gps.jpg";
@@ -827,7 +802,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_002, TestSize
     MEDIA_INFO_LOG("WriteGpsExifInfo_test_002 end");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_003, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, WriteGpsExifInfo_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("WriteGpsExifInfo_test_003 start");
     string path = "/data/test/res/no_gps.jpg";
@@ -861,26 +836,26 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_003, TestSize
     MEDIA_INFO_LOG("WriteGpsExifInfo_test_003 end");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, IsPhotoDeleted_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, IsPhotoDeleted_test_001, TestSize.Level1)
 {
-    MultiStagesCaptureManager& manager = MultiStagesCaptureManager::GetInstance();
+    MultiStagesPhotoCaptureManager& manager = MultiStagesPhotoCaptureManager::GetInstance();
     std::string photoId;
     auto ret = manager.IsPhotoDeleted(photoId);
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, IsPhotoDeleted_test_002, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, IsPhotoDeleted_test_002, TestSize.Level1)
 {
-    MultiStagesCaptureManager& manager = MultiStagesCaptureManager::GetInstance();
+    MultiStagesPhotoCaptureManager& manager = MultiStagesPhotoCaptureManager::GetInstance();
     std::string photoId = "abc";
     auto ret = manager.IsPhotoDeleted(photoId);
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, BeginSynchronize_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, BeginSynchronize_test_001, TestSize.Level1)
 {
-    DeferredProcessingAdapter adapter;
-    EXPECT_NE(adapter.deferredProcSession_, nullptr);
+    DeferredPhotoProcessingAdapter adapter;
+    EXPECT_NE(adapter.deferredPhotoProcSession_, nullptr);
     adapter.BeginSynchronize();
 }
 }

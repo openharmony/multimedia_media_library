@@ -66,6 +66,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { TOOL_ALBUM, OperationObject::TOOL_ALBUM },
         { PAH_FORM_MAP, OperationObject::PAH_FORM_MAP },
         { GRANT_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
+        { PAH_VIDEO, OperationObject::PAH_VIDEO },
 
         // use in Query...
         { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
@@ -283,6 +284,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_ENHANCEMENT_SYNC, OperationType::ENHANCEMENT_SYNC},
         { OPRN_ENHANCEMENT_QUERY, OperationType::ENHANCEMENT_QUERY},
         { OPRN_ENHANCEMENT_GET_PAIR, OperationType::ENHANCEMENT_GET_PAIR},
+        { OPRN_SET_VIDEO_ENHANCEMENT_ATTR, OperationType::SET_VIDEO_ENHANCEMENT_ATTR },
     };
     return oprnTypeMap;
 }
