@@ -479,6 +479,10 @@ bool ThumbnailUtils::QueryLcdCountByTime(const int64_t &time, const bool &before
     }
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("ResultSet is nullptr");
