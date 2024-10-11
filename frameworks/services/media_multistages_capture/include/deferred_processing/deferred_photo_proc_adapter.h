@@ -13,12 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_DEFERRED_PROCESSING_ADAPTER_H
-#define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_DEFERRED_PROCESSING_ADAPTER_H
+#ifndef FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_DEFERRED_PHOTO_PROC_ADAPTER_H
+#define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_DEFERRED_PHOTO_PROC_ADAPTER_H
 
 #include <string>
-#include <map>
-#include <memory>
 
 #ifdef ABILITY_CAMERA_SUPPORT
 #include "deferred_proc_session/deferred_photo_proc_session.h"
@@ -28,13 +26,13 @@ namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 // 延时子服务适配器
 #ifdef ABILITY_CAMERA_SUPPORT
-class DeferredProcessingAdapter : public RefBase {
+class DeferredPhotoProcessingAdapter : public RefBase {
 #else
-class DeferredProcessingAdapter {
+class DeferredPhotoProcessingAdapter {
 #endif
 public:
-    EXPORT DeferredProcessingAdapter();
-    EXPORT virtual ~DeferredProcessingAdapter();
+    EXPORT DeferredPhotoProcessingAdapter();
+    EXPORT virtual ~DeferredPhotoProcessingAdapter();
 
     EXPORT virtual void BeginSynchronize();
     EXPORT virtual void EndSynchronize();
@@ -47,9 +45,9 @@ public:
     EXPORT bool CancelProcessImage(const std::string &imageId);
 private:
 #ifdef ABILITY_CAMERA_SUPPORT
-    sptr<CameraStandard::DeferredPhotoProcSession> deferredProcSession_;
+    sptr<CameraStandard::DeferredPhotoProcSession> deferredPhotoProcSession_;
 #endif
 };
 } // namespace Media
 } // namespace OHOS
-#endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_DEFERRED_PROCESSING_ADAPTER_H
+#endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_DEFERRED_PHOTO_PROC_ADAPTER_H

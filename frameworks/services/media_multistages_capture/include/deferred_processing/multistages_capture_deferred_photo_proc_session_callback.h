@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTISTAGES_CAPTURE_DEFERRED_PROC_SESSION_CALLBACK_H
-#define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTISTAGES_CAPTURE_DEFERRED_PROC_SESSION_CALLBACK_H
+#ifndef MULTISTAGES_CAPTURE_DEFERRED_PHOTO_PROC_SESSION_CALLBACK_H
+#define MULTISTAGES_CAPTURE_DEFERRED_PHOTO_PROC_SESSION_CALLBACK_H
 
 #ifdef ABILITY_CAMERA_SUPPORT
 #include <memory>
@@ -27,10 +27,10 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-class MultiStagesCaptureDeferredProcSessionCallback : public CameraStandard::IDeferredPhotoProcSessionCallback {
+class MultiStagesCaptureDeferredPhotoProcSessionCallback : public CameraStandard::IDeferredPhotoProcSessionCallback {
 public:
-    EXPORT MultiStagesCaptureDeferredProcSessionCallback();
-    EXPORT ~MultiStagesCaptureDeferredProcSessionCallback();
+    EXPORT MultiStagesCaptureDeferredPhotoProcSessionCallback();
+    EXPORT ~MultiStagesCaptureDeferredPhotoProcSessionCallback();
 
     void OnProcessImageDone(const std::string &imageId, const uint8_t *addr, const long bytes,
         bool isCloudEnhancementAvailable) override;
@@ -50,4 +50,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 #endif
-#endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTISTAGES_CAPTURE_DEFERRED_PROC_SESSION_CALLBACK_H
+#endif  // MULTISTAGES_CAPTURE_DEFERRED_PHOTO_PROC_SESSION_CALLBACK_H
