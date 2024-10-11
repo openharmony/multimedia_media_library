@@ -117,10 +117,6 @@ const std::vector<std::string> movingPhotoEffectModeEnum {
     "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE", "CINEMA_GRAPH"
 };
 
-const std::vector<std::string> watermarkTypeEnum {
-    "DEFAULT", "BRAND_COMMON", "COMMON", "BRAND"
-};
-
 const std::vector<std::string> imageFileTypeEnum {
     "JPEG", "HEIF"
 };
@@ -132,6 +128,10 @@ const std::vector<std::string> cloudEnhancementTaskStageEnum {
 
 const std::vector<std::string> cloudEnhancementStateEnum {
     "UNAVAILABLE", "AVAILABLE", "EXECUTING", "COMPLETED"
+};
+
+const std::vector<std::string> watermarkTypeEnum {
+    "DEFAULT", "BRAND_COMMON", "COMMON", "BRAND"
 };
 
 const std::vector<std::pair<std::string, std::string>> FILE_KEY_ENUM_PROPERTIES = {
@@ -215,7 +215,6 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("LCD_SIZE",                  PhotoColumn::PHOTO_LCD_SIZE),
     std::make_pair("THM_SIZE",                  PhotoColumn::PHOTO_THUMB_SIZE),
     std::make_pair("MOVING_PHOTO_EFFECT_MODE",  PhotoColumn::MOVING_PHOTO_EFFECT_MODE),
-    std::make_pair("SUPPORT_WATERMARK_TYPE",    PhotoColumn::SUPPORT_WATERMARK_TYPE),
     std::make_pair("COVER_POSITION",            PhotoColumn::PHOTO_COVER_POSITION),
     std::make_pair("BURST_COVER_LEVEL",         PhotoColumn::PHOTO_BURST_COVER_LEVEL),
     std::make_pair("BURST_KEY",                 PhotoColumn::PHOTO_BURST_KEY),
@@ -223,6 +222,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("CE_AVAILABLE",              PhotoColumn::PHOTO_CE_AVAILABLE),
     std::make_pair("OWNER_ALBUM_ID",            PhotoColumn::PHOTO_OWNER_ALBUM_ID),
     std::make_pair("THUMBNAIL_VISIBLE",         PhotoColumn::PHOTO_THUMBNAIL_VISIBLE),
+    std::make_pair("SUPPORTED_WATERMARK_TYPE",  PhotoColumn::SUPPORTED_WATERMARK_TYPE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

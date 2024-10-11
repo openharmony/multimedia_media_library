@@ -180,7 +180,6 @@ void AddVirtualColumnsOfDateType(vector<string>& columns)
 void AddQueryIndex(AbsPredicates& predicates, const vector<string>& columns)
 {
     auto it = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT);
-    predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_READY_INDEX);
     if (it == columns.end()) {
         return;
     }

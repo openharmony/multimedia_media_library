@@ -99,7 +99,6 @@ public:
     static const std::string PHOTO_CLEAN_FLAG EXPORT;
     static const std::string PHOTO_DYNAMIC_RANGE_TYPE EXPORT;
     static const std::string MOVING_PHOTO_EFFECT_MODE EXPORT;
-    static const std::string SUPPORT_WATERMARK_TYPE EXPORT;
     static const std::string PHOTO_HAS_ASTC EXPORT; // This attribute has been replaced by "thumbnail_ready"
     static const std::string PHOTO_THUMBNAIL_READY EXPORT;
     static const std::string PHOTO_THUMBNAIL_VISIBLE EXPORT;
@@ -128,6 +127,7 @@ public:
     static const std::string PHOTO_SOURCE_PATH EXPORT;
     static const std::string PHOTO_ORIGINAL_SUBTYPE EXPORT;
     static const std::string PHOTO_DETAIL_TIME EXPORT;
+    static const std::string SUPPORTED_WATERMARK_TYPE EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;

@@ -190,9 +190,6 @@ public:
     EXPORT int32_t GetMovingPhotoEffectMode() const;
     EXPORT void SetMovingPhotoEffectMode(int32_t effectMode);
 
-    EXPORT int32_t GetSupportWatermarkType() const;
-    EXPORT void SetSupportWatermarkType(int32_t watermarkType);
-
     EXPORT int64_t GetCoverPosition() const;
     EXPORT void SetCoverPosition(int64_t coverPosition);
 
@@ -207,6 +204,9 @@ public:
 
     EXPORT int32_t GetCEAvailable() const;
     EXPORT void SetCEAvailable(int32_t ceAvailable);
+    
+    EXPORT int32_t GetSupportedWatermarkType() const;
+    EXPORT void SetSupportedWatermarkType(int32_t watermarkType);
 private:
     const std::string &GetStrMember(const std::string &name) const;
     int32_t GetInt32Member(const std::string &name) const;
