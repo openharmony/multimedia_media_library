@@ -19,8 +19,10 @@
 #include "datashare_helper.h"
 #include "fetch_result.h"
 #include "file_asset.h"
+#include "file_uri.h"
 #include "get_self_permissions.h"
 #include "hilog/log.h"
+#include "userfilemgr_uri.h"
 #include "iservice_registry.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -30,6 +32,7 @@
 #include "media_asset_types.h"
 #include "oh_media_asset_change_request.h"
 #include "media_asset_change_request_capi.h"
+#include "media_asset_change_request_impl.h"
 #include "media_asset_capi.h"
 #include "system_ability_definition.h"
 #include "oh_media_asset.h"
@@ -44,22 +47,116 @@ using namespace std;
 using namespace OHOS;
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::AppExecFwk;
 
 namespace OHOS {
 namespace Media {
+std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
+void ClearAllFile();
+void CreateDataHelper(int32_t systemAbilityId);
 
+constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 const int SCAN_WAIT_TIME_1S = 1;
+const int SCAN_WAIT_TIME = 10;
+const int CLEAN_TIME = 1;
+const int DEFAULT_ID = 1;
 const std::string ROOT_TEST_MEDIA_DIR =
     "/data/app/el2/100/base/com.ohos.medialibrary.medialibrarydata/haps/";
 MediaLibraryManager* mediaLibraryManager = MediaLibraryManager::GetMediaLibraryManager();
 
-void MediaLibraryAssetHelperCapiTest::SetUpTestCase(void) {}
+void MediaLibraryAssetHelperCapiTest::SetUpTestCase(void)
+{
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
+    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
+    perms.push_back("ohos.permission.MEDIA_LOCATION");
+    perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryAssetHelperCapiTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
 
-void MediaLibraryAssetHelperCapiTest::TearDownTestCase(void) {}
+    MEDIA_INFO_LOG("MediaLibraryAssetHelperCapiTest::SetUpTestCase:: invoked");
+    CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
+    if (sDataShareHelper_ == nullptr) {
+        ASSERT_NE(sDataShareHelper_, nullptr);
+        return;
+    }
 
-void MediaLibraryAssetHelperCapiTest::SetUp(void) {}
+    // make sure board is empty
+    ClearAllFile();
+
+    Uri scanUri(URI_SCANNER);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    sDataShareHelper_->Insert(scanUri, valuesBucket);
+    sleep(SCAN_WAIT_TIME);
+
+    MEDIA_INFO_LOG("MediaLibraryAssetHelperCapiTest::SetUpTestCase:: Finish");
+}
+
+void MediaLibraryAssetHelperCapiTest::TearDownTestCase(void)
+{
+    MEDIA_ERR_LOG("TearDownTestCase start");
+    if (sDataShareHelper_ != nullptr) {
+        sDataShareHelper_->Release();
+    }
+    sleep(CLEAN_TIME);
+    ClearAllFile();
+    MEDIA_INFO_LOG("TearDownTestCase end");
+}
+
+void MediaLibraryAssetHelperCapiTest::SetUp(void)
+{
+    system("rm -rf /storage/cloud/100/files/Photo/*");
+}
 
 void MediaLibraryAssetHelperCapiTest::TearDown(void) {}
+
+void CreateDataHelper(int32_t systemAbilityId)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (saManager == nullptr) {
+        MEDIA_ERR_LOG("Get system ability mgr failed.");
+        return;
+    }
+    auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
+    if (remoteObj == nullptr) {
+        MEDIA_ERR_LOG("GetSystemAbility Service Failed.");
+        return;
+    }
+    mediaLibraryManager->InitMediaLibraryManager(remoteObj);
+    MEDIA_INFO_LOG("InitMediaLibraryManager success!");
+
+    if (sDataShareHelper_ == nullptr) {
+        const sptr<IRemoteObject> &token = remoteObj;
+        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    }
+    mediaLibraryManager->InitMediaLibraryManager(remoteObj);
+}
+
+void ClearAllFile()
+{
+    system("rm -rf /storage/media/100/local/files/.thumbs/*");
+    system("rm -rf /storage/cloud/100/files/Audio/*");
+    system("rm -rf /storage/cloud/100/files/Audios/*");
+    system("rm -rf /storage/cloud/100/files/Camera/*");
+    system("rm -rf /storage/cloud/100/files/Docs/Documents/*");
+    system("rm -rf /storage/cloud/100/files/Photo/*");
+    system("rm -rf /storage/cloud/100/files/Pictures/*");
+    system("rm -rf /storage/cloud/100/files/Docs/Download/*");
+    system("rm -rf /storage/cloud/100/files/Docs/.*");
+    system("rm -rf /storage/cloud/100/files/Videos/*");
+    system("rm -rf /storage/cloud/100/files/.*");
+    system("rm -rf /data/app/el2/100/database/com.ohos.medialibrary.medialibrarydata/*");
+    system("kill -9 `pidof com.ohos.medialibrary.medialibrarydata`");
+    system("scanner");
+}
+
+void CallbackFunc(int32_t result, MediaLibrary_RequestId requestId)
+{
+    MEDIA_INFO_LOG("CallbackFunc::result: %{public}d", result);
+    MEDIA_INFO_LOG("CallbackFunc::requestId: %{public}s", requestId.requestId);
+}
 
 /**
  * @tc.name: media_library_capi_test_001
@@ -308,7 +405,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_010, TestSize.
     uint32_t result = OH_MediaAssetChangeRequest_SaveCameraPhoto(changeRequest, imageFileType);
     EXPECT_EQ(result, MEDIA_LIBRARY_OK);
     uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
-    EXPECT_EQ(resultChange, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_PARAMETER_ERROR);
 
     OH_MediaAsset_Release(mediaAsset);
     OH_MediaAssetChangeRequest_Release(changeRequest);
@@ -620,7 +717,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_022, TestSize.
     ASSERT_NE(changeRequest, nullptr);
 
     uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
-    EXPECT_EQ(resultChange, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_PARAMETER_ERROR);
 
     OH_MediaAsset_Release(mediaAsset);
     OH_MediaAssetChangeRequest_Release(changeRequest);
@@ -628,7 +725,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_022, TestSize.
 
 /**
  * @tc.name: media_library_capi_test_023
- * @tc.desc: OH_MediaAssetChangeRequest_GetWriteCacheHandler changeOperation is CREATE_FROM_URI
+ * @tc.desc: OH_MediaAssetChangeRequest_GetWriteCacheHandler changeOperation is GET_WRITE_CACHE_HANDLER
  * @tc.type: FUNC
  */
 HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_023, TestSize.Level0)
@@ -651,7 +748,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_023, TestSize.
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
     auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
-    AssetChangeOperation changeOperation = AssetChangeOperation::CREATE_FROM_URI;
+    AssetChangeOperation changeOperation = AssetChangeOperation::GET_WRITE_CACHE_HANDLER;
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     changeRequest->request_->RecordChangeOperation(changeOperation);
     ASSERT_NE(changeRequest, nullptr);
@@ -817,6 +914,177 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_027, TestSize.
     char* fileUri = strdup(destUri.c_str());
     uint32_t result = OH_MediaAssetChangeRequest_AddResourceWithUri(changeRequest, resourceType, fileUri);
     EXPECT_EQ(result, MEDIA_LIBRARY_NO_SUCH_FILE);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_028
+ * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is ADD_RESOURCE
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_028, TestSize.Level0)
+{
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetId(DEFAULT_ID);
+    fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::CAMERA));
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    AssetChangeOperation changeOperation = AssetChangeOperation::ADD_RESOURCE;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_029
+ * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is GET_WRITE_CACHE_HANDLER
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_029, TestSize.Level0)
+{
+    string displayName = "image_test.jpg";
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetId(DEFAULT_ID);
+    fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::CAMERA));
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    AssetChangeOperation changeOperation = AssetChangeOperation::GET_WRITE_CACHE_HANDLER;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_030
+ * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is ADD_RESOURCE and SAVE_CAMERA_PHOTO
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_030, TestSize.Level0)
+{
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetId(DEFAULT_ID);
+    fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::CAMERA));
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    AssetChangeOperation changeOperation = AssetChangeOperation::SAVE_CAMERA_PHOTO;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    AssetChangeOperation changeOperation_ = AssetChangeOperation::ADD_RESOURCE;
+    changeRequest->request_->RecordChangeOperation(changeOperation_);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_031
+ * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is ADD_RESOURCE return MEDIA_LIBRARY_PARAMETER_ERROR
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_031, TestSize.Level0)
+{
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetId(DEFAULT_ID);
+    fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    AssetChangeOperation changeOperation = AssetChangeOperation::ADD_RESOURCE;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_032
+ * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is CAMERA
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_032, TestSize.Level0)
+{
+    vector<string> perms;
+    perms.push_back("ohos.permission.MEDIA_LOCATION");
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryAssetHelperCapiTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetId(DEFAULT_ID);
+    fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::CAMERA));
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    AssetChangeOperation changeOperation = AssetChangeOperation::ADD_RESOURCE;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_033
+ * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is ADD_RESOURCE and CREATE_FROM_URI
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_033, TestSize.Level0)
+{
+    vector<string> perms;
+    perms.push_back("ohos.permission.MEDIA_LOCATION");
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryAssetHelperCapiTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetId(DEFAULT_ID);
+    fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::CAMERA));
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    AssetChangeOperation changeOperation = AssetChangeOperation::ADD_RESOURCE;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    AssetChangeOperation changeOperation_ = AssetChangeOperation::CREATE_FROM_URI;
+    changeRequest->request_->RecordChangeOperation(changeOperation_);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED);
 
     OH_MediaAsset_Release(mediaAsset);
     OH_MediaAssetChangeRequest_Release(changeRequest);
