@@ -307,6 +307,7 @@ void PhotosRestore::GetDuplicateData(int32_t duplicateDataCount)
  */
 bool PhotosRestore::IsDuplicateData(const std::string &data)
 {
+    std::lock_guard<mutex> lock(this->duplicateDataUsedCountMutex_);
     if (this->duplicateDataUsedCountMap_.count(data) == 0) {
         return false;
     }

@@ -15,8 +15,8 @@
 #ifndef OHOS_MEDIA_PHOTOS_RESTORE
 #define OHOS_MEDIA_PHOTOS_RESTORE
 
+#include <mutex>
 #include <string>
-
 #include "rdb_store.h"
 #include "photo_album_restore.h"
 #include "photos_dao.h"
@@ -88,6 +88,7 @@ private:
     PhotoAlbumRestore photoAlbumRestore_;
     std::shared_ptr<PhotosDao> photosDaoPtr_ = nullptr;
     std::shared_ptr<PhotoAlbumDao> photoAlbumDaoPtr_;
+    std::mutex duplicateDataUsedCountMutex_;
     std::unordered_map<std::string, int32_t> duplicateDataUsedCountMap_;
 
 private:
