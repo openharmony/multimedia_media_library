@@ -484,7 +484,7 @@ bool MediaAssetManagerImpl::NativeCancelRequest(const std::string &requestId)
     bool hasFastRequestInProcess = IsFastRequestCanceled(requestId, photoId);
     bool hasMapRecordInProcess = IsMapRecordCanceled(requestId, photoId);
     if (hasFastRequestInProcess || hasMapRecordInProcess) {
-        MultiStagesCaptureManager::GetInstance().CancelProcessRequest(photoId);
+        MultiStagesPhotoCaptureManager::GetInstance().CancelProcessRequest(photoId);
     } else {
         MEDIA_ERR_LOG("NativeCancel requestId(%{public}s) not in progress.", requestId.c_str());
         return false;

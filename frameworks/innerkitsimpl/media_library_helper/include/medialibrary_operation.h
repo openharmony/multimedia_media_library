@@ -92,6 +92,7 @@ enum class EXPORT OperationObject : uint32_t {
     PHOTO_REQUEST_PICTURE_BUFFER,
     PAH_CLOUD_ENHANCEMENT_OPERATE,
     ANALYSIS_ADDRESS,
+    PAH_VIDEO,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -167,6 +168,7 @@ enum class EXPORT OperationType : uint32_t {
     ENHANCEMENT_GET_PAIR,
     SAVE_PICTURE,
     LOG_MEDIALIBRARY_API,
+    SET_VIDEO_ENHANCEMENT_ATTR,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

@@ -52,6 +52,7 @@ enum class AssetChangeOperation {
     DISCARD_CAMERA_PHOTO,
     SET_ORIENTATION,
     SET_SUPPORTED_WATERMARK_TYPE,
+    SET_VIDEO_ENHANCEMENT_ATTR,
 };
 
 enum class AddResourceMode {
@@ -139,6 +140,7 @@ private:
     EXPORT static napi_value JSDiscardCameraPhoto(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetOrientation(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetSupportedWatermarkType(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetVideoEnhancementAttr(napi_env env, napi_callback_info info);
 
     bool CheckChangeOperations(napi_env env);
     bool CheckMovingPhotoWriteOperation();

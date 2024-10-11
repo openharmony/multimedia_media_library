@@ -51,6 +51,7 @@ const std::string KEY_PHOTO_ID = "PHOTO_ID";
 const std::string KEY_TOTAL_TIME_COST = "TOTAL_TIME_COST";
 
 const std::string KEY_RESULT = "RESULT";
+const std::string KEY_MEDIA_TYPE = "MEDIA_TYPE";
 
 const std::string KEY_CLOUD_ENHANCEMENT_COMPLETE_TYPE = "COMPLETE_TYPE";
 

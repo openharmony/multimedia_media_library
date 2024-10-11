@@ -1091,6 +1091,7 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
     }
     switch (cmd.GetOprnObject()) {
         case OperationObject::PAH_PHOTO:
+        case OperationObject::PAH_VIDEO:
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO: {
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
@@ -1114,7 +1115,7 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             return MediaLibraryStoryOperations::UpdateOperation(cmd);
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             std::vector<std::string> columns;
-            MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
+            MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
             return E_OK;
         }
         case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE:
@@ -1712,7 +1713,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::APP_URI_PERMISSION_INNER:
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
-            return MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
+            return MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
         case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
             return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
         case OperationObject::ANALYSIS_ADDRESS:
