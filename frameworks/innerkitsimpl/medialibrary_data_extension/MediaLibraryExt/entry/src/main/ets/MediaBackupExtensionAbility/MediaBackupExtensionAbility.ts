@@ -14,13 +14,11 @@
  */
 
 import BackupExtensionAbility, {BundleVersion} from '@ohos.application.BackupExtensionAbility';
-import fs from '@ohos.file.fs';
 // @ts-ignore
 import mediabackup from '@ohos.multimedia.mediabackup';
 
 const TAG = 'MediaBackupExtAbility';
 
-const documentPath = '/storage/media/local/files/Docs/Documents';
 const galleryAppName = 'com.huawei.photos';
 const mediaAppName = 'com.android.providers.media.module';
 
@@ -80,21 +78,21 @@ const DEFAULT_RESTORE_EX_INFO = {
           'successCount': 0,
           'duplicateCount': 0,
           'failedCount': 0,
-          'details': null
+          'details': []
         },
         {
           'backupInfo': STAT_TYPE_VIDEO,
           'successCount': 0,
           'duplicateCount': 0,
           'failedCount': 0,
-          'details': null
+          'details': []
         },
         {
           'backupInfo': STAT_TYPE_AUDIO,
           'successCount': 0,
           'duplicateCount': 0,
           'failedCount': 0,
-          'details': null
+          'details': []
         }
       ]
     }
@@ -172,7 +170,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     let sceneCode: number = this.getSceneCode(bundleVersion);
     let restoreExResult: string = await mediabackup.startRestoreEx(sceneCode, galleryAppName, mediaAppName, backupDir,
       bundleInfo);
-    let restoreExInfo: string = await this.getRestoreExInfo(restoreExResult);
+    let restoreExInfo: string = this.getRestoreExInfo(restoreExResult);
     console.log(TAG, `GET restoreExInfo: ${restoreExInfo}`);
     console.timeEnd(TAG + ' RESTORE EX');
     return restoreExInfo;
@@ -203,38 +201,12 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     return progressInfo;
   }
 
-  private async getRestoreExInfo(restoreExResult: string): Promise<string> {
+  private getRestoreExInfo(restoreExResult: string): string {
     if (!this.isRestoreExResultValid(restoreExResult)) {
       console.error(TAG, 'restoreEx result is invalid, use default');
       return JSON.stringify(DEFAULT_RESTORE_EX_INFO);
     }
-    try {
-      let jsonObject = JSON.parse(restoreExResult);
-      for (let info of jsonObject.resultInfo) {
-        if (info.type !== STAT_VALUE_COUNT_INFO) {
-          continue;
-        }
-        for (let subCountInfo of info.infos) {
-          let type = subCountInfo.backupInfo;
-          let detailsPath = subCountInfo.details;
-          subCountInfo.details = await this.getDetails(type, detailsPath);
-        }
-      }
-      return JSON.stringify(jsonObject);
-    } catch (err) {
-      console.error(TAG, `getRestoreExInfo error message: ${err.message}, code: ${err.code}`);
-      return JSON.stringify(DEFAULT_RESTORE_EX_INFO);
-    }
-  }
-
-  private async getDetails(type: string, detailsPath: string): Promise<null | number> {
-    if (detailsPath.length === 0) {
-      console.log(TAG, `${type} has no failed files`);
-      return null;
-    }
-    let file = await fs.open(detailsPath);
-    console.log(TAG, `${type} details path: ${detailsPath}, fd: ${file.fd}`);
-    return file.fd;
+    return restoreExResult;
   }
 
   private isRestoreExResultValid(restoreExResult: string): boolean {
