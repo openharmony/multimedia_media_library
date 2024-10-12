@@ -314,6 +314,7 @@ void MediaLibraryAnalysisAlbumOperationTest::SetUpTestCase(void)
     }
     vector<string> perms = { "ohos.permission.MEDIA_LOCATION" };
     uint64_t tokenId = 0;
+    
     PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryAnalysisAlbumOperationTest", perms, tokenId);
     ASSERT_TRUE(tokenId != 0);
     ClearAnalysisAlbum();
