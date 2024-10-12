@@ -1499,8 +1499,6 @@ int32_t MediaLibraryAssetOperations::OpenHighlightVideo(MediaLibraryCommand &cmd
         MEDIA_ERR_LOG("Open highlight video invalid uri : %{public}s", uriStr.c_str());
         return E_INVALID_URI;
     }
-    MEDIA_INFO_LOG("lzj##testOpenHighlight02, uri is: %{public}s", uriStr.c_str());
-    MEDIA_INFO_LOG("lzj##testOpenHighlight02, path is: %{public}s", path.c_str());
     shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
     fileAsset->SetPath(path);
     fileAsset->SetUri(uriStr);
