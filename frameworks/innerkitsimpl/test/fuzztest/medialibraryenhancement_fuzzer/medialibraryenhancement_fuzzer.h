@@ -37,16 +37,14 @@ const std::vector<std::string> ENHANCEMENT_FUZZER_URI_LISTS = {
     PAH_CLOUD_ENHANCEMENT_GET_PAIR,
 };
 
-const std::vector<CloudEnhancementAvailableType> CloudEnhancementAvailableType_FUZZER_LISTS = {
-    CloudEnhancementAvailableType::NOT_SUPPORT,
-    CloudEnhancementAvailableType::SUPPORT,
-    CloudEnhancementAvailableType::PROCESSING,
-    CloudEnhancementAvailableType::FAILED_RETRY,
-    CloudEnhancementAvailableType::FAILED,
-    CloudEnhancementAvailableType::SUCCESS,
-    CloudEnhancementAvailableType::EDIT,
-    CloudEnhancementAvailableType::TRASH,
-    CloudEnhancementAvailableType::FINISH,
+const std::vector<std::string> MIMETYPE_FUZZER_LISTS = {
+    "image/jpeg",
+    "image/heif",
+};
+
+const std::vector<std::string> DISPLAY_NAME_EXTENSION_FUZZER_LISTS = {
+    ".jpg",
+    ".hif",
 };
 
 const uint8_t BUFFER[] = {
