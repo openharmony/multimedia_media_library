@@ -367,12 +367,21 @@ struct MapInfo {
     int32_t fileId {-1};
 };
 
+struct FailedFileInfo {
+    std::string displayName;
+    std::string packageName;
+    std::string errorCode;
+    FailedFileInfo() = default;
+    FailedFileInfo(const FileInfo &fileInfo, int32_t errorCode)
+        : displayName(fileInfo.displayName), packageName(fileInfo.packageName), errorCode(std::to_string(errorCode)) {}
+};
+
 struct SubCountInfo {
     uint64_t successCount {0};
     uint64_t duplicateCount {0};
-    std::unordered_map<std::string, int32_t> failedFiles;
+    std::unordered_map<std::string, FailedFileInfo> failedFiles;
     SubCountInfo(int64_t successCount, int64_t duplicateCount,
-        const std::unordered_map<std::string, int32_t> &failedFiles)
+        const std::unordered_map<std::string, FailedFileInfo> &failedFiles)
         : successCount(successCount), duplicateCount(duplicateCount), failedFiles(failedFiles) {}
 };
 
