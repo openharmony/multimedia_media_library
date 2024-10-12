@@ -110,6 +110,7 @@ const std::string PhotoColumn::PHOTO_STRONG_ASSOCIATION = "strong_association";
 const std::string PhotoColumn::PHOTO_ASSOCIATE_FILE_ID = "associate_file_id";
 const std::string PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK = "has_cloud_watermark";
 const std::string PhotoColumn::SUPPORTED_WATERMARK_TYPE = "supported_watermark_type";
+const std::string PhotoColumn::PHOTO_METADATA_FLAGS = "metadata_flags";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -226,7 +227,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_ASSOCIATE_FILE_ID + " INT DEFAULT 0, " +
     PHOTO_HAS_CLOUD_WATERMARK + " INT DEFAULT 0, " +
     PHOTO_THUMBNAIL_VISIBLE + " INT DEFAULT 0, " +
-    SUPPORTED_WATERMARK_TYPE + " INT) ";
+    SUPPORTED_WATERMARK_TYPE + " INT, " +
+    PHOTO_METADATA_FLAGS + " INT DEFAULT 0)";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
     PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";
@@ -359,6 +361,19 @@ const std::string PhotoColumn::UPDATE_READY_ON_THUMBNAIL_UPGRADE =
                         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_THUMBNAIL_READY +
                         " = 6 " + " WHERE " + PhotoColumn::PHOTO_THUMBNAIL_READY + " != 0; END;";
 
+const std::string PhotoColumn::CREATE_PHOTOS_METADATA_DIRTY_TRIGGER =
+                        "CREATE TRIGGER IF NOT EXISTS photos_metadata_dirty_trigger AFTER UPDATE ON " +
+                        PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN old." + PhotoColumn::PHOTO_POSITION + " != 2" +
+                        " AND old.metadata_flags = " +
+                        std::to_string(static_cast<int32_t>(MetadataFlags::TYPE_UPTODATE)) +
+                        " AND new.metadata_flags = old.metadata_flags" +
+                        " AND " + PhotoColumn::CheckMetaRecoveryPhotoColumns() +
+                        " BEGIN " +
+                        " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET metadata_flags = " +
+                        std::to_string(static_cast<int32_t>(MetadataFlags::TYPE_DIRTY)) +
+                        " WHERE file_id = old.file_id;" +
+                        " END;";
+
 const std::string PhotoColumn::UPDATA_PHOTOS_DATA_UNIQUE = "CREATE UNIQUE INDEX IF NOT EXISTS photo_data_index ON " +
     PhotoColumn::PHOTOS_TABLE + " (" + MEDIA_FILE_PATH + ");";
 
@@ -429,6 +444,31 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
     size_t size = uploadPhotoColumns.size();
     for (size_t i = 0; i < size; i++) {
         std::string column = uploadPhotoColumns[i];
+        if (i != size - 1) {
+            result += "new." + column + " <> old." + column + " OR ";
+        } else {
+            result += "new." + column + " <> old." + column + ")";
+        }
+    }
+    return result;
+}
+
+std::string PhotoColumn::CheckMetaRecoveryPhotoColumns()
+{
+    const std::vector<std::string> metaDirtyPhotoColumns = {
+        MEDIA_DATE_MODIFIED, MEDIA_FILE_PATH, MEDIA_SIZE, MEDIA_TYPE, MEDIA_MIME_TYPE, MEDIA_OWNER_PACKAGE,
+        MEDIA_OWNER_APPID, MEDIA_DEVICE_NAME, MEDIA_DATE_ADDED, MEDIA_DATE_TAKEN, MEDIA_DURATION, MEDIA_IS_FAV,
+        MEDIA_DATE_TRASHED, MEDIA_DATE_DELETED, MEDIA_HIDDEN, PHOTO_META_DATE_MODIFIED, PHOTO_ORIENTATION,
+        PHOTO_LATITUDE, PHOTO_LONGITUDE, PHOTO_HEIGHT, PHOTO_WIDTH, PHOTO_SUBTYPE, PHOTO_USER_COMMENT,
+        PHOTO_DATE_YEAR, PHOTO_DATE_MONTH, PHOTO_DATE_DAY, PHOTO_SHOOTING_MODE, PHOTO_SHOOTING_MODE_TAG,
+        PHOTO_OWNER_ALBUM_ID, PHOTO_SOURCE_PATH, MOVING_PHOTO_EFFECT_MODE, PHOTO_COVER_POSITION, PHOTO_ORIGINAL_SUBTYPE,
+        PHOTO_CLOUD_ID, PHOTO_POSITION, PHOTO_DIRTY, PHOTO_SYNC_STATUS, PHOTO_CLOUD_VERSION, PHOTO_CLEAN_FLAG,
+    };
+
+    std::string result = "(";
+    size_t size = metaDirtyPhotoColumns.size();
+    for (size_t i = 0; i < size; i++) {
+        std::string column = metaDirtyPhotoColumns[i];
         if (i != size - 1) {
             result += "new." + column + " <> old." + column + " OR ";
         } else {

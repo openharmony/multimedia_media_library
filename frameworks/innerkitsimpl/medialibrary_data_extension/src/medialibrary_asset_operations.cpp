@@ -21,6 +21,7 @@
 #include <mutex>
 #include <sstream>
 
+#include "dfx_utils.h"
 #include "directory_ex.h"
 #include "file_asset.h"
 #include "media_app_uri_permission_column.h"
@@ -42,6 +43,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
+#include "medialibrary_meta_recovery.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_rdb_transaction.h"
@@ -55,6 +57,7 @@
 #include "multistages_capture_manager.h"
 #include "enhancement_manager.h"
 #include "permission_utils.h"
+#include "photo_album_column.h"
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
 #include "rdb_store.h"
@@ -364,19 +367,18 @@ static shared_ptr<FileAsset> FetchFileAssetFromResultSet(
     CHECK_AND_RETURN_RET_LOG(currentRowIndex >= 0 && currentRowIndex < count, nullptr, "Invalid row index");
 
     auto fileAsset = make_shared<FileAsset>();
+    auto &map = fileAsset->GetMemberMap();
     for (const auto &column : columns) {
         int32_t columnIndex = 0;
         CHECK_AND_RETURN_RET_LOG(resultSet->GetColumnIndex(column, columnIndex) == NativeRdb::E_OK,
             nullptr, "Can not get column %{private}s index", column.c_str());
         CHECK_AND_RETURN_RET_LOG(FILEASSET_MEMBER_MAP.find(column) != FILEASSET_MEMBER_MAP.end(), nullptr,
             "Can not find column %{private}s from member map", column.c_str());
-        int32_t memberType = FILEASSET_MEMBER_MAP.at(column);
-        switch (memberType) {
+        switch (FILEASSET_MEMBER_MAP.at(column)) {
             case MEMBER_TYPE_INT32: {
                 int32_t value = 0;
                 CHECK_AND_RETURN_RET_LOG(resultSet->GetInt(columnIndex, value) == NativeRdb::E_OK, nullptr,
                     "Can not get int value from column %{private}s", column.c_str());
-                auto &map = fileAsset->GetMemberMap();
                 map[column] = value;
                 break;
             }
@@ -384,7 +386,6 @@ static shared_ptr<FileAsset> FetchFileAssetFromResultSet(
                 int64_t value = 0;
                 CHECK_AND_RETURN_RET_LOG(resultSet->GetLong(columnIndex, value) == NativeRdb::E_OK, nullptr,
                     "Can not get long value from column %{private}s", column.c_str());
-                auto &map = fileAsset->GetMemberMap();
                 map[column] = value;
                 break;
             }
@@ -392,7 +393,13 @@ static shared_ptr<FileAsset> FetchFileAssetFromResultSet(
                 string value;
                 CHECK_AND_RETURN_RET_LOG(resultSet->GetString(columnIndex, value) == NativeRdb::E_OK, nullptr,
                     "Can not get string value from column %{private}s", column.c_str());
-                auto &map = fileAsset->GetMemberMap();
+                map[column] = value;
+                break;
+            }
+            case MEMBER_TYPE_DOUBLE: {
+                double value;
+                CHECK_AND_RETURN_RET_LOG(resultSet->GetDouble(columnIndex, value) == NativeRdb::E_OK, nullptr,
+                    "Can not get double value from column %{private}s", column.c_str());
                 map[column] = value;
                 break;
             }
@@ -431,6 +438,152 @@ static int32_t GetAssetVectorFromResultSet(const shared_ptr<NativeRdb::ResultSet
         fileAssetVector.push_back(fileAsset);
     }
     return E_OK;
+}
+
+static int32_t GetAlbumVectorFromResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
+    const vector<string> &columns, vector<shared_ptr<PhotoAlbum>> &PhotoAlbumVector)
+{
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "resultSet is nullptr");
+    int32_t count = 0;
+    CHECK_AND_RETURN_RET_LOG(resultSet->GetRowCount(count) == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Cannot get row count of resultset");
+    CHECK_AND_RETURN_RET_LOG(count > 0, E_HAS_DB_ERROR, "ResultSet count is %{public}d", count);
+
+    PhotoAlbumVector.reserve(count);
+    for (int32_t i = 0; i < count; i++) {
+        CHECK_AND_RETURN_RET_LOG(
+            resultSet->GoToNextRow() == NativeRdb::E_OK, E_HAS_DB_ERROR, "Failed to go to next row");
+
+        PhotoAlbumVector.push_back(make_shared<PhotoAlbum>());
+        PhotoAlbumVector.back()->SetPhotoAlbumType(
+            static_cast<PhotoAlbumType>(GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet)));
+        PhotoAlbumVector.back()->SetPhotoAlbumSubType(
+            static_cast<PhotoAlbumSubType>(GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet)));
+        PhotoAlbumVector.back()->SetAlbumName(GetStringVal(PhotoAlbumColumns::ALBUM_NAME, resultSet));
+        PhotoAlbumVector.back()->SetDateModified(GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, resultSet));
+        PhotoAlbumVector.back()->SetContainsHidden(GetInt32Val(PhotoAlbumColumns::CONTAINS_HIDDEN, resultSet));
+        PhotoAlbumVector.back()->SetOrder(GetInt32Val(PhotoAlbumColumns::ALBUM_ORDER, resultSet));
+        PhotoAlbumVector.back()->SetBundleName(GetStringVal(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, resultSet));
+        PhotoAlbumVector.back()->SetLocalLanguage(GetStringVal(PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE, resultSet));
+        PhotoAlbumVector.back()->SetDateAdded(GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_ADDED, resultSet));
+        PhotoAlbumVector.back()->SetIsLocal(GetInt32Val(PhotoAlbumColumns::ALBUM_IS_LOCAL, resultSet));
+        PhotoAlbumVector.back()->SetLPath(GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet));
+        PhotoAlbumVector.back()->SetPriority(GetInt32Val(PhotoAlbumColumns::ALBUM_PRIORITY, resultSet));
+        PhotoAlbumVector.back()->SetAlbumId(GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet));
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryAssetOperations::CheckExist(std::string &path)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    vector<string> columns = {MediaColumn::MEDIA_FILE_PATH};
+
+    MEDIA_INFO_LOG("query media_file_path=%{public}s start\n", DfxUtils::GetSafePath(path).c_str());
+    predicates.EqualTo(PhotoColumn::MEDIA_FILE_PATH, path);
+
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("MediaLibraryPhotoOperations error\n");
+        return E_HAS_DB_ERROR;
+    }
+    int rowCount = 0;
+    if (resultSet->GetRowCount(rowCount) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("GetRowCount error\n");
+        return E_HAS_DB_ERROR;
+    }
+
+    MEDIA_INFO_LOG("query media_file_path end, rowCount=%{public}d\n", rowCount);
+    return (rowCount > 0) ? E_OK : E_FAIL;
+}
+
+static const vector<string> META_RECOVERY_QUERY_COLUMNS = {
+    MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_SIZE,
+    MediaColumn::MEDIA_TITLE, MediaColumn::MEDIA_NAME, MediaColumn::MEDIA_TYPE,
+    MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_OWNER_PACKAGE, MediaColumn::MEDIA_OWNER_APPID,
+    MediaColumn::MEDIA_PACKAGE_NAME, MediaColumn::MEDIA_DEVICE_NAME, MediaColumn::MEDIA_DATE_ADDED,
+    MediaColumn::MEDIA_DATE_MODIFIED, MediaColumn::MEDIA_DATE_TAKEN, MediaColumn::MEDIA_DURATION,
+    MediaColumn::MEDIA_TIME_PENDING, MediaColumn::MEDIA_IS_FAV, MediaColumn::MEDIA_DATE_TRASHED,
+    MediaColumn::MEDIA_DATE_DELETED, MediaColumn::MEDIA_HIDDEN, MediaColumn::MEDIA_PARENT_ID,
+    MediaColumn::MEDIA_RELATIVE_PATH, MediaColumn::MEDIA_VIRTURL_PATH, PhotoColumn::PHOTO_DIRTY,
+    PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::PHOTO_META_DATE_MODIFIED,
+    PhotoColumn::PHOTO_SYNC_STATUS, PhotoColumn::PHOTO_CLOUD_VERSION, PhotoColumn::PHOTO_ORIENTATION,
+    PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE, PhotoColumn::PHOTO_HEIGHT,
+    PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_LCD_VISIT_TIME,
+    PhotoColumn::PHOTO_POSITION, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
+    PhotoColumn::CAMERA_SHOT_KEY, PhotoColumn::PHOTO_USER_COMMENT, PhotoColumn::PHOTO_ALL_EXIF,
+    PhotoColumn::PHOTO_DATE_YEAR, PhotoColumn::PHOTO_DATE_MONTH, PhotoColumn::PHOTO_DATE_DAY,
+    PhotoColumn::PHOTO_SHOOTING_MODE, PhotoColumn::PHOTO_SHOOTING_MODE_TAG, PhotoColumn::PHOTO_LAST_VISIT_TIME,
+    PhotoColumn::PHOTO_HIDDEN_TIME, PhotoColumn::PHOTO_THUMB_STATUS, PhotoColumn::PHOTO_CLEAN_FLAG,
+    PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_FIRST_VISIT_TIME,
+    PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE,
+    PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_COVER_POSITION,
+    PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_LCD_SIZE,
+    PhotoColumn::PHOTO_THUMB_SIZE, PhotoColumn::PHOTO_FRONT_CAMERA, PhotoColumn::PHOTO_IS_TEMP,
+    PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY, PhotoColumn::PHOTO_CE_AVAILABLE,
+    PhotoColumn::PHOTO_CE_STATUS_CODE, PhotoColumn::PHOTO_STRONG_ASSOCIATION, PhotoColumn::PHOTO_ASSOCIATE_FILE_ID,
+    PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, PhotoColumn::PHOTO_DETAIL_TIME, PhotoColumn::PHOTO_OWNER_ALBUM_ID,
+    PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, PhotoColumn::PHOTO_SOURCE_PATH
+};
+
+int32_t MediaLibraryAssetOperations::QueryTotalPhoto(vector<shared_ptr<FileAsset>> &fileAssetVector,
+    int32_t batchSize)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+
+    MEDIA_INFO_LOG("query total photo start\n");
+    predicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_METADATA_FLAGS, static_cast<int>(MetadataFlags::TYPE_NEW))->Or()
+        ->EqualTo(PhotoColumn::PHOTO_METADATA_FLAGS, static_cast<int>(MetadataFlags::TYPE_DIRTY))->Or()
+        ->IsNull(PhotoColumn::PHOTO_METADATA_FLAGS)->EndWrap();
+    predicates.And()->BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()
+        ->EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
+    predicates.OrderByAsc(PhotoColumn::PHOTO_METADATA_FLAGS);
+    predicates.Limit(0, batchSize);
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, META_RECOVERY_QUERY_COLUMNS);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("MediaLibraryPhotoOperations error\n");
+        return E_OK;
+    }
+
+    GetAssetVectorFromResultSet(resultSet, META_RECOVERY_QUERY_COLUMNS, fileAssetVector);
+
+    MEDIA_INFO_LOG("query total photo end\n");
+    return E_OK;
+}
+
+std::shared_ptr<FileAsset> MediaLibraryAssetOperations::QuerySinglePhoto(int32_t rowId)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+
+    predicates.EqualTo(MediaColumn::MEDIA_ID, rowId);
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, META_RECOVERY_QUERY_COLUMNS);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("MediaLibraryPhotoOperations error\n");
+        return nullptr;
+    }
+
+    return GetAssetFromResultSet(resultSet, META_RECOVERY_QUERY_COLUMNS);
+}
+
+int32_t MediaLibraryAssetOperations::QueryTotalAlbum(vector<shared_ptr<PhotoAlbum>> &photoAlbumVector)
+{
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_ID,
+        PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE,
+        PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_DATE_MODIFIED,
+        PhotoAlbumColumns::CONTAINS_HIDDEN, PhotoAlbumColumns::ALBUM_ORDER,
+        PhotoAlbumColumns::ALBUM_BUNDLE_NAME, PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE,
+        PhotoAlbumColumns::ALBUM_IS_LOCAL, PhotoAlbumColumns::ALBUM_DATE_ADDED,
+        PhotoAlbumColumns::ALBUM_LPATH, PhotoAlbumColumns::ALBUM_PRIORITY};
+
+    MEDIA_INFO_LOG("Start query total photo album");
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query failed, resultSet is null");
+        return E_INVALID_ARGUMENTS;
+    }
+
+    return GetAlbumVectorFromResultSet(resultSet, columns, photoAlbumVector);
 }
 
 shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const string &column,
@@ -2103,6 +2256,10 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
     }
     CreateThumbnailFileScaned(uri, path, this->isCreateThumbSync);
     MediaFileUtils::DeleteFile(MovingPhotoFileUtils::GetLivePhotoCachePath(path));
+    int32_t id;
+    if (StrToInt(fileId, id)) {
+        MediaLibraryMetaRecovery::GetInstance().WriteSingleMetaDataById(id);
+    }
     return E_OK;
 }
 
@@ -2134,6 +2291,7 @@ static void DeleteFiles(AsyncTaskData *data)
         if (!MediaFileUtils::DeleteFile(filePath) && (errno != ENOENT)) {
             MEDIA_WARN_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
         }
+        MediaLibraryMetaRecovery::DeleteMetaDataByPath(filePath);
 
         if (taskData->subTypes_[i] == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
             // delete video file of moving photo

@@ -112,6 +112,7 @@ const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
             PhotoColumn::PHOTO_CLEAN_FLAG, // cloud related
             PhotoColumn::PHOTO_THUMBNAIL_READY, // astc related
             PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_CE_STATUS_CODE, // cloud enhancement
+            PhotoColumn::PHOTO_METADATA_FLAGS, // meta recovery related
         }},
     { PhotoAlbumColumns::TABLE,
         {
