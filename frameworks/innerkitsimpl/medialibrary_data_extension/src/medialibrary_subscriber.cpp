@@ -78,7 +78,7 @@ const int32_t WIFI_STATE_CONNECTED = 4;
 
 const int32_t DELAY_TASK_TIME = 30000;
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
-const int32_t MB_SHIFT = 20;
+const int32_t MegaByte = 1024*1024;
 const int32_t MAX_FILE_SIZE_MB = 200;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
@@ -170,7 +170,7 @@ static void UploadDBFile()
         }
         totalFileSize += statInfo.st_size;
     }
-    totalFileSize >>= MB_SHIFT; // Convert bytes to MB
+    totalFileSize /= MegaByte; // Convert bytes to MB
     if (totalFileSize > MAX_FILE_SIZE_MB) {
         MEDIA_WARN_LOG("DB file over 200MB are not uploaded, totalFileSize is %{public}ld MB", (long)totalFileSize);
         return ;
