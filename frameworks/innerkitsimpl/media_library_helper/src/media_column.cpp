@@ -191,7 +191,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_DYNAMIC_RANGE_TYPE + " INT DEFAULT 0, " +
     MOVING_PHOTO_EFFECT_MODE + " INT DEFAULT 0, " +
     PHOTO_COVER_POSITION + " BIGINT DEFAULT 0, " +
-    PHOTO_THUMBNAIL_READY + " INT DEFAULT 0, " +
+    PHOTO_THUMBNAIL_READY + " BIGINT DEFAULT 0, " +
     PHOTO_LCD_SIZE + " TEXT, " +
     PHOTO_THUMB_SIZE + " TEXT," +
     PHOTO_FRONT_CAMERA + " TEXT, " +
@@ -334,7 +334,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_LCD_SIZE,
     PhotoColumn::PHOTO_THUMB_SIZE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_COVER_POSITION,
     PhotoColumn::PHOTO_FRONT_CAMERA, PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY,
-    PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
+    PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, PhotoColumn::PHOTO_THUMBNAIL_READY,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

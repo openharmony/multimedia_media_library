@@ -658,15 +658,9 @@ bool IThumbnailHelper::UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailD
 
 int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
-    int64_t thumbnail_status = 0;
-    if (data.loaderOpts.needUpload) {
-        thumbnail_status = static_cast<int64_t>(ThumbnailReady::THUMB_TO_UPLOAD);
-    } else {
-        thumbnail_status = static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_COMPLETED);
-    }
     ValuesBucket values;
     int changedRows;
-    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, thumbnail_status);
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, MediaFileUtils::UTCTimeMilliSeconds());
     Size lcdSize;
     if (ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::LCD, lcdSize)) {
         ThumbnailUtils::SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
