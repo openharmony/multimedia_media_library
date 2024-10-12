@@ -3079,6 +3079,21 @@ int32_t MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(RdbStore &sto
     return E_OK;
 }
 
+void AddHighlightMapTable(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS tab_analysis_asset_sd_map",
+        "DROP TABLE IF EXISTS tab_analysis_album_asset_map",
+        CREATE_ANALYSIS_ASSET_SD_MAP_TABLE,
+        CREATE_ANALYSIS_ALBUM_ASET_MAP_TABLE,
+        "ALTER TABLE " + HIGHLIGHT_PLAY_INFO_TABLE + " ADD COLUMN " + HIGHLIGHTING_ALGO_VERSION + " TEXT",
+        "ALTER TABLE " + HIGHLIGHT_PLAY_INFO_TABLE + " ADD COLUMN " + CAMERA_MOVEMENT_ALGO_VERSION + " TEXT",
+        "ALTER TABLE " + HIGHLIGHT_PLAY_INFO_TABLE + " ADD COLUMN " + TRANSITION_ALGO_VERSION + " TEXT",
+    };
+    MEDIA_INFO_LOG("add analysis map table of highlight db");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -3564,6 +3579,9 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_METARECOVERY) {
         AddMetaRecovery(store);
+    }
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_MAP_TABLES) {
+        AddHighlightMapTable(store);
     }
 }
 

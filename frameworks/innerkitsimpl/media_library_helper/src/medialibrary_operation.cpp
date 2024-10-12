@@ -196,6 +196,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::STORY_ALBUM, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_ALBUM_TABLE } } },
         { OperationObject::STORY_COVER, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_COVER_INFO_TABLE } } },
         { OperationObject::STORY_PLAY, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_PLAY_INFO_TABLE } } },
+        { OperationObject::ANALYSIS_ASSET_SD_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ASSET_SD_MAP_TABLE } } },
+        { OperationObject::ANALYSIS_ALBUM_ASSET_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_ASSET_MAP_TABLE } } },
         { OperationObject::USER_PHOTOGRAPHY, { { OperationType::UNKNOWN_TYPE, USER_PHOTOGRAPHY_INFO_TABLE } } },
         { OperationObject::APP_URI_PERMISSION_INNER,
             { { OperationType::UNKNOWN_TYPE, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE } } },

@@ -229,6 +229,7 @@ public:
     static const std::string QUERY_MEDIA_VOLUME EXPORT;
 
     static const std::string HIGHTLIGHT_COVER_URI EXPORT;
+    static const std::string HIGHTLIGHT_URI EXPORT;
 
     EXPORT static bool IsPhotoColumn(const std::string &columnName);
     EXPORT static std::string CheckUploadPhotoColumns();

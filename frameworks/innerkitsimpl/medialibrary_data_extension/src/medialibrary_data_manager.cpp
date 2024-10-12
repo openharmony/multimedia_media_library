@@ -644,6 +644,8 @@ int32_t MediaLibraryDataManager::SolveInsertCmdSub(MediaLibraryCommand &cmd)
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
+        case OperationObject::ANALYSIS_ASSET_SD_MAP:
+        case OperationObject::ANALYSIS_ALBUM_ASSET_MAP:
             return MediaLibraryStoryOperations::InsertOperation(cmd);
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             return MediaLibrarySearchOperations::InsertOperation(cmd);
@@ -1779,7 +1781,7 @@ int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string
     tracer.Start("MediaLibraryDataManager::OpenFile");
     auto oprnObject = cmd.GetOprnObject();
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO ||
-        oprnObject == OperationObject::HIGHLIGHT_COVER) {
+        oprnObject == OperationObject::HIGHLIGHT_COVER  || oprnObject == OperationObject::HIGHLIGHT_URI) {
         return MediaLibraryAssetOperations::OpenOperation(cmd, mode);
     }
 
