@@ -27,6 +27,9 @@
 #include "medialibrary_command.h"
 #include "media_datashare_ext_ability.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore.h"
+#include "medialibrary_unistore_manager.h"
 #include "media_file_ext_ability.h"
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
@@ -57,10 +60,12 @@ using namespace DataShare;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 static const string TESTING_DISPLAYNAME = "IMG_20240904_133901.jpg";
 static const int32_t isEven = 2;
-static inline uint32_t FuzzUInt32(const uint8_t *data, size_t size)
-{
-    return static_cast<uint32_t>(*data);
-}
+static const int32_t NO = 0;
+static const int32_t YES = 1;
+static const int32_t E_ERR = -1;
+static const string PHOTOS_TABLE = "Photos";
+static const string PHOTO_URI_PREFIX = "file://media/Photo/";
+static const string PHOTO_URI_PREFIX_UNDEDINED = "undedined/";
 
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
@@ -78,12 +83,6 @@ static inline int32_t FuzzBool(const uint8_t *data, size_t size)
 static inline string FuzzString(const uint8_t *data, size_t size)
 {
     return {reinterpret_cast<const char*>(data), size};
-}
-
-static inline vector<string> FuzzVectorIntToString(const uint8_t *data, size_t size)
-{
-    uint32_t value = FuzzUInt32(data, size);
-    return {to_string(value)};
 }
 
 static inline vector<string> FuzzVectorString(const uint8_t *data, size_t size)
@@ -117,22 +116,113 @@ static inline Media::MediaLibraryCommand FuzzMediaLibraryCmd(const uint8_t *data
     return Media::MediaLibraryCommand(FuzzUri(data, size));
 }
 
-static inline Media::CloudEnhancementAvailableType FuzzCloudEnhancementAvailableType(const uint8_t *data, size_t size)
+static inline Media::CloudEnhancementAvailableType FuzzCloudEnhancementAvailableType(const uint8_t* data, size_t size)
 {
-    uint8_t length = static_cast<uint8_t>(Media::CloudEnhancementAvailableType_FUZZER_LISTS.size());
-    if (*data < length) {
-        return Media::CloudEnhancementAvailableType_FUZZER_LISTS[*data];
+    int32_t value = FuzzInt32(data, size);
+    if (value >= static_cast<int32_t>(Media::CloudEnhancementAvailableType::NOT_SUPPORT) &&
+        value <= static_cast<int32_t>(Media::CloudEnhancementAvailableType::TRASH)) {
+        return static_cast<Media::CloudEnhancementAvailableType>(value);
     }
-    return Media::CloudEnhancementAvailableType::NOT_SUPPORT;
+    return Media::CloudEnhancementAvailableType::PROCESSING;
+}
+
+static inline void FuzzMimeTypeAndDisplayNameExtension(const uint8_t *data, size_t size, string &mimeType,
+    string &displayName)
+{
+    uint8_t length = static_cast<uint8_t>(Media::DISPLAY_NAME_EXTENSION_FUZZER_LISTS.size());
+    if (*data < length) {
+        mimeType = Media::MIMETYPE_FUZZER_LISTS[*data];
+        displayName = FuzzString(data, size) + Media::DISPLAY_NAME_EXTENSION_FUZZER_LISTS[*data];
+    }
+}
+
+static inline int32_t FuzzDynamicRangeType(const uint8_t* data, size_t size)
+{
+    int32_t value = FuzzInt32(data, size);
+    if (value >= static_cast<int32_t>(Media::DynamicRangeType::SDR) &&
+        value <= static_cast<int32_t>(Media::DynamicRangeType::HDR)) {
+        return value;
+    }
+    return static_cast<int32_t>(Media::DynamicRangeType::SDR);
+}
+
+static inline int32_t FuzzPhotoSubType(const uint8_t* data, size_t size)
+{
+    int32_t value = FuzzInt32(data, size);
+    if (value >= static_cast<int32_t>(Media::PhotoSubType::DEFAULT) &&
+        value <= static_cast<int32_t>(Media::PhotoSubType::SUBTYPE_END)) {
+        return value;
+    }
+    return static_cast<int32_t>(Media::PhotoSubType::CAMERA);
+}
+
+static inline int32_t FuzzCEErrorCodeType(const uint8_t* data, size_t size)
+{
+    int32_t value = FuzzInt32(data, size);
+    if (value >= static_cast<int32_t>(Media::CEErrorCodeType::LIMIT_USAGE) &&
+        value <= static_cast<int32_t>(Media::CEErrorCodeType::TASK_CANNOT_EXECUTE)) {
+        return value;
+    }
+    return static_cast<int32_t>(Media::CEErrorCodeType::NON_RECOVERABLE);
+}
+
+static void Init()
+{
+    const std::
+}
+
+static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
+{
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return E_ERR;
+    }
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        return E_ERR;
+    }
+    NativeRdb::ValuesBucket values;
+    values.PutString(Media::PhotoColumn::PHOTO_ID, photoId);
+    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
+
+    string mimeType = "undefined";
+    string displayName = ".undefined";
+    FuzzMimeTypeAndDisplayNameExtension(data, size, mimeType, displayName);
+    values.PutString(Media::MediaColumn::MEDIA_NAME, displayName);
+    values.PutString(Media::MediaColumn::MEDIA_MIME_TYPE, mimeType);
+    int32_t hidden = FuzzBool(data, size) ? YES : NO;
+    values.PutInt(Media::MediaColumn::MEDIA_HIDDEN, hidden);
+    values.PutInt(Media::PhotoColumn::PHOTO_SUBTYPE, FuzzPhotoSubType(data, size));
+    values.PutInt(Media::PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, FuzzDynamicRangeType(data, size));
+    int32_t hasCloudWatermark = FuzzBool(data, size) ? YES : NO;
+    values.PutInt(Media::PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, hasCloudWatermark);
+    values.PutInt(Media::PhotoColumn::PHOTO_CE_AVAILABLE,
+        static_cast<int32_t>(FuzzCloudEnhancementAvailableType(data, size)));
+
+    int64_t fileId = 0;
+    rdbStorePtr->Insert(fileId, PHOTOS_TABLE, values);
+    return static_cast<int32_t>(fileId);
+}
+
+static MediaEnhance::MediaEnhanceBundle FuzzMediaEnhanceBundle(const uint8_t* data, size_t size, string photoId)
+{
+    const uint8_t* buffer = Media::BUFFER;
+    shared_ptr<MediaEnhance::RawData> rawData = make_shared<MediaEnhance::RawData>(buffer, 0);
+    std::vector<shared_ptr<MediaEnhance::RawData>> resultBuffers = { rawData };
+    MediaEnhance::MediaEnhanceBundle bundle;
+    bundle.SetResultBuffers(resultBuffers);
+    bundle.PutInt(MediaEnhance::MediaEnhanceBundleKey::ERROR_CODE, FuzzCEErrorCodeType(data, size));
+    return bundle;
 }
 #endif
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 static void EnhancementManagerTest(const uint8_t *data, size_t size)
 {
+    int32_t fileId = InsertAsset(data, size, FuzzString(data, size));
     Media::EnhancementManager::GetInstance().Init();
-    vector<string> fileIds = FuzzVectorIntToString(data, size);
-    vector<string> photoIds = FuzzVectorIntToString(data, size);
+    vector<string> fileIds = { to_string(fileId) };
+    vector<string> photoIds;
     Media::EnhancementManager::GetInstance().CancelTasksInternal(fileIds, photoIds,
         FuzzCloudEnhancementAvailableType(data, size));
     Media::EnhancementManager::GetInstance().RemoveTasksInternal(fileIds, photoIds);
@@ -140,8 +230,11 @@ static void EnhancementManagerTest(const uint8_t *data, size_t size)
     Media::EnhancementManager::GetInstance().RecoverTrashUpdateInternal(fileIds);
 
     DataSharePredicates predicates;
-    string photoUri = "file://media/Photo/1/IMG_1722329102_000/" + TESTING_DISPLAYNAME;
+    string prefix = FuzzBool(data, size) ? PHOTO_URI_PREFIX : PHOTO_URI_PREFIX_UNDEDINED;
+    string photoUri = prefix + "1/IMG_1722329102_000/" + TESTING_DISPLAYNAME;
     predicates.EqualTo(Media::MediaColumn::MEDIA_ID, photoUri);
+    int32_t hasCloudWatermark = FuzzBool(data, size) ? YES : NO;
+    predicates.EqualTo(Media::PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, hasCloudWatermark);
     Media::MediaLibraryCommand cmd = FuzzMediaLibraryCmd(data, size);
     cmd.SetDataSharePred(predicates);
     Media::EnhancementManager::GetInstance().HandleEnhancementUpdateOperation(cmd);
@@ -151,6 +244,39 @@ static void EnhancementManagerTest(const uint8_t *data, size_t size)
     MediaEnhance::MediaEnhanceBundle mediaEnhanceBundle;
     Media::EnhancementManager::GetInstance().AddServiceTask(mediaEnhanceBundle, FuzzInt32(data, size),
         FuzzString(data, size), FuzzBool(data, size));
+}
+
+static void EnhancementTaskManagerTest(const uint8_t *data, size_t size)
+{
+    int32_t fileId = FuzzInt32(data, size);
+    string photoId = FuzzString(data, size);
+    Media::EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
+    Media::EnhancementTaskManager::RemoveEnhancementTask(photoId);
+    Media::EnhancementTaskManager::RemoveEnhancementTask(photoId);
+
+    vector<string> taskIds = FuzzVectorString(data, size);
+    Media::EnhancementTaskManager::RemoveAllEnhancementTask(taskIds);
+
+    fileId = FuzzInt32(data, size);
+    photoId = FuzzString(data, size);
+    Media::EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
+    Media::EnhancementTaskManager::InProcessingTask(photoId);
+    Media::EnhancementTaskManager::QueryPhotoIdByFileId(fileId);
+
+    photoId = FuzzString(data, size);
+    Media::EnhancementTaskManager::SetTaskRequestCount(photoId, FuzzInt32(data, size));
+    Media::EnhancementTaskManager::GetTaskRequestCount(photoId);
+}
+
+static void CloudEnhancementGetCountTest(const uint8_t *data, size_t size)
+{
+    Media::CloudEnhancementGetCount& cloudEnhancementGetCount = Media::CloudEnhancementGetCount::GetInstance();
+    cloudEnhancementGetCount.GetStartTimes();
+    string photoId = FuzzString(data, size);
+    cloudEnhancementGetCount.AddStartTime(photoId);
+    cloudEnhancementGetCount.Report(FuzzString(data, size), photoId);
+    cloudEnhancementGetCount.RemoveStartTime(photoId);
+    cloudEnhancementGetCount.RemoveStartTime(photoId);
 }
 
 static void EnhancementServiceAdpterTest(const uint8_t *data, size_t size)
@@ -174,16 +300,21 @@ static void EnhancementServiceCallbackTest(const uint8_t *data, size_t size)
     Media::EnhancementServiceCallback *callback = new Media::EnhancementServiceCallback();
     callback->OnServiceReconnected();
 
-    MediaEnhance::MediaEnhanceBundle bundle;
-    callback->OnSuccess(FuzzString(data, size), bundle);
-    callback->OnFailed(FuzzString(data, size), bundle);
+    string photoId = FuzzString(data, size);
+    MediaEnhance::MediaEnhanceBundle bundle = FuzzMediaEnhanceBundle(data, size, photoId);
+    callback->OnSuccess(photoId, bundle);
+
+    photoId = FuzzString(data, size);
+    bundle = FuzzMediaEnhanceBundle(data, size, photoId);
+    callback->OnFailed(photoId, bundle);
 
     const uint8_t* buffer = Media::BUFFER;
     shared_ptr<MediaEnhance::RawData> rawData = make_shared<MediaEnhance::RawData>(buffer, 0);
+    string displayName = FuzzString(data, size) + ".jpg";
+    int32_t hidden = FuzzBool(data, size) ? YES : NO;
     shared_ptr<Media::CloudEnhancementFileInfo> fileInfo = make_shared<Media::CloudEnhancementFileInfo>(
-        FuzzInt32(data, size), FuzzString(data, size), FuzzString(data, size), FuzzInt32(data, size), 0);
+        FuzzInt32(data, size), FuzzString(data, size), displayName, FuzzPhotoSubType(data, size), hidden);
     callback->SaveCloudEnhancementPhoto(fileInfo, *rawData);
-    callback->CreateCloudEnhancementPhoto(FuzzInt32(data, size), fileInfo);
 }
 #endif
 } // namespace OHOS
@@ -192,6 +323,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     OHOS::EnhancementManagerTest(data, size);
+    OHOS::EnhancementTaskManagerTest(data, size);
+    OHOS::CloudEnhancementGetCountTest(data, size);
     OHOS::EnhancementServiceAdpterTest(data, size);
     OHOS::EnhancementServiceCallbackTest(data, size);
 #endif
