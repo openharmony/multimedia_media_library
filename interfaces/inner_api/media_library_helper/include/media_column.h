@@ -32,6 +32,13 @@ enum class DirtyTypes : int32_t {
     TYPE_COPY
 };
 
+enum class MetadataFlags : int32_t {
+    TYPE_NEW,
+    TYPE_DIRTY,
+    TYPE_UPTODATE,
+    TYPE_RECOVERYING,
+};
+
 enum class ExtraChangeType : uint32_t {
     PHOTO_TIME_UPDATE = 100
 };
@@ -128,6 +135,7 @@ public:
     static const std::string PHOTO_ORIGINAL_SUBTYPE EXPORT;
     static const std::string PHOTO_DETAIL_TIME EXPORT;
     static const std::string SUPPORTED_WATERMARK_TYPE EXPORT;
+    static const std::string PHOTO_METADATA_FLAGS EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
@@ -198,6 +206,7 @@ public:
     static const std::string CREATE_PHOTOS_MDIRTY_TRIGGER EXPORT;
     static const std::string CREATE_PHOTOS_INSERT_CLOUD_SYNC EXPORT;
     static const std::string CREATE_PHOTOS_UPDATE_CLOUD_SYNC EXPORT;
+    static const std::string CREATE_PHOTOS_METADATA_DIRTY_TRIGGER EXPORT;
 
     // photo uri
     static const std::string PHOTO_URI_PREFIX EXPORT;
@@ -223,6 +232,7 @@ public:
 
     EXPORT static bool IsPhotoColumn(const std::string &columnName);
     EXPORT static std::string CheckUploadPhotoColumns();
+    EXPORT static std::string CheckMetaRecoveryPhotoColumns();
 
     static const std::string PHOTOS_QUERY_FILTER EXPORT;
 };

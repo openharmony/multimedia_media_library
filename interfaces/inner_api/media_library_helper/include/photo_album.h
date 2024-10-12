@@ -65,6 +65,30 @@ public:
     EXPORT void SetRelativePath(const std::string &logicalRelativePath);
     EXPORT const std::string& GetRelativePath() const;
 
+    EXPORT void SetPriority(const int32_t priority);
+    EXPORT int32_t GetPriority() const;
+
+    EXPORT void SetLPath(const std::string &path);
+    EXPORT const std::string& GetLPath() const;
+
+    EXPORT void SetBundleName(const std::string &name);
+    EXPORT const std::string& GetBundleName() const;
+
+    EXPORT void SetDateAdded(const int64_t date);
+    EXPORT int64_t GetDateAdded() const;
+
+    EXPORT void SetContainsHidden(const int32_t hidden);
+    EXPORT int32_t GetContainsHidden() const;
+
+    EXPORT void SetOrder(const int32_t order);
+    EXPORT int32_t GetOrder() const;
+
+    EXPORT void SetLocalLanguage(const std::string &language);
+    EXPORT const std::string& GetLocalLanguage() const;
+
+    EXPORT void SetIsLocal(const int32_t isLocal);
+    EXPORT int32_t GetIsLocal() const;
+
     EXPORT void SetResultNapiType(const ResultNapiType resultNapiType);
     EXPORT ResultNapiType GetResultNapiType() const;
 
@@ -102,6 +126,14 @@ private:
     double longitude_ {0.0};
     std::string relativePath_;
     int32_t displayLevel_ {0};
+    int64_t dateAdded_ {0};
+    int32_t containsHidden_ {0};
+    int32_t order_ {0};
+    std::string bundleName_;
+    std::string localLanguage_;
+    int32_t isLocal_ {0};
+    std::string lPath_;
+    int32_t priority_ {0};
 
     ResultNapiType resultNapiType_ = ResultNapiType::TYPE_MEDIALIBRARY;
     bool hiddenOnly_ = false;

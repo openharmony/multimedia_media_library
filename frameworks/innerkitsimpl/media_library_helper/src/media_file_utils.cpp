@@ -1548,6 +1548,14 @@ bool MediaFileUtils::StartsWith(const std::string &str, const std::string &prefi
     return str.compare(0, prefix.size(), prefix) == 0;
 }
 
+bool MediaFileUtils::EndsWith(const std::string &str, const std::string &suffix)
+{
+    if (str.length() < suffix.length()) {
+        return false;
+    }
+    return str.rfind(suffix) == str.length() - suffix.length();
+}
+
 void MediaFileUtils::UriAppendKeyValue(string &uri, const string &key, std::string value)
 {
     string uriKey = key + '=';

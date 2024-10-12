@@ -202,6 +202,86 @@ int32_t PhotoAlbum::GetDisplayLevel() const
     return displayLevel_;
 }
 
+void PhotoAlbum::SetPriority(const int32_t priority)
+{
+    priority_ = priority;
+}
+
+int32_t PhotoAlbum::GetPriority() const
+{
+    return priority_;
+}
+
+void PhotoAlbum::SetLPath(const std::string &path)
+{
+    lPath_ = path;
+}
+
+const std::string& PhotoAlbum::GetLPath() const
+{
+    return lPath_;
+}
+
+void PhotoAlbum::SetBundleName(const std::string &name)
+{
+    bundleName_ = name;
+}
+
+const std::string& PhotoAlbum::GetBundleName() const
+{
+    return bundleName_;
+}
+
+void PhotoAlbum::SetDateAdded(const int64_t date)
+{
+    dateAdded_ = date;
+}
+
+int64_t PhotoAlbum::GetDateAdded() const
+{
+    return dateAdded_;
+}
+
+void PhotoAlbum::SetContainsHidden(const int32_t hidden)
+{
+    containsHidden_ = hidden;
+}
+
+int32_t PhotoAlbum::GetContainsHidden() const
+{
+    return containsHidden_;
+}
+
+void PhotoAlbum::SetOrder(const int32_t order)
+{
+    order_ = order;
+}
+
+int32_t PhotoAlbum::GetOrder() const
+{
+    return order_;
+}
+
+void PhotoAlbum::SetLocalLanguage(const std::string &language)
+{
+    localLanguage_ = language;
+}
+
+const std::string& PhotoAlbum::GetLocalLanguage() const
+{
+    return localLanguage_;
+}
+
+void PhotoAlbum::SetIsLocal(const int32_t isLocal)
+{
+    isLocal_ = isLocal;
+}
+
+int32_t PhotoAlbum::GetIsLocal() const
+{
+    return isLocal_;
+}
+
 bool PhotoAlbum::IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
 {
     return (albumType == PhotoAlbumType::USER) && (albumSubType == PhotoAlbumSubType::USER_GENERIC);
