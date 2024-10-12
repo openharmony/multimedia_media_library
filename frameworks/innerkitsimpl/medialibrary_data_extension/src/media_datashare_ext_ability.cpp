@@ -485,6 +485,8 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::INDEX_CONSTRUCTION_STATUS,
         OperationObject::MEDIA_APP_URI_PERMISSION,
         OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE,
+        OperationObject::ANALYSIS_ASSET_SD_MAP,
+        OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);
@@ -711,7 +713,9 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     if (command.GetUri().ToString().find(PhotoColumn::PHOTO_CACHE_URI_PREFIX) != string::npos) {
         command.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     }
-    if (command.GetUri().ToString().find(MEDIA_DATA_DB_HIGHLIGHT) != string::npos) {
+    if (command.GetUri().ToString().find(PhotoColumn::HIGHTLIGHT_URI) != string::npos) {
+        command.SetOprnObject(OperationObject::HIGHLIGHT_URI);
+    } else if (command.GetUri().ToString().find(MEDIA_DATA_DB_HIGHLIGHT) != string::npos) {
         command.SetOprnObject(OperationObject::HIGHLIGHT_COVER);
     }
     if (command.GetUri().ToString().find(PhotoColumn::PHOTO_REQUEST_PICTURE) != string::npos) {
