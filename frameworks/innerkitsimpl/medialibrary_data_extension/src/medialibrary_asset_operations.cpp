@@ -1255,10 +1255,8 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
         path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     }
 
-    tracer.Start("OpenFileWithPrivacy");
     string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
     int32_t fd = OpenFileWithPrivacy(path, lowerMode, fileId);
-    tracer.Finish();
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{public}d, errno %{public}d", fd, errno);
         return E_HAS_FS_ERROR;
