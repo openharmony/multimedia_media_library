@@ -28,6 +28,7 @@
 #include "acl.h"
 #include "background_cloud_file_processor.h"
 #include "background_task_mgr_helper.h"
+#include "cloud_sync_switch_observer.h"
 #include "datashare_abs_result_set.h"
 #ifdef DISTRIBUTED
 #include "device_manager.h"
@@ -319,6 +320,8 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_, true);
     HandleUpgradeRdbAsync();
+    CloudSyncSwitchManager cloudSyncSwitchManager;
+    cloudSyncSwitchManager.RegisterObserver();
 
     refCnt_++;
     // TEMP: avoid Process backup call StartAsyncRecovery
