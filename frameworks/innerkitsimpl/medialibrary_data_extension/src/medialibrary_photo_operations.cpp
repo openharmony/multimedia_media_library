@@ -1369,6 +1369,26 @@ void MediaLibraryPhotoOperations::CreateThumbnailFileScan(const shared_ptr<FileA
     }
 }
 
+void HandleUpdateIndex(MediaLibraryCommand &cmd, string id)
+{
+    set<string> targetColumns = {"user_comment", "title"};
+    bool needUpdate = false;
+
+    map<string, ValueObject> valuesMap;
+    cmd.GetValueBucket().GetAll(valuesMap);
+    for (auto i : valuesMap) {
+        if (targetColumns.find(i.first) != targetColumns.end()) {
+            MEDIA_INFO_LOG("need update index");
+            needUpdate = true;
+            break;
+        }
+    }
+    if (needUpdate) {
+        MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+            static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), {id});
+    }
+}
+
 int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
 {
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE,
@@ -1413,6 +1433,7 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
         return rowId;
     }
     transactionOprn.Finish();
+    HandleUpdateIndex(cmd, to_string(fileAsset->GetId()));
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
     errCode = SendTrashNotify(cmd, fileAsset->GetId(), extraUri);
     if (errCode == E_OK) {
