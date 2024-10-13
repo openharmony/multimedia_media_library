@@ -819,31 +819,21 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
 bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
-        MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_FILE_PATH,
-        MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_POSITION,
-        MEDIA_DATA_DB_ORIENTATION,
-        MEDIA_DATA_DB_DATE_TAKEN,
+        MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_ORIENTATION, MEDIA_DATA_DB_DATE_TAKEN,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.BeginWrap()
         ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0")
-        ->Or()
-        ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "2")
-        ->Or()
-        ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "7")
+        ->Or()->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "2")
+        ->Or()->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "7")
         ->EndWrap();
     rdbPredicates.BeginWrap()
         ->BeginWrap()
         ->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->EqualTo(PhotoColumn::PHOTO_POSITION, "3")
-        ->EndWrap()
-        ->Or()
-        ->BeginWrap()
+        ->EndWrap()->Or()->BeginWrap()
         ->EqualTo(PhotoColumn::PHOTO_POSITION, "2")->And()->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, "0")
-        ->EndWrap()
-        ->EndWrap();
+        ->EndWrap()->EndWrap();
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
     if (opts.store == nullptr) {
         MEDIA_ERR_LOG("opts.store is nullptr");
@@ -857,13 +847,11 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         }
         return false;
     }
-
     err = resultSet->GoToFirstRow();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
         return false;
     }
-
     ThumbnailData data;
     do {
         ParseQueryResult(resultSet, data, err, column);
@@ -2177,16 +2165,9 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
     std::vector<ThumbnailData> &infos, NativeRdb::RdbPredicates &rdbPredicate, int &err)
 {
     vector<string> column = {
-        MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_FILE_PATH,
-        MEDIA_DATA_DB_HEIGHT,
-        MEDIA_DATA_DB_WIDTH,
-        MEDIA_DATA_DB_POSITION,
-        MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_DATE_ADDED,
-        MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_ORIENTATION,
-        MEDIA_DATA_DB_DATE_TAKEN,
+        MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_HEIGHT, MEDIA_DATA_DB_WIDTH,
+        MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_ORIENTATION, MEDIA_DATA_DB_DATE_TAKEN,
     };
     rdbPredicate.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
     rdbPredicate.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
