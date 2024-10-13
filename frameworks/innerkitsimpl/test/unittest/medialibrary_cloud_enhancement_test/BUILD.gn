@@ -54,7 +54,6 @@ ohos_unittest("medialibrary_cloud_enhancement_test") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include",
     "../../../../../../../../base/security/access_token/interfaces/innerkits/privacy/include",
     "../../../../../../player_framework/interfaces/inner_api/native",
-    "../../../../../vendor/huawei/domains/device_cloud_gateway/media_cloud_enhance_service/interfaces/inner_api/include",
     "../../../../../../../filemanagement/app_file_service/interfaces/common/include",
   ]
 
@@ -131,8 +130,7 @@ ohos_unittest("medialibrary_cloud_enhancement_test") {
           global_parts_info.device_cloud_gateway_media_cloud_enhance_service) &&
       global_parts_info.device_cloud_gateway_media_cloud_enhance_service) {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
-    external_deps +=
-        [ "media_cloud_enhance_service:media_cloud_enhance_client" ]
+    include_dirs += [ "${MEDIALIB_CLOUD_ENHANCEMENT_SERVICE_PATH}/interfaces/inner_api/include/c_api" ]
   }
 
   resource_config_file =
@@ -171,7 +169,6 @@ ohos_unittest("medialibrary_cloud_enhancement_get_pair_test") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include",
     "../../../../../../../../base/security/access_token/interfaces/innerkits/privacy/include",
     "../../../../../../player_framework/interfaces/inner_api/native",
-    "../../../../../vendor/huawei/domains/device_cloud_gateway/media_cloud_enhance_service/interfaces/inner_api/include",
     "../../../../../../../filemanagement/app_file_service/interfaces/common/include",
   ]
 
@@ -248,8 +245,6 @@ ohos_unittest("medialibrary_cloud_enhancement_get_pair_test") {
           global_parts_info.device_cloud_gateway_media_cloud_enhance_service) &&
       global_parts_info.device_cloud_gateway_media_cloud_enhance_service) {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
-    external_deps +=
-        [ "media_cloud_enhance_service:media_cloud_enhance_client" ]
   }
 
   resource_config_file =

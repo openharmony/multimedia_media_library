@@ -51,9 +51,10 @@
 #undef protected
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-#include "media_enhance_client.h"
-#include "media_enhance_bundle.h"
-#include "media_enhance_constants.h"
+#include "media_enhance_constants_c_api.h"
+#include "media_enhance_handles.h"
+#include "media_enhance_client_c_api.h"
+#include "media_enhance_bundle_c_api.h"
 #endif
 
 using namespace std;
@@ -648,7 +649,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_cancel_tasks_internal_011, Te
     ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
 
     int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
-    EXPECT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING));
+    EXPECT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::EDIT));
 
     MEDIA_INFO_LOG("manager_cancel_tasks_internal_011 End");
 }
@@ -694,7 +695,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_add_service_task_014, TestSiz
 {
     MEDIA_INFO_LOG("manager_add_service_task_014 Start");
     EnhancementManager &instance = EnhancementManager::GetInstance();
-    MediaEnhanceBundle mediaEnhanceBundle;
+    MediaEnhanceBundleHandle* mediaEnhanceBundle = instance.enhancementService_->CreateBundle();
     int32_t fileId = PrepareHighQualityPhoto(TESTING_PHOTO_ID, TESTING_DISPLAYNAME);
     UpdateCEAvailable(fileId, 1);
     TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
@@ -703,6 +704,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_add_service_task_014, TestSiz
     int32_t ret = instance.AddServiceTask(mediaEnhanceBundle, fileId, TESTING_PHOTO_ID, true);
     EXPECT_NE(ret, 0);
     transactionOprn.Finish();
+    mediaEnhanceBundle = instance.enhancementService_->CreateBundle();
     ret = instance.AddServiceTask(mediaEnhanceBundle, fileId, TESTING_PHOTO_ID, false);
     EXPECT_EQ(ret, -1);
 
@@ -717,13 +719,14 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_add_service_task_014, TestSiz
 
     int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
     int32_t hasCloudWaterMark = GetInt32Val(PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, resultSet);
-    EXPECT_EQ(ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT), true);
+    EXPECT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
     EXPECT_EQ(hasCloudWaterMark, 0);
 
     string photoId = "202408302001001";
     string displayName = "test.jpg";
     fileId = PrepareHighQualityPhoto(photoId, displayName);
     UpdateCEAvailable(fileId, 1);
+    mediaEnhanceBundle = instance.enhancementService_->CreateBundle();
     ret = instance.AddServiceTask(mediaEnhanceBundle, fileId, TESTING_PHOTO_ID, true);
     EXPECT_EQ(ret, -1);
     MEDIA_INFO_LOG("manager_add_service_task_014 End");
@@ -762,7 +765,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_adapter_test_001, TestSiz
     int32_t ret = enhancementService_->LoadEnhancementService();
     EXPECT_EQ(ret, 0);
     string photoId = "202408302001001";
-    MediaEnhanceBundle bundle;
+    MediaEnhanceBundleHandle* bundle = enhancementService_->CreateBundle();
     ret = enhancementService_->AddTask(photoId, bundle);
     EXPECT_EQ(ret, -1);
     ret = enhancementService_->CancelTask(photoId);
@@ -781,63 +784,33 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_adapter_test_001, TestSiz
 HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_on_success_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("enhancement_callback_on_success_001 Start");
-    string taskId;
-    MediaEnhanceBundle bundle;
-    EnhancementServiceCallback *callback = new EnhancementServiceCallback();
-    callback->OnSuccess(taskId, bundle);
-    taskId = "202408302001001";
-    callback->OnSuccess(taskId, bundle);
-    vector<shared_ptr<RawData>> resultBuffers;
-    const uint8_t* buffer = BUFFER;
-    uint32_t size = static_cast<uint32_t>(sizeof(BUFFER));
-    shared_ptr<RawData> rawData = make_shared<RawData>(buffer, 0);
-    resultBuffers.push_back(rawData);
-    bundle.SetResultBuffers(resultBuffers);
-    callback->OnSuccess(taskId, bundle);
-    rawData = make_shared<RawData>(buffer, size);
-    resultBuffers = { rawData };
-    bundle.SetResultBuffers(resultBuffers);
-    int32_t fileId = PrepareHighQualityPhoto(taskId, TESTING_DISPLAYNAME);
-    callback->OnSuccess(taskId, bundle);
-    vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_NAME,
-        MediaColumn::MEDIA_HIDDEN, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_CE_AVAILABLE,
-        PhotoColumn::PHOTO_STRONG_ASSOCIATION, PhotoColumn::PHOTO_ASSOCIATE_FILE_ID};
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    ASSERT_NE(g_rdbStore, nullptr);
-    auto resultSet = g_rdbStore->Query(cmd, columns);
-    ASSERT_NE(resultSet, nullptr);
-    ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
-    fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-    int32_t hidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, resultSet);
-    int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-    int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
-    int32_t association = GetInt32Val(PhotoColumn::PHOTO_STRONG_ASSOCIATION, resultSet);
-    int32_t associateFileId = GetInt32Val(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, resultSet);
-    EXPECT_EQ(displayName.find("_enhanced") != string::npos, false);
-    EXPECT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
-    EXPECT_EQ(association, 0);
-    EXPECT_EQ(FileUtils::IsFileExist(filePath), true);
-    TestCloudEnhancementImage(columns, associateFileId, fileId, hidden, subtype);
+    const char* taskId = "";
+    shared_ptr<EnhancementServiceAdapter> enhancementService_ = make_shared<EnhancementServiceAdapter>();
+    MediaEnhanceBundleHandle* bundle = nullptr;
+    EnhancementServiceCallback::OnSuccess(taskId, bundle);
+    const char* taskId2 = "202408302001001";
+    EnhancementServiceCallback::OnSuccess(taskId2, bundle);
+    bundle = enhancementService_->CreateBundle();
+    EnhancementServiceCallback::OnSuccess(taskId2, bundle);
     MEDIA_INFO_LOG("enhancement_callback_on_success_001 End");
 }
 
 HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_save_cloud_enhancement_photo_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("enhancement_callback_save_cloud_enhancement_photo_002 Start");
-    EnhancementServiceCallback *callback = new EnhancementServiceCallback();
     string sourceDisplayName;
+    CloudEnhancementThreadTask task("", 0, nullptr, 0, true);
     int32_t sourceFileId = -1;
-    const uint8_t* buffer = BUFFER;
     uint32_t size = static_cast<uint32_t>(sizeof(BUFFER));
-    shared_ptr<RawData> rawData = make_shared<RawData>(buffer, 0);
+    uint8_t* buffer = new uint8_t[size];
+    for (uint32_t i = 0; i < size; i++) {
+        buffer[i] = BUFFER[i];
+    }
     string sourceFilePath;
     int32_t sourceSubtype = 0;
     shared_ptr<CloudEnhancementFileInfo> fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath,
         sourceDisplayName, sourceSubtype, 0);
-    int32_t ret = callback->SaveCloudEnhancementPhoto(fileInfo, *rawData);
+    int32_t ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task);
     EXPECT_EQ(ret, -1);
 
     string photoId = "202408302001001";
@@ -845,28 +818,34 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_save_cloud_enhan
     sourceDisplayName = "a.f";
     fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath,
         sourceDisplayName, sourceSubtype, 0);
-    ret = callback->SaveCloudEnhancementPhoto(fileInfo, *rawData);
+    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task);
     EXPECT_EQ(ret <= 0, true);
     sourceDisplayName = "test.jpg";
     fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath,
         sourceDisplayName, sourceSubtype, 0);
-    ret = callback->SaveCloudEnhancementPhoto(fileInfo, *rawData);
+    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task);
     EXPECT_EQ(ret, -1);
 
     string photoId2 = "202408302001002";
     sourceFileId = PrepareHighQualityPhoto(photoId2, TESTING_DISPLAYNAME);
-    rawData = make_shared<RawData>(buffer, size);
+    task.addr = buffer;
+    task.bytes = size;
     fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath,
         sourceDisplayName, sourceSubtype, 0);
-    ret = callback->SaveCloudEnhancementPhoto(fileInfo, *rawData);
+    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task);
     EXPECT_GT(ret, 0);
 
     string photoId3 = "202408302001003";
     sourceFileId = PrepareHighQualityPhoto(photoId3, "IMG_20240830_200151.jpg");
     sourceSubtype = 3;
+    buffer = new uint8_t[size];
+    for (uint32_t i = 0; i < size; i++) {
+        buffer[i] = BUFFER[i];
+    }
+    task.addr = buffer;
     fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath,
         sourceDisplayName, sourceSubtype, 0);
-    ret = callback->SaveCloudEnhancementPhoto(fileInfo, *rawData);
+    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task);
     EXPECT_GT(ret, 0);
     MEDIA_INFO_LOG("enhancement_callback_save_cloud_enhancement_photo_002 End");
 }
@@ -874,22 +853,21 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_save_cloud_enhan
 HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_create_cloud_enhancement_photo_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("enhancement_callback_create_cloud_enhancement_photo_003 Start");
-    EnhancementServiceCallback *callback = new EnhancementServiceCallback();
     string displayName = "test.";
     int32_t sourceFileId = -1;
     string filePath;
     shared_ptr<CloudEnhancementFileInfo> info = make_shared<CloudEnhancementFileInfo>(0, filePath, displayName,
         0, 0);
-    int32_t ret = callback->CreateCloudEnhancementPhoto(sourceFileId, info);
+    int32_t ret = EnhancementServiceCallback::CreateCloudEnhancementPhoto(sourceFileId, info);
     EXPECT_LT(ret, 0);
     displayName = "test.txt";
     info = make_shared<CloudEnhancementFileInfo>(0, filePath, displayName, 0, 0);
-    ret = callback->CreateCloudEnhancementPhoto(sourceFileId, info);
+    ret = EnhancementServiceCallback::CreateCloudEnhancementPhoto(sourceFileId, info);
     EXPECT_LT(ret, 0);
     TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
     int32_t errCode = transactionOprn.Start();
     ASSERT_EQ(errCode, E_OK);
-    ret = callback->CreateCloudEnhancementPhoto(sourceFileId, info);
+    ret = EnhancementServiceCallback::CreateCloudEnhancementPhoto(sourceFileId, info);
     transactionOprn.Finish();
     EXPECT_LT(ret, 0);
 
@@ -897,7 +875,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_create_cloud_enh
     string photoId = "202408302001001";
     sourceFileId = PrepareHighQualityPhoto(photoId, displayName);
     info = make_shared<CloudEnhancementFileInfo>(sourceFileId, filePath, displayName, 0, 0);
-    int32_t newFileId = callback->CreateCloudEnhancementPhoto(sourceFileId, info);
+    int32_t newFileId = EnhancementServiceCallback::CreateCloudEnhancementPhoto(sourceFileId, info);
     EXPECT_GT(newFileId, 0);
 
     vector<string> columns = {
@@ -920,19 +898,21 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_create_cloud_enh
 HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_on_failed_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("enhancement_callback_on_failed_004 Start");
-    EnhancementServiceCallback *callback = new EnhancementServiceCallback();
-    string taskId;
-    MediaEnhanceBundle bundle;
-    callback->OnFailed(taskId, bundle);
-    bundle.PutInt(MediaEnhanceBundleKey::ERROR_CODE, 0);
-    taskId = "202408302001001";
-    callback->OnFailed(taskId, bundle);
+    const char* taskId = "";
+    EnhancementManager &instance = EnhancementManager::GetInstance();
+    MediaEnhanceBundleHandle* bundle = instance.enhancementService_->CreateBundle();
+    EnhancementServiceCallback::OnFailed(taskId, bundle);
+    instance.enhancementService_->PutInt(bundle, MediaEnhance_Bundle_Key::ERROR_CODE, 0);
+    const char* taskId2 = "202408302001001";
+    EnhancementServiceCallback::OnFailed(taskId2, bundle);
 
-    bundle.PutInt(MediaEnhanceBundleKey::ERROR_CODE, static_cast<int32_t>(CEErrorCodeType::NETWORK_WEAK));
-    int32_t fileId = PrepareHighQualityPhoto(taskId, TESTING_DISPLAYNAME);
+    instance.enhancementService_->PutInt(bundle, MediaEnhance_Bundle_Key::ERROR_CODE,
+        static_cast<int32_t>(CEErrorCodeType::NETWORK_WEAK));
+    int32_t fileId = PrepareHighQualityPhoto(string(taskId2), TESTING_DISPLAYNAME);
     UpdateCEAvailable(fileId, 1);
     ASSERT_GT(fileId, 0);
-    callback->OnFailed(taskId, bundle);
+    EnhancementServiceCallback::OnFailed(taskId2, bundle);
+    this_thread::sleep_for(chrono::seconds(1));
 
     vector<string> columns = {
         PhotoColumn::PHOTO_CE_AVAILABLE
@@ -954,16 +934,16 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_on_failed_004, T
 HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_on_failed_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("enhancement_callback_on_failed_005 Start");
-    string taskId = "202408302001001";
-    MediaEnhanceBundle bundle;
-    EnhancementServiceCallback *callback = new EnhancementServiceCallback();
-
-    bundle.PutInt(MediaEnhanceBundleKey::ERROR_CODE, static_cast<int32_t>(CEErrorCodeType::NON_RECOVERABLE));
-    int32_t fileId = PrepareHighQualityPhoto(taskId, TESTING_DISPLAYNAME);
+    const char* taskId = "202408302001001";
+    EnhancementManager &instance = EnhancementManager::GetInstance();
+    MediaEnhanceBundleHandle* bundle = instance.enhancementService_->CreateBundle();
+    instance.enhancementService_->PutInt(bundle, MediaEnhance_Bundle_Key::ERROR_CODE,
+        static_cast<int32_t>(CEErrorCodeType::NON_RECOVERABLE));
+    int32_t fileId = PrepareHighQualityPhoto(string(taskId), TESTING_DISPLAYNAME);
     ASSERT_GT(fileId, 0);
     UpdateCEAvailable(fileId, 2);
-    callback->OnFailed(taskId, bundle);
-
+    EnhancementServiceCallback::OnFailed(taskId, bundle);
+    this_thread::sleep_for(chrono::seconds(1));
     vector<string> columns = {
         PhotoColumn::PHOTO_CE_AVAILABLE,
         PhotoColumn::PHOTO_CE_STATUS_CODE
@@ -987,11 +967,51 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_on_service_recon
 {
     MEDIA_INFO_LOG("enhancement_callback_on_service_reconnected_006 Start");
     int32_t fileId = PrepareHighQualityPhoto(TESTING_PHOTO_ID, TESTING_DISPLAYNAME);
-    EnhancementServiceCallback *callback = new EnhancementServiceCallback();
     UpdateCEAvailable(fileId, 2);
-    callback->OnServiceReconnected();
+    EnhancementServiceCallback::OnServiceReconnected();
     EXPECT_EQ(EnhancementTaskManager::InProcessingTask(TESTING_PHOTO_ID), false);
     MEDIA_INFO_LOG("enhancement_callback_on_service_reconnected_006 End");
+}
+
+HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_deal_with_successed_task_007, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enhancement_callback_deal_with_successed_task_007 Start");
+    CloudEnhancementThreadTask task("", 0, nullptr, 0, true);
+    EnhancementServiceCallback::DealWithSuccessedTask(task);
+    string taskId = "202408302001001";
+    int32_t fileId = PrepareHighQualityPhoto(taskId, TESTING_DISPLAYNAME);
+    task.taskId = taskId;
+    uint32_t size = static_cast<uint32_t>(sizeof(BUFFER));
+    uint8_t* buffer = new uint8_t[size];
+    for (uint32_t i = 0; i < size; i++) {
+        buffer[i] = BUFFER[i];
+    }
+    task.addr = buffer;
+    task.bytes = size;
+    EnhancementServiceCallback::DealWithSuccessedTask(task);
+    vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_NAME,
+        MediaColumn::MEDIA_HIDDEN, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_CE_AVAILABLE,
+        PhotoColumn::PHOTO_STRONG_ASSOCIATION, PhotoColumn::PHOTO_ASSOCIATE_FILE_ID};
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    ASSERT_NE(g_rdbStore, nullptr);
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    ASSERT_NE(resultSet, nullptr);
+    ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    int32_t hidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, resultSet);
+    int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
+    int32_t association = GetInt32Val(PhotoColumn::PHOTO_STRONG_ASSOCIATION, resultSet);
+    int32_t associateFileId = GetInt32Val(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, resultSet);
+    EXPECT_EQ(displayName.find("_enhanced") != string::npos, false);
+    EXPECT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
+    EXPECT_EQ(association, 0);
+    EXPECT_EQ(FileUtils::IsFileExist(filePath), true);
+    TestCloudEnhancementImage(columns, associateFileId, fileId, hidden, subtype);
+    MEDIA_INFO_LOG("enhancement_callback_deal_with_successed_task_007 End");
 }
 
 HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_database_operations_query_001, TestSize.Level1)
