@@ -53,6 +53,7 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "moving_photo_processor.h"
 #include "parameters.h"
 #include "parameter.h"
 #include "photo_album_column.h"
@@ -3296,6 +3297,23 @@ static void AddAnalysisAlbumTotalTable(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void CompatLivePhoto(RdbStore &store, int32_t oldVersion)
+{
+    bool ret = false;
+    // there is no need to ResetCursor() twice if album fusion is included
+    if (oldVersion >= VERSION_ADD_OWNER_ALBUM_ID) {
+        ret = system::SetParameter(REFRESH_CLOUD_LIVE_PHOTO_FLAG, CLOUD_LIVE_PHOTO_NOT_REFRESHED);
+        if (!ret) {
+            MEDIA_ERR_LOG("Failed to set parameter for refreshing cloud live photo");
+        }
+    }
+
+    ret = system::SetParameter(COMPAT_LIVE_PHOTO_FILE_ID, "1"); // start from file_id 1
+    if (!ret) {
+        MEDIA_ERR_LOG("Failed to set parameter for compating local live photo");
+    }
+}
+
 static void ResetCloudCursorAfterInitFinish()
 {
     MEDIA_INFO_LOG("Try reset cloud cursor after storage reconstruct");
@@ -3940,6 +3958,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
     }
     if (oldVersion < VERSION_ADD_HIGHLIGHT_MAP_TABLES) {
         AddHighlightMapTable(store);
+    }
+
+    if (oldVersion < VERSION_COMPAT_LIVE_PHOTO) {
+        CompatLivePhoto(store, oldVersion);
     }
 }
 
