@@ -75,6 +75,12 @@ config("media_data_extension_public_config") {
   include_dirs += include_dfx
   include_dirs += include_cloud_enhancement
 
+  if (defined(global_parts_info) &&
+      defined(
+          global_parts_info.device_cloud_gateway_media_cloud_enhance_service)) {
+    include_dirs += [ "${MEDIALIB_CLOUD_ENHANCEMENT_SERVICE_PATH}/interfaces/inner_api/include/c_api" ]
+  }
+
   ldflags = [ "-Wl,--gc-sections" ]
 
   cflags = [
@@ -213,6 +219,8 @@ ohos_shared_library("medialibrary_data_extension") {
   media_cloud_enhancement_source = [
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_service/enhancement_service_adapter.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/enhancement_database_operations.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/dynamic_loader.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/enhancement_thread_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_task_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/dfx/cloud_enhancement_dfx_get_count.cpp",
@@ -363,8 +371,6 @@ ohos_shared_library("medialibrary_data_extension") {
       defined(
           global_parts_info.device_cloud_gateway_media_cloud_enhance_service)) {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
-    external_deps +=
-        [ "media_cloud_enhance_service:media_cloud_enhance_client" ]
     sources += [ "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_service/enhancement_service_callback.cpp" ]
   }
 

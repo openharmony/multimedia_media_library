@@ -43,11 +43,8 @@
 #include "enhancement_database_operations.h"
 #undef private
 #undef protected
-
-#include "media_enhance_client.h"
-#include "media_enhance_bundle.h"
-#include "media_enhance_constants.h"
 #endif
+
 #include "media_datashare_stub_impl.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -166,11 +163,6 @@ static inline int32_t FuzzCEErrorCodeType(const uint8_t* data, size_t size)
     return static_cast<int32_t>(Media::CEErrorCodeType::NON_RECOVERABLE);
 }
 
-static void Init()
-{
-    const std::
-}
-
 static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
 {
     auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
@@ -204,15 +196,13 @@ static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
     return static_cast<int32_t>(fileId);
 }
 
-static MediaEnhance::MediaEnhanceBundle FuzzMediaEnhanceBundle(const uint8_t* data, size_t size, string photoId)
+static MediaEnhance::MediaEnhanceBundleHandle* FuzzMediaEnhanceBundle(const uint8_t* data, size_t size, string photoId)
 {
-    const uint8_t* buffer = Media::BUFFER;
-    shared_ptr<MediaEnhance::RawData> rawData = make_shared<MediaEnhance::RawData>(buffer, 0);
-    std::vector<shared_ptr<MediaEnhance::RawData>> resultBuffers = { rawData };
-    MediaEnhance::MediaEnhanceBundle bundle;
-    bundle.SetResultBuffers(resultBuffers);
-    bundle.PutInt(MediaEnhance::MediaEnhanceBundleKey::ERROR_CODE, FuzzCEErrorCodeType(data, size));
-    return bundle;
+    MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle
+        = Media::EnhancementManager::GetInstance().enhancementService_->CreateBundle();
+    Media::EnhancementManager::GetInstance().enhancementService_->PutInt(mediaEnhanceBundle,
+        MediaEnhance::MediaEnhance_Bundle_Key::ERROR_CODE, FuzzCEErrorCodeType(data, size));
+    return mediaEnhanceBundle;
 }
 #endif
 
@@ -241,7 +231,8 @@ static void EnhancementManagerTest(const uint8_t *data, size_t size)
     vector<string> columns = FuzzVectorString(data, size);
     Media::EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
 
-    MediaEnhance::MediaEnhanceBundle mediaEnhanceBundle;
+    MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle
+        = Media::EnhancementManager::GetInstance().enhancementService_->CreateBundle();
     Media::EnhancementManager::GetInstance().AddServiceTask(mediaEnhanceBundle, FuzzInt32(data, size),
         FuzzString(data, size), FuzzBool(data, size));
 }
@@ -284,7 +275,8 @@ static void EnhancementServiceAdpterTest(const uint8_t *data, size_t size)
     shared_ptr<Media::EnhancementServiceAdapter> enhancementService = make_shared<Media::EnhancementServiceAdapter>();
     enhancementService->LoadEnhancementService();
 
-    MediaEnhance::MediaEnhanceBundle mediaEnhanceBundle;
+    MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle
+        = Media::EnhancementManager::GetInstance().enhancementService_->CreateBundle();
     string photoId = FuzzString(data, size);
     enhancementService->AddTask(FuzzString(data, size), mediaEnhanceBundle);
     enhancementService->RemoveTask(FuzzString(data, size));
@@ -297,24 +289,27 @@ static void EnhancementServiceAdpterTest(const uint8_t *data, size_t size)
 
 static void EnhancementServiceCallbackTest(const uint8_t *data, size_t size)
 {
-    Media::EnhancementServiceCallback *callback = new Media::EnhancementServiceCallback();
-    callback->OnServiceReconnected();
+    Media::EnhancementServiceCallback::OnServiceReconnected();
 
     string photoId = FuzzString(data, size);
-    MediaEnhance::MediaEnhanceBundle bundle = FuzzMediaEnhanceBundle(data, size, photoId);
-    callback->OnSuccess(photoId, bundle);
+    MediaEnhance::MediaEnhanceBundleHandle* bundle = FuzzMediaEnhanceBundle(data, size, photoId);
+    Media::EnhancementServiceCallback::OnSuccess(photoId.c_str(), bundle);
+    string photoId = FuzzString(data, size);
+    MediaEnhance::MediaEnhanceBundleHandle* bundle = FuzzMediaEnhanceBundle(data, size, photoId);
+    Media::EnhancementServiceCallback::OnFailed(photoId.c_str(), bundle);
 
-    photoId = FuzzString(data, size);
-    bundle = FuzzMediaEnhanceBundle(data, size, photoId);
-    callback->OnFailed(photoId, bundle);
-
-    const uint8_t* buffer = Media::BUFFER;
-    shared_ptr<MediaEnhance::RawData> rawData = make_shared<MediaEnhance::RawData>(buffer, 0);
+    uint8_t* buffer = Media::BUFFER;
     string displayName = FuzzString(data, size) + ".jpg";
     int32_t hidden = FuzzBool(data, size) ? YES : NO;
     shared_ptr<Media::CloudEnhancementFileInfo> fileInfo = make_shared<Media::CloudEnhancementFileInfo>(
         FuzzInt32(data, size), FuzzString(data, size), displayName, FuzzPhotoSubType(data, size), hidden);
-    callback->SaveCloudEnhancementPhoto(fileInfo, *rawData);
+    Media::CloudEnhancementThreadTask task(FuzzString(data, size),
+        FuzzInt32(data, size), buffer, FuzzUInt32(data, size), FuzzBool(data, size));
+    Media::EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task);
+    Media::EnhancementServiceCallback::CreateCloudEnhancementPhoto(FuzzInt32(data, size), fileInfo);
+    Media::EnhancementServiceCallback::DealWithSuccessedTask(task);
+    Media::EnhancementServiceCallback::DealWithFailedTask(task);
+    Media::EnhancementServiceCallback::UpdateAlbumsForCloudEnhancement();
 }
 #endif
 } // namespace OHOS

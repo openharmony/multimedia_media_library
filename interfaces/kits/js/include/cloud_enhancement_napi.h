@@ -29,12 +29,6 @@
 #include "napi/native_node_api.h"
 #include "fetch_file_result_napi.h"
 
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-#include "media_enhance_client.h"
-#include "media_enhance_bundle.h"
-#include "media_enhance_constants.h"
-#endif
-
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -91,7 +85,6 @@ private:
     static thread_local napi_ref constructor_;
 };
 
-// todo
 struct CloudEnhancementAsyncContext : public NapiError {
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];
@@ -99,7 +92,6 @@ struct CloudEnhancementAsyncContext : public NapiError {
     napi_deferred deferred;
     napi_ref callbackRef;
 
-    // todo
     const int32_t UNDEFINED = -1;
     CloudEnhancementNapi* objectInfo;
     DataShare::DataSharePredicates predicates;
