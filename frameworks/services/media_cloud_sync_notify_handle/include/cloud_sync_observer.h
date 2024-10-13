@@ -16,6 +16,11 @@
 #ifndef FRAMEWORKS_SERVICES_CLOUD_SYNC_NOTIFY_HANDLE_INCLUDE_CLOUDE_SYNC_OBSERVER_H
 #define FRAMEWORKS_SERVICES_CLOUD_SYNC_NOTIFY_HANDLE_INCLUDE_CLOUDE_SYNC_OBSERVER_H
 
+#include <mutex>
+#include <string>
+
+#include <timer.h>
+
 #include "datashare_helper.h"
 #include "medialibrary_async_worker.h"
 #include "userfile_manager_types.h"
@@ -30,10 +35,17 @@ struct CloudSyncNotifyInfo {
 
 class CloudSyncObserver : public DataShare::DataShareObserver {
 public:
-    CloudSyncObserver() = default;
+    CloudSyncObserver();
     ~CloudSyncObserver() = default;
 
     void OnChange(const ChangeInfo &changeInfo) override;
+    void HandleIndex();
+
+    /* delayed trigger */
+    OHOS::Utils::Timer timer_;
+    uint32_t timerId_ = 0;
+    bool isPending_ = false;
+    std::mutex syncMutex_;
 };
 
 class CloudSyncNotifyData : public AsyncTaskData {

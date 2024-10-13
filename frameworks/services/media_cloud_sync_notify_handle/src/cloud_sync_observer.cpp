@@ -13,16 +13,23 @@
  * limitations under the License.
  */
 
+#include <vector>
+#include <string>
+
 #include "cloud_sync_observer.h"
 
 #include "cloud_sync_notify_handler.h"
+#include "media_analysis_helper.h"
+#include "medialibrary_unistore_manager.h"
+#include "media_column.h"
 #include "media_log.h"
+#include "result_set_utils.h"
 
 using namespace std;
 
 namespace OHOS {
 namespace Media {
-
+constexpr int32_t SYNC_INTERVAL = 10000;
 static void HandleCloudNotify(AsyncTaskData *data)
 {
     auto* taskData = static_cast<CloudSyncNotifyData*>(data);
@@ -30,9 +37,23 @@ static void HandleCloudNotify(AsyncTaskData *data)
     notifyHandler->MakeResponsibilityChain();
 }
 
+CloudSyncObserver::CloudSyncObserver() : timer_("CloudSyncObserver")
+{
+    timer_.Setup();
+}
+
 void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
 {
     CloudSyncNotifyInfo notifyInfo = {changeInfo.uris_, changeInfo.changeType_};
+    string uriString = notifyInfo.uris.front().ToString();
+    if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos && notifyInfo.type == ChangeType::OTHER) {
+        lock_guard<mutex> lock(syncMutex_);
+        if (!isPending_) {
+            timerId_ = timer_.Register(bind(&CloudSyncObserver::HandleIndex, this), SYNC_INTERVAL, true);
+            isPending_ = true;
+        }
+    }
+
     auto *taskData = new (nothrow) CloudSyncNotifyData(notifyInfo);
     if (taskData == nullptr) {
         MEDIA_ERR_LOG("Failed to new taskData");
@@ -48,6 +69,35 @@ void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
         HandleCloudNotify, taskData);
     if (notifyHandleAsyncTask != nullptr) {
         asyncWorker->AddTask(notifyHandleAsyncTask, true);
+    }
+}
+
+void CloudSyncObserver::HandleIndex()
+{
+    lock_guard<mutex> lock(syncMutex_);
+    std::vector<std::string> idToDeleteIndex;
+    MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+        static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_DELETE_INDEX), idToDeleteIndex);
+
+    //update index
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr!");
+        return;
+    }
+    const std::string queryIdToUpdateIndex = "SELECT file_id FROM tab_analysis_search_index WHERE photo_status = 2";
+    auto resultSetUpdateIndex = uniStore->QuerySql(queryIdToUpdateIndex);
+    if (resultSetUpdateIndex == nullptr) {
+        MEDIA_ERR_LOG("resultSetUpdateIndex is nullptr!");
+    }
+    std::vector<std::string> idToUpdateIndex;
+    while (resultSetUpdateIndex->GoToNextRow() == NativeRdb::E_OK) {
+        idToUpdateIndex.push_back(to_string(GetInt32Val("file_id", resultSetUpdateIndex)));
+    }
+    MEDIA_INFO_LOG("HandleIndex idToUpdateIndex size: %{public}zu", idToUpdateIndex.size());
+    if (!idToUpdateIndex.empty()) {
+        MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+            static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), idToUpdateIndex);
     }
 }
 } // namespace Media

@@ -16,6 +16,7 @@
 
 #include "photo_map_operations.h"
 
+#include "media_analysis_helper.h"
 #include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -107,6 +108,17 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
             to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::FAVORITE)
         });
+
+        MEDIA_INFO_LOG("AddPhotoAssets idToUpdateIndex size: %{public}zu", updateIds.size());
+        if (!updateIds.empty()) {
+            vector<string> idToUpdateIndex;
+            for (size_t i = 0; i < updateIds.size(); i++) {
+                idToUpdateIndex.push_back(to_string(updateIds[i]));
+            }
+            MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+                static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), idToUpdateIndex);
+        }
+
         auto watch = MediaLibraryNotify::GetInstance();
         for (const auto &id : updateIds) {
             string notifyUri = PhotoColumn::PHOTO_URI_PREFIX + to_string(id);
