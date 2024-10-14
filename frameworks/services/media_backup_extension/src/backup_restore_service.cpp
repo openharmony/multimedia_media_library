@@ -19,6 +19,7 @@
 #include "media_log.h"
 #include "clone_restore.h"
 #include "upgrade_restore.h"
+#include "others_clone_restore.h"
 
 namespace OHOS {
 namespace Media {
@@ -47,19 +48,23 @@ std::string GetDualDirName()
     return dualDirName;
 }
 
-void BackupRestoreService::Init(int32_t sceneCode, const std::string &galleryAppName, const std::string &mediaAppName,
-    const std::string &backupDir)
+void BackupRestoreService::Init(const RestoreEx &info)
 {
     if (restoreService_ != nullptr) {
         return;
     }
-    serviceBackupDir_ = backupDir;
-    if (sceneCode == UPGRADE_RESTORE_ID) {
-        restoreService_ = std::make_unique<UpgradeRestore>(galleryAppName, mediaAppName, UPGRADE_RESTORE_ID,
+    serviceBackupDir_ = info.backupDir;
+    if (info.sceneCode == UPGRADE_RESTORE_ID) {
+        restoreService_ = std::make_unique<UpgradeRestore>(info.galleryAppName, info.mediaAppName, UPGRADE_RESTORE_ID,
             GetDualDirName());
         serviceBackupDir_ = RESTORE_SANDBOX_DIR;
-    } else if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
-        restoreService_ = std::make_unique<UpgradeRestore>(galleryAppName, mediaAppName, DUAL_FRAME_CLONE_RESTORE_ID);
+    } else if (info.sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
+        restoreService_ = std::make_unique<UpgradeRestore>(info.galleryAppName, info.mediaAppName,
+            DUAL_FRAME_CLONE_RESTORE_ID);
+    } else if (info.sceneCode == I_PHONE_CLONE_RESTORE) {
+        restoreService_ = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE, info.bundleInfo);
+    } else if (info.sceneCode == OTHERS_PHONE_CLONE_RESTORE) {
+        restoreService_ = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE);
     } else {
         restoreService_ = std::make_unique<CloneRestore>();
     }
@@ -69,7 +74,7 @@ void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &ga
     const std::string &mediaAppName, const std::string &backupDir)
 {
     MEDIA_INFO_LOG("Start restore service: %{public}d", sceneCode);
-    Init(sceneCode, galleryAppName, mediaAppName, backupDir);
+    Init({sceneCode, galleryAppName, mediaAppName, backupDir, ""});
     if (restoreService_ == nullptr) {
         MEDIA_ERR_LOG("Create media restore service failed.");
         return;
@@ -77,11 +82,10 @@ void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &ga
     restoreService_->StartRestore(serviceBackupDir_, UPGRADE_FILE_DIR);
 }
 
-void BackupRestoreService::StartRestoreEx(int32_t sceneCode, const std::string &galleryAppName,
-    const std::string &mediaAppName, const std::string &backupDir, std::string &restoreExInfo)
+void BackupRestoreService::StartRestoreEx(const RestoreEx &info, std::string &restoreExInfo)
 {
-    MEDIA_INFO_LOG("Start restoreEx service: %{public}d", sceneCode);
-    Init(sceneCode, galleryAppName, mediaAppName, backupDir);
+    MEDIA_INFO_LOG("Start restoreEx service: %{public}d", info.sceneCode);
+    Init(info);
     if (restoreService_ == nullptr) {
         MEDIA_ERR_LOG("Create media restore service failed.");
         restoreExInfo = "";
@@ -98,7 +102,7 @@ void BackupRestoreService::GetBackupInfo(int32_t sceneCode, std::string &backupI
         backupInfo = "";
         return;
     }
-    Init(CLONE_RESTORE_ID);
+    Init({CLONE_RESTORE_ID, "", "", "", ""});
     if (restoreService_ == nullptr) {
         MEDIA_ERR_LOG("Create media restore service failed.");
         backupInfo = "";
