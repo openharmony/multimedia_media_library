@@ -69,6 +69,11 @@ static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
     return static_cast<int32_t>(*data);
 }
 
+static inline uint32_t FuzzUInt32(const uint8_t *data, size_t size)
+{
+    return static_cast<uint32_t>(*data);
+}
+
 static inline int32_t FuzzBool(const uint8_t *data, size_t size)
 {
     if (size % isEven == 0) {
@@ -294,8 +299,8 @@ static void EnhancementServiceCallbackTest(const uint8_t *data, size_t size)
     string photoId = FuzzString(data, size);
     MediaEnhance::MediaEnhanceBundleHandle* bundle = FuzzMediaEnhanceBundle(data, size, photoId);
     Media::EnhancementServiceCallback::OnSuccess(photoId.c_str(), bundle);
-    string photoId = FuzzString(data, size);
-    MediaEnhance::MediaEnhanceBundleHandle* bundle = FuzzMediaEnhanceBundle(data, size, photoId);
+    photoId = FuzzString(data, size);
+    bundle = FuzzMediaEnhanceBundle(data, size, photoId);
     Media::EnhancementServiceCallback::OnFailed(photoId.c_str(), bundle);
 
     uint8_t* buffer = Media::BUFFER;

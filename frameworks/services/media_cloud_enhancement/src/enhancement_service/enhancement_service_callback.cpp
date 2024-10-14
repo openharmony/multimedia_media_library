@@ -96,10 +96,10 @@ static int32_t SetAssetPathInCreate(FileAsset &fileAsset)
     return E_OK;
 }
 
-static int32_t checkAddrAndBytes(uint8_t *addr, uint32_t bytes)
+static int32_t checkAddrAndBytes(CloudEnhancementThreadTask& task)
 {
-    if (addr == nullptr || bytes == 0) {
-        MEDIA_ERR_LOG("addr is nullptr or bytes(%{public}u) is 0", bytes);
+    if (task.addr == nullptr || task.bytes == 0) {
+        MEDIA_ERR_LOG("task.addr is nullptr or task.bytes(%{public}u) is 0", task.bytes);
         delete[] task.addr;
         task.addr = nullptr;
         return E_ERR;
@@ -110,7 +110,7 @@ static int32_t checkAddrAndBytes(uint8_t *addr, uint32_t bytes)
 int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEnhancementFileInfo> info,
     CloudEnhancementThreadTask& task)
 {
-    CHECK_AND_RETURN_RET(checkAddrAndBytes(task.addr, task.bytes) == E_OK, E_ERR);
+    CHECK_AND_RETURN_RET(checkAddrAndBytes(task) == E_OK, E_ERR);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckDisplayName(info->displayName) == E_OK,
         E_ERR, "display name not valid");
     auto pos = info->displayName.rfind('.');
@@ -123,7 +123,7 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
         newDisplayName, info->subtype, info->hidden);
     newFileId = CreateCloudEnhancementPhoto(info->fileId, newFileInfo);
     CHECK_AND_RETURN_RET_LOG(newFileId > 0, newFileId, "insert file in db failed, error = %{public}d", newFileId);
-    int32_t ret = FileUtils::SaveImage(newFileInfo->filePath, (void*)(task.addr), static_cast<size_t>(bytes));
+    int32_t ret = FileUtils::SaveImage(newFileInfo->filePath, (void*)(task.addr), static_cast<size_t>(task.bytes));
     delete[] task.addr;
     task.addr = nullptr;
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "save cloud enhancement image failed. ret=%{public}d, errno=%{public}d",
