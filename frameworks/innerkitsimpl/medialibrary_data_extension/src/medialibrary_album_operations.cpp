@@ -1159,7 +1159,7 @@ void DealWithHighlightSdTable(const DataSharePredicates &predicates)
             continue;
         }
         
-        string highlightVideoPath = "/storage/cloud/files/media/highlight/video/" + to_string(mapAssetDestination);
+        string highlightVideoPath = "/storage/cloud/files/highlight/video/" + to_string(mapAssetDestination);
         MediaFileUtils::DeleteDir(highlightVideoPath);
  
         const std::string DELETE_ITEM_FROM_SD_MAP =
