@@ -248,19 +248,26 @@ static bool AppendValidOrderClause(MediaLibraryCommand &cmd, RdbPredicates &pred
     constexpr int32_t FIELD_IDX = 0;
     const auto &items = cmd.GetDataSharePred().GetOperationList();
     int32_t count = 0;
-    string columnName = " (" + MediaColumn::MEDIA_DATE_ADDED + ", " + MediaColumn::MEDIA_ID + ") ";
-    string value = " (SELECT " + MediaColumn::MEDIA_DATE_ADDED + ", " + MediaColumn::MEDIA_ID + " FROM " +
-        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " + photoId + ") ";
-    string whereClause = predicates.GetWhereClause();
+    string dateType;
+    string comparisonOperator;
     for (const auto &item : items) {
         if (item.operation == ORDER_BY_ASC) {
             count++;
-            whereClause += " AND " + columnName + " <= " + value;
+            dateType = static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_DATE_TAKEN ?
+                MediaColumn::MEDIA_DATE_TAKEN : MediaColumn::MEDIA_DATE_ADDED;
+            comparisonOperator = " <= ";
         } else if (item.operation == ORDER_BY_DESC) {
             count++;
-            whereClause += " AND " + columnName + " >= " + value;
+            dateType = static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_DATE_TAKEN ?
+                MediaColumn::MEDIA_DATE_TAKEN : MediaColumn::MEDIA_DATE_ADDED;
+            comparisonOperator = " >= ";
         }
     }
+    string columnName = " (" + dateType + ", " + MediaColumn::MEDIA_ID + ") ";
+    string value = " (SELECT " + dateType + ", " + MediaColumn::MEDIA_ID + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " + photoId + ") ";
+    string whereClause = predicates.GetWhereClause();
+    whereClause += " AND " + columnName + comparisonOperator + value;
     predicates.SetWhereClause(whereClause);
 
     // only support orderby with one item
