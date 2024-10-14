@@ -314,4 +314,15 @@ bool PhotosRestore::IsDuplicateData(const std::string &data)
     this->duplicateDataUsedCountMap_[data]++;
     return this->duplicateDataUsedCountMap_.at(data) > 1;
 }
+
+/**
+ * @brief Find PhotoQuality by FileInfo.
+ */
+int32_t PhotosRestore::FindPhotoQuality(const FileInfo &fileInfo)
+{
+    if (fileInfo.photoQuality == 1 && fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
+        return 0;
+    }
+    return fileInfo.photoQuality;
+}
 }  // namespace OHOS::Media
