@@ -40,6 +40,16 @@ const std::vector<MediaType> MediaType_FUZZER_LISTS = {
     MediaType::MEDIA_TYPE_DEFAULT,
 };
 
+const std::vector<std::string> MIMETYPE_FUZZER_LISTS = {
+    "image/jpeg",
+    "image/heif",
+};
+
+const std::vector<std::string> DISPLAY_NAME_EXTENSION_FUZZER_LISTS = {
+    ".jpg",
+    ".hif",
+};
+
 } // namespace Media
 } // namespace OHOS
 #endif

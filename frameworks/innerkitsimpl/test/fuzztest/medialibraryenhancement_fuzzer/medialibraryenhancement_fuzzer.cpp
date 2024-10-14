@@ -63,6 +63,7 @@ static const int32_t E_ERR = -1;
 static const string PHOTOS_TABLE = "Photos";
 static const string PHOTO_URI_PREFIX = "file://media/Photo/";
 static const string PHOTO_URI_PREFIX_UNDEDINED = "undedined/";
+std::shared_ptr<NativeRdb::RdbStore> g_rdbStore;
 
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
@@ -165,12 +166,7 @@ static inline int32_t FuzzCEErrorCodeType(const uint8_t* data, size_t size)
 
 static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
 {
-    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        return E_ERR;
-    }
-    auto rdbStorePtr = rdbStore->GetRaw();
-    if (rdbStorePtr == nullptr) {
+    if (g_rdbStore == nullptr) {
         return E_ERR;
     }
     NativeRdb::ValuesBucket values;
@@ -192,7 +188,7 @@ static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
         static_cast<int32_t>(FuzzCloudEnhancementAvailableType(data, size)));
 
     int64_t fileId = 0;
-    rdbStorePtr->Insert(fileId, PHOTOS_TABLE, values);
+    g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
     return static_cast<int32_t>(fileId);
 }
 
@@ -204,9 +200,40 @@ static MediaEnhance::MediaEnhanceBundleHandle* FuzzMediaEnhanceBundle(const uint
         MediaEnhance::MediaEnhance_Bundle_Key::ERROR_CODE, FuzzCEErrorCodeType(data, size));
     return mediaEnhanceBundle;
 }
+
+void SetTables()
+{
+    vector<string> createTableSqlList = { Media::PhotoColumn::CREATE_PHOTO_TABLE };
+    for (auto &createTableSql : createTableSqlList) {
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
 #endif
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+static void Init()
+{
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    abilityContextImpl->SetStageContext(stageContext);
+    int32_t sceneCode = 0;
+    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
+        abilityContextImpl, sceneCode);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
+
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr || rdbStore->GetRaw() == nullptr) {
+        return;
+    }
+    g_rdbStore = rdbStore->GetRaw();
+    SetTables();
+}
+
 static void EnhancementManagerTest(const uint8_t *data, size_t size)
 {
     int32_t fileId = InsertAsset(data, size, FuzzString(data, size));
@@ -317,6 +344,7 @@ static void EnhancementServiceCallbackTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    OHOS::Init();
     OHOS::EnhancementManagerTest(data, size);
     OHOS::EnhancementTaskManagerTest(data, size);
     OHOS::CloudEnhancementGetCountTest(data, size);
