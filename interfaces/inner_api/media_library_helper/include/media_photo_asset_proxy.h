@@ -58,17 +58,17 @@ public:
 
 private:
     void CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy);
-    static int SaveImage(int fd, const std::string &uri, const std::string &photoId, void *output, size_t writeSize);
-    static int PackAndSaveImage(int fd, const std::string &uri, const sptr<PhotoProxy> &photoProxy);
-    static int32_t UpdatePhotoQuality(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
+    EXPORT static int SaveImage(int fd, const std::string &uri, const std::string &photoId, void *output, size_t writeSize);
+    EXPORT static int PackAndSaveImage(int fd, const std::string &uri, const sptr<PhotoProxy> &photoProxy);
+    EXPORT static int32_t UpdatePhotoQuality(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
         const sptr<PhotoProxy> &photoProxy, int32_t fileId, int32_t subType);
-    static int SaveLowQualityPhoto(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
+    EXPORT static int SaveLowQualityPhoto(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
     const sptr<PhotoProxy> &photoProxy, int32_t fileId, int32_t subType);
-    static void DealWithLowQualityPhoto(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper, int fd,
+    EXPORT static void DealWithLowQualityPhoto(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper, int fd,
         const std::string &uri, const sptr<PhotoProxy> &photoProxy);
-    static void SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t size,
+    EXPORT static void SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t size,
         const sptr<PhotoProxy> &photoProxy, int fd);
-    static std::string LocationValueToString(double value);
+    EXPORT static std::string LocationValueToString(double value);
 
     sptr<PhotoProxy> photoProxy_;
     int32_t fileId_ {0};

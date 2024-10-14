@@ -19,16 +19,22 @@
 #include <string>
 #include <vector>
 
+#include "ability_context_impl.h"
 #include "medialibrary_app_uri_permission_operations.h"
 #include "medialibrary_app_uri_sensitive_operations.h"
 #include "datashare_predicates.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
 #include "media_column.h"
+#include "media_log.h"
 #include "medialibrary_command.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_operation.h"
 #include "medialibrary_photo_operations.h"
+#include "medialibrary_unistore.h"
+#include "medialibrary_unistore_manager.h"
+#include "rdb_store.h"
 #include "rdb_utils.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
@@ -40,6 +46,7 @@ const int32_t PERMISSION_DEFAULT = -1;
 const int32_t SENSITIVE_DEFAULT = -1;
 const int32_t URI_DEFAULT = 0;
 const int32_t BatchInsertNumber = 5;
+std::shared_ptr<NativeRdb::RdbStore> g_rdbStore;
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
     return static_cast<int32_t>(*data);
@@ -143,13 +150,51 @@ static void AppUriSensitiveOperationsFuzzer(const uint8_t* data, size_t size)
     int32_t uriType = FuzzUriType(data, size);
 
     HandleInsertOperationFuzzer(appId, photoId, sensitiveType, permissionType, uriType);
+    sensitiveType = FuzzHideSensitiveType(data, size);
+    HandleInsertOperationFuzzer(appId, photoId, sensitiveType, permissionType, uriType);
     DeleteOperationFuzzer(appId, photoId);
     BatchInsertFuzzer(data, size);
+}
+
+void SetTables()
+{
+    vector<string> createTableSqlList = {
+        Media::PhotoColumn::CREATE_PHOTO_TABLE,
+        Media::AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
+        Media::AppUriSensitiveColumn::CREATE_APP_URI_SENSITIVE_TABLE,
+    };
+    for (auto &createTableSql : createTableSqlList) {
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
+
+static void Init()
+{
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    abilityContextImpl->SetStageContext(stageContext);
+    int32_t sceneCode = 0;
+    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
+        abilityContextImpl, sceneCode);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
+
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr || rdbStore->GetRaw() == nullptr) {
+        return;
+    }
+    g_rdbStore = rdbStore->GetRaw();
+    SetTables();
 }
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
+    OHOS::Init();
     OHOS::AppUriSensitiveOperationsFuzzer(data, size);
     return 0;
 }
