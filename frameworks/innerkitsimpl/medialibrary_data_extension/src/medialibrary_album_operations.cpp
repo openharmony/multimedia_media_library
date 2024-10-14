@@ -1131,7 +1131,6 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 
 void DealWithHighlightSdTable(const DataSharePredicates &predicates)
 {
-    MEDIA_INFO_LOG("lzj##testDeleteHighlight00");
     RdbPredicates assetMapPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_ASSET_MAP_TABLE);
     const vector<string> &whereUriArgs = assetMapPredicates.GetWhereArgs();
     vector<string> whereIdArgs;
@@ -1146,7 +1145,6 @@ void DealWithHighlightSdTable(const DataSharePredicates &predicates)
  
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     for (auto assetId: assetMapPredicates.GetWhereArgs()) {
-        MEDIA_INFO_LOG("lzj##testDeleteHighlight02, fileid is: %{public}s", assetId.c_str());
         const std::string QUERY_FILE_ASSET_INFO =
             "SELECT * FROM tab_analysis_asset_sd_map WHERE map_asset_source = " + assetId;
         shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
@@ -1154,7 +1152,7 @@ void DealWithHighlightSdTable(const DataSharePredicates &predicates)
             MEDIA_ERR_LOG("Query not matched data fails on delete highlight video");
             continue;
         }
-        int32_t mapAssetIdIndex = 0;
+        int32_t mapAssetIdIndex;
         int32_t mapAssetDestination = 0;
         resultSet->GetColumnIndex(MAP_ASSET_DESTINATION, mapAssetIdIndex);
         if (resultSet->GetInt(mapAssetIdIndex, mapAssetDestination) != NativeRdb::E_OK) {

@@ -124,6 +124,8 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { USER_PHOTOGRAPHY_INFO_TABLE, OperationObject::USER_PHOTOGRAPHY },
         { PAH_HIGHLIGHT_COVER, OperationObject::STORY_COVER },
         { PAH_HIGHLIGHT_PLAY, OperationObject::STORY_PLAY },
+        { PAH_ANA_ASSET_SD, OperationObject::ANALYSIS_ASSET_SD_MAP },
+        { PAH_ANA_ALBUM_ASSET, OperationObject::ANALYSIS_ALBUM_ASSET_MAP },
 
         // others
         { MISC_OPERATION, OperationObject::MISCELLANEOUS },
