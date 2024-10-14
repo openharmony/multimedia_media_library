@@ -311,6 +311,7 @@ struct FileInfo {
      */
     int32_t isRelatedToPhotoMap = 0;
     bool needMove {true};
+    int32_t photoQuality;
 };
 
 struct AlbumInfo {
