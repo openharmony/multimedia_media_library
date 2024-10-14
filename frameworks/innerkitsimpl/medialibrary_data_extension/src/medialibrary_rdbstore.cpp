@@ -3092,8 +3092,6 @@ int32_t MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(RdbStore &sto
 void AddHighlightMapTable(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
-        "DROP TABLE IF EXISTS tab_analysis_asset_sd_map",
-        "DROP TABLE IF EXISTS tab_analysis_album_asset_map",
         CREATE_ANALYSIS_ASSET_SD_MAP_TABLE,
         CREATE_ANALYSIS_ALBUM_ASET_MAP_TABLE,
         "ALTER TABLE " + HIGHLIGHT_PLAY_INFO_TABLE + " ADD COLUMN " + HIGHLIGHTING_ALGO_VERSION + " TEXT",
