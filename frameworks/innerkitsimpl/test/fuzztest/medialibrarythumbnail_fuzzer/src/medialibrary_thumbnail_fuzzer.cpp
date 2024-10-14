@@ -203,7 +203,6 @@ static void ThumbnailGenerateHelperTest(const uint8_t* data, size_t size)
     Media::ThumbnailGenerateHelper::CreateAstcBackground(opts);
     Media::ThumbnailGenerateHelper::CreateAstcCloudDownload(opts, FuzzBool(data, size));
     RdbPredicates predicates(PHOTOS_TABLE);
-    Media::ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, predicates, FuzzInt32(data));
     Media::ThumbnailGenerateHelper::CreateLcdBackground(opts);
     int32_t outLcdCount;
     Media::ThumbnailGenerateHelper::GetLcdCount(opts, outLcdCount);
@@ -294,7 +293,6 @@ static void ThumhnailTest(const uint8_t* data, size_t size)
     Media::ThumbnailService::GetInstance()->CreateThumbnailFileScaned(FuzzString(data, size),
         FuzzString(data, size), FuzzInt32(data));
     NativeRdb::RdbPredicates rdbPredicate("Photos");
-    Media::ThumbnailService::GetInstance()->CreateAstcBatchOnDemand(rdbPredicate, FuzzInt32(data));
     Media::ThumbnailService::GetInstance()->CancelAstcBatchTask(FuzzInt32(data));
     Media::ThumbnailService::GetInstance()->GenerateThumbnailBackground();
     Media::ThumbnailService::GetInstance()->UpgradeThumbnailBackground(false);
