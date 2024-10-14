@@ -657,6 +657,7 @@ void SendableMediaLibraryNapiUtils::InvokeJSAsyncMethod(napi_env env, napi_defer
         napi_get_reference_value(env, callbackRef, &callback);
         napi_call_function(env, nullptr, callback, ARGS_TWO, result, &retVal);
         napi_delete_reference(env, callbackRef);
+        callbackRef = nullptr;
     }
     napi_delete_async_work(env, work);
 }

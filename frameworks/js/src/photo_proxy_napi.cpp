@@ -31,6 +31,7 @@ PhotoProxyNapi::~PhotoProxyNapi()
     NAPI_DEBUG_LOG("~PhotoProxyNapi is called");
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
+        wrapper_ = nullptr;
     }
     if (photoProxy_) {
         photoProxy_ = nullptr;
