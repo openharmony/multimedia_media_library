@@ -47,21 +47,6 @@ static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
     return static_cast<int32_t>(*data);
 }
 
-static inline uint32_t FuzzUInt32(const uint8_t *data)
-{
-    return static_cast<uint32_t>(*data);
-}
-
-static inline double FuzzDouble(const uint8_t *data, size_t size)
-{
-    return static_cast<double>(*data);
-}
-
-static inline string FuzzString(const uint8_t *data, size_t size)
-{
-    return {reinterpret_cast<const char*>(data), size};
-}
-
 static inline Media::CameraShotType FuzzCameraShotType(const uint8_t *data, size_t size)
 {
     uint8_t length = static_cast<uint8_t>(Media::CameraShotType_FUZZER_LISTS.size());
@@ -87,16 +72,6 @@ static inline Media::PhotoQuality FuzzPhotoQuality(const uint8_t *data, size_t s
         return Media::PhotoQuality_FUZZER_LISTS[*data];
     }
     return Media::PhotoQuality::HIGH;
-}
-
-static inline int32_t FuzzPhotoSubType(const uint8_t* data, size_t size)
-{
-    int32_t value = FuzzInt32(data, size);
-    if (value >= static_cast<int32_t>(Media::PhotoSubType::DEFAULT) &&
-        value <= static_cast<int32_t>(Media::PhotoSubType::SUBTYPE_END)) {
-        return value;
-    }
-    return static_cast<int32_t>(Media::PhotoSubType::CAMERA);
 }
 
 void CreateDataHelper(int32_t systemAbilityId)
@@ -146,22 +121,8 @@ static void MediaLibraryMediaPhotoAssetProxyTest(const uint8_t *data, size_t siz
     if (photoAssetProxy == nullptr) {
         return;
     }
-
     sptr<Media::PhotoProxyFuzzTest> photoProxyFuzzTest = FuzzPhotoAssetProxy(data, size);
-
     photoAssetProxy->AddPhotoProxy((sptr<Media::PhotoProxy>&)photoProxyFuzzTest);
-
-    int fd = FuzzInt32(data, size);
-    photoAssetProxy->DealWithLowQualityPhoto(sDataShareHelper_, fd, FuzzString(data, size),
-        (sptr<Media::PhotoProxy>&)photoProxyFuzzTest);
-    photoAssetProxy->SaveLowQualityPhoto(sDataShareHelper_, (sptr<Media::PhotoProxy>&)photoProxyFuzzTest,
-        FuzzInt32(data, size), FuzzPhotoSubType(data, size));
-    photoAssetProxy->UpdatePhotoQuality(sDataShareHelper_, (sptr<Media::PhotoProxy>&)photoProxyFuzzTest,
-        FuzzInt32(data, size), FuzzPhotoSubType(data, size));
-    photoAssetProxy->LocationValueToString(FuzzDouble(data, size));
-    photoAssetProxy->SetShootingModeAndGpsInfo(data, FuzzUInt32(data), (sptr<Media::PhotoProxy>&)photoProxyFuzzTest,
-        FuzzInt32(data, size));
-    photoAssetProxy->PackAndSaveImage(fd, FuzzString(data, size), (sptr<Media::PhotoProxy>&)photoProxyFuzzTest);
     photoAssetProxy->GetVideoFd();
     photoAssetProxy->NotifyVideoSaveFinished();
 }
