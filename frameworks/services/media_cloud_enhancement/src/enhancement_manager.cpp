@@ -51,7 +51,7 @@ const string CLOUD_WATER_MARK_INFO = "cloudWaterMarkInfo";
 const int32_t NO = 0;
 const int32_t YES = 1;
 const string JPEG_STR = "image/jpeg";
-const string HEIF_STR = "image/heif";
+const string HEIF_STR = "image/heic";
 const string JPEG_TYPE = "JPEG";
 const string HEIF_TYPE = "HEIF";
 const unordered_map<string, string> CLOUD_ENHANCEMENT_MIME_TYPE_MAP = {
@@ -559,7 +559,7 @@ int32_t EnhancementManager::HandleCancelOperation(MediaLibraryCommand &cmd)
             static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING));
         ValuesBucket rdbValues;
         rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
-        ret = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates);
+        int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates);
         if (ret != E_OK) {
             MEDIA_ERR_LOG("update ce_available error, photoId: %{public}s", photoId.c_str());
             continue;
@@ -577,7 +577,7 @@ int32_t EnhancementManager::HandleCancelOperation(MediaLibraryCommand &cmd)
 int32_t EnhancementManager::HandleCancelAllOperation()
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    CHECK_AND_RETURN_LOG(LoadService(), E_ERR, "Load Service Error");
+    CHECK_AND_RETURN_RET_LOG(LoadService(), E_ERR, "Load Service Error");
     int32_t ret = enhancementService_->CancelAllTasks();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "cancel all tasks failed: enhancment service error");
     vector<string> taskIds;
