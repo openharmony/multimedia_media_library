@@ -79,6 +79,7 @@ const std::string CREATE_HIGHLIGHT_COVER_INFO_TABLE =
     BACKGROUND_RECT_HEIGHT + " REAL, " +
     LAYOUT_INDEX + " INT, " +
     COVER_ALGO_VERSION + " INT, " +
+    COVER_SERVICE_VERSION + " INT DEFAULT 0, " +
     COVER_KEY + " TEXT, " +
     "PRIMARY KEY (" + ALBUM_ID + "," + RATIO + ")) ";
 
@@ -91,6 +92,7 @@ const std::string CREATE_HIGHLIGHT_PLAY_INFO_TABLE =
     HIGHLIGHT_PLAY_INFO + " TEXT, " +
     IS_CHOSEN + " BOOL, " +
     PLAY_INFO_VERSION + " INT, " +
+    PLAY_SERVICE_VERSION + " INT DEFAULT 0, " +
     "PRIMARY KEY (" + ALBUM_ID + "," + PLAY_INFO_ID + ")) ";
 
 const std::string CREATE_USER_PHOTOGRAPHY_INFO_TABLE =
