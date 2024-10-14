@@ -1159,13 +1159,19 @@ void DealWithHighlightSdTable(const DataSharePredicates &predicates)
             continue;
         }
         
-        string highlightVideoPath = "file://media/highlight/video/" + to_string(mapAssetDestination);
-        MediaFileUtils::DeleteFile(highlightVideoPath);
+        string highlightVideoPath = "storage/cloud/files/media/highlight/video/" + to_string(mapAssetDestination);
+        MediaFileUtils::DeleteDir(highlightVideoPath);
  
         const std::string DELETE_ITEM_FROM_SD_MAP =
-            "DELETE FROM tab_analysis_asset_sd_map WHERE map_asset_source = " + assetId + "; " +
-            "DELETE FROM tab_analysis_album_asset_map WHERE map_asset = " + assetId;
+            "DELETE FROM tab_analysis_asset_sd_map WHERE map_asset_source = " + assetId;
         int32_t ret = rdbStore->ExecuteSql(DELETE_ITEM_FROM_SD_MAP);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("DELETE highlight video failed, id is: %{public}s", assetId.c_str());
+            continue;
+        }
+        const std:string DELETE_ITEM_FROM_ALBUM_MAP =
+                "DELETE FROM tab_analysis_album_asset_map WHERE map_asset = " + assetId;
+        int32_t ret = rdbStore->ExecuteSql(DELETE_ITEM_FROM_ALBUM_MAP);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("DELETE highlight video failed, id is: %{public}s", assetId.c_str());
             continue;
