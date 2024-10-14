@@ -208,6 +208,14 @@ std::vector<PhotosDao::PhotosRowData> PhotosClone::FindDuplicateBurstKey()
     return result;
 }
 
+int32_t PhotosClone::FindPhotoQuality(const FileInfo &fileInfo)
+{
+    if (fileInfo.photoQuality == 1 && fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
+        return 0;
+    }
+    return fileInfo.photoQuality;
+}
+
 std::string PhotosClone::ToString(const std::vector<NativeRdb::ValueObject> &values)
 {
     std::vector<std::string> result;
