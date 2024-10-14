@@ -26,7 +26,10 @@ ohos_fuzztest("MediaLibraryThumbnailFuzzTest") {
 
   sources = [ "src/medialibrary_thumbnail_fuzzer.cpp" ]
 
-  deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
 
   external_deps = [
     "ability_base:configuration",
@@ -42,6 +45,7 @@ ohos_fuzztest("MediaLibraryThumbnailFuzzTest") {
     "ability_runtime:runtime",
     "ability_runtime:uri_permission_mgr",
     "access_token:libaccesstoken_sdk",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
@@ -58,6 +62,7 @@ ohos_fuzztest("MediaLibraryThumbnailFuzzTest") {
     "image_framework:image_native",
     "init:libbegetutil",
     "ipc:ipc_core",
+    "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "player_framework:media_client",

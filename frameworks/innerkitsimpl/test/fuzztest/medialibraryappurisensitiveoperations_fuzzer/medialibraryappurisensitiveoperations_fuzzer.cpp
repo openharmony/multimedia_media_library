@@ -143,6 +143,8 @@ static void AppUriSensitiveOperationsFuzzer(const uint8_t* data, size_t size)
     int32_t uriType = FuzzUriType(data, size);
 
     HandleInsertOperationFuzzer(appId, photoId, sensitiveType, permissionType, uriType);
+    sensitiveType = FuzzHideSensitiveType(data, size);
+    HandleInsertOperationFuzzer(appId, photoId, sensitiveType, permissionType, uriType);
     DeleteOperationFuzzer(appId, photoId);
     BatchInsertFuzzer(data, size);
 }

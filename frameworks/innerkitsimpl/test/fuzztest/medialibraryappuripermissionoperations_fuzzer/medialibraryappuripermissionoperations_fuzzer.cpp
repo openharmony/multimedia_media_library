@@ -19,15 +19,21 @@
 #include <string>
 #include <vector>
 
+#include "ability_context_impl.h"
 #include "medialibrary_app_uri_permission_operations.h"
 #include "datashare_predicates.h"
 #include "media_app_uri_permission_column.h"
 #include "media_column.h"
 #include "media_file_utils.h"
+#include "media_log.h"
 #include "medialibrary_command.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_operation.h"
 #include "medialibrary_photo_operations.h"
+#include "medialibrary_unistore.h"
+#include "medialibrary_unistore_manager.h"
+#include "rdb_store.h"
 #include "rdb_utils.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
@@ -38,6 +44,8 @@ using namespace DataShare;
 const int32_t PERMISSION_DEFAULT = -1;
 const int32_t URI_DEFAULT = 0;
 const int32_t BatchInsertNumber = 5;
+static const int32_t E_ERR = -1;
+std::shared_ptr<NativeRdb::RdbStore> g_rdbStore;
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
     return static_cast<int32_t>(*data);
@@ -74,6 +82,36 @@ static int FuzzUriType(const uint8_t *data, size_t size)
     return Media::AppUriPermissionColumn::URI_PHOTO;
 }
 
+static inline void FuzzMimeTypeAndDisplayNameExtension(const uint8_t *data, size_t size, string &mimeType,
+    string &displayName)
+{
+    uint8_t length = static_cast<uint8_t>(Media::DISPLAY_NAME_EXTENSION_FUZZER_LISTS.size());
+    if (*data < length) {
+        mimeType = Media::MIMETYPE_FUZZER_LISTS[*data];
+        displayName = FuzzString(data, size) + Media::DISPLAY_NAME_EXTENSION_FUZZER_LISTS[*data];
+    }
+}
+
+static int32_t InsertPhotoAsset(const uint8_t *data, size_t size, int32_t photoId)
+{
+    if (g_rdbStore == nullptr) {
+        return E_ERR;
+    }
+    NativeRdb::ValuesBucket values;
+    values.PutInt(Media::PhotoColumn::PHOTO_ID, photoId);
+    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
+
+    string mimeType = "undefined";
+    string displayName = ".undefined";
+    FuzzMimeTypeAndDisplayNameExtension(data, size, mimeType, displayName);
+    values.PutString(Media::MediaColumn::MEDIA_NAME, displayName);
+    values.PutString(Media::MediaColumn::MEDIA_MIME_TYPE, mimeType);
+
+    int64_t fileId = 0;
+    g_rdbStore->Insert(fileId, Media::PhotoColumn::PHOTOS_TABLE, values);
+    return static_cast<int32_t>(fileId);
+}
+
 static void HandleInsertOperationFuzzer(string appId, int32_t photoId, int32_t permissionType, int32_t uriType)
 {
     DataShareValuesBucket values;
@@ -105,9 +143,10 @@ static void BatchInsertFuzzer(const uint8_t* data, size_t size)
     for (int32_t i = 0; i < BatchInsertNumber; i++) {
         DataShareValuesBucket value;
         int32_t photoId = FuzzInt32(data, size);
+        int32_t fileId = InsertPhotoAsset(data, size, photoId);
         string appId = FuzzString(data, size);
         value.Put(Media::AppUriPermissionColumn::APP_ID, appId);
-        value.Put(Media::AppUriPermissionColumn::FILE_ID, photoId);
+        value.Put(Media::AppUriPermissionColumn::FILE_ID, fileId);
         int32_t permissionType = FuzzPermissionType(data, size);
         value.Put(Media::AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
         int32_t uriType = FuzzUriType(data, size);
@@ -122,18 +161,57 @@ static void BatchInsertFuzzer(const uint8_t* data, size_t size)
 static void AppUriPermissionOperationsFuzzer(const uint8_t* data, size_t size)
 {
     int32_t photoId = FuzzInt32(data, size);
+    int32_t fileId = InsertPhotoAsset(data, size, photoId);
     string appId = FuzzString(data, size);
     int32_t permissionType = FuzzPermissionType(data, size);
     int32_t uriType = FuzzUriType(data, size);
-
-    HandleInsertOperationFuzzer(appId, photoId, permissionType, uriType);
+    HandleInsertOperationFuzzer(appId, fileId, permissionType, uriType);
+    permissionType = FuzzPermissionType(data, size);
+    HandleInsertOperationFuzzer(appId, fileId, permissionType, uriType);    // if exit, run UpdatePermissionType();
     DeleteOperationFuzzer(appId, photoId, permissionType);
+
     BatchInsertFuzzer(data, size);
+}
+
+void SetTables()
+{
+    vector<string> createTableSqlList = {
+        Media::PhotoColumn::CREATE_PHOTO_TABLE,
+        Media::AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
+        Media::AppUriSensitiveColumn::CREATE_APP_URI_SENSITIVE_TABLE,
+    };
+    for (auto &createTableSql : createTableSqlList) {
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
+
+static void Init()
+{
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    abilityContextImpl->SetStageContext(stageContext);
+    int32_t sceneCode = 0;
+    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
+        abilityContextImpl, sceneCode);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
+
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr || rdbStore->GetRaw() == nullptr) {
+        return;
+    }
+    g_rdbStore = rdbStore->GetRaw();
+    SetTables();
 }
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
+    OHOS::Init();
     OHOS::AppUriPermissionOperationsFuzzer(data, size);
     return 0;
 }
