@@ -6583,6 +6583,7 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
         { "ANALYSIS_HUMAN_FACE_TAG", AnalysisType::ANALYSIS_HUMAN_FACE_TAG },
         { "ANALYSIS_HEAD_POSITION", AnalysisType::ANALYSIS_HEAD_POSITION },
         { "ANALYSIS_BONE_POSE", AnalysisType::ANALYSIS_BONE_POSE },
+        { "ANALYSIS_MULTI_CROP", AnalysisType::ANALYSIS_MULTI_CROP },
     };
 
     napi_value result = nullptr;
