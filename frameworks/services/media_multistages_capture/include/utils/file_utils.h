@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,6 +33,8 @@ public:
         const std::string &mime_type, bool isEdited = false);
     EXPORT static int DealPicture(const std::string &mime_type, const std::string &path,
         std::shared_ptr<Media::Picture> &picture);
+    EXPORT static int32_t SaveVideo(const std::string &filePath, bool isEdited = false);
+    EXPORT static int32_t DeleteTempVideoFile(const std::string &filePath);
 
 private:
     EXPORT static int DeleteFile(const std::string &fileName);

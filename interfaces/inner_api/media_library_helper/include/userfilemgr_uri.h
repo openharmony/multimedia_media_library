@@ -88,6 +88,7 @@ const std::string OPRN_ENHANCEMENT_CANCEL_ALL = "cancel_all_enhancement";
 const std::string OPRN_ENHANCEMENT_SYNC = "sync_all_enhancement";
 const std::string OPRN_ENHANCEMENT_QUERY = "query_enhancement";
 const std::string OPRN_ENHANCEMENT_GET_PAIR = "get_pair_enhancement";
+const std::string OPRN_SET_VIDEO_ENHANCEMENT_ATTR = "set_video_enhancement_attr";
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
 const std::string MEDIA_PHOTOOPRN = "photo_operation";
@@ -282,6 +283,13 @@ const std::string PAH_CANCEL_PROCESS_IMAGE =
     MEDIALIBRARY_DATA_URI + "/" + PAH_MULTISTAGES_CAPTURE + "/" + OPRN_CANCEL_PROCESS_IMAGE;
 const std::string PAH_REMOVE_MSC_TASK =
     MEDIALIBRARY_DATA_URI + "/" + PAH_MULTISTAGES_CAPTURE + "/" + OPRN_REMOVE_MSC_TASK;
+
+// Video
+const std::string PAH_VIDEO = "video_operation";
+ 
+// Video
+const std::string PAH_SET_VIDEO_ENHANCEMENT_ATTR =
+    MEDIALIBRARY_DATA_URI + "/" + PAH_VIDEO + "/" + OPRN_SET_VIDEO_ENHANCEMENT_ATTR;
 
 // Generate thumbnails in batches operation uri
 const std::string PAH_START_GENERATE_THUMBNAILS =

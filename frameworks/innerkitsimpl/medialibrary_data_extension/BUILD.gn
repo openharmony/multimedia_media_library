@@ -75,6 +75,12 @@ config("media_data_extension_public_config") {
   include_dirs += include_dfx
   include_dirs += include_cloud_enhancement
 
+  if (defined(global_parts_info) &&
+      defined(
+          global_parts_info.device_cloud_gateway_media_cloud_enhance_service)) {
+    include_dirs += [ "${MEDIALIB_CLOUD_ENHANCEMENT_SERVICE_PATH}/interfaces/inner_api/include/c_api" ]
+  }
+
   ldflags = [ "-Wl,--gc-sections" ]
 
   cflags = [
@@ -159,8 +165,10 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_utils.cpp",
   ]
 
-  media_cloud_sync_source =
-      [ "${MEDIALIB_CLOUD_SYNC_PATH}/src/cloud_sync_helper.cpp" ]
+  media_cloud_sync_source = [
+    "${MEDIALIB_CLOUD_SYNC_PATH}/src/cloud_sync_helper.cpp",
+    "${MEDIALIB_CLOUD_SYNC_PATH}/src/cloud_sync_switch_observer.cpp",
+  ]
 
   media_rdb_utils_source = [
     "src/medialibrary_rdb_utils.cpp",
@@ -168,7 +176,8 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   media_multistages_capture_source = [
-    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/deferred_processing_adapter.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/deferred_photo_proc_adapter.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/deferred_video_proc_adapter.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_first_visit.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_request_policy.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_result.cpp",
@@ -179,6 +188,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/file_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/multistages_capture_request_task_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_capture_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_photo_capture_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_video_capture_manager.cpp",
   ]
 
   media_dfx_source = [
@@ -213,6 +224,8 @@ ohos_shared_library("medialibrary_data_extension") {
   media_cloud_enhancement_source = [
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_service/enhancement_service_adapter.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/enhancement_database_operations.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/dynamic_loader.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/enhancement_thread_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_task_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/dfx/cloud_enhancement_dfx_get_count.cpp",
@@ -363,8 +376,6 @@ ohos_shared_library("medialibrary_data_extension") {
       defined(
           global_parts_info.device_cloud_gateway_media_cloud_enhance_service)) {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
-    external_deps +=
-        [ "media_cloud_enhance_service:media_cloud_enhance_client" ]
     sources += [ "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_service/enhancement_service_callback.cpp" ]
   }
 
@@ -373,7 +384,10 @@ ohos_shared_library("medialibrary_data_extension") {
       global_parts_info.multimedia_camera_framework) {
     defines += [ "ABILITY_CAMERA_SUPPORT" ]
     external_deps += [ "camera_framework:camera_framework" ]
-    sources += [ "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_proc_session_callback.cpp" ]
+    sources += [
+      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_photo_proc_session_callback.cpp",
+      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_video_proc_session_callback.cpp",
+    ]
   }
 
   if (!media_library_link_opt) {

@@ -134,6 +134,10 @@ const std::vector<std::string> watermarkTypeEnum {
     "DEFAULT", "BRAND_COMMON", "COMMON", "BRAND"
 };
 
+const std::vector<std::string> videoEnhancementTypeEnum {
+    "QUALITY_ENHANCEMENT_LOCAL", "QUALITY_ENHANCEMENT_CLOUD", "QUALITY_ENHANCEMENT_LOCAL_AND_CLOUD"
+};
+
 const std::vector<std::pair<std::string, std::string>> FILE_KEY_ENUM_PROPERTIES = {
     std::make_pair("ID",                        MEDIA_DATA_DB_ID),
     std::make_pair("RELATIVE_PATH",             MEDIA_DATA_DB_RELATIVE_PATH),

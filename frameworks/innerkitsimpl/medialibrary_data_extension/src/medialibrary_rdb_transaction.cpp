@@ -83,8 +83,8 @@ int32_t TransactionOperations::PrepareForTransaction(bool isUpgrade)
             this_thread::sleep_for(chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
             if (isInTransaction_.load() || rdbStore_->IsInTransaction()) {
                 curTryTime++;
-                MEDIA_INFO_LOG("RdbStore is in transaction, the first:%{public}d, the second:%{public}d, \
-                    try %{public}d times...", isInTransaction_.load(), rdbStore_->IsInTransaction(), curTryTime);
+                MEDIA_INFO_LOG("RdbStore is in transaction, the first:%{public}d, try %{public}d times...",
+                    isInTransaction_.load(), curTryTime);
                 continue;
             }
         }
@@ -107,7 +107,7 @@ int32_t TransactionOperations::PrepareForTransaction(bool isUpgrade)
         }
         if (errCode == NativeRdb::E_SQLITE_LOCKED || errCode == NativeRdb::E_DATABASE_BUSY) {
             curTryTime++;
-            MEDIA_ERR_LOG("Sqlite database file is locked! try %{public}d times...", curTryTime);
+            MEDIA_ERR_LOG(" Sqllite locked! errorCode is:%{public}d, try %{public}d times...", errCode, curTryTime);
             continue;
         } else {
             MEDIA_ERR_LOG("Start Transaction failed, errCode=%{public}d", errCode);
@@ -152,10 +152,11 @@ int32_t TransactionOperations::TransactionCommit()
             if (errCode == NativeRdb::E_OK) {
                 isInTransaction_.store(false);
                 break;
-            } else if (errCode == NativeRdb::E_SQLITE_LOCKED || errCode == NativeRdb::E_DATABASE_BUSY) {
+            } else if (errCode == NativeRdb::E_SQLITE_LOCKED || errCode == NativeRdb::E_DATABASE_BUSY ||
+                errCode == NativeRdb::E_SQLITE_BUSY) {
                 this_thread::sleep_for(chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
                 curTryTime++;
-                MEDIA_ERR_LOG("commit rdb busy now, trytime is :%{public}d", curTryTime);
+                MEDIA_ERR_LOG("commit rdb busy now, trytime is :%{public}d, errCode:%{public}d", curTryTime, errCode);
             } else {
                 MEDIA_ERR_LOG("commit failed, errCode=%{public}d", errCode);
                 return E_HAS_DB_ERROR;
@@ -195,10 +196,11 @@ int32_t TransactionOperations::TransactionRollback()
             if (errCode == NativeRdb::E_OK) {
                 MEDIA_INFO_LOG("rollback success!");
                 break;
-            } else if (errCode == NativeRdb::E_SQLITE_LOCKED || errCode == NativeRdb::E_DATABASE_BUSY) {
+            } else if (errCode == NativeRdb::E_SQLITE_LOCKED || errCode == NativeRdb::E_DATABASE_BUSY ||
+                errCode == NativeRdb::E_SQLITE_BUSY) {
                 this_thread::sleep_for(chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
                 curTryTime++;
-                MEDIA_ERR_LOG("rollback rdb busy now, trytime is :%{public}d", curTryTime);
+                MEDIA_ERR_LOG("rollback rdb busy now, trytime is :%{public}d, errCode:%{public}d", curTryTime, errCode);
             } else {
                 MEDIA_ERR_LOG("rollback failed, errCode=%{public}d", errCode);
                 break;

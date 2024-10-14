@@ -20,28 +20,42 @@
 #include <map>
 #include <memory>
 
+#include "dynamic_loader.h"
+#include "enhancement_thread_manager.h"
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-#include "media_enhance_client.h"
-#include "media_enhance_bundle.h"
-#include "media_enhance_constants.h"
-#include "cloud_enhancement_dfx_get_count.h"
+#include "media_enhance_constants_c_api.h"
+#include "media_enhance_handles.h"
+#include "media_enhance_client_c_api.h"
+#include "media_enhance_bundle_c_api.h"
 #endif
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-class EnhancementServiceAdapter : public RefBase {
-#else
 class EnhancementServiceAdapter {
-#endif
 public:
     EXPORT EnhancementServiceAdapter();
     EXPORT virtual ~EnhancementServiceAdapter();
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    EXPORT int32_t AddTask(const std::string &taskId, MediaEnhance::MediaEnhanceBundle &enhanceBundle);
+    void InitEnhancementClient(MediaEnhance::MediaEnhance_TASK_TYPE taskType);
+    void DestroyEnhancementClient();
+    int32_t SetResultCallback();
+    int32_t LoadSA();
+    bool IsConnected(MediaEnhance::MediaEnhanceClientHandle* clientWrapper);
+    EXPORT MediaEnhance::MediaEnhanceBundleHandle* CreateBundle();
+    void DestroyBundle(MediaEnhance::MediaEnhanceBundleHandle* bundle);
+    int32_t GetInt(MediaEnhance::MediaEnhanceBundleHandle* bundle, const char* key);
+    int32_t FillTaskWithResultBuffer(MediaEnhance::MediaEnhanceBundleHandle* bundle,
+        CloudEnhancementThreadTask& task);
+    EXPORT void PutInt(MediaEnhance::MediaEnhanceBundleHandle* bundle, const char* key,
+        int32_t value);
+    void PutString(MediaEnhance::MediaEnhanceBundleHandle* bundle, const char* key,
+        const char* value);
+    void DeleteRawData(MediaEnhance::Raw_Data* rawData, uint32_t size);
+    void DeletePendingTasks(MediaEnhance::Pendding_Task* taskIdList, uint32_t size);
+    EXPORT int32_t AddTask(const std::string& taskId, MediaEnhance::MediaEnhanceBundleHandle* bundle);
     EXPORT int32_t RemoveTask(const std::string &taskId);
     EXPORT int32_t CancelTask(const std::string &taskId);
     EXPORT int32_t CancelAllTasks();
@@ -51,8 +65,13 @@ public:
     
 private:
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    std::shared_ptr<MediaEnhance::MediaEnhanceClient> enhancementClient_;
+    void ClientFuncInit();
+    void TaskFuncInit();
+    void BundleFuncInit();
 #endif
+
+    static std::mutex mtx_;
+    static std::shared_ptr<DynamicLoader> dynamicLoader_;
 };
 } // namespace Media
 } // namespace OHOS

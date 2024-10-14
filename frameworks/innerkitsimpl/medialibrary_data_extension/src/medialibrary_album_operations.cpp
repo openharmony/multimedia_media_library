@@ -819,6 +819,16 @@ int32_t SetPhotoAlbumName(const ValuesBucket &values, const DataSharePredicates 
         valuesNew.PutString(PhotoAlbumColumns::ALBUM_NAME, newAlbumName);
         MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(rdbStore.get(), valuesNew, resultSet, newAlbumName);
         int32_t sameAlbumId = CheckHasSameNameAlbum(newAlbumName, resultSet, valuesNew, rdbStore);
+        
+        const std::string  QUERY_FILEID_TO_UPDATE_INDEX =
+            "SELECT file_id FROM Photos WHERE dirty != '4' AND owner_album_id = " + to_string(oldAlbumId);
+        vector<string> fileIdsToUpdateIndex;
+        shared_ptr<NativeRdb::ResultSet> queryIdsResultSet = rdbStore->QuerySql(QUERY_FILEID_TO_UPDATE_INDEX);
+        while (queryIdsResultSet->GoToNextRow() == NativeRdb::E_OK) {
+            fileIdsToUpdateIndex.push_back(to_string(GetInt32Val("file_id", queryIdsResultSet)));
+        }
+        MEDIA_INFO_LOG("update index fileIdsToUpdateIndex size: %{public}zu", fileIdsToUpdateIndex.size());
+
         if (sameAlbumId != 0) {
             int changeRows = 0;
             valuesNew.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY));
@@ -827,6 +837,9 @@ int32_t SetPhotoAlbumName(const ValuesBucket &values, const DataSharePredicates 
             rdbStore->Update(changeRows, valuesNew, rdbPredicatesNew);
             MediaLibraryAlbumFusionUtils::DeleteALbumAndUpdateRelationship(rdbStore.get(), oldAlbumId,
                 sameAlbumId, false);
+            MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+                static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX),
+                fileIdsToUpdateIndex);
             return changeRows;
         } else {
             valuesNew.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
@@ -836,6 +849,9 @@ int32_t SetPhotoAlbumName(const ValuesBucket &values, const DataSharePredicates 
             }
             MediaLibraryAlbumFusionUtils::DeleteALbumAndUpdateRelationship(rdbStore.get(), oldAlbumId,
                 newAlbumId, MediaLibraryAlbumFusionUtils::IsCloudAlbum(resultSet));
+            MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+                static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX),
+                fileIdsToUpdateIndex);
         }
     }
     auto watch = MediaLibraryNotify::GetInstance();
@@ -1079,7 +1095,7 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 
     MediaLibraryAlbumOperations::DealwithNoAlbumAssets(rdbPredicates.GetWhereArgs());
     // notify deferred processing session to restore image
-    MultiStagesCaptureManager::GetInstance().RestoreImages(rdbPredicates);
+    MultiStagesCaptureManager::RestorePhotos(rdbPredicates);
 
     ValuesBucket rdbValues;
     rdbValues.PutInt(MediaColumn::MEDIA_DATE_TRASHED, 0);
@@ -2091,6 +2107,23 @@ int32_t SetAlbumName(const ValuesBucket &values, const DataSharePredicates &pred
         vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
         NotifyPortraitAlbum(changeAlbumIds);
     }
+
+    shared_ptr<NativeRdb::RdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr! failed update index");
+        return err;
+    }
+    const std::string  QUERY_MAP_ASSET_TO_UPDATE_INDEX =
+        "SELECT map_asset FROM AnalysisPhotoMap WHERE map_album = " + targetAlbumId;
+    vector<string> mapAssets;
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_MAP_ASSET_TO_UPDATE_INDEX);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        mapAssets.push_back(to_string(GetInt32Val("map_asset", resultSet)));
+    }
+    MEDIA_INFO_LOG("update index map_asset size: %{public}zu", mapAssets.size());
+    MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+        static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), mapAssets);
+
     return err;
 }
 
