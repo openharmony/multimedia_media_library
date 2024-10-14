@@ -37,6 +37,7 @@
 #include "media_library_manager.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_urisensitive_operations.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 using PrivacyRanges = vector<pair<uint32_t, uint32_t>>;
@@ -201,6 +202,8 @@ static int32_t SendRangesToIoctl(const int32_t originFd, const int32_t proxyFd, 
 /* Caller is responsible to close the returned fd */
 static int32_t OpenOriginFd(const string &path, const string &mode)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaPrivacyManager::OpenOriginFd");
     string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     if (clientBundle.empty()) {
         MEDIA_DEBUG_LOG("clientBundleName is empty");
@@ -216,6 +219,8 @@ static int32_t OpenOriginFd(const string &path, const string &mode)
  */
 static int32_t OpenFilterProxyFd(const string &path, const string &mode, const PrivacyRanges &ranges)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaPrivacyManager::OpenFilterProxyFd");
     if (!CheckFsMounted(FS_TYPE_EPFS, EPFS_MOUNT_POINT)) {
         MEDIA_INFO_LOG("Epfs is currently not supported yet");
         return OpenOriginFd(path, mode);
@@ -352,6 +357,8 @@ static int32_t CollectRanges(const string &path, const HideSensitiveType &sensit
  */
 static int32_t GetPrivacyRanges(const string &path, const string &mode, const string &fileId, PrivacyRanges &ranges)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaPrivacyManager::GetPrivacyRanges");
     if (!IsTargetExtension(path)) {
         return E_SUCCESS;
     }

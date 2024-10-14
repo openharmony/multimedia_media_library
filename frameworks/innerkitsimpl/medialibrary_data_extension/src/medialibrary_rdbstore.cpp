@@ -2411,6 +2411,16 @@ static void AddMetaRecovery(RdbStore& store)
     ExecSqls(sqls, store);
 }
 
+static void UpdateSearchIndexTriggerForCleanFlag(RdbStore& store)
+{
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS update_search_status_trigger",
+        CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
+    };
+    MEDIA_INFO_LOG("start update search index for clean flag");
+    ExecSqls(sqls, store);
+}
+
 static void UpdateAlbumRefreshTable(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -3579,6 +3589,9 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_METARECOVERY) {
         AddMetaRecovery(store);
+    }
+    if (oldVersion < VERSION_UPDATE_SEARCH_INDEX_TRIGGER_FOR_CLEAN_FLAG) {
+        UpdateSearchIndexTriggerForCleanFlag(store);
     }
     if (oldVersion < VERSION_ADD_HIGHLIGHT_MAP_TABLES) {
         AddHighlightMapTable(store);

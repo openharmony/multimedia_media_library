@@ -191,6 +191,7 @@ int32_t MediaLibraryAssetOperations::UpdateOperation(MediaLibraryCommand &cmd)
 
     switch (cmd.GetOprnObject()) {
         case OperationObject::PAH_PHOTO:
+        case OperationObject::PAH_VIDEO:
         case OperationObject::FILESYSTEM_PHOTO:
             return MediaLibraryPhotoOperations::Update(cmd);
         case OperationObject::FILESYSTEM_AUDIO:
@@ -1410,10 +1411,8 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
         path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     }
 
-    tracer.Start("OpenFileWithPrivacy");
     string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
     int32_t fd = OpenFileWithPrivacy(path, lowerMode, fileId);
-    tracer.Finish();
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{public}d, errno %{public}d", fd, errno);
         return E_HAS_FS_ERROR;
@@ -2431,7 +2430,7 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     CHECK_AND_RETURN_RET_LOG(!ids.empty(), deletedRows, "Failed to delete files in db, ids size: 0");
 
     // notify deferred processing session to remove image
-    MultiStagesCaptureManager::GetInstance().RemoveImages(predicates, false);
+    MultiStagesCaptureManager::RemovePhotos(predicates, false);
 
     // delete cloud enhanacement task
     vector<string> photoIds;

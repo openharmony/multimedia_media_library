@@ -65,6 +65,8 @@ public:
         const std::string& editDataCameraSourcePath, const std::string& mimeType);
     EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs);
     EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris);
+    EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, const std::string &path);
+    EXPORT static int32_t RemoveTempVideo(const std::string &path);
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);
@@ -129,6 +131,7 @@ private:
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static std::shared_ptr<FileAsset> GetFileAsset(MediaLibraryCommand &cmd);
     static int32_t ForceSavePicture(MediaLibraryCommand& cmd);
+    static int32_t SetVideoEnhancementAttr(MediaLibraryCommand &cmd);
 private:
     static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension,
         const std::string mimeType, std::string &oldFilePath);

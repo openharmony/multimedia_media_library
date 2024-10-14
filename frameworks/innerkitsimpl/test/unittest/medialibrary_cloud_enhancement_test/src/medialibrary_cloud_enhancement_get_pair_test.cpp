@@ -51,21 +51,12 @@
 #undef private
 #undef protected
 
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-#include "media_enhance_client.h"
-#include "media_enhance_bundle.h"
-#include "media_enhance_constants.h"
-#endif
-
 using namespace std;
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-using namespace OHOS::MediaEnhance;
-#endif
 
 namespace OHOS {
 namespace Media {

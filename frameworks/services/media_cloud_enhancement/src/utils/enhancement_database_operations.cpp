@@ -33,6 +33,8 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
+static const int32_t MAX_UPDATE_RETRY_TIMES = 5;
+
 std::shared_ptr<ResultSet> EnhancementDatabaseOperations::Query(MediaLibraryCommand &cmd,
     RdbPredicates &servicePredicates, const vector<string> &columns)
 {
@@ -75,9 +77,16 @@ std::shared_ptr<ResultSet> EnhancementDatabaseOperations::BatchQuery(MediaLibrar
 
 int32_t EnhancementDatabaseOperations::Update(ValuesBucket &rdbValues, AbsRdbPredicates &predicates)
 {
-    int32_t changedRows = MediaLibraryRdbStore::Update(rdbValues, predicates);
+    int32_t changedRows = -1;
+    for (int32_t i = 0; i < MAX_UPDATE_RETRY_TIMES; i++) {
+        changedRows = MediaLibraryRdbStore::Update(rdbValues, predicates);
+        if (changedRows >= 0) {
+            break;
+        }
+        MEDIA_ERR_LOG("Update DB failed! changedRows: %{public}d times: %{public}d", changedRows, i);
+    }
     if (changedRows <= 0) {
-        MEDIA_ERR_LOG("Update DB failed");
+        MEDIA_INFO_LOG("Update DB failed! changedRows: %{public}d", changedRows);
         return E_HAS_DB_ERROR;
     }
     return E_OK;
