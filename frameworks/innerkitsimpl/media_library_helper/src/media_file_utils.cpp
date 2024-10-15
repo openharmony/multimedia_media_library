@@ -906,6 +906,21 @@ string MediaFileUtils::GetHighlightPath(const string &uri)
     return path;
 }
 
+string MediaFileUtils::GetHighlightVideoPath(const string &uri)
+{
+    int prefixLen = 0;
+    string uriPrefix = "datashare:///media";
+    if (uri.find(uriPrefix) != string::npos) {
+        prefixLen = static_cast<int>(uriPrefix.length());
+    } else if (uri.find(ML_FILE_URI_PREFIX) != string::npos) {
+        prefixLen = static_cast<int>(ML_FILE_URI_PREFIX.length());
+    } else {
+        return "";
+    }
+    string path = "/storage/cloud/files" + uri.substr(prefixLen);
+    return path;
+}
+
 void MediaFileUtils::FormatRelativePath(string &relativePath)
 {
     if (relativePath.empty()) {
