@@ -511,11 +511,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_get_failed_files_
 {
     MEDIA_INFO_LOG("medialibrary_backup_file_get_failed_files_str_001 start");
     unordered_map<string, FailedFileInfo> failedFiles = {
-        { TEST_FILE_PATH_PHOTO, RestoreError::FILE_INVALID },
-        { TEST_FILE_PATH_VIDEO, RestoreError::MOVE_FAILED },
-        { TEST_FILE_PATH_AUDIO, RestoreError::PATH_INVALID },
+        { TEST_FILE_PATH_PHOTO, FailedFileInfo(CLONE_RESTORE_ID, fileInfo, RestoreError::FILE_INVALID) },
+        { TEST_FILE_PATH_VIDEO, FailedFileInfo(CLONE_RESTORE_ID, fileInfo, RestoreError::MOVE_FAILED) },
+        { TEST_FILE_PATH_AUDIO, FailedFileInfo(CLONE_RESTORE_ID, fileInfo, RestoreError::PATH_INVALID) },
     };
-    string failedFilesStr = BackupFileUtils::GetFailedFilesStr(CLONE_RESTORE_ID, failedFiles);
+    string failedFilesStr = BackupFileUtils::GetFailedFilesStr(CLONE_RESTORE_ID, failedFiles, MAX_FAILED_FILES_LIMIT);
     MEDIA_INFO_LOG("Get failedFilesStr: %{public}s", failedFilesStr.c_str());
     EXPECT_GT(failedFilesStr.size(), 0);
 }

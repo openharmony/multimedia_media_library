@@ -87,7 +87,7 @@ protected:
     nlohmann::json GetCountInfoJson(const std::vector<std::string> &countInfoTypes);
     SubCountInfo GetSubCountInfo(const std::string &type);
     std::unordered_map<std::string, FailedFileInfo> GetFailedFiles(const std::string &type);
-    nlohmann::json GetSubCountInfoJson(const std::string &type, const SubCountInfo &subCountInfo);
+    nlohmann::json GetSubCountInfoJson(const std::string &type, const SubCountInfo &subCountInfo, size_t &limit);
     void SetErrorCode(int32_t errorCode);
     void UpdateFailedFileByFileType(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode);
     void UpdateFailedFiles(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode);

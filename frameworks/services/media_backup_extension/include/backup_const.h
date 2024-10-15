@@ -49,6 +49,7 @@ constexpr uint32_t COVER_URI_NUM = 3;
 constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
 constexpr uint32_t THUMBNAIL_NUM = 500;
+constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
 
 const std::string RESTORE_FILES_CLOUD_DIR = "/storage/cloud/files/";
 const std::string RESTORE_FILES_LOCAL_DIR = "/storage/media/local/files/";
@@ -368,12 +369,24 @@ struct MapInfo {
 };
 
 struct FailedFileInfo {
+    std::string albumName;
     std::string displayName;
-    std::string packageName;
     std::string errorCode;
     FailedFileInfo() = default;
-    FailedFileInfo(const FileInfo &fileInfo, int32_t errorCode)
-        : displayName(fileInfo.displayName), packageName(fileInfo.packageName), errorCode(std::to_string(errorCode)) {}
+    FailedFileInfo(int32_t sceneCode, const FileInfo &fileInfo, int32_t givenErrorCode)
+    {
+        displayName = fileInfo.displayName;
+        errorCode = std::to_string(givenErrorCode);
+        if (fileInfo.recycledTime > 0) {
+            albumName = "最近删除";
+            return;
+        }
+        if (fileInfo.hidden > 0) {
+            albumName = sceneCode == CLONE_RESTORE_ID ? "已隐藏" : "隐藏相册";
+            return;
+        }
+        albumName = fileInfo.packageName;
+    }
 };
 
 struct SubCountInfo {
