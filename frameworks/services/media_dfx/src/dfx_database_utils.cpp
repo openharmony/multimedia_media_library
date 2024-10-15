@@ -13,10 +13,12 @@
  * limitations under the License.
  */
 
+#include <sys/stat.h>
 #include "dfx_database_utils.h"
 
 #include "dfx_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore_manager.h"
 #include "media_log.h"
 #include "media_column.h"
 #include "medialibrary_errno.h"
@@ -25,6 +27,9 @@
 
 namespace OHOS {
 namespace Media {
+const std::string RECORD_COUNT = "recordCount";
+const std::string ABNORMAL_VALUE = "-1";
+
 int32_t DfxDatabaseUtils::QueryFromPhotos(int32_t mediaType, bool isLocal)
 {
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
@@ -87,6 +92,87 @@ std::vector<PhotoInfo> DfxDatabaseUtils::QueryDirtyCloudPhoto()
     return photoInfoList;
 }
 
+static bool ParseResultSet(const string &querySql, int32_t mediaTypePara, int32_t &photoInfoCount)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr!");
+        return false;
+    }
+    auto resultSet = rdbStore->QuerySql(querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is null");
+        return false;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        if (mediaTypePara > 0) {
+            int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
+            if (mediaType == mediaTypePara) {
+                photoInfoCount = GetInt32Val(RECORD_COUNT, resultSet);
+            }
+        } else {
+            photoInfoCount = GetInt32Val(RECORD_COUNT, resultSet);
+        }
+    }
+    return true;
+}
+
+int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
+{
+    const string filterCondition = MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " +
+        PhotoColumn::PHOTO_SYNC_STATUS + " = " +
+        to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) + " AND " +
+        PhotoColumn::PHOTO_CLEAN_FLAG + " = " +
+        to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
+
+    const string imageAndVideoCountQuerySql = "SELECT " + MediaColumn::MEDIA_TYPE + ", COUNT(*) AS " + RECORD_COUNT +
+        " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + filterCondition + " GROUP BY " + MediaColumn::MEDIA_TYPE;
+
+    const string abnormalSizeCountQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_SIZE + " = " + ABNORMAL_VALUE +
+        " AND " + filterCondition;
+
+    const string abnormalWidthHeightQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE (" + PhotoColumn::PHOTO_WIDTH + " = " + ABNORMAL_VALUE +
+        " OR " + PhotoColumn::PHOTO_HEIGHT + " = " + ABNORMAL_VALUE + ") AND " + filterCondition;
+
+    const string abnormalVideoDurationQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_DURATION + " = " + ABNORMAL_VALUE +
+        " AND " + MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " AND " + filterCondition;
+
+    const string totalAbnormalRecordSql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE (" + MediaColumn::MEDIA_SIZE + " = 0 OR " +
+        MediaColumn::MEDIA_SIZE + " IS NULL OR " + MediaColumn::MEDIA_MIME_TYPE + " IS NULL OR " +
+        MediaColumn::MEDIA_MIME_TYPE + " = '' OR " + PhotoColumn::PHOTO_HEIGHT + " = 0 OR " +
+        PhotoColumn::PHOTO_HEIGHT + " IS NULL OR " + PhotoColumn::PHOTO_WIDTH + " = 0 OR " +
+        PhotoColumn::PHOTO_WIDTH + " IS NULL OR ((" + MediaColumn::MEDIA_DURATION + " IS NULL OR " +
+        MediaColumn::MEDIA_DURATION + " = 0 ) AND " + MediaColumn::MEDIA_TYPE + " = " +
+        std::to_string(MEDIA_TYPE_VIDEO) + " )) AND " + filterCondition;
+
+    bool ret = ParseResultSet(imageAndVideoCountQuerySql, MEDIA_TYPE_VIDEO, photoRecordInfo.videoCount);
+    ret = ParseResultSet(imageAndVideoCountQuerySql, MEDIA_TYPE_IMAGE, photoRecordInfo.imageCount) && ret;
+    ret = ParseResultSet(abnormalSizeCountQuerySql, 0, photoRecordInfo.abnormalSizeCount) && ret;
+    ret = ParseResultSet(abnormalWidthHeightQuerySql, 0, photoRecordInfo.abnormalWidthOrHeightCount) && ret;
+    ret = ParseResultSet(abnormalVideoDurationQuerySql, 0, photoRecordInfo.abnormalVideoDurationCount) && ret;
+    ret = ParseResultSet(totalAbnormalRecordSql, 0, photoRecordInfo.toBeUpdatedRecordCount) && ret;
+
+    string databaseDir = MEDIA_DB_DIR + "/rdb";
+    if (access(databaseDir.c_str(), E_OK) != 0) {
+        MEDIA_WARN_LOG("can not get rdb through sandbox");
+        return E_FAIL;
+    }
+    string dbPath = databaseDir.append("/").append(MEDIA_DATA_ABILITY_DB_NAME);
+
+    struct stat statInfo {};
+    if (stat(dbPath.c_str(), &statInfo) != 0) {
+        MEDIA_ERR_LOG("stat syscall err");
+        return E_FAIL;
+    }
+    photoRecordInfo.dbFileSize = statInfo.st_size;
+
+    return ret ? E_OK : E_FAIL;
+}
+
 int32_t DfxDatabaseUtils::QueryAnalysisVersion(const std::string &table, const std::string &column)
 {
     NativeRdb::RdbPredicates predicates(table);
@@ -129,5 +215,49 @@ int32_t DfxDatabaseUtils::QueryDouble(const NativeRdb::AbsRdbPredicates &predica
     value = GetDoubleVal(queryColumn, resultSet);
     return E_OK;
 }
+
+int32_t DfxDatabaseUtils::QueryDownloadedAndGeneratedThumb(int32_t& downloadedThumb, int32_t& generatedThumb)
+{
+    // cloud image that are all generated
+    NativeRdb::RdbPredicates generatePredicates(PhotoColumn::PHOTOS_TABLE);
+    std::vector<std::string> columns = { "count(1) AS count" };
+    std::string queryColumn = "count";
+    int32_t cloudImage = 2;
+    int32_t thumbGeneratedFinished = 2;
+    generatePredicates.GreaterThanOrEqualTo(PhotoColumn::PHOTO_POSITION, cloudImage)->And()
+        ->GreaterThanOrEqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, thumbGeneratedFinished);
+    int32_t errCode = QueryInt(generatePredicates, columns, queryColumn, generatedThumb);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("query generated image fail: %{public}d", errCode);
+        return errCode;
+    }
+
+    // cloud image that are downloaded
+    NativeRdb::RdbPredicates downloadPredicates(PhotoColumn::PHOTOS_TABLE);
+    downloadPredicates.GreaterThanOrEqualTo(PhotoColumn::PHOTO_POSITION, cloudImage)->And()
+        ->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, 0);
+    errCode = QueryInt(downloadPredicates, columns, queryColumn, downloadedThumb);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("query downloaded image fail: %{public}d", errCode);
+        return errCode;
+    }
+    return E_OK;
+}
+
+int32_t DfxDatabaseUtils::QueryTotalCloudThumb(int32_t& totalDownload)
+{
+    int32_t cloudImage = 2;
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.GreaterThanOrEqualTo(PhotoColumn::PHOTO_POSITION, cloudImage);
+    std::vector<std::string> columns = { "count(1) AS count" };
+    std::string queryColumn = "count";
+    int32_t errCode = QueryInt(predicates, columns, queryColumn, totalDownload);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("query total download image fail: %{public}d", errCode);
+        return errCode;
+    }
+    return E_OK;
+}
+
 } // namespace Media
 } // namespace OHOS

@@ -43,7 +43,7 @@ const std::string PERM_WRITE_AUDIO = "ohos.permission.WRITE_AUDIO";
 const std::string PERM_WRITE_DOCUMENT = "ohos.permission.WRITE_DOCUMENT";
 const std::string PERM_MANAGE_PRIVATE_PHOTOS = "ohos.permission.MANAGE_PRIVATE_PHOTOS";
 const std::string PERM_SHORT_TERM_WRITE_IMAGEVIDEO = "ohos.permission.SHORT_TERM_WRITE_IMAGEVIDEO";
-constexpr int SHORT_TERM_PERMISSION_DURATION_300S = 300;
+constexpr int THREE_HUNDERD_S = 300;
 
 enum SaveType {
     SHORT_IMAGE_PERM = 0,
@@ -77,11 +77,11 @@ public:
     static std::string GetPackageNameByBundleName(const std::string &bundleName);
     static std::string GetAppIdByBundleName(const std::string &bundleName);
     static std::string GetAppIdByBundleName(const std::string &bundleName, int32_t uid);
+    static void ClearBundleInfoInCache();
     static bool CheckPhotoCallerPermission(const std::vector<std::string> &perms);
     static bool CheckPhotoCallerPermission(const std::string &permission);
     static void CollectPermissionInfo(const std::string &permission, const bool permGranted,
         const Security::AccessToken::PermissionUsedType type);
-    static void ClearBundleInfoInCache();
 
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();

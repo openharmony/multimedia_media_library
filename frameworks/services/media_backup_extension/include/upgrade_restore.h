@@ -35,7 +35,6 @@ public:
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
         int32_t sourceType) const override;
     std::vector<FileInfo> QueryFileInfosFromExternal(int32_t offset, int32_t maxId, bool isCamera);
-    std::vector<FileInfo> QueryAudioFileInfosFromExternal(int32_t offset);
     std::vector<FileInfo> QueryAudioFileInfosFromAudio(int32_t offset);
     int32_t QueryNotSyncTotalNumber(int32_t offset, bool isCamera);
     void InitGarbageAlbum();
@@ -57,7 +56,6 @@ private:
     bool ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
     void RestoreFromGallery();
     void RestoreFromExternal(bool isCamera);
-    void RestoreAudioFromExternal();
     void RestoreAudioFromFile();
     bool IsValidDir(const std::string &path);
     void RestoreBatch(int32_t offset);
@@ -122,6 +120,7 @@ private:
         const std::unordered_set<std::string> &excludedFiles);
     NativeRdb::ValuesBucket GetInsertValue(const FaceInfo &faceInfo, bool isMap);
     void UpdateFilesWithFace(std::unordered_set<std::string> &filesWithFace, const std::vector<FaceInfo> &faceInfos);
+    bool HasLowQualityImage();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

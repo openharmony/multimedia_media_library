@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-if (!("finalizeConstruction" in ViewPU.prototype)) {
-    Reflect.set(ViewPU.prototype, "finalizeConstruction", () => { });
+if (!('finalizeConstruction' in ViewPU.prototype)) {
+    Reflect.set(ViewPU.prototype, 'finalizeConstruction', () => { });
 }
 
 const photoAccessHelper = requireNapi('file.photoAccessHelper');
@@ -33,6 +33,7 @@ export class RecentPhotoComponent extends ViewPU {
         this.recentPhotoOptions = undefined;
         this.onRecentPhotoCheckResult = undefined;
         this.onRecentPhotoClick = undefined;
+        this.onRecentPhotoCheckInfo = undefined;
         this.setInitiallyProvidedValue(k3);
         this.finalizeConstruction();
     }
@@ -45,6 +46,9 @@ export class RecentPhotoComponent extends ViewPU {
         }
         if (i3.onRecentPhotoClick !== undefined) {
             this.onRecentPhotoClick = i3.onRecentPhotoClick;
+        }
+        if (i3.onRecentPhotoCheckInfo !== undefined) {
+            this.onRecentPhotoCheckInfo = i3.onRecentPhotoCheckInfo;
         }
     }
     updateStateVars(h3) {
@@ -66,7 +70,7 @@ export class RecentPhotoComponent extends ViewPU {
         }, Column);
         this.observeComponentCreation2((v2, w2) => {
             SecurityUIExtensionComponent.create({
-                bundleName: 'com.ohos.photos',
+                bundleName: 'com.huawei.hmos.photos',
                 abilityName: 'RecentUIExtensionAbility',
                 parameters: {
                     'ability.want.params.uiExtensionType': 'recentPhoto',
@@ -116,6 +120,14 @@ export class RecentPhotoComponent extends ViewPU {
                 console.warn('RecentPhotoComponent onReceive data type is invalid.');
             }
         }
+        else if (q2 === 'checkInfo') {
+            if (this.onRecentPhotoCheckInfo) {
+                let s2 = new RecentPhotoInfo();
+                s2.identifier = p2.identifier;
+                s2.dateTaken = p2.dateTaken;
+                this.onRecentPhotoCheckInfo(p2.isExist, s2);
+            }
+        }
     }
     convertMIMETypeToFilterType(n2) {
         let o2;
@@ -139,11 +151,14 @@ export class RecentPhotoComponent extends ViewPU {
 export class RecentPhotoOptions {
 }
 
-export var PhotoSource;
+export class RecentPhotoInfo {
+}
+
+export let PhotoSource;
 (function (m2) {
     m2[m2.ALL = 0] = 'ALL';
     m2[m2.CAMERA = 1] = 'CAMERA';
     m2[m2.SCREENSHOT = 2] = 'SCREENSHOT';
 })(PhotoSource || (PhotoSource = {}));
 
-export default { RecentPhotoComponent, RecentPhotoOptions, PhotoSource };
+export default { RecentPhotoComponent, RecentPhotoOptions, PhotoSource, RecentPhotoInfo };

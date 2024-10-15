@@ -35,7 +35,7 @@ enum CloudSyncStatus : int32_t {
     TOTAL_DOWNLOAD_FINISH,                       // 全量下行云缩略图任务结束
     SYNC_SWITCHED_OFF,                           // 关闭同步开关
 };
- 
+
 const std::string CLOUDSYNC_STATUS_KEY = "persist.kernel.cloudsync.status";
 
 class CloudSyncNotifyHandler {

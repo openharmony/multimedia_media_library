@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <cstdint>
+
 #include "medialibrary_common_utils_test.h"
 #include "medialibrary_errno.h"
 #define private public
@@ -28,7 +30,8 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_001, TestSize.Level0)
 {
     string path = "";
     string mode = "";
-    MediaPrivacyManager mediaPrivacyManager(path, mode);
+    string fileId = "";
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId);
     int32_t ret = mediaPrivacyManager.Open();
     EXPECT_EQ(ret, E_ERR);
 }
@@ -37,7 +40,8 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_002, TestSize.Level0)
 {
     string path = ".Open";
     string mode = "Z";
-    MediaPrivacyManager mediaPrivacyManager(path, mode);
+    string fileId = "";
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId);
     int32_t ret = mediaPrivacyManager.Open();
     EXPECT_EQ(ret, E_ERR);
 }
@@ -46,16 +50,18 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_003, TestSize.Level0)
 {
     string path = ".jpeg";
     string mode = "";
-    MediaPrivacyManager mediaPrivacyManager(path, mode);
+    string fileId = "";
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId);
     int32_t ret = mediaPrivacyManager.Open();
-    EXPECT_EQ(ret, -ENOMEM);
+    EXPECT_EQ(ret, E_ERR);
 }
 
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_004, TestSize.Level0)
 {
     string path = ".Open";
     string mode = "w";
-    MediaPrivacyManager mediaPrivacyManager(path, mode);
+    string fileId = "";
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId);
     int32_t ret = mediaPrivacyManager.Open();
     EXPECT_EQ(ret, E_ERR);
 }
@@ -64,7 +70,8 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_005, TestSize.Level0)
 {
     string path(4096, 'a');
     string mode = "w";
-    MediaPrivacyManager mediaPrivacyManager(path, mode);
+    string fileId = "";
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId);
     int32_t ret = mediaPrivacyManager.Open();
     EXPECT_EQ(ret, E_ERR);
 }
@@ -73,16 +80,18 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_006, TestSize.Level0)
 {
     string path = "data:image/;base64,Open.jpeg";
     string mode = "a";
-    MediaPrivacyManager mediaPrivacyManager(path, mode);
+    string fileId = "";
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId);
     int32_t ret = mediaPrivacyManager.Open();
-    EXPECT_EQ(ret, -ENOMEM);
+    EXPECT_EQ(ret, E_ERR);
 }
 
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_007, TestSize.Level0)
 {
     string path = "data:image/;base64,Open.jpeg";
     string mode = "rwrwrw";
-    MediaPrivacyManager mediaPrivacyManager(path, mode);
+    string fileId = "";
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId);
     int32_t ret = mediaPrivacyManager.Open();
     EXPECT_EQ(ret, E_ERR);
 }
@@ -91,7 +100,8 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_008, TestSize.Level0)
 {
     string path = "/storage/cloud/files/open.jpeg";
     string mode = "w";
-    MediaPrivacyManager mediaPrivacyManager(path, mode);
+    string fileId = "";
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId);
     int32_t ret = mediaPrivacyManager.Open();
     EXPECT_EQ(ret, E_ERR);
 }
@@ -100,7 +110,8 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_009, TestSize.Level0)
 {
     string path = "";
     string mode = "w";
-    MediaPrivacyManager mediaPrivacyManager(path, mode);
+    string fileId = "";
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId);
     int32_t ret = mediaPrivacyManager.Open();
     EXPECT_EQ(ret, E_ERR);
 }
@@ -109,7 +120,8 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_010, TestSize.Level0)
 {
     string path = "/storage/cloud/files/";
     string mode = "w";
-    MediaPrivacyManager mediaPrivacyManager(path, mode);
+    string fileId = "";
+    MediaPrivacyManager mediaPrivacyManager(path, mode, fileId);
     int32_t ret = mediaPrivacyManager.Open();
     EXPECT_EQ(ret, E_ERR);
 }

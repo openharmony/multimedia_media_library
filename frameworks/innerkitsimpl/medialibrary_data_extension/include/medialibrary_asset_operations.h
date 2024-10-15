@@ -68,12 +68,15 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_LCD_VISIT_TIME, MEMBER_TYPE_INT64 },
     { PhotoColumn::PHOTO_EDIT_TIME, MEMBER_TYPE_INT64 },
     { PhotoColumn::PHOTO_SUBTYPE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, MEMBER_TYPE_INT32 },
     { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_COVER_POSITION, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_CE_AVAILABLE, MEMBER_TYPE_INT32 },
     { AudioColumn::AUDIO_ALBUM, MEMBER_TYPE_STRING },
     { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_BURST_KEY, MEMBER_TYPE_STRING },
-    { PhotoColumn::PHOTO_BURST_COVER_LEVEL, MEMBER_TYPE_INT32 }
+    { PhotoColumn::PHOTO_BURST_COVER_LEVEL, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_THUMBNAIL_READY, MEMBER_TYPE_INT64 }
 };
 
 class MediaLibraryAssetOperations {
@@ -144,7 +147,8 @@ protected:
     EXPORT static std::string CreateExtUriForV10Asset(FileAsset &fileAsset);
     static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         std::string &value);
-    static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode);
+    static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode,
+        const std::string &fileId);
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0);
     static void ScanFileWithoutAlbumUpdate(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,

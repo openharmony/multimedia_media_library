@@ -47,6 +47,7 @@ public:
     EXPORT FetchFileResultNapi();
     EXPORT ~FetchFileResultNapi();
 
+    EXPORT static napi_value Init(napi_env env, napi_value exports);
     EXPORT static napi_value UserFileMgrInit(napi_env env, napi_value exports);
     EXPORT static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
 

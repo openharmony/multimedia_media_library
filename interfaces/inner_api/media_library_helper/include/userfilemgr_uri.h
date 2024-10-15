@@ -76,7 +76,14 @@ const std::string OPRN_GROUP_DISMISS = "dismiss";
 const std::string OPRN_GROUP_ALBUM_NAME = "group_album_name";
 const std::string OPRN_GROUP_COVER_URI = "group_cover_uri";
 const std::string OPRN_SCAN_WITHOUT_ALBUM_UPDATE = "scan_without_album_update";
-
+const std::string OPRN_ADD_LOWQUALITY_IMAGE = "add_lowquality_image";
+const std::string OPRN_ENHANCEMENT_ADD = "add_enhancement";
+const std::string OPRN_ENHANCEMENT_PRIORITIZE = "prioritize_enhancement";
+const std::string OPRN_ENHANCEMENT_CANCEL = "cancel_enhancement";
+const std::string OPRN_ENHANCEMENT_CANCEL_ALL = "cancel_all_enhancement";
+const std::string OPRN_ENHANCEMENT_SYNC = "sync_all_enhancement";
+const std::string OPRN_ENHANCEMENT_QUERY = "query_enhancement";
+const std::string OPRN_ENHANCEMENT_GET_PAIR = "get_pair_enhancement";
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
 const std::string MEDIA_PHOTOOPRN = "photo_operation";
@@ -232,6 +239,7 @@ const std::string PAH_MULTISTAGES_CAPTURE = "phaccess_multistages_capture_operat
 const std::string PAH_HIGHLIGHT_COVER = "phaccess_highlight_cover_operation";
 const std::string PAH_HIGHLIGHT_PLAY = "phaccess_highlight_play_operation";
 const std::string PAH_BATCH_THUMBNAIL_OPERATE = "phaccess_batch_thumbnail_operation";
+const std::string PAH_CLOUD_ENHANCEMENT_OPERATE = "cloud_enhancement_operation";
 const std::string SEARCH_INDEX_CONSTRUCTION_STATUS = "phaccess_search_index_construction_operation";
 const std::string PAH_ANA_MULTI_CROP = "phaccess_ana_multi_crop_operation";
 
@@ -272,6 +280,8 @@ const std::string PAH_START_GENERATE_THUMBNAILS =
     MEDIALIBRARY_DATA_URI + "/" + PAH_BATCH_THUMBNAIL_OPERATE + "/" + OPRN_START_GENERATE_THUMBNAILS;
 const std::string PAH_STOP_GENERATE_THUMBNAILS =
     MEDIALIBRARY_DATA_URI + "/" + PAH_BATCH_THUMBNAIL_OPERATE + "/" + OPRN_STOP_GENERATE_THUMBNAILS;
+const std::string PAH_ADD_LOWQUALITY_IMAGE = MEDIALIBRARY_DATA_URI + "/" +
+    PAH_MULTISTAGES_CAPTURE + "/" + OPRN_ADD_LOWQUALITY_IMAGE;
 
 // PhotoAccessHelper album operation constants
 const std::string PAH_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_CREATE;
@@ -340,6 +350,22 @@ const std::string PAH_QUERY_MULTI_CROP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_M
 const std::string PAH_MOVING_PHOTO_SCAN = MEDIALIBRARY_DATA_URI + "/" + MEDIA_MOVING_PHOTO_OPRN_KEYWORD + "/" +
     OPRN_MOVING_PHOTO_SCAN;
 
+// PhotoAccessHelper cloud enhancement
+const std::string PAH_CLOUD_ENHANCEMENT_ADD = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_ADD;
+const std::string PAH_CLOUD_ENHANCEMENT_PRIORITIZE = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_PRIORITIZE;
+const std::string PAH_CLOUD_ENHANCEMENT_CANCEL = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_CANCEL;
+const std::string PAH_CLOUD_ENHANCEMENT_CANCEL_ALL = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_CANCEL_ALL;
+const std::string PAH_CLOUD_ENHANCEMENT_SYNC = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_SYNC;
+const std::string PAH_CLOUD_ENHANCEMENT_QUERY = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_QUERY;
+const std::string PAH_CLOUD_ENHANCEMENT_GET_PAIR = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
+    OPRN_ENHANCEMENT_GET_PAIR;
+
 // mediatool operation constants
 const std::string TOOL_PHOTO = "mediatool_photo_operation";
 const std::string TOOL_AUDIO = "mediatool_audio_operation";
@@ -368,6 +394,10 @@ const std::string MISC_OPERATION = "miscellaneous_operation";
 const std::string OPRN_LOG_MOVING_PHOTO = "log_moving_photo";
 
 const std::string LOG_MOVING_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MISC_OPERATION + "/" + OPRN_LOG_MOVING_PHOTO;
+
+const std::string OPRN_FINISH_REQUEST_PICTURE = "finish_request_picture";
+const std::string PAH_FINISH_REQUEST_PICTURE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/"
+    + OPRN_FINISH_REQUEST_PICTURE;
 } // namespace Media
 } // namespace OHOS
 

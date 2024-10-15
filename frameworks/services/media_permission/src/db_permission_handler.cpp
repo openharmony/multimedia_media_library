@@ -26,6 +26,9 @@
 #include "rdb_utils.h"
 #include "medialibrary_uripermission_operations.h"
 #include "permission_utils.h"
+#include "medialibrary_type_const.h"
+#include "medialibrary_data_manager.h"
+#include "media_column.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -34,23 +37,83 @@ namespace OHOS::Media {
 static set<int> readPermSet{0, 1, 3, 4};
 
 static set<int> writePermSet{2, 3, 4};
+static const string UFM_PHOTO_PREFIX = "datashare:///media/userfilemgr_photo_operation";
+static const string UFM_AUDIO_PREFIX = "datashare:///media/userfilemgr_audio_operation";
+static const string PATH_PHOTO_PREFIX = "datashare:///media/phaccess_photo_operation";
+
+static bool ParseFileIdFromPredicates(const DataShare::DataSharePredicates &predicates, string &fileId)
+{
+    constexpr int32_t FIELD_IDX = 0;
+    constexpr int32_t VALUE_IDX = 1;
+    constexpr int32_t OPERATION_SIZE = 2;
+    auto operationItems = predicates.GetOperationList();
+    for (DataShare::OperationItem item : operationItems) {
+        if (item.singleParams.size() < OPERATION_SIZE) {
+            continue;
+        }
+        if (!MediaLibraryDataManagerUtils::IsNumber(static_cast<string>(item.GetSingle(VALUE_IDX)))) {
+            continue;
+        }
+        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_ID) {
+            fileId = static_cast<string>(item.GetSingle(VALUE_IDX));
+            return true;
+        }
+    }
+    MEDIA_ERR_LOG("parse fileId from predicates fail");
+    return false;
+}
+
+static bool ParseInfoFromCmd(MediaLibraryCommand &cmd, string &fileId, int32_t &uriType)
+{
+    string cmdUri = cmd.GetUri().ToString();
+    if (MediaFileUtils::StartsWith(cmdUri, PhotoColumn::PHOTO_URI_PREFIX)) {
+        uriType = static_cast<int32_t>(TableType::TYPE_PHOTOS);
+        fileId = MediaFileUtils::GetIdFromUri(cmdUri);
+        return true;
+    }
+    if (MediaFileUtils::StartsWith(cmdUri, AudioColumn::AUDIO_URI_PREFIX)) {
+        uriType = static_cast<int32_t>(TableType::TYPE_AUDIOS);
+        fileId = MediaFileUtils::GetIdFromUri(cmdUri);
+        return true;
+    }
+
+    if (cmd.IsDataSharePredNull()) {
+        MEDIA_DEBUG_LOG("DataSharePred is nullptr");
+        return false;
+    }
+    bool isPhotoType = MediaFileUtils::StartsWith(cmdUri, UFM_PHOTO_PREFIX)
+        || MediaFileUtils::StartsWith(cmdUri, PATH_PHOTO_PREFIX);
+    if (isPhotoType) {
+        uriType = static_cast<int32_t>(TableType::TYPE_PHOTOS);
+        return ParseFileIdFromPredicates(cmd.GetDataSharePred(), fileId);
+    }
+    if (MediaFileUtils::StartsWith(cmdUri, UFM_AUDIO_PREFIX)) {
+        uriType = static_cast<int32_t>(TableType::TYPE_AUDIOS);
+        return ParseFileIdFromPredicates(cmd.GetDataSharePred(), fileId);
+    }
+    MEDIA_ERR_LOG("parse fileId and uriType from cmd fail");
+    return false;
+}
 
 int32_t DbPermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, PermParam &permParam)
 {
     MEDIA_DEBUG_LOG("DbPermissionHandler enter");
     bool isWrite = permParam.isWrite;
     string appId = GetClientAppId();
-    string fileId = MediaFileUtils::GetIdFromUri(cmd.GetUri().ToString());
-    MediaType mediaType = MediaFileUri::GetMediaTypeFromUri(cmd.GetUri().ToString());
-    MEDIA_DEBUG_LOG("isWrite=%{public}d,appId=%{public}s,fileId=%{public}s,mediaType=%{public}d",
-        isWrite, appId.c_str(), fileId.c_str(), mediaType);
+    string fileId = "";
+    int32_t uriType = 0;
+    if (!ParseInfoFromCmd(cmd, fileId, uriType)) {
+        return E_INVALID_URI;
+    }
+    MEDIA_DEBUG_LOG("isWrite=%{public}d,appId=%{public}s,fileId=%{public}s,uriType=%{public}d",
+        isWrite, appId.c_str(), fileId.c_str(), uriType);
     if (appId.empty() || fileId.empty()) {
         MEDIA_ERR_LOG("invalid input");
         return E_INVALID_FILEID;
     }
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause("file_id = ? and appid = ? and uri_type = ?");
-    predicates.SetWhereArgs({fileId, appId, to_string(mediaType)});
+    predicates.SetWhereArgs({fileId, appId, to_string(uriType)});
     vector<string> columns;
     auto queryResultSet = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, TABLE_PERMISSION), columns);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, E_PERMISSION_DENIED, "queryResultSet is nullptr");

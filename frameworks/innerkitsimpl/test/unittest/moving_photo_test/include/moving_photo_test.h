@@ -30,4 +30,4 @@ public:
 } // namespace Media
 } // namespace OHOS
 
-#endif // MOVING_PHOTO_TEST_H
+#endif // MOVING_PHOTO_TEST_H

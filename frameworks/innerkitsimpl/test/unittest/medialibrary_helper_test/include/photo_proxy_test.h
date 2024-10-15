@@ -48,7 +48,7 @@ public:
             std::to_string(localTime->tm_mon + MONTH_GAP) << std::to_string(localTime->tm_mday) << "_" <<
             std::to_string(localTime->tm_hour) << std::to_string(localTime->tm_min) <<
             std::to_string(localTime->tm_sec);
-        displayName_ = "IMG_" + std::to_string(localTime->tm_year + BASE_YEAR) + streamObj.str() + ".jpg";
+        title_ = "IMG_" + std::to_string(localTime->tm_year + BASE_YEAR) + streamObj.str();
 
         std::ostringstream streamObj2;
         // 设置宽度并使用 '0' 填充未使用的位置
@@ -59,9 +59,9 @@ public:
         photoId_ = std::to_string(localTime->tm_year + BASE_YEAR) + streamObj2.str();
     }
 
-    virtual std::string GetDisplayName() override
+    virtual std::string GetTitle() override
     {
-        return displayName_;
+        return title_;
     }
 
     // 图片后缀，例如：jpg/png
@@ -121,7 +121,7 @@ public:
     {
     }
 
-    // RGBA、JPG
+    // RGBA、JPG、YUV
     virtual PhotoFormat GetFormat() override
     {
         return PhotoFormat::RGBA;
@@ -147,10 +147,11 @@ public:
     {
         return 0;
     }
+
 private:
     void *fileDataAddr_ = nullptr;
     int32_t fileSize_ = 0;
-    std::string displayName_;
+    std::string title_;
     std::string photoId_;
     DeferredProcType deferredProcType_ = DeferredProcType::OFFLINE;
 };

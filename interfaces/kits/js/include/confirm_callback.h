@@ -23,9 +23,7 @@
 #include <uv.h>
 
 #include "want.h"
-#ifdef HAS_ACE_ENGINE_PART
 #include "ui_content.h"
-#endif
 #include "medialibrary_client_errno.h"
 
 namespace OHOS {
@@ -39,11 +37,7 @@ struct PhotoCreationConfig {
 
 class ConfirmCallback {
 public:
-#ifdef HAS_ACE_ENGINE_PART
     explicit ConfirmCallback(napi_env env, Ace::UIContent *uiContent);
-#else
-    explicit ConfirmCallback(napi_env env);
-#endif
     virtual ~ConfirmCallback() = default;
     void OnRelease(int32_t releaseCode);
     void OnResult(int32_t resultCode, const OHOS::AAFwk::Want &want);
@@ -58,9 +52,7 @@ private:
     int32_t resultCode_ = JS_ERR_PERMISSION_DENIED;
     napi_env env_ = nullptr;
     napi_ref callbackRef = nullptr;
-#ifdef HAS_ACE_ENGINE_PART
     Ace::UIContent *uiContent = nullptr;
-#endif
 
     void SendMessageBack(const std::vector<std::string> &desFileUris);
     void CloseModalUIExtension();

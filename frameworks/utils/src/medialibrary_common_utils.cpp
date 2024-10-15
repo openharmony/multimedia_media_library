@@ -163,6 +163,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     PhotoColumn::PHOTO_IS_TEMP,
     PhotoColumn::PHOTO_BURST_KEY,
     PhotoColumn::PHOTO_LCD_VISIT_TIME,
+    PhotoColumn::PHOTO_CE_AVAILABLE,
 
     // Photos table columns
     COMPAT_HIDDEN,
@@ -194,8 +195,8 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     POSE,
     SCALE_X,
     SCALE_Y,
-    SCALE_HEIGHT,
     SCALE_WIDTH,
+    SCALE_HEIGHT,
     ANALYSIS_VERSION,
     FEATURES,
     PHOTO_FILE_ID,

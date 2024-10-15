@@ -31,6 +31,8 @@
 #include "media_log.h"
 #include "upgrade_restore.h"
 #include "media_file_utils.h"
+#include "parameters.h"
+#include "cloud_sync_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
@@ -101,7 +103,7 @@ const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS 
     " media_type INT, date_added BIGINT, date_taken BIGINT, duration INT, is_favorite INT default 0, " +
     " date_trashed BIGINT DEFAULT 0, hidden INT DEFAULT 0, height INT, width INT, user_comment TEXT, " +
     " orientation INT DEFAULT 0, package_name TEXT, burst_cover_level INT DEFAULT 1, burst_key TEXT, " +
-    " dirty INTEGER DEFAULT 0, subtype INT );";
+    " dirty INTEGER DEFAULT 0, subtype INT);";
 
 const string PhotosOpenCall::CREATE_PHOTOS_ALBUM = "CREATE TABLE IF NOT EXISTS PhotoAlbum \
     (album_id INTEGER PRIMARY KEY AUTOINCREMENT, album_type INT,   \
@@ -819,33 +821,6 @@ HWTEST_F(MediaLibraryBackupTest, RestoreAudio_ParseResultSetFromAudioDb_return_f
     MEDIA_INFO_LOG("RestoreAudio_ParseResultSetFromAudioDb_return_false end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, RestoreAudio_GetAudioInsertValues_fileInfos_empty, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("RestoreAudio_GetAudioInsertValues_fileInfos_empty start");
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    std::vector<FileInfo> fileInfos;
-    auto res = upgrade->GetAudioInsertValues(0, fileInfos);
-    EXPECT_EQ(res.size(), 0);
-    MEDIA_INFO_LOG("RestoreAudio_GetAudioInsertValues_fileInfos_empty end");
-}
-
-HWTEST_F(MediaLibraryBackupTest, RestoreAudio_GetAudioInsertValues_file_not_exit, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("RestoreAudio_GetAudioInsertValues_file_not_exit start");
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    std::vector<FileInfo> fileInfos;
-    FileInfo info;
-    fileInfos.push_back(info);
-    NativeRdb::ValuesBucket value;
-    upgrade->SetAudioValueFromMetaData(info, value);
-    auto res = upgrade->GetAudioInsertValues(0, fileInfos);
-    EXPECT_EQ(res.size(), 0);
-    MEDIA_INFO_LOG("RestoreAudio_GetAudioInsertValues_file_not_exit end");
-}
-
-
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test001 start";
@@ -1255,6 +1230,20 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_empty_file, TestSiz
     MEDIA_INFO_LOG("medialib_backup_InsertAudio_empty_file end");
 }
 
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_MoveDirectory, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_MoveDirectory start");
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    string srcDir = "/data/test";
+    string dstDir = "/data/test1";
+    EXPECT_EQ(upgrade->MoveDirectory(srcDir, dstDir), E_OK);
+    // delete the destination directory after moving to prevent errors caused by an existing directory
+    auto ret = MediaFileUtils::DeleteDir(dstDir);
+    EXPECT_EQ(ret, true);
+    MEDIA_INFO_LOG("medialib_backup_MoveDirectory end");
+}
+
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_BatchQueryPhoto, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_BatchQueryPhoto start");
@@ -1586,6 +1575,17 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAlbum_002, TestSize.Level
     MEDIA_INFO_LOG("medialib_backup_InsertAlbum_002 end");
 }
 
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_001 start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    string xmlPath = "/data/test/backup/test.xml";
+    auto res = upgrade->ParseXml(xmlPath);
+    EXPECT_EQ(res, 0);
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_001 end";
+}
+
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_002, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_002 start";
@@ -1676,24 +1676,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetValueFromMetaData, Test
     valueBucket.PutString(PhotoColumn::PHOTO_ORIENTATION, "test");
     upgrade->SetValueFromMetaData(fileInfo, valueBucket);
     GTEST_LOG_(INFO) << "medialib_backup_test_SetValueFromMetaData end";
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetAudioInsertValue, TestSize.Level0)
-{
-    GTEST_LOG_(INFO) << "medialib_backup_test_GetAudioInsertValue start";
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    string mediaName;
-    FileInfo fileInfo;
-    string path = "/test/";
-    ValueObject valueObject;
-    fileInfo.displayName = "test.cpp";
-
-    auto ret = upgrade->GetAudioInsertValue(fileInfo, path);
-    ret.GetObject(MediaColumn::MEDIA_NAME, valueObject);
-    valueObject.GetString(mediaName);
-    EXPECT_EQ(mediaName, "test.cpp");
-    GTEST_LOG_(INFO) << "medialib_backup_test_GetAudioInsertValue end";
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetBackupInfo, TestSize.Level0)
@@ -2295,6 +2277,66 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_portrait, TestSize
     EXPECT_EQ(totalCount, TEST_PORTRAIT_PHOTO_COUNT);
     ClearData(rdbStore);
     MEDIA_INFO_LOG("medialib_backup_test_restore_portrait end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_file_access_helper, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_file_access_helper start");
+    string backupFilePath = "/data/test/Pictures/Camera/Flower.png";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/data/test/Pictures/Camera/"), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(backupFilePath), true);
+
+    string lowerCasePath = "/data/test/pictures/camera/flower.png";
+    EXPECT_EQ(-1, access(lowerCasePath.c_str(), F_OK));
+
+    std::shared_ptr<FileAccessHelper> fileAccessHelper_ = std::make_shared<FileAccessHelper>();
+    string resultPath = lowerCasePath;
+    bool res = fileAccessHelper_->GetValidPath(resultPath);
+    EXPECT_EQ(true, res);
+    EXPECT_EQ(backupFilePath, resultPath);
+
+    resultPath = "/data/test/Pictures/Camera/FlowerNOT.png";
+    res = fileAccessHelper_->GetValidPath(resultPath);
+    EXPECT_EQ(false, res);
+
+    MEDIA_INFO_LOG("medialib_backup_test_file_access_helper end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_livephoto, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_is_livephoto start");
+    FileInfo info;
+    info.specialFileType = 50;
+    EXPECT_EQ(BackupFileUtils::IsLivePhoto(info), true);
+    info.specialFileType = 0;
+    EXPECT_EQ(BackupFileUtils::IsLivePhoto(info), false);
+    info.specialFileType = 1000;
+    EXPECT_EQ(BackupFileUtils::IsLivePhoto(info), false);
+    info.specialFileType = -50;
+    EXPECT_EQ(BackupFileUtils::IsLivePhoto(info), false);
+    MEDIA_INFO_LOG("medialib_backup_test_is_livephoto end");
+}
+ 
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_to_moving_photo, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_convert_to_moving_photo start");
+    string livePhotoPath = "/data/test/backup_test_livephoto.jpg";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/data/test/"), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(livePhotoPath), true);
+ 
+    FileInfo info;
+    info.filePath = livePhotoPath;
+    BackupFileUtils::ConvertToMovingPhoto(info);
+    EXPECT_EQ(info.movingPhotoVideoPath, "/data/test/backup_test_livephoto.jpg.mp4");
+    EXPECT_EQ(info.extraDataPath, "/data/test/backup_test_livephoto.jpg.extra");
+ 
+    info.filePath = livePhotoPath;
+    EXPECT_EQ(MediaFileUtils::CreateFile(info.movingPhotoVideoPath), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(info.extraDataPath), true);
+    BackupFileUtils::ConvertToMovingPhoto(info);
+    EXPECT_EQ(info.movingPhotoVideoPath, "/data/test/backup_test_livephoto.jpg.mp4.dup.mp4");
+    EXPECT_EQ(info.extraDataPath, "/data/test/backup_test_livephoto.jpg.extra.dup.extra");
+    MEDIA_INFO_LOG("medialib_backup_test_convert_to_moving_photo end");
 }
 } // namespace Media
 } // namespace OHOS

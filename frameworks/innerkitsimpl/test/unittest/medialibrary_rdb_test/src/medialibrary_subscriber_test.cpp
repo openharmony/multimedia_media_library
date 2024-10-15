@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <cstdint>
+
 #include "medialibrary_rdb_test.h"
 #include "medialibrary_object_utils.h"
 #define private public

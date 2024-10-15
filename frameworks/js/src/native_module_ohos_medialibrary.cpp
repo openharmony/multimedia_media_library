@@ -26,6 +26,9 @@ namespace Media {
  */
 static napi_value Export(napi_env env, napi_value exports)
 {
+    FileAssetNapi::Init(env, exports);
+    FetchFileResultNapi::Init(env, exports);
+    AlbumNapi::Init(env, exports);
     SmartAlbumNapi::Init(env, exports);
     MediaLibraryNapi::Init(env, exports);
     MediaScannerNapi::Init(env, exports);

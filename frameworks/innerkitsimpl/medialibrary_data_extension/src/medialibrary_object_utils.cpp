@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "medialibrary_db_const.h"
 #define MLOG_TAG "ObjectUtils"
 
 #include "medialibrary_object_utils.h"
@@ -40,7 +41,6 @@
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
-#include "medialibrary_db_const.h"
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_smartalbum_map_operations.h"
@@ -58,6 +58,7 @@
 #include "thumbnail_service.h"
 #include "value_object.h"
 #include "medialibrary_tracer.h"
+#include "picture_handle_service.h"
 #include "post_event_utils.h"
 
 using namespace std;
@@ -323,7 +324,7 @@ NativeAlbumAsset MediaLibraryObjectUtils::GetLastDirExistInDb(const string &dirP
             dirId = lastPathId;
         }
     } while (lastPathId < 0);
-    MEDIA_INFO_LOG("GetLastAlbumExistInDb lastPath = %{private}s", lastPath.c_str());
+    MEDIA_DEBUG_LOG("GetLastAlbumExistInDb lastPath = %{private}s", lastPath.c_str());
     dirAsset.SetAlbumId(dirId);
     dirAsset.SetAlbumPath(lastPath);
     return dirAsset;
@@ -461,7 +462,7 @@ int32_t InitQueryParentResultSet(int32_t dirId, int32_t &parentIdVal, string &di
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(dirId));
     shared_ptr<NativeRdb::ResultSet> queryParentResultSet = uniStore->Query(cmd, {});
-    if (queryParentResultSet->GoToNextRow() != NativeRdb::E_OK) {
+    if (queryParentResultSet == nullptr || queryParentResultSet->GoToNextRow() != NativeRdb::E_OK) {
         return E_SUCCESS;
     }
     int32_t colIndex = 0;
@@ -731,7 +732,7 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd,
     return E_SUCCESS;
 }
 
-static int32_t OpenAsset(const string &filePath, const string &mode)
+static int32_t OpenAsset(const string &filePath, const string &mode, const string &fileId)
 {
     MediaLibraryTracer tracer;
     tracer.Start("OpenAsset");
@@ -743,7 +744,7 @@ static int32_t OpenAsset(const string &filePath, const string &mode)
     }
     MEDIA_DEBUG_LOG("File absFilePath is %{private}s", absFilePath.c_str());
 
-    return MediaPrivacyManager(absFilePath, mode).Open();
+    return MediaPrivacyManager(absFilePath, mode, fileId).Open();
 }
 
 static bool CheckIsOwner(const string &bundleName)
@@ -781,10 +782,19 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     tracer.Start("MediaLibraryObjectUtils::OpenFile");
 
     string uriString = cmd.GetUri().ToString();
+    MEDIA_DEBUG_LOG("MediaLibraryObjectUtils OpenFile uriString:%{public}s", uriString.c_str());
     if (cmd.GetOprnObject() == OperationObject::THUMBNAIL) {
         return ThumbnailService::GetInstance()->GetThumbnailFd(uriString);
     } else if (cmd.GetOprnObject() == OperationObject::THUMBNAIL_ASTC) {
         return ThumbnailService::GetInstance()->GetThumbnailFd(uriString, true);
+    } else if (cmd.GetOprnObject() == OperationObject::REQUEST_PICTURE) {
+        std::string fileId = cmd.GetQuerySetParam(MediaColumn::MEDIA_ID);
+        int32_t fd;
+        PictureHandlerService::OpenPicture(fileId, fd);
+        return fd;
+    } else if (cmd.GetOprnObject() == OperationObject::PHOTO_REQUEST_PICTURE_BUFFER) {
+        std::string fd = cmd.GetQuerySetParam("fd");
+        return PictureHandlerService::RequestBufferHandlerFd(fd);
     } else if (IsDocumentUri(uriString)) {
         return OpenDocument(uriString, mode);
     }
@@ -803,7 +813,8 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     }
 
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
-    int32_t fd = OpenAsset(path, mode);
+    string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
+    int32_t fd = OpenAsset(path, mode, fileId);
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
         return E_HAS_FS_ERROR;
@@ -839,6 +850,30 @@ void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id
         return ;
     }
     int ret = MediaScannerManager::GetInstance()->ScanFile(path, scanFileCb, api);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Scan file failed!");
+    }
+}
+
+void MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(const string &path, const string &id, MediaLibraryApi api)
+{
+    string tableName;
+    if (MediaFileUtils::IsFileTablePath(path)) {
+        tableName = MEDIALIBRARY_TABLE;
+    } else if (MediaFileUtils::IsPhotoTablePath(path)) {
+        tableName = PhotoColumn::PHOTOS_TABLE;
+    } else {
+        tableName = AudioColumn::AUDIOS_TABLE;
+    }
+
+    InvalidateThumbnail(id, tableName);
+
+    shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
+    if (scanFileCb == nullptr) {
+        MEDIA_ERR_LOG("Failed to create scan file callback object");
+        return ;
+    }
+    int ret = MediaScannerManager::GetInstance()->ScanFileSyncWithoutAlbumUpdate(path, scanFileCb, api, true);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
     }
@@ -1406,7 +1441,8 @@ int32_t MediaLibraryObjectUtils::CopyAsset(const shared_ptr<FileAsset> &srcFileA
         return E_INVALID_URI;
     }
     string srcPath = MediaFileUtils::UpdatePath(srcFileAsset->GetPath(), srcFileAsset->GetUri());
-    int32_t srcFd = OpenAsset(srcPath, MEDIA_FILEMODE_READWRITE);
+    string fileId = MediaFileUtils::GetIdFromUri(srcFileAsset->GetUri());
+    int32_t srcFd = OpenAsset(srcPath, MEDIA_FILEMODE_READWRITE, fileId);
     // dest asset
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     ValuesBucket values;
@@ -1431,7 +1467,8 @@ int32_t MediaLibraryObjectUtils::CopyAsset(const shared_ptr<FileAsset> &srcFileA
         return E_INVALID_URI;
     }
     string destPath = MediaFileUtils::UpdatePath(destFileAsset->GetPath(), destFileAsset->GetUri());
-    int32_t destFd = OpenAsset(destPath, MEDIA_FILEMODE_READWRITE);
+    string destFileId = MediaFileUtils::GetIdFromUri(destFileAsset->GetUri());
+    int32_t destFd = OpenAsset(destPath, MEDIA_FILEMODE_READWRITE, destFileId);
     return CopyAssetByFd(srcFd, srcFileAsset->GetId(), destFd, outRow);
 }
 
@@ -1470,6 +1507,10 @@ int32_t MediaLibraryObjectUtils::GetFileResult(shared_ptr<NativeRdb::ResultSet> 
     int errCode = E_SUCCESS;
     for (int32_t row = 0; row < count; row++) {
         unique_ptr<FileAsset> fileAsset = fetchFileResult->GetObjectFromRdb(resultSet, row);
+        if (fileAsset == nullptr) {
+            MEDIA_ERR_LOG("get fileAsset failed");
+            continue;
+        }
         if (fileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
             errCode = CopyDir(move(fileAsset), relativePath + displayName + "/");
             CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "failed to copy dir");
@@ -1509,6 +1550,7 @@ int32_t MediaLibraryObjectUtils::CopyDir(const shared_ptr<FileAsset> &srcDirAsse
     queryCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(srcDirAsset->GetId()))->And()->
         EqualTo(MEDIA_DATA_DB_IS_TRASH, "0")->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_NOFILE));
     auto resultSet = QueryWithCondition(queryCmd, {});
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "query rdbstore failed");
     auto count = 0;
     auto ret = resultSet->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "get rdbstore failed");

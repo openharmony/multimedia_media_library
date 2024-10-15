@@ -43,7 +43,7 @@ public:
     EXPORT int32_t LcdDistributeAging(const std::string &udid);
 #endif
     EXPORT int32_t GenerateThumbnailBackground();
-    EXPORT int32_t UpgradeThumbnailBackground();
+    EXPORT int32_t UpgradeThumbnailBackground(bool isWifiConnected);
     EXPORT int32_t RestoreThumbnailDualFrame();
     EXPORT void InterruptBgworker();
     EXPORT void StopAllWorker();

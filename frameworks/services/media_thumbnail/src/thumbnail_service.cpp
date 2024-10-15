@@ -109,7 +109,7 @@ static void UpdateAstcInfo(ThumbRdbOpt &opts, std::string id)
 
     ValuesBucket values;
     int changedRows;
-    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_COMPLETED));
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, MediaFileUtils::UTCTimeMilliSeconds());
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?", vector<string> { id });
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
@@ -346,9 +346,6 @@ int32_t ThumbnailService::CreateThumbnailFileScaned(const std::string &uri, cons
     err = ThumbnailGenerateHelper::CreateThumbnailFileScaned(opts, isSync);
     if (err != E_OK) {
         MEDIA_ERR_LOG("CreateThumbnailFileScaned failed : %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return err;
     }
     return E_OK;
@@ -413,7 +410,7 @@ int32_t ThumbnailService::GenerateThumbnailBackground()
             }
         }
 
-        if (tableName == PhotoColumn::PHOTOS_TABLE) {
+        if (tableName != AudioColumn::AUDIOS_TABLE) {
             err = ThumbnailGenerateHelper::CreateLcdBackground(opts);
             if (err != E_OK) {
                 MEDIA_ERR_LOG("CreateLcdBackground failed : %{public}d", err);
@@ -424,13 +421,13 @@ int32_t ThumbnailService::GenerateThumbnailBackground()
     return err;
 }
 
-int32_t ThumbnailService::UpgradeThumbnailBackground()
+int32_t ThumbnailService::UpgradeThumbnailBackground(bool isWifiConnected)
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE
     };
-    int32_t err = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts);
+    int32_t err = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, isWifiConnected);
     if (err != E_OK) {
         MEDIA_ERR_LOG("UpgradeThumbnailBackground failed : %{public}d", err);
     }

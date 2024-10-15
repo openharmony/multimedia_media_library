@@ -21,6 +21,7 @@
 #include "if_system_ability_manager.h"
 #include "iservice_registry.h"
 #include "media_app_uri_permission_column.h"
+#include "media_app_uri_sensitive_column.h"
 #include "media_library_manager.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
@@ -111,13 +112,8 @@ MedialibraryAppStateObserverManager &MedialibraryAppStateObserverManager::GetIns
     return instance;
 }
 
-static void TryUnSubscribeAppState()
+static int32_t CountTemporaryPermission(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
-    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Uripermission Delete failed, rdbStore is null.");
-        return;
-    }
     NativeRdb::AbsRdbPredicates predicatesUnSubscribe(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     vector<string> permissionTypes;
     permissionTypes.emplace_back(to_string(
@@ -138,24 +134,41 @@ static void TryUnSubscribeAppState()
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("GetRowCount failed ret:%{public}d", ret);
     }
-    if (count == 0) {
+
+    return count;
+}
+
+static int32_t CountHideSensitive(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    NativeRdb::AbsRdbPredicates predicatesUnSubscribe(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
+    vector<string> columns = { AppUriPermissionColumn::ID };
+    auto resultSet = rdbStore->Query(predicatesUnSubscribe, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Can not query URIPERMISSION");
+    }
+
+    int32_t count = 0;
+    auto ret = resultSet->GetRowCount(count);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("GetRowCount failed ret:%{public}d", ret);
+    }
+
+    return count;
+}
+
+static void TryUnSubscribeAppState(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    int32_t countPermission = CountTemporaryPermission(rdbStore);
+    int32_t countSensitive = CountHideSensitive(rdbStore);
+    if (countPermission == 0 && countSensitive == 0) {
         MedialibraryAppStateObserverManager::GetInstance().UnSubscribeAppState();
         MEDIA_INFO_LOG("No temporary permission record remains ,UnSubscribeAppState");
     }
 }
 
-void MedialibraryAppStateObserver::OnAppStopped(const AppStateData &appStateData)
+static int32_t DeleteTemporaryPermission(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const string &appId)
 {
-    auto bundleName = appStateData.bundleName;
-    MEDIA_INFO_LOG("MedialibraryAppStateObserver OnAppStopped, bundleName:%{public}s", bundleName.c_str());
-
-    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Uripermission Delete failed, rdbStore is null.");
-        return;
-    }
     NativeRdb::AbsRdbPredicates predicates(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
-    string appId = PermissionUtils::GetAppIdByBundleName(bundleName);
     predicates.EqualTo(AppUriPermissionColumn::APP_ID, appId);
     vector<string> permissionTypes;
     permissionTypes.emplace_back(to_string(
@@ -172,10 +185,41 @@ void MedialibraryAppStateObserver::OnAppStopped(const AppStateData &appStateData
     }
     MEDIA_INFO_LOG("Uripermission Delete retVal: %{public}d, deletedRows: %{public}d", ret, deletedRows);
 
-    if (deletedRows == 0) {
+    return deletedRows;
+}
+
+static int32_t DeleteHideSensitive(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const string &appId)
+{
+    NativeRdb::AbsRdbPredicates predicates(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
+    predicates.EqualTo(AppUriPermissionColumn::APP_ID, appId);
+    int32_t deletedRows = -1;
+    auto ret = rdbStore->Delete(deletedRows, predicates);
+    if (ret != NativeRdb::E_OK || deletedRows < 0) {
+        MEDIA_ERR_LOG("Story Delete db failed, errCode = %{public}d", ret);
+    }
+    MEDIA_INFO_LOG("Uripermission Delete retVal: %{public}d, deletedRows: %{public}d", ret, deletedRows);
+
+    return deletedRows;
+}
+
+void MedialibraryAppStateObserver::OnAppStopped(const AppStateData &appStateData)
+{
+    auto bundleName = appStateData.bundleName;
+    auto uid = appStateData.uid;
+    MEDIA_INFO_LOG("MedialibraryAppStateObserver OnAppStopped, bundleName:%{public}s", bundleName.c_str());
+
+    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Uripermission Delete failed, rdbStore is null.");
         return;
     }
-    TryUnSubscribeAppState();
+    string appId = PermissionUtils::GetAppIdByBundleName(bundleName, uid);
+    int32_t deletedRowsPermission = DeleteTemporaryPermission(rdbStore, appId);
+    int32_t deletedRowsSensitive = DeleteHideSensitive(rdbStore, appId);
+    if (deletedRowsPermission == 0 && deletedRowsSensitive == 0) {
+        return;
+    }
+    TryUnSubscribeAppState(rdbStore);
 }
 }  // namespace Media
 }  // namespace OHOS

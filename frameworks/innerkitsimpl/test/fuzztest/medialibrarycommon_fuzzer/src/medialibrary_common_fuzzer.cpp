@@ -66,14 +66,48 @@ static void CommonUtilsTest(const uint8_t *data, size_t size)
     Media::MediaLibraryCommonUtils::AppendSelections(selection);
 }
 
+static void DfxTest(const uint8_t *data, size_t size)
+{
+    Media::DfxDatabaseUtils::QueryFromPhotos(FuzzInt32(data), FuzzInt32(data));
+    Media::DfxDatabaseUtils::QueryAlbumInfoBySubtype(FuzzInt32(data));
+    Media::DfxDatabaseUtils::QueryDirtyCloudPhoto();
+    Media::DfxDatabaseUtils::QueryAnalysisVersion(FuzzString(data, size), FuzzString(data, size));
+    int32_t downloadedThumb;
+    int32_t generatedThumb;
+    Media::DfxDatabaseUtils::QueryDownloadedAndGeneratedThumb(downloadedThumb, generatedThumb);
+    int32_t totalDownload;
+    Media::DfxDatabaseUtils::QueryTotalCloudThumb(totalDownload);
+    Media::DfxDatabaseUtils::QueryDbVersion();
+    Media::PhotoRecordInfo info = {
+        .imageCount = FuzzInt32(data),
+        .videoCount = FuzzInt32(data)
+    };
+    Media::DfxDatabaseUtils::QueryPhotoRecordInfo(info);
+}
+
 static void PermissionUtilsTest(const uint8_t *data, size_t size)
 {
     Media::PermissionUtils::CheckCallerPermission(FuzzString(data, size));
+    std::vector<std::string> perms;
+    Media::PermissionUtils::CheckCallerPermission(perms);
+    Media::PermissionUtils::CheckPhotoCallerPermission(perms);
+    Media::PermissionUtils::CheckPhotoCallerPermission(FuzzString(data, size));
+    Media::PermissionUtils::CheckHasPermission(perms);
+    perms.push_back(FuzzString(data, size));
+    Media::PermissionUtils::CheckHasPermission(perms);
     string packageName;
     Media::PermissionUtils::GetPackageName(FuzzInt32(data), packageName);
     Media::PermissionUtils::CheckIsSystemAppByUid();
-    Media::PermissionUtils::IsNativeSAApp();
     Media::PermissionUtils::GetPackageNameByBundleName(FuzzString(data, size));
+    Media::PermissionUtils::GetAppIdByBundleName(packageName);
+    Media::PermissionUtils::IsSystemApp();
+    Media::PermissionUtils::IsNativeSAApp();
+    Media::PermissionUtils::IsRootShell();
+    Media::PermissionUtils::IsHdcShell();
+    Media::PermissionUtils::GetTokenId();
+    Media::PermissionUtils::ClearBundleInfoInCache();
+    Media::PermissionUtils::CollectPermissionInfo(FuzzString(data, size), FuzzInt32(data),
+        static_cast<Security::AccessToken::PermissionUsedType>(FuzzInt32(data)));
 }
 
 static void FileUriTest(const uint8_t *data, size_t size)
@@ -118,7 +152,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::CommonUtilsTest(data, size);
     OHOS::PermissionUtilsTest(data, size);
     OHOS::FileUriTest(data, size);
-    // OHOS::DfxTest(data, size);
+    OHOS::DfxTest(data, size);
     OHOS::ExifTest(data, size);
     OHOS::PhotoProxyTest(data, size);
     return 0;

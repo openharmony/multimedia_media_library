@@ -27,7 +27,7 @@ std::shared_ptr<MediaDataShareExtAbility> MediaDataShareStubImpl::GetOwner()
 
 std::vector<std::string> MediaDataShareStubImpl::GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter)
 {
-    MEDIA_INFO_LOG("begin.");
+    MEDIA_DEBUG_LOG("begin.");
     std::vector<std::string> ret;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -36,7 +36,7 @@ std::vector<std::string> MediaDataShareStubImpl::GetFileTypes(const Uri &uri, co
         return ret;
     }
     ret = extension->GetFileTypes(uri, mimeTypeFilter);
-    MEDIA_INFO_LOG("end successfully.");
+    MEDIA_DEBUG_LOG("end successfully.");
     return ret;
 }
 
@@ -55,7 +55,7 @@ int MediaDataShareStubImpl::OpenFile(const Uri &uri, const std::string &mode)
 
 int MediaDataShareStubImpl::OpenRawFile(const Uri &uri, const std::string &mode)
 {
-    MEDIA_INFO_LOG("begin.");
+    MEDIA_DEBUG_LOG("begin.");
     int ret = -1;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -64,7 +64,7 @@ int MediaDataShareStubImpl::OpenRawFile(const Uri &uri, const std::string &mode)
         return ret;
     }
     ret = extension->OpenRawFile(uri, mode);
-    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
+    MEDIA_DEBUG_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
@@ -135,7 +135,7 @@ std::shared_ptr<DataShareResultSet> MediaDataShareStubImpl::Query(const Uri &uri
 
 std::string MediaDataShareStubImpl::GetType(const Uri &uri)
 {
-    MEDIA_INFO_LOG("begin.");
+    MEDIA_DEBUG_LOG("begin.");
     std::string ret = "";
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -144,7 +144,7 @@ std::string MediaDataShareStubImpl::GetType(const Uri &uri)
         return ret;
     }
     ret = extension->GetType(uri);
-    MEDIA_INFO_LOG("end successfully.");
+    MEDIA_DEBUG_LOG("end successfully.");
     return ret;
 }
 
@@ -165,7 +165,7 @@ int MediaDataShareStubImpl::BatchInsert(const Uri &uri, const std::vector<DataSh
 
 bool MediaDataShareStubImpl::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
-    MEDIA_INFO_LOG("begin.");
+    MEDIA_DEBUG_LOG("begin.");
     bool ret = false;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -174,13 +174,13 @@ bool MediaDataShareStubImpl::RegisterObserver(const Uri &uri, const sptr<AAFwk::
         return ret;
     }
     ret = extension->RegisterObserver(uri, dataObserver);
-    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
+    MEDIA_DEBUG_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
 bool MediaDataShareStubImpl::UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
-    MEDIA_INFO_LOG("begin.");
+    MEDIA_DEBUG_LOG("begin.");
     bool ret = false;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -189,13 +189,13 @@ bool MediaDataShareStubImpl::UnregisterObserver(const Uri &uri, const sptr<AAFwk
         return ret;
     }
     ret = extension->UnregisterObserver(uri, dataObserver);
-    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
+    MEDIA_DEBUG_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
 bool MediaDataShareStubImpl::NotifyChange(const Uri &uri)
 {
-    MEDIA_INFO_LOG("begin.");
+    MEDIA_DEBUG_LOG("begin.");
     bool ret = false;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -204,13 +204,13 @@ bool MediaDataShareStubImpl::NotifyChange(const Uri &uri)
         return ret;
     }
     ret = extension->NotifyChange(uri);
-    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
+    MEDIA_DEBUG_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
 Uri MediaDataShareStubImpl::NormalizeUri(const Uri &uri)
 {
-    MEDIA_INFO_LOG("begin.");
+    MEDIA_DEBUG_LOG("begin.");
     Uri urivalue("");
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -219,13 +219,13 @@ Uri MediaDataShareStubImpl::NormalizeUri(const Uri &uri)
         return urivalue;
     }
     urivalue = extension->NormalizeUri(uri);
-    MEDIA_INFO_LOG("end successfully.");
+    MEDIA_DEBUG_LOG("end successfully.");
     return urivalue;
 }
 
 Uri MediaDataShareStubImpl::DenormalizeUri(const Uri &uri)
 {
-    MEDIA_INFO_LOG("begin.");
+    MEDIA_DEBUG_LOG("begin.");
     Uri urivalue("");
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -234,7 +234,7 @@ Uri MediaDataShareStubImpl::DenormalizeUri(const Uri &uri)
         return urivalue;
     }
     urivalue = extension->DenormalizeUri(uri);
-    MEDIA_INFO_LOG("end successfully.");
+    MEDIA_DEBUG_LOG("end successfully.");
     return urivalue;
 }
 } // namespace DataShare

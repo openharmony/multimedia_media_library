@@ -15,7 +15,8 @@
 
 #include "cloud_sync_helper.h"
 #include "medialibrary_rdb_transaction.h"
-
+#include "medialibrary_restore.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 
 namespace OHOS::Media {
@@ -73,7 +74,7 @@ int32_t TransactionOperations::BeginTransaction(bool isUpgrade)
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
     }
-    MEDIA_DEBUG_LOG("Start transaction");
+    MEDIA_INFO_LOG("Start transaction time is %{public}" PRId64, MediaFileUtils::UTCTimeMilliSeconds());
 
     unique_lock<mutex> cvLock(transactionMutex_);
     if (isInTransaction_.load()) {
@@ -82,10 +83,7 @@ int32_t TransactionOperations::BeginTransaction(bool isUpgrade)
     }
 
     int curTryTime = 0;
-    int maxTryTimes = MAX_TRY_TIMES;
-    if (isUpgrade) {
-        maxTryTimes = MAX_TRY_TIMES_FOR_UPGRADE;
-    }
+    int maxTryTimes = isUpgrade ? MAX_TRY_TIMES_FOR_UPGRADE : MAX_TRY_TIMES;
     while (curTryTime < maxTryTimes) {
         if (rdbStore_->IsInTransaction()) {
             if (!isInTransaction_.load()) {
@@ -103,7 +101,8 @@ int32_t TransactionOperations::BeginTransaction(bool isUpgrade)
         }
 
         int32_t errCode = rdbStore_->BeginTransaction();
-        if (errCode == SQLITE3_DATABASE_LOCKER || errCode == SQLITE3_DATABASE_LOCKER_NEW) {
+        if (errCode == NativeRdb::E_SQLITE_LOCKED || errCode == NativeRdb::E_DATABASE_BUSY ||
+            errCode == NativeRdb::E_SQLITE_BUSY) {
             curTryTime++;
             MEDIA_ERR_LOG("Sqlite database file is locked! try %{public}d times...", curTryTime);
             continue;
@@ -111,6 +110,7 @@ int32_t TransactionOperations::BeginTransaction(bool isUpgrade)
             MEDIA_ERR_LOG("Start Transaction failed, errCode=%{public}d", errCode);
             isInTransaction_.store(false);
             transactionCV_.notify_one();
+            MediaLibraryRestore::GetInstance().CheckRestore(errCode);
             return E_HAS_DB_ERROR;
         } else {
             isInTransaction_.store(true);
@@ -127,20 +127,20 @@ int32_t TransactionOperations::TransactionCommit()
     if (rdbStore_ == nullptr) {
         return E_HAS_DB_ERROR;
     }
-    MEDIA_DEBUG_LOG("Try commit transaction");
+    MEDIA_INFO_LOG("Try commit transaction time is %{public}" PRId64, MediaFileUtils::UTCTimeMilliSeconds());
 
     if (!(isInTransaction_.load()) || !(rdbStore_->IsInTransaction())) {
         MEDIA_ERR_LOG("no transaction now");
-        return E_HAS_DB_ERROR;
+        return E_OK;
     }
 
     int32_t errCode = rdbStore_->Commit();
-    isInTransaction_.store(false);
-    transactionCV_.notify_all();
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("commit failed, errCode=%{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
+    isInTransaction_.store(false);
+    transactionCV_.notify_all();
 
     if (isSkipCloudSync) {
         MEDIA_INFO_LOG("recover cloud sync for commit");

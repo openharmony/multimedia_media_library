@@ -64,7 +64,7 @@ const std::string LOCATION_ALBUM_TYPE = std::to_string(PhotoAlbumType::SMART) + 
 const std::string LOCATION_ALBUM_SUBTYPE = std::to_string(PhotoAlbumSubType::GEOGRAPHY_LOCATION) +
     " AS " + ALBUM_SUBTYPE;
 const std::string LOCATION_COUNT = "COUNT(*) AS " + COUNT;
-const std::string LOCATION_DATE_MODIFIED = "MAX(date_modified) AS " + DATE_MODIFIED;
+const std::string LOCATION_DATE_MODIFIED = "MAX(" + MediaColumn::MEDIA_DATE_ADDED + ") AS " + DATE_MODIFIED;
 const std::string CITY_ALBUM_NAME =  CITY_NAME + " AS " + ALBUM_NAME;
 const std::string LOCATION_COVER_URI =
     " (SELECT '" + PhotoColumn::PHOTO_URI_PREFIX + "'||" + MediaColumn::MEDIA_ID + "||" +
@@ -81,7 +81,7 @@ const std::string LOCATION_COVER_URI =
 
 // default fetch columns
 const set<string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
-    ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT, ALBUM_DATE_MODIFIED,
+    ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT, ALBUM_DATE_MODIFIED
 };
 
 // location default fetch columns
@@ -154,6 +154,7 @@ const std::string PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER =
     std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
     " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func(); END;";
 
+
 const std::string PhotoAlbumColumns::ALBUM_DELETE_ORDER_TRIGGER =
         " CREATE TRIGGER IF NOT EXISTS update_order_trigger AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
         " FOR EACH ROW " +
@@ -178,15 +179,6 @@ bool PhotoAlbumColumns::IsPhotoAlbumColumn(const string &columnName)
         PhotoAlbumColumns::ALBUM_RELATIVE_PATH, CONTAINS_HIDDEN, HIDDEN_COUNT, HIDDEN_COVER
     };
     return PHOTO_ALBUM_COLUMNS.find(columnName) != PHOTO_ALBUM_COLUMNS.end();
-}
-
-bool PhotoAlbumColumns::IsLocationAlbumColumn(const string &columnName)
-{
-    static const set<string> LOCATION_ALBUM_COLUMNS = {
-        LOCATION_ALBUM_TYPE, LOCATION_ALBUM_SUBTYPE, LOCATION_COUNT, LOCATION_DATE_MODIFIED,
-        CITY_ALBUM_NAME, LOCATION_COVER_URI
-    };
-    return LOCATION_ALBUM_COLUMNS.find(columnName) != LOCATION_ALBUM_COLUMNS.end();
 }
 
 inline void SetDefaultPredicatesCondition(RdbPredicates &predicates, const int32_t dateTrashed,
@@ -311,6 +303,18 @@ static void GetAllImagesPredicates(RdbPredicates &predicates, const bool hiddenS
     predicates.EndWrap();
 }
 
+static void GetCloudEnhancementPredicates(RdbPredicates &predicates, const bool hiddenState)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenState, 0, false);
+    predicates.EqualTo(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
+        to_string(static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT)));
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
+    predicates.EndWrap();
+}
+
 void PhotoAlbumColumns::GetSourceAlbumPredicates(const int32_t albumId, RdbPredicates &predicates,
     const bool hiddenState)
 {
@@ -346,6 +350,9 @@ void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype
         }
         case PhotoAlbumSubType::IMAGE: {
             return GetAllImagesPredicates(predicates, hiddenState);
+        }
+        case PhotoAlbumSubType::CLOUD_ENHANCEMENT: {
+            return GetCloudEnhancementPredicates(predicates, hiddenState);
         }
         default: {
             predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(0));

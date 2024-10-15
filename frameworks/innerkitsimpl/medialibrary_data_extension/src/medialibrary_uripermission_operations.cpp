@@ -38,10 +38,17 @@ using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 using namespace OHOS::RdbDataShareAdapter;
 
+constexpr int32_t NO_DB_OPERATION = -1;
 constexpr int32_t UPDATE_DB_OPERATION = 0;
 constexpr int32_t INSERT_DB_OPERATION = 1;
 constexpr int32_t PHOTOSTYPE = 1;
 constexpr int32_t AUDIOSTYPE = 2;
+
+constexpr int32_t FILE_ID_INDEX = 0;
+constexpr int32_t URI_TYPE_INDEX = 1;
+constexpr int32_t PERMISSION_TYPE_INDEX = 2;
+constexpr int32_t APP_ID_INDEX = 3;
+
 const string DB_OPERATION = "uriPermission_operation";
 
 static bool CheckMode(string& mode)
@@ -69,6 +76,7 @@ int32_t UriPermissionOperations::UpdateOperation(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("UriPermission update operation, rdbStore is null.");
         return E_HAS_DB_ERROR;
     }
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     int32_t updateRows = -1;
     int32_t errCode = rdbStore->Update(cmd, updateRows);
     if (errCode != NativeRdb::E_OK || updateRows < 0) {
@@ -78,6 +86,42 @@ int32_t UriPermissionOperations::UpdateOperation(MediaLibraryCommand &cmd)
     return static_cast<int32_t>(updateRows);
 }
 
+static void DeleteAllTemporaryOperation(AsyncTaskData *data)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("UriPermission update operation, rdbStore is null.");
+    }
+    NativeRdb::RdbPredicates rdbPredicate(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    vector<string> permissionTypes;
+    permissionTypes.emplace_back(to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO)));
+    permissionTypes.emplace_back(to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO)));
+    permissionTypes.emplace_back(to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
+    rdbPredicate.And()->In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
+    int32_t ret = rdbStore->Delete(rdbPredicate);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("UriPermission table delete all temporary permission failed");
+        return;
+    }
+    MEDIA_INFO_LOG("UriPermission table delete all %{public}d rows temporary permission success", ret);
+}
+
+void UriPermissionOperations::DeleteAllTemporaryAsync()
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return;
+    }
+    shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask =
+        make_shared<MediaLibraryAsyncTask>(DeleteAllTemporaryOperation, nullptr);
+    if (notifyAsyncTask != nullptr) {
+        asyncWorker->AddTask(notifyAsyncTask, false);
+    } else {
+        MEDIA_ERR_LOG("Failed to create async task for UriPermission");
+    }
+}
+
 int32_t UriPermissionOperations::DeleteOperation(MediaLibraryCommand &cmd)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -85,6 +129,7 @@ int32_t UriPermissionOperations::DeleteOperation(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("UriPermission update operation, rdbStore is null.");
         return E_HAS_DB_ERROR;
     }
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     int32_t deleteRows = -1;
     int32_t errCode = rdbStore->Delete(cmd, deleteRows);
     if (errCode != NativeRdb::E_OK || deleteRows < 0) {
@@ -101,26 +146,187 @@ int32_t UriPermissionOperations::InsertOperation(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("UriPermission insert operation, rdbStore is null.");
         return E_HAS_DB_ERROR;
     }
-    int64_t outRowId = -1;
-    int32_t errCode = rdbStore->Insert(cmd, outRowId);
-    if (errCode != NativeRdb::E_OK || outRowId < 0) {
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    int64_t rowId = -1;
+    int32_t errCode = rdbStore->Insert(cmd, rowId);
+    if (errCode != NativeRdb::E_OK || rowId < 0) {
+        MEDIA_ERR_LOG("UriPermission insert db failed, errCode = %{public}d", errCode);
+        return E_HAS_DB_ERROR;
+    }
+    return static_cast<int32_t>(rowId);
+}
+
+int32_t UriPermissionOperations::BatchInsertOperation(MediaLibraryCommand &cmd,
+    const std::vector<ValuesBucket> &values)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("UriPermission insert operation, rdbStore is null.");
+        return E_HAS_DB_ERROR;
+    }
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    int64_t outInsertNum = -1;
+    int32_t errCode = rdbStore->BatchInsert(cmd, outInsertNum, values);
+    if (errCode != NativeRdb::E_OK || outInsertNum < 0) {
         MEDIA_ERR_LOG("UriPermission Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
-    return static_cast<int32_t>(outRowId);
+    return static_cast<int32_t>(outInsertNum);
+}
+
+static void QueryUriPermission(MediaLibraryCommand &cmd, const std::vector<DataShareValuesBucket> &values,
+    std::shared_ptr<OHOS::NativeRdb::ResultSet> &resultSet)
+{
+    vector<string> columns;
+    vector<string> predicateInColumns;
+    DataSharePredicates predicates;
+    bool isValid;
+    string appid = values.at(0).Get(AppUriPermissionColumn::APP_ID, isValid);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("UriPermission query operation, rdbStore is null.");
+        return;
+    }
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    for (const auto &val : values) {
+        predicateInColumns.push_back(static_cast<string>(val.Get(AppUriPermissionColumn::FILE_ID, isValid)));
+    }
+    predicates.In(AppUriPermissionColumn::FILE_ID, predicateInColumns);
+    predicates.And()->EqualTo(AppUriPermissionColumn::APP_ID, appid);
+    cmd.SetDataSharePred(predicates);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    resultSet = rdbStore->Query(cmd, columns);
+    return;
+}
+
+static void GetSingleDbOperation(const vector<DataShareValuesBucket> &values, vector<int32_t> &dbOperation,
+    vector<int32_t> &querySingleResultSet, int index)
+{
+    bool isValid;
+    int32_t fileId = std::stoi((static_cast<string>(values.at(index).Get(AppUriPermissionColumn::FILE_ID, isValid))));
+    int32_t uriType = values.at(index).Get(AppUriPermissionColumn::URI_TYPE, isValid);
+    int32_t permissionType = values.at(index).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
+    if ((fileId == querySingleResultSet.at(FILE_ID_INDEX)) && (uriType == querySingleResultSet.at(URI_TYPE_INDEX))) {
+        if ((querySingleResultSet.at(PERMISSION_TYPE_INDEX) == AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE) ||
+            (permissionType == querySingleResultSet.at(PERMISSION_TYPE_INDEX))) {
+            dbOperation[index] = NO_DB_OPERATION;
+        } else {
+            dbOperation[index] = UPDATE_DB_OPERATION;
+        }
+    }
+}
+
+static void GetMediafileQueryResult(const vector<string>& predicateInColumns, OperationObject object,
+    std::vector<int32_t>& fileIdList)
+{
+    MediaLibraryCommand queryCmd(object, OperationType::QUERY);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("UriPermission query operation, rdbStore is null.");
+        return;
+    }
+    vector<string> columns;
+    queryCmd.GetAbsRdbPredicates()->In(AppUriPermissionColumn::FILE_ID, predicateInColumns);
+    auto queryResult = rdbStore->Query(queryCmd, columns);
+    if ((queryResult == nullptr) || (queryResult->GoToFirstRow() != NativeRdb::E_OK)) {
+        MEDIA_INFO_LOG("UriPermission query result is null.");
+        return;
+    }
+    do {
+        fileIdList.push_back(GetInt32Val(AppUriPermissionColumn::FILE_ID, queryResult));
+    } while (!queryResult->GoToNextRow());
+}
+
+static void FilterSameElementFromColumns(vector<string>& columns)
+{
+    if (!columns.empty()) {
+        set<string> sec(columns.begin(), columns.end());
+        columns.assign(sec.begin(), sec.end());
+    }
+}
+
+static void FilterNotExistUri(const std::vector<DataShareValuesBucket> &values, vector<int32_t>& dbOperation)
+{
+    vector<int32_t> photoFileIdList;
+    vector<int32_t> audioFileIdList;
+    vector<string> photosColumns;
+    vector<string> audioColumns;
+    bool isValid;
+    for (const auto &val : values) {
+        if (static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isValid)) == PHOTOSTYPE) {
+            photosColumns.push_back(val.Get(AppUriPermissionColumn::FILE_ID, isValid));
+        } else if (static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isValid)) == AUDIOSTYPE) {
+            audioColumns.push_back(val.Get(AppUriPermissionColumn::FILE_ID, isValid));
+        }
+    }
+    FilterSameElementFromColumns(photosColumns);
+    FilterSameElementFromColumns(audioColumns);
+    if (!photosColumns.empty()) {
+        GetMediafileQueryResult(photosColumns, OperationObject::FILESYSTEM_PHOTO, photoFileIdList);
+    }
+    if (!audioColumns.empty()) {
+        GetMediafileQueryResult(audioColumns, OperationObject::FILESYSTEM_AUDIO, audioFileIdList);
+    }
+    for (size_t i = 0; i < values.size(); i++) {
+        int32_t fileId = std::stoi((static_cast<string>(values[i].Get(AppUriPermissionColumn::FILE_ID, isValid))));
+        int32_t uriType = values[i].Get(AppUriPermissionColumn::URI_TYPE, isValid);
+        if (uriType == PHOTOSTYPE) {
+            auto notExistIt = std::find(photoFileIdList.begin(), photoFileIdList.end(), fileId);
+            auto sameIt = std::find(photosColumns.begin(), photosColumns.end(), to_string(fileId));
+            if (notExistIt == photoFileIdList.end() || sameIt == photosColumns.end()) {
+                dbOperation[i] = NO_DB_OPERATION;
+            }
+            if (sameIt != photosColumns.end()) {
+                photosColumns.erase(sameIt);
+            }
+        } else if (uriType == AUDIOSTYPE) {
+            auto it = std::find(audioFileIdList.begin(), audioFileIdList.end(), fileId);
+            auto sameIt = std::find(audioColumns.begin(), audioColumns.end(), to_string(fileId));
+            if (it == audioFileIdList.end() || sameIt == audioColumns.end()) {
+                dbOperation[i] = NO_DB_OPERATION;
+            }
+            if (sameIt != audioColumns.end()) {
+                audioColumns.erase(sameIt);
+            }
+        }
+    }
+}
+
+static void GetAllUriDbOperation(const vector<DataShareValuesBucket> &values, vector<int32_t> &dbOperation,
+    std::shared_ptr<OHOS::NativeRdb::ResultSet> &queryResult)
+{
+    for (const auto &val : values) {
+        dbOperation.push_back(INSERT_DB_OPERATION);
+    }
+    if ((queryResult == nullptr) || (queryResult->GoToFirstRow() != NativeRdb::E_OK)) {
+        MEDIA_INFO_LOG("UriPermission query result is null.");
+        return;
+    }
+    do {
+        vector<int32_t> querySingleResultSet;
+        querySingleResultSet.push_back(GetInt32Val(AppUriPermissionColumn::FILE_ID, queryResult));
+        querySingleResultSet.push_back(GetInt32Val(AppUriPermissionColumn::URI_TYPE, queryResult));
+        querySingleResultSet.push_back(GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryResult));
+        for (size_t i = 0; i < values.size(); i++) {
+            GetSingleDbOperation(values, dbOperation, querySingleResultSet, i);
+        }
+    } while (!queryResult->GoToNextRow());
 }
 
 static void BatchUpdate(MediaLibraryCommand &cmd, std::vector<string> inColumn, int32_t tableType,
     const std::vector<DataShareValuesBucket> &values)
 {
-    bool isvaild;
-    string appid = values[0].Get(AppUriPermissionColumn::APP_ID, isvaild);
-    int32_t permissionType = values[0].Get(AppUriPermissionColumn::PERMISSION_TYPE, isvaild);
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    bool isValid;
+    string appid = values.at(0).Get(AppUriPermissionColumn::APP_ID, isValid);
+    int32_t permissionType = values.at(0).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
     DataShareValuesBucket valuesBucket;
     DataSharePredicates predicates;
+    predicates.In(AppUriPermissionColumn::FILE_ID, inColumn);
     predicates.EqualTo(AppUriPermissionColumn::APP_ID, appid);
     predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, to_string(tableType));
-    predicates.And()->In(AppUriPermissionColumn::FILE_ID, inColumn);
     valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
     ValuesBucket value = RdbUtils::ToValuesBucket(valuesBucket);
     if (value.IsEmpty()) {
@@ -135,54 +341,94 @@ static void BatchUpdate(MediaLibraryCommand &cmd, std::vector<string> inColumn, 
     UriPermissionOperations::UpdateOperation(cmd);
 }
 
-int32_t UriPermissionOperations::BatchInsertOperation(MediaLibraryCommand &cmd,
+static void AppstateOberserverBuild(int32_t permissionType)
+{
+    if (permissionType != static_cast<int32_t>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO)) {
+        MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+    }
+}
+
+static int32_t ValueBucketCheck(const std::vector<DataShareValuesBucket> &values)
+{
+    bool isValidArr[] = {false, false, false, false};
+    if (values.empty()) {
+        return E_ERR;
+    }
+    for (const auto &val : values) {
+        val.Get(AppUriPermissionColumn::FILE_ID, isValidArr[FILE_ID_INDEX]);
+        val.Get(AppUriPermissionColumn::URI_TYPE, isValidArr[URI_TYPE_INDEX]);
+        val.Get(AppUriPermissionColumn::PERMISSION_TYPE, isValidArr[PERMISSION_TYPE_INDEX]);
+        val.Get(AppUriPermissionColumn::APP_ID, isValidArr[APP_ID_INDEX]);
+        for (size_t i = 0; i < sizeof(isValidArr); i++) {
+            if ((isValidArr[i]) == false) {
+                return E_ERR;
+            }
+        }
+    }
+    return E_OK;
+}
+
+static void InsertValueBucketPrepare(const std::vector<DataShareValuesBucket> &values, int32_t fileId,
+    int32_t uriType, std::vector<ValuesBucket> &batchInsertBucket)
+{
+    bool isValid;
+    ValuesBucket insertValues;
+    string appid = values.at(0).Get(AppUriPermissionColumn::APP_ID, isValid);
+    int32_t permissionType = values.at(0).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
+    insertValues.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
+    insertValues.Put(AppUriPermissionColumn::FILE_ID, fileId);
+    insertValues.Put(AppUriPermissionColumn::APP_ID, appid);
+    insertValues.Put(AppUriPermissionColumn::URI_TYPE, uriType);
+    insertValues.Put(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    batchInsertBucket.push_back(insertValues);
+}
+
+int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
     const std::vector<DataShareValuesBucket> &values)
 {
     std::vector<string> photosValues;
     std::vector<string> audiosValues;
+    std::vector<int32_t> dbOperation;
+    std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet;
+    std::vector<ValuesBucket>  batchInsertBucket;
     bool photoNeedToUpdate = false;
     bool audioNeedToUpdate = false;
-    bool isvaild = false;
+    bool needToInsert = false;
+    bool isValid = false;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     TransactionOperations op(rdbStore->GetRaw());
     int32_t err = op.Start();
-    int32_t permissionType = values[0].Get(AppUriPermissionColumn::PERMISSION_TYPE, isvaild);
-    if (permissionType == static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO)) {
-        MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+    if (ValueBucketCheck(values) != E_OK) {
+        return E_ERR;
     }
-    for (auto val : values) {
-        if ((static_cast<int32_t>(val.Get(DB_OPERATION, isvaild)) == UPDATE_DB_OPERATION) &&
-            (static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isvaild)) == PHOTOSTYPE)) {
-            photosValues.push_back(to_string(static_cast<int32_t>(val.Get(AppUriPermissionColumn::FILE_ID, isvaild))));
+    string appid = values.at(0).Get(AppUriPermissionColumn::APP_ID, isValid);
+    int32_t permissionType = values.at(0).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
+    AppstateOberserverBuild(permissionType);
+    QueryUriPermission(cmd, values, resultSet);
+    GetAllUriDbOperation(values, dbOperation, resultSet);
+    FilterNotExistUri(values, dbOperation);
+    for (size_t i = 0; i < values.size(); i++) {
+        int32_t fileId = std::stoi((static_cast<string>(values.at(i).Get(AppUriPermissionColumn::FILE_ID, isValid))));
+        int32_t uriType = values.at(i).Get(AppUriPermissionColumn::URI_TYPE, isValid);
+        if ((dbOperation.at(i) == UPDATE_DB_OPERATION) && (uriType == PHOTOSTYPE)) {
             photoNeedToUpdate = true;
-        } else if ((static_cast<int32_t>(val.Get(DB_OPERATION, isvaild)) == UPDATE_DB_OPERATION) &&
-            (static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isvaild)) == AUDIOSTYPE)) {
-            audiosValues.push_back(to_string(static_cast<int32_t>(val.Get(AppUriPermissionColumn::FILE_ID, isvaild))));
+            photosValues.push_back(static_cast<string>(values.at(i).Get(AppUriPermissionColumn::FILE_ID, isValid)));
+        } else if ((dbOperation.at(i) == UPDATE_DB_OPERATION) && (uriType == AUDIOSTYPE)) {
             audioNeedToUpdate = true;
-        } else if (static_cast<int32_t>(val.Get(DB_OPERATION, isvaild)) == INSERT_DB_OPERATION) {
-            DataShareValuesBucket valuesBucket;
-            valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE,
-                static_cast<int32_t>(val.Get(AppUriPermissionColumn::PERMISSION_TYPE, isvaild)));
-            valuesBucket.Put(AppUriPermissionColumn::FILE_ID,
-                static_cast<int32_t>(val.Get(AppUriPermissionColumn::FILE_ID, isvaild)));
-            valuesBucket.Put(AppUriPermissionColumn::APP_ID,
-                static_cast<string>(val.Get(AppUriPermissionColumn::APP_ID, isvaild)));
-            valuesBucket.Put(AppUriPermissionColumn::URI_TYPE,
-                static_cast<int32_t>(val.Get(AppUriPermissionColumn::URI_TYPE, isvaild)));
-            valuesBucket.Put(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
-            ValuesBucket value = RdbUtils::ToValuesBucket(valuesBucket);
-            if (value.IsEmpty()) {
-                return E_INVALID_VALUES;
-            }
-            cmd.SetValueBucket(value);
-            InsertOperation(cmd);
+            audiosValues.push_back(static_cast<string>(values.at(i).Get(AppUriPermissionColumn::FILE_ID, isValid)));
+        } else if (dbOperation.at(i) == INSERT_DB_OPERATION) {
+            needToInsert = true;
+            InsertValueBucketPrepare(values, fileId, uriType, batchInsertBucket);
         }
     }
-    if (photoNeedToUpdate == true) {
+    if (photoNeedToUpdate) {
         BatchUpdate(cmd, photosValues, PHOTOSTYPE, values);
     }
-    if (audioNeedToUpdate == true) {
+    if (audioNeedToUpdate) {
         BatchUpdate(cmd, audiosValues, AUDIOSTYPE, values);
+    }
+    if (needToInsert) {
+        UriPermissionOperations::BatchInsertOperation(cmd, batchInsertBucket);
     }
     op.Finish();
     return E_OK;

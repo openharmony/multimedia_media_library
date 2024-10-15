@@ -20,7 +20,7 @@
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryScannerDbTest : public testing::Test {
+class MediaLibraryScannerTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);

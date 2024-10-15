@@ -66,7 +66,6 @@ struct MediaAssetManagerAsyncContext : NapiError {
     std::string photoId;
     std::string displayName;
     std::string photoPath;
-    std::string callingPkgName;
     std::string requestId;
     napi_value requestIdNapiValue;
     napi_value dataHandler;
@@ -103,6 +102,7 @@ public:
     static MultiStagesCapturePhotoStatus QueryPhotoStatus(int fileId, const string& photoUri,
         std::string &photoId, bool hasReadPermission);
     static void NotifyMediaDataPrepared(AssetHandler *assetHandler);
+    static void DeleteInProcessMapRecord(const std::string &requestUri);
     static void NotifyDataPreparedWithoutRegister(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void OnDataPrepared(napi_env env, napi_value cb, void *context, void *data);
     static void RegisterTaskObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
@@ -110,6 +110,8 @@ public:
         napi_env env);
     static void GetImageSourceNapiObject(const std::string &fileUri, napi_value &imageSourceNapiObj, bool isSource,
         napi_env env);
+    static void GetPictureNapiObject(const std::string &fileUri, napi_value &imageSourceNapiObj, bool isSource,
+        napi_env env, bool& isPicture);
     static void WriteDataToDestPath(std::string requestUri, std::string destUri, napi_value& resultNapiValue,
         bool isSource, napi_env env);
 
@@ -119,13 +121,16 @@ private:
     static bool InitUserFileClient(napi_env env, napi_callback_info info);
     static napi_status ParseRequestMediaArgs(napi_env env, napi_callback_info info,
         unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
+    static napi_status ParseEfficentRequestMediaArgs(napi_env env, napi_callback_info info,
+        unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
     static napi_value JSRequestImage(napi_env env, napi_callback_info info);
+    static napi_value JSRequestEfficientIImage(napi_env env, napi_callback_info info);
     static napi_value JSRequestImageData(napi_env env, napi_callback_info info);
     static napi_value JSRequestMovingPhoto(napi_env env, napi_callback_info info);
-    static napi_value JSRequestVideoFile(napi_env env, napi_callback_info info);
     static napi_value JSCancelRequest(napi_env env, napi_callback_info info);
+    static napi_value JSRequestVideoFile(napi_env env, napi_callback_info info);
     static napi_value JSLoadMovingPhoto(napi_env env, napi_callback_info info);
-    static void ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName);
+    static void ProcessImage(const int fileId, const int deliveryMode);
     static void CancelProcessImage(const std::string &photoId);
     static void AddImage(const int fileId, DeliveryMode deliveryMode);
     static void OnHandleRequestImage(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
