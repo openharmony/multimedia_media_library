@@ -46,7 +46,6 @@ public:
 private:
     std::atomic<bool> stop;
     std::atomic<bool> isThreadAlive;
-    std::thread consumerThread;
     std::mutex queueMutex_;
     std::condition_variable condVar_;
     std::queue<CloudEnhancementThreadTask> taskQueue_;

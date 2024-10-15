@@ -24,15 +24,14 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-static constexpr int32_t WAIT_TIME = 15;
+static constexpr int32_t WAIT_TIME = 30;
 
 EnhancementThreadManager::EnhancementThreadManager()
 {
-    lock_guard<mutex> lock(queueMutex_);
     stop = false;
-    isThreadAlive = false;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    StartConsumerThread();
+    isThreadAlive = false;
+    thread(&EnhancementThreadManager::DealWithTasks, this).detach();
 #endif
 }
 
@@ -43,20 +42,14 @@ EnhancementThreadManager::~EnhancementThreadManager()
         stop = true;
     }
     condVar_.notify_all();
-    if (consumerThread.joinable()) {
-        consumerThread.join();
-    }
 }
 
 void EnhancementThreadManager::StartConsumerThread()
 {
     if (!isThreadAlive) {
         isThreadAlive = true;
-        if (consumerThread.joinable()) {
-            consumerThread.join();
-        }
+        thread(&EnhancementThreadManager::DealWithTasks, this).detach();
     }
-    consumerThread = thread(&EnhancementThreadManager::DealWithTasks, this);
 }
 
 void EnhancementThreadManager::OnProducerCallback(CloudEnhancementThreadTask& task)
@@ -104,7 +97,6 @@ void EnhancementThreadManager::DealWithTasks()
             ExecExtraWork();
         }
     }
-    lock_guard<mutex> lock(queueMutex_);
     MEDIA_INFO_LOG("cloud enhancement thread task queue is empty for %{public}d seconds", WAIT_TIME);
     isThreadAlive = false;
 }
