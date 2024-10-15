@@ -70,7 +70,7 @@ void GrantOldPhotoAssetsReadPermissionCallback::OnResult(int32_t resultCode, con
     SendMessageBack(desFileUris);
 }
 
-void GrantOldPhotoAssetsReadPermissionCallback::OnError(int32_t code, const std::string &name, 
+void GrantOldPhotoAssetsReadPermissionCallback::OnError(int32_t code, const std::string &name,
     const std::string &message)
 {
     NAPI_INFO_LOG("Code is %{public}d, name is %{public}s, message is %{public}s.", code, name.c_str(),

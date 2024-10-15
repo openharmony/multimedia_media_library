@@ -383,7 +383,7 @@ function grantOldPhotoAssetsReadPermission(srcFileUris) {
   }
 
   //check whether srcFileUris is valid
-  for(let srcFileUri of srcFileUris) {
+  for (let srcFileUri of srcFileUris) {
     if (!checkIsUriValid(srcFileUri, true)) {
       console.error('photoAccesshelper invalid uri : ${srcFileUri}.');
       return false;

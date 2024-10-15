@@ -8391,10 +8391,10 @@ napi_value MediaLibraryNapi::GrantOldPhotoAssetsReadPermission(napi_env env, nap
 
     // set want
     OHOS::AAFwk::Want want;
-    shared_ptr<GrantOldPhotoAssetsReadPermissionCallback> callback = 
+    shared_ptr<GrantOldPhotoAssetsReadPermissionCallback> callback =
         make_shared<GrantOldPhotoAssetsReadPermissionCallback>(env, uiContent);
     NAPI_ASSERT(env, InitGrantOldPhotoAssetsReadPermissionRequest(want, callback, env, args, sizeof(args)),
-        "Parse GrantOldPhotoAssetsReadPermission input fail.");
+            "Parse GrantOldPhotoAssetsReadPermission input fail.");
 
     // regist callback and config
     OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
