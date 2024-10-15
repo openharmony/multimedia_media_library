@@ -763,12 +763,13 @@ nlohmann::json BaseRestore::GetCountInfoJson(const std::vector<std::string> &cou
 {
     nlohmann::json countInfoJson;
     countInfoJson[STAT_KEY_TYPE] = STAT_VALUE_COUNT_INFO;
+    size_t limit = MAX_FAILED_FILES_LIMIT;
     for (const auto &type : countInfoTypes) {
         SubCountInfo subCountInfo = GetSubCountInfo(type);
         MEDIA_INFO_LOG("SubCountInfo %{public}s success: %{public}lld, duplicate: %{public}lld, failed: %{public}zu",
             type.c_str(), (long long)subCountInfo.successCount, (long long)subCountInfo.duplicateCount,
             subCountInfo.failedFiles.size());
-        countInfoJson[STAT_KEY_INFOS].push_back(GetSubCountInfoJson(type, subCountInfo));
+        countInfoJson[STAT_KEY_INFOS].push_back(GetSubCountInfoJson(type, subCountInfo, limit));
     }
     return countInfoJson;
 }
@@ -796,19 +797,23 @@ std::unordered_map<std::string, FailedFileInfo> BaseRestore::GetFailedFiles(cons
     return failedFiles;
 }
 
-nlohmann::json BaseRestore::GetSubCountInfoJson(const std::string &type, const SubCountInfo &subCountInfo)
+nlohmann::json BaseRestore::GetSubCountInfoJson(const std::string &type, const SubCountInfo &subCountInfo,
+    size_t &limit)
 {
     nlohmann::json subCountInfoJson;
     subCountInfoJson[STAT_KEY_BACKUP_INFO] = type;
     subCountInfoJson[STAT_KEY_SUCCESS_COUNT] = subCountInfo.successCount;
     subCountInfoJson[STAT_KEY_DUPLICATE_COUNT] = subCountInfo.duplicateCount;
     subCountInfoJson[STAT_KEY_FAILED_COUNT] = subCountInfo.failedFiles.size();
-    std::string detailsPath = BackupFileUtils::GetDetailsPath(sceneCode_, type, subCountInfo.failedFiles);
-    nlohman::json failedFilesJsonList =
-        BackupFileUtils::GetFailedFilesList(sceneCode_, subCountInfo.failedFiles);
-    subCountInfoJson[STAT_KEY_DETAILS] = failedFilesJsonList;
+    // update currentLimit = min(limit, failedFiles.size())
+    size_t currentLimit = limit <= subCountInfo.failedFiles.size() ? limit : subCountInfo.failedFiles.size();
+    std::string detailsPath = BackupFileUtils::GetDetailsPath(sceneCode_, type, subCountInfo.failedFiles, currentLimit);
+    std::vector<std::string> failedFilesList =
+        BackupFileUtils::GetFailedFilesList(sceneCode_, subCountInfo.failedFiles, currentLimit);
+    subCountInfoJson[STAT_KEY_DETAILS] = failedFilesList;
     MEDIA_INFO_LOG("Get %{public}s detail path: %{public}s, size: %{public}zu", type.c_str(),
-        BackupFileUtils::GarbleFilePath(detailsPath, DEFAULT_RESTORE_ID).c_str(), failedFilesJsonList.size());
+        BackupFileUtils::GarbleFilePath(detailsPath, DEFAULT_RESTORE_ID).c_str(), failedFilesList.size());
+    limit -= currentLimit; // update total limit
     return subCountInfoJson;
 }
 
@@ -831,7 +836,7 @@ void BaseRestore::SetErrorCode(int32_t errorCode)
 void BaseRestore::UpdateFailedFileByFileType(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode)
 {
     std::lock_guard<mutex> lock(failedFilesMutex_);
-    FailedFileInfo failedFileInfo(fileInfo, errorCode);
+    FailedFileInfo failedFileInfo(sceneCode_, fileInfo, errorCode);
     if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE)) {
         failedFilesMap_[STAT_TYPE_PHOTO].emplace(fileInfo.oldPath, failedFileInfo);
         return;

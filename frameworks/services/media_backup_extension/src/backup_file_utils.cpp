@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "MediaLibraryBackupUtils"
+
 #include "backup_file_utils.h"
 
 #include <utime.h>
@@ -437,21 +439,21 @@ bool BackupFileUtils::IsFileValid(std::string &filePath, int32_t sceneCode,
 }
 
 std::string BackupFileUtils::GetDetailsPath(int32_t sceneCode, const std::string &type,
-    const std::unordered_map<std::string, FailedFileInfo> &failedFiles)
+    const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit)
 {
     std::string detailsPath = RESTORE_FAILED_FILES_PATH + "_" + type + ".txt";
     if (MediaFileUtils::IsFileExists(detailsPath) && !MediaFileUtils::DeleteFile(detailsPath)) {
         MEDIA_ERR_LOG("%{public}s exists and delete failed", detailsPath.c_str());
         return "";
     }
-    if (failedFiles.empty()) {
+    if (failedFiles.empty() || limit == 0) {
         return "";
     }
     if (MediaFileUtils::CreateAsset(detailsPath) != E_SUCCESS) {
         MEDIA_ERR_LOG("Create %{public}s failed", detailsPath.c_str());
         return "";
     }
-    std::string failedFilesStr = GetFailedFilesStr(sceneCode, failedFiles);
+    std::string failedFilesStr = GetFailedFilesStr(sceneCode, failedFiles, limit);
     if (!MediaFileUtils::WriteStrToFile(detailsPath, failedFilesStr)) {
         MEDIA_ERR_LOG("Write to %{public}s failed", detailsPath.c_str());
         return "";
@@ -460,51 +462,46 @@ std::string BackupFileUtils::GetDetailsPath(int32_t sceneCode, const std::string
 }
 
 std::string BackupFileUtils::GetFailedFilesStr(int32_t sceneCode,
-    const std::unordered_map<std::string, int32_t> &failedFiles)
+    const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit)
 {
     std::stringstream failedFilesStream;
     failedFilesStream << "[";
-    size_t index = 0;
     for (const auto &iter : failedFiles) {
-        failedFilesStream << "\n\"";
-        nlohmann::json failedFileJson = GetFailedFileJson(sceneCode, iter.first, iter.second);
-        failedFilesStream << failedFileJson.dump();
-        index + 1 < failedFiles.size() && index + 1 < MAX_FAILED_FILES_SIZE ? failedFilesStream << "\"," :
-            failedFilesStream << "\"";
-        index++;
-        if (index == MAX_FAILED_FILES_SIZE) {
+        if (limit == 0) {
             break;
         }
+        failedFilesStream << "\n\"";
+        failedFilesStream << GetFailedFile(sceneCode, iter.first, iter.second);
+        limit > 1 ? failedFilesStream << "\"," : failedFilesStream << "\"";
+        limit--;
     }
     failedFilesStream << "\n]";
     return failedFilesStream.str();
 }
 
-nlohmann::json BackupFileUtils::GetFailedFileJson(int32_t sceneCode, const std::string &failedFilePath,
-    const FailedFileInfo &failedFileInfo)
+std::vector<std::string> BackupFileUtils::GetFailedFilesList(int32_t sceneCode,
+    const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit)
 {
-    nlohmann::json failedFileJson;
-    // single: use displayName; dual: use path
-    sceneCode == CLONE_RESTORE_ID ? failedFileJson.push_back(failedFileInfo.display_name) :
-        failedFileJson.push_back(failedFilePath);
-    failedFileJson.push_back(failedFileInfo.packageName);
-    failedFileJson.push_back(failedFileInfo.errorCode);
-    return failedFileJson;
-}
-
-nlohmann::json BackupFileUtils::GetFailedFilesJsonList(int32_t sceneCode,
-    const std::unordered_map<std::string, FailedFileInfo> &failedFiles)
-{
-    nlohmann::json failedFilesJsonList;
-    size_t index = 0;
+    nlohmann::json failedFilesList;
     for (const auto &iter : failedFiles) {
-        failedFilesJsonList.push_back(GetFailedFileJson(sceneCode, iter.first, iter.second));
-        index++;
-        if (index == MAX_FAILED_FILES_SIZE) {
+        if (limit == 0) {
             break;
         }
+        failedFilesList.push_back(GetFailedFileJson(sceneCode, iter.first, iter.second));
+        limit--;
+        index++;
     }
     return failedFilesJsonList;
+}
+
+std::string BackupFileUtils::GetFailedFile(int32_t sceneCode, const std::string &failedFilePath,
+    const FailedFileInfo &failedFileInfo)
+{
+    MEDIA_ERR_LOG("Failed file: %{public}s, %{public}s, %{public}s, %{public}s",
+        GarbleFilePath(failedFilePath, sceneCode).c_str(), failedFileInfo.albumName.c_str(),
+        GarbleFileName(failedFileInfo.displayName).c_str(), failedFileInfo.errorCode.c_str());
+    // format: albumName/displayName
+    return failedFileInfo.albumName + "/" + failedFileInfo.displayName;
 }
 
 bool BackupFileUtils::GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel,

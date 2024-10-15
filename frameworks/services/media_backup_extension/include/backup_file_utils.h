@@ -52,13 +52,13 @@ public:
     static bool IsFileValid(std::string &filePath, int32_t sceneCode,
         string relativePath = "", bool hasLowQualityImage = false);
     static std::string GetDetailsPath(int32_t sceneCode, const std::string &type,
-        const std::unordered_map<std::string, int32_t> &failedFiles);
+        const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit);
     static std::string GetFailedFilesStr(int32_t sceneCode,
-        const std::unordered_map<std::string, int32_t> &failedFiles);
-    static nlohmann::json GetFailedFilesJson(int32_t sceneCode, const std::string &failedFilePath,
+        const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit);
+    static std::vector<std::string> GetFailedFilesList(int32_t sceneCode,
+        const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit);
+    static std::string GetFailedFiles(int32_t sceneCode, const std::string &failedFilePath,
         const FailedFileInfo &failedFileInfo);
-    static nlohmann::json GetFailedFilesJsonList(int32_t sceneCode,
-        const std::unordered_map<std::string, int32_t> &failedFiles);
     static bool GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel, size_t &pos);
     static bool ShouldIncludeSd(const std::string &prefix);
     static void DeleteSdDatabase(const std::string &prefix);
