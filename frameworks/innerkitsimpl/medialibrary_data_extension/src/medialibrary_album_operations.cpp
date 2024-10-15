@@ -1158,7 +1158,7 @@ void DealWithHighlightSdTable(const DataSharePredicates &predicates)
         if (resultSet->GetInt(mapAssetIdIndex, mapAssetDestination) != NativeRdb::E_OK) {
             continue;
         }
-        
+
         string highlightVideoPath = "/storage/cloud/files/highlight/video/" + to_string(mapAssetDestination);
         MediaFileUtils::DeleteDir(highlightVideoPath);
  
@@ -1169,8 +1169,8 @@ void DealWithHighlightSdTable(const DataSharePredicates &predicates)
             MEDIA_ERR_LOG("DELETE highlight video failed, id is: %{public}s", assetId.c_str());
             continue;
         }
-        const std:string DELETE_ITEM_FROM_ALBUM_MAP =
-                "DELETE FROM tab_analysis_album_asset_map WHERE map_asset = " + assetId;
+        const std::string DELETE_ITEM_FROM_ALBUM_MAP =
+            "DELETE FROM tab_analysis_album_asset_map WHERE map_asset = " + assetId;
         ret = rdbStore->ExecuteSql(DELETE_ITEM_FROM_ALBUM_MAP);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("DELETE highlight video failed, id is: %{public}s", assetId.c_str());
