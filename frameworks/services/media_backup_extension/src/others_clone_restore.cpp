@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #define MLOG_TAG "MediaLibraryOthersCloneRestore"
 
 #include "others_clone_restore.h"
@@ -52,7 +51,7 @@ static std::string GetPhoneName()
     int len = sizeof(arr) / sizeof(arr[0]);
     std::string phoneName = "";
     for (int i = 0; i < len; i++) {
-        phoneName += char(arr[i]);
+        phoneName += static_cast<char>(arr[i]);
     }
     return phoneName;
 }
@@ -152,6 +151,7 @@ static int32_t GetAllfilesInCurrentDir(const std::string path, std::vector<FileI
     if ((dirPath = opendir(path.c_str())) == nullptr) {
         FREE_MEMORY_AND_SET_NULL(fName);
         MEDIA_ERR_LOG("Failed to opendir %{private}s, errno %{private}d", path.c_str(), errno);
+        return ERR_NOT_ACCESSIBLE;
     }
 
     while ((currentFile = readdir(dirPath)) != nullptr) {
