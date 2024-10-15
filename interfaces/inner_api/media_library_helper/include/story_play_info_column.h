@@ -31,6 +31,7 @@ const std::string HIGHLIGHT_PLAY_INFO = "play_info";
 const std::string PLAY_INFO_VERSION = "play_info_version";
 const std::string IS_CHOSEN = "is_chosen";
 const std::string PLAY_INFO_ID = "play_info_id";
+const std::string PLAY_SERVICE_VERSION = "play_service_version";
 
 const std::string URI_HIGHLIGHT_PLAY_INFO = MEDIALIBRARY_DATA_URI + "/" + HIGHLIGHT_PLAY_INFO_TABLE;
 } // namespace Media
