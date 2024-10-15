@@ -669,7 +669,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMovingPhotoVideoPath_Test
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoExtension_Test_001, TestSize.Level0)
 {
-    vector<string> validExtensions = { "jpg", "jpeg", "jpe", "heif", "hif" };
+    vector<string> validExtensions = { "jpg", "jpeg", "jpe", "heif", "hif", "heic" };
     for (const auto& extension : validExtensions) {
         EXPECT_EQ(MediaFileUtils::CheckMovingPhotoExtension(extension), true);
     }
@@ -677,7 +677,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoExtension_Te
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoExtension_Test_002, TestSize.Level0)
 {
-    vector<string> invalidExtensions = { "arw", "avif", "bm", "bmp", "cur", "dng", "gif", "heic", "heics", "heifs",
+    vector<string> invalidExtensions = { "arw", "avif", "bm", "bmp", "cur", "dng", "gif", "heics", "heifs",
         "ico", "nrw", "pef", "png", "raf", "raw", "rw2", "srw", "svg", "webp" };
     for (const auto& extension : invalidExtensions) {
         EXPECT_EQ(MediaFileUtils::CheckMovingPhotoExtension(extension), false);
