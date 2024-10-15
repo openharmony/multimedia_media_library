@@ -33,6 +33,7 @@ const std::string MEDIA_FILE_ID_DEFAULT = "-1";
 
 const int ASSET_IN_BUCKET_NUM_MAX = 1000;
 const int ASSET_DIR_START_NUM = 16;
+const int ASSET_MAX_NUM = 10000000;
 
 static std::string SolveMediaTypeV9(MediaType mediaType)
 {
@@ -539,6 +540,7 @@ int32_t MediaFileUri::CreateAssetBucket(int32_t fileId, int32_t &bucketNum)
         MEDIA_ERR_LOG("input fileId [%{public}d] is invalid", fileId);
         return E_INVALID_FILEID;
     }
+    fileId = fileId % ASSET_MAX_NUM;
     int start = ASSET_DIR_START_NUM;
     int divider = ASSET_DIR_START_NUM;
     while (fileId > start * ASSET_IN_BUCKET_NUM_MAX) {
