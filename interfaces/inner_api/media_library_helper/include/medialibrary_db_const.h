@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 124;
+const int32_t MEDIA_RDB_VERSION = 126;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -150,6 +150,8 @@ enum {
     VERSION_ADD_THUMBNAIL_VISIBLE = 122,
     VERSION_ADD_METARECOVERY = 123,
     VERSION_UPDATE_SEARCH_INDEX_TRIGGER_FOR_CLEAN_FLAG = 124,
+    VERSION_ADD_HIGHLIGHT_TRIGGER = 125,
+    VERSION_UPDATE_HILIGHT_TRIGGER = 125,
 };
 
 enum {
@@ -293,6 +295,15 @@ const std::string MEDIA_DATA_DB_COUNT = "count";
 const std::string MEDIA_DATA_BUNDLENAME = "bundle_name";
 const std::string MEDIA_DATA_DB_IS_LOCAL = "is_local";
 const std::string MEDIA_DATA_DB_HIGHLIGHT = "highlight";
+
+// highlight
+const std::string MEDIA_DATA_DB_VIDEO_TRACKS = "tracks";
+const std::string MEDIA_DATA_DB_HIGHLIGHT_TRIGGER = "trigger_generate_thumbnail";
+const std::string MEDIA_DATA_DB_KEY_FRAME = "key_frame";
+const std::string MEDIA_DATA_DB_BEGIN_STAMP = "begin_stamp";
+const std::string MEDIA_DATA_DB_TYPE = "type";
+const std::string MEDIA_DATA_DB_INSERT_TYPE = "insert";
+const std::string MEDIA_DATA_DB_UPDATE_TYPE = "update ";
 
 const std::string MEDIA_DATA_CALLING_UID = "calling_uid";
 

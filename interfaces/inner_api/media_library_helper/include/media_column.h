@@ -172,6 +172,7 @@ public:
 
     // table name
     static const std::string PHOTOS_TABLE EXPORT;
+    static const std::string HIGHLIGHT_TABLE EXPORT;
 
     // create PhotoTable sql
     static const std::string CREATE_PHOTO_TABLE EXPORT;
@@ -207,6 +208,14 @@ public:
     static const std::string CREATE_PHOTOS_INSERT_CLOUD_SYNC EXPORT;
     static const std::string CREATE_PHOTOS_UPDATE_CLOUD_SYNC EXPORT;
     static const std::string CREATE_PHOTOS_METADATA_DIRTY_TRIGGER EXPORT;
+
+    // highlight trigger
+    static const std::string MEDIA_DATA_DB_HIGHLIGHT_TRIGGER EXPORT;
+    static const std::string INSERT_GENERATE_HIGHLIGHT_THUMBNAIL EXPORT;
+    static const std::string UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL EXPORT;
+    static const std::string DROP_INSERT_GENERATE_HIGHLIGHT_THUMBNAIL EXPORT;
+    static const std::string DROP_UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL EXPORT;
+    static const std::string INDEX_HIGHLIGHT_FILEID EXPORT;
 
     // photo uri
     static const std::string PHOTO_URI_PREFIX EXPORT;

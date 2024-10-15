@@ -205,6 +205,9 @@ const std::string MEDIA_CACHE_DIR = ROOT_MEDIA_DIR + ".cache/";
 const std::string MEDIA_EDIT_DATA_DIR = ROOT_MEDIA_DIR + ".editData/";
 const char SLASH_CHAR = '/';
 const std::string SLASH_STR = "/";
+const int32_t KEY_FRAME_LCD = 1;
+const int32_t KEY_FRAME_THM = 2;
+const int32_t KEY_FRAME_THM_ASTC = 3;
 
 const std::string SKIPLIST_FILE_PATH = "/data/SkipScanFile.txt";
 

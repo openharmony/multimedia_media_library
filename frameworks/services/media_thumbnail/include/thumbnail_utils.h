@@ -76,6 +76,7 @@ public:
 #endif
     EXPORT static bool DeleteThumbFile(ThumbnailData &data, ThumbnailType type);
     EXPORT static bool DeleteThumbExDir(ThumbnailData &data);
+    EXPORT static bool DeleteBeginTimestampDir(ThumbnailData &data);
 #ifdef DISTRIBUTED
     EXPORT static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts);
 #endif
@@ -89,6 +90,7 @@ public:
     EXPORT static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
     EXPORT static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+    EXPORT static bool UpdateHighlightInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data, int &err, LcdReady status);
     EXPORT static bool DoUpdateAstcDateTaken(ThumbRdbOpt &opts, ThumbnailData &data);
 #ifdef DISTRIBUTED
@@ -113,6 +115,11 @@ public:
     EXPORT static bool QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count, int &err);
     EXPORT static bool QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
         std::vector<ThumbnailData> &infos, NativeRdb::RdbPredicates &rdbPredicate, int &err);
+    EXPORT static bool QueryNoHighlightInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
+    EXPORT static bool QueryNoHighlightPath(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+    EXPORT static bool QueryHighlightTriggerPath(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+    EXPORT static std::string GetHighlightValue(const std::string &str, const std::string &key);
+    EXPORT static bool GetHighlightTracks(ThumbRdbOpt &opts, std::vector<int> &trackInfos, int32_t &err);
 
 #ifdef DISTRIBUTED
     EXPORT static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
@@ -154,13 +161,17 @@ private:
     EXPORT static int ToSaveFile(ThumbnailData &data, const std::string &fileName,
         uint8_t *output, const int &writeSize);
     EXPORT static int SaveFileCreateDir(const std::string &path, const std::string &suffix, std::string &fileName);
+    EXPORT static int SaveFileCreateDirHighlight(const std::string &path, const std::string &suffix,
+        std::string &fileName, const std::string &timeStamp);
     EXPORT static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     EXPORT static int64_t UTCTimeMilliSeconds();
     EXPORT static void ParseQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         ThumbnailData &data, int &err, const std::vector<std::string> &column);
     EXPORT static void ParseStringResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         int index, std::string &data, int &err);
-
+    EXPORT static void ParseHighlightQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+       ThumbnailData &data, int &err);
+    
     EXPORT static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
     EXPORT static bool LoadImageFile(ThumbnailData &data, Size &desiredSize);

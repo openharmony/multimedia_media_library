@@ -768,6 +768,7 @@ export default {
   startPhotoPicker,
   getPhotoAccessHelperAsync,
   PhotoType: photoAccessHelper.PhotoType,
+  ThumbnailType: photoAccessHelper.ThumbnailType,
   PhotoCreationConfig: photoAccessHelper.PhotoCreationConfig,
   PhotoKeys: photoAccessHelper.PhotoKeys,
   AlbumKeys: photoAccessHelper.AlbumKeys,
