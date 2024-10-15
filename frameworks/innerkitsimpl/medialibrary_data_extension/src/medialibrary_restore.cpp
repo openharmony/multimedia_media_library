@@ -175,7 +175,7 @@ void MediaLibraryRestore::DoRdbBackup()
         }
         MEDIA_INFO_LOG("DoRdbBackup: Backup [end]. errCode = %{public}d", errCode);
         MediaLibraryRestore::GetInstance().ResetHAModeSwitchStatus();
-        if (errCode != NativeRdb::E_BACKUP_INTERRUPT) {
+        if (errCode != NativeRdb::E_CANCEL) {
             MediaLibraryRestore::GetInstance().isBackuping_ = false;
         }
     }).detach();
