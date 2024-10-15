@@ -54,6 +54,7 @@ const int32_t PRIORITY_DEFAULT = -1;
 const int32_t THUMBNAIL_TASK_TYPE_DEFAULT = -1;
 const string PHOTOS_TABLE = "Photos";
 const int32_t EVEN = 2;
+std::shared_ptr<NativeRdb::RdbStore> g_rdbStore;
 
 static inline string FuzzString(const uint8_t *data, size_t size)
 {
@@ -191,17 +192,17 @@ static void ThumbnailAgingHelperTest(const uint8_t* data, size_t size)
 
     vector<Media::ThumbnailData> infos;
     Media::ThumbnailAgingHelper::GetAgingLcdData(opt, FuzzInt32(data), infos);
+    Media::ThumbnailAgingHelper::GetLcdCountByTime(FuzzInt64(data, size), FuzzBool(data, size), opt, outLcdCount);
 }
 
 static void ThumbnailGenerateHelperTest(const uint8_t* data, size_t size)
 {
-    Media::ThumbRdbOpt opts = FuzzThumbRdbOpt(data, size, false);
+    Media::ThumbRdbOpt opts = FuzzThumbRdbOpt(data, size, true);
     Media::ThumbnailGenerateHelper::CreateThumbnailFileScaned(opts, FuzzBool(data, size));
     Media::ThumbnailGenerateHelper::CreateThumbnailBackground(opts);
     Media::ThumbnailGenerateHelper::CreateAstcBackground(opts);
     Media::ThumbnailGenerateHelper::CreateAstcCloudDownload(opts, FuzzBool(data, size));
     RdbPredicates predicates(PHOTOS_TABLE);
-    Media::ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, predicates, FuzzInt32(data));
     Media::ThumbnailGenerateHelper::CreateLcdBackground(opts);
     int32_t outLcdCount;
     Media::ThumbnailGenerateHelper::GetLcdCount(opts, outLcdCount);
@@ -251,22 +252,39 @@ static void ThumbnailGenerateWorkerManagerTest(const uint8_t* data, size_t size)
     manager.TryCloseThumbnailWorkerTimer();
 }
 
-static int Init()
+void SetTables()
+{
+    vector<string> createTableSqlList = { Media::PhotoColumn::CREATE_PHOTO_TABLE };
+    for (auto &createTableSql : createTableSqlList) {
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
+
+static void Init()
 {
     auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
     auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     abilityContextImpl->SetStageContext(stageContext);
     int32_t sceneCode = 0;
-    return Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl, abilityContextImpl,
-        sceneCode);
+    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
+        abilityContextImpl, sceneCode);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
+
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr || rdbStore->GetRaw() == nullptr) {
+        return;
+    }
+    g_rdbStore = rdbStore->GetRaw();
+    SetTables();
 }
 
 static void ThumhnailTest(const uint8_t* data, size_t size)
 {
-    if (Init() != 0) {
-        MEDIA_ERR_LOG("Init medialibrary fail");
-        return;
-    }
     Media::ThumbnailService::GetInstance()->GetThumbnailFd(FuzzString(data, size),
         FuzzInt32(data));
     string thumUri = "file://media/Photo/1?operation=thumbnail&width=-1&height=-1";
@@ -275,7 +293,6 @@ static void ThumhnailTest(const uint8_t* data, size_t size)
     Media::ThumbnailService::GetInstance()->CreateThumbnailFileScaned(FuzzString(data, size),
         FuzzString(data, size), FuzzInt32(data));
     NativeRdb::RdbPredicates rdbPredicate("Photos");
-    Media::ThumbnailService::GetInstance()->CreateAstcBatchOnDemand(rdbPredicate, FuzzInt32(data));
     Media::ThumbnailService::GetInstance()->CancelAstcBatchTask(FuzzInt32(data));
     Media::ThumbnailService::GetInstance()->GenerateThumbnailBackground();
     Media::ThumbnailService::GetInstance()->UpgradeThumbnailBackground(false);
@@ -344,6 +361,7 @@ static void ParseFileUriTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    OHOS::Init();
     OHOS::ThumhnailTest(data, size);
     OHOS::ThumbnailAgingHelperTest(data, size);
     OHOS::ThumbnailGenerateHelperTest(data, size);

@@ -66,7 +66,9 @@
 #include "form_map.h"
 #include "search_column.h"
 #include "shooting_mode_column.h"
+#include "story_cover_info_column.h"
 #include "story_db_sqls.h"
+#include "story_play_info_column.h"
 #include "dfx_const.h"
 #include "dfx_timer.h"
 #include "vision_multi_crop_column.h"
@@ -2429,6 +2431,18 @@ static void UpdateAlbumRefreshTable(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddCoverPlayVersionColumns(RdbStore& store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + HIGHLIGHT_COVER_INFO_TABLE +
+            " ADD COLUMN " + COVER_SERVICE_VERSION + " INT DEFAULT 0",
+        "ALTER TABLE " + HIGHLIGHT_PLAY_INFO_TABLE +
+            " ADD COLUMN " + PLAY_SERVICE_VERSION + " INT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("start add cover play version columns");
+    ExecSqls(sqls, store);
+}
+
 static void UpdateFavoriteIndex(RdbStore &store)
 {
     MEDIA_INFO_LOG("Upgrade rdb UpdateFavoriteIndex");
@@ -3590,6 +3604,9 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
     }
     if (oldVersion < VERSION_UPDATE_SEARCH_INDEX_TRIGGER_FOR_CLEAN_FLAG) {
         UpdateSearchIndexTriggerForCleanFlag(store);
+    }
+    if (oldVersion < VERSION_ADD_COVER_PLAY_SERVICE_VERSION) {
+        AddCoverPlayVersionColumns(store);
     }
     if (oldVersion < VERSION_ADD_HIGHLIGHT_MAP_TABLES) {
         AddHighlightMapTable(store);

@@ -47,6 +47,7 @@ const std::string BACKGROUND_RECT_HEIGHT  = "background_rect_height";
 const std::string LAYOUT_INDEX = "layout_index";
 const std::string COVER_ALGO_VERSION = "cover_algo_version";
 const std::string COVER_KEY = "cover_key";
+const std::string COVER_SERVICE_VERSION = "cover_service_version";
 
 const std::string URI_HIGHLIGHT_COVER_INFO = MEDIALIBRARY_DATA_URI + "/" + HIGHLIGHT_COVER_INFO_TABLE;
 } // namespace Media

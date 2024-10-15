@@ -826,7 +826,7 @@ int32_t SetPhotoAlbumName(const ValuesBucket &values, const DataSharePredicates 
             "SELECT file_id FROM Photos WHERE dirty != '4' AND owner_album_id = " + to_string(oldAlbumId);
         vector<string> fileIdsToUpdateIndex;
         shared_ptr<NativeRdb::ResultSet> queryIdsResultSet = rdbStore->QuerySql(QUERY_FILEID_TO_UPDATE_INDEX);
-        while (queryIdsResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        while (queryIdsResultSet != nullptr && queryIdsResultSet->GoToNextRow() == NativeRdb::E_OK) {
             fileIdsToUpdateIndex.push_back(to_string(GetInt32Val("file_id", queryIdsResultSet)));
         }
         MEDIA_INFO_LOG("update index fileIdsToUpdateIndex size: %{public}zu", fileIdsToUpdateIndex.size());
@@ -839,9 +839,11 @@ int32_t SetPhotoAlbumName(const ValuesBucket &values, const DataSharePredicates 
             rdbStore->Update(changeRows, valuesNew, rdbPredicatesNew);
             MediaLibraryAlbumFusionUtils::DeleteALbumAndUpdateRelationship(rdbStore.get(), oldAlbumId,
                 sameAlbumId, false);
-            MediaAnalysisHelper::AsyncStartMediaAnalysisService(
-                static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX),
-                fileIdsToUpdateIndex);
+            if (fileIdsToUpdateIndex.size() > 0) {
+                MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+                    static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX),
+                    fileIdsToUpdateIndex);
+            }
             return changeRows;
         } else {
             valuesNew.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
@@ -851,9 +853,11 @@ int32_t SetPhotoAlbumName(const ValuesBucket &values, const DataSharePredicates 
             }
             MediaLibraryAlbumFusionUtils::DeleteALbumAndUpdateRelationship(rdbStore.get(), oldAlbumId,
                 newAlbumId, MediaLibraryAlbumFusionUtils::IsCloudAlbum(resultSet));
-            MediaAnalysisHelper::AsyncStartMediaAnalysisService(
-                static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX),
-                fileIdsToUpdateIndex);
+            if (fileIdsToUpdateIndex.size() > 0) {
+                MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+                    static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX),
+                    fileIdsToUpdateIndex);
+            }
         }
     }
     auto watch = MediaLibraryNotify::GetInstance();
@@ -2171,6 +2175,10 @@ int32_t SetAlbumName(const ValuesBucket &values, const DataSharePredicates &pred
         "SELECT map_asset FROM AnalysisPhotoMap WHERE map_album = " + targetAlbumId;
     vector<string> mapAssets;
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_MAP_ASSET_TO_UPDATE_INDEX);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is nullptr! failed update index");
+        return err;
+    }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         mapAssets.push_back(to_string(GetInt32Val("map_asset", resultSet)));
     }

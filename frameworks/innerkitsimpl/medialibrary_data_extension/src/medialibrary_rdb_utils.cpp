@@ -433,7 +433,7 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const shared_pt
 }
 
 static void SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
-    ValuesBucket &values, int newCount, const string &albumId)
+    ValuesBucket &values, int newCount)
 {
     string newCover;
     if (newCount != 0) {
@@ -444,8 +444,10 @@ static void SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shar
     if (oldCover != newCover) {
         values.PutInt(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING));
         values.PutString(targetColumn, newCover);
-        MEDIA_INFO_LOG("Update portrait album %{public}s. oldCover: %{private}s, newCover: %{private}s",
-            albumId.c_str(), oldCover.c_str(), newCover.c_str());
+        int32_t albumId = GetAlbumId(albumResult);
+        MEDIA_INFO_LOG("Update portrait album %{public}d. oldCover: %{public}s, newCover: %{public}s",
+            albumId, MediaFileUtils::GetUriWithoutDisplayname(oldCover).c_str(),
+            MediaFileUtils::GetUriWithoutDisplayname(newCover).c_str());
     }
 }
 
@@ -460,8 +462,10 @@ static void SetCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<R
     const string &targetColumn = hiddenState ? PhotoAlbumColumns::HIDDEN_COVER : PhotoAlbumColumns::ALBUM_COVER_URI;
     string oldCover = GetAlbumCover(albumResult, targetColumn);
     if (oldCover != newCover) {
-        MEDIA_DEBUG_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s",
-            targetColumn.c_str(), oldCover.c_str(), newCover.c_str());
+        int32_t id = GetAlbumId(albumResult);
+        MEDIA_INFO_LOG("Update album %{public}d %{public}s. oldCover: %{public}s, newCover: %{public}s",
+            id, targetColumn.c_str(), MediaFileUtils::GetUriWithoutDisplayname(oldCover).c_str(),
+            MediaFileUtils::GetUriWithoutDisplayname(newCover).c_str());
         values.PutString(targetColumn, newCover);
     }
 }
@@ -1024,7 +1028,7 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
         MEDIA_ERR_LOG("Failed to query Portrait Album Cover");
         return E_HAS_DB_ERROR;
     }
-    SetPortraitCover(coverResult, albumResult, values, newCount, albumId);
+    SetPortraitCover(coverResult, albumResult, values, newCount);
     return E_SUCCESS;
 }
 
