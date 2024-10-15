@@ -89,6 +89,7 @@ void CloudSyncObserver::HandleIndex()
     auto resultSetUpdateIndex = uniStore->QuerySql(queryIdToUpdateIndex);
     if (resultSetUpdateIndex == nullptr) {
         MEDIA_ERR_LOG("resultSetUpdateIndex is nullptr!");
+        return;
     }
     std::vector<std::string> idToUpdateIndex;
     while (resultSetUpdateIndex->GoToNextRow() == NativeRdb::E_OK) {
@@ -99,6 +100,7 @@ void CloudSyncObserver::HandleIndex()
         MediaAnalysisHelper::AsyncStartMediaAnalysisService(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), idToUpdateIndex);
     }
+    isPending_ = false;
 }
 } // namespace Media
 } // namespace OHOS
