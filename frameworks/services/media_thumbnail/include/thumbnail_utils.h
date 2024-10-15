@@ -155,7 +155,7 @@ private:
     EXPORT static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     EXPORT static int64_t UTCTimeMilliSeconds();
     EXPORT static void ParseQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        ThumbnailData &data, int &err);
+        ThumbnailData &data, int &err, const std::vector<std::string> &column);
     EXPORT static void ParseStringResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         int index, std::string &data, int &err);
 
