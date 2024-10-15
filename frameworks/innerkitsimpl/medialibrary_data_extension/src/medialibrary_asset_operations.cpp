@@ -218,6 +218,8 @@ int32_t MediaLibraryAssetOperations::OpenOperation(MediaLibraryCommand &cmd, con
             return MediaLibraryAudioOperations::Open(cmd, mode);
         case OperationObject::HIGHLIGHT_COVER:
             return MediaLibraryAssetOperations::OpenHighlightCover(cmd, mode);
+        case OperationObject::HIGHLIGHT_URI:
+            return MediaLibraryAssetOperations::OpenHighlightVideo(cmd, mode);
         case OperationObject::FILESYSTEM_ASSET:
             MEDIA_ERR_LOG("open by FILESYSTEM_ASSET is deperated");
             return E_INVALID_VALUES;
@@ -1480,6 +1482,23 @@ int32_t MediaLibraryAssetOperations::OpenHighlightCover(MediaLibraryCommand &cmd
     
     shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
     
+    fileAsset->SetPath(path);
+    fileAsset->SetUri(uriStr);
+    
+    return OpenAsset(fileAsset, mode, cmd.GetApi(), false);
+}
+
+int32_t MediaLibraryAssetOperations::OpenHighlightVideo(MediaLibraryCommand &cmd, const string &mode)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryAssetOperations::OpenHighlightVideo");
+    string uriStr = cmd.GetUriStringWithoutSegment();
+    string path = MediaFileUtils::GetHighlightVideoPath(uriStr);
+    if (path.length() == 0) {
+        MEDIA_ERR_LOG("Open highlight video invalid uri : %{public}s", uriStr.c_str());
+        return E_INVALID_URI;
+    }
+    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
     fileAsset->SetPath(path);
     fileAsset->SetUri(uriStr);
     
