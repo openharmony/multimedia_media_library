@@ -285,7 +285,6 @@ static bool GetFastThumbNewSize(const Size &size, Size &newSize)
     }
 }
 
-
 static int OpenThumbnail(const string &path, ThumbnailType type)
 {
     if (!path.empty()) {
@@ -297,6 +296,22 @@ static int OpenThumbnail(const string &path, ThumbnailType type)
         if (fd > 0) {
             return fd;
         }
+    }
+    return E_ERR;
+}
+
+static int OpenKeyFrameThumbnail(const string &path, const int32_t &beginStamp, const int32_t &type)
+{
+    if (!path.empty()) {
+        string sandboxPath = GetKeyFrameSandboxPath(path, beginStamp, type);
+        int fd = -1;
+        if (!sandboxPath.empty()) {
+            fd = open(sandboxPath.c_str(), O_RDONLY);
+        }
+        if (fd > 0) {
+            return fd;
+        }
+        NAPI_ERR_LOG("OpenKeyFrameThumbnail failed, fd: %{public}d", -fd); 
     }
     return E_ERR;
 }
@@ -399,6 +414,18 @@ static int32_t GetPixelMapFromServer(const string &uriStr, const Size &size, con
     return UserFileClient::OpenFile(openUri, "R");
 }
 
+static int32_t GetKeyFramePixelMapFromServer(const string &uriStr, const string &path,
+    const int32_t &beginStamp, const int32_t &type)
+{
+    string openUriStr = uriStr + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_KEY_FRAME + "&" +
+        MEDIA_DATA_DB_BEGIN_STAMP + "=" + to_string(beginStamp) + "&" + MEDIA_DATA_DB_TYPE + "=" + to_string(type);
+    if (IsAsciiString(path)) {
+        openUriStr += "&" + THUMBNAIL_PATH + "=" + path;
+    }
+    Uri openUri(openUriStr);
+    return UserFileClient::OpenFile(openUri, "R");
+}
+
 unique_ptr<PixelMap> ThumbnailManager::QueryThumbnail(const string &uriStr, const Size &size, const string &path)
 {
     MediaLibraryTracer tracer;
@@ -424,6 +451,27 @@ unique_ptr<PixelMap> ThumbnailManager::QueryThumbnail(const string &uriStr, cons
     } else {
         return DecodeThumbnail(uniqueFd, size);
     }
+}
+
+unique_ptr<PixelMap> ThumbnailManager::QueryKeyFrameThumbnail(const string &uriStr, const int &beginStamp,
+    const int &type, const string &path)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("QueryKeyFrameThumbnail uri:" + uriStr);
+    
+    UniqueFd uniqueFd(OpenKeyFrameThumbnail(path, beginStamp, type));
+    Size size;
+    size.width = DEFAULT_THUMB_SIZE;
+    size.height = DEFAULT_THUMB_SIZE;
+    if (uniqueFd.Get() == E_ERR) {
+        uniqueFd = UniqueFd(GetKeyFramePixelMapFromServer(uriStr, path, beginStamp, type));
+        if (uniqueFd.Get() < 0) {
+            NAPI_ERR_LOG("queryKeyFrameThumb is null, errCode is %{public}d", uniqueFd.Get());
+            return nullptr;
+        }
+    }
+    tracer.Finish();
+    return DecodeThumbnail(uniqueFd, size);
 }
 
 void ThumbnailManager::DeleteRequestIdFromMap(const string &requestId)

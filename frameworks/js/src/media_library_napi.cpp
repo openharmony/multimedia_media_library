@@ -154,6 +154,7 @@ const std::string CONFIRM_BOX_APP_ID = "appId";
 
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sKeyFrameThumbnailTypeRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDirectoryEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sVirtualAlbumTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
@@ -278,8 +279,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("createAlbum", CreatePhotoAlbum),
             DECLARE_NAPI_FUNCTION("deleteAlbums", DeletePhotoAlbums),
             DECLARE_NAPI_FUNCTION("getAlbums", GetPhotoAlbums),
-            DECLARE_NAPI_FUNCTION("getPhotoIndex", JSGetPhotoIndex),
-            DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
+            DECLARE_NAPI_FUNCTION("getPhotoIndex", JSGetPhotoIndex), DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -297,6 +297,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("AlbumSubType", CreateAlbumSubTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoSubType", CreatePhotoSubTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("ThumbnailType", CreateKeyFrameThumbnailTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoPermissionType", CreatePhotoPermissionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("HideSensitiveType", CreateHideSensitiveTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DynamicRangeType", CreateDynamicRangeTypeEnum(env)),
@@ -354,6 +355,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_STATIC_FUNCTION("showAssetsCreationDialog", ShowAssetsCreationDialog),
         DECLARE_NAPI_STATIC_FUNCTION("checkShortTermPermission", CheckShortTermPermission),
         DECLARE_NAPI_STATIC_FUNCTION("createAssetWithShortTermPermission", CreateAssetWithShortTermPermission),
+        DECLARE_NAPI_PROPERTY("ThumbnailType", CreateKeyFrameThumbnailTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoType", CreateMediaTypeUserFileEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumKeys", CreateAlbumKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumType", CreateAlbumTypeEnum(env)),
@@ -6463,6 +6465,12 @@ napi_value MediaLibraryNapi::UserFileMgrGetPrivateAlbum(napi_env env, napi_callb
 napi_value MediaLibraryNapi::CreateMediaTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, mediaTypesEnum, sMediaTypeEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreateKeyFrameThumbnailTypeEnum(napi_env env)
+{
+    const int32_t startIdx = 1;
+    return CreateNumberEnumProperty(env, keyFrameThumbnailTypeEnum, sKeyFrameThumbnailTypeRef_, startIdx);
 }
 
 napi_value MediaLibraryNapi::CreateMediaTypeUserFileEnum(napi_env env)

@@ -32,12 +32,17 @@ public:
     EXPORT static int32_t CreateAstcBackground(ThumbRdbOpt &opts);
     EXPORT static int32_t CreateAstcCloudDownload(ThumbRdbOpt &opts, bool isCloudInsertTaskPriorityHigh = false);
     EXPORT static int32_t CreateLcdBackground(ThumbRdbOpt &opts);
+    EXPORT static int32_t GenerateHighlightThumbnailBackground(ThumbRdbOpt &opts);
+    EXPORT static int32_t TriggerHighlightThumbnail(ThumbRdbOpt &opts, std::string &id, std::string &tracks,
+        std::string &trigger, std::string &genType);
     EXPORT static int32_t UpgradeThumbnailBackground(ThumbRdbOpt &opts, bool isWifiConnected);
     EXPORT static int32_t RestoreAstcDualFrame(ThumbRdbOpt &opts);
     EXPORT static int32_t CreateAstcBatchOnDemand(ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate,
         int32_t requestId);
     EXPORT static int32_t GetNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count);
     EXPORT static int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType);
+    EXPORT static int32_t GetKeyFrameThumbnailPixelMap(ThumbRdbOpt &opts, int32_t &timeStamp,
+        int32_t &type);
 
 private:
     EXPORT static int32_t GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount);
@@ -45,6 +50,9 @@ private:
     EXPORT static int32_t GetNoThumbnailData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
     EXPORT static int32_t GetNoAstcData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
     EXPORT static int32_t GetAvailableFile(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType,
+        std::string &fileName);
+    EXPORT static int32_t GetNoHighlightData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
+    EXPORT static int32_t GetAvailableKeyFrameFile(ThumbRdbOpt &opts, ThumbnailData &data, int32_t thumbType,
         std::string &fileName);
     EXPORT static int32_t GetThumbnailDataNeedUpgrade(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas,
         bool isWifiConnected);

@@ -198,6 +198,24 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
     return fd;
 }
 
+int ThumbnailService::GetKeyFrameThumbFd(const string &path, const string &table, const string &id, const string &uri,
+    int32_t &beginStamp, int32_t &type)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .path = path,
+        .table = table,
+        .row = id,
+        .uri = uri,
+    };
+
+    int fd = ThumbnailGenerateHelper::GetKeyFrameThumbnailPixelMap(opts, beginStamp, type);
+    if (fd < 0) {
+        MEDIA_ERR_LOG("GetKeyFrameThumbnailPixelMap failed : %{public}d", fd);
+    }
+    return fd;
+}
+
 int ThumbnailService::GetThumbnailFd(const string &uri, bool isAstc)
 {
     if (!CheckSizeValid()) {
@@ -227,6 +245,33 @@ int ThumbnailService::GetThumbnailFd(const string &uri, bool isAstc)
     }
 #endif
     return GetThumbFd(path, table, id, uri, size, isAstc);
+}
+
+int ThumbnailService::GetKeyFrameThumbnailFd(const string &uri, bool isAstc)
+{
+    if (!CheckSizeValid()) {
+        MEDIA_ERR_LOG("GetKeyFrameThumbnailFd failed for invaild size, uri: %{public}s", uri.c_str());
+        return E_THUMBNAIL_INVALID_SIZE;
+    }
+    string id;
+    string path;
+    int32_t beginStamp;
+    int32_t type;
+    if (!ThumbnailUriUtils::ParseKeyFrameThumbnailInfo(uri, id, beginStamp, type, path)) {
+        MEDIA_ERR_LOG("failed to parse keyFrame thumbnail info");
+        return E_FAIL;
+    }
+    string table = PhotoColumn::HIGHLIGHT_TABLE;
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (path.empty()) {
+        int32_t errCode = GetPathFromDb(rdbStorePtr_, id, table, path);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("GetPathFromDb failed, errCode = %{public}d", errCode);
+            return errCode;
+        }
+    }
+#endif
+    return GetKeyFrameThumbFd(path, table, id, uri, beginStamp, type);
 }
 
 int32_t ThumbnailService::ParseThumbnailParam(const std::string &uri, string &fileId, string &networkId,
@@ -364,6 +409,33 @@ int32_t ThumbnailService::UpgradeThumbnailBackground(bool isWifiConnected)
     int32_t err = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, isWifiConnected);
     if (err != E_OK) {
         MEDIA_ERR_LOG("UpgradeThumbnailBackground failed : %{public}d", err);
+    }
+    return err;
+}
+
+int32_t ThumbnailService::GenerateHighlightThumbnailBackground()
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::HIGHLIGHT_TABLE
+    };
+    int32_t err = ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("GenerateHighlightThumbnailBackground failed : %{public}d", err);
+    }
+    return err;
+}
+
+int32_t ThumbnailService::TriggerHighlightThumbnail(std::string &id, std::string &tracks, std::string &trigger,
+    std::string &genType)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::HIGHLIGHT_TABLE
+    };
+    int32_t err = ThumbnailGenerateHelper::TriggerHighlightThumbnail(opts, id, tracks, trigger, genType);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("TriggerHighlightThumbnail failed : %{public}d", err);
     }
     return err;
 }

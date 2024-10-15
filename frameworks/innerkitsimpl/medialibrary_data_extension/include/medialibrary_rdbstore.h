@@ -96,6 +96,7 @@ private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    EXPORT static const std::string BeginGenerateHighlightThumbnail(const std::vector<std::string> &args);
 #ifdef DISTRIBUTED
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
 #endif

@@ -72,6 +72,7 @@
 #include "vision_multi_crop_column.h"
 #include "preferences.h"
 #include "preferences_helper.h"
+#include "thumbnail_service.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -139,6 +140,23 @@ const std::string MediaLibraryRdbStore::CloudSyncTriggerFunc(const std::vector<s
     return "";
 }
 
+const std::string MediaLibraryRdbStore::BeginGenerateHighlightThumbnail(const std::vector<std::string> &args)
+{
+    if (args.size() < STAMP_PARAM || args[STAMP_PARAM_ZERO].empty() || args[STAMP_PARAM_ONE].empty() ||
+        args[STAMP_PARAM_TWO].empty() || args[STAMP_PARAM_THREE].empty()) {
+            MEDIA_ERR_LOG("Invalid input: args must contain at least 4 non-empty strings");
+            return "";
+    }
+    std::string id = args[STAMP_PARAM_ZERO].c_str();
+    std::string tracks = args[STAMP_PARAM_ONE].c_str();
+    std::string trigger = args[STAMP_PARAM_TWO].c_str();
+    std::string genType= args[STAMP_PARAM_THREE].c_str();
+    MEDIA_INFO_LOG("id = %{public}s, tracks = %{public}s, trigger = %{public}s", id.c_str(),
+        tracks.c_str(), trigger.c_str());
+    ThumbnailService::GetInstance()->TriggerHighlightThumbnail(id, tracks, trigger, genType);
+    return "";
+}
+
 const std::string MediaLibraryRdbStore::IsCallerSelfFunc(const std::vector<std::string> &args)
 {
     return "true";
@@ -163,6 +181,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetSecurityLevel(SecurityLevel::S3);
     config_.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     config_.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
+    config_.SetScalarFunction("begin_generate_highlight_thumbnail", STAMP_PARAM, BeginGenerateHighlightThumbnail);
 }
 
 bool g_upgradeErr = false;
@@ -1196,6 +1215,9 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC,
     PhotoColumn::CREATE_PHOTOS_UPDATE_CLOUD_SYNC,
     PhotoColumn::CREATE_PHOTOS_METADATA_DIRTY_TRIGGER,
+    PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
+    PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
+    PhotoColumn::INDEX_HIGHLIGHT_FILEID,
     AudioColumn::CREATE_AUDIO_TABLE,
     CREATE_SMARTALBUM_TABLE,
     CREATE_SMARTALBUMMAP_TABLE,
@@ -1444,6 +1466,9 @@ void API10TableCreate(RdbStore &store)
         PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC,
+        PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
+        PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
+        PhotoColumn::INDEX_HIGHLIGHT_FILEID,
         AudioColumn::CREATE_AUDIO_TABLE,
         CREATE_ASSET_UNIQUE_NUMBER_TABLE,
         CREATE_FILES_DELETE_TRIGGER,
@@ -2411,6 +2436,32 @@ static void AddMetaRecovery(RdbStore& store)
     ExecSqls(sqls, store);
 }
 
+void AddHighlightTriggerColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::HIGHLIGHT_TABLE + " ADD COLUMN " +
+            PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER + " INT DEFAULT 0"
+    };
+    ExecSqls(sqls, store);
+}
+
+void AddHighlightInsertAndUpdateTrigger(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
+        PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
+        PhotoColumn::DROP_UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
+        PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL
+    };
+    ExecSqls(sqls, store);
+}
+
+void AddHighlightIndex(RdbStore &store)
+{
+    const vector<string> addHighlightIndex = { PhotoColumn::INDEX_HIGHLIGHT_FILEID };
+    ExecSqls(addHighlightIndex, store);
+}
+
 static void UpdateSearchIndexTriggerForCleanFlag(RdbStore& store)
 {
     const vector<string> sqls = {
@@ -3282,6 +3333,12 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_MODIFY_SOURCE_ALBUM_TRIGGERS) {
         ModifySourceAlbumTriggers(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_TRIGGER) {
+        AddHighlightTriggerColumn(store);
+        AddHighlightInsertAndUpdateTrigger(store);
+        AddHighlightIndex(store);
     }
     // !! Do not add upgrade code here !!
 }

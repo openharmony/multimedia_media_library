@@ -703,6 +703,7 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     int32_t object = static_cast<int32_t>(command.GetOprnObject());
     int32_t type = static_cast<int32_t>(command.GetOprnType());
     DfxTimer dfxTimer(type, object, OPEN_FILE_TIME_OUT, true);
+
     if (command.GetUri().ToString().find(MEDIA_DATA_DB_THUMBNAIL) != string::npos) {
         command.SetOprnObject(OperationObject::THUMBNAIL);
     }
@@ -720,6 +721,9 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     }
     if (command.GetUri().ToString().find(PhotoColumn::PHOTO_REQUEST_PICTURE_BUFFER) != string::npos) {
         command.SetOprnObject(OperationObject::PHOTO_REQUEST_PICTURE_BUFFER);
+    }
+    if (command.GetUri().ToString().find(MEDIA_DATA_DB_KEY_FRAME) != string::npos) {
+        command.SetOprnObject(OperationObject::KEY_FRAME);
     }
     return MediaLibraryDataManager::GetInstance()->OpenFile(command, unifyMode);
 }

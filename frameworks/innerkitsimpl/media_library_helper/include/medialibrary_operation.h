@@ -93,6 +93,7 @@ enum class EXPORT OperationObject : uint32_t {
     PAH_CLOUD_ENHANCEMENT_OPERATE,
     ANALYSIS_ADDRESS,
     PAH_VIDEO,
+    KEY_FRAME,
 };
 
 enum class EXPORT OperationType : uint32_t {
