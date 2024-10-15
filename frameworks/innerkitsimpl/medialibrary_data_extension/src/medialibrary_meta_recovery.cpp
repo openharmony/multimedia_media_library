@@ -194,7 +194,7 @@ static int32_t RefreshAlbumCount()
     return E_OK;
 }
 
-static int32_t getMetaPathFromOrignalPath(const std::string &srcPath, std::string &metaPath)
+int32_t MediaLibraryMetaRecovery::GetMetaPathFromOrignalPath(const std::string &srcPath, std::string &metaPath)
 {
     if (srcPath.empty()) {
         MEDIA_ERR_LOG("getMetaPathFromOrignalPath: source file invalid!");
@@ -497,7 +497,7 @@ int32_t MediaLibraryMetaRecovery::WriteSingleMetaData(const FileAsset &asset)
 {
     string metaFilePath;
     int32_t ret = E_OK;
-    ret = getMetaPathFromOrignalPath(asset.GetPath(), metaFilePath);
+    ret = GetMetaPathFromOrignalPath(asset.GetPath(), metaFilePath);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("invalid photo path, path = %{public}s", DfxUtils::GetSafePath(asset.GetPath()).c_str());
         return ret;
@@ -1328,7 +1328,7 @@ int32_t MediaLibraryMetaRecovery::StartAsyncRecovery()
 int32_t MediaLibraryMetaRecovery::DeleteMetaDataByPath(const string &filePath)
 {
     string metaFilePath;
-    if (E_OK != getMetaPathFromOrignalPath(filePath, metaFilePath)) {
+    if (E_OK != GetMetaPathFromOrignalPath(filePath, metaFilePath)) {
         MEDIA_ERR_LOG("DeleteMetaDataByPath: invalid photo filePath, %{public}s",
             DfxUtils::GetSafePath(filePath).c_str());
         return E_INVALID_PATH;
@@ -1361,6 +1361,27 @@ void MediaLibraryMetaRecovery::RestartCloudSync()
         MEDIA_ERR_LOG("StartCloudSync fail, errcode=%{public}d", ret);
     }
     MEDIA_INFO_LOG("End StartCloudSync");
+}
+
+int32_t MediaLibraryMetaRecovery::ResetAllMetaDirty()
+{
+    const std::string RESET_ALL_META_DIRTY_SQL =
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_METADATA_FLAGS +
+        "= 0 " + " WHERE " + PhotoColumn::PHOTO_METADATA_FLAGS + " == 2; END;";
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    auto rawRdbStore = rdbStore->GetRaw();
+    if (rawRdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+
+    int32_t err = rawRdbStore->ExecuteSql(RESET_ALL_META_DIRTY_SQL);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", RESET_ALL_META_DIRTY_SQL.c_str());
+    }
+    return err;
 }
 } // namespace Media
 } // namespace OHOS
