@@ -27,8 +27,12 @@ const mediaAppName = 'com.android.providers.media.module';
 const UPGRADE_RESTORE : number = 0;
 const DUAL_FRAME_CLONE_RESTORE : number = 1;
 const CLONE_RESTORE : number = 2;
+const I_PHONE_CLONE_RESTORE : number = 3;
+const OTHERS_PHONE_CLONE_RESTORE : number = 4;
 
 const UPGRADE_NAME = '0.0.0.0';
+const I_PHONE_FRAME_CLONE_NAME = '99.99.99.997';
+const OTHERS_PHONE_FRAME_CLONE_NAME = '99.99.99.998';
 const DUAL_FRAME_CLONE_NAME = '99.99.99.999';
 const STAT_KEY_RESULT_INFO = 'resultInfo';
 const STAT_KEY_TYPE = 'type';
@@ -163,7 +167,8 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.time(TAG + ' RESTORE EX');
     const backupDir = this.context.backupDir + 'restore';
     let sceneCode: number = this.getSceneCode(bundleVersion);
-    let restoreExResult: string = await mediabackup.startRestoreEx(sceneCode, galleryAppName, mediaAppName, backupDir);
+    let restoreExResult: string = await mediabackup.startRestoreEx(sceneCode, galleryAppName, mediaAppName, backupDir,
+      bundleInfo);
     let restoreExInfo: string = await this.getRestoreExInfo(restoreExResult);
     console.log(TAG, `GET restoreExInfo: ${restoreExInfo}`);
     console.timeEnd(TAG + ' RESTORE EX');
@@ -392,6 +397,12 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     }
     if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
       return DUAL_FRAME_CLONE_RESTORE;
+    }
+    if (bundleVersion.name === OTHERS_PHONE_FRAME_CLONE_NAME && bundleVersion.code === 0) {
+      return OTHERS_PHONE_CLONE_RESTORE;
+    }
+    if (bundleVersion.name === I_PHONE_FRAME_CLONE_NAME && bundleVersion.code === 0) {
+      return I_PHONE_CLONE_RESTORE;
     }
     return CLONE_RESTORE;
   }
