@@ -8344,7 +8344,7 @@ napi_value MediaLibraryNapi::CreateAssetWithShortTermPermission(napi_env env, na
     return result;
 }
 
-static bool InitGrantOldPhotoAssetsReadPermissionRequest(OHOS::AAFwk::Want &want, 
+static bool InitGrantOldPhotoAssetsReadPermissionRequest(OHOS::AAFwk::Want &want,
     shared_ptr<GrantOldPhotoAssetsReadPermissionCallback> &callback, napi_env env, napi_value args[], size_t argsLen)
 {
     NAPI_INFO_LOG("InitGrantOldPhotoAssetsReadPermission enter.");
@@ -8381,7 +8381,7 @@ napi_value MediaLibraryNapi::GrantOldPhotoAssetsReadPermission(napi_env env, nap
     auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
     NAPI_ASSERT(env, context != nullptr, "Context is null.");
 
-    std::shared_ptr<OHOS::AbilityRuntime::AbilityContext> abilityContext =
+    shared_ptr<OHOS::AbilityRuntime::AbilityContext> abilityContext =
         OHOS::AbilityRuntime::Context::ConvertTo<OHOS::AbilityRuntime::AbilityContext>(context);
     NAPI_ASSERT(env, abilityContext != nullptr, "AbilityContext is null.");
 
