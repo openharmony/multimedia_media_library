@@ -2043,7 +2043,6 @@ int32_t MediaLibraryDataManager::CheckCloudThumbnailDownloadFinish()
 
 void MediaLibraryDataManager::UploadDBFileInner()
 {
-    lock_guard<shared_mutex> lock(mgrSharedMutex_);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr!");
