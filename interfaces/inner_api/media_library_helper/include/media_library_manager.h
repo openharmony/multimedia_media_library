@@ -34,7 +34,6 @@ using namespace OHOS::DataShare;
  * @since 1.0
  * @version 1.0
  */
-
 enum class PhotoPermissionType : int32_t {
     TEMPORARY_READ_IMAGEVIDEO = 0,
     PERSIST_READ_IMAGEVIDEO,
@@ -188,6 +187,14 @@ public:
     EXPORT int32_t ReadMovingPhotoVideo(const string &uri);
 
     /**
+     * @brief Open private moving photo to read
+     *
+     * @param uri asset uri of the moving photo
+     * @return read fd for success and <-1> for fail
+     */
+    EXPORT int32_t ReadPrivateMovingPhoto(const string &uri);
+
+    /**
      * @brief Get image uri of moving photo
      *
      * @param uri asset uri of the moving photo
@@ -213,8 +220,7 @@ public:
      */
     EXPORT std::shared_ptr<PhotoAssetProxy> CreatePhotoAssetProxy(CameraShotType cameraShotType, uint32_t callingUid,
         int32_t userId);
-
-    /**
+       /**
      * @brief Check PhotoUri Permission
      *
      * @param tokenId a parameter for input, indicating the expected app's tokenId to check

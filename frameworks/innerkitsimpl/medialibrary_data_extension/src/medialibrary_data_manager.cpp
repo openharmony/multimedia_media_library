@@ -17,6 +17,7 @@
 
 #include "medialibrary_data_manager.h"
 
+#include <cstdlib>
 #include <shared_mutex>
 #include <unordered_set>
 
@@ -31,6 +32,7 @@
 #include "device_manager_callback.h"
 #endif
 #include "dfx_manager.h"
+#include "dfx_utils.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
@@ -46,6 +48,7 @@
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_app_uri_permission_operations.h"
+#include "medialibrary_app_uri_sensitive_operations.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
 #include "medialibrary_bundle_manager.h"
@@ -63,6 +66,7 @@
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_restore.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_story_operations.h"
@@ -70,10 +74,12 @@
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_uripermission_operations.h"
+#include "medialibrary_urisensitive_operations.h"
 #include "medialibrary_vision_operations.h"
 #include "medialibrary_search_operations.h"
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
+#include "enhancement_manager.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "photo_map_operations.h"
@@ -91,8 +97,8 @@
 #include "vision_face_tag_column.h"
 #include "vision_photo_map_column.h"
 #include "parameter.h"
-#include "parameters.h"
 #include "uuid.h"
+#include "parameters.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -157,6 +163,8 @@ __attribute__((constructor)) void RegisterDataShareCreator()
 
 static void MakeRootDirs(AsyncTaskData *data)
 {
+    const unordered_set<string> DIR_CHECK_SET = { ROOT_MEDIA_DIR + BACKUP_DATA_DIR_VALUE,
+        ROOT_MEDIA_DIR + BACKUP_SINGLE_DATA_DIR_VALUE };
     for (auto &dir : PRESET_ROOT_DIRS) {
         Uri createAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
         ValuesBucket valuesBucket;
@@ -168,22 +176,25 @@ static void MakeRootDirs(AsyncTaskData *data)
         } else if (ret <= 0) {
             MEDIA_ERR_LOG("Failed to preset root dir: %{private}s", dir.c_str());
         }
+        MediaFileUtils::CheckDirStatus(DIR_CHECK_SET, ROOT_MEDIA_DIR + dir);
     }
     if (data->dataDisplay.compare(E_POLICY) == 0 && !MediaFileUtils::SetEPolicy()) {
         MEDIA_ERR_LOG("Failed to SetEPolicy fail");
     }
     MediaFileUtils::MediaFileDeletionRecord();
+    // recover temp dir
+    MediaFileUtils::RecoverMediaTempDir();
 }
 
 void MediaLibraryDataManager::ReCreateMediaDir()
 {
+    MediaFileUtils::BackupPhotoDir();
     // delete E policy dir
     for (const string &dir : E_POLICY_DIRS) {
         if (!MediaFileUtils::DeleteDir(dir)) {
-            MEDIA_ERR_LOG("Delete dir fail, dir: %{private}s", dir.c_str());
+            MEDIA_ERR_LOG("Delete dir fail, dir: %{public}s", DfxUtils::GetSafePath(dir).c_str());
         }
     }
-    
     // create C policy dir
     InitACLPermission();
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
@@ -202,6 +213,13 @@ void MediaLibraryDataManager::ReCreateMediaDir()
     } else {
         MEDIA_WARN_LOG("Can not init make root dir task");
     }
+}
+
+void MediaLibraryDataManager::HandleOtherInitOperations()
+{
+    InitRefreshAlbum();
+    UriPermissionOperations::DeleteAllTemporaryAsync();
+    UriSensitiveOperations::DeleteAllSensitiveAsync();
 }
 
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
@@ -256,16 +274,56 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
 
-    InitRefreshAlbum();
+    HandleOtherInitOperations();
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     cloudPhotoObserver_ = std::make_shared<CloudSyncObserver>();
     cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_, true);
-
+    HandleUpgradeRdbAsync();
     refCnt_++;
     return E_OK;
+}
+
+void MediaLibraryDataManager::HandleUpgradeRdbAsync()
+{
+    std::thread([&] {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+        if (rdbStore == nullptr) {
+            MEDIA_ERR_LOG("rdbStore is nullptr!");
+            return;
+        }
+        int32_t oldVersion = rdbStore->GetOldVersion();
+        if (oldVersion == -1 || oldVersion >= MEDIA_RDB_VERSION) {
+            MEDIA_INFO_LOG("No need to upgrade rdb, oldVersion: %{public}d", oldVersion);
+            return;
+        }
+        auto rawStore = rdbStore->GetRaw();
+        if (rawStore == nullptr) {
+            MEDIA_ERR_LOG("rawStore is nullptr!");
+            return;
+        }
+        MEDIA_INFO_LOG("oldVersion:%{public}d", oldVersion);
+        // compare older version, update and set old version
+        if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
+            MediaLibraryRdbStore::CreateBurstIndex(*rawStore);
+            rdbStore->SetOldVersion(VERSION_CREATE_BURSTKEY_INDEX);
+        }
+
+        if (oldVersion < VERSION_UPDATE_BURST_DIRTY) {
+            MediaLibraryRdbStore::UpdateBurstDirty(*rawStore);
+            rdbStore->SetOldVersion(VERSION_UPDATE_BURST_DIRTY);
+        }
+
+        if (oldVersion < VERSION_MOVE_AUDIOS) {
+            MediaLibraryAudioOperations::MoveToMusic();
+            MediaLibraryRdbStore::ClearAudios(*rawStore);
+            rdbStore->SetOldVersion(VERSION_MOVE_AUDIOS);
+        }
+
+        rdbStore->SetOldVersion(MEDIA_RDB_VERSION);
+    }).detach();
 }
 
 void MediaLibraryDataManager::InitResourceInfo()
@@ -469,9 +527,11 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::FILESYSTEM_DIR:
             return MediaLibraryDirOperations::HandleDirOperation(cmd);
 
-        case OperationObject::SMART_ALBUM:
+        case OperationObject::SMART_ALBUM: {
+            string packageName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+            MEDIA_INFO_LOG("%{public}s call smart album insert!", packageName.c_str());
             return MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperation(cmd);
-
+        }
         case OperationObject::SMART_ALBUM_MAP:
             return MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd);
 
@@ -480,7 +540,33 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 
         case OperationObject::BUNDLE_PERMISSION:
             return UriPermissionOperations::HandleUriPermOperations(cmd);
+        case OperationObject::APP_URI_PERMISSION_INNER: {
+            int32_t ret = UriSensitiveOperations::InsertOperation(cmd);
+            if (ret < 0) {
+                return ret;
+            }
+            return UriPermissionOperations::InsertOperation(cmd);
+        }
+        case OperationObject::MEDIA_APP_URI_PERMISSION: {
+            int32_t ret = MediaLibraryAppUriSensitiveOperations::HandleInsertOperation(cmd);
+            if (ret != MediaLibraryAppUriSensitiveOperations::SUCCEED) {
+                return ret;
+            }
+            return MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
+        }
+        default:
+            break;
+    }
+    return SolveInsertCmdSub(cmd);
+}
 
+int32_t MediaLibraryDataManager::SolveInsertCmdSub(MediaLibraryCommand &cmd)
+{
+    if (MediaLibraryRestore::GetInstance().IsBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()) {
+        MEDIA_INFO_LOG("[SolveInsertCmdSub] rdb is backuping");
+        return E_FAIL;
+    }
+    switch (cmd.GetOprnObject()) {
         case OperationObject::VISION_START ... OperationObject::VISION_END:
             return MediaLibraryVisionOperations::InsertOperation(cmd);
 
@@ -489,30 +575,26 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::GEO_PHOTO:
             return MediaLibraryLocationOperations::InsertOperation(cmd);
 
+        case OperationObject::SEARCH_TOTAL:
+            return MediaLibrarySearchOperations::InsertOperation(cmd);
+
         case OperationObject::PAH_FORM_MAP:
             return MediaLibraryFormMapOperations::HandleStoreFormIdOperation(cmd);
-        case OperationObject::SEARCH_TOTAL: {
-            return MediaLibrarySearchOperations::InsertOperation(cmd);
-        }
 
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryStoryOperations::InsertOperation(cmd);
-
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }
-        case OperationObject::APP_URI_PERMISSION_INNER:
-            return UriPermissionOperations::InsertOperation(cmd);
-        case OperationObject::MEDIA_APP_URI_PERMISSION:
-            return MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
         default:
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
                 cmd.GetOprnObject());
-            return E_FAIL;
+            break;
     }
+    return E_FAIL;
 }
 
 static int32_t LogMovingPhoto(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue)
@@ -522,7 +604,7 @@ static int32_t LogMovingPhoto(MediaLibraryCommand &cmd, const DataShareValuesBuc
     if (!inValid) {
         MEDIA_ERR_LOG("Invalid adapted value");
     }
-    string packageName = string(dataShareValue.Get("package_name", inValid));
+    string packageName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     if (!inValid) {
         MEDIA_ERR_LOG("Invalid package name");
     } else if (packageName.empty()) {
@@ -635,8 +717,16 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
     } else if (cmd.GetOprnObject() == OperationObject::ANALYSIS_PHOTO_MAP) {
         return PhotoMapOperations::AddAnaLysisPhotoAssets(values);
     } else if (cmd.GetOprnObject() == OperationObject::APP_URI_PERMISSION_INNER) {
-        return UriPermissionOperations::BatchInsertOperation(cmd, values);
+        int32_t ret = UriSensitiveOperations::GrantUriSensitive(cmd, values);
+        if (ret < 0) {
+            return ret;
+        }
+        return UriPermissionOperations::GrantUriPermission(cmd, values);
     } else if (cmd.GetOprnObject() == OperationObject::MEDIA_APP_URI_PERMISSION) {
+        int32_t ret = MediaLibraryAppUriSensitiveOperations::BatchInsert(cmd, values);
+        if (ret != MediaLibraryAppUriSensitiveOperations::SUCCEED) {
+            return ret;
+        }
         return MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
@@ -713,12 +803,10 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
                 MediaLibraryObjectUtils::DeleteFileObj(move(fileAsset)) :
                 MediaLibraryObjectUtils::DeleteDirObj(move(fileAsset));
         }
-        case OperationObject::PHOTO_ALBUM: {
+        case OperationObject::PHOTO_ALBUM:
             return MediaLibraryAlbumOperations::DeletePhotoAlbum(rdbPredicate);
-        }
-        case OperationObject::PHOTO_MAP: {
+        case OperationObject::PHOTO_MAP:
             return PhotoMapOperations::RemovePhotoAssets(rdbPredicate);
-        }
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             if (CheckIsDismissAsset(rdbPredicate)) {
                 return PhotoMapOperations::DismissAssets(rdbPredicate);
@@ -729,12 +817,10 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
             return MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
         }
         case OperationObject::FILESYSTEM_PHOTO:
-        case OperationObject::FILESYSTEM_AUDIO: {
+        case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAssetOperations::DeleteOperation(cmd);
-        }
-        case OperationObject::PAH_FORM_MAP: {
+        case OperationObject::PAH_FORM_MAP:
             return MediaLibraryFormMapOperations::RemoveFormIdOperations(rdbPredicate);
-        }
         default:
             break;
     }
@@ -745,42 +831,32 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
 int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryCommand &cmd,
     NativeRdb::RdbPredicates &rdbPredicate)
 {
+    if (MediaLibraryRestore::GetInstance().IsBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()) {
+        MEDIA_INFO_LOG("[DeleteInRdbPredicatesAnalysis] rdb is backuping");
+        return E_FAIL;
+    }
     switch (cmd.GetOprnObject()) {
-        case OperationObject::VISION_START ... OperationObject::VISION_END: {
+        case OperationObject::VISION_START ... OperationObject::VISION_END:
             return MediaLibraryVisionOperations::DeleteOperation(cmd);
-        }
+
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
-        case OperationObject::GEO_PHOTO: {
+        case OperationObject::GEO_PHOTO:
             return MediaLibraryLocationOperations::DeleteOperation(cmd);
-        }
 
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
-        case OperationObject::USER_PHOTOGRAPHY: {
+        case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryStoryOperations::DeleteOperation(cmd);
-        }
             
-        case OperationObject::SEARCH_TOTAL: {
+        case OperationObject::SEARCH_TOTAL:
             return MediaLibrarySearchOperations::DeleteOperation(cmd);
-        }
         default:
             break;
     }
 
     return E_FAIL;
-}
-
-static int32_t SolveOtherUpdateCmd(MediaLibraryCommand &cmd, bool &solved)
-{
-    switch (cmd.GetOprnObject()) {
-        case OperationObject::APP_URI_PERMISSION_INNER:
-            solved = true;
-            return UriPermissionOperations::UpdateOperation(cmd);
-        default:
-            return E_FAIL;
-    }
 }
 
 int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue,
@@ -810,12 +886,6 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
         cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-
-    bool solved = false;
-    int32_t ret = SolveOtherUpdateCmd(cmd, solved);
-    if (solved) {
-        return ret;
-    }
     return UpdateInternal(cmd, value, predicates);
 }
 
@@ -825,24 +895,21 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
             auto ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
-            if (ret == E_SAME_PATH) {
-                break;
-            } else {
+            if (ret != E_SAME_PATH) {
                 return ret;
             }
+            break;
         }
         case OperationObject::FILESYSTEM_DIR:
             // supply a ModifyDirOperation here to replace
             // modify in the HandleDirOperations in Insert function, if need
             break;
-        case OperationObject::FILESYSTEM_ALBUM: {
+        case OperationObject::FILESYSTEM_ALBUM:
             return MediaLibraryAlbumOperations::ModifyAlbumOperation(cmd);
-        }
         case OperationObject::PAH_PHOTO:
         case OperationObject::FILESYSTEM_PHOTO:
-        case OperationObject::FILESYSTEM_AUDIO: {
+        case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
-        }
         case OperationObject::ANALYSIS_PHOTO_ALBUM: {
             if ((cmd.GetOprnType() >= OperationType::PORTRAIT_DISPLAY_LEVEL &&
                  cmd.GetOprnType() <= OperationType::GROUP_COVER_URI)) {
@@ -850,9 +917,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             }
             break;
         }
-        case OperationObject::PHOTO_ALBUM: {
+        case OperationObject::PHOTO_ALBUM:
             return MediaLibraryAlbumOperations::HandlePhotoAlbum(cmd.GetOprnType(), value, predicates);
-        }
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
             return MediaLibraryLocationOperations::UpdateOperation(cmd);
@@ -862,7 +928,6 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryStoryOperations::UpdateOperation(cmd);
-        
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             std::vector<std::string> columns;
             MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
@@ -870,6 +935,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         }
         case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE:
             return ProcessThumbnailBatchCmd(cmd, value, predicates);
+        case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
+            return EnhancementManager::GetInstance().HandleEnhancementUpdateOperation(cmd);
         default:
             break;
     }
@@ -913,7 +980,7 @@ int32_t MediaLibraryDataManager::GenerateThumbnailBackground()
     return thumbnailService_->GenerateThumbnailBackground();
 }
 
-int32_t MediaLibraryDataManager::UpgradeThumbnailBackground()
+int32_t MediaLibraryDataManager::UpgradeThumbnailBackground(bool isWifiConnected)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
@@ -924,7 +991,7 @@ int32_t MediaLibraryDataManager::UpgradeThumbnailBackground()
     if (thumbnailService_ == nullptr) {
         return E_THUMBNAIL_SERVICE_NULLPTR;
     }
-    return thumbnailService_->UpgradeThumbnailBackground();
+    return thumbnailService_->UpgradeThumbnailBackground(isWifiConnected);
 }
 
 int32_t MediaLibraryDataManager::RestoreThumbnailDualFrame()
@@ -950,7 +1017,7 @@ static void CacheAging()
 
     std::error_code errCode;
     time_t now = time(nullptr);
-    constexpr int thresholdSeconds = 7 * 24 * 60 * 60; // 7 days
+    constexpr int thresholdSeconds = 24 * 60 * 60; // 24 hours
     for (const auto& entry : filesystem::recursive_directory_iterator(cacheDir)) {
         string filePath = entry.path().string();
         if (!entry.is_regular_file()) {
@@ -960,7 +1027,7 @@ static void CacheAging()
 
         struct stat statInfo {};
         if (stat(filePath.c_str(), &statInfo) != 0) {
-            MEDIA_WARN_LOG("skip %{private}s , stat errno: %{public}d", filePath.c_str(), errno);
+            MEDIA_WARN_LOG("skip %{private}s, stat errno: %{public}d", filePath.c_str(), errno);
             continue;
         }
         time_t timeModified = statInfo.st_mtime;
@@ -1016,7 +1083,7 @@ static string generateRegexpMatchForNumber(const int32_t num)
 
 static string generateUpdateSql(const bool isCover, const string title, const int32_t mapAlbum)
 {
-    int32_t index = title.find_first_of("BURST");
+    uint32_t index = title.find_first_of("BURST");
     string globMember = title.substr(0, index) + "BURST" + generateRegexpMatchForNumber(3);
     string globCover = globMember + "_COVER";
     string updateSql;
@@ -1101,7 +1168,7 @@ static shared_ptr<NativeRdb::ResultSet> QueryBurst(shared_ptr<NativeRdb::RdbStor
         to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_BURST_KEY +
         " IS NULL AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule1 + "') OR LOWER(" +
         MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule2 + "'))";
-    
+
     auto resultSet = rdbStore->QueryByStep(querySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("failed to acquire result from visitor query.");
@@ -1425,6 +1492,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
             return MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
+        case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
+            return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
@@ -1492,7 +1561,8 @@ int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string
     }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
-    if (oprnObject != OperationObject::THUMBNAIL && oprnObject != OperationObject::THUMBNAIL_ASTC) {
+    if (oprnObject != OperationObject::THUMBNAIL && oprnObject != OperationObject::THUMBNAIL_ASTC &&
+        oprnObject != OperationObject::REQUEST_PICTURE && oprnObject != OperationObject::PHOTO_REQUEST_PICTURE_BUFFER) {
         string opObject = MediaFileUri::GetPathFirstDentry(const_cast<Uri &>(cmd.GetUri()));
         if (opObject == IMAGE_ASSET_TYPE || opObject == VIDEO_ASSET_TYPE || opObject == URI_TYPE_PHOTO) {
             cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);

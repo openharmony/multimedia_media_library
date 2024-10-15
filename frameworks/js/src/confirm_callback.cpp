@@ -29,18 +29,12 @@ static const std::string CONFIRM_BOX_DES_FILE_URIS = "desFileUris";
 static const std::string RESULT_PARAM = "result";
 static const std::string DATA_PARAM = "data";
 }
-#ifdef HAS_ACE_ENGINE_PART
+
 ConfirmCallback::ConfirmCallback(napi_env env, Ace::UIContent *uiContent)
 {
     this->env_ = env;
     this->uiContent = uiContent;
 }
-#else
-ConfirmCallback::ConfirmCallback(napi_env env)
-{
-    this->env_ = env;
-}
-#endif
 
 void ConfirmCallback::OnRelease(int32_t releaseCode)
 {
@@ -163,11 +157,9 @@ void ConfirmCallback::CloseModalUIExtension()
 {
     NAPI_INFO_LOG("Called.");
 
-#ifdef HAS_ACE_ENGINE_PART
     if (this->uiContent != nullptr) {
         uiContent->CloseModalUIExtension(this->sessionId_);
     }
-#endif
 }
 }
 }

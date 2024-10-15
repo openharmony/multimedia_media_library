@@ -23,7 +23,6 @@
 #include "media_app_uri_permission_column.h"
 #include "media_column.h"
 #include "medialibrary_db_const.h"
-#include "media_app_uri_permission_column.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "search_column.h"
@@ -83,6 +82,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OperationObject::PAH_MOVING_PHOTO },
         { PAH_BATCH_THUMBNAIL_OPERATE, OperationObject::PAH_BATCH_THUMBNAIL_OPERATE },
         { CHECK_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
+        { PAH_CLOUD_ENHANCEMENT_OPERATE, OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE },
 
         // use in Vision
         { PAH_ANA_OCR, OperationObject::VISION_OCR },
@@ -262,9 +262,6 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_SET_LOCATION, OperationType::SET_LOCATION },
         { OPRN_CANCEL_PROCESS_IMAGE, OperationType::CANCEL_PROCESS_IMAGE },
         { OPRN_LOG_MOVING_PHOTO, OperationType::LOG_MOVING_PHOTO },
-        { OPRN_GROUP_DISMISS, OperationType::DISMISS },
-        { OPRN_GROUP_ALBUM_NAME, OperationType::GROUP_ALBUM_NAME },
-        { OPRN_GROUP_COVER_URI, OperationType::GROUP_COVER_URI },
         { OPRN_ADD_FILTERS, OperationType::ADD_FILTERS },
         { OPRN_DISCARD_CAMERA_PHOTO, OperationType::DISCARD_CAMERA_PHOTO },
         { OPRN_SAVE_CAMERA_PHOTO, OperationType::SAVE_CAMERA_PHOTO },
@@ -272,7 +269,20 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_START_GENERATE_THUMBNAILS, OperationType::START_GENERATE_THUMBNAILS },
         { OPRN_STOP_GENERATE_THUMBNAILS, OperationType::STOP_GENERATE_THUMBNAILS },
         { OPRN_TOOL_QUERY_BY_DISPLAY_NAME, OperationType::TOOL_QUERY_BY_DISPLAY_NAME },
+        { OPRN_GROUP_DISMISS, OperationType::DISMISS },
+        { OPRN_GROUP_ALBUM_NAME, OperationType::GROUP_ALBUM_NAME },
+        { OPRN_GROUP_COVER_URI, OperationType::GROUP_COVER_URI },
+        { OPRN_TOOL_QUERY_BY_DISPLAY_NAME, OperationType::TOOL_QUERY_BY_DISPLAY_NAME },
+        { OPRN_ADD_LOWQUALITY_IMAGE, OperationType::ADD_LOWQUALITY_IMAGE },
+        { OPRN_FINISH_REQUEST_PICTURE, OperationType::FINISH_REQUEST_PICTURE },
         { OPRN_SCAN_WITHOUT_ALBUM_UPDATE, OperationType::SCAN_WITHOUT_ALBUM_UPDATE },
+        { OPRN_ENHANCEMENT_ADD, OperationType::ENHANCEMENT_ADD},
+        { OPRN_ENHANCEMENT_PRIORITIZE, OperationType::ENHANCEMENT_PRIORITIZE},
+        { OPRN_ENHANCEMENT_CANCEL, OperationType::ENHANCEMENT_CANCEL},
+        { OPRN_ENHANCEMENT_CANCEL_ALL, OperationType::ENHANCEMENT_CANCEL_ALL},
+        { OPRN_ENHANCEMENT_SYNC, OperationType::ENHANCEMENT_SYNC},
+        { OPRN_ENHANCEMENT_QUERY, OperationType::ENHANCEMENT_QUERY},
+        { OPRN_ENHANCEMENT_GET_PAIR, OperationType::ENHANCEMENT_GET_PAIR},
     };
     return oprnTypeMap;
 }

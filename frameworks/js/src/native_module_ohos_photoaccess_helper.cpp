@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include "cloud_enhancement_task_state_napi.h"
+#include "cloud_enhancement_napi.h"
 #include "highlight_album_napi.h"
 #include "media_album_change_request_napi.h"
 #include "media_asset_change_request_napi.h"
@@ -48,6 +50,8 @@ static napi_value PhotoAccessHelperExport(napi_env env, napi_value exports)
     MediaAssetManagerNapi::Init(env, exports);
     MovingPhotoNapi::Init(env, exports);
     PhotoProxyNapi::Init(env, exports);
+    CloudEnhancementNapi::Init(env, exports);
+    CloudEnhancementTaskStateNapi::Init(env, exports);
     return exports;
 }
 

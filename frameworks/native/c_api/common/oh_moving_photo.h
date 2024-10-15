@@ -27,4 +27,4 @@ struct OH_MovingPhoto : public OHOS::RefBase {
     std::shared_ptr<OHOS::Media::MovingPhoto> movingPhoto_ = nullptr;
 };
 
-#endif // MULTIMEDIA_MEDIA_LIBRARY_NATIVE_OH_MOVING_PHOTO_H
+#endif // MULTIMEDIA_MEDIA_LIBRARY_NATIVE_OH_MOVING_PHOTO_H

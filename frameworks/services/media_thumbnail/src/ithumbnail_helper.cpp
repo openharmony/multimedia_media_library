@@ -18,6 +18,7 @@
 
 #include "ability_manager_client.h"
 #include "background_task_mgr_helper.h"
+#include "dfx_cloud_manager.h"
 #include "dfx_utils.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
@@ -46,6 +47,16 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+
+void StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data)
+{
+    std::string photoId = opts.row.empty() ? data.id : opts.row;
+    std::string tmpPath = opts.path.empty() ? data.path : opts.path;
+    if (tmpPath.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
+        MediaLibraryPhotoOperations::StoreThumbnailSize(photoId, tmpPath);
+    }
+}
+
 void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
 {
     if (data == nullptr) {
@@ -55,9 +66,6 @@ void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> 
     bool isSuccess = DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_);
     UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
-    if (data->opts_.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-        MediaLibraryPhotoOperations::StoreThumbnailSize(data->opts_.row, data->opts_.path);
-    }
 }
 
 void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> &data)
@@ -78,9 +86,6 @@ void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
     bool isSuccess = DoCreateThumbnail(data->opts_, data->thumbnailData_);
     UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
-    if (data->opts_.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-        MediaLibraryPhotoOperations::StoreThumbnailSize(data->opts_.row, data->opts_.path);
-    }
 }
 
 void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
@@ -420,9 +425,22 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
+void UpdateLcdDbState(ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    if (opts.table != PhotoColumn::PHOTOS_TABLE) {
+        return;
+    }
+    StoreThumbnailSize(opts, data);
+    int err = 0;
+    if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
+        MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
+    }
+}
+
 bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     data.loaderOpts.decodeInThumbSize = false;
+    data.loaderOpts.isHdr = true;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("load source is nullptr path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
         return false;
@@ -446,7 +464,7 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
         float heightScale = (1.0f * lcdDesiredHeight) / data.source->GetHeight();
         lcdSource->scale(widthScale, heightScale);
     }
-    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO)) {
+    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO, false, false)) {
         MEDIA_ERR_LOG("CompressImage faild");
         return false;
     }
@@ -458,12 +476,7 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
     }
 
     data.lcd.clear();
-    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
-        if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
-            MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
-        }
-    }
-
+    UpdateLcdDbState(opts, data);
     return true;
 }
 
@@ -601,6 +614,13 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
     }
 
     ThumbnailUtils::GenTargetPixelmap(data, size);
+
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (data.source->ApplyColorSpace(ColorManager::ColorSpaceName::DISPLAY_P3) != E_OK) {
+        MEDIA_ERR_LOG("ApplyColorSpace to p3 failed");
+    }
+#endif
+
     if (!ThumbnailUtils::CompressImage(data.source,
         (type == ThumbnailType::MTH_ASTC) ? data.monthAstc : data.yearAstc, false, true)) {
         MEDIA_ERR_LOG("CompressImage to astc failed");
@@ -657,15 +677,9 @@ bool IThumbnailHelper::UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailD
 
 int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
-    int64_t thumbnail_status = 0;
-    if (data.loaderOpts.needUpload) {
-        thumbnail_status = static_cast<int64_t>(ThumbnailReady::THUMB_TO_UPLOAD);
-    } else {
-        thumbnail_status = static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_COMPLETED);
-    }
     ValuesBucket values;
     int changedRows;
-    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, thumbnail_status);
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, MediaFileUtils::UTCTimeMilliSeconds());
     Size lcdSize;
     if (ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::LCD, lcdSize)) {
         ThumbnailUtils::SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
@@ -677,6 +691,7 @@ int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const Thum
     }
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { data.id });
+    StoreThumbnailSize(opts, data);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
         return E_ERR;
@@ -788,9 +803,16 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
     }
 
     data.loaderOpts.decodeInThumbSize = true;
+    if (data.source != nullptr && data.source->IsHdr()) {
+        data.source->ToSdr();
+    }
     if (!ThumbnailUtils::ScaleThumbnailFromSource(data, false)) {
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
+    }
+    
+    if (data.orientation != 0 && data.sourceEx != nullptr && data.sourceEx->IsHdr()) {
+        data.sourceEx->ToSdr();
     }
     if (data.orientation != 0 && !ThumbnailUtils::ScaleThumbnailFromSource(data, true)) {
         MEDIA_ERR_LOG("Fail to scale from LCD_EX to THM_EX, path: %{public}s",
@@ -830,7 +852,7 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
         MEDIA_ERR_LOG("DoCreateAstc failed, try to load exist thumbnail failed, id: %{public}s", data.id.c_str());
         return false;
     }
-    if (data.loaderOpts.needUpload && !GenThumbnail(opts, data, ThumbnailType::THUMB)) {
+    if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
         MEDIA_ERR_LOG("DoCreateAstc GenThumbnail THUMB failed, id: %{public}s", data.id.c_str());
         return false;
     }
@@ -846,6 +868,7 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
+    CloudSyncDfxManager::GetInstance().RunDfx();
     return true;
 }
 
@@ -929,6 +952,7 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
     }
 
     thumbnailWait.UpdateCloudLoadThumbnailMap(CloudLoadType::CLOUD_DOWNLOAD, true);
+    CloudSyncDfxManager::GetInstance().RunDfx();
     return true;
 }
 

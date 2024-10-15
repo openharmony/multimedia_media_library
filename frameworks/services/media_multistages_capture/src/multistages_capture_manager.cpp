@@ -18,6 +18,7 @@
 #include "multistages_capture_manager.h"
 
 #include "database_adapter.h"
+#include "image_packer.h"
 #include "exif_utils.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_bundle_manager.h"
@@ -26,8 +27,11 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_tracer.h"
+#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_formmap_operations.h"
+#include "picture_manager_thread.h"
 #include "multistages_capture_dfx_first_visit.h"
 #include "multistages_capture_dfx_request_policy.h"
 #include "multistages_capture_dfx_total_time.h"
@@ -40,6 +44,9 @@ using namespace std;
 #ifdef ABILITY_CAMERA_SUPPORT
 using namespace OHOS::CameraStandard;
 #endif
+
+#define SAVE_PICTURE_TIMEOUT_SEC 20
+
 namespace OHOS {
 namespace Media {
 
@@ -88,8 +95,7 @@ shared_ptr<OHOS::NativeRdb::ResultSet> MultiStagesCaptureManager::HandleMultiSta
         case OperationType::PROCESS_IMAGE: {
             int fileId = std::stoi(columns[0]); // 0 indicates file id
             int deliveryMode = std::stoi(columns[1]); // 1 indicates delivery mode
-            string appName = columns[2]; // 2 indicates app name
-            ProcessImage(fileId, deliveryMode, appName);
+            ProcessImage(fileId, deliveryMode);
             MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::THIRD_PART);
             break;
         }
@@ -111,23 +117,117 @@ shared_ptr<OHOS::NativeRdb::ResultSet> MultiStagesCaptureManager::HandleMultiSta
             CancelRequestAndRemoveImage(columns);
             break;
         }
+        case OperationType::ADD_LOWQUALITY_IMAGE: {
+            MEDIA_DEBUG_LOG("save low quality Image");
+            SaveLowQualityImageInfo(cmd);
+            break;
+        }
         default:
             break;
     }
     return nullptr;
 }
 
-int32_t MultiStagesCaptureManager::UpdateLowQualityDbInfo(MediaLibraryCommand &cmd)
+void MultiStagesCaptureManager::SaveLowQualityImageInfo(MediaLibraryCommand &cmd)
+{
+    auto values = cmd.GetValueBucket();
+    string photoId = "";
+    ValueObject valueObject;
+    if (values.GetObject(PhotoColumn::PHOTO_ID, valueObject)) {
+        valueObject.GetString(photoId);
+    }
+    int32_t deferredProcType = -1;
+    if (values.GetObject(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, valueObject)) {
+        valueObject.GetInt(deferredProcType);
+    }
+    int32_t fileId = 0;
+    if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
+        valueObject.GetInt(fileId);
+    }
+}
+
+// 低质量入缓存
+void MultiStagesCaptureManager::DealLowQualityPicture(const std::string &imageId,
+    std::shared_ptr<Media::Picture> picture, bool isEdited)
+{
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread == nullptr) {
+        return;
+    }
+    pictureManagerThread->Start();
+    if (pictureManagerThread->IsExsitPictureByImageId(imageId)) {
+        return;
+    }
+    // 将低质量图存入缓存
+    time_t currentTime;
+    if ((currentTime = time(NULL)) == -1) {
+        MEDIA_ERR_LOG("Get time is error");
+        currentTime = time(NULL);
+    }
+    time_t expireTime = currentTime + SAVE_PICTURE_TIMEOUT_SEC;
+    std::string imageIdInPair = imageId;
+    sptr<PicturePair> picturePair = new PicturePair(std::move(picture), imageIdInPair, expireTime, true, false);
+    // 存低质量裸picture
+    pictureManagerThread->InsertPictureData(imageId, picturePair, LOW_QUALITY_PICTURE);
+    MEDIA_INFO_LOG("photoid: %{public}s", imageId.c_str());
+}
+
+bool MultiStagesCaptureManager::IsHighQualityPhotoExist(const std::string &uri)
+{
+    string filePath = MediaFileUri::GetPathFromUri(uri, true);
+    string filePathTemp = filePath + ".high";
+    return MediaFileUtils::IsFileExists(filePathTemp) || MediaFileUtils::IsFileExists(filePath);
+}
+
+void MultiStagesCaptureManager::SaveLowQualityPicture(const std::string &imageId)
+{
+    MEDIA_INFO_LOG("photoid: %{public}s", imageId.c_str());
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread == nullptr) {
+        return;
+    }
+    pictureManagerThread->Start();
+    pictureManagerThread->SaveLowQualityPicture(imageId);
+}
+
+// 高质量编辑图片存20S
+void MultiStagesCaptureManager::DealHighQualityPicture(const std::string &imageId,
+    std::shared_ptr<Media::Picture> picture, bool isEdited)
+{
+    MEDIA_INFO_LOG("photoid: %{public}s", imageId.c_str());
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread == nullptr) {
+        return;
+    }
+    pictureManagerThread->Start();
+    // 将低质量图存入缓存
+    time_t currentTime;
+    if ((currentTime = time(NULL)) == -1) {
+        MEDIA_ERR_LOG("Get time is error");
+        currentTime = time(NULL);
+    }
+    time_t expireTime = currentTime + SAVE_PICTURE_TIMEOUT_SEC;
+    std::string imageIdInPair = imageId;
+    sptr<PicturePair> picturePair= new PicturePair(std::move(picture), imageIdInPair, expireTime, true, isEdited);
+    pictureManagerThread->InsertPictureData(imageId, picturePair, HIGH_QUALITY_PICTURE);
+}
+
+int32_t MultiStagesCaptureManager::UpdateDbInfo(MediaLibraryCommand &cmd)
 {
     MediaLibraryCommand cmdLocal (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     auto values = cmd.GetValueBucket();
-    values.PutInt(MEDIA_DATA_DB_PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
     int32_t subType = 0;
     ValueObject valueObject;
     if (values.GetObject(PhotoColumn::PHOTO_SUBTYPE, valueObject)) {
         valueObject.GetInt(subType);
     }
-    if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+
+    int32_t photoQuality = static_cast<int32_t>(MultiStagesPhotoQuality::LOW);
+    if (values.GetObject(PhotoColumn::PHOTO_QUALITY, valueObject)) {
+        valueObject.GetInt(photoQuality);
+    }
+    if ((photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) &&
+        (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO))) {
         values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     }
     cmdLocal.SetValueBucket(values);
@@ -221,12 +321,26 @@ void MultiStagesCaptureManager::AddImage(int32_t fileId, const string &photoId, 
 void MultiStagesCaptureManager::AddImage(MediaLibraryCommand &cmd)
 {
     MEDIA_DEBUG_LOG("calling addImage");
-    UpdateLowQualityDbInfo(cmd);
+    UpdateDbInfo(cmd);
     auto values = cmd.GetValueBucket();
-    string photoId = "";
     ValueObject valueObject;
+    int32_t photoQuality = static_cast<int32_t>(MultiStagesPhotoQuality::LOW);
+    if (values.GetObject(PhotoColumn::PHOTO_QUALITY, valueObject)) {
+        valueObject.GetInt(photoQuality);
+    }
+    string photoId = "";
     if (values.GetObject(PhotoColumn::PHOTO_ID, valueObject)) {
         valueObject.GetString(photoId);
+    }
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread == nullptr) {
+        return;
+    }
+    pictureManagerThread->Start();
+    if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
+        pictureManagerThread->SavePictureWithImageId(photoId);
+        UpdatePictureQuality(photoId);
+        return;
     }
     int32_t deferredProcType = -1;
     if (values.GetObject(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, valueObject)) {
@@ -239,6 +353,33 @@ void MultiStagesCaptureManager::AddImage(MediaLibraryCommand &cmd)
     AddImage(fileId, photoId, deferredProcType);
     MultiStagesCaptureDfxTotalTime::GetInstance().AddStartTime(photoId);
     MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::AUTO);
+    if (OPRN_ADD_LOWQUALITY_IMAGE == cmd.GetQuerySetParam("save_picture")) {
+        MEDIA_DEBUG_LOG("save last low quality Image");
+        SaveLowQualityImageInfo(cmd);
+    }
+}
+
+int32_t MultiStagesCaptureManager::UpdatePictureQuality(const std::string &photoId)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdatePhotoQuality " + photoId);
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    NativeRdb::ValuesBucket updateValues;
+    updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+    updateCmd.SetValueBucket(updateValues);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
+    int32_t updatePhotoIdResult = DatabaseAdapter::Update(updateCmd);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, false);
+    updateCmd.GetAbsRdbPredicates()->NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
+        to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+    NativeRdb::ValuesBucket updateValuesDirty;
+    updateValuesDirty.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    updateCmd.SetValueBucket(updateValuesDirty);
+    auto isTempResult = DatabaseAdapter::Update(updateCmd);
+    if (isTempResult < 0) {
+        MEDIA_WARN_LOG("update temp flag fail, photoId: %{public}s", photoId.c_str());
+    }
+    return updatePhotoIdResult;
 }
 
 void MultiStagesCaptureManager::SyncWithDeferredProcSessionInternal()
@@ -360,7 +501,7 @@ void MultiStagesCaptureManager::RestoreImages(const AbsRdbPredicates &predicates
     }
 }
 
-void MultiStagesCaptureManager::ProcessImage(int fileId, int deliveryMode, const std::string &appName)
+void MultiStagesCaptureManager::ProcessImage(int fileId, int deliveryMode)
 {
     string photoId = MultiStagesCaptureRequestTaskManager::GetProcessingPhotoId(fileId) ;
     if (photoId.size() == 0) {

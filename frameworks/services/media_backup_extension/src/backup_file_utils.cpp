@@ -26,6 +26,7 @@
 #include "media_log.h"
 #include "media_file_utils.h"
 #include "medialibrary_asset_operations.h"
+#include "moving_photo_file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -33,8 +34,69 @@ const string DEFAULT_IMAGE_NAME = "IMG_";
 const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
 const size_t MAX_FAILED_FILES_SIZE = 100;
+const string LOW_QUALITY_PATH = "Documents/cameradata/";
 
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
+std::shared_ptr<FileAccessHelper> BackupFileUtils::fileAccessHelper_ = std::make_shared<FileAccessHelper>();
+
+bool FileAccessHelper::GetValidPath(string &filePath)
+{
+    if (access(filePath.c_str(), F_OK) == 0) {
+        return true;
+    }
+
+    string resultPath = filePath;
+    int32_t pos = 0;
+    while ((pos = resultPath.find("/", pos + 1)) != string::npos) {
+        string curPath = resultPath.substr(0, pos);
+        if (!ConvertCurrentPath(curPath, resultPath)) {
+            MEDIA_ERR_LOG("convert fail, path: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
+            return false;
+        }
+    }
+
+    string curPath = resultPath;
+    if (!ConvertCurrentPath(curPath, resultPath)) {
+        MEDIA_ERR_LOG("convert fail, path: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
+        return false;
+    }
+
+    filePath = resultPath;
+    return true;
+}
+
+bool FileAccessHelper::ConvertCurrentPath(string &curPath, string &resultPath)
+{
+    if (access(curPath.c_str(), F_OK) == 0) {
+        return true;
+    }
+
+    string parentDir = filesystem::path(curPath).parent_path().string();
+    transform(curPath.begin(), curPath.end(), curPath.begin(), ::tolower);
+    {
+        std::lock_guard<std::mutex> guard(mapMutex);
+        if (pathMap.find(curPath) != pathMap.end()) {
+            resultPath.replace(0, curPath.length(), pathMap[curPath]);
+            return true;
+        }
+    }
+
+    for (const auto &entry : filesystem::directory_iterator(parentDir,
+        std::filesystem::directory_options::skip_permission_denied)) {
+        string entryPath = entry.path();
+        transform(entryPath.begin(), entryPath.end(), entryPath.begin(), ::tolower);
+        if (entryPath == curPath) {
+            resultPath.replace(0, curPath.length(), entry.path());
+            {
+                std::lock_guard<std::mutex> guard(mapMutex);
+                pathMap[curPath] = entry.path();
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
 
 int32_t BackupFileUtils::FillMetadata(std::unique_ptr<Metadata> &data)
 {
@@ -54,6 +116,28 @@ int32_t BackupFileUtils::FillMetadata(std::unique_ptr<Metadata> &data)
         return err;
     }
     return E_OK;
+}
+
+string BackupFileUtils::ConvertLowQualityPath(int32_t sceneCode, const std::string &filePath,
+    const string &relativePath)
+{
+    string result = filePath;
+    size_t displayNameIndex = result.rfind("/");
+    if (displayNameIndex == string::npos) {
+        return result;
+    }
+    std::string displayName = result.substr(displayNameIndex + 1);
+    size_t dotPos = displayName.find_last_of(".");
+    if (dotPos != string::npos) {
+        displayName.replace(dotPos, displayName.length() - dotPos, ".camera");
+    }
+    size_t pos = result.find(relativePath);
+    if (pos == string::npos) {
+        return result;
+    }
+    string publicPath = result.substr(0, pos + 1);
+    result = publicPath + LOW_QUALITY_PATH + displayName;
+    return result;
 }
 
 int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
@@ -266,14 +350,51 @@ void BackupFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
     }
 }
 
-bool BackupFileUtils::IsFileValid(const std::string &filePath, int32_t sceneCode)
+bool BackupFileUtils::IsLowQualityImage(std::string &filePath, int32_t sceneCode,
+    string relativePath, bool hasLowQualityImage)
+{
+    struct stat statInfo {};
+    std::string garbledFilePath = BackupFileUtils::GarbleFilePath(filePath, sceneCode);
+    if (!hasLowQualityImage) {
+        MEDIA_ERR_LOG("Invalid file (%{public}s), get statInfo failed, err: %{public}d", garbledFilePath.c_str(),
+            errno);
+        return false;
+    }
+    string realPath = ConvertLowQualityPath(sceneCode, filePath, relativePath);
+    if (stat(realPath.c_str(), &statInfo) == E_SUCCESS) {
+        MEDIA_INFO_LOG("Low quality image!");
+        filePath = realPath;
+    } else {
+        MEDIA_ERR_LOG("Invalid Low quality image! file:%{public}s, err:%{public}d", garbledFilePath.c_str(), errno);
+        return false;
+    }
+    if (statInfo.st_mode & S_IFDIR) {
+        MEDIA_ERR_LOG("Invalid file (%{public}s), is a directory", garbledFilePath.c_str());
+        return false;
+    }
+    if (statInfo.st_size <= 0) {
+        MEDIA_ERR_LOG("Invalid file (%{public}s), get size (%{public}lld) <= 0", garbledFilePath.c_str(),
+            (long long)statInfo.st_size);
+        return false;
+    }
+    return true;
+}
+
+bool BackupFileUtils::IsFileValid(std::string &filePath, int32_t sceneCode,
+    string relativePath, bool hasLowQualityImage)
 {
     std::string garbledFilePath = BackupFileUtils::GarbleFilePath(filePath, sceneCode);
     struct stat statInfo {};
     if (stat(filePath.c_str(), &statInfo) != E_SUCCESS) {
-        MEDIA_ERR_LOG("Invalid file (%{public}s), get statInfo failed, err: %{public}d", garbledFilePath.c_str(),
-            errno);
-        return false;
+        bool res = false;
+        if (fileAccessHelper_ != nullptr) {
+            res = fileAccessHelper_->GetValidPath(filePath);
+        }
+        MEDIA_INFO_LOG("after getValidPath:%{public}s, res:%{public}d",
+            BackupFileUtils::GarbleFilePath(filePath, sceneCode).c_str(), res);
+        if (stat(filePath.c_str(), &statInfo) != E_SUCCESS) {
+            return IsLowQualityImage(filePath, sceneCode, relativePath, hasLowQualityImage);
+        }
     }
     if (statInfo.st_mode & S_IFDIR) {
         MEDIA_ERR_LOG("Invalid file (%{public}s), is a directory", garbledFilePath.c_str());
@@ -389,6 +510,50 @@ void BackupFileUtils::DeleteSdDatabase(const std::string &prefix)
             MEDIA_ERR_LOG("Delete Sd database %{public}s failed, errno: %{public}d", sdDb.c_str(), errno);
         }
     }
+}
+
+bool BackupFileUtils::IsLivePhoto(const FileInfo &fileInfo)
+{
+    return fileInfo.specialFileType == LIVE_PHOTO_TYPE;
+}
+
+static void addPathSuffix(const string &oldPath, const string &suffix, string &newPath)
+{
+    if (oldPath.empty() || suffix.empty()) {
+        MEDIA_WARN_LOG("oldPath or suffix is empty");
+        return;
+    }
+
+    newPath = oldPath + suffix;
+    while (MediaFileUtils::IsFileExists(newPath)) {
+        newPath += ".dup" + suffix;
+    }
+}
+
+bool BackupFileUtils::ConvertToMovingPhoto(FileInfo &fileInfo)
+{
+    if (!MediaFileUtils::IsFileExists(fileInfo.filePath)) {
+        MEDIA_ERR_LOG("Live photo does not exist, path: %{private}s, errno: %{public}d",
+            fileInfo.filePath.c_str(), errno);
+        return false;
+    }
+
+    string movingPhotoImagePath;
+    addPathSuffix(fileInfo.filePath, ".jpg", movingPhotoImagePath);
+    addPathSuffix(fileInfo.filePath, ".mp4", fileInfo.movingPhotoVideoPath);
+    addPathSuffix(fileInfo.filePath, ".extra", fileInfo.extraDataPath);
+    int32_t ret = MovingPhotoFileUtils::ConvertToMovingPhoto(
+        fileInfo.filePath, movingPhotoImagePath, fileInfo.movingPhotoVideoPath, fileInfo.extraDataPath);
+    if (ret != E_OK) {
+        return false;
+    }
+
+    if (!MediaFileUtils::DeleteFile(fileInfo.filePath)) {
+        MEDIA_WARN_LOG("Failed to delete original live photo: %{private}s, errno: %{public}d",
+            fileInfo.filePath.c_str(), errno);
+    }
+    fileInfo.filePath = movingPhotoImagePath;
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

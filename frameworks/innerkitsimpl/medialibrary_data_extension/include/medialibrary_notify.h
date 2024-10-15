@@ -17,6 +17,8 @@
 
 #include <cstddef>
 #include <string>
+#include <queue>
+#include <thread>
 #include <unordered_map>
 
 #include "dataobs_mgr_client.h"
@@ -53,7 +55,7 @@ public:
     EXPORT int32_t GetAlbumIdBySubType(const PhotoAlbumSubType subType);
     static void GetNotifyUris(const NativeRdb::AbsRdbPredicates &predicates, std::vector<std::string> &notifyUris);
 
-    Utils::Timer timer_;
+    static Utils::Timer timer_;
     static uint32_t timerId_;
     static std::mutex mutex_;
     static std::unordered_map<std::string, std::unordered_map<NotifyType, std::list<Uri>>> nfListMap_;
@@ -63,6 +65,35 @@ private:
     int32_t GetDefaultAlbums(std::unordered_map<PhotoAlbumSubType, int> &outAlbums);
     static std::shared_ptr<MediaLibraryNotify> instance_;
     std::unordered_map<PhotoAlbumSubType, int> defaultAlbums_;
+};
+
+class NotifyTaskWorker {
+public:
+    virtual ~NotifyTaskWorker();
+    static std::unique_ptr<NotifyTaskWorker>& GetInstance()
+    {
+        static std::unique_ptr<NotifyTaskWorker> instance(new NotifyTaskWorker());
+        return instance;
+    };
+    ASYNC_WORKER_API_EXPORT int32_t AddTask(const std::shared_ptr<MediaLibraryAsyncTask> &task);
+
+private:
+    COMPILE_HIDDEN NotifyTaskWorker();
+    COMPILE_HIDDEN void StartWorker();
+    COMPILE_HIDDEN std::shared_ptr<MediaLibraryAsyncTask> GetTask();
+    COMPILE_HIDDEN bool IsQueueEmpty();
+    COMPILE_HIDDEN void StartThread();
+
+    COMPILE_HIDDEN std::atomic<bool> isThreadRunning_;
+
+    COMPILE_HIDDEN std::mutex taskLock_;
+    COMPILE_HIDDEN std::queue<std::shared_ptr<MediaLibraryAsyncTask>> taskQueue_;
+
+    COMPILE_HIDDEN bool WaitForTask();
+    COMPILE_HIDDEN std::mutex cvLock_;
+    COMPILE_HIDDEN std::condition_variable taskCv_;
+
+    COMPILE_HIDDEN std::thread thread_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -20,15 +20,16 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 using namespace OHOS::AppExecFwk;
 class MedialibraryAppStateObserverManager {
     public:
         MedialibraryAppStateObserverManager() = default;
         ~MedialibraryAppStateObserverManager() = default;
-        static MedialibraryAppStateObserverManager &GetInstance();
+        EXPORT static MedialibraryAppStateObserverManager &GetInstance();
 
-        void SubscribeAppState();
-        void UnSubscribeAppState();
+        EXPORT void SubscribeAppState();
+        EXPORT void UnSubscribeAppState();
 
     protected:
         sptr<ApplicationStateObserverStub> appStateObserver_ = nullptr;

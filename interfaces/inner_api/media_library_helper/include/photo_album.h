@@ -73,7 +73,7 @@ public:
 
     EXPORT void SetDisplayLevel(const int32_t displayLevel);
     EXPORT int32_t GetDisplayLevel() const;
-
+    
     EXPORT void SetLocationOnly(const bool locationOnly);
     EXPORT bool GetLocationOnly() const;
 

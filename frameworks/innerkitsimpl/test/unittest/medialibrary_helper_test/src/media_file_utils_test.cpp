@@ -738,7 +738,9 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoEffectMode_T
         EXPECT_EQ(MediaFileUtils::CheckMovingPhotoEffectMode(i), true);
     }
 
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoEffectMode(5), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoEffectMode(5), true);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoEffectMode(6), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoEffectMode(10), true);
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoEffectMode(20), false);
 }
 
@@ -797,43 +799,43 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileSize_Test_001, TestSi
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Test_001, TestSize.Level0)
 {
-    const std::string filePath;
+    std::string filePath;
     std::string fileContent;
     auto res = MediaFileUtils::ReadStrFromFile(filePath, fileContent);
     EXPECT_EQ(res, false);
-    const std::string filePath2 = "a";
+    std::string filePath2 = "a";
     auto res2 = MediaFileUtils::ReadStrFromFile(filePath2, fileContent);
     EXPECT_EQ(res2, false);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Test_002, TestSize.Level0)
 {
-    const string uri = "datashare:///media";
+    string uri = "datashare:///media";
     auto res = MediaFileUtils::GetHighlightPath(uri);
     EXPECT_EQ(res, "/storage/cloud/files/.thumbs");
-    const string uri2 = "file://media";
+    string uri2 = "file://media";
     auto res2 = MediaFileUtils::GetHighlightPath(uri2);
     EXPECT_EQ(res2, "/storage/cloud/files/.thumbs");
-    const string uri3 = "";
+    string uri3 = "";
     auto res3 = MediaFileUtils::GetHighlightPath(uri3);
     EXPECT_EQ(res3, "");
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Test_003, TestSize.Level0)
 {
-    const string filePath;
-    const string mode;
+    string filePath;
+    string mode;
     auto res = MediaFileUtils::OpenAsset(filePath, mode);
     EXPECT_EQ(res, -209);
-    const string filePath2 = "a";
+    string filePath2 = "a";
     auto res2 = MediaFileUtils::OpenAsset(filePath2, mode);
     EXPECT_EQ(res2, -217);
-    const string filePath3 = "a";
-    const string mode3 = "r";
+    string filePath3 = "a";
+    string mode3 = "r";
     auto res3 = MediaFileUtils::OpenAsset(filePath3, mode3);
     EXPECT_EQ(res3, -209);
-    const string filePath4 = "b";
-    const string mode4 = "w";
+    string filePath4 = "b";
+    string mode4 = "w";
     auto res4 = MediaFileUtils::OpenAsset(filePath4, mode4);
     EXPECT_EQ(res4, -209);
 }
@@ -860,16 +862,16 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Test_004, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Test_005, TestSize.Level0)
 {
-    const std::string displayName = "a.mp3";
+    std::string displayName = "a.mp3";
     auto res = MediaFileUtils::GetTableNameByDisplayName(displayName);
     EXPECT_EQ(res, "Audios");
-    const std::string displayName2 = "b.mp4";
+    std::string displayName2 = "b.mp4";
     auto res2 = MediaFileUtils::GetTableNameByDisplayName(displayName2);
     EXPECT_EQ(res2, "Photos");
-    const std::string displayName3 = "c.jpg";
+    std::string displayName3 = "c.jpg";
     auto res3 = MediaFileUtils::GetTableNameByDisplayName(displayName3);
     EXPECT_EQ(res3, "Photos");
-    const std::string displayName4 = "d.txt";
+    std::string displayName4 = "d.txt";
     auto res4 = MediaFileUtils::GetTableNameByDisplayName(displayName4);
     EXPECT_EQ(res4, "");
 }

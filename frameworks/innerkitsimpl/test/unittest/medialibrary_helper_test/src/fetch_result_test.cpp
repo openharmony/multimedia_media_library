@@ -55,7 +55,7 @@ void MediaLibraryHelperUnitTest::SetUpTestCase(void)
         valuesBucket.PutLong(MEDIA_DATA_DB_SIZE, TEST_SIZE);
         valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, TEST_PATH);
         valuesBucket.PutString(MEDIA_DATA_DB_URI, TEST_URI);
-        rdbStore->Insert(rowId, MEDIALIBRARY_TABLE, valuesBucket);
+        rdbStore->Insert(rowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
         valuesBucket.Clear();
         EXPECT_EQ(rowId > 0, true);
     }
@@ -68,7 +68,7 @@ void MediaLibraryHelperUnitTest::TearDown(void) {}
 shared_ptr<DataShare::DataShareResultSet> GetFetchResult()
 {
     vector<string> columns;
-    NativeRdb::AbsRdbPredicates dirAbsPred(MEDIALIBRARY_TABLE);
+    NativeRdb::AbsRdbPredicates dirAbsPred(PhotoColumn::PHOTOS_TABLE);
     dirAbsPred.EqualTo(MEDIA_DATA_DB_SIZE, to_string(0))->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(0));
     std::shared_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(dirAbsPred, columns);
     shared_ptr<DataShare::ResultSetBridge> result = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(queryResultSet);
@@ -78,7 +78,7 @@ shared_ptr<DataShare::DataShareResultSet> GetFetchResult()
 shared_ptr<DataShare::DataShareResultSet> GetEmptyFetchResult()
 {
     vector<string> columns;
-    NativeRdb::AbsRdbPredicates dirAbsPred(MEDIALIBRARY_TABLE);
+    NativeRdb::AbsRdbPredicates dirAbsPred(PhotoColumn::PHOTOS_TABLE);
     dirAbsPred.EqualTo(MEDIA_DATA_DB_ID, to_string(0));
     std::shared_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(dirAbsPred, columns);
     shared_ptr<DataShare::ResultSetBridge> result = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(queryResultSet);

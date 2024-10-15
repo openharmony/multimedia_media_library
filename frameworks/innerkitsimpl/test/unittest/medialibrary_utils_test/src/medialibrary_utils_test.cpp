@@ -53,9 +53,7 @@ int ConfigTestOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersio
 {
     return 0;
 }
-
 shared_ptr<NativeRdb::RdbStore> storePtr = nullptr;
-
 void MediaLibraryUtilsTest::SetUpTestCase(void)
 {
     const string dbPath = "/data/test/medialibrary_utils_test.db";
@@ -65,7 +63,6 @@ void MediaLibraryUtilsTest::SetUpTestCase(void)
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     storePtr = store;
 }
-
 void MediaLibraryUtilsTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
@@ -84,6 +81,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailSet_test_001, TestSize.Le
         .table = MEDIALIBRARY_TABLE,
         .row = row
     };
+
     auto resultSetPtr = ThumbnailUtils::QueryThumbnailSet(opts);
     EXPECT_NE(resultSetPtr, nullptr);
 }
@@ -100,7 +98,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailInfo_test_001, TestSize.L
         .row = row
     };
     ThumbnailData data;
-    int err = 0;
+    int err  = 0;
     auto resultSetPtr = ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
     EXPECT_EQ(resultSetPtr, nullptr);
 }
@@ -118,6 +116,51 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_table, TestSize.Leve
     int err = 0;
     bool ret = ThumbnailUtils::QueryLcdCount(opts, outLcdCount, err);
     EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = MEDIALIBRARY_TABLE
+    };
+    int outLcdCount = 0;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryLcdCount(opts, outLcdCount, err);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_002, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string table = "Photos";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = table
+    };
+    int outLcdCount = 0;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryLcdCount(opts, outLcdCount, err);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryDistributeLcdCount_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+    };
+    int outLcdCount = 0;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryDistributeLcdCount(opts, outLcdCount, err);
+    EXPECT_EQ(ret, false);
 }
 
 #ifdef DISTRIBUTED
@@ -153,6 +196,70 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryAgingLcdInfos_test_001, TestSize.L
     vector<ThumbnailData> infos;
     int err = 0;
     bool ret = ThumbnailUtils::QueryAgingLcdInfos(opts, LcdLimit, infos, err);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string table = "medialib_QueryNoLcdInfos_test_001";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = table
+    };
+    vector<ThumbnailData> infos;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryNoLcdInfos(opts, infos, err);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_002, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string table = "Photos";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = table
+    };
+    vector<ThumbnailData> infos;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryNoLcdInfos(opts, infos, err);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string table = "medialib_QueryNoThumbnailInfos_test_001";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = table
+    };
+    vector<ThumbnailData> infos;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryNoThumbnailInfos(opts, infos, err);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_002, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string table = "Photos";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = table
+    };
+    vector<ThumbnailData> infos;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryNoThumbnailInfos(opts, infos, err);
     EXPECT_EQ(ret, false);
 }
 
@@ -343,6 +450,19 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_DeleteOriginImage_test_001, TestSize.Le
     EXPECT_EQ(ret, false);
 }
 
+HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateAstcDateAddedFromKvStore_test_001, TestSize.Level0)
+{
+    ThumbnailData data;
+    const string testStr = "medialib_UpdateAstcDateAddedFromKvStore_test_001";
+    data.dateAdded = testStr;
+    ThumbRdbOpt opts = {
+        .dateAdded = testStr,
+        .row = testStr,
+    };
+    bool ret = ThumbnailUtils::UpdateAstcDateAddedFromKvStore(opts, data);
+    EXPECT_EQ(ret, false);
+}
+
 #ifdef DISTRIBUTED
 HWTEST_F(MediaLibraryUtilsTest, medialib_SyncPullKvstore_test_001, TestSize.Level0)
 {
@@ -465,7 +585,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_parseQueryResult_test_001, TestSize.Lev
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
     rdbPredicates.Limit(0);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    ThumbnailUtils::ParseQueryResult(resultSet, data, err, column);
+    ThumbnailUtils::ParseQueryResult(resultSet, data, err);
     EXPECT_NE(err, 0);
 }
 
@@ -565,7 +685,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_scaleTargetImage_test_001, TestSize.Lev
     targetSize.height = 20;
     ThumbnailData data;
     data.source = make_shared<PixelMap>();
-    bool ret = ThumbnailUtils::ScaleTargetPixelMap(data.source, targetSize, Media::AntiAliasingOption::MEDIUM);
+    bool ret = ThumbnailUtils::ScaleTargetPixelMap(data.source, targetSize, Media::AntiAliasingOption::HIGH);
     EXPECT_EQ(ret, false);
 }
 

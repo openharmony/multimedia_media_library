@@ -25,6 +25,13 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
+namespace {
+    constexpr int ONE_MORE         = 1;
+    constexpr int ONE_SECOND       = 1;
+    constexpr int32_t BASEYEAR     = 1900;
+    constexpr int32_t LENGTH_TWO   = 2;
+    constexpr int32_t LENGTH_THREE = 3;
+}
 vector<string> DfxUtils::Split(string &input, const string &pattern)
 {
     vector<string> result;
@@ -103,6 +110,29 @@ string DfxUtils::GetCurrentDate()
     }
     std::stringstream ss;
     ss << std::put_time(tmPtr, "%Y-%m-%d");
+    return ss.str();
+}
+
+string DfxUtils::GetCurrentDateMillisecond()
+{
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+    std::tm* now_tm = std::localtime(&now_time);
+    if (now_tm == nullptr) {
+        MEDIA_ERR_LOG("GetCurrentDateMillisecond failed: now_tm is nullptr");
+        return "";
+    }
+    auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
+    std::chrono::duration<int, std::milli> ms_part = now_ms.time_since_epoch() % std::chrono::seconds(ONE_SECOND);
+
+    std::stringstream ss;
+    ss << (now_tm->tm_year + BASEYEAR) << '-'
+        << std::setw(LENGTH_TWO) << std::setfill('0') << (now_tm->tm_mon + ONE_MORE) << '-'
+        << std::setw(LENGTH_TWO) << std::setfill('0') << now_tm->tm_mday << ' '
+        << std::setw(LENGTH_TWO) << std::setfill('0') << now_tm->tm_hour << ':'
+        << std::setw(LENGTH_TWO) << std::setfill('0') << now_tm->tm_min << ':'
+        << std::setw(LENGTH_TWO) << std::setfill('0') << now_tm->tm_sec << '.'
+        << std::setw(LENGTH_THREE) << ms_part.count();
     return ss.str();
 }
 

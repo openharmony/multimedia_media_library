@@ -29,6 +29,7 @@
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #include "uri.h"
+#include "vision_db_sqls.h"
 #include "vision_db_sqls_more.h"
 
 namespace OHOS {
@@ -345,6 +346,7 @@ shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbumInfo(int32_t albumId)
     vector<string> columns = {COUNT, COVER_URI, IS_COVER_SATISFIED};
     MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY, MediaLibraryApi::API_10);
     cmd.GetAbsRdbPredicates()->EqualTo(ALBUM_ID, to_string(albumId));
+    EXPECT_NE(g_rdbStore, nullptr);
     shared_ptr<NativeRdb::ResultSet> resultSet = g_rdbStore->Query(cmd, columns);
     EXPECT_NE(resultSet, nullptr);
     EXPECT_EQ(resultSet->GoToFirstRow(), E_OK);
@@ -585,6 +587,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, QueryGroupPhotoAlbum, TestSize.
 {
     MEDIA_INFO_LOG("QueryGroupPhotoAlbum Start");
     ClearTables();
+    std::unordered_map<int32_t, int32_t> updateResult;
     vector<PortraitData> portraits = PreparePortraitData();
     vector<PortraitAlbumData> portraitsAlbum = CreatePortraitAlbum();
     vector<string> fileIds;
@@ -600,7 +603,6 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, QueryGroupPhotoAlbum, TestSize.
 
     MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY);
     MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, {});
-    sleep(1);
     CheckAlbum(4, 1, portraits[0].fileId, false);
     CheckAlbum(5, 1, portraits[3].fileId, false);
     CheckAlbum(6, 1, portraits[1].fileId, false);
@@ -614,6 +616,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, MergeAlbum_UpdateMergeGroupAlbu
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeGroupAlbumsInfo Start");
     ClearTables();
+    std::unordered_map<int32_t, int32_t> updateResult;
     vector<PortraitData> portraits = PreparePortraitData();
     vector<PortraitAlbumData> portraitsAlbum = CreatePortraitAlbum();
     vector<string> fileIds;
@@ -629,7 +632,6 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, MergeAlbum_UpdateMergeGroupAlbu
 
     MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY);
     MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, {});
-    sleep(1);
     CheckAlbum(4, 1, portraits[0].fileId, false);
     CheckAlbum(5, 1, portraits[3].fileId, false);
     CheckAlbum(6, 1, portraits[1].fileId, false);
@@ -642,7 +644,6 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, MergeAlbum_UpdateMergeGroupAlbu
     OperationType operationType = OperationType::PORTRAIT_MERGE_ALBUM;
     EXPECT_EQ(MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(operationType, values, dataPredicates), E_OK);
     MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, {});
-    sleep(1);
     CheckAlbum(5, 3, portraits[3].fileId, false);
 
     ClearTables();

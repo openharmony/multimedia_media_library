@@ -43,6 +43,7 @@ ohos_shared_library("media_library") {
     "src/file_asset.cpp",
     "src/form_map.cpp",
     "src/media_app_uri_permission_column.cpp",
+    "src/media_app_uri_sensitive_column.cpp",
     "src/media_asset_edit_data.cpp",
     "src/media_asset_rdbstore.cpp",
     "src/media_change_effect.cpp",
@@ -57,9 +58,11 @@ ohos_shared_library("media_library") {
     "src/medialibrary_kvstore_manager.cpp",
     "src/medialibrary_operation.cpp",
     "src/mimetype_utils.cpp",
+    "src/moving_photo_file_utils.cpp",
     "src/native_album_asset.cpp",
     "src/photo_album.cpp",
     "src/photo_album_column.cpp",
+    "src/photo_file_utils.cpp",
     "src/photo_map_column.cpp",
     "src/smart_album_asset.cpp",
   ]
@@ -78,7 +81,6 @@ ohos_shared_library("media_library") {
 
   external_deps = [
     "ability_base:zuri",
-    "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
     "access_token:el5_filekey_manager_sdk",

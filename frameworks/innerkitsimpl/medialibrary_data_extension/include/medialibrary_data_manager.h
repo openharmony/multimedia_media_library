@@ -74,7 +74,7 @@ public:
     EXPORT int32_t GenerateThumbnailBackground();
 
     // upgrade existed thumbnails to fix such as size, rotation and quality etc. problems
-    EXPORT int32_t UpgradeThumbnailBackground();
+    EXPORT int32_t UpgradeThumbnailBackground(bool isWifiConnected);
 
     // restore thumbnail for date fronted 500 photos from dual framework upgrade or clone
     EXPORT int32_t RestoreThumbnailDualFrame();
@@ -109,6 +109,7 @@ public:
 private:
     int32_t InitMediaLibraryRdbStore();
     void InitResourceInfo();
+    void HandleUpgradeRdbAsync();
 
 #ifdef DISTRIBUTED
     bool QuerySync(const std::string &networkId, const std::string &tableName);
@@ -140,6 +141,8 @@ private:
     int32_t DeleteInRdbPredicatesAnalysis(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate);
     int32_t UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
         const DataShare::DataSharePredicates &predicates);
+    int32_t SolveInsertCmdSub(MediaLibraryCommand &cmd);
+    void HandleOtherInitOperations();
     void InitRefreshAlbum();
     int32_t ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
         const NativeRdb::ValuesBucket &value, const DataShare::DataSharePredicates &predicates);

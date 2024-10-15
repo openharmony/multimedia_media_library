@@ -12,3 +12,4 @@
 # limitations under the License.
 
 multimedia.medialibrary. = root:1008:664
+persist.multimedia.medialibrary. = user_data_rw:user_data_rw:664

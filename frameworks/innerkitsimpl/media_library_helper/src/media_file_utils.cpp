@@ -54,7 +54,7 @@ static const mode_t CHOWN_RO_USR_GRP = 0644;
 constexpr size_t DISPLAYNAME_MAX = 255;
 const int32_t OPEN_FDS = 64;
 const std::string PATH_PARA = "path=";
-constexpr size_t EMPTY_DIR_ENTRY_COUNT = 2;  // Empty dir has 2 entry: . and ..
+constexpr unsigned short MAX_RECURSION_DEPTH = 4;
 constexpr size_t DEFAULT_TIME_SIZE = 32;
 const int32_t HMFS_MONITOR_FL = 2;
 const std::string LISTENING_BASE_PATH = "/storage/media/local/files/";
@@ -262,13 +262,13 @@ bool MediaFileUtils::IsFileValid(const string &fileName)
     struct stat statInfo {};
     if (!fileName.empty()) {
         if (stat(fileName.c_str(), &statInfo) == E_SUCCESS) {
-            //if the given path is a directory path, return
+            // if the given path is a directory path, return
             if (statInfo.st_mode & S_IFDIR) {
                 MEDIA_ERR_LOG("file is a directory");
                 return false;
             }
 
-            //if the file is empty
+            // if the file is empty
             if (statInfo.st_size == 0) {
                 MEDIA_WARN_LOG("file is empty");
             }
@@ -286,16 +286,18 @@ bool MediaFileUtils::IsDirEmpty(const string &path)
             path.c_str(), errno);
         return false;
     }
-    size_t entCount = 0;
-    while (readdir(dir) != nullptr) {
-        if (++entCount > EMPTY_DIR_ENTRY_COUNT) {
+    bool ret = true;
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            ret = false;
             break;
         }
     }
     if (closedir(dir) < 0) {
         MEDIA_ERR_LOG("Fail to closedir: %{private}s, errno: %{public}d.", path.c_str(), errno);
     }
-    return entCount <= EMPTY_DIR_ENTRY_COUNT;
+    return ret;
 }
 
 string MediaFileUtils::GetFileName(const string &filePath)
@@ -376,6 +378,127 @@ bool MediaFileUtils::DeleteDir(const string &dirName)
     return errRet;
 }
 
+bool MediaFileUtils::CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile)
+{
+    if (IsFileExists(destFile)) {
+        MEDIA_INFO_LOG("destFile:%{private}s already exists", destFile.c_str());
+        if (!DeleteFile(destFile)) {
+            MEDIA_ERR_LOG("delete destFile:%{private}s error", destFile.c_str());
+        }
+    }
+    if (!CreateFile(destFile)) {
+        MEDIA_ERR_LOG("create destFile:%{private}s failed", destFile.c_str());
+        return false;
+    }
+    if (CopyFileUtil(srcFile, destFile)) {
+        if (!DeleteFile(srcFile)) {
+            MEDIA_ERR_LOG("delete srcFile:%{private}s failed", srcFile.c_str());
+        }
+        return true;
+    } else {
+        bool delDestFileRet = DeleteFile(destFile);
+        MEDIA_ERR_LOG("copy srcFile:%{private}s failed,delDestFileRet:%{public}d", srcFile.c_str(), delDestFileRet);
+        return false;
+    }
+}
+
+/**
+ * @brief Copy the contents of srcPath to destPath, delete the successfully copied files and directories.
+ *
+ * @param srcPath must be a directory.
+ * @param destPath must be a directory.
+ * @param curRecursionDepth current recursion depth. The maximum value is {@code MAX_RECURSION_DEPTH}.
+ * @return true: all contents of {@code srcPath} are successfully copied to {@code destPath}.
+ *         false: as long as there is one item of {@code srcPath} is not successfully copied to {@code destPath}.
+ */
+bool MediaFileUtils::CopyDirAndDelSrc(const std::string &srcPath, const std::string &destPath,
+    unsigned short curRecursionDepth)
+{
+    if (curRecursionDepth > MAX_RECURSION_DEPTH) {
+        MEDIA_ERR_LOG("curRecursionDepth:%{public}d>MAX_RECURSION_DEPTH", curRecursionDepth);
+        return false;
+    }
+    ++curRecursionDepth;
+    bool ret = true;
+    DIR* srcDir = opendir(srcPath.c_str());
+    if (srcDir == nullptr) {
+        MEDIA_ERR_LOG("open srcDir:%{private}s failed,errno:%{public}d", srcPath.c_str(), errno);
+        return false;
+    }
+    if (!IsFileExists(destPath)) {
+        if (!CreateDirectory(destPath)) {
+            MEDIA_ERR_LOG("create destPath:%{private}s failed", srcPath.c_str());
+            closedir(srcDir);
+            return false;
+        }
+    }
+    struct dirent* entry;
+    while ((entry = readdir(srcDir))!= nullptr) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        string srcSubPath = srcPath + SLASH_STR + (entry->d_name);
+        string destSubPath = destPath + SLASH_STR + (entry->d_name);
+        if (entry->d_type == DT_DIR) {
+            ret = CopyDirAndDelSrc(srcSubPath, destSubPath, curRecursionDepth) && ret;
+            continue;
+        }
+        if (entry->d_type == DT_REG) {
+            ret = CopyFileAndDelSrc(srcSubPath, destSubPath) && ret;
+        } else {
+            MEDIA_ERR_LOG("unknown file type,srcSubPath:%{private}s", srcSubPath.c_str());
+            ret = false;
+        }
+    }
+
+    closedir(srcDir);
+    MEDIA_INFO_LOG("srcPath:%{private}s,destPath:%{private}s,coypPathAndDelSrcRet:%{public}d",
+        srcPath.c_str(), destPath.c_str(), ret);
+    return ret;
+}
+
+void MediaFileUtils::BackupPhotoDir()
+{
+    string dirPath = ROOT_MEDIA_DIR + PHOTO_BUCKET;
+    // check whether dir empty
+    if (!IsDirEmpty(dirPath)) {
+        MEDIA_INFO_LOG("backup for: %{private}s", dirPath.c_str());
+        string suffixName = dirPath.substr(ROOT_MEDIA_DIR.length());
+        CreateDirectory(ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR);
+        CopyDirAndDelSrc(dirPath, ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR + SLASH_STR + suffixName);
+    }
+}
+
+void MediaFileUtils::RecoverMediaTempDir()
+{
+    string recoverPath = ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR + SLASH_STR + PHOTO_BUCKET;
+    if (!IsDirEmpty(recoverPath)) {
+        DIR *dir = opendir((recoverPath).c_str());
+        if (dir == nullptr) {
+            MEDIA_ERR_LOG("Error opening temp directory");
+            return;
+        }
+        
+        struct dirent *entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            // filter . && .. dir
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+            std::string fullPath = recoverPath + SLASH_STR + entry->d_name;
+            struct stat fileStat;
+            if (stat(fullPath.c_str(), &fileStat) == -1) {
+                closedir(dir);
+                return;
+            }
+            string suffixName = fullPath.substr((recoverPath).length());
+            CopyDirAndDelSrc(fullPath, ROOT_MEDIA_DIR + PHOTO_BUCKET + suffixName);
+        }
+        DeleteDir(ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR);
+        closedir(dir);
+    }
+}
+
 bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath)
 {
     bool errRet = false;
@@ -395,7 +518,7 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
         MEDIA_ERR_LOG("File path too long %{public}d", static_cast<int>(filePath.size()));
         return errCode;
     }
-    MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
+    MEDIA_DEBUG_LOG("File path is %{private}s", filePath.c_str());
     string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
@@ -906,7 +1029,7 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
 
     string networkId = GetNetworkIdFromUri(uri);
     if (networkId.empty()) {
-        MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());
+        MEDIA_DEBUG_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());
         return retStr;
     }
 
@@ -956,16 +1079,16 @@ string MediaFileUtils::GetExtensionFromPath(const string &path)
     return extention;
 }
 
-static void SendHmdfsCallerInfoToIoctl(const int32_t fd, const string &clientbundleName)
+static void SendHmdfsCallerInfoToIoctl(const int32_t fd, const string &clientBundleName)
 {
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
     hmdfs_caller_info caller_info;
     caller_info.tokenId = tokenId;
 
-    if (strcpy_s(caller_info.bundle_name, sizeof(caller_info.bundle_name), clientbundleName.c_str()) != 0) {
-        MEDIA_ERR_LOG("Failed to copy clientbundleName: %{public}s", clientbundleName.c_str());
+    if (strcpy_s(caller_info.bundle_name, sizeof(caller_info.bundle_name), clientBundleName.c_str()) != 0) {
+        MEDIA_ERR_LOG("Failed to copy clientBundleName: %{public}s", clientBundleName.c_str());
     } else {
-        MEDIA_DEBUG_LOG("clientbundleName = %{public}s", clientbundleName.c_str());
+        MEDIA_DEBUG_LOG("tokenId = %{public}d, clientBundleName = %{public}s", tokenId, clientBundleName.c_str());
         int32_t ret = ioctl(fd, HMDFS_IOC_GET_CALLER_INFO, caller_info);
         if (ret < 0) {
             MEDIA_DEBUG_LOG("Failed to set caller_info to fd: %{public}d, error: %{public}d", fd, errno);
@@ -973,7 +1096,7 @@ static void SendHmdfsCallerInfoToIoctl(const int32_t fd, const string &clientbun
     }
 }
 
-int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode, const string &clientbundleName)
+int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode, const string &clientBundleName)
 {
     int32_t errCode = E_ERR;
 
@@ -1011,10 +1134,10 @@ int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode, con
     }
     MEDIA_DEBUG_LOG("File absFilePath is %{private}s", absFilePath.c_str());
     int32_t fd = open(absFilePath.c_str(), MEDIA_OPEN_MODE_MAP.at(mode));
-    if (clientbundleName.empty()) {
+    if (clientBundleName.empty()) {
         MEDIA_DEBUG_LOG("ClientBundleName is empty,failed to to set caller_info to fd");
     } else {
-        SendHmdfsCallerInfoToIoctl(fd, clientbundleName);
+        SendHmdfsCallerInfoToIoctl(fd, clientBundleName);
     }
     return fd;
 }
@@ -1032,7 +1155,7 @@ int32_t MediaFileUtils::CreateAsset(const string &filePath)
     }
 
     if (IsFileExists(filePath)) {
-        MEDIA_ERR_LOG("the file exists path: %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("the file exists path: %{public}s", filePath.c_str());
         return E_FILE_EXIST;
     }
 
@@ -1517,7 +1640,11 @@ int64_t MediaFileUtils::Timespec2Millisecond(const struct timespec &time)
 string MediaFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
 {
     size_t splitIndex = imagePath.find_last_of('.');
-    return (splitIndex == string::npos) ? "" : (imagePath.substr(0, splitIndex) + ".mp4");
+    size_t lastSlashIndex = imagePath.find_last_of('/');
+    if (splitIndex == string::npos || (lastSlashIndex != string::npos && lastSlashIndex > splitIndex)) {
+        return "";
+    }
+    return imagePath.substr(0, splitIndex) + ".mp4";
 }
 
 bool MediaFileUtils::CheckMovingPhotoExtension(const string &extension)
@@ -1630,11 +1757,12 @@ bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
 
 bool MediaFileUtils::CheckMovingPhotoEffectMode(int32_t effectMode)
 {
-    return effectMode >= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START) &&
-           effectMode <= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_END);
+    return (effectMode >= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START) &&
+        effectMode <= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_END)) ||
+        effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY);
 }
 
-bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
+bool MediaFileUtils::GetFileSize(const std::string &filePath, size_t &size)
 {
     struct stat statbuf;
     if (lstat(filePath.c_str(), &statbuf) == -1) {
@@ -1651,7 +1779,7 @@ bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
     return true;
 }
 
-bool MediaFileUtils::SplitMovingPhotoUri(const std::string& uri, std::vector<std::string>& ret)
+bool MediaFileUtils::SplitMovingPhotoUri(const std::string &uri, std::vector<std::string> &ret)
 {
     const std::string split(MOVING_PHOTO_URI_SPLIT);
     if (uri.empty() || IsMediaLibraryUri(uri)) {
@@ -1666,8 +1794,16 @@ bool MediaFileUtils::SplitMovingPhotoUri(const std::string& uri, std::vector<std
     return true;
 }
 
-bool MediaFileUtils::IsMediaLibraryUri(const std::string& uri)
+bool MediaFileUtils::IsMediaLibraryUri(const std::string &uri)
 {
     return !uri.empty() && uri.find(MOVING_PHOTO_URI_SPLIT) == uri.npos;
+}
+
+void MediaFileUtils::CheckDirStatus(const std::unordered_set<std::string> &dirCheckSet, const std::string &dir)
+{
+    if (dirCheckSet.count(dir) == 0) {
+        return;
+    }
+    PrintStatInformation(dir);
 }
 } // namespace OHOS::Media

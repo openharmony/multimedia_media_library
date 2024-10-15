@@ -52,6 +52,10 @@ const std::string KEY_TOTAL_TIME_COST = "TOTAL_TIME_COST";
 
 const std::string KEY_RESULT = "RESULT";
 
+const std::string KEY_DB_CORRUPT = "DB_CORRUPT_DATE";
+
+const std::string KEY_CLOUD_ENHANCEMENT_COMPLETE_TYPE = "COMPLETE_TYPE";
+
 enum OptType {
     CREATE = 0,
     THUMB,
@@ -64,6 +68,7 @@ enum ErrType {
     FILE_OPT_ERR,
     DB_OPT_ERR,
     DB_UPGRADE_ERR,
+    DB_CORRUPT_ERR,
 };
 
 enum StatType {
@@ -77,6 +82,7 @@ enum StatType {
     MSC_TRIGGER_RATIO_STAT,
     MSC_TOTAL_TIME_COST_STAT,
     MSC_RESULT_STAT,
+    CLOUD_ENHANCEMENT_GET_COUNT_STAT,
 };
 using VariantMap = std::map<std::string, std::variant<int32_t, int64_t, std::string>>;
 
@@ -99,7 +105,9 @@ private:
     COMPILE_HIDDEN void PostMscTriggerRatioStat(const VariantMap &stat);
     COMPILE_HIDDEN void PostMscTotalTimeCostStat(const VariantMap &stat);
     COMPILE_HIDDEN void PostMscResultStat(const VariantMap &stat);
-    
+    COMPILE_HIDDEN void PostDatabaseCorruption(const VariantMap &errMap);
+    COMPILE_HIDDEN void PostCloudEnhanceStat(const VariantMap &stat);
+
     COMPILE_HIDDEN int GetIntValue(const std::string &key, const VariantMap &map);
     COMPILE_HIDDEN int64_t GetInt64Value(const std::string &key, const VariantMap &map);
     COMPILE_HIDDEN std::string GetStringValue(const std::string &key, const VariantMap &map);

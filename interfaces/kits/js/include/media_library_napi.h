@@ -219,29 +219,22 @@ private:
     EXPORT static napi_value JSDeleteAsset(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSOnCallback(napi_env env, napi_callback_info info);
-    EXPORT static napi_value JSOnCallbackMediaLibrary(napi_env env, napi_callback_info info);
-
     EXPORT static napi_value JSOffCallback(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSRelease(napi_env env, napi_callback_info info);
 
-    EXPORT static napi_value JSReleaseMedialibrary(napi_env env, napi_callback_info info);
-    EXPORT static napi_value JSGetActivePeersMedialibrary(napi_env env, napi_callback_info info);
-    EXPORT static napi_value JSGetAllPeersMedialibrary(napi_env env, napi_callback_info info);
-
     EXPORT static napi_value JSGetActivePeers(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetAllPeers(napi_env env, napi_callback_info info);
-    EXPORT static napi_value CreateUndefined(napi_env env);
     EXPORT static napi_value CreateMediaTypeEnum(napi_env env);
     EXPORT static napi_value CreateFileKeyEnum(napi_env env);
     EXPORT static napi_value CreateDirectoryTypeEnum(napi_env env);
     EXPORT static napi_value CreateVirtualAlbumTypeEnum(napi_env env);
     EXPORT static napi_value CreatePrivateAlbumTypeEnum(napi_env env);
-    EXPORT static napi_value CreateDeliveryModeEnum(napi_env env);
-    EXPORT static napi_value CreateSourceModeEnum(napi_env env);
-
     EXPORT static napi_value CreatePhotoKeysEnum(napi_env env);
     EXPORT static napi_value CreateHiddenPhotosDisplayModeEnum(napi_env env);
+    EXPORT static napi_value CreateDeliveryModeEnum(napi_env env);
+    EXPORT static napi_value CreateSourceModeEnum(napi_env env);
+    EXPORT static napi_value CreateResourceTypeEnum(napi_env env);
 
     EXPORT static napi_value CreateMediaTypeUserFileEnum(napi_env env);
 
@@ -273,6 +266,8 @@ private:
     EXPORT static napi_value CreateAlbumKeyEnum(napi_env env);
     EXPORT static napi_value CreatePositionTypeEnum(napi_env env);
     EXPORT static napi_value CreatePhotoSubTypeEnum(napi_env env);
+    EXPORT static napi_value CreatePhotoPermissionTypeEnum(napi_env env);
+    EXPORT static napi_value CreateHideSensitiveTypeEnum(napi_env env);
     EXPORT static napi_value CreateDynamicRangeTypeEnum(napi_env env);
 
     EXPORT static napi_value GetPhotoAccessHelper(napi_env env, napi_callback_info info);
@@ -312,13 +307,15 @@ private:
     EXPORT static napi_value CreateAlbumSubTypeEnum(napi_env env);
     EXPORT static napi_value CreateNotifyTypeEnum(napi_env env);
     EXPORT static napi_value CreateDefaultChangeUriEnum(napi_env env);
-    EXPORT static napi_value CreateAnalysisTypeEnum(napi_env env);
     EXPORT static napi_value CreateRequestPhotoTypeEnum(napi_env env);
-    EXPORT static napi_value CreateResourceTypeEnum(napi_env env);
+    EXPORT static napi_value CreateAnalysisTypeEnum(napi_env env);
     EXPORT static napi_value CreateAuthorizationModeEnum(napi_env env);
     EXPORT static napi_value CreateHighlightAlbumInfoTypeEnum(napi_env env);
     EXPORT static napi_value CreateHighlightUserActionTypeEnum(napi_env env);
     EXPORT static napi_value CreateMovingPhotoEffectModeEnum(napi_env env);
+    EXPORT static napi_value CreateImageFileTypeEnum(napi_env env);
+    EXPORT static napi_value CreateCloudEnhancementTaskStageEnum(napi_env env);
+    EXPORT static napi_value CreateCloudEnhancementStateEnum(napi_env env);
 
     EXPORT static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
@@ -358,18 +355,23 @@ private:
     static thread_local napi_ref sPositionTypeEnumRef_;
     static thread_local napi_ref sHiddenPhotosDisplayModeEnumRef_;
     static thread_local napi_ref sPhotoSubType_;
+    static thread_local napi_ref sPhotoPermissionType_;
+    static thread_local napi_ref sHideSensitiveType_;
     static thread_local napi_ref sDynamicRangeType_;
     static thread_local napi_ref sNotifyType_;
     static thread_local napi_ref sDefaultChangeUriRef_;
-    static thread_local napi_ref sAnalysisType_;
     static thread_local napi_ref sRequestPhotoTypeEnumRef_;
+    static thread_local napi_ref sAnalysisType_;
     static thread_local napi_ref sResourceTypeEnumRef_;
     static thread_local napi_ref sDeliveryModeEnumRef_;
     static thread_local napi_ref sSourceModeEnumRef_;
     static thread_local napi_ref sHighlightAlbumInfoType_;
     static thread_local napi_ref sHighlightUserActionType_;
     static thread_local napi_ref sMovingPhotoEffectModeEnumRef_;
+    static thread_local napi_ref sImageFileTypeEnumEnumRef_;
     static thread_local napi_ref sAuthorizationModeEnumRef_;
+    static thread_local napi_ref sCloudEnhancementTaskStageEnumRef_;
+    static thread_local napi_ref sCloudEnhancementStateEnumRef_;
 
     static std::mutex sOnOffMutex_;
 };

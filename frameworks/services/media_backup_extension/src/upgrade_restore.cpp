@@ -71,16 +71,16 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
     appDataPath_ = backupRetoreDir;
     string photosPreferencesPath;
     if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
-        filePath_ = upgradeFilePath;
-        galleryDbPath_ = upgradeFilePath + "/" + GALLERY_DB_NAME;
-        audioDbPath_ = GARBLE_DUAL_FRAME_CLONE_DIR + "/0/" + AUDIO_DB_NAME;
+        filePath_ = backupRetoreDir;
+        galleryDbPath_ = backupRetoreDir + "/" + GALLERY_DB_NAME;
+        audioDbPath_ = backupRetoreDir + INTERNAL_PREFIX + "/0/" + AUDIO_DB_NAME;
+        photosPreferencesPath = backupRetoreDir + "/" + galleryAppName_ + "_preferences.xml";
         // gallery db may include both internal & external, set flag to differentiate, default false
         shouldIncludeSd_ = BackupFileUtils::ShouldIncludeSd(filePath_);
         SetParameterForClone();
 #ifdef CLOUD_SYNC_MANAGER
         FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
 #endif
-        photosPreferencesPath = UPGRADE_FILE_DIR + "/" + galleryAppName_ + "_preferences.xml";
     } else {
         filePath_ = upgradeFilePath;
         galleryDbPath_ = backupRetoreDir + "/" + galleryAppName_ + "/ce/databases/gallery.db";
@@ -90,7 +90,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         shouldIncludeSd_ = false;
         if (!MediaFileUtils::IsFileExists(externalDbPath_)) {
             MEDIA_ERR_LOG("External db is not exist.");
-            return E_FAIL;
+            return EXTERNAL_DB_NOT_EXIST;
         }
         int32_t externalErr = BackupDatabaseUtils::InitDb(externalRdb_, EXTERNAL_DB_NAME, externalDbPath_,
             mediaAppName_, false);
@@ -139,6 +139,17 @@ int32_t UpgradeRestore::InitDbAndXml(const std::string &xmlPath, bool isUpgrade)
     ParseXml(xmlPath);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
+}
+
+bool UpgradeRestore::HasLowQualityImage()
+{
+    std::string sql = "SELECT count(1) AS count FROM gallery_media WHERE (local_media_id != -1) AND \
+        (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM \
+        garbage_album WHERE type = 1) AND _size = 0 AND photo_quality = 0";
+    int count = BackupDatabaseUtils::QueryInt(galleryRdb_, sql, CUSTOM_COUNT);
+    MEDIA_INFO_LOG("HasLowQualityImage count:%{public}d", count);
+    hasLowQualityImage_ = (count > 0);
+    return hasLowQualityImage_;
 }
 
 int UpgradeRestore::StringToInt(const std::string& str)
@@ -212,9 +223,11 @@ int32_t UpgradeRestore::ParseXml(const std::string &path)
 
 void UpgradeRestore::RestoreAudio(void)
 {
-    if (sceneCode_ == UPGRADE_RESTORE_ID) {
-        RestoreAudioFromExternal();
-    } else {
+    if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
+        if (!MediaFileUtils::IsFileExists(RESTORE_MUSIC_LOCAL_DIR)) {
+            MEDIA_INFO_LOG("music dir is not exists!!!");
+            MediaFileUtils::CreateDirectory(RESTORE_MUSIC_LOCAL_DIR);
+        }
         RestoreAudioFromFile();
     }
     (void)NativeRdb::RdbHelper::DeleteRdbStore(externalDbPath_);
@@ -232,27 +245,10 @@ void UpgradeRestore::RestoreAudioFromFile()
     ffrt::wait();
 }
 
-void UpgradeRestore::RestoreAudioFromExternal(void)
-{
-    MEDIA_INFO_LOG("start restore audio from external");
-    int32_t totalNumber = BackupDatabaseUtils::QueryInt(externalRdb_, QUERY_AUDIO_COUNT, CUSTOM_COUNT);
-    MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset });
-    }
-    ffrt::wait();
-}
-
 void UpgradeRestore::RestoreAudioBatch(int32_t offset)
 {
     MEDIA_INFO_LOG("start restore audio from external, offset: %{public}d", offset);
-    std::vector<FileInfo> infos;
-    if (sceneCode_ == UPGRADE_RESTORE_ID) {
-        infos = QueryAudioFileInfosFromExternal(offset);
-    } else {
-        infos = QueryAudioFileInfosFromAudio(offset);
-    }
-
+    std::vector<FileInfo> infos = QueryAudioFileInfosFromAudio(offset);
     InsertAudio(sceneCode_, infos);
 }
 
@@ -296,30 +292,6 @@ bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::
     info.isFavorite = 0;
     info.recycledTime = 0;
     return true;
-}
-
-std::vector<FileInfo> UpgradeRestore::QueryAudioFileInfosFromExternal(int32_t offset)
-{
-    std::vector<FileInfo> result;
-    result.reserve(QUERY_COUNT);
-    if (externalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("externalRdb_ is nullptr, Maybe init failed.");
-        return result;
-    }
-    std::string queryAllAudioByCount = QUERY_ALL_AUDIOS_FROM_EXTERNAL + "limit " + std::to_string(offset) + ", " +
-        std::to_string(QUERY_COUNT);
-    auto resultSet = externalRdb_->QuerySql(queryAllAudioByCount);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return result;
-    }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        FileInfo tmpInfo;
-        if (ParseResultSetFromExternal(resultSet, tmpInfo, DUAL_MEDIA_TYPE::AUDIO_TYPE)) {
-            result.emplace_back(tmpInfo);
-        }
-    }
-    return result;
 }
 
 void UpgradeRestore::RestorePhoto(void)
@@ -471,6 +443,7 @@ void UpgradeRestore::UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::Resul
 
 void UpgradeRestore::RestoreFromGallery()
 {
+    HasLowQualityImage();
     int32_t totalNumber = QueryTotalNumber();
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
@@ -520,6 +493,9 @@ int32_t UpgradeRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
 void UpgradeRestore::HandleRestData(void)
 {
     MEDIA_INFO_LOG("Start to handle rest data in native.");
+    // restore thumbnail for date fronted 500 photos
+    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
+
     std::string photoData = appDataPath_ + "/" + galleryAppName_;
     std::string mediaData = appDataPath_ + "/" + mediaAppName_;
     if (MediaFileUtils::IsFileExists(photoData)) {
@@ -531,15 +507,16 @@ void UpgradeRestore::HandleRestData(void)
         MediaFileUtils::DeleteDir(mediaData);
     }
     BackupFileUtils::DeleteSdDatabase(filePath_);
-
-    // restore thumbnail for date fronted 500 photos
-    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
 }
 
 int32_t UpgradeRestore::QueryTotalNumber(void)
 {
     std::string querySql = QUERY_GALLERY_COUNT;
-    querySql += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
+    if (hasLowQualityImage_) {
+        querySql += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE_WITH_LOW_QUALITY;
+    } else {
+        querySql += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
+    }
     BackupDatabaseUtils::UpdateSdWhereClause(querySql, shouldIncludeSd_);
     return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
 }
@@ -553,7 +530,11 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
         return result;
     }
     std::string queryAllPhotosByCount = QUERY_ALL_PHOTOS;
-    queryAllPhotosByCount += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
+    if (hasLowQualityImage_) {
+        queryAllPhotosByCount += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE_WITH_LOW_QUALITY;
+    } else {
+        queryAllPhotosByCount += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
+    }
     BackupDatabaseUtils::UpdateSdWhereClause(queryAllPhotosByCount, shouldIncludeSd_);
     queryAllPhotosByCount += ALL_PHOTOS_ORDER_BY;
     queryAllPhotosByCount += "limit " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
@@ -671,6 +652,12 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
+    info.specialFileType = GetInt32Val(GALLERY_SPECIAL_FILE_TYPE, resultSet);
+    if (BackupFileUtils::IsLivePhoto(info) && !BackupFileUtils::ConvertToMovingPhoto(info)) {
+        MEDIA_ERR_LOG("Failed to convert live photo to moving photo, filePath = %{public}s",
+            BackupFileUtils::GarbleFilePath(info.filePath, UPGRADE_RESTORE_ID).c_str());
+        return false;
+    }
     info.height = GetInt64Val(GALLERY_HEIGHT, resultSet);
     info.width = GetInt64Val(GALLERY_WIDTH, resultSet);
     info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);
@@ -739,6 +726,10 @@ int32_t FindSubtype(const FileInfo &fileInfo)
     if (fileInfo.burstKey.size() > 0) {
         return static_cast<int32_t>(PhotoSubType::BURST);
     }
+
+    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
+        return static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+    }
     return static_cast<int32_t>(PhotoSubType::DEFAULT);
 }
 
@@ -752,6 +743,10 @@ std::string FindBurstKey(const FileInfo &fileInfo)
 
 int32_t FindDirty(const FileInfo &fileInfo)
 {
+    // prevent uploading moving photo
+    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
+        return -1;
+    }
     return static_cast<int32_t>(DirtyTypes::TYPE_NEW);
 }
 
@@ -772,7 +767,6 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
     values.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
-    values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     if (fileInfo.showDateToken != 0) {
         values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);

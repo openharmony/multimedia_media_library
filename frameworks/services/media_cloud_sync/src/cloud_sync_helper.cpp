@@ -72,7 +72,7 @@ void CloudSyncHelper::StartSync()
 
 bool CloudSyncHelper::InitDataShareHelper()
 {
-    const string photos = "persist.kernel.bundle_name.photots";
+    const string photos = "persist.kernel.bundle_name.photos";
     const string clouddrive = "persist.kernel.bundle_name.clouddrive";
     GALLERY_BUNDLE_NAME = system::GetParameter(photos, "");
     const auto CLOUDDRIVE_BUNDLE_NAME = system::GetParameter(clouddrive, "");
