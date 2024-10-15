@@ -1129,8 +1129,7 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationAllExif(
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_ORIENTATION, currentOrientation);
     if (err != E_OK) {
         currentOrientation = "";
-        MEDIA_ERR_LOG("The image don't support set orientation in exif");
-        return E_OK;
+        MEDIA_WARN_LOG("The rotation angle exlf of the image is empty");
     }
 
     MEDIA_INFO_LOG("Update image exif information, DisplayName=%{private}s, Orientation=%{private}d",
@@ -1151,13 +1150,12 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationAllExif(
     }
 
     string exifStr = fileAsset->GetAllExif();
-    if (exifStr.empty()) {
-        return E_INVALID_VALUES;
+    if (!exifStr.empty()) {
+        nlohmann::json exifJson = nlohmann::json::parse(exifStr);
+        exifJson["Orientation"] = imageSourceOrientation->second;
+        exifStr = exifJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+        values.PutString(PhotoColumn::PHOTO_ALL_EXIF, exifStr);
     }
-    nlohmann::json exifJson = nlohmann::json::parse(exifStr);
-    exifJson["Orientation"] = imageSourceOrientation->second;
-    exifStr = exifJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
-    values.PutString(PhotoColumn::PHOTO_ALL_EXIF, exifStr);
 
     err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_ORIENTATION,
         std::to_string(imageSourceOrientation->second), fileAsset->GetFilePath());
@@ -1186,7 +1184,7 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationExif(MediaLibraryCommand &
         return E_INVALID_VALUES;
     }
     int32_t errCode = UpdateOrientationAllExif(cmd, fileAsset, currentOrientation);
-    if (errCode == E_OK && !currentOrientation.empty()) {
+    if (errCode == E_OK) {
         orientationUpdated = true;
     }
     return errCode;
@@ -1328,9 +1326,6 @@ static void RevertOrientation(const shared_ptr<FileAsset> &fileAsset, string &cu
         MEDIA_ERR_LOG("fileAsset is null");
         return;
     }
-    if (currentOrientation.empty()) {
-        return;
-    }
 
     std::unique_ptr<ImageSource> imageSource;
     uint32_t err = CreateImageSource(fileAsset, imageSource);
@@ -1339,8 +1334,12 @@ static void RevertOrientation(const shared_ptr<FileAsset> &fileAsset, string &cu
         return;
     }
 
-    err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_ORIENTATION,
-        currentOrientation, fileAsset->GetFilePath());
+    err = imageSource->ModifyImageProperty(
+        0,
+        PHOTO_DATA_IMAGE_ORIENTATION,
+        currentOrientation.empty() ? ANALYSIS_HAS_DATA : currentOrientation,
+        fileAsset->GetFilePath()
+    );
     if (err != E_OK) {
         MEDIA_ERR_LOG("Rollback of exlf information failed, err = %{public}d", err);
     }
