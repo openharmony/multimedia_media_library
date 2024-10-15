@@ -61,6 +61,7 @@
 #include "safe_map.h"
 #include "search_column.h"
 #include "short_term_callback.h"
+#include "grant_old_photo_assets_read_permission_callback.h"
 #include "smart_album_napi.h"
 #include "story_album_column.h"
 #include "string_ex.h"
@@ -151,6 +152,7 @@ const std::string CONFIRM_BOX_PHOTO_SUB_TYPE_ARRAY = "photoSubTypeArray";
 const std::string CONFIRM_BOX_BUNDLE_NAME = "bundleName";
 const std::string CONFIRM_BOX_APP_NAME = "appName";
 const std::string CONFIRM_BOX_APP_ID = "appId";
+const std::string TARGET_PAGE = "targetPage";
 
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
@@ -354,6 +356,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_STATIC_FUNCTION("showAssetsCreationDialog", ShowAssetsCreationDialog),
         DECLARE_NAPI_STATIC_FUNCTION("checkShortTermPermission", CheckShortTermPermission),
         DECLARE_NAPI_STATIC_FUNCTION("createAssetWithShortTermPermission", CreateAssetWithShortTermPermission),
+        DECLARE_NAPI_STATIC_FUNCTION("grantOldPhotoAssetsReadPermission", GrantOldPhotoAssetsReadPermission),
         DECLARE_NAPI_PROPERTY("PhotoType", CreateMediaTypeUserFileEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumKeys", CreateAlbumKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumType", CreateAlbumTypeEnum(env)),
@@ -8340,6 +8343,76 @@ napi_value MediaLibraryNapi::CreateAssetWithShortTermPermission(napi_env env, na
     callback->SetSessionId(sessionId);
     return result;
 }
+
+static bool InitGrantOldPhotoAssetsReadPermissionRequest(OHOS::AAFwk::Want &want, 
+    shared_ptr<GrantOldPhotoAssetsReadPermissionCallback> &callback, napi_env env, napi_value args[], size_t argsLen)
+{
+    NAPI_INFO_LOG("InitGrantOldPhotoAssetsReadPermission enter.");
+    if (argsLen < ARGS_SIX) {
+        return false;
+    }
+
+    std::string targetType = "photoPicker";
+    want.SetParam(ABILITY_WANT_PARAMS_UIEXTENSIONTARGETTYPE, targetType);
+    std::string grantOldPhotoAssetsTag = "grantOldPhotoAssetsPage";
+    want.SetParam(TARGET_PAGE, grantOldPhotoAssetsTag);
+
+     // second param: Array<string>
+    if (!ParseAndSetFileUriArray(env, want, args[PARAM1])) {
+        NAPI_ERR_LOG("FileUriArray check failed.");
+        return false;
+    }
+
+    callback->SetFunc(args[PARAM5]);
+    return true;
+}
+
+napi_value MediaLibraryNapi::GrantOldPhotoAssetsReadPermission(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("GrantOldPhotoAssetsReadPermission enter");
+    size_t argc = ARGS_THREE;
+    napi_value args[ARGS_THREE] = {nullptr};
+    napi_value thisVar = nullptr;
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr), JS_ERR_PARAMETER_INVALID);
+
+    // first param: context, check whether context is abilityContext from stage mode
+    auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
+    NAPI_ASSERT(env, context != nullptr, "Context is null.");
+
+    std::shared_ptr<OHOS::AbilityRuntime::AbilityContext> abilityContext =
+        OHOS::AbilityRuntime::Context::ConvertTo<OHOS::AbilityRuntime::AbilityContext>(context);
+    NAPI_ASSERT(env, abilityContext != nullptr, "AbilityContext is null.");
+
+    // get uiContent from abilityContext, this api should be called after loadContent, otherwise uiContent is nullptr
+    auto uiContent = abilityContext->GetUIContent();
+    NAPI_ASSERT(env, uiContent != nullptr, "UiContent is null.");
+
+    // set want
+    OHOS::AAFwk::Want want;
+    shared_ptr<GrantOldPhotoAssetsReadPermissionCallback> callback = 
+        make_shared<GrantOldPhotoAssetsReadPermissionCallback>(env, uiContent);
+    NAPI_ASSERT(env, InitGrantOldPhotoAssetsReadPermissionRequest(want, callback, env, args, sizeof(args)),
+        "Parse GrantOldPhotoAssetsReadPermission input fail.");
+
+    // regist callback and config
+    OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
+        ([callback](auto arg) { callback->OnRelease(arg); }),
+        ([callback](auto arg1, auto arg2) { callback->OnResult(arg1, arg2); }),
+        ([callback](auto arg) { callback->OnReceive(arg); }),
+        ([callback](auto arg1, auto arg2, auto arg3) { callback->OnError(arg1, arg2, arg3); }),
+    };
+    OHOS::Ace::ModalUIExtensionConfig config;
+    config.isProhibitBack = true;
+    NAPI_INFO_LOG("GrantOldPhotoAssetsReadPermission regist callback and config success.");
+
+    int32_t sessionId = uiContent->CreateModalUIExtension(want, extensionCallback, config);
+    NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");
+    callback->SetSessionId(sessionId);
+    return result;
+}
+
 
 static void StartPhotoPickerExecute(napi_env env, void *data)
 {
