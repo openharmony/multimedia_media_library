@@ -43,7 +43,7 @@ void CloudSyncSwitchObserver::OnChange()
         MEDIA_ERR_LOG("resultSet is nullptr!");
     }
     std::vector<std::string> idToDeleteIndex;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+    while (resultSet != nullptr && resultSet->GoToNextRow() == NativeRdb::E_OK) {
         idToDeleteIndex.push_back(to_string(GetInt32Val("file_id", resultSet)));
     }
     MEDIA_INFO_LOG("idToDeleteIndex size: %{public}zu", idToDeleteIndex.size());
@@ -57,6 +57,7 @@ void CloudSyncSwitchObserver::OnChange()
     auto resultSetUpdateIndex = uniStore->QuerySql(queryIdToUpdateIndex);
     if (resultSetUpdateIndex == nullptr) {
         MEDIA_ERR_LOG("resultSetUpdateIndex is nullptr!");
+        return;
     }
     std::vector<std::string> idToUpdateIndex;
     while (resultSetUpdateIndex->GoToNextRow() == NativeRdb::E_OK) {
