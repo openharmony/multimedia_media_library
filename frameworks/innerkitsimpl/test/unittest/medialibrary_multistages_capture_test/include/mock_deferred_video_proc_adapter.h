@@ -17,6 +17,7 @@
 #define MOCK_DEFERRED_VIDEO_PROC_ADAPTER_H
  
 #include "deferred_video_proc_adapter.h"
+#include "multistages_video_capture_manager.h"
 #include "gmock/gmock.h"
  
 namespace OHOS {
@@ -28,6 +29,14 @@ public:
  
     MOCK_METHOD0(BeginSynchronize, void());
     MOCK_METHOD0(EndSynchronize, void());
+    MOCK_METHOD2(RemoveVideo, void(const std::string&, const bool));
+};
+
+class MockMultiStagesVideoCaptureManager : public MultiStagesVideoCaptureManager {
+public:
+    MockMultiStagesVideoCaptureManager() {};
+    ~MockMultiStagesVideoCaptureManager() {};
+
     MOCK_METHOD2(RemoveVideo, void(const std::string&, const bool));
 };
 } // Media
