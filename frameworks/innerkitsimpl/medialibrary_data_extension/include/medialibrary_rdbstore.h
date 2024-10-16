@@ -91,6 +91,10 @@ public:
     EXPORT static void ClearAudios(RdbStore &store);
     EXPORT static void UpdateIndexForCover(RdbStore &store);
     EXPORT static int32_t ReconstructMediaLibraryStorageFormat(RdbStore &store);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> GetAllDuplicateAssets(const std::vector<std::string> &columns,
+        const int offset, const int limit);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> GetOtherDuplicateAssets(const std::vector<std::string> &columns,
+        const int offset, const int limit);
 
 private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);

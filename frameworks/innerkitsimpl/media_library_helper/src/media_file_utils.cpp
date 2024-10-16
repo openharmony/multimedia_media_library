@@ -1636,6 +1636,15 @@ bool MediaFileUtils::EndsWith(const std::string &str, const std::string &suffix)
     return str.rfind(suffix) == str.length() - suffix.length();
 }
 
+void MediaFileUtils::ReplaceAll(std::string &str, const std::string &from, const std::string &to)
+{
+    size_t startPos = 0;
+    while ((startPos = str.find(from, startPos)) != std::string::npos) {
+        str.replace(startPos, from.length(), to);
+        startPos += to.length();
+    }
+}
+
 void MediaFileUtils::UriAppendKeyValue(string &uri, const string &key, std::string value)
 {
     string uriKey = key + '=';
