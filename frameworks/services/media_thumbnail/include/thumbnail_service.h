@@ -18,7 +18,7 @@
 
 #include <mutex>
 
-#include "fa_ability_context.h"
+#include "ability_context.h"
 #include "media_file_uri.h"
 #include "pixel_map.h"
 #include "rdb_helper.h"
