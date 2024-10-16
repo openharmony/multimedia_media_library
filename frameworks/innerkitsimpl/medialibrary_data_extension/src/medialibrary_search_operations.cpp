@@ -35,12 +35,12 @@ const std::string analysisCompleteCondition = TBL_SEARCH_CV_STATUS + " = 1 AND (
     " = 1 OR (" + PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = 0 AND " +
     PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LONGITUDE + " = 0)) ";
 const std::string selectAnalysisCompletedPhoto = "SELECT COUNT(case when " + notTrashedAndHiddenCondition +
-    TBL_SEARCH_PHOTO_STATUS + " > 0 AND " + MediaColumn::MEDIA_TYPE + " = 1 AND " + analysisCompleteCondition +
+    TBL_SEARCH_PHOTO_STATUS + " > 1 AND " + MediaColumn::MEDIA_TYPE + " = 1 AND " + analysisCompleteCondition +
     " then 1 end) as " + PHOTO_COMPLETE_NUM + ",";
 const std::string mediaPhotoTotal = "COUNT(case when " + notTrashedAndHiddenCondition + MediaColumn::MEDIA_TYPE +
     " = 1 then 1 end) as " + PHOTO_TOTAL_NUM + ",";
 const std::string selectAnalysisCompletedVideo = "COUNT(case when " + notTrashedAndHiddenCondition +
-    TBL_SEARCH_PHOTO_STATUS + " > 0 AND " + MediaColumn::MEDIA_TYPE + " = 2 AND " + analysisCompleteCondition +
+    TBL_SEARCH_PHOTO_STATUS + " > 1 AND " + MediaColumn::MEDIA_TYPE + " = 2 AND " + analysisCompleteCondition +
     " then 1 end) as " + VIDEO_COMPLETE_NUM + ",";
 const std::string mediaVideoTotal = "COUNT(case when " + notTrashedAndHiddenCondition + MediaColumn::MEDIA_TYPE +
     " = 2 then 1 end) as " + VIDEO_TOTAL_NUM;
