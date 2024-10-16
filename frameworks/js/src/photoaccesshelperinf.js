@@ -390,9 +390,15 @@ function grantOldPhotoAssetsReadPermission(srcFileUris) {
     }
   }
 
+  let context = gContext;
+  if (contet === undefined) {
+    console.info('photoAccessHelper gContet undefined');
+    context = gContext(this);
+  }
+
   try {
     return new Promise((resolve, reject) => {
-      photoAccessHelper.grantOldPhotoAssetsReadPermission(getContext(this), srcFileUris, result => {
+      photoAccessHelper.grantOldPhotoAssetsReadPermission(context, srcFileUris, result => {
         showAssetsCreationDialogResult(result, reject, resolve);
       });
     });
