@@ -30,7 +30,7 @@ static const std::string RESULT_PARAM = "result";
 static const std::string DATA_PARAM = "data";
 }
 
-GrantOldPhotoAssetsReadPermissionCallback::GrantOldPhotoAssetsReadPermissionCallback(napi_env env)
+GrantOldPhotoAssetsReadPermissionCallback::GrantOldPhotoAssetsReadPermissionCallback(napi_env env, Ace::UIContent *uiContent)
 {
     this->env_ = env;
     this->uiContent = uiContent;
