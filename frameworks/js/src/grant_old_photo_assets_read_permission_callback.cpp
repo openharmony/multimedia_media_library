@@ -26,7 +26,6 @@ namespace OHOS {
 namespace Media {
 namespace {
 static constexpr int32_t GRANT_SUCCESS = 0;
-static constexpr int32_t CONFIRM_CODE_USER_DENY = -1;
 static const string GRANT_OLD_PHOTO_ASSETS_DES_FILE_URIS = "desFileUris";
 static const string RESULT_PARAM = "result";
 static const string DATA_PARAM = "data";
@@ -63,7 +62,7 @@ void GrantOldPhotoAssetsReadPermissionCallback::OnResult(int32_t resultCode, con
         // get desFileUris from want
         desFileUris = want.GetStringArrayParam(GRANT_OLD_PHOTO_ASSETS_DES_FILE_URIS);
         for (std::string mem : desFileUris) {
-            NAPI_INFO_LOG("mem %{publi}s", mem.c_str());
+            NAPI_INFO_LOG("mem %{public}s", mem.c_str());
         }
     } else {
         NAPI_INFO_LOG("ResultCode is %{public}d.", resultCode);
