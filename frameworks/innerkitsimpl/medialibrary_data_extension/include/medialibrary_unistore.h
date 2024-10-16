@@ -16,7 +16,7 @@
 #ifndef OHOS_MEDIALIBRARY_UNISTORE_H
 #define OHOS_MEDIALIBRARY_UNISTORE_H
 
-#include "fa_ability_context.h"
+#include "ability_context.h"
 #include "medialibrary_command.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
