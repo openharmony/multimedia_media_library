@@ -1771,17 +1771,17 @@ int32_t MediaLibraryAssetOperations::GetAlbumIdByPredicates(const string &whereC
     return E_ERR;
 }
 
-void MediaLibraryAssetOperations::SendOwnerAlbumIdNotify(MediaLibraryCommand &cmd)
+void MediaLibraryAssetOperations::UpdateOwnerAlbumIdOnMove(MediaLibraryCommand &cmd,
+    int32_t &targetAlbumId, int32_t &oriAlbumId)
 {
     ValueObject value;
-    int32_t targetAlbumId = 0;
     if (!cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_OWNER_ALBUM_ID, value)) {
         return;
     }
     value.GetInt(targetAlbumId);
     auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
-    int32_t oriAlbumId = GetAlbumIdByPredicates(whereClause, whereArgs);
+    oriAlbumId = GetAlbumIdByPredicates(whereClause, whereArgs);
 
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(targetAlbumId),
@@ -1790,11 +1790,6 @@ void MediaLibraryAssetOperations::SendOwnerAlbumIdNotify(MediaLibraryCommand &cm
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(targetAlbumId),
         to_string(oriAlbumId) });
     MEDIA_INFO_LOG("Move Assets, ori album id is %{public}d, target album id is %{public}d", oriAlbumId, targetAlbumId);
-    auto watch = MediaLibraryNotify::GetInstance();
-    NotifyType typeTarget = NotifyType::NOTIFY_ALBUM_ADD_ASSET;
-    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PHOTO_ALBUM_URI_PREFIX, to_string(targetAlbumId)), typeTarget);
-    NotifyType typeOri = NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
-    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PHOTO_ALBUM_URI_PREFIX, to_string(oriAlbumId)), typeOri);
 }
 
 int32_t MediaLibraryAssetOperations::SetPendingTrue(const shared_ptr<FileAsset> &fileAsset)
