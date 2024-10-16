@@ -8381,13 +8381,21 @@ napi_value MediaLibraryNapi::GrantOldPhotoAssetsReadPermission(napi_env env, nap
     auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
     NAPI_ASSERT(env, context != nullptr, "Context is null.");
 
+    Ace::UIContent *uiContent = nullptr;
     shared_ptr<OHOS::AbilityRuntime::AbilityContext> abilityContext =
         OHOS::AbilityRuntime::Context::ConvertTo<OHOS::AbilityRuntime::AbilityContext>(context);
-    NAPI_ASSERT(env, abilityContext != nullptr, "AbilityContext is null.");
-
-    // get uiContent from abilityContext, this api should be called after loadContent, otherwise uiContent is nullptr
-    auto uiContent = abilityContext->GetUIContent();
-    NAPI_ASSERT(env, uiContent != nullptr, "UiContent is null.");
+    if (abilityContext == nullptr) {
+        auto uiExtensionContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::UIExtensionContext>(context);
+        if (uiExtensionContext == nullptr) {
+            NAPI_ERR_LOG("Fail to convert to abilityContext or uiExtensionContext");
+            return nullptr;
+        }
+        uiContent = uiExtensionContext->GetUIContent();
+    } else {
+        // get uiContent from abilityContext
+        uiContent = abilityContext->GetUIContent();
+        NAPI_ASSERT(env, uiContent != nullptr, "UiContent is null.");
+    }
 
     // set want
     OHOS::AAFwk::Want want;
