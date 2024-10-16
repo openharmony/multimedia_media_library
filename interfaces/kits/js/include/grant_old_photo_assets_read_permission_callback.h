@@ -45,7 +45,7 @@ private:
     napi_env env_ = nullptr;
     napi_ref callbackRef = nullptr;
     Ace::UIContent *uiContent = nullptr;
-    void SendMessageBack(const std::string &desFileUris);
+    void SendMessageBack(const std::vector<std::string> &desFileUris);
     void CloseModalUIExtension();
 };
 }
