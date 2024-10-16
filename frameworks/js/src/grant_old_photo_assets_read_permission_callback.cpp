@@ -52,7 +52,7 @@ void GrantOldPhotoAssetsReadPermissionCallback::OnResult(int32_t resultCode, con
     std::vector<std::string> desFileUris;
     if (resultCode == GRANT_SUCCESS) {
         this->resultCode_ = resultCode;
-        
+
         // check if the desFileUris exsit
         if (!want.HasParameter(GRANT_OLD_PHOTO_ASSETS_DES_FILE_URIS)) {
             NAPI_ERR_LOG("Can't get string array from want.");
@@ -67,7 +67,7 @@ void GrantOldPhotoAssetsReadPermissionCallback::OnResult(int32_t resultCode, con
         }
     } else {
         NAPI_INFO_LOG("ResultCode is %{public}d.", resultCode);
-        this->resultCode_ = JS_INNER_FAIL; 
+        this->resultCode_ = JS_INNER_FAIL;
     }
 
     SendMessageBack(desFileUris);
