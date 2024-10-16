@@ -8348,7 +8348,7 @@ static bool InitGrantOldPhotoAssetsReadPermissionRequest(OHOS::AAFwk::Want &want
     shared_ptr<GrantOldPhotoAssetsReadPermissionCallback> &callback, napi_env env, napi_value args[], size_t argsLen)
 {
     NAPI_INFO_LOG("InitGrantOldPhotoAssetsReadPermission enter.");
-    if (argsLen < ARGS_SIX) {
+    if (argsLen < ARGS_THREE) {
         return false;
     }
 
@@ -8363,7 +8363,7 @@ static bool InitGrantOldPhotoAssetsReadPermissionRequest(OHOS::AAFwk::Want &want
         return false;
     }
 
-    callback->SetFunc(args[PARAM5]);
+    callback->SetFunc(args[PARAM2]);
     return true;
 }
 

@@ -20,14 +20,16 @@
 #include "media_file_utils.h"
 #include "userfile_client.h"
 
+using namespace std;
+
 namespace OHOS {
 namespace Media {
 namespace {
 static constexpr int32_t GRANT_SUCCESS = 0;
 static constexpr int32_t CONFIRM_CODE_USER_DENY = -1;
-static const std::string GRANT_OLD_PHOTO_ASSETS_DES_FILE_URIS = "desFileUris";
-static const std::string RESULT_PARAM = "result";
-static const std::string DATA_PARAM = "data";
+static const string GRANT_OLD_PHOTO_ASSETS_DES_FILE_URIS = "desFileUris";
+static const string RESULT_PARAM = "result";
+static const string DATA_PARAM = "data";
 }
 
 GrantOldPhotoAssetsReadPermissionCallback::GrantOldPhotoAssetsReadPermissionCallback(napi_env env,
@@ -47,10 +49,10 @@ void GrantOldPhotoAssetsReadPermissionCallback::OnResult(int32_t resultCode, con
 {
     NAPI_INFO_LOG("ResultCode is %{public}d.", resultCode);
 
-    this->resultCode_ = resultCode;
-
     std::vector<std::string> desFileUris;
     if (resultCode == GRANT_SUCCESS) {
+        this->resultCode_ = resultCode;
+        
         // check if the desFileUris exsit
         if (!want.HasParameter(GRANT_OLD_PHOTO_ASSETS_DES_FILE_URIS)) {
             NAPI_ERR_LOG("Can't get string array from want.");
@@ -65,7 +67,7 @@ void GrantOldPhotoAssetsReadPermissionCallback::OnResult(int32_t resultCode, con
         }
     } else {
         NAPI_INFO_LOG("ResultCode is %{public}d.", resultCode);
-        this->resultCode_ = CONFIRM_CODE_SUCCESS; // user deny return success with empty uris
+        this->resultCode_ = JS_INNER_FAIL; 
     }
 
     SendMessageBack(desFileUris);
