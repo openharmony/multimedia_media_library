@@ -17,11 +17,14 @@ import("//foundation/multimedia/media_library/media_library.gni")
 group("unittest") {
   testonly = true
 
-  deps = [ ":medialibrary_meta_recovery_unittest" ]
+  deps = [
+    ":medialibrary_meta_recovery_json_test",
+    ":medialibrary_meta_recovery_unittest",
+  ]
 }
 
 ohos_unittest("medialibrary_meta_recovery_unittest") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/medialibrary_meta_recovery"
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
@@ -74,4 +77,55 @@ ohos_unittest("medialibrary_meta_recovery_unittest") {
 
   resource_config_file =
       "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
+}
+
+ohos_unittest("medialibrary_meta_recovery_json_test") {
+  module_out_path = "media_library/medialibrary_meta_recovery"
+  include_dirs = [
+    "include",
+    "$MEDIALIB_INNERKITS_PATH/medialibrary_data_extension/include",
+    "$MEDIALIB_INTERFACES_PATH/inner_api/media_library_helper/include",
+    "$MEDIALIB_UTILS_PATH/include",
+    "../get_self_permissions/include",
+    "../medialibrary_unittest_utils/include",
+  ]
+  sources = [
+    "../get_self_permissions/src/get_self_permissions.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "src/medialibrary_meta_recovery_json_test.cpp",
+    "src/medialibrary_meta_recovery_test_utils.cpp",
+  ]
+
+  external_deps = [
+    "ability_base:configuration",
+    "ability_base:zuri",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:ability_manager",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
+    "ability_runtime:runtime",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken_shared",
+    "access_token:libtokensetproc_shared",
+    "bundle_framework:appexecfwk_core",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "data_share:datashare_common",
+    "data_share:datashare_provider",
+    "hilog:libhilog",
+    "image_framework:image_native",
+    "ipc:ipc_single",
+    "kv_store:distributeddata_inner",
+    "napi:ace_napi",
+    "relational_store:native_rdb",
+    "user_file_service:file_access_extension_ability_kit",
+  ]
+
+  deps = [
+    "$MEDIALIB_INNERKITS_PATH/media_library_helper:media_library",
+    "$MEDIALIB_INNERKITS_PATH/medialibrary_data_extension:medialibrary_data_extension",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  defines = [ "META_RECOVERY_SUPPORT=1" ]
 }

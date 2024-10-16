@@ -67,21 +67,21 @@ private:
     // Json
     bool WriteJsonFile(const std::string &filePath, const nlohmann::json &j);
     bool ReadJsonFile(const std::string &filePath, nlohmann::json &j);
-    int32_t WriteMetadataToFile(const std::string &filePath, const FileAsset &fileAsset);
-    int32_t ReadMetadataFromFile(const std::string &filePath, FileAsset &fileAsset, bool &flag);
+    EXPORT int32_t WriteMetadataToFile(const std::string &filePath, const FileAsset &fileAsset);
+    EXPORT int32_t ReadMetadataFromFile(const std::string &filePath, FileAsset &fileAsset, bool &flag);
     void AddMetadataToJson(nlohmann::json &j, const FileAsset &fileAsset);
     bool GetMetadataFromJson(const nlohmann::json &j, FileAsset &fileAsset, bool &flag);
     int32_t WriteSingleMetaData(const FileAsset &asset);
-    int32_t WritePhotoAlbumToFile(const std::string &filePath,
+    EXPORT int32_t WritePhotoAlbumToFile(const std::string &filePath,
                                   const std::vector<std::shared_ptr<PhotoAlbum>> &vecPhotoAlbum);
-    int32_t ReadPhotoAlbumFromFile(const std::string &filePath,
+    EXPORT int32_t ReadPhotoAlbumFromFile(const std::string &filePath,
                                    std::vector<std::shared_ptr<PhotoAlbum>> &photoAlbumVector);
     void AddPhotoAlbumToJson(nlohmann::json &j, const PhotoAlbum &photoAlbum);
     bool GetPhotoAlbumFromJson(const nlohmann::json &j, PhotoAlbum &photoAlbum);
     void LoadAlbumMaps(const std::string &path);
-    int32_t ReadMetaStatusFromFile(std::set<int32_t> &status);
-    int32_t WriteMetaStatusToFile(const std::string &keyPath, const int32_t status);
-    int32_t ReadMetaRecoveryCountFromFile();
+    EXPORT int32_t ReadMetaStatusFromFile(std::set<int32_t> &status);
+    EXPORT int32_t WriteMetaStatusToFile(const std::string &keyPath, const int32_t status);
+    EXPORT int32_t ReadMetaRecoveryCountFromFile();
 
     // DB
     int32_t InsertMetadataInDb(const FileAsset &fileAsset, bool flag);
