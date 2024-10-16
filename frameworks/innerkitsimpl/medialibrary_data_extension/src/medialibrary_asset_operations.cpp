@@ -816,7 +816,7 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, 
         outValues.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
     }
     stringstream result;
-    for (int i = 0; i < displayName.length(); i++) {
+    for (size_t i = 0; i < displayName.length(); i++) {
         if (isdigit(displayName[i])) {
             result << displayName[i];
         }
