@@ -311,7 +311,7 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     const bool containsWrite = ContainsFlag(mode, 'w');
 
     if (cmd.GetQuerySetParam(IS_TOOL_OPEN) == TOOL_OPEN_TRUE) {
-        return IsDeveloperMediaTool(cmd)? E_SUCCESS : E_PERMISSION_DENIED;
+        return IsDeveloperMediaTool(cmd, mode)? E_SUCCESS : E_PERMISSION_DENIED;
     }
     vector<string> perms;
     FillV10Perms(mediaType, containsRead, containsWrite, perms);

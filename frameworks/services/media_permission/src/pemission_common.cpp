@@ -40,10 +40,21 @@ bool IsMediatoolOperation(MediaLibraryCommand &cmd)
         cmd.GetOprnObject() == OperationObject::TOOL_ALBUM || cmd.GetOprnType() == Media::OperationType::DELETE_TOOL;
 }
 
-bool IsDeveloperMediaTool(MediaLibraryCommand &cmd)
+static bool IsHdcShellMediatoolCommand(MediaLibraryCommand &cmd, const std::string &openFileMode)
+{
+    return cmd.GetOprnType() == Media::OperationType::TOOL_QUERY_BY_DISPLAY_NAME ||
+        cmd.GetOprnType() == Media::OperationType::DELETE_TOOL ||
+        cmd.GetOprnType() == Media::OperationType::UPDATE ||
+        cmd.GetOprnType() == Media::OperationType::ALBUM_DELETE_ASSETS ||
+        (cmd.GetOprnType() == Media::OperationType::DELETE &&
+        cmd.GetOprnObject() == OperationObject::FILESYSTEM_AUDIO) ||
+        (cmd.GetOprnType() == Media::OperationType::OPEN && openFileMode.find('w') == string::npos);
+}
+
+bool IsDeveloperMediaTool(MediaLibraryCommand &cmd, const std::string &openFileMode)
 {
     if (!PermissionUtils::IsRootShell() &&
-        !(PermissionUtils::IsHdcShell() && cmd.GetOprnType() == Media::OperationType::TOOL_QUERY_BY_DISPLAY_NAME)) {
+        !(PermissionUtils::IsHdcShell() && IsHdcShellMediatoolCommand(cmd, openFileMode))) {
         MEDIA_ERR_LOG("Mediatool permission check failed: target is not root");
         return false;
     }
