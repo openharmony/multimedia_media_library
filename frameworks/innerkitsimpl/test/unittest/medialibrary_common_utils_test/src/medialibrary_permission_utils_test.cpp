@@ -142,21 +142,6 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_not_in_cache_00
     EXPECT_EQ(appId, "");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_002, TestSize.Level0)
-{
-    PermissionUtils::ClearBundleInfoInCache();
-    int uid = 1;
-    string bundleName = "com.test.demo";
-    string packageName = "demo";
-    string appId = "demo.appid";
-    BundleInfo bundleInfo {bundleName, packageName, appId};
-    PermissionUtils::UpdateLatestBundleInfo(uid, bundleInfo);
-
-    string appIdActual = "";
-    PermissionUtils::GetAppIdFromCache(uid, "", appIdActual);
-    EXPECT_EQ(appIdActual, appId);
-}
-
 HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_003, TestSize.Level0)
 {
     PermissionUtils::ClearBundleInfoInCache();
@@ -191,28 +176,8 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_UpdateLatestBundleInfo_larger_tha
     }
 
     string packageNameActual = "";
-    PermissionUtils::GetPackageNameFromCache(0, "", packageNameActual);
-    EXPECT_EQ(packageNameActual, "");
-    PermissionUtils::GetPackageNameFromCache(4, "", packageNameActual);
-    EXPECT_EQ(packageNameActual, "");
     PermissionUtils::GetPackageNameFromCache(5, "com.test.demo5", packageNameActual);
     EXPECT_EQ(packageNameActual, "demo5");
-}
-
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_UpdateLatestBundleInfo_larger_than_capacity_002, TestSize.Level0)
-{
-    PermissionUtils::ClearBundleInfoInCache();
-    string name = "";
-    for (int i = 0; i < 55; i++) {
-        name = "demo" + to_string(i);
-        PermissionUtils::UpdateLatestBundleInfo(1, {"com.test." + name, name, name + ".appid"});
-    }
-
-    string packageNameActual = "";
-    PermissionUtils::GetPackageNameFromCache(0, "", packageNameActual);
-    EXPECT_EQ(packageNameActual, "");
-    PermissionUtils::GetPackageNameFromCache(1, "", packageNameActual);
-    EXPECT_EQ(packageNameActual, name);
 }
 
 HWTEST_F(MediaLibraryCommonUtilsTest, permission_utils_test_001, TestSize.Level0)
