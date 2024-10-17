@@ -32,45 +32,54 @@ namespace OHOS {
 namespace Media {
 namespace MediaTool {
 const string PATH_HEAD = "/storage/cloud/";
-static std::vector<std::string> QueryMediaFiles(const std::string &displayName)
+static int32_t QueryMediaFiles(const QueryParam &queryParam)
 {
     std::vector<std::string> queryfilePaths;
-    std::string fileTableName = MediaFileUtils::GetTableNameByDisplayName(displayName);
-    if (fileTableName == AudioColumn::AUDIOS_TABLE || fileTableName == PhotoColumn::PHOTOS_TABLE) {
-        auto resultSet = UserFileClientEx::GetResultsetByDisplayName(fileTableName, displayName);
-        if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
-            printf("The displayName you want to query do not exist!\n");
-            printf("find 0 result\n");
-            return queryfilePaths;
-        }
+    std::string fileTableName = MediaFileUtils::GetTableNameByDisplayName(queryParam.displayName);
+    if (fileTableName != AudioColumn::AUDIOS_TABLE && fileTableName != PhotoColumn::PHOTOS_TABLE) {
+        printf("find 0 result\n");
+        printf("The displayName format is not correct!\n");
+        return Media::E_ERR;
+    }
+
+    auto resultSet = UserFileClientEx::GetResultsetByDisplayName(fileTableName, queryParam.displayName);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
+        printf("find 0 result\n");
+        return Media::E_ERR;
+    }
+    int count = 0;
+    if (resultSet->GetRowCount(count) != 0) {
+        return Media::E_ERR;
+    }
+    printf("find %d result\n", count);
+    if (queryParam.pathFlag) {
+        printf("path\n");
         do {
             auto path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
             auto pos = path.find("/storage/cloud/file", 0);
             if (pos != string::npos) {
                 path.insert(pos + PATH_HEAD.length(), "100/");
             }
-            queryfilePaths.push_back(path);
+            printf("%s\n", path.c_str());
         } while (!resultSet->GoToNextRow());
         resultSet->Close();
-    } else {
-        printf("The displayName format is not correct!\n");
+    } else if (queryParam.uriFlag) {
+        std::shared_ptr<FetchResult<FileAsset>> fetchResult = std::make_shared<FetchResult<FileAsset>>(resultSet);
+        fetchResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
+        DumpOpt dumpOpt;
+        dumpOpt.count = fetchResult->GetCount();
+        MEDIA_DEBUG_LOG("count:%{public}d", dumpOpt.count);
+        dumpOpt.columns = {
+            MEDIA_DATA_DB_URI
+        };
+        DatabaseUtils::Dump(dumpOpt, fetchResult);
     }
-    return queryfilePaths;
+    return Media::E_OK;
 }
 
 int32_t QueryCommandV10::Start(const ExecEnv &env)
 {
-    std::vector<std::string> filePaths;
-    filePaths = QueryMediaFiles(env.queryParam.displayName);
-    int count = filePaths.size();
-    if (filePaths.empty()) {
-        return Media::E_OK;
-    }
-    printf("find %d result: \n", count);
-    for (auto path:filePaths) {
-        printf("%s\n", path.c_str());
-    }
-    return Media::E_OK;
+    return QueryMediaFiles(env.queryParam);
 }
 }
 }
