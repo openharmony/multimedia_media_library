@@ -17,6 +17,7 @@
 #define OHOS_MEDIALIBRARY_ALBUM_FUSION_UTILS_H
 
 #include <vector>
+#include <mutex>
 
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -73,6 +74,10 @@ private:
         std::multimap<int32_t, std::vector<int32_t>> &notMatchedMap);
     static int32_t HandleDuplicateAlbum(NativeRdb::RdbStore *upgradeStore);
     static int32_t HandleMisMatchScreenRecord(NativeRdb::RdbStore *upgradeStore);
+
+private:
+    static std::mutex cloudAlbumAndDataMutex_;
+    static std::unique_lock<std::mutex> cloudAlbumAndDataUniqueLock_;
 };
 }
 }
