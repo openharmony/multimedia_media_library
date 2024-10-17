@@ -42,7 +42,9 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
+#ifdef META_RECOVERY_SUPPORT
 #include "medialibrary_meta_recovery.h"
+#endif
 #include "medialibrary_restore.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -202,6 +204,9 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
     if (!isScreenOff_ || !isCharging_) {
         MediaLibraryRestore::GetInstance().InterruptBackup();
     }
+#ifdef META_RECOVERY_SUPPORT
+    MediaLibraryMetaRecovery::GetInstance().StatisticSave();
+#endif
 }
 
 void MedialibrarySubscriber::UpdateSubcriberStatus()
@@ -472,8 +477,10 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         return;
     }
 
+#ifdef META_RECOVERY_SUPPORT
     // check metadata recovery state
     MediaLibraryMetaRecovery::GetInstance().CheckRecoveryState();
+#endif
 
     // delete temporary photos
     DeleteTemporaryPhotos();
@@ -501,6 +508,9 @@ void MedialibrarySubscriber::DoBackgroundOperation()
 
 void MedialibrarySubscriber::StopBackgroundOperation()
 {
+#ifdef META_RECOVERY_SUPPORT
+    MediaLibraryMetaRecovery::GetInstance().InterruptRecovery();
+#endif
     MovingPhotoProcessor::StopProcess();
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
 }

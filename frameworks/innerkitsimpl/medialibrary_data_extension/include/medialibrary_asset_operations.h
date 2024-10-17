@@ -141,6 +141,8 @@ public:
     EXPORT static int32_t QueryTotalPhoto(std::vector<std::shared_ptr<FileAsset>> &fileAssetVector, int32_t batchSize);
     EXPORT static int32_t QueryTotalAlbum(std::vector<std::shared_ptr<PhotoAlbum>> &PhotoAlbumVector);
     EXPORT static std::shared_ptr<FileAsset> QuerySinglePhoto(int32_t rowId);
+    EXPORT static std::vector<std::string> QueryPhotosTableColumnInfo();
+    EXPORT static const std::vector<std::string> &GetPhotosTableColumnInfo();
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,

@@ -70,6 +70,7 @@ enum ErrType {
     DB_OPT_ERR,
     DB_UPGRADE_ERR,
     DB_CORRUPT_ERR,
+    RECOVERY_ERR,
 };
 
 enum StatType {
@@ -95,6 +96,7 @@ public:
 private:
     COMPILE_HIDDEN std::string GetOptType(const uint32_t &optType);
     COMPILE_HIDDEN void PostFileOptError(const VariantMap &errMap);
+    COMPILE_HIDDEN void PostRecoveryOptError(const VariantMap &error);
     COMPILE_HIDDEN void PostDbOptError(const VariantMap &errMap);
     COMPILE_HIDDEN void PostDbUpgradeError(const VariantMap &errMap);
     COMPILE_HIDDEN void PostThumbnailStat(const VariantMap &stat);
