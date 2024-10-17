@@ -1199,14 +1199,14 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationExif(MediaLibraryCommand &
     return errCode;
 }
 
-void UpdateAlbumOnMoveAssets(const int32_t &albumId, const int32_t &id, const NotifyType &type)
+void UpdateAlbumOnSystemMoveAssets(const int32_t &oriAlbumId, const int32_t &targetAlbumId)
 {
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(albumId) });
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+        { to_string(oriAlbumId), to_string(targetAlbumId) });
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(albumId) });
-    auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(id), type, albumId);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+        { to_string(oriAlbumId), to_string(targetAlbumId) });
 }
 
 bool IsSystemAlbumMovement(MediaLibraryCommand &cmd)
@@ -1272,7 +1272,6 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
         return E_INVALID_ARGUMENTS;
     }
     value.GetInt(targetAlbumId);
-
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(targetAlbumId));
     int32_t changedRows = MediaLibraryRdbStore::Update(values, predicates);
@@ -1280,13 +1279,16 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Update owner album id fail when move from system album");
         return changedRows;
     }
-
     for (auto it = ownerAlbumIds.begin(); it != ownerAlbumIds.end(); it++) {
         MEDIA_INFO_LOG("System album move assets target album id is: %{public}s", to_string(it->first).c_str());
         int32_t oriAlbumId = it->first;
+        UpdateAlbumOnSystemMoveAssets(oriAlbumId, targetAlbumId);
+        auto watch = MediaLibraryNotify::GetInstance();
         for (const auto &id : it->second) {
-            UpdateAlbumOnMoveAssets(oriAlbumId, id, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
-            UpdateAlbumOnMoveAssets(targetAlbumId, id, NotifyType::NOTIFY_ALBUM_ADD_ASSET);
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(id),
+                NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, oriAlbumId);
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(id),
+                NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
         }
     }
     return changedRows;
