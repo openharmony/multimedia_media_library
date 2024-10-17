@@ -88,8 +88,8 @@ struct DatabaseAuditLog : public AuditLog {
 
 class HiAudit : public NoCopyable {
 public:
-    EXPORT HiAudit& GetInstance();
-    EXPORT Write(const AuditLog& auditLog);
+    EXPORT static HiAudit& GetInstance();
+    EXPORT void Write(const AuditLog& auditLog);
 
 private:
     HiAudit();

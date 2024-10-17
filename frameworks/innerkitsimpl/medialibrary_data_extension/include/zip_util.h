@@ -28,11 +28,11 @@ enum {
 
 class ZipUtil {
 public:
-    EXPORT zipFile CreateZipFile(const std::string& zipPath, int32_t zipMode = APPEND_STATUS_CREATE);
-    EXPORT void CloseZipFile(zipFile& zipfile);
-    EXPORT int AddFileInZip(
+    EXPORT static zipFile CreateZipFile(const std::string& zipPath, int32_t zipMode = APPEND_STATUS_CREATE);
+    EXPORT static void CloseZipFile(zipFile& zipfile);
+    EXPORT static int AddFileInZip(
         zipFile& zipfile, const std::string& srcFile, int keepParentPathStatus, const std::string& dstFileName = "");
-    EXPORT std::string GetDestFilePath(
+    EXPORT static std::string GetDestFilePath(
         const std::string& srcFile, const std::string& destFilePath, int keepParentPathStatus);
 
 private:

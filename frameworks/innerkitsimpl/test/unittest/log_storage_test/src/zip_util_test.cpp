@@ -18,9 +18,7 @@
 #include <iostream>
 #include "media_log.h"
 #include <fstream>
-#define private public
 #include "zip_util.h"
-#undef private
 
 using namespace std;
 using namespace testing::ext;
