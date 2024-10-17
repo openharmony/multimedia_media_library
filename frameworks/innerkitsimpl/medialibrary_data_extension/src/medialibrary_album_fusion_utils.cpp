@@ -124,6 +124,10 @@ static unordered_map<string, ResultSetDataType> albumColumnTypeMap = {
     {PhotoAlbumColumns::ALBUM_IS_LOCAL, ResultSetDataType::TYPE_INT32},
 };
 
+std::mutex MediaLibraryAlbumFusionUtils::cloudAlbumAndDataMutex_;
+std::unique_lock<std::mutex> MediaLibraryAlbumFusionUtils::cloudAlbumAndDataUniqueLock_(
+    MediaLibraryAlbumFusionUtils::cloudAlbumAndDataMutex_, std::defer_lock);
+
 int32_t MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(NativeRdb::RdbStore *upgradeStore)
 {
     MEDIA_INFO_LOG("ALBUM_FUSE: STEP_0: Start remove misadded hidden data");
@@ -752,6 +756,9 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(NativeRdb::RdbStore *u
     }
     err = UpdateRelationship(upgradeStore, assetId, newAssetId, ownerAlbumId, true);
     if (err != E_OK) {
+        MEDIA_ERR_LOG("UpdateRelationship fail, "
+                      "assetId: %{public}d, newAssetId: %{public}lld, ownerAlbumId: %{public}d, ret = %{public}d",
+            assetId, (long long)newAssetId, ownerAlbumId, err);
         return E_OK;
     }
     GenerateThumbnail(newAssetId, targetPath, resultSet);
@@ -1622,6 +1629,10 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
         MEDIA_ERR_LOG("ALBUM_FUSE: First upgrade fails, perform upgrade again.");
         RdbStore &store = *upgradeStore;
         MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(store);
+        return E_OK;
+    }
+    if (!MediaLibraryAlbumFusionUtils::cloudAlbumAndDataUniqueLock_.try_lock()) {
+        MEDIA_WARN_LOG("ALBUM_FUSE: Failed to acquire lock, skipping task Clean.");
         return E_OK;
     }
     int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
