@@ -20,6 +20,7 @@
 #include <contrib/minizip/zip.h>
 
 namespace OHOS::Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 enum {
     KEEP_NONE_PARENT_PATH,
     KEEP_ONE_PARENT_PATH,
@@ -27,11 +28,11 @@ enum {
 
 class ZipUtil {
 public:
-    static zipFile CreateZipFile(const std::string& zipPath, int32_t zipMode = APPEND_STATUS_CREATE);
-    static void CloseZipFile(zipFile& zipfile);
-    static int AddFileInZip(
+    EXPORT zipFile CreateZipFile(const std::string& zipPath, int32_t zipMode = APPEND_STATUS_CREATE);
+    EXPORT void CloseZipFile(zipFile& zipfile);
+    EXPORT int AddFileInZip(
         zipFile& zipfile, const std::string& srcFile, int keepParentPathStatus, const std::string& dstFileName = "");
-    static std::string GetDestFilePath(
+    EXPORT std::string GetDestFilePath(
         const std::string& srcFile, const std::string& destFilePath, int keepParentPathStatus);
 
 private:

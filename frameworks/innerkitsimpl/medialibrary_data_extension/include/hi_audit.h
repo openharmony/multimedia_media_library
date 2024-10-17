@@ -25,6 +25,7 @@
 #include "nocopyable.h"
 
 namespace OHOS::Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 struct AuditLog {
     bool isUserBehavior;
     std::string cause;
@@ -87,8 +88,8 @@ struct DatabaseAuditLog : public AuditLog {
 
 class HiAudit : public NoCopyable {
 public:
-    static HiAudit& GetInstance();
-    void Write(const AuditLog& auditLog);
+    EXPORT HiAudit& GetInstance();
+    EXPORT Write(const AuditLog& auditLog);
 
 private:
     HiAudit();
