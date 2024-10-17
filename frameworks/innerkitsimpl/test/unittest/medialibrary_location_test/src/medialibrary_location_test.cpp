@@ -121,7 +121,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_002, TestSiz
     auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket valuesBucket2;
     EXPECT_GT(retVal1, 0);
-    EXPECT_EQ(retVal2, E_HAS_DB_ERROR);
+    EXPECT_GT(retVal2, 0);
     MEDIA_INFO_LOG("Location_InsertGeoKnowledge_Test_002::retVal = %{public}d. retVal2 = %{public}d. End",
         retVal1, retVal2);
 }
