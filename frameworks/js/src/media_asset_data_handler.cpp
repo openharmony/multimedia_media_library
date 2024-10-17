@@ -22,6 +22,7 @@
 namespace OHOS {
 namespace Media {
 static const std::string MEDIA_ASSET_DATA_HANDLER_CLASS = "MediaAssetDataHandler";
+std::mutex NapiMediaAssetDataHandler::dataHandlerRefMutex_;
 
 NapiMediaAssetDataHandler::NapiMediaAssetDataHandler(napi_env env, napi_ref dataHandler, ReturnDataType dataType,
     const std::string &uri, const std::string &destUri, SourceMode sourceMode)
@@ -36,13 +37,16 @@ NapiMediaAssetDataHandler::NapiMediaAssetDataHandler(napi_env env, napi_ref data
 
 void NapiMediaAssetDataHandler::DeleteNapiReference(napi_env env)
 {
+    std::unique_lock<std::mutex> dataHandlerLock(dataHandlerRefMutex_);
     if (dataHandlerRef_ != nullptr) {
         if (env != nullptr) {
             napi_delete_reference(env, dataHandlerRef_);
         } else {
             napi_delete_reference(env_, dataHandlerRef_);
         }
+        dataHandlerRef_ = nullptr;
     }
+    dataHandlerLock.unlock();
 }
 
 ReturnDataType NapiMediaAssetDataHandler::GetReturnDataType()
@@ -97,13 +101,16 @@ CompatibleMode NapiMediaAssetDataHandler::GetCompatibleMode()
 
 void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_env env, napi_value arg, napi_value extraInfo)
 {
+    std::unique_lock<std::mutex> dataHandlerLock(dataHandlerRefMutex_);
     if (dataHandlerRef_ == nullptr) {
         NAPI_ERR_LOG("JsOnDataPrepared js function is null");
+        dataHandlerLock.unlock();
         return;
     }
 
     napi_value callback;
     napi_status status = napi_get_reference_value(env, dataHandlerRef_, &callback);
+    dataHandlerLock.unlock();
     if (status != napi_ok) {
         NAPI_ERR_LOG("JsOnDataPrepared napi_get_reference_value fail, napi status: %{public}d",
             static_cast<int>(status));
@@ -140,13 +147,16 @@ void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_env env, napi_value arg, n
 void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_env env, napi_value pictures, napi_value arg,
     napi_value extraInfo)
 {
+    std::unique_lock<std::mutex> dataHandlerLock(dataHandlerRefMutex_);
     if (dataHandlerRef_ == nullptr) {
         NAPI_ERR_LOG("JsOnDataPrepared js function is null");
+        dataHandlerLock.unlock();
         return;
     }
 
     napi_value callback;
     napi_status status = napi_get_reference_value(env, dataHandlerRef_, &callback);
+    dataHandlerLock.unlock();
     if (status != napi_ok) {
         NAPI_ERR_LOG("JsOnDataPrepared napi_get_reference_value fail, napi status: %{public}d",
             static_cast<int>(status));

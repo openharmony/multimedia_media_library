@@ -609,6 +609,7 @@ static void GetMediaLibraryAsyncComplete(napi_env env, napi_status status, void 
             context->work, *jsContext);
     }
     napi_delete_reference(env, context->resultRef_);
+    context->resultRef_ = nullptr;
     delete context;
 }
 
@@ -3021,6 +3022,7 @@ napi_value MediaLibraryNapi::UserFileMgrOnCallback(napi_env env, napi_callback_i
         } else {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             napi_delete_reference(env, cbOnRef);
+            cbOnRef = nullptr;
             return undefinedResult;
         }
         tracer.Finish();
@@ -7596,6 +7598,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperOnCallback(napi_env env, napi_call
         } else {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             napi_delete_reference(env, cbOnRef);
+            cbOnRef = nullptr;
             return undefinedResult;
         }
         tracer.Finish();

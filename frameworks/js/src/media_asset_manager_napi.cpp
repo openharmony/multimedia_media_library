@@ -160,6 +160,7 @@ static void DeleteProcessHandlerSafe(ProgressHandler *handler, napi_env env)
     NAPI_DEBUG_LOG("[ProgressHandler delete] %{public}p.", handler);
     if (handler->progressRef != nullptr && env != nullptr) {
         napi_delete_reference(env, handler->progressRef);
+        handler->progressRef = nullptr;
     }
     delete handler;
     handler = nullptr;
@@ -1863,9 +1864,11 @@ void MediaAssetManagerNapi::JSRequestComplete(napi_env env, napi_status, void *d
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->dataHandlerRef != nullptr) {
         napi_delete_reference(env, context->dataHandlerRef);
+        context->dataHandlerRef = nullptr;
     }
     if (context->dataHandlerRef2 != nullptr) {
         napi_delete_reference(env, context->dataHandlerRef2);
+        context->dataHandlerRef2 = nullptr;
     }
 
     MediaLibraryTracer tracer;

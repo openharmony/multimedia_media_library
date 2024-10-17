@@ -80,6 +80,7 @@ private:
     NotifyMode notifyMode_ = NotifyMode::FAST_NOTIFY;
     CompatibleMode compatibleMode_;
     std::string requestId_;
+    static std::mutex dataHandlerRefMutex_;
 };
 } // Media
 } // OHOS
