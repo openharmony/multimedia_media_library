@@ -1202,7 +1202,6 @@ bool IsSystemAlbumMovement(MediaLibraryCommand &cmd)
     PhotoAlbumSubType subType;
     CHECK_AND_RETURN_RET_LOG(GetAlbumTypeSubTypeById(to_string(oriAlbumId), type, subType) == E_SUCCESS, false,
         "move assets invalid album uri");
-    
     if ((!PhotoAlbum::CheckPhotoAlbumType(type)) || (!PhotoAlbum::CheckPhotoAlbumSubType(subType))) {
         MEDIA_ERR_LOG("album id %{private}s type:%d subtype:%d", to_string(oriAlbumId).c_str(), type, subType);
         return false;
@@ -1220,7 +1219,7 @@ void GetSystemMoveAssets(AbsRdbPredicates &predicates)
     }
     vector<string> whereIdArgs;
     whereIdArgs.reserve(whereUriArgs.size() - 1);
-    for (int i = 1; i < whereUriArgs.size(); ++i) {
+    for (size_t i = 1; i < whereUriArgs.size(); ++i) {
         whereIdArgs.push_back(whereUriArgs[i]);
     }
     predicates.SetWhereArgs(whereIdArgs);
