@@ -74,4 +74,34 @@ string PhotoFileUtils::GetEditDataSourcePath(const string& photoPath, int32_t us
     }
     return parentPath + "/source." + MediaFileUtils::GetExtensionFromPath(photoPath);
 }
+
+int32_t PhotoFileUtils::GetMetaPathFromOrignalPath(const string& srcPath, string& metaPath)
+{
+     if (srcPath.empty()) {
+        MEDIA_ERR_LOG("getMetaPathFromOrignalPath: source file invalid!");
+        return E_INVALID_PATH;
+     }
+
+     size_t pos = srcPath.find(META_RECOVERY_PHOTO_RELATIVE_PATH);
+     if (pos == string::npos) {
+        MEDIA_ERR_LOG("getMetaPathFromOrignalPath: source path is not a photo path");
+        return E_INVALID_PATH;
+     }
+
+     metaPath = srcPath;
+     metaPath.replace(pos, META_RECOVERY_PHOTO_RELATIVE_PATH.length(), META_RECOVERY_PHOTO_RELATIVE_PATH);
+     metaPath += META_RECOVERY_META_FILE_SUFFIX;
+
+     return E_OK;
+}
+
+string PhotoFileUtils::GetMetaDateRealPath(const string& photoPath, int32_t userId)
+{
+    string metaPath;
+    int ret = GetMetaPathFromOrignalPath(photoPath, metaPath);
+    if (ret != E_OK) {
+        return "";
+    }
+    return AppendUserId(ROOT_MEDIA_DIR, userId) + metaPath.substr(ROOT_MEDIA_DIR.length());
+}
 } // namespace OHOS::Media

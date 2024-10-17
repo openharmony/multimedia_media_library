@@ -22,6 +22,9 @@
 #include "media_log.h"
 #include "userfile_manager_types.h"
 #include "medialibrary_bundle_manager.h"
+#ifdef META_RECOVERY_SUPPORT
+#include "medialibrary_meta_recovery.h"
+#endif
 #include "dfx_database_utils.h"
 #include "vision_aesthetics_score_column.h"
 #include "parameters.h"
@@ -253,6 +256,9 @@ static void HandleStatistic(DfxData *data)
     HandleAlbumInfo(dfxReporter);
     HandleDirtyCloudPhoto(dfxReporter);
     HandleLocalVersion(dfxReporter);
+#ifdef META_RECOVERY_SUPPORT
+    MediaLibraryMetaRecovery::GetInstance().RecoveryStatistic();
+#endif
 }
 
 void DfxManager::HandleHalfDayMissions()

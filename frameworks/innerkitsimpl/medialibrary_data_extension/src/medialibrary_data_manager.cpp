@@ -324,11 +324,15 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     cloudSyncSwitchManager.RegisterObserver();
 
     refCnt_++;
+
+#ifdef META_RECOVERY_SUPPORT
     // TEMP: avoid Process backup call StartAsyncRecovery
     // Should remove this judgment at refactor in OpenHarmony5.1
     if (extensionContext != nullptr) {
         MediaLibraryMetaRecovery::GetInstance().StartAsyncRecovery();
     }
+#endif
+
     return E_OK;
 }
 
