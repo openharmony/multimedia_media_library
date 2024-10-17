@@ -496,13 +496,13 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RemoveAllFragment_Test_001, 
     MediaFileUri::RemoveAllFragment(uri);
     EXPECT_EQ(uri, "file://data/test/testCase/123");
 
-    uri = "file://data/test/testCase";
-    MediaFileUri::RemoveAllFragment(uri);
-    EXPECT_EQ(uri, "file://data/test/testCase");
-
-    uri = "datashare://media/test/";
+    uri = "datashare://media/test/#";
     MediaFileUri::RemoveAllFragment(uri);
     EXPECT_EQ(uri, "datashare://media/test/");
+
+    uri = "#datashare://media/test/";
+    MediaFileUri::RemoveAllFragment(uri);
+    EXPECT_EQ(uri, "");
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriType_Test_001, TestSize.Level0)
