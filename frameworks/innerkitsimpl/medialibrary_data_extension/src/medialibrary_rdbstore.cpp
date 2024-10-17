@@ -270,8 +270,11 @@ const std::string SQL_QUERY_OTHER_DUPLICATE_ASSETS = "\
       (\
       SELECT\
         SELECT_COLUMNS,\
-        ROW_NUMBER( ) OVER ( PARTITION BY display_name, size, orientation, owner_album_id ORDER BY file_id ) AS rn,\
-        COUNT( ) OVER ( PARTITION BY display_name, size, orientation ) AS cnt \
+        ROW_NUMBER( ) OVER ( \
+          PARTITION BY display_name, size, orientation, owner_album_id \
+          ORDER BY file_id ASC \
+        ) AS img_row_num,\
+        COUNT( ) OVER ( PARTITION BY display_name, size, orientation ) AS img_cnt \
       FROM\
         Photos \
       WHERE\
@@ -283,8 +286,8 @@ const std::string SQL_QUERY_OTHER_DUPLICATE_ASSETS = "\
         AND media_type = 1 \
       ) \
     WHERE\
-      cnt != rn \
-      AND cnt > 1 \
+      img_cnt <> img_row_num \
+      AND img_cnt > 1 \
       AND owner_album_id IN ( SELECT album_id FROM PhotoAlbum WHERE lpath = '/Pictures/其它' ) UNION\
     SELECT\
       SELECT_COLUMNS \
@@ -292,8 +295,8 @@ const std::string SQL_QUERY_OTHER_DUPLICATE_ASSETS = "\
       (\
       SELECT\
         SELECT_COLUMNS,\
-        ROW_NUMBER( ) OVER ( PARTITION BY display_name, size, owner_album_id ORDER BY file_id ) AS rn,\
-        COUNT( ) OVER ( PARTITION BY display_name, size ) AS cnt \
+        ROW_NUMBER( ) OVER ( PARTITION BY display_name, size, owner_album_id ORDER BY file_id ASC ) AS vid_row_num,\
+        COUNT( ) OVER ( PARTITION BY display_name, size ) AS vid_cnt \
       FROM\
         Photos \
       WHERE\
@@ -305,8 +308,8 @@ const std::string SQL_QUERY_OTHER_DUPLICATE_ASSETS = "\
         AND media_type = 2 \
       ) \
     WHERE\
-      cnt != rn \
-      AND cnt > 1 \
+      vid_cnt <> vid_row_num \
+      AND vid_cnt > 1 \
       AND owner_album_id IN ( SELECT album_id FROM PhotoAlbum WHERE lpath = '/Pictures/其它' ) \
     ORDER BY\
       display_name,\
@@ -326,8 +329,11 @@ const std::string SQL_QUERY_OTHER_DUPLICATE_ASSETS_COUNT = "\
         SELECT\
           file_id,\
           owner_album_id,\
-          ROW_NUMBER( ) OVER ( PARTITION BY display_name, size, orientation, owner_album_id ORDER BY file_id ) AS rn,\
-          COUNT( ) OVER ( PARTITION BY display_name, size, orientation ) AS cnt \
+          ROW_NUMBER( ) OVER ( \
+            PARTITION BY display_name, size, orientation, owner_album_id \
+            ORDER BY file_id ASC \
+          ) AS img_row_num,\
+          COUNT( ) OVER ( PARTITION BY display_name, size, orientation ) AS img_cnt \
         FROM\
           Photos \
         WHERE\
@@ -339,8 +345,8 @@ const std::string SQL_QUERY_OTHER_DUPLICATE_ASSETS_COUNT = "\
           AND media_type = 1 \
         ) \
       WHERE\
-        cnt != rn \
-        AND cnt > 1 \
+        img_cnt <> img_row_num \
+        AND img_cnt > 1 \
         AND owner_album_id IN ( SELECT album_id FROM PhotoAlbum WHERE lpath = '/Pictures/其它' ) UNION\
       SELECT\
         file_id \
@@ -349,8 +355,8 @@ const std::string SQL_QUERY_OTHER_DUPLICATE_ASSETS_COUNT = "\
         SELECT\
           file_id,\
           owner_album_id,\
-          ROW_NUMBER( ) OVER ( PARTITION BY display_name, size, owner_album_id ORDER BY file_id ) AS rn,\
-          COUNT( ) OVER ( PARTITION BY display_name, size ) AS cnt \
+          ROW_NUMBER( ) OVER ( PARTITION BY display_name, size, owner_album_id ORDER BY file_id ASC ) AS vid_row_num,\
+          COUNT( ) OVER ( PARTITION BY display_name, size ) AS vid_cnt \
         FROM\
           Photos \
         WHERE\
@@ -362,8 +368,8 @@ const std::string SQL_QUERY_OTHER_DUPLICATE_ASSETS_COUNT = "\
           AND media_type = 2 \
         ) \
       WHERE\
-        cnt != rn \
-        AND cnt > 1 \
+        vid_cnt <> vid_row_num \
+        AND vid_cnt > 1 \
       AND owner_album_id IN ( SELECT album_id FROM PhotoAlbum WHERE lpath = '/Pictures/其它' ) \
       ) ";
 
