@@ -35,7 +35,6 @@ namespace Media {
 const string DEFAULT_IMAGE_NAME = "IMG_";
 const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
-const size_t MAX_FAILED_FILES_SIZE = 50;
 const string LOW_QUALITY_PATH = "Documents/cameradata/";
 
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
@@ -482,16 +481,15 @@ std::string BackupFileUtils::GetFailedFilesStr(int32_t sceneCode,
 std::vector<std::string> BackupFileUtils::GetFailedFilesList(int32_t sceneCode,
     const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit)
 {
-    nlohmann::json failedFilesList;
+    std::vector<std::string> failedFilesList;
     for (const auto &iter : failedFiles) {
         if (limit == 0) {
             break;
         }
-        failedFilesList.push_back(GetFailedFileJson(sceneCode, iter.first, iter.second));
+        failedFilesList.push_back(GetFailedFile(sceneCode, iter.first, iter.second));
         limit--;
-        index++;
     }
-    return failedFilesJsonList;
+    return failedFilesList;
 }
 
 std::string BackupFileUtils::GetFailedFile(int32_t sceneCode, const std::string &failedFilePath,

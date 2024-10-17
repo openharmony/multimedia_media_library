@@ -20,8 +20,6 @@
 
 #include "backup_const.h"
 #include "metadata.h"
-#include "nlohmann/json.hpp"
-
 namespace OHOS {
 namespace Media {
 class FileAccessHelper {
@@ -57,7 +55,7 @@ public:
         const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit);
     static std::vector<std::string> GetFailedFilesList(int32_t sceneCode,
         const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit);
-    static std::string GetFailedFiles(int32_t sceneCode, const std::string &failedFilePath,
+    static std::string GetFailedFile(int32_t sceneCode, const std::string &failedFilePath,
         const FailedFileInfo &failedFileInfo);
     static bool GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel, size_t &pos);
     static bool ShouldIncludeSd(const std::string &prefix);
