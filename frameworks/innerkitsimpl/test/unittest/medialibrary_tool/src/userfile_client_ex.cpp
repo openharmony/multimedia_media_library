@@ -245,7 +245,7 @@ int32_t UserFileClientEx::InsertExt(const std::string &tableName, const std::str
 }
 
 int32_t UserFileClientEx::Query(const std::string &tableName, const std::string &uri,
-    std::shared_ptr<DataShare::DataShareResultSet> &resultSet, bool isRestart)
+    std::shared_ptr<DataShare::DataShareResultSet> &resultSet, bool isList, bool isRestart)
 {
     if (isRestart && Init() != Media::E_OK) {
         MEDIA_ERR_LOG("Init failed");
@@ -261,7 +261,7 @@ int32_t UserFileClientEx::Query(const std::string &tableName, const std::string 
         MEDIA_ERR_LOG("query failed, uri:%{public}s", uri.c_str());
         return Media::E_ERR;
     }
-    std::string queryUriStr = GetListUri(tableName);
+    std::string queryUriStr = isList ? GetListUri(tableName) : GetQueryUri(tableName);
     if (queryUriStr.empty()) {
         MEDIA_ERR_LOG("query failed. queryUriStr:empty, tableName:%{public}s", tableName.c_str());
         return Media::E_ERR;
@@ -458,7 +458,7 @@ std::shared_ptr<DataShare::DataShareResultSet> UserFileClientEx::GetResultsetByD
 {
     DataShare::DataSharePredicates predicates;
     predicates.And()->EqualTo(MediaColumn::MEDIA_NAME, displayName);
-    std::vector<std::string> columns = { MediaColumn::MEDIA_FILE_PATH };
+    std::vector<std::string> columns;
     int queryErrCode = 0;
     std::string queryUriStr = GetQueryUri(tableName);
     if (queryUriStr.empty()) {
