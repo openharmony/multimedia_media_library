@@ -56,15 +56,15 @@ static void ShowUsage(bool isRoot)
     if (isRoot) {
         str.append("  send file from path to medialibrary\n");
         str.append("    command: send path (file path or dir path)\n");
-        str.append("  receive file from medialibrary to path\n");
-        str.append("    command: recv uri path | recv all path\n");
         str.append("  list file in medialibrary\n");
         str.append("    command: list uri | list all\n");
-        str.append("  delete database and files in medialibrary\n");
-        str.append("    command: delete all\n");
     }
-    str.append("  query displayname in medialibrary\n");
-    str.append("    command: query display_name\n");
+    str.append("  receive file from medialibrary to path\n");
+    str.append("    command: recv uri path | recv all path\n");
+    str.append("  delete database and files in medialibrary\n");
+    str.append("    command: delete all\n");
+    str.append("  query path or uri by displayname in medialibrary\n");
+    str.append("    command: query display_name -p | query display_name -u\n");
     printf("%s", str.c_str());
 }
 
@@ -239,11 +239,26 @@ static bool CheckDelete(ExecEnv &env)
 
 static bool CheckQuery(ExecEnv &env)
 {
-    if (env.optArgs.displayName.empty()) {
-        printf("%s input displayName incorrect.\n", STR_FAIL.c_str());
+    for (size_t i = 0; i < env.optArgs.extraArgs.size(); i++) {
+        string param = env.optArgs.extraArgs[i];
+        if (param == "-p") {
+            env.queryParam.pathFlag = true;
+        } else if (param == "-u") {
+            env.queryParam.uriFlag = true;
+        } else if (env.queryParam.displayName.empty()) {
+            env.queryParam.displayName = param;
+        }
+    }
+
+    if ((env.queryParam.pathFlag && env.queryParam.uriFlag) || env.queryParam.displayName.empty()) {
+        printf("The command is not a valid query command. See 'mediatool -h'\n");
+        ShowUsage(env.isRoot);
         return false;
     }
-    env.queryParam.displayName = env.optArgs.displayName;
+    if (!env.queryParam.pathFlag && !env.queryParam.uriFlag) {
+        env.queryParam.pathFlag = true;
+    }
+
     return true;
 }
 
@@ -307,8 +322,8 @@ int32_t CommandLine::Parser(ExecEnv &env)
         env.optArgs.cmdType = OptCmdType::TYPE_DELETE;
         PutExtraString(env, MEDIATOOL_ARG_SECOND);
     } else if (cmd == OPT_STR_QUERY) {
-        env.optArgs.displayName = optFirst;
         env.optArgs.cmdType = OptCmdType::TYPE_QUERY;
+        PutExtraString(env, MEDIATOOL_ARG_FIRST);
     } else {
         ShowUsage(env.isRoot);
         return Media::E_ERR;

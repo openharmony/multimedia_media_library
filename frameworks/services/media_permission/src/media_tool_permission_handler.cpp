@@ -47,7 +47,7 @@ int32_t MediaToolPermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &
     if (IsMediaToolOperation(cmd, permParam)) {
         // 转换tooloperation
         UnifyOprnObject(cmd);
-        return ConvertPermResult(IsDeveloperMediaTool(cmd));
+        return ConvertPermResult(IsDeveloperMediaTool(cmd, permParam.openFileNode));
     } else {
         return E_PERMISSION_DENIED;
     }
