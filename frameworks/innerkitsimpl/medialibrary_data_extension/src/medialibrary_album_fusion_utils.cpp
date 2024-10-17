@@ -125,8 +125,6 @@ static unordered_map<string, ResultSetDataType> albumColumnTypeMap = {
 };
 
 std::mutex MediaLibraryAlbumFusionUtils::cloudAlbumAndDataMutex_;
-std::unique_lock<std::mutex> MediaLibraryAlbumFusionUtils::cloudAlbumAndDataUniqueLock_(
-    MediaLibraryAlbumFusionUtils::cloudAlbumAndDataMutex_, std::defer_lock);
 
 int32_t MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(NativeRdb::RdbStore *upgradeStore)
 {
@@ -1631,7 +1629,9 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
         MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(store);
         return E_OK;
     }
-    if (!MediaLibraryAlbumFusionUtils::cloudAlbumAndDataUniqueLock_.try_lock()) {
+    std::unique_lock<std::mutex> cloudAlbumAndDataUniqueLock(
+        MediaLibraryAlbumFusionUtils::cloudAlbumAndDataMutex_, std::defer_lock);
+    if (!cloudAlbumAndDataUniqueLock.try_lock()) {
         MEDIA_WARN_LOG("ALBUM_FUSE: Failed to acquire lock, skipping task Clean.");
         return E_OK;
     }

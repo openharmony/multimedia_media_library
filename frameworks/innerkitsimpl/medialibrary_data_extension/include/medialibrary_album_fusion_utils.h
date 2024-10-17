@@ -77,7 +77,6 @@ private:
 
 private:
     static std::mutex cloudAlbumAndDataMutex_;
-    static std::unique_lock<std::mutex> cloudAlbumAndDataUniqueLock_;
 };
 }
 }
