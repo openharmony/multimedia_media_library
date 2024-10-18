@@ -28,7 +28,6 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_transaction.h"
-#include "medialibrary_rdb_transaction.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_type_const.h"

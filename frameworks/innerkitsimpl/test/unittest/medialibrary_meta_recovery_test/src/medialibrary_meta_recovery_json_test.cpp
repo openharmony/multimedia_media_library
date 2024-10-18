@@ -65,7 +65,6 @@ HWTEST_F(MedialibraryMetaRecoveryJsonTest, MedialibraryMetaRecoveryJsonTest_00, 
     const std::string originPath = "/data/local/tmp/test_file.jpg";
     const std::string filePath = "/data/local/tmp/test_file.jpg.json";
     int32_t ret = E_OK;
-    bool flag = true;
     FileAsset fileAsset1;
     FileAsset fileAsset2;
     MediaLibraryMetaRecovery &recoveryJsonManager = MediaLibraryMetaRecovery::GetInstance();
@@ -76,7 +75,7 @@ HWTEST_F(MedialibraryMetaRecoveryJsonTest, MedialibraryMetaRecoveryJsonTest_00, 
 
     ret = recoveryJsonManager.WriteMetadataToFile(filePath, fileAsset1);
     EXPECT_EQ(ret, E_OK);
-    ret = recoveryJsonManager.ReadMetadataFromFile(filePath, fileAsset2, flag);
+    ret = recoveryJsonManager.ReadMetadataFromFile(filePath, fileAsset2);
     EXPECT_EQ(ret, E_OK);
 
     EXPECT_TRUE(CompareFileAsset(fileAsset1, fileAsset2));

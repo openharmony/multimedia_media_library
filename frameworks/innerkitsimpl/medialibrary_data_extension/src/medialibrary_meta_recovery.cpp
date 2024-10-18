@@ -152,7 +152,6 @@ static std::optional<int64_t> GetNumberFromJson(const nlohmann::json &j, const s
 {
     if (j.contains(key) && j.at(key).is_number_integer()) {
         int64_t value = j.at(key);
-        MEDIA_DEBUG_LOG("get number json ok, %{private}s: %{private}lld", key.c_str(), value);
         return std::optional<int64_t>(value);
     } else {
         MEDIA_ERR_LOG("get key: %{private}s failed", key.c_str());
@@ -282,9 +281,9 @@ void MediaLibraryMetaRecovery::CheckRecoveryState()
             backupCostTime_ += backupTotalTime;
             MediaLibraryMetaRecoveryState expect = MediaLibraryMetaRecoveryState::STATE_BACKING_UP;
             if (recoveryState_.compare_exchange_strong(expect, MediaLibraryMetaRecoveryState::STATE_NONE)) {
-                MEDIA_INFO_LOG("End backing up normaly, elapse time %{public}lld ms", backupTotalTime);
+                MEDIA_INFO_LOG("End backing up normaly");
             } else {
-                MEDIA_INFO_LOG("End backing up interrupted, elapse time %{public}lld ms", backupTotalTime);
+                MEDIA_INFO_LOG("End backing up interrupted");
             }
         }).detach();
     } else {
@@ -440,7 +439,7 @@ int32_t MediaLibraryMetaRecovery::PhotoRecovery(const string &path)
     }
 
     recoveryTotalBackupCnt_ = GetTotalBackupFileCount();
-    MEDIA_INFO_LOG("recovery success total backup=%{public}lld", recoveryTotalBackupCnt_);
+    MEDIA_INFO_LOG("recovery success total backup");
 
     if (!ScannerUtils::IsDirectory(realPath)) {
         MEDIA_ERR_LOG("The path %{private}s is not a directory", realPath.c_str());
@@ -455,8 +454,10 @@ int32_t MediaLibraryMetaRecovery::PhotoRecovery(const string &path)
     recoverySuccCnt_ += ReadMetaRecoveryCountFromFile();
 
     // Delte Metastatus Json;
-    remove(META_STATUS_PATH.c_str());
-
+    err = remove(META_STATUS_PATH.c_str());
+    if (err != E_OK) {
+        MEDIA_WARN_LOG("Remove META_STATUS_PATH failed, errCode=%{public}d", err);
+    }
     // Delete status
     metaStatus.clear();
 
@@ -761,7 +762,6 @@ void MediaLibraryMetaRecovery::AddMetadataToJson(nlohmann::json &j, const FileAs
             j[key] = json::number_integer_t(value);
         } else if (type == TYPE_INT64) {
             int64_t value = fileAsset.GetInt64Member(key);
-            MEDIA_DEBUG_LOG("Writejson int64_t: %{private}s: %{public}lld", key.c_str(), value);
             j[key] = json::number_integer_t(value);
         } else if (type == TYPE_DOUBLE) {
             double value = fileAsset.GetDoubleMember(key);
@@ -1158,7 +1158,7 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset)
     }
     transactionOprn.Finish();
 
-    MEDIA_DEBUG_LOG("InsertMetadataInDb: photo insert done, rowId = %{public}lld", outRowId);
+
     return E_OK;
 }
 
@@ -1218,7 +1218,7 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
             return E_HAS_DB_ERROR;
         }
         if (changedRows > 0) {
-            MEDIA_INFO_LOG("Update album order, id = %{public}lld, order = %{public}d", outRowId, iter->GetOrder());
+            MEDIA_INFO_LOG("Update album order");
         }
 
         transactionOprn.Finish();
@@ -1314,7 +1314,6 @@ int32_t MediaLibraryMetaRecovery::StartAsyncRecovery()
             recoveryState_.exchange(MediaLibraryMetaRecoveryState::STATE_NONE);
         }
         recoveryCostTime_ += recoveryTotalTime;
-        MEDIA_INFO_LOG("Recovery finished, elapse time %{public}lld ms", recoveryTotalTime);
     }).detach();
 
     return E_OK;
@@ -1551,13 +1550,6 @@ void MediaLibraryMetaRecovery::RecoveryStatistic()
     if (ret != 0) {
         MEDIA_ERR_LOG("RecoveryStatistic error:%{public}d", ret);
     }
-    MEDIA_INFO_LOG("TOTAL_PHOTO_COUNT %{public}lld, TOTAL_BACKUP_COUNT %{public}lld,"
-        "BACKUP_PHOTO_COUNT %{public}lld BACKUP_COST_TIME %{public}lld, "
-        "REBUILT_COUNT %{public}lld, RECOVERY_BACKUP_TOTAL_COUNT %{public}lld, RECOVERY_SUCC_PHOTO_COUNT %{public}lld,"
-        "RECOVERY_COST_TIME %{public}lld",
-        totalPhotoCount, totalbackupCount, backupSuccCnt_, backupCostTime_,
-        reBuiltCount_, recoveryTotalBackupCnt_, recoverySuccCnt_, recoveryCostTime_);
-
     StatisticReset();
 }
 } // namespace Media
