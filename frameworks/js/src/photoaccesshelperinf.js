@@ -376,12 +376,6 @@ function showAssetsCreationDialog(...params) {
 async function grantOldPhotoAssetsReadPermission(srcFileUris) {
   console.info('grantOldPhotoAssetsReadPermission enter');
 
-  //check whether input is array
-  if (!checkArrayAndSize(srcFileUris, MIN_CONFIRM_NUMBER, MAX_CONFIRM_NUMBER)) {
-    console.error('input array is invalid');
-    return false;
-  }
-
   //check whether srcFileUris is valid
   for (let srcFileUri of srcFileUris) {
     if (!checkIsUriValid(srcFileUri, true)) {
