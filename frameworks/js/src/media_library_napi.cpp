@@ -8348,7 +8348,7 @@ static bool InitGrantOldPhotoAssetsReadPermissionRequest(OHOS::AAFwk::Want &want
     shared_ptr<GrantOldPhotoAssetsReadPermissionCallback> &callback, napi_env env, napi_value args[], size_t argsLen)
 {
     NAPI_INFO_LOG("InitGrantOldPhotoAssetsReadPermission enter.");
-    if (argsLen < ARGS_THREE) {
+    if (argsLen < ARGS_FOUR) {
         return false;
     }
 
@@ -8363,15 +8363,22 @@ static bool InitGrantOldPhotoAssetsReadPermissionRequest(OHOS::AAFwk::Want &want
         return false;
     }
 
-    callback->SetFunc(args[PARAM2]);
+    string appName;
+    if (!ParseString(env, args[PARAM2], appName)) {
+        NAPI_ERR_LOG("appName check failed.");
+        return false;
+    }
+    want.SetParam(CONFIRM_BOX_APP_NAME, appName);
+
+    callback->SetFunc(args[PARAM3]);
     return true;
 }
 
 napi_value MediaLibraryNapi::GrantOldPhotoAssetsReadPermission(napi_env env, napi_callback_info info)
 {
     NAPI_INFO_LOG("GrantOldPhotoAssetsReadPermission enter");
-    size_t argc = ARGS_THREE;
-    napi_value args[ARGS_THREE] = {nullptr};
+    size_t argc = ARGS_FOUR;
+    napi_value args[ARGS_FOUR] = {nullptr};
     napi_value thisVar = nullptr;
     napi_value result = nullptr;
     napi_create_object(env, &result);
@@ -8394,8 +8401,8 @@ napi_value MediaLibraryNapi::GrantOldPhotoAssetsReadPermission(napi_env env, nap
     } else {
         // get uiContent from abilityContext
         uiContent = abilityContext->GetUIContent();
-        NAPI_ASSERT(env, uiContent != nullptr, "UiContent is null.");
     }
+    NAPI_ASSERT(env, uiContent != nullptr, "UiContent is null.");
 
     // set want
     OHOS::AAFwk::Want want;
