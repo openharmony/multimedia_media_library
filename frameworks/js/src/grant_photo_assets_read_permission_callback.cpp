@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "grant_old_photo_assets_read_permission_callback.h"
+#include "grant_photo_assets_read_permission_callback.h"
 
 #include "media_library_napi.h"
 #include "medialibrary_napi_utils.h"
@@ -26,25 +26,25 @@ namespace OHOS {
 namespace Media {
 namespace {
 static constexpr int32_t GRANT_SUCCESS = 0;
-static const string GRANT_OLD_PHOTO_ASSETS_DES_FILE_URIS = "desFileUris";
+static const string GRANT_PHOTO_ASSETS_DES_FILE_URIS = "desFileUris";
 static const string RESULT_PARAM = "result";
 static const string DATA_PARAM = "data";
 }
 
-GrantOldPhotoAssetsReadPermissionCallback::GrantOldPhotoAssetsReadPermissionCallback(napi_env env,
+GrantPhotoAssetsReadPermissionCallback::GrantPhotoAssetsReadPermissionCallback(napi_env env,
     Ace::UIContent *uiContent)
 {
     this->env_ = env;
     this->uiContent = uiContent;
 }
 
-void GrantOldPhotoAssetsReadPermissionCallback::OnRelease(int32_t releaseCode)
+void GrantPhotoAssetsReadPermissionCallback::OnRelease(int32_t releaseCode)
 {
     NAPI_INFO_LOG("ReleaseCode is %{public}d.", releaseCode);
     CloseModalUIExtension();
 }
 
-void GrantOldPhotoAssetsReadPermissionCallback::OnResult(int32_t resultCode, const OHOS::AAFwk::Want &want)
+void GrantPhotoAssetsReadPermissionCallback::OnResult(int32_t resultCode, const OHOS::AAFwk::Want &want)
 {
     NAPI_INFO_LOG("ResultCode is %{public}d.", resultCode);
 
@@ -53,14 +53,14 @@ void GrantOldPhotoAssetsReadPermissionCallback::OnResult(int32_t resultCode, con
         this->resultCode_ = resultCode;
 
         // check if the desFileUris exsit
-        if (!want.HasParameter(GRANT_OLD_PHOTO_ASSETS_DES_FILE_URIS)) {
+        if (!want.HasParameter(GRANT_PHOTO_ASSETS_DES_FILE_URIS)) {
             NAPI_ERR_LOG("Can't get string array from want.");
             CHECK_ARGS_RET_VOID(this->env_, true, JS_INNER_FAIL);
             return;
         }
 
         // get desFileUris from want
-        desFileUris = want.GetStringArrayParam(GRANT_OLD_PHOTO_ASSETS_DES_FILE_URIS);
+        desFileUris = want.GetStringArrayParam(GRANT_PHOTO_ASSETS_DES_FILE_URIS);
         for (std::string mem : desFileUris) {
             NAPI_INFO_LOG("mem %{public}s", mem.c_str());
         }
@@ -72,7 +72,7 @@ void GrantOldPhotoAssetsReadPermissionCallback::OnResult(int32_t resultCode, con
     SendMessageBack(desFileUris);
 }
 
-void GrantOldPhotoAssetsReadPermissionCallback::OnError(int32_t code, const std::string &name,
+void GrantPhotoAssetsReadPermissionCallback::OnError(int32_t code, const std::string &name,
     const std::string &message)
 {
     NAPI_INFO_LOG("Code is %{public}d, name is %{public}s, message is %{public}s.", code, name.c_str(),
@@ -83,17 +83,17 @@ void GrantOldPhotoAssetsReadPermissionCallback::OnError(int32_t code, const std:
     SendMessageBack(desFileUris);
 }
 
-void GrantOldPhotoAssetsReadPermissionCallback::OnReceive(const OHOS::AAFwk::WantParams &request)
+void GrantPhotoAssetsReadPermissionCallback::OnReceive(const OHOS::AAFwk::WantParams &request)
 {
-    NAPI_INFO_LOG("GrantOldPhotoAssetsReadPermissionCallback Called.");
+    NAPI_INFO_LOG("GrantPhotoAssetsReadPermissionCallback Called.");
 }
 
-void GrantOldPhotoAssetsReadPermissionCallback::SetSessionId(int32_t sessionId)
+void GrantPhotoAssetsReadPermissionCallback::SetSessionId(int32_t sessionId)
 {
     this->sessionId_ = sessionId;
 }
 
-void GrantOldPhotoAssetsReadPermissionCallback::SetFunc(napi_value func)
+void GrantPhotoAssetsReadPermissionCallback::SetFunc(napi_value func)
 {
     napi_valuetype valueType = napi_undefined;
     napi_typeof(this->env_, func, &valueType);
@@ -124,7 +124,7 @@ static void GenerateStringArrayValue(napi_env &env, const std::vector<std::strin
     }
 }
 
-void GrantOldPhotoAssetsReadPermissionCallback::SendMessageBack(const std::vector<std::string> &desFileUris)
+void GrantPhotoAssetsReadPermissionCallback::SendMessageBack(const std::vector<std::string> &desFileUris)
 {
     NAPI_INFO_LOG("SendMessageBack enter.");
     CloseModalUIExtension();
@@ -162,7 +162,7 @@ void GrantOldPhotoAssetsReadPermissionCallback::SendMessageBack(const std::vecto
         JS_INNER_FAIL);
 }
 
-void GrantOldPhotoAssetsReadPermissionCallback::CloseModalUIExtension()
+void GrantPhotoAssetsReadPermissionCallback::CloseModalUIExtension()
 {
     NAPI_INFO_LOG("Called.");
 
