@@ -36,6 +36,7 @@
 #include "scanner_utils.h"
 #include "medialibrary_photo_operations.h"
 #include "media_file_uri.h"
+#include "photo_file_utils.h"
 
 #define private public
 #include "medialibrary_meta_recovery.h"
@@ -186,7 +187,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_Backup_001, TestSize.Lev
     // meta file exist
     string path = GetFilePath(fileId);
     string metaPath;
-    EXPECT_EQ(MediaLibraryMetaRecovery::GetMetaPathFromOrignalPath(path, metaPath), 0);
+    EXPECT_EQ(PhotoFileUtils::GetMetaPathFromOrignalPath(path, metaPath), 0);
     EXPECT_EQ(access(metaPath.c_str(), F_OK), 0);
 
     // album.json exist
@@ -204,7 +205,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_Backup_002, TestSize.Lev
 
     string path = GetFilePath(fileId);
     string metaPath;
-    EXPECT_EQ(MediaLibraryMetaRecovery::GetMetaPathFromOrignalPath(path, metaPath), 0);
+    EXPECT_EQ(PhotoFileUtils::GetMetaPathFromOrignalPath(path, metaPath), 0);
     remove(metaPath.c_str());
 
     EXPECT_EQ(MediaLibraryMetaRecovery::GetInstance().ResetAllMetaDirty(), 0);
@@ -224,7 +225,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_WriteSingleMetaDataById_
 
     string path = GetFilePath(fileId);
     string metaPath;
-    EXPECT_EQ(MediaLibraryMetaRecovery::GetMetaPathFromOrignalPath(path, metaPath), 0);
+    EXPECT_EQ(PhotoFileUtils::GetMetaPathFromOrignalPath(path, metaPath), 0);
     remove(metaPath.c_str());
     ret = MediaLibraryMetaRecovery::GetInstance().WriteSingleMetaDataById(fileId);
     EXPECT_EQ(ret, E_OK);

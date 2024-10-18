@@ -94,21 +94,21 @@ const std::string PhotoColumn::PHOTO_THUMB_SIZE = "thumb_size";
 const std::string PhotoColumn::PHOTO_HAS_ASTC = "has_astc"; // This attribute has been replaced by "thumbnail_ready"
 const std::string PhotoColumn::PHOTO_IS_TEMP = "is_temp";
 const std::string PhotoColumn::PHOTO_THUMBNAIL_READY = "thumbnail_ready";
+const std::string PhotoColumn::PHOTO_COVER_POSITION = "cover_position";
 const std::string PhotoColumn::PHOTO_THUMBNAIL_VISIBLE = "thumbnail_visible";
 const std::string PhotoColumn::PHOTO_FRONT_CAMERA = "front_camera";
 const std::string PhotoColumn::PHOTO_BURST_COVER_LEVEL = "burst_cover_level";
 const std::string PhotoColumn::PHOTO_BURST_KEY = "burst_key";
-const std::string PhotoColumn::PHOTO_COVER_POSITION = "cover_position";
 const std::string PhotoColumn::PHOTO_ORIGINAL_SUBTYPE = "original_subtype";
-const std::string PhotoColumn::PHOTO_DETAIL_TIME = "detail_time";
-const std::string PhotoColumn::PHOTO_OWNER_ALBUM_ID = "owner_album_id";
-const std::string PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID = "original_asset_cloud_id";
-const std::string PhotoColumn::PHOTO_SOURCE_PATH = "source_path";
 const std::string PhotoColumn::PHOTO_CE_AVAILABLE = "ce_available";
 const std::string PhotoColumn::PHOTO_CE_STATUS_CODE = "ce_status_code";
 const std::string PhotoColumn::PHOTO_STRONG_ASSOCIATION = "strong_association";
 const std::string PhotoColumn::PHOTO_ASSOCIATE_FILE_ID = "associate_file_id";
 const std::string PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK = "has_cloud_watermark";
+const std::string PhotoColumn::PHOTO_DETAIL_TIME = "detail_time";
+const std::string PhotoColumn::PHOTO_OWNER_ALBUM_ID = "owner_album_id";
+const std::string PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID = "original_asset_cloud_id";
+const std::string PhotoColumn::PHOTO_SOURCE_PATH = "source_path";
 const std::string PhotoColumn::SUPPORTED_WATERMARK_TYPE = "supported_watermark_type";
 const std::string PhotoColumn::PHOTO_METADATA_FLAGS = "metadata_flags";
 
@@ -281,7 +281,8 @@ const std::string PhotoColumn::CREATE_PHOTO_DISPLAYNAME_INDEX = BaseColumn::Crea
     PHOTO_DISPLAYNAME_INDEX + " ON " + PHOTOS_TABLE + " (" + MediaColumn::MEDIA_NAME + ")";
 
 const std::string PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX = BaseColumn::CreateIndex() + PHOTO_BURSTKEY_INDEX +
-    " ON " + PHOTOS_TABLE + " (" + PHOTO_BURST_KEY + "," + MEDIA_TIME_PENDING  + "," + MEDIA_NAME + " ASC);";
+    " ON " + PHOTOS_TABLE + " (" + PHOTO_BURST_KEY + "," + MEDIA_TIME_PENDING  + "," +
+    MediaColumn::MEDIA_NAME + " ASC);";
 
 const std::string PhotoColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn::MEDIA_SIZE + ") AS " +
     MediaColumn::MEDIA_SIZE + "," +
@@ -386,10 +387,10 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_DATE_DAY, PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_CLEAN_FLAG,
     PhotoColumn::PHOTO_SHOOTING_MODE, PhotoColumn::PHOTO_SHOOTING_MODE_TAG, PhotoColumn::PHOTO_THUMB_STATUS,
     PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_LCD_SIZE,
-    PhotoColumn::PHOTO_THUMB_SIZE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_FRONT_CAMERA,
-    PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY, PhotoColumn::PHOTO_COVER_POSITION,
-    PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, PhotoColumn::PHOTO_DETAIL_TIME,
-    PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::SUPPORTED_WATERMARK_TYPE,
+    PhotoColumn::PHOTO_THUMB_SIZE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_COVER_POSITION,
+    PhotoColumn::PHOTO_FRONT_CAMERA, PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY,
+    PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, PhotoColumn::PHOTO_CE_AVAILABLE,
+    PhotoColumn::PHOTO_DETAIL_TIME, PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::SUPPORTED_WATERMARK_TYPE,
     PhotoColumn::PHOTO_THUMBNAIL_VISIBLE,
 };
 
@@ -434,11 +435,11 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
         PHOTO_DATE_DAY,
         PHOTO_SHOOTING_MODE,
         PHOTO_SHOOTING_MODE_TAG,
-        PHOTO_OWNER_ALBUM_ID,
-        PHOTO_SOURCE_PATH,
         MOVING_PHOTO_EFFECT_MODE,
         PHOTO_COVER_POSITION,
         PHOTO_ORIGINAL_SUBTYPE,
+        PHOTO_OWNER_ALBUM_ID,
+        PHOTO_SOURCE_PATH
     };
 
     std::string result = "(";
