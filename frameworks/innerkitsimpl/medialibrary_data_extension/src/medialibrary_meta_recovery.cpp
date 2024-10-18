@@ -587,7 +587,6 @@ void MediaLibraryMetaRecovery::PhotoBackup(const vector<shared_ptr<FileAsset>> &
                                            int32_t &processCount,
                                            int32_t &successCount)
 {
-    MEDIA_DEBUG_LOG("Start backup batched photos, count = %{public}u", photoVector.size());
     for (auto &asset : photoVector) {
         // Check interrupt request
         if (recoveryState_.load() != MediaLibraryMetaRecoveryState::STATE_BACKING_UP) {
@@ -1158,7 +1157,6 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset)
     }
     transactionOprn.Finish();
 
-
     return E_OK;
 }
 
@@ -1398,7 +1396,7 @@ const std::unordered_map<std::string, ResultSetDataType> &MediaLibraryMetaRecove
         MEDIA_ERR_LOG("QueryRecoveryPhotosTableColumnInfo failed");
         RECOVERY_PHOTOS_TABLE_COLUMN = QueryRecoveryPhotosTableColumnInfo();
     }
-    MEDIA_DEBUG_LOG("GetRecoveryPhotosTableColumnInfo ok, size: %{public}u", RECOVERY_PHOTOS_TABLE_COLUMN.size());
+
     return  RECOVERY_PHOTOS_TABLE_COLUMN;
 }
 
@@ -1421,7 +1419,6 @@ std::unordered_map<std::string, ResultSetDataType> MediaLibraryMetaRecovery::Que
         MEDIA_DEBUG_LOG("photos table name: %{public}s, type: %{public}d", name.c_str(), type);
     }
 
-    MEDIA_DEBUG_LOG("QueryRecoveryPhotosTableColumnInfo ok, size: %{public}u", columnInfoMap.size());
     return columnInfoMap;
 }
 

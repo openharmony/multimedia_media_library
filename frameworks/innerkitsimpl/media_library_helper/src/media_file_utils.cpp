@@ -1149,16 +1149,16 @@ string MediaFileUtils::GetExtensionFromPath(const string &path)
     return extention;
 }
 
-static void SendHmdfsCallerInfoToIoctl(const int32_t fd, const string &clientBundleName)
+static void SendHmdfsCallerInfoToIoctl(const int32_t fd, const string &clientbundleName)
 {
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
     hmdfs_caller_info caller_info;
     caller_info.tokenId = tokenId;
 
-    if (strcpy_s(caller_info.bundle_name, sizeof(caller_info.bundle_name), clientBundleName.c_str()) != 0) {
-        MEDIA_ERR_LOG("Failed to copy clientBundleName: %{public}s", clientBundleName.c_str());
+    if (strcpy_s(caller_info.bundle_name, sizeof(caller_info.bundle_name), clientbundleName.c_str()) != 0) {
+        MEDIA_ERR_LOG("Failed to copy clientbundleName: %{public}s", clientbundleName.c_str());
     } else {
-        MEDIA_DEBUG_LOG("clientBundleName = %{public}s", clientBundleName.c_str());
+        MEDIA_DEBUG_LOG("clientbundleName = %{public}s", clientbundleName.c_str());
         int32_t ret = ioctl(fd, HMDFS_IOC_GET_CALLER_INFO, caller_info);
         if (ret < 0) {
             MEDIA_DEBUG_LOG("Failed to set caller_info to fd: %{public}d, error: %{public}d", fd, errno);
@@ -1166,7 +1166,7 @@ static void SendHmdfsCallerInfoToIoctl(const int32_t fd, const string &clientBun
     }
 }
 
-int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode, const string &clientBundleName)
+int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode, const string &clientbundleName)
 {
     int32_t errCode = E_ERR;
 
@@ -1204,10 +1204,10 @@ int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode, con
     }
     MEDIA_DEBUG_LOG("File absFilePath is %{private}s", absFilePath.c_str());
     int32_t fd = open(absFilePath.c_str(), MEDIA_OPEN_MODE_MAP.at(mode));
-    if (clientBundleName.empty()) {
-        MEDIA_DEBUG_LOG("clientBundleName is empty,failed to to set caller_info to fd");
+    if (clientbundleName.empty()) {
+        MEDIA_DEBUG_LOG("ClientbundleName is empty,failed to to set caller_info to fd");
     } else {
-        SendHmdfsCallerInfoToIoctl(fd, clientBundleName);
+        SendHmdfsCallerInfoToIoctl(fd, clientbundleName);
     }
     return fd;
 }
@@ -1854,7 +1854,7 @@ bool MediaFileUtils::CheckMovingPhotoEffectMode(int32_t effectMode)
         effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY);
 }
 
-bool MediaFileUtils::GetFileSize(const std::string &filePath, size_t &size)
+bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
 {
     struct stat statbuf;
     if (lstat(filePath.c_str(), &statbuf) == -1) {
@@ -1871,7 +1871,7 @@ bool MediaFileUtils::GetFileSize(const std::string &filePath, size_t &size)
     return true;
 }
 
-bool MediaFileUtils::SplitMovingPhotoUri(const std::string &uri, std::vector<std::string> &ret)
+bool MediaFileUtils::SplitMovingPhotoUri(const std::string& uri, std::vector<std::string>& ret)
 {
     const std::string split(MOVING_PHOTO_URI_SPLIT);
     if (uri.empty() || IsMediaLibraryUri(uri)) {
@@ -1886,7 +1886,7 @@ bool MediaFileUtils::SplitMovingPhotoUri(const std::string &uri, std::vector<std
     return true;
 }
 
-bool MediaFileUtils::IsMediaLibraryUri(const std::string &uri)
+bool MediaFileUtils::IsMediaLibraryUri(const std::string& uri)
 {
     return !uri.empty() && uri.find(MOVING_PHOTO_URI_SPLIT) == uri.npos;
 }

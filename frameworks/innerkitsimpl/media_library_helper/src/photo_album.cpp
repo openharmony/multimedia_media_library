@@ -182,16 +182,6 @@ bool PhotoAlbum::GetHiddenOnly() const
     return hiddenOnly_;
 }
 
-void PhotoAlbum::SetDisplayLevel(const int32_t displayLevel)
-{
-    displayLevel_ = displayLevel;
-}
-
-int32_t PhotoAlbum::GetDisplayLevel() const
-{
-    return displayLevel_;
-}
-
 void PhotoAlbum::SetLocationOnly(const bool locationOnly)
 {
     locationOnly_ = locationOnly;
@@ -200,6 +190,16 @@ void PhotoAlbum::SetLocationOnly(const bool locationOnly)
 bool PhotoAlbum::GetLocationOnly() const
 {
     return locationOnly_;
+}
+
+void PhotoAlbum::SetDisplayLevel(const int32_t displayLevel)
+{
+    displayLevel_ = displayLevel;
+}
+
+int32_t PhotoAlbum::GetDisplayLevel() const
+{
+    return displayLevel_;
 }
 
 void PhotoAlbum::SetPriority(const int32_t priority)

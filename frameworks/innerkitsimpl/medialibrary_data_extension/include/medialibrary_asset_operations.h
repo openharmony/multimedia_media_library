@@ -133,7 +133,7 @@ public:
         std::string &filePath);
     EXPORT static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
         const bool compatible = false);
-    static std::string GetEditDataSourcePath(const std::string &path);
+    EXPORT static std::string GetEditDataSourcePath(const std::string &path);
     EXPORT static int32_t GetAlbumIdByPredicates(const std::string &whereClause,
         const std::vector<std::string> &whereArgs);
     EXPORT static int32_t CheckExist(const std::string &path);
@@ -148,10 +148,10 @@ protected:
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(NativeRdb::AbsPredicates &predicates,
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
-    static int32_t GetFileAssetVectorFromDb(NativeRdb::AbsPredicates &predicates, OperationObject oprnObject,
+    EXPORT static int32_t GetFileAssetVectorFromDb(NativeRdb::AbsPredicates &predicates, OperationObject oprnObject,
         std::vector<std::shared_ptr<FileAsset>> &fileAssetVector, const std::vector<std::string> &columns = {},
         const std::string &networkId = "");
-    static std::shared_ptr<FileAsset> GetFileAssetByUri(const std::string &fileUri, bool isPhoto,
+    EXPORT static std::shared_ptr<FileAsset> GetFileAssetByUri(const std::string &fileUri, bool isPhoto,
         const std::vector<std::string> &columns, const std::string &pendingStatus = "");
 
     static int32_t CreateOperation(MediaLibraryCommand &cmd);
@@ -163,23 +163,22 @@ protected:
     static int32_t CheckExtWithType(const std::string &extention, int32_t mediaType);
     static int32_t CheckRelativePathWithType(const std::string &relativePath, int32_t mediaType);
     static void GetAssetRootDir(int32_t mediaType, std::string &rootDirPath);
-    static int32_t SetAssetPathInCreate(FileAsset &fileAsset);
-    static int32_t SetAssetPath(FileAsset &fileAsset, const std::string &extention);
-    static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd);
+    EXPORT static int32_t SetAssetPathInCreate(FileAsset &fileAsset);
+    EXPORT static int32_t SetAssetPath(FileAsset &fileAsset, const std::string &extention);
+    EXPORT static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd);
 
-    static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
+    EXPORT static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
-    static int32_t UpdateAllExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
-    static int32_t SetUserComment(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
-    static int32_t UpdateRelativePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
+    EXPORT static int32_t SetUserComment(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
+    EXPORT static int32_t UpdateRelativePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
     static void UpdateVirtualPath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t UpdateFileInDb(MediaLibraryCommand &cmd);
-    static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
+    EXPORT static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
         MediaLibraryApi api, bool isMovingPhotoVideo = false);
     static int32_t OpenHighlightCover(MediaLibraryCommand &cmd, const std::string &mode);
-    static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync = false);
     static int32_t OpenHighlightVideo(MediaLibraryCommand &cmd, const std::string &mode);
+    EXPORT static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync = false);
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset,
@@ -188,7 +187,7 @@ protected:
     static int32_t SendModifyUserCommentNotify(MediaLibraryCommand &cmd, int32_t rowId,
         const std::string &extraUri = "");
     static int32_t SetPendingStatus(MediaLibraryCommand &cmd);
-    static int32_t GrantUriPermission(const std::string &uri, const std::string &bundleName,
+    EXPORT static int32_t GrantUriPermission(const std::string &uri, const std::string &bundleName,
         const std::string &path, bool isMovingPhoto = false);
 
     static bool GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
@@ -196,16 +195,16 @@ protected:
     EXPORT static std::string CreateExtUriForV10Asset(FileAsset &fileAsset);
     static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         std::string &value);
-    static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode,
+    EXPORT static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode,
         const std::string &fileId);
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0);
     static void ScanFileWithoutAlbumUpdate(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0);
 
-    static std::string GetEditDataDirPath(const std::string &path);
-    static std::string GetEditDataPath(const std::string &path);
-    static std::string GetEditDataCameraPath(const std::string &path);
+    EXPORT static std::string GetEditDataDirPath(const std::string &path);
+    EXPORT static std::string GetEditDataPath(const std::string &path);
+    EXPORT static std::string GetEditDataCameraPath(const std::string &path);
     static std::string GetAssetCacheDir();
 
 private:

@@ -1961,9 +1961,9 @@ bool MediaLibraryRdbStore::ResetAnalysisTables()
     UpdateSpecForAddScreenshot(*rdbStore_);
     AddHeadAndPoseTables(*rdbStore_);
     AddSegmentationColumns(*rdbStore_);
-
-    AddVideoLabelTable(*rdbStore_);
     AddFaceOcclusionAndPoseTypeColumn(*rdbStore_);
+    AddVideoLabelTable(*rdbStore_);
+
     return true;
 }
 
@@ -2303,6 +2303,15 @@ void AddAlbumOrderColumn(RdbStore &store)
     }
 }
 
+static void AddFormMap(RdbStore &store)
+{
+    int32_t result = store.ExecuteSql(FormMap::CREATE_FORM_MAP_TABLE);
+    if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+        MEDIA_ERR_LOG("Failed to update PHOTOS");
+    }
+}
+
 static void FixDocsPath(RdbStore &store)
 {
     vector<string> sqls = {
@@ -2321,15 +2330,6 @@ static void FixDocsPath(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-static void AddFormMap(RdbStore &store)
-{
-    int32_t result = store.ExecuteSql(FormMap::CREATE_FORM_MAP_TABLE);
-    if (result != NativeRdb::E_OK) {
-        UpdateFail(__FILE__, __LINE__);
-        MEDIA_ERR_LOG("Failed to update PHOTOS");
-    }
-}
-
 static void AddImageVideoCount(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2338,8 +2338,6 @@ static void AddImageVideoCount(RdbStore &store)
         "ALTER TABLE " + PhotoAlbumColumns::TABLE +
                 " ADD COLUMN " + PhotoAlbumColumns::ALBUM_VIDEO_COUNT + " INT DEFAULT 0",
     };
-
-    ExecSqls(sqls, store);
 }
 
 static void AddSCHPTHiddenTimeIndex(RdbStore &store)
@@ -2595,7 +2593,6 @@ void AddStoryTables(RdbStore &store)
         CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
         CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
         "ALTER TABLE " + VISION_LABEL_TABLE + " ADD COLUMN " + SALIENCY_SUB_PROB + " TEXT",
-        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + LOCATION_TYPE + " TEXT",
     };
     MEDIA_INFO_LOG("start init story db");
     ExecSqls(executeSqlStrs, store);
