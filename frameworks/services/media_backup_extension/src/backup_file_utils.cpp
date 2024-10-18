@@ -46,7 +46,7 @@ bool FileAccessHelper::GetValidPath(string &filePath)
     }
 
     string resultPath = filePath;
-    auto pos = 0;
+    size_t pos = 0;
     while ((pos = resultPath.find("/", pos + 1)) != string::npos) {
         string curPath = resultPath.substr(0, pos);
         if (!ConvertCurrentPath(curPath, resultPath)) {
