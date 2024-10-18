@@ -61,7 +61,7 @@
 #include "safe_map.h"
 #include "search_column.h"
 #include "short_term_callback.h"
-#include "grant_old_photo_assets_read_permission_callback.h"
+#include "grant_photo_assets_read_permission_callback.h"
 #include "smart_album_napi.h"
 #include "story_album_column.h"
 #include "string_ex.h"
