@@ -29,6 +29,11 @@ namespace Media {
 constexpr int32_t PROCESS_INTERVAL = 5 * 60 * 1000;  // 5 minute
 constexpr int32_t DOWNLOAD_DURATION = 10 * 1000; // 10 seconds
 
+typedef struct {
+    bool isCloud;
+    bool isVideo;
+} QueryOption;
+
 class BackgroundCloudFileProcessor {
 public:
     EXPORT static void StartTimer();
@@ -48,11 +53,11 @@ private:
         int32_t height;
         std::string mimeType;
         int32_t duration;
+        MediaType mediaType;
     } AbnormalData;
 
     typedef struct {
         std::vector<AbnormalData> abnormalData;
-        MediaType mediaType;
     } UpdateData;
 
     class DownloadCloudFilesData : public AsyncTaskData {
@@ -80,7 +85,7 @@ private:
     static void StopDownloadFiles();
     static void ProcessCloudData();
     static void UpdateCloudData();
-    static std::shared_ptr<NativeRdb::ResultSet> QueryUpdateData();
+    static std::shared_ptr<NativeRdb::ResultSet> QueryUpdateData(bool isCloud, bool isVideo);
     static void ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet, UpdateData &updateData);
     static int32_t AddUpdateDataTask(const UpdateData &updateData);
     static void UpdateCloudDataExecutor(AsyncTaskData *data);
@@ -97,6 +102,7 @@ private:
     static uint32_t startTimerId_;
     static uint32_t stopTimerId_;
     static std::vector<std::string> curDownloadPaths_;
+    static std::vector<QueryOption> queryList_;
     static bool isUpdating_;
     static int32_t currentUpdateOffset_;
     static int32_t currentRetryCount_;
