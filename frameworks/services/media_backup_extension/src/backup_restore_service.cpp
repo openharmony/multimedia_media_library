@@ -62,9 +62,10 @@ void BackupRestoreService::Init(const RestoreEx &info)
         restoreService_ = std::make_unique<UpgradeRestore>(info.galleryAppName, info.mediaAppName,
             DUAL_FRAME_CLONE_RESTORE_ID);
     } else if (info.sceneCode == I_PHONE_CLONE_RESTORE) {
-        restoreService_ = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE, info.bundleInfo);
+        restoreService_ = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE, info.mediaAppName,
+            info.bundleInfo);
     } else if (info.sceneCode == OTHERS_PHONE_CLONE_RESTORE) {
-        restoreService_ = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE);
+        restoreService_ = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE, info.mediaAppName);
     } else {
         restoreService_ = std::make_unique<CloneRestore>();
     }
