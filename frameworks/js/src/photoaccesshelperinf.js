@@ -373,7 +373,7 @@ function showAssetsCreationDialog(...params) {
   return showAssetsCreationDialogParamsOk(...params);
 }
 
-function grantOldPhotoAssetsReadPermission(srcFileUris) {
+async function grantOldPhotoAssetsReadPermission(srcFileUris) {
   console.info('grantOldPhotoAssetsReadPermission enter');
 
   //check whether input is array
@@ -381,7 +381,7 @@ function grantOldPhotoAssetsReadPermission(srcFileUris) {
     console.error('input array is invalid');
     return false;
   }
-
+  
   //check whether srcFileUris is valid
   for (let srcFileUri of srcFileUris) {
     if (!checkIsUriValid(srcFileUri, true)) {
@@ -391,12 +391,31 @@ function grantOldPhotoAssetsReadPermission(srcFileUris) {
   }
 
   let context = gContext;
-  if (contet === undefined) {
+  if (context === undefined) {
     console.info('photoAccessHelper gContet undefined');
     context = gContext(this);
   }
 
+  let bundleInfo = getBundleInfo();
+  if (bundleInfo === undefined) {
+    return new Promise((resolve, reject) => {
+      reject(new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID));
+    });
+  }
+  let labelId = bundleInfo.appInfo.labelId;
+  console.info('photoAccessHelper labelId is ' + labelId + '.');
+  let appName = '';
+
   try {
+    let modeleName = '';
+    for (let hapInfo of bundleInfo.hapModulesInfo) {
+      if (labelId === hapInfo.labelId) {
+        modeleName = hapInfo.name;
+      }
+    }
+    console.info('photoAccessHelper modeleName is ' + modeleName + '.');
+    appName = await gContext.createModuleContext(modeleName).resourceManager.getStringValue(labelId);
+    console.info('photoAccessHelper appName is ' + appName + '.');
     return new Promise((resolve, reject) => {
       photoAccessHelper.grantOldPhotoAssetsReadPermission(context, srcFileUris, result => {
         showAssetsCreationDialogResult(result, reject, resolve);
