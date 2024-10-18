@@ -22,6 +22,7 @@
 #include <sys/stat.h>
 
 #include "cloud_sync_helper.h"
+#include "datashare_helper.h"
 #include "datashare_abs_result_set.h"
 #ifdef DISTRIBUTED
 #include "device_manager.h"
@@ -32,6 +33,7 @@
 #include "hitrace_meter.h"
 #include "image_packer.h"
 #include "ipc_skeleton.h"
+#include "iservice_registry.h"
 #include "media_column.h"
 #ifdef DISTRIBUTED
 #include "media_device_column.h"
@@ -53,6 +55,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_source_loading.h"
 #include "unique_fd.h"
+#include "wifi_device.h"
 #include "post_event_utils.h"
 #include "dfx_manager.h"
 
@@ -62,6 +65,9 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+
+static constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
+static const std::string CLOUD_DATASHARE_URI = "datashareproxy://com.huawei.hmos.clouddrive/cloud_sp?Proxy=true";
 
 #ifdef DISTRIBUTED
 bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
