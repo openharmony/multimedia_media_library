@@ -16,14 +16,23 @@
 #ifndef OHOS_MEDIA_OTHERS_CLONE_RESTORE_H
 #define OHOS_MEDIA_OTHERS_CLONE_RESTORE_H
 
+#include <sys/stat.h>
+
 #include "base_restore.h"
 #include "photos_restore.h"
 
 namespace OHOS {
 namespace Media {
+
+struct CloneDbInfo {
+    std::string displayName;
+    double dateModified;
+    double dateTaken;
+};
+
 class OthersCloneRestore : public BaseRestore {
 public:
-    OthersCloneRestore(int32_t sceneCode, const std::string &bundleInfo = "");
+    OthersCloneRestore(int32_t sceneCode, const std::string &mediaAppName, const std::string &bundleInfo = "");
     virtual ~OthersCloneRestore() = default;
 
     int32_t Init(const std::string &backupRetorePath, const std::string &upgradePath, bool isUpgrade);
@@ -43,9 +52,16 @@ private:
     void RestoreAlbum(std::vector<FileInfo> &fileInfos);
     void UpdateAlbumInfo(FileInfo &info);
     bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
+    void SetFileInfosInCurrentDir(const std::string &file, struct stat &statInfo);
+    int32_t GetAllfilesInCurrentDir(const std::string &path);
+    void UpDateFileModifiedTime(FileInfo &fileInfo);
+    void GetCloneDbInfos(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo);
 
 private:
     std::string clonePhoneName_;
+    std::string mediaAppName_;
+    std::vector<FileInfo> photoInfos_;
+    std::vector<CloneDbInfo> photoDbInfo_;
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::shared_ptr<PhotoAlbumDao> photoAlbumDaoPtr_;
 };
