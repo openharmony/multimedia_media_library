@@ -2142,7 +2142,7 @@ static bool IsMobileNetworkEnabled()
     if (resultSet != nullptr && resultSet->GoToNextRow()==0) {
         resultSet->GetString(0, switchOn);
     }
-    if (resultSet != nullptresult) {
+    if (resultSet != nullptr) {
         resultSet->Close();
     }
     cloudHelper->Release();
