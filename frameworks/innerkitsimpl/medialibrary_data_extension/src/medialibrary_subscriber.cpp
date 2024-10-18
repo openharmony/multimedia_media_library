@@ -176,8 +176,7 @@ static void UploadDBFile()
     }
     totalFileSize /= MegaByte; // Convert bytes to MB
     if (totalFileSize > MAX_FILE_SIZE_MB) {
-        MEDIA_WARN_LOG("DB file over 200MB are not uploaded, totalFileSize is %{public}ld MB",
-            static_cast<long>(totalFileSize));
+        MEDIA_WARN_LOG("DB file over 200MB are not uploaded, totalFileSize is %{public}ld MB", (long)(totalFileSize));
         return ;
     }
     if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateDirectory(destPath)) {
@@ -191,8 +190,8 @@ static void UploadDBFile()
     }
     dataManager->UploadDBFileInner();
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("Handle %{public}ld MB DBFile success, cost %{public}ld ms", static_cast<long>(totalFileSize),
-        static_cast<long>(end - begin));
+    MEDIA_INFO_LOG("Handle %{public}ld MB DBFile success, cost %{public}ld ms", (long)(totalFileSize),
+        (long)(end - begin));
 }
 
 void MedialibrarySubscriber::CheckHalfDayMissions()

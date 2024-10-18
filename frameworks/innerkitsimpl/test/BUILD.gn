@@ -40,7 +40,6 @@ group("test") {
     "unittest/medialibrary_helper_test:unittest",
     "unittest/medialibrary_location_test:unittest",
     "unittest/medialibrary_manager_utils_test:unittest",
-    "unittest/medialibrary_meta_recovery_test:unittest",
     "unittest/medialibrary_mimetype_test:unittest",
     "unittest/medialibrary_multistages_capture_test:unittest",
     "unittest/medialibrary_object_test:unittest",

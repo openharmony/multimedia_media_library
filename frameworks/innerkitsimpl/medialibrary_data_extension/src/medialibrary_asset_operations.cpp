@@ -90,11 +90,6 @@ const string DEFAULT_AUDIO_NAME = "AUD_";
 constexpr int32_t NO_DESENSITIZE = 3;
 const string PHOTO_ALBUM_URI_PREFIX = "file://media/PhotoAlbum/";
 
-constexpr int32_t ORIENTATION_0 = 1;
-constexpr int32_t ORIENTATION_90 = 6;
-constexpr int32_t ORIENTATION_180 = 3;
-constexpr int32_t ORIENTATION_270 = 8;
-
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
     int errCode = E_ERR;
@@ -515,7 +510,7 @@ const std::vector<std::string> &MediaLibraryAssetOperations::GetPhotosTableColum
         MEDIA_ERR_LOG("QueryPhotosTableColumnInfo failed");
         PHOTOS_TABLE_COLUMNS = QueryPhotosTableColumnInfo();
     }
-    MEDIA_DEBUG_LOG("GetPhotosTableColumnInfo ok, size: %{public}u", PHOTOS_TABLE_COLUMNS.size());
+
     return PHOTOS_TABLE_COLUMNS;
 }
 
@@ -552,7 +547,6 @@ std::vector<std::string> MediaLibraryAssetOperations::QueryPhotosTableColumnInfo
         columnInfo.emplace_back(columnName);
     }
 
-    MEDIA_DEBUG_LOG("QueryPhotosTableColumnInfo ok, size: %{public}u", columnInfo.size());
     return columnInfo;
 }
 
@@ -1663,10 +1657,7 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
         MEDIA_ERR_LOG("Can not get rdbstore");
         return;
     }
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
-    MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, {notifyData->notifyUri});
-    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {notifyData->notifyUri});
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, {notifyData->notifyUri});
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, {notifyData->notifyUri});
 
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
@@ -2152,7 +2143,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { MediaColumn::MEDIA_PARENT_ID, { IsInt64, IsBelowApi9 } },
     { MediaColumn::MEDIA_RELATIVE_PATH, { IsString, IsBelowApi9 } },
     { MediaColumn::MEDIA_VIRTURL_PATH, { Forbidden } },
-    { PhotoColumn::PHOTO_ORIENTATION, { IsInt64, IsBelowApi9 } },
+    { PhotoColumn::PHOTO_ORIENTATION, { IsInt64 } },
     { PhotoColumn::PHOTO_LATITUDE, { Forbidden } },
     { PhotoColumn::PHOTO_LONGITUDE, { Forbidden } },
     { PhotoColumn::PHOTO_HEIGHT, { Forbidden } },
@@ -2171,11 +2162,9 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_COVER_POSITION, { IsInt64 } },
     { PhotoColumn::PHOTO_IS_TEMP, { IsBool } },
     { PhotoColumn::PHOTO_DIRTY, { IsInt32 } },
-    { PhotoColumn::PHOTO_BURST_COVER_LEVEL, { IsInt32 } },
-    { PhotoColumn::PHOTO_BURST_KEY, { IsString } },
     { PhotoColumn::PHOTO_DETAIL_TIME, { IsStringNotNull } },
-    { PhotoColumn::PHOTO_CE_AVAILABLE, { IsInt32 } },
     { PhotoColumn::PHOTO_OWNER_ALBUM_ID, { IsInt32 } },
+    { PhotoColumn::PHOTO_CE_AVAILABLE, { IsInt32 } },
     { PhotoColumn::SUPPORTED_WATERMARK_TYPE, { IsInt32 } },
 };
 
@@ -2313,10 +2302,7 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
         InvalidateThumbnail(fileId, type);
     }
     CreateThumbnailFileScaned(uri, path, this->isCreateThumbSync);
-    string livePhotoCachePath = MovingPhotoFileUtils::GetLivePhotoCachePath(path);
-    if (MediaFileUtils::IsFileExists(livePhotoCachePath)) {
-        (void)MediaFileUtils::DeleteFile(livePhotoCachePath);
-    }
+    MediaFileUtils::DeleteFile(MovingPhotoFileUtils::GetLivePhotoCachePath(path));
 
 #ifdef META_RECOVERY_SUPPORT
     int32_t id;
@@ -2356,9 +2342,9 @@ static void DeleteFiles(AsyncTaskData *data)
         if (!MediaFileUtils::DeleteFile(filePath) && (errno != ENOENT)) {
             MEDIA_WARN_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
         }
-
 #ifdef META_RECOVERY_SUPPORT
         MediaLibraryMetaRecovery::DeleteMetaDataByPath(filePath);
+
 #endif
         if (taskData->subTypes_[i] == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
             // delete video file of moving photo
@@ -2465,6 +2451,7 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     vector<string> whereArgs = predicates.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
     vector<string> agingNotifyUris;
+
     // Query asset uris for notify before delete.
     if (isAging) {
         MediaLibraryNotify::GetNotifyUris(predicates, agingNotifyUris);
@@ -2476,11 +2463,14 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     int32_t deletedRows = 0;
     GetIdsAndPaths(predicates, ids, paths, dateTakens, subTypes);
     CHECK_AND_RETURN_RET_LOG(!ids.empty(), deletedRows, "Failed to delete files in db, ids size: 0");
+
     // notify deferred processing session to remove image
     MultiStagesCaptureManager::RemovePhotos(predicates, false);
+
     // delete cloud enhanacement task
     vector<string> photoIds;
     EnhancementManager::GetInstance().RemoveTasksInternal(ids, photoIds);
+
     deletedRows = DeleteDbByIds(predicates.GetTableName(), ids, compatible);
     if (deletedRows <= 0) {
         MEDIA_ERR_LOG("Failed to delete files in db, deletedRows: %{public}d, ids size: %{public}zu",
@@ -2488,11 +2478,13 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
         return deletedRows;
     }
     MEDIA_INFO_LOG("Delete files in db, deletedRows: %{public}d", deletedRows);
+
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
         MEDIA_ERR_LOG("Can not get asyncWorker");
         return E_ERR;
     }
+
     const vector<string> &notifyUris = isAging ? agingNotifyUris : whereArgs;
     string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateTakens, subTypes,
