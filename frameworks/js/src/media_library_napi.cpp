@@ -8385,10 +8385,10 @@ napi_value MediaLibraryNapi::GrantOldPhotoAssetsReadPermission(napi_env env, nap
     CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr), JS_ERR_PARAMETER_INVALID);
 
     // first param: context, check whether context is abilityContext from stage mode
+    Ace::UIContent *uiContent = nullptr;
     auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
     NAPI_ASSERT(env, context != nullptr, "Context is null.");
 
-    Ace::UIContent *uiContent = nullptr;
     shared_ptr<OHOS::AbilityRuntime::AbilityContext> abilityContext =
         OHOS::AbilityRuntime::Context::ConvertTo<OHOS::AbilityRuntime::AbilityContext>(context);
     if (abilityContext == nullptr) {
