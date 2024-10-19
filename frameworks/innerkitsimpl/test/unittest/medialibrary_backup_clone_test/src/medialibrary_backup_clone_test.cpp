@@ -510,6 +510,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_info_
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_get_failed_files_str_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_file_get_failed_files_str_001 start");
+    FileInfo fileInfo;
     unordered_map<string, FailedFileInfo> failedFiles = {
         { TEST_FILE_PATH_PHOTO, FailedFileInfo(CLONE_RESTORE_ID, fileInfo, RestoreError::FILE_INVALID) },
         { TEST_FILE_PATH_VIDEO, FailedFileInfo(CLONE_RESTORE_ID, fileInfo, RestoreError::MOVE_FAILED) },
