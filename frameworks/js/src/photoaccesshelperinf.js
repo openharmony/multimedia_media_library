@@ -373,8 +373,8 @@ function showAssetsCreationDialog(...params) {
   return showAssetsCreationDialogParamsOk(...params);
 }
 
-async function grantOldPhotoAssetsReadPermission(srcFileUris) {
-  console.info('grantOldPhotoAssetsReadPermission enter');
+async function grantPhotoAssetsReadPermission(srcFileUris) {
+  console.info('grantPhotoAssetsReadPermission enter');
 
   //check whether srcFileUris is valid
   for (let srcFileUri of srcFileUris) {
@@ -411,12 +411,12 @@ async function grantOldPhotoAssetsReadPermission(srcFileUris) {
     appName = await gContext.createModuleContext(moduleName).resourceManager.getStringValue(labelId);
     console.info('photoAccessHelper appName is ' + appName + '.');
     return new Promise((resolve, reject) => {
-      photoAccessHelper.grantOldPhotoAssetsReadPermission(context, srcFileUris, appName, result => {
+      photoAccessHelper.grantPhotoAssetsReadPermission(context, srcFileUris, appName, result => {
         showAssetsCreationDialogResult(result, reject, resolve);
       });
     });
   } catch (error) {
-    console.error('grantOldPhotoAssetsReadPermission catch error.');
+    console.error('grantPhotoAssetsReadPermission catch error.');
     return errorResult(new BusinessError(ERROR_MSG_INNER_FAIL, error.code), null);
   }
 }
@@ -487,7 +487,7 @@ function getPhotoAccessHelper(context) {
     helper.createDeleteRequest = createDeleteRequest;
     helper.showAssetsCreationDialog = showAssetsCreationDialog;
     helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
-    helper.grantOldPhotoAssetsReadPermission = grantOldPhotoAssetsReadPermission;
+    helper.grantPhotoAssetsReadPermission = grantPhotoAssetsReadPermission;
   }
   return helper;
 }
@@ -525,7 +525,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
-          helper.grantOldPhotoAssetsReadPermission = grantOldPhotoAssetsReadPermission;
+          helper.grantPhotoAssetsReadPermission = grantPhotoAssetsReadPermission;
         }
         return helper;
       })
@@ -545,7 +545,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
-          helper.grantOldPhotoAssetsReadPermission = grantOldPhotoAssetsReadPermission;
+          helper.grantPhotoAssetsReadPermission = grantPhotoAssetsReadPermission;
         }
         asyncCallback(err, helper);
       }
