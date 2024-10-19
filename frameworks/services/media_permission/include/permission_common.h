@@ -50,7 +50,7 @@ bool IsMediatoolOperation(MediaLibraryCommand &cmd);
 /**
  * 是否是DeveloperMediaTool
  */
-bool IsDeveloperMediaTool(MediaLibraryCommand &cmd);
+bool IsDeveloperMediaTool(MediaLibraryCommand &cmd, const std::string openFileNode = "");
 
 /**
  * 转换鉴权结果

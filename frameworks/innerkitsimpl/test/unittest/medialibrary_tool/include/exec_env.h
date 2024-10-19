@@ -50,6 +50,8 @@ struct DeleteParam {
 };
 struct QueryParam {
     std::string displayName;
+    bool pathFlag = false;
+    bool uriFlag = false;
 };
 
 struct ExecEnv {
