@@ -1956,4 +1956,46 @@ bool MediaFileUtils::CheckSupportedWatermarkType(int32_t watermarkType)
     return watermarkType >= static_cast<int32_t>(WatermarkType::BRAND_COMMON) &&
         watermarkType <= static_cast<int32_t>(WatermarkType::BRAND);
 }
+
+int32_t MediaFileUtils::CopyDirectory(const std::string &srcDir, const std::string &dstDir)
+{
+    if (!IsFileExists(srcDir)) {
+        MEDIA_ERR_LOG("SrcDir:%{public}s is not exist", DesensitizePath(srcDir).c_str());
+        return E_NO_SUCH_FILE;
+    }
+    if (!IsDirectory(srcDir)) {
+        MEDIA_ERR_LOG("SrcDir:%{public}s is not directory", DesensitizePath(srcDir).c_str());
+        return E_FAIL;
+    }
+    if (IsFileExists(dstDir)) {
+        MEDIA_ERR_LOG("DstDir:%{public}s exists", DesensitizePath(dstDir).c_str());
+        return E_FILE_EXIST;
+    }
+    if (!CreateDirectory(dstDir)) {
+        MEDIA_ERR_LOG("Create dstDir:%{public}s failed", DesensitizePath(dstDir).c_str());
+        return E_FAIL;
+    }
+ 
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(srcDir)) {
+        std::string srcFilePath = entry.path();
+        std::string tmpFilePath = srcFilePath;
+        std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
+        if (entry.is_directory()) {
+            if (!CreateDirectory(dstFilePath)) {
+                MEDIA_ERR_LOG("Create dir:%{public}s failed", DesensitizePath(dstFilePath).c_str());
+                return E_FAIL;
+            }
+        } else if (entry.is_regular_file()) {
+            if (!CopyFileUtil(srcFilePath, dstFilePath)) {
+                MEDIA_ERR_LOG("Copy file from %{public}s to %{public}s failed.",
+                    DesensitizePath(srcFilePath).c_str(), DesensitizePath(dstFilePath).c_str());
+                return E_FAIL;
+            }
+        } else {
+            MEDIA_ERR_LOG("Unhandled path type, path:%{public}s", DesensitizePath(srcFilePath).c_str());
+            return E_FAIL;
+        }
+    }
+    return E_OK;
+}
 } // namespace OHOS::Media
