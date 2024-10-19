@@ -2157,6 +2157,7 @@ static bool SetOrientationExecute(MediaAssetChangeRequestAsyncContext& context)
         NAPI_ERR_LOG("fileAsset is null");
         return false;
     }
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     valuesBucket.Put(PhotoColumn::PHOTO_ORIENTATION, fileAsset->GetOrientation());
     return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
 }
