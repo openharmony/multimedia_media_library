@@ -3299,19 +3299,16 @@ static void AddAnalysisAlbumTotalTable(RdbStore &store)
 
 static void CompatLivePhoto(RdbStore &store, int32_t oldVersion)
 {
+    MEDIA_INFO_LOG("Start configuring param for live photo compatibility");
     bool ret = false;
     // there is no need to ResetCursor() twice if album fusion is included
     if (oldVersion >= VERSION_ADD_OWNER_ALBUM_ID) {
         ret = system::SetParameter(REFRESH_CLOUD_LIVE_PHOTO_FLAG, CLOUD_LIVE_PHOTO_NOT_REFRESHED);
-        if (!ret) {
-            MEDIA_ERR_LOG("Failed to set parameter for refreshing cloud live photo");
-        }
+        MEDIA_INFO_LOG("Set parameter for refreshing cloud live photo, ret: %{public}d", ret);
     }
 
-    ret = system::SetParameter(COMPAT_LIVE_PHOTO_FILE_ID, "1"); // start from file_id 1
-    if (!ret) {
-        MEDIA_ERR_LOG("Failed to set parameter for compating local live photo");
-    }
+    ret = system::SetParameter(COMPAT_LIVE_PHOTO_FILE_ID, "1"); // start compating from file_id: 1
+    MEDIA_INFO_LOG("Set parameter for compating local live photo, ret: %{public}d", ret);
 }
 
 static void ResetCloudCursorAfterInitFinish()

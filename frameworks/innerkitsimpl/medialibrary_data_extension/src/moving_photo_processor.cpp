@@ -465,16 +465,19 @@ static int32_t MoveMovingPhoto(const string &path,
     if (ret < 0) {
         MEDIA_ERR_LOG("Failed to rename extraData, src: %{public}s, dest: %{public}s, errno: %{public}d",
             compatExtraDataPath.c_str(), movingPhotoExtraDataPath.c_str(), errno);
+        return ret;
     }
     ret = rename(compatVideoPath.c_str(), movingPhotoVideoPath.c_str());
     if (ret < 0) {
         MEDIA_ERR_LOG("Failed to rename video, src: %{public}s, dest: %{public}s, errno: %{public}d",
             compatVideoPath.c_str(), movingPhotoVideoPath.c_str(), errno);
+        return ret;
     }
     ret = rename(compatImagePath.c_str(), path.c_str());
     if (ret < 0) {
         MEDIA_ERR_LOG("Failed to rename image, src: %{public}s, dest: %{public}s, errno: %{public}d",
             compatImagePath.c_str(), path.c_str(), errno);
+        return ret;
     }
     return ret;
 }
