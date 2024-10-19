@@ -66,8 +66,8 @@ static std::string GetPhoneName()
     return phoneName;
 }
 
-OthersCloneRestore::OthersCloneRestore(int32_t sceneCode, const std::string &bundleInfo,
-    const std::string &mediaAppName)
+OthersCloneRestore::OthersCloneRestore(int32_t sceneCode, const std::string &mediaAppName,
+    const std::string &bundleInfo)
 {
     sceneCode_ = sceneCode;
     mediaAppName_ = mediaAppName;
@@ -76,6 +76,7 @@ OthersCloneRestore::OthersCloneRestore(int32_t sceneCode, const std::string &bun
         if (jsonObj.is_discarded()) {
             MEDIA_ERR_LOG("parse json failed");
             clonePhoneName_ = GetPhoneName();
+            return;
         }
         for (auto &obj : jsonObj) {
             if (obj.contains(PHONE_TYPE) && obj.at(PHONE_TYPE) == PHONE_DEVICE_TYPE) {
