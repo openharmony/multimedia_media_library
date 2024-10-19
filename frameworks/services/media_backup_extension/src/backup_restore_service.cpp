@@ -16,6 +16,7 @@
 #define MLOG_TAG "MediaLibraryRestoreService"
 
 #include "backup_restore_service.h"
+#include "ffrt_inner.h"
 #include "media_log.h"
 #include "clone_restore.h"
 #include "upgrade_restore.h"
@@ -30,6 +31,7 @@ const int DUAL_FOURTH_NUMBER = 114;
 const int DUAL_FIFTH_NUMBER = 111;
 const int DUAL_SIXTH_NUMBER = 105;
 const int DUAL_SEVENTH_NUMBER = 100;
+constexpr int32_t MAX_THREAD_NUM = 4;
 BackupRestoreService &BackupRestoreService::GetInstance(void)
 {
     static BackupRestoreService inst;
@@ -86,6 +88,7 @@ void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &ga
 void BackupRestoreService::StartRestoreEx(const RestoreEx &info, std::string &restoreExInfo)
 {
     MEDIA_INFO_LOG("Start restoreEx service: %{public}d", info.sceneCode);
+    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
     Init(info);
     if (restoreService_ == nullptr) {
         MEDIA_ERR_LOG("Create media restore service failed.");
