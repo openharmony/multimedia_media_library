@@ -374,6 +374,9 @@ const std::string SQL_QUERY_OTHER_DUPLICATE_ASSETS_COUNT = "\
       ) ";
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
+
+std::mutex MediaLibraryRdbStore::reconstructLock_;
+
 int32_t oldVersion_ = -1;
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
@@ -3364,6 +3367,24 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
 }
 
+static void ReconstructMediaLibraryStorageFormatWithLock(AsyncTaskData *data)
+{
+    if (data == nullptr) {
+        return;
+    }
+    CompensateAlbumIdData *compensateData = static_cast<CompensateAlbumIdData *>(data);
+    if (compensateData == nullptr) {
+        MEDIA_ERR_LOG("compensateData is nullptr");
+        return;
+    }
+    std::unique_lock<std::mutex> reconstructLock(compensateData->lock_, std::defer_lock);
+    if (reconstructLock.try_lock()) {
+        ReconstructMediaLibraryStorageFormatExecutor(data);
+    } else {
+        MEDIA_WARN_LOG("Failed to acquire lock, skipping task Reconstruct.");
+    }
+}
+
 static void AddOwnerAlbumIdAndRefractorTrigger(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -3423,12 +3444,12 @@ int32_t MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(RdbStore &sto
         MEDIA_ERR_LOG("Failed to get aysnc worker instance!");
         return E_FAIL;
     }
-    auto *taskData = new (std::nothrow) CompensateAlbumIdData(&store);
+    auto *taskData = new (std::nothrow) CompensateAlbumIdData(&store, MediaLibraryRdbStore::reconstructLock_);
     if (taskData == nullptr) {
         MEDIA_ERR_LOG("Failed to alloc async data for compensate album id");
         return E_NO_MEMORY;
     }
-    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(ReconstructMediaLibraryStorageFormatExecutor, taskData);
+    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(ReconstructMediaLibraryStorageFormatWithLock, taskData);
     asyncWorker->AddTask(asyncTask, false);
     return E_OK;
 }
