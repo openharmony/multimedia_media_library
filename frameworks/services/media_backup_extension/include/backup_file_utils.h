@@ -20,6 +20,7 @@
 
 #include "backup_const.h"
 #include "metadata.h"
+
 namespace OHOS {
 namespace Media {
 class FileAccessHelper {
