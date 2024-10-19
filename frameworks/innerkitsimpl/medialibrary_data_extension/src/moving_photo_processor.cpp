@@ -548,6 +548,12 @@ void MovingPhotoProcessor::UpdateLivePhotoData(const LivePhotoData& livePhotoDat
         return;
     }
 
+    if (livePhotoData.position != static_cast<int32_t>(PhotoPositionType::LOCAL) &&
+        livePhotoData.position != static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD)) {
+        MEDIA_ERR_LOG("Invalid position: %{public}d", livePhotoData.position);
+        return;
+    }
+
     ValuesBucket values;
     string whereClause = PhotoColumn::MEDIA_ID + " = ?";
     vector<string> whereArgs = { to_string(livePhotoData.fileId) };
@@ -562,14 +568,11 @@ void MovingPhotoProcessor::UpdateLivePhotoData(const LivePhotoData& livePhotoDat
         return;
     }
 
-    if (livePhotoData.position == static_cast<int32_t>(PhotoPositionType::LOCAL)) {
+    if (livePhotoData.editTime == 0) {
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, livePhotoData.subtype);
         values.PutLong(PhotoColumn::PHOTO_COVER_POSITION, livePhotoData.coverPosition);
-    } else if (livePhotoData.position == static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD)) {
-        values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, livePhotoData.metaDateModified);
     } else {
-        MEDIA_ERR_LOG("Invalid position: %{public}d", livePhotoData.position);
-        return;
+        values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, livePhotoData.metaDateModified);
     }
 
     int32_t updateCount = 0;
