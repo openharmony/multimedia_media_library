@@ -595,7 +595,7 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
     int64_t totalSize = st.st_size;
     CHECK_AND_RETURN_RET_LOG(totalSize > MIN_STANDARD_SIZE, E_INVALID_LIVE_PHOTO,
         "Failed to check live photo, total size is %{public}" PRId64, totalSize);
-    char liveTag[LIVE_TAG_LEN + 1];
+    char liveTag[LIVE_TAG_LEN + 1] = {0};
     CHECK_AND_RETURN_RET_LOG(lseek(livePhotoFd.Get(), -LIVE_TAG_LEN, SEEK_END) != -1, E_HAS_FS_ERROR,
         "Failed to lseek live tag, errno:%{public}d", errno);
     CHECK_AND_RETURN_RET_LOG(read(livePhotoFd.Get(), liveTag, LIVE_TAG_LEN) != -1, E_HAS_FS_ERROR,
