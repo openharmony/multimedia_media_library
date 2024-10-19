@@ -14,7 +14,6 @@
  */
 #include <cstdint>
 
-#include "cloud_sync_helper.h"
 #include "medialibrary_rdb_test.h"
 #include "medialibrary_object_utils.h"
 #define private public

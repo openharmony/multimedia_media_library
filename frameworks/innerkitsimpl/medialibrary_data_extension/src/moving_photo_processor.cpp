@@ -56,25 +56,6 @@ static const string LIVE_PHOTO_COMPAT_DONE = "0";
 
 bool MovingPhotoProcessor::isProcessing_ = false;
 
-static void StopCloudSync()
-{
-    string currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
-    MEDIA_DEBUG_LOG("Stop cloud sync for processing moving photo: %{public}s", currentTime.c_str());
-    bool retFlag = system::SetParameter(MOVING_PHOTO_PROCESS_FLAG, currentTime);
-    if (!retFlag) {
-        MEDIA_ERR_LOG("Failed to set parameter, retFlag: %{public}d", retFlag);
-    }
-}
-
-static void StartCloudSync()
-{
-    MEDIA_DEBUG_LOG("Reset parameter for cloud sync");
-    bool retFlag = system::SetParameter(MOVING_PHOTO_PROCESS_FLAG, "0");
-    if (!retFlag) {
-        MEDIA_ERR_LOG("Failed to set parameter for cloud sync, retFlag: %{public}d", retFlag);
-    }
-}
-
 static bool IsCloudLivePhotoRefreshed()
 {
     string refreshStatus = system::GetParameter(REFRESH_CLOUD_LIVE_PHOTO_FLAG, CLOUD_LIVE_PHOTO_REFRESHED);
@@ -97,9 +78,7 @@ void MovingPhotoProcessor::StartProcessMovingPhoto()
     }
 
     isProcessing_ = true;
-    StopCloudSync();
     CompatMovingPhoto(dataList);
-    StartCloudSync();
 }
 
 static string GetLivePhotoCompatId()
@@ -171,10 +150,7 @@ void MovingPhotoProcessor::StartProcess()
 
 void MovingPhotoProcessor::StopProcess()
 {
-    if (isProcessing_) {
-        isProcessing_ = false;
-        StartCloudSync();
-    }
+    isProcessing_ = false;
 }
 
 shared_ptr<NativeRdb::ResultSet> MovingPhotoProcessor::QueryMovingPhoto()
