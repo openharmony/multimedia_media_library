@@ -490,7 +490,7 @@ void UpgradeRestore::RestoreFromGallery()
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
-    ffrt_set_cpu_worker_max_num(ffrt::qos_default, MAX_THREAD_NUM);
+    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -518,7 +518,7 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
     MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
-    ffrt_set_cpu_worker_max_num(ffrt::qos_default, MAX_THREAD_NUM);
+    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset, maxId, isCamera, type]() {
                 RestoreExternalBatch(offset, maxId, isCamera, type);
@@ -716,6 +716,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.isBurst = GetInt32Val(GALLERY_IS_BURST, resultSet);
     info.hashCode = GetStringVal(GALLERY_HASH, resultSet);
     info.fileIdOld = GetInt32Val(GALLERY_ID, resultSet);
+    info.photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
 
     bool isSuccess = ParseResultSet(resultSet, info, GALLERY_DB_NAME);
     if (!isSuccess) {
@@ -730,6 +731,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.lPath = this->photosRestorePtr_->FindlPath(info);
     info.bundleName = this->photosRestorePtr_->FindBundleName(info);
     info.packageName = this->photosRestorePtr_->FindPackageName(info);
+    info.photoQuality = this->photosRestorePtr_->FindPhotoQuality(info);
     return isSuccess;
 }
 
@@ -794,6 +796,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestorePtr_->FindBurstKey(fileInfo));
     // find album_id by lPath.
     values.PutInt("owner_album_id", this->photosRestorePtr_->FindAlbumId(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
     return values;
 }
 

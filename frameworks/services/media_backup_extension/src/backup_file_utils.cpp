@@ -46,7 +46,7 @@ bool FileAccessHelper::GetValidPath(string &filePath)
     }
 
     string resultPath = filePath;
-    auto pos = 0;
+    size_t pos = 0;
     while ((pos = resultPath.find("/", pos + 1)) != string::npos) {
         string curPath = resultPath.substr(0, pos);
         if (!ConvertCurrentPath(curPath, resultPath)) {
@@ -185,6 +185,10 @@ string BackupFileUtils::GarbleFilePath(const std::string &filePath, int32_t scen
         path = filePath.substr(0, displayNameIndex).replace(0, GARBLE_DUAL_FRAME_CLONE_DIR.length(), GARBLE);
     } else if (sceneCode == CLONE_RESTORE_ID) {
         path = filePath.substr(0, displayNameIndex).replace(0, cloneFilePath.length(), GARBLE);
+    } else if (sceneCode == I_PHONE_CLONE_RESTORE) {
+        path = filePath.substr(0, displayNameIndex).replace(0, OTHER_CLONE_PATH.length(), GARBLE);
+    } else if (sceneCode == OTHERS_PHONE_CLONE_RESTORE) {
+        path = filePath.substr(0, displayNameIndex).replace(0, OTHER_CLONE_PATH.length(), GARBLE);
     } else {
         path = filePath.substr(0, displayNameIndex);
     }

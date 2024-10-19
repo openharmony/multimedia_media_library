@@ -42,6 +42,7 @@ using RestoreExBlock = struct {
     std::string galleryAppName;
     std::string mediaAppName;
     std::string backupDir;
+    std::string bundleInfo;
     std::string restoreExInfo;
     napi_deferred nativeDeferred;
 };
@@ -178,8 +179,8 @@ void MediaLibraryBackupNapi::UvQueueWorkEx(uv_loop_s *loop, uv_work_t *work)
 {
     uv_queue_work(loop, work, [](uv_work_t *work) {
         RestoreExBlock *block = reinterpret_cast<RestoreExBlock *> (work->data);
-        BackupRestoreService::GetInstance().StartRestoreEx(block->sceneCode, block->galleryAppName,
-            block->mediaAppName, block->backupDir, block->restoreExInfo);
+        BackupRestoreService::GetInstance().StartRestoreEx({block->sceneCode, block->galleryAppName,
+            block->mediaAppName, block->backupDir, block->bundleInfo}, block->restoreExInfo);
     }, [](uv_work_t *work, int _status) {
         RestoreExBlock *block = reinterpret_cast<RestoreExBlock *> (work->data);
         if (block == nullptr) {
@@ -208,17 +209,18 @@ napi_value MediaLibraryBackupNapi::JSStartRestoreEx(napi_env env, napi_callback_
         return result;
     }
 
-    size_t argc = ARGS_FOUR;
-    napi_value argv[ARGS_FOUR] = {0};
+    size_t argc = ARGS_FIVE;
+    napi_value argv[ARGS_FIVE] = {0};
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_FOUR), "requires 4 parameters");
+    NAPI_ASSERT(env, (argc == ARGS_FIVE), "requires 5 parameters");
     napi_get_undefined(env, &result);
     int32_t sceneCode = GetIntFromParams(env, argv, PARAM0);
     std::string galleryAppName = GetStringFromParams(env, argv, PARAM1);
     std::string mediaAppName = GetStringFromParams(env, argv, PARAM2);
     std::string backupDir = GetStringFromParams(env, argv, PARAM3);
+    std::string bundleInfo = GetStringFromParams(env, argv, PARAM4);
     std::string restoreExInfo;
     NAPI_INFO_LOG("StartRestoreEx, sceneCode = %{public}d", sceneCode);
     if (sceneCode < 0) {
@@ -235,7 +237,7 @@ napi_value MediaLibraryBackupNapi::JSStartRestoreEx(napi_env env, napi_callback_
     napi_deferred nativeDeferred = nullptr;
     napi_create_promise(env, &nativeDeferred, &result);
     RestoreExBlock *block = new (std::nothrow) RestoreExBlock {
-        env, sceneCode, galleryAppName, mediaAppName, backupDir, restoreExInfo, nativeDeferred };
+        env, sceneCode, galleryAppName, mediaAppName, backupDir, bundleInfo, restoreExInfo, nativeDeferred };
     if (block == nullptr) {
         NAPI_ERR_LOG("Failed to new block");
         delete work;

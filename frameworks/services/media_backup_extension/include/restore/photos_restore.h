@@ -61,6 +61,7 @@ public:
     std::string FindBurstKey(const FileInfo &fileInfo);
     int32_t FindBurstCoverLevel(const FileInfo &fileInfo);
     int64_t FindDateTrashed(const FileInfo &fileInfo);
+    int32_t FindPhotoQuality(const FileInfo &fileInfo);
 
 private:
     std::string ParseSourcePathToLPath(const std::string &sourcePath);

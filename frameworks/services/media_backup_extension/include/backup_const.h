@@ -37,6 +37,8 @@ constexpr int32_t GALLERY_TRASHED_ID = 0;
 constexpr int32_t UPGRADE_RESTORE_ID = 0;
 constexpr int32_t DUAL_FRAME_CLONE_RESTORE_ID = 1;
 constexpr int32_t CLONE_RESTORE_ID = 2;
+constexpr int32_t I_PHONE_CLONE_RESTORE = 3;
+constexpr int32_t OTHERS_PHONE_CLONE_RESTORE = 4;
 constexpr int32_t DEFAULT_RESTORE_ID = -1;
 constexpr int32_t RETRY_TIME = 5;
 constexpr int32_t SLEEP_INTERVAL = 1;
@@ -55,6 +57,7 @@ const std::string RESTORE_AUDIO_LOCAL_DIR = "/storage/media/local/files/Audio";
 const std::string RESTORE_MUSIC_LOCAL_DIR = "/storage/media/local/files/Docs/Music/";
 const std::string UPGRADE_FILE_DIR = "/storage/media/local/files/data";
 const std::string GARBLE_DUAL_FRAME_CLONE_DIR = "/storage/media/local/files/data/storage/emulated";
+const std::string OTHER_CLONE_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/";
 const std::string GARBLE = "***";
 const std::string GALLERT_IMPORT = "/Pictures/cloud/Imports";
 const std::string GALLERT_HIDDEN_ALBUM = "/Pictures/hiddenAlbum";
@@ -311,6 +314,7 @@ struct FileInfo {
      */
     int32_t isRelatedToPhotoMap = 0;
     bool needMove {true};
+    int32_t photoQuality;
 };
 
 struct AlbumInfo {

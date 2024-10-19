@@ -123,7 +123,7 @@ static off_t GetFileSize(const string& path)
 
 static int32_t WriteContentTofile(const UniqueFd& destFd, const UniqueFd& srcFd)
 {
-    const uint32_t BUFFER_LENGTH = 4096;
+    const uint32_t BUFFER_LENGTH = 16 * 1024; // 16KB
     if (lseek(srcFd.Get(), 0, SEEK_SET) == E_ERR) {
         MEDIA_ERR_LOG("failed to lseek file, errno: %{public}d", errno);
         return E_ERR;

@@ -1077,7 +1077,8 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_upgrade, TestSize.L
     std::unique_ptr<UpgradeRestore> upgrade =
         std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
     upgrade->mediaLibraryRdb_ = photosStorePtr;
-    upgrade->migrateAudioDatabaseNumber_ = 0;
+    uint64_t fileNumber = upgrade->migrateAudioFileNumber_;
+    upgrade->migrateAudioFileNumber_ = 0;
     std::vector<FileInfo> fileInfos;
     FileInfo fileInfo1;
     fileInfo1.filePath = "test";
@@ -1087,28 +1088,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_upgrade, TestSize.L
     fileInfo2.cloudPath = "/storage/cloud/files/Audio/10/AUD_3322.jpg";
     fileInfos.push_back(fileInfo2);
     upgrade->InsertAudio(UPGRADE_RESTORE_ID, fileInfos);
-    EXPECT_EQ(upgrade->migrateAudioDatabaseNumber_, 0);
+    EXPECT_EQ(upgrade->migrateAudioFileNumber_, 0);
+    upgrade->migrateAudioFileNumber_ = fileNumber;
     MEDIA_INFO_LOG("medialib_backup_InsertAudio_upgrade end");
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_clone, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_InsertAudio_clone start");
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    upgrade->mediaLibraryRdb_ = photosStorePtr;
-    upgrade->migrateAudioDatabaseNumber_ = 0;
-    std::vector<FileInfo> fileInfos;
-    FileInfo fileInfo1;
-    fileInfo1.filePath = "test";
-    fileInfos.push_back(fileInfo1);
-    FileInfo fileInfo2;
-    fileInfo2.filePath = "/storage/cloud/100/files/Documents/CreateImageThumbnailTest_001.jpg";
-    fileInfo2.cloudPath = "/storage/cloud/files/Audio/10/AUD_3322.jpg";
-    fileInfos.push_back(fileInfo2);
-    upgrade->InsertAudio(DUAL_FRAME_CLONE_RESTORE_ID, fileInfos);
-    EXPECT_EQ(upgrade->migrateAudioDatabaseNumber_, 0);
-    MEDIA_INFO_LOG("medialib_backup_InsertAudio_clone end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_empty_file, TestSize.Level0)
@@ -1117,10 +1099,12 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_empty_file, TestSiz
     std::unique_ptr<UpgradeRestore> upgrade =
         std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
     upgrade->mediaLibraryRdb_ = photosStorePtr;
-    upgrade->migrateAudioDatabaseNumber_ = 0;
+    uint64_t fileNumber = upgrade->migrateAudioFileNumber_;
+    upgrade->migrateAudioFileNumber_ = 0;
     std::vector<FileInfo> fileInfos;
     upgrade->InsertAudio(DUAL_FRAME_CLONE_RESTORE_ID, fileInfos);
-    EXPECT_EQ(upgrade->migrateAudioDatabaseNumber_, 0);
+    EXPECT_EQ(upgrade->migrateAudioFileNumber_, 0);
+    upgrade->migrateAudioFileNumber_ = fileNumber;
     MEDIA_INFO_LOG("medialib_backup_InsertAudio_empty_file end");
 }
 
