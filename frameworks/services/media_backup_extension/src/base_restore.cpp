@@ -1148,5 +1148,8 @@ void BaseRestore::RestoreThumbnail()
     MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
     otherProcessStatus_ = ProcessStatus::STOP;
 }
+
+void BaseRestore::StartBackup()
+{}
 } // namespace Media
 } // namespace OHOS
