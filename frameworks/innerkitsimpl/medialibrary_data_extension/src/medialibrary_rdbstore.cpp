@@ -404,7 +404,7 @@ const std::string MediaLibraryRdbStore::BeginGenerateHighlightThumbnail(const st
     std::string id = args[STAMP_PARAM_ZERO].c_str();
     std::string tracks = args[STAMP_PARAM_ONE].c_str();
     std::string trigger = args[STAMP_PARAM_TWO].c_str();
-    std::string genType= args[STAMP_PARAM_THREE].c_str();
+    std::string genType = args[STAMP_PARAM_THREE].c_str();
     MEDIA_INFO_LOG("id = %{public}s, tracks = %{public}s, trigger = %{public}s", id.c_str(),
         tracks.c_str(), trigger.c_str());
     ThumbnailService::GetInstance()->TriggerHighlightThumbnail(id, tracks, trigger, genType);
@@ -3691,12 +3691,6 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_MODIFY_SOURCE_ALBUM_TRIGGERS) {
         ModifySourceAlbumTriggers(store);
     }
-
-    if (oldVersion < VERSION_ADD_HIGHLIGHT_TRIGGER) {
-        AddHighlightTriggerColumn(store);
-        AddHighlightInsertAndUpdateTrigger(store);
-        AddHighlightIndex(store);
-    }
     // !! Do not add upgrade code here !!
 }
 
@@ -3997,6 +3991,11 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
     }
     if (oldVersion < VERSION_ADD_HIGHLIGHT_MAP_TABLES) {
         AddHighlightMapTable(store);
+    }
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_TRIGGER) {
+        AddHighlightTriggerColumn(store);
+        AddHighlightInsertAndUpdateTrigger(store);
+        AddHighlightIndex(store);
     }
 }
 

@@ -802,7 +802,7 @@ bool ThumbnailUtils::QueryHighlightTriggerPath(ThumbRdbOpt &opts, ThumbnailData 
 {
     if (QueryNoHighlightPath(opts, data, err)) {
         MEDIA_INFO_LOG("QueryHighlightTriggerPath path: %{public}s",
-        DfxUtils::GetSafePath(data.path).c_str());
+            DfxUtils::GetSafePath(data.path).c_str());
     }
     data.frame = GetHighlightValue(data.tracks, "beginFrame");
     data.timeStamp = GetHighlightValue(data.tracks, "beginTimeStamp");

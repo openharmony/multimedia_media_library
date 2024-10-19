@@ -397,7 +397,6 @@ int32_t ThumbnailGenerateHelper::GetAvailableKeyFrameFile(ThumbRdbOpt &opts, Thu
 {
     string thumbSuffix = GetKeyFrameThumbSuffix(thumbType);
     fileName = GetThumbnailPathHighlight(data.path, thumbSuffix, data.timeStamp);
-
     // No need to create keyFrame thumbnails if corresponding file exists
     if (access(fileName.c_str(), F_OK) == 0) {
         MEDIA_INFO_LOG("GetAvailableKeyFrameFile: file exists, path: %{public}s",

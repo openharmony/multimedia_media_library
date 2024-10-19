@@ -421,7 +421,7 @@ void MedialibrarySubscriber::DoThumbnailOperation()
 
     result = dataManager->GenerateHighlightThumbnailBackground();
     if (result != E_OK) {
-        MEDIA_ERR_LOG("GenerateHighlightThumbnailBackground faild %{public}d", result);
+        MEDIA_ERR_LOG("GenerateHighlightThumbnailBackground failed %{public}d", result);
     }
 
     result = dataManager->DoAging();

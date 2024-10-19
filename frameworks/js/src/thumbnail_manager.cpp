@@ -311,7 +311,7 @@ static int OpenKeyFrameThumbnail(const string &path, const int32_t &beginStamp, 
         if (fd > 0) {
             return fd;
         }
-        NAPI_ERR_LOG("OpenKeyFrameThumbnail failed, fd: %{public}d", -fd); 
+        NAPI_ERR_LOG("OpenKeyFrameThumbnail failed, fd: %{public}d", fd);
     }
     return E_ERR;
 }
