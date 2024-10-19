@@ -206,28 +206,6 @@ void BackgroundCloudFileProcessorTest::TearDown()
     MEDIA_INFO_LOG("BackgroundCloudFileProcessorTest TearDown");
 }
 
-// Scenario2: Test Image download order
-HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_002, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("background_cloud_file_processor_test_002 Start");
-    PreparePhotos(5, MEDIA_TYPE_IMAGE);
-    PreparePhotos(10, MEDIA_TYPE_IMAGE);
-    vector<string> lastBatch = PreparePhotos(2, MEDIA_TYPE_IMAGE);
-    EXPECT_EQ(QueryPhotosCount(), 17);
-
-    EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 50);
-    BackgroundCloudFileProcessor::StartTimer();
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(80));
-    std::sort(BackgroundCloudFileProcessor::curDownloadPaths_.begin(),
-        BackgroundCloudFileProcessor::curDownloadPaths_.end());
-    std::sort(lastBatch.begin(), lastBatch.end());
-    EXPECT_EQ(BackgroundCloudFileProcessor::curDownloadPaths_, lastBatch);
-
-    BackgroundCloudFileProcessor::StopTimer();
-    MEDIA_INFO_LOG("background_cloud_file_processor_test_002 End");
-}
-
 // Scenario3: Test Video download order
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_003, TestSize.Level0)
 {

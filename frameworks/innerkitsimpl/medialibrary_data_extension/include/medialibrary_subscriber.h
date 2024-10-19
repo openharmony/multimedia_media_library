@@ -22,6 +22,7 @@
 #include "common_event_subscriber.h"
 #include "common_event_support.h"
 #include "matching_skills.h"
+#include "timer.h"
 
 namespace OHOS {
 namespace Media {
@@ -37,6 +38,8 @@ enum class StatusEventType {
 
 class EXPORT MedialibrarySubscriber : public EventFwk::CommonEventSubscriber {
 public:
+    EXPORT void StartTimer();
+    EXPORT void ShutDownTimer();
     EXPORT MedialibrarySubscriber() = default;
     EXPORT explicit MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo);
     EXPORT static bool Subscribe(void);
@@ -54,8 +57,11 @@ private:
     bool currentStatus_{false};
     bool timerStatus_{false};
     std::mutex mutex_;
+    std::mutex timeMutex_;
     int32_t agingCount_ {0};
     int64_t lockTime_ {0};
+    static Utils::Timer timer_;
+    uint32_t timerId_ {0};
 
     std::mutex delayTaskLock_;
     std::condition_variable delayTaskCv_;
@@ -79,6 +85,7 @@ private:
     void DoThumbnailOperation();
     bool IsDelayTaskTimeOut();
     void EndBackgroundOperationThread();
+    void UpdateSubcriberStatus();
 };
 }  // namespace Media
 }  // namespace OHOS

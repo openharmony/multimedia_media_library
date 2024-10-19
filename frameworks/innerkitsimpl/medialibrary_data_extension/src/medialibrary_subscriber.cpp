@@ -57,7 +57,7 @@
 #include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "userfilemgr_uri.h"
-
+#include "common_timer_errors.h"
 #ifdef HAS_WIFI_MANAGER_PART
 #include "wifi_device.h"
 #endif
@@ -76,13 +76,14 @@ const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 1;
 
 // WIFI should be available in this state
 const int32_t WIFI_STATE_CONNECTED = 4;
-
+const int32_t SUBSCRIBER_STATUS_TIME = 30 * 60 * 1000;
 const int32_t DELAY_TASK_TIME = 30000;
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
 const int32_t MegaByte = 1024*1024;
 const int32_t MAX_FILE_SIZE_MB = 200;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
+Utils::Timer MedialibrarySubscriber::timer_("medialibrary_subscriber");
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
     EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING,
@@ -203,6 +204,69 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
     }
 }
 
+void MedialibrarySubscriber::UpdateSubcriberStatus()
+{
+#ifdef HAS_POWER_MANAGER_PART
+    auto& powerMgrClient = PowerMgr::PowerMgrClient::GetInstance();
+    isScreenOff_ = !powerMgrClient.IsScreenOn();
+#endif
+#ifdef HAS_BATTERY_MANAGER_PART
+    auto& batteryClient = PowerMgr::BatterySrvClient::GetInstance();
+    auto chargeState = batteryClient.GetChargingStatus();
+    isCharging_ = (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_ENABLE) ||
+        (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_FULL);
+    isPowerSufficient_ = batteryClient.GetCapacity() >= PROPER_DEVICE_BATTERY_CAPACITY;
+#endif
+#ifdef HAS_THERMAL_MANAGER_PART
+    auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
+    isDeviceTemperatureProper_ = static_cast<int32_t>(
+        thermalMgrClient.GetThermalLevel()) <= PROPER_DEVICE_TEMPERATURE_LEVEL;
+#endif
+    std::lock_guard<std::mutex> lock(mutex_);
+    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
+
+    if (currentStatus_ == newStatus) {
+        return;
+    }
+    currentStatus_ = newStatus;
+    ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(newStatus);
+    EndBackgroundOperationThread();
+    if (currentStatus_) {
+        isTaskWaiting_ = true;
+        backgroundOperationThread_ = std::thread([this] { this->DoBackgroundOperation(); });
+    } else {
+        StopBackgroundOperation();
+    }
+}
+
+void MedialibrarySubscriber::StartTimer()
+{
+    std::unique_lock<std::mutex> lock(timeMutex_);
+    if (timerId_ != 0) {
+        return;
+    }
+    uint32_t ret = timer_.Setup();
+    if (ret != Utils::TIMER_ERR_OK) {
+        MEDIA_ERR_LOG("Failed to start subscriber timer, err: %{public}d", ret);
+    }
+    Utils::Timer::TimerCallback timerCallback = [this]() {
+        UpdateSubcriberStatus();
+    };
+    timerId_ = timer_.Register(timerCallback, SUBSCRIBER_STATUS_TIME, false);
+}
+
+void MedialibrarySubscriber::ShutDownTimer()
+{
+    std::unique_lock<std::mutex> lock(timeMutex_);
+    if (timerId_ == 0) {
+        return;
+    }
+    MEDIA_INFO_LOG("MedialibrarySubscriber ShutDownTimer id %{public}d", timerId_);
+    timer_.Unregister(timerId_);
+    timerId_ = 0;
+    timer_.Shutdown();
+}
+
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -219,9 +283,11 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
     EndBackgroundOperationThread();
     if (currentStatus_) {
         isTaskWaiting_ = true;
+        StartTimer();
         backgroundOperationThread_ = std::thread([this] { this->DoBackgroundOperation(); });
     } else {
         StopBackgroundOperation();
+        ShutDownTimer();
     }
 }
 

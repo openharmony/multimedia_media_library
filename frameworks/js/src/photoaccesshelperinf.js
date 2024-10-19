@@ -373,6 +373,54 @@ function showAssetsCreationDialog(...params) {
   return showAssetsCreationDialogParamsOk(...params);
 }
 
+async function grantOldPhotoAssetsReadPermission(srcFileUris) {
+  console.info('grantOldPhotoAssetsReadPermission enter');
+
+  //check whether srcFileUris is valid
+  for (let srcFileUri of srcFileUris) {
+    if (!checkIsUriValid(srcFileUri, true)) {
+      console.error('photoAccesshelper invalid uri : ${srcFileUri}.');
+      return false;
+    }
+  }
+
+  let context = gContext;
+  if (context === undefined) {
+    console.info('photoAccessHelper gContet undefined');
+    context = getContext(this);
+  }
+
+  let bundleInfo = getBundleInfo();
+  if (bundleInfo === undefined) {
+    return new Promise((resolve, reject) => {
+      reject(new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID));
+    });
+  }
+  let labelId = bundleInfo.appInfo.labelId;
+  console.info('photoAccessHelper labelId is ' + labelId + '.');
+  let appName = '';
+
+  try {
+    let moduleName = '';
+    for (let hapInfo of bundleInfo.hapModulesInfo) {
+      if (labelId === hapInfo.labelId) {
+        moduleName = hapInfo.name;
+      }
+    }
+    console.info('photoAccessHelper moduleName is ' + moduleName + '.');
+    appName = await gContext.createModuleContext(moduleName).resourceManager.getStringValue(labelId);
+    console.info('photoAccessHelper appName is ' + appName + '.');
+    return new Promise((resolve, reject) => {
+      photoAccessHelper.grantOldPhotoAssetsReadPermission(context, srcFileUris, appName, result => {
+        showAssetsCreationDialogResult(result, reject, resolve);
+      });
+    });
+  } catch (error) {
+    console.error('grantOldPhotoAssetsReadPermission catch error.');
+    return errorResult(new BusinessError(ERROR_MSG_INNER_FAIL, error.code), null);
+  }
+}
+
 async function createAssetWithShortTermPermissionOk(photoCreationConfig) {
   let bundleInfo = getBundleInfo();
   if (bundleInfo === undefined) {
@@ -439,6 +487,7 @@ function getPhotoAccessHelper(context) {
     helper.createDeleteRequest = createDeleteRequest;
     helper.showAssetsCreationDialog = showAssetsCreationDialog;
     helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
+    helper.grantOldPhotoAssetsReadPermission = grantOldPhotoAssetsReadPermission;
   }
   return helper;
 }
@@ -476,6 +525,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
+          helper.grantOldPhotoAssetsReadPermission = grantOldPhotoAssetsReadPermission;
         }
         return helper;
       })
@@ -495,6 +545,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
+          helper.grantOldPhotoAssetsReadPermission = grantOldPhotoAssetsReadPermission;
         }
         asyncCallback(err, helper);
       }

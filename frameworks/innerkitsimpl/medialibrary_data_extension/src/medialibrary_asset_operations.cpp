@@ -218,6 +218,8 @@ int32_t MediaLibraryAssetOperations::OpenOperation(MediaLibraryCommand &cmd, con
             return MediaLibraryAudioOperations::Open(cmd, mode);
         case OperationObject::HIGHLIGHT_COVER:
             return MediaLibraryAssetOperations::OpenHighlightCover(cmd, mode);
+        case OperationObject::HIGHLIGHT_URI:
+            return MediaLibraryAssetOperations::OpenHighlightVideo(cmd, mode);
         case OperationObject::FILESYSTEM_ASSET:
             MEDIA_ERR_LOG("open by FILESYSTEM_ASSET is deperated");
             return E_INVALID_VALUES;
@@ -814,7 +816,7 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, 
         outValues.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
     }
     stringstream result;
-    for (int i = 0; i < displayName.length(); i++) {
+    for (size_t i = 0; i < displayName.length(); i++) {
         if (isdigit(displayName[i])) {
             result << displayName[i];
         }
@@ -1486,6 +1488,23 @@ int32_t MediaLibraryAssetOperations::OpenHighlightCover(MediaLibraryCommand &cmd
     return OpenAsset(fileAsset, mode, cmd.GetApi(), false);
 }
 
+int32_t MediaLibraryAssetOperations::OpenHighlightVideo(MediaLibraryCommand &cmd, const string &mode)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryAssetOperations::OpenHighlightVideo");
+    string uriStr = cmd.GetUriStringWithoutSegment();
+    string path = MediaFileUtils::GetHighlightVideoPath(uriStr);
+    if (path.length() == 0) {
+        MEDIA_ERR_LOG("Open highlight video invalid uri : %{public}s", uriStr.c_str());
+        return E_INVALID_URI;
+    }
+    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
+    fileAsset->SetPath(path);
+    fileAsset->SetUri(uriStr);
+    
+    return OpenAsset(fileAsset, mode, cmd.GetApi(), false);
+}
+
 void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int32_t type)
 {
     string tableName;
@@ -1752,17 +1771,17 @@ int32_t MediaLibraryAssetOperations::GetAlbumIdByPredicates(const string &whereC
     return E_ERR;
 }
 
-void MediaLibraryAssetOperations::SendOwnerAlbumIdNotify(MediaLibraryCommand &cmd)
+void MediaLibraryAssetOperations::UpdateOwnerAlbumIdOnMove(MediaLibraryCommand &cmd,
+    int32_t &targetAlbumId, int32_t &oriAlbumId)
 {
     ValueObject value;
-    int32_t targetAlbumId = 0;
     if (!cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_OWNER_ALBUM_ID, value)) {
         return;
     }
     value.GetInt(targetAlbumId);
     auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
-    int32_t oriAlbumId = GetAlbumIdByPredicates(whereClause, whereArgs);
+    oriAlbumId = GetAlbumIdByPredicates(whereClause, whereArgs);
 
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(targetAlbumId),
@@ -1771,11 +1790,6 @@ void MediaLibraryAssetOperations::SendOwnerAlbumIdNotify(MediaLibraryCommand &cm
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(targetAlbumId),
         to_string(oriAlbumId) });
     MEDIA_INFO_LOG("Move Assets, ori album id is %{public}d, target album id is %{public}d", oriAlbumId, targetAlbumId);
-    auto watch = MediaLibraryNotify::GetInstance();
-    NotifyType typeTarget = NotifyType::NOTIFY_ALBUM_ADD_ASSET;
-    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PHOTO_ALBUM_URI_PREFIX, to_string(targetAlbumId)), typeTarget);
-    NotifyType typeOri = NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
-    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PHOTO_ALBUM_URI_PREFIX, to_string(oriAlbumId)), typeOri);
 }
 
 int32_t MediaLibraryAssetOperations::SetPendingTrue(const shared_ptr<FileAsset> &fileAsset)

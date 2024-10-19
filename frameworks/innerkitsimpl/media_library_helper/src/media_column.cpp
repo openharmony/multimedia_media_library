@@ -141,6 +141,7 @@ const std::string PhotoColumn::DEFAULT_PHOTO_URI = "file://media/Photo";
 const std::string PhotoColumn::PHOTO_CACHE_URI_PREFIX = "file://media/Photo/cache/";
 const std::string PhotoColumn::PHOTO_TYPE_URI = "/Photo";
 const std::string PhotoColumn::HIGHTLIGHT_COVER_URI = "/highlight";
+const std::string PhotoColumn::HIGHTLIGHT_URI = "/highlight/video";
 
 const std::string PhotoColumn::PHOTO_CLOUD_URI_PREFIX = "file://cloudsync/Photo/";
 
@@ -360,7 +361,7 @@ const std::string PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL =
                         "CREATE TRIGGER insert_generate_highlight_thumbnail_trigger AFTER INSERT ON " +
                         PhotoColumn::HIGHLIGHT_TABLE + " BEGIN SELECT begin_generate_highlight_thumbnail " +
                         "(NEW." + MEDIA_DATA_DB_ID + ", NEW." + MEDIA_DATA_DB_VIDEO_TRACKS +
-                        ", NEW." + MEDIA_DATA_DB_HIGHLIGHT_TRIGGER + ", '" + MEDIA_DATA_DB_INSERT_TYPE + "');  LEND;";
+                        ", NEW." + MEDIA_DATA_DB_HIGHLIGHT_TRIGGER + ", '" + MEDIA_DATA_DB_INSERT_TYPE + "'); END;";
 
 const std::string PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL =
                         "CREATE TRIGGER update_generate_highlight_thumbnail_trigger AFTER UPDATE ON " +
@@ -368,7 +369,7 @@ const std::string PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL =
                         MEDIA_DATA_DB_HIGHLIGHT_TRIGGER + "= 1 " + "AND NEW." + MEDIA_DATA_DB_HIGHLIGHT_TRIGGER +
                         "= 0 BEGIN SELECT begin_generate_highlight_thumbnail " +
                         "(NEW." + MEDIA_DATA_DB_ID + ", NEW." + MEDIA_DATA_DB_VIDEO_TRACKS +
-                        ", NEW." + MEDIA_DATA_DB_HIGHLIGHT_TRIGGER + ", '" + MEDIA_DATA_DB_UPDATE_TYPE + "');  LEND;";
+                        ", NEW." + MEDIA_DATA_DB_HIGHLIGHT_TRIGGER + ", '" + MEDIA_DATA_DB_UPDATE_TYPE + "'); END;";
 
 const std::string PhotoColumn::INDEX_HIGHLIGHT_FILEID =
                         BaseColumn::CreateIndex() + MEDIA_DATA_DB_ID + " ON " + HIGHLIGHT_TABLE + " (" + MEDIA_ID +");";

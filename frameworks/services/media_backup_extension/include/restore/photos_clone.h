@@ -62,6 +62,7 @@ public:
     int32_t FindAlbumId(const FileInfo &fileInfo);
     std::string FindPackageName(const FileInfo &info);
     std::string FindBundleName(const FileInfo &info);
+    int32_t FindPhotoQuality(const FileInfo &fileInfo);
 
 private:
     enum { UUID_STR_LENGTH = 37 };

@@ -98,11 +98,11 @@ public:
         return this->photoAlbumDaoPtr_->RestoreAlbums(albumInfosToRestore);
     }
 
-private:
-    std::vector<GalleryAlbumRowData> GetGalleryAlbums();
     std::vector<PhotoAlbumDao::PhotoAlbumRowData> GetAlbumsToRestore(
         const std::vector<PhotoAlbumDao::PhotoAlbumRowData> &photoAlbums,
         const std::vector<GalleryAlbumRowData> &galleryAlbums);
+private:
+    std::vector<GalleryAlbumRowData> GetGalleryAlbums();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;

@@ -109,13 +109,13 @@ const std::string QUERY_NOT_MATCHED_DATA_IN_PHOTOMAP_BY_PAGE =
 
 const std::string QUERY_NEW_NOT_MATCHED_DATA_IN_PHOTOMAP_BY_PAGE =
     "SELECT " + PhotoMap::ASSET_ID + ", " + PhotoMap::ALBUM_ID + " FROM " + PhotoMap::TABLE +
-    " LIMIT 0, 200";
+    " WHERE dirty <>4 LIMIT 0, 200";
 
 const std::string QUERY_NOT_MATCHED_COUNT_IN_PHOTOMAP =
     "SELECT count(1) FROM PhotoMap WHERE dirty <>4 and dirty<>6";
 
 const std::string QUERY_NEW_NOT_MATCHED_COUNT_IN_PHOTOMAP =
-    "SELECT count(1) FROM PhotoMap";
+    "SELECT count(1) FROM PhotoMap WHERE dirty <>4";
 
 const std::string CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET =
     "INSERT INTO " + PhotoAlbumColumns::TABLE +

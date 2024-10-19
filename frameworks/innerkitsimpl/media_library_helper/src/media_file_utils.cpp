@@ -169,6 +169,60 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIM
     { "text/x-python", { "py" } }
 };
 
+static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_EXTRA_MIME_TYPE_MAP = {
+    { "image/ief", { "ief" } },
+    { "image/jp2", { "jp2", "jpg2" } },
+    { "image/ipm", { "ipm" } },
+    { "image/ipx", { "jpx", "jpf" } },
+    { "image/pcx", { "pcx" } },
+    { "image/svg+xml", { "svgz" } },
+    { "image/tiff", { "tiff", "tif" } },
+    { "image/vnd.divu", { "djvu", "djv" } },
+    { "image/vnd.wap.wbmp", { "wbmp" } },
+    { "image/x-canon-cr2", { "cr2" } },
+    { "image/x-canon-crw", { "crw" } },
+    { "image/x-cmu-raster", { "ras" } },
+    { "image/x-coreldraw", { "cdr" } },
+    { "image/x-coreldrawpattern", { "pat" } },
+    { "image/x-coreldrawtemplate", { "cdt" } },
+    { "image/x-corelphotopaint", { "cpt" } },
+    { "image/x-epson-erf", { "erf" } },
+    { "image/x-jg", { "art" } },
+    { "image/x-jng", { "jng" } },
+    { "image/x-nikon-nef", { "nef" } },
+    { "image/x-olvmpus-orf", { "orf" } },
+    { "image/x-photoshop", { "psd" } },
+    { "image/x-portable-anymap", { "pnm" } },
+    { "image/x-portable-bitmap", { "pbm" } },
+    { "image/x-portable-graymap", { "pgm" } },
+    { "image/x-portable-pixmap", { "ppm" } },
+    { "image/x-rgb", { "rgb" } },
+    { "image/x-xbitmap", { "xbm" } },
+    { "image/x-xpixmap", { "xpm" } },
+    { "image/x-xwindowdump", { "xwd" } },
+    { "video/avi", { "avi" } },
+    { "video/x-pn-realvideo", { "rmvb" } },
+    { "video/annodex", { "axv" } },
+    { "video/dl", { "dl" } },
+    { "video/dv", { "dif" } },
+    { "video/fli", { "fli" } },
+    { "video/gl", { "gl" } },
+    { "video/mpeg", { "mpe" } },
+    { "video/quicktime", { "qt" } },
+    { "video/ogg", { "ogv" } },
+    { "video/vnd.mpegurl", { "mxu" } },
+    { "video/x-flv", { "flv" } },
+    { "video/x-la-asf", { "lsf",  "lsx" } },
+    { "video/x-mng", { "mng" } },
+    { "video/x-ms-asf", { "asf", "asx" } },
+    { "video/x-ms-wm", { "wm" } },
+    { "video/x-ms-wmv", { "wmv" } },
+    { "video/x-ms-wmx", { "wmx" } },
+    { "video/x-ms-wvx", { "wvx" } },
+    { "video/x-sgi-movie", { "movie" } },
+    { "video/x-matroska", { "mpv" } }
+};
+
 int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, struct FTW *ftwbuf)
 {
     CHECK_AND_RETURN_RET_LOG(fpath != nullptr, E_FAIL, "fpath == nullptr");
@@ -852,6 +906,21 @@ string MediaFileUtils::GetHighlightPath(const string &uri)
     return path;
 }
 
+string MediaFileUtils::GetHighlightVideoPath(const string &uri)
+{
+    int prefixLen = 0;
+    string uriPrefix = "datashare:///media";
+    if (uri.find(uriPrefix) != string::npos) {
+        prefixLen = static_cast<int>(uriPrefix.length());
+    } else if (uri.find(ML_FILE_URI_PREFIX) != string::npos) {
+        prefixLen = static_cast<int>(ML_FILE_URI_PREFIX.length());
+    } else {
+        return "";
+    }
+    string path = "/storage/cloud/files" + uri.substr(prefixLen);
+    return path;
+}
+
 void MediaFileUtils::FormatRelativePath(string &relativePath)
 {
     if (relativePath.empty()) {
@@ -1051,6 +1120,17 @@ MediaType MediaFileUtils::GetMediaType(const string &filePath)
 
     string extention = GetExtensionFromPath(filePath);
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extention, MEDIA_MIME_TYPE_MAP);
+    return MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
+}
+
+MediaType MediaFileUtils::GetMediaTypeNotSupported(const string &filePath)
+{
+    if (filePath.empty()) {
+        return MEDIA_TYPE_ALL;
+    }
+
+    string extention = GetExtensionFromPath(filePath);
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extention, MEDIA_EXTRA_MIME_TYPE_MAP);
     return MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
 }
 
@@ -1556,6 +1636,15 @@ bool MediaFileUtils::EndsWith(const std::string &str, const std::string &suffix)
     return str.rfind(suffix) == str.length() - suffix.length();
 }
 
+void MediaFileUtils::ReplaceAll(std::string &str, const std::string &from, const std::string &to)
+{
+    size_t startPos = 0;
+    while ((startPos = str.find(from, startPos)) != std::string::npos) {
+        str.replace(startPos, from.length(), to);
+        startPos += to.length();
+    }
+}
+
 void MediaFileUtils::UriAppendKeyValue(string &uri, const string &key, std::string value)
 {
     string uriKey = key + '=';
@@ -1661,9 +1750,9 @@ string MediaFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
 
 bool MediaFileUtils::CheckMovingPhotoExtension(const string &extension)
 {
-    // image of moving photo must be image/jpeg or image/heif
+    // image of moving photo must be image/jpeg, image/heif or image/heic
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP);
-    return mimeType == "image/jpeg" || mimeType == "image/heif";
+    return mimeType == "image/jpeg" || mimeType == "image/heif" || mimeType == "image/heic";
 }
 
 bool MediaFileUtils::CheckMovingPhotoVideoExtension(const string &extension)

@@ -124,6 +124,8 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { USER_PHOTOGRAPHY_INFO_TABLE, OperationObject::USER_PHOTOGRAPHY },
         { PAH_HIGHLIGHT_COVER, OperationObject::STORY_COVER },
         { PAH_HIGHLIGHT_PLAY, OperationObject::STORY_PLAY },
+        { PAH_ANA_ASSET_SD, OperationObject::ANALYSIS_ASSET_SD_MAP },
+        { PAH_ANA_ALBUM_ASSET, OperationObject::ANALYSIS_ALBUM_ASSET_MAP },
 
         // others
         { MISC_OPERATION, OperationObject::MISCELLANEOUS },
@@ -197,6 +199,9 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::STORY_ALBUM, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_ALBUM_TABLE } } },
         { OperationObject::STORY_COVER, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_COVER_INFO_TABLE } } },
         { OperationObject::STORY_PLAY, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_PLAY_INFO_TABLE } } },
+        { OperationObject::ANALYSIS_ASSET_SD_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ASSET_SD_MAP_TABLE } } },
+        { OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
+            { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_ASSET_MAP_TABLE } } },
         { OperationObject::USER_PHOTOGRAPHY, { { OperationType::UNKNOWN_TYPE, USER_PHOTOGRAPHY_INFO_TABLE } } },
         { OperationObject::APP_URI_PERMISSION_INNER,
             { { OperationType::UNKNOWN_TYPE, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE } } },
@@ -295,6 +300,8 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_SAVE_PICTURE, OperationType::SAVE_PICTURE},
         { "log_medialibrary_api", OperationType::LOG_MEDIALIBRARY_API},
         { OPRN_SET_VIDEO_ENHANCEMENT_ATTR, OperationType::SET_VIDEO_ENHANCEMENT_ATTR },
+        { OPRN_ALL_DUPLICATE_ASSETS, OperationType::ALL_DUPLICATE_ASSETS },
+        { OPRN_OTHER_DUPLICATE_ASSETS, OperationType::OTHER_DUPLICATE_ASSETS },
     };
     return oprnTypeMap;
 }

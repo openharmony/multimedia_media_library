@@ -248,19 +248,26 @@ static bool AppendValidOrderClause(MediaLibraryCommand &cmd, RdbPredicates &pred
     constexpr int32_t FIELD_IDX = 0;
     const auto &items = cmd.GetDataSharePred().GetOperationList();
     int32_t count = 0;
-    string columnName = " (" + MediaColumn::MEDIA_DATE_ADDED + ", " + MediaColumn::MEDIA_ID + ") ";
-    string value = " (SELECT " + MediaColumn::MEDIA_DATE_ADDED + ", " + MediaColumn::MEDIA_ID + " FROM " +
-        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " + photoId + ") ";
-    string whereClause = predicates.GetWhereClause();
+    string dateType;
+    string comparisonOperator;
     for (const auto &item : items) {
         if (item.operation == ORDER_BY_ASC) {
             count++;
-            whereClause += " AND " + columnName + " <= " + value;
+            dateType = static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_DATE_TAKEN ?
+                MediaColumn::MEDIA_DATE_TAKEN : MediaColumn::MEDIA_DATE_ADDED;
+            comparisonOperator = " <= ";
         } else if (item.operation == ORDER_BY_DESC) {
             count++;
-            whereClause += " AND " + columnName + " >= " + value;
+            dateType = static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_DATE_TAKEN ?
+                MediaColumn::MEDIA_DATE_TAKEN : MediaColumn::MEDIA_DATE_ADDED;
+            comparisonOperator = " >= ";
         }
     }
+    string columnName = " (" + dateType + ", " + MediaColumn::MEDIA_ID + ") ";
+    string value = " (SELECT " + dateType + ", " + MediaColumn::MEDIA_ID + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " + photoId + ") ";
+    string whereClause = predicates.GetWhereClause();
+    whereClause += " AND " + columnName + comparisonOperator + value;
     predicates.SetWhereClause(whereClause);
 
     // only support orderby with one item
@@ -329,6 +336,14 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
             return HandleAnalysisIndex(cmd, photoId, albumId);
         }
         return HandleIndexOfUri(cmd, predicates, photoId, albumId);
+    }
+    int limit = predicates.GetLimit();
+    int offset = predicates.GetOffset();
+    if (cmd.GetOprnType() == OperationType::ALL_DUPLICATE_ASSETS) {
+        return MediaLibraryRdbStore::GetAllDuplicateAssets(columns, offset, limit);
+    }
+    if (cmd.GetOprnType() == OperationType::OTHER_DUPLICATE_ASSETS) {
+        return MediaLibraryRdbStore::GetOtherDuplicateAssets(columns, offset, limit);
     }
     MediaLibraryRdbUtils::AddQueryIndex(predicates, columns);
     return MediaLibraryRdbStore::Query(predicates, columns);
@@ -1192,14 +1207,14 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationExif(MediaLibraryCommand &
     return errCode;
 }
 
-void UpdateAlbumOnMoveAssets(const int32_t &albumId, const NotifyType &type)
+void UpdateAlbumOnSystemMoveAssets(const int32_t &oriAlbumId, const int32_t &targetAlbumId)
 {
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(albumId) });
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+        { to_string(oriAlbumId), to_string(targetAlbumId) });
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(albumId) });
-    auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PHOTO_ALBUM_URI_PREFIX_V0, to_string(albumId)), type);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+        { to_string(oriAlbumId), to_string(targetAlbumId) });
 }
 
 bool IsSystemAlbumMovement(MediaLibraryCommand &cmd)
@@ -1211,7 +1226,6 @@ bool IsSystemAlbumMovement(MediaLibraryCommand &cmd)
     PhotoAlbumSubType subType;
     CHECK_AND_RETURN_RET_LOG(GetAlbumTypeSubTypeById(to_string(oriAlbumId), type, subType) == E_SUCCESS, false,
         "move assets invalid album uri");
-    
     if ((!PhotoAlbum::CheckPhotoAlbumType(type)) || (!PhotoAlbum::CheckPhotoAlbumSubType(subType))) {
         MEDIA_ERR_LOG("album id %{private}s type:%d subtype:%d", to_string(oriAlbumId).c_str(), type, subType);
         return false;
@@ -1229,7 +1243,7 @@ void GetSystemMoveAssets(AbsRdbPredicates &predicates)
     }
     vector<string> whereIdArgs;
     whereIdArgs.reserve(whereUriArgs.size() - 1);
-    for (int i = 1; i < whereUriArgs.size(); ++i) {
+    for (size_t i = 1; i < whereUriArgs.size(); ++i) {
         whereIdArgs.push_back(whereUriArgs[i]);
     }
     predicates.SetWhereArgs(whereIdArgs);
@@ -1237,7 +1251,7 @@ void GetSystemMoveAssets(AbsRdbPredicates &predicates)
 
 int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
 {
-    std::set<int32_t> ownerAlbumIds;
+    std::map<int32_t, std::vector<int32_t>> ownerAlbumIds;
     vector<string> assetString;
     auto assetVector = cmd.GetAbsRdbPredicates()->GetWhereArgs();
     for (const auto &fileAsset : assetVector) {
@@ -1246,7 +1260,7 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.And()->In(PhotoColumn::MEDIA_ID, assetString);
-    vector<string> columns = { PhotoColumn::PHOTO_OWNER_ALBUM_ID };
+    vector<string> columns = { PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::MEDIA_ID };
     auto resultSetQuery = MediaLibraryRdbStore::Query(predicates, columns);
     if (resultSetQuery == nullptr) {
         MEDIA_ERR_LOG("album id is not exist");
@@ -1255,7 +1269,7 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
     while (resultSetQuery->GoToNextRow() == NativeRdb::E_OK) {
         int32_t albumId = 0;
         albumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSetQuery);
-        ownerAlbumIds.insert(albumId);
+        ownerAlbumIds[albumId].push_back(GetInt32Val(MediaColumn::MEDIA_ID, resultSetQuery));
     }
 
     ValueObject value;
@@ -1265,20 +1279,25 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
         return E_INVALID_ARGUMENTS;
     }
     value.GetInt(targetAlbumId);
-
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(targetAlbumId));
     int32_t changedRows = MediaLibraryRdbStore::Update(values, predicates);
     if (changedRows < 0) {
-        MEDIA_ERR_LOG("Update owner albun id fail when move from system album");
+        MEDIA_ERR_LOG("Update owner album id fail when move from system album");
         return changedRows;
     }
-
-    for (const auto &oriAlbumId: ownerAlbumIds) {
-        MEDIA_INFO_LOG("System album move assets target album id is: %{public}s", to_string(oriAlbumId).c_str());
-        UpdateAlbumOnMoveAssets(oriAlbumId, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+    for (auto it = ownerAlbumIds.begin(); it != ownerAlbumIds.end(); it++) {
+        MEDIA_INFO_LOG("System album move assets target album id is: %{public}s", to_string(it->first).c_str());
+        int32_t oriAlbumId = it->first;
+        UpdateAlbumOnSystemMoveAssets(oriAlbumId, targetAlbumId);
+        auto watch = MediaLibraryNotify::GetInstance();
+        for (const auto &id : it->second) {
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(id),
+                NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, oriAlbumId);
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(id),
+                NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
+        }
     }
-    UpdateAlbumOnMoveAssets(targetAlbumId, NotifyType::NOTIFY_ALBUM_ADD_ASSET);
     return changedRows;
 }
 
@@ -1311,13 +1330,17 @@ int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &c
         return updateRows;
     }
     transactionOprn.Finish();
-    SendOwnerAlbumIdNotify(cmd);
+    int32_t targetAlbumId = 0;
+    int32_t oriAlbumId = 0;
+    UpdateOwnerAlbumIdOnMove(cmd, targetAlbumId, oriAlbumId);
     auto watch =  MediaLibraryNotify::GetInstance();
     for (const auto &fileAsset : fileAssetVector) {
         string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
         string assetUri = MediaFileUtils::GetUriByExtrConditions(
             PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()), extraUri);
         watch->Notify(assetUri, NotifyType::NOTIFY_UPDATE);
+        watch->Notify(assetUri, NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
+        watch->Notify(assetUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, oriAlbumId);
     }
     return updateRows;
 }

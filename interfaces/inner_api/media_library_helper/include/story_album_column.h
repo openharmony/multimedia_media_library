@@ -51,6 +51,10 @@ const std::string HIGHLIGHT_FILTER_EDIT_COUNT = "filter_edit_count";
 const std::string HIGHLIGHT_IS_MUTED = "is_muted";
 const std::string HIGHLIGHT_IS_FAVORITE = "is_favorite";
 const std::string HIGHLIGHT_THEME = "theme";
+const std::string HIGHLIGHT_MAP_ALBUM = "map_album";
+const std::string HIGHLIGHT_MAP_ASSET = "map_asset";
+const std::string MAP_ASSET_SOURCE = "map_asset_source";
+const std::string MAP_ASSET_DESTINATION = "map_asset_destination";
 
 const std::string URI_HIGHLIGHT_ALBUM = MEDIALIBRARY_DATA_URI + "/" + HIGHLIGHT_ALBUM_TABLE;
 } // namespace Media
