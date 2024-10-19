@@ -807,12 +807,16 @@ nlohmann::json BaseRestore::GetSubCountInfoJson(const std::string &type, const S
     subCountInfoJson[STAT_KEY_FAILED_COUNT] = subCountInfo.failedFiles.size();
     // update currentLimit = min(limit, failedFiles.size())
     size_t currentLimit = limit <= subCountInfo.failedFiles.size() ? limit : subCountInfo.failedFiles.size();
-    std::string detailsPath = BackupFileUtils::GetDetailsPath(sceneCode_, type, subCountInfo.failedFiles, currentLimit);
-    std::vector<std::string> failedFilesList =
-        BackupFileUtils::GetFailedFilesList(sceneCode_, subCountInfo.failedFiles, currentLimit);
-    subCountInfoJson[STAT_KEY_DETAILS] = failedFilesList;
-    MEDIA_INFO_LOG("Get %{public}s detail path: %{public}s, size: %{public}zu", type.c_str(),
-        BackupFileUtils::GarbleFilePath(detailsPath, DEFAULT_RESTORE_ID).c_str(), failedFilesList.size());
+    std::string detailsPath;
+    std::vector<std::string> failedFilesList;
+    if (sceneCode_ == UPGRADE_RESTORE_ID) {
+        detailsPath = BackupFileUtils::GetDetailsPath(sceneCode_, type, subCountInfo.failedFiles, currentLimit);
+        subCountInfoJson[STAT_KEY_DETAILS] = detailsPath;
+    } else {
+        failedFilesList = BackupFileUtils::GetFailedFilesList(sceneCode_, subCountInfo.failedFiles, currentLimit);
+        subCountInfoJson[STAT_KEY_DETAILS] = failedFilesList;
+    }
+    MEDIA_INFO_LOG("Get %{public}s details size: %{public}zu", type.c_str(), currentLimit);
     limit -= currentLimit; // update total limit
     return subCountInfoJson;
 }

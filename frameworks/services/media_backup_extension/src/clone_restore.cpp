@@ -1507,7 +1507,7 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
             MEDIA_ERR_LOG("MoveFile failed, filePath: %{public}s, errCode: %{public}d, errno: %{public}d",
                 BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(), moveErrCode,
                 errno);
-            UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::MOVE_FAILED);
+            UpdateFailedFiles(fileInfo.fileType, fileInfo, RestoreError::MOVE_FAILED);
             excludedFileIdSet.insert(fileInfo.fileIdOld);
             continue;
         }
