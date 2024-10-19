@@ -44,6 +44,10 @@ public:
     EXPORT void CloseAllKvStore();
     EXPORT bool IsKvStoreValid(const KvStoreValueType &valueType);
     EXPORT int32_t RebuildInvalidKvStore(const KvStoreValueType &valueType);
+    EXPORT std::shared_ptr<MediaLibraryKvStore> GetSingleKvStore(const KvStoreRoleType &roleType,
+        const std::string &storeId, const std::string &baseDir);
+    EXPORT int32_t CloneKvStore(const std::string &oldKvStoreId, const std::string &oldBaseDir,
+        const std::string &newKvStoreId, const std::string &newBaseDir);
 
 private:
     MediaLibraryKvStoreManager() = default;

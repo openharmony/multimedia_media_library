@@ -42,6 +42,7 @@ public:
     std::string GetRestoreExInfo();
     void ReportPortraitStat(int32_t sceneCode);
     std::string GetProgressInfo();
+    virtual void StartBackup();
 
 protected:
     int32_t Init(void);
