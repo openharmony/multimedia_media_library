@@ -17,6 +17,7 @@
 #include "metadata_extractor.h"
 
 #include <fcntl.h>
+#include "directory_ex.h"
 #include "hitrace_meter.h"
 #include "media_exif.h"
 #include "media_file_utils.h"
@@ -507,11 +508,10 @@ void PopulateExtractedAVLocationMeta(std::shared_ptr<Meta> &meta, std::unique_pt
 static void ParseLivePhotoCoverPosition(std::unique_ptr<Metadata> &data)
 {
     string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(data->GetMovingPhotoImagePath());
-    if (!MediaFileUtils::IsFileExists(extraPath)) {
-        MEDIA_ERR_LOG("file not exists, path:%{private}s", extraPath.c_str());
-        return;
-    }
-    UniqueFd fd(open(extraPath.c_str(), O_RDONLY));
+    string absExtraPath;
+    CHECK_AND_PRINT_LOG(PathToRealPath(extraPath, absExtraPath),
+        "file is not real path: %{private}s, errno: %{public}d", extraPath.c_str(), errno);
+    UniqueFd fd(open(absExtraPath.c_str(), O_RDONLY));
     uint32_t version{0};
     uint32_t frameIndex{0};
     bool hasCinemagraphInfo{false};
