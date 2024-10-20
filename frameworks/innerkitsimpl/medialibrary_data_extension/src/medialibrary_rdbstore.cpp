@@ -62,6 +62,7 @@
 #include "rdb_sql_utils.h"
 #include "result_set_utils.h"
 #include "source_album.h"
+#include "tab_old_photos_table_event_handler.h"
 #include "vision_column.h"
 #include "vision_ocr_column.h"
 #include "form_map.h"
@@ -1645,6 +1646,9 @@ static int32_t ExecuteSql(RdbStore &store)
         if (store.ExecuteSql(sqlStr) != NativeRdb::E_OK) {
             return NativeRdb::E_ERROR;
         }
+    }
+    if (TabOldPhotosTableEventHandler().OnCreate(store) != NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
     }
     return NativeRdb::E_OK;
 }
@@ -3980,6 +3984,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_COMPAT_LIVE_PHOTO) {
         CompatLivePhoto(store, oldVersion);
+    }
+    
+    if (oldVersion < VERSION_CREATE_TAB_OLD_PHOTOS) {
+        TabOldPhotosTableEventHandler().OnCreate(store);
     }
 }
 
