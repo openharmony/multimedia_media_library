@@ -37,6 +37,7 @@ const size_t MAX_FAILED_FILES_SIZE = 100;
 const string LOW_QUALITY_PATH = "Documents/cameradata/";
 
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
+std::shared_ptr<DataShare::DataShareHelper> BackupFileUtils::sDataShareHelper_ = nullptr;
 std::shared_ptr<FileAccessHelper> BackupFileUtils::fileAccessHelper_ = std::make_shared<FileAccessHelper>();
 
 bool FileAccessHelper::GetValidPath(string &filePath)
@@ -475,6 +476,33 @@ std::string BackupFileUtils::GetFailedFilesStr(const std::unordered_map<std::str
     }
     failedFilesStream << "\n]";
     return failedFilesStream.str();
+}
+
+void BackupFileUtils::CreateDataShareHelper(const sptr<IRemoteObject> &token)
+{
+    if (token != nullptr) {
+        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+        if (sDataShareHelper_ == nullptr) {
+            MEDIA_ERR_LOG("generate thumbnails after restore failed, the sDataShareHelper_ is nullptr.");
+        }
+    }
+}
+
+void BackupFileUtils::GenerateThumbnailsAfterRestore()
+{
+    if (sDataShareHelper_ == nullptr) {
+        return;
+    }
+    std::string updateUri = PAH_GENERATE_THUMBNAILS_RESTORE;
+    MediaFileUtils::UriAppendKeyValue(updateUri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(updateUri);
+    DataShare::DataSharePredicates emptyPredicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_THUMBNAIL_READY, 0);
+    int result = sDataShareHelper_->Update(uri, emptyPredicates, valuesBucket);
+    if (result < 0) {
+        MEDIA_ERR_LOG("generate thumbnails after restore failed, the sDataShareHelper_ update error");
+    }
 }
 
 bool BackupFileUtils::GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel,

@@ -161,7 +161,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.time(TAG + ' RESTORE');
     const backupDir = this.context.backupDir + 'restore';
     let sceneCode: number = this.getSceneCode(bundleVersion);
-    await mediabackup.startRestore(sceneCode, galleryAppName, mediaAppName, backupDir);
+    await mediabackup.startRestore(this.context, sceneCode, galleryAppName, mediaAppName, backupDir);
     console.timeEnd(TAG + ' RESTORE');
   }
 
@@ -170,7 +170,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.time(TAG + ' RESTORE EX');
     const backupDir = this.context.backupDir + 'restore';
     let sceneCode: number = this.getSceneCode(bundleVersion);
-    let restoreExResult: string = await mediabackup.startRestoreEx(sceneCode, galleryAppName, mediaAppName, backupDir,
+    let restoreExResult: string = await mediabackup.startRestoreEx(this.context, sceneCode, galleryAppName, mediaAppName, backupDir,
       bundleInfo);
     let restoreExInfo: string = await this.getRestoreExInfo(restoreExResult);
     console.log(TAG, `GET restoreExInfo: ${restoreExInfo}`);
