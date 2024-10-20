@@ -47,6 +47,7 @@
 #include "media_directory_type_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "media_old_photos_column.h"
 #include "media_scanner_manager.h"
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
@@ -78,6 +79,7 @@
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_story_operations.h"
 #include "medialibrary_sync_operation.h"
+#include "medialibrary_tab_old_photos_operations.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_uripermission_operations.h"
@@ -1723,6 +1725,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
         case OperationObject::ANALYSIS_ADDRESS:
             return QueryGeo(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        case OperationObject::TAB_OLD_PHOTO:
+            return MediaLibraryTabOldPhotosOperations().Query(
+                RdbUtils::ToPredicates(predicates, TabOldPhotosColumn::OLD_PHOTOS_TABLE), columns);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
