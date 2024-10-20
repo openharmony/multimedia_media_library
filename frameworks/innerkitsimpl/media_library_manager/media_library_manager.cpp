@@ -43,6 +43,7 @@
 #include "medialibrary_type_const.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
+#include "media_library_tab_old_photos_client.h"
 #include "moving_photo_file_utils.h"
 #include "post_proc.h"
 #include "permission_utils.h"
@@ -102,7 +103,7 @@ void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &tok
     }
 }
 
-static sptr<IRemoteObject> InitToken()
+sptr<IRemoteObject> MediaLibraryManager::InitToken()
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saManager == nullptr) {
@@ -360,7 +361,7 @@ static int32_t SolvePath(const string &filePath, string &tempPath, string &userI
     return E_SUCCESS;
 }
 
-static int32_t CheckResultSet(std::shared_ptr<DataShareResultSet> &resultSet)
+int32_t MediaLibraryManager::CheckResultSet(std::shared_ptr<DataShareResultSet> &resultSet)
 {
     int count = 0;
     auto ret = resultSet->GetRowCount(count);
@@ -1343,6 +1344,11 @@ shared_ptr<PhotoAssetProxy> MediaLibraryManager::CreatePhotoAssetProxy(CameraSho
     shared_ptr<PhotoAssetProxy> photoAssetProxy = make_shared<PhotoAssetProxy>(dataShareHelper, cameraShotType,
         callingUid, userId);
     return photoAssetProxy;
+}
+
+std::unordered_map<std::string, std::string> MediaLibraryManager::GetUrisByOldUris(std::vector<std::string> uris)
+{
+    return TabOldPhotosClient(*this).GetUrisByOldUris(uris);
 }
 } // namespace Media
 } // namespace OHOS
