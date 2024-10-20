@@ -19,6 +19,7 @@
 #include <string>
 
 #include "backup_const.h"
+#include "datashare_helper.h"
 #include "metadata.h"
 
 namespace OHOS {
@@ -53,6 +54,8 @@ public:
     static std::string GetDetailsPath(const std::string &type,
         const std::unordered_map<std::string, int32_t> &failedFiles);
     static std::string GetFailedFilesStr(const std::unordered_map<std::string, int32_t> &failedFiles);
+    static void CreateDataShareHelper(const sptr<IRemoteObject> &token);
+    static void GenerateThumbnailsAfterRestore();
     static bool GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel, size_t &pos);
     static bool ShouldIncludeSd(const std::string &prefix);
     static void DeleteSdDatabase(const std::string &prefix);
@@ -63,6 +66,7 @@ public:
         string relativePath, bool hasLowQualityImage);
 
 private:
+    static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
     static int32_t CreateAssetRealName(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &name);

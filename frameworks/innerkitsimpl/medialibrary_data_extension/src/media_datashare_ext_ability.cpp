@@ -420,6 +420,14 @@ static int32_t HandleShortPermission(bool &need)
     return err;
 }
 
+static int32_t HandleRestorePermission(MediaLibraryCommand &cmd)
+{
+    if (cmd.GetUriStringWithoutSegment() == PAH_GENERATE_THUMBNAILS_RESTORE) {
+        return PermissionUtils::CheckCallerPermission(PERM_READ_IMAGEVIDEO) ? E_SUCCESS : E_PERMISSION_DENIED;
+    }
+    return E_PERMISSION_DENIED;
+}
+
 static int32_t UserFileMgrPermissionCheck(MediaLibraryCommand &cmd, const bool isWrite)
 {
     static const set<OperationObject> USER_FILE_MGR_OBJECTS = {
@@ -803,6 +811,9 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
     if (err != E_SUCCESS) {
         err = CheckPermFromUri(cmd, true);
+    }
+    if (err != E_SUCCESS) {
+        err = HandleRestorePermission(cmd);
     }
     bool isMediatoolOperation = IsMediatoolOperation(cmd);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());

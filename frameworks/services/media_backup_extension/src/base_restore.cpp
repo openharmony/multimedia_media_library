@@ -1149,7 +1149,7 @@ void BaseRestore::RestoreThumbnail()
     otherProcessStatus_ = ProcessStatus::START;
     otherTotalNumber_ += THUMBNAIL_NUM;
     MEDIA_INFO_LOG("onProcess Update otherTotalNumber_: %{public}lld", (long long)otherTotalNumber_);
-    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
+    BackupFileUtils::GenerateThumbnailsAfterRestore();
     otherProcessStatus_ = ProcessStatus::STOP;
 }
 
