@@ -66,6 +66,8 @@ public:
     static string ConvertLowQualityPath(int32_t sceneCode, const std::string &filePath, const string &relativePath);
     static bool IsLowQualityImage(std::string &filePath, int32_t sceneCode,
         string relativePath, bool hasLowQualityImage);
+    static std::string GetFileFolderFromPath(int32_t sceneCode, const std::string &path,
+        bool shouldStartWithSlash = true);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
