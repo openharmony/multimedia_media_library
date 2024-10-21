@@ -45,7 +45,7 @@ private:
 
 public:
     TabOldPhotosClient(MediaLibraryManager &mediaLibraryManager) : mediaLibraryManager_(mediaLibraryManager) {};
-    std::unordered_map<std::string, std::string> GetUrisByOldUris(std::vector<std::string> uris);
+    std::unordered_map<std::string, std::string> GetUrisByOldUris(std::vector<std::string>& uris);
 
 private:
     int BuildPredicates(const std::vector<std::string> &queryTabOldPhotosUris,
