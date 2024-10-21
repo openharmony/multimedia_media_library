@@ -509,8 +509,10 @@ static void ParseLivePhotoCoverPosition(std::unique_ptr<Metadata> &data)
 {
     string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(data->GetMovingPhotoImagePath());
     string absExtraPath;
-    CHECK_AND_PRINT_LOG(PathToRealPath(extraPath, absExtraPath),
-        "file is not real path: %{private}s, errno: %{public}d", extraPath.c_str(), errno);
+    if (!PathToRealPath(extraPath, absExtraPath)) {
+        MEDIA_ERR_LOG("file is not real path: %{private}s, errno: %{public}d", extraPath.c_str(), errno);
+        return;
+    }
     UniqueFd fd(open(absExtraPath.c_str(), O_RDONLY));
     uint32_t version{0};
     uint32_t frameIndex{0};
