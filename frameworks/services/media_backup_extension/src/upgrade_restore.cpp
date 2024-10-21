@@ -295,6 +295,7 @@ bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::
     info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
     info.displayName = BackupFileUtils::GetFileNameFromPath(info.filePath);
     info.title = BackupFileUtils::GetFileTitle(info.displayName);
+    info.packageName = BackupFileUtils::GetFileFolderFromPath(sceneCode_, info.filePath, false);
     info.isFavorite = 0;
     info.recycledTime = 0;
     return true;

@@ -587,5 +587,22 @@ bool BackupFileUtils::ConvertToMovingPhoto(FileInfo &fileInfo)
     fileInfo.filePath = movingPhotoImagePath;
     return true;
 }
+
+std::string BackupFileUtils::GetFileFolderFromPath(int32_t sceneCode, const std::string &path,
+    bool shouldStartWithSlash)
+{
+    if (path.empty()) {
+        MEDIA_ERR_LOG("Failed to obtain file folder because given path is empty");
+        return "";  
+    }
+    size_t endPosition = path.rfind("/");
+    if (endPosition == std::string::npos) {
+        MEDIA_ERR_LOG("Failed to obtain file folder because / not found, path: %{public}s",
+            GarbleFilePath(path, sceneCode).c_str());
+        return "";  
+    }
+    size_t startPosition = MediaFileUtils::StartsWith(path, "/") && !shouldStartWithSlash ? 1 : 0;
+    return path.substr(startPosition, endPosition);
+}
 } // namespace Media
 } // namespace OHOS
