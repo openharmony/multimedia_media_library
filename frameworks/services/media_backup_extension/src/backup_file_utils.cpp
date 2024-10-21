@@ -363,8 +363,8 @@ string BackupFileUtils::GetFileNameFromPath(const string &path)
 {
     size_t pos = GetLastSlashPosFromPath(path);
     if (pos == INVALID_RET || pos + 1 >= path.size()) {
-        MEDIA_ERR_LOG("Failed to obtain file name because pos is invalid or out of range, path: %{public}s,
-            size: %{public}s, pos: %{public}zu", GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str(), path.size(), pos);
+        MEDIA_ERR_LOG("Failed to obtain file name because pos is invalid or out of range, path: %{public}s, "
+            "size: %{public}zu, pos: %{public}zu", GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str(), path.size(), pos);
         return "";
     }
     return path.substr(pos + 1);
