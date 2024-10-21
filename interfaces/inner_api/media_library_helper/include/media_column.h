@@ -216,7 +216,7 @@ public:
     static const std::string DROP_INSERT_GENERATE_HIGHLIGHT_THUMBNAIL EXPORT;
     static const std::string DROP_UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL EXPORT;
     static const std::string INDEX_HIGHLIGHT_FILEID EXPORT;
-
+    
     // photo uri
     static const std::string PHOTO_URI_PREFIX EXPORT;
     static const std::string PHOTO_TYPE_URI EXPORT;
@@ -284,6 +284,8 @@ public:
     // create table sql
     static const std::string CREATE_PHOTO_EXT_TABLE EXPORT;
 };
+
+
 
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_COLUMN_H_
