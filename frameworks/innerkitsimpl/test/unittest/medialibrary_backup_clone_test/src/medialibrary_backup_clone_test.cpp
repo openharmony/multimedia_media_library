@@ -479,11 +479,15 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_update_failed_fil
 {
     MEDIA_INFO_LOG("medialibrary_backup_base_update_failed_files_001 start");
     ClearRestoreExInfo();
-    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE), TEST_FILE_PATH_PHOTO,
+    FileInfo fileInfo;
+    fileInfo.oldPath = TEST_FILE_PATH_PHOTO;
+    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE), fileInfo,
         RestoreError::FILE_INVALID);
-    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO), TEST_FILE_PATH_VIDEO,
+    fileInfo.oldPath = TEST_FILE_PATH_VIDEO;
+    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO), fileInfo,
         RestoreError::MOVE_FAILED);
-    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_AUDIO), TEST_FILE_PATH_AUDIO,
+    fileInfo.oldPath = TEST_FILE_PATH_AUDIO;
+    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_AUDIO), fileInfo,
         RestoreError::PATH_INVALID);
     MEDIA_INFO_LOG("Get failedFilesMap size: %{public}zu", restoreService->failedFilesMap_.size());
     EXPECT_GT(restoreService->failedFilesMap_.size(), 0);
@@ -506,12 +510,13 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_info_
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_get_failed_files_str_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_file_get_failed_files_str_001 start");
-    unordered_map<string, int32_t> failedFiles = {
-        { TEST_FILE_PATH_PHOTO, RestoreError::FILE_INVALID },
-        { TEST_FILE_PATH_VIDEO, RestoreError::MOVE_FAILED },
-        { TEST_FILE_PATH_AUDIO, RestoreError::PATH_INVALID },
+    FileInfo fileInfo;
+    unordered_map<string, FailedFileInfo> failedFiles = {
+        { TEST_FILE_PATH_PHOTO, FailedFileInfo(CLONE_RESTORE_ID, fileInfo, RestoreError::FILE_INVALID) },
+        { TEST_FILE_PATH_VIDEO, FailedFileInfo(CLONE_RESTORE_ID, fileInfo, RestoreError::MOVE_FAILED) },
+        { TEST_FILE_PATH_AUDIO, FailedFileInfo(CLONE_RESTORE_ID, fileInfo, RestoreError::PATH_INVALID) },
     };
-    string failedFilesStr = BackupFileUtils::GetFailedFilesStr(failedFiles);
+    string failedFilesStr = BackupFileUtils::GetFailedFilesStr(CLONE_RESTORE_ID, failedFiles, MAX_FAILED_FILES_LIMIT);
     MEDIA_INFO_LOG("Get failedFilesStr: %{public}s", failedFilesStr.c_str());
     EXPECT_GT(failedFilesStr.size(), 0);
 }
