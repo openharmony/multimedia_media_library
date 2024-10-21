@@ -145,15 +145,22 @@ bool ThumbnailUtils::DeleteBeginTimestampDir(ThumbnailData &data)
     string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
     string dirName = MediaFileUtils::GetParentPath(fileName);
 
+    if (access(dirName.c_str(), F_OK) != 0) {
+        MEDIA_INFO_LOG("No need to delete beginTimeStamp, directory not exists path: %{public}s, id: %{public}s",
+            DfxUtils::GetSafePath(dirName).c_str(), data.id.c_str());
+        return true;
+    }
+
     for (const auto &dirEntry : std::filesystem::directory_iterator{ dirName }) {
-        if (!std::filesystem::is_directory(dirEntry.status())) {
+        string dir = dirEntry.path().string();
+        if (!MediaFileUtils.IsDirectory(dir)) {
             continue;
         }
-        string folderName = dirEntry.path().filename().string();
+        string folderName = MediaFileUtils::GetFileName(dir);
         if (folderName.find("beginTimeStamp") == 0) {
             string folderPath = dirName + '/' + folderName;
             if (!MediaFileUtils::DeleteDir(folderPath)) {
-                MEDIA_INFO_LOG("failed to delete beginStamp directory, path: %{public}s, id: %{public}s",
+                MEDIA_ERR_LOG("failed to delete beginStamp directory, path: %{public}s, id: %{public}s",
                     DfxUtils::GetSafePath(folderPath).c_str(), data.id.c_str());
                 return false;
             }
@@ -1098,9 +1105,11 @@ bool ThumbnailUtils::UpdateHighlightInfo(ThumbRdbOpt &opts, ThumbnailData &data,
     MediaLibraryTracer tracer;
     tracer.Start("UpdateHighlightInfo opts.store->Update");
     values.PutLong(PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER, 1);
-    
-    err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-        vector<string> { opts.row });
+
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.EqualTo(MEDIA_DATA_DB_ID, data.id);
+    rdbPredicates.EqualTo(MEDIA_DATA_DB_VIDEO_TRACKS, data.tracks);
+    err = opts.store->Update(changedRows, values, rdbPredicates);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("UpdateHighlightInfo failed! %{public}d", err);
         return false;

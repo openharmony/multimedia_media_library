@@ -237,7 +237,8 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         fileInfos[i].cloudPath = cloudPath;
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
         SetValueFromMetaData(fileInfos[i], value);
-        if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID && this->HasSameFileForDualClone(fileInfos[i])) {
+        if ((sceneCode == DUAL_FRAME_CLONE_RESTORE_ID || sceneCode == OTHERS_PHONE_CLONE_RESTORE) &&
+            this->HasSameFileForDualClone(fileInfos[i])) {
             fileInfos[i].needMove = false;
             RemoveDuplicateDualCloneFiles(fileInfos[i]);
             MEDIA_WARN_LOG("File %{public}s already exists.",
@@ -273,7 +274,7 @@ static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::Valu
 }
 
 static void InsertOrientation(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
-    const FileInfo &fileInfo)
+    FileInfo &fileInfo, int32_t sceneCode)
 {
     bool hasOrientation = value.HasColumn(PhotoColumn::PHOTO_ORIENTATION);
     if (hasOrientation && fileInfo.fileType != MEDIA_TYPE_VIDEO) {
@@ -283,6 +284,9 @@ static void InsertOrientation(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
         value.Delete(PhotoColumn::PHOTO_ORIENTATION);
     }
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata->GetOrientation()); // video use orientation in metadata
+    if (sceneCode == OTHERS_PHONE_CLONE_RESTORE) {
+        fileInfo.orientation = metadata->GetOrientation();
+    }
 }
 
 static void SetCoverPosition(const FileInfo &fileInfo,
@@ -344,7 +348,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
     value.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, data->GetDynamicRangeType());
     InsertDateAdded(data, value);
-    InsertOrientation(data, value, fileInfo);
+    InsertOrientation(data, value, fileInfo, sceneCode_);
     int64_t dateAdded = 0;
     ValueObject valueObject;
     if (value.GetObject(MediaColumn::MEDIA_DATE_ADDED, valueObject)) {
@@ -1148,5 +1152,8 @@ void BaseRestore::RestoreThumbnail()
     MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
     otherProcessStatus_ = ProcessStatus::STOP;
 }
+
+void BaseRestore::StartBackup()
+{}
 } // namespace Media
 } // namespace OHOS

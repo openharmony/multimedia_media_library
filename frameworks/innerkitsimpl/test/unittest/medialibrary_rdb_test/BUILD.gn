@@ -26,6 +26,7 @@ ohos_unittest("medialibrary_rdb_test") {
     "./include",
     "../medialibrary_unittest_utils/include",
     "../get_self_permissions/include",
+    "${MEDIALIB_CLOUD_SYNC_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/device_manage",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/devices_info_interact",
@@ -38,6 +39,7 @@ ohos_unittest("medialibrary_rdb_test") {
   ]
 
   sources = [
+    "${MEDIALIB_CLOUD_SYNC_PATH}/src/cloud_sync_helper.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/moving_photo_processor.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/media_datashare_stub_impl_test.cpp",
@@ -70,6 +72,14 @@ ohos_unittest("medialibrary_rdb_test") {
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
   ]
+
+  defines = []
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.filemanagement_dfs_service)) {
+    defines += [ "CLOUD_SYNC_MANAGER" ]
+    external_deps += [ "dfs_service:cloudsync_kit_inner" ]
+  }
 
   sanitize = {
     cfi = true
