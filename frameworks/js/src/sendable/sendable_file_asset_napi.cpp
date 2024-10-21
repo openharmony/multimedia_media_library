@@ -853,17 +853,17 @@ static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
         string onClause = VISION_IMAGE_FACE_TABLE + "." + TAG_ID + " = " + VISION_FACE_TAG_TABLE + "." + TAG_ID;
         predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ onClause });
     }
-    int fileId = context->objectInfo->GetFileId();
+    string fileId = to_string(context->objectInfo->GetFileId());
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
         vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = " +
             GEO_KNOWLEDGE_TABLE + "." + LATITUDE + " AND " + PhotoColumn::PHOTOS_TABLE + "." +
             PhotoColumn::PHOTO_LONGITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LONGITUDE + " AND " +
-            GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \"" + language + "\"" };
+            GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \'" + language + "\'" };
         predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(onClause);
-        predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, to_string(fileId));
+        predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, fileId);
     } else {
-        predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+        predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     }
     Uri uri(analysisInfo.uriStr);
     std::vector<std::string> fetchColumn = analysisInfo.fetchColumn;
@@ -874,7 +874,7 @@ static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
         Uri uri(PAH_QUERY_ANA_TOTAL);
         DataShare::DataSharePredicates predicates;
         std::vector<std::string> fetchColumn = { analysisInfo.fieldStr };
-        predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+        predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
         auto fieldValue = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
         string value = MediaLibraryNapiUtils::ParseResultSet2JsonStr(fieldValue, fetchColumn);
         if (strstr(value.c_str(), ANALYSIS_INIT_VALUE.c_str()) == NULL) {
