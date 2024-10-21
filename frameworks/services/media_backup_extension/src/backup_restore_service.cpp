@@ -15,6 +15,8 @@
 
 #define MLOG_TAG "MediaLibraryRestoreService"
 
+#include <securec.h>
+
 #include "backup_restore_service.h"
 #include "ffrt_inner.h"
 #include "media_log.h"
@@ -88,7 +90,13 @@ void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &ga
 void BackupRestoreService::StartRestoreEx(const RestoreEx &info, std::string &restoreExInfo)
 {
     MEDIA_INFO_LOG("Start restoreEx service: %{public}d", info.sceneCode);
-    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
+    ffrt_worker_num_param qosConfig;
+    if (memset_s(&qosConfig, sizeof(qosConfig), -1, sizeof(qosConfig)) == EOK) {
+        qosConfig.effectLen = 1;
+        qosConfig.qosConfigArray[0].qos = ffrt::qos_utility;
+        qosConfig.qosConfigArray[0].hardLimit = MAX_THREAD_NUM;
+        ffrt_set_qos_worker_num(&qosConfig);
+    }
     Init(info);
     if (restoreService_ == nullptr) {
         MEDIA_ERR_LOG("Create media restore service failed.");
