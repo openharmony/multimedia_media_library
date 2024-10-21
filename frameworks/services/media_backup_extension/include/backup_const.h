@@ -49,7 +49,10 @@ constexpr uint32_t COVER_URI_NUM = 3;
 constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
 constexpr uint32_t THUMBNAIL_NUM = 500;
+constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
 
+const std::string RESTORE_FILES_CLOUD_DIR = "/storage/cloud/files/";
+const std::string RESTORE_FILES_LOCAL_DIR = "/storage/media/local/files/";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
@@ -159,6 +162,21 @@ const std::string GALLERY_ALBUM_NAME = "albumName";
 const std::string GALLERY_ALBUM_BUCKETID = "relativeBucketId";
 const std::string GALLERY_ALBUM_IPATH = "lPath";
 const std::string GALLERY_NICK_NAME = "nick_name";
+
+const int RESTORE_THUMBNAIL_READY_SUCCESS = 3;
+const int RESTORE_THUMBNAIL_READY_NO_THUMBNAIL = 0;
+const int RESTORE_THUMBNAIL_VISIBLE_FALSE = 0;
+const int RESTORE_THUMBNAIL_VISIBLE_TRUE = 1;
+const int RESTORE_LCD_VISIT_TIME_SUCCESS = 2;
+const int RESTORE_LCD_VISIT_TIME_NO_LCD = 0;
+const std::string MEDIA_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data";
+const std::string MEDIA_KVSTORE_YEAR_STOREID = "medialibrary_year_astc_data";
+const std::string CLONE_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data_clone";
+const std::string CLONE_KVSTORE_YEAR_STOREID = "medialibrary_year_astc_data_clone";
+const std::string MEDIA_KVDB_DIR = "/data/storage/el2/database";
+const std::string CLONE_KVDB_BACKUP_DIR = "/storage/media/local/files/.backup/backup/media_temp_kvdb";
+const std::string RESTORE_KVSTORE_FILE_ID_TEMPLATE = "0000000000";
+const std::string RESTORE_KVSTORE_DATE_KEY_TEMPLATE = "0000000000000";
 
 const std::string FILE_SEPARATOR = "/";
 
@@ -278,6 +296,8 @@ struct FileInfo {
     bool isNew {true};
     int64_t dateTaken {0};
     int64_t firstUpdateTime {0};
+    int64_t thumbnailReady {0};
+    int32_t lcdVisitTime {0};
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
     std::unordered_map<std::string, std::unordered_set<int32_t>> tableAlbumSetMap;
     /**
@@ -315,6 +335,8 @@ struct FileInfo {
     int32_t isRelatedToPhotoMap = 0;
     bool needMove {true};
     int32_t photoQuality;
+    std::string oldAstcDateKey;
+    std::string newAstcDateKey;
 };
 
 struct AlbumInfo {
@@ -346,12 +368,33 @@ struct MapInfo {
     int32_t fileId {-1};
 };
 
+struct FailedFileInfo {
+    std::string albumName;
+    std::string displayName;
+    std::string errorCode;
+    FailedFileInfo() = default;
+    FailedFileInfo(int32_t sceneCode, const FileInfo &fileInfo, int32_t givenErrorCode)
+    {
+        displayName = fileInfo.displayName;
+        errorCode = std::to_string(givenErrorCode);
+        if (fileInfo.recycledTime > 0) {
+            albumName = "最近删除";
+            return;
+        }
+        if (fileInfo.hidden > 0) {
+            albumName = sceneCode == CLONE_RESTORE_ID ? "已隐藏" : "隐藏相册";
+            return;
+        }
+        albumName = fileInfo.packageName;
+    }
+};
+
 struct SubCountInfo {
     uint64_t successCount {0};
     uint64_t duplicateCount {0};
-    std::unordered_map<std::string, int32_t> failedFiles;
+    std::unordered_map<std::string, FailedFileInfo> failedFiles;
     SubCountInfo(int64_t successCount, int64_t duplicateCount,
-        const std::unordered_map<std::string, int32_t> &failedFiles)
+        const std::unordered_map<std::string, FailedFileInfo> &failedFiles)
         : successCount(successCount), duplicateCount(duplicateCount), failedFiles(failedFiles) {}
 };
 

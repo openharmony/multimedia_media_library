@@ -53,6 +53,7 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "moving_photo_processor.h"
 #include "parameters.h"
 #include "parameter.h"
 #include "photo_album_column.h"
@@ -61,6 +62,7 @@
 #include "rdb_sql_utils.h"
 #include "result_set_utils.h"
 #include "source_album.h"
+#include "tab_old_photos_table_event_handler.h"
 #include "vision_column.h"
 #include "vision_ocr_column.h"
 #include "form_map.h"
@@ -374,6 +376,9 @@ const std::string SQL_QUERY_OTHER_DUPLICATE_ASSETS_COUNT = "\
       ) ";
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
+
+std::mutex MediaLibraryRdbStore::reconstructLock_;
+
 int32_t oldVersion_ = -1;
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
@@ -1641,6 +1646,9 @@ static int32_t ExecuteSql(RdbStore &store)
         if (store.ExecuteSql(sqlStr) != NativeRdb::E_OK) {
             return NativeRdb::E_ERROR;
         }
+    }
+    if (TabOldPhotosTableEventHandler().OnCreate(store) != NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
     }
     return NativeRdb::E_OK;
 }
@@ -3296,6 +3304,20 @@ static void AddAnalysisAlbumTotalTable(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void CompatLivePhoto(RdbStore &store, int32_t oldVersion)
+{
+    MEDIA_INFO_LOG("Start configuring param for live photo compatibility");
+    bool ret = false;
+    // there is no need to ResetCursor() twice if album fusion is included
+    if (oldVersion >= VERSION_ADD_OWNER_ALBUM_ID) {
+        ret = system::SetParameter(REFRESH_CLOUD_LIVE_PHOTO_FLAG, CLOUD_LIVE_PHOTO_NOT_REFRESHED);
+        MEDIA_INFO_LOG("Set parameter for refreshing cloud live photo, ret: %{public}d", ret);
+    }
+
+    ret = system::SetParameter(COMPAT_LIVE_PHOTO_FILE_ID, "1"); // start compating from file_id: 1
+    MEDIA_INFO_LOG("Set parameter for compating local live photo, ret: %{public}d", ret);
+}
+
 static void ResetCloudCursorAfterInitFinish()
 {
     MEDIA_INFO_LOG("Try reset cloud cursor after storage reconstruct");
@@ -3364,6 +3386,24 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
 }
 
+static void ReconstructMediaLibraryStorageFormatWithLock(AsyncTaskData *data)
+{
+    if (data == nullptr) {
+        return;
+    }
+    CompensateAlbumIdData *compensateData = static_cast<CompensateAlbumIdData *>(data);
+    if (compensateData == nullptr) {
+        MEDIA_ERR_LOG("compensateData is nullptr");
+        return;
+    }
+    std::unique_lock<std::mutex> reconstructLock(compensateData->lock_, std::defer_lock);
+    if (reconstructLock.try_lock()) {
+        ReconstructMediaLibraryStorageFormatExecutor(data);
+    } else {
+        MEDIA_WARN_LOG("Failed to acquire lock, skipping task Reconstruct.");
+    }
+}
+
 static void AddOwnerAlbumIdAndRefractorTrigger(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -3423,12 +3463,12 @@ int32_t MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(RdbStore &sto
         MEDIA_ERR_LOG("Failed to get aysnc worker instance!");
         return E_FAIL;
     }
-    auto *taskData = new (std::nothrow) CompensateAlbumIdData(&store);
+    auto *taskData = new (std::nothrow) CompensateAlbumIdData(&store, MediaLibraryRdbStore::reconstructLock_);
     if (taskData == nullptr) {
         MEDIA_ERR_LOG("Failed to alloc async data for compensate album id");
         return E_NO_MEMORY;
     }
-    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(ReconstructMediaLibraryStorageFormatExecutor, taskData);
+    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(ReconstructMediaLibraryStorageFormatWithLock, taskData);
     asyncWorker->AddTask(asyncTask, false);
     return E_OK;
 }
@@ -3940,6 +3980,14 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
     }
     if (oldVersion < VERSION_ADD_HIGHLIGHT_MAP_TABLES) {
         AddHighlightMapTable(store);
+    }
+
+    if (oldVersion < VERSION_COMPAT_LIVE_PHOTO) {
+        CompatLivePhoto(store, oldVersion);
+    }
+    
+    if (oldVersion < VERSION_CREATE_TAB_OLD_PHOTOS) {
+        TabOldPhotosTableEventHandler().OnCreate(store);
     }
 }
 

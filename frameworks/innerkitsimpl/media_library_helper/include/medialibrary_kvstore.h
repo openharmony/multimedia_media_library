@@ -51,6 +51,11 @@ public:
     EXPORT int32_t BatchQuery(std::vector<std::string> &batchKeys, std::vector<std::vector<uint8_t>> &values);
     EXPORT bool Close();
     EXPORT int32_t RebuildKvStore(const KvStoreValueType &valueType, const std::string &baseDir);
+    EXPORT int32_t BatchInsert(const std::vector<DistributedKv::Entry> &entries);
+    EXPORT int32_t InitSingleKvstore(const KvStoreRoleType &roleType,
+        const std::string &storeId, const std::string &baseDir);
+    EXPORT int32_t PutAllValueToNewKvStore(std::shared_ptr<MediaLibraryKvStore> &newKvstore);
+
 private:
     bool GetKvStoreOption(DistributedKv::Options &options, const KvStoreRoleType &roleType, const std::string &baseDir);
 
