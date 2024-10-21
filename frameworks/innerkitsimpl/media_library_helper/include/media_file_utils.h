@@ -180,6 +180,7 @@ public:
     EXPORT static void ModifyFile(const std::string path, int64_t modifiedTime);
     EXPORT static std::string GetUriWithoutDisplayname(const std::string &uri);
     EXPORT static bool CheckSupportedWatermarkType(int32_t watermarkType);
+    EXPORT static int32_t CopyDirectory(const std::string &srcDir, const std::string &dstDir);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);

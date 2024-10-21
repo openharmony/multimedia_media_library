@@ -61,7 +61,7 @@
 #include "safe_map.h"
 #include "search_column.h"
 #include "short_term_callback.h"
-#include "grant_old_photo_assets_read_permission_callback.h"
+#include "request_photo_uris_read_permission_callback.h"
 #include "smart_album_napi.h"
 #include "story_album_column.h"
 #include "string_ex.h"
@@ -356,7 +356,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_STATIC_FUNCTION("showAssetsCreationDialog", ShowAssetsCreationDialog),
         DECLARE_NAPI_STATIC_FUNCTION("checkShortTermPermission", CheckShortTermPermission),
         DECLARE_NAPI_STATIC_FUNCTION("createAssetWithShortTermPermission", CreateAssetWithShortTermPermission),
-        DECLARE_NAPI_STATIC_FUNCTION("grantOldPhotoAssetsReadPermission", GrantOldPhotoAssetsReadPermission),
+        DECLARE_NAPI_STATIC_FUNCTION("requestPhotoUrisReadPermission", RequestPhotoUrisReadPermission),
         DECLARE_NAPI_PROPERTY("PhotoType", CreateMediaTypeUserFileEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumKeys", CreateAlbumKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumType", CreateAlbumTypeEnum(env)),
@@ -8353,18 +8353,18 @@ napi_value MediaLibraryNapi::CreateAssetWithShortTermPermission(napi_env env, na
     return result;
 }
 
-static bool InitGrantOldPhotoAssetsReadPermissionRequest(OHOS::AAFwk::Want &want,
-    shared_ptr<GrantOldPhotoAssetsReadPermissionCallback> &callback, napi_env env, napi_value args[], size_t argsLen)
+static bool InitRequestPhotoUrisReadPermissionRequest(OHOS::AAFwk::Want &want,
+    shared_ptr<RequestPhotoUrisReadPermissionCallback> &callback, napi_env env, napi_value args[], size_t argsLen)
 {
-    NAPI_INFO_LOG("InitGrantOldPhotoAssetsReadPermission enter.");
+    NAPI_INFO_LOG("InitRequestPhotoUrisReadPermission enter.");
     if (argsLen < ARGS_FOUR) {
         return false;
     }
 
     std::string targetType = "photoPicker";
     want.SetParam(ABILITY_WANT_PARAMS_UIEXTENSIONTARGETTYPE, targetType);
-    std::string grantOldPhotoAssetsTag = "grantOldPhotoAssetsPage";
-    want.SetParam(TARGET_PAGE, grantOldPhotoAssetsTag);
+    std::string requestPhotoUrisTag = "requestPhotoUrisPage";
+    want.SetParam(TARGET_PAGE, requestPhotoUrisTag);
 
      // second param: Array<string>
     if (!ParseAndSetFileUriArray(env, want, args[PARAM1])) {
@@ -8383,9 +8383,9 @@ static bool InitGrantOldPhotoAssetsReadPermissionRequest(OHOS::AAFwk::Want &want
     return true;
 }
 
-napi_value MediaLibraryNapi::GrantOldPhotoAssetsReadPermission(napi_env env, napi_callback_info info)
+napi_value MediaLibraryNapi::RequestPhotoUrisReadPermission(napi_env env, napi_callback_info info)
 {
-    NAPI_INFO_LOG("GrantOldPhotoAssetsReadPermission enter");
+    NAPI_INFO_LOG("RequestPhotoUrisReadPermission enter");
     size_t argc = ARGS_FOUR;
     napi_value args[ARGS_FOUR] = {nullptr};
     napi_value thisVar = nullptr;
@@ -8415,10 +8415,10 @@ napi_value MediaLibraryNapi::GrantOldPhotoAssetsReadPermission(napi_env env, nap
 
     // set want
     OHOS::AAFwk::Want want;
-    shared_ptr<GrantOldPhotoAssetsReadPermissionCallback> callback =
-        make_shared<GrantOldPhotoAssetsReadPermissionCallback>(env, uiContent);
-    NAPI_ASSERT(env, InitGrantOldPhotoAssetsReadPermissionRequest(want, callback, env, args, sizeof(args)),
-            "Parse GrantOldPhotoAssetsReadPermission input fail.");
+    shared_ptr<RequestPhotoUrisReadPermissionCallback> callback =
+        make_shared<RequestPhotoUrisReadPermissionCallback>(env, uiContent);
+    NAPI_ASSERT(env, InitRequestPhotoUrisReadPermissionRequest(want, callback, env, args, sizeof(args)),
+            "Parse RequestPhotoUrisReadPermission input fail.");
 
     // regist callback and config
     OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
@@ -8429,7 +8429,7 @@ napi_value MediaLibraryNapi::GrantOldPhotoAssetsReadPermission(napi_env env, nap
     };
     OHOS::Ace::ModalUIExtensionConfig config;
     config.isProhibitBack = true;
-    NAPI_INFO_LOG("GrantOldPhotoAssetsReadPermission regist callback and config success.");
+    NAPI_INFO_LOG("RequestPhotoUrisReadPermission regist callback and config success.");
 
     int32_t sessionId = uiContent->CreateModalUIExtension(want, extensionCallback, config);
     NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");

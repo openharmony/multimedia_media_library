@@ -152,6 +152,12 @@ enum class MovingPhotoEffectMode : int32_t {
     IMAGE_ONLY = 10
 };
 
+enum class PhotoPositionType : int32_t {
+    LOCAL = 1,
+    CLOUD = 2,
+    LOCAL_AND_CLOUD = 3
+};
+
 enum class CloudEnhancementTaskStage : int32_t {
     TASK_STAGE_EXCEPTION = -1,
     TASK_STAGE_PREPARING,

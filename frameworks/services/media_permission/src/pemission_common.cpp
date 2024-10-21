@@ -40,10 +40,19 @@ bool IsMediatoolOperation(MediaLibraryCommand &cmd)
         cmd.GetOprnObject() == OperationObject::TOOL_ALBUM || cmd.GetOprnType() == Media::OperationType::DELETE_TOOL;
 }
 
-bool IsDeveloperMediaTool(MediaLibraryCommand &cmd)
+static bool IsMediatoolOperationType(MediaLibraryCommand &cmd, const std::string &openFileNode)
+{
+    return cmd.GetOprnType() == Media::OperationType::TOOL_QUERY_BY_DISPLAY_NAME ||
+        cmd.GetOprnType() == Media::OperationType::DELETE_TOOL ||
+        cmd.GetOprnType() == Media::OperationType::UPDATE ||
+        cmd.GetOprnType() == Media::OperationType::ALBUM_DELETE_ASSETS ||
+        (cmd.GetOprnType() == Media::OperationType::OPEN && openFileNode.find('w') == string::npos);
+}
+
+bool IsDeveloperMediaTool(MediaLibraryCommand &cmd, const std::string openFileNode)
 {
     if (!PermissionUtils::IsRootShell() &&
-        !(PermissionUtils::IsHdcShell() && cmd.GetOprnType() == Media::OperationType::TOOL_QUERY_BY_DISPLAY_NAME)) {
+        !(PermissionUtils::IsHdcShell() && IsMediatoolOperationType(cmd, openFileNode))) {
         MEDIA_ERR_LOG("Mediatool permission check failed: target is not root");
         return false;
     }

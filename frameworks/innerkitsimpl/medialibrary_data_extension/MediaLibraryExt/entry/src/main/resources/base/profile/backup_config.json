@@ -14,7 +14,9 @@
         "/storage/media/local/files/.editData/",
         "/storage/media/local/files/Audio/",
         "/storage/media/local/files/Audios/",
-        "/data/storage/el2/database/rdb/"
+        "/data/storage/el2/database/rdb/",
+        "/storage/media/local/files/.thumbs/",
+        "/storage/media/local/files/.backup/backup/media_temp_kvdb/"
     ],
     "fullBackupOnly": true
 }
