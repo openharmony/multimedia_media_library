@@ -55,7 +55,6 @@ void MultiStagesVideoCaptureManager::AddVideoInternal(const std::string &videoId
     MEDIA_INFO_LOG("AddVideoInternal filePath = %{public}s", filePath.c_str());
 
     string absSrcFilePath;
-
     if (!PathToRealPath(filePath, absSrcFilePath)) {
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
         return;
@@ -71,7 +70,7 @@ void MultiStagesVideoCaptureManager::AddVideoInternal(const std::string &videoId
     string dirPath = filePath.substr(0, filePath.rfind('/'));
     char realDirPath[PATH_MAX] = {0};
     if (realpath(dirPath.c_str(), realDirPath) == nullptr) {
-        MEDIA_ERR_LOG("check dirPath fail");
+        MEDIA_ERR_LOG("check dirPath fail, dirPath = %{public}s", dirPath.c_str());
         close(srcFd);
         return;
     }
