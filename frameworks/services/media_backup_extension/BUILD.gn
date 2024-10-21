@@ -53,6 +53,7 @@ ohos_shared_library("mediabackup") {
     "./src/restore/photos_clone.cpp",
     "./src/restore/photos_dao.cpp",
     "./src/restore/photos_restore.cpp",
+    "./src/restore/tab_old_photos_restore.cpp",
     "./src/upgrade_restore.cpp",
   ]
 

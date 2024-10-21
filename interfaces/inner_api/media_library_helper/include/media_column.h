@@ -276,5 +276,7 @@ public:
     static const std::string CREATE_PHOTO_EXT_TABLE EXPORT;
 };
 
+
+
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_COLUMN_H_
