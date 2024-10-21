@@ -822,6 +822,7 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, 
         }
     }
     outValues.Put(PhotoColumn::PHOTO_ID, result.str());
+    outValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
 }
 
 static void HandleIsTemp(MediaLibraryCommand &cmd, ValuesBucket &outValues)
