@@ -36,6 +36,7 @@ const string DEFAULT_IMAGE_NAME = "IMG_";
 const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
 const string LOW_QUALITY_PATH = "Documents/cameradata/";
+const size_t INVALID_RET = -1;
 
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
 std::shared_ptr<FileAccessHelper> BackupFileUtils::fileAccessHelper_ = std::make_shared<FileAccessHelper>();
@@ -360,17 +361,13 @@ void BackupFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
 
 string BackupFileUtils::GetFileNameFromPath(const string &path)
 {
-    if (!path.empty()) {
-        size_t lastPosition = path.rfind("/");
-        if (lastPosition != string::npos) {
-            if (path.size() > lastPosition) {
-                return path.substr(lastPosition + 1);
-            }
-        }
+    size_t pos = GetLastSlashPosFromPath(path);
+    if (pos == INVALID_RET || pos + 1 >= path.size()) {
+        MEDIA_ERR_LOG("Failed to obtain file name because pos is invalid or out of range, path: %{public}s,
+            size: %{public}s, pos: %{public}zu", GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str(), path.size(), pos);
+        return "";
     }
-
-    MEDIA_ERR_LOG("Failed to obtain file name because given pathname is empty");
-    return "";
+    return path.substr(pos + 1);
 }
 
 string BackupFileUtils::GetFileTitle(const string &displayName)
@@ -588,21 +585,35 @@ bool BackupFileUtils::ConvertToMovingPhoto(FileInfo &fileInfo)
     return true;
 }
 
-std::string BackupFileUtils::GetFileFolderFromPath(int32_t sceneCode, const std::string &path,
-    bool shouldStartWithSlash)
+size_t BackupFileUtils::GetLastSlashPosFromPath(const std::string &path)
 {
     if (path.empty()) {
-        MEDIA_ERR_LOG("Failed to obtain file folder because given path is empty");
-        return "";  
+        MEDIA_ERR_LOG("Failed to obtain last slash pos because given path is empty");
+        return INVALID_RET;
     }
-    size_t endPosition = path.rfind("/");
-    if (endPosition == std::string::npos) {
-        MEDIA_ERR_LOG("Failed to obtain file folder because / not found, path: %{public}s",
-            GarbleFilePath(path, sceneCode).c_str());
-        return "";  
+    size_t pos = path.rfind("/");
+    if (pos == std::string::npos) {
+        MEDIA_ERR_LOG("Failed to obtain last slash pos because / not found");
+        return INVALID_RET;
     }
-    size_t startPosition = MediaFileUtils::StartsWith(path, "/") && !shouldStartWithSlash ? 1 : 0;
-    return path.substr(startPosition, endPosition);
+    return pos;
+}
+
+std::string BackupFileUtils::GetFileFolderFromPath(const std::string &path, bool shouldStartWithSlash)
+{
+    size_t endPos = GetLastSlashPosFromPath(path);
+    if (endPos == INVALID_RET) {
+        MEDIA_ERR_LOG("Failed to obtain file folder, path: %{public}s",
+            GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str());
+        return "";
+    }
+    size_t startPos = MediaFileUtils::StartsWith(path, "/") && !shouldStartWithSlash ? 1 : 0;
+    if (startPos >= endPos) {
+        MEDIA_ERR_LOG("Failed to obtain file folder because start %{public}zu >= end %{public}zu, path: %{public}s",
+            startPos, endPos, GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str());
+        return "";
+    }
+    return path.substr(startPos, endPos - startPos);
 }
 } // namespace Media
 } // namespace OHOS
