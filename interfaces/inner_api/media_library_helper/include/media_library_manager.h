@@ -122,6 +122,16 @@ public:
     EXPORT int32_t QueryTotalSize(MediaVolume &outMediaVolume);
 
     /**
+     * @brief Query new uri by old uri
+     *
+     * @param uris old uris
+     * @return map of old uris to new uris
+     * @since 1.0
+     * @version 1.0
+     */
+    EXPORT std::unordered_map<std::string, std::string> GetUrisByOldUris(std::vector<std::string> uris);
+
+    /**
      * @brief Make a query from database
      *
      * @param columnName a column name in datebase
@@ -259,6 +269,9 @@ public:
     EXPORT static bool IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize);
     EXPORT static int32_t OpenReadOnlyAppSandboxVideo(const string& uri);
     EXPORT static int64_t GetSandboxMovingPhotoTime(const string& uri);
+
+    sptr<IRemoteObject> InitToken();
+    int32_t CheckResultSet(std::shared_ptr<DataShareResultSet> &resultSet);
 
 private:
     int32_t ReadMovingPhotoVideo(const string &uri, const string &option);
