@@ -164,6 +164,22 @@ static bool isHighQualityPhotoExist(string uri)
     return MediaFileUtils::IsFileExists(filePathTemp) || MediaFileUtils::IsFileExists(filePath);
 }
 
+void PhotoAssetProxy::SetPhotoIdForAsset(const sptr<PhotoProxy> &photoProxy, DataShare::DataShareValuesBucket &values)
+{
+    if (photoProxy->GetPhotoId() == "") {
+        stringstream result;
+        string displayName = photoProxy->GetTitle();
+        for (size_t i = 0; i < displayName.length(); i++) {
+            if (isdigit(displayName[i])) {
+                result << displayName[i];
+            }
+        }
+        values.Put(PhotoColumn::PHOTO_ID, result.str());
+    } else {
+        values.Put(PhotoColumn::PHOTO_ID, photoProxy->GetPhotoId());
+    }
+}
+
 int32_t CloseFd(const shared_ptr<DataShare::DataShareHelper> &dataShareHelper, const string &uri, const int32_t fd)
 {
     MediaLibraryTracer tracer;
@@ -353,9 +369,7 @@ int32_t PhotoAssetProxy::UpdatePhotoQuality(shared_ptr<DataShare::DataShareHelpe
     predicates.SetWhereArgs({ to_string(fileId) });
 
     DataShare::DataShareValuesBucket valuesBucket;
-    string photoId = (photoProxy->GetPhotoId() == "" || subType == static_cast<int32_t>(PhotoSubType::BURST)) ?
-        (to_string(fileId) + "_") : photoProxy->GetPhotoId();
-    valuesBucket.Put(PhotoColumn::PHOTO_ID, photoId);
+    SetPhotoIdForAsset(photoProxy, valuesBucket);
     valuesBucket.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, static_cast<int32_t>(photoProxy->GetDeferredProcType()));
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
     valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(subType));
