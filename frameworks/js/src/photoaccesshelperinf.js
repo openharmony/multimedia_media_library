@@ -373,8 +373,8 @@ function showAssetsCreationDialog(...params) {
   return showAssetsCreationDialogParamsOk(...params);
 }
 
-async function grantPhotoAssetsReadPermission(srcFileUris) {
-  console.info('grantPhotoAssetsReadPermission enter');
+async function requestPhotoUrisReadPermission(srcFileUris) {
+  console.info('requestPhotoUrisReadPermission enter');
 
   //check whether srcFileUris is valid
   for (let srcFileUri of srcFileUris) {
@@ -411,12 +411,12 @@ async function grantPhotoAssetsReadPermission(srcFileUris) {
     appName = await gContext.createModuleContext(moduleName).resourceManager.getStringValue(labelId);
     console.info('photoAccessHelper appName is ' + appName + '.');
     return new Promise((resolve, reject) => {
-      photoAccessHelper.grantPhotoAssetsReadPermission(context, srcFileUris, appName, result => {
+      photoAccessHelper.requestPhotoUrisReadPermission(context, srcFileUris, appName, result => {
         showAssetsCreationDialogResult(result, reject, resolve);
       });
     });
   } catch (error) {
-    console.error('grantPhotoAssetsReadPermission catch error.');
+    console.error('requestPhotoUrisReadPermission catch error.');
     return errorResult(new BusinessError(ERROR_MSG_INNER_FAIL, error.code), null);
   }
 }
@@ -487,7 +487,7 @@ function getPhotoAccessHelper(context) {
     helper.createDeleteRequest = createDeleteRequest;
     helper.showAssetsCreationDialog = showAssetsCreationDialog;
     helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
-    helper.grantPhotoAssetsReadPermission = grantPhotoAssetsReadPermission;
+    helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
   }
   return helper;
 }
@@ -525,7 +525,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
-          helper.grantPhotoAssetsReadPermission = grantPhotoAssetsReadPermission;
+          helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
         }
         return helper;
       })
@@ -545,7 +545,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
-          helper.grantPhotoAssetsReadPermission = grantPhotoAssetsReadPermission;
+          helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
         }
         asyncCallback(err, helper);
       }
