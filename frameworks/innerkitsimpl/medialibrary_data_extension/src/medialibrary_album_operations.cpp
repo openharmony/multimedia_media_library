@@ -1147,24 +1147,23 @@ void DealWithHighlightSdTable(const DataSharePredicates &predicates)
     }
     assetMapPredicates.SetWhereArgs(whereIdArgs);
  
+    RdbPredicates predicatesSdMap(ANALYSIS_ASSET_SD_MAP_TABLE);
+    predicatesSdMap.And()->In(MAP_ASSET_SOURCE, assetMapPredicates.GetWhereArgs());
+    vector<string> columns = { MAP_ASSET_SOURCE, MAP_ASSET_DESTINATION };
+    auto resultSetQuery = MediaLibraryRdbStore::Query(predicatesSdMap, columns);
+    if (resultSetQuery == nullptr) {
+        MEDIA_ERR_LOG("get highlight video failed");
+        return;
+    }
+
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    for (auto assetId: assetMapPredicates.GetWhereArgs()) {
-        const std::string QUERY_FILE_ASSET_INFO =
-            "SELECT * FROM tab_analysis_asset_sd_map WHERE map_asset_source = " + assetId;
-        shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
-        if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Query not matched data fails on delete highlight video");
-            continue;
-        }
-        int32_t mapAssetIdIndex;
-        int32_t mapAssetDestination = 0;
-        resultSet->GetColumnIndex(MAP_ASSET_DESTINATION, mapAssetIdIndex);
-        if (resultSet->GetInt(mapAssetIdIndex, mapAssetDestination) != NativeRdb::E_OK) {
-            continue;
-        }
+    while (resultSetQuery->GoToNextRow() == NativeRdb::E_OK) {
+        string assetId = to_string(GetInt32Val(MAP_ASSET_SOURCE, resultSetQuery));
+        int32_t mapAssetDestination = GetInt32Val(MAP_ASSET_DESTINATION, resultSetQuery);
 
         string highlightVideoPath = "/storage/cloud/files/highlight/video/" + to_string(mapAssetDestination);
         MediaFileUtils::DeleteDir(highlightVideoPath);
+        MEDIA_INFO_LOG("Delete highlight video path is: %{public}s", highlightVideoPath.c_str());
  
         const std::string DELETE_ITEM_FROM_SD_MAP =
             "DELETE FROM tab_analysis_asset_sd_map WHERE map_asset_source = " + assetId;
@@ -1180,8 +1179,8 @@ void DealWithHighlightSdTable(const DataSharePredicates &predicates)
             MEDIA_ERR_LOG("DELETE highlight video failed, id is: %{public}s", assetId.c_str());
             continue;
         }
-        MEDIA_INFO_LOG("Deal with highlight video finished");
     }
+    MEDIA_INFO_LOG("Deal with highlight video finished");
 }
 
 static inline int32_t DeletePhotoAssets(const DataSharePredicates &predicates,
