@@ -525,7 +525,7 @@ int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts)
     }
 
     MEDIA_INFO_LOG("create astc for restored dual frame photos count:%{public}zu", infos.size());
-    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, FFRT_MAX_RESTORE_ASTC_THREADS);
+
     for (auto &info : infos) {
         opts.row = info.id;
         if (!info.isLocalFile) {
@@ -534,11 +534,10 @@ int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts)
         }
         info.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::RESTORE, LoadSourceType::LOCAL_PHOTO);
-        std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(opts, info);
-        ffrt::submit(std::bind(&IThumbnailHelper::CreateThumbnail, taskData), {}, {},
-            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateThumbnail, opts, info,
+            ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::MID);
     }
-    ffrt::wait();
+
     MEDIA_INFO_LOG("create astc for restored dual frame photos finished");
     return E_OK;
 }
