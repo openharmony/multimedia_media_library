@@ -32,6 +32,7 @@
 #include "backup_restore_service.h"
 #include "base_restore.h"
 #include "clone_restore.h"
+#include "others_clone_restore.h"
 #undef private
 #undef protected
 #include "burst_key_generator.h"
@@ -100,6 +101,13 @@ const int32_t EXPECTED_COUNT_0 = 0;
 const int32_t EXPECTED_ALBUM_TOTAL_COUNT = 4;
 const int32_t EXPECTED_AUDIO_COUNT = 3;
 const int32_t INVALID_ERROR_CODE = -1;
+
+const int PHONE_FIRST_NUMBER = 105;
+const int PHONE_SECOND_NUMBER = 80;
+const int PHONE_THIRD_NUMBER = 104;
+const int PHONE_FOURTH_NUMBER = 111;
+const int PHONE_FIFTH_NUMBER = 110;
+const int PHONE_SIXTH_NUMBER = 101;
 
 shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 unique_ptr<CloneRestore> restoreService = nullptr;
@@ -797,6 +805,848 @@ void MediaLibraryBackupCloneTest::VerifyImageFaceRestore(const std::shared_ptr<N
     resultSet->GetDouble(index, doubleValue);
     EXPECT_DOUBLE_EQ(doubleValue, 1.0);
     EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+}
+
+static std::string GetPhoneName()
+{
+    int arr[] = { PHONE_FIRST_NUMBER, PHONE_SECOND_NUMBER, PHONE_THIRD_NUMBER, PHONE_FOURTH_NUMBER, PHONE_FIFTH_NUMBER,
+        PHONE_SIXTH_NUMBER };
+    int len = sizeof(arr) / sizeof(arr[0]);
+    std::string phoneName = "";
+    for (int i = 0; i < len; i++) {
+        phoneName += static_cast<char>(arr[i]);
+    }
+    return phoneName;
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersCloneRestore_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_restore_OthersCloneRestore_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
+        "", "");
+    EXPECT_EQ(othersClone->clonePhoneName_, "");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersCloneRestore_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_OthersCloneRestore_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "[\n\t\t\"type\":\t\"backupInfo\"]");
+    EXPECT_EQ(othersClone->clonePhoneName_, GetPhoneName());
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersCloneRestore_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_OthersCloneRestore_003");
+
+    std::string json = string("[{\n\t\t\"type\":\t\"deviceType\",\n\t\t\"detail\":\t\"test\"\n\t},") +
+        " {\n\t\t\"type\":\t\"userId\",\n\t\t\"detail\":\t\"100\"\n\t}]";
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", json);
+    EXPECT_EQ(othersClone->clonePhoneName_, "test");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersCloneRestore_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_OthersCloneRestore_004");
+
+    std::string json = string("[{\n\t\t\"type\":\t\"device\",\n\t\t\"detail\":\t\"test\"\n\t},") +
+        " {\n\t\t\"type\":\t\"userId\",\n\t\t\"detail\":\t\"100\"\n\t}]";
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", json);
+    EXPECT_EQ(othersClone->clonePhoneName_, GetPhoneName());
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetCloneDbInfos_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_GetCloneDbInfos_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    std::vector<CloneDbInfo> vec;
+    othersClone->GetCloneDbInfos("aaa", vec);
+    EXPECT_TRUE(vec.empty());
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetCloneDbInfos_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_GetCloneDbInfos_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    
+    string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
+    system(cmdMkdir.c_str());
+
+    std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
+    NativeRdb::RdbStoreConfig config(path);
+    CloneOpenCall helper;
+    int errCode = 0;
+    shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    store->ExecuteSql(string("CREATE TABLE IF NOT EXISTS mediaInfo ") +
+        "(_data TEXT, latitude DOUBLE, longitude DOUBLE, datetaken DOUBLE, date_modified DOUBLE, primaryStr TEXT)");
+    store->ExecuteSql(string("INSERT INTO mediaInfo (_data, latitude, longitude, datetaken,") +
+        " date_modified, primaryStr) VALUES ('/storage/emulated', 0, 0, 1726123123, 1726123.123, '1234563.jpg')");
+    std::vector<CloneDbInfo> vec;
+    othersClone->GetCloneDbInfos("photo_MediaInfo.db", vec);
+    EXPECT_FALSE(vec.empty());
+    store->ExecuteSql("DROP TABLE IF EXISTS mediaInfo");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_Init_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    EXPECT_NE(othersClone->Init("/data/photo", "/data/test", true), E_OK);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_Init_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+
+    string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
+    system(cmdMkdir.c_str());
+    std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
+    NativeRdb::RdbStoreConfig config(path);
+    CloneOpenCall helper;
+    int errCode = 0;
+    shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    othersClone->mediaLibraryRdb_ = store;
+    EXPECT_NE(othersClone->Init("/data/photo", "/data/test", true), E_OK);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_Init_003");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+
+    string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
+    system(cmdMkdir.c_str());
+    std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
+    NativeRdb::RdbStoreConfig config(path);
+    CloneOpenCall helper;
+    int errCode = 0;
+    shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    othersClone->mediaLibraryRdb_ = store;
+    othersClone->backupRestoreDir_ = "/storage/media/100/local/files/";
+    EXPECT_EQ(othersClone->Init("/data/photo", "/data/test", true), E_OK);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetInsertValue_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_GetInsertValue_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.dateTaken = 1;
+    fileInfo.dateModified = 1;
+    auto value = othersClone->GetInsertValue(fileInfo, "/data", 1);
+    int64_t taken;
+    int64_t modified;
+    value.values_[MediaColumn::MEDIA_DATE_TAKEN].GetLong(taken);
+    value.values_[MediaColumn::MEDIA_DATE_MODIFIED].GetLong(modified);
+    EXPECT_EQ(taken, 1);
+    EXPECT_EQ(modified, 1);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetInsertValue_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_GetInsertValue_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    auto value = othersClone->GetInsertValue(fileInfo, "/data", 1);
+    int64_t taken;
+    int64_t modified;
+    value.values_[MediaColumn::MEDIA_DATE_TAKEN].GetLong(taken);
+    value.values_[MediaColumn::MEDIA_DATE_MODIFIED].GetLong(modified);
+    EXPECT_EQ(taken, 0);
+    EXPECT_EQ(modified, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    struct stat st;
+    othersClone->SetFileInfosInCurrentDir("filePath/test.gif", st);
+    EXPECT_EQ(othersClone->photoInfos_[0].filePath, "filePath/test.gif");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    struct stat st;
+    othersClone->SetFileInfosInCurrentDir("filePath/test.mp4", st);
+    EXPECT_EQ(othersClone->photoInfos_[0].filePath, "filePath/test.mp4");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_003");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    struct stat st;
+    othersClone->SetFileInfosInCurrentDir("filePath/test.mp3", st);
+    EXPECT_EQ(othersClone->audioInfos_[0].filePath, "filePath/test.mp3");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_004");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    struct stat st;
+    othersClone->SetFileInfosInCurrentDir("filePath/test.ief", st);
+    EXPECT_EQ(othersClone->photoInfos_[0].filePath, "filePath/test.ief");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_005");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    struct stat st;
+    othersClone->SetFileInfosInCurrentDir("filePath/test.txt", st);
+    EXPECT_TRUE(othersClone->photoInfos_.empty());
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.displayName = "test.jpg";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_AUDIO;
+    CloneDbInfo cloneDbInfo;
+    cloneDbInfo.displayName = "test.jpg";
+    cloneDbInfo.dateModified = 1;
+    cloneDbInfo.dateTaken = 1;
+    othersClone->audioDbInfo_.push_back(cloneDbInfo);
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    EXPECT_EQ(fileInfo.dateModified, 1000);
+    EXPECT_EQ(fileInfo.dateTaken, 1000);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.displayName = "test.jpg";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_AUDIO;
+    CloneDbInfo cloneDbInfo;
+    cloneDbInfo.displayName = "";
+    cloneDbInfo.dateModified = 1;
+    cloneDbInfo.dateTaken = 1;
+    othersClone->audioDbInfo_.push_back(cloneDbInfo);
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    EXPECT_EQ(fileInfo.dateModified, 0);
+    EXPECT_EQ(fileInfo.dateTaken, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_003");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.displayName = "test.jpg";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    CloneDbInfo cloneDbInfo;
+    cloneDbInfo.displayName = "test.jpg";
+    cloneDbInfo.dateModified = 1;
+    cloneDbInfo.dateTaken = 1;
+    othersClone->photoDbInfo_.push_back(cloneDbInfo);
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    EXPECT_EQ(fileInfo.dateModified, 1000);
+    EXPECT_EQ(fileInfo.dateTaken, 1000);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_004");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.displayName = "test.jpg";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    CloneDbInfo cloneDbInfoPh;
+    cloneDbInfoPh.displayName = "";
+    CloneDbInfo cloneDbInfo;
+    cloneDbInfo.displayName = "test.jpg";
+    cloneDbInfo.dateModified = 1;
+    cloneDbInfo.dateTaken = 1;
+    othersClone->photoDbInfo_.push_back(cloneDbInfoPh);
+    othersClone->audioDbInfo_.push_back(cloneDbInfo);
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    EXPECT_EQ(fileInfo.dateModified, 1000);
+    EXPECT_EQ(fileInfo.dateTaken, 1000);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_005");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.displayName = "test.jpg";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    CloneDbInfo cloneDbInfoPh;
+    cloneDbInfoPh.displayName = "";
+    CloneDbInfo cloneDbInfo;
+    cloneDbInfo.displayName = "";
+    othersClone->photoDbInfo_.push_back(cloneDbInfoPh);
+    othersClone->audioDbInfo_.push_back(cloneDbInfo);
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    EXPECT_EQ(fileInfo.dateModified, 0);
+    EXPECT_EQ(fileInfo.dateTaken, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_006");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.displayName = "test.jpg";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_VIDEO;
+    CloneDbInfo cloneDbInfoPh;
+    cloneDbInfoPh.displayName = "";
+    CloneDbInfo cloneDbInfo;
+    cloneDbInfo.displayName = "";
+    othersClone->photoDbInfo_.push_back(cloneDbInfoPh);
+    othersClone->audioDbInfo_.push_back(cloneDbInfo);
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    EXPECT_EQ(fileInfo.dateModified, 0);
+    EXPECT_EQ(fileInfo.dateTaken, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_007");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.displayName = "test.jpg";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_FILE;
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    EXPECT_EQ(fileInfo.dateModified, 0);
+    EXPECT_EQ(fileInfo.dateTaken, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_008");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.displayName = "test.jpg";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_AUDIO;
+    CloneDbInfo cloneDbInfo;
+    cloneDbInfo.displayName = "test.jpg";
+    cloneDbInfo.dateModified = 1.5e10;
+    cloneDbInfo.dateTaken = 1.5e10;
+    othersClone->audioDbInfo_.push_back(cloneDbInfo);
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    EXPECT_EQ(fileInfo.dateModified, 15000000000);
+    EXPECT_EQ(fileInfo.dateTaken, 15000000000);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_009");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.filePath = "/data/photo";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_AUDIO;
+    CloneDbInfo cloneDbInfo;
+    othersClone->audioDbInfo_.push_back(cloneDbInfo);
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    EXPECT_EQ(fileInfo.dateModified, 0);
+    EXPECT_EQ(fileInfo.dateTaken, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetAllfilesInCurrentDir_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_GetAllfilesInCurrentDir_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    
+    auto err = othersClone->GetAllfilesInCurrentDir("/storage/media/100/local/test/test");
+    EXPECT_EQ(err, ERR_NOT_ACCESSIBLE);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetAllfilesInCurrentDir_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_GetAllfilesInCurrentDir_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    
+    auto err = othersClone->GetAllfilesInCurrentDir("/storage/media/100/local/files/");
+    EXPECT_EQ(err, E_OK);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePhoto_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestorePhoto_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    othersClone->RestorePhoto();
+    EXPECT_EQ(othersClone->totalNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePhoto_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestorePhoto_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_FILE;
+    othersClone->photoInfos_.push_back(fileInfo);
+    othersClone->RestorePhoto();
+    EXPECT_EQ(othersClone->totalNumber_, 1);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePhoto_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestorePhoto_003");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    for (int i = 0;i < 200;i ++) {
+        othersClone->photoInfos_.push_back(fileInfo);
+    }
+    othersClone->RestorePhoto();
+    EXPECT_EQ(othersClone->totalNumber_, 200);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePhoto_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestorePhoto_004");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_VIDEO;
+    othersClone->photoInfos_.push_back(fileInfo);
+    othersClone->RestorePhoto();
+    EXPECT_EQ(othersClone->totalNumber_, 1);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_InsertPhoto_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_InsertPhoto_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    std::vector<FileInfo> fileInfos;
+    othersClone->InsertPhoto(fileInfos);
+    EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_InsertPhoto_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_InsertPhoto_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+
+    std::vector<FileInfo> fileInfos;
+    FileInfo tmpInfo;
+    struct stat statInfo;
+    lstat("/vendor/etc/firmware/nvram_ap6275s.txt", &statInfo);
+    tmpInfo.filePath = "/vendor/etc/firmware/nvram_ap6275s.txt";
+    tmpInfo.displayName = "nvram_ap6275s.txt";
+    tmpInfo.title = BackupFileUtils::GetFileTitle(tmpInfo.displayName);
+    tmpInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    tmpInfo.fileSize = statInfo.st_size;
+    tmpInfo.dateModified = MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim);
+    fileInfos.push_back(tmpInfo);
+    othersClone->imageNumber_ = 1;
+    othersClone->hasLowQualityImage_ = true;
+    othersClone->InsertPhoto(fileInfos);
+    EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAudio_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestoreAudio_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    othersClone->RestoreAudio();
+    EXPECT_EQ(othersClone->audioTotalNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAudio_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestoreAudio_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    othersClone->RestoreAudio();
+    EXPECT_EQ(othersClone->audioTotalNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAudio_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestoreAudio_003");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    othersClone->audioInfos_.push_back(fileInfo);
+    othersClone->RestoreAudio();
+    EXPECT_EQ(othersClone->audioTotalNumber_, 1);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAlbum_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestoreAlbum_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    
+    string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
+    system(cmdMkdir.c_str());
+    std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
+    NativeRdb::RdbStoreConfig config(path);
+    CloneOpenCall helper;
+    int errCode = 0;
+    othersClone->mediaLibraryRdb_ = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+
+    std::vector<FileInfo> fileInfos;
+    othersClone->RestoreAlbum(fileInfos);
+    EXPECT_FALSE(othersClone->photoAlbumDaoPtr_->mediaLibraryRdb_ == nullptr);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAlbum_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestoreAlbum_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    
+    std::vector<FileInfo> fileInfos;
+    othersClone->RestoreAlbum(fileInfos);
+    EXPECT_TRUE(othersClone->photoAlbumDaoPtr_->mediaLibraryRdb_ == nullptr);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFileForDualClone_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HasSameFileForDualClone_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    
+    string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
+    system(cmdMkdir.c_str());
+
+    std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
+    NativeRdb::RdbStoreConfig config(path);
+    CloneOpenCall helper;
+    int errCode = 0;
+    shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+
+    othersClone->photosRestorePtr_->OnStart(store, store);
+    
+    EXPECT_FALSE(othersClone->HasSameFileForDualClone(fileInfo));
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFileForDualClone_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HasSameFileForDualClone_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.fileType = MEDIA_TYPE_VIDEO;
+    fileInfo.displayName = "test.jpg";
+    fileInfo.fileSize = 100;
+
+    string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
+    system(cmdMkdir.c_str());
+
+    std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
+    NativeRdb::RdbStoreConfig config(path);
+    CloneOpenCall helper;
+    int errCode = 0;
+    shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    store->ExecuteSql(PhotoColumn::CREATE_PHOTO_TABLE);
+    store->ExecuteSql(string("INSERT INTO Photos (file_id, data, display_name, size, owner_album_id") +
+        ") VALUES (1, 'test', 'test.jpg', 100, 0)");
+
+    othersClone->photosRestorePtr_->photosBasicInfo_.maxFileId = 100;
+    othersClone->photosRestorePtr_->OnStart(store, store);
+
+    EXPECT_TRUE(othersClone->HasSameFileForDualClone(fileInfo));
+    store->ExecuteSql("DROP TABLE IF EXISTS Photos");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpdateAlbumInfo_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpdateAlbumInfo_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    othersClone->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(othersClone->mediaLibraryRdb_);
+    othersClone->clonePhoneName_ = "testPhone";
+    othersClone->UpdateAlbumInfo(fileInfo);
+    EXPECT_EQ(fileInfo.bundleName, "testPhone");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpdateAlbumInfo_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpdateAlbumInfo_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    FileInfo fileInfo;
+    fileInfo.lPath = "/data/test";
+    PhotoAlbumDao::PhotoAlbumRowData photoAlbumRowData;
+    photoAlbumRowData.albumId = 1;
+    othersClone->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(othersClone->mediaLibraryRdb_);
+    othersClone->photoAlbumDaoPtr_->photoAlbumCache_["/data/test"] = photoAlbumRowData;
+    othersClone->UpdateAlbumInfo(fileInfo);
+    EXPECT_EQ(fileInfo.ownerAlbumId, 1);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_NeedBatchQueryPhotoForPortrait_001,
+    TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_NeedBatchQueryPhotoForPortrait_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    std::vector<FileInfo> fileInfos;
+    NeedQueryMap needQueryMap;
+    EXPECT_TRUE(othersClone->NeedBatchQueryPhotoForPortrait(fileInfos, needQueryMap));
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleRestData_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleRestData_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    othersClone->HandleRestData();
+    EXPECT_EQ(othersClone->otherProcessStatus_, ProcessStatus::STOP);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_ParseResultSet_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_ParseResultSet_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    std::shared_ptr<NativeRdb::ResultSet> resultSet;
+    FileInfo fileInfo;
+    std::string dbName;
+    EXPECT_TRUE(othersClone->ParseResultSet(resultSet, fileInfo, dbName));
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_ParseResultSetForAudio_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_ParseResultSetForAudio_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    std::shared_ptr<NativeRdb::ResultSet> resultSet;
+    FileInfo fileInfo;
+    EXPECT_TRUE(othersClone->ParseResultSetForAudio(resultSet, fileInfo));
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_CloneInfoPushBack_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_CloneInfoPushBack_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    CloneDbInfo cloneDbInfo = {"test.jpg", "/data/photo", 100, 100};
+    std::vector<CloneDbInfo> pushInfos;
+    std::vector<CloneDbInfo> popInfos = {cloneDbInfo};
+    othersClone->CloneInfoPushBack(pushInfos, popInfos);
+    EXPECT_EQ(pushInfos[0].displayName, "test.jpg");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_CloneInfoPushBack_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_CloneInfoPushBack_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    std::vector<CloneDbInfo> pushInfos;
+    std::vector<CloneDbInfo> popInfos;
+    othersClone->CloneInfoPushBack(pushInfos, popInfos);
+    EXPECT_TRUE(pushInfos.empty());
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleSelectBatch_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    std::shared_ptr<NativeRdb::RdbStore> mediaRdb = nullptr;
+    int32_t offset = 1;
+    int32_t sceneCode = I_PHONE_CLONE_RESTORE;
+    std::vector<CloneDbInfo> mediaDbInfo;
+    othersClone->HandleSelectBatch(mediaRdb, offset, sceneCode, mediaDbInfo);
+    EXPECT_TRUE(mediaDbInfo.empty());
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleSelectBatch_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+
+    string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
+    system(cmdMkdir.c_str());
+    std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
+    NativeRdb::RdbStoreConfig config(path);
+    CloneOpenCall helper;
+    int errCode = 0;
+    shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+
+    std::shared_ptr<NativeRdb::RdbStore> mediaRdb = store;
+    int32_t offset = 1;
+    int32_t sceneCode = I_PHONE_CLONE_RESTORE;
+    std::vector<CloneDbInfo> mediaDbInfo;
+    othersClone->HandleSelectBatch(mediaRdb, offset, sceneCode, mediaDbInfo);
+    EXPECT_TRUE(mediaDbInfo.empty());
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleSelectBatch_003");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+
+    string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
+    system(cmdMkdir.c_str());
+    std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
+    NativeRdb::RdbStoreConfig config(path);
+    CloneOpenCall helper;
+    int errCode = 0;
+    shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    store->ExecuteSql(string("CREATE TABLE IF NOT EXISTS mediaInfo ") +
+        "(_data TEXT, latitude DOUBLE, longitude DOUBLE, datetaken DOUBLE, date_modified DOUBLE, primaryStr TEXT)");
+    store->ExecuteSql(string("INSERT INTO mediaInfo (_data, latitude, longitude, datetaken,") +
+        " date_modified, primaryStr) VALUES ('/storage/medialib', 0, 0, 17283946, 17283.946, '123456789.jpg')");
+    store->ExecuteSql(string("INSERT INTO mediaInfo (_data, latitude, longitude, datetaken,") +
+        " date_modified, primaryStr) VALUES ('/storage/media', 0, 0, 17283946, 17283.946, '963852741.jpg')");
+
+    std::shared_ptr<NativeRdb::RdbStore> mediaRdb = store;
+    int32_t offset = 1;
+    int32_t sceneCode = I_PHONE_CLONE_RESTORE;
+    std::vector<CloneDbInfo> mediaDbInfo;
+    othersClone->HandleSelectBatch(mediaRdb, offset, sceneCode, mediaDbInfo);
+    EXPECT_EQ(mediaDbInfo[0].displayName, "963852741.jpg");
+    store->ExecuteSql("DROP TABLE IF EXISTS mediaInfo");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleSelectBatch_004");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+
+    string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
+    system(cmdMkdir.c_str());
+    std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
+    NativeRdb::RdbStoreConfig config(path);
+    CloneOpenCall helper;
+    int errCode = 0;
+    shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    store->ExecuteSql(string("CREATE TABLE IF NOT EXISTS mediaInfo ") +
+        "(_data TEXT, latitude DOUBLE, longitude DOUBLE, datetaken DOUBLE, date_modified DOUBLE, primaryStr TEXT)");
+    store->ExecuteSql(string("INSERT INTO mediaInfo (_data, latitude, longitude, datetaken,") +
+        " date_modified, primaryStr) VALUES ('/storage/medialib', 0, 0, 17283946, 17283.946, '123456789.jpg')");
+    store->ExecuteSql(string("INSERT INTO mediaInfo (_data, latitude, longitude, datetaken,") +
+        " date_modified, primaryStr) VALUES ('/storage/media', 0, 0, 17283946, 17283.946, '963852741.jpg')");
+
+    std::shared_ptr<NativeRdb::RdbStore> mediaRdb = store;
+    int32_t offset = 1;
+    int32_t sceneCode = OTHERS_PHONE_CLONE_RESTORE;
+    std::vector<CloneDbInfo> mediaDbInfo;
+    othersClone->HandleSelectBatch(mediaRdb, offset, sceneCode, mediaDbInfo);
+    EXPECT_EQ(mediaDbInfo[0].data, "/storage/media");
+    store->ExecuteSql("DROP TABLE IF EXISTS mediaInfo");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleInsertBatch_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleInsertBatch_001");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    int32_t offset = 0;
+    FileInfo fileInfo;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    othersClone->photoInfos_.push_back(fileInfo);
+    othersClone->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(othersClone->mediaLibraryRdb_);
+    othersClone->HandleInsertBatch(offset);
+    EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleInsertBatch_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleInsertBatch_002");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    int32_t offset = 0;
+    FileInfo fileInfo;
+    for (int i = 0;i < 200;i ++) {
+        othersClone->photoInfos_.push_back(fileInfo);
+    }
+    othersClone->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(othersClone->mediaLibraryRdb_);
+    othersClone->HandleInsertBatch(offset);
+    EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
 }
 } // namespace Media
 } // namespace OHOS
