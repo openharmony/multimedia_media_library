@@ -2018,12 +2018,6 @@ int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryComm
     ValueObject valueObject;
     if (value.GetObject(THUMBNAIL_BATCH_GENERATE_REQUEST_ID, valueObject)) {
         valueObject.GetInt(requestId);
-    } else {
-        return -EINVAL;
-    }
-    if (requestId <= 0) {
-        MEDIA_ERR_LOG("invalid request id");
-        return E_INVALID_VALUES;
     }
 
     if (cmd.GetOprnType() == OperationType::START_GENERATE_THUMBNAILS) {
@@ -2032,6 +2026,8 @@ int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryComm
     } else if (cmd.GetOprnType() == OperationType::STOP_GENERATE_THUMBNAILS) {
         thumbnailService_->CancelAstcBatchTask(requestId);
         return E_OK;
+    } else if (cmd.GetOprnType() == OperationType::GENERATE_THUMBNAILS_RESTORE) {
+        return thumbnailService_->RestoreThumbnailDualFrame();
     } else {
         MEDIA_ERR_LOG("invalid mediaLibrary command");
         return E_INVALID_ARGUMENTS;

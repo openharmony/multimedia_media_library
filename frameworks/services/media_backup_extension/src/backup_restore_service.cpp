@@ -16,7 +16,10 @@
 #define MLOG_TAG "MediaLibraryRestoreService"
 
 #include <securec.h>
+#include <context.h>
+#include <context_impl.h>
 
+#include "backup_file_utils.h"
 #include "backup_restore_service.h"
 #include "ffrt_inner.h"
 #include "media_log.h"
@@ -52,7 +55,7 @@ std::string GetDualDirName()
     return dualDirName;
 }
 
-void BackupRestoreService::Init(const RestoreEx &info)
+void BackupRestoreService::Init(const RestoreInfo &info)
 {
     if (restoreService_ != nullptr) {
         return;
@@ -75,19 +78,23 @@ void BackupRestoreService::Init(const RestoreEx &info)
     }
 }
 
-void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &galleryAppName,
-    const std::string &mediaAppName, const std::string &backupDir)
+void BackupRestoreService::StartRestore(const std::shared_ptr<AbilityRuntime::Context> &context,
+    const RestoreInfo &info)
 {
-    MEDIA_INFO_LOG("Start restore service: %{public}d", sceneCode);
-    Init({sceneCode, galleryAppName, mediaAppName, backupDir, ""});
+    MEDIA_INFO_LOG("Start restore service: %{public}d", info.sceneCode);
+    Init(info);
     if (restoreService_ == nullptr) {
         MEDIA_ERR_LOG("Create media restore service failed.");
         return;
     }
+    if (context != nullptr) {
+        BackupFileUtils::CreateDataShareHelper(context->GetToken());
+    }
     restoreService_->StartRestore(serviceBackupDir_, UPGRADE_FILE_DIR);
 }
 
-void BackupRestoreService::StartRestoreEx(const RestoreEx &info, std::string &restoreExInfo)
+void BackupRestoreService::StartRestoreEx(const std::shared_ptr<AbilityRuntime::Context> &context,
+    const RestoreInfo &info, std::string &restoreExInfo)
 {
     MEDIA_INFO_LOG("Start restoreEx service: %{public}d", info.sceneCode);
     ffrt_worker_num_param qosConfig;
@@ -102,6 +109,9 @@ void BackupRestoreService::StartRestoreEx(const RestoreEx &info, std::string &re
         MEDIA_ERR_LOG("Create media restore service failed.");
         restoreExInfo = "";
         return;
+    }
+    if (context != nullptr) {
+        BackupFileUtils::CreateDataShareHelper(context->GetToken());
     }
     restoreService_->StartRestoreEx(serviceBackupDir_, UPGRADE_FILE_DIR, restoreExInfo);
 }
