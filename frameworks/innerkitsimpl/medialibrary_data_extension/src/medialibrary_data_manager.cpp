@@ -280,7 +280,7 @@ static int32_t ExcuteAsyncWork()
 
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
-    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode)
+    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode, bool isNeedCreateDir)
 {
     lock_guard<shared_mutex> lock(mgrSharedMutex_);
 
@@ -309,8 +309,10 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     CHECK_AND_WARN_LOG(errCode == E_OK, "failed at MakeDirQuerySetMap");
     InitACLPermission();
     InitDatabaseACLPermission();
-    errCode = ExcuteAsyncWork();
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at ExcuteAsyncWork");
+    if (isNeedCreateDir) {
+        errCode = ExcuteAsyncWork();
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at ExcuteAsyncWork");
+    }
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
     ReconstructMediaLibraryPhotoMap();

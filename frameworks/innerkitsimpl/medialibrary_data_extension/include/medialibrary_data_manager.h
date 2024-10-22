@@ -95,7 +95,8 @@ public:
     EXPORT std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 
     EXPORT int32_t InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context,
-        const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode);
+        const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext,
+        int32_t &sceneCode, bool isNeedCreateDir = true);
     EXPORT void ClearMediaLibraryMgr();
     EXPORT int32_t MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
     EXPORT void CreateThumbnailAsync(const std::string &uri, const std::string &path);
