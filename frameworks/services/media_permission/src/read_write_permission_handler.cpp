@@ -228,6 +228,7 @@ static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
         OperationObject::ALL_DEVICE,
         OperationObject::ACTIVE_DEVICE,
         OperationObject::MISCELLANEOUS,
+        OperationObject::TAB_OLD_PHOTO,
     };
 
     string uri = cmd.GetUri().ToString();

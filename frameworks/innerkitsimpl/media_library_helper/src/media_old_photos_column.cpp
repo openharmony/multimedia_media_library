@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance whit the License.
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
@@ -26,7 +26,7 @@ const std::string TabOldPhotosColumn::MEDIA_OLD_ID = "old_file_id";
 const std::string TabOldPhotosColumn::MEDIA_OLD_FILE_PATH = "old_data";
 
 const std::set<std::string> TabOldPhotosColumn::DEFAULT_TAB_OLD_PHOTOS_COLUMNS = {
-    TabOldPhotosColumn::MEDIA_ID, TabOldPhotosColumn::MEDIA_FILE_PATH, MEDIA_OLD_ID, MEDIA_OLD_FILE_PATH
+    MEDIA_ID, MEDIA_FILE_PATH, MEDIA_OLD_ID, MEDIA_OLD_FILE_PATH
 };
 
 } // namespace Media
