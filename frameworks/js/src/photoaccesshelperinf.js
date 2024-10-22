@@ -39,6 +39,7 @@ const MAX_DELETE_NUMBER = 300;
 const MIN_DELETE_NUMBER = 1;
 const MAX_CONFIRM_NUMBER = 100;
 const MIN_CONFIRM_NUMBER = 1;
+const MAX_REQUEST_PHOTO_NUMBER = 999;
 
 let gContext = undefined;
 
@@ -376,6 +377,11 @@ function showAssetsCreationDialog(...params) {
 async function requestPhotoUrisReadPermission(srcFileUris) {
   console.info('requestPhotoUrisReadPermission enter');
 
+  // check whether input array is array
+  if (!checkArrayAndSize(srcFileUris, MIN_CONFIRM_NUMBER, MAX_REQUEST_PHOTO_NUMBER)) {
+    console.error('input array is invalid');
+    return false;
+  }
   //check whether srcFileUris is valid
   for (let srcFileUri of srcFileUris) {
     if (!checkIsUriValid(srcFileUri, true)) {
