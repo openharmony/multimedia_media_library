@@ -2573,7 +2573,6 @@ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shar
     MEDIA_INFO_LOG("photoId: %{public}s", photoId.c_str());
     auto pictureManagerThread = PictureManagerThread::GetInstance();
     if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
         picture = pictureManagerThread->GetDataWithImageId(photoId, isCleanImmediately);
     }
     if (picture == nullptr) {
@@ -2607,7 +2606,6 @@ int32_t MediaLibraryPhotoOperations::FinishRequestPicture(MediaLibraryCommand &c
     MEDIA_INFO_LOG("photoId: %{public}s", photoId.c_str());
     auto pictureManagerThread = PictureManagerThread::GetInstance();
     if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
         pictureManagerThread->FinishAccessingPicture(photoId);
     }
     return E_OK;
@@ -2627,6 +2625,17 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     MEDIA_DEBUG_LOG("ForceSavePicture");
     int fileType = std::atoi(cmd.GetQuerySetParam(IMAGE_FILE_TYPE).c_str());
     int fileId = std::atoi(cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID).c_str());
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileId));
+    vector<string> columns = { PhotoColumn::PHOTO_IS_TEMP };
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet ==nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("result set is empty");
+        return E_ERR;
+    }
+    if (GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet) == 0) {
+        return E_OK;
+    }
     string uri = cmd.GetQuerySetParam("uri");
     SavePicture(fileType, fileId);
     string path = MediaFileUri::GetPathFromUri(uri, true);
@@ -2641,7 +2650,6 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     if (pictureManagerThread == nullptr) {
         return E_ERR;
     }
-    pictureManagerThread->Start();
     std::shared_ptr<Media::Picture> picture;
     std::string photoId;
     if (GetPicture(fileId, picture, false, photoId) != E_OK) {
@@ -2719,7 +2727,6 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
         int32_t ret = MediaChangeEffect::TakeEffectForPicture(picture, editData);
         auto pictureManagerThread = PictureManagerThread::GetInstance();
         if (pictureManagerThread != nullptr) {
-            pictureManagerThread->Start();
             pictureManagerThread->FinishAccessingPicture(photoId);
         }
         MediaLibraryObjectUtils::ScanFileAsync(sourcePath, to_string(fileId), MediaLibraryApi::API_10);

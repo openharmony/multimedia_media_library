@@ -1313,11 +1313,13 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     string path = "image/";
     string type = STAT_TYPE_PHOTO;
     int32_t fileType = MediaType::MEDIA_TYPE_IMAGE;
+    FileInfo fileInfo;
+    fileInfo.oldPath = path;
 
-    upgrade->UpdateFailedFileByFileType(fileType, path, errCode);
+    upgrade->UpdateFailedFileByFileType(fileType, fileInfo, errCode);
     auto ret = upgrade->GetFailedFiles(type);
     // ret[path] = errCode
-    EXPECT_EQ(ret[path], 0);
+    EXPECT_EQ(ret[path].errorCode, to_string(errCode));
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_image end";
 }
 
@@ -1332,11 +1334,13 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     string path = "video/";
     string type = STAT_TYPE_VIDEO;
     int32_t fileType = MediaType::MEDIA_TYPE_VIDEO;
+    FileInfo fileInfo;
+    fileInfo.oldPath = path;
 
-    upgrade->UpdateFailedFileByFileType(fileType, path, errCode);
+    upgrade->UpdateFailedFileByFileType(fileType, fileInfo, errCode);
     auto ret = upgrade->GetFailedFiles(type);
     // ret[path] = errCode
-    EXPECT_EQ(ret[path], 1);
+    EXPECT_EQ(ret[path].errorCode, to_string(errCode));
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_video end";
 }
 
@@ -1351,11 +1355,13 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     string path = "audio/";
     string type = STAT_TYPE_AUDIO;
     int32_t fileType = MediaType::MEDIA_TYPE_AUDIO;
+    FileInfo fileInfo;
+    fileInfo.oldPath = path;
 
-    upgrade->UpdateFailedFileByFileType(fileType, path, errCode);
+    upgrade->UpdateFailedFileByFileType(fileType, fileInfo, errCode);
     auto ret = upgrade->GetFailedFiles(type);
     // ret[path] = errCode
-    EXPECT_EQ(ret[path], -1);
+    EXPECT_EQ(ret[path].errorCode, to_string(errCode));
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_audio end";
 }
 
@@ -1369,8 +1375,10 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     int32_t fileType = -1;
     string path = "test_path";
     int32_t errCode = 3;
+    FileInfo fileInfo;
+    fileInfo.oldPath = path;
 
-    upgrade->UpdateFailedFileByFileType(fileType, path, errCode);
+    upgrade->UpdateFailedFileByFileType(fileType, fileInfo, errCode);
     auto ret = upgrade->GetErrorInfoJson();
     string str = ret[STAT_KEY_ERROR_INFO].dump();
     str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());

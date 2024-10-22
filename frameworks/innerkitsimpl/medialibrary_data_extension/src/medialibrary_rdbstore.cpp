@@ -3979,9 +3979,9 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
     }
 
     if (oldVersion < VERSION_ADD_HIGHLIGHT_TRIGGER) {
-            AddHighlightTriggerColumn(store);
-            AddHighlightInsertAndUpdateTrigger(store);
-            AddHighlightIndex(store);
+        AddHighlightTriggerColumn(store);
+        AddHighlightInsertAndUpdateTrigger(store);
+        AddHighlightIndex(store);
     }
 }
 

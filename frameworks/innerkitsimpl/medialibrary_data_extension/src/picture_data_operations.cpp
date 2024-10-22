@@ -319,7 +319,8 @@ int32_t PictureDataOperations::AddSavePictureTask(sptr<PicturePair>& picturePair
 
 int32_t PictureDataOperations::GetPendingTaskSize()
 {
-    return taskSize;
+    lock_guard<mutex> lock(pictureMapMutex_);
+    return lowQualityPictureMap_.size() + highQualityPictureMap_.size();
 }
 
 void PictureDataOperations::DeleteDataWithImageId(const std::string& imageId, PictureType pictureType)

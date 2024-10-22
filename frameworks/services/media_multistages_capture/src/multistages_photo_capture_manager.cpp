@@ -149,7 +149,6 @@ void MultiStagesPhotoCaptureManager::DealLowQualityPicture(const std::string &im
     if (pictureManagerThread == nullptr) {
         return;
     }
-    pictureManagerThread->Start();
     if (pictureManagerThread->IsExsitPictureByImageId(imageId)) {
         return;
     }
@@ -181,7 +180,6 @@ void MultiStagesPhotoCaptureManager::SaveLowQualityPicture(const std::string &im
     if (pictureManagerThread == nullptr) {
         return;
     }
-    pictureManagerThread->Start();
     pictureManagerThread->SaveLowQualityPicture(imageId);
 }
 
@@ -194,7 +192,6 @@ void MultiStagesPhotoCaptureManager::DealHighQualityPicture(const std::string &i
     if (pictureManagerThread == nullptr) {
         return;
     }
-    pictureManagerThread->Start();
     // 将低质量图存入缓存
     time_t currentTime;
     if ((currentTime = time(NULL)) == -1) {
@@ -326,7 +323,6 @@ void MultiStagesPhotoCaptureManager::AddImage(MediaLibraryCommand &cmd)
     if (pictureManagerThread == nullptr) {
         return;
     }
-    pictureManagerThread->Start();
     if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
         pictureManagerThread->SavePictureWithImageId(photoId);
         UpdatePictureQuality(photoId);
