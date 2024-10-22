@@ -29,7 +29,7 @@
 using namespace std;
 
 namespace OHOS::Media {
-std::unordered_map<std::string, std::string> TabOldPhotosClient::GetUrisByOldUris(std::vector<std::string> uris)
+std::unordered_map<std::string, std::string> TabOldPhotosClient::GetUrisByOldUris(std::vector<std::string>& uris)
 {
     std::unordered_map<std::string, std::string> resultMap;
     if (uris.empty() || static_cast<std::int32_t>(uris.size()) > this->URI_MAX_SIZE) {
@@ -74,6 +74,10 @@ std::shared_ptr<DataShare::DataShareResultSet> TabOldPhotosClient::GetResultSetF
     }
     resultSet = dataShareHelper->Query(uri, predicates, columns, &businessError);
     int count = 0;
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query failed, code: %{public}d", businessError.GetCode());
+        return nullptr;
+    }
     auto ret = resultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Resultset check failed, ret: %{public}d", ret);
@@ -151,11 +155,17 @@ std::vector<TabOldPhotosClient::RequestUriObj> TabOldPhotosClient::Parse(
 
         if (uri.find(GALLERY_URI_PREFIX) != std::string::npos) {
             size_t lastSlashPos = uri.rfind('/');
-            if (lastSlashPos != std::string::npos && lastSlashPos + 1 < uri.length()) {
-                std::string idStr = uri.substr(lastSlashPos + 1);
-                obj.type = URI_TYPE_ID_LINK;
-                obj.oldFileId = std::stoi(idStr);
+            if (lastSlashPos == std::string::npos || lastSlashPos + 1 >= uri.length()) {
+                MEDIA_ERR_LOG("Error locating media id in media uri: %{public}s", uri.c_str());
+                continue;
             }
+            std::string idStr = uri.substr(lastSlashPos + 1);
+            if (!(!idStr.empty() && std::all_of(idStr.begin(), idStr.end(), ::isdigit))) {
+                MEDIA_ERR_LOG("Media id is empty or contains invalid character in uri: %{public}s", uri.c_str());
+                continue;
+            }
+            obj.type = URI_TYPE_ID_LINK;
+            obj.oldFileId = std::stoi(idStr);
         } else if (uri.find(GALLERY_PATH) != std::string::npos) {
             obj.type = URI_TYPE_PATH;
             obj.oldData = uri;
@@ -219,8 +229,6 @@ std::unordered_map<std::string, std::string> TabOldPhotosClient::Parse(
     for (const auto &requestUriObj : uriList) {
         std::pair<std::string, std::string> pair = this->Build(requestUriObj, dataMapping);
         resultMap[pair.first] = pair.second;
-        MEDIA_INFO_LOG("Request URI = %{public}s , Resulting URI = %{public}s",
-            pair.first.c_str(), pair.second.c_str());
     }
     return resultMap;
 }

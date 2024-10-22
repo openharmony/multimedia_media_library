@@ -161,6 +161,18 @@
         }
       },
       {
+        "name": "ohos.permission.READ_IMAGEVIDEO",
+        "reason": "$string:permission_read_imagevideo",
+        "usedScene":{
+          "abilities":[
+            "MainAbility",
+            "DataShareExtAbility",
+            "MediaBackupExtensionAbility"
+          ],
+          "when": "always"
+        }
+      },
+      {
         "name": "ohos.permission.GET_WIFI_INFO",
         "reason": "$string:permission_get_wifi_info",
         "usedScene":{

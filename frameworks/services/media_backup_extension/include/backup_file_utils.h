@@ -19,6 +19,7 @@
 #include <string>
 
 #include "backup_const.h"
+#include "datashare_helper.h"
 #include "metadata.h"
 
 namespace OHOS {
@@ -50,9 +51,16 @@ public:
     static std::string GetFileTitle(const string &displayName);
     static bool IsFileValid(std::string &filePath, int32_t sceneCode,
         string relativePath = "", bool hasLowQualityImage = false);
-    static std::string GetDetailsPath(const std::string &type,
-        const std::unordered_map<std::string, int32_t> &failedFiles);
-    static std::string GetFailedFilesStr(const std::unordered_map<std::string, int32_t> &failedFiles);
+    static std::string GetDetailsPath(int32_t sceneCode, const std::string &type,
+        const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit);
+    static std::string GetFailedFilesStr(int32_t sceneCode,
+        const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit);
+    static std::vector<std::string> GetFailedFilesList(int32_t sceneCode,
+        const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit);
+    static std::string GetFailedFile(int32_t sceneCode, const std::string &failedFilePath,
+        const FailedFileInfo &failedFileInfo);
+    static void CreateDataShareHelper(const sptr<IRemoteObject> &token);
+    static void GenerateThumbnailsAfterRestore();
     static bool GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel, size_t &pos);
     static bool ShouldIncludeSd(const std::string &prefix);
     static void DeleteSdDatabase(const std::string &prefix);
@@ -61,8 +69,11 @@ public:
     static string ConvertLowQualityPath(int32_t sceneCode, const std::string &filePath, const string &relativePath);
     static bool IsLowQualityImage(std::string &filePath, int32_t sceneCode,
         string relativePath, bool hasLowQualityImage);
+    static size_t GetLastSlashPosFromPath(const std::string &path);
+    static std::string GetFileFolderFromPath(const std::string &path, bool shouldStartWithSlash = true);
 
 private:
+    static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
     static int32_t CreateAssetRealName(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &name);
