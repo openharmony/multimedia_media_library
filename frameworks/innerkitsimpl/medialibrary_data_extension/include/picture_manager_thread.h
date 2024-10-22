@@ -70,6 +70,7 @@ private:
     static std::unique_ptr<PictureManagerThread> instance_;
     static std::mutex mutex_;
     sptr<PictureDataOperations> pictureDataOperations_;
+    int32_t lastPendingTaskSize_ = 0;
 }; // class PictureManagerThread
 } // namespace Media
 }  // namespace OHOS
