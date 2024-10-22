@@ -83,6 +83,8 @@ const int32_t MegaByte = 1024*1024;
 const int32_t MAX_FILE_SIZE_MB = 200;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
+std::mutex MedialibrarySubscriber::timeMutex_;
+uint32_t MedialibrarySubscriber::timerId_ = 0;
 Utils::Timer MedialibrarySubscriber::timer_("medialibrary_subscriber");
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
