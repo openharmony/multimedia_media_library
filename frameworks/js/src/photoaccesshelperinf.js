@@ -377,6 +377,10 @@ async function requestPhotoUrisReadPermission(srcFileUris) {
   console.info('requestPhotoUrisReadPermission enter');
 
   //check whether srcFileUris is valid
+  if (srcFileUris === undefined || srcFileUris.length < MIN_CONFIRM_NUMBER) {
+    console.error('photoAccessHelper invalid, array size invalid.');
+    return false;
+  }
   for (let srcFileUri of srcFileUris) {
     if (!checkIsUriValid(srcFileUri, true)) {
       console.error('photoAccesshelper invalid uri : ${srcFileUri}.');
