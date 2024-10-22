@@ -57,11 +57,11 @@ private:
     bool currentStatus_{false};
     bool timerStatus_{false};
     std::mutex mutex_;
-    std::mutex timeMutex_;
     int32_t agingCount_ {0};
     int64_t lockTime_ {0};
     static Utils::Timer timer_;
-    uint32_t timerId_ {0};
+    static uint32_t timerId_;
+    static std::mutex timeMutex_;
 
     std::mutex delayTaskLock_;
     std::condition_variable delayTaskCv_;
