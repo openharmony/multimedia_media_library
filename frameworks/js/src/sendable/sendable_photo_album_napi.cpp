@@ -811,7 +811,7 @@ static void GetFaceIdCompleteCallback(napi_env env, napi_status status, void *da
     auto jsContext = make_unique<SendableJSAsyncContextOutput>();
     jsContext->status = false;
 
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, jsContext->error);
     } else {
