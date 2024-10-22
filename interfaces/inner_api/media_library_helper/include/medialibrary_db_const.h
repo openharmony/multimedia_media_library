@@ -307,6 +307,7 @@ const std::string MEDIA_DATA_DB_BEGIN_STAMP = "begin_stamp";
 const std::string MEDIA_DATA_DB_TYPE = "type";
 const std::string MEDIA_DATA_DB_INSERT_TYPE = "insert";
 const std::string MEDIA_DATA_DB_UPDATE_TYPE = "update ";
+const std::string MEDIA_DATA_DB_HIGHLIGHT_ID = "highlight_id";
 
 const std::string MEDIA_DATA_CALLING_UID = "calling_uid";
 

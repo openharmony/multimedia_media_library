@@ -58,6 +58,7 @@
 #include "wifi_device.h"
 #include "post_event_utils.h"
 #include "dfx_manager.h"
+#include "image_format_convert.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -144,16 +145,15 @@ bool ThumbnailUtils::DeleteBeginTimestampDir(ThumbnailData &data)
 {
     string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
     string dirName = MediaFileUtils::GetParentPath(fileName);
-
     if (access(dirName.c_str(), F_OK) != 0) {
         MEDIA_INFO_LOG("No need to delete beginTimeStamp, directory not exists path: %{public}s, id: %{public}s",
             DfxUtils::GetSafePath(dirName).c_str(), data.id.c_str());
         return true;
     }
 
-    for (const auto &dirEntry : std::filesystem::directory_iterator{ dirName }) {
+    for (const auto &dirEntry : std::filesystem::directory_iterator{dirName}) {
         string dir = dirEntry.path().string();
-        if (!MediaFileUtils.IsDirectory(dir)) {
+        if (!MediaFileUtils::IsDirectory(dir)) {
             continue;
         }
         string folderName = MediaFileUtils::GetFileName(dir);
@@ -166,7 +166,6 @@ bool ThumbnailUtils::DeleteBeginTimestampDir(ThumbnailData &data)
             }
         }
     }
-
     return true;
 }
 
@@ -266,6 +265,14 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
         DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
         return false;
     }
+    if (data.source->GetPixelFormat() == PixelFormat::YCBCR_P010) {
+        uint32_t ret = ImageFormatConvert::ConvertImageFormat(data.source, PixelFormat::RGBA_1010102);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("PixelMapYuv10ToRGBA_1010102: source ConvertImageFormat fail");
+            return false;
+        }
+    }
+
     data.orientation = 0;
     data.stats.sourceWidth = data.source->GetWidth();
     data.stats.sourceHeight = data.source->GetHeight();
@@ -744,10 +751,7 @@ bool ThumbnailUtils::QueryNoHighlightInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("QueryNoHighlightInfos failed %{public}d", err);
-        if (err == E_EMPTY_VALUES_BUCKET) {
-            return true;
-        }
-        return false;
+        return (err == E_EMPTY_VALUES_BUCKET);
     }
 
     err = resultSet->GoToFirstRow();
@@ -819,10 +823,19 @@ bool ThumbnailUtils::QueryHighlightTriggerPath(ThumbRdbOpt &opts, ThumbnailData 
 std::string ThumbnailUtils::GetHighlightValue(const std::string &str, const std::string &key)
 {
     std::size_t keyPos = str.find(key);
+    if (keyPos == std::string::npos) {
+        return "";
+    }
     std::size_t colonPos = str.find(":", keyPos);
+    if (colonPos == std::string::npos) {
+        return "";
+    }
     std::size_t commaPos = str.find(",", colonPos);
     if (commaPos == std::string::npos) {
         commaPos = str.find("}", colonPos);
+        if (commaPos == std::string::npos) {
+            return "";
+        }
     }
     std::string valueStr = str.substr(colonPos + 1, commaPos - colonPos - 1);
     return valueStr;
@@ -1470,9 +1483,8 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
         MEDIA_ERR_LOG("thumbnail center crop failed [%{private}s]", data.id.c_str());
         return false;
     }
-    if (data.source->GetPixelFormat() != PixelFormat::YCBCR_P010) {
-        data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    }
+    data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+
     if (data.orientation != 0) {
         if (data.isLocalFile) {
             Media::InitializationOptions opts;

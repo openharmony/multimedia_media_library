@@ -372,7 +372,7 @@ const std::string PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL =
                         ", NEW." + MEDIA_DATA_DB_HIGHLIGHT_TRIGGER + ", '" + MEDIA_DATA_DB_UPDATE_TYPE + "'); END;";
 
 const std::string PhotoColumn::INDEX_HIGHLIGHT_FILEID =
-                        BaseColumn::CreateIndex() + MEDIA_DATA_DB_ID + " ON " + HIGHLIGHT_TABLE + " (" + MEDIA_ID +");";
+                        BaseColumn::CreateIndex() + MEDIA_DATA_DB_HIGHLIGHT_ID + " ON " + HIGHLIGHT_TABLE + " (" + MEDIA_ID +");";
 
 const std::string  PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC =
                         " CREATE TRIGGER IF NOT EXISTS photo_insert_cloud_sync_trigger AFTER INSERT ON " +
