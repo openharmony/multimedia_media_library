@@ -39,7 +39,7 @@
 
 namespace OHOS {
 namespace Media {
-
+const int32_t MAX_VALUE = 100000000;
 std::shared_ptr<Media::Picture> PictureHandlerClient::RequestPicture(const int32_t &fileId)
 {
     MEDIA_DEBUG_LOG("PictureHandlerClient::RequestPicture fileId: %{public}d", fileId);
@@ -180,7 +180,7 @@ bool PictureHandlerClient::ReadAuxiliaryPicture(MessageParcel &data, std::unique
     auxiliaryPicture->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
 
     int32_t metadataSize = 0;
-    if (data.ReadInt32(metadataSize)) {
+    if (data.ReadInt32(metadataSize) && metadataSize >= 0 && metadataSize < MAX_VALUE) {
         MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPicture metadataSize: %{public}d", metadataSize);
         for (int i = 0; i < metadataSize; i++) {
             MetadataType type = static_cast<MetadataType>(data.ReadInt32());
@@ -298,9 +298,15 @@ bool PictureHandlerClient::ReadBufferHandle(MessageParcel &data, sptr<SurfaceBuf
 {
     uint32_t reserveFds = 0;
     bool readReserveFdsRet = data.ReadUint32(reserveFds);
+    if (reserveFds < 0 || reserveFds > static_cast<uint32_t>(MAX_VALUE)) {
+        return false;
+    }
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle reserveFds: %{public}d", reserveFds);
     uint32_t reserveInts = 0;
     bool reserveIntsRet = data.ReadUint32(reserveInts);
+    if (reserveInts < 0 || reserveInts > static_cast<uint32_t>(MAX_VALUE)) {
+        return false;
+    }
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle reserveInts: %{public}d", reserveInts);
 
     size_t handleSize = sizeof(BufferHandle) + (sizeof(int32_t) * (reserveFds + reserveInts));
