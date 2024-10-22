@@ -280,7 +280,7 @@ static int32_t ExcuteAsyncWork()
 
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
-    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode)
+    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode, bool isNeedCreateDir)
 {
     lock_guard<shared_mutex> lock(mgrSharedMutex_);
 
@@ -309,8 +309,10 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     CHECK_AND_WARN_LOG(errCode == E_OK, "failed at MakeDirQuerySetMap");
     InitACLPermission();
     InitDatabaseACLPermission();
-    errCode = ExcuteAsyncWork();
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at ExcuteAsyncWork");
+    if (isNeedCreateDir) {
+        errCode = ExcuteAsyncWork();
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at ExcuteAsyncWork");
+    }
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
     ReconstructMediaLibraryPhotoMap();
@@ -2033,12 +2035,6 @@ int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryComm
     ValueObject valueObject;
     if (value.GetObject(THUMBNAIL_BATCH_GENERATE_REQUEST_ID, valueObject)) {
         valueObject.GetInt(requestId);
-    } else {
-        return -EINVAL;
-    }
-    if (requestId <= 0) {
-        MEDIA_ERR_LOG("invalid request id");
-        return E_INVALID_VALUES;
     }
 
     if (cmd.GetOprnType() == OperationType::START_GENERATE_THUMBNAILS) {
@@ -2047,6 +2043,8 @@ int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryComm
     } else if (cmd.GetOprnType() == OperationType::STOP_GENERATE_THUMBNAILS) {
         thumbnailService_->CancelAstcBatchTask(requestId);
         return E_OK;
+    } else if (cmd.GetOprnType() == OperationType::GENERATE_THUMBNAILS_RESTORE) {
+        return thumbnailService_->RestoreThumbnailDualFrame();
     } else {
         MEDIA_ERR_LOG("invalid mediaLibrary command");
         return E_INVALID_ARGUMENTS;

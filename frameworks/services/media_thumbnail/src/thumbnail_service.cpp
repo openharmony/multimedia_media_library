@@ -612,6 +612,11 @@ void ThumbnailService::DeleteAstcWithFileIdAndDateTaken(const std::string &fileI
 
 int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId)
 {
+    if (requestId <= 0) {
+        MEDIA_ERR_LOG("create astc batch failed, invalid request id:%{public}d", requestId);
+        return E_INVALID_VALUES;
+    }
+
     CancelAstcBatchTask(requestId - 1);
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
@@ -622,6 +627,11 @@ int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbP
 
 void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
 {
+    if (requestId <= 0) {
+        MEDIA_ERR_LOG("cancel astc batch failed, invalid request id:%{public}d", requestId);
+        return;
+    }
+
     MEDIA_INFO_LOG("CancelAstcBatchTask requestId: %{public}d", requestId);
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);

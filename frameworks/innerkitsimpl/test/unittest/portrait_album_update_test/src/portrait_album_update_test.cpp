@@ -121,17 +121,16 @@ string GetCoverUri(PortraitData data)
     return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(data.fileId), extrUri);
 }
 
-int64_t CreatePortraitAlbum()
+int64_t CreatePortraitAlbum(const string &tagId)
 {
     TransactionOperations transactionOprn(g_rdbStore->GetRaw());
     transactionOprn.Start();
     int64_t albumId = -1;
-    string tag = "ser_1711000000000000000";
     ValuesBucket valuesBucket;
     valuesBucket.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
     valuesBucket.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
-    valuesBucket.PutString(TAG_ID, tag);
-    valuesBucket.PutString(GROUP_TAG, tag);
+    valuesBucket.PutString(TAG_ID, tagId);
+    valuesBucket.PutString(GROUP_TAG, tagId);
     EXPECT_NE(g_rdbStore, nullptr);
     int32_t ret = g_rdbStore->GetRaw()->Insert(albumId, ANALYSIS_ALBUM_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
@@ -170,7 +169,7 @@ PortraitData InsertPortraitToPhotos()
     return portraitData;
 }
 
-void InsertPortraitToImageFace(int64_t fileId, int totalFaces)
+void InsertPortraitToImageFace(int64_t fileId, int totalFaces, const string &tagId)
 {
     ASSERT_NE(g_rdbStore, nullptr);
     TransactionOperations transactionOprn(g_rdbStore->GetRaw());
@@ -181,6 +180,7 @@ void InsertPortraitToImageFace(int64_t fileId, int totalFaces)
         valuesBucket.PutInt(MediaColumn::MEDIA_ID, fileId);
         valuesBucket.PutInt(FACE_ID, faceId);
         valuesBucket.PutInt(TOTAL_FACES, totalFaces);
+        valuesBucket.PutString(TAG_ID, tagId);
         EXPECT_NE((g_rdbStore == nullptr), true);
         int32_t ret = g_rdbStore->GetRaw()->Insert(rowId, VISION_IMAGE_FACE_TABLE, valuesBucket);
         EXPECT_EQ(ret, E_OK);
@@ -301,7 +301,7 @@ shared_ptr<NativeRdb::ResultSet> QueryPortraitAlbumInfo(int32_t albumId)
     return resultSet;
 }
 
-vector<PortraitData> PreparePortraitData()
+vector<PortraitData> PreparePortraitData(const string &tagId)
 {
     const int portraitCount = 4;
     const vector<int> faceCount = { 1, 1, 2, 3 };
@@ -309,7 +309,7 @@ vector<PortraitData> PreparePortraitData()
     for (size_t index = 0; index < portraitCount; index++) {
         PortraitData portrait = InsertPortraitToPhotos();
         portraits.push_back(portrait);
-        InsertPortraitToImageFace(portrait.fileId, faceCount[index]);
+        InsertPortraitToImageFace(portrait.fileId, faceCount[index], tagId);
     }
     return portraits;
 }
@@ -359,12 +359,13 @@ void CheckAlbum(int64_t albumId, int count, int64_t coverId, CoverSatisfiedType 
 HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_001 Start");
-    vector<PortraitData> portraits = PreparePortraitData();
-    int64_t albumId = CreatePortraitAlbum();
+    const string tagId = "ser_1711000000000000000";
+    vector<PortraitData> portraits = PreparePortraitData(tagId);
+    int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<string> albumIds = { to_string(albumId) };
     vector<string> fileIds;
-    for (auto data : portraits) {
+    for (auto &data : portraits) {
         fileIds.push_back(to_string(data.fileId));
     }
 
@@ -387,12 +388,13 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_001, TestSize.Level
 HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_002 Start");
-    vector<PortraitData> portraits = PreparePortraitData();
-    int64_t albumId = CreatePortraitAlbum();
+    const string tagId = "ser_1711000000000000000";
+    vector<PortraitData> portraits = PreparePortraitData(tagId);
+    int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<string> albumIds = { to_string(albumId) };
     vector<string> fileIds;
-    for (auto data : portraits) {
+    for (auto &data : portraits) {
         fileIds.push_back(to_string(data.fileId));
     }
 
@@ -418,12 +420,13 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_002, TestSize.Level
 HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_003 Start");
-    vector<PortraitData> portraits = PreparePortraitData();
-    int64_t albumId = CreatePortraitAlbum();
+    const string tagId = "ser_1711000000000000000";
+    vector<PortraitData> portraits = PreparePortraitData(tagId);
+    int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<string> albumIds = { to_string(albumId) };
     vector<string> fileIds;
-    for (auto data : portraits) {
+    for (auto &data : portraits) {
         fileIds.push_back(to_string(data.fileId));
     }
 
@@ -496,9 +499,10 @@ void TestCoverUpdateByFileIds(int64_t albumId, const vector<PortraitData> &portr
 HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_004 Start");
-    int64_t albumId = CreatePortraitAlbum();
+    const string tagId = "ser_1711000000000000000";
+    int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
-    vector<PortraitData> portraits = PreparePortraitData();
+    vector<PortraitData> portraits = PreparePortraitData(tagId);
     vector<string> fileIds; // empty fileId list, full update
     string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "0/fake/fake.jpg";
     TestCoverUpdateByFileIds(albumId, portraits, fileIds, coverUri, TEST_INDEX_ONE);
@@ -508,11 +512,12 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_004, TestSize.Level
 HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_005 Start");
-    int64_t albumId = CreatePortraitAlbum();
+    const string tagId = "ser_1711000000000000000";
+    int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
-    vector<PortraitData> portraits = PreparePortraitData();
+    vector<PortraitData> portraits = PreparePortraitData(tagId);
     vector<string> fileIds;
-    for (auto data : portraits) {
+    for (auto &data : portraits) {
         fileIds.push_back(to_string(data.fileId)); // full fileId list, update by uri
     }
     string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "0/fake/fake.jpg";
@@ -523,9 +528,10 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_005, TestSize.Level
 HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_006, TestSize.Level0)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_006 Start");
-    int64_t albumId = CreatePortraitAlbum();
+    const string tagId = "ser_1711000000000000000";
+    int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
-    vector<PortraitData> portraits = PreparePortraitData();
+    vector<PortraitData> portraits = PreparePortraitData(tagId);
     vector<string> fileIds;
     string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "/0/fake/fake.jpg"; // invalid uri, get empty fileId
     TestCoverUpdateByFileIds(albumId, portraits, fileIds, coverUri, TEST_INDEX_ONE);
@@ -535,9 +541,10 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_006, TestSize.Level
 HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_007, TestSize.Level0)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_007 Start");
-    int64_t albumId = CreatePortraitAlbum();
+    const string tagId = "ser_1711000000000000000";
+    int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
-    vector<PortraitData> portraits = PreparePortraitData();
+    vector<PortraitData> portraits = PreparePortraitData(tagId);
     vector<string> fileIds; // empty fileId list, full update
     string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "0/fake/fake.jpg";
     TestCoverUpdateByFileIds(albumId, portraits, fileIds, coverUri, TEST_INDEX_ONE);
@@ -564,12 +571,13 @@ void UserSetCoverUriTest(const int64_t albumId, const vector<PortraitData> &port
 HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_008, TestSize.Level0)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_008 Start");
-    vector<PortraitData> portraits = PreparePortraitData();
-    int64_t albumId = CreatePortraitAlbum();
+    const string tagId = "ser_1711000000000000000";
+    int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
+    vector<PortraitData> portraits = PreparePortraitData(tagId);
     vector<string> albumIds = { to_string(albumId) };
     vector<string> fileIds;
-    for (auto data : portraits) {
+    for (auto &data : portraits) {
         fileIds.push_back(to_string(data.fileId));
     }
 

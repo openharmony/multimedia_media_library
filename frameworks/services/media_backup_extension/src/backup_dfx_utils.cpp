@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "MediaLibraryBackupUtils"
+
 #include "backup_dfx_utils.h"
 
 #include "hisysevent.h"
