@@ -1348,6 +1348,7 @@ shared_ptr<PhotoAssetProxy> MediaLibraryManager::CreatePhotoAssetProxy(CameraSho
 
 std::unordered_map<std::string, std::string> MediaLibraryManager::GetUrisByOldUris(std::vector<std::string> uris)
 {
+    MEDIA_INFO_LOG("Start request uris by old uris, size: %{public}zu", uris.size());
     return TabOldPhotosClient(*this).GetUrisByOldUris(uris);
 }
 } // namespace Media

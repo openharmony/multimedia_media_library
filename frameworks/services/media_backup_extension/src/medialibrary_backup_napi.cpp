@@ -15,6 +15,7 @@
 
 #define MLOG_TAG "MediaLibraryBackupNapi"
 
+#include <napi_base_context.h>
 #include "medialibrary_backup_napi.h"
 #include "application_context.h"
 #include "backup_restore_service.h"
@@ -29,20 +30,15 @@ namespace Media {
 
 using RestoreBlock = struct {
     napi_env env;
-    int32_t sceneCode;
-    std::string galleryAppName;
-    std::string mediaAppName;
-    std::string backupDir;
+    std::weak_ptr<OHOS::AbilityRuntime::Context> context;
+    RestoreInfo restoreInfo;
     napi_deferred nativeDeferred;
 };
 
 using RestoreExBlock = struct {
     napi_env env;
-    int32_t sceneCode;
-    std::string galleryAppName;
-    std::string mediaAppName;
-    std::string backupDir;
-    std::string bundleInfo;
+    std::weak_ptr<OHOS::AbilityRuntime::Context> context;
+    RestoreInfo restoreInfo;
     std::string restoreExInfo;
     napi_deferred nativeDeferred;
 };
@@ -121,8 +117,7 @@ void MediaLibraryBackupNapi::UvQueueWork(uv_loop_s *loop, uv_work_t *work)
             delete work;
             return;
         }
-        BackupRestoreService::GetInstance().StartRestore(block->sceneCode, block->galleryAppName,
-            block->mediaAppName, block->backupDir);
+        BackupRestoreService::GetInstance().StartRestore(block->context.lock(), block->restoreInfo);
     }, [](uv_work_t *work, int _status) {
         RestoreBlock *block = reinterpret_cast<RestoreBlock *> (work->data);
         napi_handle_scope scope = nullptr;
@@ -140,6 +135,28 @@ void MediaLibraryBackupNapi::UvQueueWork(uv_loop_s *loop, uv_work_t *work)
     });
 }
 
+bool ParseContext(const napi_env &env, const napi_value &input,
+    std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
+{
+    bool isStageMode = false;
+    napi_status status = OHOS::AbilityRuntime::IsStageContext(env, input, isStageMode);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("parse context status error, status:%{public}d", status);
+        return false;
+    }
+    if (!isStageMode) {
+        NAPI_ERR_LOG("parse context failed, not stage context");
+        return false;
+    }
+    context = OHOS::AbilityRuntime::GetStageModeContext(env, input);
+    if (context == nullptr) {
+        NAPI_ERR_LOG("parse context failed, context is null");
+        return false;
+    }
+ 
+    return true;
+}
+
 napi_value MediaLibraryBackupNapi::JSStartRestore(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
@@ -147,20 +164,28 @@ napi_value MediaLibraryBackupNapi::JSStartRestore(napi_env env, napi_callback_in
         return result;
     }
 
-    size_t argc = ARGS_FOUR;
-    napi_value argv[ARGS_FOUR] = {0};
+    size_t argc = ARGS_FIVE;
+    napi_value argv[ARGS_FIVE] = {0};
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_FOUR), "requires 4 parameters");
+    NAPI_ASSERT(env, (argc == ARGS_FIVE), "requires 5 parameters");
     napi_get_undefined(env, &result);
-    int32_t sceneCode = GetIntFromParams(env, argv, PARAM0);
-    std::string galleryAppName = GetStringFromParams(env, argv, PARAM1);
-    std::string mediaAppName = GetStringFromParams(env, argv, PARAM2);
-    std::string backupDir = GetStringFromParams(env, argv, PARAM3);
-    NAPI_INFO_LOG("StartRestore, sceneCode = %{public}d", sceneCode);
-    if (sceneCode < 0) {
-        NAPI_INFO_LOG("Parameters error, sceneCode = %{public}d", sceneCode);
+    
+    // get ability context
+    std::shared_ptr<OHOS::AbilityRuntime::Context> context;
+    if (!ParseContext(env, argv[PARAM0], context)) {
+        return result;
+    }
+    RestoreInfo restoreInfo;
+    restoreInfo.sceneCode = GetIntFromParams(env, argv, PARAM1);
+    restoreInfo.galleryAppName = GetStringFromParams(env, argv, PARAM2);
+    restoreInfo.mediaAppName = GetStringFromParams(env, argv, PARAM3);
+    restoreInfo.backupDir = GetStringFromParams(env, argv, PARAM4);
+    NAPI_INFO_LOG("StartRestore, sceneCode = %{public}d", restoreInfo.sceneCode);
+
+    if (restoreInfo.sceneCode < 0) {
+        NAPI_ERR_LOG("Parameters error, sceneCode = %{public}d", restoreInfo.sceneCode);
         return result;
     }
     uv_loop_s *loop = nullptr;
@@ -172,8 +197,7 @@ napi_value MediaLibraryBackupNapi::JSStartRestore(napi_env env, napi_callback_in
     }
     napi_deferred nativeDeferred = nullptr;
     napi_create_promise(env, &nativeDeferred, &result);
-    RestoreBlock *block = new (std::nothrow) RestoreBlock {
-        env, sceneCode, galleryAppName, mediaAppName, backupDir, nativeDeferred };
+    RestoreBlock *block = new (std::nothrow) RestoreBlock { env, context, restoreInfo, nativeDeferred };
     if (block == nullptr) {
         NAPI_ERR_LOG("Failed to new block");
         delete work;
@@ -188,8 +212,8 @@ void MediaLibraryBackupNapi::UvQueueWorkEx(uv_loop_s *loop, uv_work_t *work)
 {
     uv_queue_work(loop, work, [](uv_work_t *work) {
         RestoreExBlock *block = reinterpret_cast<RestoreExBlock *> (work->data);
-        BackupRestoreService::GetInstance().StartRestoreEx({block->sceneCode, block->galleryAppName,
-            block->mediaAppName, block->backupDir, block->bundleInfo}, block->restoreExInfo);
+        BackupRestoreService::GetInstance().StartRestoreEx(block->context.lock(), block->restoreInfo,
+            block->restoreExInfo);
     }, [](uv_work_t *work, int _status) {
         RestoreExBlock *block = reinterpret_cast<RestoreExBlock *> (work->data);
         if (block == nullptr) {
@@ -218,22 +242,28 @@ napi_value MediaLibraryBackupNapi::JSStartRestoreEx(napi_env env, napi_callback_
         return result;
     }
 
-    size_t argc = ARGS_FIVE;
-    napi_value argv[ARGS_FIVE] = {0};
+    size_t argc = ARGS_SIX;
+    napi_value argv[ARGS_SIX] = {0};
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_FIVE), "requires 5 parameters");
+    NAPI_ASSERT(env, (argc == ARGS_SIX), "requires 6 parameters");
     napi_get_undefined(env, &result);
-    int32_t sceneCode = GetIntFromParams(env, argv, PARAM0);
-    std::string galleryAppName = GetStringFromParams(env, argv, PARAM1);
-    std::string mediaAppName = GetStringFromParams(env, argv, PARAM2);
-    std::string backupDir = GetStringFromParams(env, argv, PARAM3);
-    std::string bundleInfo = GetStringFromParams(env, argv, PARAM4);
+    // get ability context
+    std::shared_ptr<OHOS::AbilityRuntime::Context> context;
+    if (!ParseContext(env, argv[PARAM0], context)) {
+        return result;
+    }
+    RestoreInfo restoreInfo;
+    restoreInfo.sceneCode = GetIntFromParams(env, argv, PARAM1);
+    restoreInfo.galleryAppName = GetStringFromParams(env, argv, PARAM2);
+    restoreInfo.mediaAppName = GetStringFromParams(env, argv, PARAM3);
+    restoreInfo.backupDir = GetStringFromParams(env, argv, PARAM4);
+    restoreInfo.bundleInfo = GetStringFromParams(env, argv, PARAM5);
     std::string restoreExInfo;
-    NAPI_INFO_LOG("StartRestoreEx, sceneCode = %{public}d", sceneCode);
-    if (sceneCode < 0) {
-        NAPI_INFO_LOG("Parameters error, sceneCode = %{public}d", sceneCode);
+    NAPI_INFO_LOG("StartRestoreEx, sceneCode = %{public}d", restoreInfo.sceneCode);
+    if (restoreInfo.sceneCode < 0) {
+        NAPI_INFO_LOG("Parameters error, sceneCode = %{public}d", restoreInfo.sceneCode);
         return result;
     }
     uv_loop_s *loop = nullptr;
@@ -246,7 +276,7 @@ napi_value MediaLibraryBackupNapi::JSStartRestoreEx(napi_env env, napi_callback_
     napi_deferred nativeDeferred = nullptr;
     napi_create_promise(env, &nativeDeferred, &result);
     RestoreExBlock *block = new (std::nothrow) RestoreExBlock {
-        env, sceneCode, galleryAppName, mediaAppName, backupDir, bundleInfo, restoreExInfo, nativeDeferred };
+        env, context, restoreInfo, restoreExInfo, nativeDeferred };
     if (block == nullptr) {
         NAPI_ERR_LOG("Failed to new block");
         delete work;

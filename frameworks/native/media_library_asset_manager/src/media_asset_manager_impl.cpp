@@ -89,28 +89,29 @@ static void DeleteInProcessMapRecord(const std::string &requestUri, const std::s
 {
     MEDIA_INFO_LOG("DeleteInProcessMapRecord lock multiStagesCaptureLock");
     std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
-    if (inProcessUriMap.find(requestUri) == inProcessUriMap.end()) {
+    auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(requestUri);
+    if (inProcessUriMap.find(uriLocal) == inProcessUriMap.end()) {
         return;
     }
 
-    std::map<std::string, AssetHandler*> assetHandlers = inProcessUriMap[requestUri];
+    std::map<std::string, AssetHandler*> assetHandlers = inProcessUriMap[uriLocal];
     if (assetHandlers.find(requestId) == assetHandlers.end()) {
         return;
     }
 
     assetHandlers.erase(requestId);
     if (!assetHandlers.empty()) {
-        inProcessUriMap[requestUri] = assetHandlers;
+        inProcessUriMap[uriLocal] = assetHandlers;
         return;
     }
 
-    inProcessUriMap.erase(requestUri);
+    inProcessUriMap.erase(uriLocal);
 
-    if (multiStagesObserverMap.find(requestUri) != multiStagesObserverMap.end()) {
-        sDataShareHelper_->UnregisterObserverExt(Uri(requestUri),
-            static_cast<std::shared_ptr<DataShare::DataShareObserver>>(multiStagesObserverMap[requestUri]));
+    if (multiStagesObserverMap.find(uriLocal) != multiStagesObserverMap.end()) {
+        sDataShareHelper_->UnregisterObserverExt(Uri(uriLocal),
+            static_cast<std::shared_ptr<DataShare::DataShareObserver>>(multiStagesObserverMap[uriLocal]));
     }
-    multiStagesObserverMap.erase(requestUri);
+    multiStagesObserverMap.erase(uriLocal);
     MEDIA_INFO_LOG("DeleteInProcessMapRecord unlock multiStagesCaptureLock");
 }
 
@@ -356,8 +357,7 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
         MEDIA_ERR_LOG("Return mode type invalid %{public}d", dataHandler->GetReturnDataType());
         return false;
     }
-    auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(assetHandler->requestUri);
-    DeleteDataHandler(notifyMode, uriLocal, assetHandler->requestId);
+    DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     MEDIA_INFO_LOG("Delete assetHandler: %{public}p", assetHandler);
     DeleteAssetHandlerSafe(assetHandler);
     return true;
@@ -697,11 +697,11 @@ bool MediaAssetManagerImpl::NotifyDataPreparedWithoutRegister(
 void MediaAssetManagerImpl::RegisterTaskObserver(const unique_ptr<RequestSourceAsyncContext> &asyncContext)
 {
     auto dataObserver = std::make_shared<MultiStagesTaskObserver>(asyncContext->fileId);
-    Uri uri(asyncContext->requestUri);
-    if (multiStagesObserverMap.find(asyncContext->requestUri) == multiStagesObserverMap.end()) {
-        sDataShareHelper_->RegisterObserverExt(uri,
+    auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(asyncContext->requestUri);
+    if (multiStagesObserverMap.find(uriLocal) == multiStagesObserverMap.end()) {
+        sDataShareHelper_->RegisterObserverExt(Uri(uriLocal),
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
-        multiStagesObserverMap.insert(std::make_pair(asyncContext->requestUri, dataObserver));
+        multiStagesObserverMap.insert(std::make_pair(uriLocal, dataObserver));
     }
 
     InsertDataHandler(NativeNotifyMode::WAIT_FOR_HIGH_QUALITY, asyncContext);

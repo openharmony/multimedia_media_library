@@ -52,13 +52,9 @@ void MultiStagesVideoCaptureManager::AddVideoInternal(const std::string &videoId
     const std::string &filePath)
 {
 #ifdef ABILITY_CAMERA_SUPPORT
-    string tempPath = filePath.substr(0, filePath.rfind('.')) + "_tmp" + filePath.substr(filePath.rfind('.'));
-
-    MEDIA_INFO_LOG("AddVideoInternal filePath = %{public}s, tempPath = %{public}s",
-        filePath.c_str(), tempPath.c_str());
+    MEDIA_INFO_LOG("AddVideoInternal filePath = %{public}s", filePath.c_str());
 
     string absSrcFilePath;
-
     if (!PathToRealPath(filePath, absSrcFilePath)) {
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
         return;
@@ -66,7 +62,28 @@ void MultiStagesVideoCaptureManager::AddVideoInternal(const std::string &videoId
 
     const mode_t fileMode = 0644;
     int srcFd = open(absSrcFilePath.c_str(), O_RDONLY);
+    if (srcFd < 0) {
+        MEDIA_ERR_LOG("open file fail, srcFd = %{public}d", srcFd);
+        return;
+    }
+
+    string dirPath = filePath.substr(0, filePath.rfind('/'));
+    char realDirPath[PATH_MAX] = {0};
+    if (realpath(dirPath.c_str(), realDirPath) == nullptr) {
+        MEDIA_ERR_LOG("check dirPath fail, dirPath = %{public}s", dirPath.c_str());
+        close(srcFd);
+        return;
+    }
+
+    string tempPath = realDirPath + filePath.substr(filePath.rfind('/'),
+        filePath.rfind('.') - filePath.rfind('/')) + "_tmp" + filePath.substr(filePath.rfind('.'));
+    MEDIA_INFO_LOG("AddVideoInternal tempPath = %{public}s", tempPath.c_str());
     int dstFd = open(tempPath.c_str(), O_CREAT|O_WRONLY|O_TRUNC, fileMode);
+    if (dstFd < 0) {
+        MEDIA_ERR_LOG("open file fail, dstFd = %{public}d", dstFd);
+        close(srcFd);
+        return;
+    }
     
     deferredProcSession_->AddVideo(videoId, srcFd, dstFd);
 #endif
