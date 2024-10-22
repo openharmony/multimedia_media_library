@@ -219,7 +219,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
 }
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::GetCommandByImageId(const std::string &imageId,
-    MediaLibraryCommand &cmd, string &photoId)
+    MediaLibraryCommand &cmd)
 {
     size_t slashIndex = imageId.rfind("/");
     string where = "";
@@ -235,11 +235,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::GetCommandByImageId(con
         string fileId = MediaFileUtils::GetIdFromUri(imageId);
         where = PhotoColumn::MEDIA_ID + " = ? ";
         whereArgs = { fileId };
-        photoId = result.str();
-    } else {
-        where = PhotoColumn::PHOTO_ID + " = ? ";
-        whereArgs = { imageId };
-        photoId = imageId;
     }
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
@@ -270,10 +265,9 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityIma
     MediaLibraryTracer tracer;
     tracer.Start("OnDeliveryLowQualityImage " + imageId);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string photoId = "";
-    GetCommandByImageId(imageId, cmd, photoId);
+    GetCommandByImageId(imageId, cmd);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_QUALITY};
+        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_ID};
     tracer.Start("Query");
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
@@ -282,10 +276,10 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityIma
         return;
     }
     tracer.Finish();
-    int32_t photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
+    string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
-    MultiStagesPhotoCaptureManager::GetInstance().DealLowQualityPicture(imageId, std::move(picture), isEdited);
+    MultiStagesPhotoCaptureManager::GetInstance().DealLowQualityPicture(photoId, std::move(picture), isEdited);
     MEDIA_INFO_LOG("save low quality image end");
 }
 
