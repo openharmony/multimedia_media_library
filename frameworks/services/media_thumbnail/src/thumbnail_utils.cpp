@@ -2218,7 +2218,9 @@ static bool IsMobileNetworkEnabled()
     if (resultSet != nullptr && resultSet->GoToNextRow()==0) {
         resultSet->GetString(0, switchOn);
     }
-    resultSet->Close();
+    if (resultSet != nullptr) {
+        resultSet->Close();
+    }
     cloudHelper->Release();
     return switchOn == "1";
 }
