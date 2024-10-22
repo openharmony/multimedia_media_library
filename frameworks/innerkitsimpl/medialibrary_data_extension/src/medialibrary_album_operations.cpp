@@ -1163,6 +1163,7 @@ void DealWithHighlightSdTable(const DataSharePredicates &predicates)
 
         string highlightVideoPath = "/storage/cloud/files/highlight/video/" + to_string(mapAssetDestination);
         MediaFileUtils::DeleteDir(highlightVideoPath);
+        MEDIA_INFO_LOG("Delete highlight video path is: %{public}s", highlightVideoPath.c_str());
  
         const std::string DELETE_ITEM_FROM_SD_MAP =
             "DELETE FROM tab_analysis_asset_sd_map WHERE map_asset_source = " + assetId;
