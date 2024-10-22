@@ -86,14 +86,17 @@ int32_t BaseRestore::Init(void)
         MEDIA_ERR_LOG("Failed to get context");
         return E_FAIL;
     }
-    BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo =
-        BackgroundTaskMgr::EfficiencyResourceInfo(BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
-    BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
     int32_t err = BackupDatabaseUtils::InitDb(mediaLibraryRdb_, MEDIA_DATA_ABILITY_DB_NAME, DATABASE_PATH, BUNDLE_NAME,
         true, context->GetArea());
     if (err != E_OK) {
         MEDIA_ERR_LOG("medialibrary rdb fail, err = %{public}d", err);
         return E_FAIL;
+    }
+    int32_t sceneCode = 0;
+    int32_t errCode = MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context, nullptr, sceneCode, false);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("When restore, InitMediaLibraryMgr fail, errcode = %{public}d", errCode);
+        return errCode;
     }
     migrateDatabaseNumber_ = 0;
     migrateFileNumber_ = 0;

@@ -103,9 +103,6 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
             MEDIA_ERR_LOG("External init rdb fail, err = %{public}d", externalErr);
             return E_FAIL;
         }
-        if (sceneCode_ == UPGRADE_RESTORE_ID) {
-            MediaLibraryDataManager::GetInstance()->ReCreateMediaDir();
-        }
     }
     MEDIA_INFO_LOG("Shoud include Sd: %{public}d", static_cast<int32_t>(shouldIncludeSd_));
     return InitDbAndXml(photosPreferencesPath, isUpgrade);
@@ -115,6 +112,9 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
 {
     if (isUpgrade && BaseRestore::Init() != E_OK) {
         return E_FAIL;
+    }
+    if (sceneCode_ == UPGRADE_RESTORE_ID) {
+        MediaLibraryDataManager::GetInstance()->ReCreateMediaDir();
     }
     if (!MediaFileUtils::IsFileExists(galleryDbPath_)) {
         MEDIA_ERR_LOG("Gallery media db is not exist.");
