@@ -15,6 +15,10 @@
 
 #define MLOG_TAG "PhotoAssetProxy"
 
+#include <cstdint>
+#include <string>
+#include <sstream>
+
 #include "media_photo_asset_proxy.h"
 
 #include "datashare_abs_result_set.h"
@@ -37,8 +41,14 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 const string API_VERSION = "api_version";
+const string SAVE_PICTURE = "save_picture";
 const double TIMER_MULTIPLIER = 60.0;
-
+const std::unordered_map<CameraShotType, PhotoSubType> CAMERASHOT_TO_SUBTYPE_MAP = {
+    {CameraShotType::MOVING_PHOTO, PhotoSubType::MOVING_PHOTO},
+    {CameraShotType::BURST, PhotoSubType::BURST},
+    {CameraShotType::IMAGE, PhotoSubType::CAMERA},
+    {CameraShotType::VIDEO, PhotoSubType::CAMERA},
+};
 PhotoAssetProxy::PhotoAssetProxy() {}
 
 PhotoAssetProxy::PhotoAssetProxy(shared_ptr<DataShare::DataShareHelper> dataShareHelper, CameraShotType cameraShotType,
@@ -48,7 +58,12 @@ PhotoAssetProxy::PhotoAssetProxy(shared_ptr<DataShare::DataShareHelper> dataShar
     cameraShotType_ = cameraShotType;
     callingUid_ = callingUid;
     userId_ = userId;
-    subType_ = cameraShotType == CameraShotType::MOVING_PHOTO ? PhotoSubType::MOVING_PHOTO : PhotoSubType::CAMERA;
+    auto itr = CAMERASHOT_TO_SUBTYPE_MAP.find(cameraShotType);
+    if (itr == CAMERASHOT_TO_SUBTYPE_MAP.end()) {
+        subType_ = PhotoSubType::CAMERA;
+    } else {
+        subType_ = itr->second;
+    }
     MEDIA_INFO_LOG("init success, shottype: %{public}d, callingUid: %{public}d, userid: %{public}d",
         static_cast<int32_t>(cameraShotType), callingUid, userId);
 }
@@ -107,6 +122,7 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
         MEDIA_ERR_LOG("Failed to create Asset, burstKey is empty when CameraShotType::BURST");
         return;
     }
+
     string displayName = photoProxy->GetTitle() + "." + photoProxy->GetExtension();
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
     if ((mediaType != MEDIA_TYPE_IMAGE) && (mediaType != MEDIA_TYPE_VIDEO)) {
@@ -211,7 +227,7 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
         return E_ERR;
     }
 
-    MEDIA_INFO_LOG("start pack PixelMap");
+    MEDIA_DEBUG_LOG("start pack PixelMap");
     Media::InitializationOptions opts;
     opts.pixelFormat = Media::PixelFormat::RGBA_8888;
     opts.size = {
@@ -328,6 +344,38 @@ int32_t PhotoAssetProxy::UpdatePhotoQuality(shared_ptr<DataShare::DataShareHelpe
 {
     string uri = PAH_ADD_IMAGE;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    if (photoProxy->GetFormat() == PhotoFormat::YUV) {
+        MediaFileUtils::UriAppendKeyValue(uri, SAVE_PICTURE, OPRN_ADD_LOWQUALITY_IMAGE);
+    }
+    Uri updateAssetUri(uri);
+    DataShare::DataSharePredicates predicates;
+    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+    predicates.SetWhereArgs({ to_string(fileId) });
+
+    DataShare::DataShareValuesBucket valuesBucket;
+    string photoId = (photoProxy->GetPhotoId() == "" || subType == static_cast<int32_t>(PhotoSubType::BURST)) ?
+        (to_string(fileId) + "_") : photoProxy->GetPhotoId();
+    valuesBucket.Put(PhotoColumn::PHOTO_ID, photoId);
+    valuesBucket.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, static_cast<int32_t>(photoProxy->GetDeferredProcType()));
+    valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
+    valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(subType));
+    valuesBucket.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(photoProxy->GetPhotoQuality()));
+
+    int32_t changeRows = dataShareHelper->Update(updateAssetUri, predicates, valuesBucket);
+    if (changeRows < 0) {
+        MEDIA_ERR_LOG("update fail, error: %{public}d", changeRows);
+    }
+    MEDIA_INFO_LOG("photoId: %{public}s, fileId: %{public}d", photoProxy->GetPhotoId().c_str(), fileId);
+    return changeRows;
+}
+
+int PhotoAssetProxy::SaveLowQualityPhoto(std::shared_ptr<DataShare::DataShareHelper>  &dataShareHelper,
+    const sptr<PhotoProxy> &photoProxy, int32_t fileId, int32_t subType)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SaveLowQualityPhoto");
+    string uri = PAH_ADD_LOWQUALITY_IMAGE;
+    MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(uri);
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
@@ -338,13 +386,16 @@ int32_t PhotoAssetProxy::UpdatePhotoQuality(shared_ptr<DataShare::DataShareHelpe
     valuesBucket.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, static_cast<int32_t>(photoProxy->GetDeferredProcType()));
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
     valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(subType));
+    valuesBucket.Put(PhotoColumn::PHOTO_LATITUDE, photoProxy->GetLatitude());
+    valuesBucket.Put(PhotoColumn::PHOTO_LONGITUDE, photoProxy->GetLongitude());
 
     int32_t changeRows = dataShareHelper->Update(updateAssetUri, predicates, valuesBucket);
     if (changeRows < 0) {
         MEDIA_ERR_LOG("update fail, error: %{public}d", changeRows);
     }
-    MEDIA_INFO_LOG("photoId: %{public}s, fileId: %{public}d", photoProxy->GetPhotoId().c_str(), fileId);
-    return changeRows;
+    MEDIA_INFO_LOG("photoId: %{public}s,", photoProxy->GetPhotoId().c_str());
+    photoProxy->Release();
+    return E_OK;
 }
 
 void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
@@ -381,8 +432,13 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
     if (cameraShotType_ == CameraShotType::VIDEO) {
         return;
     }
-    if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW) {
+    if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW || photoProxy->GetFormat() == PhotoFormat::YUV) {
         UpdatePhotoQuality(dataShareHelper_, photoProxy, fileId_, static_cast<int32_t>(subType_));
+    }
+    if (photoProxy->GetFormat() == PhotoFormat::YUV) {
+        photoProxy->Release();
+        tracer.Finish();
+        return;
     }
     tracer.Finish();
 

@@ -12,12 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 #ifndef IVISION_SERVICE_CV
 #define IVISION_SERVICE_CV
-
+ 
 #include "iremote_broker.h"
-
+ 
 namespace OHOS {
 namespace Media {
 class IMediaAnalysisService : public IRemoteBroker {
@@ -28,7 +28,6 @@ public:
         START_UPDATE_INDEX = 32,
         START_BACKGROUND_TASK = 33,
         PORTRAIT_COVER_SELECTION = 34,
-        HIGHLIGHT_COVER_GENERATE = 35,
     };
 public:
     DECLARE_INTERFACE_DESCRIPTOR(u"Multimedia.MediaAnalyseService.API");

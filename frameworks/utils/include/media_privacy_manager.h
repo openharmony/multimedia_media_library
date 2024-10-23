@@ -30,7 +30,7 @@ enum PrivacyType {
 
 class MediaPrivacyManager {
 public:
-    EXPORT MediaPrivacyManager(const std::string &path, const std::string &mode);
+    EXPORT MediaPrivacyManager(const std::string &path, const std::string &mode, const std::string &fileId);
     EXPORT virtual ~MediaPrivacyManager();
 
     EXPORT int32_t Open();
@@ -38,6 +38,7 @@ public:
 private:
     std::string path_;
     std::string mode_;
+    std::string fileId_;
     /* Privacy ranges in a file, specified by <begin, end> offsets of the file */
     std::vector<std::pair<uint32_t, uint32_t>> ranges_;
 };

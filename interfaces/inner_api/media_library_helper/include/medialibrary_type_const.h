@@ -94,6 +94,40 @@ enum class DirtyType : int32_t {
     TYPE_SDIRTY
 };
 
+enum class CloudEnhancementAvailableType : int32_t {
+    NOT_SUPPORT = 0,
+    SUPPORT,
+    PROCESSING,
+    FAILED_RETRY,
+    FAILED,
+    SUCCESS,
+    EDIT,
+    TRASH,
+    FINISH = 120,
+};
+
+enum class CEErrorCodeType : int32_t {
+    // failed retry
+    LIMIT_USAGE = 100,
+    LIMIT_REQUEST,
+    TASK_CACHE_TIMEOUT,
+    NETWORK_UNAVAILABLE,
+    TEMPERATURES_GUARD,
+    NETWORK_WEAK,
+    // failed
+    EXECUTE_FAILED,
+    // failed retry
+    DO_AUTH_FAILED,
+    TASK_CANNOT_EXECUTE,
+    // failed
+    NON_RECOVERABLE = 200,
+};
+
+enum class StrongAssociationType : int32_t {
+    NORMAL = 0,
+    CLOUD_ENHANCEMENT
+};
+
 enum class SyncStatusType : int32_t {
     TYPE_VISIBLE = 0,
     TYPE_DOWNLOAD,
@@ -167,6 +201,7 @@ const std::string ROOT_SANDBOX_DIR = "/storage/Share/";
 const std::string FS_TYPE_EPFS = "epfs";
 const std::string EPFS_MOUNT_POINT = "/storage/cloud/epfs";
 const std::string MEDIA_CACHE_DIR = ROOT_MEDIA_DIR + ".cache/";
+const std::string MEDIA_EDIT_DATA_DIR = ROOT_MEDIA_DIR + ".editData/";
 const char SLASH_CHAR = '/';
 const std::string SLASH_STR = "/";
 
@@ -198,11 +233,14 @@ const std::string BACKUP_DATA_DIR_VALUE = "data/";
 const std::string BACKUP_SINGLE_DATA_DIR_VALUE = ".backup/";
 const std::string THUMB_DIR_VALUE = ".thumbs/Photo";
 const std::string EDIT_DATA_DIR_VALUE = ".editData";
+const std::string MEDIALIBRARY_TEMP_DIR = ".medialibrarytemp";
+const std::string CACHE_DIR_VALUE = ".cache";
+const std::string CLOUD_ENHANCEMENT_WATER_MARK_DIR = "/sys_prod/resource/camera";
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
     PHOTO_BUCKET + "/", AUDIO_BUCKET + "/", BACKUP_DATA_DIR_VALUE, EDIT_DATA_DIR_VALUE + "/",
-    BACKUP_SINGLE_DATA_DIR_VALUE
+    BACKUP_SINGLE_DATA_DIR_VALUE, CACHE_DIR_VALUE
 };
 
 const std::vector<std::string> E_POLICY_DIRS = {

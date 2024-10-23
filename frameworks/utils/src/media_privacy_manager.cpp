@@ -33,6 +33,10 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
 #include "permission_utils.h"
+#include "media_exif.h"
+#include "media_library_manager.h"
+#include "medialibrary_bundle_manager.h"
+#include "medialibrary_urisensitive_operations.h"
 
 using namespace std;
 using PrivacyRanges = vector<pair<uint32_t, uint32_t>>;
@@ -41,8 +45,67 @@ namespace OHOS {
 namespace Media {
 constexpr uint32_t E_NO_EXIF = 1;
 constexpr uint32_t E_NO_PRIVACY_EXIF_TAG = 2;
+const std::vector<std::string> ALL_SENSITIVE_EXIF = {
+    PHOTO_DATA_IMAGE_GPS_LATITUDE,
+    PHOTO_DATA_IMAGE_GPS_LONGITUDE,
+    PHOTO_DATA_IMAGE_GPS_TIME_STAMP,
+    PHOTO_DATA_IMAGE_GPS_DATE_STAMP,
+    PHOTO_DATA_IMAGE_GPS_ALTITUDE,
+    PHOTO_DATA_IMAGE_GPS_VERSION_ID,
+    PHOTO_DATA_IMAGE_MAKE,
+    PHOTO_DATA_IMAGE_MODEL,
+    PHOTO_DATA_IMAGE_SOFTWARE,
+    PHOTO_DATA_IMAGE_DATE_TIME,
+    PHOTO_DATA_IMAGE_EXPOSURE_TIME,
+    PHOTO_DATA_IMAGE_F_NUMBER,
+    PHOTO_DATA_IMAGE_EXPOSURE_PROGRAM,
+    PHOTO_DATA_IMAGE_STANDARD_OUTPUT_SENSITIVITY,
+    PHOTO_DATA_IMAGE_PHOTOGRAPHIC_SENSITIVITY,
+    PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL,
+    PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL_FOR_MEDIA,
+    PHOTO_DATA_IMAGE_DATE_TIME_DIGITIZED,
+    PHOTO_DATA_IMAGE_EXPOSURE_BIAS_VALUE,
+    PHOTO_DATA_IMAGE_METERING_MODE,
+    PHOTO_DATA_IMAGE_LIGHT_SOURCE,
+    PHOTO_DATA_IMAGE_FLASH,
+    PHOTO_DATA_IMAGE_FOCAL_LENGTH,
+    PHOTO_DATA_IMAGE_EXPOSURE_MODE,
+    PHOTO_DATA_IMAGE_WHITE_BALANCE,
+    PHOTO_DATA_IMAGE_DIGITAL_ZOOM_RATIO,
+    PHOTO_DATA_IMAGE_FOCAL_LENGTH_IN_35_MM_FILM
+};
+const std::vector<std::string> GEOGRAPHIC_LOCATION_EXIF = {
+    PHOTO_DATA_IMAGE_GPS_LATITUDE,
+    PHOTO_DATA_IMAGE_GPS_LONGITUDE,
+    PHOTO_DATA_IMAGE_GPS_TIME_STAMP,
+    PHOTO_DATA_IMAGE_GPS_DATE_STAMP,
+    PHOTO_DATA_IMAGE_GPS_ALTITUDE,
+    PHOTO_DATA_IMAGE_GPS_VERSION_ID
+};
+const std::vector<std::string> SHOOTING_PARAM_EXIF = {
+    PHOTO_DATA_IMAGE_MAKE,
+    PHOTO_DATA_IMAGE_MODEL,
+    PHOTO_DATA_IMAGE_SOFTWARE,
+    PHOTO_DATA_IMAGE_DATE_TIME,
+    PHOTO_DATA_IMAGE_EXPOSURE_TIME,
+    PHOTO_DATA_IMAGE_F_NUMBER,
+    PHOTO_DATA_IMAGE_EXPOSURE_PROGRAM,
+    PHOTO_DATA_IMAGE_PHOTOGRAPHIC_SENSITIVITY,
+    PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL,
+    PHOTO_DATA_IMAGE_DATE_TIME_DIGITIZED,
+    PHOTO_DATA_IMAGE_EXPOSURE_BIAS_VALUE,
+    PHOTO_DATA_IMAGE_METERING_MODE,
+    PHOTO_DATA_IMAGE_LIGHT_SOURCE,
+    PHOTO_DATA_IMAGE_FLASH,
+    PHOTO_DATA_IMAGE_FOCAL_LENGTH,
+    PHOTO_DATA_IMAGE_EXPOSURE_MODE,
+    PHOTO_DATA_IMAGE_WHITE_BALANCE,
+    PHOTO_DATA_IMAGE_DIGITAL_ZOOM_RATIO,
+    PHOTO_DATA_IMAGE_FOCAL_LENGTH_IN_35_MM_FILM
+};
 
-MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode) : path_(path), mode_(mode)
+MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode, const string &fileId)
+    : path_(path), mode_(mode), fileId_(fileId)
 {}
 
 MediaPrivacyManager::~MediaPrivacyManager()
@@ -55,7 +118,11 @@ const unordered_map<PrivacyType, string> PRIVACY_PERMISSION_MAP = {
 const vector<string> EXIF_SUPPORTED_EXTENSION = {
     IMAGE_CONTAINER_TYPE_JPG,
     IMAGE_CONTAINER_TYPE_JPEG,
-    IMAGE_CONTAINER_TYPE_JPE
+    IMAGE_CONTAINER_TYPE_JPE,
+    IMAGE_CONTAINER_TYPE_PNG,
+    IMAGE_CONTAINER_TYPE_WEBP,
+    IMAGE_CONTAINER_TYPE_DNG,
+    IMAGE_CONTAINER_TYPE_HEIC,
 };
 
 static bool IsTargetExtension(const string &path)
@@ -207,6 +274,9 @@ static int32_t SortRangesAndCheck(PrivacyRanges &ranges)
         return -EINVAL;
     }
     sort(ranges.begin(), ranges.end(), CmpMode);
+    const auto u_idx = unique(ranges.begin(), ranges.end());
+    ranges.erase(u_idx, ranges.end());
+    size = ranges.size();
 
     if (ranges[0].first >= ranges[0].second) {
         MEDIA_ERR_LOG("Incorrect fileter ranges: begin(%{public}u) is not less than end(%{public}u)",
@@ -225,8 +295,12 @@ static int32_t SortRangesAndCheck(PrivacyRanges &ranges)
     return E_SUCCESS;
 }
 
-static int32_t CollectRanges(const string &path, const PrivacyType &type, PrivacyRanges &ranges)
+static int32_t CollectRanges(const string &path, const HideSensitiveType &sensitiveType, PrivacyRanges &ranges)
 {
+    if (sensitiveType == HideSensitiveType::NO_DESENSITIZE) {
+        return E_SUCCESS;
+    }
+
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
     uint32_t err = -1;
@@ -237,9 +311,24 @@ static int32_t CollectRanges(const string &path, const PrivacyType &type, Privac
     }
 
     PrivacyRanges areas;
-    err = imageSource->GetFilterArea(type, areas);
+    std::vector<std::string> exifKeys;
+    switch (sensitiveType) {
+        case HideSensitiveType::ALL_DESENSITIZE:
+            err = imageSource->GetFilterArea(ALL_SENSITIVE_EXIF, areas);
+            break;
+        case HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE:
+            err = imageSource->GetFilterArea(GEOGRAPHIC_LOCATION_EXIF, areas);
+            break;
+        case HideSensitiveType::SHOOTING_PARAM_DESENSITIZE:
+            err = imageSource->GetFilterArea(SHOOTING_PARAM_EXIF, areas);
+            break;
+        default:
+            MEDIA_ERR_LOG("Invaild hide sensitive type %{public}d", sensitiveType);
+            return E_SUCCESS;
+    }
+
     if ((err != E_SUCCESS) && (err != E_NO_EXIF) && (err != E_NO_PRIVACY_EXIF_TAG)) {
-        MEDIA_ERR_LOG("Failed to get privacy area with type %{public}d, err: %{public}u", type, err);
+        MEDIA_ERR_LOG("Failed to get privacy area with type %{public}d, err: %{public}u", sensitiveType, err);
         return E_ERR;
     }
     for (auto &range : areas) {
@@ -261,9 +350,13 @@ static int32_t CollectRanges(const string &path, const PrivacyType &type, Privac
  * o Read jpeg with MEDIA_LOCATION: return success with empty ranges
  * o Other cases: return negative error code.
  */
-static int32_t GetPrivacyRanges(const string &path, const string &mode, PrivacyRanges &ranges)
+static int32_t GetPrivacyRanges(const string &path, const string &mode, const string &fileId, PrivacyRanges &ranges)
 {
     if (!IsTargetExtension(path)) {
+        return E_SUCCESS;
+    }
+
+    if (fileId.empty()) {
         return E_SUCCESS;
     }
 
@@ -281,7 +374,17 @@ static int32_t GetPrivacyRanges(const string &path, const string &mode, PrivacyR
         if (result) {
             continue;
         }
-        int32_t err = CollectRanges(path, item.first, ranges);
+        //collect ranges by hideSensitiveType
+        string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+        string appId = PermissionUtils::GetAppIdByBundleName(bundleName);
+        string appIdFile = UriSensitiveOperations::QueryAppId(fileId);
+        if (appId == appIdFile) {
+            continue;
+        }
+
+        HideSensitiveType sensitiveType =
+            static_cast<HideSensitiveType>(UriSensitiveOperations::QuerySensitiveType(appId, fileId));
+        int32_t err = CollectRanges(path, sensitiveType, ranges);
         if (err < 0) {
             return err;
         }
@@ -291,7 +394,7 @@ static int32_t GetPrivacyRanges(const string &path, const string &mode, PrivacyR
 
 int32_t MediaPrivacyManager::Open()
 {
-    int err = GetPrivacyRanges(path_, mode_, ranges_);
+    int err = GetPrivacyRanges(path_, mode_, fileId_, ranges_);
     if (err < 0) {
         return err;
     }

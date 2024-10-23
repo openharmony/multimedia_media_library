@@ -45,9 +45,7 @@
 #include "permission_utils.h"
 #include "photo_proxy_napi.h"
 #include "securec.h"
-#ifdef HAS_ACE_ENGINE_PART
 #include "ui_content.h"
-#endif
 #include "unique_fd.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
@@ -244,6 +242,11 @@ void MediaAssetChangeRequestNapi::RecordChangeOperation(AssetChangeOperation cha
         assetChangeOperations_.insert(assetChangeOperations_.begin() + 1, changeOperation);
         return;
     }
+    if (changeOperation == AssetChangeOperation::ADD_RESOURCE &&
+        Contains(AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE)) {
+        assetChangeOperations_.insert(assetChangeOperations_.begin(), changeOperation);
+        return;
+    }
     assetChangeOperations_.push_back(changeOperation);
 }
 
@@ -261,7 +264,9 @@ bool MediaAssetChangeRequestNapi::ContainsResource(ResourceType resourceType) co
 bool MediaAssetChangeRequestNapi::IsMovingPhoto() const
 {
     return fileAsset_ != nullptr &&
-        fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+        (fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+        (fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
+        fileAsset_->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)));
 }
 
 bool MediaAssetChangeRequestNapi::CheckMovingPhotoResource(ResourceType resourceType) const
@@ -284,10 +289,14 @@ static const unordered_map<MovingPhotoEffectMode, unordered_map<ResourceType, bo
         { { ResourceType::IMAGE_RESOURCE, false }, { ResourceType::VIDEO_RESOURCE, true } } },
     { MovingPhotoEffectMode::LOOP_PLAY,
         { { ResourceType::IMAGE_RESOURCE, false }, { ResourceType::VIDEO_RESOURCE, true } } },
+    { MovingPhotoEffectMode::CINEMA_GRAPH,
+        { { ResourceType::IMAGE_RESOURCE, false }, { ResourceType::VIDEO_RESOURCE, true } } },
     { MovingPhotoEffectMode::LONG_EXPOSURE,
         { { ResourceType::IMAGE_RESOURCE, true }, { ResourceType::VIDEO_RESOURCE, false } } },
     { MovingPhotoEffectMode::MULTI_EXPOSURE,
         { { ResourceType::IMAGE_RESOURCE, true }, { ResourceType::VIDEO_RESOURCE, false } } },
+    { MovingPhotoEffectMode::IMAGE_ONLY,
+        { { ResourceType::IMAGE_RESOURCE, false }, { ResourceType::VIDEO_RESOURCE, false } } },
 };
 
 bool MediaAssetChangeRequestNapi::CheckEffectModeWriteOperation()
@@ -335,8 +344,7 @@ bool MediaAssetChangeRequestNapi::CheckMovingPhotoWriteOperation()
 
     bool isCreation = Contains(AssetChangeOperation::CREATE_FROM_SCRATCH);
     if (!isCreation) {
-        NAPI_ERR_LOG("Moving photo is not supported to edit now");
-        return false;
+        return true;
     }
 
     int addResourceTimes =
@@ -450,6 +458,16 @@ size_t MediaAssetChangeRequestNapi::GetMovingPhotoVideoSize() const
 string MediaAssetChangeRequestNapi::GetCacheMovingPhotoVideoName() const
 {
     return cacheMovingPhotoVideoName_;
+}
+
+void MediaAssetChangeRequestNapi::SetImageFileType(int32_t imageFileType)
+{
+    imageFileType_ = imageFileType;
+}
+
+int32_t MediaAssetChangeRequestNapi::GetImageFileType()
+{
+    return imageFileType_;
 }
 
 napi_value MediaAssetChangeRequestNapi::JSGetAsset(napi_env env, napi_callback_info info)
@@ -913,7 +931,6 @@ napi_value MediaAssetChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
             env, asyncContext, "ChangeRequestDeleteAssets", DeleteAssetsExecute, DeleteAssetsCompleteCallback);
     }
 
-#ifdef HAS_ACE_ENGINE_PART
     // Deletion control by ui extension
     CHECK_COND(env, HasWritePermission(), OHOS_PERMISSION_DENIED_CODE);
     CHECK_COND_WITH_MESSAGE(
@@ -943,10 +960,6 @@ napi_value MediaAssetChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
     CHECK_COND(env, sessionId != 0, JS_INNER_FAIL);
     callback->SetSessionId(sessionId);
     RETURN_NAPI_UNDEFINED(env);
-#else
-    NapiError::ThrowError(env, JS_INNER_FAIL, "ace_engine is not support");
-    return nullptr;
-#endif
 }
 
 napi_value MediaAssetChangeRequestNapi::JSSetEditData(napi_env env, napi_callback_info info)
@@ -1163,11 +1176,16 @@ napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callb
     auto changeRequest = asyncContext->objectInfo;
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
-    if (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+    if (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+        (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::DEFAULT) ||
+        fileAsset->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY))) {
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT, "Operation not support: the asset is not moving photo");
         return nullptr;
     }
-
+    if (fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
+        effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    }
     fileAsset->SetMovingPhotoEffectMode(effectMode);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE);
     RETURN_NAPI_UNDEFINED(env);
@@ -1197,12 +1215,19 @@ napi_value MediaAssetChangeRequestNapi::JSSetCameraShotKey(napi_env env, napi_ca
 
 napi_value MediaAssetChangeRequestNapi::JSSaveCameraPhoto(napi_env env, napi_callback_info info)
 {
+    constexpr size_t minArgs = ARGS_ZERO;
+    constexpr size_t maxArgs = ARGS_ONE;
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env,
-        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ZERO) == napi_ok,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, minArgs, maxArgs) == napi_ok,
         "Failed to get object info");
-
     auto changeRequest = asyncContext->objectInfo;
+    if (asyncContext->argc == ARGS_ONE) {
+        int32_t fileType;
+        MediaLibraryNapiUtils::GetInt32Arg(env, asyncContext->argv[PARAM0], fileType);
+        NAPI_DEBUG_LOG("fileType: %{public}d", fileType);
+        changeRequest->SetImageFileType(fileType);
+    }
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
     if (changeRequest->Contains(AssetChangeOperation::SET_EDIT_DATA) &&
@@ -1743,6 +1768,9 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
         valuesBucket.Put(CACHE_FILE_NAME, cacheFileName_);
         ret = PutMediaAssetEditData(valuesBucket);
         CHECK_COND_RET(ret == E_OK, ret, "Failed to put editData");
+        if (IsMovingPhoto()) {
+            valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
+        }
         if (isSetEffectMode) {
             valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset_->GetMovingPhotoEffectMode());
             valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
@@ -2039,7 +2067,8 @@ static bool SetEffectModeExecute(MediaAssetChangeRequestAsyncContext& context)
 
     // SET_MOVING_PHOTO_EFFECT_MODE will be applied together with ADD_RESOURCE
     auto changeRequest = context.objectInfo;
-    if (changeRequest->Contains(AssetChangeOperation::ADD_RESOURCE)) {
+    if (std::find(context.assetChangeOperations.begin(), context.assetChangeOperations.end(),
+        AssetChangeOperation::ADD_RESOURCE) != context.assetChangeOperations.end()) {
         return true;
     }
 
@@ -2109,6 +2138,9 @@ static void DiscardHighQualityPhoto(MediaAssetChangeRequestAsyncContext& context
 
 static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SaveCameraPhotoExecute");
+
     auto changeOpreations = context.assetChangeOperations;
     bool containsAddResource = std::find(changeOpreations.begin(), changeOpreations.end(),
         AssetChangeOperation::ADD_RESOURCE) != changeOpreations.end();
@@ -2138,6 +2170,8 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_SUBTYPE,
         to_string(fileAsset->GetPhotoSubType()));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, IMAGE_FILE_TYPE,
+        to_string(context.objectInfo->GetImageFileType()));
     Uri uri(uriStr);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);

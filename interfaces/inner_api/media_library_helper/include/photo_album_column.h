@@ -86,7 +86,6 @@ public:
     static const std::string ALBUM_CLOUD_URI_PREFIX EXPORT;
 
     EXPORT static bool IsPhotoAlbumColumn(const std::string &columnName);
-    EXPORT static bool IsLocationAlbumColumn(const std::string &columnName);
 
     EXPORT static void GetUserAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
         const bool hiddenState);

@@ -158,13 +158,13 @@ public:
 
     /**
      * @brief Get the Burst Key object
-     * @return std::string 36 characters like xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx
+     * @return std::string 36 characters, like xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx
      */
     std::string GetBurstKey() override
     {
         return this->burstKey_;
     }
- 
+
     /**
      * @brief judge the photo is the cover photo or not
      *
@@ -175,16 +175,17 @@ public:
     {
         return this->isCoverPhoto_;
     }
- 
+
     void SetIsCoverPhoto(bool isCoverPhoto)
     {
         this->isCoverPhoto_ = isCoverPhoto;
     }
- 
+
     void SetBurstKey(std::string burstKey)
     {
         this->burstKey_ = burstKey;
     }
+
 private:
     void *fileDataAddr_ = nullptr;
     int32_t fileSize_ = 0;

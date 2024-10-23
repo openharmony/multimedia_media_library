@@ -61,7 +61,6 @@ constexpr int32_t JS_E_INPUT          = UFM_JS_ERR(UFM_MODULE_CODE, 15);
 constexpr int32_t JS_E_OPERATION_NOT_SUPPORT = UFM_JS_ERR(UFM_MODULE_CODE, 16);
 
 constexpr int32_t JS_E_NAMETOOLONG    = UFM_JS_ERR(UFM_SYSCAP_BASE, 36);
-constexpr int32_t JS_E_API_SUNSET     = UFM_JS_ERR(UFM_SYSCAP_BASE, 1);
 
 // trans server errorCode to js Error code
 const std::unordered_map<int, int> trans2JsError = {

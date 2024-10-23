@@ -81,7 +81,7 @@ function checkIsUriValid(uri, isAppUri) {
   if (!isAppUri) {
     return uri.includes('file://media/Photo/');
   }
-
+ 
   // showAssetsCreationDialog store third part application resource to media library, no need to check it
   return true;
 }
@@ -114,16 +114,16 @@ function errorResult(rej, asyncCallback) {
 }
 
 function getAbilityResource(bundleInfo) {
-  console.log('getAbilityResource enter.');
+  console.info('getAbilityResource enter.');
   let labelId = 0;
   for (let hapInfo of bundleInfo.hapModulesInfo) {
-    if (hapInfo.type === bundleManager.ModuleType.ENRTY) {
+    if (hapInfo.type === bundleManager.ModuleType.ENTRY) {
       labelId = getLabelId(hapInfo);
     }
   }
   return labelId;
 }
-
+ 
 function getLabelId(hapInfo) {
   let labelId = 0;
   for (let abilityInfo of hapInfo.abilitiesInfo) {
@@ -176,7 +176,7 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
   }
   const appName = await getAppName();
   if (appName.length === 0) {
-    console.info(`photoAccessHelper appName not found`);
+    console.info('photoAccessHelper appName not found');
     return errorResult(new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_PARAMERTER_INVALID), asyncCallback);
   }
   try {
@@ -184,7 +184,7 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
       return photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
         if (result.result === REQUEST_CODE_SUCCESS) {
           asyncCallback();
-        } else if (result.result == PERMISSION_DENIED) {
+        } else if (result.result === PERMISSION_DENIED) {
           asyncCallback(new BusinessError(ERROR_MSG_USER_DENY));
         } else {
           asyncCallback(new BusinessError(ERROR_MSG_INNER_FAIL, result.result));
@@ -195,7 +195,7 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
         photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
           if (result.result === REQUEST_CODE_SUCCESS) {
             resolve();
-          } else if (result.result == PERMISSION_DENIED) {
+          } else if (result.result === PERMISSION_DENIED) {
             reject(new BusinessError(ERROR_MSG_USER_DENY));
           } else {
             reject(new BusinessError(ERROR_MSG_INNER_FAIL, result.result));
@@ -386,11 +386,11 @@ async function createAssetWithShortTermPermissionOk(photoCreationConfig) {
   let appId = bundleInfo.signatureInfo.appId;
   console.info('photoAccessHelper bundleName is ' + bundleName + '.');
   console.info('photoAccessHelper appId is ' + appId + '.');
-
+  
   let labelId = bundleInfo.appInfo.labelId;
   console.info('photoAccessHelper labelId is ' + appId + '.');
   let appName = '';
-
+  
   try {
     let modeleName = '';
     for (let hapInfo of bundleInfo.hapModulesInfo) {
@@ -401,7 +401,7 @@ async function createAssetWithShortTermPermissionOk(photoCreationConfig) {
     console.info('photoAccessHelper modeleName is ' + modeleName + '.');
     appName = await gContext.createModuleContext(modeleName).resourceManager.getStringValue(labelId);
     console.info('photoAccessHelper appName is ' + appName + '.');
-    
+
     if (photoAccessHelper.checkShortTermPermission()) {
       let photoCreationConfigs = [photoCreationConfig];
       let desFileUris = await getPhotoAccessHelper(getContext(this)).createAssetsHasPermission(bundleName, appName, appId,
@@ -550,13 +550,17 @@ const PhotoViewMIMETypes = {
 const ErrCode = {
   INVALID_ARGS: 13900020,
   RESULT_ERROR: 13900042,
-  CONTEXT_NO_EXIST: 16000011,
+};
+
+const CompleteButtonText = {
+  TEXT_DONE: 0,
+  TEXT_SEND: 1,
+  TEXT_ADD: 2,
 };
 
 const ERRCODE_MAP = new Map([
   [ErrCode.INVALID_ARGS, 'Invalid argument'],
   [ErrCode.RESULT_ERROR, 'Unknown error'],
-  [ErrCode.CONTEXT_NO_EXIST, 'Current ability failed to obtain context'],
 ]);
 
 const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
@@ -618,6 +622,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isOriginalSupported = option.isOriginalSupported;
     config.parameters.subWindowName = option.subWindowName;
     config.parameters.themeColor = option.themeColor;
+    config.parameters.completeButtonText = option.completeButtonText;
   }
 
   return config;
@@ -652,17 +657,8 @@ async function photoPickerSelect(...args) {
   const config = parsePhotoPickerSelectOption(args);
   console.log('[picker] config: ' + JSON.stringify(config));
 
-  let context = undefined;
   try {
-    context = getContext(this);
-  } catch (getContextError) {
-    console.error('[picker] getContext error: ' + getContextError);
-    throw getErr(ErrCode.CONTEXT_NO_EXIST);
-  }
-  try {
-    if (context === undefined) {
-      throw getErr(ErrCode.CONTEXT_NO_EXIST);
-    }
+    let context = getContext(this);
     let result = await startPhotoPicker(context, config);
     console.log('[picker] result: ' + JSON.stringify(result));
     const selectResult = getPhotoPickerSelectResult(result);
@@ -680,7 +676,7 @@ async function photoPickerSelect(...args) {
       }
     });
   } catch (error) {
-    console.error('[picker] error: ' + JSON.stringify(error));
+    console.log('[picker] error: ' + error);
   }
   return undefined;
 }
@@ -700,6 +696,7 @@ function PhotoSelectOptions() {
   this.isPhotoTakingSupported = true;
   this.isEditSupported = true;
   this.isOriginalSupported = false;
+  this.completeButtonText = CompleteButtonText.TEXT_DONE;
 }
 
 function PhotoSelectResult(uris, isOriginalPhoto) {
@@ -769,9 +766,12 @@ export default {
   HighlightAlbum: photoAccessHelper.HighlightAlbum,
   PositionType: photoAccessHelper.PositionType,
   PhotoSubtype: photoAccessHelper.PhotoSubtype,
+  PhotoPermissionType: photoAccessHelper.PhotoPermissionType,
+  HideSensitiveType: photoAccessHelper.HideSensitiveType,
   NotifyType: photoAccessHelper.NotifyType,
   DefaultChangeUri: photoAccessHelper.DefaultChangeUri,
   HiddenPhotosDisplayMode: photoAccessHelper.HiddenPhotosDisplayMode,
+  RequestPhotoType: photoAccessHelper.RequestPhotoType,
   AnalysisType: photoAccessHelper.AnalysisType,
   HighlightAlbumInfoType: photoAccessHelper.HighlightAlbumInfoType,
   HighlightUserActionType: photoAccessHelper.HighlightUserActionType,
@@ -794,4 +794,10 @@ export default {
   MediaAssetManager: photoAccessHelper.MediaAssetManager,
   MovingPhoto: photoAccessHelper.MovingPhoto,
   MovingPhotoEffectMode: photoAccessHelper.MovingPhotoEffectMode,
+  CompleteButtonText: CompleteButtonText,
+  ImageFileType: photoAccessHelper.ImageFileType,
+  CloudEnhancement: photoAccessHelper.CloudEnhancement,
+  CloudEnhancementTaskStage: photoAccessHelper.CloudEnhancementTaskStage,
+  CloudEnhancementState: photoAccessHelper.CloudEnhancementState,
+  CloudEnhancementTaskState: photoAccessHelper.CloudEnhancementTaskState,
 };

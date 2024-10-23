@@ -17,6 +17,8 @@
 
 #include <limits>
 #include <string>
+#include <tuple>
+#include <vector>
 
 namespace OHOS {
 namespace Media {
@@ -50,6 +52,7 @@ enum class ResourceType {
     IMAGE_RESOURCE = 1, // corresponds to MEDIA_TYPE_IMAGE
     VIDEO_RESOURCE,     // corresponds to MEDIA_TYPE_VIDEO
     PHOTO_PROXY,
+    PRIVATE_MOVING_PHOTO_RESOURCE,
 };
 
 enum AnalysisType : int32_t {
@@ -109,7 +112,8 @@ enum PhotoAlbumSubType : int32_t {
     SCREENSHOT,
     CAMERA,
     IMAGE,
-    SYSTEM_END = IMAGE,
+    CLOUD_ENHANCEMENT,
+    SYSTEM_END = CLOUD_ENHANCEMENT,
     SOURCE_GENERIC = 2049,
     ANALYSIS_START = 4097,
     CLASSIFY = ANALYSIS_START,
@@ -145,7 +149,26 @@ enum class MovingPhotoEffectMode : int32_t {
     LOOP_PLAY,
     LONG_EXPOSURE,
     MULTI_EXPOSURE,
-    EFFECT_MODE_END = MULTI_EXPOSURE
+    CINEMA_GRAPH,
+    EFFECT_MODE_END = CINEMA_GRAPH,
+    IMAGE_ONLY = 10
+};
+
+enum class CloudEnhancementTaskStage : int32_t {
+    TASK_STAGE_EXCEPTION = -1,
+    TASK_STAGE_PREPARING,
+    TASK_STAGE_UPLOADING,
+    TASK_STAGE_EXECUTING,
+    TASK_STAGE_DOWNLOADING,
+    TASK_STAGE_FAILED,
+    TASK_STAGE_COMPLETED
+};
+
+enum class CloudEnhancementState : int32_t {
+    UNAVAILABLE = 0,
+    AVAILABLE,
+    EXECUTING,
+    COMPLETED
 };
 
 const std::string URI_PARAM_API_VERSION = "api_version";
@@ -175,6 +198,12 @@ enum class RequestPhotoType : int32_t {
     REQUEST_TYPE_END
 };
 
+enum class BurstCoverLevelType : int32_t {
+    COVER = 1,
+    MEMBER = 2,
+    DEFAULT = COVER
+};
+
 enum class CoverSatisfiedType : uint8_t {
     NO_SETTING = 0,
     DEFAULT_SETTING = 1,
@@ -182,12 +211,6 @@ enum class CoverSatisfiedType : uint8_t {
     USER_SETTING_EDITE = 3,
     BEAUTY_SETTING = 4,
     BEAUTY_SETTING_EDITE = 5
-};
-
-enum class BurstCoverLevelType : int32_t {
-    COVER = 1,
-    MEMBER = 2,
-    DEFAULT = COVER
 };
 } // namespace Media
 } // namespace OHOS

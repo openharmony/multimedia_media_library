@@ -802,7 +802,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_027, TestSize.
     EXPECT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
-
+ 
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     MediaLibrary_ResourceType resourceType = MediaLibrary_ResourceType::MEDIA_LIBRARY_IMAGE_RESOURCE;
     fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::CAMERA));

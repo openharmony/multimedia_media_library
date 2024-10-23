@@ -18,13 +18,16 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <thread>
 
+#include "ability_context_impl.h"
 #include "data_ability_observer_interface.h"
 #include "datashare_business_error.h"
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
 #include "datashare_values_bucket.h"
 #include "media_datashare_ext_ability.h"
+#include "medialibrary_data_manager.h"
 #include "media_file_ext_ability.h"
 #include "media_datashare_stub_impl.h"
 #include "media_log.h"
@@ -133,13 +136,6 @@ static inline DatashareBusinessError FuzzDataShareBusinessError(const uint8_t *d
     return error;
 }
 
-static inline void InitFuzzer(MediaDataShareExtAbility &extension)
-{
-    AAFwk::Want want;
-    extension.OnStart(want);
-    extension.OnConnect(want);
-}
-
 static inline void NotifyChangeFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
 {
     extension.NotifyChange(FuzzUri(data, size));
@@ -161,6 +157,11 @@ static inline void UpdateFuzzer(MediaDataShareExtAbility &extension, const uint8
 {
     DataSharePredicates predicates;
     extension.Update(FuzzUri(data, size), FuzzDataSharePredicates(data, size), FuzzDataShareValuesBucket(data, size));
+}
+
+static inline void OpenFileFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+{
+    extension.OpenFile(FuzzUri(data, size), FuzzString(data, size));
 }
 
 static inline void DeleteFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
@@ -209,6 +210,17 @@ static inline void NormalizeUriFuzzer(MediaDataShareExtAbility &extension, const
 static inline void StopFuzzer(MediaDataShareExtAbility &extension)
 {
     extension.OnStop();
+}
+
+static int InitExtention(MediaDataShareExtAbility &extension)
+{
+    extension.InitPermissionHandler();
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    abilityContextImpl->SetStageContext(stageContext);
+    int32_t sceneCode = 0;
+    return Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl, abilityContextImpl,
+        sceneCode);
 }
 
 class ArkJsRuntime : public AbilityRuntime::JsRuntime {
@@ -262,12 +274,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     auto extension = OHOS::Init();
-    OHOS::InitFuzzer(extension);
+    OHOS::InitExtention(extension);
     OHOS::InsertFuzzer(extension, data, size);
     OHOS::InsertExtFuzzer(extension, data, size);
     OHOS::UpdateFuzzer(extension, data, size);
     OHOS::QueryFuzzer(extension, data, size);
     OHOS::DeleteFuzzer(extension, data, size);
+    OHOS::OpenFileFuzzer(extension, data, size);
 
     OHOS::RegisterObserverFuzzer(extension, data, size);
     OHOS::UnregisterObserverFuzzer(extension, data, size);
@@ -281,5 +294,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::CreateFileFuzzer(fileExtension, data, size);
 #endif
     OHOS::StopFuzzer(extension);
+    int sleepTime = 100;
+    std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
     return 0;
 }

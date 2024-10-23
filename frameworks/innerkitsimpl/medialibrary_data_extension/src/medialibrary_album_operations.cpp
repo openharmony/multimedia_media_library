@@ -26,7 +26,7 @@
 #include "media_log.h"
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
-#include "medialibrary_async_worker.h"
+#include "medialibrary_album_refresh.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
@@ -36,6 +36,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
+#include "enhancement_manager.h"
 #include "multistages_capture_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -248,99 +249,6 @@ static void QuerySqlDebug(const string &sql, const vector<string> &selectionArgs
 }
 #endif
 
-static void NotifyAnalysisAlbum(PhotoAlbumSubType subtype, int32_t albumId)
-{
-    const static set<PhotoAlbumSubType> NEED_FLUSH_ANALYSIS_ALBUM = {
-        PhotoAlbumSubType::SHOOTING_MODE,
-    };
-    if (NEED_FLUSH_ANALYSIS_ALBUM.find(subtype) != NEED_FLUSH_ANALYSIS_ALBUM.end()) {
-        auto watch = MediaLibraryNotify::GetInstance();
-        if (watch == nullptr) {
-            MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
-            return;
-        }
-        if (albumId > 0) {
-            watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX,
-                to_string(albumId)), NotifyType::NOTIFY_ADD);
-        } else {
-            watch->Notify(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
-        }
-    }
-}
-
-static void NotifySystemAlbumFunc(PhotoAlbumType albumtype, PhotoAlbumSubType subtype, int32_t albumId)
-{
-    if (albumtype == PhotoAlbumType::SMART) {
-        NotifyAnalysisAlbum(subtype, albumId);
-        return;
-    }
-    const static set<PhotoAlbumSubType> NEED_FLUSH_PHOTO_ALBUM = {
-        PhotoAlbumSubType::IMAGE,
-        PhotoAlbumSubType::VIDEO,
-    };
-    if (NEED_FLUSH_PHOTO_ALBUM.find(subtype) != NEED_FLUSH_PHOTO_ALBUM.end()) {
-        auto watch = MediaLibraryNotify::GetInstance();
-        if (watch == nullptr) {
-            MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
-            return;
-        }
-        if (albumId > 0) {
-            watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
-                to_string(albumId)), NotifyType::NOTIFY_ADD);
-        } else {
-            watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
-        }
-    }
-}
-
-static void RefreshCallbackFunc()
-{
-    auto watch = MediaLibraryNotify::GetInstance();
-    if (watch == nullptr) {
-        MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
-        return;
-    }
-    watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
-    watch->Notify(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
-}
-
-static void RefreshAlbumAsyncTask(AsyncTaskData *data)
-{
-    MEDIA_INFO_LOG("Start refresh album task");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
-        return;
-    }
-    if (rdbStore->GetRaw() == nullptr) {
-        MEDIA_ERR_LOG("RdbStore is nullptr!");
-        return;
-    }
-    int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(rdbStore->GetRaw(),
-        NotifySystemAlbumFunc, RefreshCallbackFunc);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("RefreshAllAlbums failed ret:%{public}d", ret);
-    }
-}
-
-static void RefreshAlbums()
-{
-    if (MediaLibraryRdbUtils::IsNeedRefreshAlbum() && !MediaLibraryRdbUtils::IsInRefreshTask()) {
-        shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-        if (asyncWorker == nullptr) {
-            MEDIA_ERR_LOG("Can not get asyncWorker");
-            return;
-        }
-        shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(
-            RefreshAlbumAsyncTask, nullptr);
-        if (notifyAsyncTask != nullptr) {
-            asyncWorker->AddTask(notifyAsyncTask, true);
-        } else {
-            MEDIA_ERR_LOG("Start UpdateAlbumsAndSendNotifyInTrash failed");
-        }
-    }
-}
-
 static size_t QueryCloudPhotoThumbnailVolumn(shared_ptr<MediaLibraryUnistore>& uniStore)
 {
     constexpr size_t averageThumbnailSize = 289 * 1024;
@@ -395,8 +303,8 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
         MEDIA_ERR_LOG("uniStore is nullptr!");
         return nullptr;
     }
-    RefreshAlbums();
 
+    RefreshAlbums(true);
     if (cmd.GetOprnObject() == OperationObject::MEDIA_VOLUME) {
         size_t cloudPhotoThumbnailVolume = QueryCloudPhotoThumbnailVolumn(uniStore);
         size_t localPhotoThumbnailVolumn = QueryLocalPhotoThumbnailVolumn(uniStore);
@@ -524,10 +432,9 @@ int DoCreatePhotoAlbum(const string &albumName, const string &relativePath)
     lastInsertRowId = rdbStore->ExecuteForLastInsertedRowId(sql, bindArgs);
     if (lastInsertRowId < 0) {
         MEDIA_ERR_LOG("insert fail and rollback");
-        rdbStore->GetRaw()->RollBack();
-    } else {
-        op.Finish();
+        return lastInsertRowId;
     }
+    op.Finish();
 
     return lastInsertRowId;
 }
@@ -563,10 +470,10 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
         if (err == E_OK) {
             auto ret = rdbStore->Insert(cmd, outRowId);
             if (ret != E_OK) {
-                rdbStore->GetRaw()->RollBack();
-            } else {
-                op.Finish();
+                MEDIA_ERR_LOG("insert fail, ret: %{public}d", ret);
+                return outRowId;
             }
+            op.Finish();
         }
         rowId = outRowId;
     } else {
@@ -644,8 +551,7 @@ int32_t GetStringValueFromResultSet(shared_ptr<ResultSet> resultSet, const strin
 void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePredicates &predicates)
 {
     string whereClause;
-    if (value == FIRST_PAGE) {
-        string whereClauseRelatedMe = ALBUM_ID + " IN (SELECT " + MAP_ALBUM + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
+    string whereClauseRelatedMe = "(SELECT " + MAP_ALBUM + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
             " WHERE " + MAP_ASSET + " IN ( SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
             " WHERE " + MediaColumn::MEDIA_ID + " IN (SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
             " WHERE " + MAP_ASSET + " IN (SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE " +
@@ -654,20 +560,22 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
             " = 0) AND " + MAP_ALBUM + " NOT IN (SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
             IS_ME + " = 1)" + " GROUP BY " + MAP_ALBUM + " HAVING count(" + MAP_ALBUM + ") >= " +
             to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT_RELATED_ME) + ")";
+    if (value == FIRST_PAGE) {
+        string relatedMeFirstPage = ALBUM_ID + " IN " + whereClauseRelatedMe;
         string whereClauseDisplay = USER_DISPLAY_LEVEL + " = 1";
         string whereClauseSatifyCount = COUNT + " >= " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND (" +
-        USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
+            USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (((" + USER_DISPLAY_LEVEL + " != 3 AND " +
             USER_DISPLAY_LEVEL + " !=2) OR " + USER_DISPLAY_LEVEL + " IS NULL) AND ((" +
-            whereClauseDisplay + ") OR (" + whereClauseRelatedMe + ") OR (" + whereClauseSatifyCount + "))) GROUP BY " +
+            whereClauseDisplay + ") OR (" + relatedMeFirstPage + ") OR (" + whereClauseSatifyCount + "))) GROUP BY " +
             GROUP_TAG + " ORDER BY CASE WHEN " + RENAME_OPERATION + " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == SECOND_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 2 OR (" +
             COUNT + " < " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND " + COUNT + " >= " +
             to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " AND (" + USER_DISPLAY_LEVEL + " != 1 OR " +
             USER_DISPLAY_LEVEL + " IS NULL) AND (" + USER_DISPLAY_LEVEL + " != 3 OR " + USER_DISPLAY_LEVEL +
-            " IS NULL))) GROUP BY " + GROUP_TAG + " ORDER BY CASE WHEN " + RENAME_OPERATION +
-            " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
+            " IS NULL))) AND " + ALBUM_ID + " NOT IN " + whereClauseRelatedMe + " GROUP BY " + GROUP_TAG +
+            " ORDER BY CASE WHEN " + RENAME_OPERATION + " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == FAVORITE_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 3 )GROUP BY " +
             GROUP_TAG + " ORDER BY " + RANK;
@@ -770,14 +678,14 @@ void GetAlbumNameNotNullPredicates(int32_t value, DataShare::DataSharePredicates
     predicates.SetWhereClause(selection);
 }
 
-void GetIsMeInnerJoinPredicates(RdbPredicates &rdbPredicates)
+void GetIsMeLeftJoinPredicates(RdbPredicates &rdbPredicates)
 {
     std::string onClause = ANALYSIS_ALBUM_TABLE + "." + ALBUM_ID + " = " +
         ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM;
-    rdbPredicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
+    rdbPredicates.LeftOuterJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
     onClause = ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ASSET + " = " +
         PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID;
-    rdbPredicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ onClause });
+    rdbPredicates.LeftOuterJoin(PhotoColumn::PHOTOS_TABLE)->On({ onClause });
 }
 
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortraitAlbum(MediaLibraryCommand &cmd,
@@ -815,7 +723,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
     auto rdbPredicates = RdbUtils::ToPredicates(predicatesPortrait, ANALYSIS_ALBUM_TABLE);
     if (whereClause.find(IS_ME) != string::npos &&
         GetPortraitSubtype(IS_ME, whereClause, whereArgs) == QUERY_PROB_IS_ME_VALUE) {
-        GetIsMeInnerJoinPredicates(rdbPredicates);
+        GetIsMeLeftJoinPredicates(rdbPredicates);
         std::vector<std::string> ismeColumns;
         for (auto &item : columns) {
             if (item.find(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, 0) == string::npos) {
@@ -825,6 +733,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
         ismeColumns.push_back(ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_DATE_MODIFIED);
         ismeColumns.push_back("CAST(" + ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_DATE_MODIFIED +
             " / 1000 AS BIGINT) AS date_modified_s");
+        MEDIA_INFO_LOG("start query prob is me!!!");
         return MediaLibraryRdbStore::Query(rdbPredicates, ismeColumns);
     }
     return MediaLibraryRdbStore::Query(rdbPredicates, columns);
@@ -833,7 +742,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
 shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
-    RefreshAlbums();
+    RefreshAlbums(true);
     if (cmd.GetAbsRdbPredicates()->GetOrder().empty()) {
         cmd.GetAbsRdbPredicates()->OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
     }
@@ -911,6 +820,9 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     if (changedRows < 0) {
         return changedRows;
     }
+
+    // set cloud enhancement to available
+    EnhancementManager::GetInstance().RecoverTrashUpdateInternal(rdbPredicates.GetWhereArgs());
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), whereArgs);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
@@ -1506,6 +1418,7 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         MergeAlbumInfo albumInfo;
+        int isCoverSatisfied = 0;
         if (GetIntValueFromResultSet(resultSet, ALBUM_ID, albumInfo.albumId) != E_OK ||
             GetStringValueFromResultSet(resultSet, GROUP_TAG, albumInfo.groupTag) != E_OK ||
             GetIntValueFromResultSet(resultSet, COUNT, albumInfo.count) != E_OK ||
@@ -1516,10 +1429,11 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
             GetIntValueFromResultSet(resultSet, RANK, albumInfo.rank) != E_OK ||
             GetIntValueFromResultSet(resultSet, RENAME_OPERATION, albumInfo.renameOperation) != E_OK ||
             GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumInfo.albumName) != E_OK ||
-            GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, albumInfo.isCoverSatisfied) != E_OK) {
+            GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, isCoverSatisfied) != E_OK) {
                 MEDIA_ERR_LOG("GetMergeAlbumsInfo db fail");
                 return E_HAS_DB_ERROR;
             }
+        albumInfo.isCoverSatisfied = static_cast<uint8_t>(isCoverSatisfied);
         mergeAlbumInfo.push_back(albumInfo);
     }
     return E_OK;

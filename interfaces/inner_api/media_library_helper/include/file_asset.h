@@ -154,6 +154,8 @@ public:
 
     EXPORT int32_t GetPhotoIndex() const;
 
+    EXPORT int32_t GetOriginalSubType() const;
+
     EXPORT const std::string &GetCameraShotKey() const;
     EXPORT void SetCameraShotKey(const std::string &cameraShotKey);
 
@@ -193,6 +195,9 @@ public:
 
     EXPORT const std::string &GetBurstKey() const;
     EXPORT void SetBurstKey(const std::string &burstKey);
+
+    EXPORT int32_t GetCEAvailable() const;
+    EXPORT void SetCEAvailable(int32_t ceAvailable);
 
 private:
     const std::string &GetStrMember(const std::string &name) const;

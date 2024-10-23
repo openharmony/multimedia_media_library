@@ -73,6 +73,7 @@ public:
     EXPORT void SetBundleName(const std::string &bundleName);
     EXPORT void SetDeviceName(const std::string &deviceName);
     EXPORT void SetResult(const std::string &result);
+    EXPORT bool IsDataSharePredNull() const;
 
 private:
     void ParseOprnObjectFromUri();

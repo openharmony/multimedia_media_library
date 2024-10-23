@@ -41,6 +41,7 @@
 #include "medialibrary_subscriber.h"
 #include "medialibrary_uripermission_operations.h"
 #include "multistages_capture_manager.h"
+#include "enhancement_manager.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "os_account_manager.h"
@@ -171,15 +172,15 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 
     DfxManager::GetInstance();
     auto scannerManager = MediaScannerManager::GetInstance();
-    if (scannerManager != nullptr) {
-        scannerManager->Start();
-    } else {
+    if (scannerManager == nullptr) {
         DfxReporter::ReportStartResult(DfxType::START_SCANNER_FAIL, 0, startTime);
         DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
         return;
     }
 
     MultiStagesCaptureManager::GetInstance().Init();
+
+    EnhancementManager::GetInstance().InitAsync();
 
     Media::MedialibrarySubscriber::Subscribe();
     dataManager->SetStartupParameter();
@@ -409,7 +410,7 @@ static int32_t HandleShortPermission(bool &need)
 {
     int32_t err = PermissionUtils::CheckPhotoCallerPermission(PERM_SHORT_TERM_WRITE_IMAGEVIDEO) ? E_SUCCESS :
         E_PERMISSION_DENIED;
-    if (err == E_SUCCESS) {
+    if (!err) {
         need = true;
     } else {
         need = false;
@@ -480,6 +481,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
         OperationObject::INDEX_CONSTRUCTION_STATUS,
         OperationObject::MEDIA_APP_URI_PERMISSION,
+        OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);
@@ -509,8 +511,6 @@ static int32_t HandleSpecialObjectPermission(MediaLibraryCommand &cmd, bool isWr
         return HandleMediaVolumePerm();
     } else if (obj == OperationObject::BUNDLE_PERMISSION) {
         return HandleBundlePermCheck();
-    } else if (obj == OperationObject::APP_URI_PERMISSION_INNER) {
-        return E_SUCCESS;
     }
 
     return E_NEED_FURTHER_CHECK;
@@ -600,19 +600,21 @@ static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd, const string 
         int errCode = businessError.GetCode();
         string clientAppId = GetClientAppId();
         string fileId = MediaFileUtils::GetIdFromUri(uri.ToString());
-        if (clientAppId.empty() || fileId.empty()) {
-            return false;
-        }
         DataSharePredicates predicates;
         predicates.And()->EqualTo("file_id", fileId);
         predicates.And()->EqualTo("owner_appid", clientAppId);
+        if (clientAppId.empty() || fileId.empty()) {
+            return false;
+        }
         auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
         auto count = 0;
-        queryResultSet->GetRowCount(count);
-        if (count != 0) {
-            ret = true;
-            CollectPermissionInfo(cmd, unifyMode, true,
-                PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
+        if (queryResultSet != nullptr) {
+            queryResultSet->GetRowCount(count);
+            if (count != 0) {
+                ret = true;
+                CollectPermissionInfo(cmd, unifyMode, true,
+                    PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
+            }
         }
     }
     return ret;
@@ -625,6 +627,9 @@ static bool AddOwnerCheck(MediaLibraryCommand &cmd, DataSharePredicates &appidPr
         return false;
     }
     string clientAppId = GetClientAppId();
+    if (clientAppId.empty()) {
+        return false;
+    }
     appidPredicates.And()->EqualTo("owner_appid", clientAppId);
     return true;
 }
@@ -708,6 +713,12 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     if (command.GetUri().ToString().find(MEDIA_DATA_DB_HIGHLIGHT) != string::npos) {
         command.SetOprnObject(OperationObject::HIGHLIGHT_COVER);
     }
+    if (command.GetUri().ToString().find(PhotoColumn::PHOTO_REQUEST_PICTURE) != string::npos) {
+        command.SetOprnObject(OperationObject::REQUEST_PICTURE);
+    }
+    if (command.GetUri().ToString().find(PhotoColumn::PHOTO_REQUEST_PICTURE_BUFFER) != string::npos) {
+        command.SetOprnObject(OperationObject::PHOTO_REQUEST_PICTURE_BUFFER);
+    }
     return MediaLibraryDataManager::GetInstance()->OpenFile(command, unifyMode);
 }
 
@@ -760,15 +771,11 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     }
 
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
-    int32_t ret = MediaLibraryDataManager::GetInstance()->InsertExt(cmd, value, result);
+    int32_t ret =  MediaLibraryDataManager::GetInstance()->InsertExt(cmd, value, result);
     if (needToResetTime) {
         AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
-        err = Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(tokenCaller,
-            PERM_SHORT_TERM_WRITE_IMAGEVIDEO, SHORT_TERM_PERMISSION_DURATION_300S);
-        if (err < 0) {
-            MEDIA_ERR_LOG("queryResultSet is nullptr! errCode: %{public}d", err);
-            return err;
-        }
+        Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(tokenCaller,
+            PERM_SHORT_TERM_WRITE_IMAGEVIDEO, THREE_HUNDERD_S);
     }
     return ret;
 }
@@ -781,6 +788,7 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
         .isWrite = true,
     };
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
+    cmd.SetDataSharePred(predicates);
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
     if (err != E_SUCCESS) {
@@ -789,8 +797,8 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     bool isMediatoolOperation = IsMediatoolOperation(cmd);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
-
     DataSharePredicates appidPredicates = predicates;
+
     if (err != E_SUCCESS) {
         if (isMediatoolOperation) {
             MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
@@ -818,6 +826,7 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
         .isWrite = true,
     };
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
+    cmd.SetDataSharePred(predicates);
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
     if (err != E_SUCCESS) {
@@ -840,6 +849,7 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     MediaLibraryCommand cmd(uri);
     PermParam permParam = {.isWrite = false};
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, nullptr, "permissionHandler_ is nullptr");
+    cmd.SetDataSharePred(predicates);
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
     if (err != E_SUCCESS) {
@@ -851,6 +861,7 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     bool isMediatoolOperation = IsMediatoolOperation(cmd);
     int errCode = businessError.GetCode();
     DataSharePredicates appidPredicates = predicates;
+
     if (err != E_SUCCESS) {
         if (isMediatoolOperation) {
             MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
@@ -879,11 +890,11 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     auto count = 0;
     queryResultSet->GetRowCount(count);
     if (err < 0 && count == 0) {
+        MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
         businessError.SetCode(err);
         return nullptr;
     }
-    shared_ptr<DataShareResultSet> resultSet = make_shared<DataShareResultSet>(queryResultSet);
-    return resultSet;
+    return make_shared<DataShareResultSet>(queryResultSet);
 }
 
 string MediaDataShareExtAbility::GetType(const Uri &uri)

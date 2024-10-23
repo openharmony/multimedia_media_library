@@ -37,6 +37,7 @@ public:
     EXPORT static int32_t Delete(MediaLibraryCommand &cmd);
     EXPORT static int32_t Open(MediaLibraryCommand &cmd, const std::string &mode);
     EXPORT static int32_t Close(MediaLibraryCommand &cmd);
+    EXPORT static void MoveToMusic();
     static int32_t TrashAging(std::shared_ptr<int> countPtr = nullptr);
 
 private:

@@ -211,7 +211,6 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     MediaType mediaType = metadata.GetFileMediaType();
 
     values.PutString(MediaColumn::MEDIA_FILE_PATH, metadata.GetFilePath());
-    values.PutString(MediaColumn::MEDIA_MIME_TYPE, metadata.GetFileMimeType());
     values.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
     if (skipPhoto) {
         values.PutString(MediaColumn::MEDIA_NAME, metadata.GetFileName());
@@ -238,14 +237,15 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, metadata.GetShootingModeTag());
         values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, metadata.GetLastVisitTime());
         values.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, metadata.GetDynamicRangeType());
-        values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, metadata.GetFrontCamera());
         values.PutLong(PhotoColumn::PHOTO_COVER_POSITION, metadata.GetCoverPosition());
+        values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, metadata.GetFrontCamera());
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
         if (metadata.GetPhotoSubType() != 0) {
             values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
         }
-#endif
+        if (metadata.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo
+        }
     } else if (mediaType == MediaType::MEDIA_TYPE_AUDIO) {
         values.PutString(AudioColumn::AUDIO_ALBUM, metadata.GetAlbum());
         values.PutString(AudioColumn::AUDIO_ARTIST, metadata.GetFileArtist());
@@ -498,7 +498,7 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
                 MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING,
                 MediaColumn::MEDIA_DATE_ADDED, PhotoColumn::PHOTO_DATE_DAY, MediaColumn::MEDIA_OWNER_PACKAGE,
-                PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP
+                PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::MOVING_PHOTO_EFFECT_MODE
             };
         } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
             columns = {
@@ -590,7 +590,7 @@ int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata
 
     vector<string> args;
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
-        if (fileId != 0) {
+        if (fileId > 0) {
             whereClause = MediaColumn::MEDIA_ID + " = ? ";
             args = { to_string(fileId) };
         } else {
@@ -1032,19 +1032,25 @@ int32_t MediaScannerDb::DeleteError(const std::string &err)
 void MediaScannerDb::UpdateAlbumInfo(const std::vector<std::string> &subtypes,
     const std::vector<std::string> &userAlbumIds, const std::vector<std::string> &sourceAlbumIds)
 {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbstore is nullptr");
+        return;
+    }
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
         to_string(PhotoAlbumSubType::IMAGE),
         to_string(PhotoAlbumSubType::VIDEO),
         to_string(PhotoAlbumSubType::SCREENSHOT),
         to_string(PhotoAlbumSubType::FAVORITE),
+        to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
     });
 }
 
 void MediaScannerDb::UpdateAlbumInfoByMetaData(const Metadata &metadata)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
+    if (rdbStore == nullptr || rdbStore->GetRaw() == nullptr) {
         MEDIA_ERR_LOG("rdbstore is nullptr");
         return;
     }
@@ -1058,6 +1064,8 @@ void MediaScannerDb::UpdateAlbumInfoByMetaData(const Metadata &metadata)
             MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
             { to_string(PhotoAlbumSubType::VIDEO) }
         );
+    } else {
+        MEDIA_WARN_LOG("Invalid mediaType : %{public}d", metadata.GetFileMediaType());
     }
     if (!metadata.GetOwnerPackage().empty()) {
         if (metadata.GetFileId() != FILE_ID_DEFAULT) {

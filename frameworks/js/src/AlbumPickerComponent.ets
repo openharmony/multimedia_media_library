@@ -14,11 +14,13 @@
  */
 
 import { PickerColorMode } from '@ohos.file.PhotoPickerComponent';
+import photoAccessHelper from '@ohos.file.photoAccessHelper';
 
 @Component
 export struct AlbumPickerComponent {
   albumPickerOptions?: AlbumPickerOptions | undefined;
   onAlbumClick?: (albumInfo: AlbumInfo) => boolean;
+  onEmptyAreaClick?: EmptyAreaClickCallback;
 
   build() {
     Row() {
@@ -28,21 +30,13 @@ export struct AlbumPickerComponent {
             'ability.want.params.uiExtensionTargetType':'photoPicker',
             targetPage: 'albumPage',
             themeColorMode: this.albumPickerOptions?.themeColorMode,
+            filterType: this.albumPickerOptions?.filterType,
           }
         }).height('100%').width('100%').onRemoteReady((proxy) => {
           console.info('AlbumPickerComponent onRemoteReady');
         }).onReceive((data) => {
           let wantParam: Record<string, Object> = data as Record<string, Object>;
-          let dataType = wantParam['dataType'] as string;
-          if (dataType === 'selectAlbum') {
-            if (this.onAlbumClick) {
-              let albumInfo: AlbumInfo = new AlbumInfo();
-              albumInfo.uri = wantParam['albumUri'] as string;
-              albumInfo.albumName = wantParam['albumName'] as string;
-              this.onAlbumClick(albumInfo);
-            }
-          }
-          console.info('AlbumPickerComponent onReceive ' + dataType);
+          this.handleOnReceive(wantParam);
         }).onError(() => {
           console.info('AlbumPickerComponent onError');
         });
@@ -53,8 +47,30 @@ export struct AlbumPickerComponent {
   }
 }
 
+private handleOnReceive(wantParam: Record<string, Object>): void {
+  let dataType = wantParam.dataType. as string;
+  if (dataType === 'selectAlbum') {
+    if (this.onAlbumClick) {
+      let albumInfo: AlbumInfo = new AlbumInfo();
+      albumInfo.uri = wantParam.albumUri as string;
+      albumInfo.albumName = wantParam.albumName. as string;
+      this.onAlbumClick(albumInfo);
+    }
+  } else if (dataType === 'emptyAreaClick') {
+    if (this.onEmptyAreaClick) {
+      this.onEmptyAreaClick();
+    }
+  } else {
+    console.info('AlbumPickerComponent onReceive: other case');
+  }
+  console.info('AlbumPickerComponent onReceive ' + dataType);
+}
+
+export type EmptyAreaClickCallback = () => void;
+
 export class AlbumPickerOptions {
   public themeColorMode?: PickerColorMode;
+  public filterType?: photoAccessHelper.PhotoViewMIMETypes;
 }
 
 export class AlbumInfo {

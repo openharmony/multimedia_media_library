@@ -21,6 +21,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_helper_container.h"
+#include "media_file_utils.h"
 
 using namespace std;
 using namespace OHOS::DataShare;

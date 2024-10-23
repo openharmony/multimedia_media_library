@@ -58,7 +58,6 @@ ohos_unittest("medialibrary_search_unittest") {
     "napi:ace_napi",
     "relational_store:native_rdb",
   ]
-
   sanitize = {
     cfi = true
     cfi_cross_dso = true

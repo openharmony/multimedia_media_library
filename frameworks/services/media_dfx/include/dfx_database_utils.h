@@ -27,13 +27,17 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class DfxDatabaseUtils {
 public:
-    static int32_t QueryFromPhotos(int32_t mediaType, bool isLocal);
-    static AlbumInfo QueryAlbumInfoBySubtype(int32_t albumSubtype);
-    static std::vector<PhotoInfo> QueryDirtyCloudPhoto();
-    static int32_t QueryAnalysisVersion(const std::string &table, const std::string &column);
-    static int32_t QueryDbVersion();
+    EXPORT static int32_t QueryFromPhotos(int32_t mediaType, bool isLocal);
+    EXPORT static AlbumInfo QueryAlbumInfoBySubtype(int32_t albumSubtype);
+    EXPORT static std::vector<PhotoInfo> QueryDirtyCloudPhoto();
+    EXPORT static int32_t QueryAnalysisVersion(const std::string &table, const std::string &column);
+    EXPORT static int32_t QueryDownloadedAndGeneratedThumb(int32_t& downloadedThumb, int32_t& generatedThumb);
+    EXPORT static int32_t QueryTotalCloudThumb(int32_t& totalDownload);
+    EXPORT static int32_t QueryDbVersion();
+    EXPORT static int32_t QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo);
 
 private:
     static int32_t QueryInt(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,

@@ -432,6 +432,11 @@ void FileAsset::SetPhotoSubType(int32_t photoSubType)
     member_[PhotoColumn::PHOTO_SUBTYPE] = photoSubType;
 }
 
+int32_t FileAsset::GetOriginalSubType() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE);
+}
+
 const std::string &FileAsset::GetCameraShotKey() const
 {
     return GetStrMember(PhotoColumn::CAMERA_SHOT_KEY);
@@ -530,6 +535,16 @@ const std::string &FileAsset::GetBurstKey() const
 void FileAsset::SetBurstKey(const std::string &burstKey)
 {
     member_[PhotoColumn::PHOTO_BURST_KEY] = burstKey;
+}
+
+int32_t FileAsset::GetCEAvailable() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_CE_AVAILABLE);
+}
+
+void FileAsset::SetCEAvailable(int32_t ceAvailable)
+{
+    member_[PhotoColumn::PHOTO_CE_AVAILABLE] = ceAvailable;
 }
 
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)

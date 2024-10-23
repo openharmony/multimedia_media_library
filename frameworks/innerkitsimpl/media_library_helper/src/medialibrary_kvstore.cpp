@@ -41,8 +41,27 @@ int32_t MediaLibraryKvStore::Init(
         MEDIA_ERR_LOG("failed to GetKvStoreOption");
         return E_ERR;
     }
+
     MEDIA_INFO_LOG("InitKvStore baseDir %{public}s", options.group.groupDir.c_str());
-    return E_ERR;
+    Status status;
+    if (valueType == KvStoreValueType::MONTH_ASTC) {
+        status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, KVSTORE_MONTH_STOREID, kvStorePtr_);
+    } else if (valueType == KvStoreValueType::YEAR_ASTC) {
+        status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, KVSTORE_YEAR_STOREID, kvStorePtr_);
+    } else if (valueType == KvStoreValueType::MONTH_ASTC_OLD_VERSION) {
+        status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, KVSTORE_MONTH_STOREID_OLD_VERSION, kvStorePtr_);
+    } else if (valueType == KvStoreValueType::YEAR_ASTC_OLD_VERSION) {
+        status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, KVSTORE_YEAR_STOREID_OLD_VERSION, kvStorePtr_);
+    } else {
+        MEDIA_ERR_LOG("invalid value type");
+        return E_ERR;
+    }
+
+    if (status != Status::SUCCESS || kvStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("init KvStore failed, status %{public}d", status);
+        return static_cast<int32_t>(status);
+    }
+    return E_OK;
 }
 
 int32_t MediaLibraryKvStore::Insert(const std::string &key, const std::vector<uint8_t> &value)
@@ -179,6 +198,11 @@ int32_t MediaLibraryKvStore::BatchQuery(
         return E_HAS_DB_ERROR;
     }
 
+    if (batchKeys.empty()) {
+        MEDIA_ERR_LOG("batchKeys is empty");
+        return E_ERR;
+    }
+
     std::sort(batchKeys.begin(), batchKeys.end(), [](std::string a, std::string b) {return a > b;});
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryKvStore::BatchQuery");
@@ -187,6 +211,8 @@ int32_t MediaLibraryKvStore::BatchQuery(
 
 bool MediaLibraryKvStore::Close()
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryKvStore::Close");
     if (kvStorePtr_ == nullptr) {
         MEDIA_ERR_LOG("kvStorePtr_ is nullptr");
         return true;
@@ -221,5 +247,40 @@ bool MediaLibraryKvStore::GetKvStoreOption(
     options.securityLevel = SecurityLevel::S3;
     options.kvStoreType = KvStoreType::LOCAL_ONLY;
     return true;
+}
+
+int32_t MediaLibraryKvStore::RebuildKvStore(const KvStoreValueType &valueType, const std::string &baseDir)
+{
+    MEDIA_INFO_LOG("Start RebuildKvStore, type %{public}d", valueType);
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryKvStore::RebuildKvStore");
+    Status status;
+    tracer.Start("DeleteKvStore");
+    if (valueType == KvStoreValueType::MONTH_ASTC) {
+        status = dataManager_.DeleteKvStore(KVSTORE_APPID, KVSTORE_MONTH_STOREID, baseDir);
+    } else if (valueType == KvStoreValueType::YEAR_ASTC) {
+        status = dataManager_.DeleteKvStore(KVSTORE_APPID, KVSTORE_YEAR_STOREID, baseDir);
+    } else {
+        MEDIA_ERR_LOG("Invalid value type: %{public}d", valueType);
+        return E_ERR;
+    }
+    tracer.Finish();
+
+    if (status != Status::SUCCESS) {
+        MEDIA_ERR_LOG("Delete kvstore failed, type %{public}d, status %{public}d", valueType, status);
+        return static_cast<int32_t>(status);
+    }
+
+    int32_t err = Init(KvStoreRoleType::OWNER, valueType, baseDir);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Rebuild kvstore failed, type %{public}d, status %{public}d", valueType, err);
+        return err;
+    }
+
+    if (!Close()) {
+        return E_ERR;
+    }
+    MEDIA_INFO_LOG("RebuildKvStore finish, type %{public}d", valueType);
+    return E_OK;
 }
 } // namespace OHOS::Media

@@ -24,6 +24,7 @@
 
 #include "rdb_predicates.h"
 #include "rdb_store.h"
+#include "uri.h"
 #include "userfile_manager_types.h"
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))

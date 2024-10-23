@@ -25,10 +25,14 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
+constexpr int32_t PROCESS_INTERVAL = 5 * 60 * 1000;  // 5 minute
+constexpr int32_t DOWNLOAD_DURATION = 10 * 1000; // 10 seconds
+
 class BackgroundCloudFileProcessor {
 public:
-    static void StartTimer();
-    static void StopTimer();
+    EXPORT static void StartTimer();
+    EXPORT static void StopTimer();
 
 private:
     typedef struct {
@@ -73,7 +77,7 @@ private:
     static void ParseDownloadFiles(std::shared_ptr<NativeRdb::ResultSet> &resultSet, DownloadFiles &downloadFiles);
     static int32_t AddDownloadTask(const DownloadFiles &downloadFiles);
     static void DownloadCloudFilesExecutor(AsyncTaskData *data);
-    static void StopDownloadFiles(const std::vector<std::string> &filePaths);
+    static void StopDownloadFiles();
     static void ProcessCloudData();
     static void UpdateCloudData();
     static std::shared_ptr<NativeRdb::ResultSet> QueryUpdateData();
@@ -81,16 +85,21 @@ private:
     static int32_t AddUpdateDataTask(const UpdateData &updateData);
     static void UpdateCloudDataExecutor(AsyncTaskData *data);
     static void UpdateAbnormaldata(std::unique_ptr<Metadata> &metadata, const std::string &tableName);
-    static int32_t GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata);
+    static void GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata);
     static int32_t GetExtractMetadata(std::unique_ptr<Metadata> &metadata);
     static void StopUpdateData();
+    static void UpdateCurrentOffset();
 
+    static int32_t processInterval_;
+    static int32_t downloadDuration_;
     static std::recursive_mutex mutex_;
     static Utils::Timer timer_;
     static uint32_t startTimerId_;
     static uint32_t stopTimerId_;
     static std::vector<std::string> curDownloadPaths_;
     static bool isUpdating_;
+    static int32_t currentUpdateOffset_;
+    static int32_t currentRetryCount_;
 };
 } // namespace Media
 } // namespace OHOS

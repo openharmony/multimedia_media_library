@@ -72,7 +72,6 @@ config("napi_config") {
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
-    "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
@@ -108,6 +107,8 @@ ohos_shared_library("medialibrary_nutils") {
   configs = [ ":napi_config" ]
   sources = [
     "${MEDIALIB_JS_PATH}/src/album_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/cloud_enhancement_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/cloud_enhancement_task_state_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/confirm_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/delete_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/fetch_file_result_napi.cpp",
@@ -129,6 +130,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/napi_error.cpp",
     "${MEDIALIB_JS_PATH}/src/photo_album_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/photo_proxy_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/picture_handle_client.cpp",
     "${MEDIALIB_JS_PATH}/src/short_term_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/smart_album_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/thumbnail_manager.cpp",
@@ -148,15 +150,14 @@ ohos_shared_library("medialibrary_nutils") {
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
     "ability_runtime:dataobs_manager",
-    "ability_runtime:extensionkit_native",
     "ability_runtime:napi_base_context",
-    "ability_runtime:napi_common",
     "ability_runtime:runtime",
     "ability_runtime:service_extension",
     "ability_runtime:ui_extension",
     "access_token:libaccesstoken_sdk",
     "access_token:libprivacy_sdk",
     "access_token:libtokenid_sdk",
+    "ace_engine:ace_uicontent",
     "app_file_service:fileuri_native",
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
@@ -170,14 +171,13 @@ ohos_shared_library("medialibrary_nutils") {
     "image_framework:image_native",
     "init:libbegetutil",
     "ipc:ipc_core",
-    "ipc:ipc_single",
     "ipc:rpc",
     "kv_store:distributeddata_inner",
+    "libexif:libexif",
     "napi:ace_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
-    "samgr:samgr_proxy",
     "window_manager:libwm",
   ]
 
@@ -202,20 +202,23 @@ ohos_shared_library("medialibrary_nutils") {
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [
-      "memmgr_override:libpurgeablemem_plugin",
-      "memmgr_override:purgeable_pixelmap_builder",
+      "memmgr:libpurgeablemem_plugin",
+      "memmgr:purgeable_pixelmap_builder",
     ]
+  }
+
+  if (defined(global_parts_info) &&
+      defined(
+          global_parts_info.device_cloud_gateway_media_cloud_enhance_service)) {
+    defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
+    external_deps +=
+        [ "media_cloud_enhance_service:media_cloud_enhance_client" ]
   }
 
   if (ability_runtime_graphics) {
-    external_deps += [
-      "ace_engine:ace_uicontent",
-      "image_framework:image_native",
-    ]
-    cflags_cc = [ "-DHAS_ACE_ENGINE_PART" ]
+    external_deps += [ "image_framework:image_native" ]
   }
 
-  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "media_library"
 }
@@ -254,6 +257,10 @@ ohos_shared_library("medialibrary") {
   if (defined(medialibrary_mtp_enable)) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.open_source_libyuv)) {
+    defines += [ "EXT_PIXEL" ]
+  }
   if (!media_library_link_opt) {
     sanitize = {
       cfi = true
@@ -270,8 +277,8 @@ ohos_shared_library("medialibrary") {
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [
-      "memmgr_override:libpurgeablemem_plugin",
-      "memmgr_override:purgeable_pixelmap_builder",
+      "memmgr:libpurgeablemem_plugin",
+      "memmgr:purgeable_pixelmap_builder",
     ]
   }
 
@@ -331,8 +338,8 @@ ohos_shared_library("userfilemanager") {
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [
-      "memmgr_override:libpurgeablemem_plugin",
-      "memmgr_override:purgeable_pixelmap_builder",
+      "memmgr:libpurgeablemem_plugin",
+      "memmgr:purgeable_pixelmap_builder",
     ]
   }
 
@@ -439,8 +446,8 @@ ohos_shared_library("photoaccesshelper") {
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [
-      "memmgr_override:libpurgeablemem_plugin",
-      "memmgr_override:purgeable_pixelmap_builder",
+      "memmgr:libpurgeablemem_plugin",
+      "memmgr:purgeable_pixelmap_builder",
     ]
   }
 
@@ -688,8 +695,8 @@ ohos_shared_library("sendablephotoaccesshelper") {
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [
-      "memmgr_override:libpurgeablemem_plugin",
-      "memmgr_override:purgeable_pixelmap_builder",
+      "memmgr:libpurgeablemem_plugin",
+      "memmgr:purgeable_pixelmap_builder",
     ]
   }
 

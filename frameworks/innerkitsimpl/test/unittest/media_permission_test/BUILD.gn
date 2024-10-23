@@ -72,6 +72,7 @@ ohos_unittest("media_permission_unittest") {
     "data_share:datashare_common",
     "data_share:datashare_provider",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",

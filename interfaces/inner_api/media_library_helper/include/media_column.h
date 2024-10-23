@@ -117,9 +117,10 @@ public:
     static const std::string PHOTO_LCD_SIZE EXPORT;
     static const std::string PHOTO_THUMB_SIZE EXPORT;
     static const std::string PHOTO_IS_TEMP EXPORT;
+    static const std::string PHOTO_COVER_POSITION EXPORT;
     static const std::string PHOTO_BURST_COVER_LEVEL EXPORT;
     static const std::string PHOTO_BURST_KEY EXPORT;
-    static const std::string PHOTO_COVER_POSITION EXPORT;
+    static const std::string PHOTO_ORIGINAL_SUBTYPE EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
@@ -145,6 +146,12 @@ public:
     static const std::string PHOTO_DATE_MONTH_FORMAT EXPORT;
     static const std::string PHOTO_DATE_DAY_FORMAT EXPORT;
     static const std::string PHOTO_FRONT_CAMERA EXPORT;
+    // cloud enhancement
+    static const std::string PHOTO_CE_AVAILABLE EXPORT;
+    static const std::string PHOTO_CE_STATUS_CODE EXPORT;
+    static const std::string PHOTO_STRONG_ASSOCIATION EXPORT;
+    static const std::string PHOTO_ASSOCIATE_FILE_ID EXPORT;
+    static const std::string PHOTO_HAS_CLOUD_WATERMARK EXPORT;
 
     // table name
     static const std::string PHOTOS_TABLE EXPORT;
@@ -166,6 +173,8 @@ public:
     static const std::string DROP_PHOTO_FAVORITE_INDEX EXPORT;
     static const std::string CREATE_PHOTO_DISPLAYNAME_INDEX EXPORT;
     static const std::string CREATE_PHOTO_BURSTKEY_INDEX EXPORT;
+    static const std::string UPDATE_READY_ON_THUMBNAIL_UPGRADE EXPORT;
+    static const std::string UPDATA_PHOTOS_DATA_UNIQUE EXPORT;
 
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;
@@ -189,6 +198,12 @@ public:
     // cloud sync uri
     static const std::string PHOTO_CLOUD_URI_PREFIX EXPORT;
 
+    // cloud notify uri
+    static const std::string PHOTO_HEIGHT_ERROR_URI_PREFIX EXPORT;
+    static const std::string PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX EXPORT;
+    // yuv uri
+    static const std::string PHOTO_REQUEST_PICTURE EXPORT;
+    static const std::string PHOTO_REQUEST_PICTURE_BUFFER EXPORT;
     // all columns
     static const std::set<std::string> PHOTO_COLUMNS EXPORT;
 
