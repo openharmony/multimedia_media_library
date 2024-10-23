@@ -65,6 +65,7 @@ constexpr int32_t FACE_RECOGNITION = 1;
 constexpr int32_t FACE_FEATURE = 2;
 constexpr int32_t FACE_CLUSTERED = 3;
 constexpr int32_t CLOUD_POSITION_STATUS = 2;
+constexpr int32_t UPDATE_ALBUM_TIME_OUT = 1000;
 mutex MediaLibraryRdbUtils::sRefreshAlbumMutex_;
 
 // 注意，端云同步代码仓也有相同常量，添加新相册时，请通知端云同步进行相应修改
@@ -1644,6 +1645,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore
 
     // For each row
     while (albumResult->GoToNextRow() == E_OK) {
+        int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
         TransactionOperations transactionOprn(rdbStore);
         int32_t err = transactionOprn.Start();
         if (err != NativeRdb::E_OK) {
@@ -1657,6 +1659,11 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore
             UpdateAnalysisAlbumIfNeeded(rdbStore, albumResult, false);
         }
         transactionOprn.Finish();
+        int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+        if ((end - start) > UPDATE_ALBUM_TIME_OUT) {
+            MEDIA_INFO_LOG("udpate analysis album: %{public}d cost %{public}ld", GetAlbumId(albumResult),
+                static_cast<long>(end - start));
+        }
     }
 }
 
