@@ -1173,6 +1173,20 @@ int32_t MediaLibraryDataManager::GenerateThumbnailBackground()
     return thumbnailService_->GenerateThumbnailBackground();
 }
 
+int32_t MediaLibraryDataManager::GenerateHighlightThumbnailBackground()
+{
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+
+    if (thumbnailService_ == nullptr) {
+        return E_THUMBNAIL_SERVICE_NULLPTR;
+    }
+    return thumbnailService_->GenerateHighlightThumbnailBackground();
+}
+
 int32_t MediaLibraryDataManager::UpgradeThumbnailBackground(bool isWifiConnected)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
@@ -1795,7 +1809,8 @@ int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
     if (oprnObject != OperationObject::THUMBNAIL && oprnObject != OperationObject::THUMBNAIL_ASTC &&
-        oprnObject != OperationObject::REQUEST_PICTURE && oprnObject != OperationObject::PHOTO_REQUEST_PICTURE_BUFFER) {
+        oprnObject != OperationObject::REQUEST_PICTURE && oprnObject != OperationObject::PHOTO_REQUEST_PICTURE_BUFFER &&
+        oprnObject != OperationObject::KEY_FRAME) {
         string opObject = MediaFileUri::GetPathFirstDentry(const_cast<Uri &>(cmd.GetUri()));
         if (opObject == IMAGE_ASSET_TYPE || opObject == VIDEO_ASSET_TYPE || opObject == URI_TYPE_PHOTO) {
             cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);

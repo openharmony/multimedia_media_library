@@ -139,6 +139,7 @@ private:
     EXPORT static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperFavorite(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetKeyFrameThumbnail(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperRequestPhoto(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCancelPhotoRequest(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperSetHidden(napi_env env, napi_callback_info info);
@@ -175,6 +176,8 @@ struct FileAssetAsyncContext : public NapiError {
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
     Size size;
     bool isDirectory;
+    int32_t beginStamp;
+    int32_t type;
     int32_t changedRows;
     int32_t fd;
     int32_t analysisType = AnalysisType::ANALYSIS_INVALID;

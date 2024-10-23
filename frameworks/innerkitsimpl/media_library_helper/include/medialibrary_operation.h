@@ -96,6 +96,7 @@ enum class EXPORT OperationObject : uint32_t {
     ANALYSIS_ASSET_SD_MAP,
     ANALYSIS_ALBUM_ASSET_MAP,
     PAH_VIDEO,
+    KEY_FRAME,
     TAB_OLD_PHOTO,
 };
 

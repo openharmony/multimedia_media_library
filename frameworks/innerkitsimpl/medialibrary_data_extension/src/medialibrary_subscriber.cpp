@@ -421,6 +421,11 @@ void MedialibrarySubscriber::DoThumbnailOperation()
         MEDIA_ERR_LOG("UpgradeThumbnailBackground faild");
     }
 
+    result = dataManager->GenerateHighlightThumbnailBackground();
+    if (result != E_OK) {
+        MEDIA_ERR_LOG("GenerateHighlightThumbnailBackground failed %{public}d", result);
+    }
+
     result = dataManager->DoAging();
     if (result != E_OK) {
         MEDIA_ERR_LOG("DoAging faild");

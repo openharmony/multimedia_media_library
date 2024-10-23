@@ -93,6 +93,7 @@ using Context = SendablePhotoAccessHelperAsyncContext* ;
 
 thread_local napi_ref SendablePhotoAccessHelper::photoAccessHelperConstructor_ = nullptr;
 thread_local napi_ref SendablePhotoAccessHelper::sMediaTypeEnumRef_ = nullptr;
+thread_local napi_ref SendablePhotoAccessHelper::sKeyFrameThumbnailTypeRef_ = nullptr;
 thread_local napi_ref SendablePhotoAccessHelper::sPhotoSubType_ = nullptr;
 thread_local napi_ref SendablePhotoAccessHelper::sPositionTypeEnumRef_ = nullptr;
 thread_local napi_ref SendablePhotoAccessHelper::sAlbumType_ = nullptr;
@@ -135,6 +136,7 @@ napi_value SendablePhotoAccessHelper::Init(napi_env env, napi_value exports)
     const vector<napi_property_descriptor> staticProps = {
         DECLARE_NAPI_STATIC_FUNCTION("getPhotoAccessHelper", GetPhotoAccessHelper),
         DECLARE_NAPI_PROPERTY("PhotoType", CreateMediaTypeUserFileEnum(env)),
+        DECLARE_NAPI_PROPERTY("ThumbnailType", CreateKeyFrameThumbnailTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumType", CreateAlbumTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumSubtype", CreateAlbumSubTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env)),
@@ -926,6 +928,12 @@ napi_value SendablePhotoAccessHelper::CreateMediaTypeUserFileEnum(napi_env env)
 {
     const int32_t startIdx = 1;
     return CreateNumberEnumProperty(env, mediaTypesUserFileEnum, sMediaTypeEnumRef_, startIdx);
+}
+
+napi_value SendablePhotoAccessHelper::CreateKeyFrameThumbnailTypeEnum(napi_env env)
+{
+    const int32_t startIdx = 1;
+    return CreateNumberEnumProperty(env, keyFrameThumbnailTypeEnum, sKeyFrameThumbnailTypeRef_, startIdx);
 }
 
 napi_value SendablePhotoAccessHelper::CreateAlbumTypeEnum(napi_env env)

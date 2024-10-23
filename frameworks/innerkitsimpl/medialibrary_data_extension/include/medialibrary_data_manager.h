@@ -73,6 +73,7 @@ public:
     EXPORT std::string GetType(const Uri &uri);
     EXPORT void NotifyChange(const Uri &uri);
     EXPORT int32_t GenerateThumbnailBackground();
+    EXPORT int32_t GenerateHighlightThumbnailBackground();
 
     // upgrade existed thumbnails to fix such as size, rotation and quality etc. problems
     EXPORT int32_t UpgradeThumbnailBackground(bool isWifiConnected);

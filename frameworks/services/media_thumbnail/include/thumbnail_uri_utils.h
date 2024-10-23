@@ -30,6 +30,8 @@ public:
         std::string &outNetworkId, std::string &outTableName);
     EXPORT static bool ParseThumbnailInfo(const std::string &uriString, std::string &outFileId,
         Size &outSize, std::string &outNetworkId, std::string &outTableName);
+    EXPORT static bool ParseKeyFrameThumbnailInfo(const std::string &uriString, std::string &outFileId,
+        int32_t &outBeginStamp, int32_t &outType, std::string &outPath);
     EXPORT static std::string GetDateTakenFromUri(const std::string &uri);
     EXPORT static std::string GetFileUriFromUri(const std::string &uri);
 private:

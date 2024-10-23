@@ -733,6 +733,9 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     if (command.GetUri().ToString().find(PhotoColumn::PHOTO_REQUEST_PICTURE_BUFFER) != string::npos) {
         command.SetOprnObject(OperationObject::PHOTO_REQUEST_PICTURE_BUFFER);
     }
+    if (command.GetUri().ToString().find(MEDIA_DATA_DB_KEY_FRAME) != string::npos) {
+        command.SetOprnObject(OperationObject::KEY_FRAME);
+    }
     return MediaLibraryDataManager::GetInstance()->OpenFile(command, unifyMode);
 }
 

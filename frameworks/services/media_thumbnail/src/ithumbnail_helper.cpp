@@ -64,6 +64,9 @@ void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> 
         return;
     }
     bool isSuccess = DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_);
+    if (isSuccess && !data->thumbnailData_.tracks.empty() && (data->thumbnailData_.trigger == "0")) {
+        UpdateHighlightDbState(data->opts_, data->thumbnailData_);
+    }
     UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
@@ -440,6 +443,17 @@ void UpdateLcdDbState(ThumbRdbOpt &opts, ThumbnailData &data)
     }
 }
 
+void IThumbnailHelper::UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    if (opts.table != PhotoColumn::HIGHLIGHT_TABLE) {
+        return;
+    }
+    int err = 0;
+    if (!ThumbnailUtils::UpdateHighlightInfo(opts, data, err)) {
+        MEDIA_ERR_LOG("UpdateHighlightInfo faild err : %{public}d", err);
+    }
+}
+
 bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     data.loaderOpts.decodeInThumbSize = false;
@@ -749,6 +763,11 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
             {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
+    }
+
+    if (!data.tracks.empty()) {
+        MEDIA_INFO_LOG("generate highlight frame, no need to create month and year astc");
+        return true;
     }
 
     // for some device that do not support KvStore, no need to generate the month and year astc.
