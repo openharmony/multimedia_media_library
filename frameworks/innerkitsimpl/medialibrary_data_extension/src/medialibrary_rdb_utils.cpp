@@ -1403,7 +1403,8 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<RdbStor
 {
     vector<string> newWhereIdArgs;
     for (auto albumId: predicates.GetWhereArgs()) {
-        const std::string QUERY_FILE_ASSET_INFO = "SELECT * FROM Photos WHERE owner_album_id = " + albumId;
+        const std::string QUERY_FILE_ASSET_INFO = "SELECT * FROM Photos WHERE owner_album_id = " + albumId +
+            " AND clean_flag =0 AND hidden =0";
         shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
         vector<string> fileAssetsIds, fileAssetsUri;
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
