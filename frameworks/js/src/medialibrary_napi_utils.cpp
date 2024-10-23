@@ -16,11 +16,13 @@
 
 #include "medialibrary_napi_utils.h"
 
+#include <cctype>
 #include "basic/result_set.h"
 #include "datashare_predicates.h"
 #include "location_column.h"
 #include "ipc_skeleton.h"
 #include "js_proxy.h"
+#include "cloud_enhancement_napi.h"
 #include "highlight_album_napi.h"
 #include "media_asset_change_request_napi.h"
 #include "media_assets_change_request_napi.h"
@@ -34,6 +36,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
+#include "medialibrary_type_const.h"
 #include "moving_photo_napi.h"
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
@@ -248,17 +251,30 @@ string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
     return id;
 }
 
-int32_t MediaLibraryNapiUtils::GetFileIdFromAssetUri(const string &uri)
+int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
 {
-    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos) {
-        std::string tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
-        return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
+    const static int ERROR = -1;
+    if (PhotoColumn::PHOTO_URI_PREFIX.size() >= uri.size()) {
+        NAPI_ERR_LOG("photo uri is too short");
+        return ERROR;
     }
-    if (uri.find(AudioColumn::AUDIO_URI_PREFIX) == string::npos) {
-        std::string tmp = uri.substr(AudioColumn::AUDIO_URI_PREFIX.size());
-        return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
+    if (uri.substr(0, PhotoColumn::PHOTO_URI_PREFIX.size()) !=
+        PhotoColumn::PHOTO_URI_PREFIX) {
+        NAPI_ERR_LOG("only photo uri is valid");
+        return ERROR;
     }
-    return -1;
+    std::string tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
+ 
+    std::string fileIdStr = tmp.substr(0, tmp.find_first_of('/'));
+    if (fileIdStr.empty()) {
+        NAPI_ERR_LOG("intercepted fileId is empty");
+        return ERROR;
+    }
+    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)) {
+        return std::stoi(fileIdStr);
+    }
+    NAPI_ERR_LOG("asset fileId is invalid");
+    return ERROR;
 }
 
 MediaType MediaLibraryNapiUtils::GetMediaTypeFromUri(const string &uri)
@@ -1091,6 +1107,17 @@ static int32_t GetAllImagesPredicates(DataSharePredicates &predicates, const boo
     return E_SUCCESS;
 }
 
+static int32_t GetCloudEnhancementPredicates(DataSharePredicates &predicates, const bool hiddenOnly)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
+    predicates.EqualTo(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
+        to_string(static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT)));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
+    predicates.EndWrap();
+    return E_SUCCESS;
+}
+
 int32_t MediaLibraryNapiUtils::GetSourceAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates,
     const bool hiddenOnly)
 {
@@ -1126,6 +1153,9 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
         }
         case PhotoAlbumSubType::IMAGE: {
             return GetAllImagesPredicates(predicates, hiddenOnly);
+        }
+        case PhotoAlbumSubType::CLOUD_ENHANCEMENT: {
+            return GetCloudEnhancementPredicates(predicates, hiddenOnly);
         }
         default: {
             NAPI_ERR_LOG("Unsupported photo album subtype: %{public}d", subType);
@@ -1491,6 +1521,10 @@ napi_status MediaLibraryNapiUtils::ParsePredicates(napi_env env, const napi_valu
 {
     JSProxy::JSProxy<DataShareAbsPredicates> *jsProxy = nullptr;
     napi_unwrap(env, arg, reinterpret_cast<void **>(&jsProxy));
+    if (jsProxy == nullptr) {
+        NAPI_ERR_LOG("jsProxy is invalid");
+        return napi_invalid_arg;
+    }
     shared_ptr<DataShareAbsPredicates> predicate = jsProxy->GetInstance();
     CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType) == TRUE,
         napi_invalid_arg, "invalid predicate");
@@ -1632,6 +1666,10 @@ template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<Media
     napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext>& asyncContext,
     const size_t minArgs, const size_t maxArgs);
 
+template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<CloudEnhancementAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<CloudEnhancementAsyncContext>& asyncContext,
+    const size_t minArgs, const size_t maxArgs);
+
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaLibraryAsyncContext>(napi_env env,
     unique_ptr<MediaLibraryAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
@@ -1678,6 +1716,10 @@ template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MovingPhotoAsyncC
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAssetManagerAsyncContext>(napi_env env,
     unique_ptr<MediaAssetManagerAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<CloudEnhancementAsyncContext>(napi_env env,
+    unique_ptr<CloudEnhancementAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
 template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,

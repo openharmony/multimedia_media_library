@@ -42,6 +42,8 @@ public:
     EXPORT virtual void Stop() override;
 
     EXPORT virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) override;
+    EXPORT virtual int32_t BatchInsert(MediaLibraryCommand &cmd, int64_t& outInsertNum,
+        const std::vector<ValuesBucket>& values) override;
     EXPORT virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
     EXPORT virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &changedRows) override;
     EXPORT std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
@@ -53,6 +55,8 @@ public:
 
     EXPORT std::shared_ptr<NativeRdb::RdbStore> GetRaw() const;
 
+    EXPORT static int32_t BatchInsert(int64_t &outRowId, const std::string &table,
+        const std::vector<NativeRdb::ValuesBucket> &values);
     EXPORT static void BuildValuesSql(const NativeRdb::ValuesBucket &values,
         std::vector<NativeRdb::ValueObject> &bindArgs, std::string &sql);
     EXPORT static void BuildQuerySql(const NativeRdb::AbsRdbPredicates &predicates,
@@ -72,11 +76,16 @@ public:
     static std::string GetString(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &column);
     EXPORT static bool ResetAnalysisTables();
     EXPORT static bool ResetSearchTables();
-    EXPORT static int32_t UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows);
+    EXPORT static int32_t UpdateLastVisitTime(const std::string &id);
     EXPORT static bool HasColumnInTable(RdbStore &store, const std::string &columnName, const std::string &tableName);
     static void AddColumnIfNotExists(
         RdbStore &store, const std::string &columnName, const std::string &columnType, const std::string &tableName);
     EXPORT static int32_t QueryPragma(const std::string &key, int64_t &value);
+    EXPORT static void SetOldVersion(int32_t oldVersion);
+    EXPORT static int32_t GetOldVersion();
+    EXPORT static void CreateBurstIndex(RdbStore &store);
+    EXPORT static void UpdateBurstDirty(RdbStore &store);
+    EXPORT static void ClearAudios(RdbStore &store);
 
 private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);

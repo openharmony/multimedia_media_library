@@ -41,20 +41,23 @@ namespace OHOS {
 namespace Media {
 using namespace FileManagement::CloudSync;
 
-static constexpr int32_t DOWNLOAD_BATCH_SIZE = 5;
-static constexpr int32_t PROCESS_INTERVAL = 60 * 1000; // 1 minute
-static constexpr int32_t DOWNLOAD_DURATION = 20 * 1000; // 20 seconds
-static constexpr int32_t UPDATE_BATCH_SIZE = 3;
+static constexpr int32_t DOWNLOAD_BATCH_SIZE = 2;
+static constexpr int32_t UPDATE_BATCH_SIZE = 1;
+static constexpr int32_t MAX_RETRY_COUNT = 2;
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
 static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.55;
 
+int32_t BackgroundCloudFileProcessor::processInterval_ = PROCESS_INTERVAL;  // 5 minute
+int32_t BackgroundCloudFileProcessor::downloadDuration_ = DOWNLOAD_DURATION; // 10 seconds
 recursive_mutex BackgroundCloudFileProcessor::mutex_;
 Utils::Timer BackgroundCloudFileProcessor::timer_("background_cloud_file_processor");
 uint32_t BackgroundCloudFileProcessor::startTimerId_ = 0;
 uint32_t BackgroundCloudFileProcessor::stopTimerId_ = 0;
 std::vector<std::string> BackgroundCloudFileProcessor::curDownloadPaths_;
 bool BackgroundCloudFileProcessor::isUpdating_ = true;
+int32_t BackgroundCloudFileProcessor::currentUpdateOffset_ = 0;
+int32_t BackgroundCloudFileProcessor::currentRetryCount_ = 0;
 
 void BackgroundCloudFileProcessor::DownloadCloudFiles()
 {
@@ -201,7 +204,7 @@ void BackgroundCloudFileProcessor::DownloadCloudFilesExecutor(AsyncTaskData *dat
     auto *taskData = static_cast<DownloadCloudFilesData *>(data);
     auto downloadFiles = taskData->downloadFiles_;
 
-    MEDIA_INFO_LOG("Try to download %{public}zu cloud files.", downloadFiles.paths.size());
+    MEDIA_DEBUG_LOG("Try to download %{public}zu cloud files.", downloadFiles.paths.size());
     for (const auto &path : downloadFiles.paths) {
         int32_t ret = CloudSyncManager::GetInstance().StartDownloadFile(path);
         if (ret != E_OK) {
@@ -215,19 +218,20 @@ void BackgroundCloudFileProcessor::DownloadCloudFilesExecutor(AsyncTaskData *dat
         if (stopTimerId_ > 0) {
             timer_.Unregister(stopTimerId_);
         }
-        stopTimerId_ = timer_.Register([=]() { StopDownloadFiles(downloadFiles.paths); }, DOWNLOAD_DURATION, true);
+        stopTimerId_ = timer_.Register(StopDownloadFiles, downloadDuration_, true);
     }
 }
 
-void BackgroundCloudFileProcessor::StopDownloadFiles(const std::vector<std::string> &filePaths)
+void BackgroundCloudFileProcessor::StopDownloadFiles()
 {
-    for (const auto &path : filePaths) {
+    for (const auto &path : curDownloadPaths_) {
         MEDIA_INFO_LOG("Try to Stop downloading cloud file, the path is %{public}s", path.c_str());
         int32_t ret = CloudSyncManager::GetInstance().StopDownloadFile(path);
         if (ret != E_OK) {
             MEDIA_ERR_LOG("Stop downloading cloud file failed, err: %{public}d, path: %{public}s", ret, path.c_str());
         }
     }
+    curDownloadPaths_.clear();
 }
 
 std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateData()
@@ -238,7 +242,8 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateD
         MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_DURATION };
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(MediaColumn::MEDIA_SIZE, 0)
+    predicates.BeginWrap()
+        ->EqualTo(MediaColumn::MEDIA_SIZE, 0)
         ->Or()
         ->IsNull(MediaColumn::MEDIA_SIZE)
         ->Or()
@@ -263,7 +268,15 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateD
         ->IsNull(MediaColumn::MEDIA_DURATION)
         ->EndWrap()
         ->EndWrap()
-        ->Limit(UPDATE_BATCH_SIZE);
+        ->EndWrap()
+        ->And()
+        ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0)
+        ->And()
+        ->EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE))
+        ->And()
+        ->EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN))
+        ->OrderByAsc(MediaColumn::MEDIA_ID)
+        ->Limit(currentUpdateOffset_, UPDATE_BATCH_SIZE);
 
     return MediaLibraryRdbStore::Query(predicates, columns);
 }
@@ -332,6 +345,18 @@ int32_t BackgroundCloudFileProcessor::AddUpdateDataTask(const UpdateData &update
     return E_OK;
 }
 
+void BackgroundCloudFileProcessor::UpdateCurrentOffset()
+{
+    if (currentRetryCount_ >= MAX_RETRY_COUNT) {
+        currentUpdateOffset_ += 1;
+        currentRetryCount_ = 0;
+    } else {
+        currentRetryCount_ += 1;
+    }
+    MEDIA_INFO_LOG("currentUpdateOffset_ is %{public}d, currentRetryCount_ is %{public}d",
+        currentUpdateOffset_, currentRetryCount_);
+}
+
 void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
 {
     auto *taskData = static_cast<UpdateAbnormalData *>(data);
@@ -352,11 +377,7 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
         metadata->SetFileWidth(abnormalData.width);
         metadata->SetFileSize(abnormalData.size);
         metadata->SetFileMimeType(abnormalData.mimeType);
-        int32_t ret = GetSizeAndMimeType(metadata);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("failed to get size and mimeType! err: %{public}d.", ret);
-            continue;
-        }
+        GetSizeAndMimeType(metadata);
         if (abnormalData.size == 0 || abnormalData.mimeType.empty()) {
             int64_t fileSize = metadata->GetFileSize();
             string mimeType =  metadata->GetFileMimeType();
@@ -365,8 +386,9 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
         }
         if (abnormalData.width == 0 || abnormalData.height == 0
             || (abnormalData.duration == 0 && updateData.mediaType == MEDIA_TYPE_VIDEO)) {
-            ret = GetExtractMetadata(metadata);
-            if (ret != E_OK) {
+            int32_t ret = GetExtractMetadata(metadata);
+            if (ret != E_OK && MediaFileUtils::IsFileExists(abnormalData.path)) {
+                UpdateCurrentOffset();
                 MEDIA_ERR_LOG("failed to get extract metadata! err: %{public}d.", ret);
                 continue;
             }
@@ -378,6 +400,7 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
             metadata->SetFileDuration((duration == 0 && updateData.mediaType == MEDIA_TYPE_VIDEO) ? -1: duration);
         }
         UpdateAbnormaldata(metadata, PhotoColumn::PHOTOS_TABLE);
+        currentRetryCount_ = 0;
     }
 }
 
@@ -416,22 +439,25 @@ void BackgroundCloudFileProcessor::UpdateAbnormaldata(std::unique_ptr<Metadata> 
         MEDIA_ERR_LOG("Update operation failed. Result %{public}d. Updated %{public}d", result, updateCount);
         return ;
     }
+    MEDIA_INFO_LOG("id:%{public}d, duration:%{public}d, height:%{public}d, width:%{public}d, size:%{public}" PRId64,
+        metadata->GetFileId(), metadata->GetFileDuration(), metadata->GetFileHeight(), metadata->GetFileWidth(),
+        metadata->GetFileSize());
 }
 
-int32_t BackgroundCloudFileProcessor::GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata)
+void BackgroundCloudFileProcessor::GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata)
 {
     std::string path = metadata->GetFilePath();
     struct stat statInfo {};
     if (stat(path.c_str(), &statInfo) != 0) {
-        MEDIA_ERR_LOG("stat syscall err");
-        return E_FAIL;
+        MEDIA_ERR_LOG("stat syscall err %{public}d", errno);
+        metadata->SetFileSize(static_cast<int64_t>(0));
+    } else {
+        metadata->SetFileSize(statInfo.st_size);
     }
-    metadata->SetFileSize(statInfo.st_size);
     string extension = ScannerUtils::GetFileExtension(path);
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     metadata->SetFileExtension(extension);
     metadata->SetFileMimeType(mimeType);
-    return E_OK;
 }
 
 int32_t BackgroundCloudFileProcessor::GetExtractMetadata(std::unique_ptr<Metadata> &metadata)
@@ -467,7 +493,7 @@ void BackgroundCloudFileProcessor::StartTimer()
         MEDIA_ERR_LOG("Failed to start background download cloud files timer, err: %{public}d", ret);
     }
     isUpdating_ = true;
-    startTimerId_ = timer_.Register(ProcessCloudData, PROCESS_INTERVAL);
+    startTimerId_ = timer_.Register(ProcessCloudData, processInterval_);
 }
 
 void BackgroundCloudFileProcessor::StopTimer()
@@ -481,7 +507,7 @@ void BackgroundCloudFileProcessor::StopTimer()
     startTimerId_ = 0;
     stopTimerId_ = 0;
     StopUpdateData();
-    StopDownloadFiles(curDownloadPaths_);
+    StopDownloadFiles();
 }
 } // namespace Media
 } // namespace OHOS

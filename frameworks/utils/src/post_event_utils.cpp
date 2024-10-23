@@ -278,12 +278,29 @@ void PostEventUtils::PostMscResultStat(const VariantMap &stat)
     }
 }
 
+void PostEventUtils::PostDatabaseCorruption(const VariantMap &errMap)
+{
+    string date = GetStringValue(KEY_DB_CORRUPT, errMap);
+    MEDIA_ERR_LOG("ReportDatabaseCorruption periodTime:%{public}s", date.c_str());
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "DATABASE_CORRUPTION_ERROR",
+        HiviewDFX::HiSysEvent::EventType::FAULT,
+        "DATE", date);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportDatabaseCorruption error:%{public}d", ret);
+    }
+}
+
 void PostEventUtils::PostErrorProcess(const uint32_t &errType, const VariantMap &error)
 {
     switch (errType) {
         case ErrType::FILE_OPT_ERR:
         case ErrType::DB_OPT_ERR:
         case ErrType::DB_UPGRADE_ERR:
+            break;
+        case ErrType::DB_CORRUPT_ERR:
+            PostDatabaseCorruption(error);
             break;
         default:
             PostFileOptError(error);
@@ -292,6 +309,24 @@ void PostEventUtils::PostErrorProcess(const uint32_t &errType, const VariantMap 
             break;
     }
 }
+
+void PostEventUtils::PostCloudEnhanceStat(const VariantMap &stat)
+{
+    std::string photoId = GetStringValue(KEY_PHOTO_ID, stat);
+    std::string completeType = GetStringValue(KEY_CLOUD_ENHANCEMENT_COMPLETE_TYPE, stat);
+    int64_t totalTimeCost = GetInt64Value(KEY_TOTAL_TIME_COST, stat);
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_CLOUDENHANCEMENT_STAT",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        KEY_PHOTO_ID, photoId,
+        KEY_TOTAL_TIME_COST, totalTimeCost,
+        KEY_CLOUD_ENHANCEMENT_COMPLETE_TYPE, completeType);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("PostCloudEnhanceStat:%{public}d", ret);
+    }
+}
+
 
 void PostEventUtils::PostStatProcess(const uint32_t &statType, const VariantMap &stat)
 {
@@ -315,6 +350,9 @@ void PostEventUtils::PostStatProcess(const uint32_t &statType, const VariantMap 
             break;
         case StatType::MSC_RESULT_STAT:
             PostMscResultStat(stat);
+            break;
+        case StatType::CLOUD_ENHANCEMENT_GET_COUNT_STAT:
+            PostCloudEnhanceStat(stat);
             break;
         default:
             PostThumbnailStat(stat);

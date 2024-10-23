@@ -33,6 +33,7 @@ constexpr int32_t CLOUD_LCD_TIME_OUT = 800;
 constexpr int32_t RDB_TIME_OUT = 100;
 constexpr int32_t TO_MILLION = 1000;
 constexpr int32_t ONE_MINUTE = 60;
+constexpr int32_t ONE_HOUR = 60 * 60;
 constexpr int32_t FIVE_MINUTE = 5 * 60 * 1000;
 constexpr int32_t SIX_HOUR = 6 * 60 * 60;
 constexpr int32_t HALF_DAY = 12 * 60 * 60;
@@ -72,6 +73,7 @@ enum DfxType {
     RDB_UPDATE_BY_CMD,
     RDB_QUERY,
     RDB_EXECUTE_SQL,
+    RDB_BATCHINSERT,
     IMAGE_SOURCE_CREATE = 1200,
     IMAGE_SOURCE_GET_INFO,
     IMAGE_SOURCE_CREATE_PIXELMAP,
@@ -85,7 +87,8 @@ enum DfxType {
     START_DIR_SET_FAIL,
     START_THUMBNAIL_SERVICE_FAIL,
     START_SCANNER_FAIL,
-    CHECK_USER_UNLOCK_FAIL
+    CHECK_USER_UNLOCK_FAIL,
+    ADD_DATA_UNIQUE_INDEX_FAIL
 };
 
 const std::string NULL_STRING = "";
@@ -105,6 +108,9 @@ const std::string MOVING_PHOTO_KEY_UNADAPTED_NUM = "unadapted_app_num";
 const std::string MOVING_PHOTO_KEY_UNADAPTED_PACKAGE = "unadapted_app_package";
 const std::string MOVING_PHOTO_KEY_ADAPTED_NUM = "adapted_app_num";
 const std::string MOVING_PHOTO_KEY_ADAPTED_PACKAGE = "adapted_app_package";
+const std::string CLOUD_SYNC_START_TIME = "cloud_sync_start_time";
+const std::string CLOUDSYNC_STATUS_KEY = "persist.kernel.cloudsync.status";
+const std::string IS_REPORTED = "is_reported";
 
 const std::string CLOUD_PHOTO_PATH = "/storage/cloud/files/Photo/";
 const std::string CLOUD_FILE_PATH = "/storage/cloud/files/";
@@ -133,6 +139,16 @@ struct PhotoInfo {
     std::string data;
     int32_t dirty;
     int32_t cloudVersion;
+};
+
+struct PhotoRecordInfo {
+    int32_t imageCount;
+    int32_t videoCount;
+    int32_t abnormalSizeCount;
+    int32_t abnormalWidthOrHeightCount;
+    int32_t abnormalVideoDurationCount;
+    int32_t toBeUpdatedRecordCount;
+    int64_t dbFileSize;
 };
 
 struct AdaptationToMovingPhotoInfo {

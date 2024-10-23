@@ -12,21 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 #ifndef MEDIALIBRARY_APP_URI_PERMISSION_OPERATIONS
 #define MEDIALIBRARY_APP_URI_PERMISSION_OPERATIONS
-
+ 
 #include <string>
 #include <unordered_map>
 #include "media_app_uri_permission_column.h"
+#include "media_app_uri_sensitive_column.h"
 #include "file_asset.h"
 #include "medialibrary_command.h"
 #include "rdb_predicates.h"
 #include "result_set.h"
 #include "datashare_values_bucket.h"
-
+ 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 
 EXPORT const std::unordered_map<std::string, int> APP_URI_PERMISSION_MEMBER_MAP = {
     {AppUriPermissionColumn::ID, MEMBER_TYPE_INT32},
@@ -35,26 +37,49 @@ EXPORT const std::unordered_map<std::string, int> APP_URI_PERMISSION_MEMBER_MAP 
     {AppUriPermissionColumn::URI_TYPE, MEMBER_TYPE_INT32},
     {AppUriPermissionColumn::PERMISSION_TYPE, MEMBER_TYPE_INT32},
     {AppUriPermissionColumn::DATE_MODIFIED, MEMBER_TYPE_INT64}};
-
+ 
 class MediaLibraryAppUriPermissionOperations {
 public:
-    static const int ERROR;
-    static const int SUCCEED;
-    static const int ALREADY_EXIST;
+    EXPORT static const int ERROR;
+    EXPORT static const int SUCCEED;
+    EXPORT static const int ALREADY_EXIST;
+    EXPORT static const int NO_DATA_EXIST;
 
-    static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
-    static int32_t BatchInsert(MediaLibraryCommand &cmd,
+    EXPORT static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t BatchInsert(MediaLibraryCommand &cmd,
         const std::vector<DataShare::DataShareValuesBucket> &values);
-    static int32_t DeleteOperation(NativeRdb::RdbPredicates &predicates);
-    static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryOperation(
+    EXPORT static int32_t DeleteOperation(NativeRdb::RdbPredicates &predicates);
+    EXPORT static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryOperation(
         DataShare::DataSharePredicates &predicates, std::vector<std::string> &fetchColumns);
 private:
+    /**
+     * query newData before insert, use this method.
+     * @param resultFlag ERROR: query newData error.
+     *                   NO_DATA: newData not exist in database.
+     *                   ALREADY_EXIST: newData already exist in database.
+     */
     static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryNewData(
         OHOS::NativeRdb::ValuesBucket &valueBucket, int &resultFlag);
+    /**
+     * get the value of the int type corresponding to {@code column} from {@code valueBucket}.
+     * @param result target value
+     * @return true: Successfully obtained the value.
+     *         false: failed to get the value.
+     */
     static bool GetIntFromValuesBucket(OHOS::NativeRdb::ValuesBucket &valueBucket,
-        const std::string column, int &result);
+        const std::string &column, int &result);
+    /**
+     * @param resultSetDB must contain id value.
+     * @param valueBucketParam must contain permissionType value.
+     */
+    static int UpdatePermissionType(std::shared_ptr<OHOS::NativeRdb::ResultSet> &resultSetDB,
+        int &permissionTypeParam);
+    static bool IsValidPermissionType(int &permissionType);
+    static bool CanOverride(int &permissionTypeParam, int &permissionTypeDB);
+    static bool IsPhotoExist(int &photoFileId);
+    static bool IsPhotosAllExist(const std::vector<DataShare::DataShareValuesBucket> &values);
 };
 } // namespace Media
 } // namespace OHOS
-
+ 
 #endif // MEDIALIBRARY_APP_URI_PERMISSION_OPERATIONS

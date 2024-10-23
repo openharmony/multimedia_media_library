@@ -26,6 +26,8 @@
 #include "bundle_info.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
+#include "dfx_cloud_manager.h"
+
 #include "want.h"
 #include "post_event_utils.h"
 #ifdef HAS_POWER_MANAGER_PART
@@ -39,6 +41,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
+#include "medialibrary_restore.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
@@ -70,7 +73,10 @@ const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 1;
 // WIFI should be available in this state
 const int32_t WIFI_STATE_CONNECTED = 4;
 
+const int32_t DELAY_TASK_TIME = 30000;
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
+const int32_t MB_SHIFT = 20;
+const int32_t MAX_FILE_SIZE_MB = 200;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
@@ -123,8 +129,13 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
         }
     }
 #endif
-    MEDIA_INFO_LOG("MedialibrarySubscriber current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
+    MEDIA_DEBUG_LOG("MedialibrarySubscriber current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
         isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_, isWifiConn_);
+}
+
+MedialibrarySubscriber::~MedialibrarySubscriber()
+{
+    EndBackgroundOperationThread();
 }
 
 bool MedialibrarySubscriber::Subscribe(void)
@@ -139,10 +150,44 @@ bool MedialibrarySubscriber::Subscribe(void)
     return EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber);
 }
 
+static void UploadDBFile()
+{
+    MEDIA_INFO_LOG("UploadDBFile begin");
+    static const std::string databaseDir = MEDIA_DB_DIR + "/rdb";
+    static const std::vector<std::string> dbFileName = { "/media_library.db",
+                                                         "/media_library.db-shm",
+                                                         "/media_library.db-wal" };
+    static const std::string destPath = "/data/storage/el2/log/logpack";
+    std::uintmax_t totalFileSize = 0;
+    for (auto &filePath : dbFileName) {
+        totalFileSize += std::filesystem::file_size(databaseDir + filePath);
+    }
+    totalFileSize >>= MB_SHIFT; // Convert bytes to MB
+    MEDIA_INFO_LOG("The database file totalFileSize is %{public}jd MB", totalFileSize);
+    if (totalFileSize > MAX_FILE_SIZE_MB) {
+        MEDIA_INFO_LOG("DB file over 200MB are not uploaded, totalFileSize is %{public}jd MB", totalFileSize);
+        return ;
+    }
+    if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateDirectory(destPath)) {
+        MEDIA_ERR_LOG("Create dir failed, dir=%{private}s", destPath.c_str());
+        return ;
+    }
+    for (auto &filePath : dbFileName) {
+        CHECK_AND_RETURN_LOG(!MediaFileUtils::CopyFileUtil(databaseDir + filePath, destPath + filePath),
+            "Failed to copy DB file to logpack");
+    }
+    MEDIA_INFO_LOG("UploadDBFile end");
+}
+
 void MedialibrarySubscriber::CheckHalfDayMissions()
 {
     if (isScreenOff_ && isCharging_) {
+        UploadDBFile();
         DfxManager::GetInstance()->HandleHalfDayMissions();
+        MediaLibraryRestore::GetInstance().DoRdbHAModeSwitch();
+    }
+    if (!isScreenOff_ || !isCharging_) {
+        MediaLibraryRestore::GetInstance().InterruptRdbHAModeSwitch();
     }
 }
 
@@ -159,8 +204,10 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
 
     currentStatus_ = newStatus;
     ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(newStatus);
+    EndBackgroundOperationThread();
     if (currentStatus_) {
-        DoBackgroundOperation();
+        isTaskWaiting_ = true;
+        backgroundOperationThread_ = std::thread([this] { this->DoBackgroundOperation(); });
     } else {
         StopBackgroundOperation();
     }
@@ -176,6 +223,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             break;
         case StatusEventType::SCREEN_ON:
             isScreenOff_ = false;
+            CheckHalfDayMissions();
             break;
         case StatusEventType::CHARGING:
             isCharging_ = true;
@@ -183,6 +231,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             break;
         case StatusEventType::DISCHARGING:
             isCharging_ = false;
+            CheckHalfDayMissions();
             break;
         case StatusEventType::BATTERY_CHANGED:
             isPowerSufficient_ = want.GetIntParam(COMMON_EVENT_KEY_BATTERY_CAPACITY,
@@ -205,7 +254,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
 {
     const AAFwk::Want &want = eventData.GetWant();
     std::string action = want.GetAction();
-    MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
+    MEDIA_DEBUG_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
         isWifiConn_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
         UpdateBackgroundTimer();
@@ -285,7 +334,7 @@ void MedialibrarySubscriber::DoThumbnailOperation()
         MEDIA_ERR_LOG("GenerateThumbnailBackground faild");
     }
 
-    result = dataManager->UpgradeThumbnailBackground();
+    result = dataManager->UpgradeThumbnailBackground(isWifiConn_);
     if (result != E_OK) {
         MEDIA_ERR_LOG("UpgradeThumbnailBackground faild");
     }
@@ -338,7 +387,7 @@ static int32_t DoUpdateBurstFromGallery()
 
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
-    if (!currentStatus_) {
+    if (!IsDelayTaskTimeOut() || !currentStatus_) {
         MEDIA_INFO_LOG("The conditions for DoBackgroundOperation are not met, will return.");
         return;
     }
@@ -361,14 +410,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (watch != nullptr) {
         watch->DoAging();
     }
-    auto scannerManager = MediaScannerManager::GetInstance();
-    if (scannerManager == nullptr) {
-        return;
-    }
-    scannerManager->ScanError();
-
-    MEDIA_INFO_LOG("Do success, current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
-        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 }
 
 void MedialibrarySubscriber::StopBackgroundOperation()
@@ -395,6 +436,10 @@ void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleNam
 
 void MedialibrarySubscriber::UpdateBackgroundTimer()
 {
+    if (isCharging_ && isScreenOff_) {
+        CloudSyncDfxManager::GetInstance().RunDfx();
+    }
+
     ThumbnailGenerateWorkerManager::GetInstance().TryCloseThumbnailWorkerTimer();
 
     std::lock_guard<std::mutex> lock(mutex_);
@@ -414,6 +459,27 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
     } else {
         BackgroundCloudFileProcessor::StopTimer();
     }
+}
+
+bool MedialibrarySubscriber::IsDelayTaskTimeOut()
+{
+    std::unique_lock<std::mutex> lock(delayTaskLock_);
+    return !delayTaskCv_.wait_for(lock, std::chrono::milliseconds(DELAY_TASK_TIME), [this]() {
+        return !isTaskWaiting_;
+    });
+}
+
+void MedialibrarySubscriber::EndBackgroundOperationThread()
+{
+    {
+        std::unique_lock<std::mutex> lock(delayTaskLock_);
+        isTaskWaiting_ = false;
+    }
+    delayTaskCv_.notify_all();
+    if (!backgroundOperationThread_.joinable()) {
+        return;
+    }
+    backgroundOperationThread_.join();
 }
 }  // namespace Media
 }  // namespace OHOS

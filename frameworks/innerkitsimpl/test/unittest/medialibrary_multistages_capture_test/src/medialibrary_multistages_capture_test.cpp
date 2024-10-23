@@ -37,6 +37,7 @@
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #include "values_bucket.h"
+
 #define private public
 #define protected public
 #include "exif_utils.h"
@@ -602,7 +603,6 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, exif_utils_location_value_to_string
     MEDIA_INFO_LOG("exif_utils_location_value_to_string_001 Start");
     double latitude = 31.2592678069444;
     EXPECT_EQ(ExifUtils::LocationValueToString(latitude), "31, 15, 33.364105");
-
     double longitude = 121.617393493611;
     EXPECT_EQ(ExifUtils::LocationValueToString(longitude), "121, 37, 2.616577");
     MEDIA_INFO_LOG("exif_utils_location_value_to_string_001 End");
@@ -613,7 +613,6 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, exif_utils_location_value_to_string
     MEDIA_INFO_LOG("exif_utils_location_value_to_string_002 Start");
     double latitude = -31.2592678069444;
     EXPECT_EQ(ExifUtils::LocationValueToString(latitude), "31, 15, 33.364105");
-
     double longitude = -121.617393493611;
     EXPECT_EQ(ExifUtils::LocationValueToString(longitude), "121, 37, 2.616577");
     MEDIA_INFO_LOG("exif_utils_location_value_to_string_002 End");
@@ -713,10 +712,10 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdatePhotoQuality_001, TestSize.Le
     MEDIA_INFO_LOG("UpdatePhotoQuality_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_normal_001, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_normal_001, TestSize.Level1)
 {
     // test 1 PhotoColumn::PHOTO_SUBTYPE + PhotoSubType::MOVING_PHOTO
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_normal_001 Start");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_normal_001 Start");
     auto fileId = PrepareForFirstVisit();
     EXPECT_GT(fileId, 0);
 
@@ -726,14 +725,14 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_normal_0
     bucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     cmd.SetValueBucket(bucket);
 
-    auto ret = instance.UpdateLowQualityDbInfo(cmd);
+    auto ret = instance.UpdateDbInfo(cmd);
     EXPECT_EQ(ret, 0);
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_normal_001 End");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_normal_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_normal_002, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_normal_002, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_normal_002 Start");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_normal_002 Start");
     // test 2 PhotoColumn::PHOTO_SUBTYPE + !PhotoSubType::MOVING_PHOTO
     auto fileId = PrepareForFirstVisit();
     EXPECT_GT(fileId, 0);
@@ -744,14 +743,14 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_normal_0
     bucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::CAMERA));
     cmd.SetValueBucket(bucket);
 
-    auto ret = instance.UpdateLowQualityDbInfo(cmd);
+    auto ret = instance.UpdateDbInfo(cmd);
     EXPECT_EQ(ret, 0);
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_normal_002 End");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_normal_002 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_empty_bucket_003, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_empty_bucket_003, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_empty_bucket_003 Start");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_empty_bucket_003 Start");
     // test3 empty bucket
     auto fileId = PrepareForFirstVisit();
     EXPECT_GT(fileId, 0);
@@ -761,14 +760,14 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_empty_bu
     MediaLibraryCommand cmd (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     cmd.SetValueBucket(bucket);
 
-    auto ret = instance.UpdateLowQualityDbInfo(cmd);
+    auto ret = instance.UpdateDbInfo(cmd);
     EXPECT_EQ(ret, 0);
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_empty_bucket_003 End");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_empty_bucket_003 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_nodata_004, TestSize.Level1)
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateDbInfoTest_nodata_004, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_nodata_004 Start");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_nodata_004 Start");
     // no data
     ValuesBucket bucket;
     MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
@@ -776,9 +775,9 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_nodata_0
     bucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     cmd.SetValueBucket(bucket);
 
-    auto ret = instance.UpdateLowQualityDbInfo(cmd);
+    auto ret = instance.UpdateDbInfo(cmd);
     EXPECT_NE(ret, 0);
-    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_nodata_004 End");
+    MEDIA_INFO_LOG("UpdateDbInfoTest_nodata_004 End");
 }
 
 HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_001, TestSize.Level1)
@@ -815,14 +814,14 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_002, TestSize
     auto refErr = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF, refStr);
     EXPECT_EQ(err, 0);
     EXPECT_EQ(refErr, 0);
-    EXPECT_NE(propertyStr, "");
+    EXPECT_EQ(propertyStr, "12, 20, 4.038");
     EXPECT_EQ(refStr, "E");
 
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE, propertyStr);
     refErr = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF, refStr);
     EXPECT_EQ(err, 0);
     EXPECT_EQ(refErr, 0);
-    EXPECT_NE(propertyStr, "");
+    EXPECT_EQ(propertyStr, "35, 40, 4.037");
     EXPECT_EQ(refStr, "N");
 
     MEDIA_INFO_LOG("WriteGpsExifInfo_test_002 end");
@@ -849,14 +848,14 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_003, TestSize
     auto refErr = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF, refStr);
     EXPECT_EQ(err, 0);
     EXPECT_EQ(refErr, 0);
-    EXPECT_NE(propertyStr, "");
+    EXPECT_EQ(propertyStr, "120, 20, 4.038");
     EXPECT_EQ(refStr, "W");
 
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE, propertyStr);
     refErr = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF, refStr);
     EXPECT_EQ(err, 0);
     EXPECT_EQ(refErr, 0);
-    EXPECT_NE(propertyStr, "");
+    EXPECT_EQ(propertyStr, "33, 40, 4.037");
     EXPECT_EQ(refStr, "S");
 
     MEDIA_INFO_LOG("WriteGpsExifInfo_test_003 end");

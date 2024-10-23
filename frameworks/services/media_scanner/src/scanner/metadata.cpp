@@ -54,8 +54,8 @@ Metadata::Metadata()
     albumName_(FILE_ALBUM_NAME_DEFAULT),
     recyclePath_(FILE_RECYCLE_PATH_DEFAULT),
     timePending_(FILE_TIME_PENDING_DEFAULT),
-    frontcamera_(FILE_FRONT_CAMERA_DEFAULT),
-    isTemp_(FILE_IS_TEMP_DEFAULT)
+    isTemp_(FILE_IS_TEMP_DEFAULT),
+    frontcamera_(FILE_FRONT_CAMERA_DEFAULT)
 {
     Init();
 }
@@ -96,11 +96,15 @@ void Metadata::Init()
     memberFuncMap_[PhotoColumn::MEDIA_OWNER_PACKAGE] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetOwnerPackage);
     memberFuncMap_[PhotoColumn::PHOTO_SUBTYPE] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetPhotoSubType);
+    memberFuncMap_[PhotoColumn::MOVING_PHOTO_EFFECT_MODE] = make_pair(ResultSetDataType::TYPE_INT32,
+        &Metadata::SetMovingPhotoEffectMode);
     memberFuncMap_[PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE] = make_pair(ResultSetDataType::TYPE_INT32,
         &Metadata::SetDynamicRangeType);
+    memberFuncMap_[PhotoColumn::PHOTO_IS_TEMP] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetIsTemp);
     memberFuncMap_[PhotoColumn::PHOTO_FRONT_CAMERA] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetFrontCamera);
-    memberFuncMap_[PhotoColumn::PHOTO_IS_TEMP] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetIsTemp);
+    memberFuncMap_[PhotoColumn::MEDIA_FILE_PATH] = make_pair(ResultSetDataType::TYPE_STRING,
+        &Metadata::SetMovingPhotoImagePath);
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -443,6 +447,16 @@ int32_t Metadata::GetPhotoSubType() const
     return photoSubType_;
 }
 
+void Metadata::SetMovingPhotoEffectMode(const VariantData &movingPhotoEffectMode)
+{
+    movingPhotoEffectMode_ = std::get<int32_t>(movingPhotoEffectMode);
+}
+
+int32_t Metadata::GetMovingPhotoEffectMode() const
+{
+    return movingPhotoEffectMode_;
+}
+
 void Metadata::SetTableName(const string &tableName)
 {
     tableName_ = tableName;
@@ -493,14 +507,14 @@ int32_t Metadata::GetDynamicRangeType() const
     return dynamicRangeType_;
 }
 
-void Metadata::SetFrontCamera(const VariantData &frontcamera)
+void Metadata::SetMovingPhotoImagePath(const VariantData &imagePath)
 {
-    frontcamera_ = std::get<string>(frontcamera);
+    movingPhotoImagePath_ = std::get<string>(imagePath);
 }
 
-std::string Metadata::GetFrontCamera() const
+std::string Metadata::GetMovingPhotoImagePath() const
 {
-    return frontcamera_;
+    return movingPhotoImagePath_;
 }
 
 void Metadata::SetCoverPosition(const VariantData &coverPosition)
@@ -513,6 +527,16 @@ int64_t Metadata::GetCoverPosition() const
     return coverPosition_;
 }
 
+void Metadata::SetFrameIndex(const VariantData &frameIndex)
+{
+    frameIndex_ = std::get<int32_t>(frameIndex);
+}
+
+int32_t Metadata::GetFrameIndex() const
+{
+    return frameIndex_;
+}
+
 void Metadata::SetIsTemp(const VariantData &isTemp)
 {
     isTemp_ = std::get<int32_t>(isTemp);
@@ -521,6 +545,16 @@ void Metadata::SetIsTemp(const VariantData &isTemp)
 int32_t Metadata::GetIsTemp()
 {
     return isTemp_;
+}
+
+void Metadata::SetFrontCamera(const VariantData &frontcamera)
+{
+    frontcamera_ = std::get<string>(frontcamera);
+}
+
+std::string Metadata::GetFrontCamera() const
+{
+    return frontcamera_;
 }
 } // namespace Media
 } // namespace OHOS

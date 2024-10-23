@@ -33,6 +33,7 @@
 #include "photo_map_column.h"
 #include "photo_album_column.h"
 #include "vision_column.h"
+#include "moving_photo_file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -67,11 +68,6 @@ void MediaScannerObj::SetErrorPath(const std::string &path)
     errorPath_ = path;
 }
 
-void MediaScannerObj::SetIsSkipAlbumUpdate(bool isSkipAlbumUpdate)
-{
-    isSkipAlbumUpdate_ = isSkipAlbumUpdate;
-}
-
 void MediaScannerObj::SetForceScan(bool isForceScan)
 {
     isForceScan_ = isForceScan;
@@ -80,6 +76,11 @@ void MediaScannerObj::SetForceScan(bool isForceScan)
 void MediaScannerObj::SetFileId(int32_t fileId)
 {
     fileId_ = fileId;
+}
+
+void MediaScannerObj::SetIsSkipAlbumUpdate(bool isSkipAlbumUpdate)
+{
+    isSkipAlbumUpdate_ = isSkipAlbumUpdate;
 }
 
 int32_t MediaScannerObj::ScanFile()
@@ -403,6 +404,35 @@ int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId
     return E_OK;
 }
 
+void ParseLivePhoto(const std::string& path, const std::unique_ptr<Metadata>& data)
+{
+    if (data->GetFileMimeType() != "image/jpeg") {
+        return;
+    }
+    if (!MovingPhotoFileUtils::IsLivePhoto(path)) {
+        return;
+    }
+
+    string extraDataDir = MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(path);
+    if (extraDataDir.empty()) {
+        MEDIA_ERR_LOG("failed to get local extra data dir");
+        return;
+    }
+    if (!MediaFileUtils::IsFileExists(extraDataDir) && !MediaFileUtils::CreateDirectory(extraDataDir)) {
+        MEDIA_ERR_LOG("Failed to create file, path:%{private}s", extraDataDir.c_str());
+        return;
+    }
+    if (MovingPhotoFileUtils::ConvertToMovingPhoto(path, path,
+            MovingPhotoFileUtils::GetMovingPhotoVideoPath(path),
+            MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(path)) == E_OK) {
+        size_t imageSize;
+        if (MediaFileUtils::GetFileSize(path, imageSize)) {
+            data->SetFileSize(static_cast<int64_t>(imageSize));
+        }
+        data->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    }
+}
+
 int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
 {
     data_ = make_unique<Metadata>();
@@ -462,7 +492,7 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
     data_->SetFileExtension(extension);
     data_->SetFileMimeType(mimeType);
     data_->SetFileMediaType(MimeTypeUtils::GetMediaTypeFromMimeType(mimeType));
-
+    ParseLivePhoto(path_, data_);
     return E_OK;
 }
 
@@ -723,6 +753,15 @@ int32_t MediaScannerObj::CleanupDirectory()
     return E_OK;
 }
 
+static int32_t OpenFailedOperation(const string &path)
+{
+    MEDIA_ERR_LOG("Failed to opendir %{private}s, errno %{private}d", path.c_str(), errno);
+    VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
+        {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::SCAN}};
+    PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+    return ERR_NOT_ACCESSIBLE;
+}
+
 int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
 {
     int err = E_OK;
@@ -730,28 +769,24 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
     struct dirent *ent = nullptr;
     size_t len = path.length();
     struct stat statInfo;
-
+ 
     if (len >= FILENAME_MAX - 1) {
         return ERR_INCORRECT_PATH;
     }
-
+ 
     auto fName = (char *)calloc(FILENAME_MAX, sizeof(char));
     if (fName == nullptr) {
         return ERR_MEM_ALLOC_FAIL;
     }
-
+ 
     if (strcpy_s(fName, FILENAME_MAX, path.c_str()) != ERR_SUCCESS) {
         FREE_MEMORY_AND_SET_NULL(fName);
         return ERR_MEM_ALLOC_FAIL;
     }
     fName[len++] = '/';
     if ((dirPath = opendir(path.c_str())) == nullptr) {
-        MEDIA_ERR_LOG("Failed to opendir %{private}s, errno %{private}d", path.c_str(), errno);
         FREE_MEMORY_AND_SET_NULL(fName);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::SCAN}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return ERR_NOT_ACCESSIBLE;
+        return OpenFailedOperation(path);
     }
 
     while ((ent = readdir(dirPath)) != nullptr) {
@@ -759,11 +794,11 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
             err = E_STOP;
             break;
         }
-
+ 
         if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {
             continue;
         }
-
+ 
         if (strncpy_s(fName + len, FILENAME_MAX - len, ent->d_name, FILENAME_MAX - len)) {
             continue;
         }
@@ -784,16 +819,16 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
                 // might break in later pr for a rescan
                 continue;
             }
-
+ 
             (void)WalkFileTree(currentPath, albumId);
         } else {
             (void)ScanFileInTraversal(currentPath, path, parentId);
         }
     }
-
+ 
     closedir(dirPath);
     FREE_MEMORY_AND_SET_NULL(fName);
-
+ 
     return err;
 }
 

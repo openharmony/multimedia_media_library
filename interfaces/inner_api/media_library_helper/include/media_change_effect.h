@@ -17,6 +17,7 @@
 #define MEDIA_LIBRARY_MEDIA_CHANGE_EFFECT_H
  
 #include <string>
+#include "picture.h"
  
 using std::string;
  
@@ -26,6 +27,7 @@ namespace Media {
 class MediaChangeEffect {
 public:
     static int32_t TakeEffect(const string &inputPath, const string &outputPath, string &editdata);
+    static int32_t TakeEffectForPicture(std::shared_ptr<Media::Picture> &inPicture, string &editdata);
 };
  
 } // end of namespace

@@ -242,10 +242,10 @@ public:
      * be found in the current environment.
      */
     EXPORT Uri DenormalizeUri(const Uri &uri) override;
+    EXPORT void InitPermissionHandler();
 private:
     Runtime& runtime_;
     std::shared_ptr<Media::AbsPermissionHandler> permissionHandler_ = nullptr;
-    void InitPermissionHandler();
     int CheckPermissionForOpenFile(const Uri &uri, Media::MediaLibraryCommand &command, std::string &unifyMode);
 };
 } // namespace AbilityRuntime

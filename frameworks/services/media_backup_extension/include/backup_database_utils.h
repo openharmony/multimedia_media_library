@@ -82,6 +82,8 @@ public:
     static bool IsValInBound(float val, float minVal, float maxVal);
     static void UpdateGroupTag(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::unordered_map<std::string, std::string> &groupTagMap);
+    static void UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        const std::vector<FileInfo> &fileInfos);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);

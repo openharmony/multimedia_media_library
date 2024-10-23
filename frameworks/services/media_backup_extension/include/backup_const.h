@@ -40,12 +40,15 @@ constexpr int32_t DEFAULT_RESTORE_ID = -1;
 constexpr int32_t RETRY_TIME = 5;
 constexpr int32_t SLEEP_INTERVAL = 1;
 constexpr int32_t GARBAGE_PHOTO_SIZE = 2048;
+constexpr int32_t LIVE_PHOTO_TYPE = 50;
 constexpr size_t GARBLE_UNIT = 2;
+constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
 const std::string RESTORE_AUDIO_LOCAL_DIR = "/storage/media/local/files/Audio";
+const std::string RESTORE_MUSIC_LOCAL_DIR = "/storage/media/local/files/Docs/Music/";
 const std::string UPGRADE_FILE_DIR = "/storage/media/local/files/data";
 const std::string GARBLE_DUAL_FRAME_CLONE_DIR = "/storage/media/local/files/data/storage/emulated";
 const std::string GARBLE = "***";
@@ -77,6 +80,7 @@ const std::string GALLERY_MEDIA_BUCKET_ID = "relative_bucket_id";
 const std::string GALLERY_MEDIA_SOURCE_PATH = "sourcePath";
 const std::string GALLERY_RECYCLE_FLAG = "recycleFlag";
 const std::string GALLERY_HASH = "hash";
+const std::string GALLERY_SPECIAL_FILE_TYPE = "special_file_type";
 
 // external column
 const std::string EXTERNAL_IS_FAVORITE = "is_favorite";
@@ -224,6 +228,8 @@ struct FileInfo {
     std::string packageName;
     std::string bundleName;
     std::string oldPath;
+    std::string movingPhotoVideoPath;
+    std::string extraDataPath;
     int32_t fileIdOld {-1};
     int32_t fileIdNew {-1};
     int64_t fileSize {0};
@@ -232,6 +238,8 @@ struct FileInfo {
     int32_t hidden {0};
     int32_t isFavorite {0};
     int32_t fileType {0};
+    int32_t specialFileType {0};
+    int32_t subtype {0};
     int64_t showDateToken {0};
     int32_t height {0};
     int32_t width {0};
@@ -263,6 +271,12 @@ struct FileInfo {
      * @brief the field data for media_library.db # Photos # burst_key. 36 length of uuid.
      */
     std::string burstKey;
+    /**
+     *  @brief the associate file id, used for cloud enhancement pair relationship
+     */
+    int32_t associateFileId;
+
+    bool needMove {true};
 };
 
 struct AlbumInfo {
@@ -337,7 +351,8 @@ using NeedQueryMap = std::unordered_map<PhotoRelatedType, std::unordered_set<std
 const std::string QUERY_FILE_COLUMN = "SELECT _id, " + GALLERY_FILE_DATA + ", " + GALLERY_DISPLAY_NAME + ", " +
     EXTERNAL_IS_FAVORITE + ", " + GALLERY_FILE_SIZE + ", " + GALLERY_DURATION + ", " + GALLERY_MEDIA_TYPE + ", " +
     EXTERNAL_DATE_MODIFIED + ", " + GALLERY_HEIGHT + ", " + GALLERY_WIDTH + ", " + GALLERY_TITLE + ", " +
-    GALLERY_ORIENTATION + ", " + EXTERNAL_DATE_ADDED + ", " + EXTERNAL_DATE_TAKEN + " FROM files WHERE ";
+    GALLERY_ORIENTATION + ", " + EXTERNAL_DATE_ADDED + ", " + EXTERNAL_DATE_TAKEN + ", " +
+    GALLERY_SPECIAL_FILE_TYPE + " FROM files WHERE ";
 
 const std::string IN_CAMERA = " bucket_id IN (-1739773001, 0, 1028075469, 0) AND (is_pending = 0)";
 
@@ -377,7 +392,8 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
     "," + GALLERY_FILE_SIZE + "," + GALLERY_DURATION + "," + GALLERY_MEDIA_TYPE + "," + GALLERY_SHOW_DATE_TOKEN + "," +
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + ", " +
     EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID + "," + GALLERY_MEDIA_SOURCE_PATH + "," +
-    GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH + ", " + GALLERY_ID + " FROM gallery_media ";
+    GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH + ", " + GALLERY_ID + "," +
+    GALLERY_SPECIAL_FILE_TYPE + " FROM gallery_media ";
 
 const std::string QUERY_MAX_ID = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
@@ -390,14 +406,6 @@ const std::string QUERY_GALLERY_ALBUM_INFO = "SELECT " + GALLERY_ALBUM +
                                      ".lPath != '" + GALLERT_IMPORT + "'" + " AND " + GALLERY_ALBUM +
                                      ".lPath != '" + GALLERT_HIDDEN_ALBUM + "'";
 
-const std::string QUERY_AUDIO_COUNT = "SELECT count(1) as count FROM files WHERE media_type = 2 AND _size > 0 \
-    AND _data LIKE '/storage/emulated/0/Music%'";
-
-const std::string QUERY_ALL_AUDIOS_FROM_EXTERNAL = "SELECT " + EXTERNAL_IS_FAVORITE + "," + EXTERNAL_DATE_MODIFIED +
-    "," + EXTERNAL_DATE_ADDED + "," + EXTERNAL_FILE_DATA + "," + EXTERNAL_TITLE + "," + EXTERNAL_DISPLAY_NAME + "," +
-    EXTERNAL_FILE_SIZE + "," + EXTERNAL_DURATION + "," + EXTERNAL_MEDIA_TYPE + " FROM files WHERE media_type = 2 AND \
-    _size > 0 AND _data LIKE '/storage/emulated/0/Music%'";
-
 const std::string DUAL_CLONE_AUDIO_FULL_TABLE = "mediainfo INNER JOIN mediafile ON mediainfo." + AUDIO_DATA +
     " = '/storage/emulated/0'||mediafile.filepath";
 
@@ -405,6 +413,11 @@ const std::string QUERY_ALL_AUDIOS_FROM_AUDIODB = "SELECT " + AUDIO_DATA + "," +
     AUDIO_DATE_TAKEN + " FROM " + DUAL_CLONE_AUDIO_FULL_TABLE;
 
 const std::string QUERY_DUAL_CLONE_AUDIO_COUNT = "SELECT count(1) as count FROM " + DUAL_CLONE_AUDIO_FULL_TABLE;
+
+const std::string ALL_PHOTOS_WHERE_CLAUSE_WITH_LOW_QUALITY = " (local_media_id != -1) AND (relative_bucket_id \
+    IS NULL OR relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) \
+    AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
+    (_size > 0 OR (_size = 0 AND photo_quality = 0)) ";
 } // namespace Media
 } // namespace OHOS
 

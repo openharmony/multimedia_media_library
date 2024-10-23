@@ -20,6 +20,7 @@
 
 #include "dfx_const.h"
 #include "dfx_utils.h"
+#include "dfx_database_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "hisysevent.h"
@@ -189,6 +190,7 @@ void DfxReporter::ReportDeleteBehavior(string bundleName, int32_t type, std::str
     if (bundleName == "" || path == "") {
         return;
     }
+    MEDIA_WARN_LOG("%{public}s do %{public}d on %{public}s", bundleName.c_str(), type, path.c_str());
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
         "MEDIALIB_DELETE_BEHAVIOR",
@@ -340,6 +342,82 @@ void DfxReporter::ReportStartResult(int32_t scene, int32_t error, int32_t start)
         "TIME", cost);
     if (ret != 0) {
         MEDIA_ERR_LOG("Report startResult error:%{public}d", ret);
+    }
+}
+
+std::string SecondsToTime(const int64_t& seconds)
+{
+    int32_t remain_seconds = seconds;
+    int32_t hour = seconds / ONE_HOUR;
+    remain_seconds = seconds - ONE_HOUR * hour;
+    int32_t minute = remain_seconds / ONE_MINUTE;
+    remain_seconds = remain_seconds - minute * ONE_MINUTE;
+    return std::to_string(hour) + "_h_" + std::to_string(minute) + "_m_" + std::to_string(remain_seconds) + "_s";
+}
+
+int32_t DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb,
+    const int32_t& generatedThumb, const int32_t& totalDownload)
+{
+    if (totalDownload == 0) {
+        return 0;
+    }
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get dfx common preferences error: %{public}d", errCode);
+        return 0;
+    }
+    int64_t start = prefs->GetLong(CLOUD_SYNC_START_TIME, 0);
+    int64_t now = MediaFileUtils::UTCTimeSeconds();
+    int64_t cost = now - start;
+    time_t startTime = start + ONE_HOUR * 8;
+    std::string astcStartTime = asctime(gmtime(&startTime));
+    float total = static_cast<float>(totalDownload);
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "CLOUD_THUMB_GENERATE_STATISTIC",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "CLOUD_DOWN_START", astcStartTime,
+        "DOWNLOADED_THUMB_NUM", downloadedThumb,
+        "DOWNLOADED_THUMB_RATIO", downloadedThumb / total,
+        "GENERATED_THUMB_NUM", generatedThumb,
+        "GENERATED_THUMB_RATIO", generatedThumb / total,
+        "CLOUD_DOWN_TOTAL_DURATION", SecondsToTime(cost));
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Report CloudSyncThumbGenerationStatus error:%{public}d", ret);
+    }
+    return ret;
+}
+
+void DfxReporter::ReportPhotoRecordInfo()
+{
+    PhotoRecordInfo photoRecordInfo;
+    int32_t result = DfxDatabaseUtils::QueryPhotoRecordInfo(photoRecordInfo);
+    if (result != 0) {
+        MEDIA_ERR_LOG("QueryPhotoRecordInfo error:%{public}d", result);
+        return;
+    }
+    int32_t imageCount = photoRecordInfo.imageCount;
+    int32_t videoCount = photoRecordInfo.videoCount;
+    int32_t abnormalSizeCount = photoRecordInfo.abnormalSizeCount;
+    int32_t abnormalWidthOrHeightCount = photoRecordInfo.abnormalWidthOrHeightCount;
+    int32_t abnormalVideoDurationCount = photoRecordInfo.abnormalVideoDurationCount;
+    int32_t toBeUpdatedRecordCount = photoRecordInfo.toBeUpdatedRecordCount;
+    int64_t dbFileSize = photoRecordInfo.dbFileSize;
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_DATABASE_INFO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "DB_FILE_SIZE", dbFileSize,
+        "IMAGE_COUNT", imageCount,
+        "VIDEO_COUNT", videoCount,
+        "ABNORMAL_SIZE_COUNT", abnormalSizeCount,
+        "ABNORMAL_WIDTH_OR_HEIGHT_COUNT", abnormalWidthOrHeightCount,
+        "ABNORMAL_VIDEO_DURATION_COUNT", abnormalVideoDurationCount,
+        "ABNORMAL_COUNT_TO_UPDATE", toBeUpdatedRecordCount);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportPhotoRecordInfo error:%{public}d", ret);
     }
 }
 } // namespace Media

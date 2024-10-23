@@ -28,6 +28,7 @@
 #include "rdb_predicates.h"
 #include "rdb_result_set_bridge.h"
 #include "vision_column.h"
+#include "medialibrary_async_worker.h"
 
 namespace OHOS {
 namespace Media {
@@ -43,7 +44,7 @@ struct MergeAlbumInfo {
     int rank;
     int renameOperation;
     std::string albumName;
-    int isCoverSatisfied;
+    uint8_t isCoverSatisfied;
     std::string tagId;
 };
 class MediaLibraryAlbumOperations {

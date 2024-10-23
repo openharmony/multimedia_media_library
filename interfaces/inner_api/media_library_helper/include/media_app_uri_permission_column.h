@@ -12,13 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_APP_URI_PERMISSION_H_
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_APP_URI_PERMISSION_H_
-
+ 
 #include <string>
 #include <set>
-
+ 
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
@@ -31,37 +31,39 @@ public:
     static const std::string URI_TYPE EXPORT;
     static const std::string PERMISSION_TYPE EXPORT;
     static const std::string DATE_MODIFIED EXPORT;
-
+ 
     // uriTypes
     static const int URI_PHOTO EXPORT;
     static const int URI_AUDIO EXPORT;
     static const std::set<int> URI_TYPES_ALL EXPORT;
-
+ 
     // permissionTypes
     static const int PERMISSION_TEMPORARY_READ EXPORT;
     static const int PERMISSION_PERSIST_READ EXPORT;
-    static const int PERMISSION_TEMPORARY_WHRITE EXPORT;
-    static const int PERMISSION_PERSIST_WHRITE EXPORT;
+    static const int PERMISSION_TEMPORARY_WRITE EXPORT;
+    static const int PERMISSION_TEMPORARY_READ_WRITE EXPORT;
     static const int PERMISSION_PERSIST_READ_WRITE EXPORT;
     static const std::set<int> PERMISSION_TYPES_ALL EXPORT;
     static const std::set<int> PERMISSION_TYPES_PICKER EXPORT;
+    static const std::set<int> PERMISSION_TYPES_TEMPORARY EXPORT;
+    static const std::set<int> PERMISSION_TYPES_PERSIST EXPORT;
 
     // index
     static const std::string URI_URITYPE_APPID_INDEX EXPORT;
-
+ 
     // table name
     static const std::string APP_URI_PERMISSION_TABLE EXPORT;
-
+ 
     // default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
 
-    // create table sql
+    // create sql
     static const std::string CREATE_APP_URI_PERMISSION_TABLE EXPORT;
     static const std::string CREATE_URI_URITYPE_APPID_INDEX EXPORT;
-
+ 
     // all columns
     static const std::set<std::string> ALL_COLUMNS EXPORT;
 };
-
+ 
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_APP_URI_PERMISSION_H_

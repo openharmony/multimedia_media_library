@@ -17,7 +17,6 @@
 #define OHOS_MEDIALIBRARY_ERRNO_H
 
 #include <errno.h>
-#include <stdint.h>
 
 namespace OHOS {
 namespace Media {
@@ -74,6 +73,7 @@ constexpr int32_t E_IS_IN_COMMIT =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 3
 constexpr int32_t E_IS_IN_REVERT =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 31);
 constexpr int32_t E_GET_PRAMS_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 32);
 constexpr int32_t E_INVALID_MOVING_PHOTO =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 33);
+constexpr int32_t E_INVALID_LIVE_PHOTO =    MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 34);
 constexpr int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1799);
 
 // medialibary directory and file type control { 2000, 2099 }

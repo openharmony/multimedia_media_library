@@ -21,9 +21,15 @@ ohos_fuzztest("MediaLibraryUtilFuzzTest") {
   include_dirs = [
     "./include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/dfx",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
   ]
 
-  sources = [ "src/medialibrary_util_fuzzer.cpp" ]
+  sources = [
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
+    "src/medialibrary_util_fuzzer.cpp",
+  ]
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
@@ -31,9 +37,12 @@ ohos_fuzztest("MediaLibraryUtilFuzzTest") {
   ]
 
   external_deps = [
+    "ability_base:configuration",
     "ability_base:want",
     "ability_base:zuri",
+    "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
+    "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
     "ability_runtime:app_manager",
     "ability_runtime:dataobs_manager",
@@ -41,8 +50,6 @@ ohos_fuzztest("MediaLibraryUtilFuzzTest") {
     "ability_runtime:runtime",
     "ability_runtime:uri_permission_mgr",
     "access_token:libaccesstoken_sdk",
-    "access_token:libprivacy_sdk",
-    "access_token:libtokenid_sdk",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
@@ -59,6 +66,7 @@ ohos_fuzztest("MediaLibraryUtilFuzzTest") {
     "image_framework:image_native",
     "init:libbegetutil",
     "ipc:ipc_core",
+    "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "player_framework:media_client",

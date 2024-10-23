@@ -35,11 +35,13 @@ public:
 };
 
 using MediaLibraryExecute = void (*)(AsyncTaskData *data);
+enum TaskType {REFRESH_ALBUM, BUTT};
 
 class MediaLibraryAsyncTask {
 public:
-    MediaLibraryAsyncTask(MediaLibraryExecute executor, AsyncTaskData *data) : executor_(executor), data_(data) {}
-    MediaLibraryAsyncTask() : MediaLibraryAsyncTask(nullptr, nullptr) {}
+    MediaLibraryAsyncTask(MediaLibraryExecute executor, AsyncTaskData *data, TaskType taskType = BUTT)
+        : executor_(executor), data_(data), taskType_(taskType) {}
+    MediaLibraryAsyncTask() : MediaLibraryAsyncTask(nullptr, nullptr, BUTT) {}
     virtual ~MediaLibraryAsyncTask()
     {
         delete data_;
@@ -48,6 +50,7 @@ public:
 
     MediaLibraryExecute executor_;
     AsyncTaskData *data_;
+    TaskType taskType_;
 };
 
 class MediaLibraryAsyncWorker {
@@ -57,6 +60,7 @@ public:
     ASYNC_WORKER_API_EXPORT void Interrupt();
     ASYNC_WORKER_API_EXPORT void Stop();
     ASYNC_WORKER_API_EXPORT int32_t AddTask(const std::shared_ptr<MediaLibraryAsyncTask> &task, bool isFg);
+    ASYNC_WORKER_API_EXPORT void ClearRefreshTaskQueue();
 
 private:
     COMPILE_HIDDEN MediaLibraryAsyncWorker();

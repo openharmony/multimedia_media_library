@@ -86,6 +86,13 @@ const std::string CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER = "CREATE TRIGGER 
     " WHERE (old." + ALBUM_ID + " = " + ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM + ")" +
     ")); END;";
 
+const std::string IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP = "idx_fileid_for_analysis_photo_map";
+const std::string CREATE_IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP = "CREATE INDEX IF NOT EXISTS " +
+    IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP + " ON " + ANALYSIS_PHOTO_MAP_TABLE + " ( map_asset );";
+
+const std::string IDX_FILEID_FOR_ANALYSIS_TOTAL = "idx_fileid_for_analysis_total";
+const std::string CREATE_IDX_FILEID_FOR_ANALYSIS_TOTAL = "CREATE INDEX IF NOT EXISTS " +
+    IDX_FILEID_FOR_ANALYSIS_TOTAL + " ON " + VISION_TOTAL_TABLE + " ( file_id );";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_DB_SQLS_MORE_H

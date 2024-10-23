@@ -292,7 +292,7 @@ const std::vector<std::string> directoryEnumValues {
 };
 
 const std::vector<std::string> systemAlbumSubType {
-    "FAVORITE", "VIDEO", "HIDDEN", "TRASH", "SCREENSHOT", "CAMERA", "IMAGE"
+    "FAVORITE", "VIDEO", "HIDDEN", "TRASH", "SCREENSHOT", "CAMERA", "IMAGE", "CLOUD_ENHANCEMENT"
 };
 
 const std::vector<std::string> analysisAlbumSubType {
@@ -308,6 +308,14 @@ const std::vector<std::string> photoSubTypeEnum {
     "DEFAULT", "SCREENSHOT", "CAMERA", "MOVING_PHOTO"
 };
 
+const std::vector<std::string> photoPermissionTypeEnum {
+    "TEMPORARY_READ_IMAGEVIDEO", "PERSISTENT_READ_IMAGEVIDEO"
+};
+
+const std::vector<std::string> hideSensitiveTypeEnum {
+    "HIDE_LOCATION_AND_SHOOTING_PARAM", "HIDE_LOCATION_ONLY", "HIDE_SHOOTING_PARAM_ONLY", "NO_HIDE_SENSITIVE_TYPE"
+};
+
 const std::vector<std::string> notifyTypeEnum {
     "NOTIFY_ADD", "NOTIFY_UPDATE", "NOTIFY_REMOVE", "NOTIFY_ALBUM_ADD_ASSET", "NOTIFY_ALBUM_REMOVE_ASSET"
 };
@@ -317,7 +325,7 @@ const std::vector<std::string> requestPhotoTypeEnum {
 };
 
 const std::vector<std::string> resourceTypeEnum {
-    "IMAGE_RESOURCE", "VIDEO_RESOURCE", "PHOTO_PROXY"
+    "IMAGE_RESOURCE", "VIDEO_RESOURCE", "PHOTO_PROXY", "PRIVATE_MOVING_PHOTO_RESOURCE"
 };
 
 const std::vector<std::string> dynamicRangeTypeEnum {
@@ -325,7 +333,20 @@ const std::vector<std::string> dynamicRangeTypeEnum {
 };
 
 const std::vector<std::string> movingPhotoEffectModeEnum {
-    "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE"
+    "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE", "CINEMA_GRAPH"
+};
+
+const std::vector<std::string> imageFileTypeEnum {
+    "JPEG", "HEIF"
+};
+
+const std::vector<std::string> cloudEnhancementTaskStageEnum {
+    "TASK_STAGE_EXCEPTION", "TASK_STAGE_PREPARING", "TASK_STAGE_UPLOADING",
+    "TASK_STAGE_EXECUTING", "TASK_STAGE_DOWNLOADING", "TASK_STAGE_FAILED", "TASK_STAGE_COMPLETED"
+};
+
+const std::vector<std::string> cloudEnhancementStateEnum {
+    "UNAVAILABLE", "AVAILABLE", "EXECUTING", "COMPLETED"
 };
 
 const std::vector<std::string> fileKeyEnumValues {
@@ -432,6 +453,8 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("COVER_POSITION",            PhotoColumn::PHOTO_COVER_POSITION),
     std::make_pair("BURST_COVER_LEVEL",         PhotoColumn::PHOTO_BURST_COVER_LEVEL),
     std::make_pair("BURST_KEY",                 PhotoColumn::PHOTO_BURST_KEY),
+    std::make_pair("THUMBNAIL_READY",           PhotoColumn::PHOTO_THUMBNAIL_READY),
+    std::make_pair("CE_AVAILABLE",              PhotoColumn::PHOTO_CE_AVAILABLE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
@@ -508,7 +531,7 @@ public:
     static napi_status GetStringArray(napi_env env, napi_value arg, std::vector<std::string> &array);
     static void UriAddTableName(std::string &uri, const std::string tableName);
     static std::string GetFileIdFromUri(const std::string &uri);
-    static int32_t GetFileIdFromAssetUri(const std::string &uri);
+    static int32_t GetFileIdFromPhotoUri(const std::string &uri);
     static MediaType GetMediaTypeFromUri(const std::string &uri);
     template <class AsyncContext>
     static napi_status GetPredicate(napi_env env, const napi_value arg, const std::string &propName,

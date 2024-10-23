@@ -42,6 +42,10 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
+const string MUSIC_DIR = "/storage/media/local/files/Docs/Music/";
+const string CLOUD_AUDIO_DIR = "/storage/cloud/files/Audio/";
+const string LOCAL_AUDIO_DIR = "/storage/media/local/files/Audio/";
+
 int32_t MediaLibraryAudioOperations::Create(MediaLibraryCommand &cmd)
 {
     switch (cmd.GetApi()) {
@@ -402,6 +406,33 @@ int32_t MediaLibraryAudioOperations::TrashAging(shared_ptr<int> countPtr)
         *countPtr = deletedRows;
     }
     return E_OK;
+}
+
+void MediaLibraryAudioOperations::MoveToMusic()
+{
+    RdbPredicates predicates(AudioColumn::AUDIOS_TABLE);
+    vector<string> columns = {AudioColumn::MEDIA_NAME, MediaColumn::MEDIA_FILE_PATH};
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("result is nullptr or count is zero");
+        return;
+    }
+    if (!MediaFileUtils::IsFileExists(MUSIC_DIR)) {
+        MEDIA_INFO_LOG("music dir is not exists!!!");
+        MediaFileUtils::CreateDirectory(MUSIC_DIR);
+    }
+    int32_t num = 0;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        string path = MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::MEDIA_FILE_PATH);
+        string localPath = path.replace(0, CLOUD_AUDIO_DIR.length(), LOCAL_AUDIO_DIR);
+        string displayName = MediaLibraryRdbStore::GetString(resultSet, AudioColumn::MEDIA_NAME);
+        if (!MediaFileUtils::ModifyAsset(localPath, MUSIC_DIR + displayName)) {
+            num++;
+        } else {
+            MEDIA_ERR_LOG("move %{private}s to music fail!", displayName.c_str());
+        }
+    }
+    MEDIA_INFO_LOG("%{public}d audios move to music success", num);
 }
 } // namespace Media
 } // namespace OHOS

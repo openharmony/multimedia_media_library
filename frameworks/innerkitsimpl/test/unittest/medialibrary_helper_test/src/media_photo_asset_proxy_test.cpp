@@ -72,5 +72,5 @@ void CreateDataHelper(int32_t systemAbilityId)
         sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     }
 }
-}
-}
+} // Media
+} // OHOS

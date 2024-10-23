@@ -50,6 +50,7 @@ public:
     EXPORT int32_t Query(const std::string &key, std::vector<uint8_t> &value);
     EXPORT int32_t BatchQuery(std::vector<std::string> &batchKeys, std::vector<std::vector<uint8_t>> &values);
     EXPORT bool Close();
+    EXPORT int32_t RebuildKvStore(const KvStoreValueType &valueType, const std::string &baseDir);
 private:
     bool GetKvStoreOption(DistributedKv::Options &options, const KvStoreRoleType &roleType, const std::string &baseDir);
 

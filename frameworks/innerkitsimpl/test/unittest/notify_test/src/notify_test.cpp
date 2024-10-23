@@ -16,13 +16,18 @@
 
 #include "notify_test.h"
 
+#include <memory>
+#include <vector>
+#include <algorithm>
+#include <string>
+
 #include "ability_context_impl.h"
 #include "fetch_result.h"
 #include "get_self_permissions.h"
 #include "iservice_registry.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_album_operations.h"
+#include "medialibrary_album_refresh.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -41,7 +46,6 @@
 #include "cloud_sync_notify_handler.h"
 #include "notify_handler.h"
 #include "uri_convert_handler.h"
-#include "userfile_manager_types.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -98,25 +102,27 @@ void CheckFileNotify(NotifyType notifyType)
     }
 }
 
-void SolveAlbumNotify(shared_ptr<TestObserver> obs, string assetStr)
+void SolveAlbumNotify(std::shared_ptr<TestObserver> obs, const std::string& assetStr)
 {
-    uint8_t *data = new (nothrow) uint8_t[obs->changeInfo_.size_];
-    if (data == nullptr) {
+    std::vector<uint8_t> data(obs->changeInfo_.size_);
+    if (data.empty()) {
         return;
     }
-    int copyRet = memcpy_s(data, obs->changeInfo_.size_, obs->changeInfo_.data_, obs->changeInfo_.size_);
-    if (copyRet != 0) {
-        return;
-    }
-    shared_ptr<MessageParcel> parcel = make_shared<MessageParcel>();
-    if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(data), obs->changeInfo_.size_)) {
+
+    std::copy(static_cast<const char*>(obs->changeInfo_.data_), static_cast<const char*>(obs->changeInfo_.data_) +
+        obs->changeInfo_.size_, data.begin());
+    std::shared_ptr<MessageParcel> parcel = std::make_shared<MessageParcel>();
+
+    if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(data.data()), obs->changeInfo_.size_)) {
         uint32_t len = 0;
         if (!parcel->ReadUint32(len)) {
             return;
         }
+
         EXPECT_EQ(len, LIST_SIZE);
+
         for (uint32_t i = 0; i < len; i++) {
-            string subUri = parcel->ReadString();
+            std::string subUri = parcel->ReadString();
             if (subUri.empty()) {
                 return;
             }
@@ -198,6 +204,15 @@ static void CheckInfo(shared_ptr<TestObserver> obs, const std::string &uriPrefix
     if (obs->condition_.wait_for(lock, 1s) == cv_status::no_timeout ||
         obs->bChange_.load()) {
         if (changeType == DataShareObserver::ChangeType::OTHER) {
+            EXPECT_EQ(obs->changeInfo_.changeType_,
+                static_cast<DataShareObserver::ChangeType>(NotifyType::NOTIFY_REMOVE));
+        } else if (changeType == DataShareObserver::ChangeType::INSERT) {
+            EXPECT_EQ(obs->changeInfo_.changeType_,
+                static_cast<DataShareObserver::ChangeType>(NotifyType::NOTIFY_ADD));
+        } else if (changeType == DataShareObserver::ChangeType::UPDATE) {
+            EXPECT_EQ(obs->changeInfo_.changeType_,
+                static_cast<DataShareObserver::ChangeType>(NotifyType::NOTIFY_UPDATE));
+        } else if (changeType == DataShareObserver::ChangeType::DELETE) {
             EXPECT_EQ(obs->changeInfo_.changeType_,
                 static_cast<DataShareObserver::ChangeType>(NotifyType::NOTIFY_REMOVE));
         } else {
@@ -622,8 +637,16 @@ HWTEST_F(NotifyTest, handle_empty_data_001, TestSize.Level0)
     ASSERT_TRUE(rdbStore != nullptr);
     CloudSyncHandleData emptyHandleData;
     emptyHandleData.orgInfo.type = DataShareObserver::ChangeType::OTHER;
-    AnalysisHandler handler;
-    handler.Handle(emptyHandleData);
+
+    bool refreshAlbumsCalled = false;
+    auto mockRefreshAlbums = [&refreshAlbumsCalled](bool) {
+        refreshAlbumsCalled = true;
+    };
+
+    auto handler = make_shared<AnalysisHandler>(mockRefreshAlbums);
+    handler->Handle(emptyHandleData);
+
+    ASSERT_TRUE(refreshAlbumsCalled);
     MEDIA_INFO_LOG("handle_empty_data_001 exit");
 }
 

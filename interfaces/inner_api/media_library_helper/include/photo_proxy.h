@@ -24,6 +24,8 @@ namespace Media {
 enum class PhotoFormat : int32_t {
     RGBA = 0,
     JPG,
+    HEIF,
+    YUV,
 };
 
 enum class PhotoQuality : int32_t {
@@ -51,7 +53,7 @@ public:
     virtual size_t GetFileSize() = 0;
     virtual PhotoFormat GetFormat() = 0; // RGBA、JPG
     virtual PhotoQuality GetPhotoQuality() = 0; // 后续相机框架可能通过AddPhotoProxy传入高质量图
-    virtual std::string GetBurstKey() = 0; // 一组连拍照片一个key，uuid
+    virtual std::string GetBurstKey() = 0; // 一组连拍照片一个key， 32byte uuid
     virtual bool IsCoverPhoto() = 0; // 设置封面，1表示封面
     virtual void Release() = 0;
     virtual double GetLatitude() = 0;

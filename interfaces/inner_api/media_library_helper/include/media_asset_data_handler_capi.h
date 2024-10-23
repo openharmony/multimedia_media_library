@@ -119,6 +119,7 @@ enum class ReturnDataType {
     TYPE_ARRAY_BUFFER,
     TYPE_MOVING_PHOTO,
     TYPE_TARGET_FILE,
+    TYPE_PICTURE,
 };
 
 class CapiMediaAssetDataHandler {
