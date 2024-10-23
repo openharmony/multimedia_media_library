@@ -86,7 +86,6 @@ static void RefreshCallbackFunc()
 
 static void RefreshAlbumAsyncTask(AsyncTaskData *data)
 {
-    MEDIA_INFO_LOG("Start refresh album task");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
@@ -96,10 +95,8 @@ static void RefreshAlbumAsyncTask(AsyncTaskData *data)
         MEDIA_ERR_LOG("RdbStore is nullptr!");
         return;
     }
-    SlowDown();
     int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(rdbStore->GetRaw(),
         NotifySystemAlbumFunc, RefreshCallbackFunc);
-    ResetCpu();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("RefreshAllAlbums failed ret:%{public}d", ret);
     }
