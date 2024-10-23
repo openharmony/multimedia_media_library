@@ -34,7 +34,7 @@ struct HiAuditConfig {
     uint32_t fileCount;
 };
 
-HiAuditConfig HIAUDIT_CONFIG = { "/data/storage/el2/log/audit/", "media_library", 2 * 1024, 3 * 1204 * 1024, 10 };
+HiAuditConfig HIAUDIT_CONFIG = { "/data/storage/el2/log/audit/", "media_library", 2 * 1024, 3 * 1024 * 1024, 10 };
 const std::string HIAUDIT_LOG_NAME = HIAUDIT_CONFIG.logPath + HIAUDIT_CONFIG.logName + "_audit.csv";
 
 void HiAuditTest::SetUpTestCase(void) {}
@@ -85,7 +85,6 @@ HWTEST_F(HiAuditTest, HiAuditTest_DirectoryNotExists_test_002, TestSize.Level0)
     EXPECT_GT(audit.writeFd_, 0);
     EXPECT_EQ(audit.writeLogSize_.load(), 0);
     MEDIA_INFO_LOG("HiAuditTest_DirectoryNotExists_test_002 end");
-
 }
 } // namespace Media
 } // namespace OHOS
