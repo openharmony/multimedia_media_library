@@ -136,6 +136,11 @@ constexpr uint8_t NUMBER_HINT_1 = 1;
 
 constexpr int32_t DEFAULT_ORIGINAL = -1;
 
+const std::string Equal_Sign = "=";
+const std::string DYNAMIC_RANGE = "decodeDynamicRange";
+const int32_t DYNAMIC_AUTO = 0;
+const int32_t DYNAMIC_HDR = 2;
+
 const std::string THUMBNAIL_OPERN_KEYWORD = "operation";
 const std::string THUMBNAIL_OPER = "oper";
 const std::string THUMBNAIL_HEIGHT = "height";
