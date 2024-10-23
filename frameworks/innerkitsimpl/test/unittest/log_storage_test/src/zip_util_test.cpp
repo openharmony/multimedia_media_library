@@ -36,7 +36,7 @@ void ZipUtilTest::TearDown(void) {}
 HWTEST_F(ZipUtilTest, Create_Zip_Test_001, testing::ext::TestSize.Level0)
 {
     MEDIA_INFO_LOG("Create_Zip_Test_001 begin");
-    std::string filePath = "/data/app/el2/100/log/com.ohos.medialibrary.medialibrarydata/audit/media_library.zip";
+    std::string filePath = "/data/storage/el2/log/test.zip";
     zipFile compressZip = ZipUtil::CreateZipFile(filePath, 0);
     ASSERT_NE(compressZip, nullptr);
     ZipUtil::CloseZipFile(compressZip);
@@ -46,11 +46,11 @@ HWTEST_F(ZipUtilTest, Create_Zip_Test_001, testing::ext::TestSize.Level0)
 HWTEST_F(ZipUtilTest, Create_Zip_Test_002, testing::ext::TestSize.Level0)
 {
     MEDIA_INFO_LOG("Create_Zip_Test_002 begin");
-    std::string filePath = "/data/app/el2/100/log/com.ohos.medialibrary.medialibrarydata/audit/media_library.csv";
+    std::string filePath = "/data/storage/el2/log/test.csv";
     std::ofstream file(filePath);
     ASSERT_EQ(file.is_open(), true);
     file.close();
-    std::string zipFilePath = "/data/app/el2/100/log/com.ohos.medialibrary.medialibrarydata/audit/media_library.zip";
+    std::string zipFilePath = "/data/storage/el2/log/test.zip";
     zipFile compressZip = ZipUtil::CreateZipFile(zipFilePath);
     ASSERT_NE(compressZip, nullptr);
     int ret = ZipUtil::AddFileInZip(compressZip, filePath, KEEP_NONE_PARENT_PATH);
@@ -58,5 +58,5 @@ HWTEST_F(ZipUtilTest, Create_Zip_Test_002, testing::ext::TestSize.Level0)
     ZipUtil::CloseZipFile(compressZip);
     MEDIA_INFO_LOG("Create_Zip_Test_002 end");
 }
-} // namespace OHOS
+} // namespace Media
 } // namespace OHOS
