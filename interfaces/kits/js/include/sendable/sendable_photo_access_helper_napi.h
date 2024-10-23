@@ -68,6 +68,7 @@ private:
     EXPORT static napi_value JSRelease(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value CreateMediaTypeUserFileEnum(napi_env env);
+    EXPORT static napi_value CreateKeyFrameThumbnailTypeEnum(napi_env env);
     EXPORT static napi_value CreatePhotoSubTypeEnum(napi_env env);
     EXPORT static napi_value CreateAlbumTypeEnum(napi_env env);
     EXPORT static napi_value CreateAlbumSubTypeEnum(napi_env env);
@@ -87,7 +88,7 @@ private:
 
     static thread_local napi_ref photoAccessHelperConstructor_;
     static thread_local napi_ref sMediaTypeEnumRef_;
-
+    static thread_local napi_ref sKeyFrameThumbnailTypeRef_;
     static thread_local napi_ref sPhotoKeysEnumRef_;
     static thread_local napi_ref sAlbumKeyEnumRef_;
     static thread_local napi_ref sAlbumType_;

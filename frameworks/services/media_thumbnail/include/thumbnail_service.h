@@ -38,12 +38,17 @@ public:
     EXPORT void ReleaseService();
 
     EXPORT int GetThumbnailFd(const std::string &uri, bool isAstc = false);
+    EXPORT int GetKeyFrameThumbnailFd(const std::string &uri, bool isAstc = false);
     EXPORT int32_t LcdAging();
 #ifdef DISTRIBUTED
     EXPORT int32_t LcdDistributeAging(const std::string &udid);
 #endif
     EXPORT int32_t GenerateThumbnailBackground();
     EXPORT int32_t UpgradeThumbnailBackground(bool isWifiConnected);
+    EXPORT int32_t GenerateHighlightThumbnailBackground();
+    EXPORT int32_t TriggerHighlightThumbnail(std::string &id, std::string &tracks, std::string &trigger,
+        std::string &genType);
+
     EXPORT int32_t RestoreThumbnailDualFrame();
     EXPORT void InterruptBgworker();
     EXPORT void StopAllWorker();
@@ -78,6 +83,8 @@ private:
         std::string &tableName);
     int GetThumbFd(const std::string &path, const std::string &table, const std::string &id,
         const std::string &uri, const Size &size, bool isAstc = false);
+    int GetKeyFrameThumbFd(const std::string &path, const std::string &table, const std::string &id,
+        const std::string &uri, int32_t &beginStamp, int32_t &type);
     static std::shared_ptr<ThumbnailService> thumbnailServiceInstance_;
     static std::mutex instanceLock_;
 #ifdef DISTRIBUTED

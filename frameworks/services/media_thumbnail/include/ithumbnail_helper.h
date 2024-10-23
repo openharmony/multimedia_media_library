@@ -110,6 +110,7 @@ public:
     EXPORT static void DeleteMonthAndYearAstc(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static void UpdateAstcDateTaken(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static bool UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess);
+    EXPORT static void UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &data);
 private:
     EXPORT static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
     EXPORT static bool GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data);

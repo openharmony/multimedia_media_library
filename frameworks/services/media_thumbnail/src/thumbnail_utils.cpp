@@ -141,6 +141,34 @@ bool ThumbnailUtils::DeleteThumbExDir(ThumbnailData &data)
     return true;
 }
 
+bool ThumbnailUtils::DeleteBeginTimestampDir(ThumbnailData &data)
+{
+    string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
+    string dirName = MediaFileUtils::GetParentPath(fileName);
+    if (access(dirName.c_str(), F_OK) != 0) {
+        MEDIA_INFO_LOG("No need to delete beginTimeStamp, directory not exists path: %{public}s, id: %{public}s",
+            DfxUtils::GetSafePath(dirName).c_str(), data.id.c_str());
+        return true;
+    }
+
+    for (const auto &dirEntry : std::filesystem::directory_iterator{dirName}) {
+        string dir = dirEntry.path().string();
+        if (!MediaFileUtils::IsDirectory(dir)) {
+            continue;
+        }
+        string folderName = MediaFileUtils::GetFileName(dir);
+        if (folderName.find("beginTimeStamp") == 0) {
+            string folderPath = dirName + '/' + folderName;
+            if (!MediaFileUtils::DeleteDir(folderPath)) {
+                MEDIA_ERR_LOG("failed to delete beginStamp directory, path: %{public}s, id: %{public}s",
+                    DfxUtils::GetSafePath(folderPath).c_str(), data.id.c_str());
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
     Size &desiredSize, uint32_t &errCode)
 {
@@ -223,8 +251,16 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     ConvertDecodeSize(data, {videoWidth, videoHeight}, desiredSize);
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
-    data.source = avMetadataHelper->FetchFrameYuv(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
+    if (!data.tracks.empty()) {
+        int64_t timestamp = std::stoll(data.timeStamp);
+        timestamp = timestamp * MS_TRANSFER_US;
+        data.source = avMetadataHelper->FetchFrameYuv(timestamp, AVMetadataQueryOption::AV_META_QUERY_CLOSEST,
         param);
+    } else {
+        data.source = avMetadataHelper->FetchFrameYuv(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
+        param);
+    }
+
     if (data.source == nullptr) {
         DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
         return false;
@@ -681,6 +717,133 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &i
     return true;
 }
 
+bool ThumbnailUtils::QueryNoHighlightPath(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_FILE_PATH,
+    };
+    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.EqualTo(PhotoColumn::MEDIA_ID, data.id);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("QueryNoHighlightPath failed %{public}d", err);
+        return false;
+    }
+
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("QueryNoHighlightPath failed GoToFirstRow %{public}d", err);
+        return false;
+    }
+    ParseQueryResult(resultSet, data, err, column);
+    return true;
+}
+
+bool ThumbnailUtils::QueryNoHighlightInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_VIDEO_TRACKS,
+        MEDIA_DATA_DB_HIGHLIGHT_TRIGGER,
+    };
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.EqualTo(PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER, "0");
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("QueryNoHighlightInfos failed %{public}d", err);
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
+
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("QueryNoHighlightInfos failed GoToFirstRow %{public}d", err);
+        return false;
+    }
+    
+    ThumbnailData data;
+    do {
+        ParseHighlightQueryResult(resultSet, data, err);
+        if (QueryNoHighlightPath(opts, data, err)) {
+            MEDIA_INFO_LOG("QueryNoHighlightPath data.path %{public}s",
+                DfxUtils::GetSafePath(data.path).c_str());
+        }
+        data.frame = GetHighlightValue(data.tracks, "beginFrame");
+        data.timeStamp = GetHighlightValue(data.tracks, "beginTimeStamp");
+        if (!data.path.empty()) {
+            infos.push_back(data);
+        }
+    } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
+bool ThumbnailUtils::GetHighlightTracks(ThumbRdbOpt &opts, vector<int> &trackInfos, int32_t &err)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_VIDEO_TRACKS,
+    };
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.EqualTo(PhotoColumn::MEDIA_ID, opts.row);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("GetHighlightTracks failed %{public}d", err);
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
+
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("GetHighlightTracks failed GoToFirstRow %{public}d", err);
+        return false;
+    }
+    
+    ThumbnailData data;
+    string timeStamp;
+    do {
+        ParseHighlightQueryResult(resultSet, data, err);
+        timeStamp = GetHighlightValue(data.tracks, "beginTimeStamp");
+        trackInfos.push_back(stoi(timeStamp));
+    } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
+bool ThumbnailUtils::QueryHighlightTriggerPath(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
+{
+    if (QueryNoHighlightPath(opts, data, err)) {
+        MEDIA_INFO_LOG("QueryHighlightTriggerPath path: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+    }
+    data.frame = GetHighlightValue(data.tracks, "beginFrame");
+    data.timeStamp = GetHighlightValue(data.tracks, "beginTimeStamp");
+    return true;
+}
+
+std::string ThumbnailUtils::GetHighlightValue(const std::string &str, const std::string &key)
+{
+    std::size_t keyPos = str.find(key);
+    if (keyPos == std::string::npos) {
+        return "";
+    }
+    std::size_t colonPos = str.find(":", keyPos);
+    if (colonPos == std::string::npos) {
+        return "";
+    }
+    std::size_t commaPos = str.find(",", colonPos);
+    if (commaPos == std::string::npos) {
+        commaPos = str.find("}", colonPos);
+        if (commaPos == std::string::npos) {
+            return "";
+        }
+    }
+    std::string valueStr = str.substr(colonPos + 1, commaPos - colonPos - 1);
+    return valueStr;
+}
+
 bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
@@ -945,6 +1108,26 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
+        return false;
+    }
+    return true;
+}
+
+bool ThumbnailUtils::UpdateHighlightInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
+{
+    ValuesBucket values;
+    int changedRows;
+
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateHighlightInfo opts.store->Update");
+    values.PutLong(PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER, 1);
+
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.EqualTo(MEDIA_DATA_DB_ID, data.id);
+    rdbPredicates.EqualTo(MEDIA_DATA_DB_VIDEO_TRACKS, data.tracks);
+    err = opts.store->Update(changedRows, values, rdbPredicates);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("UpdateHighlightInfo failed! %{public}d", err);
         return false;
     }
     return true;
@@ -1399,6 +1582,19 @@ int ThumbnailUtils::SaveFileCreateDir(const string &path, const string &suffix, 
     return E_OK;
 }
 
+int ThumbnailUtils::SaveFileCreateDirHighlight(const string &path, const string &suffix,
+    string &fileName, const string &timeStamp)
+{
+    fileName = GetThumbnailPathHighlight(path, suffix, timeStamp);
+    string dir = MediaFileUtils::GetParentPath(fileName);
+    if (!MediaFileUtils::CreateDirectory(dir)) {
+        MEDIA_ERR_LOG("Fail to create highlight directory, fileName: %{public}s",
+            DfxUtils::GetSafePath(fileName).c_str());
+        return -errno;
+    }
+    return E_OK;
+}
+
 int ThumbnailUtils::ToSaveFile(ThumbnailData &data, const string &fileName, uint8_t *output, const int &writeSize)
 {
     int ret = SaveFile(fileName, output, writeSize);
@@ -1467,7 +1663,13 @@ int ThumbnailUtils::SaveThumbDataToLocalDir(ThumbnailData &data, const std::stri
     uint8_t *output, const int writeSize)
 {
     string fileName;
-    int ret = SaveFileCreateDir(data.path, suffix, fileName);
+    int ret;
+    if (!data.tracks.empty()) {
+        ret = SaveFileCreateDirHighlight(data.path, suffix, fileName, data.timeStamp);
+    } else {
+        ret = SaveFileCreateDir(data.path, suffix, fileName);
+    }
+
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SaveThumbDataToLocalDir create dir path %{public}s err %{public}d",
             DfxUtils::GetSafePath(data.path).c_str(), ret);
@@ -1589,6 +1791,9 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
         isDelete = true;
     }
     if (DeleteThumbExDir(tmpData)) {
+        isDelete = true;
+    }
+    if (DeleteBeginTimestampDir(tmpData)) {
         isDelete = true;
     }
     string fileName = GetThumbnailPath(tmpData.path, "");
@@ -1731,6 +1936,25 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         } else if (columnValue == MEDIA_DATA_DB_DATE_TAKEN) {
             ParseStringResult(resultSet, index, data.dateTaken, err);
         }
+    }
+}
+
+void ThumbnailUtils::ParseHighlightQueryResult(const shared_ptr<ResultSet> &resultSet, ThumbnailData &data, int &err)
+{
+    int index;
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_ID, index);
+    if (err == NativeRdb::E_OK) {
+        ParseStringResult(resultSet, index, data.id, err);
+    }
+
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_VIDEO_TRACKS, index);
+    if (err == NativeRdb::E_OK) {
+        ParseStringResult(resultSet, index, data.tracks, err);
+    }
+
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_HIGHLIGHT_TRIGGER, index);
+    if (err == NativeRdb::E_OK) {
+        ParseStringResult(resultSet, index, data.trigger, err);
     }
 }
 

@@ -78,6 +78,37 @@ bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString, string &outF
     return true;
 }
 
+bool ThumbnailUriUtils::ParseKeyFrameThumbnailInfo(const string &uriString, string &outFileId, int32_t &outBeginStamp,
+    int32_t &outType, string &outPath)
+{
+    string::size_type pos = uriString.find_last_of('?');
+    if (pos == string::npos) {
+        return false;
+    }
+    MediaFileUri uri(uriString);
+    outFileId = uri.GetFileId();
+    auto &queryKey = uri.GetQueryKeys();
+
+    if (queryKey.count(THUMBNAIL_OPERN_KEYWORD) == 0 &&
+        queryKey[THUMBNAIL_OPERN_KEYWORD] != MEDIA_DATA_DB_KEY_FRAME) {
+        MEDIA_ERR_LOG("The key_word in uri id not key_frame!");
+        return false;
+    }
+
+    if (queryKey.count(THUMBNAIL_BEGIN_STAMP) != 0) {
+        outBeginStamp = stoi(queryKey[THUMBNAIL_BEGIN_STAMP]);
+    }
+
+    if (queryKey.count(THUMBNAIL_TYPE) != 0) {
+        outType = stoi(queryKey[THUMBNAIL_TYPE]);
+    }
+
+    if (queryKey.count(THUMBNAIL_PATH) != 0) {
+        outPath = queryKey[THUMBNAIL_PATH];
+    }
+    return true;
+}
+
 bool ThumbnailUriUtils::IsOriginalImg(const Size &outSize, const string &outPath)
 {
     return outSize.width == DEFAULT_ORIGINAL && outSize.height == DEFAULT_ORIGINAL;
