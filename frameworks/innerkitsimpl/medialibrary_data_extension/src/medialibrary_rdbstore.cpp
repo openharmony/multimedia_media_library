@@ -3337,6 +3337,22 @@ static void ResetCloudCursorAfterInitFinish()
     MEDIA_INFO_LOG("Reset cloud cursor after storage reconstruct end");
 }
 
+static int32_t MatchedDataFusion(CompensateAlbumIdData* compensateData)
+{
+    int32_t matchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(
+        compensateData->upgradeStore_);
+    if (matchedDataHandleResult != E_OK) {
+        MEDIA_ERR_LOG("Fatal err, handle matched relationship fail by %{public}d", matchedDataHandleResult);
+        // This should not happen, try again
+        matchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(
+            compensateData->upgradeStore_);
+        if (matchedDataHandleResult != E_OK) {
+            MEDIA_ERR_LOG("Fatal err, handle matched relationship again by %{public}d", matchedDataHandleResult);
+        }
+    }
+    return matchedDataHandleResult;
+}
+
 static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
 {
     if (data == nullptr) {
@@ -3351,16 +3367,11 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
     CHECK_AND_PRINT_LOG(MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(compensateData->upgradeStore_) == E_OK,
         "Failed to remove misadded hidden data");
     int64_t cleanDataBeginTime = MediaFileUtils::UTCTimeMilliSeconds();
-    int32_t matchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(
+    MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(cleanDataBeginTime, AlbumFusionState::START,
         compensateData->upgradeStore_);
-    if (matchedDataHandleResult != E_OK) {
-        MEDIA_ERR_LOG("Fatal err, handle matched relationship fail by %{public}d", matchedDataHandleResult);
-        // This should not happen, try again
-        matchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(
+    if (MatchedDataFusion(compensateData) != E_OK) {
+        MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(cleanDataBeginTime, AlbumFusionState::FAILED,
             compensateData->upgradeStore_);
-        if (matchedDataHandleResult != E_OK) {
-            MEDIA_ERR_LOG("Fatal err, handle not matched relationship again by %{public}d", matchedDataHandleResult);
-        }
         return;
     }
     int32_t notMatchedDataHandleResult = MediaLibraryAlbumFusionUtils::HandleNotMatchedDataFusion(
@@ -3368,6 +3379,8 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
     if (notMatchedDataHandleResult != E_OK) {
         MEDIA_ERR_LOG("Fatal err, handle not matched relationship fail by %{public}d", notMatchedDataHandleResult);
         // This should not happen, and if it does, avoid cleaning up more data.
+        MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(cleanDataBeginTime, AlbumFusionState::FAILED,
+            compensateData->upgradeStore_);
         return;
     }
     MEDIA_INFO_LOG("ALBUM_FUSE: End compensate album id for old asset cost %{public}ld",
@@ -3382,6 +3395,8 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
     MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(1); // 1: set upgrade status success
     ResetCloudCursorAfterInitFinish();
     MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
+    MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(cleanDataBeginTime, AlbumFusionState::SUCCESS,
+        compensateData->upgradeStore_);
     MEDIA_INFO_LOG("ALBUM_FUSE: Processing old data end, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
 }
