@@ -17,6 +17,7 @@
 
 #include <mutex>
 #include <string>
+
 #include "rdb_store.h"
 #include "photo_album_restore.h"
 #include "photos_dao.h"

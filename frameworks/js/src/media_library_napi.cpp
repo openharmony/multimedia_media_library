@@ -61,7 +61,7 @@
 #include "safe_map.h"
 #include "search_column.h"
 #include "short_term_callback.h"
-#include "grant_old_photo_assets_read_permission_callback.h"
+#include "request_photo_uris_read_permission_callback.h"
 #include "smart_album_napi.h"
 #include "story_album_column.h"
 #include "string_ex.h"
@@ -96,7 +96,7 @@ const int32_t THIRD_ENUM = 3;
 const int32_t FORMID_MAX_LEN = 19;
 const int32_t SLEEP_TIME = 100;
 const int64_t MAX_INT64 = 9223372036854775807;
-const int32_t MAX_QUERY_LIMIT = 500;
+const int32_t MAX_QUERY_LIMIT = 15;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
 
@@ -156,6 +156,7 @@ const std::string TARGET_PAGE = "targetPage";
 
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sKeyFrameThumbnailTypeRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDirectoryEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sVirtualAlbumTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
@@ -280,8 +281,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("createAlbum", CreatePhotoAlbum),
             DECLARE_NAPI_FUNCTION("deleteAlbums", DeletePhotoAlbums),
             DECLARE_NAPI_FUNCTION("getAlbums", GetPhotoAlbums),
-            DECLARE_NAPI_FUNCTION("getPhotoIndex", JSGetPhotoIndex),
-            DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
+            DECLARE_NAPI_FUNCTION("getPhotoIndex", JSGetPhotoIndex), DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -299,6 +299,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("AlbumSubType", CreateAlbumSubTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoSubType", CreatePhotoSubTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("ThumbnailType", CreateKeyFrameThumbnailTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoPermissionType", CreatePhotoPermissionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("HideSensitiveType", CreateHideSensitiveTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DynamicRangeType", CreateDynamicRangeTypeEnum(env)),
@@ -356,7 +357,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_STATIC_FUNCTION("showAssetsCreationDialog", ShowAssetsCreationDialog),
         DECLARE_NAPI_STATIC_FUNCTION("checkShortTermPermission", CheckShortTermPermission),
         DECLARE_NAPI_STATIC_FUNCTION("createAssetWithShortTermPermission", CreateAssetWithShortTermPermission),
-        DECLARE_NAPI_STATIC_FUNCTION("grantOldPhotoAssetsReadPermission", GrantOldPhotoAssetsReadPermission),
+        DECLARE_NAPI_PROPERTY("ThumbnailType", CreateKeyFrameThumbnailTypeEnum(env)),
+        DECLARE_NAPI_STATIC_FUNCTION("requestPhotoUrisReadPermission", RequestPhotoUrisReadPermission),
         DECLARE_NAPI_PROPERTY("PhotoType", CreateMediaTypeUserFileEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumKeys", CreateAlbumKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumType", CreateAlbumTypeEnum(env)),
@@ -6476,6 +6478,12 @@ napi_value MediaLibraryNapi::CreateMediaTypeEnum(napi_env env)
     return CreateNumberEnumProperty(env, mediaTypesEnum, sMediaTypeEnumRef_);
 }
 
+napi_value MediaLibraryNapi::CreateKeyFrameThumbnailTypeEnum(napi_env env)
+{
+    const int32_t startIdx = 1;
+    return CreateNumberEnumProperty(env, keyFrameThumbnailTypeEnum, sKeyFrameThumbnailTypeRef_, startIdx);
+}
+
 napi_value MediaLibraryNapi::CreateMediaTypeUserFileEnum(napi_env env)
 {
     const int32_t startIdx = 1;
@@ -8353,18 +8361,18 @@ napi_value MediaLibraryNapi::CreateAssetWithShortTermPermission(napi_env env, na
     return result;
 }
 
-static bool InitGrantOldPhotoAssetsReadPermissionRequest(OHOS::AAFwk::Want &want,
-    shared_ptr<GrantOldPhotoAssetsReadPermissionCallback> &callback, napi_env env, napi_value args[], size_t argsLen)
+static bool InitRequestPhotoUrisReadPermissionRequest(OHOS::AAFwk::Want &want,
+    shared_ptr<RequestPhotoUrisReadPermissionCallback> &callback, napi_env env, napi_value args[], size_t argsLen)
 {
-    NAPI_INFO_LOG("InitGrantOldPhotoAssetsReadPermission enter.");
+    NAPI_INFO_LOG("InitRequestPhotoUrisReadPermission enter.");
     if (argsLen < ARGS_FOUR) {
         return false;
     }
 
     std::string targetType = "photoPicker";
     want.SetParam(ABILITY_WANT_PARAMS_UIEXTENSIONTARGETTYPE, targetType);
-    std::string grantOldPhotoAssetsTag = "grantOldPhotoAssetsPage";
-    want.SetParam(TARGET_PAGE, grantOldPhotoAssetsTag);
+    std::string requestPhotoUrisTag = "requestPhotoUrisPage";
+    want.SetParam(TARGET_PAGE, requestPhotoUrisTag);
 
      // second param: Array<string>
     if (!ParseAndSetFileUriArray(env, want, args[PARAM1])) {
@@ -8383,9 +8391,9 @@ static bool InitGrantOldPhotoAssetsReadPermissionRequest(OHOS::AAFwk::Want &want
     return true;
 }
 
-napi_value MediaLibraryNapi::GrantOldPhotoAssetsReadPermission(napi_env env, napi_callback_info info)
+napi_value MediaLibraryNapi::RequestPhotoUrisReadPermission(napi_env env, napi_callback_info info)
 {
-    NAPI_INFO_LOG("GrantOldPhotoAssetsReadPermission enter");
+    NAPI_INFO_LOG("RequestPhotoUrisReadPermission enter");
     size_t argc = ARGS_FOUR;
     napi_value args[ARGS_FOUR] = {nullptr};
     napi_value thisVar = nullptr;
@@ -8415,10 +8423,10 @@ napi_value MediaLibraryNapi::GrantOldPhotoAssetsReadPermission(napi_env env, nap
 
     // set want
     OHOS::AAFwk::Want want;
-    shared_ptr<GrantOldPhotoAssetsReadPermissionCallback> callback =
-        make_shared<GrantOldPhotoAssetsReadPermissionCallback>(env, uiContent);
-    NAPI_ASSERT(env, InitGrantOldPhotoAssetsReadPermissionRequest(want, callback, env, args, sizeof(args)),
-            "Parse GrantOldPhotoAssetsReadPermission input fail.");
+    shared_ptr<RequestPhotoUrisReadPermissionCallback> callback =
+        make_shared<RequestPhotoUrisReadPermissionCallback>(env, uiContent);
+    NAPI_ASSERT(env, InitRequestPhotoUrisReadPermissionRequest(want, callback, env, args, sizeof(args)),
+            "Parse RequestPhotoUrisReadPermission input fail.");
 
     // regist callback and config
     OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
@@ -8429,7 +8437,7 @@ napi_value MediaLibraryNapi::GrantOldPhotoAssetsReadPermission(napi_env env, nap
     };
     OHOS::Ace::ModalUIExtensionConfig config;
     config.isProhibitBack = true;
-    NAPI_INFO_LOG("GrantOldPhotoAssetsReadPermission regist callback and config success.");
+    NAPI_INFO_LOG("RequestPhotoUrisReadPermission regist callback and config success.");
 
     int32_t sessionId = uiContent->CreateModalUIExtension(want, extensionCallback, config);
     NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");

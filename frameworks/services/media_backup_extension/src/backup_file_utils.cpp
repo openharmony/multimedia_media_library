@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "MediaLibraryBackupUtils"
+
 #include "backup_file_utils.h"
 
 #include <utime.h>
@@ -33,10 +35,11 @@ namespace Media {
 const string DEFAULT_IMAGE_NAME = "IMG_";
 const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
-const size_t MAX_FAILED_FILES_SIZE = 100;
 const string LOW_QUALITY_PATH = "Documents/cameradata/";
+const size_t INVALID_RET = -1;
 
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
+std::shared_ptr<DataShare::DataShareHelper> BackupFileUtils::sDataShareHelper_ = nullptr;
 std::shared_ptr<FileAccessHelper> BackupFileUtils::fileAccessHelper_ = std::make_shared<FileAccessHelper>();
 
 bool FileAccessHelper::GetValidPath(string &filePath)
@@ -46,7 +49,7 @@ bool FileAccessHelper::GetValidPath(string &filePath)
     }
 
     string resultPath = filePath;
-    auto pos = 0;
+    size_t pos = 0;
     while ((pos = resultPath.find("/", pos + 1)) != string::npos) {
         string curPath = resultPath.substr(0, pos);
         if (!ConvertCurrentPath(curPath, resultPath)) {
@@ -359,17 +362,13 @@ void BackupFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
 
 string BackupFileUtils::GetFileNameFromPath(const string &path)
 {
-    if (!path.empty()) {
-        size_t lastPosition = path.rfind("/");
-        if (lastPosition != string::npos) {
-            if (path.size() > lastPosition) {
-                return path.substr(lastPosition + 1);
-            }
-        }
+    size_t pos = GetLastSlashPosFromPath(path);
+    if (pos == INVALID_RET || pos + 1 >= path.size()) {
+        MEDIA_ERR_LOG("Failed to obtain file name because pos is invalid or out of range, path: %{public}s, "
+            "size: %{public}zu, pos: %{public}zu", GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str(), path.size(), pos);
+        return "";
     }
-
-    MEDIA_ERR_LOG("Failed to obtain file name because given pathname is empty");
-    return "";
+    return path.substr(pos + 1);
 }
 
 string BackupFileUtils::GetFileTitle(const string &displayName)
@@ -436,22 +435,22 @@ bool BackupFileUtils::IsFileValid(std::string &filePath, int32_t sceneCode,
     return true;
 }
 
-std::string BackupFileUtils::GetDetailsPath(const std::string &type,
-    const std::unordered_map<std::string, int32_t> &failedFiles)
+std::string BackupFileUtils::GetDetailsPath(int32_t sceneCode, const std::string &type,
+    const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit)
 {
     std::string detailsPath = RESTORE_FAILED_FILES_PATH + "_" + type + ".txt";
     if (MediaFileUtils::IsFileExists(detailsPath) && !MediaFileUtils::DeleteFile(detailsPath)) {
         MEDIA_ERR_LOG("%{public}s exists and delete failed", detailsPath.c_str());
         return "";
     }
-    if (failedFiles.empty()) {
+    if (failedFiles.empty() || limit == 0) {
         return "";
     }
     if (MediaFileUtils::CreateAsset(detailsPath) != E_SUCCESS) {
         MEDIA_ERR_LOG("Create %{public}s failed", detailsPath.c_str());
         return "";
     }
-    std::string failedFilesStr = GetFailedFilesStr(failedFiles);
+    std::string failedFilesStr = GetFailedFilesStr(sceneCode, failedFiles, limit);
     if (!MediaFileUtils::WriteStrToFile(detailsPath, failedFilesStr)) {
         MEDIA_ERR_LOG("Write to %{public}s failed", detailsPath.c_str());
         return "";
@@ -459,22 +458,73 @@ std::string BackupFileUtils::GetDetailsPath(const std::string &type,
     return detailsPath;
 }
 
-std::string BackupFileUtils::GetFailedFilesStr(const std::unordered_map<std::string, int32_t> &failedFiles)
+std::string BackupFileUtils::GetFailedFilesStr(int32_t sceneCode,
+    const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit)
 {
     std::stringstream failedFilesStream;
     failedFilesStream << "[";
-    size_t index = 0;
     for (const auto &iter : failedFiles) {
-        failedFilesStream << "\n\"" + iter.first;
-        index + 1 < failedFiles.size() && index + 1 < MAX_FAILED_FILES_SIZE ? failedFilesStream << "\"," :
-            failedFilesStream << "\"";
-        index++;
-        if (index == MAX_FAILED_FILES_SIZE) {
+        if (limit == 0) {
             break;
         }
+        failedFilesStream << "\n\"";
+        failedFilesStream << GetFailedFile(sceneCode, iter.first, iter.second);
+        limit > 1 ? failedFilesStream << "\"," : failedFilesStream << "\"";
+        limit--;
     }
     failedFilesStream << "\n]";
     return failedFilesStream.str();
+}
+
+void BackupFileUtils::CreateDataShareHelper(const sptr<IRemoteObject> &token)
+{
+    if (token != nullptr) {
+        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+        if (sDataShareHelper_ == nullptr) {
+            MEDIA_ERR_LOG("generate thumbnails after restore failed, the sDataShareHelper_ is nullptr.");
+        }
+    }
+}
+
+void BackupFileUtils::GenerateThumbnailsAfterRestore()
+{
+    if (sDataShareHelper_ == nullptr) {
+        return;
+    }
+    std::string updateUri = PAH_GENERATE_THUMBNAILS_RESTORE;
+    MediaFileUtils::UriAppendKeyValue(updateUri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(updateUri);
+    DataShare::DataSharePredicates emptyPredicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_THUMBNAIL_READY, 0);
+    int result = sDataShareHelper_->Update(uri, emptyPredicates, valuesBucket);
+    if (result < 0) {
+        MEDIA_ERR_LOG("generate thumbnails after restore failed, the sDataShareHelper_ update error");
+    }
+}
+
+std::vector<std::string> BackupFileUtils::GetFailedFilesList(int32_t sceneCode,
+    const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit)
+{
+    std::vector<std::string> failedFilesList;
+    for (const auto &iter : failedFiles) {
+        if (limit == 0) {
+            break;
+        }
+        failedFilesList.push_back(GetFailedFile(sceneCode, iter.first, iter.second));
+        limit--;
+    }
+    return failedFilesList;
+}
+
+std::string BackupFileUtils::GetFailedFile(int32_t sceneCode, const std::string &failedFilePath,
+    const FailedFileInfo &failedFileInfo)
+{
+    MEDIA_ERR_LOG("Failed file: %{public}s, %{public}s, %{public}s, %{public}s",
+        GarbleFilePath(failedFilePath, sceneCode).c_str(), failedFileInfo.albumName.c_str(),
+        GarbleFileName(failedFileInfo.displayName).c_str(), failedFileInfo.errorCode.c_str());
+    // format: albumName/displayName
+    return failedFileInfo.albumName + "/" + failedFileInfo.displayName;
 }
 
 bool BackupFileUtils::GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel,
@@ -561,6 +611,37 @@ bool BackupFileUtils::ConvertToMovingPhoto(FileInfo &fileInfo)
     }
     fileInfo.filePath = movingPhotoImagePath;
     return true;
+}
+
+size_t BackupFileUtils::GetLastSlashPosFromPath(const std::string &path)
+{
+    if (path.empty()) {
+        MEDIA_ERR_LOG("Failed to obtain last slash pos because given path is empty");
+        return INVALID_RET;
+    }
+    size_t pos = path.rfind("/");
+    if (pos == std::string::npos) {
+        MEDIA_ERR_LOG("Failed to obtain last slash pos because / not found");
+        return INVALID_RET;
+    }
+    return pos;
+}
+
+std::string BackupFileUtils::GetFileFolderFromPath(const std::string &path, bool shouldStartWithSlash)
+{
+    size_t endPos = GetLastSlashPosFromPath(path);
+    if (endPos == INVALID_RET) {
+        MEDIA_ERR_LOG("Failed to obtain file folder, path: %{public}s",
+            GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str());
+        return "";
+    }
+    size_t startPos = MediaFileUtils::StartsWith(path, "/") && !shouldStartWithSlash ? 1 : 0;
+    if (startPos >= endPos) {
+        MEDIA_ERR_LOG("Failed to obtain file folder because start %{public}zu >= end %{public}zu, path: %{public}s",
+            startPos, endPos, GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str());
+        return "";
+    }
+    return path.substr(startPos, endPos - startPos);
 }
 } // namespace Media
 } // namespace OHOS

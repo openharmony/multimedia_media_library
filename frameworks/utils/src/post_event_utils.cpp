@@ -106,6 +106,21 @@ void PostEventUtils::PostFileOptError(const VariantMap &error)
     }
 }
 
+void PostEventUtils::PostRecoveryOptError(const VariantMap &error)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_META_RECOVERY_ERROR",
+        HiviewDFX::HiSysEvent::EventType::FAULT,
+        "ERR_FILE", GetStringValue(KEY_ERR_FILE, error),
+        "LINE", GetIntValue(KEY_ERR_LINE, error),
+        "ERROR_CODE", GetIntValue(KEY_ERR_CODE, error),
+        "TYPE", GetOptType(GetIntValue(KEY_OPT_TYPE, error)));
+    if (ret != 0) {
+        MEDIA_ERR_LOG("PostFileOptError error:%{public}d", ret);
+    }
+}
+
 void PostEventUtils::PostDbOptError(const VariantMap &error)
 {
     uint32_t uid = getuid();
@@ -303,6 +318,9 @@ void PostEventUtils::PostErrorProcess(const uint32_t &errType, const VariantMap 
             break;
         case ErrType::DB_CORRUPT_ERR:
             PostDatabaseCorruption(error);
+            break;
+        case ErrType::RECOVERY_ERR:
+            PostRecoveryOptError(error);
             break;
         default:
             PostFileOptError(error);

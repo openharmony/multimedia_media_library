@@ -31,6 +31,11 @@ constexpr int32_t DEFAULT_LCD_SIZE = 1080;
 constexpr uint32_t INT32_MAX_VALUE_LENGTH = 10;
 constexpr int32_t VERTICAL_ANGLE = 90;
 constexpr int32_t STRAIGHT_ANGLE = 180;
+constexpr int32_t STAMP_PARAM = 4;
+constexpr int32_t STAMP_PARAM_ZERO = 0;
+constexpr int32_t STAMP_PARAM_ONE = 1;
+constexpr int32_t STAMP_PARAM_TWO = 2;
+constexpr int32_t STAMP_PARAM_THREE = 3;
 enum class ThumbnailType : int32_t {
     LCD,
     THUMB,
@@ -131,6 +136,7 @@ constexpr uint8_t ASTC_LOW_QUALITY = 20;
 
 constexpr uint32_t THUMBNAIL_QUERY_MAX = 2000;
 constexpr int64_t AV_FRAME_TIME = 0;
+constexpr int64_t MS_TRANSFER_US = 1000;
 
 constexpr uint8_t NUMBER_HINT_1 = 1;
 
@@ -141,6 +147,8 @@ const std::string THUMBNAIL_OPER = "oper";
 const std::string THUMBNAIL_HEIGHT = "height";
 const std::string THUMBNAIL_WIDTH = "width";
 const std::string THUMBNAIL_PATH = "path";
+const std::string THUMBNAIL_BEGIN_STAMP = "begin_stamp";
+const std::string THUMBNAIL_TYPE = "type";
 
 // create thumbnail in close operation
 const std::string CLOSE_CREATE_THUMB_STATUS = "create_thumbnail_sync_status";
@@ -168,6 +176,17 @@ static inline std::string GetThumbnailPath(const std::string &path, const std::s
     return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + "/" + key + suffix;
 }
 
+static inline std::string GetThumbnailPathHighlight(const std::string &path, const std::string &key,
+    const std::string &timeStamp)
+{
+    if (path.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    std::string suffix = (key == "THM_ASTC") ? ".astc" : ".jpg";
+    return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) +
+        "/beginTimeStamp" + timeStamp + "/" + key + suffix;
+}
+
 static std::string GetThumbSuffix(ThumbnailType type)
 {
     switch (type) {
@@ -181,6 +200,20 @@ static std::string GetThumbSuffix(ThumbnailType type)
             return THUMBNAIL_THUMBASTC_SUFFIX;
         case ThumbnailType::LCD:
             return THUMBNAIL_LCD_SUFFIX;
+        default:
+            return "";
+    }
+}
+
+static std::string GetKeyFrameThumbSuffix(int32_t type)
+{
+    switch (type) {
+        case KEY_FRAME_LCD:
+            return THUMBNAIL_LCD_SUFFIX;
+        case KEY_FRAME_THM:
+            return THUMBNAIL_THUMB_SUFFIX;
+        case KEY_FRAME_THM_ASTC:
+            return THUMBNAIL_THUMBASTC_SUFFIX;
         default:
             return "";
     }
@@ -208,6 +241,18 @@ static inline std::string GetSandboxPath(const std::string &path, ThumbnailType 
     std::string suffix = (type == ThumbnailType::THUMB_ASTC) ? ".astc" : ".jpg";
     std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + "/" + GetThumbSuffix(type) + suffix;
     return ROOT_SANDBOX_DIR + ".thumbs/" + suffixStr;
+}
+
+static inline std::string GetKeyFrameSandboxPath(const std::string &path, const int32_t &beginStamp,
+    const int32_t &type)
+{
+    if (path.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    std::string suffix = (type == KEY_FRAME_THM_ASTC) ? ".astc" : ".jpg";
+    std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + "/beginTimeStamp" + std::to_string(beginStamp) +
+        "/" + GetKeyFrameThumbSuffix(type) + suffix;
+    return ROOT_MEDIA_DIR + ".thumbs/" + suffixStr;
 }
 
 static inline bool IsThumbnail(const int32_t width, const int32_t height)

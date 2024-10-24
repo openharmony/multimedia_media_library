@@ -29,6 +29,8 @@ namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
 EXPORT std::string GetLocalThumbnailPath(const std::string &path, const std::string &key);
+EXPORT std::string GetLocalKeyFrameThumbnailPath(const std::string &path, const std::string &key,
+    const std::string &timeStamp);
 EXPORT Size ConvertDecodeSize(ThumbnailData &data, const Size &sourceSize, Size &desiredSize);
 EXPORT bool GenDecodeOpts(const Size &sourceSize, const Size &targetSize, DecodeOptions &decodeOpts);
 EXPORT std::unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err);

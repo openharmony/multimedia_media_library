@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,20 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_META_RECOVERY_UNIT_TEST_H
-#define MEDIALIBRARY_META_RECOVERY_UNIT_TEST_H
+#ifndef OHOS_MEDIA_TAB_OLD_PHOTOS_OPERATIONS_H
+#define OHOS_MEDIA_TAB_OLD_PHOTOS_OPERATIONS_H
 
-#include <gtest/gtest.h>
+#include <string>
+#include <vector>
+
+#include "abs_shared_result_set.h"
+#include "medialibrary_command.h"
+#include "rdb_utils.h"
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryMetaRecoveryUnitTest : public testing::Test {
+class MediaLibraryTabOldPhotosOperations {
 public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
+    std::shared_ptr<NativeRdb::ResultSet> Query(const NativeRdb::RdbPredicates &rdbPredicate,
+        const std::vector<std::string> &columns);
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIALIBRARY_META_RECOVERY_UNIT_TEST_H
+
+#endif // OHOS_MEDIA_TAB_OLD_PHOTOS_OPERATIONS_H

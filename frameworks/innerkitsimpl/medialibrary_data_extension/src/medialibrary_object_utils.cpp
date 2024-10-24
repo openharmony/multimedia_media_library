@@ -796,6 +796,8 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     } else if (cmd.GetOprnObject() == OperationObject::PHOTO_REQUEST_PICTURE_BUFFER) {
         std::string fd = cmd.GetQuerySetParam("fd");
         return PictureHandlerService::RequestBufferHandlerFd(fd);
+    } else if (cmd.GetOprnObject() == OperationObject::KEY_FRAME) {
+        return ThumbnailService::GetInstance()->GetKeyFrameThumbnailFd(uriString, true);
     } else if (IsDocumentUri(uriString)) {
         return OpenDocument(uriString, mode);
     }

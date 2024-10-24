@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "MediaLibraryBackupUtils"
+
 #include "backup_database_utils.h"
 
 #include <nlohmann/json.hpp>

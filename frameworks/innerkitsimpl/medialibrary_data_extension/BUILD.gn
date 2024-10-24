@@ -239,6 +239,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
     "src/background_cloud_file_processor.cpp",
     "src/event_handler/album_plugin_table_event_handler.cpp",
+    "src/event_handler/tab_old_photos_table_event_handler.cpp",
     "src/hi_audit.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
@@ -271,6 +272,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_smartalbum_operations.cpp",
     "src/medialibrary_story_operations.cpp",
     "src/medialibrary_subscriber.cpp",
+    "src/medialibrary_tab_old_photos_operations.cpp",
     "src/medialibrary_uripermission_operations.cpp",
     "src/medialibrary_urisensitive_operations.cpp",
     "src/medialibrary_vision_operations.cpp",
@@ -365,6 +367,7 @@ ohos_shared_library("medialibrary_data_extension") {
   if (defined(medialibrary_mtp_enable)) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
+  defines += [ "META_RECOVERY_SUPPORT=1" ]
 
   if (!defined(global_parts_info) ||
       defined(global_parts_info.security_security_component_manager)) {

@@ -407,9 +407,14 @@ void ClearRestoreExInfo()
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_start_restore_ex_001 start");
+    RestoreInfo info;
+    info.sceneCode = UPGRADE_RESTORE_ID;
+    info.galleryAppName = EMPTY_STR;
+    info.mediaAppName = EMPTY_STR;
+    info.backupDir = EMPTY_STR;
+    info.bundleInfo = EMPTY_STR;
     string restoreExInfo = INVALID_STR;
-    BackupRestoreService::GetInstance().StartRestoreEx({ UPGRADE_RESTORE_ID, EMPTY_STR, EMPTY_STR, EMPTY_STR,
-        EMPTY_STR }, restoreExInfo);
+    BackupRestoreService::GetInstance().StartRestoreEx(nullptr, info, restoreExInfo);
     MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
     EXPECT_NE(restoreExInfo, EMPTY_STR); // upgrade is now supported
 }
@@ -417,9 +422,14 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_start_restore_ex_002 start");
+    RestoreInfo info;
+    info.sceneCode = DUAL_FRAME_CLONE_RESTORE_ID;
+    info.galleryAppName = EMPTY_STR;
+    info.mediaAppName = EMPTY_STR;
+    info.backupDir = EMPTY_STR;
+    info.bundleInfo = EMPTY_STR;
     string restoreExInfo = INVALID_STR;
-    BackupRestoreService::GetInstance().StartRestoreEx({ DUAL_FRAME_CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR, EMPTY_STR,
-        EMPTY_STR }, restoreExInfo);
+    BackupRestoreService::GetInstance().StartRestoreEx(nullptr, info, restoreExInfo);
     MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
     EXPECT_NE(restoreExInfo, EMPTY_STR); // dual clone is now supported
 }
@@ -427,9 +437,14 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_start_restore_ex_003 start");
+    RestoreInfo info;
+    info.sceneCode = CLONE_RESTORE_ID;
+    info.galleryAppName = EMPTY_STR;
+    info.mediaAppName = EMPTY_STR;
+    info.backupDir = EMPTY_STR;
+    info.bundleInfo = EMPTY_STR;
     string restoreExInfo = INVALID_STR;
-    BackupRestoreService::GetInstance().StartRestoreEx({ CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR, EMPTY_STR,
-        EMPTY_STR }, restoreExInfo);
+    BackupRestoreService::GetInstance().StartRestoreEx(nullptr, info, restoreExInfo);
     MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
     EXPECT_NE(restoreExInfo, EMPTY_STR); // single clone is now supported
 }
@@ -479,11 +494,15 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_update_failed_fil
 {
     MEDIA_INFO_LOG("medialibrary_backup_base_update_failed_files_001 start");
     ClearRestoreExInfo();
-    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE), TEST_FILE_PATH_PHOTO,
+    FileInfo fileInfo;
+    fileInfo.oldPath = TEST_FILE_PATH_PHOTO;
+    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE), fileInfo,
         RestoreError::FILE_INVALID);
-    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO), TEST_FILE_PATH_VIDEO,
+    fileInfo.oldPath = TEST_FILE_PATH_VIDEO;
+    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO), fileInfo,
         RestoreError::MOVE_FAILED);
-    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_AUDIO), TEST_FILE_PATH_AUDIO,
+    fileInfo.oldPath = TEST_FILE_PATH_AUDIO;
+    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_AUDIO), fileInfo,
         RestoreError::PATH_INVALID);
     MEDIA_INFO_LOG("Get failedFilesMap size: %{public}zu", restoreService->failedFilesMap_.size());
     EXPECT_GT(restoreService->failedFilesMap_.size(), 0);
@@ -506,12 +525,13 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_info_
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_get_failed_files_str_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_file_get_failed_files_str_001 start");
-    unordered_map<string, int32_t> failedFiles = {
-        { TEST_FILE_PATH_PHOTO, RestoreError::FILE_INVALID },
-        { TEST_FILE_PATH_VIDEO, RestoreError::MOVE_FAILED },
-        { TEST_FILE_PATH_AUDIO, RestoreError::PATH_INVALID },
+    FileInfo fileInfo;
+    unordered_map<string, FailedFileInfo> failedFiles = {
+        { TEST_FILE_PATH_PHOTO, FailedFileInfo(CLONE_RESTORE_ID, fileInfo, RestoreError::FILE_INVALID) },
+        { TEST_FILE_PATH_VIDEO, FailedFileInfo(CLONE_RESTORE_ID, fileInfo, RestoreError::MOVE_FAILED) },
+        { TEST_FILE_PATH_AUDIO, FailedFileInfo(CLONE_RESTORE_ID, fileInfo, RestoreError::PATH_INVALID) },
     };
-    string failedFilesStr = BackupFileUtils::GetFailedFilesStr(failedFiles);
+    string failedFilesStr = BackupFileUtils::GetFailedFilesStr(CLONE_RESTORE_ID, failedFiles, MAX_FAILED_FILES_LIMIT);
     MEDIA_INFO_LOG("Get failedFilesStr: %{public}s", failedFilesStr.c_str());
     EXPECT_GT(failedFilesStr.size(), 0);
 }

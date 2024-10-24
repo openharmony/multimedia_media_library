@@ -17,6 +17,7 @@
 #define OHOS_MEDIALIBRARY_RDBSTORE_H
 
 #include <memory>
+#include <mutex>
 
 #include "medialibrary_async_worker.h"
 #include "medialibrary_sync_operation.h"
@@ -100,6 +101,8 @@ private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    EXPORT static const std::string BeginGenerateHighlightThumbnail(const std::vector<std::string>& args);
+    static std::mutex reconstructLock_;
 #ifdef DISTRIBUTED
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
 #endif
@@ -109,9 +112,10 @@ private:
 
 class CompensateAlbumIdData : public AsyncTaskData {
 public:
-    CompensateAlbumIdData(NativeRdb::RdbStore *store) : upgradeStore_(store){};
+    CompensateAlbumIdData(NativeRdb::RdbStore *store, std::mutex &lock) : upgradeStore_(store), lock_(lock){};
     virtual ~CompensateAlbumIdData() override = default;
     NativeRdb::RdbStore *upgradeStore_;
+    std::mutex &lock_;
 };
 
 class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {

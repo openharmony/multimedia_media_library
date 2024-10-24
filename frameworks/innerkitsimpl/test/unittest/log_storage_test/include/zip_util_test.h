@@ -13,25 +13,21 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_META_RECOVERY_TEST_UTILS_H
-#define MEDIALIBRARY_META_RECOVERY_TEST_UTILS_H
+#ifndef ZIP_UTIL_TEST_H
+#define ZIP_UTIL_TEST_H
 
-#include <memory>
-#include <vector>
-
-#include "file_asset.h"
-#include "photo_album.h"
+#include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {
-bool CreateFile(const std::string &filePath);
-
-void InitFileAsset(FileAsset &fileAsset);
-bool CompareFileAsset(const FileAsset &fileAsset1, const FileAsset &fileAsset2);
-
-void InitPhotoAlbum(std::vector<std::shared_ptr<PhotoAlbum>> &vecPhotoAlbum, const int32_t count);
-bool ComparePhotoAlbum(const std::vector<std::shared_ptr<PhotoAlbum>> &vecPhotoAlbum1,
-    const std::vector<std::shared_ptr<PhotoAlbum>> &vecPhotoAlbum2);
+class ZipUtilTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+};
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIALIBRARY_META_RECOVERY_TEST_UTILS_H
+
+#endif // ZIP_UTIL_TEST_H

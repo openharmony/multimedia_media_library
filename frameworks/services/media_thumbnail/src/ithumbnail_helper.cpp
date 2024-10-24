@@ -40,7 +40,6 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_source_loading.h"
-#include "image_format_convert.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -65,6 +64,9 @@ void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> 
         return;
     }
     bool isSuccess = DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_);
+    if (isSuccess && !data->thumbnailData_.tracks.empty() && (data->thumbnailData_.trigger == "0")) {
+        UpdateHighlightDbState(data->opts_, data->thumbnailData_);
+    }
     UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
@@ -441,6 +443,17 @@ void UpdateLcdDbState(ThumbRdbOpt &opts, ThumbnailData &data)
     }
 }
 
+void IThumbnailHelper::UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    if (opts.table != PhotoColumn::HIGHLIGHT_TABLE) {
+        return;
+    }
+    int err = 0;
+    if (!ThumbnailUtils::UpdateHighlightInfo(opts, data, err)) {
+        MEDIA_ERR_LOG("UpdateHighlightInfo faild err : %{public}d", err);
+    }
+}
+
 bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     data.loaderOpts.decodeInThumbSize = false;
@@ -661,19 +674,6 @@ bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const Thumbna
     return true;
 }
 
-void PixelMapYuv10ToRGBA_8888(std::shared_ptr<PixelMap> &source)
-{
-    if (source == nullptr) {
-        MEDIA_ERR_LOG("source is nullptr");
-        return;
-    }
-    uint32_t ret = ImageFormatConvert::ConvertImageFormat(source, PixelFormat::RGBA_8888);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("PixelMapYuv10ToRGBA_8888: source ConvertImageFormat fail");
-    }
-    source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-}
-
 bool IThumbnailHelper::UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
     if (opts.store == nullptr) {
@@ -746,9 +746,6 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
     }
     if (data.source != nullptr && data.source->IsHdr()) {
         data.source->ToSdr();
-        if (data.mediaType == MEDIA_TYPE_VIDEO) {
-            PixelMapYuv10ToRGBA_8888(data.source);
-        }
     }
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
@@ -766,6 +763,11 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
             {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
+    }
+
+    if (!data.tracks.empty()) {
+        MEDIA_INFO_LOG("generate highlight frame, no need to create month and year astc");
+        return true;
     }
 
     // for some device that do not support KvStore, no need to generate the month and year astc.
@@ -830,9 +832,6 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
     data.loaderOpts.decodeInThumbSize = true;
     if (data.source != nullptr && data.source->IsHdr()) {
         data.source->ToSdr();
-        if (data.mediaType == MEDIA_TYPE_VIDEO) {
-            PixelMapYuv10ToRGBA_8888(data.source);
-        }
     }
     if (!ThumbnailUtils::ScaleThumbnailFromSource(data, false)) {
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
@@ -841,9 +840,6 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
     
     if (data.orientation != 0 && data.sourceEx != nullptr && data.sourceEx->IsHdr()) {
         data.sourceEx->ToSdr();
-        if (data.mediaType == MEDIA_TYPE_VIDEO) {
-            PixelMapYuv10ToRGBA_8888(data.sourceEx);
-        }
     }
     if (data.orientation != 0 && !ThumbnailUtils::ScaleThumbnailFromSource(data, true)) {
         MEDIA_ERR_LOG("Fail to scale from LCD_EX to THM_EX, path: %{public}s",
@@ -885,9 +881,6 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
     }
     if (data.source != nullptr && data.source->IsHdr()) {
         data.source->ToSdr();
-        if (data.mediaType == MEDIA_TYPE_VIDEO) {
-            PixelMapYuv10ToRGBA_8888(data.source);
-        }
     }
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
         MEDIA_ERR_LOG("DoCreateAstc GenThumbnail THUMB failed, id: %{public}s", data.id.c_str());
@@ -976,9 +969,6 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
     data.loaderOpts.decodeInThumbSize = true;
     if (data.source != nullptr && data.source->IsHdr()) {
         data.source->ToSdr();
-        if (data.mediaType == MEDIA_TYPE_VIDEO) {
-            PixelMapYuv10ToRGBA_8888(data.source);
-        }
     }
     if (!ThumbnailUtils::ScaleThumbnailFromSource(data, false)) {
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());

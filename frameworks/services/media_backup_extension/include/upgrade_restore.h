@@ -22,6 +22,7 @@
 #include "base_restore.h"
 #include "burst_key_generator.h"
 #include "photos_restore.h"
+#include "tab_old_photos_restore.h"
 
 namespace OHOS {
 namespace Media {
@@ -131,6 +132,7 @@ private:
     bool shouldIncludeSd_{false};
     PhotoAlbumRestore photoAlbumRestore_;
     std::shared_ptr<PhotosRestore> photosRestorePtr_ = std::make_shared<PhotosRestore>(this->photoAlbumRestore_);
+    TabOldPhotosRestore tabOldPhotosRestore_;
 };
 } // namespace Media
 } // namespace OHOS

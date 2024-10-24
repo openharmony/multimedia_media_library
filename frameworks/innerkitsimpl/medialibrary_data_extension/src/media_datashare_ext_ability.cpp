@@ -289,7 +289,7 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     const bool containsWrite = ContainsFlag(mode, 'w');
 
     if (cmd.GetQuerySetParam(IS_TOOL_OPEN) == TOOL_OPEN_TRUE) {
-        return IsDeveloperMediaTool(cmd)? E_SUCCESS : E_PERMISSION_DENIED;
+        return IsDeveloperMediaTool(cmd, mode)? E_SUCCESS : E_PERMISSION_DENIED;
     }
     vector<string> perms;
     FillV10Perms(mediaType, containsRead, containsWrite, perms);
@@ -418,6 +418,14 @@ static int32_t HandleShortPermission(bool &need)
         need = false;
     }
     return err;
+}
+
+static int32_t HandleRestorePermission(MediaLibraryCommand &cmd)
+{
+    if (cmd.GetUriStringWithoutSegment() == PAH_GENERATE_THUMBNAILS_RESTORE) {
+        return PermissionUtils::CheckCallerPermission(PERM_READ_IMAGEVIDEO) ? E_SUCCESS : E_PERMISSION_DENIED;
+    }
+    return E_PERMISSION_DENIED;
 }
 
 static int32_t UserFileMgrPermissionCheck(MediaLibraryCommand &cmd, const bool isWrite)
@@ -725,6 +733,9 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     if (command.GetUri().ToString().find(PhotoColumn::PHOTO_REQUEST_PICTURE_BUFFER) != string::npos) {
         command.SetOprnObject(OperationObject::PHOTO_REQUEST_PICTURE_BUFFER);
     }
+    if (command.GetUri().ToString().find(MEDIA_DATA_DB_KEY_FRAME) != string::npos) {
+        command.SetOprnObject(OperationObject::KEY_FRAME);
+    }
     return MediaLibraryDataManager::GetInstance()->OpenFile(command, unifyMode);
 }
 
@@ -803,6 +814,9 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
     if (err != E_SUCCESS) {
         err = CheckPermFromUri(cmd, true);
+    }
+    if (err != E_SUCCESS) {
+        err = HandleRestorePermission(cmd);
     }
     bool isMediatoolOperation = IsMediatoolOperation(cmd);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());

@@ -238,6 +238,7 @@ private:
     EXPORT static napi_value CreateHiddenPhotosDisplayModeEnum(napi_env env);
 
     EXPORT static napi_value CreateMediaTypeUserFileEnum(napi_env env);
+    EXPORT static napi_value CreateKeyFrameThumbnailTypeEnum(napi_env env);
 
     EXPORT static napi_value JSGetSmartAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetPrivateAlbum(napi_env env, napi_callback_info info);
@@ -279,7 +280,7 @@ private:
     EXPORT static napi_value CreateAssetsHasPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value CreateAssetWithShortTermPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value ShowAssetsCreationDialog(napi_env env, napi_callback_info info);
-    EXPORT static napi_value GrantOldPhotoAssetsReadPermission(napi_env env, napi_callback_info info);
+    EXPORT static napi_value RequestPhotoUrisReadPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperAgentCreateAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperAgentCreateAssetsWithMode(napi_env env, napi_callback_info info);
@@ -345,6 +346,7 @@ private:
     static thread_local napi_ref userFileMgrConstructor_;
     static thread_local napi_ref photoAccessHelperConstructor_;
     static thread_local napi_ref sMediaTypeEnumRef_;
+    static thread_local napi_ref sKeyFrameThumbnailTypeRef_;
     static thread_local napi_ref sDirectoryEnumRef_;
     static thread_local napi_ref sVirtualAlbumTypeEnumRef_;
     static thread_local napi_ref sFileKeyEnumRef_;

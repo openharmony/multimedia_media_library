@@ -60,6 +60,10 @@ const std::vector<std::string> mediaTypesUserFileEnum {
     "IMAGE", "VIDEO", "AUDIO"
 };
 
+const std::vector<std::string> keyFrameThumbnailTypeEnum {
+    "LCD", "THM", "THM_ASTC"
+};
+
 const std::vector<std::string> directoryEnum {
     "DIR_CAMERA", "DIR_VIDEO", "DIR_IMAGE", "DIR_AUDIO", "DIR_DOCUMENTS", "DIR_DOWNLOAD"
 };

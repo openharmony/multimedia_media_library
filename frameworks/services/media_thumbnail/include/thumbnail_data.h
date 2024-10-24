@@ -101,6 +101,10 @@ public:
     EXPORT std::string path;
     EXPORT std::string thumbnailKey;
     EXPORT std::string lcdKey;
+    EXPORT std::string tracks;
+    EXPORT std::string trigger;
+    EXPORT std::string frame;
+    EXPORT std::string timeStamp;
     EXPORT Size lcdDesiredSize;
     EXPORT Size thumbDesiredSize;
     EXPORT GenerateStats stats;

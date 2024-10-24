@@ -47,6 +47,7 @@
 #include "media_directory_type_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "media_old_photos_column.h"
 #include "media_scanner_manager.h"
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
@@ -78,6 +79,7 @@
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_story_operations.h"
 #include "medialibrary_sync_operation.h"
+#include "medialibrary_tab_old_photos_operations.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_uripermission_operations.h"
@@ -189,9 +191,6 @@ static void MakeRootDirs(AsyncTaskData *data)
         }
         MediaFileUtils::CheckDirStatus(DIR_CHECK_SET, ROOT_MEDIA_DIR + dir);
     }
-    if (data->dataDisplay.compare(E_POLICY) == 0 && !PermissionUtils::SetEPolicy()) {
-        MEDIA_ERR_LOG("Failed to SetEPolicy fail");
-    }
     MediaFileUtils::MediaFileDeletionRecord();
     // recover temp dir
     MediaFileUtils::RecoverMediaTempDir();
@@ -278,7 +277,7 @@ static int32_t ExcuteAsyncWork()
 
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
-    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode)
+    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode, bool isNeedCreateDir)
 {
     lock_guard<shared_mutex> lock(mgrSharedMutex_);
 
@@ -307,8 +306,10 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     CHECK_AND_WARN_LOG(errCode == E_OK, "failed at MakeDirQuerySetMap");
     InitACLPermission();
     InitDatabaseACLPermission();
-    errCode = ExcuteAsyncWork();
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at ExcuteAsyncWork");
+    if (isNeedCreateDir) {
+        errCode = ExcuteAsyncWork();
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at ExcuteAsyncWork");
+    }
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
     ReconstructMediaLibraryPhotoMap();
@@ -324,11 +325,15 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     cloudSyncSwitchManager.RegisterObserver();
 
     refCnt_++;
+
+#ifdef META_RECOVERY_SUPPORT
     // TEMP: avoid Process backup call StartAsyncRecovery
     // Should remove this judgment at refactor in OpenHarmony5.1
     if (extensionContext != nullptr) {
         MediaLibraryMetaRecovery::GetInstance().StartAsyncRecovery();
     }
+#endif
+
     return E_OK;
 }
 
@@ -1172,6 +1177,20 @@ int32_t MediaLibraryDataManager::GenerateThumbnailBackground()
     return thumbnailService_->GenerateThumbnailBackground();
 }
 
+int32_t MediaLibraryDataManager::GenerateHighlightThumbnailBackground()
+{
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+
+    if (thumbnailService_ == nullptr) {
+        return E_THUMBNAIL_SERVICE_NULLPTR;
+    }
+    return thumbnailService_->GenerateHighlightThumbnailBackground();
+}
+
 int32_t MediaLibraryDataManager::UpgradeThumbnailBackground(bool isWifiConnected)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
@@ -1723,6 +1742,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
         case OperationObject::ANALYSIS_ADDRESS:
             return QueryGeo(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        case OperationObject::TAB_OLD_PHOTO:
+            return MediaLibraryTabOldPhotosOperations().Query(
+                RdbUtils::ToPredicates(predicates, TabOldPhotosColumn::OLD_PHOTOS_TABLE), columns);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
@@ -1791,7 +1813,8 @@ int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
     if (oprnObject != OperationObject::THUMBNAIL && oprnObject != OperationObject::THUMBNAIL_ASTC &&
-        oprnObject != OperationObject::REQUEST_PICTURE && oprnObject != OperationObject::PHOTO_REQUEST_PICTURE_BUFFER) {
+        oprnObject != OperationObject::REQUEST_PICTURE && oprnObject != OperationObject::PHOTO_REQUEST_PICTURE_BUFFER &&
+        oprnObject != OperationObject::KEY_FRAME) {
         string opObject = MediaFileUri::GetPathFirstDentry(const_cast<Uri &>(cmd.GetUri()));
         if (opObject == IMAGE_ASSET_TYPE || opObject == VIDEO_ASSET_TYPE || opObject == URI_TYPE_PHOTO) {
             cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
@@ -2013,12 +2036,6 @@ int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryComm
     ValueObject valueObject;
     if (value.GetObject(THUMBNAIL_BATCH_GENERATE_REQUEST_ID, valueObject)) {
         valueObject.GetInt(requestId);
-    } else {
-        return -EINVAL;
-    }
-    if (requestId <= 0) {
-        MEDIA_ERR_LOG("invalid request id");
-        return E_INVALID_VALUES;
     }
 
     if (cmd.GetOprnType() == OperationType::START_GENERATE_THUMBNAILS) {
@@ -2027,6 +2044,8 @@ int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryComm
     } else if (cmd.GetOprnType() == OperationType::STOP_GENERATE_THUMBNAILS) {
         thumbnailService_->CancelAstcBatchTask(requestId);
         return E_OK;
+    } else if (cmd.GetOprnType() == OperationType::GENERATE_THUMBNAILS_RESTORE) {
+        return thumbnailService_->RestoreThumbnailDualFrame();
     } else {
         MEDIA_ERR_LOG("invalid mediaLibrary command");
         return E_INVALID_ARGUMENTS;

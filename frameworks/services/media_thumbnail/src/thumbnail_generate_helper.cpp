@@ -17,6 +17,7 @@
 #include "thumbnail_generate_helper.h"
 
 #include <fcntl.h>
+#include <securec.h>
 
 #include "acl.h"
 #include "dfx_const.h"
@@ -292,6 +293,16 @@ int32_t ThumbnailGenerateHelper::GetNoAstcData(ThumbRdbOpt &opts, vector<Thumbna
     return E_OK;
 }
 
+int32_t ThumbnailGenerateHelper::GetNoHighlightData(ThumbRdbOpt &opts, vector<ThumbnailData> &outDatas)
+{
+    int32_t err = E_ERR;
+    if (!ThumbnailUtils::QueryNoHighlightInfos(opts, outDatas, err)) {
+        MEDIA_ERR_LOG("Failed to QueryNoHighlightInfos %{public}d", err);
+        return err;
+    }
+    return E_OK;
+}
+
 int32_t ThumbnailGenerateHelper::GetNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count)
 {
     int32_t err = E_ERR;
@@ -315,6 +326,25 @@ bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailTyp
         IThumbnailHelper::UpdateThumbnailState(opts, data, isSuccess);
         if (!isSuccess) {
             MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s",
+                DfxUtils::GetSafePath(data.path).c_str());
+            return false;
+        }
+    }
+    return true;
+}
+
+bool GenerateKeyFrameLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int32_t thumbType)
+{
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    if (thumbType == KEY_FRAME_LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
+        MEDIA_ERR_LOG("Get key frame lcd thumbnail pixelmap, doCreateLcd failed: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+        return false;
+    }
+    if (thumbType != KEY_FRAME_LCD) {
+        bool isSuccess = IThumbnailHelper::DoCreateThumbnail(opts, data);
+        if (!isSuccess) {
+            MEDIA_ERR_LOG("Get default key frame thumbnail pixelmap, doCreateThumbnail failed: %{public}s",
                 DfxUtils::GetSafePath(data.path).c_str());
             return false;
         }
@@ -363,6 +393,30 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
     return E_OK;
 }
 
+int32_t ThumbnailGenerateHelper::GetAvailableKeyFrameFile(ThumbRdbOpt &opts, ThumbnailData &data, int32_t thumbType,
+    std::string &fileName)
+{
+    string thumbSuffix = GetKeyFrameThumbSuffix(thumbType);
+    fileName = GetThumbnailPathHighlight(data.path, thumbSuffix, data.timeStamp);
+    // No need to create keyFrame thumbnails if corresponding file exists
+    if (access(fileName.c_str(), F_OK) == 0) {
+        MEDIA_INFO_LOG("GetAvailableKeyFrameFile: file exists, path: %{public}s",
+            DfxUtils::GetSafePath(fileName).c_str());
+        return E_OK;
+    }
+
+    MEDIA_INFO_LOG("GetAvailableKeyFrameFile: no available file, create thumbnail, path: %{public}s",
+        DfxUtils::GetSafePath(fileName).c_str());
+    if (!GenerateKeyFrameLocalThumbnail(opts, data, thumbType)) {
+        MEDIA_ERR_LOG("GenerateKeyFrameLocalThumbnail failed");
+        return E_THUMBNAIL_LOCAL_CREATE_FAIL;
+    }
+    if (!opts.path.empty()) {
+        fileName = GetThumbnailPathHighlight(data.path, thumbSuffix, data.timeStamp);
+    }
+    return E_OK;
+}
+
 bool IsLocalThumbnailAvailable(ThumbnailData &data, ThumbnailType thumbType)
 {
     string tmpPath = "";
@@ -373,6 +427,23 @@ bool IsLocalThumbnailAvailable(ThumbnailData &data, ThumbnailType thumbType)
             break;
         case ThumbnailType::LCD:
             tmpPath =  GetLocalThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
+            break;
+        default:
+            break;
+    }
+    return access(tmpPath.c_str(), F_OK) == 0;
+}
+
+bool IsLocalKeyFrameThumbnailAvailable(ThumbnailData &data, int32_t type)
+{
+    string tmpPath = "";
+    switch (type) {
+        case KEY_FRAME_THM:
+        case KEY_FRAME_THM_ASTC:
+            tmpPath = GetLocalKeyFrameThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX, data.timeStamp);
+            break;
+        case KEY_FRAME_LCD:
+            tmpPath = GetLocalKeyFrameThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX, data.timeStamp);
             break;
         default:
             break;
@@ -477,6 +548,104 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
     return fd;
 }
 
+int32_t ThumbnailGenerateHelper::GetKeyFrameThumbnailPixelMap(ThumbRdbOpt &opts, int32_t &timeStamp, int32_t &type)
+{
+    ThumbnailWait thumbnailWait(false);
+    thumbnailWait.CheckAndWait(opts.row, type == KEY_FRAME_LCD);
+    vector<int> trackInfos;
+    int32_t errTracks = E_ERR;
+    if (!ThumbnailUtils::GetHighlightTracks(opts, trackInfos, errTracks)) {
+        MEDIA_ERR_LOG("Failed to GetHighlightTracks %{public}d", errTracks);
+        return errTracks;
+    }
+    if (find(trackInfos.begin(), trackInfos.end(), timeStamp) == trackInfos.end()) {
+        timeStamp = 0;
+        MEDIA_ERR_LOG("Not the frame of the highlight tracks, return the first frame");
+    }
+
+    ThumbnailData thumbnailData;
+    thumbnailData.path = opts.path;
+    thumbnailData.id = opts.row;
+    thumbnailData.dateTaken = opts.dateTaken;
+    thumbnailData.fileUri = opts.fileUri;
+    thumbnailData.stats.uri = thumbnailData.fileUri;
+    thumbnailData.timeStamp = std::to_string(timeStamp);
+    thumbnailData.tracks = "tracks";
+
+    string fileName;
+    int err = GetAvailableKeyFrameFile(opts, thumbnailData, type, fileName);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("GetAvailableKeyFrameFile failed, path: %{public}s",
+            DfxUtils::GetSafePath(thumbnailData.path).c_str());
+        return err;
+    }
+
+    string absFilePath;
+    if (!PathToRealPath(fileName, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{public}s",
+            DfxUtils::GetSafePath(fileName).c_str());
+        return E_ERR;
+    }
+
+    auto fd = open(absFilePath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        MEDIA_ERR_LOG("GetKeyFrameThumbnailPixelMap: open file failed path: %{public}s",
+            DfxUtils::GetSafePath(thumbnailData.path).c_str());
+        return E_ERR;
+    }
+    return fd;
+}
+
+int32_t ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(ThumbRdbOpt &opts)
+{
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is not init");
+        return E_ERR;
+    }
+
+    vector<ThumbnailData> infos;
+    int32_t err = GetNoHighlightData(opts, infos);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to GetNoHighlightData %{public}d", err);
+        return err;
+    }
+    if (infos.empty()) {
+        MEDIA_DEBUG_LOG("No need generate highlight thumbnail.");
+        return E_OK;
+    }
+
+    for (uint32_t i = 0; i < infos.size(); i++) {
+        opts.row = infos[i].id;
+        infos[i].loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
+            opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
+    }
+    return E_OK;
+}
+
+int32_t ThumbnailGenerateHelper::TriggerHighlightThumbnail(ThumbRdbOpt &opts, std::string &id, std::string &tracks,
+    std::string &trigger, std::string &genType)
+{
+    ThumbnailData data;
+    data.id = id;
+    data.tracks = tracks;
+    data.trigger = trigger;
+
+    int32_t err = E_ERR;
+    if (!ThumbnailUtils::QueryHighlightTriggerPath(opts, data, err)) {
+        MEDIA_ERR_LOG("Failed to QueryHighlightTriggerPath %{public}d", err);
+        return err;
+    }
+    if (genType == MEDIA_DATA_DB_UPDATE_TYPE && ThumbnailUtils::DeleteBeginTimestampDir(data)) {
+        MEDIA_INFO_LOG("Delete beginTimeStampDir success");
+    }
+    opts.row = data.id;
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
+        opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
+    return E_OK;
+}
+
 int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts, bool isWifiConnected)
 {
     if (opts.store == nullptr) {
@@ -525,7 +694,14 @@ int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts)
     }
 
     MEDIA_INFO_LOG("create astc for restored dual frame photos count:%{public}zu", infos.size());
-    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, FFRT_MAX_RESTORE_ASTC_THREADS);
+    ffrt_worker_num_param qosConfig;
+    if (memset_s(&qosConfig, sizeof(qosConfig), -1, sizeof(qosConfig)) == EOK) {
+        qosConfig.effectLen = 1;
+        qosConfig.qosConfigArray[0].qos = ffrt::qos_utility;
+        qosConfig.qosConfigArray[0].hardLimit = FFRT_MAX_RESTORE_ASTC_THREADS;
+        ffrt_set_qos_worker_num(&qosConfig);
+    }
+
     for (auto &info : infos) {
         opts.row = info.id;
         if (!info.isLocalFile) {
@@ -534,11 +710,10 @@ int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts)
         }
         info.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::RESTORE, LoadSourceType::LOCAL_PHOTO);
-        std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(opts, info);
-        ffrt::submit(std::bind(&IThumbnailHelper::CreateThumbnail, taskData), {}, {},
-            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateThumbnail, opts, info,
+            ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::MID);
     }
-    ffrt::wait();
+
     MEDIA_INFO_LOG("create astc for restored dual frame photos finished");
     return E_OK;
 }
