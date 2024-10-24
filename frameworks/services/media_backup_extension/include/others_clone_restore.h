@@ -58,8 +58,13 @@ private:
     void UpDateFileModifiedTime(FileInfo &fileInfo);
     void GetCloneDbInfos(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo);
     bool HasSameFileForDualClone(FileInfo &fileInfo);
+    void HandleSelectBatch(std::shared_ptr<NativeRdb::RdbStore> mediaRdb, int32_t offset, int32_t sceneCode,
+        std::vector<CloneDbInfo> &mediaDbInfo);
+    void CloneInfoPushBack(std::vector<CloneDbInfo> &pushInfos, std::vector<CloneDbInfo> &popInfos);
+    void HandleInsertBatch(int32_t offset);
 
 private:
+    std::mutex cloneMutex_;
     std::string clonePhoneName_;
     std::string mediaAppName_;
     std::vector<FileInfo> photoInfos_;
