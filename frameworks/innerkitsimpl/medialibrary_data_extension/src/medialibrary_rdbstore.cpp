@@ -3993,6 +3993,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
         AddHighlightInsertAndUpdateTrigger(store);
         AddHighlightIndex(store);
     }
+
+    if (oldVersion < VERSION_ALTER_THUMBNAIL_VISIBLE) {
+        AlterThumbnailVisible(store);
+    }
 }
 
 static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
@@ -4052,10 +4056,6 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_COMPAT_LIVE_PHOTO) {
         CompatLivePhoto(store, oldVersion);
-    }
-
-    if (oldVersion < VERSION_ALTER_THUMBNAIL_VISIBLE) {
-        AlterThumbnailVisible(store);
     }
 
     UpgradeExtensionPart4(store, oldVersion);
