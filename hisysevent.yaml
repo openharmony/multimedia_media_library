@@ -139,3 +139,30 @@ MEDIALIB_CLOUDENHANCEMENT_STAT:
   PHOTO_ID: { type: STRING, desc: photo id }
   TOTAL_TIME_COST: { type: UINT64, desc: total time cost of cloud enhancement }
   COMPLETE_TYPE: { type: STRING, desc: types of cloudenhancement task completion}
+
+MEDIALIB_BACKUP_MEDIA_STAT:
+  __BASE: {type: STATISTIC, level: CRITICAL, desc: Report the under-transferred media statistic info before Upgrade Restore task., preserve: true }
+  SCENE_CODE: { type: INT32, desc: Scenarios, such as dual-to-single-dual-to-single-cloned single-to-single }
+  TASK_ID: { type: STRING, desc:Task ID, which is used to distinguish events reported in the same batch. }
+  ALBUM_NAME: { type: STRING, desc: Album name (general reference) }
+  TOTAL_COUNT: { type: INT32, desc: Total Assets }
+  IMAGE_COUNT: { type: INT32, desc: Total number of pictures }
+  VIDEO_COUNT: { type: INT32, desc: Total number of videos }
+  HIDDEN_COUNT: { type: INT32, desc: Number of hidden assets }
+  TRASHED_COUNT: { type: INT32, desc: Number of deleted assets }
+  FAVORITE_COUNT: { type: INT32, desc: Number of Favorited Assets }
+  CLOUD_COUNT: { type: INT32, desc: Pure Cloud Asset Quantity }
+  BURST_COVER_COUNT: { type: INT32, desc: Number of Cover Images }
+  BURST_TOTAL_COUNT: { type: INT32, desc: Total number of continuous pictures }
+ 
+MEDIALIB_BACKUP_RESTORE_RESULT:
+  __BASE: {type: STATISTIC, level: CRITICAL, desc: Report the data transfer result after Upgrade Restore task., preserve: true }
+  SCENE_CODE: { type: INT32, desc: Scenarios, such as dual-to-single-dual-to-single-cloned single-to-single }
+  TASK_ID: { type: STRING, desc: Task ID, which is used to distinguish events reported in the same batch. }
+  ERROR_CODE: { type: STRING, desc: Execution result code }
+  ERROR_INFO: { type: STRING, desc: Execution Information }
+  TYPE: { type: STRING, desc: Error Type }
+  BACKUP_INFO: { type: STRING, desc: Asset type, such as image, video, and audio }
+  DUPLICATE_COUNT: { type: INT32, desc: Number of existing assets of the new device }
+  FAILED_COUNT: { type: INT32, desc: Number of assets that fail to be migrated }
+  SUCCESS_COUNT: { type: INT32, desc: Number of Successfully Migrated Assets }
