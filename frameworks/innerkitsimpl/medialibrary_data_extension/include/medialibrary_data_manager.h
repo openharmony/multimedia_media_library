@@ -73,6 +73,7 @@ public:
     EXPORT std::string GetType(const Uri &uri);
     EXPORT void NotifyChange(const Uri &uri);
     EXPORT int32_t GenerateThumbnailBackground();
+    EXPORT int32_t GenerateHighlightThumbnailBackground();
 
     // upgrade existed thumbnails to fix such as size, rotation and quality etc. problems
     EXPORT int32_t UpgradeThumbnailBackground(bool isWifiConnected);
@@ -95,7 +96,8 @@ public:
     EXPORT std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 
     EXPORT int32_t InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context,
-        const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode);
+        const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext,
+        int32_t &sceneCode, bool isNeedCreateDir = true);
     EXPORT void ClearMediaLibraryMgr();
     EXPORT int32_t MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
     EXPORT void CreateThumbnailAsync(const std::string &uri, const std::string &path);

@@ -15,7 +15,13 @@
 
 #define MLOG_TAG "MediaLibraryRestoreService"
 
+#include <securec.h>
+#include <context.h>
+#include <context_impl.h>
+
+#include "backup_file_utils.h"
 #include "backup_restore_service.h"
+#include "ffrt_inner.h"
 #include "media_log.h"
 #include "clone_restore.h"
 #include "upgrade_restore.h"
@@ -30,6 +36,7 @@ const int DUAL_FOURTH_NUMBER = 114;
 const int DUAL_FIFTH_NUMBER = 111;
 const int DUAL_SIXTH_NUMBER = 105;
 const int DUAL_SEVENTH_NUMBER = 100;
+constexpr int32_t MAX_THREAD_NUM = 4;
 BackupRestoreService &BackupRestoreService::GetInstance(void)
 {
     static BackupRestoreService inst;
@@ -48,7 +55,7 @@ std::string GetDualDirName()
     return dualDirName;
 }
 
-void BackupRestoreService::Init(const RestoreEx &info)
+void BackupRestoreService::Init(const RestoreInfo &info)
 {
     if (restoreService_ != nullptr) {
         return;
@@ -71,26 +78,40 @@ void BackupRestoreService::Init(const RestoreEx &info)
     }
 }
 
-void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &galleryAppName,
-    const std::string &mediaAppName, const std::string &backupDir)
+void BackupRestoreService::StartRestore(const std::shared_ptr<AbilityRuntime::Context> &context,
+    const RestoreInfo &info)
 {
-    MEDIA_INFO_LOG("Start restore service: %{public}d", sceneCode);
-    Init({sceneCode, galleryAppName, mediaAppName, backupDir, ""});
+    MEDIA_INFO_LOG("Start restore service: %{public}d", info.sceneCode);
+    Init(info);
     if (restoreService_ == nullptr) {
         MEDIA_ERR_LOG("Create media restore service failed.");
         return;
     }
+    if (context != nullptr) {
+        BackupFileUtils::CreateDataShareHelper(context->GetToken());
+    }
     restoreService_->StartRestore(serviceBackupDir_, UPGRADE_FILE_DIR);
 }
 
-void BackupRestoreService::StartRestoreEx(const RestoreEx &info, std::string &restoreExInfo)
+void BackupRestoreService::StartRestoreEx(const std::shared_ptr<AbilityRuntime::Context> &context,
+    const RestoreInfo &info, std::string &restoreExInfo)
 {
     MEDIA_INFO_LOG("Start restoreEx service: %{public}d", info.sceneCode);
+    ffrt_worker_num_param qosConfig;
+    if (memset_s(&qosConfig, sizeof(qosConfig), -1, sizeof(qosConfig)) == EOK) {
+        qosConfig.effectLen = 1;
+        qosConfig.qosConfigArray[0].qos = ffrt::qos_utility;
+        qosConfig.qosConfigArray[0].hardLimit = MAX_THREAD_NUM;
+        ffrt_set_qos_worker_num(&qosConfig);
+    }
     Init(info);
     if (restoreService_ == nullptr) {
         MEDIA_ERR_LOG("Create media restore service failed.");
         restoreExInfo = "";
         return;
+    }
+    if (context != nullptr) {
+        BackupFileUtils::CreateDataShareHelper(context->GetToken());
     }
     restoreService_->StartRestoreEx(serviceBackupDir_, UPGRADE_FILE_DIR, restoreExInfo);
 }
@@ -121,6 +142,22 @@ void BackupRestoreService::GetProgressInfo(std::string &progressInfo)
         return;
     }
     progressInfo = restoreService_->GetProgressInfo();
+}
+
+void BackupRestoreService::StartBackup(int32_t sceneCode, const std::string &galleryAppName,
+    const std::string &mediaAppName)
+{
+    MEDIA_INFO_LOG("Start backup service: %{public}d", sceneCode);
+    if (sceneCode != CLONE_RESTORE_ID) {
+        MEDIA_ERR_LOG("StartBackup current scene is not supported");
+        return;
+    }
+    Init({CLONE_RESTORE_ID, galleryAppName, mediaAppName, "", ""});
+    if (restoreService_ == nullptr) {
+        MEDIA_ERR_LOG("Create media backup service failed.");
+        return;
+    }
+    restoreService_->StartBackup();
 }
 } // namespace Media
 } // namespace OHOS

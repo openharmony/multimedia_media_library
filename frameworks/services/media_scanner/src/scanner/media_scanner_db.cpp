@@ -533,7 +533,7 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
                 MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING,
                 MediaColumn::MEDIA_DATE_ADDED, PhotoColumn::PHOTO_DATE_DAY, MediaColumn::MEDIA_OWNER_PACKAGE,
                 PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
-                PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_QUALITY,
+                PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_QUALITY, MediaColumn::MEDIA_DATE_TAKEN,
             };
         } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
             columns = {

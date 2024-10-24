@@ -22,8 +22,8 @@
 #include "location_column.h"
 #include "media_app_uri_permission_column.h"
 #include "media_column.h"
+#include "media_old_photos_column.h"
 #include "medialibrary_db_const.h"
-#include "media_app_uri_permission_column.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "search_column.h"
@@ -85,6 +85,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_BATCH_THUMBNAIL_OPERATE, OperationObject::PAH_BATCH_THUMBNAIL_OPERATE },
         { CHECK_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
         { PAH_CLOUD_ENHANCEMENT_OPERATE, OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE },
+        { TAB_OLD_PHOTO, OperationObject::TAB_OLD_PHOTO },
 
         // use in Vision
         { PAH_ANA_OCR, OperationObject::VISION_OCR },
@@ -189,6 +190,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::ANALYSIS_ADDRESS, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
             { { OperationType::UNKNOWN_TYPE, VISION_ANALYSIS_ALBUM_TOTAL_TABLE } } },
+        { OperationObject::TAB_OLD_PHOTO, { { OperationType::UNKNOWN_TYPE, TabOldPhotosColumn::OLD_PHOTOS_TABLE } }},
 
         // search
         { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },
@@ -286,6 +288,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_REMOVE_MSC_TASK, OperationType::REMOVE_MSC_TASK },
         { OPRN_START_GENERATE_THUMBNAILS, OperationType::START_GENERATE_THUMBNAILS },
         { OPRN_STOP_GENERATE_THUMBNAILS, OperationType::STOP_GENERATE_THUMBNAILS },
+        { OPRN_GENERATE_THUMBNAILS_RESTORE, OperationType::GENERATE_THUMBNAILS_RESTORE },
         { OPRN_TOOL_QUERY_BY_DISPLAY_NAME, OperationType::TOOL_QUERY_BY_DISPLAY_NAME },
         { OPRN_ADD_LOWQUALITY_IMAGE, OperationType::ADD_LOWQUALITY_IMAGE },
         { OPRN_FINISH_REQUEST_PICTURE, OperationType::FINISH_REQUEST_PICTURE },

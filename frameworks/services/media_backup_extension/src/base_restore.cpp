@@ -86,14 +86,17 @@ int32_t BaseRestore::Init(void)
         MEDIA_ERR_LOG("Failed to get context");
         return E_FAIL;
     }
-    BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo =
-        BackgroundTaskMgr::EfficiencyResourceInfo(BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
-    BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
     int32_t err = BackupDatabaseUtils::InitDb(mediaLibraryRdb_, MEDIA_DATA_ABILITY_DB_NAME, DATABASE_PATH, BUNDLE_NAME,
         true, context->GetArea());
     if (err != E_OK) {
         MEDIA_ERR_LOG("medialibrary rdb fail, err = %{public}d", err);
         return E_FAIL;
+    }
+    int32_t sceneCode = 0;
+    int32_t errCode = MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context, nullptr, sceneCode, false);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("When restore, InitMediaLibraryMgr fail, errcode = %{public}d", errCode);
+        return errCode;
     }
     migrateDatabaseNumber_ = 0;
     migrateFileNumber_ = 0;
@@ -237,7 +240,8 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         fileInfos[i].cloudPath = cloudPath;
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
         SetValueFromMetaData(fileInfos[i], value);
-        if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID && this->HasSameFileForDualClone(fileInfos[i])) {
+        if ((sceneCode == DUAL_FRAME_CLONE_RESTORE_ID || sceneCode == OTHERS_PHONE_CLONE_RESTORE) &&
+            this->HasSameFileForDualClone(fileInfos[i])) {
             fileInfos[i].needMove = false;
             RemoveDuplicateDualCloneFiles(fileInfos[i]);
             MEDIA_WARN_LOG("File %{public}s already exists.",
@@ -273,7 +277,7 @@ static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::Valu
 }
 
 static void InsertOrientation(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
-    const FileInfo &fileInfo)
+    FileInfo &fileInfo, int32_t sceneCode)
 {
     bool hasOrientation = value.HasColumn(PhotoColumn::PHOTO_ORIENTATION);
     if (hasOrientation && fileInfo.fileType != MEDIA_TYPE_VIDEO) {
@@ -283,6 +287,9 @@ static void InsertOrientation(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
         value.Delete(PhotoColumn::PHOTO_ORIENTATION);
     }
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata->GetOrientation()); // video use orientation in metadata
+    if (sceneCode == OTHERS_PHONE_CLONE_RESTORE) {
+        fileInfo.orientation = metadata->GetOrientation();
+    }
 }
 
 static void SetCoverPosition(const FileInfo &fileInfo,
@@ -344,7 +351,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
     value.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, data->GetDynamicRangeType());
     InsertDateAdded(data, value);
-    InsertOrientation(data, value, fileInfo);
+    InsertOrientation(data, value, fileInfo, sceneCode_);
     int64_t dateAdded = 0;
     ValueObject valueObject;
     if (value.GetObject(MediaColumn::MEDIA_DATE_ADDED, valueObject)) {
@@ -410,7 +417,7 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
         if (moveErrCode != E_SUCCESS) {
             MEDIA_ERR_LOG("MoveFile failed, filePath: %{public}s, errCode: %{public}d, errno: %{public}d",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(), moveErrCode, errno);
-            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::MOVE_FAILED);
+            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
             continue;
         }
         BackupFileUtils::ModifyFile(dstPath, fileInfos[i].dateModified / MSEC_TO_SEC);
@@ -493,7 +500,7 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
             continue;
         }
         if (!MoveAndModifyFile(fileInfos[i], sceneCode)) {
-            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::MOVE_FAILED);
+            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
             moveFailedData.push_back(fileInfos[i].cloudPath);
             continue;
         }
@@ -759,19 +766,20 @@ nlohmann::json BaseRestore::GetCountInfoJson(const std::vector<std::string> &cou
 {
     nlohmann::json countInfoJson;
     countInfoJson[STAT_KEY_TYPE] = STAT_VALUE_COUNT_INFO;
+    size_t limit = MAX_FAILED_FILES_LIMIT;
     for (const auto &type : countInfoTypes) {
         SubCountInfo subCountInfo = GetSubCountInfo(type);
         MEDIA_INFO_LOG("SubCountInfo %{public}s success: %{public}lld, duplicate: %{public}lld, failed: %{public}zu",
             type.c_str(), (long long)subCountInfo.successCount, (long long)subCountInfo.duplicateCount,
             subCountInfo.failedFiles.size());
-        countInfoJson[STAT_KEY_INFOS].push_back(GetSubCountInfoJson(type, subCountInfo));
+        countInfoJson[STAT_KEY_INFOS].push_back(GetSubCountInfoJson(type, subCountInfo, limit));
     }
     return countInfoJson;
 }
 
 SubCountInfo BaseRestore::GetSubCountInfo(const std::string &type)
 {
-    std::unordered_map<std::string, int32_t> failedFiles = GetFailedFiles(type);
+    std::unordered_map<std::string, FailedFileInfo> failedFiles = GetFailedFiles(type);
     if (type == STAT_TYPE_PHOTO) {
         return SubCountInfo(migrateFileNumber_ - migrateVideoFileNumber_, migratePhotoDuplicateNumber_, failedFiles);
     }
@@ -781,10 +789,10 @@ SubCountInfo BaseRestore::GetSubCountInfo(const std::string &type)
     return SubCountInfo(migrateAudioFileNumber_, migrateAudioDuplicateNumber_, failedFiles);
 }
 
-std::unordered_map<std::string, int32_t> BaseRestore::GetFailedFiles(const std::string &type)
+std::unordered_map<std::string, FailedFileInfo> BaseRestore::GetFailedFiles(const std::string &type)
 {
     std::lock_guard<mutex> lock(failedFilesMutex_);
-    std::unordered_map<std::string, int32_t> failedFiles;
+    std::unordered_map<std::string, FailedFileInfo> failedFiles;
     auto iter = failedFilesMap_.find(type);
     if (iter != failedFilesMap_.end()) {
         return iter->second;
@@ -792,14 +800,27 @@ std::unordered_map<std::string, int32_t> BaseRestore::GetFailedFiles(const std::
     return failedFiles;
 }
 
-nlohmann::json BaseRestore::GetSubCountInfoJson(const std::string &type, const SubCountInfo &subCountInfo)
+nlohmann::json BaseRestore::GetSubCountInfoJson(const std::string &type, const SubCountInfo &subCountInfo,
+    size_t &limit)
 {
     nlohmann::json subCountInfoJson;
     subCountInfoJson[STAT_KEY_BACKUP_INFO] = type;
     subCountInfoJson[STAT_KEY_SUCCESS_COUNT] = subCountInfo.successCount;
     subCountInfoJson[STAT_KEY_DUPLICATE_COUNT] = subCountInfo.duplicateCount;
     subCountInfoJson[STAT_KEY_FAILED_COUNT] = subCountInfo.failedFiles.size();
-    subCountInfoJson[STAT_KEY_DETAILS] = BackupFileUtils::GetDetailsPath(type, subCountInfo.failedFiles);
+    // update currentLimit = min(limit, failedFiles.size())
+    size_t currentLimit = limit <= subCountInfo.failedFiles.size() ? limit : subCountInfo.failedFiles.size();
+    std::string detailsPath;
+    std::vector<std::string> failedFilesList;
+    if (sceneCode_ == UPGRADE_RESTORE_ID) {
+        detailsPath = BackupFileUtils::GetDetailsPath(sceneCode_, type, subCountInfo.failedFiles, currentLimit);
+        subCountInfoJson[STAT_KEY_DETAILS] = detailsPath;
+    } else {
+        failedFilesList = BackupFileUtils::GetFailedFilesList(sceneCode_, subCountInfo.failedFiles, currentLimit);
+        subCountInfoJson[STAT_KEY_DETAILS] = failedFilesList;
+    }
+    MEDIA_INFO_LOG("Get %{public}s details size: %{public}zu", type.c_str(), currentLimit);
+    limit -= currentLimit; // update total limit
     return subCountInfoJson;
 }
 
@@ -819,37 +840,36 @@ void BaseRestore::SetErrorCode(int32_t errorCode)
     errorInfo_ = iter->second;
 }
 
-void BaseRestore::UpdateFailedFileByFileType(int32_t fileType, const std::string &filePath, int32_t errorCode)
+void BaseRestore::UpdateFailedFileByFileType(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode)
 {
     std::lock_guard<mutex> lock(failedFilesMutex_);
+    FailedFileInfo failedFileInfo(sceneCode_, fileInfo, errorCode);
     if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE)) {
-        failedFilesMap_[STAT_TYPE_PHOTO][filePath] = errorCode;
+        failedFilesMap_[STAT_TYPE_PHOTO].emplace(fileInfo.oldPath, failedFileInfo);
         return;
     }
     if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
-        failedFilesMap_[STAT_TYPE_VIDEO][filePath] = errorCode;
+        failedFilesMap_[STAT_TYPE_VIDEO].emplace(fileInfo.oldPath, failedFileInfo);
         return;
     }
     if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_AUDIO)) {
-        failedFilesMap_[STAT_TYPE_AUDIO][filePath] = errorCode;
+        failedFilesMap_[STAT_TYPE_AUDIO].emplace(fileInfo.oldPath, failedFileInfo);
         return;
     }
     MEDIA_ERR_LOG("Unsupported file type: %{public}d", fileType);
 }
 
-void BaseRestore::UpdateFailedFiles(int32_t fileType, const std::string &filePath, int32_t errorCode)
+void BaseRestore::UpdateFailedFiles(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode)
 {
     SetErrorCode(errorCode);
-    std::string realPath = sceneCode_ != CLONE_RESTORE_ID ? filePath :
-        BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL, filePath);
-    UpdateFailedFileByFileType(fileType, realPath, errorCode);
+    UpdateFailedFileByFileType(fileType, fileInfo, errorCode);
 }
 
 void BaseRestore::UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode)
 {
     SetErrorCode(errorCode);
     for (const auto &fileInfo : fileInfos) {
-        UpdateFailedFileByFileType(fileInfo.fileType, fileInfo.oldPath, errorCode);
+        UpdateFailedFileByFileType(fileInfo.fileType, fileInfo, errorCode);
     }
 }
 
@@ -1145,8 +1165,11 @@ void BaseRestore::RestoreThumbnail()
     otherProcessStatus_ = ProcessStatus::START;
     otherTotalNumber_ += THUMBNAIL_NUM;
     MEDIA_INFO_LOG("onProcess Update otherTotalNumber_: %{public}lld", (long long)otherTotalNumber_);
-    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
+    BackupFileUtils::GenerateThumbnailsAfterRestore();
     otherProcessStatus_ = ProcessStatus::STOP;
 }
+
+void BaseRestore::StartBackup()
+{}
 } // namespace Media
 } // namespace OHOS

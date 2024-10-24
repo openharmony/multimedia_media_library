@@ -98,6 +98,16 @@ std::string GetLocalThumbnailPath(const std::string &path, const std::string &ke
     return LOCAL_MEDIA_PATH + ((key == "") ? "" : ".thumbs/") + path.substr(ROOT_MEDIA_DIR.length()) + suffix;
 }
 
+std::string GetLocalKeyFrameThumbnailPath(const std::string &path, const std::string &key, const std::string &timeStamp)
+{
+    if (path.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    std::string suffix = (key == "") ? "" : "/" + key + ".jpg";
+    return LOCAL_MEDIA_PATH + ((key == "") ? "" : ".thumbs/") + path.substr(ROOT_MEDIA_DIR.length()) +
+        "/beginTimeStamp" + timeStamp + "/" + suffix;
+}
+
 std::string GetLcdExPath(const std::string &path)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {

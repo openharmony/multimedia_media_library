@@ -1144,8 +1144,7 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationAllExif(
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_ORIENTATION, currentOrientation);
     if (err != E_OK) {
         currentOrientation = "";
-        MEDIA_ERR_LOG("The image don't support set orientation in exif");
-        return E_OK;
+        MEDIA_WARN_LOG("The rotation angle exlf of the image is empty");
     }
 
     MEDIA_INFO_LOG("Update image exif information, DisplayName=%{private}s, Orientation=%{private}d",
@@ -1166,13 +1165,12 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationAllExif(
     }
 
     string exifStr = fileAsset->GetAllExif();
-    if (exifStr.empty()) {
-        return E_INVALID_VALUES;
+    if (!exifStr.empty()) {
+        nlohmann::json exifJson = nlohmann::json::parse(exifStr);
+        exifJson["Orientation"] = imageSourceOrientation->second;
+        exifStr = exifJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+        values.PutString(PhotoColumn::PHOTO_ALL_EXIF, exifStr);
     }
-    nlohmann::json exifJson = nlohmann::json::parse(exifStr);
-    exifJson["Orientation"] = imageSourceOrientation->second;
-    exifStr = exifJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
-    values.PutString(PhotoColumn::PHOTO_ALL_EXIF, exifStr);
 
     err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_ORIENTATION,
         std::to_string(imageSourceOrientation->second), fileAsset->GetFilePath());
@@ -1201,7 +1199,7 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationExif(MediaLibraryCommand &
         return E_INVALID_VALUES;
     }
     int32_t errCode = UpdateOrientationAllExif(cmd, fileAsset, currentOrientation);
-    if (errCode == E_OK && !currentOrientation.empty()) {
+    if (errCode == E_OK) {
         orientationUpdated = true;
     }
     return errCode;
@@ -1351,9 +1349,6 @@ static void RevertOrientation(const shared_ptr<FileAsset> &fileAsset, string &cu
         MEDIA_ERR_LOG("fileAsset is null");
         return;
     }
-    if (currentOrientation.empty()) {
-        return;
-    }
 
     std::unique_ptr<ImageSource> imageSource;
     uint32_t err = CreateImageSource(fileAsset, imageSource);
@@ -1362,8 +1357,12 @@ static void RevertOrientation(const shared_ptr<FileAsset> &fileAsset, string &cu
         return;
     }
 
-    err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_ORIENTATION,
-        currentOrientation, fileAsset->GetFilePath());
+    err = imageSource->ModifyImageProperty(
+        0,
+        PHOTO_DATA_IMAGE_ORIENTATION,
+        currentOrientation.empty() ? ANALYSIS_HAS_DATA : currentOrientation,
+        fileAsset->GetFilePath()
+    );
     if (err != E_OK) {
         MEDIA_ERR_LOG("Rollback of exlf information failed, err = %{public}d", err);
     }
@@ -2574,7 +2573,6 @@ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shar
     MEDIA_INFO_LOG("photoId: %{public}s", photoId.c_str());
     auto pictureManagerThread = PictureManagerThread::GetInstance();
     if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
         picture = pictureManagerThread->GetDataWithImageId(photoId, isCleanImmediately);
     }
     if (picture == nullptr) {
@@ -2608,7 +2606,6 @@ int32_t MediaLibraryPhotoOperations::FinishRequestPicture(MediaLibraryCommand &c
     MEDIA_INFO_LOG("photoId: %{public}s", photoId.c_str());
     auto pictureManagerThread = PictureManagerThread::GetInstance();
     if (pictureManagerThread != nullptr) {
-        pictureManagerThread->Start();
         pictureManagerThread->FinishAccessingPicture(photoId);
     }
     return E_OK;
@@ -2628,6 +2625,17 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     MEDIA_DEBUG_LOG("ForceSavePicture");
     int fileType = std::atoi(cmd.GetQuerySetParam(IMAGE_FILE_TYPE).c_str());
     int fileId = std::atoi(cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID).c_str());
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileId));
+    vector<string> columns = { PhotoColumn::PHOTO_IS_TEMP };
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet ==nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("result set is empty");
+        return E_ERR;
+    }
+    if (GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet) == 0) {
+        return E_OK;
+    }
     string uri = cmd.GetQuerySetParam("uri");
     SavePicture(fileType, fileId);
     string path = MediaFileUri::GetPathFromUri(uri, true);
@@ -2642,7 +2650,6 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     if (pictureManagerThread == nullptr) {
         return E_ERR;
     }
-    pictureManagerThread->Start();
     std::shared_ptr<Media::Picture> picture;
     std::string photoId;
     if (GetPicture(fileId, picture, false, photoId) != E_OK) {
@@ -2720,7 +2727,6 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
         int32_t ret = MediaChangeEffect::TakeEffectForPicture(picture, editData);
         auto pictureManagerThread = PictureManagerThread::GetInstance();
         if (pictureManagerThread != nullptr) {
-            pictureManagerThread->Start();
             pictureManagerThread->FinishAccessingPicture(photoId);
         }
         MediaLibraryObjectUtils::ScanFileAsync(sourcePath, to_string(fileId), MediaLibraryApi::API_10);

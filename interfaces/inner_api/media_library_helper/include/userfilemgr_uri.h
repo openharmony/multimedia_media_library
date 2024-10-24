@@ -71,6 +71,7 @@ const std::string OPRN_CANCEL_PROCESS_IMAGE = "cancel_process_image";
 const std::string OPRN_MOVING_PHOTO_SCAN = "moving_photo_scan";
 const std::string OPRN_START_GENERATE_THUMBNAILS = "start_generate_thumbnails";
 const std::string OPRN_STOP_GENERATE_THUMBNAILS = "stop_generate_thumbnails";
+const std::string OPRN_GENERATE_THUMBNAILS_RESTORE = "generate_thumbnails_restore";
 const std::string OPRN_ADD_FILTERS = "add_filters";
 const std::string OPRN_DISCARD_CAMERA_PHOTO = "discard_camera_photo";
 const std::string OPRN_SAVE_CAMERA_PHOTO = "save_camera_photo";
@@ -304,6 +305,10 @@ const std::string PAH_STOP_GENERATE_THUMBNAILS =
     MEDIALIBRARY_DATA_URI + "/" + PAH_BATCH_THUMBNAIL_OPERATE + "/" + OPRN_STOP_GENERATE_THUMBNAILS;
 const std::string PAH_ADD_LOWQUALITY_IMAGE = MEDIALIBRARY_DATA_URI + "/" +
     PAH_MULTISTAGES_CAPTURE + "/" + OPRN_ADD_LOWQUALITY_IMAGE;
+    
+// Generate thumbnails after clone or upgrade restore operation uri
+const std::string PAH_GENERATE_THUMBNAILS_RESTORE =
+    MEDIALIBRARY_DATA_URI + "/" + PAH_BATCH_THUMBNAIL_OPERATE + "/" + OPRN_GENERATE_THUMBNAILS_RESTORE;
 
 // PhotoAccessHelper album operation constants
 const std::string PAH_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_CREATE;
@@ -439,6 +444,9 @@ const std::string MEDIALIBRARY_SMARTALBUM_CHANGE_URI  =  MEDIALIBRARY_DATA_URI +
 const std::string MEDIALIBRARY_DEVICE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "device";
 const std::string MEDIALIBRARY_SMART_URI = MEDIALIBRARY_DATA_URI + '/' + "smart";
 const std::string MEDIALIBRARY_REMOTEFILE_URI = MEDIALIBRARY_DATA_URI + '/' + "remotfile";
+
+const std::string TAB_OLD_PHOTO = "tab_old_photos_operation";
+const std::string QUERY_TAB_OLD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_OLD_PHOTO + "/" + OPRN_QUERY;
 } // namespace Media
 } // namespace OHOS
 

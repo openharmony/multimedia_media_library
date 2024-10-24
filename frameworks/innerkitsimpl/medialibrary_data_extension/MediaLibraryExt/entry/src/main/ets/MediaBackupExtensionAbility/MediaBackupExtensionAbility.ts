@@ -20,7 +20,6 @@ import mediabackup from '@ohos.multimedia.mediabackup';
 
 const TAG = 'MediaBackupExtAbility';
 
-const documentPath = '/storage/media/local/files/Docs/Documents';
 const galleryAppName = 'com.huawei.photos';
 const mediaAppName = 'com.android.providers.media.module';
 
@@ -151,6 +150,9 @@ const DEFAULT_PROGRESS_INFO = {
 export default class MediaBackupExtAbility extends BackupExtensionAbility {
   async onBackup() : Promise<void> {
     console.log(TAG, 'onBackup ok.');
+    console.time(TAG + ' BACKUP');
+    await mediabackup.startBackup(CLONE_RESTORE, galleryAppName, mediaAppName);
+    console.timeEnd(TAG + ' BACKUP');
   }
 
   async onRestore(bundleVersion : BundleVersion) : Promise<void> {
@@ -158,7 +160,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.time(TAG + ' RESTORE');
     const backupDir = this.context.backupDir + 'restore';
     let sceneCode: number = this.getSceneCode(bundleVersion);
-    await mediabackup.startRestore(sceneCode, galleryAppName, mediaAppName, backupDir);
+    await mediabackup.startRestore(this.context, sceneCode, galleryAppName, mediaAppName, backupDir);
     console.timeEnd(TAG + ' RESTORE');
   }
 
@@ -167,9 +169,9 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.time(TAG + ' RESTORE EX');
     const backupDir = this.context.backupDir + 'restore';
     let sceneCode: number = this.getSceneCode(bundleVersion);
-    let restoreExResult: string = await mediabackup.startRestoreEx(sceneCode, galleryAppName, mediaAppName, backupDir,
+    let restoreExResult: string = await mediabackup.startRestoreEx(this.context, sceneCode, galleryAppName, mediaAppName, backupDir,
       bundleInfo);
-    let restoreExInfo: string = await this.getRestoreExInfo(restoreExResult);
+    let restoreExInfo: string = await this.getRestoreExInfo(sceneCode, restoreExResult);
     console.log(TAG, `GET restoreExInfo: ${restoreExInfo}`);
     console.timeEnd(TAG + ' RESTORE EX');
     return restoreExInfo;
@@ -200,10 +202,13 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     return progressInfo;
   }
 
-  private async getRestoreExInfo(restoreExResult: string): Promise<string> {
+  private async getRestoreExInfo(sceneCode: number, restoreExResult: string): Promise<string> {
     if (!this.isRestoreExResultValid(restoreExResult)) {
       console.error(TAG, 'restoreEx result is invalid, use default');
       return JSON.stringify(DEFAULT_RESTORE_EX_INFO);
+    }
+    if (sceneCode !== UPGRADE_RESTORE) {
+      return restoreExResult;
     }
     try {
       let jsonObject = JSON.parse(restoreExResult);
@@ -230,7 +235,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       return null;
     }
     let file = await fs.open(detailsPath);
-    console.log(TAG, `${type} details path: ${detailsPath}, fd: ${file.fd}`);
+    console.log(TAG, `${type} details fd: ${file.fd}`);
     return file.fd;
   }
 

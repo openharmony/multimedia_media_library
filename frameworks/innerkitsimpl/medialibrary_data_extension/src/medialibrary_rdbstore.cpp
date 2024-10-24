@@ -49,10 +49,13 @@
 #include "media_container_types.h"
 #include "media_scanner.h"
 #include "media_scanner_manager.h"
+#ifdef META_RECOVERY_SUPPORT
 #include "medialibrary_meta_recovery.h"
+#endif
 #include "medialibrary_notify.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "moving_photo_processor.h"
 #include "parameters.h"
 #include "parameter.h"
 #include "photo_album_column.h"
@@ -61,6 +64,7 @@
 #include "rdb_sql_utils.h"
 #include "result_set_utils.h"
 #include "source_album.h"
+#include "tab_old_photos_table_event_handler.h"
 #include "vision_column.h"
 #include "vision_ocr_column.h"
 #include "form_map.h"
@@ -74,6 +78,7 @@
 #include "vision_multi_crop_column.h"
 #include "preferences.h"
 #include "preferences_helper.h"
+#include "thumbnail_service.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -374,6 +379,9 @@ const std::string SQL_QUERY_OTHER_DUPLICATE_ASSETS_COUNT = "\
       ) ";
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
+
+std::mutex MediaLibraryRdbStore::reconstructLock_;
+
 int32_t oldVersion_ = -1;
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
@@ -390,6 +398,23 @@ struct ShootingModeValueBucket {
 const std::string MediaLibraryRdbStore::CloudSyncTriggerFunc(const std::vector<std::string> &args)
 {
     CloudSyncHelper::GetInstance()->StartSync();
+    return "";
+}
+
+const std::string MediaLibraryRdbStore::BeginGenerateHighlightThumbnail(const std::vector<std::string> &args)
+{
+    if (args.size() < STAMP_PARAM || args[STAMP_PARAM_ZERO].empty() || args[STAMP_PARAM_ONE].empty() ||
+        args[STAMP_PARAM_TWO].empty() || args[STAMP_PARAM_THREE].empty()) {
+            MEDIA_ERR_LOG("Invalid input: args must contain at least 4 non-empty strings");
+            return "";
+    }
+    std::string id = args[STAMP_PARAM_ZERO].c_str();
+    std::string tracks = args[STAMP_PARAM_ONE].c_str();
+    std::string trigger = args[STAMP_PARAM_TWO].c_str();
+    std::string genType = args[STAMP_PARAM_THREE].c_str();
+    MEDIA_INFO_LOG("id = %{public}s, tracks = %{public}s, trigger = %{public}s", id.c_str(),
+        tracks.c_str(), trigger.c_str());
+    ThumbnailService::GetInstance()->TriggerHighlightThumbnail(id, tracks, trigger, genType);
     return "";
 }
 
@@ -417,6 +442,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetSecurityLevel(SecurityLevel::S3);
     config_.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     config_.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
+    config_.SetScalarFunction("begin_generate_highlight_thumbnail", STAMP_PARAM, BeginGenerateHighlightThumbnail);
 }
 
 bool g_upgradeErr = false;
@@ -1642,22 +1668,30 @@ static int32_t ExecuteSql(RdbStore &store)
             return NativeRdb::E_ERROR;
         }
     }
+    if (TabOldPhotosTableEventHandler().OnCreate(store) != NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
+    }
     return NativeRdb::E_OK;
 }
 
 int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 {
     MEDIA_INFO_LOG("Rdb OnCreate");
+#ifdef META_RECOVERY_SUPPORT
     NativeRdb::RebuiltType rebuilt = NativeRdb::RebuiltType::NONE;
     store.GetRebuilt(rebuilt);
+#endif
+
     if (ExecuteSql(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
 
+#ifdef META_RECOVERY_SUPPORT
     if (rebuilt == NativeRdb::RebuiltType::REBUILT) {
         // set Rebuilt flag
         MediaLibraryMetaRecovery::GetInstance().SetRdbRebuiltStatus(true);
     }
+#endif
 
     if (PrepareSystemAlbums(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
@@ -2286,6 +2320,7 @@ bool MediaLibraryRdbStore::ResetAnalysisTables()
     AddSegmentationColumns(*rdbStore_);
     AddFaceOcclusionAndPoseTypeColumn(*rdbStore_);
     AddVideoLabelTable(*rdbStore_);
+
     return true;
 }
 
@@ -2741,6 +2776,32 @@ static void AddMetaRecovery(RdbStore& store)
     };
     MEDIA_INFO_LOG("start AddMetaRecovery");
     ExecSqls(sqls, store);
+}
+
+void AddHighlightTriggerColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::HIGHLIGHT_TABLE + " ADD COLUMN " +
+            PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER + " INT DEFAULT 0"
+    };
+    ExecSqls(sqls, store);
+}
+
+void AddHighlightInsertAndUpdateTrigger(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
+        PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
+        PhotoColumn::DROP_UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
+        PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL
+    };
+    ExecSqls(sqls, store);
+}
+
+void AddHighlightIndex(RdbStore &store)
+{
+    const vector<string> addHighlightIndex = { PhotoColumn::INDEX_HIGHLIGHT_FILEID };
+    ExecSqls(addHighlightIndex, store);
 }
 
 static void UpdateSearchIndexTriggerForCleanFlag(RdbStore& store)
@@ -3296,6 +3357,20 @@ static void AddAnalysisAlbumTotalTable(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void CompatLivePhoto(RdbStore &store, int32_t oldVersion)
+{
+    MEDIA_INFO_LOG("Start configuring param for live photo compatibility");
+    bool ret = false;
+    // there is no need to ResetCursor() twice if album fusion is included
+    if (oldVersion >= VERSION_ADD_OWNER_ALBUM_ID) {
+        ret = system::SetParameter(REFRESH_CLOUD_LIVE_PHOTO_FLAG, CLOUD_LIVE_PHOTO_NOT_REFRESHED);
+        MEDIA_INFO_LOG("Set parameter for refreshing cloud live photo, ret: %{public}d", ret);
+    }
+
+    ret = system::SetParameter(COMPAT_LIVE_PHOTO_FILE_ID, "1"); // start compating from file_id: 1
+    MEDIA_INFO_LOG("Set parameter for compating local live photo, ret: %{public}d", ret);
+}
+
 static void ResetCloudCursorAfterInitFinish()
 {
     MEDIA_INFO_LOG("Try reset cloud cursor after storage reconstruct");
@@ -3364,6 +3439,24 @@ static void ReconstructMediaLibraryStorageFormatExecutor(AsyncTaskData *data)
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
 }
 
+static void ReconstructMediaLibraryStorageFormatWithLock(AsyncTaskData *data)
+{
+    if (data == nullptr) {
+        return;
+    }
+    CompensateAlbumIdData *compensateData = static_cast<CompensateAlbumIdData *>(data);
+    if (compensateData == nullptr) {
+        MEDIA_ERR_LOG("compensateData is nullptr");
+        return;
+    }
+    std::unique_lock<std::mutex> reconstructLock(compensateData->lock_, std::defer_lock);
+    if (reconstructLock.try_lock()) {
+        ReconstructMediaLibraryStorageFormatExecutor(data);
+    } else {
+        MEDIA_WARN_LOG("Failed to acquire lock, skipping task Reconstruct.");
+    }
+}
+
 static void AddOwnerAlbumIdAndRefractorTrigger(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -3423,12 +3516,12 @@ int32_t MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(RdbStore &sto
         MEDIA_ERR_LOG("Failed to get aysnc worker instance!");
         return E_FAIL;
     }
-    auto *taskData = new (std::nothrow) CompensateAlbumIdData(&store);
+    auto *taskData = new (std::nothrow) CompensateAlbumIdData(&store, MediaLibraryRdbStore::reconstructLock_);
     if (taskData == nullptr) {
         MEDIA_ERR_LOG("Failed to alloc async data for compensate album id");
         return E_NO_MEMORY;
     }
-    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(ReconstructMediaLibraryStorageFormatExecutor, taskData);
+    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(ReconstructMediaLibraryStorageFormatWithLock, taskData);
     asyncWorker->AddTask(asyncTask, false);
     return E_OK;
 }
@@ -3887,6 +3980,33 @@ static void AddThumbnailVisible(RdbStore& store)
     ExecSqls(sqls, store);
 }
 
+static void AlterThumbnailVisible(RdbStore& store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_INDEX_SCHPT_READY,
+        PhotoColumn::INDEX_SCHPT_READY,
+    };
+    MEDIA_INFO_LOG("Add AlterThumbnailVisible");
+    ExecSqls(sqls, store);
+}
+
+static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_CREATE_TAB_OLD_PHOTOS) {
+        TabOldPhotosTableEventHandler().OnCreate(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_TRIGGER) {
+        AddHighlightTriggerColumn(store);
+        AddHighlightInsertAndUpdateTrigger(store);
+        AddHighlightIndex(store);
+    }
+
+    if (oldVersion < VERSION_ALTER_THUMBNAIL_VISIBLE) {
+        AlterThumbnailVisible(store);
+    }
+}
+
 static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CLOUD_ENAHCNEMENT) {
@@ -3941,6 +4061,12 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_HIGHLIGHT_MAP_TABLES) {
         AddHighlightMapTable(store);
     }
+
+    if (oldVersion < VERSION_COMPAT_LIVE_PHOTO) {
+        CompatLivePhoto(store, oldVersion);
+    }
+
+    UpgradeExtensionPart4(store, oldVersion);
 }
 
 static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)

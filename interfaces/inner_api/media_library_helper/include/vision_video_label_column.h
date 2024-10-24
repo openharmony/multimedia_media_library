@@ -30,6 +30,7 @@ const std::string TRACKS = "tracks";
 const std::string VIDEO_PART_FEATURE = "video_part_feature";
 const std::string FILTER_TAG = "filter_tag";
 const std::string ALGO_VERSION = "algo_version";
+const std::string TRIGGER_GENERATE_THUMBNAIL = "trigger_generate_thumbnail";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_VIDEO_LABEL_COLUMN_H

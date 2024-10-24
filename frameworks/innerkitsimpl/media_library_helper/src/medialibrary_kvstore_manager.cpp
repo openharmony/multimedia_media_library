@@ -151,7 +151,7 @@ bool MediaLibraryKvStoreManager::IsKvStoreValid(const KvStoreValueType &valueTyp
 
     ptr = std::make_shared<MediaLibraryKvStore>();
     int32_t status = ptr->Init(KvStoreRoleType::OWNER, valueType, KV_STORE_OWNER_DIR);
-    if (status == static_cast<int32_t>(Status::CRYPT_ERROR) || status == static_cast<int32_t>(Status::DB_ERROR)) {
+    if (status == static_cast<int32_t>(Status::DATA_CORRUPTED)) {
         MEDIA_ERR_LOG("KvStore is invalid and needs to be deleted, status %{public}d, type %{public}d",
             status, valueType);
         return false;
@@ -169,5 +169,42 @@ int32_t MediaLibraryKvStoreManager::RebuildInvalidKvStore(const KvStoreValueType
     kvStoreMap_.Erase(valueType);
     KvStoreSharedPtr ptr = std::make_shared<MediaLibraryKvStore>();
     return ptr->RebuildKvStore(valueType, KV_STORE_OWNER_DIR);
+}
+
+std::shared_ptr<MediaLibraryKvStore> MediaLibraryKvStoreManager::GetSingleKvStore(
+    const KvStoreRoleType &roleType, const std::string &storeId, const std::string &baseDir)
+{
+    KvStoreSharedPtr ptr = std::make_shared<MediaLibraryKvStore>();
+    int32_t status = ptr->InitSingleKvstore(roleType, storeId, baseDir);
+    if (status != E_OK) {
+        MEDIA_ERR_LOG("Init kvStore failed, status %{public}d", status);
+        return nullptr;
+    }
+    return ptr;
+}
+
+int32_t MediaLibraryKvStoreManager::CloneKvStore(const std::string &oldKvStoreId, const std::string &oldBaseDir,
+    const std::string &newKvStoreId, const std::string &newBaseDir)
+{
+    KvStoreSharedPtr oldKvStore = std::make_shared<MediaLibraryKvStore>();
+    int32_t status = oldKvStore->InitSingleKvstore(KvStoreRoleType::OWNER, oldKvStoreId, oldBaseDir);
+    if (status != E_OK) {
+        MEDIA_ERR_LOG("Init old kvStore failed, status %{public}d", status);
+        return status;
+    }
+
+    KvStoreSharedPtr newKvStore = std::make_shared<MediaLibraryKvStore>();
+    status = newKvStore->InitSingleKvstore(KvStoreRoleType::OWNER, newKvStoreId, newBaseDir);
+    if (status != E_OK) {
+        MEDIA_ERR_LOG("Init new kvStore failed, status %{public}d", status);
+        return status;
+    }
+
+    status = oldKvStore->PutAllValueToNewKvStore(newKvStore);
+    if (status != E_OK) {
+        MEDIA_ERR_LOG("Clone kvstore failed, status %{public}d", status);
+        return status;
+    }
+    return E_OK;
 }
 } // namespace OHOS::Media

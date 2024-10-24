@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_GRANT_OLD_PHOTO_ASSETS_READ_PERMISSION_CALLBACK_H
-#define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_GRANT_OLD_PHOTO_ASSETS_READ_PERMISSION_CALLBACK_H
+#ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_REQUEST_PHOTO_URIS_READ_PERMISSION_CALLBACK_H
+#define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_REQUEST_PHOTO_URIS_READ_PERMISSION_CALLBACK_H
 
 #include <js_native_api.h>
 #include <napi/native_api.h>
@@ -28,10 +28,10 @@
 namespace OHOS {
 namespace Media {
 
-class GrantOldPhotoAssetsReadPermissionCallback {
+class RequestPhotoUrisReadPermissionCallback {
 public:
-    explicit GrantOldPhotoAssetsReadPermissionCallback(napi_env env, Ace::UIContent *uiContent);
-    virtual ~GrantOldPhotoAssetsReadPermissionCallback() = default;
+    explicit RequestPhotoUrisReadPermissionCallback(napi_env env, Ace::UIContent *uiContent);
+    virtual ~RequestPhotoUrisReadPermissionCallback() = default;
     void OnRelease(int32_t releaseCode);
     void OnResult(int32_t resultCode, const OHOS::AAFwk::Want &want);
     void OnReceive(const OHOS::AAFwk::WantParams &request);
