@@ -22,6 +22,7 @@
 #include "photo_album_restore.h"
 #include "photos_dao.h"
 #include "photo_album_dao.h"
+#include "gallery_media_dao.h"
 
 namespace OHOS::Media {
 class PhotosRestore {
@@ -38,6 +39,7 @@ public:
         this->photosDaoPtr_ = std::make_shared<PhotosDao>(mediaLibraryRdb);
         this->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(mediaLibraryRdb);
         this->photosBasicInfo_ = this->photosDaoPtr_->GetBasicInfo();
+        this->galleryMediaDao_.SetGalleryRdb(galleryRdb);
     }
 
     PhotosDao::PhotosRowData FindSameFile(const FileInfo &fileInfo)
@@ -92,71 +94,9 @@ private:
     std::shared_ptr<PhotoAlbumDao> photoAlbumDaoPtr_;
     std::mutex duplicateDataUsedCountMutex_;
     std::unordered_map<std::string, int32_t> duplicateDataUsedCountMap_;
+    GalleryMediaDao galleryMediaDao_;
 
 private:
-    const std::string SQL_GALLERY_MEDIA_QUERY_COUNT = "\
-        SELECT COUNT(1) AS count \
-        FROM gallery_media \
-            LEFT JOIN gallery_album \
-            ON gallery_media.albumId=gallery_album.albumId \
-        WHERE (local_media_id != -1) AND \
-            (relative_bucket_id IS NULL OR \
-                relative_bucket_id NOT IN ( \
-                    SELECT DISTINCT relative_bucket_id \
-                    FROM garbage_album \
-                    WHERE type = 1 \
-                ) \
-            ) AND \
-            (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
-            _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
-            COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
-        ORDER BY _id ASC ;";
-    const std::string SQL_GALLERY_MEDIA_QUERY_FOR_RESTORE = "\
-        SELECT \
-            _id, \
-            local_media_id, \
-            _data, \
-            _display_name, \
-            description, \
-            is_hw_favorite, \
-            recycledTime, \
-            _size, \
-            duration, \
-            media_type, \
-            showDateToken, \
-            height, \
-            width, \
-            title, \
-            orientation, \
-            date_modified, \
-            relative_bucket_id, \
-            sourcePath, \
-            is_hw_burst, \
-            recycleFlag, \
-            hash, \
-            special_file_type, \
-            first_update_time, \
-            datetaken, \
-            detail_time, \
-            gallery_album.lPath \
-        FROM gallery_media \
-            LEFT JOIN gallery_album \
-            ON gallery_media.albumId=gallery_album.albumId \
-        WHERE (local_media_id != -1) AND \
-            (relative_bucket_id IS NULL OR \
-                relative_bucket_id NOT IN ( \
-                    SELECT DISTINCT relative_bucket_id \
-                    FROM garbage_album \
-                    WHERE type = 1 \
-                ) \
-            ) AND \
-            (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
-            _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
-            COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
-        ORDER BY _id ASC \
-        LIMIT ?, ?;";
     const std::string SQL_GALLERY_MEDIA_QUERY_DUPLICATE_DATA = "\
         SELECT _data, count(1) as count \
         FROM gallery_media \
