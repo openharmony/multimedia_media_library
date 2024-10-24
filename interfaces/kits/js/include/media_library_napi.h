@@ -302,6 +302,7 @@ private:
     EXPORT static napi_value PhotoAccessStartCreateThumbnailTask(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessStopCreateThumbnailTask(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetBurstAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetDataAnalysisProgress(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
@@ -412,6 +413,8 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::vector<std::string> uriArray;
     std::string networkId;
     std::string extendArgs;
+    std::string analysisProgress;
+    int32_t analysisType = AnalysisType::ANALYSIS_INVALID;
     std::unique_ptr<FetchResult<FileAsset>> fetchFileResult;
     std::unique_ptr<FetchResult<AlbumAsset>> fetchAlbumResult;
     std::unique_ptr<FetchResult<PhotoAlbum>> fetchPhotoAlbumResult;
