@@ -1194,7 +1194,8 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationExif(MediaLibraryCommand &
         MEDIA_INFO_LOG("No need update orientation.");
         return E_OK;
     }
-    if (fileAsset->GetMediaType() != MEDIA_TYPE_IMAGE) {
+    if ((fileAsset->GetMediaType() != MEDIA_TYPE_IMAGE) ||
+        (fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO))) {
         MEDIA_ERR_LOG("Only images support rotation.");
         return E_INVALID_VALUES;
     }
