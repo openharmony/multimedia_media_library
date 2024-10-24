@@ -3972,6 +3972,16 @@ static void AddThumbnailVisible(RdbStore& store)
     ExecSqls(sqls, store);
 }
 
+static void AddAlterThumbnailVisible(RdbStore& store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_INDEX_SCHPT_READY,
+        PhotoColumn::INDEX_SCHPT_READY,
+    };
+    MEDIA_INFO_LOG("Add AddAlterThumbnailVisible");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CREATE_TAB_OLD_PHOTOS) {
@@ -4042,6 +4052,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_COMPAT_LIVE_PHOTO) {
         CompatLivePhoto(store, oldVersion);
+    }
+
+    if (oldVersion < AddAlterThumbnailVisible) {
+        AddAlterThumbnailVisible(store);
     }
 
     UpgradeExtensionPart4(store, oldVersion);
