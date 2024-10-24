@@ -328,6 +328,7 @@ void DfxManager::HandleFiveMinuteTask()
     dfxAnalyzer_->FlushThumbnail(result);
     AdaptationToMovingPhotoInfo adaptationInfo = dfxCollector_->GetAdaptationToMovingPhotoInfo();
     dfxAnalyzer_->FlushAdaptationToMovingPhoto(adaptationInfo);
+    CheckStatus();
 }
 
 void DfxManager::HandleDeleteBehaviors()
