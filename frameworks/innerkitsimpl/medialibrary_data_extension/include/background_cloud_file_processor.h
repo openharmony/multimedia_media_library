@@ -22,6 +22,7 @@
 #include "timer.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
+#include "rdb_predicates.h"
 
 namespace OHOS {
 namespace Media {
@@ -54,6 +55,8 @@ private:
         std::string mimeType;
         int32_t duration;
         MediaType mediaType;
+        bool isCloud;
+        bool isVideo;
     } AbnormalData;
 
     typedef struct {
@@ -86,14 +89,16 @@ private:
     static void ProcessCloudData();
     static void UpdateCloudData();
     static std::shared_ptr<NativeRdb::ResultSet> QueryUpdateData(bool isCloud, bool isVideo);
-    static void ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet, UpdateData &updateData);
+    static void ProcessCloudAndVideo(NativeRdb::RdbPredicates &predicates, bool isCloud, bool isVideo);
+    static void ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet, UpdateData &updateData,
+        bool isCloud, bool isVideo);
     static int32_t AddUpdateDataTask(const UpdateData &updateData);
     static void UpdateCloudDataExecutor(AsyncTaskData *data);
     static void UpdateAbnormaldata(std::unique_ptr<Metadata> &metadata, const std::string &tableName);
     static void GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata);
     static int32_t GetExtractMetadata(std::unique_ptr<Metadata> &metadata);
     static void StopUpdateData();
-    static void UpdateCurrentOffset();
+    static void UpdateCurrentOffset(bool isCloud, bool isVideo);
 
     static int32_t processInterval_;
     static int32_t downloadDuration_;
@@ -104,8 +109,10 @@ private:
     static std::vector<std::string> curDownloadPaths_;
     static std::vector<QueryOption> queryList_;
     static bool isUpdating_;
-    static int32_t currentUpdateOffset_;
-    static int32_t currentRetryCount_;
+    static int32_t cloudUpdateOffset_;
+    static int32_t localImageUpdateOffset_;
+    static int32_t localVideoUpdateOffset_;
+    static int32_t cloudRetryCount_;
     static bool isDownload_;
 };
 } // namespace Media
