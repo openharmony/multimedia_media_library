@@ -33,6 +33,12 @@
 
 namespace OHOS {
 namespace Media {
+
+enum class AlbumFusionState {
+    START = 1,
+    SUCCESS = 2,
+    FAILED = 3
+};
 class MediaLibraryAlbumFusionUtils {
 public:
     EXPORT static int32_t RemoveMisAddedHiddenData(NativeRdb::RdbStore *upgradeStore);
@@ -63,6 +69,8 @@ public:
     EXPORT static int32_t RefreshAllAlbums();
     EXPORT static int32_t GetAlbumFuseUpgradeStatus();
     EXPORT static int32_t SetAlbumFuseUpgradeStatus(int32_t upgradeStatus);
+    EXPORT static void ReportAlbumFusionData(int64_t albumFusionTag, AlbumFusionState albumFusionState,
+        NativeRdb::RdbStore* rdbStore);
 private:
     static int32_t HandleRestData(NativeRdb::RdbStore *upgradeStore, const int32_t &assetId,
         const std::vector<int32_t> &restOwnerAlbumIds, int32_t &handledCount);

@@ -22,6 +22,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "dfx_reporter.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_notify.h"
@@ -31,10 +32,12 @@
 #include "medialibrary_album_compatibility_fusion_sql.h"
 #include "medialibrary_album_refresh.h"
 #include "parameters.h"
-#include "thumbnail_service.h"
 #include "photo_file_operation.h"
 #include "photo_burst_operation.h"
 #include "photo_displayname_operation.h"
+#include "result_set_utils.h"
+#include "thumbnail_service.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -1664,5 +1667,67 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
     return E_OK;
+}
+
+static int QueryCount(NativeRdb::RdbStore* rdbStore, const string& sql, const string& column)
+{
+    if (rdbStore == nullptr) {
+        MEDIA_INFO_LOG("fail to get rdbstore");
+        return -1;
+    }
+    auto resultSet = rdbStore->QueryByStep(sql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query failed, failed when executing sql: %{public}s", sql.c_str());
+        return -1;
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Query result go to first row failed, sql: %{public}s", sql.c_str());
+        return -1;
+    }
+    return GetInt32Val(column, resultSet);
+}
+
+void MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(int64_t albumFusionTag, AlbumFusionState albumFusionState,
+    NativeRdb::RdbStore* rdbStore)
+{
+    AlbumFusionDfxDataPoint dataPoint;
+    dataPoint.albumFusionTag = albumFusionTag;
+    dataPoint.reportTimeStamp = MediaFileUtils::UTCTimeMilliSeconds();
+    dataPoint.albumFusionState = static_cast<int32_t>(albumFusionState);
+    MEDIA_INFO_LOG("ALBUM_FUSE: Report album fusion data start, tag is %{public}" PRId64 ", fusion state is %{public}d",
+        albumFusionTag, static_cast<int32_t>(albumFusionState));
+
+    dataPoint.imageAssetCount = QueryCount(rdbStore,
+        "SELECT count FROM PhotoAlbum WHERE album_subtype = " + to_string(PhotoAlbumSubType::IMAGE),
+        "count");
+    dataPoint.videoAssetCount = QueryCount(rdbStore,
+        "SELECT count FROM PhotoAlbum WHERE album_subtype = " + to_string(PhotoAlbumSubType::VIDEO),
+        "count");
+    dataPoint.numberOfSourceAlbum = QueryCount(rdbStore,
+        "SELECT count(*) FROM PhotoAlbum WHERE album_subtype = " + to_string(PhotoAlbumSubType::SOURCE_GENERIC),
+        "count(*)");
+    dataPoint.numberOfUserAlbum = QueryCount(rdbStore,
+        "SELECT count(*) FROM PhotoAlbum WHERE album_subtype = " + to_string(PhotoAlbumSubType::USER_GENERIC),
+        "count(*)");
+    dataPoint.totalAssetsInSourceAlbums = QueryCount(rdbStore,
+        "SELECT sum(count) FROM PhotoAlbum WHERE album_subtype = " + to_string(PhotoAlbumSubType::SOURCE_GENERIC),
+        "sum(count)");
+    dataPoint.totalAssetsInUserAlbums = QueryCount(rdbStore,
+        "SELECT sum(count) FROM PhotoAlbum WHERE album_subtype = " + to_string(PhotoAlbumSubType::USER_GENERIC),
+        "sum(count)");
+    dataPoint.albumDetails = "";
+    int32_t hiddenAssetCount = QueryCount(rdbStore,
+        "SELECT count FROM PhotoAlbum WHERE album_subtype = " + to_string(PhotoAlbumSubType::HIDDEN),
+        "count");
+    int32_t dotHiddenAlbumAssetCount = QueryCount(rdbStore,
+        "SELECT count FROM PhotoAlbum WHERE album_name = '.hiddenAlbum' AND dirty <> 4 AND album_subtype = " +
+            to_string(PhotoAlbumSubType::SOURCE_GENERIC),
+        "count");
+    dataPoint.hiddenAssetInfo = "{hidden assets: " + to_string(hiddenAssetCount) + ", .hiddenAlbum assets: " +
+        to_string(dotHiddenAlbumAssetCount) + "}";
+
+    DfxReporter::ReportAlbumFusion(dataPoint);
+    MEDIA_INFO_LOG("ALBUM_FUSE: Report album fusion data end, tag is %{public}" PRId64 ", fusion state is %{public}d",
+        albumFusionTag, albumFusionState);
 }
 } // namespace OHOS::Media

@@ -438,5 +438,29 @@ int32_t DfxReporter::ReportMedialibraryAPI(const string& callerPackage, const st
     }
     return E_SUCCESS;
 }
+
+int32_t DfxReporter::ReportAlbumFusion(const AlbumFusionDfxDataPoint& reportData)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_ALBUM_FUSION_SINGLE",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "ALBUM_FUSION_TAG", reportData.albumFusionTag,
+        "REPORT_TIME_STAMP", reportData.reportTimeStamp,
+        "ALBUM_FUSION_STATE", reportData.albumFusionState,
+        "IMAGE_ASSET_COUNT", reportData.imageAssetCount,
+        "VIDEO_ASSET_COUNT", reportData.videoAssetCount,
+        "NUMBER_OF_SOURCE_ALBUM", reportData.numberOfSourceAlbum,
+        "NUMBER_OF_USER_ALBUM", reportData.numberOfUserAlbum,
+        "TOTAL_ASSETS_IN_SOURCE_ALBUMS", reportData.totalAssetsInSourceAlbums,
+        "TOTAL_ASSETS_IN_USER_ALBUMS", reportData.totalAssetsInUserAlbums,
+        "ALBUM_DETAILS", reportData.albumDetails,
+        "HIDDEN_ASSET_COUNT", reportData.hiddenAssetInfo);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ALBUM FUSION report data failed, ret: %{public}d", ret);
+        return E_FAIL;
+    }
+    return E_SUCCESS;
+}
 } // namespace Media
 } // namespace OHOS
