@@ -751,7 +751,7 @@ bool ThumbnailUtils::QueryNoHighlightInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("QueryNoHighlightInfos failed %{public}d", err);
-        return (err == E_EMPTY_VALUES_BUCKET);
+        return err == E_EMPTY_VALUES_BUCKET;
     }
 
     err = resultSet->GoToFirstRow();
@@ -2439,7 +2439,9 @@ static bool IsMobileNetworkEnabled()
     if (resultSet != nullptr && resultSet->GoToNextRow()==0) {
         resultSet->GetString(0, switchOn);
     }
-    resultSet->Close();
+    if (resultSet != nullptr) {
+        resultSet->Close();
+    }
     cloudHelper->Release();
     return switchOn == "1";
 }

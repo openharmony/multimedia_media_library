@@ -49,7 +49,9 @@
 #include "media_container_types.h"
 #include "media_scanner.h"
 #include "media_scanner_manager.h"
+#ifdef META_RECOVERY_SUPPORT
 #include "medialibrary_meta_recovery.h"
+#endif
 #include "medialibrary_notify.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
@@ -1657,9 +1659,7 @@ static const vector<string> onCreateSqlStrs = {
     TriggerDeleteAudioClearAppUriPermission(),
     PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX,
     PhotoColumn::UPDATA_PHOTOS_DATA_UNIQUE,
-    PhotoColumn::DROP_INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
-    PhotoColumn::DROP_UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::INDEX_HIGHLIGHT_FILEID,
 };
@@ -1680,16 +1680,21 @@ static int32_t ExecuteSql(RdbStore &store)
 int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 {
     MEDIA_INFO_LOG("Rdb OnCreate");
+#ifdef META_RECOVERY_SUPPORT
     NativeRdb::RebuiltType rebuilt = NativeRdb::RebuiltType::NONE;
     store.GetRebuilt(rebuilt);
+#endif
+
     if (ExecuteSql(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
 
+#ifdef META_RECOVERY_SUPPORT
     if (rebuilt == NativeRdb::RebuiltType::REBUILT) {
         // set Rebuilt flag
         MediaLibraryMetaRecovery::GetInstance().SetRdbRebuiltStatus(true);
     }
+#endif
 
     if (PrepareSystemAlbums(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
@@ -2318,6 +2323,7 @@ bool MediaLibraryRdbStore::ResetAnalysisTables()
     AddSegmentationColumns(*rdbStore_);
     AddFaceOcclusionAndPoseTypeColumn(*rdbStore_);
     AddVideoLabelTable(*rdbStore_);
+
     return true;
 }
 
@@ -2781,17 +2787,15 @@ void AddHighlightTriggerColumn(RdbStore &store)
         "ALTER TABLE " + PhotoColumn::HIGHLIGHT_TABLE + " ADD COLUMN " +
             PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER + " INT DEFAULT 0"
     };
-    MEDIA_INFO_LOG("start ad  highlight trigger column");
+    MEDIA_INFO_LOG("start add highlight trigger column");
     ExecSqls(sqls, store);
-    MEDIA_INFO_LOG("end ad  highlight trigger column");
+    MEDIA_INFO_LOG("end add highlight trigger column");
 }
 
 void AddHighlightInsertAndUpdateTrigger(RdbStore &store)
 {
     const vector<string> sqls = {
-        PhotoColumn::DROP_INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
         PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
-        PhotoColumn::DROP_UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
         PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL
     };
     MEDIA_INFO_LOG("start add highlight insert and update trigger");
@@ -3983,6 +3987,16 @@ static void AddThumbnailVisible(RdbStore& store)
     ExecSqls(sqls, store);
 }
 
+static void AlterThumbnailVisible(RdbStore& store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_INDEX_SCHPT_READY,
+        PhotoColumn::INDEX_SCHPT_READY,
+    };
+    MEDIA_INFO_LOG("Add AlterThumbnailVisible");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CREATE_TAB_OLD_PHOTOS) {
@@ -3993,6 +4007,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
         AddHighlightTriggerColumn(store);
         AddHighlightInsertAndUpdateTrigger(store);
         AddHighlightIndex(store);
+    }
+
+    if (oldVersion < VERSION_ALTER_THUMBNAIL_VISIBLE) {
+        AlterThumbnailVisible(store);
     }
 }
 

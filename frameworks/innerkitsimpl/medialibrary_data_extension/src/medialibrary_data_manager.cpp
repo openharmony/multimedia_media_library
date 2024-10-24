@@ -191,9 +191,6 @@ static void MakeRootDirs(AsyncTaskData *data)
         }
         MediaFileUtils::CheckDirStatus(DIR_CHECK_SET, ROOT_MEDIA_DIR + dir);
     }
-    if (data->dataDisplay.compare(E_POLICY) == 0 && !PermissionUtils::SetEPolicy()) {
-        MEDIA_ERR_LOG("Failed to SetEPolicy fail");
-    }
     MediaFileUtils::MediaFileDeletionRecord();
     // recover temp dir
     MediaFileUtils::RecoverMediaTempDir();
@@ -328,11 +325,15 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     cloudSyncSwitchManager.RegisterObserver();
 
     refCnt_++;
+
+#ifdef META_RECOVERY_SUPPORT
     // TEMP: avoid Process backup call StartAsyncRecovery
     // Should remove this judgment at refactor in OpenHarmony5.1
     if (extensionContext != nullptr) {
         MediaLibraryMetaRecovery::GetInstance().StartAsyncRecovery();
     }
+#endif
+
     return E_OK;
 }
 
