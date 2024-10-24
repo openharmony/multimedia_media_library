@@ -43,7 +43,9 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
+#ifdef META_RECOVERY_SUPPORT
 #include "medialibrary_meta_recovery.h"
+#endif
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_rdb_transaction.h"
@@ -477,12 +479,12 @@ static int32_t GetAlbumVectorFromResultSet(const shared_ptr<NativeRdb::ResultSet
     return E_OK;
 }
 
-int32_t MediaLibraryAssetOperations::CheckExist(std::string &path)
+int32_t MediaLibraryAssetOperations::CheckExist(const std::string &path)
 {
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     vector<string> columns = {MediaColumn::MEDIA_FILE_PATH};
 
-    MEDIA_INFO_LOG("query media_file_path=%{public}s start\n", DfxUtils::GetSafePath(path).c_str());
+    MEDIA_DEBUG_LOG("query media_file_path=%{public}s start\n", DfxUtils::GetSafePath(path).c_str());
     predicates.EqualTo(PhotoColumn::MEDIA_FILE_PATH, path);
 
     auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
@@ -500,41 +502,65 @@ int32_t MediaLibraryAssetOperations::CheckExist(std::string &path)
     return (rowCount > 0) ? E_OK : E_FAIL;
 }
 
-static const vector<string> META_RECOVERY_QUERY_COLUMNS = {
-    MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_SIZE,
-    MediaColumn::MEDIA_TITLE, MediaColumn::MEDIA_NAME, MediaColumn::MEDIA_TYPE,
-    MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_OWNER_PACKAGE, MediaColumn::MEDIA_OWNER_APPID,
-    MediaColumn::MEDIA_PACKAGE_NAME, MediaColumn::MEDIA_DEVICE_NAME, MediaColumn::MEDIA_DATE_ADDED,
-    MediaColumn::MEDIA_DATE_MODIFIED, MediaColumn::MEDIA_DATE_TAKEN, MediaColumn::MEDIA_DURATION,
-    MediaColumn::MEDIA_TIME_PENDING, MediaColumn::MEDIA_IS_FAV, MediaColumn::MEDIA_DATE_TRASHED,
-    MediaColumn::MEDIA_DATE_DELETED, MediaColumn::MEDIA_HIDDEN, MediaColumn::MEDIA_PARENT_ID,
-    MediaColumn::MEDIA_RELATIVE_PATH, MediaColumn::MEDIA_VIRTURL_PATH, PhotoColumn::PHOTO_DIRTY,
-    PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::PHOTO_META_DATE_MODIFIED,
-    PhotoColumn::PHOTO_SYNC_STATUS, PhotoColumn::PHOTO_CLOUD_VERSION, PhotoColumn::PHOTO_ORIENTATION,
-    PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE, PhotoColumn::PHOTO_HEIGHT,
-    PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_LCD_VISIT_TIME,
-    PhotoColumn::PHOTO_POSITION, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
-    PhotoColumn::CAMERA_SHOT_KEY, PhotoColumn::PHOTO_USER_COMMENT, PhotoColumn::PHOTO_ALL_EXIF,
-    PhotoColumn::PHOTO_DATE_YEAR, PhotoColumn::PHOTO_DATE_MONTH, PhotoColumn::PHOTO_DATE_DAY,
-    PhotoColumn::PHOTO_SHOOTING_MODE, PhotoColumn::PHOTO_SHOOTING_MODE_TAG, PhotoColumn::PHOTO_LAST_VISIT_TIME,
-    PhotoColumn::PHOTO_HIDDEN_TIME, PhotoColumn::PHOTO_THUMB_STATUS, PhotoColumn::PHOTO_CLEAN_FLAG,
-    PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_FIRST_VISIT_TIME,
-    PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE,
-    PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_COVER_POSITION,
-    PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_LCD_SIZE,
-    PhotoColumn::PHOTO_THUMB_SIZE, PhotoColumn::PHOTO_FRONT_CAMERA, PhotoColumn::PHOTO_IS_TEMP,
-    PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY, PhotoColumn::PHOTO_CE_AVAILABLE,
-    PhotoColumn::PHOTO_CE_STATUS_CODE, PhotoColumn::PHOTO_STRONG_ASSOCIATION, PhotoColumn::PHOTO_ASSOCIATE_FILE_ID,
-    PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, PhotoColumn::PHOTO_DETAIL_TIME, PhotoColumn::PHOTO_OWNER_ALBUM_ID,
-    PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, PhotoColumn::PHOTO_SOURCE_PATH
-};
+const std::vector<std::string> &MediaLibraryAssetOperations::GetPhotosTableColumnInfo()
+{
+    MEDIA_DEBUG_LOG("GetPhotosTableColumnInfo");
+    static std::vector<std::string> PHOTOS_TABLE_COLUMNS = QueryPhotosTableColumnInfo();
+    if (PHOTOS_TABLE_COLUMNS.empty()) {
+        MEDIA_ERR_LOG("QueryPhotosTableColumnInfo failed");
+        PHOTOS_TABLE_COLUMNS = QueryPhotosTableColumnInfo();
+    }
+
+    return PHOTOS_TABLE_COLUMNS;
+}
+
+std::vector<std::string> MediaLibraryAssetOperations::QueryPhotosTableColumnInfo()
+{
+    MEDIA_DEBUG_LOG("QueryPhotosTableColumnInfo");
+    std::vector<std::string> columnInfo;
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore == nullptr");
+        return columnInfo;
+    }
+
+    shared_ptr<NativeRdb::RdbStore> rawRdbStore = rdbStore->GetRaw();
+    if (rawRdbStore == nullptr) {
+        MEDIA_ERR_LOG("rawRdbStore == nullptr)");
+        return columnInfo;
+    }
+
+    std::string querySql = "SELECT name FROM pragma_table_info('" + PhotoColumn::PHOTOS_TABLE + "')";
+    std::vector<std::string> sqlArgs;
+    auto resultSet = rdbStore->QuerySql(querySql, sqlArgs);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is nullptr");
+        return columnInfo;
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string columnName = GetStringVal("name", resultSet);
+        if (FILEASSET_MEMBER_MAP.count(columnName) == 0) {
+            MEDIA_WARN_LOG("FILEASSET_MEMBER_MAP not find column: %{public}s", columnName.c_str());
+            continue;
+        }
+        columnInfo.emplace_back(columnName);
+    }
+
+    return columnInfo;
+}
 
 int32_t MediaLibraryAssetOperations::QueryTotalPhoto(vector<shared_ptr<FileAsset>> &fileAssetVector,
     int32_t batchSize)
 {
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-
     MEDIA_INFO_LOG("query total photo start\n");
+    const std::vector<std::string> &columnInfo = GetPhotosTableColumnInfo();
+    if (columnInfo.empty()) {
+        MEDIA_ERR_LOG("GetPhotosTableColumnInfo failed");
+        return E_ERR;
+    }
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_METADATA_FLAGS, static_cast<int>(MetadataFlags::TYPE_NEW))->Or()
         ->EqualTo(PhotoColumn::PHOTO_METADATA_FLAGS, static_cast<int>(MetadataFlags::TYPE_DIRTY))->Or()
         ->IsNull(PhotoColumn::PHOTO_METADATA_FLAGS)->EndWrap();
@@ -542,13 +568,13 @@ int32_t MediaLibraryAssetOperations::QueryTotalPhoto(vector<shared_ptr<FileAsset
         ->EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
     predicates.OrderByAsc(PhotoColumn::PHOTO_METADATA_FLAGS);
     predicates.Limit(0, batchSize);
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, META_RECOVERY_QUERY_COLUMNS);
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columnInfo);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("MediaLibraryPhotoOperations error\n");
         return E_OK;
     }
 
-    GetAssetVectorFromResultSet(resultSet, META_RECOVERY_QUERY_COLUMNS, fileAssetVector);
+    GetAssetVectorFromResultSet(resultSet, columnInfo, fileAssetVector);
 
     MEDIA_INFO_LOG("query total photo end\n");
     return E_OK;
@@ -556,16 +582,21 @@ int32_t MediaLibraryAssetOperations::QueryTotalPhoto(vector<shared_ptr<FileAsset
 
 std::shared_ptr<FileAsset> MediaLibraryAssetOperations::QuerySinglePhoto(int32_t rowId)
 {
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    const std::vector<std::string> &columnInfo = GetPhotosTableColumnInfo();
+    if (columnInfo.empty()) {
+        MEDIA_ERR_LOG("GetPhotosTableColumnInfo failed");
+        return nullptr;
+    }
 
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, rowId);
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, META_RECOVERY_QUERY_COLUMNS);
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columnInfo);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("MediaLibraryPhotoOperations error\n");
         return nullptr;
     }
 
-    return GetAssetFromResultSet(resultSet, META_RECOVERY_QUERY_COLUMNS);
+    return GetAssetFromResultSet(resultSet, columnInfo);
 }
 
 int32_t MediaLibraryAssetOperations::QueryTotalAlbum(vector<shared_ptr<PhotoAlbum>> &photoAlbumVector)
@@ -594,7 +625,6 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const stri
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryAssetOperations::GetFileAssetFromDb");
-
     if (!CheckOprnObject(oprnObject) || column.empty() || value.empty()) {
         return nullptr;
     }
@@ -790,7 +820,7 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, 
         MEDIA_DEBUG_LOG("do not have permission to set burst_key or burst_cover_level");
         return;
     }
- 
+
     string burstKey;
     ValueObject value;
     if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_BURST_KEY, value)) {
@@ -799,7 +829,7 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, 
     if (!burstKey.empty()) {
         outValues.PutString(PhotoColumn::PHOTO_BURST_KEY, burstKey);
     }
- 
+
     int32_t burstCoverLevel = 0;
     if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_BURST_COVER_LEVEL, value)) {
         value.GetInt(burstCoverLevel);
@@ -1114,7 +1144,6 @@ int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd)
 
     return deletedRows;
 }
-
 
 int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
     const shared_ptr<FileAsset> &fileAsset, bool &isNameChanged)
@@ -2270,10 +2299,14 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
     }
     CreateThumbnailFileScaned(uri, path, this->isCreateThumbSync);
     MediaFileUtils::DeleteFile(MovingPhotoFileUtils::GetLivePhotoCachePath(path));
+
+#ifdef META_RECOVERY_SUPPORT
     int32_t id;
     if (StrToInt(fileId, id)) {
         MediaLibraryMetaRecovery::GetInstance().WriteSingleMetaDataById(id);
     }
+#endif
+
     return E_OK;
 }
 
@@ -2305,8 +2338,10 @@ static void DeleteFiles(AsyncTaskData *data)
         if (!MediaFileUtils::DeleteFile(filePath) && (errno != ENOENT)) {
             MEDIA_WARN_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
         }
+#ifdef META_RECOVERY_SUPPORT
         MediaLibraryMetaRecovery::DeleteMetaDataByPath(filePath);
 
+#endif
         if (taskData->subTypes_[i] == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
             // delete video file of moving photo
             string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(filePath);
@@ -2373,7 +2408,7 @@ int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
     if (resultSet == nullptr) {
         return E_HAS_DB_ERROR;
     }
-    
+
     if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         HandlePhotosResultSet(resultSet, outIds, outPaths, outDateTakens, outSubTypes);
     } else if (predicates.GetTableName() == AudioColumn::AUDIOS_TABLE) {

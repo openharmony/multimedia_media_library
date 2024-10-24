@@ -21,9 +21,14 @@
 #include <fcntl.h>
 
 #include "acl.h"
+#ifdef HAS_BATTERY_MANAGER_PART
+#include "battery_srv_client.h"
+#endif
 #include "cloud_sync_helper.h"
+#include "dfx_database_utils.h"
 #include "dfx_utils.h"
 #include "directory_ex.h"
+#include "hisysevent.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -46,100 +51,44 @@
 #include "mimetype_utils.h"
 #include "parameter.h"
 #include "photo_album_column.h"
+#include "photo_file_utils.h"
 #include "photo_map_column.h"
 #include "post_event_utils.h"
+#include "preferences.h"
+#include "preferences_helper.h"
 #include "result_set_utils.h"
+#ifdef HAS_THERMAL_MANAGER_PART
+#include "thermal_mgr_client.h"
+#endif
 #include "vision_column.h"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
 using json = nlohmann::json;
-using ResultTypeMap = unordered_map<string, ResultSetDataType>;
 
 namespace {
     const string META_RECOVERY_ROOT_DIR = ROOT_MEDIA_DIR + ".meta/";
-    const string META_RECOVERY_PHOTO_RELATIVE_PATH = "/Photo/";
-    const string META_RECOVERY_META_RELATIVE_PATH = "/.meta/Photo/";
-    const string META_RECOVERY_META_FILE_SUFFIX = ".json";
+    const string META_RECOVERY_META_PATH = ROOT_MEDIA_DIR + ".meta/Photo";
     const string META_RECOVERY_ALBUM_PATH = META_RECOVERY_ROOT_DIR + "album.json";
     const string META_STATUS_PATH = META_RECOVERY_ROOT_DIR + "status.json";
     constexpr int32_t QUERY_BATCH_SIZE = 500;
-    const int32_t META_RETRY_MAX_COUNTS = 10;
-
-    const ResultTypeMap RESULT_TYPE_MAP = {
-        { MediaColumn::MEDIA_FILE_PATH, TYPE_STRING },
-        { MediaColumn::MEDIA_SIZE, TYPE_INT64 },
-        { MediaColumn::MEDIA_TITLE, TYPE_STRING },
-        { MediaColumn::MEDIA_NAME, TYPE_STRING },
-        { MediaColumn::MEDIA_TYPE, TYPE_INT32 },
-        { MediaColumn::MEDIA_MIME_TYPE, TYPE_STRING },
-        { MediaColumn::MEDIA_OWNER_PACKAGE, TYPE_STRING },
-        { MediaColumn::MEDIA_OWNER_APPID, TYPE_STRING },
-        { MediaColumn::MEDIA_PACKAGE_NAME, TYPE_STRING },
-        { MediaColumn::MEDIA_DEVICE_NAME, TYPE_STRING },
-        { MediaColumn::MEDIA_DATE_ADDED, TYPE_INT64 },
-        { MediaColumn::MEDIA_DATE_MODIFIED, TYPE_INT64 },
-        { MediaColumn::MEDIA_DATE_TAKEN, TYPE_INT64 },
-        { MediaColumn::MEDIA_DURATION, TYPE_INT32 },
-        { MediaColumn::MEDIA_TIME_PENDING, TYPE_INT64 },
-        { MediaColumn::MEDIA_IS_FAV, TYPE_INT32 },
-        { MediaColumn::MEDIA_DATE_TRASHED, TYPE_INT64 },
-        { MediaColumn::MEDIA_DATE_DELETED, TYPE_INT64 },
-        { MediaColumn::MEDIA_HIDDEN, TYPE_INT32 },
-        { MediaColumn::MEDIA_PARENT_ID, TYPE_INT32 },
-        { MediaColumn::MEDIA_RELATIVE_PATH, TYPE_STRING },
-        { PhotoColumn::PHOTO_DIRTY, TYPE_INT32 },
-        { PhotoColumn::PHOTO_CLOUD_ID, TYPE_STRING },
-        { PhotoColumn::PHOTO_META_DATE_MODIFIED, TYPE_INT64 },
-        { PhotoColumn::PHOTO_SYNC_STATUS, TYPE_INT32 },
-        { PhotoColumn::PHOTO_CLOUD_VERSION, TYPE_INT64 },
-        { PhotoColumn::PHOTO_ORIENTATION, TYPE_INT32 },
-        { PhotoColumn::PHOTO_LATITUDE, TYPE_DOUBLE },
-        { PhotoColumn::PHOTO_LONGITUDE, TYPE_DOUBLE },
-        { PhotoColumn::PHOTO_HEIGHT, TYPE_INT32 },
-        { PhotoColumn::PHOTO_WIDTH, TYPE_INT32 },
-        { PhotoColumn::PHOTO_EDIT_TIME, TYPE_INT64 },
-        { PhotoColumn::PHOTO_LCD_VISIT_TIME, TYPE_INT64 },
-        { PhotoColumn::PHOTO_POSITION, TYPE_INT32 },
-        { PhotoColumn::PHOTO_SUBTYPE, TYPE_INT32 },
-        { PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, TYPE_INT32 },
-        { PhotoColumn::CAMERA_SHOT_KEY, TYPE_STRING },
-        { PhotoColumn::PHOTO_USER_COMMENT, TYPE_STRING },
-        { PhotoColumn::PHOTO_ALL_EXIF, TYPE_STRING },
-        { PhotoColumn::PHOTO_DATE_YEAR, TYPE_STRING },
-        { PhotoColumn::PHOTO_DATE_MONTH, TYPE_STRING },
-        { PhotoColumn::PHOTO_DATE_DAY, TYPE_STRING },
-        { PhotoColumn::PHOTO_SHOOTING_MODE, TYPE_STRING },
-        { PhotoColumn::PHOTO_SHOOTING_MODE_TAG, TYPE_STRING },
-        { PhotoColumn::PHOTO_LAST_VISIT_TIME, TYPE_INT64 },
-        { PhotoColumn::PHOTO_HIDDEN_TIME, TYPE_INT64 },
-        { PhotoColumn::PHOTO_THUMB_STATUS, TYPE_INT32 },
-        { PhotoColumn::PHOTO_CLEAN_FLAG, TYPE_INT32 },
-        { PhotoColumn::PHOTO_ID, TYPE_STRING },
-        { PhotoColumn::PHOTO_QUALITY, TYPE_INT32 },
-        { PhotoColumn::PHOTO_FIRST_VISIT_TIME, TYPE_INT64 },
-        { PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, TYPE_INT32 },
-        { PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, TYPE_INT32 },
-        { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, TYPE_INT32 },
-        { PhotoColumn::PHOTO_COVER_POSITION, TYPE_INT64 },
-        { PhotoColumn::PHOTO_LCD_SIZE, TYPE_STRING },
-        { PhotoColumn::PHOTO_THUMB_SIZE, TYPE_STRING },
-        { PhotoColumn::PHOTO_FRONT_CAMERA, TYPE_STRING },
-        { PhotoColumn::PHOTO_IS_TEMP, TYPE_INT32 },
-        { PhotoColumn::PHOTO_BURST_COVER_LEVEL, TYPE_INT32 },
-        { PhotoColumn::PHOTO_BURST_KEY, TYPE_STRING },
-        { PhotoColumn::PHOTO_CE_AVAILABLE, TYPE_INT32 },
-        { PhotoColumn::PHOTO_CE_STATUS_CODE, TYPE_INT32 },
-        { PhotoColumn::PHOTO_STRONG_ASSOCIATION, TYPE_INT32 },
-        { PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, TYPE_INT32 },
-        { PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, TYPE_INT32 },
-        { PhotoColumn::PHOTO_DETAIL_TIME, TYPE_STRING },
-        { PhotoColumn::PHOTO_OWNER_ALBUM_ID, TYPE_INT32 },
-        { PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, TYPE_STRING },
-        { PhotoColumn::PHOTO_SOURCE_PATH, TYPE_STRING },
+    constexpr int32_t META_RETRY_MAX_COUNTS = 10;
+    constexpr int32_t META_RETRY_INTERVAL = 100;
+    const std::string RDB_CONFIG = "/data/storage/el2/base/preferences/recovery_config.xml";
+    const std::string BACKUP_PHOTO_COUNT = "BACKUP_PHOTO_COUNT";
+    const std::string BACKUP_COST_TIME = "BACKUP_COST_TIME";
+    const std::string REBUILT_COUNT = "REBUILT_COUNT";
+    const std::string RECOVERY_BACKUP_TOTAL_COUNT = "RECOVERY_BACKUP_TOTAL_COUNT";
+    const std::string RECOVERY_SUCC_PHOTO_COUNT = "RECOVERY_SUCC_PHOTO_COUNT";
+    const std::string RECOVERY_COST_TIME = "RECOVERY_COST_TIME";
+    static const std::unordered_set<std::string> EXCLUDED_COLUMNS = {
+        MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_VIRTURL_PATH,
+        PhotoColumn::PHOTO_THUMBNAIL_READY,
+        PhotoColumn::PHOTO_METADATA_FLAGS,
     };
-} // namespace
+}  // namespace
 
 static void SetStartupParam()
 {
@@ -157,12 +106,6 @@ static void SetStartupParam()
 
 static int32_t RefreshThumbnail()
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("RefreshThumbnail: failed to get rdb store handler");
-        return E_HAS_DB_ERROR;
-    }
-
     MediaLibraryKvStoreManager::GetInstance().RebuildInvalidKvStore(KvStoreValueType::MONTH_ASTC);
     MediaLibraryKvStoreManager::GetInstance().RebuildInvalidKvStore(KvStoreValueType::YEAR_ASTC);
     Acl::AclSetDatabase();
@@ -178,11 +121,10 @@ static int32_t RefreshAlbumCount()
     }
     auto rawRdbStore = rdbStore->GetRaw();
     if (rawRdbStore == nullptr) {
-        MEDIA_ERR_LOG("rawRdbStore == nullptr");
+        MEDIA_ERR_LOG("rawRdbStore == nullptr)");
         return E_HAS_DB_ERROR;
     }
     MediaLibraryRdbUtils::UpdateAllAlbums(rawRdbStore);
-    MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
         MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
@@ -191,26 +133,6 @@ static int32_t RefreshAlbumCount()
 
     watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
     watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
-    return E_OK;
-}
-
-int32_t MediaLibraryMetaRecovery::GetMetaPathFromOrignalPath(const std::string &srcPath, std::string &metaPath)
-{
-    if (srcPath.empty()) {
-        MEDIA_ERR_LOG("getMetaPathFromOrignalPath: source file invalid!");
-        return E_INVALID_PATH;
-    }
-
-    size_t pos = srcPath.find(META_RECOVERY_PHOTO_RELATIVE_PATH);
-    if (pos == string::npos) {
-        MEDIA_ERR_LOG("getMetaPathFromOrignalPath: source path is not a photo path");
-        return E_INVALID_PATH;
-    }
-
-    metaPath = srcPath;
-    metaPath.replace(pos, META_RECOVERY_PHOTO_RELATIVE_PATH.length(), META_RECOVERY_META_RELATIVE_PATH);
-    metaPath += META_RECOVERY_META_FILE_SUFFIX;
-
     return E_OK;
 }
 
@@ -230,7 +152,6 @@ static std::optional<int64_t> GetNumberFromJson(const nlohmann::json &j, const s
 {
     if (j.contains(key) && j.at(key).is_number_integer()) {
         int64_t value = j.at(key);
-        MEDIA_DEBUG_LOG("get number json ok, %{private}s: %{private}lld", key.c_str(), value);
         return std::optional<int64_t>(value);
     } else {
         MEDIA_ERR_LOG("get key: %{private}s failed", key.c_str());
@@ -261,26 +182,20 @@ static shared_ptr<NativeRdb::RdbStore> GetRdbStoreRaw()
     return rdbStore->GetRaw();
 }
 
-static void SetValuesFromFileAsset(const FileAsset &fileAsset, ValuesBucket &values)
+static void SetValuesFromFileAsset(const FileAsset &fileAsset, ValuesBucket &values,
+    const std::unordered_map<std::string, ResultSetDataType> &columnInfoMap)
 {
-    for (const auto &item : RESULT_TYPE_MAP) {
-        string name = item.first;
-        int type = item.second;
+    for (const auto &[name, type] : columnInfoMap) {
         if (type == TYPE_STRING) {
             values.PutString(name, fileAsset.GetStrMember(name));
-            MEDIA_DEBUG_LOG("insert: string: %{private}s %{private}s",
-                name.c_str(), fileAsset.GetStrMember(name).c_str());
         } else if (type == TYPE_INT32) {
             values.PutInt(name, fileAsset.GetInt32Member(name));
-            MEDIA_DEBUG_LOG("insert: int32: %{private}s %{public}d", name.c_str(), fileAsset.GetInt32Member(name));
         } else if (type == TYPE_INT64) {
             values.PutLong(name, fileAsset.GetInt64Member(name));
-            MEDIA_DEBUG_LOG("insert: int64: %{private}s %{public}lld", name.c_str(), fileAsset.GetInt64Member(name));
         } else if (type == TYPE_DOUBLE) {
             values.PutDouble(name, fileAsset.GetDoubleMember(name));
-            MEDIA_DEBUG_LOG("insert: double: %{private}s %{public}f", name.c_str(), fileAsset.GetDoubleMember(name));
         } else {
-            MEDIA_DEBUG_LOG("insert: error %{public}d", type);
+            MEDIA_DEBUG_LOG("Invalid fileasset value type, name = %{private}s, type = %{public}d", name.c_str(), type);
         }
     }
 }
@@ -300,6 +215,55 @@ static void SetValuesFromPhotoAlbum(shared_ptr<PhotoAlbum> &photoAlbumPtr, Value
     values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, photoAlbumPtr->GetPriority());
 }
 
+static bool GetPhotoAlbumFromJsonPart1(const nlohmann::json &j, PhotoAlbum &photoAlbum)
+{
+    bool ret = true;
+
+    optional<string> bundleName = GetStringFromJson(j, PhotoAlbumColumns::ALBUM_BUNDLE_NAME);
+    if (bundleName.has_value()) {
+        photoAlbum.SetBundleName(bundleName.value());
+    } else {
+        ret = false;
+    }
+
+    optional<string> localLanguage = GetStringFromJson(j, PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE);
+    if (localLanguage.has_value()) {
+        photoAlbum.SetLocalLanguage(localLanguage.value());
+    } else {
+        ret = false;
+    }
+
+    optional<int64_t> dateAdded = GetNumberFromJson(j, PhotoAlbumColumns::ALBUM_DATE_ADDED);
+    if (dateAdded.has_value()) {
+        photoAlbum.SetDateAdded(dateAdded.value());
+    } else {
+        ret = false;
+    }
+
+    optional<int64_t> isLocal = GetNumberFromJson(j, PhotoAlbumColumns::ALBUM_IS_LOCAL);
+    if (isLocal.has_value()) {
+        photoAlbum.SetIsLocal((int32_t)isLocal.value());
+    } else {
+        ret = false;
+    }
+
+    optional<string> lPath = GetStringFromJson(j, PhotoAlbumColumns::ALBUM_LPATH);
+    if (lPath.has_value()) {
+        photoAlbum.SetLPath(lPath.value());
+    } else {
+        ret = false;
+    }
+
+    optional<int64_t> priority = GetNumberFromJson(j, PhotoAlbumColumns::ALBUM_PRIORITY);
+    if (priority.has_value()) {
+        photoAlbum.SetPriority((int32_t)priority.value());
+    } else {
+        ret = false;
+    }
+
+    return ret;
+}
+
 MediaLibraryMetaRecovery &MediaLibraryMetaRecovery::GetInstance()
 {
     static MediaLibraryMetaRecovery instance;
@@ -311,16 +275,15 @@ void MediaLibraryMetaRecovery::CheckRecoveryState()
     MediaLibraryMetaRecoveryState expect = MediaLibraryMetaRecoveryState::STATE_NONE;
     if (recoveryState_.compare_exchange_strong(expect, MediaLibraryMetaRecoveryState::STATE_BACKING_UP)) {
         std::thread([this]() {
-            MEDIA_INFO_LOG("Start backing up");
             int64_t backupStartTime = MediaFileUtils::UTCTimeMilliSeconds();
             this->DoBackupMetadata();
             int64_t backupTotalTime = MediaFileUtils::UTCTimeMilliSeconds() - backupStartTime;
-
-            MediaLibraryMetaRecoveryState expect =  MediaLibraryMetaRecoveryState::STATE_BACKING_UP;
+            backupCostTime_ += backupTotalTime;
+            MediaLibraryMetaRecoveryState expect = MediaLibraryMetaRecoveryState::STATE_BACKING_UP;
             if (recoveryState_.compare_exchange_strong(expect, MediaLibraryMetaRecoveryState::STATE_NONE)) {
-                MEDIA_INFO_LOG("End backing up normaly, elapse time %{public}lld ms", backupTotalTime);
+                MEDIA_INFO_LOG("End backing up normaly");
             } else {
-                MEDIA_INFO_LOG("End backing up interrupted, elapse time %{public}lld ms", backupTotalTime);
+                MEDIA_INFO_LOG("End backing up interrupted");
             }
         }).detach();
     } else {
@@ -364,7 +327,7 @@ void MediaLibraryMetaRecovery::LoadAlbumMaps(const string &path)
     for (auto it : vecPhotoAlbum) {
         oldAlbumIdToLpath[it->GetAlbumId()] = it->GetLPath();
         MEDIA_INFO_LOG("oldAlbumIdToLpath, json id %{public}d, path=%{public}s", it->GetAlbumId(),
-            it->GetLPath().c_str());
+            DfxUtils::GetSafePath(it->GetLPath()).c_str());
     }
     // 2. db PhotoAlbum to lpathToNewAlbumId
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
@@ -379,7 +342,8 @@ void MediaLibraryMetaRecovery::LoadAlbumMaps(const string &path)
         int albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
         string lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
         lpathToNewAlbumId[lPath] = albumId;
-        MEDIA_INFO_LOG("lpathToNewAlbumId, path=%{public}s db id %{public}d, ", lPath.c_str(), albumId);
+        MEDIA_INFO_LOG("lpathToNewAlbumId, path=%{public}s db id %{public}d, ",
+            DfxUtils::GetSafePath(lPath).c_str(), albumId);
     }
     return;
 }
@@ -398,7 +362,7 @@ void MediaLibraryMetaRecovery::DoDataBaseRecovery()
     LoadAlbumMaps(ROOT_MEDIA_DIR+".meta/album.json");
 
     MEDIA_INFO_LOG("Photo recovery start");
-    if (PhotoRecovery(ROOT_MEDIA_DIR + ".meta/Photo") != E_OK) {
+    if (PhotoRecovery(META_RECOVERY_META_PATH) != E_OK) {
         MEDIA_ERR_LOG("Recover Photo failed");
     }
     MEDIA_INFO_LOG("Photo recovery end");
@@ -423,20 +387,37 @@ int32_t MediaLibraryMetaRecovery::AlbumRecovery(const string &path)
 
         ret = ReadPhotoAlbumFromFile(path, vecPhotoAlbum);
         if (ret != E_OK) {
-            MEDIA_ERR_LOG("read album file failed, errCode=%{public}d", ret);
+            MEDIA_ERR_LOG("read album file failed, errCode = %{public}d", ret);
             break;
         }
 
         ret = InsertMetadataInDb(vecPhotoAlbum);
         if (ret != E_OK) {
-            MEDIA_ERR_LOG("AlbumRecovery: insert album failed, errCode=%{public}d", ret);
+            MEDIA_ERR_LOG("AlbumRecovery: insert album failed, errCode = %{public}d", ret);
             break;
         }
 
         MEDIA_INFO_LOG("AlbumRecovery: photo album is recovered successful");
-    }while (false);
+    } while (false);
 
     return ret;
+}
+
+static int32_t GetTotalBackupFileCount()
+{
+    int count = 0;
+    if (access(META_RECOVERY_META_PATH.c_str(), F_OK) != E_OK) {
+        return count;
+    }
+
+    filesystem::path dir(META_RECOVERY_META_PATH);
+    for (const auto& entry : filesystem::recursive_directory_iterator(dir)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".json") {
+            ++count;
+        }
+    }
+
+    return count;
 }
 
 int32_t MediaLibraryMetaRecovery::PhotoRecovery(const string &path)
@@ -446,9 +427,9 @@ int32_t MediaLibraryMetaRecovery::PhotoRecovery(const string &path)
 
     if (!PathToRealPath(path, realPath)) {
         if (errno == ENOENT) {
-            //Delte Metastatus Json;
+            // Delte Metastatus Json;
             remove(META_STATUS_PATH.c_str());
-            //Delete status
+            // Delete status
             metaStatus.clear();
             MEDIA_ERR_LOG("no meta file no need to recovery");
             return E_OK;
@@ -456,6 +437,9 @@ int32_t MediaLibraryMetaRecovery::PhotoRecovery(const string &path)
         MEDIA_ERR_LOG("Failed to get real path %{private}s, errno %{public}d", path.c_str(), errno);
         return E_INVALID_PATH;
     }
+
+    recoveryTotalBackupCnt_ = GetTotalBackupFileCount();
+    MEDIA_INFO_LOG("recovery success total backup");
 
     if (!ScannerUtils::IsDirectory(realPath)) {
         MEDIA_ERR_LOG("The path %{private}s is not a directory", realPath.c_str());
@@ -467,15 +451,14 @@ int32_t MediaLibraryMetaRecovery::PhotoRecovery(const string &path)
         MEDIA_ERR_LOG("Failed to ScanMetaDir, errCode=%{public}d", err);
     }
 
-    MEDIA_INFO_LOG("recovery success totalCount=%{public}d", ReadMetaRecoveryCountFromFile());
+    recoverySuccCnt_ += ReadMetaRecoveryCountFromFile();
 
-    //Delte Metastatus Json;
-    int ret = remove(META_STATUS_PATH.c_str());
-    if (ret != 0) {
-        MEDIA_ERR_LOG("Failed to remove MetaStatus file, err=%{public}d", ret);
+    // Delte Metastatus Json;
+    err = remove(META_STATUS_PATH.c_str());
+    if (err != E_OK) {
+        MEDIA_WARN_LOG("Remove META_STATUS_PATH failed, errCode=%{public}d", err);
     }
-
-    //Delete status
+    // Delete status
     metaStatus.clear();
 
     return err;
@@ -483,21 +466,28 @@ int32_t MediaLibraryMetaRecovery::PhotoRecovery(const string &path)
 
 int32_t MediaLibraryMetaRecovery::WriteSingleMetaDataById(int32_t rowId)
 {
-    MEDIA_INFO_LOG("WriteSingleMetaDataById : rowId %{public}d", rowId);
+    int ret = E_OK;
+
+    MEDIA_DEBUG_LOG("WriteSingleMetaDataById : rowId %{public}d", rowId);
     auto asset = MediaLibraryAssetOperations::QuerySinglePhoto(rowId);
     if (asset == nullptr) {
         MEDIA_ERR_LOG("QuerySinglePhoto : rowId %{public}d failed", rowId);
         return E_HAS_DB_ERROR;
     }
 
-    return WriteSingleMetaData(*asset);
+    ret = WriteSingleMetaData(*asset);
+    if (ret == E_OK) {
+        backupSuccCnt_++;
+    }
+    return ret;
 }
 
 int32_t MediaLibraryMetaRecovery::WriteSingleMetaData(const FileAsset &asset)
 {
     string metaFilePath;
     int32_t ret = E_OK;
-    ret = GetMetaPathFromOrignalPath(asset.GetPath(), metaFilePath);
+
+    ret = PhotoFileUtils::GetMetaPathFromOrignalPath(asset.GetPath(), metaFilePath);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("invalid photo path, path = %{public}s", DfxUtils::GetSafePath(asset.GetPath()).c_str());
         return ret;
@@ -531,6 +521,21 @@ int32_t MediaLibraryMetaRecovery::WriteSingleMetaData(const FileAsset &asset)
 
 void MediaLibraryMetaRecovery::DoBackupMetadata()
 {
+    int32_t temp = 0;
+    int32_t tempLevel = 0;
+    int32_t batteryCapacity = 0;
+
+#ifdef HAS_THERMAL_MANAGER_PART
+    auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
+    temp = static_cast<int32_t>(thermalMgrClient.GetThermalSensorTemp(PowerMgr::SensorType::SHELL));
+    tempLevel = static_cast<int32_t>(thermalMgrClient.GetThermalLevel());
+#endif
+#ifdef HAS_BATTERY_MANAGER_PART
+    batteryCapacity = PowerMgr::BatterySrvClient::GetInstance().GetCapacity();
+#endif
+    MEDIA_INFO_LOG("Start backing up, batteryCap = %{public}d, temp = %{public}d(%{public}d)",
+        batteryCapacity, temp, tempLevel);
+
     // Backing up photo albums
     AlbumBackup();
 
@@ -556,37 +561,33 @@ void MediaLibraryMetaRecovery::AlbumBackup()
 
 void MediaLibraryMetaRecovery::PhotoBackupBatch()
 {
-    int32_t photoTotaldCount = 0;
+    int32_t photoTotalCount = 0;
     int32_t photoProcessedCount = 0;
     int32_t photoSuccessedCount = 0;
     vector<shared_ptr<FileAsset>> photoVector;
     do {
         if (recoveryState_.load() != MediaLibraryMetaRecoveryState::STATE_BACKING_UP) {
-            MEDIA_INFO_LOG("PhotoBackupBatch: process is interrupted");
+            MEDIA_INFO_LOG("Photo backing up process is interrupted");
             break;
         }
 
         photoVector.clear();
         MediaLibraryAssetOperations::QueryTotalPhoto(photoVector, QUERY_BATCH_SIZE);
         if (photoVector.size() > 0) {
-            photoTotaldCount += photoVector.size();
+            photoTotalCount += photoVector.size();
             PhotoBackup(photoVector, photoProcessedCount, photoSuccessedCount);
         }
     } while (photoVector.size() == QUERY_BATCH_SIZE);
-    MEDIA_INFO_LOG("PhotoBackupBatch: Photo backup end, result = %{public}d/%{public}d/%{public}d",
-        photoSuccessedCount, photoProcessedCount, photoTotaldCount);
+    MEDIA_INFO_LOG("Photo backup end, result = %{public}d/%{public}d/%{public}d",
+        photoSuccessedCount, photoProcessedCount, photoTotalCount);
+    backupSuccCnt_ += photoSuccessedCount;
 }
 
 void MediaLibraryMetaRecovery::PhotoBackup(const vector<shared_ptr<FileAsset>> &photoVector,
                                            int32_t &processCount,
                                            int32_t &successCount)
 {
-    MEDIA_INFO_LOG("Start backup batched photos, count = %{public}u", photoVector.size());
     for (auto &asset : photoVector) {
-        if (asset == NULL) {
-            MEDIA_ERR_LOG("asset null");
-            continue;
-        }
         // Check interrupt request
         if (recoveryState_.load() != MediaLibraryMetaRecoveryState::STATE_BACKING_UP) {
             MEDIA_INFO_LOG("Photo backing up process is interrupted");
@@ -660,40 +661,28 @@ int32_t MediaLibraryMetaRecovery::ScanMetaDir(const string &path, int32_t bucket
             MEDIA_INFO_LOG("currentPath=%{public}s, path=%{public}s, cur_bucket %{public}d recovery start",
                            DfxUtils::GetSafePath(currentPath).c_str(), DfxUtils::GetSafePath(path).c_str(), cur_bucket);
 
-            //recovery after interrupt, skip bucket which scanned.
+            // Recovery after interrupt, skip bucket which scanned.
             if (metaStatus.find(cur_bucket) != metaStatus.end()) {
                 MEDIA_INFO_LOG("skip bucket id=%{public}d", cur_bucket);
                 continue;
             }
             (void)ScanMetaDir(currentPath, cur_bucket);
             RefreshAlbumCount();
-        } else {
-            MEDIA_DEBUG_LOG("currentPath=%{public}s, path=%{public}s",
-                DfxUtils::GetSafePath(currentPath).c_str(), DfxUtils::GetSafePath(path).c_str());
-            bool albumIdDirtyFlag = false;
-            FileAsset fileAsset;
-            if (ReadMetadataFromFile(currentPath, fileAsset, albumIdDirtyFlag) != E_OK) {
-                MEDIA_ERR_LOG("ScanMetaDir: ReadMetadataFrom file failed");
-                continue;
-            }
+            continue;
+        }
 
-            // Insert fileAsset to DB
-            int32_t retry_cnt = 0;
-            do {
-                if (InsertMetadataInDb(fileAsset, albumIdDirtyFlag) != E_OK) {
-                    MEDIA_ERR_LOG("ScanMetaDir: InsertMetadataInDb failed, retry_cnt=%{public}d", retry_cnt);
-                    int32_t sleep_time = 100;
-                    this_thread::sleep_for(chrono::milliseconds(sleep_time));
-                } else {
-                    break;
-                }
-                retry_cnt++;
-            } while (retry_cnt < META_RETRY_MAX_COUNTS);
-            if (retry_cnt < META_RETRY_MAX_COUNTS) {
-                recoverySuccessCnt++;
-            } else {
-                MEDIA_ERR_LOG("ScanMetaDir: InsertMetadataInDb finally failed, retry_cnt=%{public}d", retry_cnt);
-            }
+        MEDIA_DEBUG_LOG("currentPath=%{public}s, path=%{public}s",
+            DfxUtils::GetSafePath(currentPath).c_str(), DfxUtils::GetSafePath(path).c_str());
+
+        FileAsset fileAsset;
+        if (ReadMetadataFromFile(currentPath, fileAsset) != E_OK) {
+            MEDIA_ERR_LOG("ScanMetaDir: ReadMetadataFrom file failed");
+            continue;
+        }
+
+        // Insert fileAsset to DB
+        if (InsertMetadataInDbRetry(fileAsset) == E_OK) {
+            recoverySuccessCnt++;
         }
     }
 
@@ -755,7 +744,13 @@ int32_t MediaLibraryMetaRecovery::WriteMetadataToFile(const string &filePath, co
 
 void MediaLibraryMetaRecovery::AddMetadataToJson(nlohmann::json &j, const FileAsset &fileAsset)
 {
-    for (const auto &[key, type] : RESULT_TYPE_MAP) {
+    const std::unordered_map<std::string, ResultSetDataType> &columnInfoMap = GetRecoveryPhotosTableColumnInfo();
+    if (columnInfoMap.empty()) {
+        MEDIA_ERR_LOG("GetRecoveryPhotosTableColumnInfo failed");
+        return;
+    }
+
+    for (const auto &[key, type] : columnInfoMap) {
         if (type == TYPE_STRING) {
             string value = fileAsset.GetStrMember(key);
             MEDIA_DEBUG_LOG("Writejson string: %{private}s: %{private}s", key.c_str(), value.c_str());
@@ -766,7 +761,6 @@ void MediaLibraryMetaRecovery::AddMetadataToJson(nlohmann::json &j, const FileAs
             j[key] = json::number_integer_t(value);
         } else if (type == TYPE_INT64) {
             int64_t value = fileAsset.GetInt64Member(key);
-            MEDIA_DEBUG_LOG("Writejson int64_t: %{private}s: %{public}lld", key.c_str(), value);
             j[key] = json::number_integer_t(value);
         } else if (type == TYPE_DOUBLE) {
             double value = fileAsset.GetDoubleMember(key);
@@ -778,11 +772,16 @@ void MediaLibraryMetaRecovery::AddMetadataToJson(nlohmann::json &j, const FileAs
     }
 }
 
-bool MediaLibraryMetaRecovery::GetMetadataFromJson(const nlohmann::json &j, FileAsset &fileAsset, bool &flag)
+bool MediaLibraryMetaRecovery::GetMetadataFromJson(const nlohmann::json &j, FileAsset &fileAsset)
 {
+    const std::unordered_map<std::string, ResultSetDataType> &columnInfoMap = GetRecoveryPhotosTableColumnInfo();
+    if (columnInfoMap.empty()) {
+        MEDIA_ERR_LOG("GetRecoveryPhotosTableColumnInfo failed");
+        return false;
+    }
+
     bool ret = true;
-    for (const auto &[name, type] : RESULT_TYPE_MAP) {
-        MEDIA_DEBUG_LOG("ReadFile: %{private}s %{public}d", name.c_str(), type);
+    for (const auto &[name, type] : columnInfoMap) {
         if (type == TYPE_STRING) {
             optional<string> value = GetStringFromJson(j, name);
             if (value.has_value()) {
@@ -792,22 +791,11 @@ bool MediaLibraryMetaRecovery::GetMetadataFromJson(const nlohmann::json &j, File
             }
         } else if (type == TYPE_INT32) {
             optional<int64_t> value = GetNumberFromJson(j, name);
-            if (!value.has_value()) {
+            if (value.has_value()) {
+                fileAsset.SetMemberValue(name, (int32_t)value.value());
+            } else {
                 ret = false;
-                continue;
             }
-            int val0 = (int32_t)value.value();
-            int val = (int32_t)value.value();
-            if (name == PhotoColumn::PHOTO_OWNER_ALBUM_ID) {
-                auto lpath = oldAlbumIdToLpath.find(val);
-                if (lpath != oldAlbumIdToLpath.end() &&
-                    lpathToNewAlbumId.find(lpath->second) != lpathToNewAlbumId.end()) {
-                    val = lpathToNewAlbumId[lpath->second];
-                    MEDIA_INFO_LOG("convert album %{public}d to %{public}d", val0, val);
-                }
-                flag = (val0 != val);
-            }
-            fileAsset.SetMemberValue(name, val);
         } else if (type == TYPE_INT64) {
             optional<int64_t> value = GetNumberFromJson(j, name);
             if (value.has_value()) {
@@ -830,7 +818,7 @@ bool MediaLibraryMetaRecovery::GetMetadataFromJson(const nlohmann::json &j, File
     return ret;
 }
 
-int32_t MediaLibraryMetaRecovery::ReadMetadataFromFile(const string &filePath, FileAsset &fileAsset, bool &flag)
+int32_t MediaLibraryMetaRecovery::ReadMetadataFromFile(const string &filePath, FileAsset &fileAsset)
 {
     int ret = E_OK;
     json jsonMetadata;
@@ -839,11 +827,11 @@ int32_t MediaLibraryMetaRecovery::ReadMetadataFromFile(const string &filePath, F
         return E_FILE_OPER_FAIL;
     }
 
-    if (!GetMetadataFromJson(jsonMetadata, fileAsset, flag)) {
+    if (!GetMetadataFromJson(jsonMetadata, fileAsset)) {
         MEDIA_ERR_LOG("GetMetadataFromJson not all right");
     }
 
-    // Media file path
+    // Meida file path
     string mediaFilePath = filePath;
     size_t pos = mediaFilePath.find(META_RECOVERY_META_RELATIVE_PATH);
     if (pos != string::npos) {
@@ -854,15 +842,7 @@ int32_t MediaLibraryMetaRecovery::ReadMetadataFromFile(const string &filePath, F
     }
     fileAsset.SetFilePath(mediaFilePath);
 
-    // Media Type
-    fileAsset.SetMediaType(MediaFileUtils::GetMediaType(mediaFilePath));
-
-    // MimeType
-    string extension = MediaFileUtils::GetExtensionFromPath(mediaFilePath);
-    fileAsset.SetMimeType(MimeTypeUtils::GetMimeTypeFromExtension(extension));
-
-    // Date added
-    struct stat statInfo = {0};
+    struct stat statInfo = { 0 };
     if (stat(mediaFilePath.c_str(), &statInfo) != 0) {
         MEDIA_ERR_LOG("ReadMetadataFromFile: stat syscall err %{public}d", errno);
         ret = E_SYSCALL;
@@ -947,49 +927,8 @@ bool MediaLibraryMetaRecovery::GetPhotoAlbumFromJson(const nlohmann::json &j, Ph
         ret = false;
     }
 
-    optional<string> bundleName = GetStringFromJson(j, PhotoAlbumColumns::ALBUM_BUNDLE_NAME);
-    if (bundleName.has_value()) {
-        photoAlbum.SetBundleName(bundleName.value());
-    } else {
-        ret = false;
-    }
-
-    optional<string> localLanguage = GetStringFromJson(j, PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE);
-    if (localLanguage.has_value()) {
-        photoAlbum.SetLocalLanguage(localLanguage.value());
-    } else {
-        ret = false;
-    }
-
-    optional<int64_t> dateAdded = GetNumberFromJson(j, PhotoAlbumColumns::ALBUM_DATE_ADDED);
-    if (dateAdded.has_value()) {
-        photoAlbum.SetDateAdded(dateAdded.value());
-    } else {
-        ret = false;
-    }
-
-    optional<int64_t> isLocal = GetNumberFromJson(j, PhotoAlbumColumns::ALBUM_IS_LOCAL);
-    if (isLocal.has_value()) {
-        photoAlbum.SetIsLocal((int32_t)isLocal.value());
-    } else {
-        ret = false;
-    }
-
-    optional<string> lPath = GetStringFromJson(j, PhotoAlbumColumns::ALBUM_LPATH);
-    if (lPath.has_value()) {
-        photoAlbum.SetLPath(lPath.value());
-    } else {
-        ret = false;
-    }
-
-    optional<int64_t> priority = GetNumberFromJson(j, PhotoAlbumColumns::ALBUM_PRIORITY);
-    if (priority.has_value()) {
-        photoAlbum.SetPriority((int32_t)priority.value());
-    } else {
-        ret = false;
-    }
-
-    return ret;
+    return (ret && GetPhotoAlbumFromJsonPart1(j, photoAlbum));
+    // !! Do not add upgrade code here !!
 }
 
 int32_t MediaLibraryMetaRecovery::WritePhotoAlbumToFile(const string &filePath,
@@ -1039,7 +978,7 @@ int32_t MediaLibraryMetaRecovery::ReadPhotoAlbumFromFile(const string &filePath,
         return E_ERR;
     }
 
-    int ret = 0;
+    int ret = E_OK;
     for (const json &j : jsonArray) {
         PhotoAlbum photoAlbum;
         if (!GetPhotoAlbumFromJson(j, photoAlbum)) {
@@ -1058,7 +997,7 @@ int32_t MediaLibraryMetaRecovery::ReadPhotoAlbumFromFile(const string &filePath,
 int32_t MediaLibraryMetaRecovery::WriteMetaStatusToFile(const string &keyPath, const int32_t status)
 {
     json j;
-    if (std::filesystem::exists(META_STATUS_PATH) && !ReadJsonFile(META_STATUS_PATH, j)) {
+    if (!ReadJsonFile(META_STATUS_PATH, j)) {
         MEDIA_WARN_LOG("ReadFile META_STATUS_PATH failed, will write new META_STATUS_PATH file");
         j = json::object();
     }
@@ -1118,13 +1057,73 @@ int32_t MediaLibraryMetaRecovery::ReadMetaRecoveryCountFromFile()
     return recoverySuccessCnt;
 }
 
-int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset, bool flag)
+bool MediaLibraryMetaRecovery::UpdatePhotoOwnerAlbumId(ValuesBucket &values)
+{
+    ValueObject valueObject;
+    if (!values.GetObject(PhotoColumn::PHOTO_OWNER_ALBUM_ID, valueObject)) {
+        return false;
+    }
+
+    int32_t oldOwnerAlbumId = 0;
+    valueObject.GetInt(oldOwnerAlbumId);
+    if (oldAlbumIdToLpath.find(oldOwnerAlbumId) == oldAlbumIdToLpath.end()) {
+        return false;
+    }
+
+    const std::string &lpath = oldAlbumIdToLpath[oldOwnerAlbumId];
+    if (lpathToNewAlbumId.end() == lpathToNewAlbumId.find(lpath)) {
+        return false;
+    }
+
+    int32_t newOwnerAlbumId = lpathToNewAlbumId[lpath];
+    if (newOwnerAlbumId == oldOwnerAlbumId) {
+        return false;
+    }
+
+    MEDIA_DEBUG_LOG("convert album %{public}d to %{public}d", oldOwnerAlbumId, newOwnerAlbumId);
+    values.Delete(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
+    values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, newOwnerAlbumId);
+
+    return true;
+}
+
+int32_t MediaLibraryMetaRecovery::InsertMetadataInDbRetry(const FileAsset &fileAsset)
+{
+    int32_t retry_cnt = 0;
+    do {
+        if (InsertMetadataInDb(fileAsset) == E_OK) {
+            break;
+        }
+
+        retry_cnt++;
+        MEDIA_ERR_LOG("InsertMetadataInDb failed, retry_cnt = %{public}d", retry_cnt);
+        this_thread::sleep_for(chrono::milliseconds(META_RETRY_INTERVAL));
+    } while (retry_cnt < META_RETRY_MAX_COUNTS);
+
+    if (retry_cnt >= META_RETRY_MAX_COUNTS) {
+        MEDIA_ERR_LOG("InsertMetadataInDb finally failed, retry_cnt = %{public}d", retry_cnt);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_DB_FAIL},
+            {KEY_OPT_TYPE, OptType::CREATE}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::RECOVERY_ERR, map);
+        return ERR_FAIL;
+    }
+
+    return E_OK;
+}
+
+int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset)
 {
     std::string filePath = fileAsset.GetFilePath();
-    MEDIA_INFO_LOG("InsertMetadataInDb: photo filepath = %{public}s", DfxUtils::GetSafePath(filePath).c_str());
-    if (E_OK == MediaLibraryAssetOperations::CheckExist(filePath)) {
-        MEDIA_INFO_LOG("InsertMetadataInDb: insert: photo is exist in db, ignore");
+    MEDIA_DEBUG_LOG("InsertMetadataInDb: photo filepath = %{public}s", DfxUtils::GetSafePath(filePath).c_str());
+    if (MediaLibraryAssetOperations::CheckExist(filePath) == E_OK) {
+        MEDIA_DEBUG_LOG("InsertMetadataInDb: insert: photo is exist in db, ignore");
         return E_OK;
+    }
+
+    const std::unordered_map<std::string, ResultSetDataType> &columnInfoMap = GetRecoveryPhotosTableColumnInfo();
+    if (columnInfoMap.empty()) {
+        MEDIA_ERR_LOG("GetRecoveryPhotosTableColumnInfo failed");
+        return E_ERR;
     }
 
     auto rawRdbStore = GetRdbStoreRaw();
@@ -1141,12 +1140,14 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset,
     }
 
     ValuesBucket valuesBucket;
-    SetValuesFromFileAsset(fileAsset, valuesBucket);
+    SetValuesFromFileAsset(fileAsset, valuesBucket, columnInfoMap);
 
-    // set meta flag uptodate, to avoid backup db into meta again
-    valuesBucket.PutInt(PhotoColumn::PHOTO_METADATA_FLAGS,
-                        flag ? static_cast<int>(MetadataFlags::TYPE_DIRTY) :
-                        static_cast<int>(MetadataFlags::TYPE_UPTODATE));
+    // set meta flags uptodate, to avoid backup db into meta again
+    if (UpdatePhotoOwnerAlbumId(valuesBucket)) {
+        valuesBucket.PutInt(PhotoColumn::PHOTO_METADATA_FLAGS, static_cast<int>(MetadataFlags::TYPE_DIRTY));
+    } else {
+        valuesBucket.PutInt(PhotoColumn::PHOTO_METADATA_FLAGS, static_cast<int>(MetadataFlags::TYPE_UPTODATE));
+    }
 
     int64_t outRowId = -1;
     errCode = rawRdbStore->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
@@ -1156,7 +1157,6 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset,
     }
     transactionOprn.Finish();
 
-    MEDIA_INFO_LOG("InsertMetadataInDb: photo insert done, rowId = %{public}lld", outRowId);
     return E_OK;
 }
 
@@ -1164,15 +1164,11 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
 {
     auto rawRdbStore = GetRdbStoreRaw();
     if (rawRdbStore == nullptr) {
-        MEDIA_ERR_LOG("GetRdbStoreRaw failed, return nullptr");
+        MEDIA_ERR_LOG("GetRdbStoreRaw failed, return nullptr)");
         return E_HAS_DB_ERROR;
     }
 
     for (auto iter : vecPhotoAlbum) {
-        if (iter == NULL) {
-            MEDIA_ERR_LOG("iter nullptr");
-            continue;
-        }
         MEDIA_INFO_LOG("InsertMetadataInDb: album name = %{private}s", iter->GetAlbumName().c_str());
         RdbPredicates predicates(PhotoAlbumColumns::TABLE);
         vector<string> columns = {PhotoAlbumColumns::ALBUM_ID,
@@ -1196,9 +1192,9 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
             return errCode;
         }
 
+        // Insert album item
         ValuesBucket valuesBucket;
         SetValuesFromPhotoAlbum(iter, valuesBucket);
-        
         int64_t outRowId = -1;
         errCode = rawRdbStore->Insert(outRowId, PhotoAlbumColumns::TABLE, valuesBucket);
         if (errCode != NativeRdb::E_OK) {
@@ -1206,17 +1202,21 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
             return errCode;
         }
 
-        RdbPredicates predicatesOrder(PhotoAlbumColumns::TABLE);
-        predicatesOrder.EqualTo(PhotoAlbumColumns::ALBUM_ID, outRowId);
-
-        ValuesBucket valuesOrder;
-        valuesOrder.PutInt(PhotoAlbumColumns::ALBUM_ORDER, iter->GetOrder());
-
+        // Update album order inserted just now
         int32_t changedRows = -1;
-        errCode = rawRdbStore->Update(changedRows, valuesOrder, predicatesOrder);
+        RdbPredicates predicatesOrder(PhotoAlbumColumns::TABLE);
+        predicatesOrder.And()->EqualTo(PhotoAlbumColumns::ALBUM_ID, outRowId)
+                             ->And()
+                             ->NotEqualTo(PhotoAlbumColumns::ALBUM_ORDER, iter->GetOrder());
+        valuesBucket.Clear();
+        valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_ORDER, iter->GetOrder());
+        errCode = rawRdbStore->Update(changedRows, valuesBucket, predicatesOrder);
         if (errCode != E_OK) {
-            MEDIA_ERR_LOG("Update album order failed, error=%{public}d", errCode);
+            MEDIA_ERR_LOG("Update album order failed, err = %{public}d", errCode);
             return E_HAS_DB_ERROR;
+        }
+        if (changedRows > 0) {
+            MEDIA_INFO_LOG("Update album order");
         }
 
         transactionOprn.Finish();
@@ -1229,7 +1229,6 @@ int32_t MediaLibraryMetaRecovery::UpdateMetadataFlagInDb(const int32_t fieldId, 
 {
     int32_t errCode = E_OK;
 
-    MEDIA_INFO_LOG("Update photo metadata flag, fieldId = %{public}d, new flag = %{public}d", fieldId, flag);
     std::shared_ptr<NativeRdb::RdbStore> rdbRawPtr = GetRdbStoreRaw();
     if (!rdbRawPtr) {
         MEDIA_ERR_LOG("GetRdbStoreRaw failed");
@@ -1242,8 +1241,8 @@ int32_t MediaLibraryMetaRecovery::UpdateMetadataFlagInDb(const int32_t fieldId, 
     TransactionOperations transactionOprn(rdbRawPtr);
     errCode = transactionOprn.Start();
     if (errCode != E_OK) {
-            MEDIA_ERR_LOG("transaction operation start failed, errCode = %{public}d", errCode);
-            return errCode;
+        MEDIA_ERR_LOG("transaction operation start failed, error=%{public}d", errCode);
+        return errCode;
     }
 
     ValuesBucket values;
@@ -1252,7 +1251,7 @@ int32_t MediaLibraryMetaRecovery::UpdateMetadataFlagInDb(const int32_t fieldId, 
     int32_t changedRows = -1;
     errCode = rdbRawPtr->Update(changedRows, values, predicates);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Database update failed, error=%{public}d", errCode);
+        MEDIA_ERR_LOG("Database update failed, err = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
     transactionOprn.Finish();
@@ -1263,42 +1262,36 @@ int32_t MediaLibraryMetaRecovery::UpdateMetadataFlagInDb(const int32_t fieldId, 
 int32_t MediaLibraryMetaRecovery::SetRdbRebuiltStatus(bool status)
 {
     rdbRebuilt_ = status;
+    reBuiltCount_++;
     return E_OK;
 }
 
 int32_t MediaLibraryMetaRecovery::StartAsyncRecovery()
 {
-    MEDIA_INFO_LOG("StartAsyncRecovery: rebuild status %{public}d", rdbRebuilt_);
+    StatisticRestore();
 
-    MediaLibraryMetaRecoveryState oldState;
-    bool hasStatusFile = bool(access(META_STATUS_PATH.c_str(), F_OK) == E_OK);
-    switch (recoveryState_.load()) {
-        case MediaLibraryMetaRecoveryState::STATE_RECOVERING: {
-            MEDIA_INFO_LOG("StartAsyncRecovery: recovery process is already running");
+    MediaLibraryMetaRecoveryState oldState = recoveryState_.exchange(MediaLibraryMetaRecoveryState::STATE_RECOVERING);
+    if (oldState == MediaLibraryMetaRecoveryState::STATE_RECOVERING) {
+        MEDIA_INFO_LOG("recovery process is already running");
+        return E_OK;
+    }
+
+    if (oldState == MediaLibraryMetaRecoveryState::STATE_NONE) {
+        bool hasStatusFile = bool(access(META_STATUS_PATH.c_str(), F_OK) == E_OK);
+        MEDIA_INFO_LOG("rebuild status %{public}d, has status file %{public}d", rdbRebuilt_, hasStatusFile);
+        if (!hasStatusFile && !rdbRebuilt_) {
+            MEDIA_INFO_LOG("StartAsyncRecovery: no need to recovery");
+            recoveryState_.exchange(MediaLibraryMetaRecoveryState::STATE_NONE);
             return E_OK;
         }
-        case MediaLibraryMetaRecoveryState::STATE_RECOVERING_ABORT: {
-            oldState = recoveryState_.exchange(MediaLibraryMetaRecoveryState::STATE_RECOVERING);
-            break;
-        }
-        default: {
-            if (!hasStatusFile && !rdbRebuilt_) {
-                MEDIA_INFO_LOG("StartAsyncRecovery: no need to recovery");
-                return E_OK;
-            }
-            recoveryState_.exchange(MediaLibraryMetaRecoveryState::STATE_RECOVERING);
-            oldState = hasStatusFile ? MediaLibraryMetaRecoveryState::STATE_RECOVERING_ABORT :
-                                       MediaLibraryMetaRecoveryState::STATE_NONE;
-            break;
-        }
+        oldState = hasStatusFile ? MediaLibraryMetaRecoveryState::STATE_RECOVERING_ABORT :
+                                    MediaLibraryMetaRecoveryState::STATE_NONE;
     }
 
     if (oldState == MediaLibraryMetaRecoveryState::STATE_RECOVERING_ABORT) {
-        if (ReadMetaStatusFromFile(metaStatus) != E_OK) {
-            MEDIA_ERR_LOG("StartAsyncRecovery: ReadMetaStatusFromFile failed");
-        }
+        ReadMetaStatusFromFile(metaStatus);
     } else {
-        // create status.json if not exist
+        // Create status.json if not exist
         const string parentDir = MediaFileUtils::GetParentPath(META_STATUS_PATH);
         if (MediaFileUtils::CreateDirectory(parentDir)) {
             MediaFileUtils::CreateFile(META_STATUS_PATH);
@@ -1312,14 +1305,13 @@ int32_t MediaLibraryMetaRecovery::StartAsyncRecovery()
         int64_t recoveryStartTime = MediaFileUtils::UTCTimeMilliSeconds();
         this->DoDataBaseRecovery();
         int64_t recoveryTotalTime = MediaFileUtils::UTCTimeMilliSeconds() - recoveryStartTime;
-
         bool isStatusFileExist = bool(access(META_STATUS_PATH.c_str(), F_OK) == E_OK);
         if (isStatusFileExist) {
             recoveryState_.exchange(MediaLibraryMetaRecoveryState::STATE_RECOVERING_ABORT);
         } else {
             recoveryState_.exchange(MediaLibraryMetaRecoveryState::STATE_NONE);
         }
-        MEDIA_INFO_LOG("Recovery finished, elapse time %{public}lld ms", recoveryTotalTime);
+        recoveryCostTime_ += recoveryTotalTime;
     }).detach();
 
     return E_OK;
@@ -1328,7 +1320,7 @@ int32_t MediaLibraryMetaRecovery::StartAsyncRecovery()
 int32_t MediaLibraryMetaRecovery::DeleteMetaDataByPath(const string &filePath)
 {
     string metaFilePath;
-    if (E_OK != GetMetaPathFromOrignalPath(filePath, metaFilePath)) {
+    if (PhotoFileUtils::GetMetaPathFromOrignalPath(filePath, metaFilePath) != E_OK) {
         MEDIA_ERR_LOG("DeleteMetaDataByPath: invalid photo filePath, %{public}s",
             DfxUtils::GetSafePath(filePath).c_str());
         return E_INVALID_PATH;
@@ -1363,11 +1355,79 @@ void MediaLibraryMetaRecovery::RestartCloudSync()
     MEDIA_INFO_LOG("End StartCloudSync");
 }
 
+ResultSetDataType MediaLibraryMetaRecovery::GetDataType(const std::string &name)
+{
+    auto it = FILEASSET_MEMBER_MAP.find(name);
+    if (it == FILEASSET_MEMBER_MAP.end()) {
+        MEDIA_ERR_LOG("FILEASSET_MEMBER_MAP not find name: %{public}s", name.c_str());
+        return TYPE_NULL;
+    }
+
+    switch (it->second) {
+        case MEMBER_TYPE_INT32: {
+            return TYPE_INT32;
+            break;
+        }
+        case MEMBER_TYPE_INT64: {
+            return TYPE_INT64;
+            break;
+        }
+        case MEMBER_TYPE_STRING: {
+            return TYPE_STRING;
+            break;
+        }
+        case MEMBER_TYPE_DOUBLE: {
+            return TYPE_DOUBLE;
+            break;
+        }
+        default: {
+            return TYPE_NULL;
+            break;
+        }
+    }
+}
+
+const std::unordered_map<std::string, ResultSetDataType> &MediaLibraryMetaRecovery::GetRecoveryPhotosTableColumnInfo()
+{
+    MEDIA_DEBUG_LOG("GetRecoveryPhotosTableColumnInfo");
+    static std::unordered_map<std::string, ResultSetDataType> RECOVERY_PHOTOS_TABLE_COLUMN
+        = QueryRecoveryPhotosTableColumnInfo();
+    if (RECOVERY_PHOTOS_TABLE_COLUMN.empty()) {
+        MEDIA_ERR_LOG("QueryRecoveryPhotosTableColumnInfo failed");
+        RECOVERY_PHOTOS_TABLE_COLUMN = QueryRecoveryPhotosTableColumnInfo();
+    }
+
+    return  RECOVERY_PHOTOS_TABLE_COLUMN;
+}
+
+std::unordered_map<std::string, ResultSetDataType> MediaLibraryMetaRecovery::QueryRecoveryPhotosTableColumnInfo()
+{
+    MEDIA_DEBUG_LOG("QueryRecoveryPhotosTableColumnInfo");
+    std::unordered_map<std::string, ResultSetDataType> columnInfoMap;
+    const std::vector<std::string> &columnInfo = MediaLibraryAssetOperations::GetPhotosTableColumnInfo();
+    if (columnInfo.empty()) {
+        MEDIA_ERR_LOG("GetPhotosTableColumnInfo failed");
+        return columnInfoMap;
+    }
+
+    for (const std::string &name : columnInfo) {
+        if (EXCLUDED_COLUMNS.count(name) > 0) {
+            continue;
+        }
+        ResultSetDataType type = GetDataType(name);
+        columnInfoMap.emplace(name, type);
+        MEDIA_DEBUG_LOG("photos table name: %{public}s, type: %{public}d", name.c_str(), type);
+    }
+
+    return columnInfoMap;
+}
+
 int32_t MediaLibraryMetaRecovery::ResetAllMetaDirty()
 {
     const std::string RESET_ALL_META_DIRTY_SQL =
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_METADATA_FLAGS +
-        "= 0 " + " WHERE " + PhotoColumn::PHOTO_METADATA_FLAGS + " == 2; END;";
+        " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_METADATA_FLAGS +
+        " = 0 " + " WHERE " + PhotoColumn::PHOTO_METADATA_FLAGS + " == 2; END;";
+
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
@@ -1382,6 +1442,112 @@ int32_t MediaLibraryMetaRecovery::ResetAllMetaDirty()
         MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", RESET_ALL_META_DIRTY_SQL.c_str());
     }
     return err;
+}
+
+static int32_t QueryInt(const NativeRdb::AbsRdbPredicates &predicates,
+    const std::vector<std::string> &columns, const std::string &queryColumn, int32_t &value)
+{
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return E_DB_FAIL;
+    }
+    value = GetInt32Val(queryColumn, resultSet);
+    return E_OK;
+}
+
+static int32_t QueryAllPhoto(bool backup)
+{
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.And()->BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()
+        ->EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
+
+    if (backup) {
+        predicates.BeginWrap()
+                  ->EqualTo(PhotoColumn::PHOTO_METADATA_FLAGS, static_cast<int>(MetadataFlags::TYPE_NEW))
+                  ->Or()
+                  ->EqualTo(PhotoColumn::PHOTO_METADATA_FLAGS, static_cast<int>(MetadataFlags::TYPE_DIRTY))
+                  ->Or()
+                  ->IsNull(PhotoColumn::PHOTO_METADATA_FLAGS)
+                  ->EndWrap();
+    }
+
+    std::vector<std::string> columns = { "count(1) AS count" };
+    std::string queryColumn = "count";
+    int32_t count;
+    int32_t errCode = QueryInt(predicates, columns, queryColumn, count);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("query local image fail: %{public}d", errCode);
+    }
+    return count;
+}
+
+void MediaLibraryMetaRecovery::StatisticSave()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_CONFIG, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    prefs->PutLong(BACKUP_PHOTO_COUNT, backupSuccCnt_);
+    prefs->PutLong(BACKUP_COST_TIME, backupCostTime_);
+    prefs->PutLong(REBUILT_COUNT, reBuiltCount_);
+    prefs->PutLong(RECOVERY_BACKUP_TOTAL_COUNT, recoveryTotalBackupCnt_);
+    prefs->PutLong(RECOVERY_SUCC_PHOTO_COUNT, recoverySuccCnt_);
+    prefs->PutLong(RECOVERY_COST_TIME, recoveryCostTime_);
+    prefs->FlushSync();
+}
+
+void MediaLibraryMetaRecovery::StatisticRestore()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_CONFIG, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    backupSuccCnt_ = prefs->GetLong(BACKUP_PHOTO_COUNT, 0);
+    backupCostTime_ = prefs->GetLong(BACKUP_COST_TIME, 0);
+    reBuiltCount_ += prefs->GetLong(REBUILT_COUNT, 0);  // reBuiltCount_ will be set before Restore
+    recoveryTotalBackupCnt_ = prefs->GetLong(RECOVERY_BACKUP_TOTAL_COUNT, 0);
+    recoverySuccCnt_ = prefs->GetLong(RECOVERY_SUCC_PHOTO_COUNT, 0);
+    recoveryCostTime_ = prefs->GetLong(RECOVERY_COST_TIME, 0);
+}
+
+void MediaLibraryMetaRecovery::StatisticReset()
+{
+    backupSuccCnt_ = 0;
+    reBuiltCount_ = 0;
+    backupCostTime_ = 0;
+    recoverySuccCnt_ = 0;
+    recoveryCostTime_ = 0;
+    recoveryTotalBackupCnt_ = 0;
+    StatisticSave();
+}
+
+void MediaLibraryMetaRecovery::RecoveryStatistic()
+{
+    static constexpr char MEDIA_LIBRARY[] = "MEDIALIBRARY";
+    int64_t totalPhotoCount = QueryAllPhoto(false);
+    int64_t totalbackupCount = GetTotalBackupFileCount();
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_META_RECOVERY_INFO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "TOTAL_PHOTO_COUNT", totalPhotoCount,
+        "TOTAL_BACKUP_COUNT", totalbackupCount,
+        "BACKUP_PHOTO_COUNT", backupSuccCnt_,
+        "BACKUP_COST_TIME", backupCostTime_,
+        "REBUILT_COUNT", reBuiltCount_,
+        "RECOVERY_BACKUP_TOTAL_COUNT", recoveryTotalBackupCnt_,
+        "RECOVERY_SUCC_PHOTO_COUNT", recoverySuccCnt_,
+        "RECOVERY_COST_TIME", recoveryCostTime_);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("RecoveryStatistic error:%{public}d", ret);
+    }
+    StatisticReset();
 }
 } // namespace Media
 } // namespace OHOS

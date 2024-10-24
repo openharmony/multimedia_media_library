@@ -49,7 +49,9 @@
 #include "media_container_types.h"
 #include "media_scanner.h"
 #include "media_scanner_manager.h"
+#ifdef META_RECOVERY_SUPPORT
 #include "medialibrary_meta_recovery.h"
+#endif
 #include "medialibrary_notify.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
@@ -1675,16 +1677,21 @@ static int32_t ExecuteSql(RdbStore &store)
 int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 {
     MEDIA_INFO_LOG("Rdb OnCreate");
+#ifdef META_RECOVERY_SUPPORT
     NativeRdb::RebuiltType rebuilt = NativeRdb::RebuiltType::NONE;
     store.GetRebuilt(rebuilt);
+#endif
+
     if (ExecuteSql(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
 
+#ifdef META_RECOVERY_SUPPORT
     if (rebuilt == NativeRdb::RebuiltType::REBUILT) {
         // set Rebuilt flag
         MediaLibraryMetaRecovery::GetInstance().SetRdbRebuiltStatus(true);
     }
+#endif
 
     if (PrepareSystemAlbums(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
@@ -2313,6 +2320,7 @@ bool MediaLibraryRdbStore::ResetAnalysisTables()
     AddSegmentationColumns(*rdbStore_);
     AddFaceOcclusionAndPoseTypeColumn(*rdbStore_);
     AddVideoLabelTable(*rdbStore_);
+
     return true;
 }
 
