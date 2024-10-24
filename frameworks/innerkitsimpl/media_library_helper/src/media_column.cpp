@@ -276,7 +276,7 @@ const std::string PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX =
     BaseColumn::CreateIndex() + PHOTO_FAVORITE_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
     "," + MEDIA_DATE_TRASHED + "," + PHOTO_IS_TEMP + "," + MEDIA_IS_FAV + "," + PHOTO_BURST_COVER_LEVEL +
-    "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_ID + "DESC);";
+    "," + MEDIA_DATE_TAKEN + " DESC, " + MEDIA_ID + " DESC);";
 
 const std::string PhotoColumn::DROP_PHOTO_FAVORITE_INDEX = BaseColumn::DropIndex() + PHOTO_FAVORITE_INDEX;
 
