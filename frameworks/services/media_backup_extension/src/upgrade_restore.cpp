@@ -39,6 +39,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
+#include "gallery_report.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -345,7 +346,6 @@ void UpgradeRestore::AnalyzeSource()
     MEDIA_INFO_LOG("start AnalyzeSource.");
     AnalyzeGalleryErrorSource();
     AnalyzeGallerySource();
-    AnalyzeExternalSource();
     MEDIA_INFO_LOG("end AnalyzeSource.");
 }
 
@@ -369,43 +369,13 @@ void UpgradeRestore::AnalyzeGalleryDuplicateData()
 
 void UpgradeRestore::AnalyzeGallerySource()
 {
-    if (galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
-        return;
-    }
-    int32_t galleryAllCount = BackupDatabaseUtils::QueryGalleryAllCount(galleryRdb_);
-    int32_t galleryImageCount = BackupDatabaseUtils::QueryGalleryImageCount(galleryRdb_);
-    int32_t galleryVideoCount = BackupDatabaseUtils::QueryGalleryVideoCount(galleryRdb_);
-    int32_t galleryHiddenCount = BackupDatabaseUtils::QueryGalleryHiddenCount(galleryRdb_);
-    int32_t galleryTrashedCount = BackupDatabaseUtils::QueryGalleryTrashedCount(galleryRdb_);
-    int32_t gallerySdCardCount = BackupDatabaseUtils::QueryGallerySdCardCount(galleryRdb_);
-    int32_t galleryScreenVideoCount = BackupDatabaseUtils::QueryGalleryScreenVideoCount(galleryRdb_);
-    int32_t galleryFavoriteCount =  BackupDatabaseUtils::QueryGalleryFavoriteCount(galleryRdb_);
-    int32_t galleryImportsCount = BackupDatabaseUtils::QueryGalleryImportsCount(galleryRdb_);
-    int32_t galleryCloudCount = BackupDatabaseUtils::QueryGalleryCloudCount(galleryRdb_);
-    int32_t galleryBurstCoverCount = BackupDatabaseUtils::QueryGalleryBurstCoverCount(galleryRdb_);
-    int32_t galleryBurstTotalCount = BackupDatabaseUtils::QueryGalleryBurstTotalCount(galleryRdb_);
-    MEDIA_INFO_LOG("gallery analyze result: {galleryAllCount: %{public}d, galleryImageCount: %{public}d, "
-        "galleryVideoCount: %{public}d, galleryHiddenCount: %{public}d, galleryTrashedCount: %{public}d, "
-        "gallerySdCardCount: %{public}d, galleryScreenVideoCount: %{public}d, galleryFavoriteCount: %{public}d, "
-        "galleryImportsCount: %{public}d, galleryCloudCount: %{public}d, galleryBurstCount: cover %{public}d, "
-        "total %{public}d}",
-        galleryAllCount, galleryImageCount, galleryVideoCount, galleryHiddenCount, galleryTrashedCount,
-        gallerySdCardCount, galleryScreenVideoCount, galleryFavoriteCount, galleryImportsCount, galleryCloudCount,
-        galleryBurstCoverCount, galleryBurstTotalCount);
-}
-
-void UpgradeRestore::AnalyzeExternalSource()
-{
-    if (externalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("externalRdb_ is nullptr, Maybe init failed.");
-        return;
-    }
-    int32_t externalImageCount = BackupDatabaseUtils::QueryExternalImageCount(externalRdb_);
-    int32_t externalVideoCount = BackupDatabaseUtils::QueryExternalVideoCount(externalRdb_);
-    int32_t externalAudioCount = BackupDatabaseUtils::QueryExternalAudioCount(externalRdb_);
-    MEDIA_INFO_LOG("external analyze result: {externalImageCount: %{public}d, externalVideoCount: %{public}d, \
-        externalAudioCount: %{public}d", externalImageCount, externalVideoCount, externalAudioCount);
+    GalleryReport()
+        .SetGalleryRdb(this->galleryRdb_)
+        .SetExternalRdb(this->externalRdb_)
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .SetShouldIncludeSd(this->shouldIncludeSd_)
+        .Report();
 }
 
 void UpgradeRestore::InitGarbageAlbum()
