@@ -6208,7 +6208,7 @@ static void JSGetDataAnalysisProgressCompleteCallback(napi_env env, napi_status 
     }
     tracer.Finish();
     if (context->work != nullptr) {
-        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->defered, context->callbackRef, context->work,
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef, context->work,
             *jsContext);
     }
     delete context;
