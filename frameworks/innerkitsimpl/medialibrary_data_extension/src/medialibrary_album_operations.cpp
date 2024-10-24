@@ -571,10 +571,8 @@ int32_t GetStringValueFromResultSet(shared_ptr<ResultSet> resultSet, const strin
 
 void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePredicates &predicates)
 {
-    std::string whereClauseAlbumName = ALBUM_NAME + " IS NOT NULL AND " + ALBUM_NAME + " != ''";
     string whereClause;
-    if (value == FIRST_PAGE) {
-        string whereClauseRelatedMe = ALBUM_ID + " IN (SELECT " + MAP_ALBUM + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
+    string whereClauseRelatedMe = "(SELECT " + MAP_ALBUM + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
             " WHERE " + MAP_ASSET + " IN ( SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
             " WHERE " + MediaColumn::MEDIA_ID + " IN (SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
             " WHERE " + MAP_ASSET + " IN (SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE " +
@@ -583,12 +581,16 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
             " = 0) AND " + MAP_ALBUM + " NOT IN (SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
             IS_ME + " = 1)" + " GROUP BY " + MAP_ALBUM + " HAVING count(" + MAP_ALBUM + ") >= " +
             to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT_RELATED_ME) + ")";
+    std::string whereClauseAlbumName = ALBUM_NAME + " IS NOT NULL AND " + ALBUM_NAME + " != ''";
+    
+    if (value == FIRST_PAGE) {
+        string relatedMeFirstPage = ALBUM_ID + " IN " + whereClauseRelatedMe;
         string whereClauseDisplay = USER_DISPLAY_LEVEL + " = 1";
         string whereClauseSatifyCount = COUNT + " >= " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND (" +
-        USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
+            USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (((" + USER_DISPLAY_LEVEL + " != 3 AND " +
             USER_DISPLAY_LEVEL + " !=2) OR " + USER_DISPLAY_LEVEL + " IS NULL) AND ((" +
-            whereClauseDisplay + ") OR (" + whereClauseRelatedMe + ") OR (" + whereClauseSatifyCount + ") OR (" +
+            whereClauseDisplay + ") OR (" + relatedMeFirstPage + ") OR (" + whereClauseSatifyCount + ") OR (" +
             whereClauseAlbumName + "))) GROUP BY " +
             GROUP_TAG + " ORDER BY CASE WHEN " + RENAME_OPERATION + " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == SECOND_PAGE) {
@@ -596,9 +598,10 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
             COUNT + " < " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND " + COUNT + " >= " +
             to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " AND (" + USER_DISPLAY_LEVEL + " != 1 OR " +
             USER_DISPLAY_LEVEL + " IS NULL) AND (" + USER_DISPLAY_LEVEL + " != 3 OR " + USER_DISPLAY_LEVEL +
-            " IS NULL))) AND NOT (" + whereClauseAlbumName + ")" +
-            " GROUP BY " + GROUP_TAG + " ORDER BY CASE WHEN " + RENAME_OPERATION +
-            " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
+            " IS NULL) " + " AND NOT (" + whereClauseAlbumName + ")))" +
+            " AND " + ALBUM_ID + " NOT IN " + whereClauseRelatedMe +
+            " GROUP BY " + GROUP_TAG +
+            " ORDER BY CASE WHEN " + RENAME_OPERATION + " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == FAVORITE_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 3 )GROUP BY " +
             GROUP_TAG + " ORDER BY " + RANK;
@@ -1040,6 +1043,52 @@ static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUse
     }
 }
 
+static int32_t RebuildDeletedAlbum(shared_ptr<NativeRdb::ResultSet> &albumResultSet, std::string &assetId)
+{
+    string sourcePath;
+    string lPath;
+    GetStringValueFromResultSet(albumResultSet, PhotoColumn::PHOTO_SOURCE_PATH, sourcePath);
+    bool isUserAlbum = false;
+    int64_t newAlbumId = -1;
+    GetLPathFromSourcePath(sourcePath, lPath);
+    RecoverAlbum(assetId, lPath, isUserAlbum, newAlbumId);
+    if (newAlbumId == -1) {
+        MEDIA_ERR_LOG("Recover album fails");
+        return E_INVALID_ARGUMENTS;
+    }
+    if (isUserAlbum) {
+        MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {to_string(newAlbumId)});
+    } else {
+        MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {to_string(newAlbumId)});
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+        PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(newAlbumId)), NotifyType::NOTIFY_ADD);
+    return E_OK;
+}
+
+static void CheckAlbumStatusAndFixDirtyState(shared_ptr<NativeRdb::RdbStore> &uniStore,
+    shared_ptr<NativeRdb::ResultSet> &resultSetAlbum, int32_t &ownerAlbumId)
+{
+    int dirtyIndex;
+    int32_t dirty;
+    resultSetAlbum->GetColumnIndex(PhotoColumn::PHOTO_DIRTY, dirtyIndex);
+    if (resultSetAlbum->GetInt(dirtyIndex, dirty) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not find dirty status for album %{public}d", ownerAlbumId);
+        return;
+    }
+    if (dirty == static_cast<int32_t>(DirtyType::TYPE_DELETED)) {
+        std::string updateDirtyForRecoverAlbum = "UPDATE PhotoAlbum SET dirty = '1'"
+        " WHERE album_id =" + to_string(ownerAlbumId);
+        int32_t err = uniStore->ExecuteSql(updateDirtyForRecoverAlbum);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to reset dirty exec: %{public}s fails", updateDirtyForRecoverAlbum.c_str());
+        }
+    }
+}
+
 void MediaLibraryAlbumOperations::DealwithNoAlbumAssets(const vector<string> &whereArgs)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
@@ -1047,9 +1096,12 @@ void MediaLibraryAlbumOperations::DealwithNoAlbumAssets(const vector<string> &wh
         MEDIA_ERR_LOG("get uniStore fail");
         return;
     }
-    for (auto assetId: whereArgs) {
+    for (std::string assetId: whereArgs) {
+        if (assetId.empty() || std::atoi(assetId.c_str()) <= 0) {
+            continue;
+        }
         string queryFileOnPhotos = "SELECT * FROM Photos WHERE file_id = " + assetId;
-        auto resultSet = uniStore->QuerySql(queryFileOnPhotos);
+        shared_ptr<NativeRdb::ResultSet> resultSet = uniStore->QuerySql(queryFileOnPhotos);
         if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("fail to query file on photo");
             continue;
@@ -1062,31 +1114,15 @@ void MediaLibraryAlbumOperations::DealwithNoAlbumAssets(const vector<string> &wh
         }
 
         const std::string queryAlbum = "SELECT * FROM PhotoAlbum WHERE album_id = " + to_string(ownerAlbumId);
-        auto resultSetAlbum = uniStore->QuerySql(queryAlbum);
+        shared_ptr<NativeRdb::ResultSet> resultSetAlbum = uniStore->QuerySql(queryAlbum);
         if (resultSetAlbum == nullptr || resultSetAlbum->GoToFirstRow() != NativeRdb::E_OK) {
-            string sourcePath;
-            string lPath;
-            GetStringValueFromResultSet(resultSet, PhotoColumn::PHOTO_SOURCE_PATH, sourcePath);
-            bool isUserAlbum = false;
-            int64_t newAlbumId = -1;
-            GetLPathFromSourcePath(sourcePath, lPath);
-            RecoverAlbum(assetId, lPath, isUserAlbum, newAlbumId);
-            if (newAlbumId == -1) {
+            int32_t err = RebuildDeletedAlbum(resultSet, assetId);
+            if (err == E_INVALID_ARGUMENTS) {
                 continue;
             }
-            if (isUserAlbum) {
-                MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-                    MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(newAlbumId) });
-            } else {
-                MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-                    MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(newAlbumId) });
-            }
-            auto watch = MediaLibraryNotify::GetInstance();
-            NotifyType type = NotifyType::NOTIFY_ADD;
-            watch->Notify(MediaFileUtils::GetUriByExtrConditions(
-                PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(newAlbumId)), type);
         } else {
-            MEDIA_ERR_LOG("no need to build old album");
+            CheckAlbumStatusAndFixDirtyState(uniStore, resultSetAlbum, ownerAlbumId);
+            MEDIA_INFO_LOG("no need to build exits album");
             continue;
         }
     }

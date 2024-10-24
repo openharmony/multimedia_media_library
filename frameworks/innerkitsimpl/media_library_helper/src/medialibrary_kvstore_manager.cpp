@@ -151,7 +151,7 @@ bool MediaLibraryKvStoreManager::IsKvStoreValid(const KvStoreValueType &valueTyp
 
     ptr = std::make_shared<MediaLibraryKvStore>();
     int32_t status = ptr->Init(KvStoreRoleType::OWNER, valueType, KV_STORE_OWNER_DIR);
-    if (status == static_cast<int32_t>(Status::CRYPT_ERROR) || status == static_cast<int32_t>(Status::DB_ERROR)) {
+    if (status == static_cast<int32_t>(Status::DATA_CORRUPTED)) {
         MEDIA_ERR_LOG("KvStore is invalid and needs to be deleted, status %{public}d, type %{public}d",
             status, valueType);
         return false;

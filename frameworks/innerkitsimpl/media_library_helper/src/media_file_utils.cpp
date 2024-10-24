@@ -1205,7 +1205,7 @@ int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode, con
     MEDIA_DEBUG_LOG("File absFilePath is %{private}s", absFilePath.c_str());
     int32_t fd = open(absFilePath.c_str(), MEDIA_OPEN_MODE_MAP.at(mode));
     if (clientbundleName.empty()) {
-        MEDIA_DEBUG_LOG("ClientBundleName is empty,failed to to set caller_info to fd");
+        MEDIA_DEBUG_LOG("ClientbundleName is empty,failed to to set caller_info to fd");
     } else {
         SendHmdfsCallerInfoToIoctl(fd, clientbundleName);
     }

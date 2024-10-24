@@ -22,12 +22,16 @@
 #include "media_log.h"
 #include "userfile_manager_types.h"
 #include "medialibrary_bundle_manager.h"
+#ifdef META_RECOVERY_SUPPORT
+#include "medialibrary_meta_recovery.h"
+#endif
 #include "dfx_database_utils.h"
 #include "vision_aesthetics_score_column.h"
 #include "parameters.h"
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "hi_audit.h"
+#include "medialibrary_errno.h"
 
 using namespace std;
 
@@ -253,6 +257,9 @@ static void HandleStatistic(DfxData *data)
     HandleAlbumInfo(dfxReporter);
     HandleDirtyCloudPhoto(dfxReporter);
     HandleLocalVersion(dfxReporter);
+#ifdef META_RECOVERY_SUPPORT
+    MediaLibraryMetaRecovery::GetInstance().RecoveryStatistic();
+#endif
 }
 
 void DfxManager::HandleHalfDayMissions()
@@ -286,6 +293,26 @@ void DfxManager::HandleHalfDayMissions()
         prefs->PutLong(LAST_HALF_DAY_REPORT_TIME, time);
         prefs->FlushSync();
     }
+}
+
+void DfxManager::IsDirectoryExist(const string& dirName)
+{
+    struct stat statInfo {};
+    if (stat(dirName.c_str(), &statInfo) == E_SUCCESS) {
+        if (statInfo.st_mode & S_IFDIR) {
+            return;
+        }
+        MEDIA_ERR_LOG("Not Is DIR, errno is %{public}d", errno);
+        return;
+    }
+    MEDIA_ERR_LOG("Directory Not Exist, errno is %{public}d", errno);
+    return;
+}
+
+void DfxManager::CheckStatus()
+{
+    const std::string CLOUD_FILE_PATH = "/storage/cloud/files";
+    IsDirectoryExist(CLOUD_FILE_PATH);
 }
 
 void DfxManager::HandleFiveMinuteTask()
