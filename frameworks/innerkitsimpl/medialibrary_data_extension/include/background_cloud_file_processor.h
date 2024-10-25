@@ -19,10 +19,10 @@
 #include "abs_shared_result_set.h"
 #include "medialibrary_async_worker.h"
 #include "metadata.h"
+#include "rdb_predicates.h"
 #include "timer.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
-#include "rdb_predicates.h"
 
 namespace OHOS {
 namespace Media {
@@ -89,7 +89,7 @@ private:
     static void ProcessCloudData();
     static void UpdateCloudData();
     static std::shared_ptr<NativeRdb::ResultSet> QueryUpdateData(bool isCloud, bool isVideo);
-    static void ProcessCloudAndVideo(NativeRdb::RdbPredicates &predicates, bool isCloud, bool isVideo);
+    static void SetPredicates(NativeRdb::RdbPredicates &predicates, bool isCloud, bool isVideo);
     static void ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet, UpdateData &updateData,
         bool isCloud, bool isVideo);
     static int32_t AddUpdateDataTask(const UpdateData &updateData);
@@ -107,7 +107,6 @@ private:
     static uint32_t startTimerId_;
     static uint32_t stopTimerId_;
     static std::vector<std::string> curDownloadPaths_;
-    static std::vector<QueryOption> queryList_;
     static bool isUpdating_;
     static int32_t cloudUpdateOffset_;
     static int32_t localImageUpdateOffset_;

@@ -35,8 +35,8 @@
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
-#include "values_bucket.h"
 #include "userfile_manager_types.h"
+#include "values_bucket.h"
 
 namespace OHOS {
 namespace Media {
@@ -58,7 +58,6 @@ Utils::Timer BackgroundCloudFileProcessor::timer_("background_cloud_file_process
 uint32_t BackgroundCloudFileProcessor::startTimerId_ = 0;
 uint32_t BackgroundCloudFileProcessor::stopTimerId_ = 0;
 std::vector<std::string> BackgroundCloudFileProcessor::curDownloadPaths_;
-std::vector<QueryOption> BackgroundCloudFileProcessor::queryList_;
 bool BackgroundCloudFileProcessor::isUpdating_ = true;
 int32_t BackgroundCloudFileProcessor::cloudUpdateOffset_ = 0;
 int32_t BackgroundCloudFileProcessor::localImageUpdateOffset_ = 0;
@@ -100,28 +99,28 @@ void BackgroundCloudFileProcessor::DownloadCloudFiles()
 void BackgroundCloudFileProcessor::UpdateCloudData()
 {
     MEDIA_DEBUG_LOG("Start update cloud data task");
-    queryList_ = {{false, true}, {false, false}, {true, true}};
+    std::vector<QueryOption> queryList = {{false, true}, {false, false}, {true, true}};
     std::shared_ptr<NativeRdb::ResultSet> resultSet;
     int32_t count = 0;
     UpdateData updateData;
-    for (auto option : queryList_) {
+    for (auto option : queryList) {
         resultSet = QueryUpdateData(option.isCloud, option.isVideo);
-        if (resultSet == nullptr) {
+        if (resultSet == nullptr || resultSet->GetRowCount(count) != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Failed to query data, %{public}d, %{public}d", option.isCloud, option.isVideo);
-            return;
+            continue;
         }
-        if (resultSet->GetRowCount(count) != NativeRdb::E_OK || count == 0) {
-            MEDIA_DEBUG_LOG("query data count null, %{public}d, %{public}d", option.isCloud, option.isVideo);
+        if (count == 0) {
+            MEDIA_DEBUG_LOG("no need to update, %{public}d, %{public}d", option.isCloud, option.isVideo);
             continue;
         }
         ParseUpdateData(resultSet, updateData, option.isCloud, option.isVideo);
-        if (updateData.abnormalData.empty()) {
-            MEDIA_DEBUG_LOG("No cloud data need to update, %{public}d, %{public}d", option.isCloud, option.isVideo);
-            return;
-        }
         break;
     }
 
+    if (updateData.abnormalData.empty()) {
+        MEDIA_DEBUG_LOG("No data need to update");
+        return;
+    }
     int32_t ret = AddUpdateDataTask(updateData);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to add update task! err: %{public}d", ret);
@@ -254,7 +253,7 @@ void BackgroundCloudFileProcessor::StopDownloadFiles()
     curDownloadPaths_.clear();
 }
 
-void BackgroundCloudFileProcessor::ProcessCloudAndVideo(RdbPredicates &predicates, bool isCloud, bool isVideo)
+void BackgroundCloudFileProcessor::SetPredicates(RdbPredicates &predicates, bool isCloud, bool isVideo)
 {
     if (isCloud) {
         predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD))
@@ -286,30 +285,44 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateD
     const std::vector<std::string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
         MediaColumn::MEDIA_TYPE, MediaColumn::MEDIA_SIZE,
         PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_HEIGHT,
-        MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_DURATION, PhotoColumn::PHOTO_POSITION };
+        MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_DURATION };
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.BeginWrap()
-        ->EqualTo(MediaColumn::MEDIA_SIZE, 0)->Or()
-        ->IsNull(MediaColumn::MEDIA_SIZE)->Or()
-        ->EqualTo(PhotoColumn::PHOTO_WIDTH, 0)->Or()
-        ->IsNull(PhotoColumn::PHOTO_WIDTH)->Or()
-        ->EqualTo(PhotoColumn::PHOTO_HEIGHT, 0)->Or()
-        ->IsNull(PhotoColumn::PHOTO_HEIGHT)->Or()
-        ->EqualTo(MediaColumn::MEDIA_MIME_TYPE, "")->Or()
-        ->IsNull(MediaColumn::MEDIA_MIME_TYPE)->Or()
+        ->EqualTo(MediaColumn::MEDIA_SIZE, 0)
+        ->Or()
+        ->IsNull(MediaColumn::MEDIA_SIZE)
+        ->Or()
+        ->EqualTo(PhotoColumn::PHOTO_WIDTH, 0)
+        ->Or()
+        ->IsNull(PhotoColumn::PHOTO_WIDTH)
+        ->Or()
+        ->EqualTo(PhotoColumn::PHOTO_HEIGHT, 0)
+        ->Or()
+        ->IsNull(PhotoColumn::PHOTO_HEIGHT)
+        ->Or()
+        ->EqualTo(MediaColumn::MEDIA_MIME_TYPE, "")
+        ->Or()
+        ->IsNull(MediaColumn::MEDIA_MIME_TYPE)
+        ->Or()
         ->BeginWrap()
-        ->EqualTo(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(MEDIA_TYPE_VIDEO))->And()
+        ->EqualTo(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(MEDIA_TYPE_VIDEO))
+        ->And()
         ->BeginWrap()
-        ->EqualTo(MediaColumn::MEDIA_DURATION, 0)->Or()
+        ->EqualTo(MediaColumn::MEDIA_DURATION, 0)
+        ->Or()
         ->IsNull(MediaColumn::MEDIA_DURATION)
         ->EndWrap()
         ->EndWrap()
-        ->EndWrap()->And()
-        ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0)->And()
-        ->EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE))->And()
-        ->EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN))->And();
-    ProcessCloudAndVideo(predicates, isCloud, isVideo);
+        ->EndWrap()
+        ->And()
+        ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0)
+        ->And()
+        ->EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE))
+        ->And()
+        ->EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN))
+        ->And();
+    SetPredicates(predicates, isCloud, isVideo);
     return MediaLibraryRdbStore::Query(predicates, columns);
 }
 
@@ -337,8 +350,6 @@ void BackgroundCloudFileProcessor::ParseUpdateData(std::shared_ptr<NativeRdb::Re
             get<std::string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_MIME_TYPE, resultSet, TYPE_STRING));
         int32_t mediaType =
             get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_TYPE, resultSet, TYPE_INT32));
-        int32_t position =
-            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_POSITION, resultSet, TYPE_INT32));
 
         AbnormalData abnormalData;
         abnormalData.fileId = fileId;
@@ -351,7 +362,7 @@ void BackgroundCloudFileProcessor::ParseUpdateData(std::shared_ptr<NativeRdb::Re
         abnormalData.isCloud = isCloud;
         abnormalData.isVideo = isVideo;
 
-        if (position == POSITION_CLOUD && mediaType == static_cast<int32_t>(MEDIA_TYPE_VIDEO)) {
+        if (isCloud && mediaType == static_cast<int32_t>(MEDIA_TYPE_VIDEO)) {
             updateData.abnormalData.clear();
             abnormalData.mediaType = MEDIA_TYPE_VIDEO;
             updateData.abnormalData.push_back(abnormalData);
