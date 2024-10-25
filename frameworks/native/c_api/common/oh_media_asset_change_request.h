@@ -28,4 +28,4 @@ struct OH_MediaAssetChangeRequest : public OHOS::RefBase {
     std::shared_ptr<OHOS::Media::MediaAssetChangeRequest> request_ = nullptr;
 };
 
-#endif // MULTIMEDIA_MEDIA_LIBRARY_NATIVE_OH_MEDIA_ASSET_CHANGE_REQUEST_H
+#endif // MULTIMEDIA_MEDIA_LIBRARY_NATIVE_OH_MEDIA_ASSET_CHANGE_REQUEST_H
