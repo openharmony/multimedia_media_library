@@ -40,6 +40,7 @@ public:
     std::shared_ptr<Storage> GetStorage(uint32_t id);
     bool HasStorage(uint32_t id = MTP_STORAGE_ID_ALL2);
     std::vector<std::shared_ptr<Storage>> GetStorages();
+    int32_t GetSizeOfPath(const char *path, int32_t type, int64_t &size);
 private:
     MtpStorageManager();
     sptr<StorageManager::IStorageManager> proxy_;

@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define MLOG_TAG "MtpMonitor"
 #include "mtp_monitor.h"
 #include <thread>
 #include "media_log.h"
@@ -50,6 +50,9 @@ void MtpMonitor::Run()
         }
         operationPtr_->Execute();
         std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
+    }
+    if (operationPtr_ != nullptr) {
+        operationPtr_.reset();
     }
 }
 } // namespace Media

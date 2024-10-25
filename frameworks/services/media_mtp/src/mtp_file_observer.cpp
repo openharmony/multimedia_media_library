@@ -28,6 +28,7 @@ int MtpFileObserver::inotifyFd_ = 0;
 std::map<int, std::string> MtpFileObserver::watchMap_;
 std::mutex MtpFileObserver::eventLock_;
 const int BUF_SIZE = 1024;
+const int32_t SIZE_ONE = 1;
 #ifdef HAS_BATTERY_MANAGER_PART
 const int LOW_BATTERY = 50;
 #endif
@@ -54,15 +55,15 @@ bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, const ContextSptr &
 {
     char eventBuf[BUF_SIZE] = {0};
 
-    int ret = read(inotifyFd, eventBuf, sizeof(eventBuf));
-    if (ret < (int)sizeof(struct inotify_event)) {
+    int ret = read(inotifyFd, eventBuf, sizeof(eventBuf) - SIZE_ONE);
+    if (ret < static_cast<int>(sizeof(struct inotify_event))) {
         MEDIA_ERR_LOG("MtpFileObserver AddInotifyEvents no event");
         return false;
     }
 
     struct inotify_event *positionEvent = (struct inotify_event *)eventBuf;
     struct inotify_event *event;
-    while (ret >= (int)sizeof(struct inotify_event)) {
+    while (ret >= static_cast<int>(sizeof(struct inotify_event))) {
         event = positionEvent;
         if (event->len) {
             bool isFind;
@@ -78,7 +79,7 @@ bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, const ContextSptr &
             }
         }
         positionEvent++;
-        ret -= (int)sizeof(struct inotify_event);
+        ret -= static_cast<int>(sizeof(struct inotify_event));
     }
     return true;
 }
@@ -151,7 +152,7 @@ void MtpFileObserver::AddFileInotify(const std::string &path, const std::string 
             watchMap_.insert(make_pair(ret, path));
         }
         if (!startThread_) {
-            std::thread watchThread([context] { context->WatchPathThread(); });
+            std::thread watchThread([&context] { WatchPathThread(context); });
             watchThread.detach();
             startThread_ = true;
         }
