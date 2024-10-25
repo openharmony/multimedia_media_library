@@ -95,7 +95,7 @@ void MediaAnalysisHelper::AnalysePortraitCover(const std::string albumId)
     }
 }
 
-bool MediaAnalysisHelper::ParseGeoInfo(const std::vector<std::string> &geoInfo)
+bool MediaAnalysisHelper::ParseGeoInfo(const std::vector<std::string> geoInfo)
 {
     MessageParcel data;
     MediaAnalysisProxy mediaAnalysisProxy(nullptr);
@@ -117,6 +117,10 @@ bool MediaAnalysisHelper::ParseGeoInfo(const std::vector<std::string> &geoInfo)
         MEDIA_ERR_LOG("Actively Calling Analysis For Parse Geographic Information failed");
         return false;
     }
+
+    std::string addressDescription = reply.ReadString();
+    MEDIA_INFO_LOG("ParseGeoInfo success, fileId: %{public}s, addressDescription: %{private}s", geoInfo.front().c_str(),
+        addressDescription.c_str());
     return true;
 }
 } // namespace Media
