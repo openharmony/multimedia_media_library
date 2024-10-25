@@ -1677,20 +1677,23 @@ shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, co
     string latitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, queryResult);
     string longitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult);
     string addressDescription = GetStringVal(ADDRESS_DESCRIPTION, queryResult);
-
-    MEDIA_DEBUG_LOG(
-        "QueryGeo, fileId: %{public}s, latitude: %{public}s, longitude: %{public}s, addressDescription: %{public}s",
+    MEDIA_INFO_LOG(
+        "QueryGeo, fileId: %{public}s, latitude: %{public}s, longitude: %{public}s, addressDescription: %{private}s",
         fileId.c_str(), latitude.c_str(), longitude.c_str(), addressDescription.c_str());
 
-    if (!latitude.empty() && !longitude.empty() && addressDescription.empty()) {
-        std::future<bool> futureResult = std::async(std::launch::async, [&]() {
-            return MediaAnalysisHelper::ParseGeoInfo({ fileId, latitude, longitude });
-        });
+    if (!(latitude == "0" && longitude == "0") && addressDescription.empty()) {
+        const std::vector<std::string> geoInfo{ fileId, latitude, longitude };
+        std::future<bool> futureResult =
+            std::async(std::launch::async, MediaAnalysisHelper::ParseGeoInfo, std::move(geoInfo));
 
         bool parseResult = false;
         const int timeout = 5;
-        if (std::future_status::ready == futureResult.wait_for(std::chrono::seconds(timeout))) {
+        std::future_status futureStatus = futureResult.wait_for(std::chrono::seconds(timeout));
+        if (futureStatus == std::future_status::ready) {
             parseResult = futureResult.get();
+        } else {
+            MEDIA_ERR_LOG("ParseGeoInfo Failed, fileId: %{public}s, futureStatus: %{public}d", fileId.c_str(),
+                static_cast<int>(futureStatus));
         }
 
         if (parseResult) {
