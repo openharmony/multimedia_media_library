@@ -528,15 +528,15 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_compressImage_test_001, TestSize.Level0
 {
     ThumbnailData data;
     data.thumbnail.push_back(0);
-    data.source = make_shared<PixelMap>();
-    bool ret = ThumbnailUtils::CompressImage(data.source, data.thumbnail);
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    bool ret = ThumbnailUtils::CompressImage(pixelMap, data.thumbnail);
     EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Level0)
 {
     ThumbnailData data;
-    data.source = nullptr;
     data.mediaType = MEDIA_TYPE_VIDEO;
     data.loaderOpts.decodeInThumbSize = true;
     data.path = "";
@@ -550,7 +550,8 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Leve
     ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, false);
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
-    data.source = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, true);
 }
@@ -680,8 +681,9 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_scaleTargetImage_test_001, TestSize.Lev
     targetSize.width = 20;
     targetSize.height = 20;
     ThumbnailData data;
-    data.source = make_shared<PixelMap>();
-    bool ret = ThumbnailUtils::ScaleTargetPixelMap(data.source, targetSize, Media::AntiAliasingOption::HIGH);
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    bool ret = ThumbnailUtils::ScaleTargetPixelMap(pixelMap, targetSize, Media::AntiAliasingOption::HIGH);
     EXPECT_EQ(ret, false);
 }
 
@@ -693,7 +695,8 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0
     desiredSize.height = 20;
     data.path = "/storage/cloud/files";
     data.loaderOpts.decodeInThumbSize  = false;
-    data.source = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     std::string sourcePath = "";
     bool ret = ThumbnailUtils::LoadImageFile(data, desiredSize);
     EXPECT_EQ(ret, false);
