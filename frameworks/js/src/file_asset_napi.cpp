@@ -1848,10 +1848,14 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
             GetInt32InfoFromNapiObject(env, argv[PARAM0], "width", asyncContext->size.width);
             GetInt32InfoFromNapiObject(env, argv[PARAM0], "height", asyncContext->size.height);
         } else if (i == PARAM0 && valueType == napi_function) {
-            napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
+            if (asyncContext->callbackRef == nullptr) {
+                napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
+            }
             break;
         } else if (i == PARAM1 && valueType == napi_function) {
-            napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
+            if (asyncContext->callbackRef == nullptr) {
+                napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
+            }
             break;
         } else {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid parameter type");
