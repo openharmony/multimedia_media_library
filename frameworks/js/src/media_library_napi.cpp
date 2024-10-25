@@ -6157,14 +6157,14 @@ static std::string GetCvProgress()
         NAPI_ERR_LOG("In GetCvProgress, GotoFirstRow failed, errCode is %{public}d", errCode);
         return "-1";
     }
-    int total_count = -1;
+    int totalCount = -1;
     ret->GetInt(0, total_count);
-    NAPI_INFO_LOG("In GetCvProgress, total_count is %{public}d", total_count);
+    NAPI_INFO_LOG("In GetCvProgress, total_count is %{public}d", totalCount);
     for (size_t i = 1; i < columns.size(); ++i) {
         int tmp = -1;
         ret->GetInt(i, tmp);
         NAPI_INFO_LOG("In GetCvProgress, cur index is %{public}lu, count is %{public}d", i, tmp);
-        if (tmp < total_count * PERCENT_95) {
+        if (tmp < totalCount * PERCENT_95) {
             NAPI_INFO_LOG("In GetCvProgress, return value is 0");
             return "0";
         }
