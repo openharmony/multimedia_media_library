@@ -65,6 +65,7 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
     "${MEDIALIB_SERVICES_PATH}/media_permission/include",
+    "${MEDIALIB_SERVICES_PATH}/media_power_efficiency/include",
 
     "../../../../../bundlemanager/bundle_framework/interfaces/kits/js/common",
   ]
@@ -231,6 +232,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/dfx/cloud_enhancement_dfx_get_count.cpp",
   ]
 
+  media_power_efficiency_source = [ "${MEDIALIB_SERVICES_PATH}/media_power_efficiency/src/power_efficiency_manager.cpp" ]
+
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
@@ -295,6 +298,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_cloud_sync_notify_handle_source
   sources += media_permission_source
   sources += media_cloud_enhancement_source
+  sources += media_power_efficiency_source
 
   public_configs = [ ":media_data_extension_public_config" ]
 
