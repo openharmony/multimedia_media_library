@@ -25,7 +25,6 @@
 #include "directory_ex.h"
 #include "extension_context.h"
 #include "media_column.h"
-#include "media_file_utils.h"
 #include "media_log.h"
 #include "media_file_utils.h"
 #include "media_scanner_manager.h"
@@ -43,6 +42,7 @@
 #include "resource_type.h"
 #include "userfilemgr_uri.h"
 #include "medialibrary_notify.h"
+#include "upgrade_restore_task_report.h"
 
 namespace OHOS {
 namespace Media {
@@ -741,6 +741,7 @@ void BaseRestore::StartRestoreEx(const std::string &backupRetoreDir, const std::
 {
     StartRestore(backupRetoreDir, upgradePath);
     restoreExInfo = GetRestoreExInfo();
+    UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).Report(restoreExInfo);
 }
 
 std::string BaseRestore::GetRestoreExInfo()

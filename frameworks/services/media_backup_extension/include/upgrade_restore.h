@@ -69,7 +69,6 @@ private:
     void AnalyzeGalleryErrorSource();
     void AnalyzeGalleryDuplicateData();
     void AnalyzeGallerySource();
-    void AnalyzeExternalSource();
     void HandleCloneBatch(int32_t offset, int32_t maxId);
     void UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int32_t &number);
     int32_t ParseXml(std::string path);
