@@ -6166,10 +6166,12 @@ static std::string GetCvProgress()
         NAPI_INFO_LOG("In GetCvProgress, cur index is %{public}zu, count is %{public}d", i, tmp);
         if (tmp < totalCount * PERCENT_95) {
             NAPI_INFO_LOG("In GetCvProgress, return value is 0");
+            ret->Close();
             return "0";
         }
     }
     NAPI_INFO_LOG("In GetCvProgress, return value is 1");
+    ret->Close();
     return "1";
 }
 
