@@ -150,55 +150,6 @@ int32_t BackupDatabaseUtils::InitGarbageAlbum(std::shared_ptr<NativeRdb::RdbStor
     return E_OK;
 }
 
-int32_t BackupDatabaseUtils::QueryGalleryAllCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_ALL_COUNT = "SELECT count(1) AS count FROM gallery_media";
-    return QueryInt(galleryRdb, QUERY_GALLERY_ALL_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryImageCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_IMAGE_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE media_type = 1 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_IMAGE_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryVideoCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_VIDEO_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE media_type = 3 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_VIDEO_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryHiddenCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_HIDDEN_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE local_media_id = -4 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_HIDDEN_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryTrashedCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_TRASHED_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE local_media_id = 0 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_TRASHED_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryFavoriteCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_FAVORITE_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE is_hw_favorite = 1 AND _size > 0 AND local_media_id != -1";
-    return QueryInt(galleryRdb, QUERY_GALLERY_FAVORITE_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryImportsCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_IMPORTS_COUNT =
-        string("SELECT count(1) AS count FROM gallery_media WHERE ") +
-        " _data LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND _size > 0 AND local_media_id != -1";
-    return QueryInt(galleryRdb, QUERY_GALLERY_IMPORTS_COUNT, CUSTOM_COUNT);
-}
-
 int32_t BackupDatabaseUtils::QueryGalleryCloneCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     static string QUERY_GALLERY_CLONE_COUNT =
@@ -206,57 +157,6 @@ int32_t BackupDatabaseUtils::QueryGalleryCloneCount(std::shared_ptr<NativeRdb::R
         "AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( " +
         "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)";
     return QueryInt(galleryRdb, QUERY_GALLERY_CLONE_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGallerySdCardCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_SD_CARD_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE storage_id NOT IN (0, 65537) AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_SD_CARD_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryScreenVideoCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_SCRENN_VIDEO_COUNT =
-        "SELECT count(1) AS count FROM gallery_media \
-        WHERE local_media_id = -3 AND bucket_id = 1028075469 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_SCRENN_VIDEO_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryCloudCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_CLOUD_COUNT =
-        "SELECT count(1) AS count FROM gallery_media \
-        WHERE local_media_id = -1 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_CLOUD_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryBurstCoverCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_BURST_COVER_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE is_hw_burst = 1 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_BURST_COVER_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryBurstTotalCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_BURST_TOTAL_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE is_hw_burst IN (1, 2) AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_BURST_TOTAL_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryExternalImageCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
-{
-    static string QUERY_EXTERNAL_IMAGE_COUNT =
-        "SELECT count(1) AS count FROM files WHERE  media_type = 1 AND _size > 0";
-    return QueryInt(externalRdb, QUERY_EXTERNAL_IMAGE_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryExternalVideoCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
-{
-    static string QUERY_EXTERNAL_VIDEO_COUNT =
-        "SELECT count(1) AS count FROM files WHERE  media_type = 3 AND _size > 0";
-    return QueryInt(externalRdb, QUERY_EXTERNAL_VIDEO_COUNT, CUSTOM_COUNT);
 }
 
 void BackupDatabaseUtils::QueryGalleryDuplicateDataCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb,
@@ -332,13 +232,6 @@ std::string BackupDatabaseUtils::GarbleInfoName(const string &infoName)
     size_t garbledSize = infoName.size() - MIN_GARBLE_SIZE;
     garbledInfoName.replace(GARBLE_START, garbledSize, GARBLE);
     return garbledInfoName;
-}
-
-int32_t BackupDatabaseUtils::QueryExternalAudioCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
-{
-    static string QUERY_EXTERNAL_AUDIO_COUNT = "SELECT count(1) as count FROM files WHERE media_type = 2 AND _size > 0 \
-        AND _data LIKE '/storage/emulated/0/Music%'";
-    return QueryInt(externalRdb, QUERY_EXTERNAL_AUDIO_COUNT, CUSTOM_COUNT);
 }
 
 void BackupDatabaseUtils::UpdateSelection(std::string &selection, const std::string &selectionToAdd, bool needWrap)

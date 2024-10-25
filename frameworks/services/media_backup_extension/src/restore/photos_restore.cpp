@@ -33,14 +33,7 @@ namespace OHOS::Media {
 std::shared_ptr<NativeRdb::ResultSet> PhotosRestore::GetGalleryMedia(
     int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
 {
-    int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
-    int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
-    std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag, offset, pageSize};
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return nullptr;
-    }
-    return this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_FOR_RESTORE, params);
+    return this->galleryMediaDao_.GetGalleryMedia(offset, pageSize, shouldIncludeSd, hasLowQualityImage);
 }
 
 /**
@@ -48,18 +41,7 @@ std::shared_ptr<NativeRdb::ResultSet> PhotosRestore::GetGalleryMedia(
  */
 int32_t PhotosRestore::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQualityImage)
 {
-    int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
-    int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
-    std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag};
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return 0;
-    }
-    auto resultSet = this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_COUNT, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
-    return GetInt32Val("count", resultSet);
+    return this->galleryMediaDao_.GetGalleryMediaCount(shouldIncludeSd, hasLowQualityImage);
 }
 
 /**
@@ -294,7 +276,8 @@ void PhotosRestore::GetDuplicateData(int32_t duplicateDataCount)
             int32_t count = GetInt32Val(CUSTOM_COUNT, resultSet);
             this->duplicateDataUsedCountMap_[data] = 0;
             MEDIA_INFO_LOG("Get duplicate data: %{public}s, count: %{public}d",
-                BackupFileUtils::GarbleFilePath(data, DEFAULT_RESTORE_ID).c_str(), count);
+                BackupFileUtils::GarbleFilePath(data, DEFAULT_RESTORE_ID).c_str(),
+                count);
         }
         // Check if there are more rows to fetch.
         resultSet->GetRowCount(rowCount);
