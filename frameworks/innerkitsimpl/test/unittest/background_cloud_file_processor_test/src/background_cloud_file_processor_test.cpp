@@ -30,6 +30,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -209,9 +210,9 @@ void BackgroundCloudFileProcessorTest::TearDown()
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_003 Start");
-    PreparePhotos(5, MEDIA_TYPE_VIDEO, 2);
-    PreparePhotos(10, MEDIA_TYPE_VIDEO, 2);
-    vector<string> latest = PreparePhotos(1, MEDIA_TYPE_VIDEO, 2);
+    PreparePhotos(5, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    PreparePhotos(10, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    vector<string> latest = PreparePhotos(1, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
     EXPECT_EQ(QueryPhotosCount(), 16);
 
     EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 50);
@@ -228,11 +229,11 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_004 Start");
-    PreparePhotos(5, MEDIA_TYPE_IMAGE, 2);
-    PreparePhotos(5, MEDIA_TYPE_VIDEO, 2);
-    PreparePhotos(5, MEDIA_TYPE_IMAGE, 2);
-    PreparePhotos(5, MEDIA_TYPE_VIDEO, 2);
-    vector<string> latest = PreparePhotos(1, MEDIA_TYPE_VIDEO, 2);
+    PreparePhotos(5, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    PreparePhotos(5, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    PreparePhotos(5, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    PreparePhotos(5, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    vector<string> latest = PreparePhotos(1, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
     EXPECT_EQ(QueryPhotosCount(), 21);
 
     EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 50);
@@ -249,9 +250,9 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_005 Start");
-    vector<string> earliest = PreparePhotos(1, MEDIA_TYPE_VIDEO, 2);
-    PreparePhotos(10, MEDIA_TYPE_IMAGE, 2);
-    PreparePhotos(10, MEDIA_TYPE_IMAGE, 2);
+    vector<string> earliest = PreparePhotos(1, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
     EXPECT_EQ(QueryPhotosCount(), 21);
 
     EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 50);
@@ -268,7 +269,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_006, TestSize.Level0)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_006 Start");
-    PreparePhotos(10, MEDIA_TYPE_IMAGE, 2);
+    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
     EXPECT_EQ(QueryPhotosCount(), 10);
 
     EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 50);
@@ -285,7 +286,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_007, TestSize.Level0)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_007 Start");
-    PreparePhotos(10, MEDIA_TYPE_VIDEO, 2);
+    PreparePhotos(10, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
     EXPECT_EQ(QueryPhotosCount(), 10);
 
     EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 50);
@@ -302,9 +303,9 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_008, TestSize.Level0)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_008 Start");
-    PreparePhotos(10, MEDIA_TYPE_IMAGE, 2);
+    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
     PrepareAbnormalPhotos(MediaColumn::MEDIA_SIZE);
-    auto resultSet = BackgroundCloudFileProcessor::QueryUpdateData(true, flase);
+    auto resultSet = BackgroundCloudFileProcessor::QueryUpdateData(true, false);
     int32_t rowCount;
     int32_t ret = resultSet->GetRowCount(rowCount);
     EXPECT_EQ(ret, 0);
@@ -316,7 +317,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_009, TestSize.Level0)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_009 Start");
-    PreparePhotos(10, MEDIA_TYPE_VIDEO, 2);
+    PreparePhotos(10, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
     PrepareAbnormalPhotos(MediaColumn::MEDIA_SIZE);
     auto resultSet = BackgroundCloudFileProcessor::QueryUpdateData(true, true);
     int32_t rowCount;
@@ -329,7 +330,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_010, TestSize.Level0)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_010 Start");
-    PreparePhotos(10, MEDIA_TYPE_IMAGE, 1);
+    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL));
     PrepareAbnormalPhotos(MediaColumn::MEDIA_SIZE);
     auto resultSet = BackgroundCloudFileProcessor::QueryUpdateData(false, false);
     int32_t rowCount;
@@ -342,7 +343,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_011, TestSize.Level0)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_011 Start");
-    PreparePhotos(10, MEDIA_TYPE_VIDEO, 1);
+    PreparePhotos(10, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::LOCAL));
     PrepareAbnormalPhotos(MediaColumn::MEDIA_SIZE);
     auto resultSet = BackgroundCloudFileProcessor::QueryUpdateData(false, true);
     int32_t rowCount;
