@@ -110,6 +110,7 @@ MEDIALIB_MSC_RESULT_STAT:
   __BASE: { type: STATISTIC, level: MINOR, desc: result of multistages capture }
   PHOTO_ID: { type: STRING, desc: photo id }
   RESULT: { type: INT32, desc: result of processing multistages capture }
+  MEDIA_TYPE: { type: INT32, desc: media type }
 
 MEDIALIB_THUMBNAIL_GENERATION:
   __BASE: { type: STATISTIC, level: MINOR, desc: Medialibrary thumbnail generation statistics, preserve: true }
@@ -141,10 +142,10 @@ MEDIALIB_CLOUDENHANCEMENT_STAT:
   COMPLETE_TYPE: { type: STRING, desc: types of cloudenhancement task completion}
 
 MEDIALIB_BACKUP_MEDIA_STAT:
-  __BASE: {type: STATISTIC, level: CRITICAL, desc: Report the under-transferred media statistic info before Upgrade Restore task., preserve: true }
-  SCENE_CODE: { type: INT32, desc: Scenarios, such as dual-to-single-dual-to-single-cloned single-to-single }
-  TASK_ID: { type: STRING, desc:Task ID, which is used to distinguish events reported in the same batch. }
-  ALBUM_NAME: { type: STRING, desc: Album name (general reference) }
+  __BASE: {type: STATISTIC, level: CRITICAL, desc: Report the under transferred media statistic info before Upgrade Restore task, preserve: true }
+  SCENE_CODE: { type: INT32, desc: Scenarios }
+  TASK_ID: { type: STRING, desc: Task ID }
+  ALBUM_NAME: { type: STRING, desc: Album name }
   TOTAL_COUNT: { type: INT32, desc: Total Assets }
   IMAGE_COUNT: { type: INT32, desc: Total number of pictures }
   VIDEO_COUNT: { type: INT32, desc: Total number of videos }
@@ -156,13 +157,13 @@ MEDIALIB_BACKUP_MEDIA_STAT:
   BURST_TOTAL_COUNT: { type: INT32, desc: Total number of continuous pictures }
  
 MEDIALIB_BACKUP_RESTORE_RESULT:
-  __BASE: {type: STATISTIC, level: CRITICAL, desc: Report the data transfer result after Upgrade Restore task., preserve: true }
-  SCENE_CODE: { type: INT32, desc: Scenarios, such as dual-to-single-dual-to-single-cloned single-to-single }
-  TASK_ID: { type: STRING, desc: Task ID, which is used to distinguish events reported in the same batch. }
+  __BASE: {type: STATISTIC, level: CRITICAL, desc: Report the data transfer result after Upgrade Restore task, preserve: true }
+  SCENE_CODE: { type: INT32, desc: Scenarios }
+  TASK_ID: { type: STRING, desc: Task ID }
   ERROR_CODE: { type: STRING, desc: Execution result code }
   ERROR_INFO: { type: STRING, desc: Execution Information }
   TYPE: { type: STRING, desc: Error Type }
-  BACKUP_INFO: { type: STRING, desc: Asset type, such as image, video, and audio }
+  BACKUP_INFO: { type: STRING, desc: Asset type }
   DUPLICATE_COUNT: { type: INT32, desc: Number of existing assets of the new device }
   FAILED_COUNT: { type: INT32, desc: Number of assets that fail to be migrated }
   SUCCESS_COUNT: { type: INT32, desc: Number of Successfully Migrated Assets }
