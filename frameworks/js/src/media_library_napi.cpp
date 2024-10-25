@@ -348,7 +348,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("grantPhotoUrisPermission", PhotoAccessGrantPhotoUrisPermission),
             DECLARE_NAPI_FUNCTION("cancelPhotoUriPermission", PhotoAccessCancelPhotoUriPermission),
             DECLARE_NAPI_FUNCTION("createAssetsForAppWithMode", PhotoAccessHelperAgentCreateAssetsWithMode),
-            DECLARE_NAPI_FUNCTION("getDataAnalysisProgress", PhotoAccessHelperGetDataAnalysisProgress);
+            DECLARE_NAPI_FUNCTION("getDataAnalysisProgress", PhotoAccessHelperGetDataAnalysisProgress),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -6163,7 +6163,7 @@ static std::string GetCvProgress()
     for (size_t i = 1; i < columns.size(); ++i) {
         int tmp = -1;
         ret->GetInt(i, tmp);
-        NAPI_INFO_LOG("In GetCvProgress, cur index is %{public}lu, count is %{public}d", i, tmp);
+        NAPI_INFO_LOG("In GetCvProgress, cur index is %{public}zu, count is %{public}d", i, tmp);
         if (tmp < totalCount * PERCENT_95) {
             NAPI_INFO_LOG("In GetCvProgress, return value is 0");
             return "0";
@@ -6195,7 +6195,7 @@ static void JSGetDataAnalysisProgressCompleteCallback(napi_env env, napi_status 
     tracer.Start("JSGetDataAnalysisProgressCompleteCallback");
     auto *context = static_cast<MediaLibraryAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    unique_ptr<JsAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
