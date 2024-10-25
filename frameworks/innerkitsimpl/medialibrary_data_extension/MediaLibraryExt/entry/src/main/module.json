@@ -204,6 +204,17 @@
           ],
           "when": "always"
         }
+      },
+      {
+        "name": "ohos.permission.MANAGE_USB_CONFIG",
+        "reason": "$string:permission_manage_usb_config",
+        "usedScene":{
+          "abilities":[
+            "MainAbility",
+            "DataShareExtAbility"
+          ],
+          "when": "always"
+        }
       }
     ],
     "proxyDatas": [

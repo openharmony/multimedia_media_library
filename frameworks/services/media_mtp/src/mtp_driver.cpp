@@ -12,7 +12,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
+#define MLOG_TAG "MtpDriver"
 #include "mtp_driver.h"
 #include "media_log.h"
 #include "media_mtp_utils.h"
@@ -51,10 +51,12 @@ MtpDriver::MtpDriver()
 
 MtpDriver::~MtpDriver()
 {
+    CloseDriver();
 }
 
 int MtpDriver::OpenDriver()
 {
+    MEDIA_INFO_LOG("MtpDriver::OpenDriver start");
     usbfnMtpInterface = IUsbfnMtpInterface::Get();
     if (usbfnMtpInterface == nullptr) {
         MEDIA_ERR_LOG("IUsbfnMtpInterface::Get() failed.");
@@ -67,6 +69,7 @@ int MtpDriver::OpenDriver()
         return ret;
     }
     usbOpenFlag = true;
+    MEDIA_INFO_LOG("MtpDriver::OpenDriver end");
     return MTP_SUCCESS;
 }
 
@@ -74,6 +77,7 @@ int MtpDriver::CloseDriver()
 {
     if (usbfnMtpInterface != nullptr) {
         auto ret = usbfnMtpInterface->Stop();
+        usbfnMtpInterface->Release();
         MEDIA_ERR_LOG("MtpDriver::CloseDriver Error: %{public}d", ret);
     }
 
@@ -89,6 +93,8 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
             return MTP_ERROR_DRIVER_OPEN_FAILED;
         }
     }
+
+    CHECK_AND_RETURN_RET_LOG(usbfnMtpInterface != nullptr, E_ERR, "Read: usbfnMtpInterface is nullptr");
     if (outReadSize == 0) {
         outReadSize = READ_SIZE;
     }
@@ -107,12 +113,14 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
 
 void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t &bufferSize)
 {
+    CHECK_AND_RETURN_LOG(usbfnMtpInterface != nullptr, "Write: usbfnMtpInterface is nullptr");
     auto ret = usbfnMtpInterface->Write(buffer);
     bufferSize = static_cast<uint32_t>(ret);
 }
 
 int MtpDriver::ReceiveObj(MtpFileRange &mfr)
 {
+    CHECK_AND_RETURN_RET_LOG(usbfnMtpInterface != nullptr, E_ERR, "ReceiveObj: usbfnMtpInterface is nullptr");
     struct UsbFnMtpFileSlice mfs = {
         .fd = mfr.fd,
         .offset = mfr.offset,
@@ -125,6 +133,7 @@ int MtpDriver::ReceiveObj(MtpFileRange &mfr)
 
 int MtpDriver::SendObj(MtpFileRange &mfr)
 {
+    CHECK_AND_RETURN_RET_LOG(usbfnMtpInterface != nullptr, E_ERR, "SendObj: usbfnMtpInterface is nullptr");
     struct UsbFnMtpFileSlice mfs = {
         .fd = mfr.fd,
         .offset = 0,
@@ -137,6 +146,7 @@ int MtpDriver::SendObj(MtpFileRange &mfr)
 
 int MtpDriver::WriteEvent(EventMtp &em)
 {
+    CHECK_AND_RETURN_RET_LOG(usbfnMtpInterface != nullptr, E_ERR, "WriteEvent: usbfnMtpInterface is nullptr");
     return usbfnMtpInterface->SendEvent(em.data);
 }
 } // namespace Media

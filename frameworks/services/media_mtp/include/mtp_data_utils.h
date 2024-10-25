@@ -20,6 +20,7 @@
 #include <variant>
 #include <sys/time.h>
 #include <stdio.h>
+#include <unordered_map>
 
 #include "datashare_result_set.h"
 #include "mtp_operation_context.h"
@@ -123,6 +124,12 @@ public:
         const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
         PropertyValue &outPropValue);
     static int32_t GetMediaTypeByName(std::string &displayName, MediaType &outMediaType);
+    // MTP
+    static int32_t GetMtpPropList(const std::shared_ptr<std::unordered_map<uint32_t, std::string>> &handles,
+        const std::unordered_map<std::string, uint32_t> &pathHandles,
+        const std::shared_ptr<MtpOperationContext> &context, shared_ptr<vector<Property>> &outPropValue);
+    static int32_t GetMtpPropValue(const std::string &path,
+        const uint32_t property, const uint16_t format, PropertyValue &outPropValue);
 private:
     static int32_t GetPropList(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
         const std::shared_ptr<UInt16List> &properties, std::shared_ptr<std::vector<Property>> &outProps);
@@ -138,6 +145,12 @@ private:
         uint16_t property, std::shared_ptr<std::vector<Property>> &outProps);
     static void SetProperty(const std::string &column,
         const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, ResultSetDataType &type, Property &prop);
+    // MTP
+    static void GetMtpOneRowProp(const std::shared_ptr<UInt16List> &properties, const uint32_t &parentId,
+        std::unordered_map<uint32_t, std::string>::iterator it, shared_ptr<vector<Property>> &outProps);
+    static uint32_t GetMtpFormatByPath(const std::string &path, uint16_t &outFormat);
+    static void SetMtpProperty(const std::string &column, const std::string &path,
+        ResultSetDataType &type, Property &prop);
 };
 } // namespace Media
 } // namespace OHOS

@@ -12,7 +12,6 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/ability/ability_runtime/ability_runtime.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
 if (defined(medialibrary_mtp_enable)) {
@@ -35,6 +34,8 @@ if (defined(medialibrary_mtp_enable)) {
       "src/mtp_error_utils.cpp",
       "src/mtp_event.cpp",
       "src/mtp_file_observer.cpp",
+      "src/mtp_manager.cpp",
+      "src/mtp_media_library.cpp",
       "src/mtp_medialibrary_manager.cpp",
       "src/mtp_monitor.cpp",
       "src/mtp_operation.cpp",
@@ -43,6 +44,7 @@ if (defined(medialibrary_mtp_enable)) {
       "src/mtp_packet_tools.cpp",
       "src/mtp_service.cpp",
       "src/mtp_storage_manager.cpp",
+      "src/mtp_subscriber.cpp",
       "src/object_info.cpp",
       "src/packet_payload_factory.cpp",
       "src/payload_data.cpp",
@@ -96,10 +98,7 @@ if (defined(medialibrary_mtp_enable)) {
       "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     ]
 
-    deps = [
-      "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
-      "//third_party/openssl:libcrypto_shared",
-    ]
+    deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
 
     external_deps = [
       "ability_base:base",
@@ -127,7 +126,13 @@ if (defined(medialibrary_mtp_enable)) {
       "safwk:system_ability_fwk",
       "samgr:samgr_proxy",
       "storage_service:storage_manager_sa_proxy",
+      "usb_manager:usbsrv_client",
     ]
+
+    defines = []
+    if (defined(medialibrary_mtp_enable)) {
+      defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
+    }
 
     sanitize = {
       cfi = true

@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define MLOG_TAG "MtpStorageManager"
 #include "mtp_storage_manager.h"
 #include <mutex>
 #include <sys/statvfs.h>
@@ -22,6 +22,7 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "system_ability_definition.h"
+#include "istorage_manager.h"
 
 using namespace std;
 
@@ -30,7 +31,12 @@ namespace Media {
 
 std::shared_ptr<MtpStorageManager> MtpStorageManager::instance_ = nullptr;
 std::mutex MtpStorageManager::mutex_;
-
+enum SizeType {
+    TOTAL,
+    FREE,
+    USED
+};
+static const char *PATH_DATA = "/mnt/hmdfs/100/account";
 MtpStorageManager::MtpStorageManager(void)
 {
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
@@ -55,32 +61,35 @@ std::shared_ptr<MtpStorageManager> MtpStorageManager::GetInstance()
 
 int64_t MtpStorageManager::GetTotalSize()
 {
-    struct statvfs diskInfo;
-    int ret = statvfs("/data", &diskInfo);
-    if (ret != 0) {
+    int64_t totalSize = 0;
+    int32_t ret = GetSizeOfPath(PATH_DATA, SizeType::TOTAL, totalSize);
+    if (ret != E_OK) {
         MEDIA_ERR_LOG("GetTotalSize failed, errno: %{public}d", errno);
         return MTP_FAIL;
     }
-    int64_t totalSize =
-        static_cast<long long>(diskInfo.f_bsize) * static_cast<long long>(diskInfo.f_blocks);
     return totalSize;
 }
 
 int64_t MtpStorageManager::GetFreeSize()
 {
-    struct statvfs diskInfo;
-    int ret = statvfs("/data", &diskInfo);
-    if (ret != 0) {
+    int64_t freeSize = 0;
+    int32_t ret = GetSizeOfPath(PATH_DATA, SizeType::FREE, freeSize);
+    if (ret != E_OK) {
         MEDIA_ERR_LOG("GetFreeSize failed, errno: %{public}d", errno);
         return MTP_FAIL;
     }
-    int64_t freeSize =
-        static_cast<long long>(diskInfo.f_bsize) * static_cast<long long>(diskInfo.f_bfree);
     return freeSize;
 }
 
 void MtpStorageManager::AddStorage(shared_ptr<Storage> &storage)
 {
+    if (!storages.empty()) {
+        for (auto stor : storages) {
+            if (stor->GetStorageID() == storage->GetStorageID()) {
+                return;
+            }
+        }
+    }
     storages.push_back(storage);
 }
 
@@ -113,6 +122,23 @@ bool MtpStorageManager::HasStorage(uint32_t id)
     }
 
     return result;
+}
+
+int32_t MtpStorageManager::GetSizeOfPath(const char *path, int32_t type, int64_t &size)
+{
+    struct statvfs diskInfo;
+    int ret = statvfs(path, &diskInfo);
+    if (ret != E_OK) {
+        return E_ERR;
+    }
+    if (type == SizeType::TOTAL) {
+        size = (int64_t)diskInfo.f_bsize * (int64_t)diskInfo.f_blocks;
+    } else if (type == SizeType::FREE) {
+        size = (int64_t)diskInfo.f_bsize * (int64_t)diskInfo.f_bavail;
+    } else {
+        size = (int64_t)diskInfo.f_bsize * ((int64_t)diskInfo.f_blocks - (int64_t)diskInfo.f_bavail);
+    }
+    return E_OK;
 }
 
 std::vector<std::shared_ptr<Storage>> MtpStorageManager::GetStorages()

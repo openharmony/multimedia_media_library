@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 #include "mtp_operation_context.h"
+#include "mtp_media_library.h"
 #include "payload_data.h"
 namespace OHOS {
 namespace Media {
@@ -69,6 +70,7 @@ private:
 
     std::shared_ptr<MtpOperationContext> context_;
     std::shared_ptr<MtpMedialibraryManager> mtpMedialibraryManager_;
+    std::shared_ptr<MtpMediaLibrary> mtpMediaLibrary_;
 };
 } // namespace Media
 } // namespace OHOS
