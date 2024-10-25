@@ -51,4 +51,4 @@ static napi_module RecentPhotoComponentModule = {
 extern "C" __attribute__((constructor)) void RecentPhotoComponentRegisterModule(void)
 {
     napi_module_register(&RecentPhotoComponentModule);
-}
+}

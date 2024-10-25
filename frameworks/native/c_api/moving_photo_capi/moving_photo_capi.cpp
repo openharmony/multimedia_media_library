@@ -70,4 +70,4 @@ MediaLibrary_ErrorCode OH_MovingPhoto_Release(OH_MovingPhoto* movingPhoto)
     delete movingPhoto;
     movingPhoto = nullptr;
     return MEDIA_LIBRARY_OK;
-}
+}
