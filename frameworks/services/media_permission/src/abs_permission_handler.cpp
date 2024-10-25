@@ -54,9 +54,9 @@ static bool IsFitCollectInfo(MediaLibraryCommand &cmd)
 
 int32_t AbsPermissionHandler::ExecuteCheckPermissionWithDfx(MediaLibraryCommand &cmd, PermParam &permParam)
 {
-    MEDIA_DEBUG_LOG("ExecuteCheckPermissionWithDfx begin");
+    MEDIA_DEBUG_LOG("ExecuteCheckPermissionWithDfx begin, isOpenFile: %{public}d", permParam.isOpenFile);
     int32_t err = ExecuteCheckPermission(cmd, permParam);
-    if (isDoDfx_ && IsFitCollectInfo(cmd)) {
+    if (isDoDfx_ && IsFitCollectInfo(cmd) && permParam.isOpenFile) {
         MEDIA_DEBUG_LOG("dfx begin");
         bool permGranted = err == E_SUCCESS;
         PermissionUsedType type = PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE;
