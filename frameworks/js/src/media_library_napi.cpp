@@ -6158,7 +6158,7 @@ static std::string GetCvProgress()
         return "-1";
     }
     int totalCount = -1;
-    ret->GetInt(0, total_count);
+    ret->GetInt(0, totalCount);
     NAPI_INFO_LOG("In GetCvProgress, total_count is %{public}d", totalCount);
     for (size_t i = 1; i < columns.size(); ++i) {
         int tmp = -1;
