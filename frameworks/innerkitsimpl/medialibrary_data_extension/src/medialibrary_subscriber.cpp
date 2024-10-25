@@ -63,6 +63,7 @@
 #ifdef HAS_WIFI_MANAGER_PART
 #include "wifi_device.h"
 #endif
+#include "power_efficiency_manager.h"
 
 using namespace OHOS::AAFwk;
 
@@ -322,10 +323,12 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             isPowerSufficient_ = want.GetIntParam(COMMON_EVENT_KEY_BATTERY_CAPACITY,
                 COMMON_EVENT_KEY_GET_DEFAULT_PARAM) >= PROPER_DEVICE_BATTERY_CAPACITY;
             break;
-        case StatusEventType::THERMAL_LEVEL_CHANGED:
+        case StatusEventType::THERMAL_LEVEL_CHANGED: {
             isDeviceTemperatureProper_ = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
                 COMMON_EVENT_KEY_GET_DEFAULT_PARAM) <= PROPER_DEVICE_TEMPERATURE_LEVEL;
+            PowerEfficiencyManager::UpdateAlbumUpdateInterval(isDeviceTemperatureProper_);
             break;
+        }
         default:
             MEDIA_WARN_LOG("StatusEventType:%{public}d is not invalid", statusEventType);
             return;
