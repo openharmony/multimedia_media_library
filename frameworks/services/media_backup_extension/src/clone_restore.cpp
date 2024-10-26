@@ -32,6 +32,7 @@
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
 #include "backup_dfx_utils.h"
+#include "media_smart_album_column.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
