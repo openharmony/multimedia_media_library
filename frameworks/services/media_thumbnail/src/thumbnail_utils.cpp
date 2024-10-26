@@ -1904,7 +1904,7 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
         return;
     }
 
-    ParseQueryResult(resultSet, data, err, column);
+    ParseQueryResult(resultSet, data, err, columns);
     if (err != NativeRdb::E_OK || data.path.empty()) {
         MEDIA_ERR_LOG("Fail to query thumbnail data using id: %{public}s, err: %{public}d", id.c_str(), err);
         resultSet->Close();
