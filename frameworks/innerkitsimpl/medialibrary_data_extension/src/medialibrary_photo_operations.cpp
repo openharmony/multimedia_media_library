@@ -852,6 +852,52 @@ static string GetUriWithoutSeg(const string &oldUri)
     return oldUri;
 }
 
+static int32_t UpdataIsTempAndDirty(MediaLibraryCommand &cmd, const string &fileId)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
+
+    int32_t updateDirtyRows = 0;
+    string subTypeStr = cmd.GetQuerySetParam(PhotoColumn::PHOTO_SUBTYPE);
+    if (subTypeStr.empty()) {
+        MEDIA_ERR_LOG("get subType fail");
+        return E_ERR;
+    }
+    int32_t subType = stoi(subTypeStr);
+    if (subType == static_cast<int32_t>(PhotoSubType::BURST)) {
+        predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
+        predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+        values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+        updateDirtyRows = MediaLibraryRdbStore::Update(values, predicates);
+        if (updateDirtyRows < 0) {
+            MEDIA_INFO_LOG("burst photo update temp and dirty flag fail.");
+            return E_ERR;
+        }
+    } else {
+        int32_t updateIsTempRows = MediaLibraryRdbStore::Update(values, predicates);
+        if (updateIsTempRows < 0) {
+            MEDIA_ERR_LOG("update temp flag fail.");
+            return E_ERR;
+        }
+        if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            predicates.EqualTo(PhotoColumn::PHOTO_QUALITY,
+                to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
+            predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
+                to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+            ValuesBucket valuesBucketDirty;
+            valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+            updateDirtyRows = MediaLibraryRdbStore::Update(valuesBucketDirty, predicates);
+            if (updateDirtyRows < 0) {
+                MEDIA_INFO_LOG("update dirty flag fail.");
+                return E_ERR;
+            }
+        }
+    }
+    return updateDirtyRows;
+}
+
 int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
 {
     MediaLibraryTracer tracer;
@@ -868,32 +914,11 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         SavePicture(stoi(fileType), stoi(fileId));
     }
 
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
-    ValuesBucket values;
-    values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-    int32_t updatedRows = MediaLibraryRdbStore::Update(values, predicates);
-    if (updatedRows < 0) {
-        MEDIA_ERR_LOG("update temp flag fail.");
+    int32_t ret = UpdataIsTempAndDirty(cmd, fileId);
+    if (ret == E_ERR || ret < 0) {
         return 0;
     }
 
-    string subTypeStr = cmd.GetQuerySetParam(PhotoColumn::PHOTO_SUBTYPE);
-    if (subTypeStr.empty()) {
-        MEDIA_ERR_LOG("get subType fail");
-        return updatedRows;
-    }
-    int32_t subType = stoi(subTypeStr);
-    if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
-        predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
-        ValuesBucket valuesBucketDirty;
-        valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-        int32_t updatedDirtyRows = MediaLibraryRdbStore::Update(valuesBucketDirty, predicates);
-        if (updatedDirtyRows < 0) {
-            MEDIA_INFO_LOG("update dirty flag fail.");
-        }
-    }
     string uri = cmd.GetQuerySetParam(PhotoColumn::MEDIA_FILE_PATH);
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch != nullptr) {
@@ -912,9 +937,8 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
             MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, true, true, stoi(fileId));
         }
     }
-    MEDIA_INFO_LOG("SaveCameraPhoto Success, updatedRows: %{public}d, needScanStr: %{public}s",
-        updatedRows, needScanStr.c_str());
-    return updatedRows;
+    MEDIA_INFO_LOG("SaveCameraPhoto Success, ret: %{public}d, needScanStr: %{public}s", ret, needScanStr.c_str());
+    return ret;
 }
 
 int32_t MediaLibraryPhotoOperations::SetVideoEnhancementAttr(MediaLibraryCommand &cmd)
