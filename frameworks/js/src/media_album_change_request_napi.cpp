@@ -1088,6 +1088,35 @@ static bool OrderAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
     return true;
 }
 
+static void UpdateTabAnalysisImageFace(std::shared_ptr<PhotoAlbum>& photoAlbum,
+    MediaAlbumChangeRequestAsyncContext& context)
+{
+    if (photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::PORTRAIT) {
+        return;
+    }
+
+    std::string updateUri = PAH_UPDATE_ANA_FACE;
+    MediaLibraryNapiUtils::UriAppendKeyValue(updateUri, API_VERSION, std::to_string(MEDIA_API_VERSION_V10));
+    MediaLibraryNapiUtils::UriAppendKeyValue(updateUri, MEDIA_OPERN_KEYWORD, UPDATE_DISMISS_ASSET);
+    Uri updateFaceUri(updateUri);
+
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(MediaAlbumChangeRequestNapi::TAG_ID,
+        std::to_string(MediaAlbumChangeRequestNapi::PORTRAIT_REMOVED));
+
+    DataShare::DataSharePredicates updatePredicates;
+    std::vector<std::string> dismissAssetArray = context.objectInfo->GetDismissAssetArray();
+    std::string selection = std::to_string(photoAlbum->GetAlbumId());
+    for (size_t i = 0; i < dismissAssetArray.size(); ++i) {
+        selection += "," + dismissAssetArray[i];
+    }
+    updatePredicates.SetWhereClause(selection);
+    int updatedRows = UserFileClient::Update(updateFaceUri, updatePredicates, updateValues);
+    if (updatedRows <= 0) {
+        NAPI_WARN_LOG("Failed to update tab_analysis_image_face, err: %{public}d", updatedRows);
+    }
+}
+
 static bool DismissAssetExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -1103,12 +1132,18 @@ static bool DismissAssetExecute(MediaAlbumChangeRequestAsyncContext& context)
     predicates.And()->EqualTo(ALBUM_SUBTYPE, to_string(photoAlbum->GetPhotoAlbumSubType()));
 
     auto deletedRows = UserFileClient::Delete(uri, predicates);
-    context.objectInfo->ClearDismissAssetArray();
     if (deletedRows < 0) {
         context.SaveError(deletedRows);
         NAPI_ERR_LOG("Failed to dismiss asset err: %{public}d", deletedRows);
         return false;
     }
+
+    /* 只针对人像相册更新 tab_analysis_image_face 表 */
+    if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
+        UpdateTabAnalysisImageFace(photoAlbum, context);
+    }
+
+    context.objectInfo->ClearDismissAssetArray();
     return true;
 }
 

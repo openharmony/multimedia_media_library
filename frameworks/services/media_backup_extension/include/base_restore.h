@@ -46,7 +46,7 @@ public:
 
 protected:
     int32_t Init(void);
-    
+
     virtual void RestorePhoto(void) = 0;
     virtual void RestoreAudio(void) = 0;
     virtual void HandleRestData(void) = 0;
@@ -103,7 +103,6 @@ protected:
     bool NeedQuery(const FileInfo &fileInfo, const NeedQueryMap &needQueryMap);
     bool NeedQueryByPhotoRelatedType(const FileInfo &fileInfo, PhotoRelatedType photoRelatedType,
         const std::unordered_set<std::string> &needQuerySet);
-    void UpdateFaceAnalysisStatus();
     int32_t GetUniqueId(int32_t fileType);
     bool IsFileValid(FileInfo &fileInfo, const int32_t sceneCode);
     void CreateDir(std::string &dir);
@@ -120,6 +119,7 @@ protected:
     std::atomic<uint64_t> migrateAudioDuplicateNumber_{0};
     std::atomic<uint64_t> migratePortraitPhotoNumber_{0};
     std::atomic<uint64_t> migratePortraitFaceNumber_{0};
+    std::atomic<uint64_t> migratePortraitAlbumNumber_{0};
     std::atomic<uint64_t> migratePortraitTotalTimeCost_{0};
     std::atomic<uint32_t> imageNumber_;
     std::atomic<uint32_t> videoNumber_;
@@ -140,7 +140,6 @@ protected:
     int fileMinSize_ = 0;
     int32_t sceneCode_ = DEFAULT_RESTORE_ID;
     std::unordered_map<std::string, std::string> tagIdMap_;
-    std::unordered_map<std::string, std::string> groupTagMap_;
     std::unordered_map<std::string, int32_t> portraitAlbumIdMap_;
     bool hasLowQualityImage_ = false;
 };

@@ -54,6 +54,77 @@ const std::string GALLERY_FACE_FACE_ID = GALLERY_TABLE_FACE + "." + GALLERY_FACE
 const std::string E_VERSION = "-1";
 const std::string TAG_ID_PREFIX = "ser_";
 const std::string TAG_ID_UNPROCESSED = "-1";
+
+/* AnalysisAlbum TBL COL_NAME */
+const std::string ANALYSIS_COL_ALBUM_ID = "album_id";
+const std::string ANALYSIS_COL_ALBUM_TYPE = "album_type";
+const std::string ANALYSIS_COL_ALBUM_SUBTYPE = "album_subtype";
+const std::string ANALYSIS_COL_ALBUM_NAME = "album_name";
+const std::string ANALYSIS_COL_COVER_URI = "cover_uri";
+const std::string ANALYSIS_COL_COUNT = "count";
+const std::string ANALYSIS_COL_DATE_MODIFIED = "date_modified";
+const std::string ANALYSIS_COL_RANK = "rank";
+const std::string ANALYSIS_COL_TAG_ID = "tag_id";
+const std::string ANALYSIS_COL_USER_OPERATION = "user_operation";
+const std::string ANALYSIS_COL_GROUP_TAG = "group_tag";
+const std::string ANALYSIS_COL_USER_DISPLAY_LEVEL = "user_display_level";
+const std::string ANALYSIS_COL_IS_ME = "is_me";
+const std::string ANALYSIS_COL_IS_REMOVED = "is_removed";
+const std::string ANALYSIS_COL_RENAME_OPERATION = "rename_operation";
+const std::string ANALYSIS_COL_IS_LOCAL = "is_local";
+const std::string ANALYSIS_COL_IS_COVER_SATISFIED = "is_cover_satisfied";
+
+/* FaceTag TBL COL_NAME */
+const std::string FACE_TAG_COL_ID = "id";
+const std::string FACE_TAG_COL_TAG_ID = "tag_id";
+const std::string FACE_TAG_COL_TAG_NAME = "tag_name";
+const std::string FACE_TAG_COL_USER_OPERATION = "user_operation";
+const std::string FACE_TAG_COL_GROUP_TAG = "group_tag";
+const std::string FACE_TAG_COL_RENAME_OPERATION = "rename_operation";
+const std::string FACE_TAG_COL_CENTER_FEATURES = "center_features";
+const std::string FACE_TAG_COL_TAG_VERSION = "tag_version";
+const std::string FACE_TAG_COL_USER_DISPLAY_LEVEL = "user_display_level";
+const std::string FACE_TAG_COL_TAG_ORDER = "tag_order";
+const std::string FACE_TAG_COL_IS_ME = "is_me";
+const std::string FACE_TAG_COL_COVER_URI = "cover_uri";
+const std::string FACE_TAG_COL_COUNT = "count";
+const std::string FACE_TAG_COL_DATE_MODIFY = "date_modify";
+const std::string FACE_TAG_COL_ALBUM_TYPE = "album_type";
+const std::string FACE_TAG_COL_IS_REMOVED = "is_removed";
+const std::string FACE_TAG_COL_ANALYSIS_VERSION = "analysis_version";
+
+// image_face_tbl COL_NAME
+const std::string IMAGE_FACE_COL_ID = "id";
+const std::string IMAGE_FACE_COL_FILE_ID = "file_id";
+const std::string IMAGE_FACE_COL_FACE_ID = "face_id";
+const std::string IMAGE_FACE_COL_TAG_ID = "tag_id";
+const std::string IMAGE_FACE_COL_SCALE_X = "scale_x";
+const std::string IMAGE_FACE_COL_SCALE_Y = "scale_y";
+const std::string IMAGE_FACE_COL_SCALE_WIDTH = "scale_width";
+const std::string IMAGE_FACE_COL_SCALE_HEIGHT = "scale_height";
+const std::string IMAGE_FACE_COL_LANDMARKS = "landmarks";
+const std::string IMAGE_FACE_COL_PITCH = "pitch";
+const std::string IMAGE_FACE_COL_YAW = "yaw";
+const std::string IMAGE_FACE_COL_ROLL = "roll";
+const std::string IMAGE_FACE_COL_PROB = "prob";
+const std::string IMAGE_FACE_COL_TOTAL_FACES = "total_faces";
+const std::string IMAGE_FACE_COL_FACE_VERSION = "face_version";
+const std::string IMAGE_FACE_COL_FEATURES_VERSION = "features_version";
+const std::string IMAGE_FACE_COL_FEATURES = "features";
+const std::string IMAGE_FACE_COL_FACE_OCCLUSION = "face_occlusion";
+const std::string IMAGE_FACE_COL_ANALYSIS_VERSION = "analysis_version";
+const std::string IMAGE_FACE_COL_BEAUTY_BOUNDER_X = "beauty_bounder_x";
+const std::string IMAGE_FACE_COL_BEAUTY_BOUNDER_Y = "beauty_bounder_y";
+const std::string IMAGE_FACE_COL_BEAUTY_BOUNDER_WIDTH = "beauty_bounder_width";
+const std::string IMAGE_FACE_COL_BEAUTY_BOUNDER_HEIGHT = "beauty_bounder_height";
+const std::string IMAGE_FACE_COL_AESTHETICS_SCORE = "aesthetics_score";
+const std::string IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION = "beauty_bounder_version";
+const std::string IMAGE_FACE_COL_IS_EXCLUDED = "is_excluded";
+const std::string ANALYSIS_ALBUM_SUBTYPE = "album_subtype";
+
+const std::string QUERY_FACE_TAG_COUNT = "SELECT count(1) AS count FROM " + VISION_FACE_TAG_TABLE;
+const std::string QUERY_IMAGE_FACE_COUNT = "SELECT count(1) AS count FROM " + VISION_IMAGE_FACE_TABLE;
+
 const std::string GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY = GALLERY_TAG_NAME + " IS NOT NULL AND " + GALLERY_TAG_NAME +
     " != ''";
 const std::string GALLERY_TAG_WITH_PHOTOS = "EXISTS (SELECT 1 FROM " + GALLERY_TABLE_MERGE_FACE + " INNER JOIN \

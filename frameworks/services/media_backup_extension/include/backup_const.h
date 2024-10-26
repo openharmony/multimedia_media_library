@@ -20,6 +20,7 @@
 #include <unordered_set>
 #include <variant>
 #include <vector>
+#include <optional>
 
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -43,6 +44,7 @@ constexpr int32_t GARBAGE_PHOTO_SIZE = 2048;
 constexpr int32_t LIVE_PHOTO_TYPE = 50;
 constexpr size_t GARBLE_UNIT = 2;
 constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
+constexpr uint32_t COVER_URI_NUM = 3;
 
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
@@ -345,6 +347,80 @@ struct FaceInfo {
     std::string landmarks;
 };
 
+struct AnalysisAlbumTbl {
+    std::optional<int32_t> albumId;
+    std::optional<int32_t> albumType;
+    std::optional<int32_t> albumSubtype;
+    std::optional<std::string> albumName;
+    std::optional<std::string> coverUri;
+    std::optional<int32_t> count;
+    std::optional<int64_t> dateModified;
+    std::optional<int32_t> rank;
+    std::optional<std::string> tagId;
+    std::optional<int32_t> userOperation;
+    std::optional<std::string> groupTag;
+    std::optional<int32_t> userDisplayLevel;
+    std::optional<int32_t> isMe;
+    std::optional<int32_t> isRemoved;
+    std::optional<int32_t> renameOperation;
+    std::optional<int32_t> isLocal;
+    std::optional<int32_t> isCoverSatisfied;
+};
+
+struct FaceTagTbl {
+    std::optional<int32_t> id;
+    std::optional<std::string> tagId;
+    std::optional<std::string> tagName;
+    std::optional<int32_t> userOperation;
+    std::optional<std::string> groupTag;
+    std::optional<int32_t> renameOperation;
+    std::optional<std::string> centerFeatures;
+    std::optional<std::string> tagVersion;
+    std::optional<int32_t> userDisplayLevel;
+    std::optional<int32_t> tagOrder;
+    std::optional<int32_t> isMe;
+    std::optional<std::string> coverUri;
+    std::optional<int32_t> count;
+    std::optional<int64_t> dateModify;
+    std::optional<int32_t> albumType;
+    std::optional<int32_t> isRemoved;
+    std::optional<std::string> analysisVersion;
+};
+
+struct ImageFaceTbl {
+    std::optional<int32_t> id;
+    std::optional<int32_t> fileId;
+    std::optional<std::string> faceId;
+    std::optional<std::string> tagId;
+    std::optional<double> scaleX;
+    std::optional<double> scaleY;
+    std::optional<double> scaleWidth;
+    std::optional<double> scaleHeight;
+    std::optional<std::string> landmarks;
+    std::optional<double> pitch;
+    std::optional<double> yaw;
+    std::optional<double> roll;
+    std::optional<double> prob;
+    std::optional<int32_t> totalFaces;
+    std::optional<std::string> faceVersion;
+    std::optional<std::string> featuresVersion;
+    std::optional<std::string> features;
+    std::optional<int32_t> faceOcclusion;
+    std::optional<std::string> analysisVersion;
+    std::optional<double> beautyBounderX;
+    std::optional<double> beautyBounderY;
+    std::optional<double> beautyBounderWidth;
+    std::optional<double> beautyBounderHeight;
+    std::optional<double> aestheticsScore;
+    std::optional<std::string> beautyBounderVersion;
+    std::optional<int32_t> isExcluded;
+};
+
+struct AnalysisPhotoMapTbl {
+    std::optional<int32_t> mapAlbum;
+    std::optional<int32_t> mapAsset;
+};
+
 using NeedQueryMap = std::unordered_map<PhotoRelatedType, std::unordered_set<std::string>>;
 
 // sql for external
@@ -418,6 +494,10 @@ const std::string ALL_PHOTOS_WHERE_CLAUSE_WITH_LOW_QUALITY = " (local_media_id !
     IS NULL OR relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) \
     AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
     (_size > 0 OR (_size = 0 AND photo_quality = 0)) ";
+const std::vector<std::string> EXCLUDED_PORTRAIT_COLUMNS = {"album_id", "count", "rank"};
+const std::vector<std::string> EXCLUDED_FACE_TAG_COLUMNS = {"id", "user_operation", "rename_operation", "group_tag",
+    "user_display_level", "tag_order", "is_me", "cover_uri", "count", "date_modify", "album_type", "is_removed"};
+const std::vector<std::string> EXCLUDED_IMAGE_FACE_COLUMNS = {"id"};
 } // namespace Media
 } // namespace OHOS
 
