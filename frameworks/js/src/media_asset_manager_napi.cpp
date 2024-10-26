@@ -1129,7 +1129,6 @@ bool IsSaveCallbackInfoByTranscoder(napi_value napiValueOfMedia, napi_env env, A
     auto dataHandler = assetHandler->dataHandler;
     if (dataHandler == nullptr) {
         NAPI_ERR_LOG("data handler is nullptr");
-        DeleteAssetHandlerSafe(assetHandler, env);
         return false;
     }
     if (napiValueOfMedia == nullptr) {
