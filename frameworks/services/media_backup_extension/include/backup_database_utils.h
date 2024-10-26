@@ -97,7 +97,7 @@ public:
     static std::vector<std::string> filterColumns(const std::vector<std::string>& allColumns,
         const std::vector<std::string>& excludedColumns);
     static std::vector<FileIdPair> CollectFileIdPairs(const std::vector<FileInfo>& fileInfos);
-    static std::pair<std::vector<int32_t>, std::vector<int32_t>> UnzipFileIdPairs(const std::vector<FileIdPair>&pairs);
+    static std::pair<std::vector<int32_t>, std::vector<int32_t>> UnzipFileIdPairs(const std::vector<FileIdPair> &pairs);
     static void UpdateAnalysisPhotoMapStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static std::vector<std::string> SplitString(const std::string& str, char delimiter);
     static void PrintQuerySql(const std::string& querySql);
