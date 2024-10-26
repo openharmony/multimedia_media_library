@@ -22,6 +22,7 @@
 #include <sys/stat.h>
 
 #include "cloud_sync_helper.h"
+#include "datashare_helper.h"
 #include "datashare_abs_result_set.h"
 #ifdef DISTRIBUTED
 #include "device_manager.h"
@@ -32,6 +33,7 @@
 #include "hitrace_meter.h"
 #include "image_packer.h"
 #include "ipc_skeleton.h"
+#include "iservice_registry.h"
 #include "media_column.h"
 #ifdef DISTRIBUTED
 #include "media_device_column.h"
@@ -53,6 +55,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_source_loading.h"
 #include "unique_fd.h"
+#include "wifi_device.h"
 #include "post_event_utils.h"
 #include "dfx_manager.h"
 
@@ -62,6 +65,9 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+
+static constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
+static const std::string CLOUD_DATASHARE_URI = "datashareproxy://com.huawei.hmos.clouddrive/cloud_sp?Proxy=true";
 
 #ifdef DISTRIBUTED
 bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
@@ -2103,6 +2109,56 @@ void ThumbnailUtils::SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size
     values.PutString(column, tmpSize);
 }
 
+static bool IsMobileNetworkEnabled()
+{
+    bool isWifiConnected = false;
+    auto wifiDevicePtr = Wifi::WifiDevice::GetInstance(WIFI_DEVICE_ABILITY_ID);
+    if (wifiDevicePtr == nullptr) {
+        MEDIA_ERR_LOG("wifiDevicePtr is null");
+    } else {
+        int32_t ret = wifiDevicePtr->IsConnected(isWifiConnected);
+        if (ret != Wifi::WIFI_OPT_SUCCESS) {
+            MEDIA_ERR_LOG("Get Is Connnected Fail: %{public}d", ret);
+        }
+    }
+    if (isWifiConnected) {
+        return true;
+    }
+    auto saMgr = OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (saMgr == nullptr) {
+        MEDIA_ERR_LOG("Failed to get SystemAbilityManagerClient");
+        return false;
+    }
+    OHOS::sptr<OHOS::IRemoteObject> remoteObject = saMgr->CheckSystemAbility(STORAGE_MANAGER_MANAGER_ID);
+    if (remoteObject == nullptr) {
+        MEDIA_ERR_LOG("Token is null.");
+        return false;
+    }
+    std::shared_ptr<DataShare::DataShareHelper> cloudHelper =
+        DataShare::DataShareHelper::Creator(remoteObject, CLOUD_DATASHARE_URI);
+    if (cloudHelper == nullptr) {
+        MEDIA_INFO_LOG("cloudHelper is null");
+        return false;
+    }
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo("key", "useMobileNetworkData");
+    Uri cloudUri(CLOUD_DATASHARE_URI + "&key=useMobileNetworkData");
+    vector<string> columns = {"value"};
+    shared_ptr<DataShare::DataShareResultSet> resultSet =
+        cloudHelper->Query(cloudUri, predicates, columns);
+    
+    //default mobile network is off
+    string switchOn = "0";
+    if (resultSet != nullptr && resultSet->GoToNextRow()==0) {
+        resultSet->GetString(0, switchOn);
+    }
+    if (resultSet != nullptr) {
+        resultSet->Close();
+    }
+    cloudHelper->Release();
+    return switchOn == "1";
+}
+
 bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
     std::vector<ThumbnailData> &infos, NativeRdb::RdbPredicates &rdbPredicate, int &err)
 {
@@ -2118,6 +2174,13 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
         MEDIA_DATA_DB_ORIENTATION,
     };
     rdbPredicate.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
+    if (!IsMobileNetworkEnabled()) {
+        rdbPredicate.BeginWrap();
+        rdbPredicate.EqualTo(PhotoColumn::PHOTO_POSITION, "1");
+        rdbPredicate.Or();
+        rdbPredicate.EqualTo(PhotoColumn::PHOTO_POSITION, "3");
+        rdbPredicate.EndWrap();
+    }
     rdbPredicate.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
     rdbPredicate.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, "0");
     rdbPredicate.EqualTo(MEDIA_DATA_DB_DATE_TRASHED, "0");
