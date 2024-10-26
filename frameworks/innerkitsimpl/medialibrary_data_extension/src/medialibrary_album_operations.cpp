@@ -560,6 +560,8 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
             " = 0) AND " + MAP_ALBUM + " NOT IN (SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
             IS_ME + " = 1)" + " GROUP BY " + MAP_ALBUM + " HAVING count(" + MAP_ALBUM + ") >= " +
             to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT_RELATED_ME) + ")";
+    std::string whereClauseAlbumName = ALBUM_NAME + " IS NOT NULL AND " + ALBUM_NAME + " != ''";
+
     if (value == FIRST_PAGE) {
         string relatedMeFirstPage = ALBUM_ID + " IN " + whereClauseRelatedMe;
         string whereClauseDisplay = USER_DISPLAY_LEVEL + " = 1";
@@ -567,14 +569,17 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
             USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (((" + USER_DISPLAY_LEVEL + " != 3 AND " +
             USER_DISPLAY_LEVEL + " !=2) OR " + USER_DISPLAY_LEVEL + " IS NULL) AND ((" +
-            whereClauseDisplay + ") OR (" + relatedMeFirstPage + ") OR (" + whereClauseSatifyCount + "))) GROUP BY " +
+            whereClauseDisplay + ") OR (" + relatedMeFirstPage + ") OR (" + whereClauseSatifyCount + ") OR (" +
+            whereClauseAlbumName + "))) GROUP BY " +
             GROUP_TAG + " ORDER BY CASE WHEN " + RENAME_OPERATION + " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == SECOND_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 2 OR (" +
             COUNT + " < " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND " + COUNT + " >= " +
             to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " AND (" + USER_DISPLAY_LEVEL + " != 1 OR " +
             USER_DISPLAY_LEVEL + " IS NULL) AND (" + USER_DISPLAY_LEVEL + " != 3 OR " + USER_DISPLAY_LEVEL +
-            " IS NULL))) AND " + ALBUM_ID + " NOT IN " + whereClauseRelatedMe + " GROUP BY " + GROUP_TAG +
+            " IS NULL) " + " AND NOT (" + whereClauseAlbumName + ")))" +
+            " AND " + ALBUM_ID + " NOT IN " + whereClauseRelatedMe +
+            " GROUP BY " + GROUP_TAG +
             " ORDER BY CASE WHEN " + RENAME_OPERATION + " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == FAVORITE_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 3 )GROUP BY " +

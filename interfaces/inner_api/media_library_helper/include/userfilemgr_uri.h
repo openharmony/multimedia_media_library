@@ -58,6 +58,7 @@ const std::string OPRN_PORTRAIT_IS_ME = "is_me";
 const std::string OPRN_PORTRAIT_ALBUM_NAME = "album_name";
 const std::string OPRN_PORTRAIT_MERGE_ALBUM = "merge_album";
 const std::string OPRN_DISMISS_ASSET = "dismiss_asset";
+const std::string UPDATE_DISMISS_ASSET = "dismiss_asset_update";
 const std::string OPRN_PORTRAIT_COVER_URI = "cover_uri";
 const std::string OPRN_SUBMIT_CACHE = "operation_submit_cache";
 const std::string OPRN_ADD_IMAGE = "add_image";
@@ -345,6 +346,7 @@ const std::string PAH_QUERY_HIGHLIGHT_COVER = MEDIALIBRARY_DATA_URI + "/" + PAH_
 const std::string PAH_QUERY_HIGHLIGHT_PLAY = MEDIALIBRARY_DATA_URI + "/" + PAH_HIGHLIGHT_PLAY + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_TOTAL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_TOTAL + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_MULTI_CROP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MULTI_CROP + "/" + OPRN_QUERY;
+const std::string PAH_UPDATE_ANA_FACE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_FACE + "/" + OPRN_UPDATE;
 
 // PhotoAccessHelper moving photo
 const std::string PAH_MOVING_PHOTO_SCAN = MEDIALIBRARY_DATA_URI + "/" + MEDIA_MOVING_PHOTO_OPRN_KEYWORD + "/" +

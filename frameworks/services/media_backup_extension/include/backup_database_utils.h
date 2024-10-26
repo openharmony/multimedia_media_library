@@ -17,13 +17,21 @@
 #define BACKUP_DATABASE_UTILS_H
 
 #include <string>
+#include <sstream>
+#include <vector>
+#include <type_traits>
 
 #include "backup_const.h"
 #include "rdb_helper.h"
 #include "result_set.h"
+#include "medialibrary_errno.h"
+#include "medialibrary_rdb_utils.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
+using FileIdPair = std::pair<int32_t, int32_t>;
+using TagPairOpt = std::pair<std::optional<std::string>, std::optional<std::string>>;
 class BackupDatabaseUtils {
 public:
     static int32_t InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
@@ -80,10 +88,51 @@ public:
     static float GetLandmarksScale(int32_t width, int32_t height);
     static bool IsLandmarkValid(const FaceInfo &faceInfo, float landmarkX, float landmarkY);
     static bool IsValInBound(float val, float minVal, float maxVal);
-    static void UpdateGroupTag(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
-        const std::unordered_map<std::string, std::string> &groupTagMap);
     static void UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::vector<FileInfo> &fileInfos);
+    static std::vector<std::pair<std::string, std::string>> GetColumnInfoPairs(
+        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName);
+    static std::vector<std::string> GetCommonColumnInfos(std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
+        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::string tableName);
+    static std::vector<std::string> filterColumns(const std::vector<std::string>& allColumns,
+        const std::vector<std::string>& excludedColumns);
+    static std::vector<FileIdPair> CollectFileIdPairs(const std::vector<FileInfo>& fileInfos);
+    static std::pair<std::vector<int32_t>, std::vector<int32_t>> UnzipFileIdPairs(const std::vector<FileIdPair>&pairs);
+    static void UpdateAnalysisPhotoMapStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
+    static std::vector<std::string> SplitString(const std::string& str, char delimiter);
+    static void PrintQuerySql(const std::string& querySql);
+    static bool DeleteDuplicatePortraitAlbum(const std::vector<std::string> &albumNames,
+        const std::vector<std::string> tagIds, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql);
+    static void UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        const std::vector<FileIdPair>& fileIdPair);
+    static std::string GetFileIdNewFilterClause(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+        const std::vector<FileIdPair>& fileIdPair);
+    static void UpdateFaceAnalysisTblStatus(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void DeleteExistingImageFaceData(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+        const std::vector<FileIdPair>& fileIdPair);
+    static std::vector<TagPairOpt> QueryTagInfo(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet,
+        TagPairOpt& tagPair);
+    static void UpdateGroupTagColumn(const std::vector<TagPairOpt>& updatedPairs,
+        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void UpdateFaceGroupTagsUnion(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void UpdateTagPairs(std::vector<TagPairOpt>& updatedPairs, const std::string& newGroupTag,
+        const std::vector<std::string>& tagIds);
+    static void UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
+        const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap);
+
+    template <typename T>
+    static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
+    template <typename T>
+    static std::string JoinSQLValues(const std::vector<T>& values, std::string_view delimiter);
+
+    template <typename T>
+    struct always_false : std::false_type {};
+    template <typename T>
+    static std::optional<T> GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        const std::string &columnName);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
@@ -103,6 +152,76 @@ public:
         return 0;
     }
 };
+
+template <typename T>
+std::string BackupDatabaseUtils::JoinSQLValues(const std::vector<T>& values, std::string_view delimiter)
+{
+    std::stringstream ss;
+    bool first = true;
+    for (const auto& value : values) {
+        if (!first) {
+            ss << delimiter;
+        }
+        first = false;
+        if constexpr (std::is_same_v<T, std::string>) {
+            ss << "'" << value << "'";
+        } else {
+            ss << std::to_string(value);
+        }
+    }
+    return ss.str();
+}
+
+template <typename T>
+std::string BackupDatabaseUtils::JoinValues(const std::vector<T>& values, std::string_view delimiter)
+{
+    std::stringstream ss;
+    bool first = true;
+    for (const auto& value : values) {
+        if (!first) {
+            ss << delimiter;
+        }
+        first = false;
+        if constexpr (std::is_same_v<T, std::string>) {
+            ss << value;
+        } else {
+            ss << std::to_string(value);
+        }
+    }
+    return ss.str();
+}
+
+template<typename T>
+std::optional<T> BackupDatabaseUtils::GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    const std::string &columnName)
+{
+    int32_t columnIndex;
+    int32_t err = resultSet->GetColumnIndex(columnName, columnIndex);
+    if (err != E_OK) {
+        return std::nullopt;
+    }
+
+    bool isNull = false;
+    int32_t errCode = resultSet->IsColumnNull(columnIndex, isNull);
+    if (errCode || isNull) {
+        return std::nullopt;
+    }
+
+    T value;
+    if constexpr (std::is_same_v<T, int32_t>) {
+        errCode = resultSet->GetInt(columnIndex, value);
+    } else if constexpr (std::is_same_v<T, int64_t>) {
+        errCode = resultSet->GetLong(columnIndex, value);
+    } else if constexpr (std::is_same_v<T, double>) {
+        errCode = resultSet->GetDouble(columnIndex, value);
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        errCode = resultSet->GetString(columnIndex, value);
+    } else {
+        static_assert(always_false<T>::value, "Unsupported type for GetOptionalValue");
+    }
+
+    return errCode ? std::nullopt : std::optional<T>(value);
+}
 } // namespace Media
 } // namespace OHOS
 
