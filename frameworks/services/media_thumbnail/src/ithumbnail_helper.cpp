@@ -153,10 +153,10 @@ void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executo
 }
 
 void IThumbnailHelper::AddThumbnailGenBatchTask(ThumbnailGenerateExecute executor,
-    ThumbRdbOpt &opts, ThumbnailData &thumbData, int32_t requestId)
+    ThumbRdbOpt &opts, ThumbnailData &thumbData, const ThumbnailTaskType &readyTaskPriority, int32_t requestId)
 {
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
-        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
+        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(readyTaskPriority);
     if (thumbnailWorker == nullptr) {
         MEDIA_ERR_LOG("thumbnailWorker is null");
         return;
