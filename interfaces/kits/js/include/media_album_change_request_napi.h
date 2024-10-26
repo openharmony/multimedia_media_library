@@ -56,6 +56,8 @@ struct PhotoAlbumPtrCompare {
 
 class MediaAlbumChangeRequestNapi : public MediaChangeRequestNapi {
 public:
+    static constexpr int32_t PORTRAIT_REMOVED = -3;
+    static const inline std::string TAG_ID = "tag_id";
     EXPORT MediaAlbumChangeRequestNapi() = default;
     EXPORT ~MediaAlbumChangeRequestNapi() override = default;
 
