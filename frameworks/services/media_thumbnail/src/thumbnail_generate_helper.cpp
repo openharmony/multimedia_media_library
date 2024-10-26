@@ -183,8 +183,8 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts, bool
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
-    ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate, int32_t requestId)
+int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(ThumbRdbOpt &opts,
+    NativeRdb::RdbPredicates &predicate, const ThumbnailTaskType &readyTaskPriority, int32_t requestId)
 {
     if (opts.store == nullptr) {
         MEDIA_ERR_LOG("rdbStore is not init");
@@ -208,12 +208,13 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
         if (info.isLocalFile) {
             info.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
-            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateThumbnail, opts, info, requestId);
+            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateThumbnail,
+                opts, info, readyTaskPriority, requestId);
         } else {
             info.loaderOpts.loadingStates = info.mediaType == MEDIA_TYPE_VIDEO ?
                 SourceLoader::ALL_SOURCE_LOADING_CLOUD_VIDEO_STATES : SourceLoader::ALL_SOURCE_LOADING_STATES;
-            IThumbnailHelper::AddThumbnailGenBatchTask(info.orientation == 0 ?
-                IThumbnailHelper::CreateAstc : IThumbnailHelper::CreateAstcEx, opts, info, requestId);
+            IThumbnailHelper::AddThumbnailGenBatchTask(info.orientation == 0 ? IThumbnailHelper::CreateAstc :
+                IThumbnailHelper::CreateAstcEx, opts, info, readyTaskPriority, requestId);
         }
     }
     return E_OK;

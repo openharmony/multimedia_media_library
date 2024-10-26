@@ -36,6 +36,9 @@
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_uri_utils.h"
 #include "post_event_utils.h"
+#ifdef HAS_THERMAL_MANAGER_PART
+#include "thermal_mgr_client.h"
+#endif
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -617,12 +620,18 @@ int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbP
         return E_INVALID_VALUES;
     }
 
+    ThumbnailTaskType readyTaskPriority = ThumbnailTaskType::FOREGROUND;
+#ifdef HAS_THERMAL_MANAGER_PART
+    auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
+    readyTaskPriority = static_cast<int32_t>(thermalMgrClient.GetThermalLevel()) <
+        READY_TEMPERATURE_LEVEL ? ThumbnailTaskType::FOREGROUND : ThumbnailTaskType::BACKGROUND;
+#endif
     CancelAstcBatchTask(requestId - 1);
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE
     };
-    return ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, rdbPredicate, requestId);
+    return ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, rdbPredicate, readyTaskPriority, requestId);
 }
 
 void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
@@ -633,13 +642,21 @@ void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
     }
 
     MEDIA_INFO_LOG("CancelAstcBatchTask requestId: %{public}d", requestId);
-    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
+    std::shared_ptr<ThumbnailGenerateWorker> thumbnailForegroundWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
-    if (thumbnailWorker == nullptr) {
-        MEDIA_ERR_LOG("thumbnailWorker is null");
-        return;
+    if (thumbnailForegroundWorker == nullptr) {
+        MEDIA_ERR_LOG("thumbnailForegroundWorker is null");
+    } else {
+        thumbnailForegroundWorker->IgnoreTaskByRequestId(requestId);
     }
-    thumbnailWorker->IgnoreTaskByRequestId(requestId);
+
+    std::shared_ptr<ThumbnailGenerateWorker> thumbnailBackgroundWorker =
+        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::BACKGROUND);
+    if (thumbnailBackgroundWorker == nullptr) {
+        MEDIA_ERR_LOG("thumbnailBackgroundWorker is null");
+    } else {
+        thumbnailBackgroundWorker->IgnoreTaskByRequestId(requestId);
+    }
 }
 
 void ThumbnailService::UpdateAstcWithNewDateTaken(const std::string &fileId, const std::string &newDateTaken,

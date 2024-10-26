@@ -20,6 +20,7 @@
 #include "rdb_predicates.h"
 #include "single_kvstore.h"
 #include "thumbnail_utils.h"
+#include "thumbnail_generate_worker.h"
 
 namespace OHOS {
 namespace Media {
@@ -38,7 +39,7 @@ public:
     EXPORT static int32_t UpgradeThumbnailBackground(ThumbRdbOpt &opts, bool isWifiConnected);
     EXPORT static int32_t RestoreAstcDualFrame(ThumbRdbOpt &opts);
     EXPORT static int32_t CreateAstcBatchOnDemand(ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate,
-        int32_t requestId);
+        const ThumbnailTaskType &readyTaskPriority, int32_t requestId);
     EXPORT static int32_t GetNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count);
     EXPORT static int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType);
     EXPORT static int32_t GetKeyFrameThumbnailPixelMap(ThumbRdbOpt &opts, int32_t &timeStamp,
