@@ -81,6 +81,9 @@ const std::string GALLERY_MEDIA_SOURCE_PATH = "sourcePath";
 const std::string GALLERY_RECYCLE_FLAG = "recycleFlag";
 const std::string GALLERY_HASH = "hash";
 const std::string GALLERY_SPECIAL_FILE_TYPE = "special_file_type";
+const std::string GALLERY_FIRST_UPDATE_TIME = "first_update_time";
+const std::string GALLERY_DATE_TAKEN = "datetaken";
+const std::string GALLERY_DETAIL_TIME = "detail_time";
 
 // external column
 const std::string EXTERNAL_IS_FAVORITE = "is_favorite";
@@ -230,6 +233,7 @@ struct FileInfo {
     std::string oldPath;
     std::string movingPhotoVideoPath;
     std::string extraDataPath;
+    std::string detailTime;
     int32_t fileIdOld {-1};
     int32_t fileIdNew {-1};
     int64_t fileSize {0};
@@ -249,6 +253,8 @@ struct FileInfo {
     int32_t mediaAlbumId {-1};  // 单相册id
     int32_t localMediaId {-1};
     bool isNew {true};
+    int64_t dateTaken {0};
+    int64_t firstUpdateTime {0};
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
     std::unordered_map<std::string, std::unordered_set<int32_t>> tableAlbumSetMap;
     /**
@@ -393,7 +399,8 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + ", " +
     EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID + "," + GALLERY_MEDIA_SOURCE_PATH + "," +
     GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH + ", " + GALLERY_ID + "," +
-    GALLERY_SPECIAL_FILE_TYPE + " FROM gallery_media ";
+    GALLERY_SPECIAL_FILE_TYPE + "," + GALLERY_FIRST_UPDATE_TIME +  "," + GALLERY_DATE_TAKEN + "," +
+    GALLERY_DETAIL_TIME + " FROM gallery_media ";
 
 const std::string QUERY_MAX_ID = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \

@@ -199,6 +199,8 @@ public:
     EXPORT int32_t GetCEAvailable() const;
     EXPORT void SetCEAvailable(int32_t ceAvailable);
 
+    EXPORT const std::string &GetDetailTime() const;
+    EXPORT void SetDetailTime(const std::string &detailTime);
 private:
     const std::string &GetStrMember(const std::string &name) const;
     int32_t GetInt32Member(const std::string &name) const;

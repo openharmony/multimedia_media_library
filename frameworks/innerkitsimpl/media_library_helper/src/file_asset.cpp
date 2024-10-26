@@ -547,6 +547,16 @@ void FileAsset::SetCEAvailable(int32_t ceAvailable)
     member_[PhotoColumn::PHOTO_CE_AVAILABLE] = ceAvailable;
 }
 
+const std::string &FileAsset::GetDetailTime() const
+{
+    return GetStrMember(PhotoColumn::PHOTO_DETAIL_TIME);
+}
+
+void FileAsset::SetDetailTime(const string &detailTime)
+{
+    member_[PhotoColumn::PHOTO_DETAIL_TIME] = detailTime;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);

@@ -153,7 +153,7 @@ static void InsertDateAdded(const Metadata &metadata, ValuesBucket &outValues)
                     static_cast<long long>(dateAdded));
             }
         } else {
-            dateAdded = dateTaken * MSEC_TO_SEC;
+            dateAdded = dateTaken;
             MEDIA_WARN_LOG("Invalid dateAdded time, use dateTaken instead: %{public}lld",
                 static_cast<long long>(dateAdded));
         }
@@ -239,6 +239,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, metadata.GetDynamicRangeType());
         values.PutLong(PhotoColumn::PHOTO_COVER_POSITION, metadata.GetCoverPosition());
         values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, metadata.GetFrontCamera());
+        values.PutString(PhotoColumn::PHOTO_DETAIL_TIME, metadata.GetDetailTime());
 
         if (metadata.GetPhotoSubType() != 0) {
             values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
@@ -498,7 +499,8 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
                 MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING,
                 MediaColumn::MEDIA_DATE_ADDED, PhotoColumn::PHOTO_DATE_DAY, MediaColumn::MEDIA_OWNER_PACKAGE,
-                PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::MOVING_PHOTO_EFFECT_MODE
+                PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+                MediaColumn::MEDIA_DATE_TAKEN
             };
         } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
             columns = {
