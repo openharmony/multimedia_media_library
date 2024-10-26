@@ -51,7 +51,6 @@ constexpr int32_t E_ERR = -1;
 constexpr int32_t E_HAS_DB_ERROR = -222;
 constexpr int32_t E_SUCCESS = 0;
 constexpr int32_t E_EMPTY_ALBUM_ID = 1;
-constexpr int32_t E_NEED_UPDATE_ALBUM_COVER_URI = 2;
 constexpr size_t ALBUM_UPDATE_THRESHOLD = 1000;
 constexpr int32_t SINGLE_FACE = 1;
 constexpr double LOCATION_DB_ZERO = 0;
@@ -430,8 +429,8 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const shared_pt
     return newCount;
 }
 
-static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
-    ValuesBucket &values, int newCount)
+static void SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
+    ValuesBucket &values, int newCount, const string &albumId)
 {
     string newCover;
     if (newCount != 0) {
@@ -439,15 +438,12 @@ static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const s
     }
     const string &targetColumn = PhotoAlbumColumns::ALBUM_COVER_URI;
     string oldCover = GetAlbumCover(albumResult, targetColumn);
-    int32_t ret = E_SUCCESS;
     if (oldCover != newCover) {
-        ret = E_NEED_UPDATE_ALBUM_COVER_URI;
         values.PutInt(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING));
         values.PutString(targetColumn, newCover);
-        MEDIA_INFO_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s", targetColumn.c_str(),
-            oldCover.c_str(), newCover.c_str());
+        MEDIA_INFO_LOG("Update portrait album %{public}s. oldCover: %{private}s, newCover: %{private}s",
+            albumId.c_str(), oldCover.c_str(), newCover.c_str());
     }
-    return ret;
 }
 
 static void SetCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
@@ -873,28 +869,6 @@ bool MediaLibraryRdbUtils::IsInRefreshTask()
     return isInRefreshTask.load();
 }
 
-static void SetPortraitAlbumCoverPredicates(RdbPredicates &predicates)
-{
-    string imageFaceFileId = VISION_IMAGE_FACE_TABLE + "." + MediaColumn::MEDIA_ID;
-    string photosFileId = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID;
-    string clause = imageFaceFileId + " = " + photosFileId;
-    predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ clause });
-
-    string isExcluded = VISION_IMAGE_FACE_TABLE + "." + IS_EXCLUDED;
-    string aestheticsScore = VISION_IMAGE_FACE_TABLE + "." + FACE_AESTHETICS_SCORE;
-    string aestheticsOrder = "CASE WHEN " + isExcluded + " = 1 THEN " + aestheticsScore + " ELSE NULL END ";
-    predicates.OrderByDesc(aestheticsOrder);
-
-    string imageFaceTotalFaces = VISION_IMAGE_FACE_TABLE + "." + TOTAL_FACES;
-    string faceOrder = "CASE WHEN " + imageFaceTotalFaces + " = " + to_string(SINGLE_FACE) + " THEN 0 ELSE 1 END ";
-    predicates.OrderByAsc(faceOrder);
-
-    string photosDateAdded = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_DATE_ADDED;
-    predicates.OrderByDesc(photosDateAdded);
-
-    predicates.Limit(1);
-}
-
 static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates &predicates)
 {
     string anaAlbumGroupTag = ANALYSIS_ALBUM_TABLE + "." + GROUP_TAG;
@@ -989,18 +963,57 @@ static inline bool ShouldUpdatePortraitAlbumCover(const shared_ptr<NativeRdb::Rd
         !IsCoverValid(rdbStore, albumId, fileId);
 }
 
+static shared_ptr<ResultSet> QueryPortraitAlbumCover(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    const string &albumId)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("QueryPortraitCover");
+
+    const std::string sql = "\
+        SELECT\
+          Photos.file_id,\
+          Photos.display_name,\
+          Photos.data\
+        FROM\
+          Photos\
+          INNER JOIN AnalysisPhotoMap ON AnalysisPhotoMap.map_asset = Photos.file_id\
+          INNER JOIN AnalysisAlbum ON AnalysisAlbum.album_id = AnalysisPhotoMap.map_album\
+          INNER JOIN tab_analysis_image_face ON tab_analysis_image_face.file_id = Photos.file_id\
+        WHERE\
+          Photos.sync_status = 0\
+          AND Photos.clean_flag = 0\
+          AND Photos.date_trashed = 0\
+          AND Photos.hidden = 0\
+          AND Photos.time_pending = 0\
+          AND Photos.is_temp = 0\
+          AND Photos.burst_cover_level = 1\
+          AND AnalysisAlbum.group_tag = ( SELECT group_tag FROM AnalysisAlbum WHERE album_id = ? LIMIT 1 )\
+          AND AnalysisAlbum.group_tag LIKE '%' || tab_analysis_image_face.tag_id || '%'\
+        ORDER BY\
+          tab_analysis_image_face.is_excluded DESC,\
+          tab_analysis_image_face.aesthetics_score DESC,\
+        CASE\
+            WHEN tab_analysis_image_face.total_faces = 1 THEN\
+            0 ELSE 1\
+          END ASC,\
+          Photos.date_added DESC\
+          LIMIT 1;";
+
+    const std::vector<ValueObject> bindArgs{ ValueObject(albumId) };
+    auto resultSet = rdbStore->QuerySql(sql, bindArgs);
+    if (resultSet == nullptr) {
+        return nullptr;
+    }
+
+    resultSet->GoToFirstRow();
+    return resultSet;
+}
+
 static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const shared_ptr<ResultSet> &albumResult, const vector<string> &fileIds, ValuesBucket &values)
 {
     const vector<string> countColumns = {
         MEDIA_COLUMN_COUNT_DISTINCT_FILE_ID
-    };
-
-    const vector<string> coverColumns = {
-        PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID,
-        PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_FILE_PATH,
-        PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_NAME,
-        VISION_IMAGE_FACE_TABLE + "." + TOTAL_FACES
     };
 
     string coverUri = GetAlbumCover(albumResult, PhotoAlbumColumns::ALBUM_COVER_URI);
@@ -1012,20 +1025,20 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
     GetPortraitAlbumCountPredicates(albumId, predicates);
     shared_ptr<ResultSet> countResult = QueryGoToFirst(rdbStore, predicates, countColumns);
     if (countResult == nullptr) {
-        MEDIA_ERR_LOG("Failed to query countResult");
+        MEDIA_ERR_LOG("Failed to query Portrait Album Count");
         return E_HAS_DB_ERROR;
     }
     int32_t newCount = SetCount(countResult, albumResult, values, false, PhotoAlbumSubType::PORTRAIT);
     if (!ShouldUpdatePortraitAlbumCover(rdbStore, albumId, coverId, isCoverSatisfied)) {
         return E_SUCCESS;
     }
-    SetPortraitAlbumCoverPredicates(predicates);
-    shared_ptr<ResultSet> coverResult = QueryGoToFirst(rdbStore, predicates, coverColumns);
+    shared_ptr<ResultSet> coverResult = QueryPortraitAlbumCover(rdbStore, albumId);
     if (coverResult == nullptr) {
         MEDIA_ERR_LOG("Failed to query Portrait Album Cover");
         return E_HAS_DB_ERROR;
     }
-    return SetPortraitCover(coverResult, albumResult, values, newCount);
+    SetPortraitCover(coverResult, albumResult, values, newCount, albumId);
+    return E_SUCCESS;
 }
 
 static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
@@ -1139,7 +1152,7 @@ static int32_t UpdatePortraitAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
     ValuesBucket values;
     int32_t albumId = GetAlbumId(albumResult);
     int setRet = SetPortraitUpdateValues(rdbStore, albumResult, fileIds, values);
-    if (setRet < 0) {
+    if (setRet != E_SUCCESS) {
         MEDIA_ERR_LOG("Failed to set portrait album update values! album id: %{public}d, err: %{public}d", albumId,
             setRet);
         return setRet;
