@@ -57,17 +57,15 @@ State PictureManagerThread::State() const
 
 void PictureManagerThread::Start()
 {
-    MEDIA_INFO_LOG("enter ");
+    unique_lock<mutex> locker(runningMutex_);
     if (pictureDataOperations_ == nullptr) {
         pictureDataOperations_ = new PictureDataOperations();
     }
+    if (pauseFlag_) {
+        Stop();
+    }
     if (thread_ == nullptr) {
         thread_ = std::make_unique<std::thread>(&PictureManagerThread::Run, this);
-        pauseFlag_ = false;
-        stopFlag_ = false;
-        state_ = State::RUNNING;
-    } else if (stopFlag_) {
-        Run();
         pauseFlag_ = false;
         stopFlag_ = false;
         state_ = State::RUNNING;
@@ -81,7 +79,9 @@ void PictureManagerThread::Stop()
         pauseFlag_ = false;
         stopFlag_ = true;
         condition_.notify_all();  // Notify one waiting thread, if there is one.
-        thread_->join(); // wait for thread finished
+        if (thread_->joinable()) {
+            thread_->join(); // wait for thread finished
+        }
         thread_ = nullptr;
         state_ = State::STOPPED;
     }
@@ -109,6 +109,8 @@ void PictureManagerThread::Resume()
 void PictureManagerThread::Run()
 {
     MEDIA_INFO_LOG("enter thread run:");
+    string name("PictureManagerThread");
+    pthread_setname_np(pthread_self(), name.c_str());
     while (!stopFlag_) {
         if (pictureDataOperations_ == nullptr) {
             pictureDataOperations_ = new PictureDataOperations();
@@ -116,14 +118,19 @@ void PictureManagerThread::Run()
         pictureDataOperations_->CleanDateForPeriodical();
         unique_lock<mutex> locker(threadMutex_);
         condition_.wait_for(locker, std::chrono::seconds(1)); // 实际1S扫描一次
+        int32_t taskSize = pictureDataOperations_->GetPendingTaskSize();
+        if (lastPendingTaskSize_ != 0 && taskSize == 0) {
+            pauseFlag_ = true;
+            return;
+        }
+        lastPendingTaskSize_ = taskSize;
     }
-    pauseFlag_ = false;
-    stopFlag_ = false;
 }
 
 void PictureManagerThread::InsertPictureData(const std::string& imageId, sptr<PicturePair>& PicturePair,
     PictureType pictureType)
 {
+    Start();
     if (pictureDataOperations_ == nullptr) {
         MEDIA_ERR_LOG("InsertPictureData failed, pictureDataOperations_ is null");
         return;

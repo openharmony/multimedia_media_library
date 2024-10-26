@@ -19,6 +19,7 @@
 #include <dirent.h>
 #include <memory>
 #include <mutex>
+#include <sstream>
 
 #include "directory_ex.h"
 #include "file_asset.h"
@@ -625,7 +626,7 @@ static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &file
     }
 }
 
-static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues)
+static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, const std::string displayName)
 {
     if (!PermissionUtils::IsNativeSAApp()) {
         MEDIA_DEBUG_LOG("do not have permission to set burst_key or burst_cover_level");
@@ -648,6 +649,14 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues)
     if (burstCoverLevel != 0) {
         outValues.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, burstCoverLevel);
     }
+    stringstream result;
+    for (int i = 0; i < displayName.length(); i++) {
+        if (isdigit(displayName[i])) {
+            result << displayName[i];
+        }
+    }
+    outValues.Put(PhotoColumn::PHOTO_ID, result.str());
+    outValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
 }
 
 static void HandleIsTemp(MediaLibraryCommand &cmd, ValuesBucket &outValues)
@@ -695,7 +704,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
             assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo
         }
         HandleIsTemp(cmd, assetInfo);
-        HandleBurstPhoto(cmd, assetInfo);
+        HandleBurstPhoto(cmd, assetInfo, displayName);
     }
 
     HandleCallingPackage(cmd, fileAsset, assetInfo);

@@ -278,7 +278,7 @@ bool PictureDataOperations::SavePicture(const std::string& imageId,
     }
     if (iter != pictureMap.end()) {
         FileUtils::SavePicture(iter->first, (iter->second)->picture_, false, isLowQualityPicture);
-        MEDIA_INFO_LOG("Save Low Quality file Success, photoId: %{public}s", imageId.c_str());
+        MEDIA_INFO_LOG("SavePicture, photoId: %{public}s", imageId.c_str());
         // 落盘后清除缓存数据
         pictureMap.erase(iter);
         isSuccess = true;
@@ -319,7 +319,8 @@ int32_t PictureDataOperations::AddSavePictureTask(sptr<PicturePair>& picturePair
 
 int32_t PictureDataOperations::GetPendingTaskSize()
 {
-    return taskSize;
+    lock_guard<mutex> lock(pictureMapMutex_);
+    return lowQualityPictureMap_.size() + highQualityPictureMap_.size();
 }
 
 void PictureDataOperations::DeleteDataWithImageId(const std::string& imageId, PictureType pictureType)

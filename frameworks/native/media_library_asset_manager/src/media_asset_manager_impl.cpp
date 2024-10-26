@@ -196,13 +196,14 @@ static void InsertInProcessMapRecord(const std::string &requestUri, const std::s
     MEDIA_INFO_LOG("InsertInProcessMapRecord lock multiStagesCaptureLock");
     std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     std::map<std::string, AssetHandler*> assetHandler;
-    if (inProcessUriMap.find(requestUri) != inProcessUriMap.end()) {
-        assetHandler = inProcessUriMap[requestUri];
+    auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(requestUri);
+    if (inProcessUriMap.find(uriLocal) != inProcessUriMap.end()) {
+        assetHandler = inProcessUriMap[uriLocal];
         assetHandler[requestId] = handler;
-        inProcessUriMap[requestUri] = assetHandler;
+        inProcessUriMap[uriLocal] = assetHandler;
     } else {
         assetHandler[requestId] = handler;
-        inProcessUriMap[requestUri] = assetHandler;
+        inProcessUriMap[uriLocal] = assetHandler;
     }
     MEDIA_INFO_LOG("InsertInProcessMapRecord unlock multiStagesCaptureLock");
 }
@@ -354,8 +355,8 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
         MEDIA_ERR_LOG("Return mode type invalid %{public}d", dataHandler->GetReturnDataType());
         return false;
     }
-
-    DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
+    auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(assetHandler->requestUri);
+    DeleteDataHandler(notifyMode, uriLocal, assetHandler->requestId);
     MEDIA_INFO_LOG("Delete assetHandler: %{public}p", assetHandler);
     DeleteAssetHandlerSafe(assetHandler);
     return true;
