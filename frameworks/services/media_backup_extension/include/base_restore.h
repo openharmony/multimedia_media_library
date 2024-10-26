@@ -22,10 +22,11 @@
 
 #include "backup_const.h"
 #include "medialibrary_rdb_transaction.h"
+#include "media_file_utils.h"
 #include "nlohmann/json.hpp"
 #include "rdb_helper.h"
 #include "result_set.h"
-#include "media_file_utils.h"
+#include "tab_old_photos_restore.h"
 
 namespace OHOS {
 namespace Media {
@@ -163,6 +164,7 @@ protected:
     std::unordered_map<std::string, int32_t> portraitAlbumIdMap_;
     bool hasLowQualityImage_ = false;
     std::string taskId_ = std::to_string(MediaFileUtils::UTCTimeSeconds());
+    TabOldPhotosRestore tabOldPhotosRestore_;
 };
 } // namespace Media
 } // namespace OHOS

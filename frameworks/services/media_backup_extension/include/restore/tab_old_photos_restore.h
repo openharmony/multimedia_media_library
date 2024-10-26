@@ -53,7 +53,9 @@ private:
                 ON Photos.data=INPUT.data \
             LEFT JOIN tab_old_photos \
                 ON INPUT.old_data=tab_old_photos.old_data \
-        WHERE tab_old_photos.old_data IS NULL;";
+        WHERE tab_old_photos.old_data IS NULL AND \
+            COALESCE(hidden, 0) = 0 AND \
+            COALESCE(date_trashed, 0) = 0;";
 };
 } // namespace OHOS::Media
 #endif // OHOS_BACKUP_MEDIA_TAB_OLD_PHOTOS_RESTORE
