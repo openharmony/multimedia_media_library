@@ -1823,6 +1823,8 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_livephoto, TestSize.Lev
     FileInfo info;
     info.specialFileType = 50;
     EXPECT_EQ(BackupFileUtils::IsLivePhoto(info), true);
+    info.specialFileType = 1050;
+    EXPECT_EQ(BackupFileUtils::IsLivePhoto(info), true);
     info.specialFileType = 0;
     EXPECT_EQ(BackupFileUtils::IsLivePhoto(info), false);
     info.specialFileType = 1000;
