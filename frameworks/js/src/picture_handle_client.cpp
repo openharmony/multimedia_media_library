@@ -113,6 +113,10 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture read mainPixelMap");
     std::shared_ptr<PixelMap> mainPixelMap = ReadPixelMap(pictureParcel);
     std::unique_ptr<Media::Picture> picturePtr = Picture::Create(mainPixelMap);
+    if (picturePtr == nullptr) {
+        MEDIA_ERR_LOG("PictureHandlerService::ReadPicture picturePtr is nullptr!");
+        return E_ERR;
+    }
 
     ReadExifMetadata(pictureParcel, picturePtr);
     ReadMaintenanceData(pictureParcel, picturePtr);
