@@ -1639,7 +1639,6 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
             continue;
         }
         if (columnValue == MEDIA_DATA_DB_ID) {
-
             ParseStringResult(resultSet, index, data.id, err);
         } else if (columnValue == MEDIA_DATA_DB_FILE_PATH) {
             ParseStringResult(resultSet, index, data.path, err);
