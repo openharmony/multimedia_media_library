@@ -62,6 +62,7 @@ private:
     void Run();
     std::unique_ptr<std::thread> thread_ = nullptr;
     std::mutex threadMutex_;
+    std::mutex runningMutex_;
     std::condition_variable condition_;
     std::atomic_bool pauseFlag_; // 暂停标识
     std::atomic_bool stopFlag_; // 停止标识
@@ -69,6 +70,7 @@ private:
     static std::unique_ptr<PictureManagerThread> instance_;
     static std::mutex mutex_;
     sptr<PictureDataOperations> pictureDataOperations_;
+    int32_t lastPendingTaskSize_ = 0;
 }; // class PictureManagerThread
 } // namespace Media
 }  // namespace OHOS
