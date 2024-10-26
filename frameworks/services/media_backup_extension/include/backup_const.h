@@ -44,6 +44,7 @@ constexpr int32_t RETRY_TIME = 5;
 constexpr int32_t SLEEP_INTERVAL = 1;
 constexpr int32_t GARBAGE_PHOTO_SIZE = 2048;
 constexpr int32_t LIVE_PHOTO_TYPE = 50;
+constexpr int32_t LIVE_PHOTO_HDR_TYPE = 1050;
 constexpr size_t GARBLE_UNIT = 2;
 constexpr uint32_t COVER_URI_NUM = 3;
 constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
