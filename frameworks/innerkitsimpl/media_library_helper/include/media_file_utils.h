@@ -174,7 +174,7 @@ public:
     EXPORT static void RecoverMediaTempDir();
     EXPORT static std::string DesensitizePath(const std::string &path);
     EXPORT static void CheckDirStatus(const std::unordered_set<std::string> &dirCheckSet, const std::string &dir);
-
+    EXPORT static std::string GetUriWithoutDisplayname(const std::string &uri);
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
     static int32_t RemoveDirectory(const std::string &path);
