@@ -406,6 +406,11 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
 shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
     ThumbnailData &data, int &err)
 {
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+    };
     MediaLibraryTracer tracer;
     tracer.Start("QueryThumbnailInfo");
     auto resultSet = QueryThumbnailSet(opts);
@@ -421,7 +426,7 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
         return nullptr;
     }
 
-    ParseQueryResult(resultSet, data, err);
+    ParseQueryResult(resultSet, data, err, column);
     return resultSet;
 }
 
