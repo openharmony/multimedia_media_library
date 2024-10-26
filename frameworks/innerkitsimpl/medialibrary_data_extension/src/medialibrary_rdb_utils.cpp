@@ -47,6 +47,7 @@
 #include "location_column.h"
 #include "search_column.h"
 #include "story_cover_info_column.h"
+#include "power_efficiency_manager.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -2190,8 +2191,8 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbSt
     unique_lock<mutex> lock(sRefreshAlbumMutex_);
     if (IsInRefreshTask()) {
         lock.unlock();
-        MEDIA_ERR_LOG("RefreshAllAlbuming, quit");
-        return E_ERR;
+        MEDIA_DEBUG_LOG("RefreshAllAlbuming, quit");
+        return E_OK;
     }
     isInRefreshTask = true;
     lock.unlock();
@@ -2216,6 +2217,7 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbSt
         if (ret != E_SUCCESS) {
             break;
         }
+        this_thread::sleep_for(chrono::milliseconds(PowerEfficiencyManager::GetAlbumUpdateInterval()));
         isRefresh = true;
     }
 

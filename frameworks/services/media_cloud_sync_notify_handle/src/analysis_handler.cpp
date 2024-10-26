@@ -120,7 +120,7 @@ void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
             return;
         }
         if (count > 0) {
-            MEDIA_INFO_LOG("%{public}d analysis album nned update", count);
+            MEDIA_INFO_LOG("%{public}d analysis album need update", count);
             list<Uri> sendUris = UpdateAnalysisAlbumsForCloudSync(rdbStore, resultSet, fileIds);
             AddNewNotify(newHandleData, sendUris);
         }
