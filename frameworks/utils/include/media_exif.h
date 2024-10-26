@@ -70,6 +70,8 @@ const std::string PHOTO_DATA_IMAGE_ISO_SPEED_LATITUDE_ZZZ = "ISOSpeedLatitudezzz
 const std::string PHOTO_DATA_VIDEO_CUSTOM_INFO = "customInfo";
 const std::string PHOTO_DATA_VIDEO_COVER_TIME = "com.openharmony.covertime";
 const std::string PHOTO_DATA_IMAGE_FRONT_CAMERA = "HwMnoteFrontCamera";
+const std::string PHOTO_DATA_IMAGE_OFFSET_TIME_ORIGINAL = "OffsetTimeOriginal";
+const std::string PHOTO_DATA_IMAGE_SUBSEC_TIME_ORIGINAL = "SubsecTimeOriginal";
 
 const std::vector<std::string> exifInfoKeys = {
     PHOTO_DATA_IMAGE_BITS_PER_SAMPLE,

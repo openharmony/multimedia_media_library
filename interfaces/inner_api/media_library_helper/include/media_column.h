@@ -121,6 +121,7 @@ public:
     static const std::string PHOTO_BURST_COVER_LEVEL EXPORT;
     static const std::string PHOTO_BURST_KEY EXPORT;
     static const std::string PHOTO_ORIGINAL_SUBTYPE EXPORT;
+    static const std::string PHOTO_DETAIL_TIME EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
@@ -152,6 +153,8 @@ public:
     static const std::string PHOTO_STRONG_ASSOCIATION EXPORT;
     static const std::string PHOTO_ASSOCIATE_FILE_ID EXPORT;
     static const std::string PHOTO_HAS_CLOUD_WATERMARK EXPORT;
+    // format in PhotoTable detail time
+    static const std::string PHOTO_DETAIL_TIME_FORMAT EXPORT;
 
     // table name
     static const std::string PHOTOS_TABLE EXPORT;
@@ -181,6 +184,7 @@ public:
     static const std::string DROP_INDEX_SCTHP_ADDTIME EXPORT;
     static const std::string INDEX_CAMERA_SHOT_KEY EXPORT;
     static const std::string INDEX_SCHPT_READY EXPORT;
+    static const std::string DROP_INDEX_SCHPT_READY EXPORT;
 
     // create Photo cloud sync trigger
     static const std::string CREATE_PHOTOS_DELETE_TRIGGER EXPORT;

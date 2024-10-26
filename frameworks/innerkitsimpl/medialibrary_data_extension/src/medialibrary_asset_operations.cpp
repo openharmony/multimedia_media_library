@@ -1901,6 +1901,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_BURST_COVER_LEVEL, { IsInt32 } },
     { PhotoColumn::PHOTO_BURST_KEY, { IsString } },
     { PhotoColumn::PHOTO_CE_AVAILABLE, { IsInt32 } },
+    { PhotoColumn::PHOTO_DETAIL_TIME, { IsStringNotNull } },
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)

@@ -157,6 +157,9 @@ public:
     EXPORT void SetIsTemp(const VariantData &isTemp);
     EXPORT int32_t GetIsTemp();
 
+    EXPORT void SetDetailTime(const VariantData &detailTime);
+    EXPORT std::string GetDetailTime() const;
+
     EXPORT void SetForAdd(bool forAdd);
     EXPORT bool GetForAdd() const;
     EXPORT void SetTableName(const std::string &tableName);
@@ -246,6 +249,8 @@ private:
     int32_t isTemp_;
     // front camera
     std::string frontcamera_;
+
+    std::string detailTime_;
 };
 } // namespace Media
 } // namespace OHOS
