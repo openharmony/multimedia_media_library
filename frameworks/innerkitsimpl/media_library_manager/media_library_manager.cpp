@@ -627,7 +627,22 @@ bool MediaLibraryManager::IfSizeEqualsRatio(const Size &imageSize, const Size &t
     }
 }
 
-unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, const Size& size)
+static void ParseDecodeOptionsFromUri(const string& uri, DecodeOptions& decodeOpts)
+{
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    if (uri == "") {
+        return;
+    }
+    auto dynamicIter = uri.find(DYNAMIC_RANGE);
+    if (dynamicIter != string::npos) {
+        int dynamicRange = uri.substr(dynamicIter + DYNAMIC_RANGE.length() + Equal_Sign.length()).front() - '0';
+        if (dynamicRange >= DYNAMIC_AUTO && dynamicRange <= DYNAMIC_HDR) {
+            decodeOpts.desiredDynamicRange = static_cast<DecodeDynamicRange>(dynamicRange);
+        }
+    }
+}
+
+unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, const Size& size, const string& uri)
 {
     MediaLibraryTracer tracer;
     tracer.Start("ImageSource::CreateImageSource");
@@ -649,7 +664,7 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, co
     bool isEqualsRatio = IfSizeEqualsRatio(imageInfo.size, size);
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize = isEqualsRatio ? size : imageInfo.size;
-    decodeOpts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    ParseDecodeOptionsFromUri(uri, decodeOpts);
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
     if (pixelMap == nullptr) {
         MEDIA_ERR_LOG("CreatePixelMap err %{public}d", err);
