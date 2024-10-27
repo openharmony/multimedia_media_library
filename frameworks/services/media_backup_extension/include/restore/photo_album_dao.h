@@ -19,8 +19,10 @@
 #include <vector>
 #include <algorithm>
 #include <cctype>
+#include <mutex>
 
 #include "rdb_store.h"
+#include "safe_map.h"
 
 namespace OHOS::Media {
 class PhotoAlbumDao {
@@ -36,8 +38,10 @@ public:
     };
 
 public:
-    PhotoAlbumDao(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb) : mediaLibraryRdb_(mediaLibraryRdb)
-    {}
+    void SetMediaLibraryRdb(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
+    {
+        this->mediaLibraryRdb_ = mediaLibraryRdb;
+    }
     std::vector<PhotoAlbumRowData> GetPhotoAlbums();
     PhotoAlbumRowData GetPhotoAlbum(const std::string &lPath);
     PhotoAlbumRowData GetOrCreatePhotoAlbum(const PhotoAlbumRowData &album);
@@ -57,7 +61,8 @@ private:
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
-    std::unordered_map<std::string, PhotoAlbumRowData> photoAlbumCache_;
+    OHOS::SafeMap<std::string, PhotoAlbumRowData> photoAlbumCache_;
+    std::mutex cacheLock_;
 
 private:
     const int32_t MAX_ALBUM_NAME_SEQUENCE = 1000;
