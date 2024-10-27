@@ -140,7 +140,7 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
     }
     ParseXml(xmlPath);
     this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
-    this->photosRestorePtr_->OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
+    this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -364,7 +364,7 @@ void UpgradeRestore::AnalyzeGalleryDuplicateData()
     int32_t total = 0;
     BackupDatabaseUtils::QueryGalleryDuplicateDataCount(galleryRdb_, count, total);
     MEDIA_INFO_LOG("Duplicate data count: %{public}d, total: %{public}d", count, total);
-    this->photosRestorePtr_->GetDuplicateData(count);
+    this->photosRestore_.GetDuplicateData(count);
 }
 
 void UpgradeRestore::AnalyzeGallerySource()
@@ -455,8 +455,7 @@ void UpgradeRestore::UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::Resul
 void UpgradeRestore::RestoreFromGallery()
 {
     HasLowQualityImage();
-    int32_t totalNumber =
-        this->photosRestorePtr_->GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
+    int32_t totalNumber = this->photosRestore_.GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
@@ -536,7 +535,7 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
         MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
         return result;
     }
-    auto resultSet = this->photosRestorePtr_->GetGalleryMedia(
+    auto resultSet = this->photosRestore_.GetGalleryMedia(
         offset, QUERY_COUNT, this->shouldIncludeSd_, this->hasLowQualityImage_);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
@@ -625,19 +624,20 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
 {
     // only parse image and video
     info.oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
-    if (this->photosRestorePtr_->IsDuplicateData(info.oldPath)) {
+    if (this->photosRestore_.IsDuplicateData(info.oldPath)) {
         MEDIA_ERR_LOG("Data duplicate and already used, path: %{public}s",
             BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str());
         return false;
     }
-    int32_t mediaType = GetInt32Val(GALLERY_MEDIA_TYPE, resultSet);
-    if (mediaType != DUAL_MEDIA_TYPE::IMAGE_TYPE && mediaType != DUAL_MEDIA_TYPE::VIDEO_TYPE) {
-        MEDIA_ERR_LOG("Invalid media type: %{public}d, path: %{public}s", mediaType,
+    info.displayName = GetStringVal(GALLERY_DISPLAY_NAME, resultSet);
+    info.fileType = GetInt32Val(GALLERY_MEDIA_TYPE, resultSet);
+    info.fileType = this->photosRestore_.FindMediaType(info);
+    if (info.fileType != MediaType::MEDIA_TYPE_IMAGE && info.fileType != MediaType::MEDIA_TYPE_VIDEO) {
+        MEDIA_ERR_LOG("Invalid media type: %{public}d, path: %{public}s",
+            info.fileType,
             BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str());
         return false;
     }
-    info.fileType = (mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) ?
-        MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
     info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet);
     if (info.fileSize < fileMinSize_ && dbName == EXTERNAL_DB_NAME) {
         MEDIA_WARN_LOG("maybe garbage path = %{public}s, minSize:%{public}d.",
@@ -651,7 +651,6 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
             BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str());
         return false;
     }
-    info.displayName = GetStringVal(GALLERY_DISPLAY_NAME, resultSet);
     info.title = GetStringVal(GALLERY_TITLE, resultSet);
     info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
@@ -696,10 +695,10 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.sourcePath = GetStringVal(GALLERY_MEDIA_SOURCE_PATH, resultSet);
     info.lPath = GetStringVal("lPath", resultSet);
     // Find lPath, bundleName, packageName by sourcePath, lPath
-    info.lPath = this->photosRestorePtr_->FindlPath(info);
-    info.bundleName = this->photosRestorePtr_->FindBundleName(info);
-    info.packageName = this->photosRestorePtr_->FindPackageName(info);
-    info.photoQuality = this->photosRestorePtr_->FindPhotoQuality(info);
+    info.lPath = this->photosRestore_.FindlPath(info);
+    info.bundleName = this->photosRestore_.FindBundleName(info);
+    info.packageName = this->photosRestore_.FindPackageName(info);
+    info.photoQuality = this->photosRestore_.FindPhotoQuality(info);
     return isSuccess;
 }
 
@@ -744,7 +743,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
         string fileName = fileInfo.displayName;
         MEDIA_WARN_LOG("the file :%{public}s is favorite.", BackupFileUtils::GarbleFileName(fileName).c_str());
     }
-    values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, this->photosRestorePtr_->FindDateTrashed(fileInfo));
+    values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, this->photosRestore_.FindDateTrashed(fileInfo));
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
     if (fileInfo.hidden != 0) {
         string fileName = fileInfo.displayName;
@@ -758,12 +757,12 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
-    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, this->photosRestorePtr_->FindSubtype(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestorePtr_->FindDirty(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestorePtr_->FindBurstCoverLevel(fileInfo));
-    values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestorePtr_->FindBurstKey(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, this->photosRestore_.FindSubtype(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestore_.FindBurstCoverLevel(fileInfo));
+    values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestore_.FindBurstKey(fileInfo));
     // find album_id by lPath.
-    values.PutInt("owner_album_id", this->photosRestorePtr_->FindAlbumId(fileInfo));
+    values.PutInt("owner_album_id", this->photosRestore_.FindAlbumId(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
     return values;
 }
@@ -805,7 +804,7 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
  */
 bool UpgradeRestore::HasSameFileForDualClone(FileInfo &fileInfo)
 {
-    PhotosDao::PhotosRowData rowData = this->photosRestorePtr_->FindSameFile(fileInfo);
+    PhotosDao::PhotosRowData rowData = this->photosRestore_.FindSameFile(fileInfo);
     int32_t fileId = rowData.fileId;
     std::string cloudPath = rowData.data;
     if (fileId <= 0 || cloudPath.empty()) {
