@@ -80,10 +80,16 @@ private:
             first_update_time, \
             datetaken, \
             detail_time, \
-            gallery_album.lPath \
+            photo_quality, \
+            CASE WHEN COALESCE(gallery_album.lPath, '') <> '' \
+                THEN gallery_album.lPath \
+                ELSE album_v2.lPath \
+            END AS lPath \
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
+            LEFT JOIN gallery_album AS album_v2 \
+            ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
         WHERE (local_media_id != -1) AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
