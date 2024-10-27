@@ -353,23 +353,23 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_zero_size, TestSiz
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_duplicate_data, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_duplicate_data start");
-    ASSERT_NE(restoreService->photosRestorePtr_, nullptr);
-    restoreService->photosRestorePtr_->galleryRdb_ = restoreService->galleryRdb_;
-    ASSERT_NE(restoreService->photosRestorePtr_->galleryRdb_, nullptr);
+    restoreService->photosRestore_.galleryRdb_ = restoreService->galleryRdb_;
+    ASSERT_NE(restoreService->photosRestore_.galleryRdb_, nullptr);
+ 
     restoreService->AnalyzeGalleryErrorSource();
-    size_t count = restoreService->photosRestorePtr_->duplicateDataUsedCountMap_.size();
+    size_t count = restoreService->photosRestore_.duplicateDataUsedCountMap_.size();
     MEDIA_INFO_LOG("count: %{public}zu", count);
     EXPECT_GT(count, 0); // has duplicate data
-
+ 
     string dataPath = "/storage/emulated/0/A/media/Rocket/test/duplicate_data.mp4";
-    bool isDuplicateData = restoreService->photosRestorePtr_->IsDuplicateData(dataPath);
+    bool isDuplicateData = restoreService->photosRestore_.IsDuplicateData(dataPath);
     MEDIA_INFO_LOG("check %{public}s: %{public}d", dataPath.c_str(), static_cast<int32_t>(isDuplicateData));
     EXPECT_EQ(isDuplicateData, false); // first time used, not duplicate
-    isDuplicateData = restoreService->photosRestorePtr_->IsDuplicateData(dataPath);
+    isDuplicateData = restoreService->photosRestore_.IsDuplicateData(dataPath);
     MEDIA_INFO_LOG("double check %{public}s: %{public}d", dataPath.c_str(), static_cast<int32_t>(isDuplicateData));
     EXPECT_EQ(isDuplicateData, true); // second time used, duplicate
     dataPath = "/storage/emulated/0/fake/fake.jpg";
-    isDuplicateData = restoreService->photosRestorePtr_->IsDuplicateData(dataPath);
+    isDuplicateData = restoreService->photosRestore_.IsDuplicateData(dataPath);
     MEDIA_INFO_LOG("check %{public}s: %{public}d", dataPath.c_str(), static_cast<int32_t>(isDuplicateData));
     EXPECT_EQ(isDuplicateData, false); // not exist in map, not duplicate
     MEDIA_INFO_LOG("medialib_backup_test_duplicate_data end");
