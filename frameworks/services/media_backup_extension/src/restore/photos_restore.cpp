@@ -98,15 +98,6 @@ PhotoAlbumDao::PhotoAlbumRowData PhotosRestore::FindAlbumInfo(const FileInfo &fi
     // Scenario 1, WHEN FileInfo is in /Pictures/Screenshots and Video type, THEN redirect to /Pictures/Screenrecords
     std::string lPathForScreenshot =
         fileInfo.lPath.empty() ? this->ParseSourcePathToLPath(fileInfo.sourcePath) : fileInfo.lPath;
-    if (fileInfo.lPath.empty() && !lPathForScreenshot.empty()) {
-        MEDIA_INFO_LOG(
-            "Media_Restore: fix lPath of screenshots album."
-            "fileInfo.lPath: %{public}s, lPathForScreenshot: %{public}s, lowercase: %{public}s, Object: %{public}s",
-            fileInfo.lPath.c_str(),
-            lPathForScreenshot.c_str(),
-            this->ToLower(lPathForScreenshot).c_str(),
-            this->ToString(fileInfo).c_str());
-    }
     if (this->ToLower(lPathForScreenshot) == this->ToLower(AlbumPlugin::LPATH_SCREEN_SHOTS) &&
         fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
         MEDIA_INFO_LOG("Media_Restore: screenshots redirect to screenrecords, fileInfo.lPath: %{public}s, "
@@ -114,8 +105,8 @@ PhotoAlbumDao::PhotoAlbumRowData PhotosRestore::FindAlbumInfo(const FileInfo &fi
             fileInfo.lPath.c_str(),
             lPathForScreenshot.c_str(),
             this->ToString(fileInfo).c_str());
-        albumInfo = this->photoAlbumDaoPtr_->BuildAlbumInfoOfRecorders();
-        albumInfo = this->photoAlbumDaoPtr_->GetOrCreatePhotoAlbum(albumInfo);
+        albumInfo = this->photoAlbumDao_.BuildAlbumInfoOfRecorders();
+        albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
         return albumInfo;
     }
     // Scenario 2, WHEN FileInfo is in hidden album, THEN override lPath to the folder in sourcePath.
@@ -123,10 +114,18 @@ PhotoAlbumDao::PhotoAlbumRowData PhotosRestore::FindAlbumInfo(const FileInfo &fi
     if (fileInfo.lPath.empty() || this->ToLower(fileInfo.lPath) == this->ToLower(GALLERT_HIDDEN_ALBUM)) {
         std::string lPathFromSourcePath = this->ParseSourcePathToLPath(fileInfo.sourcePath);
         albumInfo = this->BuildAlbumInfoByLPath(lPathFromSourcePath);
-        albumInfo = this->photoAlbumDaoPtr_->GetOrCreatePhotoAlbum(albumInfo);
+        albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
+        MEDIA_INFO_LOG("Media_Restore: fix lPath of album.fileInfo.lPath: %{public}s, "
+                       "lPathFromSourcePath: %{public}s, lowercase: %{public}s, "
+                       "FileInfo Object: %{public}s, AlbumInfo Object: %{public}s",
+            fileInfo.lPath.c_str(),
+            lPathFromSourcePath.c_str(),
+            this->ToLower(lPathFromSourcePath).c_str(),
+            this->ToString(fileInfo).c_str(),
+            this->photoAlbumDao_.ToString(albumInfo).c_str());
         return albumInfo;
     }
-    return this->photoAlbumDaoPtr_->GetPhotoAlbum(fileInfo.lPath);
+    return this->photoAlbumDao_.GetPhotoAlbum(fileInfo.lPath);
 }
 
 /**
@@ -307,5 +306,43 @@ int32_t PhotosRestore::FindPhotoQuality(const FileInfo &fileInfo)
         return 0;
     }
     return fileInfo.photoQuality;
+}
+
+/**
+ * @brief Find suffix of displayName. include dot, e.g. ".jpg"
+ * @return return the suffix of displayName. "" if not found.
+ */
+std::string PhotosRestore::GetSuffix(const std::string &displayName)
+{
+    size_t dotPos = displayName.rfind('.');
+    if (dotPos != std::string::npos) {
+        return this->ToLower(displayName.substr(dotPos));  // include dot, e.g. ".jpg"
+    }
+    return "";
+}
+
+/**
+ * @brief Find media_type by FileInfo.
+ */
+int32_t PhotosRestore::FindMediaType(const FileInfo &fileInfo)
+{
+    int32_t mediaType = fileInfo.fileType;
+    if (mediaType == DUAL_MEDIA_TYPE::IMAGE_TYPE || mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) {
+        return mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
+    }
+    std::string suffix = this->GetSuffix(fileInfo.displayName);
+    if (this->IMAGE_SUFFIX_SET.count(suffix) > 0) {
+        MEDIA_INFO_LOG("Media_Restore: correct mediaType to IMAGE_TYPE by suffix: %{public}s, Object: %{public}s",
+            suffix.c_str(),
+            this->ToString(fileInfo).c_str());
+        return MediaType::MEDIA_TYPE_IMAGE;
+    }
+    if (this->VIDEO_SUFFIX_SET.count(suffix) > 0) {
+        MEDIA_INFO_LOG("Media_Restore: correct mediaType to VIDEO_TYPE by suffix: %{public}s, Object: %{public}s",
+            suffix.c_str(),
+            this->ToString(fileInfo).c_str());
+        return MediaType::MEDIA_TYPE_VIDEO;
+    }
+    return mediaType;
 }
 }  // namespace OHOS::Media
