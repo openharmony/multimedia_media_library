@@ -189,7 +189,8 @@ int32_t OthersCloneRestore::Init(const std::string &backupRetoreDir, const std::
     MEDIA_INFO_LOG("GetCloneDb cost %{public}ld, recursively getting all files cost %{public}ld, phonesize:%{public}d, \
         audiosize:%{public}d", (long)(startCurrent - startGetInfo), (long)(end - startCurrent),
         (int)photoInfos_.size(), (int)audioInfos_.size());
-    this->photosRestorePtr_->OnStart(mediaLibraryRdb_, nullptr);
+    this->photoAlbumDao_.SetMediaLibraryRdb(this->mediaLibraryRdb_);
+    this->photosRestore_.OnStart(this->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("Init end");
     return E_OK;
 }
@@ -515,12 +516,7 @@ bool OthersCloneRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb:
 
 void OthersCloneRestore::RestoreAlbum(std::vector<FileInfo> &fileInfos)
 {
-    photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(mediaLibraryRdb_);
-    if (!photoAlbumDaoPtr_) {
-        MEDIA_ERR_LOG("photoAlbumDaoPtr_ is null");
-        return;
-    }
-    std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfos = photoAlbumDaoPtr_->GetPhotoAlbums();
+    std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfos = this->photoAlbumDao_.GetPhotoAlbums();
     std::vector<PhotoAlbumRestore::GalleryAlbumRowData> galleryAlbumInfos;
     if (sceneCode_ == I_PHONE_CLONE_RESTORE) {
         PhotoAlbumRestore::GalleryAlbumRowData galleryAlbum;
@@ -537,7 +533,7 @@ void OthersCloneRestore::RestoreAlbum(std::vector<FileInfo> &fileInfos)
     }
     std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfosToRestore =
         photoAlbumRestore_.GetAlbumsToRestore(albumInfos, galleryAlbumInfos);
-    auto ret =  photoAlbumDaoPtr_->RestoreAlbums(albumInfosToRestore);
+    auto ret =  photoAlbumDao_.RestoreAlbums(albumInfosToRestore);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to RestoreAlbums : %{public}d", ret);
     }
@@ -545,7 +541,7 @@ void OthersCloneRestore::RestoreAlbum(std::vector<FileInfo> &fileInfos)
 
 bool OthersCloneRestore::HasSameFileForDualClone(FileInfo &fileInfo)
 {
-    PhotosDao::PhotosRowData rowData = this->photosRestorePtr_->FindSameFile(fileInfo);
+    PhotosDao::PhotosRowData rowData = this->photosRestore_.FindSameFile(fileInfo);
     int32_t fileId = rowData.fileId;
     std::string cloudPath = rowData.data;
     if (fileId <= 0 || cloudPath.empty()) {
@@ -559,14 +555,14 @@ bool OthersCloneRestore::HasSameFileForDualClone(FileInfo &fileInfo)
 void OthersCloneRestore::UpdateAlbumInfo(FileInfo &info)
 {
     if (sceneCode_ == I_PHONE_CLONE_RESTORE) {
-        PhotoAlbumDao::PhotoAlbumRowData albumInfo = photoAlbumDaoPtr_->GetPhotoAlbum(I_PHONE_LPATH + clonePhoneName_);
+        PhotoAlbumDao::PhotoAlbumRowData albumInfo = photoAlbumDao_.GetPhotoAlbum(I_PHONE_LPATH + clonePhoneName_);
         info.lPath = I_PHONE_LPATH + clonePhoneName_;
         info.mediaAlbumId = albumInfo.albumId;
         info.ownerAlbumId = albumInfo.albumId;
         info.packageName = clonePhoneName_;
         info.bundleName = clonePhoneName_;
     } else if (sceneCode_ == OTHERS_PHONE_CLONE_RESTORE) {
-        PhotoAlbumDao::PhotoAlbumRowData albumInfo = photoAlbumDaoPtr_->GetPhotoAlbum(info.lPath);
+        PhotoAlbumDao::PhotoAlbumRowData albumInfo = photoAlbumDao_.GetPhotoAlbum(info.lPath);
         info.mediaAlbumId = albumInfo.albumId;
         info.ownerAlbumId = albumInfo.albumId;
     }
