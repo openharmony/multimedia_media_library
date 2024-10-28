@@ -337,6 +337,31 @@ int64_t InsertPhoto(double_t latitude, double_t longitude)
     return fileId;
 }
 
+int32_t InsertGeoKnowledge(double_t latitude, double_t longitude, const string &language)
+{
+    MEDIA_INFO_LOG("InsertGeoKnowledge::Start");
+    Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
+    MediaLibraryCommand cmd(geoKnowledgeUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(LATITUDE, latitude);
+    valuesBucket.Put(LONGITUDE, longitude);
+    const int64_t locationKey = 131048514448;
+    valuesBucket.Put(LOCATION_KEY, locationKey);
+    valuesBucket.Put(LANGUAGE, language);
+    valuesBucket.Put(COUNTRY, "中国");
+    valuesBucket.Put(CITY_ID, "1064019431304993816");
+    valuesBucket.Put(ADMIN_AREA, "广东省");
+    valuesBucket.Put(LOCALITY, "深圳市");
+    valuesBucket.Put(SUB_LOCALITY, "南山区");
+    valuesBucket.Put(THOROUGHFARE, "科苑南路");
+    valuesBucket.Put(SUB_THOROUGHFARE, "2600号");
+    valuesBucket.Put(CITY_NAME, "深圳市");
+    valuesBucket.Put(ADDRESS_DESCRIPTION, "广东省深圳市南山区粤海街道深圳人才公园");
+    int32_t retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    MEDIA_INFO_LOG("InsertGeoKnowledge::End, retVal = %{public}d", retVal);
+    return retVal;
+}
+
 HWTEST_F(MediaLibraryLocationTest, Location_QueryGeo_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Location_QueryGeo_Test_001::Start");
@@ -344,17 +369,19 @@ HWTEST_F(MediaLibraryLocationTest, Location_QueryGeo_Test_001, TestSize.Level0)
     double_t longitude = 113.946701049722;
     int64_t fileId = InsertPhoto(latitude, longitude);
     EXPECT_GT(fileId, 0);
+    string language = Global::I18n::LocaleConfig::GetSystemLanguage();
+    int32_t retVal = InsertGeoKnowledge(latitude, longitude, language);
+    EXPECT_GT(retVal, 0);
 
     Uri cmdUri(PAH_QUERY_ANA_ADDRESS);
     MediaLibraryCommand cmd(cmdUri);
     vector<string> columns{ PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE,
         ADDRESS_DESCRIPTION };
     DataShare::DataSharePredicates predicates;
-    string language = Global::I18n::LocaleConfig::GetSystemLanguage();
     vector<string> clause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = " +
         GEO_KNOWLEDGE_TABLE + "." + LATITUDE + " AND " + PhotoColumn::PHOTOS_TABLE + "." +
         PhotoColumn::PHOTO_LONGITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LONGITUDE + " AND " + GEO_KNOWLEDGE_TABLE +
-        "." + LANGUAGE + " = \"" + language + "\"" };
+        "." + LANGUAGE + " = \'" + language + "\'" };
     predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(clause);
     predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, to_string(fileId));
     int errCode = 0;
@@ -368,23 +395,6 @@ HWTEST_F(MediaLibraryLocationTest, Location_QueryGeo_Test_001, TestSize.Level0)
     double_t queryLongitude = GetDoubleVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, resultSet);
     EXPECT_EQ(queryLongitude, longitude);
     string addressDescription = GetStringVal(ADDRESS_DESCRIPTION, resultSet);
-    EXPECT_EQ(addressDescription.empty(), false);
-
-    Uri geoKnowUri(URI_GEO_KEOWLEDGE);
-    MediaLibraryCommand geoKnowCmd(geoKnowUri);
-    columns = { ADDRESS_DESCRIPTION };
-    DataShare::DataSharePredicates geoPredicates;
-    geoPredicates.EqualTo(LATITUDE, to_string(latitude));
-    geoPredicates.And();
-    geoPredicates.EqualTo(LONGITUDE, to_string(longitude));
-    geoPredicates.And();
-    geoPredicates.EqualTo(LANGUAGE, language);
-    queryResultSet = MediaLibraryDataManager::GetInstance()->Query(geoKnowCmd, columns, geoPredicates, errCode);
-    EXPECT_NE(queryResultSet, nullptr);
-    resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
-    EXPECT_NE(resultSet, nullptr);
-    EXPECT_EQ(resultSet->GoToNextRow(), NativeRdb::E_OK);
-    addressDescription = GetStringVal(ADDRESS_DESCRIPTION, resultSet);
     EXPECT_EQ(addressDescription.empty(), false);
     MEDIA_INFO_LOG("Location_QueryGeo_Test_001::End");
 }
