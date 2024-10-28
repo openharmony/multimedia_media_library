@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define MLOG_TAG "MtpMedialibraryManager"
 #include "mtp_medialibrary_manager.h"
 
 #include <unistd.h>
@@ -28,6 +28,7 @@
 #include "media_log.h"
 #include "media_smart_map_column.h"
 #include "system_ability_definition.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 

@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "MtpOperation"
 #include "mtp_operation.h"
 #include <algorithm>
 #include "header_data.h"
@@ -103,6 +104,8 @@ void MtpOperation::SendMakeResponsePacket(int &errorCode)
 {
     responsePacketPtr_->Reset();
     GetPayloadData(mtpContextPtr_, dataPayloadData_, RESPONSE_CONTAINER_TYPE, errorCode);
+    MEDIA_INFO_LOG("operation = [0x%{public}x : %{public}s ]", mtpContextPtr_->operationCode,
+        MtpPacketTool::GetOperationName(mtpContextPtr_->operationCode).c_str());
     shared_ptr<HeaderData> responseHeaderData = make_shared<HeaderData>(
         RESPONSE_CONTAINER_TYPE, responseCode_, mtpContextPtr_->transactionID);
 
@@ -163,6 +166,8 @@ void MtpOperation::SendR2Idata(int &errorCode)
     }
 
     responseCode_ = GetPayloadData(mtpContextPtr_, dataPayloadData_, DATA_CONTAINER_TYPE, errorCode);
+    MEDIA_INFO_LOG("operation = [0x%{public}x : %{public}s ]", mtpContextPtr_->operationCode,
+        MtpPacketTool::GetOperationName(mtpContextPtr_->operationCode).c_str());
     if (errorCode != MTP_SUCCESS) {
         MEDIA_ERR_LOG("GetPayloadData fail err: %{public}d", errorCode);
         return;
