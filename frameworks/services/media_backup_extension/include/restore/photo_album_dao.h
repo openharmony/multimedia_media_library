@@ -63,6 +63,7 @@ private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     OHOS::SafeMap<std::string, PhotoAlbumRowData> photoAlbumCache_;
     std::mutex cacheLock_;
+    std::mutex photoAlbumCreateLock_;
 
 private:
     const int32_t MAX_ALBUM_NAME_SEQUENCE = 1000;

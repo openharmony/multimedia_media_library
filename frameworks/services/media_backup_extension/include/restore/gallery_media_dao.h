@@ -40,6 +40,8 @@ private:
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
+            LEFT JOIN gallery_album AS album_v2 \
+            ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
         WHERE (local_media_id != -1) AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
