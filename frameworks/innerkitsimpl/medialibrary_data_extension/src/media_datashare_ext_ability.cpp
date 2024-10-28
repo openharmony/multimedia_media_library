@@ -63,6 +63,7 @@
 #include "read_write_permission_handler.h"
 #include "db_permission_handler.h"
 #include "userfilemgr_uri.h"
+#include "mtp_manager.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -133,6 +134,14 @@ void MediaDataShareExtAbility::InitPermissionHandler()
     MEDIA_DEBUG_LOG("InitPermissionHandler end:permissionHandler_=%{public}d", permissionHandler_ != nullptr);
 }
 
+void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
+{
+    MultiStagesPhotoCaptureManager::GetInstance().Init();
+    MultiStagesVideoCaptureManager::GetInstance().Init();
+    MtpManager::GetInstance().Init();
+    EnhancementManager::GetInstance().InitAsync();
+}
+
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 {
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
@@ -179,10 +188,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
         return;
     }
 
-    MultiStagesPhotoCaptureManager::GetInstance().Init();
-    MultiStagesVideoCaptureManager::GetInstance().Init();
-
-    EnhancementManager::GetInstance().InitAsync();
+    OnStartSub(want);
 
     Media::MedialibrarySubscriber::Subscribe();
     dataManager->SetStartupParameter();
