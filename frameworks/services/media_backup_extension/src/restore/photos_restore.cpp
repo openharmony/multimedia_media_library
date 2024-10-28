@@ -343,6 +343,6 @@ int32_t PhotosRestore::FindMediaType(const FileInfo &fileInfo)
             this->ToString(fileInfo).c_str());
         return MediaType::MEDIA_TYPE_VIDEO;
     }
-    return mediaType;
+    return MediaType::MEDIA_TYPE_DEFAULT;
 }
 }  // namespace OHOS::Media
