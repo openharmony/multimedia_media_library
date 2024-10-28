@@ -26,12 +26,15 @@ public:
 
 private:
     int32_t AddPhotoQualityOfGalleryMedia(NativeRdb::RdbStore &store);
+    int32_t AddRelativeBucketIdOfGalleryAlbum(NativeRdb::RdbStore &store);
 
 private:
     // Note: The column photo_quality's default value is 0.
     // But we should set it to 1 for the existing data.
     const std::string SQL_GALLERY_MEDIA_TABLE_ADD_PHOTO_QUALITY = "\
         ALTER TABLE gallery_media ADD COLUMN photo_quality INTEGER DEFAULT 1;";
+    const std::string SQL_GALLERY_ALBUM_TABLE_ADD_RELATIVE_BUCKET_ID = "\
+        ALTER TABLE gallery_album ADD COLUMN relativeBucketId TEXT;";
 
 private:
     DbUpgradeUtils dbUpgradeUtils_;

@@ -30,7 +30,8 @@ int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     AlbumPluginTableEventHandler handler;
     int32_t ret = handler.OnUpgrade(store, 0, 0);
     MEDIA_INFO_LOG("GalleryDbUpgrade::OnUpgrade end, ret: %{public}d", ret);
-    return this->AddPhotoQualityOfGalleryMedia(store);
+    this->AddPhotoQualityOfGalleryMedia(store);
+    return this->AddRelativeBucketIdOfGalleryAlbum(store);
 }
 
 /**
@@ -50,6 +51,26 @@ int32_t GalleryDbUpgrade::AddPhotoQualityOfGalleryMedia(NativeRdb::RdbStore &sto
             sql.c_str());
     }
     MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddPhotoQualityOfGalleryMedia success");
+    return ret;
+}
+
+/**
+ * @brief Add relativeBucketId of gallery_album table in gallery.db if not exists.
+ */
+int32_t GalleryDbUpgrade::AddRelativeBucketIdOfGalleryAlbum(NativeRdb::RdbStore &store)
+{
+    if (this->dbUpgradeUtils_.IsColumnExists(store, "gallery_album", "relativeBucketId")) {
+        return NativeRdb::E_OK;
+    }
+    std::string sql = this->SQL_GALLERY_ALBUM_TABLE_ADD_RELATIVE_BUCKET_ID;
+    int32_t ret = store.ExecuteSql(sql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG(
+            "Media_Restore: GalleryDbUpgrade::AddRelativeBucketIdOfGalleryAlbum failed, ret=%{public}d, sql=%{public}s",
+            ret,
+            sql.c_str());
+    }
+    MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddRelativeBucketIdOfGalleryAlbum success");
     return ret;
 }
 }  // namespace DataTransfer

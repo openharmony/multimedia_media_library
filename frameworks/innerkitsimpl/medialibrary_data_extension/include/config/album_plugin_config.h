@@ -159,7 +159,7 @@ const std::vector<AlbumPluginRowData> ALBUM_PLUGIN_DATA = {
     {"/qsbk/qiushibaike", "糗事百科", "qiushibaike", "", "", ""},
     {"/tencent/QQ_Favorite", "QQ表情", "QQ Favorite", "", "", ".QQ_Favorite"},
     {"/tencent/QQ_Images", "QQ", "QQ Images", "", "default-album-101", ".QQ_Images", 0},
-    {"/Pictrures/QQ", "QQ", "QQ Images", "", "default-album-101", ".QQ_Images"},
+    {"/Pictures/QQ", "QQ", "QQ Images", "", "default-album-101", ".QQ_Images"},
     {"/QQBrowser/图片收藏", "QQ浏览器", "QQBrowser", "com.tencent.mtthm", "", ""},
     {"/QQMail", "QQ邮箱", "QQMail", "", "", ".QQMail", 0},
     {"/Download/QQMail", "QQ邮箱", "QQMail", "", "", ".QQMail"},

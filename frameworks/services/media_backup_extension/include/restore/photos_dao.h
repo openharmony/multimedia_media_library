@@ -37,8 +37,10 @@ public:
     };
 
 public:
-    explicit PhotosDao(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb) : mediaLibraryRdb_(mediaLibraryRdb)
-    {}
+    void SetMediaLibraryRdb(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
+    {
+        this->mediaLibraryRdb_ = mediaLibraryRdb;
+    }
     /**
      * @brief Find same file info by lPath, displayName, size, orientation.
      * lPath - if original fileInfo's lPath is empty, it will be ignored.

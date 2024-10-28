@@ -130,7 +130,7 @@ private:
     int32_t mediaScreenreCorderAlbumId_{-1};
     bool shouldIncludeSd_{false};
     PhotoAlbumRestore photoAlbumRestore_;
-    std::shared_ptr<PhotosRestore> photosRestorePtr_ = std::make_shared<PhotosRestore>(this->photoAlbumRestore_);
+    PhotosRestore photosRestore_;
     TabOldPhotosRestore tabOldPhotosRestore_;
 };
 } // namespace Media

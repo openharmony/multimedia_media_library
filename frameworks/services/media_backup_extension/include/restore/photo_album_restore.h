@@ -40,7 +40,7 @@ public:
     {
         this->mediaLibraryRdb_ = mediaLibraryRdb;
         this->galleryRdb_ = galleryRdb;
-        this->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(this->mediaLibraryRdb_);
+        this->photoAlbumDao_.SetMediaLibraryRdb(mediaLibraryRdb);
     }
 
     void TRACE_LOG(std::vector<GalleryAlbumRowData> &galleryAlbumInfos)
@@ -88,26 +88,27 @@ public:
         std::vector<GalleryAlbumRowData> galleryAlbumInfos = this->GetGalleryAlbums();
         TRACE_LOG(galleryAlbumInfos);
         // fetch all albums from mediaLibraryRdb
-        std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfos = this->photoAlbumDaoPtr_->GetPhotoAlbums();
+        std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfos = this->photoAlbumDao_.GetPhotoAlbums();
         TRACE_LOG(albumInfos);
         // compare albums to find the album that need to be restored
         std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfosToRestore =
             this->GetAlbumsToRestore(albumInfos, galleryAlbumInfos);
         TRACE_LOG(albumInfosToRestore);
         // restore albums
-        return this->photoAlbumDaoPtr_->RestoreAlbums(albumInfosToRestore);
+        return this->photoAlbumDao_.RestoreAlbums(albumInfosToRestore);
     }
 
     std::vector<PhotoAlbumDao::PhotoAlbumRowData> GetAlbumsToRestore(
         const std::vector<PhotoAlbumDao::PhotoAlbumRowData> &photoAlbums,
         const std::vector<GalleryAlbumRowData> &galleryAlbums);
+
 private:
     std::vector<GalleryAlbumRowData> GetGalleryAlbums();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
-    std::shared_ptr<PhotoAlbumDao> photoAlbumDaoPtr_;
+    PhotoAlbumDao photoAlbumDao_;
 
 private:
     const std::string GALLERY_ALBUM_NAME = "albumName";

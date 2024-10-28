@@ -23,6 +23,7 @@
 #include "album_plugin_config.h"
 #include "userfile_manager_types.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_rdb_transaction.h"
 
 namespace OHOS::Media {
 std::string StringUtils::ToLower(const std::string &str)
@@ -46,7 +47,7 @@ bool PhotoAlbumDao::CheckAlbumNameUnique(const std::string &albumName, const std
     }
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, bindArgs);
     if (resultSet == nullptr || resultSet->GoToNextRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
+        MEDIA_ERR_LOG("Media_Restore: Query resultSql is null.");
         return true;
     }
     int32_t count = GetInt32Val("count", resultSet);
@@ -59,13 +60,13 @@ bool PhotoAlbumDao::CheckAlbumNameUnique(const std::string &albumName, const std
 std::string PhotoAlbumDao::FindUniqueAlbumName(const PhotoAlbumDao::PhotoAlbumRowData &photoAlbum)
 {
     if (photoAlbum.lPath.empty() || photoAlbum.albumName.empty()) {
-        MEDIA_ERR_LOG("Invalid album data");
+        MEDIA_ERR_LOG("Media_Restore: Invalid album data");
         return "";
     }
     const std::string lPath = photoAlbum.lPath;
     // The PhotoAlbum is cached.
-    if (this->photoAlbumCache_.count(StringUtils::ToLower(lPath)) > 0) {
-        PhotoAlbumDao::PhotoAlbumRowData albumDataInCache = this->photoAlbumCache_[StringUtils::ToLower(lPath)];
+    PhotoAlbumDao::PhotoAlbumRowData albumDataInCache;
+    if (this->photoAlbumCache_.Find(StringUtils::ToLower(lPath), albumDataInCache)) {
         return albumDataInCache.albumName;
     }
     // Check if the album name is unique.
@@ -77,7 +78,7 @@ std::string PhotoAlbumDao::FindUniqueAlbumName(const PhotoAlbumDao::PhotoAlbumRo
         sequence++;
         isUnique = this->CheckAlbumNameUnique(albumName, photoAlbum.lPath);
     }
-    MEDIA_INFO_LOG("FindUniqueAlbumName, old albumName: %{public}s, albumName: %{public}s, lPath: %{public}s",
+    MEDIA_INFO_LOG("Media_Restore: FindUniqueAlbumName, old name: %{public}s, new name: %{public}s, lPath: %{public}s",
         photoAlbum.albumName.c_str(),
         albumName.c_str(),
         photoAlbum.lPath.c_str());
@@ -102,7 +103,7 @@ std::vector<PhotoAlbumDao::PhotoAlbumRowData> PhotoAlbumDao::GetPhotoAlbums()
         }
         auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, bindArgs);
         if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Query resultSql is null.");
+            MEDIA_ERR_LOG("Media_Restore: Query resultSql is null.");
             break;
         }
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -128,15 +129,16 @@ std::vector<PhotoAlbumDao::PhotoAlbumRowData> PhotoAlbumDao::GetPhotoAlbums()
  */
 PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string &lPath)
 {
+    std::unique_lock<std::mutex> lock(this->cacheLock_);
     // find the PhotoAlbum info by lPath in cache
-    if (this->photoAlbumCache_.count(StringUtils::ToLower(lPath)) > 0) {
-        return this->photoAlbumCache_[StringUtils::ToLower(lPath)];
+    PhotoAlbumDao::PhotoAlbumRowData albumRowData;
+    if (this->photoAlbumCache_.Find(StringUtils::ToLower(lPath), albumRowData)) {
+        return albumRowData;
     }
     MEDIA_INFO_LOG("Media_Restore: can not find the PhotoAlbum info by lPath in cache."
                    " lPath=%{public}s, lPath in cache=%{public}s",
         lPath.c_str(),
         StringUtils::ToLower(lPath).c_str());
-    PhotoAlbumDao::PhotoAlbumRowData albumRowData;
     // query the PhotoAlbum info by lPath from PhotoAlbum table
     std::vector<NativeRdb::ValueObject> bindArgs = {lPath};
     std::string querySql = this->SQL_PHOTO_ALBUM_SELECT_BY_LPATH;
@@ -158,7 +160,11 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
     albumRowData.lPath = GetStringVal(this->FIELD_NAME_LPATH, resultSet);
     albumRowData.priority = GetInt32Val(this->FIELD_NAME_PRIORITY, resultSet);
     // cache the PhotoAlbum info by lPath
-    this->photoAlbumCache_[StringUtils::ToLower(lPath)] = albumRowData;
+    this->photoAlbumCache_.Insert(StringUtils::ToLower(lPath), albumRowData);
+    MEDIA_INFO_LOG("Media_Restore: add the PhotoAlbum info by lPath into cache."
+                   " lPath=%{public}s, lPath in cache=%{public}s",
+        lPath.c_str(),
+        StringUtils::ToLower(albumRowData.lPath).c_str());
     return albumRowData;
 }
 
@@ -170,8 +176,11 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const Phot
     // validate inputs
     PhotoAlbumDao::PhotoAlbumRowData result;
     if (album.lPath.empty()) {
+        MEDIA_ERR_LOG(
+            "Media_Restore: Invalid album data, lPath is empty. Object: %{public}s", this->ToString(album).c_str());
         return result;
     }
+    std::unique_lock<std::mutex> lock(this->photoAlbumCreateLock_);
     // try to get from cache
     PhotoAlbumDao::PhotoAlbumRowData albumRowData = this->GetPhotoAlbum(album.lPath);
     if (!albumRowData.lPath.empty()) {
@@ -184,14 +193,24 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const Phot
         MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
         return result;
     }
-    auto err = this->mediaLibraryRdb_->ExecuteSql(this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("INSERT INTO PhotoAlbum failed, err = %{public}d", err);
+    TransactionOperations transactionOprn(this->mediaLibraryRdb_);
+    auto errCode = transactionOprn.Start(true);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG(
+            "Media_Restore: INSERT INTO PhotoAlbum failed, can not get rdb transaction. err = %{public}d", errCode);
         return result;
     }
-    MEDIA_INFO_LOG("INSERT INTO PhotoAlbum success, albumName = %{public}s, lPath = %{public}s",
-        album.albumName.c_str(),
-        album.lPath.c_str());
+    auto err = this->mediaLibraryRdb_->ExecuteSql(this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Media_Restore: INSERT INTO PhotoAlbum failed, err = %{public}d, executeSql = %{public}s, "
+                      "bindArgs = %{public}s",
+            err,
+            this->SQL_PHOTO_ALBUM_INSERT.c_str(),
+            this->ToString(bindArgs).c_str());
+        return result;
+    }
+    transactionOprn.Finish();
+    MEDIA_INFO_LOG("Media_Restore: INSERT INTO PhotoAlbum success, Object: %{public}s", this->ToString(album).c_str());
     return this->GetPhotoAlbum(album.lPath);
 }
 
@@ -212,7 +231,7 @@ std::string PhotoAlbumDao::ToString(const std::vector<NativeRdb::ValueObject> &b
 int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowData> &photoAlbums)
 {
     if (photoAlbums.empty()) {
-        MEDIA_INFO_LOG("albumInfos are empty");
+        MEDIA_INFO_LOG("Media_Restore: albumInfos are empty");
         return NativeRdb::E_OK;
     }
     int32_t err = NativeRdb::E_OK;
@@ -220,7 +239,6 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
         MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
         return E_FAIL;
     }
-    this->mediaLibraryRdb_->BeginTransaction();
     for (const PhotoAlbumDao::PhotoAlbumRowData &data : photoAlbums) {
         std::vector<NativeRdb::ValueObject> bindArgs = {
             data.albumType, data.albumSubType, data.albumName, data.bundleName, data.lPath, data.priority};
@@ -231,12 +249,10 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
                 err,
                 this->SQL_PHOTO_ALBUM_INSERT.c_str(),
                 this->ToString(bindArgs).c_str());
-            this->mediaLibraryRdb_->RollBack();
-            return err;
         }
     }
-    this->mediaLibraryRdb_->Commit();
-    MEDIA_INFO_LOG("restore albums success, %{public}d albums", static_cast<int32_t>(photoAlbums.size()));
+    MEDIA_INFO_LOG(
+        "Media_Restore: restore albums success, %{public}d albums", static_cast<int32_t>(photoAlbums.size()));
     return NativeRdb::E_OK;
 }
 
