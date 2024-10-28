@@ -26,6 +26,7 @@ public:
 
 private:
     int32_t AddPhotoQualityOfGalleryMedia(NativeRdb::RdbStore &store);
+    int32_t AddRelativeBucketIdOfGalleryAlbum(NativeRdb::RdbStore &store);
 
 private:
     // Note: The column photo_quality's default value is 0.
