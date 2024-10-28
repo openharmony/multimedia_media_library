@@ -34,9 +34,9 @@ public:
     {
         this->mediaLibraryTargetRdb_ = mediaLibraryTargetRdb;
         this->mediaLibraryOriginalRdb_ = mediaLibraryOriginalRdb;
-        this->photosDaoPtr_ = std::make_shared<PhotosDao>(mediaLibraryTargetRdb);
-        this->photosBasicInfo_ = this->photosDaoPtr_->GetBasicInfo();
-        this->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(mediaLibraryTargetRdb);
+        this->photosDao_.SetMediaLibraryRdb(mediaLibraryTargetRdb);
+        this->photosBasicInfo_ = this->photosDao_.GetBasicInfo();
+        this->photoAlbumDao_.SetMediaLibraryRdb(mediaLibraryTargetRdb);
         return 0;
     }
 
@@ -51,7 +51,7 @@ public:
     PhotosDao::PhotosRowData FindSameFile(const FileInfo &fileInfo)
     {
         int32_t maxFileId = this->photosBasicInfo_.maxFileId;
-        return this->photosDaoPtr_->FindSameFile(fileInfo, maxFileId);
+        return this->photosDao_.FindSameFile(fileInfo, maxFileId);
     }
 
     std::shared_ptr<NativeRdb::ResultSet> GetPhotosInPhotoMap(int32_t offset, int32_t pageSize);
@@ -80,8 +80,8 @@ private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryTargetRdb_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryOriginalRdb_;
     PhotosDao::PhotosBasicInfo photosBasicInfo_;
-    std::shared_ptr<PhotosDao> photosDaoPtr_ = nullptr;
-    std::shared_ptr<PhotoAlbumDao> photoAlbumDaoPtr_ = nullptr;
+    PhotosDao photosDao_;
+    PhotoAlbumDao photoAlbumDao_;
 
 private:
     std::string SQL_PHOTOS_TABLE_COUNT_IN_PHOTO_MAP = "\

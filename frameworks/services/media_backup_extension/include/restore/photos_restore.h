@@ -17,6 +17,8 @@
 
 #include <mutex>
 #include <string>
+#include <sstream>
+#include <unordered_set>
 
 #include "rdb_store.h"
 #include "photo_album_restore.h"
@@ -27,8 +29,6 @@
 namespace OHOS::Media {
 class PhotosRestore {
 public:
-    PhotosRestore(PhotoAlbumRestore &albumRestore) : photoAlbumRestore_(albumRestore)
-    {}
     /**
      * @brief Restore Start Event Handler.
      */
@@ -36,16 +36,16 @@ public:
     {
         this->mediaLibraryRdb_ = mediaLibraryRdb;
         this->galleryRdb_ = galleryRdb;
-        this->photosDaoPtr_ = std::make_shared<PhotosDao>(mediaLibraryRdb);
-        this->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(mediaLibraryRdb);
-        this->photosBasicInfo_ = this->photosDaoPtr_->GetBasicInfo();
+        this->photosDao_.SetMediaLibraryRdb(mediaLibraryRdb);
+        this->photoAlbumDao_.SetMediaLibraryRdb(mediaLibraryRdb);
+        this->photosBasicInfo_ = this->photosDao_.GetBasicInfo();
         this->galleryMediaDao_.SetGalleryRdb(galleryRdb);
     }
 
     PhotosDao::PhotosRowData FindSameFile(const FileInfo &fileInfo)
     {
         int32_t maxFileId = this->photosBasicInfo_.maxFileId;
-        return this->photosDaoPtr_->FindSameFile(fileInfo, maxFileId);
+        return this->photosDao_.FindSameFile(fileInfo, maxFileId);
     }
 
     std::shared_ptr<NativeRdb::ResultSet> GetGalleryMedia(
@@ -65,6 +65,7 @@ public:
     int32_t FindBurstCoverLevel(const FileInfo &fileInfo);
     int64_t FindDateTrashed(const FileInfo &fileInfo);
     int32_t FindPhotoQuality(const FileInfo &fileInfo);
+    int32_t FindMediaType(const FileInfo &fileInfo);
 
 private:
     std::string ParseSourcePathToLPath(const std::string &sourcePath);
@@ -79,19 +80,21 @@ private:
     }
     std::string ToString(const FileInfo &fileInfo)
     {
-        return "FileInfo[ fileId: " + std::to_string(fileInfo.fileIdOld) + ", displayName: " + fileInfo.displayName +
-               ", bundleName: " + fileInfo.bundleName + ", lPath: " + fileInfo.lPath +
-               ", size: " + std::to_string(fileInfo.fileSize) + ", fileType: " + std::to_string(fileInfo.fileType) +
-               " ]";
+        std::stringstream ss;
+        ss << "FileInfo[ fileId: " << fileInfo.fileIdOld << ", displayName: " << fileInfo.displayName
+           << ", bundleName: " << fileInfo.bundleName << ", lPath: " << fileInfo.lPath
+           << ", size: " << fileInfo.fileSize << ", fileType: " << fileInfo.fileType
+           << ", oldPath: " << fileInfo.oldPath << ", sourcePath: " << fileInfo.sourcePath << " ]";
+        return ss.str();
     }
+    std::string GetSuffix(const std::string &displayName);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     PhotosDao::PhotosBasicInfo photosBasicInfo_;
-    PhotoAlbumRestore photoAlbumRestore_;
-    std::shared_ptr<PhotosDao> photosDaoPtr_ = nullptr;
-    std::shared_ptr<PhotoAlbumDao> photoAlbumDaoPtr_;
+    PhotosDao photosDao_;
+    PhotoAlbumDao photoAlbumDao_;
     std::mutex duplicateDataUsedCountMutex_;
     std::unordered_map<std::string, int32_t> duplicateDataUsedCountMap_;
     GalleryMediaDao galleryMediaDao_;
@@ -103,6 +106,10 @@ private:
         GROUP BY _data \
         HAVING count(1) > 1 \
         LIMIT ?, ?;";
+    const std::unordered_set<std::string> IMAGE_SUFFIX_SET = {
+        ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".webp", ".svg"};
+    const std::unordered_set<std::string> VIDEO_SUFFIX_SET = {
+        ".avi", ".mp4", ".mov", ".mkv", ".flv", ".wmv", ".3gp", ".3g2", ".swf", ".vo", ".mpg", ".m4v"};
 };
 }  // namespace OHOS::Media
 

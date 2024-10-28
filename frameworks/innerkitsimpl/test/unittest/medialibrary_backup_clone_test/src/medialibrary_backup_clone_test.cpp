@@ -1355,7 +1355,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAl
 
     std::vector<FileInfo> fileInfos;
     othersClone->RestoreAlbum(fileInfos);
-    EXPECT_FALSE(othersClone->photoAlbumDaoPtr_->mediaLibraryRdb_ == nullptr);
+    EXPECT_FALSE(othersClone->photoAlbumDao_.mediaLibraryRdb_ == nullptr);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAlbum_002, TestSize.Level0)
@@ -1367,7 +1367,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAl
     
     std::vector<FileInfo> fileInfos;
     othersClone->RestoreAlbum(fileInfos);
-    EXPECT_TRUE(othersClone->photoAlbumDaoPtr_->mediaLibraryRdb_ == nullptr);
+    EXPECT_TRUE(othersClone->photoAlbumDao_.mediaLibraryRdb_ == nullptr);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFileForDualClone_001, TestSize.Level0)
@@ -1387,7 +1387,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFi
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
 
-    othersClone->photosRestorePtr_->OnStart(store, store);
+    othersClone->photosRestore_.OnStart(store, store);
     
     EXPECT_FALSE(othersClone->HasSameFileForDualClone(fileInfo));
 }
@@ -1415,8 +1415,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFi
     store->ExecuteSql(string("INSERT INTO Photos (file_id, data, display_name, size, owner_album_id") +
         ") VALUES (1, 'test', 'test.jpg', 100, 0)");
 
-    othersClone->photosRestorePtr_->photosBasicInfo_.maxFileId = 100;
-    othersClone->photosRestorePtr_->OnStart(store, store);
+    othersClone->photosRestore_.photosBasicInfo_.maxFileId = 100;
+    othersClone->photosRestore_.OnStart(store, store);
 
     EXPECT_TRUE(othersClone->HasSameFileForDualClone(fileInfo));
     store->ExecuteSql("DROP TABLE IF EXISTS Photos");
@@ -1429,7 +1429,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpdateAlb
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
     FileInfo fileInfo;
-    othersClone->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(othersClone->mediaLibraryRdb_);
     othersClone->clonePhoneName_ = "testPhone";
     othersClone->UpdateAlbumInfo(fileInfo);
     EXPECT_EQ(fileInfo.bundleName, "testPhone");
@@ -1445,8 +1444,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpdateAlb
     fileInfo.lPath = "/data/test";
     PhotoAlbumDao::PhotoAlbumRowData photoAlbumRowData;
     photoAlbumRowData.albumId = 1;
-    othersClone->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(othersClone->mediaLibraryRdb_);
-    othersClone->photoAlbumDaoPtr_->photoAlbumCache_["/data/test"] = photoAlbumRowData;
+    othersClone->photoAlbumDao_.photoAlbumCache_.Insert("/data/test", photoAlbumRowData);
     othersClone->UpdateAlbumInfo(fileInfo);
     EXPECT_EQ(fileInfo.ownerAlbumId, 1);
 }
@@ -1628,7 +1626,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleIns
     FileInfo fileInfo;
     fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
     othersClone->photoInfos_.push_back(fileInfo);
-    othersClone->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(othersClone->mediaLibraryRdb_);
     othersClone->HandleInsertBatch(offset);
     EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
 }
@@ -1644,7 +1641,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleIns
     for (int i = 0;i < 200;i ++) {
         othersClone->photoInfos_.push_back(fileInfo);
     }
-    othersClone->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(othersClone->mediaLibraryRdb_);
     othersClone->HandleInsertBatch(offset);
     EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
 }

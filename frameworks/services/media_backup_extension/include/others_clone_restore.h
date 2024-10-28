@@ -72,9 +72,9 @@ private:
     std::vector<CloneDbInfo> photoDbInfo_;
     std::vector<CloneDbInfo> audioDbInfo_;
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
-    std::shared_ptr<PhotoAlbumDao> photoAlbumDaoPtr_;
+    PhotoAlbumDao photoAlbumDao_;
     PhotoAlbumRestore photoAlbumRestore_;
-    std::shared_ptr<PhotosRestore> photosRestorePtr_ = std::make_shared<PhotosRestore>(this->photoAlbumRestore_);
+    PhotosRestore photosRestore_;
 };
 } // namespace Media
 } // namespace OHOS

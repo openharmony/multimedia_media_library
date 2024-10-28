@@ -31,7 +31,7 @@ public:
     {
         this->mediaLibraryOriginalRdb_ = mediaLibraryOriginalRdb;
         this->mediaLibraryTargetRdb_ = mediaLibraryTargetRdb;
-        this->photoAlbumDaoPtr_ = std::make_shared<PhotoAlbumDao>(mediaLibraryTargetRdb);
+        this->photoAlbumDao_.SetMediaLibraryRdb(mediaLibraryTargetRdb);
     }
 
     int32_t GetPhotoAlbumCountInOriginalDb();
@@ -39,10 +39,7 @@ public:
 
     bool HasSameAlbum(const std::string &lPath)
     {
-        if (this->photoAlbumDaoPtr_ == nullptr) {
-            return false;
-        }
-        PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->photoAlbumDaoPtr_->GetPhotoAlbum(lPath);
+        PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->photoAlbumDao_.GetPhotoAlbum(lPath);
         return !albumInfo.lPath.empty();
     }
 
@@ -52,7 +49,7 @@ private:
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryTargetRdb_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryOriginalRdb_;
-    std::shared_ptr<PhotoAlbumDao> photoAlbumDaoPtr_;
+    PhotoAlbumDao photoAlbumDao_;
 
 private:
     const std::string SQL_PHOTO_ALBUM_COUNT_FOR_CLONE = "\

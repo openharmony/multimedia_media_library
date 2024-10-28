@@ -114,18 +114,18 @@ PhotoAlbumDao::PhotoAlbumRowData PhotosClone::FindAlbumInfo(const FileInfo &file
     }
     if (this->ToLower(fileInfo.lPath) == this->ToLower(AlbumPlugin::LPATH_SCREEN_SHOTS) &&
         fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
-        albumInfo = this->photoAlbumDaoPtr_->BuildAlbumInfoOfRecorders();
-        albumInfo = this->photoAlbumDaoPtr_->GetOrCreatePhotoAlbum(albumInfo);
+        albumInfo = this->photoAlbumDao_.BuildAlbumInfoOfRecorders();
+        albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
         MEDIA_INFO_LOG(
             "Media_Restore: screenshots redirect to screenrecords, Object: %{public}s, albumInfo: %{public}s",
             this->ToString(fileInfo).c_str(),
-            this->photoAlbumDaoPtr_->ToString(albumInfo).c_str());
+            this->photoAlbumDao_.ToString(albumInfo).c_str());
         return albumInfo;
     }
-    albumInfo = this->photoAlbumDaoPtr_->GetPhotoAlbum(fileInfo.lPath);
+    albumInfo = this->photoAlbumDao_.GetPhotoAlbum(fileInfo.lPath);
     if (albumInfo.lPath.empty()) {
         MEDIA_ERR_LOG("Media_Restore: albumInfo is empty, albumInfo: %{public}s, Object: %{public}s",
-            this->photoAlbumDaoPtr_->ToString(albumInfo).c_str(),
+            this->photoAlbumDao_.ToString(albumInfo).c_str(),
             this->ToString(fileInfo).c_str());
     }
     return albumInfo;
