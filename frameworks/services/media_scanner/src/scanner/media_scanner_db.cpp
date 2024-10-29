@@ -224,8 +224,9 @@ static void HandleMovingPhotoDirty(const Metadata &metadata, ValuesBucket &value
     }
 
     string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(metadata.GetFilePath());
-    if (!MediaFileUtils::IsFileExists(videoPath)) {
-        MEDIA_DEBUG_LOG("video of moving photo dose not exist");
+    size_t videoSize = 0;
+    if (!MediaFileUtils::GetFileSize(videoPath, videoSize) || videoSize == 0) {
+        MEDIA_DEBUG_LOG("video of moving photo cannot upload");
         return;
     }
     values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));

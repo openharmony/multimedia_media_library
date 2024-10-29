@@ -177,6 +177,7 @@ enum class EXPORT OperationType : uint32_t {
     SET_VIDEO_ENHANCEMENT_ATTR,
     ALL_DUPLICATE_ASSETS,
     OTHER_DUPLICATE_ASSETS,
+    DEGENERATE_MOVING_PHOTO,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()
