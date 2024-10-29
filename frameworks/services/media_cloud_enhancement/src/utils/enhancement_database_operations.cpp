@@ -26,6 +26,7 @@
 #include "mimetype_utils.h"
 #include "result_set_utils.h"
 #include "rdb_utils.h"
+#include "photo_album_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -106,6 +107,35 @@ static void HandleDateAdded(const int64_t dateAdded, const MediaType type, Value
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
 }
 
+static void SetOwnerAlbumId(ValuesBucket &assetInfo)
+{
+    RdbPredicates queryPredicates(PhotoAlbumColumns::TABLE);
+    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
+    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT));
+    vector<string> columns = { PhotoAlbumColumns::ALBUM_ID };
+    shared_ptr<ResultSet> resultSet = MediaLibraryRdbStore::Query(queryPredicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query cloud enhancement album id!");
+        return;
+    }
+    int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+    assetInfo.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
+}
+
+static void SetSupportedWatermarkType(int32_t sourceFileId, ValuesBucket &assetInfo)
+{
+    RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
+    queryPredicates.EqualTo(MediaColumn::MEDIA_ID, to_string(sourceFileId));
+    vector<string> columns = { PhotoColumn::SUPPORTED_WATERMARK_TYPE };
+    shared_ptr<ResultSet> resultSet = MediaLibraryRdbStore::Query(queryPredicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query supported watermark type!");
+        return;
+    }
+    int32_t supportedWatermarkType = GetInt32Val(PhotoColumn::SUPPORTED_WATERMARK_TYPE, resultSet);
+    assetInfo.PutInt(PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWatermarkType);
+}
+
 int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibraryCommand &cmd,
     const FileAsset &fileAsset, int32_t sourceFileId, shared_ptr<CloudEnhancementFileInfo> info)
 {
@@ -148,6 +178,8 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
     assetInfo.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
         static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT));
     assetInfo.PutInt(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, sourceFileId);
+    SetOwnerAlbumId(assetInfo);
+    SetSupportedWatermarkType(sourceFileId, assetInfo);
     cmd.SetValueBucket(assetInfo);
     cmd.SetTableName(PhotoColumn::PHOTOS_TABLE);
     int64_t outRowId = -1;
