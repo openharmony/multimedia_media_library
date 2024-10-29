@@ -25,6 +25,7 @@
 #include "photo_album_dao.h"
 #include "album_plugin_config.h"
 #include "backup_file_utils.h"
+#include "mimetype_utils.h"
 
 namespace OHOS::Media {
 /**
@@ -316,7 +317,7 @@ std::string PhotosRestore::GetSuffix(const std::string &displayName)
 {
     size_t dotPos = displayName.rfind('.');
     if (dotPos != std::string::npos) {
-        return this->ToLower(displayName.substr(dotPos));  // include dot, e.g. ".jpg"
+        return this->ToLower(displayName.substr(dotPos + 1));  // without dot, e.g. "jpg"
     }
     return "";
 }
@@ -326,23 +327,16 @@ std::string PhotosRestore::GetSuffix(const std::string &displayName)
  */
 int32_t PhotosRestore::FindMediaType(const FileInfo &fileInfo)
 {
-    int32_t mediaType = fileInfo.fileType;
-    if (mediaType == DUAL_MEDIA_TYPE::IMAGE_TYPE || mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) {
-        return mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
+    int32_t dualMediaType = fileInfo.fileType;
+    if (dualMediaType == DUAL_MEDIA_TYPE::IMAGE_TYPE || dualMediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) {
+        return dualMediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
     }
     std::string suffix = this->GetSuffix(fileInfo.displayName);
-    if (this->IMAGE_SUFFIX_SET.count(suffix) > 0) {
-        MEDIA_INFO_LOG("Media_Restore: correct mediaType to IMAGE_TYPE by suffix: %{public}s, Object: %{public}s",
-            suffix.c_str(),
-            this->ToString(fileInfo).c_str());
-        return MediaType::MEDIA_TYPE_IMAGE;
-    }
-    if (this->VIDEO_SUFFIX_SET.count(suffix) > 0) {
-        MEDIA_INFO_LOG("Media_Restore: correct mediaType to VIDEO_TYPE by suffix: %{public}s, Object: %{public}s",
-            suffix.c_str(),
-            this->ToString(fileInfo).c_str());
-        return MediaType::MEDIA_TYPE_VIDEO;
-    }
-    return MediaType::MEDIA_TYPE_DEFAULT;
+    MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(MimeTypeUtils::GetMimeTypeFromExtension(suffix));
+    MEDIA_INFO_LOG("Media_Restore: correct mediaType from %{public}d to %{public}d, displayName: %{public}s",
+        fileInfo.fileType,
+        mediaType,
+        fileInfo.displayName.c_str());
+    return mediaType;
 }
 }  // namespace OHOS::Media
