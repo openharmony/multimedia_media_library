@@ -76,6 +76,8 @@ public:
     EXPORT void AstcChangeKeyFromDateAddedToDateTaken();
     EXPORT void UpdateCurrentStatusForTask(const bool &currentStatusForTask);
     EXPORT bool GetCurrentStatusForTask();
+    EXPORT void NotifyTempStatusForReady(const int32_t &currentTemperatureLevel);
+    EXPORT int32_t GetCurrentTemperatureLevel();
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();
@@ -92,9 +94,13 @@ private:
 #endif
     std::shared_ptr<NativeRdb::RdbStore> rdbStorePtr_;
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
+    std::shared_ptr<NativeRdb::RdbPredicates> rdbPredicatePtr_;
     Size screenSize_;
+    int32_t currentRequestId_ = 0;
+    int32_t currentTemperatureLevel_ = 0;
     bool isScreenSizeInit_ = false;
     bool currentStatusForTask_ = false;
+    bool isTemperatureHighForReady_ = false;
 };
 } // namespace Media
 } // namespace OHOS
