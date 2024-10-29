@@ -448,7 +448,6 @@ int32_t MtpMediaLibrary::MoveObject(const std::shared_ptr<MtpOperationContext> &
     }
 
     uint32_t fromHandle = pathToHandleMap.find(fromPath.string())->second;
-    uint32_t toHandle = pathToHandleMap.find(toPath.string())->second;
     if (pathToHandleMap.find(toPath.string()) == pathToHandleMap.end()) {
         if (isDir) {
             MoveHandlePathMap(fromPath, toPath);
@@ -456,6 +455,7 @@ int32_t MtpMediaLibrary::MoveObject(const std::shared_ptr<MtpOperationContext> &
         ModifyHandlePathMap(fromPath.string(), toPath.string());
     } else {
         if (isDir) {
+            uint32_t toHandle = pathToHandleMap.find(toPath.string())->second;
             MoveRepeatDirHandlePathMap(fromPath, toPath);
             repeatHandle = toHandle;
         } else {
