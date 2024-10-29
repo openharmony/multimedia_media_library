@@ -90,6 +90,7 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture dataSize: %{public}d", dataSize);
     if (dataSize == 0) {
         MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture picture is not exists");
+        munmap(addr, msgLen);
         return E_NO_SUCH_FILE;
     }
 
@@ -100,11 +101,13 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
         auxiliaryPictureSize);
     uint8_t *pictureParcelData = static_cast<uint8_t *>(malloc(dataSize));
     if (pictureParcelData == nullptr) {
+        munmap(addr, msgLen);
         return E_ERR;
     }
     if (memcpy_s((void*)pictureParcelData, dataSize, addr+readoffset, dataSize)) {
         MEDIA_ERR_LOG("PictureHandlerService::ReadPicture memcpy_s pictureParcel failed!");
         free(pictureParcelData);
+        munmap(addr, msgLen);
         return E_ERR;
     }
     MessageParcel pictureParcel;
@@ -115,6 +118,7 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     std::unique_ptr<Media::Picture> picturePtr = Picture::Create(mainPixelMap);
     if (picturePtr == nullptr) {
         MEDIA_ERR_LOG("PictureHandlerService::ReadPicture picturePtr is nullptr!");
+        munmap(addr, msgLen);
         return E_ERR;
     }
 
