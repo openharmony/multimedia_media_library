@@ -412,6 +412,11 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
 shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
     ThumbnailData &data, int &err)
 {
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+    };
     MediaLibraryTracer tracer;
     tracer.Start("QueryThumbnailInfo");
     auto resultSet = QueryThumbnailSet(opts);
@@ -427,7 +432,7 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
         return nullptr;
     }
 
-    ParseQueryResult(resultSet, data, err);
+    ParseQueryResult(resultSet, data, err, column);
     return resultSet;
 }
 
@@ -557,7 +562,7 @@ bool ThumbnailUtils::QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimi
 
     ThumbnailData data;
     do {
-        ParseQueryResult(resultSet, data, err);
+        ParseQueryResult(resultSet, data, err, column);
         if (!data.lcdKey.empty()) {
             infos.push_back(data);
         }
@@ -596,7 +601,7 @@ bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
 
     ThumbnailData data;
     do {
-        ParseQueryResult(resultSet, data, err);
+        ParseQueryResult(resultSet, data, err, column);
         if (!data.path.empty()) {
             infos.push_back(data);
         }
@@ -631,7 +636,7 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &i
 
     ThumbnailData data;
     do {
-        ParseQueryResult(resultSet, data, err);
+        ParseQueryResult(resultSet, data, err, column);
         if (!data.path.empty()) {
             infos.push_back(data);
         }
@@ -685,7 +690,7 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
 
     ThumbnailData data;
     do {
-        ParseQueryResult(resultSet, data, err);
+        ParseQueryResult(resultSet, data, err, column);
         if (!data.path.empty()) {
             infos.push_back(data);
         }
@@ -727,7 +732,7 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
 
     ThumbnailData data;
     do {
-        ParseQueryResult(resultSet, data, err);
+        ParseQueryResult(resultSet, data, err, column);
         if (!data.path.empty()) {
             infos.push_back(data);
         }
@@ -768,7 +773,7 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
 
     ThumbnailData data;
     do {
-        ParseQueryResult(resultSet, data, err);
+        ParseQueryResult(resultSet, data, err, column);
         if (!data.path.empty()) {
             infos.push_back(data);
         }
@@ -822,7 +827,7 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
 
     ThumbnailData data;
     do {
-        ParseQueryResult(resultSet, data, err);
+        ParseQueryResult(resultSet, data, err, column);
         if (!data.path.empty()) {
             infos.push_back(data);
         }
@@ -857,7 +862,7 @@ bool ThumbnailUtils::QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore
 
     ThumbnailData data;
     do {
-        ParseQueryResult(resultSet, data, err);
+        ParseQueryResult(resultSet, data, err, column);
         infos.push_back(data);
     } while (resultSet->GoToNextRow() == E_OK);
     return true;
@@ -989,7 +994,7 @@ bool ThumbnailUtils::QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, vector<Thumb
 
     ThumbnailData data;
     do {
-        ParseQueryResult(resultSet, data, err);
+        ParseQueryResult(resultSet, data, err, column);
         infos.push_back(data);
     } while (resultSet->GoToNextRow() == E_OK);
     return true;
@@ -1630,55 +1635,37 @@ void ThumbnailUtils::ParseStringResult(const shared_ptr<ResultSet> &resultSet, i
     }
 }
 
-void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, ThumbnailData &data, int &err)
+void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, ThumbnailData &data,
+    int &err, const std::vector<std::string> &column)
 {
     int index;
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_ID, index);
-    if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.id, err);
-    }
-
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, index);
-    if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.path, err);
-    }
-
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_ADDED, index);
-    if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.dateAdded, err);
-    }
-
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_NAME, index);
-    if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.displayName, err);
-    }
-
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, index);
-    if (err == NativeRdb::E_OK) {
-        data.mediaType = MediaType::MEDIA_TYPE_ALL;
-        err = resultSet->GetInt(index, data.mediaType);
-    }
-
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_ORIENTATION, index);
-    if (err == NativeRdb::E_OK) {
-        err = resultSet->GetInt(index, data.orientation);
-    }
-
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_POSITION, index);
-    if (err == NativeRdb::E_OK) {
-        int position = 0;
-        err = resultSet->GetInt(index, position);
-        data.isLocalFile = (position == 1);
-    }
-
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_HEIGHT, index);
-    if (err == NativeRdb::E_OK) {
-        err = resultSet->GetInt(index, data.photoHeight);
-    }
-
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_WIDTH, index);
-    if (err == NativeRdb::E_OK) {
-        err = resultSet->GetInt(index, data.photoWidth);
+    for (auto &columnValue : column) {
+        err = resultSet->GetColumnIndex(columnValue, index);
+        if (err != NativeRdb::E_OK) {
+            continue;
+        }
+        if (columnValue == MEDIA_DATA_DB_ID) {
+            ParseStringResult(resultSet, index, data.id, err);
+        } else if (columnValue == MEDIA_DATA_DB_FILE_PATH) {
+            ParseStringResult(resultSet, index, data.path, err);
+        } else if (columnValue == MEDIA_DATA_DB_DATE_ADDED) {
+            ParseStringResult(resultSet, index, data.dateAdded, err);
+        } else if (columnValue == MEDIA_DATA_DB_NAME) {
+            ParseStringResult(resultSet, index, data.displayName, err);
+        } else if (columnValue == MEDIA_DATA_DB_MEDIA_TYPE) {
+            data.mediaType = MediaType::MEDIA_TYPE_ALL;
+            err = resultSet->GetInt(index, data.mediaType);
+        } else if (columnValue == MEDIA_DATA_DB_ORIENTATION) {
+            err = resultSet->GetInt(index, data.orientation);
+        } else if (columnValue == MEDIA_DATA_DB_POSITION) {
+            int position = 0;
+            err = resultSet->GetInt(index, position);
+            data.isLocalFile = (position == 1);
+        } else if (columnValue == MEDIA_DATA_DB_HEIGHT) {
+            err = resultSet->GetInt(index, data.photoHeight);
+        } else if (columnValue == MEDIA_DATA_DB_WIDTH) {
+            err = resultSet->GetInt(index, data.photoWidth);
+        }
     }
 }
 
@@ -1922,7 +1909,7 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
         return;
     }
 
-    ParseQueryResult(resultSet, data, err);
+    ParseQueryResult(resultSet, data, err, columns);
     if (err != NativeRdb::E_OK || data.path.empty()) {
         MEDIA_ERR_LOG("Fail to query thumbnail data using id: %{public}s, err: %{public}d", id.c_str(), err);
         resultSet->Close();
@@ -2202,7 +2189,7 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
 
     ThumbnailData data;
     do {
-        ParseQueryResult(resultSet, data, err);
+        ParseQueryResult(resultSet, data, err, column);
         if (!data.path.empty()) {
             infos.push_back(data);
         }
