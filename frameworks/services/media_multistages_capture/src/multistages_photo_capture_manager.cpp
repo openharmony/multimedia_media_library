@@ -323,7 +323,6 @@ void MultiStagesPhotoCaptureManager::AddImage(MediaLibraryCommand &cmd)
     if (values.GetObject(PhotoColumn::PHOTO_QUALITY, valueObject)) {
         valueObject.GetInt(photoQuality);
     }
-
     string photoId = "";
     if (values.GetObject(PhotoColumn::PHOTO_ID, valueObject)) {
         valueObject.GetString(photoId);
@@ -346,7 +345,6 @@ void MultiStagesPhotoCaptureManager::AddImage(MediaLibraryCommand &cmd)
     if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
         valueObject.GetInt(fileId);
     }
-
     AddImage(fileId, photoId, deferredProcType);
     MultiStagesCaptureDfxTotalTime::GetInstance().AddStartTime(photoId);
     MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::AUTO);
