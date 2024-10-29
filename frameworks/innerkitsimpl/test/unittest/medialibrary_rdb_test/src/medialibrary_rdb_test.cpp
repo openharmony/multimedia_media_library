@@ -517,5 +517,20 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ResetSearchTables_test, TestSize.Level0)
     ret = MediaLibraryRdbStore::ResetSearchTables();
     EXPECT_EQ(ret, false);
 }
+
+HWTEST_F(MediaLibraryRdbTest, medialib_GenerateHighlightThumbnail_test, TestSize.Level0)
+{
+    if (rdbStorePtr == nullptr) {
+        exit(1);
+    }
+    rdbStorePtr->Init();
+    vector<string> args = {"1", "tracks"};
+    auto ret = MediaLibraryRdbStore::BeginGenerateHighlightThumbnail();
+    EXPECT_EQ(ret, "");
+    args = {"1", "tracks", "", "insert"};
+    auto ret = MediaLibraryRdbStore::BeginGenerateHighlightThumbnail();
+    EXPECT_EQ(ret, "");
+    rdbStorePtr->Stop();
+}
 } // namespace Media
 } // namespace OHOS
