@@ -63,6 +63,8 @@ public:
     EXPORT static int32_t FinishRequestPicture(MediaLibraryCommand &cmd);
     EXPORT static int32_t AddFiltersForCloudEnhancementPhoto(int32_t fileId, const std::string& assetPath,
         const std::string& editDataCameraSourcePath, const std::string& mimeType);
+    EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, const std::string &path);
+    EXPORT static int32_t RemoveTempVideo(const std::string &path);
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);
@@ -119,6 +121,7 @@ private:
     static void ProcessEditedEffectMode(MediaLibraryCommand& cmd, int32_t effectMode);
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static std::shared_ptr<FileAsset> GetFileAsset(MediaLibraryCommand &cmd);
+    static int32_t SetVideoEnhancementAttr(MediaLibraryCommand &cmd);
 private:
     static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension,
         const std::string mimeType, std::string &oldFilePath);

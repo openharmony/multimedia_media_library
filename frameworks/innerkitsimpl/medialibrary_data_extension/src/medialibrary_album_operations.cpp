@@ -816,7 +816,7 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicates);
 
     // notify deferred processing session to restore image
-    MultiStagesCaptureManager::GetInstance().RestoreImages(rdbPredicates);
+    MultiStagesCaptureManager::RestorePhotos(rdbPredicates);
 
     ValuesBucket rdbValues;
     rdbValues.PutInt(MediaColumn::MEDIA_DATE_TRASHED, 0);

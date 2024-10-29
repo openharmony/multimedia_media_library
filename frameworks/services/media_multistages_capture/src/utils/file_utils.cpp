@@ -184,5 +184,35 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     }
     return ret;
 }
+
+int32_t FileUtils::SaveVideo(const std::string &filePath, bool isEdited)
+{
+    string tempPath = filePath.substr(0, filePath.rfind('.')) + "_tmp" + filePath.substr(filePath.rfind('.'));
+    string targetPath = filePath;
+    if (isEdited) {
+        targetPath = MediaLibraryAssetOperations::GetEditDataSourcePath(filePath);
+    }
+ 
+    if (!IsFileExist(filePath)) {
+        MEDIA_INFO_LOG("file not exist: %{public}s", filePath.c_str());
+    }
+ 
+    if (!IsFileExist(tempPath)) {
+        MEDIA_INFO_LOG("file not exist: %{public}s", tempPath.c_str());
+    }
+ 
+    MEDIA_INFO_LOG("video rename targetPath: %{public}s, tempPath: %{public}s", targetPath.c_str(), tempPath.c_str());
+    return rename(tempPath.c_str(), targetPath.c_str());
+}
+ 
+int32_t FileUtils::DeleteTempVideoFile(const std::string &filePath)
+{
+    MEDIA_INFO_LOG("filePath: %{public}s", filePath.c_str());
+    string tempPath = filePath.substr(0, filePath.rfind('.')) + "_tmp" + filePath.substr(filePath.rfind('.'));
+    if (IsFileExist(tempPath)) {
+        return DeleteFile(tempPath);
+    }
+    return E_OK;
+}
 } // namespace Media
 } // namespace OHOS

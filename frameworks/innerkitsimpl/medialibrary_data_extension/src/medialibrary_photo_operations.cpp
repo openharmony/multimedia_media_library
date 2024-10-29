@@ -738,7 +738,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     vector<string> notifyUris = rdbPredicate.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicate);
 
-    MultiStagesCaptureManager::GetInstance().RemoveImages(rdbPredicate, true);
+    MultiStagesCaptureManager::RemovePhotos(rdbPredicate, true);
 
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
@@ -842,6 +842,15 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     }
     MEDIA_INFO_LOG("Success, updatedRows: %{public}d, needScanStr: %{public}s", updatedRows, needScanStr.c_str());
     return updatedRows;
+}
+
+int32_t MediaLibraryPhotoOperations::SetVideoEnhancementAttr(MediaLibraryCommand &cmd)
+{
+    string videoId = cmd.GetQuerySetParam(PhotoColumn::PHOTO_ID);
+    string fileId = cmd.GetQuerySetParam(MediaColumn::MEDIA_ID);
+    string filePath = cmd.GetQuerySetParam(MediaColumn::MEDIA_FILE_PATH);
+    MultiStagesVideoCaptureManager::GetInstance().AddVideo(videoId, fileId, filePath);
+    return E_OK;
 }
 
 static int32_t GetHiddenState(const ValuesBucket &values)
@@ -1089,6 +1098,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
             return DiscardCameraPhoto(cmd);
         case OperationType::SAVE_CAMERA_PHOTO:
             return SaveCameraPhoto(cmd);
+        case OperationType::SET_VIDEO_ENHANCEMENT_ATTR:
+            return SetVideoEnhancementAttr(cmd);
         default:
             return UpdateFileAsset(cmd);
     }
@@ -2731,6 +2742,18 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
     int32_t ret = MediaChangeEffect::TakeEffectForPicture(inPicture, editdata);
     FileUtils::DealPicture(mime_type, outputPath, inPicture);
     return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::ProcessMultistagesVideo(bool isEdited, const std::string &path)
+{
+    MEDIA_INFO_LOG("ProcessMultistagesVideo path:%{public}s, isEdited: %{public}d", path.c_str(), isEdited);
+    return FileUtils::SaveVideo(path, isEdited);
+}
+
+int32_t MediaLibraryPhotoOperations::RemoveTempVideo(const std::string &path)
+{
+    MEDIA_INFO_LOG("RemoveTempVideo path: %{public}s", path.c_str());
+    return FileUtils::DeleteTempVideoFile(path);
 }
 
 PhotoEditingRecord::PhotoEditingRecord()

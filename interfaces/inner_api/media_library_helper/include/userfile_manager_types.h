@@ -171,6 +171,12 @@ enum class CloudEnhancementState : int32_t {
     COMPLETED
 };
 
+enum class VideoEnhancementType : int32_t {
+    QUALITY_ENHANCEMENT_LOCAL,
+    QUALITY_ENHANCEMENT_CLOUD,
+    QUALITY_ENHANCEMENT_LOCAL_AND_CLOUD,
+};
+
 const std::string URI_PARAM_API_VERSION = "api_version";
 
 enum class MediaLibraryApi : uint32_t {

@@ -178,7 +178,8 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
         return;
     }
 
-    MultiStagesCaptureManager::GetInstance().Init();
+    MultiStagesPhotoCaptureManager::GetInstance().Init();
+    MultiStagesVideoCaptureManager::GetInstance().Init();
 
     EnhancementManager::GetInstance().InitAsync();
 
