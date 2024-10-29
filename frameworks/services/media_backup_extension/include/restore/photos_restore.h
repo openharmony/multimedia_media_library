@@ -106,10 +106,6 @@ private:
         GROUP BY _data \
         HAVING count(1) > 1 \
         LIMIT ?, ?;";
-    const std::unordered_set<std::string> IMAGE_SUFFIX_SET = {
-        ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".webp", ".svg"};
-    const std::unordered_set<std::string> VIDEO_SUFFIX_SET = {
-        ".avi", ".mp4", ".mov", ".mkv", ".flv", ".wmv", ".3gp", ".3g2", ".swf", ".vo", ".mpg", ".m4v"};
 };
 }  // namespace OHOS::Media
 
