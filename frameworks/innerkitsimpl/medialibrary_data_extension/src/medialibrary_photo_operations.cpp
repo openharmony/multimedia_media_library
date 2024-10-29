@@ -1529,6 +1529,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
             return ForceSavePicture(cmd);
         case OperationType::SET_VIDEO_ENHANCEMENT_ATTR:
             return SetVideoEnhancementAttr(cmd);
+        case OperationType::DEGENERATE_MOVING_PHOTO:
+            return DegenerateMovingPhoto(cmd);
         default:
             return UpdateFileAsset(cmd);
     }
@@ -3383,6 +3385,54 @@ int32_t MediaLibraryPhotoOperations::ScanFileWithoutAlbumUpdate(MediaLibraryComm
     MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId);
 
     return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::DegenerateMovingPhoto(MediaLibraryCommand &cmd)
+{
+    vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_NAME, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
+        OperationObject::FILESYSTEM_PHOTO, columns);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("failed to query fileAsset");
+        return E_INVALID_VALUES;
+    }
+
+    if (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        MEDIA_INFO_LOG("fileAsset is not moving photo");
+        return E_OK;
+    }
+
+    if (fileAsset->GetPhotoEditTime() > 0) {
+        MEDIA_INFO_LOG("moving photo is edited");
+        return E_OK;
+    }
+
+    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(fileAsset->GetFilePath());
+    size_t videoSize = 0;
+    if (MediaFileUtils::GetFileSize(videoPath, videoSize) && videoSize > 0) {
+        MEDIA_INFO_LOG("video of moving photo exists, no need to degenerate");
+        return E_OK;
+    }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore");
+    RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
+    ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
+    int32_t updatedRows = rdbStore->Update(values, predicates);
+    if (updatedRows <= 0) {
+        MEDIA_WARN_LOG("Failed to update subtype, updatedRows=%{public}d", updatedRows);
+        return updatedRows;
+    }
+
+    string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetFilePath());
+    auto watch = MediaLibraryNotify::GetInstance();
+    watch->Notify(
+        MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()), extraUri),
+        NotifyType::NOTIFY_UPDATE);
+    return updatedRows;
 }
 } // namespace Media
 } // namespace OHOS
