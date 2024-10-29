@@ -751,10 +751,7 @@ bool ThumbnailUtils::QueryNoHighlightInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("QueryNoHighlightInfos failed %{public}d", err);
-        if (err == E_EMPTY_VALUES_BUCKET) {
-            return true;
-        }
-        return false;
+        return err == E_EMPTY_VALUES_BUCKET;
     }
 
     err = resultSet->GoToFirstRow();

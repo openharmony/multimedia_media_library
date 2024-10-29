@@ -1659,6 +1659,9 @@ static const vector<string> onCreateSqlStrs = {
     TriggerDeleteAudioClearAppUriPermission(),
     PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX,
     PhotoColumn::UPDATA_PHOTOS_DATA_UNIQUE,
+    PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
+    PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
+    PhotoColumn::INDEX_HIGHLIGHT_FILEID,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2784,24 +2787,28 @@ void AddHighlightTriggerColumn(RdbStore &store)
         "ALTER TABLE " + PhotoColumn::HIGHLIGHT_TABLE + " ADD COLUMN " +
             PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER + " INT DEFAULT 0"
     };
+    MEDIA_INFO_LOG("start add highlight trigger column");
     ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add highlight trigger column");
 }
 
 void AddHighlightInsertAndUpdateTrigger(RdbStore &store)
 {
     const vector<string> sqls = {
-        PhotoColumn::DROP_INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
         PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
-        PhotoColumn::DROP_UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
         PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL
     };
+    MEDIA_INFO_LOG("start add highlight insert and update trigger");
     ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add highlight insert and update trigger");
 }
 
 void AddHighlightIndex(RdbStore &store)
 {
     const vector<string> addHighlightIndex = { PhotoColumn::INDEX_HIGHLIGHT_FILEID };
+    MEDIA_INFO_LOG("start add highlight index");
     ExecSqls(addHighlightIndex, store);
+    MEDIA_INFO_LOG("end add highlight index");
 }
 
 static void UpdateSearchIndexTriggerForCleanFlag(RdbStore& store)
