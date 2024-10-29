@@ -270,7 +270,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightInfos_test_001, TestSiz
     if (storePtr == nullptr) {
         exit(1);
     }
-    string table = "medialib_QueryNoThumbnailInfos_test_001";
+    string table = "medialib_QueryNoHighlightInfos_test_001";
     ThumbRdbOpt opts = {
         .store = storePtr,
         .table = table
@@ -302,14 +302,14 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_GetHighlightValue_test_001, TestSize.Le
     string str = "{name:value}";
     string key = "nonexistent";
     EXPECT_EQ(ThumbnailUtils::GetHighlightValue(str, key), "");
-    string str = "{name value}";
-    string key = "name";
+    str = "{name value}";
+    key = "name";
     EXPECT_EQ(ThumbnailUtils::GetHighlightValue(str, key), "");
-    string str = "{name:value";
-    string key = "name";
+    str = "{name:value";
+    key = "name";
     EXPECT_EQ(ThumbnailUtils::GetHighlightValue(str, key), "");
-    string str = "{name:value, type:1}";
-    string key = "name";
+    str = "{name:value, type:1}";
+    key = "name";
     EXPECT_EQ(ThumbnailUtils::GetHighlightValue(str, key), "value");
 }
 

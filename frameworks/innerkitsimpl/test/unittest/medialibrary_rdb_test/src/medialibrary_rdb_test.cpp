@@ -525,10 +525,10 @@ HWTEST_F(MediaLibraryRdbTest, medialib_GenerateHighlightThumbnail_test, TestSize
     }
     rdbStorePtr->Init();
     vector<string> args = {"1", "tracks"};
-    auto ret = MediaLibraryRdbStore::BeginGenerateHighlightThumbnail();
+    auto ret = MediaLibraryRdbStore::BeginGenerateHighlightThumbnail(args);
     EXPECT_EQ(ret, "");
     args = {"1", "tracks", "", "insert"};
-    auto ret = MediaLibraryRdbStore::BeginGenerateHighlightThumbnail();
+    ret = MediaLibraryRdbStore::BeginGenerateHighlightThumbnail(args);
     EXPECT_EQ(ret, "");
     rdbStorePtr->Stop();
 }
