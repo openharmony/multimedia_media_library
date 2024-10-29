@@ -541,6 +541,7 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     int32_t fileMoveCount = 0;
     int32_t videoFileMoveCount = 0;
     MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
+    this->tabOldPhotosRestore_.Restore(this->mediaLibraryRdb_, fileInfos);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related"
         " cost %{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld.",
