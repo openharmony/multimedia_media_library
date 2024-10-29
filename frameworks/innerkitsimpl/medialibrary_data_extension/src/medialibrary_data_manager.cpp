@@ -37,6 +37,7 @@
 #include "dfx_manager.h"
 #include "dfx_reporter.h"
 #include "dfx_utils.h"
+#include "directory_ex.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
@@ -1221,24 +1222,17 @@ int32_t MediaLibraryDataManager::RestoreThumbnailDualFrame()
 
 static void CacheAging()
 {
-    filesystem::path cacheDir(MEDIA_CACHE_DIR);
-    if (!filesystem::exists(cacheDir)) {
+    if (!MediaFileUtils::IsDirectory(MEDIA_CACHE_DIR)) {
         return;
     }
-
-    std::error_code errCode;
     time_t now = time(nullptr);
     constexpr int thresholdSeconds = 24 * 60 * 60; // 24 hours
-    for (const auto& entry : filesystem::recursive_directory_iterator(cacheDir)) {
-        string filePath = entry.path().string();
-        if (!entry.is_regular_file()) {
-            MEDIA_WARN_LOG("skip %{private}s, not regular file", filePath.c_str());
-            continue;
-        }
-
+    vector<string> files;
+    GetDirFiles(MEDIA_CACHE_DIR, files);
+    for (auto &file : files) {
         struct stat statInfo {};
-        if (stat(filePath.c_str(), &statInfo) != 0) {
-            MEDIA_WARN_LOG("skip %{private}s , stat errno: %{public}d", filePath.c_str(), errno);
+        if (stat(file.c_str(), &statInfo) != 0) {
+            MEDIA_WARN_LOG("skip %{private}s , stat errno: %{public}d", file.c_str(), errno);
             continue;
         }
         time_t timeModified = statInfo.st_mtime;
@@ -1246,9 +1240,8 @@ static void CacheAging()
         if (duration < thresholdSeconds) {
             continue;
         }
-
-        if (!filesystem::remove(entry.path(), errCode)) {
-            MEDIA_WARN_LOG("Failed to remove %{private}s, err: %{public}d", filePath.c_str(), errCode.value());
+        if (!MediaFileUtils::DeleteFile(file)) {
+            MEDIA_ERR_LOG("delete failed %{public}s, errno: %{public}d", file.c_str(), errno);
         }
     }
 }
