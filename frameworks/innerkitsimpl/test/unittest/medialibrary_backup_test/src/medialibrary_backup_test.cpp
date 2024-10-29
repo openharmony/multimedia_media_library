@@ -37,6 +37,7 @@
 #include "medialibrary_unittest_utils.h"
 #undef private
 #undef protected
+#include "mimetype_utils.h"
 
 using namespace std;
 using namespace OHOS;
@@ -1877,6 +1878,25 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_file_access_helper, TestSi
     EXPECT_EQ(false, res);
 
     MEDIA_INFO_LOG("medialib_backup_test_file_access_helper end");
+}
+ 
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_media_type_beyong_1_3, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_media_type start");
+    PhotosRestore photosRestore;
+    FileInfo fileInfo;
+    fileInfo.displayName = "abc.jpg";
+    MimeTypeUtils::InitMimeTypeMap();
+    EXPECT_EQ(photosRestore.FindMediaType(fileInfo), MediaType::MEDIA_TYPE_IMAGE);
+    fileInfo.displayName = "abc.mp4";
+    EXPECT_EQ(photosRestore.FindMediaType(fileInfo), MediaType::MEDIA_TYPE_VIDEO);
+    fileInfo.fileType = 1;
+    fileInfo.displayName = "abc.mp4";
+    EXPECT_EQ(photosRestore.FindMediaType(fileInfo), MediaType::MEDIA_TYPE_IMAGE);
+    fileInfo.fileType = 3;
+    fileInfo.displayName = "abc.jpg";
+    EXPECT_EQ(photosRestore.FindMediaType(fileInfo), MediaType::MEDIA_TYPE_VIDEO);
+    MEDIA_INFO_LOG("medialib_backup_test_media_type end");
 }
 } // namespace Media
 } // namespace OHOS
