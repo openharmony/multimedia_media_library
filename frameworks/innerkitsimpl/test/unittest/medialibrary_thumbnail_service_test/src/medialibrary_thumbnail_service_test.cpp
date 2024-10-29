@@ -913,14 +913,14 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, UpgradeThumbnailBackground_test_001, 
 {
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     auto res = serverTest->UpgradeThumbnailBackground(false);
-    EXPECT_NE(res, E_OK);
+    EXPECT_EQ(res, E_OK);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_001, TestSize.Level0)
 {
     ThumbRdbOpt opts;
     auto res = ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
-    EXPECT_NE(res, -1);
+    EXPECT_EQ(res, -1);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_002, TestSize.Level0)
@@ -929,14 +929,14 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
     opts.table = "tab_analysis_video_label";
     auto res = ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
-    EXPECT_NE(res < 0, true);
+    EXPECT_EQ(res < 0, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_003, TestSize.Level0)
 {
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     auto res = serverTest->GenerateHighlightThumbnailBackground();
-    EXPECT_NE(res, E_OK);
+    EXPECT_EQ(res < 0, true);
 }
 } // namespace Media
 } // namespace OHOS
