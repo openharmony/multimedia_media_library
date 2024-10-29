@@ -1688,7 +1688,7 @@ std::string MediaFileUtils::GetUriWithoutDisplayname(const string &uri)
         return uri;
     }
 
-    return uri.substr(0, index);
+    return uri.substr(0, index + 1);
 }
 
 string MediaFileUtils::Encode(const string &uri)
