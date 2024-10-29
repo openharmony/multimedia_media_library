@@ -66,6 +66,7 @@ constexpr int32_t NO = 0;
 
 constexpr int32_t USER_COMMENT_MAX_LEN = 420;
 constexpr int32_t MAX_DELETE_NUMBER = 300;
+constexpr int32_t MAX_PHOTO_ID_LEN = 32;
 
 const std::string PAH_SUBTYPE = "subtype";
 const std::string CAMERA_SHOT_KEY = "cameraShotKey";
@@ -146,6 +147,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setCameraShotKey", JSSetCameraShotKey),
             DECLARE_NAPI_FUNCTION("saveCameraPhoto", JSSaveCameraPhoto),
             DECLARE_NAPI_FUNCTION("discardCameraPhoto", JSDiscardCameraPhoto),
+            DECLARE_NAPI_FUNCTION("setVideoEnhancementAttr", JSSetVideoEnhancementAttr),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -1065,6 +1067,31 @@ napi_value MediaAssetChangeRequestNapi::JSSetTitle(napi_env env, napi_callback_i
         changeRequest->creationValuesBucket_.valuesMap[MEDIA_DATA_DB_NAME] = displayName;
         changeRequest->creationValuesBucket_.valuesMap[PhotoColumn::MEDIA_TITLE] = title;
     }
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSSetVideoEnhancementAttr(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) == napi_ok,
+        "Failed to get object info");
+    
+    int32_t videoEnhancementType;
+    string photoId;
+    MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[0], videoEnhancementType);
+    MediaLibraryNapiUtils::GetParamStringWithLength(env, asyncContext->argv[1], MAX_PHOTO_ID_LEN, photoId);
+
+    auto changeRequest = asyncContext->objectInfo;
+    changeRequest->fileAsset_->SetPhotoId(photoId);
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_VIDEO_ENHANCEMENT_ATTR);
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -2183,6 +2210,33 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     return true;
 }
 
+static bool SetVideoEnhancementAttr(MediaAssetChangeRequestAsyncContext& context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("setVideoEnhancementAttr");
+
+    auto changeOpreations = context.assetChangeOperations;
+    DataShare::DataSharePredicates predicates;
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
+
+    string uri = PAH_SET_VIDEO_ENHANCEMENT_ATTR;
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, PhotoColumn::PHOTO_ID, fileAsset->GetPhotoId());
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_FILE_PATH, fileAsset->GetPath());
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri updateAssetUri(uri);
+    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
+}
+
 static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -2243,6 +2297,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SAVE_CAMERA_PHOTO, SaveCameraPhotoExecute },
     { AssetChangeOperation::ADD_FILTERS, AddFiltersExecute },
     { AssetChangeOperation::DISCARD_CAMERA_PHOTO, DiscardCameraPhotoExecute },
+    { AssetChangeOperation::SET_VIDEO_ENHANCEMENT_ATTR, SetVideoEnhancementAttr },
 };
 
 static void ApplyAssetChangeRequestExecute(napi_env env, void* data)

@@ -186,6 +186,7 @@ thread_local napi_ref MediaLibraryNapi::sMovingPhotoEffectModeEnumRef_ = nullptr
 thread_local napi_ref MediaLibraryNapi::sImageFileTypeEnumEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sCloudEnhancementTaskStageEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sCloudEnhancementStateEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sVideoEnhancementTypeEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -371,6 +372,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("AuthorizationMode", CreateAuthorizationModeEnum(env)),
         DECLARE_NAPI_PROPERTY("CloudEnhancementTaskStage", CreateCloudEnhancementTaskStageEnum(env)),
         DECLARE_NAPI_PROPERTY("CloudEnhancementState", CreateCloudEnhancementStateEnum(env)),
+        DECLARE_NAPI_PROPERTY("VideoEnhancementType", CreateVideoEnhancementTypeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -6507,6 +6509,11 @@ napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
 {
     const int32_t startIdx = 1;
     return CreateNumberEnumProperty(env, resourceTypeEnum, sResourceTypeEnumRef_, startIdx);
+}
+
+napi_value MediaLibraryNapi::CreateVideoEnhancementTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, videoEnhancementTypeEnum, sVideoEnhancementTypeEnumRef_);
 }
 
 napi_value MediaLibraryNapi::CreateMovingPhotoEffectModeEnum(napi_env env)

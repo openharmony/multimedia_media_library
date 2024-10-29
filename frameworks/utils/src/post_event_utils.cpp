@@ -267,12 +267,14 @@ void PostEventUtils::PostMscResultStat(const VariantMap &stat)
 {
     string photoId = GetStringValue(KEY_PHOTO_ID, stat);
     int32_t result = GetIntValue(KEY_RESULT, stat);
+    int32_t mediaType = GetIntValue(KEY_MEDIA_TYPE, stat);
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
         "MEDIALIB_MSC_RESULT_STAT",
         HiviewDFX::HiSysEvent::EventType::STATISTIC,
         KEY_PHOTO_ID, photoId,
-        KEY_RESULT, result);
+        KEY_RESULT, result,
+        KEY_MEDIA_TYPE, mediaType);
     if (ret != 0) {
         MEDIA_ERR_LOG("PostMscResultStat error:%{public}d", ret);
     }
