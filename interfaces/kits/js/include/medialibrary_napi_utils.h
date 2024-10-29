@@ -349,6 +349,10 @@ const std::vector<std::string> cloudEnhancementStateEnum {
     "UNAVAILABLE", "AVAILABLE", "EXECUTING", "COMPLETED"
 };
 
+const std::vector<std::string> videoEnhancementTypeEnum {
+    "QUALITY_ENHANCEMENT_LOCAL", "QUALITY_ENHANCEMENT_CLOUD", "QUALITY_ENHANCEMENT_LOCAL_AND_CLOUD"
+};
+
 const std::vector<std::string> fileKeyEnumValues {
     MEDIA_DATA_DB_ID,
     MEDIA_DATA_DB_RELATIVE_PATH,
