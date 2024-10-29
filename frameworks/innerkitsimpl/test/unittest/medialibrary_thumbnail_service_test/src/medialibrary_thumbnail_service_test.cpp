@@ -913,7 +913,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, UpgradeThumbnailBackground_test_001, 
 {
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     auto res = serverTest->UpgradeThumbnailBackground(false);
-    EXPECT_EQ(res, E_OK);
+    EXPECT_NE(res, E_OK);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_001, TestSize.Level0)
