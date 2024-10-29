@@ -406,7 +406,7 @@ int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId
 
 void ParseLivePhoto(const std::string& path, const std::unique_ptr<Metadata>& data)
 {
-    if (data->GetFileMimeType() != "image/jpeg") {
+    if (!MediaFileUtils::IsMovingPhotoMimeType(data->GetFileMimeType())) {
         return;
     }
     if (!MovingPhotoFileUtils::IsLivePhoto(path)) {

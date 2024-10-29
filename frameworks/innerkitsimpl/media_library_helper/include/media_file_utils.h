@@ -160,6 +160,7 @@ public:
     EXPORT static int64_t Timespec2Millisecond(const struct timespec &time);
     EXPORT static std::string GetMovingPhotoVideoPath(const std::string &imagePath);
     EXPORT static bool CheckMovingPhotoExtension(const std::string &extension);
+    EXPORT static bool IsMovingPhotoMimeType(const std::string &mimeType);
     EXPORT static bool CheckMovingPhotoVideoExtension(const std::string &extension);
     EXPORT static bool CheckMovingPhotoImage(const std::string &path);
     EXPORT static bool CheckMovingPhotoVideo(const std::string &path);
