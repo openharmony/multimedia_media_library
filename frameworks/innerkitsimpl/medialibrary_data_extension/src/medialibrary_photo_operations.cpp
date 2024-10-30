@@ -3391,7 +3391,7 @@ static void UpdateDirty(int32_t fileId)
 {
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
-    predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL))
+    predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
     predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, 0);
     predicates.EqualTo(PhotoColumn::PHOTO_DIRTY, -1);
     ValuesBucket values;
