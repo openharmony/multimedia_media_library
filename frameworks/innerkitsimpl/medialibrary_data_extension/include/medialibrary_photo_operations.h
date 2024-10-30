@@ -132,6 +132,7 @@ private:
     static std::shared_ptr<FileAsset> GetFileAsset(MediaLibraryCommand &cmd);
     static int32_t ForceSavePicture(MediaLibraryCommand& cmd);
     static int32_t SetVideoEnhancementAttr(MediaLibraryCommand &cmd);
+    static int32_t DegenerateMovingPhoto(MediaLibraryCommand &cmd);
 private:
     static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension,
         const std::string mimeType, std::string &oldFilePath);

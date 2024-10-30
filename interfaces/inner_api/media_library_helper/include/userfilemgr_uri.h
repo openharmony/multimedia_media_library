@@ -69,6 +69,7 @@ const std::string OPRN_SET_LOCATION = "set_location";
 const std::string OPRN_SET_PHOTO_QUALITY = "set_photo_quality";
 const std::string OPRN_CANCEL_PROCESS_IMAGE = "cancel_process_image";
 const std::string OPRN_MOVING_PHOTO_SCAN = "moving_photo_scan";
+const std::string OPRN_DEGENERATE_MOVING_PHOTO = "degenerate_moving_photo";
 const std::string OPRN_START_GENERATE_THUMBNAILS = "start_generate_thumbnails";
 const std::string OPRN_STOP_GENERATE_THUMBNAILS = "stop_generate_thumbnails";
 const std::string OPRN_GENERATE_THUMBNAILS_RESTORE = "generate_thumbnails_restore";
@@ -378,6 +379,8 @@ const std::string PAH_UPDATE_ANA_FACE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_FA
 // PhotoAccessHelper moving photo
 const std::string PAH_MOVING_PHOTO_SCAN = MEDIALIBRARY_DATA_URI + "/" + MEDIA_MOVING_PHOTO_OPRN_KEYWORD + "/" +
     OPRN_MOVING_PHOTO_SCAN;
+const std::string PAH_DEGENERATE_MOVING_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" +
+    OPRN_DEGENERATE_MOVING_PHOTO;
 
 // PhotoAccessHelper cloud enhancement
 const std::string PAH_CLOUD_ENHANCEMENT_ADD = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
