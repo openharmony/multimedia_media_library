@@ -6945,7 +6945,6 @@ static void RestrictAlbumSubtypeOptions(unique_ptr<MediaLibraryAsyncContext> &co
             to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
         }));
     } else {
-        MEDIA_INFO_LOG("Get favorite");
         context->predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
     }
 }
