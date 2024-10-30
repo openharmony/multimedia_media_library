@@ -1309,6 +1309,10 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Update owner album id fail when move from system album");
         return changedRows;
     }
+    if (!assetString.empty()) {
+        MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+            static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), assetString);
+    }
     for (auto it = ownerAlbumIds.begin(); it != ownerAlbumIds.end(); it++) {
         MEDIA_INFO_LOG("System album move assets target album id is: %{public}s", to_string(it->first).c_str());
         int32_t oriAlbumId = it->first;
@@ -1355,15 +1359,21 @@ int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &c
     transactionOprn.Finish();
     int32_t targetAlbumId = 0;
     int32_t oriAlbumId = 0;
+    vector<string> idsToUpdateIndex;
     UpdateOwnerAlbumIdOnMove(cmd, targetAlbumId, oriAlbumId);
     auto watch =  MediaLibraryNotify::GetInstance();
     for (const auto &fileAsset : fileAssetVector) {
+        idsToUpdateIndex.push_back(to_string(fileAsset->GetId()));
         string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
         string assetUri = MediaFileUtils::GetUriByExtrConditions(
             PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()), extraUri);
         watch->Notify(assetUri, NotifyType::NOTIFY_UPDATE);
         watch->Notify(assetUri, NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
         watch->Notify(assetUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, oriAlbumId);
+    }
+    if (!idsToUpdateIndex.empty()) {
+        MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+            static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), idsToUpdateIndex);
     }
     return updateRows;
 }
