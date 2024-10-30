@@ -842,6 +842,7 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeAstc(UniqueFd &uniqueFd)
 
     DecodeOptions decodeOpts;
     decodeOpts.fastAstc = true;
+    decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
     if (pixelMap == nullptr) {
         MEDIA_ERR_LOG("CreatePixelMap err %{public}d", err);
