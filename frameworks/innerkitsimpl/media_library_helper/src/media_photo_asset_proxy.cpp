@@ -78,6 +78,7 @@ PhotoAssetProxy::~PhotoAssetProxy()
         DataShare::DataShareValuesBucket valuesBucket;
         string fileId = MediaFileUtils::GetIdFromUri(uri_);
         predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+        valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
         int32_t changeRows = dataShareHelper_->Update(updateUri, predicates, valuesBucket);
         MEDIA_WARN_LOG("Degenerate moving photo: %{public}s, ret: %{public}d", fileId.c_str(), changeRows);
     }
