@@ -89,6 +89,7 @@ public:
 private:
     static std::atomic<bool> isNeedRefreshAlbum;
     static std::atomic<bool> isInRefreshTask;
+    static std::mutex sRefreshAlbumMutex_;
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIALIBRARY_RDB_UTILS_H
