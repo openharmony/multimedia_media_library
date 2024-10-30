@@ -63,6 +63,7 @@ constexpr int32_t FACE_RECOGNITION = 1;
 constexpr int32_t FACE_FEATURE = 2;
 constexpr int32_t FACE_CLUSTERED = 3;
 constexpr int32_t CLOUD_POSITION_STATUS = 2;
+mutex MediaLibraryRdbUtils::sRefreshAlbumMutex_;
 
 // 注意，端云同步代码仓也有相同常量，添加新相册时，请通知端云同步进行相应修改
 const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
@@ -1964,10 +1965,32 @@ int RefreshAnalysisPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     return ret;
 }
 
+static bool IsRefreshAlbumEmpty(const shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    RdbPredicates predicates(ALBUM_REFRESH_TABLE);
+    vector<string> columns = { REFRESHED_ALBUM_ID };
+    auto resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Can not query ALBUM_REFRESH_TABLE");
+        return true;
+    }
+    int32_t count = -1;
+    int32_t ret = resultSet->GetRowCount(count);
+    MEDIA_DEBUG_LOG("RefreshAllAlbuming remain count:%{public}d", count);
+    return count <= 0;
+}
+
 int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     function<void(PhotoAlbumType, PhotoAlbumSubType, int)> refreshProcessHandler, function<void()> refreshCallback)
 {
+    unique_lock<mutex> lock(sRefreshAlbumMutex_);
+    if (IsInRefreshTask()) {
+        lock.unlock();
+        MEDIA_ERR_LOG("RefreshAllAlbuming, quit");
+        return E_ERR;
+    }
     isInRefreshTask = true;
+    lock.unlock();
 
     MediaLibraryTracer tracer;
     tracer.Start("RefreshAllAlbums");
@@ -1979,7 +2002,7 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbSt
 
     int ret = E_SUCCESS;
     bool isRefresh = false;
-    while (IsNeedRefreshAlbum()) {
+    while (IsNeedRefreshAlbum() || !IsRefreshAlbumEmpty(rdbStore)) {
         SetNeedRefreshAlbum(false);
         ret = RefreshPhotoAlbums(rdbStore, refreshProcessHandler);
         if (ret == E_EMPTY_ALBUM_ID) {
