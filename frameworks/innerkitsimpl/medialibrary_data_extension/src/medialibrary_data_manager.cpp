@@ -33,6 +33,7 @@
 #include "device_manager_callback.h"
 #endif
 #include "dfx_manager.h"
+#include "dfx_reporter.h"
 #include "dfx_utils.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
@@ -600,19 +601,31 @@ int32_t MediaLibraryDataManager::SolveInsertCmdSub(MediaLibraryCommand &cmd)
 
 static int32_t LogMovingPhoto(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue)
 {
-    bool inValid = false;
-    bool adapted = bool(dataShareValue.Get("adapted", inValid));
-    if (!inValid) {
+    bool isValid = false;
+    bool adapted = bool(dataShareValue.Get("adapted", isValid));
+    if (!isValid) {
         MEDIA_ERR_LOG("Invalid adapted value");
+        return E_ERR;
     }
     string packageName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-    if (!inValid) {
-        MEDIA_ERR_LOG("Invalid package name");
-    } else if (packageName.empty()) {
+    if (packageName.empty()) {
         MEDIA_WARN_LOG("Package name is empty, adapted: %{public}d", static_cast<int>(adapted));
     }
     DfxManager::GetInstance()->HandleAdaptationToMovingPhoto(packageName, adapted);
     return E_OK;
+}
+
+static int32_t LogMedialibraryAPI(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue)
+{
+    string packageName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    bool isValid = false;
+    string saveUri = string(dataShareValue.Get("saveUri", isValid));
+    CHECK_AND_RETURN_RET_LOG(isValid, E_FAIL, "Invalid saveUri value");
+    int32_t ret = DfxReporter::ReportMedialibraryAPI(packageName, saveUri);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("Log medialibrary API failed");
+    }
+    return ret;
 }
 
 static int32_t SolveOtherInsertCmd(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue,
@@ -624,6 +637,10 @@ static int32_t SolveOtherInsertCmd(MediaLibraryCommand &cmd, const DataShareValu
             if (cmd.GetOprnType() == OperationType::LOG_MOVING_PHOTO) {
                 solved = true;
                 return LogMovingPhoto(cmd, dataShareValue);
+            }
+            if (cmd.GetOprnType() == OperationType::LOG_MEDIALIBRARY_API) {
+                solved = true;
+                return LogMedialibraryAPI(cmd, dataShareValue);
             }
             return E_OK;
         }
@@ -1912,6 +1929,30 @@ int32_t MediaLibraryDataManager::CheckCloudThumbnailDownloadFinish()
     }
 
     return thumbnailService_->CheckCloudThumbnailDownloadFinish();
+}
+
+void MediaLibraryDataManager::UploadDBFileInner()
+{
+    lock_guard<shared_mutex> lock(mgrSharedMutex_);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr!");
+        return;
+    }
+    auto rawStore = rdbStore->GetRaw();
+    if (rawStore == nullptr) {
+        MEDIA_ERR_LOG("rawStore is nullptr!");
+        return;
+    }
+
+    std::string destPath = "/data/storage/el2/log/logpack/media_library.db";
+    std::string tmpPath = MEDIA_DB_DIR + "/rdb/media_library_tmp.db";
+    int32_t errCode = rawStore->Backup(tmpPath);
+    if (errCode != 0) {
+        MEDIA_ERR_LOG("rdb backup fail: %{public}d", errCode);
+        return;
+    }
+    MediaFileUtils::CopyFileUtil(tmpPath, destPath);
 }
 }  // namespace Media
 }  // namespace OHOS
