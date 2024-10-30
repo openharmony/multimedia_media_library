@@ -23,6 +23,9 @@ constexpr int32_t NORMAL_INTERNVAL = 1000;
 constexpr int32_t OVERLOAD_INTERNVAL = 2500;
 
 int32_t PowerEfficiencyManager::sAlbumUpdateInterval_ = NORMAL_INTERNVAL;
+bool PowerEfficiencyManager::isCharging_ = false;
+bool PowerEfficiencyManager::isScreenOff_ = false;
+
 PowerEfficiencyManager::PowerEfficiencyManager()
 {
 }
@@ -41,5 +44,17 @@ int32_t PowerEfficiencyManager::GetAlbumUpdateInterval()
 {
     return sAlbumUpdateInterval_;
 }
+
+void PowerEfficiencyManager::SetSubscriberStatus(bool isCharging, bool isScreenOff)
+{
+    isCharging_ = isCharging;
+    isScreenOff_ = isScreenOff;
+}
+
+bool PowerEfficiencyManager::IsChargingAndScreenOff()
+{
+    return isCharging_ && isScreenOff_;
+}
+
 } // namespace Media
 } // namespace OHOS
