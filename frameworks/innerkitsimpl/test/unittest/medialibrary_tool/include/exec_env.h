@@ -62,6 +62,7 @@ struct ExecEnv {
     DeleteParam deleteParam;
     QueryParam queryParam;
     std::string workPath; // current work path
+    bool isRoot = false;
     [[nodiscard]] std::string ToStr() const;
 };
 } // namespace MediaTool

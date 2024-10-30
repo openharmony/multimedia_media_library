@@ -81,9 +81,9 @@ MediaLibrary_ErrorCode MovingPhotoImpl::RequestContentWithUri(MediaLibrary_Resou
         destVideoUri_ = uri;
         MEDIA_DEBUG_LOG("Request content with uri destVideoUri_ = %{public}s", destVideoUri_);
     } else {
-        MEDIA_ERR_LOG("Request content with uri, invalid resourceType");
         destImageUri_ = nullptr;
         destVideoUri_ = nullptr;
+        MEDIA_ERR_LOG("Request content with uri, invalid resourceType");
         return MEDIA_LIBRARY_PARAMETER_ERROR;
     }
     int32_t ret = RequestContentToSandbox();

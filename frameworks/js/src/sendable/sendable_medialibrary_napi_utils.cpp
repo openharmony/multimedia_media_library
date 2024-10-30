@@ -368,6 +368,10 @@ napi_status SendableMediaLibraryNapiUtils::GetPredicate(napi_env env, const napi
         CHECK_STATUS_RET(napi_get_named_property(env, arg, propName.c_str(), &property), "Failed to get property");
         JSProxy::JSProxy<DataShareAbsPredicates> *jsProxy = nullptr;
         napi_unwrap(env, property, reinterpret_cast<void **>(&jsProxy));
+        if (jsProxy == nullptr) {
+            NAPI_ERR_LOG("jsProxy is invalid");
+            return napi_invalid_arg;
+        }
         shared_ptr<DataShareAbsPredicates> predicate = jsProxy->GetInstance();
         CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType) == TRUE, napi_invalid_arg,
             "invalid predicate");
@@ -1227,6 +1231,10 @@ napi_status SendableMediaLibraryNapiUtils::ParsePredicates(napi_env env, const n
 {
     JSProxy::JSProxy<DataShareAbsPredicates> *jsProxy = nullptr;
     napi_unwrap(env, arg, reinterpret_cast<void **>(&jsProxy));
+    if (jsProxy == nullptr) {
+        NAPI_ERR_LOG("jsProxy is invalid");
+        return napi_invalid_arg;
+    }
     shared_ptr<DataShareAbsPredicates> predicate = jsProxy->GetInstance();
     CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType) == TRUE,
         napi_invalid_arg, "invalid predicate");
