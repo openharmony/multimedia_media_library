@@ -79,6 +79,7 @@ private:
     uint32_t callingUid_ {0};
     int32_t userId_ {0};
     PhotoSubType subType_ = PhotoSubType::DEFAULT;
+    bool isMovingPhotoVideoSaved_ = false;
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
 };
 } // Media
