@@ -3387,6 +3387,18 @@ int32_t MediaLibraryPhotoOperations::ScanFileWithoutAlbumUpdate(MediaLibraryComm
     return E_OK;
 }
 
+static void UpdateDirty(int32_t fileId)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, 0);
+    predicates.EqualTo(PhotoColumn::PHOTO_DIRTY, -1);
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
+    int32_t updateDirtyRows = MediaLibraryRdbStore::Update(values, predicates);
+    MEDIA_INFO_LOG("update dirty to 1, file_id:%{public}d, changedRows:%{public}d", fileId, updateDirtyRows);
+}
+
 int32_t MediaLibraryPhotoOperations::DegenerateMovingPhoto(MediaLibraryCommand &cmd)
 {
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
@@ -3411,8 +3423,13 @@ int32_t MediaLibraryPhotoOperations::DegenerateMovingPhoto(MediaLibraryCommand &
     string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(fileAsset->GetFilePath());
     size_t videoSize = 0;
     if (MediaFileUtils::GetFileSize(videoPath, videoSize) && videoSize > 0) {
-        MEDIA_INFO_LOG("video of moving photo exists, no need to degenerate");
+        MEDIA_INFO_LOG("no need to degenerate, video size:%{public}d", static_cast<int32_t>(videoSize));
         return E_OK;
+    }
+
+    if (MediaFileUtils::IsFileExists(videoPath)) {
+        MEDIA_INFO_LOG("delete empty video file, size:%{public}d", static_cast<int32_t>(videoSize));
+        (void)MediaFileUtils::DeleteFile(videoPath);
     }
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
@@ -3426,6 +3443,7 @@ int32_t MediaLibraryPhotoOperations::DegenerateMovingPhoto(MediaLibraryCommand &
         MEDIA_WARN_LOG("Failed to update subtype, updatedRows=%{public}d", updatedRows);
         return updatedRows;
     }
+    UpdateDirty(fileAsset->GetId());
 
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetFilePath());
     auto watch = MediaLibraryNotify::GetInstance();
