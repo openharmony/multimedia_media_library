@@ -764,6 +764,7 @@ static void HandleDateAdded(const int64_t dateAdded, const MediaType type, Value
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
     outValues.PutString(PhotoColumn::PHOTO_DATE_DAY,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
+    outValues.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateAdded);
 }
 
 static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &fileAsset, ValuesBucket &outValues)
