@@ -56,8 +56,10 @@ public:
     EXPORT static void SetParameterToStopSync();
     EXPORT static void SetParameterToStartSync();
     EXPORT static int32_t CleanInvalidCloudAlbumAndData();
-    EXPORT static int32_t CopyLocalSingleFile(NativeRdb::RdbStore *upgradeStore, const int32_t &assetId,
-        const int32_t &ownerAlbumId, std::shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId);
+    EXPORT static int32_t CloneSingleAsset(const int32_t &assetId, const std::string title);
+    EXPORT static int32_t CopyLocalSingleFile(NativeRdb::RdbStore *upgradeStore,
+        const int32_t &ownerAlbumId, std::shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId,
+        const std::string displayName = "");
     EXPORT static int32_t CopyCloudSingleFile(NativeRdb::RdbStore *upgradeStore, const int32_t &assetId,
         const int32_t &ownerAlbumId, std::shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId);
     EXPORT static int32_t DeleteALbumAndUpdateRelationship(NativeRdb::RdbStore *upgradeStore,
