@@ -102,7 +102,7 @@ static const uint8_t BUF[] = {
 };
 
 static const std::string EDITDATA_VALUE = "{\"imageEffect\":{\"filters\":[{\"name\":\"InplaceSticker\","
-    "\"values\":{\"RESOURCE_DIRECTORY\":\"/sys_prod/resource\"}}],\"name\":\"brandWaterMark\"}}";
+    "\"values\":{\"RESOURCE_DIRECTORY\":\"/sys_prod/resource/camera\"}}],\"name\":\"brandWaterMark\"}}";
 static const std::string COMPATIBLE_FORMAT_VALUE = "com.demo.test";
 static const std::string FORMAT_VERSION_VALUE = "0";
 static const std::string ROOT_DIR = "/storage/cloud/files/";
