@@ -164,9 +164,11 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
 
 void AddVirtualColumnsOfDateType(vector<string>& columns)
 {
-    vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED };
+    vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED,
+            MEDIA_DATA_DB_DATE_TAKEN };
     vector<string> dateTypeSeconds = { MEDIA_DATA_DB_DATE_ADDED_TO_SECOND,
-            MEDIA_DATA_DB_DATE_TRASHED_TO_SECOND, MEDIA_DATA_DB_DATE_MODIFIED_TO_SECOND };
+            MEDIA_DATA_DB_DATE_TRASHED_TO_SECOND, MEDIA_DATA_DB_DATE_MODIFIED_TO_SECOND,
+            MEDIA_DATA_DB_DATE_TAKEN_TO_SECOND };
     for (size_t i = 0; i < dateTypes.size(); i++) {
         auto it = find(columns.begin(), columns.end(), dateTypes[i]);
         if (it != columns.end()) {
