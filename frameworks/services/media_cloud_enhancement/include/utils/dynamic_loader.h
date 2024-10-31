@@ -34,7 +34,7 @@ public:
  
     void* OpenDynamicHandle(std::string dynamicLibrary);
     void CloseDynamicHandle(std::string dynamicLibrary);
-    void* GetFuntion(const std::string dynamicLibrary, const std::string function);
+    void* GetFunction(const std::string dynamicLibrary, const std::string function);
     inline bool EndsWith(const std::string& str, const std::string& suffix)
     {
         if (str.length() >= suffix.length()) {
@@ -49,4 +49,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif  // FRAMEWORKS_SERVICES_MEDIA_CLOUD_ENHANCEMENT_INCLUDE_DYNAMIC_LOADER_H
+#endif  // FRAMEWORKS_SERVICES_MEDIA_CLOUD_ENHANCEMENT_INCLUDE_DYNAMIC_LOADER_H

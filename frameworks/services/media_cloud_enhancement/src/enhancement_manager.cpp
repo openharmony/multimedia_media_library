@@ -44,24 +44,23 @@ using namespace OHOS::MediaEnhance;
 namespace OHOS {
 namespace Media {
 using json = nlohmann::json;
-const string FILE_TPYE = "fileType";
-const string IS_HDR_VIVID = "isHdrVivid";
-const string HAS_WATER_MARK_INFO = "hasCloudWaterMark";
-const string CLOUD_WATER_MARK_INFO = "cloudWaterMarkInfo";
-const int32_t NO = 0;
-const int32_t YES = 1;
-const string JPEG_STR = "image/jpeg";
-const string HEIF_STR = "image/heic";
-const string JPEG_TYPE = "JPEG";
-const string HEIF_TYPE = "HEIF";
-const unordered_map<string, string> CLOUD_ENHANCEMENT_MIME_TYPE_MAP = {
+static const string FILE_TPYE = "fileType";
+static const string IS_HDR_VIVID = "isHdrVivid";
+static const string HAS_WATER_MARK_INFO = "hasCloudWaterMark";
+static const string CLOUD_WATER_MARK_INFO = "cloudWaterMarkInfo";
+static const int32_t NO = 0;
+static const int32_t YES = 1;
+static const string JPEG_STR = "image/jpeg";
+static const string HEIF_STR = "image/heic";
+static const string JPEG_TYPE = "JPEG";
+static const string HEIF_TYPE = "HEIF";
+static const unordered_map<string, string> CLOUD_ENHANCEMENT_MIME_TYPE_MAP = {
     { JPEG_STR, JPEG_TYPE },
     { HEIF_STR, HEIF_TYPE },
 };
 
 EnhancementManager::EnhancementManager()
 {
-    LoadService();
     threadManager_ = make_shared<EnhancementThreadManager>();
 }
 
@@ -168,10 +167,14 @@ bool EnhancementManager::InitAsync()
     return true;
 }
 
-bool EnhancementManager::Init(bool isReconnected)
+bool EnhancementManager::Init()
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     // restart
+    if (!LoadService()) {
+        MEDIA_ERR_LOG("load enhancement service error");
+        return false;
+    }
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     vector<string> columns = {
         MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_ID,
@@ -191,13 +194,6 @@ bool EnhancementManager::Init(bool isReconnected)
         int32_t dynamicRangeType = GetInt32Val(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, resultSet);
         int32_t hasCloudWatermark = GetInt32Val(PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, resultSet);
         MEDIA_INFO_LOG("restart and submit: fileId: %{public}d, photoId: %{public}s", fileId, photoId.c_str());
-        if (isReconnected) {
-            enhancementService_ = make_shared<EnhancementServiceAdapter>();
-        }
-        if (!LoadService()) {
-            MEDIA_ERR_LOG("load enhancement service error");
-            continue;
-        }
         MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
         if (mediaEnhanceBundle == nullptr) {
             continue;
