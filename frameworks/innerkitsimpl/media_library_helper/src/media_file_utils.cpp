@@ -1750,8 +1750,12 @@ string MediaFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
 
 bool MediaFileUtils::CheckMovingPhotoExtension(const string &extension)
 {
+    return IsMovingPhotoMimeType(MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP));
+}
+
+bool MediaFileUtils::IsMovingPhotoMimeType(const string &mimeType)
+{
     // image of moving photo must be image/jpeg, image/heif or image/heic
-    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP);
     return mimeType == "image/jpeg" || mimeType == "image/heif" || mimeType == "image/heic";
 }
 
