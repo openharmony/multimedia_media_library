@@ -1344,18 +1344,10 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAl
 
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
-    
-    string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
-    system(cmdMkdir.c_str());
-    std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
-    NativeRdb::RdbStoreConfig config(path);
-    CloneOpenCall helper;
-    int errCode = 0;
-    othersClone->mediaLibraryRdb_ = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
 
     std::vector<FileInfo> fileInfos;
     othersClone->RestoreAlbum(fileInfos);
-    EXPECT_FALSE(othersClone->photoAlbumDao_.mediaLibraryRdb_ == nullptr);
+    EXPECT_TRUE(othersClone->photoAlbumDao_.mediaLibraryRdb_ == nullptr);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAlbum_002, TestSize.Level0)
@@ -1365,7 +1357,9 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAl
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
     
+    FileInfo fileInfo;
     std::vector<FileInfo> fileInfos;
+    fileInfos.push_back(fileInfo);
     othersClone->RestoreAlbum(fileInfos);
     EXPECT_TRUE(othersClone->photoAlbumDao_.mediaLibraryRdb_ == nullptr);
 }

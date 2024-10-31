@@ -764,6 +764,7 @@ static void HandleDateAdded(const int64_t dateAdded, const MediaType type, Value
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
     outValues.PutString(PhotoColumn::PHOTO_DATE_DAY,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
+    outValues.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateAdded);
 }
 
 static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &fileAsset, ValuesBucket &outValues)
@@ -2154,6 +2155,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_QUALITY, { IsInt32 } },
     { PhotoColumn::PHOTO_FIRST_VISIT_TIME, { IsInt64 } },
     { PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, { IsInt32 } },
+    { PhotoColumn::PHOTO_SUBTYPE, { IsInt32 } },
     { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, { IsInt32 } },
     { PhotoColumn::PHOTO_COVER_POSITION, { IsInt64 } },
     { PhotoColumn::PHOTO_IS_TEMP, { IsBool } },

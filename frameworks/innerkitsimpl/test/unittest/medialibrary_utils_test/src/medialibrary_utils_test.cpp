@@ -265,6 +265,101 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_002, TestSiz
     EXPECT_EQ(ret, false);
 }
 
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightInfos_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string table = "medialib_QueryNoHighlightInfos_test_001";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = table
+    };
+    vector<ThumbnailData> infos;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryNoHighlightInfos(opts, infos, err);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightInfos_test_002, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string table = "tab_analysis_video_label";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = table
+    };
+    vector<ThumbnailData> infos;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryNoHighlightInfos(opts, infos, err);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_GetHighlightValue_test_001, TestSize.Level0)
+{
+    string str = "{name:value}";
+    string key = "nonexistent";
+    EXPECT_EQ(ThumbnailUtils::GetHighlightValue(str, key), "");
+    str = "{name value}";
+    key = "name";
+    EXPECT_EQ(ThumbnailUtils::GetHighlightValue(str, key), "");
+    str = "{name:value";
+    key = "name";
+    EXPECT_EQ(ThumbnailUtils::GetHighlightValue(str, key), "");
+    str = "{name:value, type:1}";
+    key = "name";
+    EXPECT_EQ(ThumbnailUtils::GetHighlightValue(str, key), "value");
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryHighlightTriggerPath_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string table = "Photos";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = table
+    };
+    ThumbnailData data;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryHighlightTriggerPath(opts, data, err);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_GetHighlightTracks_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string table = "tab_analysis_video_label";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = table
+    };
+    vector<int> infos;
+    int err = 0;
+    bool ret = ThumbnailUtils::GetHighlightTracks(opts, infos, err);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightPath_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    ThumbnailData data;
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+    };
+    int err = 0;
+    data.id = "1";
+    bool ret = ThumbnailUtils::QueryNoHighlightPath(opts, data, err);
+    EXPECT_EQ(ret, false);
+}
+
 HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateLcdInfo_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
@@ -693,6 +788,10 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0
     EXPECT_EQ(ret, false);
     ret = ThumbnailUtils::LoadVideoFile(data, desiredSize);
     EXPECT_EQ(ret, false);
+    ret = ThumbnailUtils::LoadAudioFile(data, desiredSize);
+    EXPECT_EQ(ret, false);
+    data.tracks = "tracks";
+    data.timeStamp = "0";
     ret = ThumbnailUtils::LoadAudioFile(data, desiredSize);
     EXPECT_EQ(ret, false);
 }

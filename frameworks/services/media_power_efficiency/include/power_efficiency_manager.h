@@ -28,7 +28,11 @@ public:
     ~PowerEfficiencyManager();
     EXPORT static void UpdateAlbumUpdateInterval(bool isNormal);
     EXPORT static int32_t GetAlbumUpdateInterval();
+    EXPORT static void SetSubscriberStatus(bool isCharging, bool isScreenOff);
+    EXPORT static bool IsChargingAndScreenOff();
 
+    static bool isCharging_;
+    static bool isScreenOff_;
 private:
     static int32_t sAlbumUpdateInterval_;
 };

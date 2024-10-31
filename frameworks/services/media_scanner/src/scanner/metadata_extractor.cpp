@@ -203,13 +203,12 @@ static void ExtractDetailTimeMetadata(unique_ptr<ImageSource>& imageSource, uniq
 
 static void ExtractDateTakenMetadata(unique_ptr<ImageSource>& imageSource, unique_ptr<Metadata>& data)
 {
-    uint32_t err = E_ERR;
     string dateString;
     string timeString;
     int64_t int64Time = 0;
     int32_t offsetTime = 0;
     string offsetString;
-    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL, timeString);
+    uint32_t err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL, timeString);
     if (err == E_OK && !timeString.empty()) {
         err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_OFFSET_TIME_ORIGINAL, offsetString);
         if (err == E_OK && offsetTimeToSeconds(offsetString, offsetTime) == E_OK) {
@@ -250,7 +249,8 @@ static void ExtractDateTakenMetadata(unique_ptr<ImageSource>& imageSource, uniqu
         }
     }
     // use modified time as date taken time when date taken not set
-    data->SetDateTaken(data->GetDateTaken() == 0 ? data->GetFileDateModified() : data->GetDateTaken());
+    data->SetDateTaken((data->GetDateTaken() == 0 || data->GetDateTaken() == data->GetFileDateAdded()) ?
+        data->GetFileDateModified() : data->GetDateTaken());
     MEDIA_DEBUG_LOG("Set date_taken use modified time");
 }
 
