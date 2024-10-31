@@ -793,10 +793,10 @@ HWTEST_F(MediaLibraryCloudEnhancementGetPairTest, dfx_total_time_033, TestSize.L
     MEDIA_INFO_LOG("dfx_total_time_033 Start");
     string photoId = "1234566";
     string type = "TestType";
-    CloudEnhancementGetCount::GetInstance().AddStartTimes(photoId);
-    EXPECT_EQ(CloudEnhancementGetCount::GetInstance().empty(), false);
+    CloudEnhancementGetCount::GetInstance().AddStartTime(photoId);
+    EXPECT_EQ(CloudEnhancementGetCount::GetInstance().GetStartTimes().empty(), false);
     // sleep for 1234 millseconds
-    this_theard::sleep_for(chrono::milliseconds(1234));
+    this_thread::sleep_for(chrono::milliseconds(1234));
     CloudEnhancementGetCount::GetInstance().Report(type, photoId);
     EXPECT_EQ(CloudEnhancementGetCount::GetInstance().GetStartTimes().empty(), true);
     MEDIA_INFO_LOG("dfx_total_time_033 End");

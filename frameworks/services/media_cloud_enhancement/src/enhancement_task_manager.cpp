@@ -88,5 +88,5 @@ int32_t EnhancementTaskManager::GetTaskRequestCount(const string &photoId)
     }
     return -1;
 }
-} // Media
-} // OHOS
+} // namespace Media
+} // namespace OHOS
