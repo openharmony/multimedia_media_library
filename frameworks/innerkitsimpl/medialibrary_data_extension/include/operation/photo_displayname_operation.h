@@ -161,8 +161,8 @@ public:
         }
         // Build the photo asset info.
         PhotoDisplayNameOperation::PhotoAssetInfo photoAssetInfo;
-        photoAssetInfo.displayName = 
-            displayName == "" ? GetStringVal(MediaColumn::MEDIA_NAME, resultSet) : displayName;
+        photoAssetInfo.displayName = displayName == "" ? GetStringVal(MediaColumn::MEDIA_NAME,
+            resultSet) : displayName;
         photoAssetInfo.subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
         photoAssetInfo.ownerAlbumId = targetAlbumId;
         return this->FindDislayName(rdbStore, photoAssetInfo);
