@@ -432,6 +432,8 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("WIDTH",                     PhotoColumn::PHOTO_WIDTH),
     std::make_pair("HEIGHT",                    PhotoColumn::PHOTO_HEIGHT),
     std::make_pair("DATE_TAKEN",                MediaColumn::MEDIA_DATE_TAKEN),
+    std::make_pair("DATE_TAKEN_MS",             MEDIA_DATA_DB_DATE_TAKEN_MS),
+    std::make_pair("DETAIL_TIME",               PhotoColumn::PHOTO_DETAIL_TIME),
     std::make_pair("ORIENTATION",               PhotoColumn::PHOTO_ORIENTATION),
     std::make_pair("FAVORITE",                  MediaColumn::MEDIA_IS_FAV),
     std::make_pair("MEDIA_TYPE",                MediaColumn::MEDIA_TYPE),

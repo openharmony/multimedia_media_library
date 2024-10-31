@@ -45,6 +45,7 @@ const int32_t CLONE_QUERY_COUNT = 200;
 const int32_t SYSTEM_ALBUM_ID_START = 1;
 const int32_t SYSTEM_ALBUM_ID_END = 7;
 const string MEDIA_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
+constexpr int64_t SECONDS_LEVEL_LIMIT = 1e10;
 const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
     { PhotoColumn::PHOTOS_TABLE,
         {
@@ -521,6 +522,14 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
         auto columnVal = it->second;
         if (columnName == PhotoColumn::PHOTO_EDIT_TIME) {
             PrepareEditTimeVal(values, get<int64_t>(columnVal), fileInfo, commonColumnInfoMap);
+            continue;
+        }
+        if (columnName == PhotoColumn::MEDIA_DATE_TAKEN) {
+            if (get<int64_t>(columnVal) > SECONDS_LEVEL_LIMIT) {
+                values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, get<int64_t>(columnVal));
+            } else {
+                values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, get<int64_t>(columnVal) * MSEC_TO_SEC);
+            }
             continue;
         }
         PrepareCommonColumnVal(values, columnName, columnVal, commonColumnInfoMap);

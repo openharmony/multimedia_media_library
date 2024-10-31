@@ -25,7 +25,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t MEDIA_RDB_VERSION = 107;
+const int32_t MEDIA_RDB_VERSION = 108;
 
 enum {
     VERSION_ADD_CLOUD = 2,
@@ -135,6 +135,7 @@ enum {
     VERSION_ADD_INDEX_FOR_FILEID = 105,
     VERSION_MOVE_AUDIOS = 106,
     VERSION_FIX_PHOTO_SCHPT_MEDIA_TYPE_INDEX = 107,
+    VERSION_ADD_DETAIL_TIME = 108,
 };
 
 enum {
@@ -246,6 +247,9 @@ const std::string MEDIA_DATA_DB_ORIENTATION = "orientation";
 const std::string MEDIA_DATA_DB_LATITUDE = "latitude";
 const std::string MEDIA_DATA_DB_LONGITUDE = "longitude";
 const std::string MEDIA_DATA_DB_DATE_TAKEN = "date_taken";
+const std::string MEDIA_DATA_DB_DATE_TAKEN_S = "date_taken_s";
+const std::string MEDIA_DATA_DB_DATE_TAKEN_MS = "date_taken_ms";
+const std::string MEDIA_DATA_DB_DATE_TAKEN_TO_SECOND = "CAST(date_taken / 1000 AS BIGINT) AS date_taken_s";
 const std::string MEDIA_DATA_DB_THUMBNAIL = "thumbnail";
 const std::string MEDIA_DATA_DB_THUMB_ASTC = "astc";
 const std::string MEDIA_DATA_DB_HAS_ASTC = "has_astc"; // This attribute has been replaced by "thumbnail_ready"
@@ -301,6 +305,7 @@ const std::map<std::string, std::string> DATE_TRANSITION_MAP = {
     { MEDIA_DATA_DB_DATE_MODIFIED_MS, MEDIA_DATA_DB_DATE_MODIFIED },
     { MEDIA_DATA_DB_DATE_ADDED_MS, MEDIA_DATA_DB_DATE_ADDED },
     { MEDIA_DATA_DB_DATE_TRASHED_MS, MEDIA_DATA_DB_DATE_TRASHED },
+    { MEDIA_DATA_DB_DATE_TAKEN_MS, MEDIA_DATA_DB_DATE_TAKEN },
 };
 
 // ringtone uri constants
