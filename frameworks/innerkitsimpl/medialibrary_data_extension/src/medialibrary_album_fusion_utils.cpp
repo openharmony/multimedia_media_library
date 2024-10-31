@@ -845,15 +845,15 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int32_t &assetId, c
     GetIntValueFromResultSet(resultSet, PhotoColumn::PHOTO_OWNER_ALBUM_ID, ownerAlbumId);
     int32_t err = CopyLocalSingleFile(rdbStore->GetRaw().get(), ownerAlbumId, resultSet, newAssetId,
         displayName);
-    MEDIA_INFO_LOG("NewAssetId = %{public}ld", newAssetId);
+    MEDIA_INFO_LOG("NewAssetId = %{public}lld", (long long)newAssetId);
 
     int64_t now = MediaFileUtils::UTCTimeMilliSeconds();
     const std::string executeSql =
         "update Photos set date_added = " + to_string(now) + " WHERE file_id = " + to_string(newAssetId);
     int32_t ret = rdbStore->GetRaw()->ExecuteSql(executeSql);
     if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to update newAsset data, ret = %{public}d, newAssetId is %{public}ld",
-            ret, newAssetId);
+        MEDIA_ERR_LOG("Failed to update newAsset data, ret = %{public}d, newAssetId is %{public}lld",
+            ret, (long long)newAssetId);
         return E_HAS_DB_ERROR;
     }
     return newAssetId;
