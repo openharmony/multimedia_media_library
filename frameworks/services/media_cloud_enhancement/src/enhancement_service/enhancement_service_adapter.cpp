@@ -20,9 +20,7 @@
 #include "ipc_skeleton.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
-
 #include <dlfcn.h>
-#include "media_log.h"
 #include "dynamic_loader.h"
 #include "enhancement_service_callback.h"
 #include "cloud_enhancement_dfx_get_count.h"
@@ -55,7 +53,7 @@ using ClientAddTask = int32_t (*)(MediaEnhanceClientHandle* client, const char* 
                                   MediaEnhanceBundleHandle* bundle);
 using ClientSetResultCallback = int32_t (*)(MediaEnhanceClientHandle* client, MediaEnhance_Callbacks* callbacks);
 using ClientGetPenddingTask = int32_t (*)(MediaEnhanceClientHandle* client, Pendding_Task** taskIdList, uint32_t* size);
-using ClientDeletePenddingTask = int32_t (*)(Pendding_Task* taskIdList, uint32_t size);
+using ClientDeletePenddingTask = void (*)(Pendding_Task* taskIdList, uint32_t size);
 using ClientStopService = int32_t (*)(MediaEnhanceClientHandle* client);
 using ClientCancelTask = int32_t (*)(MediaEnhanceClientHandle* client, const char* taskId);
 using ClientRemoveTask = int32_t (*)(MediaEnhanceClientHandle* client, const char* taskId);
@@ -87,35 +85,35 @@ shared_ptr<DynamicLoader> EnhancementServiceAdapter::dynamicLoader_
 
 void EnhancementServiceAdapter::ClientFuncInit()
 {
-    createMCEClientFunc = (CreateMCEClient)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    createMCEClientFunc = (CreateMCEClient)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "CreateMediaEnhanceClient");
     if (createMCEClientFunc == nullptr) {
         MEDIA_ERR_LOG("CreateMediaEnhanceClient dlsym failed.error:%{public}s", dlerror());
         return;
     }
  
-    destroyMCEClientFunc = (DestroyMCEClient)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
-        "DestroyMediaEnhanceBundle");
+    destroyMCEClientFunc = (DestroyMCEClient)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        "DestroyMediaEnhanceClient");
     if (destroyMCEClientFunc == nullptr) {
         MEDIA_ERR_LOG("DestroyMediaEnhanceClient dlsym failed.error:%{public}s", dlerror());
         return;
     }
  
-    clientLoadSaFunc = (ClientLoadSA)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    clientLoadSaFunc = (ClientLoadSA)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhanceClient_LoadSA");
     if (clientLoadSaFunc == nullptr) {
         MEDIA_ERR_LOG("MediaEnhanceClient_LoadSA dlsym failed.error:%{public}s", dlerror());
         return;
     }
  
-    clientIsConnectedFunc = (ClientIsConnected)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    clientIsConnectedFunc = (ClientIsConnected)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhanceClient_IsConnected");
     if (clientIsConnectedFunc == nullptr) {
         MEDIA_ERR_LOG("MediaEnhanceClient_IsConnected dlsym failed.error:%{public}s", dlerror());
         return;
     }
 
-    clientSetResultCallback = (ClientSetResultCallback)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    clientSetResultCallback = (ClientSetResultCallback)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhanceClient_SetResultCallback");
     if (clientSetResultCallback == nullptr) {
         MEDIA_ERR_LOG("MediaEnhanceClient_SetResultCallback dlsym failed.error:%{public}s", dlerror());
@@ -125,42 +123,42 @@ void EnhancementServiceAdapter::ClientFuncInit()
 
 void EnhancementServiceAdapter::TaskFuncInit()
 {
-    clientAddTaskFunc = (ClientAddTask)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    clientAddTaskFunc = (ClientAddTask)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhanceClient_AddTask");
     if (clientAddTaskFunc == nullptr) {
         MEDIA_ERR_LOG("MediaEnhanceClient_AddTask dlsym failed.error:%{public}s", dlerror());
         return;
     }
 
-    clientGetPenddingTask = (ClientGetPenddingTask)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    clientGetPenddingTask = (ClientGetPenddingTask)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhanceClient_GetPendingTasks");
     if (clientGetPenddingTask == nullptr) {
         MEDIA_ERR_LOG("MediaEnhanceClient_GetPendingTasks dlsym failed. error:%{public}s", dlerror());
         return;
     }
 
-    clientDeletePenddingTask = (ClientDeletePenddingTask)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    clientDeletePenddingTask = (ClientDeletePenddingTask)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhance_DeletePendingTasks");
     if (clientDeletePenddingTask == nullptr) {
         MEDIA_ERR_LOG("MediaEnhance_DeletePendingTasks dlsym failed. error:%{public}s", dlerror());
         return;
     }
 
-    clientStopServiceFunc = (ClientStopService)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    clientStopServiceFunc = (ClientStopService)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhanceClient_StopService");
     if (clientStopServiceFunc == nullptr) {
         MEDIA_ERR_LOG("MediaEnhanceClient_StopService dlsym failed. error:%{public}s", dlerror());
         return;
     }
 
-    clientCancelTaskFunc = (ClientCancelTask)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    clientCancelTaskFunc = (ClientCancelTask)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhanceClient_CancelTask");
     if (clientCancelTaskFunc == nullptr) {
         MEDIA_ERR_LOG("MediaEnhanceClient_CancelTask dlsym failed. error:%{public}s", dlerror());
         return;
     }
 
-    clientRemoveTaskFunc = (ClientRemoveTask)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    clientRemoveTaskFunc = (ClientRemoveTask)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhanceClient_RemoveTask");
     if (clientRemoveTaskFunc == nullptr) {
         MEDIA_ERR_LOG("MediaEnhanceClient_RemoveTask dlsym failed. error:%{public}s", dlerror());
@@ -170,35 +168,35 @@ void EnhancementServiceAdapter::TaskFuncInit()
 
 void EnhancementServiceAdapter::BundleFuncInit()
 {
-    bundleHandleGetIntFunc = (BundleHandleGetInt)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    bundleHandleGetIntFunc = (BundleHandleGetInt)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhanceBundle_GetInt");
     if (bundleHandleGetIntFunc == nullptr) {
         MEDIA_ERR_LOG("MediaEnhanceBundle_GetInt dlsym failed. error:%{public}s", dlerror());
         return;
     }
  
-    bundleGetResBufferFunc = (BundleHandleGetResBuffer)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    bundleGetResBufferFunc = (BundleHandleGetResBuffer)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhanceBundle_GetResultBuffers");
     if (bundleGetResBufferFunc == nullptr) {
         MEDIA_ERR_LOG("MediaEnhanceBundle_GetResultBuffers dlsym failed. error:%{public}s", dlerror());
         return;
     }
  
-    bundleHandlePutIntFunc = (BundleHandlePutInt)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    bundleHandlePutIntFunc = (BundleHandlePutInt)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhanceBundle_PutInt");
     if (bundleHandlePutIntFunc == nullptr) {
         MEDIA_ERR_LOG("MediaEnhanceBundle_PutInt dlsym failed. error:%{public}s", dlerror());
         return;
     }
     
-    bundleHandlePutStringFunc = (BundleHandlePutString)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    bundleHandlePutStringFunc = (BundleHandlePutString)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhanceBundle_PutString");
     if (bundleHandlePutStringFunc == nullptr) {
         MEDIA_ERR_LOG("MediaEnhanceBundle_PutString dlsym failed. error:%{public}s", dlerror());
         return;
     }
 
-    bundleDeleteRawData = (BundleDeleteRawData)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+    bundleDeleteRawData = (BundleDeleteRawData)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
         "MediaEnhance_DeleteRawDataList");
     if (bundleDeleteRawData == nullptr) {
         MEDIA_ERR_LOG("MediaEnhance_DeleteRawDataList dlsym failed. error:%{public}s", dlerror());
@@ -209,7 +207,7 @@ void EnhancementServiceAdapter::BundleFuncInit()
 void EnhancementServiceAdapter::InitEnhancementClient(MediaEnhance_TASK_TYPE taskType)
 {
     if (createMCEClientFunc == nullptr) {
-        createMCEClientFunc = (CreateMCEClient)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        createMCEClientFunc = (CreateMCEClient)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "CreateMediaEnhanceClient");
     }
     if (createMCEClientFunc == nullptr) {
@@ -225,8 +223,8 @@ void EnhancementServiceAdapter::InitEnhancementClient(MediaEnhance_TASK_TYPE tas
 void EnhancementServiceAdapter::DestroyEnhancementClient()
 {
     if (destroyMCEClientFunc == nullptr) {
-        destroyMCEClientFunc = (DestroyMCEClient)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
-            "DestroyMediaEnhanceBundle");
+        destroyMCEClientFunc = (DestroyMCEClient)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
+            "DestroyMediaEnhanceClient");
     }
     if (destroyMCEClientFunc == nullptr) {
         MEDIA_ERR_LOG("DestroyMediaEnhanceClient dlsym failed.error:%{public}s", dlerror());
@@ -290,7 +288,7 @@ int32_t EnhancementServiceAdapter::SetResultCallback()
         .onSAReconnectedFunc = &EnhancementServiceCallback::OnServiceReconnected,
     };
     if (clientSetResultCallback == nullptr) {
-        clientSetResultCallback = (ClientSetResultCallback)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        clientSetResultCallback = (ClientSetResultCallback)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhanceClient_SetResultCallback");
     }
     if (clientSetResultCallback == nullptr) {
@@ -311,7 +309,7 @@ int32_t EnhancementServiceAdapter::LoadSA()
         return E_ERR;
     }
     if (clientLoadSaFunc == nullptr) {
-        clientLoadSaFunc = (ClientLoadSA)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        clientLoadSaFunc = (ClientLoadSA)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhanceClient_LoadSA");
     }
     if (clientLoadSaFunc == nullptr) {
@@ -332,7 +330,7 @@ bool EnhancementServiceAdapter::IsConnected(MediaEnhanceClientHandle* clientWrap
         return E_ERR;
     }
     if (clientIsConnectedFunc == nullptr) {
-        clientIsConnectedFunc = (ClientIsConnected)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        clientIsConnectedFunc = (ClientIsConnected)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhanceClient_IsConnected");
     }
     if (clientIsConnectedFunc == nullptr) {
@@ -363,7 +361,7 @@ int32_t EnhancementServiceAdapter::LoadEnhancementService()
 MediaEnhanceBundleHandle* EnhancementServiceAdapter::CreateBundle()
 {
     if (createMCEBundleFunc == nullptr) {
-        createMCEBundleFunc = (CreateMCEBundle)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        createMCEBundleFunc = (CreateMCEBundle)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "CreateMediaEnhanceBundle");
     }
     if (createMCEBundleFunc == nullptr) {
@@ -376,7 +374,7 @@ MediaEnhanceBundleHandle* EnhancementServiceAdapter::CreateBundle()
 void EnhancementServiceAdapter::DestroyBundle(MediaEnhanceBundleHandle* bundle)
 {
     if (destroyMCEBundleFunc == nullptr) {
-        destroyMCEBundleFunc = (DestroyMCEBundle)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        destroyMCEBundleFunc = (DestroyMCEBundle)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "DestroyMediaEnhanceBundle");
     }
     if (destroyMCEBundleFunc == nullptr) {
@@ -389,7 +387,7 @@ void EnhancementServiceAdapter::DestroyBundle(MediaEnhanceBundleHandle* bundle)
 int32_t EnhancementServiceAdapter::GetInt(MediaEnhanceBundleHandle* bundle, const char* key)
 {
     if (bundleHandleGetIntFunc == nullptr) {
-        bundleHandleGetIntFunc = (BundleHandleGetInt)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        bundleHandleGetIntFunc = (BundleHandleGetInt)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhanceBundle_GetInt");
     }
     if (bundleHandleGetIntFunc == nullptr) {
@@ -405,7 +403,7 @@ int32_t EnhancementServiceAdapter::FillTaskWithResultBuffer(MediaEnhanceBundleHa
     Raw_Data* rawDateVec;
     uint32_t size;
     if (bundleGetResBufferFunc == nullptr) {
-        bundleGetResBufferFunc = (BundleHandleGetResBuffer)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        bundleGetResBufferFunc = (BundleHandleGetResBuffer)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhanceBundle_GetResultBuffers");
     }
     if (bundleGetResBufferFunc == nullptr) {
@@ -437,7 +435,7 @@ void EnhancementServiceAdapter::PutInt(MediaEnhanceBundleHandle* bundle, const c
     int32_t value)
 {
     if (bundleHandlePutIntFunc == nullptr) {
-        bundleHandlePutIntFunc = (BundleHandlePutInt)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        bundleHandlePutIntFunc = (BundleHandlePutInt)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhanceBundle_PutInt");
     }
     if (bundleHandlePutIntFunc == nullptr) {
@@ -451,7 +449,7 @@ void EnhancementServiceAdapter::PutString(MediaEnhanceBundleHandle* bundle, cons
     const char* value)
 {
     if (bundleHandlePutStringFunc == nullptr) {
-        bundleHandlePutStringFunc = (BundleHandlePutString)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        bundleHandlePutStringFunc = (BundleHandlePutString)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhanceBundle_PutString");
     }
     if (bundleHandlePutStringFunc == nullptr) {
@@ -464,7 +462,7 @@ void EnhancementServiceAdapter::PutString(MediaEnhanceBundleHandle* bundle, cons
 void EnhancementServiceAdapter::DeleteRawData(Raw_Data* rawData, uint32_t size)
 {
     if (bundleDeleteRawData == nullptr) {
-        bundleDeleteRawData = (BundleDeleteRawData)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        bundleDeleteRawData = (BundleDeleteRawData)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhance_DeleteRawDataList");
     }
     if (bundleDeleteRawData == nullptr) {
@@ -486,7 +484,7 @@ int32_t EnhancementServiceAdapter::AddTask(const string& taskId, MediaEnhanceBun
     }
     int32_t triggerType = GetInt(bundle, MediaEnhance_Bundle_Key::TRIGGER_TYPE);
     if (clientAddTaskFunc == nullptr) {
-        clientAddTaskFunc = (ClientAddTask)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        clientAddTaskFunc = (ClientAddTask)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhanceClient_AddTask");
     }
     if (clientAddTaskFunc == nullptr) {
@@ -509,7 +507,7 @@ int32_t EnhancementServiceAdapter::RemoveTask(const string &taskId)
         return ret;
     }
     if (clientRemoveTaskFunc == nullptr) {
-        clientRemoveTaskFunc = (ClientRemoveTask)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        clientRemoveTaskFunc = (ClientRemoveTask)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhanceClient_RemoveTask");
     }
     if (clientRemoveTaskFunc == nullptr) {
@@ -531,7 +529,7 @@ int32_t EnhancementServiceAdapter::CancelTask(const string &taskId)
         return ret;
     }
     if (clientCancelTaskFunc == nullptr) {
-        clientCancelTaskFunc = (ClientCancelTask)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        clientCancelTaskFunc = (ClientCancelTask)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhanceClient_CancelTask");
     }
     if (clientCancelTaskFunc == nullptr) {
@@ -553,7 +551,7 @@ int32_t EnhancementServiceAdapter::CancelAllTasks()
         return ret;
     }
     if (clientStopServiceFunc == nullptr) {
-        clientStopServiceFunc = (ClientStopService)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        clientStopServiceFunc = (ClientStopService)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhanceClient_StopService");
     }
     if (clientStopServiceFunc == nullptr) {
@@ -570,7 +568,7 @@ int32_t EnhancementServiceAdapter::GetPendingTasks(vector<std::string> &taskIdLi
         return ret;
     }
     if (clientGetPenddingTask == nullptr) {
-        clientGetPenddingTask = (ClientGetPenddingTask)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        clientGetPenddingTask = (ClientGetPenddingTask)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhanceClient_GetPendingTasks");
     }
     if (clientGetPenddingTask == nullptr) {
@@ -597,7 +595,7 @@ void EnhancementServiceAdapter::DeletePendingTasks(Pendding_Task* taskIdList, ui
         return;
     }
     if (clientGetPenddingTask == nullptr) {
-        clientDeletePenddingTask = (ClientDeletePenddingTask)dynamicLoader_->GetFuntion(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        clientDeletePenddingTask = (ClientDeletePenddingTask)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhance_DeletePendingTasks");
     }
     if (clientDeletePenddingTask == nullptr) {

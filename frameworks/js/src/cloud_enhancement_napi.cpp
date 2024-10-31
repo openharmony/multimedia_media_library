@@ -776,15 +776,14 @@ static void FillTaskStageWithClientQuery(CloudEnhancementAsyncContext* context, 
     bundle = QueryTaskState(photoId);
     if (bundle == nullptr) {
         NAPI_ERR_LOG("queryTaskState result is nullptr!");
+        DestroyEnhancementClient();
         return;
     }
     int32_t currentState = GetInt(bundle, MediaEnhance_Query::CURRENT_STATE);
     NAPI_INFO_LOG("clientQueryTaskStateFunc stage = %{public}d", currentState);
     if (currentState == MediaEnhance_Query::EN_EXCEPTION) {
         context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_EXCEPTION;
-        return;
-    }
-    if (currentState == MediaEnhance_Query::EN_PREPARING) {
+    } else if (currentState == MediaEnhance_Query::EN_PREPARING) {
         context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_PREPARING;
     } else if (currentState == MediaEnhance_Query::EN_UPLOADING) {
         context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_UPLOADING;
