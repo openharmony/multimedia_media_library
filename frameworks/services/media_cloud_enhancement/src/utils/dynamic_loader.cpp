@@ -24,7 +24,7 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
-const char *K_LIBRARY_SUFFIX = ".so";
+static const char *K_LIBRARY_SUFFIX = ".so";
 DynamicLoader::DynamicLoader()
 {
     MEDIA_INFO_LOG("EnhancementDynamicLoader ctor");
@@ -60,10 +60,10 @@ void* DynamicLoader::OpenDynamicHandle(std::string dynamicLibrary)
     return dynamicLibHandle_[dynamicLibrary];
 }
  
-void* DynamicLoader::GetFuntion(const string dynamicLibrary, const string function)
+void* DynamicLoader::GetFunction(const string dynamicLibrary, const string function)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("EnhancementDynamicLoader::GetFuntion");
+    tracer.Start("EnhancementDynamicLoader::GetFunction");
     std::lock_guard loaderLock(libLock_);
     // if not opened, then open directly
     if (dynamicLibHandle_[dynamicLibrary] == nullptr) {
@@ -77,7 +77,7 @@ void* DynamicLoader::GetFuntion(const string dynamicLibrary, const string functi
             MEDIA_ERR_LOG("Failed to load %{public}s, reason: %{public}sn", function.c_str(), dlerror());
             return nullptr;
         }
-        MEDIA_INFO_LOG("GetFuntion %{public}s success", function.c_str());
+        MEDIA_INFO_LOG("GetFunction %{public}s success", function.c_str());
     }
     return handle;
 }

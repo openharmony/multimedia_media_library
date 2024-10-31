@@ -187,6 +187,7 @@ void EnhancementServiceCallback::OnSuccess(const char* photoId, MediaEnhanceBund
     MEDIA_INFO_LOG("callback OnSuccess start, photo_id: %{public}s", taskId.c_str());
     CHECK_AND_RETURN_LOG(!taskId.empty(), "enhancement callback error: taskId is empty");
     CHECK_AND_RETURN_LOG(bundle != nullptr, "enhancement callback error: bundle is nullptr");
+    EnhancementTaskManager::SetTaskRequestCount(taskId, 1);
     CloudEnhancementThreadTask task(taskId, 0, nullptr, 0, true);
     int32_t ret = EnhancementManager::GetInstance().enhancementService_->FillTaskWithResultBuffer(bundle, task);
     CHECK_AND_RETURN_LOG(ret == E_OK, "enhancement callback error: FillTaskWithResultBuffer failed");
@@ -212,14 +213,13 @@ void EnhancementServiceCallback::OnFailed(const char* photoId, MediaEnhanceBundl
 void EnhancementServiceCallback::OnServiceReconnected()
 {
     MEDIA_INFO_LOG("Cloud enhancement service is reconnected, try to submit processing tasks");
-    EnhancementManager::GetInstance().Init(true);
+    EnhancementManager::GetInstance().Init();
 }
 
 void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTask& task)
 {
     string taskId = task.taskId;
     MEDIA_INFO_LOG("DealWithSuccessedTask start, photo_id: %{public}s", taskId.c_str());
-    EnhancementTaskManager::SetTaskRequestCount(taskId, 1);
     // query 100 per
     string where = PhotoColumn::PHOTO_ID + " = ? ";
     vector<string> whereArgs { taskId };

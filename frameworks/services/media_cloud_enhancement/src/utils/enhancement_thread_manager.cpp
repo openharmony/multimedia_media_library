@@ -30,7 +30,7 @@ EnhancementThreadManager::EnhancementThreadManager()
 {
     stop = false;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    isThreadAlive = false;
+    isThreadAlive = true;
     thread(&EnhancementThreadManager::DealWithTasks, this).detach();
 #endif
 }
