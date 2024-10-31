@@ -305,6 +305,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_SET_VIDEO_ENHANCEMENT_ATTR, OperationType::SET_VIDEO_ENHANCEMENT_ATTR },
         { OPRN_ALL_DUPLICATE_ASSETS, OperationType::ALL_DUPLICATE_ASSETS },
         { OPRN_OTHER_DUPLICATE_ASSETS, OperationType::OTHER_DUPLICATE_ASSETS },
+        { OPRN_DEGENERATE_MOVING_PHOTO, OperationType::DEGENERATE_MOVING_PHOTO },
     };
     return oprnTypeMap;
 }

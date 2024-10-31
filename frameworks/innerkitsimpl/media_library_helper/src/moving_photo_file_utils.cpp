@@ -383,6 +383,9 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
     }
     if (MergeFile(imageFd, videoFd, livePhotoFd, extraPath, GetFrameIndex(coverPosition, videoFd.Get())) == E_ERR) {
         MEDIA_ERR_LOG("failed to MergeFile file");
+        if (!MediaFileUtils::DeleteFile(absCachePath)) {
+            MEDIA_ERR_LOG("failed to delete cache file, errno: %{public}d", errno);
+        }
         return E_ERR;
     }
     livePhotoPath = absCachePath;

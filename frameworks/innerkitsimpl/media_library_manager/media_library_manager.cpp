@@ -80,6 +80,7 @@ struct UriParams {
     string fileUri;
     Size size;
     bool isAstc;
+    DecodeDynamicRange dynamicRange;
 };
 static map<string, TableType> tableMap = {
     { MEDIALIBRARY_TYPE_IMAGE_URI, TableType::TYPE_PHOTOS },
@@ -559,6 +560,27 @@ void MediaLibraryManager::GetUriIdPrefix(std::string &fileUri)
     fileUri = tmpUri.substr(0, slashIdx);
 }
 
+static void GetUriParamsFromQueryKey(UriParams& uriParams,
+    std::unordered_map<std::string, std::string>& queryKey)
+{
+    if (queryKey.count(THUMBNAIL_PATH) != 0) {
+        uriParams.path = queryKey[THUMBNAIL_PATH];
+    }
+    if (queryKey.count(THUMBNAIL_WIDTH) != 0) {
+        uriParams.size.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+    }
+    if (queryKey.count(THUMBNAIL_HEIGHT) != 0) {
+        uriParams.size.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+    }
+    if (queryKey.count(THUMBNAIL_OPER) != 0) {
+        uriParams.isAstc = queryKey[THUMBNAIL_OPER] == MEDIA_DATA_DB_THUMB_ASTC;
+    }
+    uriParams.dynamicRange = DecodeDynamicRange::AUTO;
+    if (queryKey.count(DYNAMIC_RANGE) != 0) {
+        uriParams.dynamicRange = static_cast<DecodeDynamicRange>(stoi(queryKey[DYNAMIC_RANGE]));
+    }
+}
+
 static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &uriParams)
 {
     MediaFileUri mediaUri(uri);
@@ -596,18 +618,7 @@ static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &
         uriParams.fileUri = uri.substr(0, qIdx);
         MediaLibraryManager::GetUriIdPrefix(uriParams.fileUri);
         auto &queryKey = mediaUri.GetQueryKeys();
-        if (queryKey.count(THUMBNAIL_PATH) != 0) {
-            uriParams.path = queryKey[THUMBNAIL_PATH];
-        }
-        if (queryKey.count(THUMBNAIL_WIDTH) != 0) {
-            uriParams.size.width = stoi(queryKey[THUMBNAIL_WIDTH]);
-        }
-        if (queryKey.count(THUMBNAIL_HEIGHT) != 0) {
-            uriParams.size.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
-        }
-        if (queryKey.count(THUMBNAIL_OPER) != 0) {
-            uriParams.isAstc = queryKey[THUMBNAIL_OPER] == MEDIA_DATA_DB_THUMB_ASTC;
-        }
+        GetUriParamsFromQueryKey(uriParams, queryKey);
     }
     return true;
 }
@@ -627,22 +638,8 @@ bool MediaLibraryManager::IfSizeEqualsRatio(const Size &imageSize, const Size &t
     }
 }
 
-static void ParseDecodeOptionsFromUri(const string& uri, DecodeOptions& decodeOpts)
-{
-    decodeOpts.desiredDynamicRange = DecodeDynamicRange::AUTO;
-    if (uri == "") {
-        return;
-    }
-    auto dynamicIter = uri.find(DYNAMIC_RANGE);
-    if (dynamicIter != string::npos) {
-        int dynamicRange = uri.substr(dynamicIter + DYNAMIC_RANGE.length() + Equal_Sign.length()).front() - '0';
-        if (dynamicRange >= DYNAMIC_AUTO && dynamicRange <= DYNAMIC_HDR) {
-            decodeOpts.desiredDynamicRange = static_cast<DecodeDynamicRange>(dynamicRange);
-        }
-    }
-}
-
-unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, const Size& size, const string& uri)
+unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, const Size& size,
+    DecodeDynamicRange dynamicRange)
 {
     MediaLibraryTracer tracer;
     tracer.Start("ImageSource::CreateImageSource");
@@ -664,7 +661,7 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, co
     bool isEqualsRatio = IfSizeEqualsRatio(imageInfo.size, size);
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize = isEqualsRatio ? size : imageInfo.size;
-    ParseDecodeOptionsFromUri(uri, decodeOpts);
+    decodeOpts.desiredDynamicRange = dynamicRange;
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
     if (pixelMap == nullptr) {
         MEDIA_ERR_LOG("CreatePixelMap err %{public}d", err);
@@ -686,23 +683,22 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, co
     return pixelMap;
 }
 
-unique_ptr<PixelMap> MediaLibraryManager::QueryThumbnail(const std::string &uri, Size &size,
-                                                         const string &path, bool isAstc)
+unique_ptr<PixelMap> MediaLibraryManager::QueryThumbnail(UriParams& params)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("QueryThumbnail uri:" + uri);
+    tracer.Start("QueryThumbnail uri:" + params.fileUri);
 
-    string oper = isAstc ? MEDIA_DATA_DB_THUMB_ASTC : MEDIA_DATA_DB_THUMBNAIL;
-    string openUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + oper + "&" + MEDIA_DATA_DB_WIDTH +
-        "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height);
+    string oper = params.isAstc ? MEDIA_DATA_DB_THUMB_ASTC : MEDIA_DATA_DB_THUMBNAIL;
+    string openUriStr = params.fileUri + "?" + MEDIA_OPERN_KEYWORD + "=" + oper + "&" + MEDIA_DATA_DB_WIDTH +
+        "=" + to_string(params.size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(params.size.height);
     tracer.Start("DataShare::OpenThumbnail");
-    UniqueFd uniqueFd(MediaLibraryManager::OpenThumbnail(openUriStr, path, size, isAstc));
+    UniqueFd uniqueFd(MediaLibraryManager::OpenThumbnail(openUriStr, params.path, params.size, params.isAstc));
     if (uniqueFd.Get() < 0) {
         MEDIA_ERR_LOG("queryThumb is null, errCode is %{public}d", uniqueFd.Get());
         return nullptr;
     }
     tracer.Finish();
-    return DecodeThumbnail(uniqueFd, size);
+    return DecodeThumbnail(uniqueFd, params.size, params.dynamicRange);
 }
 
 std::unique_ptr<PixelMap> MediaLibraryManager::GetThumbnail(const Uri &uri)
@@ -726,7 +722,7 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetThumbnail(const Uri &uri)
         MEDIA_ERR_LOG("GetThumbnail failed, get params from uri failed, uri :%{public}s", uriStr.c_str());
         return nullptr;
     }
-    auto pixelmap = QueryThumbnail(uriParams.fileUri, uriParams.size, uriParams.path, uriParams.isAstc);
+    auto pixelmap = QueryThumbnail(uriParams);
     if (pixelmap == nullptr) {
         MEDIA_ERR_LOG("pixelmap is null, uri :%{public}s, path :%{public}s",
             uriParams.fileUri.c_str(), MediaFileUtils::DesensitizePath(uriParams.path).c_str());

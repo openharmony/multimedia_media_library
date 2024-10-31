@@ -78,7 +78,8 @@
           "preferences",
           "wifi",
           "libxml2",
-          "zlib"
+          "zlib",
+          "device_standby"
         ],
         "third_party": [
           "e2fsprogs",

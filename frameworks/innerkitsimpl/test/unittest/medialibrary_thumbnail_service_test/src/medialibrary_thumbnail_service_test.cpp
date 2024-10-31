@@ -95,6 +95,22 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetThumbnail_test_001, TestS
     serverTest->ReleaseService();
 }
 
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetKeyFrameThumbnail_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
+    string uri = "";
+    auto fd = serverTest->GetKeyFrameThumbnailFd(uri);
+    EXPECT_LT(fd, 0);
+    uri = "ParseKeyFrameThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_KEY_FRAME + "&" +
+          THUMBNAIL_BEGIN_STAMP + "=1&" + THUMBNAIL_TYPE + "=1";
+    fd = serverTest->GetKeyFrameThumbnailFd(uri);
+    EXPECT_LT(fd, 0);
+    serverTest->ReleaseService();
+}
+
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_LcdAging_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
@@ -845,6 +861,23 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_020, Te
     EXPECT_NE(size.height, size2.height);
 }
 
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_021, TestSize.Level0)
+{
+    ThumbnailData data;
+    auto res = ThumbnailUtils::DeleteBeginTimestampDir(data);
+    EXPECT_EQ(res, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_022, TestSize.Level0)
+{
+    string path = "";
+    string suffix;
+    string fileName;
+    string timeStamp = "1";
+    auto res = ThumbnailUtils::SaveFileCreateDirHighlight(path, suffix, fileName, timeStamp);
+    EXPECT_EQ(res, 0);
+}
+
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_001, TestSize.Level0)
 {
     ThumbRdbOpt opts;
@@ -881,6 +914,29 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, UpgradeThumbnailBackground_test_001, 
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     auto res = serverTest->UpgradeThumbnailBackground(false);
     EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_001, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    auto res = ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
+    EXPECT_EQ(res, -1);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_002, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
+    opts.table = "tab_analysis_video_label";
+    auto res = ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
+    EXPECT_EQ(res < 0, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_003, TestSize.Level0)
+{
+    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
+    auto res = serverTest->GenerateHighlightThumbnailBackground();
+    EXPECT_EQ(res < 0, true);
 }
 } // namespace Media
 } // namespace OHOS

@@ -1355,6 +1355,13 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, RestoreThumbnailDualFrame_new_003, Tes
     EXPECT_EQ(ret<=0, true);
 }
 
+HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateHighlightThumbnailBackground_test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    auto ret = mediaLibraryDataManager->GenerateHighlightThumbnailBackground();
+    EXPECT_EQ(ret <= 0, true);
+}
+
 struct BurstResult {
     int64_t fileId;
     string title;
