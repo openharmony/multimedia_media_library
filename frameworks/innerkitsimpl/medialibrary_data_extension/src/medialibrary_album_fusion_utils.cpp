@@ -744,9 +744,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(NativeRdb::RdbStore *u
     int32_t err = PhotoFileOperation().CopyPhoto(resultSet, targetPath);
     if (err != E_OK) {
         MEDIA_ERR_LOG("CopyPhoto failed, srcPath = %{public}s, targetPath = %{public}s, ret = %{public}d",
-            srcPath.c_str(),
-            targetPath.c_str(),
-            err);
+            srcPath.c_str(), targetPath.c_str(), err);
         return err;
     }
     MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName);
