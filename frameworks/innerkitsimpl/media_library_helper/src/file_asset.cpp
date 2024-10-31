@@ -246,6 +246,16 @@ void FileAsset::SetAlbumId(int32_t albumId)
     member_[MEDIA_DATA_DB_BUCKET_ID] = albumId;
 }
 
+int32_t FileAsset::GetOwnerAlbumId() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
+}
+
+void FileAsset::SetOwnerAlbumId(int32_t ownerAlbumId)
+{
+    member_[PhotoColumn::PHOTO_OWNER_ALBUM_ID] = ownerAlbumId;
+}
+
 const string &FileAsset::GetAlbumName() const
 {
     return GetStrMember(MEDIA_DATA_DB_BUCKET_NAME);
