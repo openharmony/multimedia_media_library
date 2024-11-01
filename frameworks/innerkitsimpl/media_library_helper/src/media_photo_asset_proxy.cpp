@@ -489,13 +489,12 @@ void PhotoAssetProxy::NotifyVideoSaveFinished()
         MEDIA_ERR_LOG("datashareHelper is nullptr");
         return;
     }
-    string uriStr = PAH_MOVING_PHOTO_SCAN;
-    MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    string uriStr = PAH_ADD_FILTERS;
     Uri uri(uriStr);
-    DataShare::DataSharePredicates predicates;
-    DataShare::DatashareBusinessError businessError;
-    std::vector<std::string> columns { uri_ };
-    dataShareHelper_->Query(uri, predicates, columns, &businessError);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::MEDIA_ID, fileId_);
+    valuesBucket.Put(NOTIFY_VIDEO_SAVE_FINISHED, uri_);
+    dataShareHelper_->Insert(uri, valuesBucket);
     MEDIA_INFO_LOG("video save finished %{public}s", uri_.c_str());
 }
 } // Media

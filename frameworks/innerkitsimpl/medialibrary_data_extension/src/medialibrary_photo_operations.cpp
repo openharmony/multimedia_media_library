@@ -73,6 +73,7 @@
 #include "dfx_manager.h"
 #include "moving_photo_file_utils.h"
 #include "hi_audit.h"
+#include "video_composition_callback_imp.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -2193,6 +2194,19 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
             "Failed to delete asset, path:%{private}s", path.c_str());
     }
 
+    CHECK_AND_RETURN_RET_LOG(DoRevertFilters(fileAsset, path, sourcePath) == E_OK, E_FAIL,
+        "Failed to DoRevertFilters to photo");
+
+    ScanFile(path, true, true, true);
+    // revert cloud enhancement ce_available
+    EnhancementManager::GetInstance().RevertEditUpdateInternal(fileId);
+    NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileAsset> &fileAsset,
+    std::string &path, std::string &sourcePath)
+{
     string editDataCameraPath = GetEditDataCameraPath(path);
     if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(sourcePath, path) == E_OK, E_HAS_FS_ERROR,
@@ -2203,12 +2217,9 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
             "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
         CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourcePath, path, editData) == E_OK, E_FAIL,
             "Failed to add filters to photo");
+        CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset) == E_OK, E_FAIL,
+            "Failed to add filters to video");
     }
-
-    ScanFile(path, true, true, true);
-    // revert cloud enhancement ce_available
-    EnhancementManager::GetInstance().RevertEditUpdateInternal(fileId);
-    NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     return E_OK;
 }
 
@@ -2638,6 +2649,27 @@ int32_t MediaLibraryPhotoOperations::FinishRequestPicture(MediaLibraryCommand &c
 
 int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
 {
+    // moving photo video save and add filters
+    const ValuesBucket& values = cmd.GetValueBucket();
+    string videoSaveFinishedUri;
+    if (GetStringFromValuesBucket(values, NOTIFY_VIDEO_SAVE_FINISHED, videoSaveFinishedUri)) {
+        int32_t id = -1;
+        if (!GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id)) {
+            MEDIA_ERR_LOG("Failed to get fileId");
+            return E_INVALID_VALUES;
+        }
+        vector<string> columns = { videoSaveFinishedUri };
+        ScanMovingPhoto(cmd, columns);
+
+        vector<string> fileAssetColumns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
+            PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME };
+        shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
+            PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, fileAssetColumns);
+        CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
+            "Failed to GetFileAssetFromDb, fileId = %{public}d", id);
+        return AddFiltersToVideoExecute(fileAsset);
+    }
+
     if (IsCameraEditData(cmd)) {
         shared_ptr<FileAsset> fileAsset = GetFileAsset(cmd);
         return AddFiltersExecute(cmd, fileAsset, "");
@@ -2667,6 +2699,7 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId);
     return E_OK;
 }
+
 int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const int32_t &fileId)
 {
     MEDIA_DEBUG_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
@@ -2763,6 +2796,34 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
         MediaLibraryObjectUtils::ScanFileAsync(assetPath, to_string(fileAsset->GetId()), MediaLibraryApi::API_10);
     }
     return ret;
+}
+
+int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<FileAsset>& fileAsset)
+{
+    string assetPath = fileAsset->GetFilePath();
+    string editDataCameraPath = MediaLibraryAssetOperations::GetEditDataCameraPath(assetPath);
+    if (MediaFileUtils::IsFileExists(editDataCameraPath)) {
+        string editData;
+        CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
+            "Failed to read editData, path = %{public}s", editDataCameraPath.c_str());
+        // erase sticker field
+        if (editData.find(FILTER_LOAD_LUT_MODEL) == std::string::npos) {
+            MEDIA_INFO_LOG("MovingPhoto video only supports filter now.");
+            return E_OK;
+        }
+        CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(fileAsset, assetPath) == E_OK, E_HAS_FS_ERROR,
+            "Failed to save source video, path = %{public}s", assetPath.c_str());
+        auto index = editData.find(FRAME_STICKER);
+        if (index != std::string::npos) {
+            VideoCompositionCallbackImpl::EraseStickerField(editData, index);
+        }
+        index = editData.find(INPLACE_STICKER);
+        if (index != std::string::npos) {
+            VideoCompositionCallbackImpl::EraseStickerField(editData, index);
+        }
+        VideoCompositionCallbackImpl::AddCompositionTask(assetPath, editData);
+    }
+    return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(int32_t fileId,
@@ -2874,8 +2935,8 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(MediaLibraryCommand& cmd,
-    const shared_ptr<FileAsset>& fileAsset, const string& assetPath)
+int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(const shared_ptr<FileAsset>& fileAsset,
+    const string& assetPath)
 {
     MEDIA_INFO_LOG("Moving photo SaveSourceVideoFile begin, fileId:%{public}d", fileAsset->GetId());
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
@@ -2902,7 +2963,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditMovingPhotoExecute(MediaLibraryCo
     int32_t errCode = E_OK;
     if (fileAsset->GetPhotoEditTime() == 0) { // the asset has not been edited before
         // Save video file in the photo direvtory to the .editdata directory
-        errCode = SaveSourceVideoFile(cmd, fileAsset, assetPath);
+        errCode = SaveSourceVideoFile(fileAsset, assetPath);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
             "Failed to save %{private}s to sourcePath, errCode: %{public}d", assetPath.c_str(), errCode);
     }
