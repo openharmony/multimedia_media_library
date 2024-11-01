@@ -28,6 +28,7 @@ namespace Media {
 using namespace std;
 using namespace OHOS::DataShare;
 #define EXPORT __attribute__ ((visibility ("default")))
+struct UriParams;
 /**
  * @brief Interface for accessing all the File operation and AlbumAsset operation APIs
  *
@@ -276,8 +277,8 @@ public:
 private:
     int32_t ReadMovingPhotoVideo(const string &uri, const string &option);
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size, bool isAstc);
-    static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, const string &path, bool isAstc);
-    static unique_ptr<PixelMap> DecodeThumbnail(UniqueFd& uniqueFd, const Size& size, const std::string& uri = "");
+    static unique_ptr<PixelMap> QueryThumbnail(UriParams& params);
+    static unique_ptr<PixelMap> DecodeThumbnail(UniqueFd& uniqueFd, const Size& size, DecodeDynamicRange dynamicRange);
     static unique_ptr<PixelMap> GetPixelMapWithoutDecode(UniqueFd &uniqueFd, const Size& size);
     static unique_ptr<PixelMap> DecodeAstc(UniqueFd &uniqueFd);
 
