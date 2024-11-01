@@ -77,6 +77,7 @@ const std::string OPRN_ADD_FILTERS = "add_filters";
 const std::string OPRN_DISCARD_CAMERA_PHOTO = "discard_camera_photo";
 const std::string OPRN_SAVE_CAMERA_PHOTO = "save_camera_photo";
 const std::string OPRN_SAVE_PICTURE = "save_picture";
+const std::string OPRN_CLONE_ASSET = "clone_asset";
 const std::string OPRN_REMOVE_MSC_TASK = "remove_msc_task"; // remove multistages capture task
 const std::string OPRN_GROUP_DISMISS = "dismiss";
 const std::string OPRN_GROUP_ALBUM_NAME = "group_album_name";
@@ -281,6 +282,7 @@ const std::string PAH_SCAN_WITHOUT_ALBUM_UPDATE = MEDIALIBRARY_DATA_URI + "/" + 
 const std::string PATH_SAVE_PICTURE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SAVE_PICTURE;
 const std::string PAH_ALL_DUPLICATE_ASSETS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + URI_ALL_DUPLICATE_ASSETS;
 const std::string PAH_OTHER_DUPLICATE_ASSETS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + URI_OTHER_DUPLICATE_ASSETS;
+const std::string PAH_CLONE_ASSET = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CLONE_ASSET;
 
 // MultiStages capture related operation uri
 const std::string PAH_SET_PHOTO_QUALITY = MEDIALIBRARY_DATA_URI + "/ "+ PAH_PHOTO + "/" + OPRN_SET_PHOTO_QUALITY;

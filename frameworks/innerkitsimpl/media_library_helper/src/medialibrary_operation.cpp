@@ -301,6 +301,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_ENHANCEMENT_QUERY, OperationType::ENHANCEMENT_QUERY},
         { OPRN_ENHANCEMENT_GET_PAIR, OperationType::ENHANCEMENT_GET_PAIR},
         { OPRN_SAVE_PICTURE, OperationType::SAVE_PICTURE},
+        { OPRN_CLONE_ASSET, OperationType::CLONE_ASSET},
         { "log_medialibrary_api", OperationType::LOG_MEDIALIBRARY_API},
         { OPRN_SET_VIDEO_ENHANCEMENT_ATTR, OperationType::SET_VIDEO_ENHANCEMENT_ATTR },
         { OPRN_ALL_DUPLICATE_ASSETS, OperationType::ALL_DUPLICATE_ASSETS },

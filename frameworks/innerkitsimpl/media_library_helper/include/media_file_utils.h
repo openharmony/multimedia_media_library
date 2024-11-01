@@ -106,6 +106,9 @@ public:
     EXPORT static int32_t CheckDentryName(const std::string &dentryName);
     EXPORT static int32_t CheckDisplayName(const std::string &displayName);
     EXPORT static int32_t CheckFileDisplayName(const std::string &displayName);
+    EXPORT static int32_t CheckTitleName(const std::string &title);
+    EXPORT static std::string GetFileAssetUri(const std::string &fileAssetData, const std::string &displayName,
+        const int32_t &fileId);
     EXPORT static int32_t CheckRelativePath(const std::string &relativePath);
     EXPORT static void FormatRelativePath(std::string &relativePath);
     EXPORT static void GetRootDirFromRelativePath(const std::string &relativePath, std::string &rootDir);
