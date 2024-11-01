@@ -406,7 +406,8 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
 {
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        if (!BackupFileUtils::IsFileValid(fileInfos[i].filePath, CLONE_RESTORE_ID)) {
+        int32_t errCode = BackupFileUtils::IsFileValid(fileInfos[i].filePath, CLONE_RESTORE_ID);
+        if (errCode != E_OK) {
             MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, filePath: %{public}s",
                 sceneCode,
                 sourceType,
@@ -1486,9 +1487,8 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
     }
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t fileMoveCount = 0;
-    unordered_set<int32_t> excludedFileIdSet;
     for (auto& fileInfo : fileInfos) {
-        if (!BackupFileUtils::IsFileValid(fileInfo.filePath, CLONE_RESTORE_ID)) {
+        if (BackupFileUtils::IsFileValid(fileInfo.filePath, CLONE_RESTORE_ID) != E_OK) {
             MEDIA_ERR_LOG("File is invalid: filePath: %{public}s",
                 BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
             continue;
@@ -1509,7 +1509,6 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
                 BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(), moveErrCode,
                 errno);
             UpdateFailedFiles(fileInfo.fileType, fileInfo, RestoreError::MOVE_FAILED);
-            excludedFileIdSet.insert(fileInfo.fileIdOld);
             continue;
         }
         BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);

@@ -107,10 +107,13 @@ private:
     void UpdateFaceAnalysisStatus();
     void UpdateDualCloneFaceAnalysisStatus();
     bool HasLowQualityImage();
+    void CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode) override;
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> externalRdb_;
+    std::shared_ptr<NativeRdb::RdbStore> photoCacheRdb_;
+    std::shared_ptr<NativeRdb::RdbStore> videoCacheRdb_;
     std::shared_ptr<NativeRdb::RdbStore> audioRdb_;
     BurstKeyGenerator burstKeyGenerator_;
     std::string galleryDbPath_;
