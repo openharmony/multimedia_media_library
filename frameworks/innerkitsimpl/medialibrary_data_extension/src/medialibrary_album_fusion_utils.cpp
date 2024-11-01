@@ -550,8 +550,11 @@ struct MediaAssetCopyInfo {
     std::string targetPath;
     bool isCopyThumbnail;
     int32_t ownerAlbumId;
-    MediaAssetCopyInfo(const std::string& targetPath, bool isCopyThumbnail, int32_t ownerAlbumId)
-        : targetPath(targetPath), isCopyThumbnail(isCopyThumbnail), ownerAlbumId(ownerAlbumId) {}
+    std::string displayName;
+    MediaAssetCopyInfo(const std::string& targetPath, bool isCopyThumbnail, int32_t ownerAlbumId,
+        const std::string& displayName = "")
+        : targetPath(targetPath), isCopyThumbnail(isCopyThumbnail), ownerAlbumId(ownerAlbumId),
+        displayName(displayName) {}
 };
 
 static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& resultSet,
@@ -579,10 +582,13 @@ static int32_t BuildInsertValuesBucket(NativeRdb::RdbStore &rdbStore, NativeRdb:
     std::string targetPath = copyInfo.targetPath;
     bool isCopyThumbnail = copyInfo.isCopyThumbnail;
     int32_t ownerAlbumId = copyInfo.ownerAlbumId;
+    std::string displayName = copyInfo.displayName;
     values.PutString(MediaColumn::MEDIA_FILE_PATH, targetPath);
-    std::string uniqueDisplayName = PhotoDisplayNameOperation().FindDisplayName(rdbStore, resultSet, ownerAlbumId);
+    std::string uniqueDisplayName = PhotoDisplayNameOperation().FindDisplayName(rdbStore, resultSet, ownerAlbumId,
+        displayName);
     if (!uniqueDisplayName.empty()) {
         values.PutString(MediaColumn::MEDIA_NAME, uniqueDisplayName);
+        values.PutString(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(uniqueDisplayName));
     } else {
         MEDIA_ERR_LOG("Failed to get unique display name");
     }
@@ -712,13 +718,16 @@ static int32_t UpdateCoverInfoForAlbum(NativeRdb::RdbStore *upgradeStore, const 
     return E_OK;
 }
 
-int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(NativeRdb::RdbStore *upgradeStore, const int32_t &assetId,
-    const int32_t &ownerAlbumId, shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId)
+int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(NativeRdb::RdbStore *upgradeStore,
+    const int32_t &ownerAlbumId, shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId,
+    const std::string displayName)
 {
     if (upgradeStore == nullptr) {
         MEDIA_INFO_LOG("fail to get rdbstore");
         return E_DB_FAIL;
     }
+    int32_t assetId;
+    GetIntValueFromResultSet(resultSet, MediaColumn::MEDIA_ID, assetId);
     MEDIA_INFO_LOG("begin copy local file, fileId is %{public}d, and target album is %{public}d",
         assetId, ownerAlbumId);
     std::string srcPath = "";
@@ -735,12 +744,10 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(NativeRdb::RdbStore *u
     int32_t err = PhotoFileOperation().CopyPhoto(resultSet, targetPath);
     if (err != E_OK) {
         MEDIA_ERR_LOG("CopyPhoto failed, srcPath = %{public}s, targetPath = %{public}s, ret = %{public}d",
-            srcPath.c_str(),
-            targetPath.c_str(),
-            err);
+            srcPath.c_str(), targetPath.c_str(), err);
         return err;
     }
-    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId);
+    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName);
     NativeRdb::ValuesBucket values;
     err = BuildInsertValuesBucket(*upgradeStore, values, resultSet, copyInfo);
     if (err != E_OK) {
@@ -814,6 +821,44 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(NativeRdb::RdbStore *u
     return E_OK;
 }
 
+int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int32_t &assetId, const string title)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr || rdbStore->GetRaw() == nullptr) {
+        MEDIA_ERR_LOG("Failed to get rdbStore.");
+        return E_DB_FAIL;
+    }
+
+    int64_t newAssetId = -1;
+    const std::string QUERY_FILE_META_INFO =
+        "SELECT * FROM Photos WHERE file_id = " + to_string(assetId);
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->GetRaw()->QuerySql(QUERY_FILE_META_INFO);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_INFO_LOG("Query not matched data fails");
+        return E_DB_FAIL;
+    }
+
+    string oldDisplayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    string oldTitle = GetStringVal(MediaColumn::MEDIA_TITLE, resultSet);
+    string displayName = oldDisplayName.replace(oldDisplayName.find(oldTitle), oldTitle.length(), title);
+    int32_t ownerAlbumId;
+    GetIntValueFromResultSet(resultSet, PhotoColumn::PHOTO_OWNER_ALBUM_ID, ownerAlbumId);
+    int32_t err = CopyLocalSingleFile(rdbStore->GetRaw().get(), ownerAlbumId, resultSet, newAssetId,
+        displayName);
+    MEDIA_INFO_LOG("NewAssetId = %{public}lld", (long long)newAssetId);
+
+    int64_t now = MediaFileUtils::UTCTimeMilliSeconds();
+    const std::string executeSql =
+        "update Photos set date_added = " + to_string(now) + " WHERE file_id = " + to_string(newAssetId);
+    int32_t ret = rdbStore->GetRaw()->ExecuteSql(executeSql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to update newAsset data, ret = %{public}d, newAssetId is %{public}lld",
+            ret, (long long)newAssetId);
+        return E_HAS_DB_ERROR;
+    }
+    return newAssetId;
+}
+
 int32_t MediaLibraryAlbumFusionUtils::HandleNoOwnerData(NativeRdb::RdbStore *upgradeStore)
 {
     MEDIA_INFO_LOG("Begin handle no owner data");
@@ -851,7 +896,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleRestData(NativeRdb::RdbStore *upgrad
         MEDIA_INFO_LOG("file is local asset %{public}d", assetId);
         // skip first one, already handled
         for (size_t i = 0; i < restOwnerAlbumIds.size(); i++) {
-            int32_t err = CopyLocalSingleFile(upgradeStore, assetId, restOwnerAlbumIds[i], resultSet, newAssetId);
+            int32_t err = CopyLocalSingleFile(upgradeStore, restOwnerAlbumIds[i], resultSet, newAssetId);
             if (err != E_OK) {
                 MEDIA_WARN_LOG("Copy file fails, fileId is %{public}d", assetId);
                 continue;
@@ -911,7 +956,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleSingleFileCopy(NativeRdb::RdbStore *
     }
     int32_t err = E_OK;
     if (isLocalAsset(resultSet)) {
-        err = CopyLocalSingleFile(upgradeStore, assetId, ownerAlbumId, resultSet, newAssetId);
+        err = CopyLocalSingleFile(upgradeStore, ownerAlbumId, resultSet, newAssetId);
     } else {
         err = CopyCloudSingleFile(upgradeStore, assetId, ownerAlbumId, resultSet, newAssetId);
     }
@@ -1500,7 +1545,7 @@ static void HandleNewCloudDirtyDataImp(NativeRdb::RdbStore *upgradeStore,
         // skip first one, already handled
         for (size_t i = 0; i < restOwnerAlbumIds.size(); i++) {
             int32_t err = MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(upgradeStore,
-                assetId, restOwnerAlbumIds[i], resultSet, newAssetId);
+                restOwnerAlbumIds[i], resultSet, newAssetId);
             if (err != E_OK) {
                 MEDIA_WARN_LOG("Copy file fails, fileId is %{public}d", assetId);
                 continue;

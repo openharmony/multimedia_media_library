@@ -813,6 +813,26 @@ static inline int32_t CheckTitle(const string &title)
     return E_OK;
 }
 
+int32_t MediaFileUtils::CheckTitleName(const string &title)
+    {
+        return CheckTitle(title);
+    }
+
+std::string MediaFileUtils::GetFileAssetUri(const std::string &fileAssetData, const std::string &displayName,
+    const int32_t &fileId)
+{
+    std::string filePath = fileAssetData;
+    std::string baseUri = "file://media";
+    size_t lastSlashInData = filePath.rfind('/');
+    std::string fileNameInData =
+        (lastSlashInData != std::string::npos) ? filePath.substr(lastSlashInData + 1) : filePath;
+    size_t dotPos = fileNameInData.rfind('.');
+    if (dotPos != std::string::npos) {
+        fileNameInData = fileNameInData.substr(0, dotPos);
+    }
+    return baseUri + "/Photo/" + std::to_string(fileId) + "/" + fileNameInData + "/" + displayName;
+}
+
 int32_t MediaFileUtils::CheckDisplayName(const string &displayName)
 {
     int err = CheckStringSize(displayName, DISPLAYNAME_MAX);
