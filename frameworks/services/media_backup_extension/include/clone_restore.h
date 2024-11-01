@@ -58,6 +58,7 @@ private:
     void AnalyzeSource() override;
     void RestoreAlbum(void);
     void RestoreAudio(void) override;
+    void NotifyAlbum() override;
     void InsertPhoto(std::vector<FileInfo> &fileInfos);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
@@ -99,7 +100,6 @@ private:
     void GetAlbumExtraQueryWhereClause(const std::string &tableName);
     bool IsReadyForRestore(const std::string &tableName);
     void UpdateAlbumToNotifySet(const std::string &tableName, const std::unordered_set<int32_t> &albumSet);
-    void NotifyAlbum();
     void PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,
         const std::unordered_map<std::string, std::string> &commonColumnInfoMap) const;
     void RestoreGallery();

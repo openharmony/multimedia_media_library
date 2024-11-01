@@ -128,6 +128,25 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
             return E_FAIL;
         }
     }
+    std::string cacheDbType = "photo";
+    std::string cacheDbName = cacheDbType + "_Cache.db";
+    int32_t errCode = E_OK;
+    if (MediaFileUtils::IsFileExists(filePath_ + cacheDbName)) {
+        errCode = BackupDatabaseUtils::InitDb(photoCacheRdb_, cacheDbName, filePath_ + cacheDbName,
+            "photo_Cache", false);
+        if (photoCacheRdb_ == nullptr) {
+            MEDIA_ERR_LOG("photo_Cache init rdb fail, err = %{public}d", errCode);
+        }
+    }
+    cacheDbType = "video";
+    cacheDbName = cacheDbType + "_Cache.db";
+    if (MediaFileUtils::IsFileExists(filePath_ + cacheDbName)) {
+        errCode = BackupDatabaseUtils::InitDb(videoCacheRdb_, cacheDbName, filePath_ + cacheDbName,
+            "video_Cache", false);
+        if (videoCacheRdb_ == nullptr) {
+            MEDIA_ERR_LOG("video_Cache init rdb fail, err = %{public}d", errCode);
+        }
+    }
 
     if (!MediaFileUtils::IsFileExists(audioDbPath_)) {
         MEDIA_ERR_LOG("audio mediaInfo db is not exist.");
@@ -1249,6 +1268,31 @@ void UpgradeRestore::UpdateDualCloneFaceAnalysisStatus()
     BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
+}
+
+void UpgradeRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode)
+{
+    if (fileInfo.fileSize == 0) {
+        MEDIA_WARN_LOG("file size is 0, path: %{public}s",
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode_).c_str());
+    }
+    if (errCode != E_NO_SUCH_FILE) {
+        return;
+    }
+    int32_t dbStatus = E_OK;
+    int32_t fileStatus = E_OK;
+    std::shared_ptr<NativeRdb::RdbStore> rdbStore;
+    std::vector<std::string> args;
+    if (sceneCode_ == UPGRADE_RESTORE_ID) {
+        rdbStore = externalRdb_;
+        args = { "files", "_data", fileInfo.oldPath };
+    } else {
+        rdbStore = fileInfo.fileType == DUAL_MEDIA_TYPE::IMAGE_TYPE ? photoCacheRdb_ : videoCacheRdb_;
+        std::string tableName = fileInfo.fileSize >= TAR_FILE_LIMIT ? "normal_file" : "small_file";
+        args = { tableName, "filepath", fileInfo.oldPath };
+    }
+    BackupDatabaseUtils::IsFileExistInDb(rdbStore, args, dbStatus, fileStatus);
+    MEDIA_INFO_LOG("Check status db: %{pbulic}d, file: %{public}d", dbStatus, fileStatus);
 }
 } // namespace Media
 } // namespace OHOS
