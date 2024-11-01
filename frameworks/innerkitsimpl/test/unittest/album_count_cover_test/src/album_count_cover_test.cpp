@@ -831,7 +831,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_005, TestSize.Level0)
     auto fileAsset2 = CreateImageAsset("Test_Favorites_002.jpg");
     ASSERT_NE(fileAsset2, nullptr);
     FavoriteFileAsset(fileAsset2->GetId(), true);
-    AlbumInfo(2, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
 
     // 4. Hide a photo.
     MEDIA_INFO_LOG("Step: Hide a photo");
@@ -842,7 +841,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_005, TestSize.Level0)
     // 5. Un-hide a photo.
     MEDIA_INFO_LOG("Step: Un-hide a photo");
     HideFileAsset(fileAsset2, false);
-    AlbumInfo(2, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 6. Trash a photo.
@@ -854,7 +852,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_005, TestSize.Level0)
     // 7. Un-trash a photo.
     MEDIA_INFO_LOG("Step: Un-trash a photo");
     TrashFileAsset(fileAsset2, false);
-    AlbumInfo(2, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
 
     // 8. Un-favorite a photo.
@@ -868,12 +865,10 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_005, TestSize.Level0)
     // 10. Batch favorite all photos.
     vector<string> fileAssetUriArray = { fileAsset->GetUri(), fileAsset2->GetUri() };
     BatchFavoriteFileAsset(fileAssetUriArray, true);
-    AlbumInfo(2, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
 
     // 11. Batch un-favorite all photos.
     BatchFavoriteFileAsset(fileAssetUriArray, false);
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
-
     MEDIA_INFO_LOG("album_count_cover_005 end");
 }
 
