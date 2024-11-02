@@ -225,13 +225,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::GetCommandByImageId(con
     string where = "";
     vector<string> whereArgs;
     if (slashIndex != string::npos) {
-        string displayName = imageId.substr(slashIndex + 1);
-        stringstream result;
-        for (size_t i = 0; i < displayName.length(); i++) {
-            if (isdigit(displayName[i])) {
-                result << displayName[i];
-            }
-        }
         string fileId = MediaFileUtils::GetIdFromUri(imageId);
         where = PhotoColumn::MEDIA_ID + " = ? ";
         whereArgs = { fileId };
