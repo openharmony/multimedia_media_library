@@ -44,7 +44,7 @@ const std::string CREATE_GEO_KNOWLEDGE_TABLE =
     LOCATION_VERSION + " Text, " +
     FIRST_AOI_CATEGORY + " Text, " +
     FIRST_POI_CATEGORY + " Text, " +
-    FILE_ID + " Text, " +
+    FILE_ID + " INTEGER, " +
     LOCATION_TYPE + " TEXT) ";
 
 const std::string CREATE_GEO_DICTIONARY_TABLE =
