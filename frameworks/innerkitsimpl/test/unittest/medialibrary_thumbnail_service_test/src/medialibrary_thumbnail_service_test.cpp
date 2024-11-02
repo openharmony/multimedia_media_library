@@ -21,6 +21,7 @@
 #include "ithumbnail_helper.h"
 #include "thumbnail_generate_helper.h"
 #undef private
+#include "medialibrary_unistore_manager.h"
 
 using namespace std;
 using namespace OHOS;
@@ -40,8 +41,6 @@ const string ConfigTestOpenCall::CREATE_TABLE_TEST = string("CREATE TABLE IF NOT
     "(file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, media_type INTEGER," +
     " date_added TEXT, display_name TEXT, thumbnail_ready TEXT, position TEXT)";
 
-const int32_t E_THUMBNAIL_ASTC_ALL_EXIST = -2307;
-const int32_t E_THUMBNAIL_LCD_ALL_EXIST = -2308;
 const int32_t E_GETROUWCOUNT_ERROR = 27394103;
 
 int ConfigTestOpenCall::OnCreate(RdbStore &store)
@@ -53,14 +52,14 @@ int ConfigTestOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersio
 {
     return 0;
 }
-shared_ptr<NativeRdb::RdbStore> storePtr = nullptr;
+shared_ptr<MediaLibraryRdbStore> storePtr = nullptr;
 void MediaLibraryThumbnailServiceTest::SetUpTestCase(void)
 {
     const string dbPath = "/data/test/medialibrary_thumbnail_service_test.db";
     NativeRdb::RdbStoreConfig config(dbPath);
     ConfigTestOpenCall helper;
     int errCode = 0;
-    shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    shared_ptr<MediaLibraryRdbStore> store = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     storePtr = store;
 }
 void MediaLibraryThumbnailServiceTest::TearDownTestCase(void) {}

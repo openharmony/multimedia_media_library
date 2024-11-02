@@ -53,7 +53,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_CreateFileOperati
     int32_t ret = MediaLibraryFileOperations::CreateFileOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     cmd.SetValueBucket(values);
     ret = MediaLibraryFileOperations::CreateFileOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
@@ -74,7 +74,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_CloseFileOperatio
 
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     values.PutInt("file_id", -1);
     MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_ASSET, OperationType::CLOSE, values);
     ret = MediaLibraryFileOperations::CloseFileOperation(cmd1);
@@ -87,7 +87,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_ModifyFileOperati
     int32_t ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
     EXPECT_EQ(ret, E_INVALID_FILEID);
 
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     values.PutInt("file_id", -1);
     values.PutString(MEDIA_DATA_DB_NAME, "medialibrary_ModifyFileOperation_test_001");
     MediaLibraryCommand cmd3(OperationObject::FILESYSTEM_ASSET, OperationType::GETCAPACITY, values);
@@ -102,7 +102,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_GetAlbumCapacityO
     int32_t ret = MediaLibraryFileOperations::GetAlbumCapacityOperation(cmd);
     EXPECT_EQ(ret, E_FAIL);
 
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_ASSET, OperationType::GETCAPACITY, values);
     ret = MediaLibraryFileOperations::GetAlbumCapacityOperation(cmd1);
     EXPECT_EQ(ret, E_FAIL);
@@ -114,7 +114,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_CopyFileOperation
     int32_t ret = MediaLibraryFileOperations::CopyFileOperation(cmd);
     EXPECT_EQ(ret, E_INVALID_URI);
     
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_ASSET, OperationType::GETCAPACITY, values);
     ret = MediaLibraryFileOperations::GetAlbumCapacityOperation(cmd1);
     EXPECT_EQ(ret, E_FAIL);

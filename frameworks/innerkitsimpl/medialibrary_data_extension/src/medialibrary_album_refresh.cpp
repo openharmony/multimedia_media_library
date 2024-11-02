@@ -91,11 +91,8 @@ static void RefreshAlbumAsyncTask(AsyncTaskData *data)
         MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
         return;
     }
-    if (rdbStore->GetRaw() == nullptr) {
-        MEDIA_ERR_LOG("RdbStore is nullptr!");
-        return;
-    }
-    int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(rdbStore->GetRaw(),
+
+    int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(rdbStore,
         NotifySystemAlbumFunc, RefreshCallbackFunc);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("RefreshAllAlbums failed ret:%{public}d", ret);

@@ -30,7 +30,6 @@
 #include "medialibrary_app_uri_sensitive_operations.h"
 #include "datashare_predicates_objects.h"
 #include "medialibrary_appstate_observer.h"
-#include "medialibrary_rdb_transaction.h"
 #include "media_file_uri.h"
 #include "rdb_utils.h"
 #include "datashare_predicates.h"
