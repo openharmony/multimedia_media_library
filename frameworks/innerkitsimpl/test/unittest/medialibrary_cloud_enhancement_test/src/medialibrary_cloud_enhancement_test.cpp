@@ -35,7 +35,6 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
-#include "medialibrary_rdb_transaction.h"
 #include "result_set_utils.h"
 #include "values_bucket.h"
 
@@ -424,13 +423,13 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_enhancement_query_oper
     MediaLibraryCommand cmd1(queryTaskUri);
     cmd1.SetDataSharePred(predicates);
     vector<string> columns;
-    shared_ptr<ResultSet> resultSet1 = instance.HandleEnhancementQueryOperation(cmd1, columns);
+    shared_ptr<NativeRdb::ResultSet> resultSet1 = instance.HandleEnhancementQueryOperation(cmd1, columns);
     EXPECT_EQ(resultSet1, nullptr);
     uriStr = PAH_CLOUD_ENHANCEMENT_GET_PAIR;
     Uri getPairUri(uriStr);
     MediaLibraryCommand cmd2(getPairUri);
     cmd2.SetDataSharePred(predicates);
-    shared_ptr<ResultSet> resultSet2 = instance.HandleEnhancementQueryOperation(cmd2, columns);
+    shared_ptr<NativeRdb::ResultSet> resultSet2 = instance.HandleEnhancementQueryOperation(cmd2, columns);
     EXPECT_EQ(resultSet2, nullptr);
     MEDIA_INFO_LOG("manager_handle_enhancement_query_operation_003 End");
 }
@@ -474,12 +473,8 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_add_operation_004, Tes
     Uri addTaskUri(uriStr);
     MediaLibraryCommand cmd(addTaskUri);
     cmd.SetDataSharePred(predicates);
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    int32_t errCode = transactionOprn.Start();
-    EXPECT_EQ(errCode, 0);
     int32_t result = instance.HandleAddOperation(cmd, false);
     EXPECT_EQ(result, -1);
-    transactionOprn.Finish();
 
     result = instance.HandleAddOperation(cmd, true);
     EXPECT_EQ(result, -1);
@@ -698,12 +693,8 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_add_service_task_014, TestSiz
     MediaEnhanceBundleHandle* mediaEnhanceBundle = instance.enhancementService_->CreateBundle();
     int32_t fileId = PrepareHighQualityPhoto(TESTING_PHOTO_ID, TESTING_DISPLAYNAME);
     UpdateCEAvailable(fileId, 1);
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    int32_t errCode = transactionOprn.Start();
-    ASSERT_EQ(errCode, 0);
     int32_t ret = instance.AddServiceTask(mediaEnhanceBundle, fileId, TESTING_PHOTO_ID, true);
     EXPECT_NE(ret, 0);
-    transactionOprn.Finish();
     mediaEnhanceBundle = instance.enhancementService_->CreateBundle();
     ret = instance.AddServiceTask(mediaEnhanceBundle, fileId, TESTING_PHOTO_ID, false);
     EXPECT_EQ(ret, -1);
@@ -864,11 +855,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_create_cloud_enh
     info = make_shared<CloudEnhancementFileInfo>(0, filePath, displayName, 0, 0);
     ret = EnhancementServiceCallback::CreateCloudEnhancementPhoto(sourceFileId, info);
     EXPECT_LT(ret, 0);
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    int32_t errCode = transactionOprn.Start();
-    ASSERT_EQ(errCode, E_OK);
     ret = EnhancementServiceCallback::CreateCloudEnhancementPhoto(sourceFileId, info);
-    transactionOprn.Finish();
     EXPECT_LT(ret, 0);
 
     displayName = TESTING_DISPLAYNAME;
@@ -1026,7 +1013,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_database_operations_query
     vector<string> columns = {
         PhotoColumn::PHOTO_CE_AVAILABLE
     };
-    shared_ptr<ResultSet> resultSet = EnhancementDatabaseOperations::Query(cmd, servicePredicates, columns);
+    shared_ptr<NativeRdb::ResultSet> resultSet = EnhancementDatabaseOperations::Query(cmd, servicePredicates, columns);
     EXPECT_EQ(resultSet, nullptr);
 
     int32_t fileId = PrepareHighQualityPhoto(TESTING_PHOTO_ID, TESTING_DISPLAYNAME);
@@ -1058,7 +1045,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_database_operations_batch
         PhotoColumn::PHOTO_CE_AVAILABLE
     };
     unordered_map<int32_t, string> fileId2Uri;
-    shared_ptr<ResultSet> resultSet = EnhancementDatabaseOperations::BatchQuery(cmd, columns, fileId2Uri);
+    shared_ptr<NativeRdb::ResultSet> resultSet = EnhancementDatabaseOperations::BatchQuery(cmd, columns, fileId2Uri);
     EXPECT_EQ(resultSet, nullptr);
 
     int32_t fileId = PrepareHighQualityPhoto(TESTING_PHOTO_ID, TESTING_DISPLAYNAME);

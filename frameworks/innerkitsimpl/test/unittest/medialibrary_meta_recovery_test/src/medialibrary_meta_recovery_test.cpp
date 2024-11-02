@@ -94,7 +94,7 @@ int32_t CreatePhotoApi10(int mediaType, const string &displayName)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     values.PutString(MediaColumn::MEDIA_NAME, displayName);
     values.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
     cmd.SetValueBucket(values);
@@ -174,7 +174,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_Backup_001, TestSize.Lev
     }
 
     MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
-    ValuesBucket closeValues;
+    NativeRdb::ValuesBucket closeValues;
     closeValues.PutString(MEDIA_DATA_DB_URI, fileUri.ToString());
     closeCmd.SetValueBucket(closeValues);
     auto ret = MediaLibraryPhotoOperations::Close(closeCmd);

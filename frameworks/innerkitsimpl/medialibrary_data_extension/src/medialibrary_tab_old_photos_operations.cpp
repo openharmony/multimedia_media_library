@@ -33,7 +33,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryTabOldPhotosOperations::Query(
         return nullptr;
     }
 
-    return rdbStore->Query(rdbPredicate, columns);
+    return rdbStore->QueryWithFilter(rdbPredicate, columns);
 }
 } // namespace Media
 } // namespace OHOS

@@ -80,7 +80,7 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
     return false;
 }
 
-bool MediaLibraryDeviceOperations::UpdateDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+bool MediaLibraryDeviceOperations::UpdateDeviceInfo(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName)
 {
     std::vector<std::string> columns;

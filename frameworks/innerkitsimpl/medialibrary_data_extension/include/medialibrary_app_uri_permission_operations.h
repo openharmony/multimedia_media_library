@@ -25,6 +25,7 @@
 #include "rdb_predicates.h"
 #include "result_set.h"
 #include "datashare_values_bucket.h"
+#include "medialibrary_rdb_transaction.h"
 
 namespace OHOS {
 namespace Media {
@@ -73,7 +74,7 @@ private:
      * @param valueBucketParam must contain permissionType value.
      */
     static int UpdatePermissionType(std::shared_ptr<OHOS::NativeRdb::ResultSet> &resultSetDB,
-        int &permissionTypeParam);
+        int &permissionTypeParam, std::shared_ptr<TransactionOperations> trans = nullptr);
     static bool IsValidPermissionType(int &permissionType);
     static bool CanOverride(int &permissionTypeParam, int &permissionTypeDB);
     static bool IsPhotoExist(int &photoFileId);

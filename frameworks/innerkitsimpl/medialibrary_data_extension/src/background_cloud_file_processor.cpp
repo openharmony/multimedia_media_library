@@ -253,7 +253,7 @@ void BackgroundCloudFileProcessor::StopDownloadFiles()
     curDownloadPaths_.clear();
 }
 
-void BackgroundCloudFileProcessor::SetPredicates(RdbPredicates &predicates, bool isCloud, bool isVideo)
+void BackgroundCloudFileProcessor::SetPredicates(NativeRdb::RdbPredicates &predicates, bool isCloud, bool isVideo)
 {
     if (isCloud) {
         predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD))
@@ -287,7 +287,7 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateD
         PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_HEIGHT,
         MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_DURATION };
 
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.BeginWrap()
         ->EqualTo(MediaColumn::MEDIA_SIZE, 0)
         ->Or()
@@ -323,7 +323,7 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateD
         ->EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN))
         ->And();
     SetPredicates(predicates, isCloud, isVideo);
-    return MediaLibraryRdbStore::Query(predicates, columns);
+    return MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
 }
 
 void BackgroundCloudFileProcessor::ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
@@ -463,7 +463,7 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
     }
 }
 
-static void SetAbnormalValuesFromMetaData(std::unique_ptr<Metadata> &metadata, ValuesBucket &values)
+static void SetAbnormalValuesFromMetaData(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &values)
 {
     values.PutLong(MediaColumn::MEDIA_SIZE, metadata->GetFileSize());
     values.PutInt(MediaColumn::MEDIA_DURATION, metadata->GetFileDuration());
@@ -475,7 +475,7 @@ static void SetAbnormalValuesFromMetaData(std::unique_ptr<Metadata> &metadata, V
 void BackgroundCloudFileProcessor::UpdateAbnormaldata(std::unique_ptr<Metadata> &metadata, const std::string &tableName)
 {
     int32_t updateCount(0);
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     string whereClause = MediaColumn::MEDIA_ID + " = ?";
     vector<string> whereArgs = { to_string(metadata->GetFileId()) };
     SetAbnormalValuesFromMetaData(metadata, values);
@@ -484,16 +484,11 @@ void BackgroundCloudFileProcessor::UpdateAbnormaldata(std::unique_ptr<Metadata> 
         MEDIA_ERR_LOG("Update operation failed. rdbStore is null");
         return ;
     }
-    auto rdbStorePtr = rdbStore->GetRaw();
-    if (rdbStorePtr == nullptr) {
-        MEDIA_ERR_LOG("Update operation failed. rdbStorePtr is null");
-        return ;
-    }
     if (!isUpdating_) {
         MEDIA_INFO_LOG("stop update data,isUpdating_ is %{public}d.", isUpdating_);
         return;
     }
-    int32_t result = rdbStorePtr->Update(updateCount, tableName, values, whereClause, whereArgs);
+    int32_t result = rdbStore->Update(updateCount, tableName, values, whereClause, whereArgs);
     if (result != NativeRdb::E_OK || updateCount <= 0) {
         MEDIA_ERR_LOG("Update operation failed. Result %{public}d. Updated %{public}d", result, updateCount);
         return ;

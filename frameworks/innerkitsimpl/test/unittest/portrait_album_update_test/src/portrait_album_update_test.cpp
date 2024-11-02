@@ -33,8 +33,9 @@
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_photo_operations.h"
+#define private public
 #include "medialibrary_rdbstore.h"
-#include "medialibrary_rdb_transaction.h"
+#undef private
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
@@ -123,8 +124,6 @@ string GetCoverUri(PortraitData data)
 
 int64_t CreatePortraitAlbum(const string &tagId)
 {
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int64_t albumId = -1;
     ValuesBucket valuesBucket;
     valuesBucket.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
@@ -134,15 +133,12 @@ int64_t CreatePortraitAlbum(const string &tagId)
     EXPECT_NE(g_rdbStore, nullptr);
     int32_t ret = g_rdbStore->GetRaw()->Insert(albumId, ANALYSIS_ALBUM_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
     MEDIA_INFO_LOG("InsertAlbum albumId is %{public}s", to_string(albumId).c_str());
     return albumId;
 }
 
 PortraitData InsertPortraitToPhotos()
 {
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int64_t fileId = -1;
     int64_t timestamp = GetTimestamp();
     string title = GetTitle(timestamp);
@@ -160,7 +156,6 @@ PortraitData InsertPortraitToPhotos()
     EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
     MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
     PortraitData portraitData;
     portraitData.fileId = fileId;
@@ -172,8 +167,6 @@ PortraitData InsertPortraitToPhotos()
 void InsertPortraitToImageFace(int64_t fileId, int totalFaces, const string &tagId)
 {
     ASSERT_NE(g_rdbStore, nullptr);
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int64_t rowId = -1;
     for (size_t faceId = 0; faceId <= totalFaces; faceId++) {
         ValuesBucket valuesBucket;
@@ -185,15 +178,12 @@ void InsertPortraitToImageFace(int64_t fileId, int totalFaces, const string &tag
         int32_t ret = g_rdbStore->GetRaw()->Insert(rowId, VISION_IMAGE_FACE_TABLE, valuesBucket);
         EXPECT_EQ(ret, E_OK);
     }
-    transactionOprn.Finish();
 }
 
 void InsertPortraitsToAlbum(const vector<PortraitData> &portraitData, int64_t albumId, int64_t coverIndex,
     CoverSatisfiedType coverSatisfiedType)
 {
     ASSERT_NE(g_rdbStore, nullptr);
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int64_t rowId = -1;
     for (PortraitData data : portraitData) {
         ValuesBucket valuesBucket;
@@ -214,14 +204,11 @@ void InsertPortraitsToAlbum(const vector<PortraitData> &portraitData, int64_t al
     cmd.GetAbsRdbPredicates()->EqualTo(ALBUM_ID, to_string(albumId));
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
 }
 
 void TrashPortrait(int64_t fileId, int64_t value = 1)
 {
     ASSERT_NE(g_rdbStore, nullptr);
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int32_t changedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     ValuesBucket updateValues;
@@ -230,14 +217,11 @@ void TrashPortrait(int64_t fileId, int64_t value = 1)
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
 }
 
 void HidePortrait(int64_t fileId, int64_t value = 1)
 {
     ASSERT_NE(g_rdbStore, nullptr);
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int32_t changedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     ValuesBucket updateValues;
@@ -246,21 +230,17 @@ void HidePortrait(int64_t fileId, int64_t value = 1)
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
 }
 
 void DismissPortrait(int64_t albumId, int64_t fileId)
 {
     ASSERT_NE(g_rdbStore, nullptr);
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int32_t deletedRows = -1;
     MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_MAP, OperationType::DELETE);
     cmd.GetAbsRdbPredicates()->EqualTo(MAP_ALBUM, to_string(albumId));
     cmd.GetAbsRdbPredicates()->EqualTo(MAP_ASSET, to_string(fileId));
     int32_t ret = g_rdbStore->Delete(cmd, deletedRows);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
 }
 
 void PortraitAlbumUpdateTest::SetUpTestCase()
@@ -370,16 +350,16 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_001, TestSize.Level
     }
 
     InsertPortraitsToAlbum(portraits, albumId, 1, CoverSatisfiedType::DEFAULT_SETTING);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, fileIds);
     CheckAlbum(albumId, 4, portraits[1].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     TrashPortrait(portraits[0].fileId);
     TrashPortrait(portraits[1].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, { fileIds[0], fileIds[1] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[0], fileIds[1] });
     CheckAlbum(albumId, 2, portraits[3].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     TrashPortrait(portraits[3].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, { fileIds[3] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[3] });
     CheckAlbum(albumId, 1, portraits[2].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     MEDIA_INFO_LOG("portrait_album_update_test_001 End");
@@ -399,19 +379,19 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_002, TestSize.Level
     }
 
     InsertPortraitsToAlbum(portraits, albumId, 1, CoverSatisfiedType::DEFAULT_SETTING);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, fileIds);
     CheckAlbum(albumId, 4, portraits[1].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     HidePortrait(portraits[1].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, { fileIds[1] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[1] });
     CheckAlbum(albumId, 3, portraits[0].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     HidePortrait(portraits[0].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, { fileIds[0] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[0] });
     CheckAlbum(albumId, 2, portraits[3].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     HidePortrait(portraits[2].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, { fileIds[2] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[2] });
     CheckAlbum(albumId, 1, portraits[3].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     MEDIA_INFO_LOG("portrait_album_update_test_002 End");
@@ -431,19 +411,19 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_003, TestSize.Level
     }
 
     InsertPortraitsToAlbum(portraits, albumId, 1, CoverSatisfiedType::DEFAULT_SETTING);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, fileIds);
     CheckAlbum(albumId, 4, portraits[1].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     DismissPortrait(albumId, portraits[1].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, { fileIds[1] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[1] });
     CheckAlbum(albumId, 3, portraits[0].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     DismissPortrait(albumId, portraits[0].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, { fileIds[0] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[0] });
     CheckAlbum(albumId, 2, portraits[3].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     DismissPortrait(albumId, portraits[3].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, { fileIds[3] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[3] });
     CheckAlbum(albumId, 1, portraits[2].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     MEDIA_INFO_LOG("portrait_album_update_test_003 End");
@@ -452,8 +432,6 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_003, TestSize.Level
 void InsertPortraitMap(const vector<PortraitData> &portraitData, int64_t albumId)
 {
     ASSERT_NE(g_rdbStore, nullptr);
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int64_t rowId = -1;
     for (PortraitData data : portraitData) {
         ValuesBucket valuesBucket;
@@ -463,14 +441,11 @@ void InsertPortraitMap(const vector<PortraitData> &portraitData, int64_t albumId
         int32_t ret = g_rdbStore->GetRaw()->Insert(rowId, ANALYSIS_PHOTO_MAP_TABLE, valuesBucket);
         EXPECT_EQ(ret, E_OK);
     }
-    transactionOprn.Finish();
 }
 
 void SetPortraitCover(int64_t albumId, const string &coverUri, int32_t isCoverSatisfied)
 {
     ASSERT_NE(g_rdbStore, nullptr);
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int32_t changedRows = -1;
     MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::UPDATE);
     ValuesBucket updateValues;
@@ -481,7 +456,6 @@ void SetPortraitCover(int64_t albumId, const string &coverUri, int32_t isCoverSa
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
     MEDIA_INFO_LOG("Changed rows: %{public}d", changedRows);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
 }
 
 void TestCoverUpdateByFileIds(int64_t albumId, const vector<PortraitData> &portraits, const vector<string> &fileIds,
@@ -492,7 +466,7 @@ void TestCoverUpdateByFileIds(int64_t albumId, const vector<PortraitData> &portr
     SetPortraitCover(albumId, coverUri, isCoverSatisfied);
 
     vector<string> albumIds = { to_string(albumId) };
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, fileIds);
     CheckAlbum(albumId, portraits.size(), portraits[expectedCoverId].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 }
 
@@ -551,7 +525,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_007, TestSize.Level
 
     fileIds.push_back(to_string(portraits[TEST_INDEX_TWO].fileId));
     vector<string> albumIds = { to_string(albumId) };
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, fileIds); // no need update
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, fileIds); // no need update
     CheckAlbum(albumId, portraits.size(), portraits[TEST_INDEX_ONE].fileId, CoverSatisfiedType::DEFAULT_SETTING);
     MEDIA_INFO_LOG("portrait_album_update_test_007 End");
 }
@@ -582,7 +556,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_008, TestSize.Level
     }
 
     InsertPortraitsToAlbum(portraits, albumId, 1, CoverSatisfiedType::DEFAULT_SETTING);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, fileIds);
     CheckAlbum(albumId, 4, portraits[1].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     UserSetCoverUriTest(albumId, portraits, 3);

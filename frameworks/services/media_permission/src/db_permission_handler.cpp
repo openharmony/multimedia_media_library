@@ -139,7 +139,8 @@ int32_t DbPermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, Pe
     predicates.SetWhereClause("file_id = ? and appid = ? and uri_type = ?");
     predicates.SetWhereArgs({fileId, appId, to_string(uriType)});
     vector<string> columns;
-    auto queryResultSet = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, TABLE_PERMISSION), columns);
+    auto queryResultSet =
+        MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, TABLE_PERMISSION), columns);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, E_PERMISSION_DENIED, "queryResultSet is nullptr");
     int count = 0;
     auto ret = queryResultSet->GetRowCount(count);

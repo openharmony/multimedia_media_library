@@ -85,7 +85,7 @@ void PrepareTempVideoFile(const string &filePath)
 int32_t SetVideoId(int fileId, const string &photoId)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_ID, photoId);
     cmd.SetValueBucket(values);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
@@ -95,7 +95,7 @@ int32_t SetVideoId(int fileId, const string &photoId)
 int32_t SetEdited(int fileId)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_EDIT_TIME, 1);
     cmd.SetValueBucket(values);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
@@ -174,7 +174,7 @@ inline int32_t CreatePhotoApi10(int mediaType, const string &displayName)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     values.PutString(MediaColumn::MEDIA_NAME, displayName);
     values.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
     cmd.SetValueBucket(values);
@@ -187,7 +187,7 @@ int32_t PrepareVideoData()
     EXPECT_GT(fileId, 0);
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
     cmd.SetValueBucket(values);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));

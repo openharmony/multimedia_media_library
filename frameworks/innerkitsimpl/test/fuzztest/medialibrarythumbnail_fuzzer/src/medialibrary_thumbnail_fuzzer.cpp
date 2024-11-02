@@ -129,12 +129,12 @@ static inline Media::ThumbnailTaskType FuzzThumbnailTaskType(const uint8_t* data
 
 static Media::ThumbRdbOpt FuzzThumbRdbOpt(const uint8_t* data, size_t size, bool isNeedNullptr)
 {
-    std::shared_ptr<NativeRdb::RdbStore> store;
+    std::shared_ptr<Media::MediaLibraryRdbStore> store;
     if (isNeedNullptr) {
         store = FuzzBool(data, size) ?
-            Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw() : nullptr;
+            Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() : nullptr;
     } else {
-        store = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+        store = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     }
 
     Media::ThumbRdbOpt opt = {
