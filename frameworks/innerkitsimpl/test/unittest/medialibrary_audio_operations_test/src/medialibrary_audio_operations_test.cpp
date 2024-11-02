@@ -54,6 +54,7 @@
 #include "uri.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
+#include "transaction.h"
 
 namespace OHOS {
 namespace Media {
