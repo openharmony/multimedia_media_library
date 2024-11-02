@@ -318,7 +318,6 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_001, TestSize.Level0)
     ret = trans1.Update(valuesBucket, predicates);
     EXPECT_TRUE(ret >= 0);
     trans2.Finish();
-    
 }
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_002, TestSize.Level0)

@@ -1111,8 +1111,8 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset)
         return E_ERR;
     }
 
-+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-+    if (rdbStore == nullptr) {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("GetRdbStoreRaw failed, return nullptr");
         return E_HAS_DB_ERROR;
     }

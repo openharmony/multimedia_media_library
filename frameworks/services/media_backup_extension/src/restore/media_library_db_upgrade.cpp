@@ -25,11 +25,12 @@
 
 namespace OHOS::Media {
 namespace DataTransfer {
+constexpr int32_t MAX_TRY_TIMES_FOR_DB = 30;
+constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // 50 milliseconds.
+
 /**
  * @brief Upgrade the database, before data restore or clone.
  */
- constexpr int32_t MAX_TRY_TIMES_FOR_DB = 30;
- constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // in milliseconds.
 int32_t MediaLibraryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
 {
     int32_t ret = NativeRdb::E_OK;
