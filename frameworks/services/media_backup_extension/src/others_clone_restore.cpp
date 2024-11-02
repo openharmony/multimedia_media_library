@@ -31,6 +31,7 @@
 #include "media_file_uri.h"
 #include "media_log.h"
 #include "media_scanner.h"
+#include "medialibrary_rdb_transaction.h"
 
 namespace OHOS {
 namespace Media {

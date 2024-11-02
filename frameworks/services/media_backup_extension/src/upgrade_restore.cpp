@@ -40,6 +40,7 @@
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
 #include "gallery_report.h"
+#include "medialibrary_rdb_transaction.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -426,12 +427,6 @@ void UpgradeRestore::HandleCloneBatch(int32_t offset, int32_t maxId)
 void UpgradeRestore::UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int32_t &number)
 {
     int32_t errCode = E_ERR;
-    TransactionOperations transactionOprn(galleryRdb_);
-    errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("can not get rdb before update clone");
-        return;
-    }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t id = GetInt32Val(GALLERY_ID, resultSet);
         std::string data = GetStringVal(GALLERY_FILE_DATA, resultSet);
@@ -449,7 +444,6 @@ void UpgradeRestore::UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::Resul
         }
         number += changeRows;
     }
-    transactionOprn.Finish();
 }
 
 void UpgradeRestore::RestoreFromGallery()
