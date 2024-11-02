@@ -23,7 +23,6 @@
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_rdb_transaction.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
@@ -298,8 +297,6 @@ int64_t InsertPhoto(double_t latitude, double_t longitude)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     EXPECT_NE(rdbStore, nullptr);
-    TransactionOperations transactionOprn(rdbStore->GetRaw());
-    transactionOprn.Start();
     int64_t fileId = -1;
     int64_t timestamp = GetTimestamp();
     string title = GetTitle(timestamp);
@@ -332,7 +329,6 @@ int64_t InsertPhoto(double_t latitude, double_t longitude)
     valuesBucket.PutInt(MediaColumn::MEDIA_TIME_PENDING, 0);
     int32_t ret = rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
     MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
     return fileId;
 }

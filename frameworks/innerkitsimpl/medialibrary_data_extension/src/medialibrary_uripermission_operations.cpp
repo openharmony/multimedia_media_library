@@ -70,21 +70,27 @@ static bool CheckMode(string& mode)
     return true;
 }
 
-int32_t UriPermissionOperations::UpdateOperation(MediaLibraryCommand &cmd)
+int32_t UriPermissionOperations::UpdateOperation(MediaLibraryCommand &cmd,
+    std::shared_ptr<TransactionOperations> trans)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("UriPermission update operation, rdbStore is null.");
-        return E_HAS_DB_ERROR;
-    }
     cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     int32_t updateRows = -1;
-    int32_t errCode = rdbStore->Update(cmd, updateRows);
+    int errCode;
+    if (trans == nullptr) {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        if (rdbStore == nullptr) {
+            MEDIA_ERR_LOG("UriPermission update operation, rdbStore is null.");
+            return E_HAS_DB_ERROR;
+        }
+        errCode = rdbStore->Update(cmd, updateRows);
+    } else {
+        errCode = trans->Update(cmd, updateRows);
+    }
     if (errCode != NativeRdb::E_OK || updateRows < 0) {
         MEDIA_ERR_LOG("UriPermission Update db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
-    return static_cast<int32_t>(updateRows);
+    return updateRows;
 }
 
 static void DeleteAllTemporaryOperation(AsyncTaskData *data)
@@ -158,7 +164,7 @@ int32_t UriPermissionOperations::InsertOperation(MediaLibraryCommand &cmd)
 }
 
 int32_t UriPermissionOperations::BatchInsertOperation(MediaLibraryCommand &cmd,
-    const std::vector<ValuesBucket> &values)
+    const std::vector<ValuesBucket> &values, std::shared_ptr<TransactionOperations> trans)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -167,7 +173,12 @@ int32_t UriPermissionOperations::BatchInsertOperation(MediaLibraryCommand &cmd,
     }
     cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     int64_t outInsertNum = -1;
-    int32_t errCode = rdbStore->BatchInsert(cmd, outInsertNum, values);
+    int32_t errCode;
+    if (trans == nullptr) {
+        errCode = rdbStore->BatchInsert(cmd, outInsertNum, values);
+    } else {
+        errCode = trans->BatchInsert(cmd, outInsertNum, values);
+    }
     if (errCode != NativeRdb::E_OK || outInsertNum < 0) {
         MEDIA_ERR_LOG("UriPermission Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
@@ -317,29 +328,32 @@ static void GetAllUriDbOperation(const vector<DataShareValuesBucket> &values, ve
 }
 
 static void BatchUpdate(MediaLibraryCommand &cmd, std::vector<string> inColumn, int32_t tableType,
-    const std::vector<DataShareValuesBucket> &values)
+    const std::vector<DataShareValuesBucket> &values, std::shared_ptr<TransactionOperations> trans)
 {
-    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     bool isValid;
-    string appid = values.at(0).Get(AppUriPermissionColumn::APP_ID, isValid);
-    int32_t permissionType = values.at(0).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
     DataShareValuesBucket valuesBucket;
-    DataSharePredicates predicates;
-    predicates.In(AppUriPermissionColumn::FILE_ID, inColumn);
-    predicates.EqualTo(AppUriPermissionColumn::APP_ID, appid);
-    predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, to_string(tableType));
+    int32_t permissionType = values.at(0).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
     valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
-    ValuesBucket value = RdbUtils::ToValuesBucket(valuesBucket);
-    if (value.IsEmpty()) {
+    ValuesBucket valueBucket = RdbUtils::ToValuesBucket(valuesBucket);
+    if (valueBucket.IsEmpty()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager Insert: Input parameter is invalid");
         return;
     }
-    cmd.SetValueBucket(value);
+
+    DataSharePredicates predicates;
+    string appid = values.at(0).Get(AppUriPermissionColumn::APP_ID, isValid);
+    predicates.EqualTo(AppUriPermissionColumn::APP_ID, appid);
+    predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, to_string(tableType));
+    predicates.In(AppUriPermissionColumn::FILE_ID, inColumn);
+    cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    cmd.SetValueBucket(valueBucket);
     cmd.SetDataSharePred(predicates);
-    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
+
+    NativeRdb::RdbPredicates rdbPredicate =
+        RdbUtils::ToPredicates(predicates, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    UriPermissionOperations::UpdateOperation(cmd);
+    UriPermissionOperations::UpdateOperation(cmd, trans);
 }
 
 static void AppstateOberserverBuild(int32_t permissionType)
@@ -411,8 +425,6 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
     if (ValueBucketCheck(values) != E_OK || rdbStore == nullptr) {
         return E_ERR;
     }
-    string appid = values.at(0).Get(AppUriPermissionColumn::APP_ID, isValid);
-    int32_t permissionType = values.at(0).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
     GrantPermissionPrepareHandle(cmd, values, dbOperation, resultSet);
     for (size_t i = 0; i < values.size(); i++) {
         int32_t fileId = std::stoi((static_cast<string>(values.at(i).Get(AppUriPermissionColumn::FILE_ID, isValid))));
@@ -428,21 +440,25 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
             InsertValueBucketPrepare(values, fileId, uriType, batchInsertBucket);
         }
     }
-    TransactionOperations op(rdbStore->GetRaw());
-    if (op.Start() != E_OK) {
-        MEDIA_ERR_LOG("TransactionOperations start error!");
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    int32_t errCode = trans->Start();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("TransactionOperations start error %{public}d", errCode);
         return E_ERR;
     }
     if (photoNeedToUpdate) {
-        BatchUpdate(cmd, photosValues, PHOTOSTYPE, values);
+        BatchUpdate(cmd, photosValues, PHOTOSTYPE, values, trans);
     }
     if (audioNeedToUpdate) {
-        BatchUpdate(cmd, audiosValues, AUDIOSTYPE, values);
+        BatchUpdate(cmd, audiosValues, AUDIOSTYPE, values, trans);
     }
     if (needToInsert) {
-        UriPermissionOperations::BatchInsertOperation(cmd, batchInsertBucket);
+        UriPermissionOperations::BatchInsertOperation(cmd, batchInsertBucket, trans);
     }
-    op.Finish();
+    errCode = trans->Finish();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("GrantUriPermission: tans finish fail!, ret:%{public}d", errCode);
+    }
     return E_OK;
 }
 
@@ -487,7 +503,7 @@ int32_t UriPermissionOperations::GetUriPermissionMode(const string &fileId, cons
     return E_SUCCESS;
 }
 
-int32_t CheckUriPermValues(ValuesBucket &valuesBucket, int32_t &fileId, string &bundleName, int32_t &tableType,
+static int32_t CheckUriPermValues(ValuesBucket &valuesBucket, int32_t &fileId, string &bundleName, int32_t &tableType,
     string &inputMode)
 {
     ValueObject valueObject;
