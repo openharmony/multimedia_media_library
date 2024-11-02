@@ -18,27 +18,22 @@
 
 namespace OHOS {
 namespace Media {
-using namespace std;
-
 int32_t MediaScanExecutor::Commit(std::unique_ptr<MediaScannerObj> scanner)
 {
-    lock_guard<mutex> lock(queueMutex_);
-
+    std::lock_guard<std::mutex> lock(queueMutex_);
     queue_.push(move(scanner));
-
     if (activeThread_ < MAX_THREAD) {
         thread(&MediaScanExecutor::HandleScanExecution, this).detach();
         activeThread_++;
     }
-
     return 0;
 }
 
 void MediaScanExecutor::HandleScanExecution()
 {
-    string name("HandleScanExecution");
+    std::string name("HandleScanExecution");
     pthread_setname_np(pthread_self(), name.c_str());
-    unique_ptr<MediaScannerObj> scanner;
+    std::unique_ptr<MediaScannerObj> scanner;
     while (true) {
         {
             std::lock_guard<std::mutex> lock(queueMutex_);
