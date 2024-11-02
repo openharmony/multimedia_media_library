@@ -2006,7 +2006,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_002, TestSize.Leve
     int mapId = InsertAnalysisMap(albumId, 2);
     EXPECT_GT(mapId, 0);
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(rdbStore, {"12"}, {
         PhotoAlbumSubType::CLASSIFY, PhotoAlbumSubType::PORTRAIT
     });
@@ -2047,7 +2047,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_003, TestSize.Leve
     int32_t id2 = CreateSingleImage("AnalysisAlbumMapTest2.jpg");
     InsertAnalysisMap(albumId, id1);
     InsertAnalysisMap(albumId, id2);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, {
         "file://media/Photo/" + to_string(id1), "file://media/Photo/" + to_string(id2)
     });
