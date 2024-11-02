@@ -152,8 +152,9 @@ private:
     };
 
 public:
-    std::string FindDisplayName(NativeRdb::RdbStore &rdbStore, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        const int32_t targetAlbumId, const std::string displayName = "")
+    std::string FindDisplayName(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t targetAlbumId,
+        const std::string displayName = "")
     {
         if (resultSet == nullptr || targetAlbumId <= 0) {
             MEDIA_ERR_LOG("Media_Operation: FindBurstKey: resultSet is null or targetAlbumId is invalid");
@@ -161,15 +162,15 @@ public:
         }
         // Build the photo asset info.
         PhotoDisplayNameOperation::PhotoAssetInfo photoAssetInfo;
-        photoAssetInfo.displayName = displayName == "" ? GetStringVal(MediaColumn::MEDIA_NAME,
-            resultSet) : displayName;
+        photoAssetInfo.displayName = displayName == "" ? GetStringVal(MediaColumn::MEDIA_NAME, resultSet) : displayName;
         photoAssetInfo.subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
         photoAssetInfo.ownerAlbumId = targetAlbumId;
         return this->FindDislayName(rdbStore, photoAssetInfo);
     }
 
 private:
-    std::string FindDislayName(NativeRdb::RdbStore &rdbStore, const PhotoAssetInfo &photoAssetInfo)
+    std::string FindDislayName(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        const PhotoAssetInfo &photoAssetInfo)
     {
         DisplayNameInfo displayNameInfo(photoAssetInfo);
         std::string displayName = displayNameInfo.ToString();
@@ -190,14 +191,15 @@ private:
         return displayName;
     }
 
-    bool IsDisplayNameExists(NativeRdb::RdbStore &rdbStore, const int32_t ownerAlbumId, const std::string &displayName)
+    bool IsDisplayNameExists(const std::shared_ptr<MediaLibraryRdbStore> rdbStore, const int32_t ownerAlbumId,
+        const std::string &displayName)
     {
         if (ownerAlbumId <= 0 || displayName.empty()) {
             return false;
         }
         std::string querySql = this->SQL_PHOTOS_TABLE_QUERY_DISPLAY_NAME;
         const std::vector<NativeRdb::ValueObject> bindArgs = {ownerAlbumId, displayName};
-        auto resultSet = rdbStore.QuerySql(querySql, bindArgs);
+        auto resultSet = rdbStore->QuerySql(querySql, bindArgs);
         if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
             return false;
         }
