@@ -4662,12 +4662,43 @@ napi_value FileAssetNapi::PhotoAccessHelperIsEdited(napi_env env, napi_callback_
         PhotoAccessHelperIsEditedExecute, PhotoAccessHelperIsEditedComplete);
 }
 
+static int64_t ParseEditTime(FileAssetAsyncContext *context)
+{
+    int64_t editTime = 0;
+    if (context == nullptr) {
+        NAPI_ERR_LOG("context nullptr");
+        return editTime;
+    }
+    int32_t fileId = context->objectPtr->GetId();
+    string queryUriStr = PAH_QUERY_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(queryUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(queryUriStr);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    DataShare::DataShareValuesBucket values;
+    vector<string> columns = { PhotoColumn::PHOTO_EDIT_TIME };
+    int32_t errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    if (!GetEditTimeFromResultSet(resultSet, editTime)) {
+        context->SaveError(E_FAIL);
+        return editTime;
+    }
+    if (editTime == 0) {
+        context->editDataBuffer = static_cast<char*>(malloc(1));
+        context->editDataBuffer[0] = '\0';
+    }
+    return editTime;
+}
+
 static void PhotoAccessHelperRequestEditDataExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperRequestEditDataExecute");
     auto *context = static_cast<FileAssetAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    if (ParseEditTime(context) <= 0) {
+        return;
+    }
     bool isValid = false;
     string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
