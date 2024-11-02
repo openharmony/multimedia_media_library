@@ -22,6 +22,7 @@
 #include <string>
 #include <map>
 
+#include "medialibrary_rdbstore.h"
 #include "rdb_predicates.h"
 #include "rdb_store.h"
 #include "userfile_manager_types.h"
@@ -38,58 +39,58 @@ struct AlbumCounts {
 
 class MediaLibraryRdbUtils {
 public:
-    EXPORT static void UpdateSystemAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateSystemAlbumInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &subtypes = {});
-    EXPORT static void UpdateUserAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateUserAlbumInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &userAlbumIds = {});
-    EXPORT static void UpdateSourceAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateSourceAlbumInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &sourceAlbumIds = {});
-    static void UpdateUserAlbumByUri(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    static void UpdateUserAlbumByUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &uris);
-    EXPORT static void UpdateAnalysisAlbumByUri(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateAnalysisAlbumByUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &uris);
-    static void UpdateSourceAlbumByUri(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    static void UpdateSourceAlbumByUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &uris);
 
     static void AddQueryFilter(NativeRdb::AbsRdbPredicates &predicates);
-    EXPORT static void UpdateSysAlbumHiddenState(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateSysAlbumHiddenState(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &subtypes = {});
-    EXPORT static void UpdateAnalysisAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateAnalysisAlbumInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &userAlbumIds = {}, const std::vector<std::string> &fileIds = {});
-    EXPORT static void UpdateAnalysisAlbumByFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateAnalysisAlbumByFile(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &fileIds, const std::vector<int> &albumTypes);
-    EXPORT static void UpdateAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateAllAlbums(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &uris = {});
 
-    EXPORT static int32_t RefreshAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static int32_t RefreshAllAlbums(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         std::function<void(PhotoAlbumType, PhotoAlbumSubType, int)> refreshProcessHandler,
         std::function<void()> refreshCallback);
-    EXPORT static int32_t IsNeedRefreshByCheckTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static int32_t IsNeedRefreshByCheckTable(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         bool &signal);
 
-    EXPORT static void UpdateSystemAlbumCountInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateSystemAlbumCountInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &subtypes = {});
-    EXPORT static void UpdateUserAlbumCountInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateUserAlbumCountInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &userAlbumIds = {});
-    EXPORT static void UpdateAnalysisAlbumCountInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateAnalysisAlbumCountInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &subtypes = {});
-    EXPORT static void UpdateAllAlbumsForCloud(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    EXPORT static void UpdateAllAlbumsCountForCloud(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    EXPORT static void UpdateAllAlbumsForCloud(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
+    EXPORT static void UpdateAllAlbumsCountForCloud(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
 
     EXPORT static bool IsNeedRefreshAlbum();
     EXPORT static void SetNeedRefreshAlbum(bool isNeedRefresh);
     EXPORT static bool IsInRefreshTask();
-    EXPORT static int32_t GetAlbumIdsForPortrait(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static int32_t GetAlbumIdsForPortrait(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         std::vector<std::string> &portraitAlbumIds);
     EXPORT static int32_t GetAlbumSubtypeArgument(const NativeRdb::RdbPredicates &predicates);
     EXPORT static void AddVirtualColumnsOfDateType(std::vector<std::string>& columns);
     EXPORT static void AddQueryIndex(NativeRdb::AbsPredicates& predicates, const std::vector<std::string>& columns);
-    EXPORT static bool HasDataToAnalysis(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    EXPORT static int32_t UpdateTrashedAssetOnAlbum(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static bool HasDataToAnalysis(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
+    EXPORT static int32_t UpdateTrashedAssetOnAlbum(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         NativeRdb::RdbPredicates &predicates);
-    EXPORT static int32_t UpdateOwnerAlbumId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static int32_t UpdateOwnerAlbumId(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<DataShare::DataShareValuesBucket> &values, std::vector<int32_t> &updateIds);
-    EXPORT static int32_t UpdateRemoveAsset(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static int32_t UpdateRemoveAsset(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &whereIdArgs);
 
 private:

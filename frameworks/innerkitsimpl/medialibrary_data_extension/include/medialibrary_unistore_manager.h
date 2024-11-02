@@ -58,13 +58,21 @@ public:
 
     EXPORT std::shared_ptr<MediaLibraryUnistore> GetRdbStore() const
     {
-        return rdbStorePtr_;
+        if (rdbStorePtr_ != nullptr && rdbStorePtr_->CheckRdbStore()) {
+            return rdbStorePtr_;
+        }
+        MEDIA_ERR_LOG("MediaLibraryRdbStore or rdbStore is nullptr");
+        return nullptr;
     }
 
     // avoid using the raw rdbstore
     EXPORT std::shared_ptr<MediaLibraryRdbStore> GetRdbStoreRaw() const
     {
-        return rdbStorePtr_;
+        if (rdbStorePtr_ != nullptr && rdbStorePtr_->CheckRdbStore()) {
+            return rdbStorePtr_;
+        }
+        MEDIA_ERR_LOG("MediaLibraryRdbStore or rdbStore is nullptr");
+        return nullptr;
     }
 
 private:
