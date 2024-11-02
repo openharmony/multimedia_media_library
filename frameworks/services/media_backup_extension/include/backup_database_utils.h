@@ -88,7 +88,8 @@ public:
     static void PrintQuerySql(const std::string& querySql);
     static bool DeleteDuplicatePortraitAlbum(const std::vector<std::string> &albumNames,
         const std::vector<std::string> tagIds, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
-    static void ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql);
+    static int ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql,
+        const std::vector<NativeRdb::ValueObject> &args = {});
     static void UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::vector<FileIdPair>& fileIdPair);
     static std::string GetFileIdNewFilterClause(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
@@ -109,6 +110,8 @@ public:
         const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap);
     static void UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::vector<FileInfo> &fileInfos);
+    static int32_t BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
+        std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum);
 
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
