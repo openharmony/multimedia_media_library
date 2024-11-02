@@ -120,7 +120,7 @@ static void UpdateAstcInfo(ThumbRdbOpt &opts, std::string id)
     }
 }
 
-void ThumbnailService::Init(const shared_ptr<RdbStore> &rdbStore,
+void ThumbnailService::Init(const shared_ptr<MediaLibraryRdbStore> rdbStore,
 #ifdef DISTRIBUTED
     const shared_ptr<SingleKvStore> &kvStore,
 #endif
@@ -151,7 +151,7 @@ void ThumbnailService::ReleaseService()
 }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
-static int32_t GetPathFromDb(const shared_ptr<NativeRdb::RdbStore> &rdbStorePtr, const string &fileId,
+static int32_t GetPathFromDb(const shared_ptr<MediaLibraryRdbStore> rdbStorePtr, const string &fileId,
     const string &table, string &path)
 {
     if (rdbStorePtr == nullptr) {

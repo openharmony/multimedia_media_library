@@ -205,10 +205,10 @@ string GetUriWithoutSeg(const string &oldUri)
     return oldUri;
 }
 
-static string GetAlbumId(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
+static string GetAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const string &albumName)
 {
-    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    NativeRdb::RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore nullptr");
@@ -233,7 +233,7 @@ static string GetAlbumId(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
 }
 
 static int32_t MaintainShootingModeMap(std::unique_ptr<Metadata> &data,
-    shared_ptr<NativeRdb::RdbStore> &rdbStorePtr)
+    const shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
     string insertShootingModeSql = "INSERT OR IGNORE INTO " + ANALYSIS_PHOTO_MAP_TABLE +
         "(" + PhotoMap::ALBUM_ID + "," + PhotoMap::ASSET_ID + ") SELECT AnalysisAlbum.album_id, " +
@@ -241,7 +241,7 @@ static int32_t MaintainShootingModeMap(std::unique_ptr<Metadata> &data,
         ANALYSIS_ALBUM_TABLE + " ON Photos.shooting_mode=AnalysisAlbum.album_name WHERE file_id = " +
         to_string(data->GetFileId()) + " AND AnalysisAlbum.album_subtype = " +
         to_string(PhotoAlbumSubType::SHOOTING_MODE);
-    int32_t result = rdbStorePtr->ExecuteSql(insertShootingModeSql);
+    int32_t result = rdbStore->ExecuteSql(insertShootingModeSql);
     return result;
 }
 
@@ -252,21 +252,16 @@ static int32_t MaintainAlbumRelationship(std::unique_ptr<Metadata> &data)
         MEDIA_ERR_LOG("rdbstore is nullptr");
         return E_HAS_DB_ERROR;
     }
-    auto rdbStorePtr = rdbStore->GetRaw();
-    if (rdbStorePtr == nullptr) {
-        MEDIA_ERR_LOG("obtain raw rdbstore fails");
-        return E_HAS_DB_ERROR;
-    }
-    auto ret = MaintainShootingModeMap(data, rdbStorePtr);
+    auto ret = MaintainShootingModeMap(data, rdbStore);
     if (ret != E_OK) {
         return ret;
     }
-    string album_id = GetAlbumId(rdbStorePtr, data->GetShootingMode());
+    string album_id = GetAlbumId(rdbStore, data->GetShootingMode());
     if (album_id.empty()) {
         MEDIA_ERR_LOG("Failed to query album_id,Album cover and count update fails");
         return E_ERR;
     }
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStorePtr, {album_id});
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, {album_id});
     return E_OK;
 }
 
