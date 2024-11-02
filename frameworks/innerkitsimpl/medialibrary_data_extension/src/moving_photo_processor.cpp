@@ -181,7 +181,7 @@ shared_ptr<NativeRdb::ResultSet> MovingPhotoProcessor::QueryMovingPhoto()
         ->IsNull(PhotoColumn::PHOTO_QUALITY)
         ->EndWrap()
         ->Limit(MOVING_PHOTO_PROCESS_NUM);
-    return MediaLibraryRdbStore::Query(predicates, columns);
+    return MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
 }
 
 void MovingPhotoProcessor::ParseMovingPhotoData(shared_ptr<NativeRdb::ResultSet>& resultSet,
@@ -222,17 +222,12 @@ void MovingPhotoProcessor::UpdateMovingPhotoData(const MovingPhotoData& movingPh
         MEDIA_ERR_LOG("rdbStore is null");
         return;
     }
-    auto rdbStorePtr = rdbStore->GetRaw();
-    if (rdbStorePtr == nullptr) {
-        MEDIA_ERR_LOG("rdbStorePtr is null");
-        return;
-    }
     if (!isProcessing_) {
         MEDIA_INFO_LOG("stop updateing moving photo data");
         return;
     }
     int32_t updateCount = 0;
-    int32_t result = rdbStorePtr->Update(updateCount, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
+    int32_t result = rdbStore->Update(updateCount, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
     if (result != NativeRdb::E_OK || updateCount <= 0) {
         MEDIA_ERR_LOG("Update failed. result: %{public}d, updateCount: %{public}d", result, updateCount);
         return;
@@ -343,7 +338,7 @@ shared_ptr<NativeRdb::ResultSet> MovingPhotoProcessor::QueryCandidateLivePhoto()
         ->EndWrap()
         ->OrderByAsc(PhotoColumn::MEDIA_ID)
         ->Limit(LIVE_PHOTO_QUERY_NUM);
-    return MediaLibraryRdbStore::Query(predicates, columns);
+    return MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
 }
 
 void MovingPhotoProcessor::ParseLivePhotoData(shared_ptr<NativeRdb::ResultSet>& resultSet,
@@ -562,11 +557,6 @@ void MovingPhotoProcessor::UpdateLivePhotoData(const LivePhotoData& livePhotoDat
         MEDIA_ERR_LOG("rdbStore is null");
         return;
     }
-    auto rdbStorePtr = rdbStore->GetRaw();
-    if (rdbStorePtr == nullptr) {
-        MEDIA_ERR_LOG("rdbStorePtr is null");
-        return;
-    }
 
     if (livePhotoData.editTime == 0) {
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, livePhotoData.subtype);
@@ -576,7 +566,7 @@ void MovingPhotoProcessor::UpdateLivePhotoData(const LivePhotoData& livePhotoDat
     }
 
     int32_t updateCount = 0;
-    int32_t result = rdbStorePtr->Update(updateCount, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
+    int32_t result = rdbStore->Update(updateCount, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
     if (result != NativeRdb::E_OK || updateCount <= 0) {
         MEDIA_ERR_LOG("Update failed. result: %{public}d, updateCount: %{public}d", result, updateCount);
         return;

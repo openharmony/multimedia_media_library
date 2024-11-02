@@ -23,6 +23,7 @@
 #include "rdb_errno.h"
 #include "result_set_utils.h"
 #include "media_log.h"
+#include "medialibrary_rdb_transaction.h"
 
 namespace OHOS::Media {
 
@@ -52,7 +53,11 @@ int32_t AlbumPluginTableEventHandler::InitiateData(NativeRdb::RdbStore &store)
 {
     int32_t err = NativeRdb::E_OK;
     MEDIA_INFO_LOG("InitiateData begin initiate %{public}s table data.", TABLE_NAME.c_str());
-    store.BeginTransaction();
+    auto [errCode, trans] = store.CreateTransaction(OHOS::NativeRdb::Transaction::EXCLUSIVE);
+    if (errCode != NativeRdb::E_OK || trans == nullptr) {
+        MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
+        return errCode;
+    }
     for (const AlbumPlugin::AlbumPluginRowData &data : AlbumPlugin::ALBUM_PLUGIN_DATA) {
         std::vector<NativeRdb::ValueObject> bindArgs = {
             data.lpath,
@@ -63,13 +68,16 @@ int32_t AlbumPluginTableEventHandler::InitiateData(NativeRdb::RdbStore &store)
             data.dual_album_name,
             data.priority
         };
-        err = store.ExecuteSql(this->INSERT_DATA_SQL, bindArgs);
+        auto res = trans->Execute(this->INSERT_DATA_SQL, bindArgs);
+        err = res.first;
         if (err != NativeRdb::E_OK) {
-            store.RollBack();
             return err;
         }
     }
-    store.Commit();
+    err = trans->Commit();
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("InitiateData tans finish fail!, ret:%{public}d", err);
+    }
     MEDIA_INFO_LOG("InitiateData end initiate %{public}s table data %{public}d.",
         TABLE_NAME.c_str(),
         static_cast<int32_t>(AlbumPlugin::ALBUM_PLUGIN_DATA.size()));
