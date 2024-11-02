@@ -127,7 +127,7 @@ void ClearData()
 {
     MEDIA_INFO_LOG("Start clear data");
     ExecuteSqls(g_rdbStore->GetRaw(), CLEAR_SQLS);
-    MediaLibraryRdbUtils::UpdateAllAlbums(g_rdbStore->GetRaw());
+    MediaLibraryRdbUtils::UpdateAllAlbums(g_rdbStore);
     MEDIA_INFO_LOG("End clear data");
 }
 

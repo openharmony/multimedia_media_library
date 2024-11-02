@@ -1750,7 +1750,8 @@ void ClearData(shared_ptr<RdbStore> rdbStore)
 {
     MEDIA_INFO_LOG("Start clear data");
     ExecuteSqls(rdbStore, CLEAR_SQLS);
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
+    auto mediaLibraryRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdbStore);
     MEDIA_INFO_LOG("End clear data");
 }
 
