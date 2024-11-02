@@ -1019,7 +1019,7 @@ int32_t MediaLibraryObjectUtils::UpdateDateModified(const string &dirPath)
 unique_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetByPredicates(const NativeRdb::AbsRdbPredicates &predicates,
     const vector<string> &columns)
 {
-    auto absResultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto absResultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (absResultSet == nullptr) {
         return nullptr;
     }

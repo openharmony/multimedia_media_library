@@ -20,6 +20,7 @@
 #include "abs_rdb_predicates.h"
 #include "distributed_kv_data_manager.h"
 #include "medialibrary_db_const.h"
+#include "medialibrary_rdbstore.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
 #include "rdb_store.h"
@@ -32,7 +33,7 @@ namespace Media {
 using namespace OHOS::NativeRdb;
 #ifdef DISTRIBUTED
 struct MediaLibrarySyncOpts {
-    std::shared_ptr<NativeRdb::RdbStore> rdbStore;
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore;
     std::shared_ptr<DistributedKv::SingleKvStore> kvStore;
     std::string table;
     std::string bundleName;

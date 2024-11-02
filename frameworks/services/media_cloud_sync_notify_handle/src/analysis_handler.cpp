@@ -44,20 +44,20 @@ static vector<string> GetFileIds(const CloudSyncHandleData &handleData)
     return fileIds;
 }
 
-static shared_ptr<ResultSet> GetUpdateAnalysisAlbumsInfo(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
+static shared_ptr<NativeRdb::ResultSet> GetUpdateAnalysisAlbumsInfo(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const vector<string> &fileIds)
 {
     vector<string> columns = {
         "DISTINCT (map_album)"
     };
-    RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
+    NativeRdb::RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
     predicates.In(PhotoMap::ASSET_ID, fileIds);
 
     return rdbStore->Query(predicates, columns);
 }
 
-static list<Uri> UpdateAnalysisAlbumsForCloudSync(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const shared_ptr<ResultSet> &resultSet, const vector<string> &fileIds)
+static list<Uri> UpdateAnalysisAlbumsForCloudSync(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const shared_ptr<NativeRdb::ResultSet> &resultSet, const vector<string> &fileIds)
 {
     vector<string> albumIds;
 
@@ -92,7 +92,7 @@ static void AddNewNotify(CloudSyncHandleData &handleData, const list<Uri> &sendU
 
 void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Can not get rdbstore");
         return;
@@ -108,7 +108,7 @@ void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
 
     CloudSyncHandleData newHandleData = handleData;
     if (!fileIds.empty()) {
-        shared_ptr<ResultSet> resultSet = GetUpdateAnalysisAlbumsInfo(rdbStore, fileIds);
+        shared_ptr<NativeRdb::ResultSet> resultSet = GetUpdateAnalysisAlbumsInfo(rdbStore, fileIds);
         if (resultSet == nullptr) {
             MEDIA_ERR_LOG("Failed query AnalysisAlbum");
             return;

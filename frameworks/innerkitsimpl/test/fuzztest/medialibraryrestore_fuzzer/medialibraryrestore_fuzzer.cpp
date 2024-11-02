@@ -20,7 +20,9 @@
 #include <pixel_map.h>
 
 #include "medialibrary_restore.h"
+#define private public
 #include "medialibrary_rdbstore.h"
+#undef private
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "media_file_utils.h"
@@ -103,7 +105,7 @@ void WaitForBackup()
 const NativeRdb::RdbStoreConfig GetConfig()
 {
     NativeRdb::RdbStoreConfig config(DB_PATH);
-    config.SetHaMode(Media::HAMode::MANUAL_TRIGGER);
+    config.SetHaMode(NativeRdb::HAMode::MANUAL_TRIGGER);
     config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
     config.SetAllowRebuild(true);
     return config;
@@ -122,7 +124,6 @@ static void MediaLibraryRestoreTest(const uint8_t *data, size_t size)
     std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_1));
     rdb->IsSlaveDiffFromMaster();
 
-    Media::MediaLibraryDataManager::GetInstance()->rdbStore_ = rdb;
     Media::MediaLibraryRestore::GetInstance().CheckBackup();
     Media::MediaLibraryRestore::GetInstance().IsBackuping();
     WaitForBackup();

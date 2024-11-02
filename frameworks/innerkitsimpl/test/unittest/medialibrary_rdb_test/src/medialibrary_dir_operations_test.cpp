@@ -52,7 +52,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_002, TestSize.Lev
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
     MediaLibraryUnitTestUtils::InitUnistore();
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     cmd.SetValueBucket(values);
     ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
@@ -73,7 +73,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_003, TestSize.Lev
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
     MediaLibraryUnitTestUtils::InitUnistore();
-    ValuesBucket valuesBucket;
+    NativeRdb::ValuesBucket valuesBucket;
     cmd.SetValueBucket(valuesBucket);
     ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
@@ -85,7 +85,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_003, TestSize.Lev
     EXPECT_EQ(ret, E_GET_VALUEBUCKET_FAIL);
 
     MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_ASSET, OperationType::TRASH);
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     values.PutString(TDD_TEST_PATH, "medialib_handleTestCase_02");
     values.PutInt(MEDIA_DATA_DB_ID, 10);
     cmd1.SetValueBucket(values);
@@ -102,7 +102,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_004, TestSize.Lev
     EXPECT_EQ(ret, E_FAIL);
 
     MediaLibraryUnitTestUtils::InitUnistore();
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     values.PutString(TDD_TEST_PATH, "medialib_HandleDirOperation_test_004");
     values.PutInt(MEDIA_DATA_DB_ID, 11);
     cmd.SetValueBucket(values);
@@ -120,7 +120,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_CreateDirOperation_test_001, TestSize.Lev
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
     MediaLibraryUnitTestUtils::InitUnistore();
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     MediaLibraryCommand cmd1(uri, OperationType::CREATE);
     cmd1.SetValueBucket(values);
     ret = MediaLibraryDirOperations::CreateDirOperation(cmd1);
@@ -144,7 +144,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TrashDirOperation_test_001, TestSize.Leve
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
     MediaLibraryUnitTestUtils::InitUnistore();
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     cmd.SetValueBucket(values);
     ret = MediaLibraryDirOperations::TrashDirOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
@@ -156,7 +156,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TrashDirOperation_test_001, TestSize.Leve
     EXPECT_EQ(ret, E_GET_VALUEBUCKET_FAIL);
 
     MediaLibraryCommand cmd1(uri, OperationType::QUERY);
-    ValuesBucket valuesBucket;
+    NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutString(TDD_TEST_PATH, "medialib_TrashTestCase_02");
     valuesBucket.PutInt(MEDIA_DATA_DB_ID, 12);
     cmd1.SetValueBucket(valuesBucket);

@@ -102,7 +102,7 @@ int CorruptDb(bool isSlave)
     return ret;
 }
 
-int InsertRdbData(const std::shared_ptr<RdbStore> &rdb)
+int InsertRdbData(const std::shared_ptr<NativeRdb::RdbStore> &rdb)
 {
     int errCode = 0;
     for (int i = 0; i < INSERT_ROWS; i++) {
@@ -111,7 +111,7 @@ int InsertRdbData(const std::shared_ptr<RdbStore> &rdb)
     return errCode;
 }
 
-int IncreaseRdbData(const std::shared_ptr<RdbStore> &rdb)
+int IncreaseRdbData(const std::shared_ptr<NativeRdb::RdbStore> &rdb)
 {
     int errCode = rdb->ExecuteSql(INSERT_SQL);
     for (int i = 0; i < INCREASE_FORMULA; i++) {
@@ -132,8 +132,8 @@ void WaitForBackup()
 const NativeRdb::RdbStoreConfig GetConfig()
 {
     NativeRdb::RdbStoreConfig config(DB_PATH);
-    config.SetHaMode(HAMode::MANUAL_TRIGGER);
-    config.SetSecurityLevel(SecurityLevel::S3);
+    config.SetHaMode(NativeRdb::HAMode::MANUAL_TRIGGER);
+    config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
     config.SetAllowRebuild(true);
     return config;
 }
@@ -166,7 +166,6 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_001, testing::ex
     EXPECT_EQ(errCode, E_OK);
 
     ASSERT_TRUE(rdb->IsSlaveDiffFromMaster());
-    MediaLibraryDataManager::GetInstance()->rdbStore_ = rdb;
     MediaLibraryRestore::GetInstance().CheckBackup();
     EXPECT_EQ(MediaLibraryRestore::GetInstance().IsBackuping(), true);
     WaitForBackup();
@@ -206,7 +205,6 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_002, testing::ex
     IncreaseRdbData(rdb);
     ASSERT_TRUE(rdb->IsSlaveDiffFromMaster());
 
-    MediaLibraryDataManager::GetInstance()->rdbStore_ = rdb;
     MediaLibraryRestore::GetInstance().CheckBackup();
     WaitForBackup();
     ASSERT_FALSE(rdb->IsSlaveDiffFromMaster());
@@ -236,7 +234,6 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_003, testing::ex
     IncreaseRdbData(rdb);
     ASSERT_TRUE(rdb->IsSlaveDiffFromMaster());
 
-    MediaLibraryDataManager::GetInstance()->rdbStore_ = rdb;
     MediaLibraryRestore::GetInstance().CheckBackup();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_1));

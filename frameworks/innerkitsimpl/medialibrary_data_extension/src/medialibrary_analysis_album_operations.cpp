@@ -121,7 +121,7 @@ static int32_t GetAlbumId(const string &whereClause, const vector<string> &where
     return E_INDEX;
 }
 
-static int32_t GetIntValueFromResultSet(shared_ptr<ResultSet> resultSet, const string &column, int &value)
+static int32_t GetIntValueFromResultSet(shared_ptr<NativeRdb::ResultSet> resultSet, const string &column, int &value)
 {
     int index = E_INDEX;
     resultSet->GetColumnIndex(column, index);
@@ -134,7 +134,8 @@ static int32_t GetIntValueFromResultSet(shared_ptr<ResultSet> resultSet, const s
     return E_OK;
 }
 
-static int32_t GetStringValueFromResultSet(shared_ptr<ResultSet> resultSet, const string &column, string &value)
+static int32_t GetStringValueFromResultSet(shared_ptr<NativeRdb::ResultSet> resultSet, const string &column,
+    string &value)
 {
     if (resultSet == nullptr) {
         return E_HAS_DB_ERROR;
@@ -212,7 +213,7 @@ static void ClearEmptyGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &cle
     rdbPredicates.SetWhereClause(clause);
     rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SMART));
     rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::GROUP_PHOTO));
-    auto ret = MediaLibraryRdbStore::Update(values, rdbPredicates);
+    auto ret = MediaLibraryRdbStore::UpdateWithDateTime(values, rdbPredicates);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Clear empty group photo album info failed! Error: %{public}d", ret);
     }
@@ -265,7 +266,7 @@ static string BuildUpdateGroupPhotoAlbumSql(const GroupPhotoAlbumInfo &albumInfo
 
 static void UpdateGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &updateAlbums)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Update group photo album info failed, rdbStore is null.");
         return;
@@ -308,7 +309,7 @@ static void InsertGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &insertA
         rdbPredicates.SetWhereArgs({ to_string(PhotoAlbumSubType::GROUP_PHOTO) });
         rdbPredicates.OrderByDesc(PhotoAlbumColumns::ALBUM_ID);
         std::vector<std::string> columns = { PhotoAlbumColumns::ALBUM_ID };
-        auto resultSet = MediaLibraryRdbStore::Query(rdbPredicates, columns);
+        auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
         if (resultSet == nullptr) {
             return;
         }
@@ -398,7 +399,7 @@ static std::map<int32_t, GroupPhotoAlbumInfo> GetAnalysisAlbumInfo()
     const string queryAnalysisAlbumSql = "SELECT * FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
         PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SMART) + " AND " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::GROUP_PHOTO);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Get AnalysisAlbum failed, rdbStore is null.");
         return lastResultMap;
@@ -427,7 +428,7 @@ static bool UpdateGroupPhotoAlbum(vector<GroupPhotoAlbumInfo> &updateAlbums, vec
 {
     auto lastResultMap = GetAnalysisAlbumInfo();
     const string querySql = GetGroupPhotoAlbumSql();
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Update group photo album failed, rdbStore is null.");
         return false;
@@ -518,7 +519,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAnalysisAlbumOperations::Query
     rdbPredicates.SetWhereClause(clause);
     rdbPredicates.OrderByDesc(RENAME_OPERATION);
     rdbPredicates.OrderByDesc("(SELECT LENGTH(" + TAG_ID + ") - LENGTH([REPLACE](" + TAG_ID + ", ',', '')))");
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
     if (albumId != E_INDEX) {
         return resultSet;
     }
@@ -639,7 +640,7 @@ static string ReorderTagId(string target, const vector<MergeAlbumInfo> &mergeAlb
     return reordererTagId;
 }
 
-int32_t GetMergeAlbumInfo(shared_ptr<ResultSet> resultSet, MergeAlbumInfo &info)
+int32_t GetMergeAlbumInfo(shared_ptr<NativeRdb::ResultSet> resultSet, MergeAlbumInfo &info)
 {
     int isCoverSatisfied = 0;
     if (GetIntValueFromResultSet(resultSet, ALBUM_ID, info.albumId) != E_OK ||
@@ -815,7 +816,7 @@ int32_t MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(const Operati
 void MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(int32_t albumId)
 {
     const string &querySql = GetGroupPhotoAlbumSql();
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Update group photo album by id: %{public}d failed, rdbStore is null.", albumId);
         return;
@@ -845,12 +846,6 @@ void MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(int3
         MEDIA_ERR_LOG("UpdatePortraitAlbumCoverSatisfied failed, fileId: %{public}d, rdbStore is null.", fileId);
         return;
     }
-    auto rdbStorePtr = rdbStore->GetRaw();
-    if (rdbStorePtr == nullptr) {
-        MEDIA_ERR_LOG("UpdatePortraitAlbumCoverSatisfied failed, fileId: %{public}d, rdbStorePtr is null.", fileId);
-        return;
-    }
-
     const string coverUriPrefix = "'" + PhotoColumn::PHOTO_URI_PREFIX + to_string(fileId) + "/%'";
 
     const string updateSql = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_COVER_SATISFIED + " = " +
@@ -858,17 +853,10 @@ void MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(int3
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT)) +
         " AND " + PhotoAlbumColumns::ALBUM_COVER_URI + " LIKE " + coverUriPrefix;
 
-    TransactionOperations transactionOprn(rdbStorePtr);
-    int32_t errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Transaction Start error, fileId: %{public}d, errCode: %{public}d.", fileId, errCode);
-        return;
-    }
-    int32_t ret = rdbStorePtr->ExecuteSql(updateSql);
+    int32_t ret = rdbStore->ExecuteSql(updateSql);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("ExecuteSql error, fileId: %{public}d, ret: %{public}d.", fileId, ret);
         return;
     }
-    transactionOprn.Finish();
 }
 } // namespace OHOS::Media

@@ -102,8 +102,6 @@ int32_t MediaLibraryAppUriSensitiveOperations::BatchInsert(
     MediaLibraryCommand &cmd, const std::vector<DataShare::DataShareValuesBucket> &values)
 {
     MEDIA_INFO_LOG("batch insert begin");
-    TransactionOperations transactionOprn(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
     std::vector<ValuesBucket> insertVector;
     for (auto it = values.begin(); it != values.end(); it++) {
         ValuesBucket value = RdbUtils::ToValuesBucket(*it);
@@ -156,7 +154,8 @@ std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriSensitiveOperation
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates,
         AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
-    std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = MediaLibraryRdbStore::Query(rdbPredicates, fetchColumns);
+    std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet =
+        MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, fetchColumns);
     if (resultSet == nullptr) {
         return nullptr;
     }
@@ -239,7 +238,7 @@ int MediaLibraryAppUriSensitiveOperations::UpdateSensitiveType(shared_ptr<Result
     updatePredicates.EqualTo(AppUriSensitiveColumn::ID, idDB);
     RdbPredicates updateRdbPredicates =
         RdbUtils::ToPredicates(updatePredicates, AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
-    int32_t updateRows = MediaLibraryRdbStore::Update(updateVB, updateRdbPredicates);
+    int32_t updateRows = MediaLibraryRdbStore::UpdateWithDateTime(updateVB, updateRdbPredicates);
     if (updateRows < 1) {
         MEDIA_ERR_LOG("upgrade SensitiveType error,idDB=%{public}d", idDB);
         return ERROR;

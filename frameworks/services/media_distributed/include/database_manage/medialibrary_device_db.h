@@ -33,7 +33,7 @@ public:
 
     static int64_t InsertDeviceInfo(const ValuesBucket &values, const std::shared_ptr<RdbStore> &rdbStore);
     static int32_t DeleteDeviceInfo(const std::string &udid, const std::shared_ptr<RdbStore> &rdbStore);
-    static int32_t UpdateDeviceInfo(const ValuesBucket &values, const std::shared_ptr<RdbStore> &rdbStore);
+    static int32_t UpdateDeviceInfo(const ValuesBucket &values, const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
 };
 } // namespace Media
 } // namespace OHOS

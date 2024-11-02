@@ -23,6 +23,7 @@
 #include "avmetadatahelper.h"
 #include "datashare_result_set.h"
 #include "image_source.h"
+#include "medialibrary_rdbstore.h"
 #include "rdb_helper.h"
 #include "rdb_predicates.h"
 #include "single_kvstore.h"
@@ -33,7 +34,7 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 struct ThumbRdbOpt {
-    EXPORT std::shared_ptr<NativeRdb::RdbStore> store;
+    EXPORT std::shared_ptr<MediaLibraryRdbStore> store;
 #ifdef DISTRIBUTED
     EXPORT std::shared_ptr<DistributedKv::SingleKvStore> kvStore;
 #endif
@@ -150,8 +151,8 @@ public:
     EXPORT static bool GetLocalThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size);
     EXPORT static void SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column);
     EXPORT static bool LoadVideoFile(ThumbnailData &data, Size &desiredSize);
-    EXPORT static bool CheckCloudThumbnailDownloadFinish(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr);
-    EXPORT static bool QueryOldKeyAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
+    EXPORT static bool CheckCloudThumbnailDownloadFinish(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr);
+    EXPORT static bool QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr,
         const std::string &table, std::vector<ThumbnailData> &infos);
 
 private:

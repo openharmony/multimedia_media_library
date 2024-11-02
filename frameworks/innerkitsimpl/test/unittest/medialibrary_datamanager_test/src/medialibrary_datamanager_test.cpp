@@ -1382,7 +1382,7 @@ void InsertBurstAsset(BurstResult &result)
     auto rdbStorePtr = rdbStore->GetRaw();
     EXPECT_NE(rdbStorePtr, nullptr);
 
-    ValuesBucket valuesBucket;
+    NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutInt(MediaColumn::MEDIA_TYPE, result.mediaType);
     valuesBucket.PutString(MediaColumn::MEDIA_TITLE, result.title);
     valuesBucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, result.subtype);
@@ -1403,7 +1403,7 @@ void InsertPhotomapForBurst(BurstResult result)
     EXPECT_NE(rdbStorePtr, nullptr);
 
     int64_t fileId = -1;
-    ValuesBucket valuesBucket;
+    NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutInt(PhotoMap::ASSET_ID, result.fileId);
     valuesBucket.PutInt(PhotoMap::ALBUM_ID, result.mapAlbum);
 
