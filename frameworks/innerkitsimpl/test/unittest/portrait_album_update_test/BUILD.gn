@@ -28,9 +28,9 @@ ohos_unittest("PortraitAlbumUpdateTest") {
 
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_album_operations.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_rdb_transaction.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_analysis_album_operations.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_command.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_rdb_transaction.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/portrait_album_update_test.cpp",
