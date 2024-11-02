@@ -403,11 +403,11 @@ static int32_t GetPrivacyRanges(const string &path, const string &mode, const st
 static bool IsDeveloperMediaTool()
 {
     if (!PermissionUtils::IsRootShell() && !PermissionUtils::IsHdcShell()) {
-        MEDIA_ERR_LOG("Mediatool permission check failed: target is not root");
+        MEDIA_DEBUG_LOG("Mediatool permission check failed: target is not root");
         return false;
     }
     if (!OHOS::system::GetBoolParameter("const.security.developermode.state", true)) {
-        MEDIA_ERR_LOG("Mediatool permission check failed: target is not in developer mode");
+        MEDIA_DEBUG_LOG("Mediatool permission check failed: target is not in developer mode");
         return false;
     }
     return true;
