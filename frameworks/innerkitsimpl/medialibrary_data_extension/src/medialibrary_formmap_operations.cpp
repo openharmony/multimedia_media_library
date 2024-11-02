@@ -170,7 +170,7 @@ void MediaLibraryFormMapOperations::ModifyFormMapMessage(const string &uri, cons
     value.PutString(FormMap::FORMMAP_URI, uri);
     RdbPredicates predicates(FormMap::FORM_MAP_TABLE);
     predicates.And()->EqualTo(FormMap::FORMMAP_FORM_ID, std::to_string(formId));
-    int32_t updateRow = MediaLibraryRdbStore::Update(value, predicates);
+    int32_t updateRow = MediaLibraryRdbStore::UpdateWithDateTime(value, predicates);
     if (updateRow < 0) {
         MEDIA_ERR_LOG("Modify FormMap message err!, uri is %{private}s, formId is %{private}s",
             uri.c_str(), to_string(formId).c_str());
@@ -292,7 +292,7 @@ int32_t MediaLibraryFormMapOperations::HandleStoreFormIdOperation(MediaLibraryCo
         lock_guard<mutex> lock(mutex_);
         RdbPredicates predicates(FormMap::FORM_MAP_TABLE);
         predicates.EqualTo(FormMap::FORMMAP_FORM_ID, formId);
-        return MediaLibraryRdbStore::Update(value, predicates);
+        return MediaLibraryRdbStore::UpdateWithDateTime(value, predicates);
     }
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();

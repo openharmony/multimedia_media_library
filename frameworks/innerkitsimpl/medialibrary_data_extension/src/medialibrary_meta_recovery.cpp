@@ -119,12 +119,8 @@ static int32_t RefreshAlbumCount()
         MEDIA_ERR_LOG("RefreshAlbumCount: failed to get rdb store handler");
         return E_HAS_DB_ERROR;
     }
-    auto rawRdbStore = rdbStore->GetRaw();
-    if (rawRdbStore == nullptr) {
-        MEDIA_ERR_LOG("rawRdbStore == nullptr)");
-        return E_HAS_DB_ERROR;
-    }
-    MediaLibraryRdbUtils::UpdateAllAlbums(rawRdbStore);
+
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
         MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
@@ -171,18 +167,7 @@ static std::optional<double> GetDoubleFromJson(const nlohmann::json &j, const st
     }
 }
 
-static shared_ptr<NativeRdb::RdbStore> GetRdbStoreRaw()
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Get rdb store failed from unistore manager");
-        return nullptr;
-    }
-
-    return rdbStore->GetRaw();
-}
-
-static void SetValuesFromFileAsset(const FileAsset &fileAsset, ValuesBucket &values,
+static void SetValuesFromFileAsset(const FileAsset &fileAsset, NativeRdb::ValuesBucket &values,
     const std::unordered_map<std::string, ResultSetDataType> &columnInfoMap)
 {
     for (const auto &[name, type] : columnInfoMap) {
@@ -200,7 +185,7 @@ static void SetValuesFromFileAsset(const FileAsset &fileAsset, ValuesBucket &val
     }
 }
 
-static void SetValuesFromPhotoAlbum(shared_ptr<PhotoAlbum> &photoAlbumPtr, ValuesBucket &values)
+static void SetValuesFromPhotoAlbum(shared_ptr<PhotoAlbum> &photoAlbumPtr, NativeRdb::ValuesBucket &values)
 {
     values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, photoAlbumPtr->GetPhotoAlbumType());
     values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, photoAlbumPtr->GetPhotoAlbumSubType());
@@ -330,10 +315,10 @@ void MediaLibraryMetaRecovery::LoadAlbumMaps(const string &path)
             DfxUtils::GetSafePath(it->GetLPath()).c_str());
     }
     // 2. db PhotoAlbum to lpathToNewAlbumId
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    NativeRdb::RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     vector<string> columns = {PhotoAlbumColumns::ALBUM_ID,
         PhotoAlbumColumns::ALBUM_LPATH};
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet == nullptr)");
         return;
@@ -1057,9 +1042,9 @@ int32_t MediaLibraryMetaRecovery::ReadMetaRecoveryCountFromFile()
     return recoverySuccessCnt;
 }
 
-bool MediaLibraryMetaRecovery::UpdatePhotoOwnerAlbumId(ValuesBucket &values)
+bool MediaLibraryMetaRecovery::UpdatePhotoOwnerAlbumId(NativeRdb::ValuesBucket &values)
 {
-    ValueObject valueObject;
+    NativeRdb::ValueObject valueObject;
     if (!values.GetObject(PhotoColumn::PHOTO_OWNER_ALBUM_ID, valueObject)) {
         return false;
     }
@@ -1126,20 +1111,13 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset)
         return E_ERR;
     }
 
-    auto rawRdbStore = GetRdbStoreRaw();
-    if (rawRdbStore == nullptr) {
++    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
++    if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("GetRdbStoreRaw failed, return nullptr");
         return E_HAS_DB_ERROR;
     }
 
-    TransactionOperations transactionOprn(rawRdbStore);
-    int32_t errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("transaction operation start failed, error=%{public}d", errCode);
-        return errCode;
-    }
-
-    ValuesBucket valuesBucket;
+    NativeRdb::ValuesBucket valuesBucket;
     SetValuesFromFileAsset(fileAsset, valuesBucket, columnInfoMap);
 
     // set meta flags uptodate, to avoid backup db into meta again
@@ -1150,32 +1128,31 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset)
     }
 
     int64_t outRowId = -1;
-    errCode = rawRdbStore->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    int32_t errCode = rdbStore->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Insert photo failed, errCode = %{public}d", errCode);
         return errCode;
     }
-    transactionOprn.Finish();
 
     return E_OK;
 }
 
 int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_ptr<PhotoAlbum>> &vecPhotoAlbum)
 {
-    auto rawRdbStore = GetRdbStoreRaw();
-    if (rawRdbStore == nullptr) {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("GetRdbStoreRaw failed, return nullptr)");
         return E_HAS_DB_ERROR;
     }
 
     for (auto iter : vecPhotoAlbum) {
         MEDIA_INFO_LOG("InsertMetadataInDb: album name = %{private}s", iter->GetAlbumName().c_str());
-        RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+        NativeRdb::RdbPredicates predicates(PhotoAlbumColumns::TABLE);
         vector<string> columns = {PhotoAlbumColumns::ALBUM_ID,
             PhotoAlbumColumns::ALBUM_LPATH};
         predicates.IsNotNull(PhotoAlbumColumns::ALBUM_LPATH)->And()->EqualTo(PhotoAlbumColumns::ALBUM_LPATH,
                              iter->GetLPath());
-        auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+        auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
         if (resultSet == nullptr) {
             MEDIA_ERR_LOG("resultSet == nullptr)");
             continue;
@@ -1184,19 +1161,18 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
             MEDIA_ERR_LOG("skip duplicate lpath %{public}s", iter->GetLPath().c_str());
             continue;
         }
-
-        TransactionOperations transactionOprn(rawRdbStore);
-        int32_t errCode = transactionOprn.Start();
+        std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+        int32_t errCode = trans->Start();
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("transaction operation start failed, error=%{public}d", errCode);
             return errCode;
         }
 
         // Insert album item
-        ValuesBucket valuesBucket;
+        NativeRdb::ValuesBucket valuesBucket;
         SetValuesFromPhotoAlbum(iter, valuesBucket);
         int64_t outRowId = -1;
-        errCode = rawRdbStore->Insert(outRowId, PhotoAlbumColumns::TABLE, valuesBucket);
+        errCode = trans->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
         if (errCode != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("InsertMetadataInDb: insert album failed, errCode = %{public}d", errCode);
             return errCode;
@@ -1204,13 +1180,13 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
 
         // Update album order inserted just now
         int32_t changedRows = -1;
-        RdbPredicates predicatesOrder(PhotoAlbumColumns::TABLE);
+        NativeRdb::RdbPredicates predicatesOrder(PhotoAlbumColumns::TABLE);
         predicatesOrder.And()->EqualTo(PhotoAlbumColumns::ALBUM_ID, outRowId)
                              ->And()
                              ->NotEqualTo(PhotoAlbumColumns::ALBUM_ORDER, iter->GetOrder());
         valuesBucket.Clear();
         valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_ORDER, iter->GetOrder());
-        errCode = rawRdbStore->Update(changedRows, valuesBucket, predicatesOrder);
+        errCode = trans->Update(changedRows, valuesBucket, predicatesOrder);
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("Update album order failed, err = %{public}d", errCode);
             return E_HAS_DB_ERROR;
@@ -1219,7 +1195,10 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
             MEDIA_INFO_LOG("Update album order");
         }
 
-        transactionOprn.Finish();
+        errCode = trans->Finish();
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("InsertMetadataInDb: tans finish fail!, ret:%{public}d", errCode);
+        }
     }
 
     return E_OK;
@@ -1229,33 +1208,24 @@ int32_t MediaLibraryMetaRecovery::UpdateMetadataFlagInDb(const int32_t fieldId, 
 {
     int32_t errCode = E_OK;
 
-    std::shared_ptr<NativeRdb::RdbStore> rdbRawPtr = GetRdbStoreRaw();
-    if (!rdbRawPtr) {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (!rdbStore) {
         MEDIA_ERR_LOG("GetRdbStoreRaw failed");
         return E_HAS_DB_ERROR;
     }
 
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fieldId);
 
-    TransactionOperations transactionOprn(rdbRawPtr);
-    errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("transaction operation start failed, error=%{public}d", errCode);
-        return errCode;
-    }
-
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_METADATA_FLAGS, static_cast<int>(flag));
 
     int32_t changedRows = -1;
-    errCode = rdbRawPtr->Update(changedRows, values, predicates);
+    errCode = rdbStore->Update(changedRows, values, predicates);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("Database update failed, err = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
-    transactionOprn.Finish();
-
     return E_OK;
 }
 
@@ -1432,12 +1402,8 @@ int32_t MediaLibraryMetaRecovery::ResetAllMetaDirty()
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
-    auto rawRdbStore = rdbStore->GetRaw();
-    if (rawRdbStore == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
 
-    int32_t err = rawRdbStore->ExecuteSql(RESET_ALL_META_DIRTY_SQL);
+    int32_t err = rdbStore->ExecuteSql(RESET_ALL_META_DIRTY_SQL);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", RESET_ALL_META_DIRTY_SQL.c_str());
     }
@@ -1447,7 +1413,7 @@ int32_t MediaLibraryMetaRecovery::ResetAllMetaDirty()
 static int32_t QueryInt(const NativeRdb::AbsRdbPredicates &predicates,
     const std::vector<std::string> &columns, const std::string &queryColumn, int32_t &value)
 {
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return E_DB_FAIL;
     }
