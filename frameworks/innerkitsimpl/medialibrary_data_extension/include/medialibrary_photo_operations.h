@@ -67,6 +67,12 @@ public:
     EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris);
     EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, const std::string &path);
     EXPORT static int32_t RemoveTempVideo(const std::string &path);
+    EXPORT static int32_t SaveSourceVideoFile(const std::shared_ptr<FileAsset> &fileAsset,
+        const std::string &assetPath);
+    EXPORT static int32_t AddFiltersToVideoExecute(const std::shared_ptr<FileAsset>& fileAsset);
+    EXPORT static int32_t DoRevertFilters(const std::shared_ptr<FileAsset> &fileAsset,
+        std::string &path, std::string &sourcePath);
+
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);
@@ -98,8 +104,6 @@ private:
     static int32_t SaveEditDataCamera(MediaLibraryCommand &cmd, const std::string &assetPath,
         std::string &editData);
     static int32_t SaveSourceAndEditData(const std::shared_ptr<FileAsset> &fileAsset, const std::string &editData);
-    static int32_t SaveSourceVideoFile(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
-        const std::string &assetPath);
     static int32_t AddFiltersExecute(MediaLibraryCommand& cmd, const std::shared_ptr<FileAsset>& fileAsset,
         const std::string &cachePath);
     static int32_t SubmitEditCacheExecute(MediaLibraryCommand &cmd,
