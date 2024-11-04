@@ -907,7 +907,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         return 0;
     }
     MEDIA_INFO_LOG("start SaveCameraPhoto, fileId: %{public}s", fileId.c_str());
-    int32_t ret = UpdataIsTempAndDirty(cmd, fileId);
+    int32_t ret = UpdateIsTempAndDirty(cmd, fileId);
     if (ret < 0) {
         return 0;
     }
