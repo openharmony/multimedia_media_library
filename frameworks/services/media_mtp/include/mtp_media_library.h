@@ -37,6 +37,7 @@ public:
     EXPORT static std::shared_ptr<MtpMediaLibrary> GetInstance();
 
     EXPORT void Init();
+    EXPORT void Clear();
     EXPORT int32_t GetHandles(int32_t parentId, std::vector<int> &outHandles,
         MediaType mediaType = MEDIA_TYPE_DEFAULT);
     EXPORT int32_t GetHandles(const std::shared_ptr<MtpOperationContext> &context,
@@ -61,6 +62,8 @@ public:
     EXPORT int32_t GetObjectPropValue(const std::shared_ptr<MtpOperationContext> &context,
         uint64_t &outIntVal, uint128_t &outLongVal, std::string &outStrVal);
     EXPORT int32_t GetRealPath(const std::string &path, std::string &outPath);
+    EXPORT int GetStorageIds();
+    EXPORT void DeleteHandlePathMap(const std::string &path, const uint32_t id);
 
 private:
     void AddToHandlePathMap(const std::string &path, const uint32_t &id);
@@ -70,18 +73,21 @@ private:
     void DeletePathHandleMap(const std::string &path, const uint32_t &id);
     void MoveHandlePathMap(const std::string &path, const std::string &to);
     void MoveRepeatDirHandlePathMap(const std::string &path, const std::string &to);
+    uint32_t MoveObjectSub(const sf::path &fromPath, const sf::path &toPath, const bool &isDir,
+        uint32_t &repeatHandle);
     uint32_t GetId();
     uint32_t GetParentId(const std::string &path);
     uint32_t ScanDirNoDepth(const sf::path &root, std::shared_ptr<UInt32List> &out);
-    uint32_t ScanDirWithType(const sf::path &root, std::shared_ptr<std::unordered_map<uint32_t, std::string>> &out);
-    uint32_t ScanDirTraverseWithType(const sf::path &root,
+    uint32_t ScanDirWithType(const std::string &root, std::shared_ptr<std::unordered_map<uint32_t, std::string>> &out);
+    uint32_t ScanDirTraverseWithType(const std::string &root,
         std::shared_ptr<std::unordered_map<uint32_t, std::string>> &out);
     uint32_t GetSizeFromOfft(const off_t &size);
     uint32_t AddPathToMap(const sf::path &path);
     std::shared_ptr<std::unordered_map<uint32_t, std::string>> GetHandlesMap(
         const std::shared_ptr<MtpOperationContext> &context);
+    void GetExternalStorages();
+    void ErasePathInfo(const std::string &path);
 
-    static std::mutex mutex_;
     static std::shared_ptr<MtpMediaLibrary> instance_;
     static std::atomic<uint32_t> id_;
 };

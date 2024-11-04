@@ -360,38 +360,36 @@ uint16_t MtpOperationUtils::SetObjectReferences(shared_ptr<PayloadData> &data)
 
 uint16_t MtpOperationUtils::GetObjectDataDeal()
 {
-    if (context_ == nullptr) {
-        MEDIA_ERR_LOG("SetObjectReferences context_ is null");
-        return MTP_ERROR_CONTEXT_IS_NULL;
-    }
+    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, MTP_ERROR_CONTEXT_IS_NULL, "GetObjectDataDeal context_ is null");
 
     int fd = 0;
-    int errorCode;
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        errorCode = mtpMediaLibrary_->GetFd(context_, fd);
-    } else {
-        errorCode = mtpMedialibraryManager_->GetFd(context_, fd);
-    }
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("GetObjectDataDeal GetFd fail!");
-        return errorCode;
-    }
+    int errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetFd(context_, fd) :
+        mtpMedialibraryManager_->GetFd(context_, fd);
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "GetObjectDataDeal GetFd fail!");
+
     MtpFileRange object;
     object.fd = fd;
     object.offset = 0;
     struct stat sstat;
     int result = fstat(object.fd, &sstat);
-    if (result < 0) {
-        MEDIA_ERR_LOG("GetObjectDataDeal fstat error = %{public}d", errno);
-        return MTP_ERROR_INCOMPLETE_TRANSFER;
-    }
+    PreDealFd(result < 0, fd);
+    CHECK_AND_RETURN_RET_LOG(result == MTP_SUCCESS, MTP_ERROR_INCOMPLETE_TRANSFER,
+        "GetObjectDataDeal fstat error = %{public}d", errno);
+
     object.length = sstat.st_size;
     object.command = context_->operationCode;
     object.transaction_id = context_->transactionID;
     result = context_->mtpDriver->SendObj(object);
+    PreDealFd(result < 0, fd);
     if (result < 0) {
         MEDIA_ERR_LOG("GetObjectDataDeal SendObj error!");
         return MTP_ERROR_INCOMPLETE_TRANSFER;
+    }
+    int32_t ret = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->CloseFd(context_, fd) :
+        mtpMedialibraryManager_->CloseFd(context_, fd);
+    if (ret != MTP_SUCCESS) {
+        MEDIA_ERR_LOG("DealFd CloseFd fail!");
+        return E_ERR;
     }
     return MTP_SUCCESS;
 }
@@ -404,49 +402,71 @@ uint16_t MtpOperationUtils::GetObject(shared_ptr<PayloadData> &data, int errorCo
 
 uint16_t MtpOperationUtils::DoRecevieSendObject()
 {
-    if (context_ == nullptr) {
-        MEDIA_ERR_LOG("DoRecevieSendObject context_ is null");
-        return MTP_ERROR_CONTEXT_IS_NULL;
-    }
-
-    int fd = 0;
-    int errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetFd(context_, fd) :
-        mtpMedialibraryManager_->GetFd(context_, fd);
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("DoRecevieSendObject GetFd fail!");
-        return errorCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, MTP_ERROR_CONTEXT_IS_NULL, "DoRecevieSendObject context_ is null");
 
     vector<uint8_t> dataBuffer;
     uint32_t temp = READ_LEN;
-    context_->mtpDriver->Read(dataBuffer, temp);
+    int errorCode = context_->mtpDriver->Read(dataBuffer, temp);
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "DoRecevieSendObject Read error!");
+
+    int fd = 0;
+    errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetFd(context_, fd) :
+        mtpMedialibraryManager_->GetFd(context_, fd);
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "DoRecevieSendObject GetFd fail!");
+
     uint32_t initialData = dataBuffer.size() < HEADER_LEN  ? 0 : dataBuffer.size() - HEADER_LEN;
-    int ret = write(fd, &dataBuffer[HEADER_LEN], initialData);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("DoRecevieSendObject write error = %{public}d", errno);
-        return MTP_ERROR_INCOMPLETE_TRANSFER;
-    }
+    errorCode = write(fd, &dataBuffer[HEADER_LEN], initialData);
+    PreDealFd(errorCode < 0, fd);
+    CHECK_AND_RETURN_RET_LOG(errorCode >= 0, MTP_ERROR_RESPONSE_GENERAL,
+        "DoRecevieSendObject write error = %{public}d", errno);
 
     MtpFileRange object;
     object.fd = fd;
     object.offset = initialData;
     object.length = static_cast<int64_t>(context_->sendObjectFileSize) - static_cast<int64_t>(initialData);
-    context_->mtpDriver->ReceiveObj(object);
-    fsync(fd);
-    struct stat sstat;
-    int result = fstat(fd, &sstat);
-    if (result < 0) {
-        MEDIA_ERR_LOG("DoRecevieSendObject fstat error = %{public}d", errno);
-        return MTP_ERROR_INCOMPLETE_TRANSFER;
+    errorCode = context_->mtpDriver->ReceiveObj(object);
+    if (errorCode != MTP_SUCCESS) {
+        MEDIA_ERR_LOG("DoRecevieSendObject ReceiveObj errorCode = %{public}d", errorCode);
+        PreDealFd(errorCode != MTP_SUCCESS, fd);
+        string filePath;
+        MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetPathById(context_->handle, filePath):
+            mtpMedialibraryManager_->GetPathById(context_->handle, filePath);
+        unlink(filePath.c_str());
+        if (MtpManager::GetInstance().IsMtpMode()) {
+            mtpMediaLibrary_->DeleteHandlePathMap(filePath, context_->handle);
+        }
+        return MTP_ERROR_TRANSFER_CANCELLED;
     }
+
+    errorCode = fsync(fd);
+    PreDealFd(errorCode != MTP_SUCCESS, fd);
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_RESPONSE_GENERAL,
+        "DoRecevieSendObject fsync eroor = %{public}d", errno);
+
+    struct stat sstat;
+    errorCode = fstat(fd, &sstat);
+    PreDealFd(errorCode != MTP_SUCCESS, fd);
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_RESPONSE_GENERAL,
+        "DoRecevieSendObject fstat error = %{public}d", errno);
+
     errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->CloseFd(context_, fd) :
         mtpMedialibraryManager_->CloseFd(context_, fd);
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("DoRecevieSendObject CloseFd fail!");
-        return errorCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "DoRecevieSendObject CloseFd fail!");
+
     SendEventPacket(context_->handle, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
     return MTP_SUCCESS;
+}
+
+void MtpOperationUtils::PreDealFd(const bool deal, const int fd)
+{
+    if (!deal || fd <= 0) {
+        return;
+    }
+    int32_t ret = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->CloseFd(context_, fd) :
+        mtpMedialibraryManager_->CloseFd(context_, fd);
+    if (ret != MTP_SUCCESS) {
+        MEDIA_ERR_LOG("DealFd CloseFd fail!");
+    }
 }
 
 uint16_t MtpOperationUtils::GetThumb(shared_ptr<PayloadData> &data, uint16_t containerType, int &errorCode)
@@ -612,16 +632,20 @@ uint16_t MtpOperationUtils::GetStorageIDs(shared_ptr<PayloadData> &data, uint16_
         errorCode = MTP_ERROR_SESSION_NOT_OPEN;
         return CheckErrorCode(errorCode);
     }
-    auto storage = make_shared<Storage>();
-    storage->SetStorageID(DEFAULT_STORAGE_ID);
-    storage->SetStorageType(MTP_STORAGE_FIXEDRAM);
-    storage->SetFilesystemType(MTP_FILESYSTEM_GENERICHIERARCHICAL);
-    storage->SetAccessCapability(MTP_ACCESS_READ_WRITE);
-    storage->SetMaxCapacity(MtpStorageManager::GetInstance()->GetTotalSize());
-    storage->SetFreeSpaceInBytes(MtpStorageManager::GetInstance()->GetFreeSize());
-    storage->SetFreeSpaceInObjects(0);
-    storage->SetStorageDescription("Inner Storage");
-    MtpStorageManager::GetInstance()->AddStorage(storage);
+    if (MtpManager::GetInstance().IsMtpMode()) {
+        mtpMediaLibrary_->GetStorageIds();
+    } else {
+        auto storage = make_shared<Storage>();
+        storage->SetStorageID(DEFAULT_STORAGE_ID);
+        storage->SetStorageType(MTP_STORAGE_FIXEDRAM);
+        storage->SetFilesystemType(MTP_FILESYSTEM_GENERICHIERARCHICAL);
+        storage->SetAccessCapability(MTP_ACCESS_READ_WRITE);
+        storage->SetMaxCapacity(MtpStorageManager::GetInstance()->GetTotalSize());
+        storage->SetFreeSpaceInBytes(MtpStorageManager::GetInstance()->GetFreeSize());
+        storage->SetFreeSpaceInObjects(0);
+        storage->SetStorageDescription("Inner Storage");
+        MtpStorageManager::GetInstance()->AddStorage(storage);
+    }
 
     shared_ptr<GetStorageIdsData> getStorageIdsData = make_shared<GetStorageIdsData>();
     getStorageIdsData->SetStorages(MtpStorageManager::GetInstance()->GetStorages());
