@@ -1172,8 +1172,8 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_037, TestSize.
 
 /**
  * @tc.name: media_library_capi_test_038
- * @tc.desc: if cacheFileName_ and cacheMovingPhotoVideoName_ is not empty, after inserting
- *           GET_WRITE_CACHE_HANDLER changeOperation, test OH_MediaAccessHelper_ApplyChanges, return
+ * @tc.desc: after inserting GET_WRITE_CACHE_HANDLER changeOperation, if cacheFileName_ and cacheMovingPhotoVideoName_
+ *           is not empty, but sDataShareHelper_ is nullptr, test OH_MediaAccessHelper_ApplyChanges, return
  *           MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED
  * @tc.type: FUNC
  */
