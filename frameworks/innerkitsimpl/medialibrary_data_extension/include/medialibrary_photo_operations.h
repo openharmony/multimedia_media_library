@@ -59,7 +59,7 @@ public:
         const std::string &outputPath, std::string &editdata, const std::string &mime_type);
     EXPORT static int32_t SavePicture(const int32_t &fileType, const int32_t &fileId);
     EXPORT static int32_t GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
-        bool isCleanImmediately, std::string &photoId);
+        bool isCleanImmediately, std::string &photoId, bool &isHighQualityPicture);
     EXPORT static int32_t FinishRequestPicture(MediaLibraryCommand &cmd);
     EXPORT static int32_t AddFiltersForCloudEnhancementPhoto(int32_t fileId, const std::string& assetPath,
         const std::string& editDataCameraSourcePath, const std::string& mimeType);
@@ -138,8 +138,8 @@ private:
     static int32_t SetVideoEnhancementAttr(MediaLibraryCommand &cmd);
     static int32_t DegenerateMovingPhoto(MediaLibraryCommand &cmd);
 private:
-    static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension,
-        const std::string mimeType, std::string &oldFilePath);
+    static int32_t UpdateExtension(const int32_t &fileId, std::string &mimeType, const int32_t &fileType,
+        std::string &oldFilePath);
     static void UpdateEditDataPath(std::string filePath, const std::string &extension);
     static void DeleteAbnormalFile(std::string &assetPath, const int32_t &fileId, const std::string &oldFilePath);
     static std::mutex saveCameraPhotoMutex_;
