@@ -4066,6 +4066,15 @@ static void AlterThumbnailVisible(RdbStore& store)
     ExecSqls(sqls, store);
 }
 
+static void AddHighlightVideoCountCanPack(RdbStore& store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " + HIGHLIGHT_VIDEO_COUNT_CAN_PACK + " INT",
+    };
+    MEDIA_INFO_LOG("Add key: hilghlight video count can pack Start");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CREATE_TAB_OLD_PHOTOS) {
@@ -4080,6 +4089,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ALTER_THUMBNAIL_VISIBLE) {
         AlterThumbnailVisible(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_VIDEO_COUNT_CAN_PACK) {
+        AddHighlightVideoCountCanPack(store);
     }
 }
 
