@@ -100,7 +100,8 @@ bool PictureHandlerService::WritePicture(const int32_t &fileId, MessageParcel &d
     MEDIA_DEBUG_LOG("PictureHandlerService WritePicture enter, fileId: %{public}d", fileId);
     std::shared_ptr<Media::Picture> picture;
     std::string photoId;
-    int32_t ret = MediaLibraryPhotoOperations::GetPicture(fileId, picture, false, photoId);
+    bool isHighQualityPicture = false;
+    int32_t ret = MediaLibraryPhotoOperations::GetPicture(fileId, picture, false, photoId, isHighQualityPicture);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("PictureHandlerService::GetPicture picture is not exist, fileId: %{public}d", fileId);
         return false;
