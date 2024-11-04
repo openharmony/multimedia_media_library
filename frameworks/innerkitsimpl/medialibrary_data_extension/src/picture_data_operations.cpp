@@ -25,6 +25,7 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 int32_t PictureDataOperations::taskSize = 0;
+const int32_t SAVE_PICTURE_TIMEOUT_SEC = 20;
 
 PictureDataOperations::PictureDataOperations()
 {
@@ -44,7 +45,8 @@ void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<Pictu
     auto iter = pictureMap.begin();
     while (iter != pictureMap.end()) {
         time_t now = time(nullptr);
-        if (((iter->second)->expireTime_ < now) && ((iter->second)->isCleanImmediately_)) {
+        bool isNeedDeletePicture = ((iter->second)->expireTime_ < now) && ((iter->second)->isCleanImmediately_);
+        if (isNeedDeletePicture || ((iter->second)->expireTime_ + SAVE_PICTURE_TIMEOUT_SEC) < now) {
             if (pictureType == LOW_QUALITY_PICTURE) {
                 FileUtils::SavePicture(iter->first, (iter->second)->picture_, false, true);
             }
@@ -143,16 +145,18 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
 }
 
 std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageId(const std::string& imageId,
-    bool isCleanImmediately)
+    bool &isHighQualityPicture, bool isCleanImmediately)
 {
     MEDIA_DEBUG_LOG("enter %{public}s enter", imageId.c_str());
     enum PictureType pictureType;
     std::shared_ptr<Media::Picture> picture;
+    isHighQualityPicture = false;
     for (pictureType = HIGH_QUALITY_PICTURE; pictureType >= LOW_QUALITY_PICTURE;
         pictureType = (PictureType)(pictureType - 1)) {
         picture = GetDataWithImageIdAndPictureType(imageId, pictureType, isCleanImmediately);
         if (picture != nullptr && picture->GetMainPixel() != nullptr) {
             MEDIA_DEBUG_LOG("GetDataWithImageId is not null ");
+            isHighQualityPicture = (pictureType == HIGH_QUALITY_PICTURE);
             return picture;
         } else {
             MEDIA_DEBUG_LOG("GetDataWithImageId is not found ");
