@@ -77,7 +77,6 @@ int MtpDriver::CloseDriver()
 {
     if (usbfnMtpInterface != nullptr) {
         auto ret = usbfnMtpInterface->Stop();
-        usbfnMtpInterface->Release();
         MEDIA_ERR_LOG("MtpDriver::CloseDriver Error: %{public}d", ret);
     }
 
