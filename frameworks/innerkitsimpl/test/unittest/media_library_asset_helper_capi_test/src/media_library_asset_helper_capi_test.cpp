@@ -179,7 +179,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_001, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -199,7 +198,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_002, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_VIDEO);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -218,7 +216,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_003, TestSize.
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_MEDIALIBRARY);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     EXPECT_EQ(changeRequest, nullptr);
 
@@ -240,7 +237,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_004, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -267,7 +263,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_005, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -294,7 +289,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_006, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -321,7 +315,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_007, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -350,7 +343,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_008, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -376,7 +368,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_009, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -404,7 +395,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_010, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -432,7 +422,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_011, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -460,7 +449,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_012, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -488,7 +476,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_013, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -515,7 +502,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_014, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -542,7 +528,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_015, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -569,7 +554,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_016, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -596,7 +580,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_017, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -622,7 +605,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_018, TestSize.
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_MEDIALIBRARY);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     EXPECT_EQ(changeRequest, nullptr);
 
@@ -646,7 +628,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_019, TestSize.
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_MEDIALIBRARY);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     EXPECT_EQ(changeRequest, nullptr);
 
@@ -669,7 +650,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_020, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     AssetChangeOperation changeOperation = AssetChangeOperation::CREATE_FROM_SCRATCH;
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     changeRequest->request_->RecordChangeOperation(changeOperation);
@@ -694,7 +674,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_021, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     AssetChangeOperation changeOperation = AssetChangeOperation::SET_EDIT_DATA;
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     changeRequest->request_->RecordChangeOperation(changeOperation);
@@ -719,7 +698,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_022, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     AssetChangeOperation changeOperation = AssetChangeOperation::CREATE_FROM_URI;
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     changeRequest->request_->RecordChangeOperation(changeOperation);
@@ -756,7 +734,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_023, TestSize.
     fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::CAMERA));
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     AssetChangeOperation changeOperation = AssetChangeOperation::GET_WRITE_CACHE_HANDLER;
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     changeRequest->request_->RecordChangeOperation(changeOperation);
@@ -800,7 +777,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_024, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -837,7 +813,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_025, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -874,7 +849,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_026, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_VIDEO);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -916,7 +890,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_027, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -941,7 +914,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_028, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -968,7 +940,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_029, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -994,7 +965,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_030, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -1022,7 +992,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_031, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -1053,7 +1022,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_032, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
@@ -1084,7 +1052,6 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_033, TestSize.
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
-    auto fileAssetPtr = mediaAsset->mediaAsset_->GetFileAssetInstance();
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
     ASSERT_NE(changeRequest, nullptr);
 
