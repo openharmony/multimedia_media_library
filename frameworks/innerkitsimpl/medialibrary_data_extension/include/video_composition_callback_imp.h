@@ -26,7 +26,8 @@ namespace OHOS {
 namespace Media {
 static const std::string FRAME_STICKER = "FrameSticker";
 static const std::string INPLACE_STICKER = "InplaceSticker";
-static const std::string FILTER_LOAD_LUT_MODEL = "FILTER_LOAD_LUT_MODEL";
+static const std::string FILTERS_FIELD = "filters";
+static const char FILTERS_END = ',';
 static const int32_t MAX_CONCURRENT_NUM = 5;
 static const int32_t START_DISTANCE = 10;
 
@@ -61,6 +62,7 @@ private:
     static int32_t curWorkerNum_;
     static std::mutex mutex_;
     int32_t inputFileFd_;
+    int32_t outputFileFd_;
     string videoPath_;
 };
 

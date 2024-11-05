@@ -38,6 +38,8 @@ VideoCompositionCallbackImpl::VideoCompositionCallbackImpl() {}
 
 void VideoCompositionCallbackImpl::onResult(VEFResult result, VEFError errorCode)
 {
+    close(inputFileFd_);
+    close(outputFileFd_);
     editorMap_.erase(inputFileFd_);
     size_t lastSlash = videoPath_.rfind('.');
     string sourceImagePath = videoPath_.substr(0, lastSlash) + ".jpg";
@@ -50,7 +52,7 @@ void VideoCompositionCallbackImpl::onResult(VEFResult result, VEFError errorCode
         // Video Composite failed save sourceVideo to photo directory
         CHECK_AND_RETURN_LOG(MediaFileUtils::CopyFileUtil(sourceVideoPath, videoPath_),
             "Copy sourceVideoPath to videoPath, path:%{private}s", sourceVideoPath.c_str());
-        return ;
+        return;
     }
 
     mutex_.lock();
@@ -79,27 +81,33 @@ int32_t VideoCompositionCallbackImpl::CallStartComposite(const std::string& sour
     MEDIA_INFO_LOG("Call StartComposite begin, sourceVideoPath:%{public}s", sourceVideoPath.c_str());
     int32_t inputFileFd = open(sourceVideoPath.c_str(), O_RDONLY);
     if (inputFileFd == -1) {
-        MEDIA_ERR_LOG("Open failed for inputFileFd file");
+        MEDIA_ERR_LOG("Open failed for inputFileFd file, errno: %{public}d", errno);
         return E_ERR;
     }
 
     int32_t outputFileFd = open(videoPath.c_str(), O_WRONLY|O_CREAT, CHOWN_RW_USR_GRP);
     if (outputFileFd == -1) {
-        MEDIA_ERR_LOG("Open failed for outputFileFd file");
+        close(inputFileFd);
+        MEDIA_ERR_LOG("Open failed for outputFileFd file, errno: %{public}d", errno);
         return E_ERR;
     }
 
     auto callBack = std::make_shared<VideoCompositionCallbackImpl>();
     auto editor = VideoEditorFactory::CreateVideoEditor();
     if (editor == nullptr) {
+        close(inputFileFd);
+        close(outputFileFd);
         MEDIA_ERR_LOG("CreateEditor failed with error");
         return E_ERR;
     }
     callBack->inputFileFd_ = inputFileFd;
+    callBack->outputFileFd_ = outputFileFd;
     callBack->videoPath_ = videoPath;
 
     VEFError error = editor->AppendVideoFile(inputFileFd, effectDescription);
     if (error != VEFError::ERR_OK) {
+        close(inputFileFd);
+        close(outputFileFd);
         editor = nullptr;
         MEDIA_ERR_LOG("AppendVideoFile failed with error: %{public}d", (int32_t)error);
         return E_ERR;
@@ -107,6 +115,8 @@ int32_t VideoCompositionCallbackImpl::CallStartComposite(const std::string& sour
     auto compositionOptions = std::make_shared<CompositionOptions>(outputFileFd, callBack);
     error = editor->StartComposite(compositionOptions);
     if (error != VEFError::ERR_OK) {
+        close(inputFileFd);
+        close(outputFileFd);
         editor = nullptr;
         MEDIA_ERR_LOG("StartComposite failed with error: %{public}d", (int32_t)error);
         return E_ERR;
