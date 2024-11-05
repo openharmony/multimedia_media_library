@@ -2643,7 +2643,7 @@ int64_t MediaLibraryPhotoOperations::CloneSingleAsset(MediaLibraryCommand &cmd)
 {
     const ValuesBucket& values = cmd.GetValueBucket();
     int fileId = -1;
-    ValueObject valueObject
+    ValueObject valueObject;
     if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
         valueObject.GetInt(fileId);
     } else {
