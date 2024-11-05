@@ -2171,10 +2171,9 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
 
     int32_t subtype = static_cast<int32_t>(fileAsset->GetPhotoSubType());
     int32_t movingPhotoSubtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
-    if (subtype == movingPhotoSubtype || fileAsset->GetOriginalSubType() == movingPhotoSubtype) {
-        string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourcePath);
-        errCode = RevertMovingPhotoVideo(fileAsset, path, sourceVideoPath, subtype);
-        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_FS_ERROR, "Failed to revert movingPhoto video");
+    if (fileAsset->GetOriginalSubType() == movingPhotoSubtype) {
+        errCode = UpdateMovingPhotoSubtype(fileAsset->GetId(), subtype);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update movingPhoto subtype");
     }
 
     string editDataPath = GetEditDataPath(path);
@@ -2211,6 +2210,13 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
     if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(sourcePath, path) == E_OK, E_HAS_FS_ERROR,
             "Can not modify %{private}s to %{private}s", sourcePath.c_str(), path.c_str());
+        int32_t subtype = static_cast<int32_t>(fileAsset->GetPhotoSubType());
+        if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
+            string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourcePath);
+            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(sourceVideoPath, videoPath) == E_OK, E_HAS_FS_ERROR,
+                "Can not modify %{private}s to %{private}s", sourceVideoPath.c_str(), videoPath.c_str());
+        }
     } else {
         string editData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
@@ -2265,25 +2271,6 @@ static int32_t Move(const string& srcPath, const string& destPath)
             srcPath.c_str(), destPath.c_str(), ret, errno);
     }
     return ret;
-}
-
-int32_t MediaLibraryPhotoOperations::RevertMovingPhotoVideo(const std::shared_ptr<FileAsset> &fileAsset,
-    const string &path, const string &sourceVideoPath, int32_t subtype)
-{
-    int32_t fileId = fileAsset->GetId();
-    CHECK_AND_RETURN_RET_LOG(!sourceVideoPath.empty(), E_INVALID_URI,
-        "Cannot get source video path, id=%{public}d", fileId);
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(sourceVideoPath), E_NO_SUCH_FILE,
-        "Can not get source video file, id=%{public}d", fileId);
-
-    int32_t errCode = E_OK;
-    if (subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        errCode = UpdateMovingPhotoSubtype(fileAsset->GetId(), subtype);
-        CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
-    }
-    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
-    CHECK_AND_RETURN_RET_LOG(Move(sourceVideoPath, videoPath) == E_OK, E_HAS_FS_ERROR, "Failed to move video");
-    return errCode;
 }
 
 bool MediaLibraryPhotoOperations::IsNeedRevertEffectMode(MediaLibraryCommand& cmd,
@@ -2807,12 +2794,6 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<F
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
             "Failed to read editData, path = %{public}s", editDataCameraPath.c_str());
         // erase sticker field
-        if (editData.find(FILTER_LOAD_LUT_MODEL) == std::string::npos) {
-            MEDIA_INFO_LOG("MovingPhoto video only supports filter now.");
-            return E_OK;
-        }
-        CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(fileAsset, assetPath) == E_OK, E_HAS_FS_ERROR,
-            "Failed to save source video, path = %{public}s", assetPath.c_str());
         auto index = editData.find(FRAME_STICKER);
         if (index != std::string::npos) {
             VideoCompositionCallbackImpl::EraseStickerField(editData, index);
@@ -2821,6 +2802,17 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<F
         if (index != std::string::npos) {
             VideoCompositionCallbackImpl::EraseStickerField(editData, index);
         }
+        index = editData.find(FILTERS_FIELD);
+        if (index == std::string::npos) {
+            MEDIA_ERR_LOG("Can not find Video filters field.");
+            return E_ERR;
+        }
+        if (editData[index + START_DISTANCE] == FILTERS_END) {
+            MEDIA_INFO_LOG("MovingPhoto video only supports filter now.");
+            return E_OK;
+        }
+        CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(fileAsset, assetPath) == E_OK, E_HAS_FS_ERROR,
+            "Failed to save source video, path = %{public}s", assetPath.c_str());
         VideoCompositionCallbackImpl::AddCompositionTask(assetPath, editData);
     }
     return E_OK;
