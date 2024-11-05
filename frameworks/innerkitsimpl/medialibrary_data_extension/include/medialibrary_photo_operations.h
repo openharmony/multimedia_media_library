@@ -92,8 +92,6 @@ private:
     static int32_t CommitEditInsertExecute(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &editData);
     static int32_t DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset);
-    static int32_t RevertMovingPhotoVideo(const std::shared_ptr<FileAsset> &fileAsset,
-        const std::string &path, const std::string &sourceVideoPath, int32_t subtype);
     static int32_t ParseMediaAssetEditData(MediaLibraryCommand &cmd, std::string &editData);
     static void ParseCloudEnhancementEditData(std::string& editData);
     static void CreateThumbnailFileScan(const std::shared_ptr<FileAsset> &fileAsset, std::string &extraUri,
