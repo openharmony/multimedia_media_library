@@ -23,15 +23,12 @@ class MtpService {
 public:
     MTP_API_EXPORT MtpService();
     ~MtpService() = default;
-    MTP_API_EXPORT static std::shared_ptr<MtpService> GetInstance();
     MTP_API_EXPORT void StartService();
     MTP_API_EXPORT void StopService();
     MTP_API_EXPORT void Init();
 
 private:
-
-    static std::shared_ptr<MtpService> mtpServiceInstance_;
-    static std::mutex instanceLock_;
+    std::mutex mutex_;
     std::shared_ptr<MtpMonitor> monitorPtr_;
     bool isMonitorRun_;
 };

@@ -31,16 +31,16 @@ class MtpStorageManager {
 public:
     ~MtpStorageManager();
     static std::shared_ptr<MtpStorageManager> GetInstance();
-    int64_t GetTotalSize();
-    int64_t GetFreeSize();
+    int64_t GetTotalSize(const std::string &path = std::string(""));
+    int64_t GetFreeSize(const std::string &path = std::string(""));
     static std::mutex mutex_;
     static std::shared_ptr<MtpStorageManager> instance_;
     void AddStorage(std::shared_ptr<Storage> &storage);
     void RemoveStorage(std::shared_ptr<Storage> &storage);
+    void ClearStorages();
     std::shared_ptr<Storage> GetStorage(uint32_t id);
     bool HasStorage(uint32_t id = MTP_STORAGE_ID_ALL2);
     std::vector<std::shared_ptr<Storage>> GetStorages();
-    int32_t GetSizeOfPath(const char *path, int32_t type, int64_t &size);
 private:
     MtpStorageManager();
     sptr<StorageManager::IStorageManager> proxy_;
