@@ -922,7 +922,13 @@ string MediaFileUtils::GetHighlightPath(const string &uri)
         return "";
     }
 
-    string path = "/storage/cloud/files/.thumbs" + uri.substr(prefixLen);
+    string path;
+    if (IsFileExists(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD)) {
+        path = "/storage/cloud/files/.thumbs" + uri.substr(prefixLen);
+    } else {
+        path = "/storage/cloud/files" + uri.substr(prefixLen);
+    }
+    
     return path;
 }
 
