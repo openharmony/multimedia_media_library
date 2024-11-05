@@ -55,6 +55,7 @@
 #include "dfx_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_rdb_utils.h"
+#include "medialibrary_type_const.h"
 #include "moving_photo_processor.h"
 #include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
@@ -514,6 +515,19 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     int32_t ret = DoUpdateBurstFromGallery();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DoUpdateBurstFromGallery faild");
+    }
+
+    // migration highlight info to new path
+    if (MediaFileUtils::IsFileExists(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD)) {
+        MEDIA_INFO_LOG("Migration highlight info to new path");
+        bool retMigration = MediaFileUtils::CopyDirAndDelSrc(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD,
+            ROOT_MEDIA_DIR + HIGHLIGHT_INFO_NEW);
+        if (retMigration) {
+            bool retDelete = MediaFileUtils::DeleteDir(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD);
+            if (!retDelete) {
+                MEDIA_ERR_LOG("Delete old highlight path fail");
+            }
+        }
     }
 
     // compat old-version moving photo
