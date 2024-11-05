@@ -76,10 +76,6 @@ MediaAssetChangeRequestImpl::~MediaAssetChangeRequestImpl()
         dataBuffer_ = nullptr;
     }
 
-    if (editData_ != nullptr) {
-        editData_ = nullptr;
-    }
-
     addResourceTypes_.clear();
     assetChangeOperations_.clear();
 }
@@ -431,23 +427,6 @@ int32_t MediaAssetChangeRequestImpl::CopyToMediaLibrary(AddResourceMode mode)
     return ret;
 }
 
-int32_t MediaAssetChangeRequestImpl::CreateAssetBySecurityComponent(string& assetUri)
-{
-    bool isValid = false;
-    string title = creationValuesBucket_.Get(PhotoColumn::MEDIA_TITLE, isValid);
-    CHECK_AND_RETURN_RET_LOG(isValid, E_FAIL, "Failed to get title");
-
-    string extension = creationValuesBucket_.Get(ASSET_EXTENTION, isValid);
-    CHECK_AND_RETURN_RET_LOG(isValid && MediaFileUtils::CheckDisplayName(title + "." + extension) == E_OK, E_FAIL,
-        "Failed to check displayName");
-
-    creationValuesBucket_.valuesMap.erase(MEDIA_DATA_DB_NAME);
-    string uri = PAH_CREATE_PHOTO_COMPONENT;
-    MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri createAssetUri(uri);
-    return UserFileClient::InsertExt(createAssetUri, creationValuesBucket_, assetUri);
-}
-
 int32_t MediaAssetChangeRequestImpl::CopyFileToMediaLibrary(const OHOS::UniqueFd& destFd, bool isMovingPhotoVideo)
 {
     string srcRealPath = isMovingPhotoVideo ? movingPhotoVideoRealPath_ : realPath_;
@@ -510,15 +489,10 @@ int32_t MediaAssetChangeRequestImpl::SubmitCache()
     string uri = PAH_SUBMIT_CACHE;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri submitCacheUri(uri);
-    string assetUri;
-    int32_t ret;
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset->GetId());
     valuesBucket.Put(CACHE_FILE_NAME, cacheFileName_);
-    ret = PutMediaAssetEditData(valuesBucket);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to put editData");
-
-    ret = UserFileClient::Insert(submitCacheUri, valuesBucket);
+    int32_t ret = UserFileClient::Insert(submitCacheUri, valuesBucket);
 
     cacheFileName_.clear();
     cacheMovingPhotoVideoName_.clear();
@@ -544,31 +518,6 @@ int32_t MediaAssetChangeRequestImpl::SendFile(const OHOS::UniqueFd& srcFd, const
     }
 
     return E_OK;
-}
-
-int32_t MediaAssetChangeRequestImpl::PutMediaAssetEditData(OHOS::DataShare::DataShareValuesBucket& valuesBucket)
-{
-    CHECK_AND_RETURN_RET(editData_ != nullptr, E_OK);
-
-    string compatibleFormat = editData_->GetCompatibleFormat();
-    CHECK_AND_RETURN_RET_LOG(!compatibleFormat.empty(), E_FAIL, "Failed to check compatibleFormat");
-
-    string formatVersion = editData_->GetFormatVersion();
-    CHECK_AND_RETURN_RET_LOG(!formatVersion.empty(), E_FAIL, "Failed to check formatVersion");
-
-    string data = editData_->GetData();
-    CHECK_AND_RETURN_RET_LOG(!data.empty(), E_FAIL, "Failed to check data");
-
-    valuesBucket.Put(COMPATIBLE_FORMAT, compatibleFormat);
-    valuesBucket.Put(FORMAT_VERSION, formatVersion);
-    valuesBucket.Put(EDIT_DATA, data);
-    return E_OK;
-}
-
-bool MediaAssetChangeRequestImpl::HasAddResource(MediaLibrary_ResourceType resourceType)
-{
-    return find(addResourceTypes_.begin(), addResourceTypes_.end(), resourceType) !=
-        addResourceTypes_.end();
 }
 
 bool MediaAssetChangeRequestImpl::AddResourceByMode(const OHOS::UniqueFd& uniqueFd,
