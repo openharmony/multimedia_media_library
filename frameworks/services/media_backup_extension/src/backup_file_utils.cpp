@@ -385,7 +385,7 @@ int32_t BackupFileUtils::IsLowQualityImage(std::string &filePath, int32_t sceneC
     if (!hasLowQualityImage) {
         MEDIA_ERR_LOG("Invalid file (%{public}s), no low quality image, err: %{public}d", garbledFilePath.c_str(),
             errno);
-        return E_FAIL;
+        return E_NO_SUCH_FILE;
     }
     string realPath = ConvertLowQualityPath(sceneCode, filePath, relativePath);
     if (stat(realPath.c_str(), &statInfo) != E_SUCCESS) {
