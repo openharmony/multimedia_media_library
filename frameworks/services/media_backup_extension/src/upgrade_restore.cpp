@@ -53,7 +53,6 @@ constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
-constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 const std::string INTERNAL_PREFIX = "/storage/emulated";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
@@ -84,6 +83,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         photosPreferencesPath = backupRetoreDir + "/" + galleryAppName_ + "_preferences.xml";
         // gallery db may include both internal & external, set flag to differentiate, default false
         shouldIncludeSd_ = BackupFileUtils::ShouldIncludeSd(filePath_);
+        backupDatabaseHelper_.Init(sceneCode_, shouldIncludeSd_, filePath_);
         SetParameterForClone();
 #ifdef CLOUD_SYNC_MANAGER
         FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
@@ -105,6 +105,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
             MEDIA_ERR_LOG("External init rdb fail, err = %{public}d", externalErr);
             return E_FAIL;
         }
+        backupDatabaseHelper_.AddDb(BackupDatabaseHelper::DbType::EXTERNAL, externalRdb_);
     }
     MEDIA_INFO_LOG("Shoud include Sd: %{public}d", static_cast<int32_t>(shouldIncludeSd_));
     return InitDbAndXml(photosPreferencesPath, isUpgrade);
@@ -126,25 +127,6 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
         if (galleryRdb_ == nullptr) {
             MEDIA_ERR_LOG("Gallery init rdb fail, err = %{public}d", galleryErr);
             return E_FAIL;
-        }
-    }
-    std::string cacheDbType = "photo";
-    std::string cacheDbName = cacheDbType + "_Cache.db";
-    int32_t errCode = E_OK;
-    if (MediaFileUtils::IsFileExists(filePath_ + cacheDbName)) {
-        errCode = BackupDatabaseUtils::InitDb(photoCacheRdb_, cacheDbName, filePath_ + cacheDbName,
-            "photo_Cache", false);
-        if (photoCacheRdb_ == nullptr) {
-            MEDIA_ERR_LOG("photo_Cache init rdb fail, err = %{public}d", errCode);
-        }
-    }
-    cacheDbType = "video";
-    cacheDbName = cacheDbType + "_Cache.db";
-    if (MediaFileUtils::IsFileExists(filePath_ + cacheDbName)) {
-        errCode = BackupDatabaseUtils::InitDb(videoCacheRdb_, cacheDbName, filePath_ + cacheDbName,
-            "video_Cache", false);
-        if (videoCacheRdb_ == nullptr) {
-            MEDIA_ERR_LOG("video_Cache init rdb fail, err = %{public}d", errCode);
         }
     }
 
@@ -808,6 +790,7 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
     } else {
         newPath = prefix + relativePath; // others, remove sd prefix, use relative path
     }
+    fileInfo.isInternal = false;
     return true;
 }
  
@@ -1281,18 +1264,8 @@ void UpgradeRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode)
     }
     int32_t dbStatus = E_OK;
     int32_t fileStatus = E_OK;
-    std::shared_ptr<NativeRdb::RdbStore> rdbStore;
-    std::vector<std::string> args;
-    if (sceneCode_ == UPGRADE_RESTORE_ID) {
-        rdbStore = externalRdb_;
-        args = { "files", "_data", fileInfo.oldPath };
-    } else {
-        rdbStore = fileInfo.fileType == DUAL_MEDIA_TYPE::IMAGE_TYPE ? photoCacheRdb_ : videoCacheRdb_;
-        std::string tableName = fileInfo.fileSize >= TAR_FILE_LIMIT ? "normal_file" : "small_file";
-        args = { tableName, "filepath", fileInfo.oldPath };
-    }
-    BackupDatabaseUtils::IsFileExistInDb(rdbStore, args, dbStatus, fileStatus);
-    MEDIA_INFO_LOG("Check status db: %{pbulic}d, file: %{public}d", dbStatus, fileStatus);
+    backupDatabaseHelper_.IsFileExist(sceneCode_, fileInfo, dbStatus, fileStatus);
+    MEDIA_INFO_LOG("Check status db: %{public}d, file: %{public}d", dbStatus, fileStatus);
 }
 } // namespace Media
 } // namespace OHOS

@@ -19,6 +19,7 @@
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 
+#include "backup_database_helper.h"
 #include "base_restore.h"
 #include "burst_key_generator.h"
 #include "photos_restore.h"
@@ -112,8 +113,6 @@ private:
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> externalRdb_;
-    std::shared_ptr<NativeRdb::RdbStore> photoCacheRdb_;
-    std::shared_ptr<NativeRdb::RdbStore> videoCacheRdb_;
     std::shared_ptr<NativeRdb::RdbStore> audioRdb_;
     BurstKeyGenerator burstKeyGenerator_;
     std::string galleryDbPath_;
@@ -133,6 +132,7 @@ private:
     bool shouldIncludeSd_{false};
     PhotoAlbumRestore photoAlbumRestore_;
     PhotosRestore photosRestore_;
+    BackupDatabaseHelper backupDatabaseHelper_;
 };
 } // namespace Media
 } // namespace OHOS

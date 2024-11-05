@@ -913,19 +913,5 @@ void BackupDatabaseUtils::UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbSt
         fileIdOld2NewForCloudEnhancement.Erase(fileInfo.associateFileId);
     }
 }
-
-void BackupDatabaseUtils::IsFileExistInDb(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
-    const std::vector<std::string> &args, int32_t &dbStatus, int32_t &fileStatus)
-{
-    std::string querySql = "SELECT count(1) as count FROM ? WHERE ? = ?";
-    auto resultSet = GetQueryResultSet(rdbStore, querySql, args);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
-        dbStatus = E_FAIL;
-        fileStatus = E_FAIL;
-        return;
-    }
-    dbStatus = E_OK;
-    fileStatus = GetInt32Val(CUSTOM_COUNT, resultSet) > 0 ? E_OK : E_FAIL;
-}
 } // namespace Media
 } // namespace OHOS

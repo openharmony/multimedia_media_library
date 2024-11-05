@@ -51,6 +51,7 @@ constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
 constexpr uint32_t THUMBNAIL_NUM = 500;
 constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
+constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 
 const std::string RESTORE_FILES_CLOUD_DIR = "/storage/cloud/files/";
 const std::string RESTORE_FILES_LOCAL_DIR = "/storage/media/local/files/";
@@ -338,6 +339,7 @@ struct FileInfo {
     int32_t photoQuality;
     std::string oldAstcDateKey;
     std::string newAstcDateKey;
+    bool isInternal {true};
 };
 
 struct AlbumInfo {
