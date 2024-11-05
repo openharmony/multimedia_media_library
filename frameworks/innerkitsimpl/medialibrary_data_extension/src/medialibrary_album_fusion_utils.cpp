@@ -784,7 +784,41 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(const std::shared_ptr<
     return E_OK;
 }
 
-int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int32_t &assetId, const string title)
+void SendNewAssetNotify(string newFileAssetUri, const shared_ptr<MediaLibraryRdbStore> &rdbStore)
+{
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("Can not get MediaLibraryNotify, fail to send new asset notify.");
+        return;
+    }
+    watch->Notify(newFileAssetUri, NotifyType::NOTIFY_ADD);
+
+    vector<string> systemAlbumsExcludeSource = {
+        to_string(PhotoAlbumSubType::FAVORITE),
+        to_string(PhotoAlbumSubType::VIDEO),
+        to_string(PhotoAlbumSubType::HIDDEN),
+        to_string(PhotoAlbumSubType::TRASH),
+        to_string(PhotoAlbumSubType::IMAGE),
+        to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
+    };
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, systemAlbumsExcludeSource);
+    MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, { newFileAssetUri });
+}
+
+void UpdateNewAssetAttr(const shared_ptr<MediaLibraryRdbStore> &rdbStore, RdbPredicates newPredicates)
+{
+    ValuesBucket values;
+    values.Put(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
+    values.Put(MediaColumn::MEDIA_DATE_TAKEN, MediaFileUtils::UTCTimeMilliSeconds());
+    values.Put(MediaColumn::MEDIA_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    int32_t updateRow = -1;
+    rdbStore->Update(updateRow, values, newPredicates);
+    if (updateRow < 0) {
+        MEDIA_ERR_LOG("Failed to update newAsset data, ret = %{public}d", updateRow);
+    }
+}
+
+int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, const string title)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
@@ -792,32 +826,47 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int32_t &assetId, c
         return E_DB_FAIL;
     }
 
-    int64_t newAssetId = -1;
-    const std::string QUERY_FILE_META_INFO =
-        "SELECT * FROM Photos WHERE file_id = " + to_string(assetId);
-    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_META_INFO);
+    const std::string querySql = "SELECT * FROM Photos WHERE file_id = ?";
+    std::vector<NativeRdb::ValueObject> params = { assetId };
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql, params);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_INFO_LOG("Query not matched data fails");
         return E_DB_FAIL;
     }
 
     string oldDisplayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-    string oldTitle = GetStringVal(MediaColumn::MEDIA_TITLE, resultSet);
-    string displayName = oldDisplayName.replace(oldDisplayName.find(oldTitle), oldTitle.length(), title);
+    string suffix = MediaFileUtils::SplitByChar(oldDisplayName, '.');
+    if (suffix.empty()) {
+        MEDIA_ERR_LOG("Failed to get file suffix.");
+        return E_FAIL;
+    }
+
+    string displayName = title + "." + suffix;
     int32_t ownerAlbumId;
     GetIntValueFromResultSet(resultSet, PhotoColumn::PHOTO_OWNER_ALBUM_ID, ownerAlbumId);
+    int64_t newAssetId = -1;
     int32_t err = CopyLocalSingleFile(rdbStore, ownerAlbumId, resultSet, newAssetId, displayName);
-    MEDIA_INFO_LOG("NewAssetId = %{public}lld", (long long)newAssetId);
-
-    int64_t now = MediaFileUtils::UTCTimeMilliSeconds();
-    const std::string executeSql =
-        "update Photos set date_added = " + to_string(now) + " WHERE file_id = " + to_string(newAssetId);
-    int32_t ret = rdbStore->ExecuteSql(executeSql);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to update newAsset data, ret = %{public}d, newAssetId is %{public}lld",
-            ret, (long long)newAssetId);
-        return E_HAS_DB_ERROR;
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Clone local asset failed, ret = %{public}d, assetId = %{public}lld", err, (long long)assetId);
+        return err;
     }
+
+    RdbPredicates newPredicates(PhotoColumn::PHOTOS_TABLE);
+    newPredicates.EqualTo(PhotoColumn::MEDIA_ID, newAssetId);
+    vector<string> columns = {
+        PhotoColumn::MEDIA_FILE_PATH
+    };
+    shared_ptr<NativeRdb::ResultSet> newResultSet = rdbStore->Query(newPredicates, columns);
+    if (newResultSet == nullptr || newResultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_INFO_LOG("Query not matched data fails");
+        return E_DB_FAIL;
+    }
+
+    string newFileAssetUri = MediaFileUtils::GetFileAssetUri(GetStringVal(MediaColumn::MEDIA_FILE_PATH, newResultSet),
+        displayName, newAssetId);
+    SendNewAssetNotify(newFileAssetUri, rdbStore);
+    UpdateNewAssetAttr(rdbStore->GetRaw(), newPredicates);
+    MEDIA_INFO_LOG("End clone asset, newAssetId = %{public}lld", (long long)newAssetId);
     return newAssetId;
 }
 
