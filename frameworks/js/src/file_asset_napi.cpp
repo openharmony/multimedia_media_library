@@ -3961,8 +3961,8 @@ static void CloneAssetHandlerExecute(napi_env env, void *data)
     DataShare::DataShareValuesBucket valuesBucket;
     string uri = PAH_CLONE_ASSET;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    MediaFileUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    MediaFileUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_TITLE, fileAsset->GetTitle());
+    valuesBucket.Put(MediaColumn::MEDIA_ID, fileAsset->GetId());
+    valuesBucket.Put(MediaColumn::MEDIA_TITLE, fileAsset->GetTitle());
     Uri cloneAssetUri(uri);
     int32_t newAssetId = UserFileClient::Insert(cloneAssetUri, valuesBucket);
     if (newAssetId < 0) {
