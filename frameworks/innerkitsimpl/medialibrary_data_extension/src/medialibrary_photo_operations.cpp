@@ -33,6 +33,7 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
@@ -2636,6 +2637,22 @@ int32_t MediaLibraryPhotoOperations::FinishRequestPicture(MediaLibraryCommand &c
         pictureManagerThread->FinishAccessingPicture(photoId);
     }
     return E_OK;
+}
+
+int64_t MediaLibraryPhotoOperations::CloneSingleAsset(MediaLibraryCommand &cmd)
+{
+    const ValuesBucket& values = cmd.GetValueBucket();
+    int fileId = -1;
+    ValueObject valueObject;
+    if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
+        valueObject.GetInt(fileId);
+    } else {
+        MEDIA_ERR_LOG("Failed to get media id from values bucket.");
+        return fileId;
+    }
+    string title;
+    GetStringFromValuesBucket(values, MediaColumn::MEDIA_NAME, title);
+    return MediaLibraryAlbumFusionUtils::CloneSingleAsset(static_cast<int64_t>(fileId), title);
 }
 
 int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)

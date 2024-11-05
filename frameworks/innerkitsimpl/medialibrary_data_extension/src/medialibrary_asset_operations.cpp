@@ -124,6 +124,9 @@ int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &
         case OperationType::FINISH_REQUEST_PICTURE:
             errCode = MediaLibraryPhotoOperations::FinishRequestPicture(cmd);
             break;
+        case OperationType::CLONE_ASSET:
+            errCode = MediaLibraryPhotoOperations::CloneSingleAsset(cmd);
+            break;
         default:
             MEDIA_ERR_LOG("unknown operation type %{public}d", cmd.GetOprnType());
             break;
