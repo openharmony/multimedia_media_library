@@ -66,14 +66,11 @@ private:
     bool HasWritePermission();
     bool WriteBySecurityComponent();
     int32_t CopyToMediaLibrary(AddResourceMode mode);
-    int32_t CreateAssetBySecurityComponent(std::string& assetUri);
     int32_t CopyFileToMediaLibrary(const OHOS::UniqueFd& destFd, bool isMovingPhotoVideo = false);
     int32_t CopyDataBufferToMediaLibrary(const OHOS::UniqueFd& destFd, bool isMovingPhotoVideo = false);
     bool SendToCacheFile(const OHOS::UniqueFd& destFd, bool isMovingPhotoVideo = false);
     int32_t SubmitCache();
     int32_t SendFile(const OHOS::UniqueFd& srcFd, const OHOS::UniqueFd& destFd);
-    int32_t PutMediaAssetEditData(OHOS::DataShare::DataShareValuesBucket& valuesBucket);
-    bool HasAddResource(MediaLibrary_ResourceType resourceType);
     bool AddResourceByMode(const OHOS::UniqueFd& uniqueFd, AddResourceMode mode,
         bool isMovingPhotoVideo = false);
     bool WriteCacheByArrayBuffer(const OHOS::UniqueFd& destFd, bool isMovingPhotoVideo = false);
@@ -96,7 +93,6 @@ private:
     uint32_t movingPhotoVideoBufferSize_;
     uint32_t dataBufferSize_;
     AddResourceMode addResourceMode_;
-    std::shared_ptr<MediaAssetEditData> editData_ = nullptr;
 };
 
 }
