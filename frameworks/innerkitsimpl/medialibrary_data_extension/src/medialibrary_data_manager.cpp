@@ -52,7 +52,6 @@
 #include "media_scanner_manager.h"
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
-#include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
@@ -724,13 +723,6 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
-    }
-
-    string uriString = cmd.GetUri().ToString();
-    if (uriString.find(PAH_CLONE_ASSET) != std::string::npos) {
-        int32_t fileId = std::stoi(cmd.GetQuerySetParam(MediaColumn::MEDIA_ID));
-        string title = cmd.GetQuerySetParam(MediaColumn::MEDIA_TITLE);
-        return MediaLibraryAlbumFusionUtils::CloneSingleAsset(fileId, title);
     }
 
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
