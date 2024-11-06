@@ -4028,6 +4028,16 @@ static void AddVideoFaceTable(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddGeoDefaultValue(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " DROP COLUMN " + GEO,
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + GEO + " INT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Add geo deault value start");
+    ExecSqls(sqls, store);
+}
+
 static void AddOCRCardColumns(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4093,6 +4103,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_HIGHLIGHT_VIDEO_COUNT_CAN_PACK) {
         AddHighlightVideoCountCanPack(store);
+    }
+
+    if (oldVersion < VERSION_ADD_GEO_DEFAULT_VALUE) {
+        AddGeoDefaultValue(store);
     }
 }
 
