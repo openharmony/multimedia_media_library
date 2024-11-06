@@ -588,8 +588,8 @@ int32_t ThumbnailGenerateHelper::GetKeyFrameThumbnailPixelMap(ThumbRdbOpt &opts,
 
     auto fd = open(absFilePath.c_str(), O_RDONLY);
     if (fd < 0) {
-        MEDIA_ERR_LOG("GetKeyFrameThumbnailPixelMap: open file failed path: %{public}s",
-            DfxUtils::GetSafePath(thumbnailData.path).c_str());
+        MEDIA_ERR_LOG("GetKeyFrameThumbnailPixelMap: open file failed path: %{public}s, errno:%{public}d",
+            DfxUtils::GetSafePath(thumbnailData.path).c_str(), errno);
         return E_ERR;
     }
     return fd;
