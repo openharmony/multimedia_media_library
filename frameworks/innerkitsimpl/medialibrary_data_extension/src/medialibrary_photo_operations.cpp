@@ -1180,8 +1180,8 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationAllExif(
     }
 
     string exifStr = fileAsset->GetAllExif();
-    if (!exifStr.empty()) {
-        nlohmann::json exifJson = nlohmann::json::parse(exifStr);
+    if (!exifStr.empty() && nlohmann::json::accept(exifStr)) {
+        nlohmann::json exifJson = nlohmann::json::parse(exifStr, nullptr, false);
         exifJson["Orientation"] = imageSourceOrientation->second;
         exifStr = exifJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
         values.PutString(PhotoColumn::PHOTO_ALL_EXIF, exifStr);
@@ -1373,20 +1373,20 @@ static void RevertOrientation(const shared_ptr<FileAsset> &fileAsset, string &cu
     }
 
     std::unique_ptr<ImageSource> imageSource;
-    uint32_t err = CreateImageSource(fileAsset, imageSource);
+    int32_t err = CreateImageSource(fileAsset, imageSource);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to obtain image exif information, err = %{public}d", err);
         return;
     }
 
-    err = imageSource->ModifyImageProperty(
+    uint32_t ret = imageSource->ModifyImageProperty(
         0,
         PHOTO_DATA_IMAGE_ORIENTATION,
         currentOrientation.empty() ? ANALYSIS_HAS_DATA : currentOrientation,
         fileAsset->GetFilePath()
     );
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Rollback of exlf information failed, err = %{public}d", err);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Rollback of exlf information failed, err = %{public}d", ret);
     }
 }
 
