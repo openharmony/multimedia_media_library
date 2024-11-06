@@ -12,8 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "MediaLibraryBackupUtils"
+
 #include "backup_database_helper.h"
 #include "backup_database_utils.h"
+#include "backup_file_utils.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 
 namespace OHOS::Media {
@@ -42,8 +46,13 @@ void BackupDatabaseHelper::InitDb(int32_t dbType, const std::string &prefix)
         return;
     }
     DbInfo dbInfo = DB_INFO_MAP.at(dbType);
-    int32_t errCode = BackupDatabaseUtils::InitDb(dbInfo.rdbStore, dbInfo.name + DB_NAME_SUFFIX, prefix + dbInfo.path,
-        dbInfo.name, false);
+    std::string dbFullPath = prefix + dbInfo.path;
+    if (!MediaFileUtils::IsFileExists(dbFullPath)) {
+        MEDIA_WARN_LOG("Db not exist, type: %{public}d, path: %{public}s", dbType,
+            BackupFileUtils::GarbleFilePath(dbFullPath, DEFAULT_RESTORE_ID).c_str());
+        return;
+    }
+    int32_t errCode = BackupDatabaseUtils::InitDb(dbInfo.rdbStore, dbInfo.name, dbFullPath, BUNDLE_NAME, false);
     if (dbInfo.rdbStore == nullptr) {
         MEDIA_ERR_LOG("Init db failed, type: %{public}d, errCode: %{public}d", dbType, errCode);
         return;
@@ -69,11 +78,12 @@ void BackupDatabaseHelper::AddDb(int32_t dbType, std::shared_ptr<NativeRdb::RdbS
     MEDIA_INFO_LOG("Add db succeeded, type: %{public}d, current size: %{public}zu", dbType, dbInfoMap_.size());
 }
 
-void BackupDatabaseHelper::IsFileExist(int32_t sceneCode, const FileInfo &fileInfo, int32_t &dbStatus,
+void BackupDatabaseHelper::IsFileExist(int32_t sceneCode, const FileInfo &fileInfo, int32_t &dbType, int32_t &dbStatus,
     int32_t &fileStatus)
 {
     FileQueryInfo fileQueryInfo;
     GetFileQueryInfo(sceneCode, fileInfo, fileQueryInfo);
+    dbType = fileQueryInfo.dbType;
     if (!HasDb(fileQueryInfo.dbType)) {
         dbStatus = E_DB_FAIL;
         return;
@@ -108,6 +118,6 @@ void BackupDatabaseHelper::GetFileQueryInfo(int32_t sceneCode, const FileInfo &f
         dbType = fileInfo.fileType == DUAL_MEDIA_TYPE::IMAGE_TYPE ? DbType::PHOTO_SD_CACHE : DbType::VIDEO_SD_CACHE;
     }
     std::string tableName = fileInfo.fileSize >= TAR_FILE_LIMIT ? "normal_file" : "small_file";
-    fileQueryInfo = FileQueryInfo(dbType, tableName, "filepath", fileInfo.oldPath); 
+    fileQueryInfo = FileQueryInfo(dbType, tableName, "filepath", fileInfo.oldPath);
 }
 } // namespace OHOS::Media

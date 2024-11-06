@@ -156,8 +156,8 @@ const std::vector<std::string> STAT_PROGRESS_TYPES = { STAT_TYPE_PHOTO_VIDEO, ST
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
 const std::string AUDIO_DB_NAME = "audio_MediaInfo.db";
-const std::string PHOTO_SD_DB_NAME = "photo_sd_MediaInfo.db";
-const std::string VIDEO_SD_DB_NAME = "video_sd_MediaInfo.db";
+const std::string PHOTO_SD_DB_NAME = "photo_sd_Cache.db";
+const std::string VIDEO_SD_DB_NAME = "video_sd_Cache.db";
 
 const std::string GALLERY_ALBUM = "gallery_album";
 const std::string GALLERY_ALBUM_NAME = "albumName";
