@@ -80,7 +80,7 @@ void CloudSyncObserver::HandleIndex()
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_DELETE_INDEX), idToDeleteIndex);
 
     //update index
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
         return;

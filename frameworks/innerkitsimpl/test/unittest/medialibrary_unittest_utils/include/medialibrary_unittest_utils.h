@@ -20,6 +20,8 @@
 
 #include "imedia_scanner_callback.h"
 #include "file_asset.h"
+#include "rdb_open_callback.h"
+#include "rdb_store_config.h"
 
 namespace OHOS {
 namespace Media {
@@ -49,6 +51,9 @@ public:
     static bool IsValid();
     static void Init();
     static int32_t InitUnistore();
+    static int32_t InitUnistore(const NativeRdb::RdbStoreConfig &config, int version,
+        NativeRdb::RdbOpenCallback &openCallback);
+    static void StopUnistore();
     static void InitRootDirs();
     static void CleanTestFiles();
     static void CleanBundlePermission();
