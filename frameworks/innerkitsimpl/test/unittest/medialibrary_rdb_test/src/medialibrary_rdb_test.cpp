@@ -300,10 +300,10 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_001, TestSize.Level0)
     }
     rdbStorePtr->Init();
     TransactionOperations trans1;
-    int32_t ret = trans1.Start();
+    int32_t ret = trans1.Start(__func__);
     EXPECT_EQ(ret, E_OK);
     TransactionOperations trans2;
-    int32_t ret1 = trans2.Start();
+    int32_t ret1 = trans2.Start(__func__);
     EXPECT_NE(ret1, E_OK);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE);
     ValuesBucket valuesBucket;
@@ -327,7 +327,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_002, TestSize.Level0)
     }
     rdbStorePtr->Stop();
     TransactionOperations trans;
-    int32_t ret = trans.Start();
+    int32_t ret = trans.Start(__func__);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
@@ -417,10 +417,10 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_001, TestSize.
     rdbStorePtr->Init();
     TransactionOperations trans1;
     trans1.Finish();
-    int32_t ret = trans1.Start();
+    int32_t ret = trans1.Start(__func__);
     EXPECT_EQ(ret, E_OK);
     TransactionOperations trans2;
-    auto res = trans2.Start();
+    auto res = trans2.Start(__func__);
     ret = res;
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     trans1.Finish();
@@ -434,7 +434,7 @@ void TransactionTestFunc(shared_ptr<MediaLibraryRdbStore> rdbStorePtr, int* star
     int32_t sleepTimeMs)
 {
     TransactionOperations trans;
-    int32_t ret = trans.Start();
+    int32_t ret = trans.Start(__func__);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Start failed, ret=%{public}d", ret);
         return;

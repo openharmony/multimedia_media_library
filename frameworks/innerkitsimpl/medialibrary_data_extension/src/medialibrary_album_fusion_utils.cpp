@@ -50,8 +50,6 @@ constexpr int32_t POSITION_BOTH_FLAG = 3;
 constexpr int32_t CLOUD_COPY_DIRTY_FLAG = 7;
 
 constexpr int32_t TIME_STAMP_OFFSET = 5;
-constexpr int32_t MAX_RETRY_TIMES = 100;
-constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // in milliseconds.
 const std::string ALBUM_FUSION_FLAG = "multimedia.medialibrary.cloneFlag";
 const std::string ALBUM_FUSION_UPGRADE_STATUS_FLAG = "persist.multimedia.medialibrary.albumFusion.status";
 const int32_t ALBUM_FUSION_UPGRADE_SUCCESS = 1;

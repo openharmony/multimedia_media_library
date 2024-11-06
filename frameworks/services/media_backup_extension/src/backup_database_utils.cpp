@@ -37,8 +37,6 @@ const size_t XY_DIMENSION = 2;
 const size_t BYTE_LEN = 4;
 const size_t BYTE_BASE_OFFSET = 8;
 const size_t LANDMARKS_SIZE = 5;
-constexpr int32_t MAX_TRY_TIMES_FOR_DB = 30;
-constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // in milliseconds.
 const std::string LANDMARK_X = "x";
 const std::string LANDMARK_Y = "y";
 const std::vector<uint32_t> HEX_MAX = { 0xff, 0xffff, 0xffffff, 0xffffffff };
@@ -81,7 +79,7 @@ static int32_t ExecSqlWithRetry(std::function<int32_t()> execSql)
 {
     int currentTime = 0;
     int32_t err = NativeRdb::E_OK;
-    while (currentTime <= MAX_TRY_TIMES_FOR_DB) {
+    while (currentTime <= MAX_TRY_TIMES) {
         err = execSql();
         if (err == NativeRdb::E_OK) {
             break;

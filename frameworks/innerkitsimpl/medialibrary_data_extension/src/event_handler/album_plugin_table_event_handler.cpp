@@ -53,7 +53,7 @@ int32_t AlbumPluginTableEventHandler::InitiateData(NativeRdb::RdbStore &store)
 {
     int32_t err = NativeRdb::E_OK;
     MEDIA_INFO_LOG("InitiateData begin initiate %{public}s table data.", TABLE_NAME.c_str());
-    auto [errCode, trans] = store.CreateTransaction(OHOS::NativeRdb::Transaction::EXCLUSIVE);
+    auto [errCode, trans] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
     if (errCode != NativeRdb::E_OK || trans == nullptr) {
         MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
         return errCode;

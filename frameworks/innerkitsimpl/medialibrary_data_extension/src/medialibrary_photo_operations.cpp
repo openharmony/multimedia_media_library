@@ -581,7 +581,7 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check Dir and Extention, "
         "displayName=%{private}s, mediaType=%{public}d", displayName.c_str(), mediaType);
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    errCode = trans->Start();
+    errCode = trans->Start(__func__);
     if (errCode != E_OK) {
         return errCode;
     }
@@ -659,7 +659,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     int32_t errCode = CheckWithType(isContains, displayName, extention, mediaType);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    errCode = trans->Start();
+    errCode = trans->Start(__func__);
     CHECK_AND_RETURN_RET((errCode == E_OK), errCode);
     errCode = isContains ? SetAssetPathInCreate(fileAsset, trans) :
         SetAssetPath(fileAsset, extention, trans);

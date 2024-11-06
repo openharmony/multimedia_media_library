@@ -110,7 +110,7 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
         return ERROR;
     }
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    int32_t errCode = trans->Start();
+    int32_t errCode = trans->Start(__func__);
     std::vector<ValuesBucket> insertVector;
     for (auto it = values.begin(); it != values.end(); it++) {
         ValuesBucket value = RdbUtils::ToValuesBucket(*it);
