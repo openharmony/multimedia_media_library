@@ -61,12 +61,19 @@ shared_ptr<MediaLibraryRdbStore> storePtr = nullptr;
 
 void MediaLibraryUtilsTest::SetUpTestCase(void)
 {
-    MediaLibraryUnitTestUtils::Init();
-    storePtr = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    const string dbPath = "/data/test/medialibrary_utils_test.db";
+    NativeRdb::RdbStoreConfig config(dbPath);
+    ConfigTestOpenCall helper;
+    int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, 1, helper);
+    EXPECT_EQ(ret, E_OK);
+    storePtr = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(storePtr, nullptr);
 }
 
-void MediaLibraryUtilsTest::TearDownTestCase(void) {}
+void MediaLibraryUtilsTest::TearDownTestCase(void)
+{
+    MediaLibraryUnitTestUtils::StopUnistore();
+}
 
 // SetUp:Execute before each test case
 void MediaLibraryUtilsTest::SetUp() {}

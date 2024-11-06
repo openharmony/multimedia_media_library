@@ -241,7 +241,7 @@ static void CheckCloudSyncNotify(const std::string &uriPrefix, const std::string
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnitTestUtils::InitUnistore();
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_TRUE(rdbStore != nullptr);
 
     string assetStr = "";
@@ -604,7 +604,7 @@ HWTEST_F(NotifyTest, handle_empty_data_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("handle_empty_data_001 enter");
     MediaLibraryUnitTestUtils::InitUnistore();
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_TRUE(rdbStore != nullptr);
     CloudSyncHandleData emptyHandleData;
     emptyHandleData.orgInfo.type = DataShareObserver::ChangeType::OTHER;

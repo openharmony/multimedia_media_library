@@ -265,7 +265,7 @@ void GetMaxAlbumOrder(int32_t &maxAlbumOrder)
 void PhotoAlbumTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ClearUserAlbums();
     ClearTable(PhotoMap::TABLE);
 }

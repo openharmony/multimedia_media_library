@@ -1122,7 +1122,7 @@ void BaseRestore::UpdateDatabase()
     updateProcessStatus_ = ProcessStatus::START;
     GetUpdateTotalCount();
     MEDIA_INFO_LOG("Start update all albums");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
     MEDIA_INFO_LOG("Start update unique number");
     BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
