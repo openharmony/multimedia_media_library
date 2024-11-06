@@ -243,7 +243,7 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
 static string GetDistTable(const string &table, const string &networkId)
 {
     string ret = MEDIALIBRARY_TABLE;
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return ret;
     }
