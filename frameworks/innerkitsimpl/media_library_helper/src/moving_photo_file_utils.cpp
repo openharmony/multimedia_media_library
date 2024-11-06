@@ -533,10 +533,14 @@ static int32_t SendLivePhoto(const UniqueFd &livePhotoFd, const string &destPath
     return E_OK;
 }
 
-static bool IsValidHexInteger(string hexStr)
+static bool IsValidHexInteger(const string &hexStr)
 {
+    constexpr int32_t HEX_INT_LENGTH = 8;
+    if (hexStr.length() > HEX_INT_LENGTH) {
+        return false;
+    }
     uint64_t num = stoull(hexStr, nullptr, HEX_BASE);
-    if (num > numeric_limits<int>::max()) {
+    if (num > numeric_limits<int32_t>::max()) {
         return false;
     }
     return true;
@@ -574,7 +578,7 @@ static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataS
     // extra data with cinemagraph
     CHECK_AND_RETURN_RET_LOG(totalSize > MIN_STANDARD_SIZE + CINEMAGRAPH_INFO_SIZE_LEN, E_INVALID_LIVE_PHOTO,
         "Failed to check live photo with cinemagraph, total size is %{public}" PRId64, totalSize);
-    char cinemagraphSize[CINEMAGRAPH_INFO_SIZE_LEN + 1] = {0};
+    char cinemagraphSize[CINEMAGRAPH_INFO_SIZE_LEN] = {0};
     CHECK_AND_RETURN_RET_LOG(lseek(livePhotoFd.Get(), -(MIN_STANDARD_SIZE + CINEMAGRAPH_INFO_SIZE_LEN), SEEK_END) != -1,
         E_HAS_FS_ERROR, "Failed to lseek cinemagraph size, errno:%{public}d", errno);
     CHECK_AND_RETURN_RET_LOG(read(livePhotoFd.Get(), cinemagraphSize, CINEMAGRAPH_INFO_SIZE_LEN) != -1, E_HAS_FS_ERROR,
@@ -585,8 +589,8 @@ static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataS
     }
     if (!IsValidHexInteger(cinemagraphSizeStream.str())) {
         extraDataSize = MIN_STANDARD_SIZE;
-        MEDIA_WARN_LOG("hex string over int max");
-        return E_OK; 
+        MEDIA_WARN_LOG("hex string over int max %{public}s", cinemagraphSizeStream.str().c_str());
+        return E_OK;
     }
     extraDataSize = MIN_STANDARD_SIZE + std::stoi(cinemagraphSizeStream.str(), 0, HEX_BASE);
     return E_OK;
