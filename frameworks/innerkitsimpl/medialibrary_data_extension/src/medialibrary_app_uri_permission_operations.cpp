@@ -79,7 +79,7 @@ int32_t MediaLibraryAppUriPermissionOperations::HandleInsertOperation(MediaLibra
         MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
     }
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("get rdbStore error");
         return ERROR;

@@ -86,7 +86,7 @@ static void RefreshCallbackFunc()
 
 static void RefreshAlbumAsyncTask(AsyncTaskData *data)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
         return;

@@ -259,6 +259,10 @@ static int32_t DropAllTables(const shared_ptr<MediaLibraryRdbStore> rdbStore)
         " FROM sqlite_master" +
         " WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%';";
     auto dropSqlsResultSet = rdbStore->QuerySql(queryDropSql);
+    if (dropSqlsResultSet == nullptr) {
+        MEDIA_ERR_LOG("query Drop Sql failed");
+        return E_HAS_DB_ERROR;
+    }
     vector<string> dropSqlsVec;
     while (dropSqlsResultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t columnIndex = 0;
@@ -285,7 +289,7 @@ static int32_t DropAllTables(const shared_ptr<MediaLibraryRdbStore> rdbStore)
 int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cmd)
 {
     auto valuesBucket = cmd.GetValueBucket();
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Can not get rdb store");
         return E_HAS_DB_ERROR;
@@ -296,8 +300,11 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
         MEDIA_ERR_LOG("Drop table failed, errCode=%{public}d", errCode);
         return errCode;
     }
-    MediaLibraryDataCallBack callback;
-    callback.OnCreate(*rdbStore->GetRaw());
+    errCode = rdbStore->DataCallBackOnCreate();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("DataCallBackOnCreate failed, errCode=%{public}d", errCode);
+        return errCode;
+    }
     MediaLibraryRdbStore::ResetAnalysisTables();
     MediaLibraryRdbStore::ResetSearchTables();
     const static vector<string> DELETE_DIR_LIST = {
@@ -520,7 +527,7 @@ std::vector<std::string> MediaLibraryAssetOperations::QueryPhotosTableColumnInfo
 {
     MEDIA_DEBUG_LOG("QueryPhotosTableColumnInfo");
     std::vector<std::string> columnInfo;
-    std::shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore == nullptr");
         return columnInfo;
@@ -625,7 +632,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const stri
         return nullptr;
     }
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return nullptr;
     }
@@ -647,7 +654,7 @@ static shared_ptr<NativeRdb::ResultSet> QueryByPredicates(AbsPredicates &predica
         return nullptr;
     }
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return nullptr;
     }
@@ -1119,7 +1126,7 @@ int32_t MediaLibraryAssetOperations::SetAssetPath(FileAsset &fileAsset, const st
 
 int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
@@ -1285,7 +1292,7 @@ void MediaLibraryAssetOperations::UpdateVirtualPath(MediaLibraryCommand &cmd,
 
 int32_t MediaLibraryAssetOperations::UpdateFileInDb(MediaLibraryCommand &cmd)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
@@ -1314,7 +1321,7 @@ int32_t MediaLibraryAssetOperations::OpenFileWithPrivacy(const string &filePath,
 
 static int32_t SetPendingTime(const shared_ptr<FileAsset> &fileAsset, int64_t pendingTime)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
@@ -1652,7 +1659,7 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
     }
     DeleteNotifyAsyncTaskData* notifyData = static_cast<DeleteNotifyAsyncTaskData*>(data);
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Can not get rdbstore");
         return;
@@ -1739,12 +1746,12 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, s
     value.GetInt(isFavorite);
 
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw(),
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
         { to_string(PhotoAlbumSubType::FAVORITE) });
     CHECK_AND_RETURN_LOG(fileAsset != nullptr, "fileAsset is nullptr");
     if (fileAsset->IsHidden()) {
         MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw(),
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
             { to_string(PhotoAlbumSubType::FAVORITE) });
     }
 
@@ -1813,10 +1820,10 @@ void MediaLibraryAssetOperations::UpdateOwnerAlbumIdOnMove(MediaLibraryCommand &
     oriAlbumId = GetAlbumIdByPredicates(whereClause, whereArgs);
 
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw(), { to_string(targetAlbumId),
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId),
         to_string(oriAlbumId) });
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw(), { to_string(targetAlbumId),
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId),
         to_string(oriAlbumId) });
     MEDIA_INFO_LOG("Move Assets, ori album id is %{public}d, target album id is %{public}d", oriAlbumId, targetAlbumId);
 }
@@ -2023,7 +2030,7 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueId(int32_t type,
     const string querySql = "SELECT " + UNIQUE_NUMBER + " FROM " + ASSET_UNIQUE_NUMBER_TABLE +
         " WHERE " + ASSET_MEDIA_TYPE + "='" + typeString + "';";
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
@@ -2325,7 +2332,7 @@ static void DeleteFiles(AsyncTaskData *data)
     }
     auto *taskData = static_cast<DeleteFilesTask *>(data);
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw(), { to_string(PhotoAlbumSubType::TRASH) });
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(PhotoAlbumSubType::TRASH) });
 
     DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_DELETE_ASSETS, taskData->deleteRows_,
         taskData->notifyUris_, taskData->bundleName_);
