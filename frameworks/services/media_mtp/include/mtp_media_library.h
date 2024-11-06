@@ -47,7 +47,7 @@ public:
     EXPORT int32_t GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd);
     EXPORT int32_t SendObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         uint32_t &outStorageID, uint32_t &outParent, uint32_t &outHandle);
-    EXPORT int32_t GetPathById(const int32_t &id, std::string &outPath);
+    EXPORT int32_t GetPathById(const int32_t id, std::string &outPath);
     EXPORT int32_t GetIdByPath(const std::string &path, uint32_t &outId);
     EXPORT int32_t MoveObject(const std::shared_ptr<MtpOperationContext> &context, uint32_t &repeatHandle);
     EXPORT int32_t CopyObject(const std::shared_ptr<MtpOperationContext> &context,
@@ -62,6 +62,8 @@ public:
     EXPORT int32_t GetRealPath(const std::string &path, std::string &outPath);
     EXPORT int GetStorageIds();
     EXPORT void DeleteHandlePathMap(const std::string &path, const uint32_t id);
+    EXPORT int ObserverAddPathToMap(const std::string &path);
+    EXPORT void ObserverDeletePathToMap(const std::string &path);
 
 private:
     void AddToHandlePathMap(const std::string &path, const uint32_t id);
@@ -74,7 +76,7 @@ private:
         uint32_t &repeatHandle);
     uint32_t GetId();
     uint32_t GetParentId(const std::string &path);
-    uint32_t ScanDirNoDepth(const sf::path &root, std::shared_ptr<UInt32List> &out);
+    uint32_t ScanDirNoDepth(const std::string &root, std::shared_ptr<UInt32List> &out);
     uint32_t ScanDirWithType(const std::string &root, std::shared_ptr<std::unordered_map<uint32_t, std::string>> &out);
     uint32_t ScanDirTraverseWithType(const std::string &root,
         std::shared_ptr<std::unordered_map<uint32_t, std::string>> &out);
