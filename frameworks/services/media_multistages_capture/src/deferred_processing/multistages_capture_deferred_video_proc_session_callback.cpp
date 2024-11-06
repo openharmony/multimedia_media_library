@@ -74,6 +74,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    resultSet->Close();
 
     int ret = MediaLibraryPhotoOperations::ProcessMultistagesVideo(isEdited, data);
     if (ret != E_OK) {
