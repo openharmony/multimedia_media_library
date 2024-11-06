@@ -492,6 +492,7 @@ int32_t EnhancementManager::HandlePrioritizeOperation(MediaLibraryCommand &cmd)
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
     int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
+    resultSet->Close();
     MEDIA_INFO_LOG("HandlePrioritizeOperation fileId: %{public}d, photoId: %{public}s, ceAvailable: %{public}d",
         fileId, photoId.c_str(), ceAvailable);
     if (ceAvailable != static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING)) {

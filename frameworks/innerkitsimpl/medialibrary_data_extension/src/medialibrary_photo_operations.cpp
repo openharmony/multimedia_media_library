@@ -189,6 +189,7 @@ static int32_t GetAlbumTypeSubTypeById(const string &albumId, PhotoAlbumType &ty
         "album id is not exist");
     type = static_cast<PhotoAlbumType>(GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet));
     subType = static_cast<PhotoAlbumSubType>(GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet));
+    resultSet->Close();
     return E_SUCCESS;
 }
 
@@ -768,6 +769,7 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
         if (resultSet->GetInt(ownerAlbumIdIndex, ownerAlbumId) != NativeRdb::E_OK) {
             continue;
         }
+        resultSet->Close();
 
         const std::string QUERY_LPATH_INFO = "SELECT * FROM PhotoAlbum WHERE album_id = " + to_string(ownerAlbumId);
         shared_ptr<NativeRdb::ResultSet> resultSetAlbum = rdbStore->QuerySql(QUERY_LPATH_INFO);
@@ -781,6 +783,7 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
         if (resultSetAlbum->GetString(lpathIndex, lpath) != NativeRdb::E_OK) {
             continue;
         }
+        resultSetAlbum->Close();
 
         string newSourcePath = sourcePathPrefix + lpath + "/" + displayName;
         ValuesBucket values;
@@ -1273,16 +1276,14 @@ void GetSystemMoveAssets(AbsRdbPredicates &predicates)
     predicates.SetWhereArgs(whereIdArgs);
 }
 
-int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
+int32_t PrepareUpdateArgs(MediaLibraryCommand &cmd, std::map<int32_t, std::vector<int32_t>> &ownerAlbumIds,
+    vector<string> &assetString, RdbPredicates &predicates)
 {
-    std::map<int32_t, std::vector<int32_t>> ownerAlbumIds;
-    vector<string> assetString;
     auto assetVector = cmd.GetAbsRdbPredicates()->GetWhereArgs();
     for (const auto &fileAsset : assetVector) {
         assetString.push_back(fileAsset);
     }
 
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.And()->In(PhotoColumn::MEDIA_ID, assetString);
     vector<string> columns = { PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::MEDIA_ID };
     auto resultSetQuery = MediaLibraryRdbStore::Query(predicates, columns);
@@ -1294,6 +1295,18 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
         int32_t albumId = 0;
         albumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSetQuery);
         ownerAlbumIds[albumId].push_back(GetInt32Val(MediaColumn::MEDIA_ID, resultSetQuery));
+    }
+    resultSetQuery->Close();
+    return E_OK;
+}
+
+int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
+{
+    std::map<int32_t, std::vector<int32_t>> ownerAlbumIds;
+    vector<string> assetString;
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    if (PrepareUpdateArgs(cmd, ownerAlbumIds, assetString, predicates) != E_OK) {
+        return E_INVALID_ARGUMENTS;
     }
 
     ValueObject value;
@@ -1986,6 +1999,7 @@ void MediaLibraryPhotoOperations::DeleteAbnormalFile(std::string &assetPath, con
     }
     int32_t fileIdTemp = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     string filePathTemp = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    resultSet->Close();
     MEDIA_INFO_LOG("DeleteAbnormalFile fileId:%{public}d, filePathTemp = %{public}s", fileIdTemp, filePathTemp.c_str());
     auto oldFileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileIdTemp),
                                            OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
@@ -2588,6 +2602,7 @@ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shar
     }
 
     photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+    resultSet->Close();
     if (photoId.empty()) {
         MEDIA_ERR_LOG("photoId is emply fileId is: %{public}d", fileId);
         return E_FILE_EXIST;
@@ -2621,6 +2636,7 @@ int32_t MediaLibraryPhotoOperations::FinishRequestPicture(MediaLibraryCommand &c
     }
 
     string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+    resultSet->Close();
     if (photoId.empty()) {
         MEDIA_ERR_LOG("photoId is emply fileId is: %{public}d", fileId);
         return E_FILE_EXIST;
@@ -2680,6 +2696,7 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     if (GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet) == 0) {
         return E_OK;
     }
+    resultSet->Close();
     string uri = cmd.GetQuerySetParam("uri");
     SavePicture(fileType, fileId);
     string path = MediaFileUri::GetPathFromUri(uri, true);
