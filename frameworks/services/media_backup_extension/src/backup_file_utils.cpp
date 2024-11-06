@@ -385,7 +385,7 @@ int32_t BackupFileUtils::IsLowQualityImage(std::string &filePath, int32_t sceneC
     if (!hasLowQualityImage) {
         MEDIA_ERR_LOG("Invalid file (%{public}s), no low quality image, err: %{public}d", garbledFilePath.c_str(),
             errno);
-        return E_NO_SUCH_FILE;
+        return E_FAIL;
     }
     string realPath = ConvertLowQualityPath(sceneCode, filePath, relativePath);
     if (stat(realPath.c_str(), &statInfo) != E_SUCCESS) {
@@ -417,7 +417,8 @@ int32_t BackupFileUtils::IsFileValid(std::string &filePath, int32_t sceneCode,
             res = fileAccessHelper_->GetValidPath(filePath);
         }
         if (stat(filePath.c_str(), &statInfo) != E_SUCCESS) {
-            return IsLowQualityImage(filePath, sceneCode, relativePath, hasLowQualityImage);
+            return hasLowQualityImage ? IsLowQualityImage(filePath, sceneCode, relativePath, hasLowQualityImage) :
+                E_NO_SUCH_FILE;
         }
     }
     if (statInfo.st_mode & S_IFDIR) {
