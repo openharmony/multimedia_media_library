@@ -1262,10 +1262,11 @@ void UpgradeRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode)
     if (errCode != E_NO_SUCH_FILE) {
         return;
     }
+    int32_t dbType = BackupDatabaseHelper::DbType::DEFAULT;
     int32_t dbStatus = E_OK;
     int32_t fileStatus = E_OK;
-    backupDatabaseHelper_.IsFileExist(sceneCode_, fileInfo, dbStatus, fileStatus);
-    MEDIA_INFO_LOG("Check status db: %{public}d, file: %{public}d", dbStatus, fileStatus);
+    backupDatabaseHelper_.IsFileExist(sceneCode_, fileInfo, dbType, dbStatus, fileStatus);
+    MEDIA_INFO_LOG("Check status type: %{public}d, db: %{public}d, file: %{public}d", dbType, dbStatus, fileStatus);
 }
 } // namespace Media
 } // namespace OHOS
