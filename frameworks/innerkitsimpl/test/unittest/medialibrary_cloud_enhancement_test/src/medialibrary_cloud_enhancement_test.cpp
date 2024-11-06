@@ -311,8 +311,8 @@ void TestCloudEnhancementImage(vector<string> &columns, int32_t associateFileId,
 void MediaLibraryCloudEnhancementTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
         exit(1);
     }
@@ -336,7 +336,7 @@ void MediaLibraryCloudEnhancementTest::TearDownTestCase(void)
 // SetUp:Execute before each test case
 void MediaLibraryCloudEnhancementTest::SetUp()
 {
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
         exit(1);
     }

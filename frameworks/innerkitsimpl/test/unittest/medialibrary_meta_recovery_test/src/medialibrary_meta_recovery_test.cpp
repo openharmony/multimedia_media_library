@@ -83,7 +83,7 @@ void MediaLibraryMetaRecoveryUnitTest::SetUp(void)
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
 }
 
 void MediaLibraryMetaRecoveryUnitTest::TearDown(void) {}
@@ -111,16 +111,12 @@ int32_t ClearPhotoApi10()
     const std::string CLEAR_PHOTOS =
         "DELETE FROM " + PhotoColumn::PHOTOS_TABLE;
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
-    auto rawRdbStore = rdbStore->GetRaw();
-    if (rawRdbStore == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
 
-    int err = rawRdbStore->ExecuteSql(CLEAR_PHOTOS);
+    int err = rdbStore->ExecuteSql(CLEAR_PHOTOS);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", CLEAR_PHOTOS.c_str());
     }
