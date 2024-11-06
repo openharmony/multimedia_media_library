@@ -116,7 +116,7 @@ string InsertPhoto(const MediaType &mediaType, int32_t position)
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_TIME_PENDING, 0);
-    int32_t ret = rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    int32_t ret = rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
     return path;
@@ -186,7 +186,7 @@ void BackgroundCloudFileProcessorTest::SetUpTestCase()
     MEDIA_INFO_LOG("BackgroundCloudFileProcessorTest SetUpTestCase");
 
     MediaLibraryUnitTestUtils::Init();
-    rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(rdbStore, nullptr);
 }
 

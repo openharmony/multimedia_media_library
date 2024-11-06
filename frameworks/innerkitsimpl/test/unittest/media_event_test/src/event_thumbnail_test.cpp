@@ -21,6 +21,7 @@
 #include "thumbnail_utils.h"
 #undef private
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
 
 using  namespace std;
 using namespace OHOS;
@@ -48,15 +49,24 @@ int ConfigTestOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersio
 {
     return 0;
 }
+
 shared_ptr<MediaLibraryRdbStore> storePtr = nullptr;
 
 void EventThumbnailTest::SetUpTestCase(void)
 {
-    auto store = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    storePtr = store;
+    const string dbPath = "/data/test/medialibrary_utils_test.db";
+    NativeRdb::RdbStoreConfig config(dbPath);
+    ConfigTestOpenCall helper;
+    int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, 1, helper);
+    EXPECT_EQ(ret, E_OK);
+    storePtr = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    ASSERT_NE(storePtr, nullptr);
 }
 
-void EventThumbnailTest::TearDownTestCase(void) {}
+void EventThumbnailTest::TearDownTestCase(void)
+{
+    MediaLibraryUnitTestUtils::StopUnistore();
+}
 
 // SetUp:Execute before each test case
 void EventThumbnailTest::SetUp() {}
