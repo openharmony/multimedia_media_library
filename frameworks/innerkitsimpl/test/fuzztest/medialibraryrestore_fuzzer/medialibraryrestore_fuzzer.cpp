@@ -27,6 +27,8 @@
 #include "medialibrary_errno.h"
 #include "media_file_utils.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
 #include "rdb_store_config.h"
 
 namespace OHOS {
@@ -124,6 +126,10 @@ static void MediaLibraryRestoreTest(const uint8_t *data, size_t size)
     std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_1));
     rdb->IsSlaveDiffFromMaster();
 
+    int32_t ret = Media::MediaLibraryUnitTestUtils::InitUnistore(config, RDB_VERSION, callBack);
+    if (ret != Media::E_OK) {
+        return;
+    }
     Media::MediaLibraryRestore::GetInstance().CheckBackup();
     Media::MediaLibraryRestore::GetInstance().IsBackuping();
     WaitForBackup();
@@ -136,6 +142,7 @@ static void MediaLibraryRestoreTest(const uint8_t *data, size_t size)
     std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_1));
     Media::MediaLibraryRestore::GetInstance().InterruptBackup();
 
+    Media::MediaLibraryUnitTestUtils::StopUnistore();
     NativeRdb::RdbHelper::DeleteRdbStore(config);
 }
 } // namespace OHOS

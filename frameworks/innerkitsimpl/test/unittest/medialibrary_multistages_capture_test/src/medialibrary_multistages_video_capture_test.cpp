@@ -201,8 +201,8 @@ int32_t PrepareVideoData()
 void MediaLibraryMultiStagesVideoCaptureTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryMultiStagesVideoCaptureTest failed, can not get rdbstore");
         exit(1);
     }
@@ -218,7 +218,7 @@ void MediaLibraryMultiStagesVideoCaptureTest::TearDownTestCase(void)
 // SetUp:Execute before each test case
 void MediaLibraryMultiStagesVideoCaptureTest::SetUp()
 {
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryMultiStagesVideoCaptureTest failed, can not get rdbstore");
         exit(1);
     }

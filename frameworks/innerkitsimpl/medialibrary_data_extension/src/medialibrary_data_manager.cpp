@@ -238,10 +238,10 @@ static int32_t ReconstructMediaLibraryPhotoMap()
     if (system::GetParameter("persist.multimedia.medialibrary.albumFusion.status", "1") == "1") {
         return E_OK;
     }
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Failed to get rdbstore, try again!");
-        rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+        rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         if (rdbStore == nullptr) {
             MEDIA_ERR_LOG("Fatal error! Failed to get rdbstore, new cloud data is not processed!!");
             return E_DB_FAIL;
@@ -346,7 +346,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()
 {
     std::thread([&] {
-        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         if (rdbStore == nullptr) {
             MEDIA_ERR_LOG("rdbStore is nullptr!");
             return;
@@ -474,7 +474,7 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
         MEDIA_ERR_LOG("init MediaLibraryUnistoreManager failed");
         return ret;
     }
-    rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return E_ERR;
@@ -2062,7 +2062,7 @@ int32_t MediaLibraryDataManager::CheckCloudThumbnailDownloadFinish()
 
 void MediaLibraryDataManager::UploadDBFileInner()
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr!");
         return;

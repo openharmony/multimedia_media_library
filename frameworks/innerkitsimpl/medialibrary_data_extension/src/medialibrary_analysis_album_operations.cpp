@@ -266,7 +266,7 @@ static string BuildUpdateGroupPhotoAlbumSql(const GroupPhotoAlbumInfo &albumInfo
 
 static void UpdateGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &updateAlbums)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Update group photo album info failed, rdbStore is null.");
         return;
@@ -399,7 +399,7 @@ static std::map<int32_t, GroupPhotoAlbumInfo> GetAnalysisAlbumInfo()
     const string queryAnalysisAlbumSql = "SELECT * FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
         PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SMART) + " AND " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::GROUP_PHOTO);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Get AnalysisAlbum failed, rdbStore is null.");
         return lastResultMap;
@@ -428,7 +428,7 @@ static bool UpdateGroupPhotoAlbum(vector<GroupPhotoAlbumInfo> &updateAlbums, vec
 {
     auto lastResultMap = GetAnalysisAlbumInfo();
     const string querySql = GetGroupPhotoAlbumSql();
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Update group photo album failed, rdbStore is null.");
         return false;
@@ -590,7 +590,7 @@ static int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const Merg
     return E_OK;
 }
 
-static int32_t UpdateForMergeGroupAlbums(const shared_ptr<MediaLibraryUnistore> &store, const vector<int> &deleteId,
+static int32_t UpdateForMergeGroupAlbums(const shared_ptr<MediaLibraryRdbStore> store, const vector<int> &deleteId,
     const std::unordered_map<string, MergeAlbumInfo> updateMap)
 {
     for (auto it : deleteId) {
@@ -816,7 +816,7 @@ int32_t MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(const Operati
 void MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(int32_t albumId)
 {
     const string &querySql = GetGroupPhotoAlbumSql();
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Update group photo album by id: %{public}d failed, rdbStore is null.", albumId);
         return;
@@ -841,7 +841,7 @@ void MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(int32_t albu
 
 void MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(int32_t fileId)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("UpdatePortraitAlbumCoverSatisfied failed, fileId: %{public}d, rdbStore is null.", fileId);
         return;

@@ -51,6 +51,10 @@ int32_t TransactionOperations::Start(bool isBackup)
     } else {
         rdbStore_ = MediaLibraryRdbStore::GetRaw();
     }
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("rdbStore_ is null");
+        return E_HAS_DB_ERROR;
+    }
 
     int currentTime = 0;
     int errCode = -1;
