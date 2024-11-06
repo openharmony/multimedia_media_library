@@ -1162,7 +1162,7 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
             continue;
         }
         std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-        int32_t errCode = trans->Start();
+        int32_t errCode = trans->Start(__func__);
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("transaction operation start failed, error=%{public}d", errCode);
             return errCode;

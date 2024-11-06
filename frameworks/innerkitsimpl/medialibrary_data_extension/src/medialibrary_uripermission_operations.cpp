@@ -441,7 +441,7 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
         }
     }
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    int32_t errCode = trans->Start();
+    int32_t errCode = trans->Start(__func__);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("TransactionOperations start error %{public}d", errCode);
         return E_ERR;

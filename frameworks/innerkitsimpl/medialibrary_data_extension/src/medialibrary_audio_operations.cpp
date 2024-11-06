@@ -181,7 +181,7 @@ int32_t MediaLibraryAudioOperations::CreateV9(MediaLibraryCommand& cmd)
         "displayName=%{private}s, mediaType=%{public}d", displayName.c_str(), mediaType);
 
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    errCode = trans->Start();
+    errCode = trans->Start(__func__);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("transactionOprn errCode:%{public}d", errCode);
         return errCode;
@@ -238,7 +238,7 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
     int32_t errCode = CheckWithType(isContains, displayName, extention, MediaType::MEDIA_TYPE_AUDIO);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    errCode = trans->Start();
+    errCode = trans->Start(__func__);
     CHECK_AND_RETURN_RET((errCode == E_OK), errCode);
     errCode = isContains ? SetAssetPathInCreate(fileAsset, trans) :
         SetAssetPath(fileAsset, extention, trans);
