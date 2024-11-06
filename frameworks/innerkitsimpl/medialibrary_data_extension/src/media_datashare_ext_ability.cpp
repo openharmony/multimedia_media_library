@@ -142,6 +142,26 @@ void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
     EnhancementManager::GetInstance().InitAsync();
 }
 
+static bool CheckUnlockScene(int64_t startTime)
+{
+    if (IsStartBeforeUserUnlock()) {
+        DfxReporter::ReportStartResult(DfxType::CHECK_USER_UNLOCK_FAIL, 0, startTime);
+        MEDIA_INFO_LOG("%{public}s Killing self caused by booting before unlocking", __func__);
+        DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+        return false;
+    }
+
+    bool isMediaPathExists = MediaFileUtils::IsDirectory(ROOT_MEDIA_DIR);
+    if (!isMediaPathExists) {
+        DfxReporter::ReportStartResult(DfxType::CHECK_MEDIA_PATH_UNLOCK_FAIL, 0, startTime);
+        MEDIA_INFO_LOG("%{public}s Killing self caused by media path unmounted", __func__);
+        DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+        return false;
+    }
+
+    return true;
+}
+
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 {
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
@@ -161,10 +181,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
         DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
         return;
     }
-    if (IsStartBeforeUserUnlock()) {
-        DfxReporter::ReportStartResult(DfxType::CHECK_USER_UNLOCK_FAIL, 0, startTime);
-        DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
-        MEDIA_INFO_LOG("%{public}s Killing self caused by booting before unlocking", __func__);
+    if (!CheckUnlockScene(startTime)) {
         return;
     }
     auto extensionContext = GetContext();
