@@ -45,7 +45,7 @@ void ClearData()
     MediaLibraryDataManager::GetInstance()->Delete(geoKnowledgeCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(geoDictionaryCmd, predicates);
     string clearPhotos = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE;
-    MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->ExecuteSql(clearPhotos);
+    MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->ExecuteSql(clearPhotos);
     num = 0;
 }
 
@@ -295,7 +295,7 @@ string GetTitle(int64_t &timestamp)
 
 int64_t InsertPhoto(double_t latitude, double_t longitude)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     EXPECT_NE(rdbStore, nullptr);
     int64_t fileId = -1;
     int64_t timestamp = GetTimestamp();
@@ -327,7 +327,7 @@ int64_t InsertPhoto(double_t latitude, double_t longitude)
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_TIME_PENDING, 0);
-    int32_t ret = rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    int32_t ret = rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
     return fileId;
