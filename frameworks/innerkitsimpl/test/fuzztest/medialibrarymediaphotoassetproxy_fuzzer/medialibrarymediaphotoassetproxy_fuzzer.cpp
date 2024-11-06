@@ -41,7 +41,7 @@ using namespace std;
 using namespace DataShare;
 constexpr int FUZZ_STORAGE_MANAGER_MANAGER_ID = 5003;
 std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
-std::shared_ptr<NativeRdb::RdbStore> g_rdbStore;
+std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
     return static_cast<int32_t>(*data);
@@ -152,11 +152,11 @@ static void RdbStoreInit()
         abilityContextImpl, sceneCode);
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
 
-    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr || rdbStore->GetRaw() == nullptr) {
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
         return;
     }
-    g_rdbStore = rdbStore->GetRaw();
+    g_rdbStore = rdbStore;
     SetTables();
 }
 } // namespace OHOS

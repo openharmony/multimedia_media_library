@@ -63,7 +63,7 @@ static const int32_t E_ERR = -1;
 static const string PHOTOS_TABLE = "Photos";
 static const string PHOTO_URI_PREFIX = "file://media/Photo/";
 static const string PHOTO_URI_PREFIX_UNDEDINED = "undedined/";
-std::shared_ptr<NativeRdb::RdbStore> g_rdbStore;
+std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
@@ -231,11 +231,12 @@ static void Init()
         abilityContextImpl, sceneCode);
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
 
-    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr || rdbStore->GetRaw() == nullptr) {
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
         return;
     }
-    g_rdbStore = rdbStore->GetRaw();
+    g_rdbStore = rdbStore;
     SetTables();
 }
 
