@@ -223,11 +223,13 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         int32_t errCode = IsFileValid(fileInfos[i], sceneCode);
         if (errCode != E_OK) {
             fileInfos[i].needMove = false;
-            CheckInvalidFile(fileInfos[i], errCode);
-            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, filePath: %{public}s",
+            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, filePath: %{public}s, "
+                "size: %{public}lld",
                 sceneCode,
                 sourceType,
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(),
+                (long long)fileInfos[i].fileSize);
+            CheckInvalidFile(fileInfos[i], errCode);
             continue;
         }
         std::string cloudPath;
@@ -382,7 +384,6 @@ void BaseRestore::RecursiveCreateDir(std::string &relativePath, std::string &suf
     CreateDir(relativePath);
     size_t pos = suffix.find('/');
     if (pos == std::string::npos) {
-        MEDIA_ERR_LOG("Recursive completion, return.");
         return;
     }
     std::string prefix = suffix.substr(0, pos + 1);
@@ -401,6 +402,9 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     int32_t fileMoveCount = 0;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath)) {
+            MEDIA_ERR_LOG("File is not exist: filePath: %{public}s, size: %{public}lld",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(),
+                (long long)fileInfos[i].fileSize);
             continue;
         }
         string relativePath0 = RESTORE_MUSIC_LOCAL_DIR;

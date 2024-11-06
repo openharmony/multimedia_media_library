@@ -1255,10 +1255,6 @@ void UpgradeRestore::UpdateDualCloneFaceAnalysisStatus()
 
 void UpgradeRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode)
 {
-    if (fileInfo.fileSize == 0) {
-        MEDIA_WARN_LOG("file size is 0, path: %{public}s",
-            BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode_).c_str());
-    }
     if (errCode != E_NO_SUCH_FILE) {
         return;
     }
