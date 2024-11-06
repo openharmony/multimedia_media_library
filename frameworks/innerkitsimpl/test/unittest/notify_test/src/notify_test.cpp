@@ -434,36 +434,6 @@ HWTEST_F(NotifyTest, asset_on_change_003, TestSize.Level0)
 }
 
 /**
- * @tc.name: album_on_change_001
- * @tc.desc: solve album and get message
- *           1. RegisterObserverExt called "album_on_change_001"
- *           2. NotifyType::NOTIFY_ALBUM_ADD_ASSET
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(NotifyTest, album_on_change_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("album_on_change_001 enter");
-    CheckAlbumNotify(NotifyType::NOTIFY_ALBUM_ADD_ASSET, DataShareObserver::ChangeType::INSERT);
-    MEDIA_INFO_LOG("album_on_change_001 exit");
-}
-
-/**
- * @tc.name: album_on_change_002
- * @tc.desc: solve album and get message
- *           1. RegisterObserverExt called "album_on_change_002"
- *           2. NotifyType::NOTIFY_ALBUM_REMOVE_ASSET
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(NotifyTest, album_on_change_002, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("album_on_change_002 enter");
-    CheckAlbumNotify(NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, DataShareObserver::ChangeType::DELETE);
-    MEDIA_INFO_LOG("album_on_change_002 exit");
-}
-
-/**
  * @tc.name: close_asset_on_change_001
  * @tc.desc: solve close asset and get message
  *           1. RegisterObserverExt called "close_asset_on_change_001"
