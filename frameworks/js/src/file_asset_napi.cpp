@@ -4957,7 +4957,7 @@ static int32_t GetFileUriFd(FileAssetAsyncContext *context)
     }
     int32_t fd = open(uriRealPath.c_str(), O_RDONLY);
     if (fd < 0) {
-        NAPI_ERR_LOG("Can not open fileUri, ret: %{public}d", fd);
+        NAPI_ERR_LOG("Can not open fileUri, ret: %{public}d, errno:%{public}d", fd, errno);
         context->SaveError(E_FAIL);
         return E_FAIL;
     }

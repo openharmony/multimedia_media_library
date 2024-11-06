@@ -63,7 +63,7 @@ void MultiStagesVideoCaptureManager::AddVideoInternal(const std::string &videoId
     const mode_t fileMode = 0644;
     int srcFd = open(absSrcFilePath.c_str(), O_RDONLY);
     if (srcFd < 0) {
-        MEDIA_ERR_LOG("open file fail, srcFd = %{public}d", srcFd);
+        MEDIA_ERR_LOG("open file fail, srcFd = %{public}d, errno:%{public}d", srcFd, errno);
         return;
     }
 
@@ -80,7 +80,7 @@ void MultiStagesVideoCaptureManager::AddVideoInternal(const std::string &videoId
     MEDIA_INFO_LOG("AddVideoInternal tempPath = %{public}s", tempPath.c_str());
     int dstFd = open(tempPath.c_str(), O_CREAT|O_WRONLY|O_TRUNC, fileMode);
     if (dstFd < 0) {
-        MEDIA_ERR_LOG("open file fail, dstFd = %{public}d", dstFd);
+        MEDIA_ERR_LOG("open file fail, dstFd = %{public}d, errno:%{public}d", dstFd, errno);
         close(srcFd);
         return;
     }

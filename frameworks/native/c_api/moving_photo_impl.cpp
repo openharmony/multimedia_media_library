@@ -244,7 +244,7 @@ int32_t MovingPhotoImpl::OpenReadOnlyVideo(const std::string& videoUri, bool isM
     std::string realPath = fileUri.GetRealPath();
     int32_t fd = open(realPath.c_str(), O_RDONLY);
     if (fd < 0) {
-        MEDIA_ERR_LOG("Failed to open read only video file");
+        MEDIA_ERR_LOG("Failed to open read only video file, errno: %{public}d", errno);
         return -1;
     }
     return fd;

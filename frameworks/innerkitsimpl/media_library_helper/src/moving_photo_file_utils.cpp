@@ -190,7 +190,7 @@ static int32_t ReadExtraFile(const std::string& extraPath, map<string, string>& 
     }
     UniqueFd fd(open(absExtraPath.c_str(), O_RDONLY));
     if (fd.Get() == E_ERR) {
-        MEDIA_ERR_LOG("failed to open extra file");
+        MEDIA_ERR_LOG("failed to open extra file, errno: %{public}d", errno);
         return E_ERR;
     }
     uint32_t version{0};
@@ -358,7 +358,7 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", imagePath.c_str(), errno);
     UniqueFd imageFd(open(absImagePath.c_str(), O_RDONLY));
     if (imageFd.Get() == E_ERR) {
-        MEDIA_ERR_LOG("failed to open image file");
+        MEDIA_ERR_LOG("failed to open image file, errno: %{public}d", errno);
         return E_ERR;
     }
     string absVideoPath;
@@ -366,7 +366,7 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", videoPath.c_str(), errno);
     UniqueFd videoFd(open(absVideoPath.c_str(), O_RDONLY));
     if (videoFd.Get() == E_ERR) {
-        MEDIA_ERR_LOG("failed to open video file");
+        MEDIA_ERR_LOG("failed to open video file, errno: %{public}d", errno);
         return E_ERR;
     }
     if (MediaFileUtils::CreateAsset(cachePath) != E_OK) {
@@ -378,7 +378,7 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", cachePath.c_str(), errno);
     UniqueFd livePhotoFd(open(absCachePath.c_str(), O_WRONLY | O_TRUNC));
     if (livePhotoFd.Get() == E_ERR) {
-        MEDIA_ERR_LOG("failed to open live photo file");
+        MEDIA_ERR_LOG("failed to open live photo file, errno: %{public}d", errno);
         return E_ERR;
     }
     if (MergeFile(imageFd, videoFd, livePhotoFd, extraPath, GetFrameIndex(coverPosition, videoFd.Get())) == E_ERR) {
