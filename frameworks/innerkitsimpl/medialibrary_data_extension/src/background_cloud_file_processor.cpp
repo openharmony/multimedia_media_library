@@ -479,7 +479,7 @@ void BackgroundCloudFileProcessor::UpdateAbnormaldata(std::unique_ptr<Metadata> 
     string whereClause = MediaColumn::MEDIA_ID + " = ?";
     vector<string> whereArgs = { to_string(metadata->GetFileId()) };
     SetAbnormalValuesFromMetaData(metadata, values);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Update operation failed. rdbStore is null");
         return ;

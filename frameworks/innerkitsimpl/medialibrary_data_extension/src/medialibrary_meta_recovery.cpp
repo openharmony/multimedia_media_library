@@ -114,7 +114,7 @@ static int32_t RefreshThumbnail()
 
 static int32_t RefreshAlbumCount()
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("RefreshAlbumCount: failed to get rdb store handler");
         return E_HAS_DB_ERROR;
@@ -1111,7 +1111,7 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset)
         return E_ERR;
     }
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("GetRdbStoreRaw failed, return nullptr");
         return E_HAS_DB_ERROR;
@@ -1139,7 +1139,7 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset)
 
 int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_ptr<PhotoAlbum>> &vecPhotoAlbum)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("GetRdbStoreRaw failed, return nullptr)");
         return E_HAS_DB_ERROR;
@@ -1208,7 +1208,7 @@ int32_t MediaLibraryMetaRecovery::UpdateMetadataFlagInDb(const int32_t fieldId, 
 {
     int32_t errCode = E_OK;
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (!rdbStore) {
         MEDIA_ERR_LOG("GetRdbStoreRaw failed");
         return E_HAS_DB_ERROR;
@@ -1398,7 +1398,7 @@ int32_t MediaLibraryMetaRecovery::ResetAllMetaDirty()
         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_METADATA_FLAGS +
         " = 0 " + " WHERE " + PhotoColumn::PHOTO_METADATA_FLAGS + " == 2; END;";
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
