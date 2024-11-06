@@ -1019,7 +1019,7 @@ HWTEST_F(AlbumCountCoverTest, refresh_analysis_album001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("refresh_analysis_album001 begin");
     MediaLibraryRdbUtils::UpdateAllAlbumsCountForCloud(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw());
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
     int count = QueryCountForBussinessTable();
     EXPECT_GT(count, 0);
 }
