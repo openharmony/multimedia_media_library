@@ -28,7 +28,7 @@ ohos_fuzztest("MediaLibraryRestoreFuzzTest") {
 
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
-    "./medialibraryrestore_fuzzer.cpp"
+    "./medialibraryrestore_fuzzer.cpp",
   ]
 
   deps = [

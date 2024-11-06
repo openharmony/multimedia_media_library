@@ -1113,7 +1113,7 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset)
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("GetRdbStoreRaw failed, return nullptr");
+        MEDIA_ERR_LOG("GetRdbStore failed, return nullptr");
         return E_HAS_DB_ERROR;
     }
 
@@ -1141,7 +1141,7 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("GetRdbStoreRaw failed, return nullptr)");
+        MEDIA_ERR_LOG("GetRdbStore failed, return nullptr)");
         return E_HAS_DB_ERROR;
     }
 
@@ -1210,7 +1210,7 @@ int32_t MediaLibraryMetaRecovery::UpdateMetadataFlagInDb(const int32_t fieldId, 
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (!rdbStore) {
-        MEDIA_ERR_LOG("GetRdbStoreRaw failed");
+        MEDIA_ERR_LOG("GetRdbStore failed");
         return E_HAS_DB_ERROR;
     }
 
