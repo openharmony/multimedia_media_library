@@ -2472,12 +2472,20 @@ bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, bool isSource
         MEDIA_ERR_LOG("Fail to scale thumbnail, data source is empty, isSourceEx: %{public}d.", isSourceEx);
         return false;
     }
+    if (dataSource != nullptr && dataSource->IsHdr()) {
+        uint32_t ret = dataSource->ToSdr();
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("Fail to transform to sdr, isSourceEx: %{public}d.", isSourceEx);
+            return false;
+        }
+    }
     ImageInfo imageInfo;
     dataSource->GetImageInfo(imageInfo);
     if (imageInfo.pixelFormat != PixelFormat::RGBA_8888) {
         uint32_t ret = ImageFormatConvert::ConvertImageFormat(dataSource, PixelFormat::RGBA_8888);
         if (ret != E_OK) {
-            MEDIA_ERR_LOG("Fail to scale convert image format, isSourceEx: %{public}d.", isSourceEx);
+            MEDIA_ERR_LOG("Fail to scale convert image format, isSourceEx: %{public}d, format: %{public}d.",
+                isSourceEx, imageInfo.pixelFormat);
             return false;
         }
     }
