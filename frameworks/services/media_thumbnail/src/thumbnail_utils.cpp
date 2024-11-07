@@ -200,8 +200,9 @@ bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHe
     DecodeOptions decOpts;
     decOpts.desiredSize = ConvertDecodeSize(data, imageInfo.size, desiredSize);
     decOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
-    data.source = audioImageSource->CreatePixelMap(decOpts, errCode);
-    if ((errCode != E_OK) || (data.source == nullptr)) {
+    auto pixelMapPtr = audioImageSource->CreatePixelMap(decOpts, errCode);
+    std::shared_ptr<PixelMap> pixelMap = std::move(pixelMapPtr);
+    if ((errCode != E_OK) || (pixelMap == nullptr)) {
         MEDIA_ERR_LOG("Av meta data helper fetch frame at time failed");
         if (errCode != E_OK) {
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
@@ -211,6 +212,7 @@ bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHe
         }
         return false;
     }
+    data.source.SetPixelMap(pixelMap);
     return true;
 }
 
@@ -251,31 +253,33 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     ConvertDecodeSize(data, {videoWidth, videoHeight}, desiredSize);
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
+    std::shared_ptr<PixelMap> pixelMap;
     if (!data.tracks.empty()) {
         int64_t timestamp = std::stoll(data.timeStamp);
         timestamp = timestamp * MS_TRANSFER_US;
-        data.source = avMetadataHelper->FetchFrameYuv(timestamp, AVMetadataQueryOption::AV_META_QUERY_CLOSEST,
+        pixelMap = avMetadataHelper->FetchFrameYuv(timestamp, AVMetadataQueryOption::AV_META_QUERY_CLOSEST,
         param);
     } else {
-        data.source = avMetadataHelper->FetchFrameYuv(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
+        pixelMap = avMetadataHelper->FetchFrameYuv(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
         param);
     }
 
-    if (data.source == nullptr) {
+    if (pixelMap == nullptr) {
         DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
         return false;
     }
-    if (data.source->GetPixelFormat() == PixelFormat::YCBCR_P010) {
-        uint32_t ret = ImageFormatConvert::ConvertImageFormat(data.source, PixelFormat::RGBA_1010102);
+    if (pixelMap->GetPixelFormat() == PixelFormat::YCBCR_P010) {
+        uint32_t ret = ImageFormatConvert::ConvertImageFormat(pixelMap, PixelFormat::RGBA_1010102);
         if (ret != E_OK) {
             MEDIA_ERR_LOG("PixelMapYuv10ToRGBA_1010102: source ConvertImageFormat fail");
             return false;
         }
     }
 
+    data.source.SetPixelMap(pixelMap);
     data.orientation = 0;
-    data.stats.sourceWidth = data.source->GetWidth();
-    data.stats.sourceHeight = data.source->GetHeight();
+    data.stats.sourceWidth = pixelMap->GetWidth();
+    data.stats.sourceHeight = pixelMap->GetHeight();
     DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, videoWidth, videoHeight);
     return true;
 }
@@ -312,12 +316,13 @@ bool ThumbnailUtils::ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadat
     return true;
 }
 
-// gen pixelmap from data.souce, should ensure source is not null
+// gen pixelmap from data.souce.pixelMapSource, should ensure source is not null
 bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GenTargetPixelmap");
-    if (data.source == nullptr) {
+    auto pixelMap = data.source.GetPixelMap();
+    if (pixelMap == nullptr) {
         return false;
     }
 
@@ -325,9 +330,9 @@ bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredS
         return false;
     }
 
-    float widthScale = (1.0f * desiredSize.width) / data.source->GetWidth();
-    float heightScale = (1.0f * desiredSize.height) / data.source->GetHeight();
-    data.source->scale(widthScale, heightScale);
+    float widthScale = (1.0f * desiredSize.width) / pixelMap->GetWidth();
+    float heightScale = (1.0f * desiredSize.height) / pixelMap->GetHeight();
+    pixelMap->scale(widthScale, heightScale);
     return true;
 }
 
@@ -434,6 +439,74 @@ bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_
     }
 
     data.resize(packedSize);
+    return true;
+}
+
+bool CheckAfterPacking(const std::string &tempOutputPath, const std::string &outputPath)
+{
+    size_t size = -1;
+    MediaFileUtils::GetFileSize(tempOutputPath, size);
+    if (size == 0 && !MediaFileUtils::DeleteFile(tempOutputPath)) {
+        MEDIA_ERR_LOG("CompressPicture failed, failed to delete temp filters file: %{public}s",
+            DfxUtils::GetSafePath(tempOutputPath).c_str());
+        return false;
+    }
+    int ret = rename(tempOutputPath.c_str(), outputPath.c_str());
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("CompressPicture failed, failed to rename temp filters file: %{public}s",
+            DfxUtils::GetSafePath(tempOutputPath).c_str());
+        return false;
+    }
+    if (MediaFileUtils::IsFileExists(tempOutputPath)) {
+        MEDIA_INFO_LOG("file: %{public}s exists, needs to be deleted", DfxUtils::GetSafePath(tempOutputPath).c_str());
+        if (!MediaFileUtils::DeleteFile(tempOutputPath)) {
+            MEDIA_ERR_LOG("delete file: %{public}s failed", DfxUtils::GetSafePath(tempOutputPath).c_str());
+        }
+    }
+    return true;
+}
+
+bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx)
+{
+    MEDIA_INFO_LOG("CompressPicture %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+    auto outputPath = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
+    auto picture = isSourceEx ? data.source.GetPictureEx() : data.source.GetPicture();
+    if (picture == nullptr) {
+        MEDIA_ERR_LOG("CompressPicture failed, source is nullptr, path: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+        return false;
+    }
+    Media::ImagePacker imagePacker;
+    PackOption option = {
+        .format = THUMBNAIL_FORMAT,
+        .quality = THUMBNAIL_MID,
+        .numberHint = NUMBER_HINT_1,
+        .desiredDynamicRange = EncodeDynamicRange::AUTO,
+        .needsPackProperties = false
+    };
+    int ret = SaveFileCreateDir(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX, outputPath);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CompressPicture failed, SaveFileCreateDir failed, path: %{public}s, isSourceEx: %{public}d",
+            DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
+        return false;
+    }
+    size_t lastSlash = outputPath.rfind('/');
+    if (lastSlash == string::npos || outputPath.size() <= lastSlash + 1) {
+        MEDIA_ERR_LOG("CompressPicture failed, failed to check outputPath: %{public}s, isSourceEx: %{public}d",
+            DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
+        return false;
+    }
+    string tempOutputPath = outputPath.substr(0, lastSlash) + "/temp_" + outputPath.substr(lastSlash + 1);
+    ret = MediaFileUtils::CreateAsset(tempOutputPath);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("CompressPicture failed, failed to create temp filter file: %{public}s, isSourceEx: %{public}d",
+            DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
+        return false;
+    }
+    imagePacker.StartPacking(tempOutputPath, option);
+    imagePacker.AddPicture(*(picture));
+    imagePacker.FinalizePacking();
+    CheckAfterPacking(tempOutputPath, outputPath);
     return true;
 }
 
@@ -1454,9 +1527,87 @@ bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts)
 }
 #endif
 
+void PostProcPixelMapSource(ThumbnailData &data)
+{
+    auto pixelMap = data.source.GetPixelMap();
+    if (pixelMap == nullptr) {
+        return;
+    }
+    pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    if (data.orientation != 0) {
+        if (data.isLocalFile) {
+            Media::InitializationOptions opts;
+            auto copySourcePtr = PixelMap::Create(*pixelMap, opts);
+            std::shared_ptr<PixelMap> copySource = std::move(copySourcePtr);
+            data.source.SetPixelMapEx(copySource);
+        }
+        pixelMap->rotate(static_cast<float>(data.orientation));
+    }
+
+    // PixelMap has been rotated, fix the exif orientation to zero degree.
+    pixelMap->ModifyImageProperty(PHOTO_DATA_IMAGE_ORIENTATION, DEFAULT_EXIF_ORIENTATION);
+}
+
+bool ThumbnailUtils::CopyPictureSource(std::shared_ptr<Picture> &picture, std::shared_ptr<Picture> &copySource)
+{
+    auto pixelMap = picture->GetMainPixel();
+    auto gainMap = picture->GetGainmapPixelMap();
+    if (pixelMap == nullptr || gainMap == nullptr) {
+        return false;
+    }
+    Size pixelMapSize = {pixelMap->GetWidth(), pixelMap->GetHeight()};
+    Media::InitializationOptions opts = {
+        .size = pixelMapSize,
+        .pixelFormat = pixelMap->GetPixelFormat(),
+        .alphaType = pixelMap->GetAlphaType()
+    };
+
+    auto copyPixelMapPtr = PixelMap::Create(*pixelMap, opts);
+    std::shared_ptr<PixelMap> copyPixelMap = std::move(copyPixelMapPtr);
+    if (copyPixelMap == nullptr) {
+        return false;
+    }
+    auto copyGainMapPtr = PixelMap::Create(*gainMap, opts);
+    std::shared_ptr<PixelMap> copyGainMap = std::move(copyGainMapPtr);
+    if (copyGainMap == nullptr) {
+        return false;
+    }
+    auto auxiliaryPicturePtr = AuxiliaryPicture::Create(copyGainMap, AuxiliaryPictureType::GAINMAP, pixelMapSize);
+    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = std::move(auxiliaryPicturePtr);
+    if (auxiliaryPicture == nullptr) {
+        return false;
+    }
+    auto copySourcePtr = Picture::Create(copyPixelMap);
+    copySource = std::move(copySourcePtr);
+    copySource->SetAuxiliaryPicture(auxiliaryPicture);
+    return true;
+}
+
+void PostProcPictureSource(ThumbnailData &data)
+{
+    auto picture = data.source.GetPicture();
+    if (picture == nullptr) {
+        return;
+    }
+    auto pixelMap = picture->GetMainPixel();
+    auto gainMap = picture->GetGainmapPixelMap();
+    if (pixelMap == nullptr || gainMap == nullptr) {
+        return;
+    }
+    if (data.orientation != 0) {
+        if (data.isLocalFile) {
+            std::shared_ptr<Picture> copySource;
+            ThumbnailUtils::CopyPictureSource(picture, copySource);
+            data.source.SetPictureEx(copySource);
+        }
+        pixelMap->rotate(static_cast<float>(data.orientation));
+        gainMap->rotate(static_cast<float>(data.orientation));
+    }
+}
+
 bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
 {
-    if (data.source != nullptr) {
+    if (!data.source.IsEmptySource()) {
         return true;
     }
     MediaLibraryTracer tracer;
@@ -1474,28 +1625,22 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
     } else {
         ret = LoadImageFile(data, desiredSize);
     }
-    if (!ret || (data.source == nullptr)) {
+    if (!ret || (data.source.IsEmptySource())) {
         return false;
     }
     tracer.Finish();
 
-    if (data.loaderOpts.decodeInThumbSize && !CenterScaleEx(data.source, desiredSize, data.path)) {
+    auto pixelMap = data.source.GetPixelMap();
+    if (data.loaderOpts.decodeInThumbSize && !CenterScaleEx(pixelMap, desiredSize, data.path)) {
         MEDIA_ERR_LOG("thumbnail center crop failed [%{private}s]", data.id.c_str());
         return false;
     }
-    data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
 
-    if (data.orientation != 0) {
-        if (data.isLocalFile) {
-            Media::InitializationOptions opts;
-            auto copySource = PixelMap::Create(*data.source, opts);
-            data.sourceEx = std::move(copySource);
-        }
-        data.source->rotate(static_cast<float>(data.orientation));
+    if (data.source.HasPictureSource()) {
+        PostProcPictureSource(data);
+    } else {
+        PostProcPixelMapSource(data);
     }
-
-    // PixelMap has been rotated, fix the exif orientation to zero degree.
-    data.source->ModifyImageProperty(PHOTO_DATA_IMAGE_ORIENTATION, DEFAULT_EXIF_ORIENTATION);
     return true;
 }
 
@@ -1504,7 +1649,8 @@ bool ThumbnailUtils::ScaleFastThumb(ThumbnailData &data, const Size &size)
     MediaLibraryTracer tracer;
     tracer.Start("ScaleFastThumb");
 
-    if (!CenterScaleEx(data.source, size, data.path)) {
+    auto pixelMap = data.source.GetPixelMap();
+    if (!CenterScaleEx(pixelMap, size, data.path)) {
         MEDIA_ERR_LOG("Fast thumb center crop failed [%{private}s]", data.id.c_str());
         return false;
     }
@@ -2318,10 +2464,24 @@ void ThumbnailUtils::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData)
 
 bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, bool isSourceEx)
 {
-    std::shared_ptr<PixelMap> dataSource = isSourceEx ? data.sourceEx : data.source;
+    std::shared_ptr<PixelMap> dataSource = isSourceEx ? data.source.GetPixelMapEx() : data.source.GetPixelMap();
     if (dataSource == nullptr) {
         MEDIA_ERR_LOG("Fail to scale thumbnail, data source is empty, isSourceEx: %{public}d.", isSourceEx);
         return false;
+    }
+    ImageInfo imageInfo;
+    dataSource->GetImageInfo(imageInfo);
+    if (imageInfo.pixelFormat != PixelFormat::RGBA_8888) {
+        uint32_t ret = ImageFormatConvert::ConvertImageFormat(dataSource, PixelFormat::RGBA_8888);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("Fail to scale convert image format, isSourceEx: %{public}d.", isSourceEx);
+            return false;
+        }
+    }
+    if (isSourceEx) {
+        data.source.SetPixelMapEx(dataSource);
+    } else {
+        data.source.SetPixelMap(dataSource);
     }
     Size desiredSize;
     Size targetSize = ConvertDecodeSize(data, {dataSource->GetWidth(), dataSource->GetHeight()}, desiredSize);
@@ -2514,7 +2674,7 @@ bool ThumbnailUtils::ConvertStrToInt32(const std::string &str, int32_t &ret)
     return true;
 }
 
-bool ThumbnailUtils::CheckCloudThumbnailDownloadFinish(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr)
+bool ThumbnailUtils::CheckCloudThumbnailDownloadFinish(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr)
 {
     if (rdbStorePtr == nullptr) {
         MEDIA_ERR_LOG("RdbStorePtr is nullptr!");
@@ -2542,7 +2702,7 @@ bool ThumbnailUtils::CheckCloudThumbnailDownloadFinish(const std::shared_ptr<Nat
     return true;
 }
 
-bool ThumbnailUtils::QueryOldKeyAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
+bool ThumbnailUtils::QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr,
     const std::string &table, std::vector<ThumbnailData> &infos)
 {
     vector<string> column = {

@@ -17,26 +17,26 @@
 
 #include "medialibrary_backup_clone_test.h"
 
+#define private public
+#define protected public
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
 #include "clone_source.h"
-#include "medialibrary_rdbstore.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_unistore_manager.h"
-#include "medialibrary_unittest_utils.h"
 #include "media_column.h"
 #include "media_log.h"
 #include "media_file_utils.h"
-#define private public
-#define protected public
 #include "backup_restore_service.h"
 #include "base_restore.h"
 #include "clone_restore.h"
+#include "medialibrary_rdb_utils.h"
+#include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
 #include "others_clone_restore.h"
-#undef private
-#undef protected
 #include "burst_key_generator.h"
 #include "backup_const.h"
+#undef protected
+#undef private
 
 using namespace std;
 using namespace OHOS;
@@ -127,7 +127,7 @@ void ClearData()
 {
     MEDIA_INFO_LOG("Start clear data");
     ExecuteSqls(g_rdbStore->GetRaw(), CLEAR_SQLS);
-    MediaLibraryRdbUtils::UpdateAllAlbums(g_rdbStore->GetRaw());
+    MediaLibraryRdbUtils::UpdateAllAlbums(g_rdbStore);
     MEDIA_INFO_LOG("End clear data");
 }
 
@@ -167,7 +167,7 @@ void MediaLibraryBackupCloneTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("Start Init");
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
     MEDIA_INFO_LOG("Start init restoreService");
     restoreService = make_unique<CloneRestore>();

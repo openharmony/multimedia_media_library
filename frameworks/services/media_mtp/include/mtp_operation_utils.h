@@ -65,6 +65,7 @@ public:
 
 private:
     uint16_t CheckErrorCode(int errorCode);
+    void PreDealFd(const bool deal, const int fd);
     void SendEventPacket(uint32_t objectHandle, uint16_t eventCode);
     uint16_t HasStorage(int &errorCode);
 

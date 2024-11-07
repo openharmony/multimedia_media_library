@@ -283,6 +283,68 @@ void SourceLoader::SetCurrentStateFunction()
     IsSizeLargeEnough = stateFunc.IsSizeLargeEnough;
 }
 
+bool SourceLoader::GeneratePictureSource(std::unique_ptr<ImageSource> &imageSource, const Size &targetSize)
+{
+    DecodingOptionsForPicture pictureOpts;
+    uint32_t errorCode = ERR_OK;
+    auto picturePtr = imageSource->CreatePicture(pictureOpts, errorCode);
+    if (errorCode != E_OK || picturePtr == nullptr) {
+        MEDIA_ERR_LOG("Failed to GeneratePictureSource, CreatePicture failed, err: %{public}d, path %{public}s",
+            errorCode, DfxUtils::GetSafePath(data_.path).c_str());
+        return false;
+    }
+    std::shared_ptr<Picture> picture = std::move(picturePtr);
+    auto pixelMap = picture->GetMainPixel();
+    auto gainMap = picture->GetGainmapPixelMap();
+    if (pixelMap == nullptr) {
+        MEDIA_ERR_LOG("Failed to GeneratePictureSource, main pixelMap is nullptr, path %{public}s",
+            DfxUtils::GetSafePath(data_.path).c_str());
+        return false;
+    }
+    if (gainMap == nullptr) {
+        MEDIA_ERR_LOG("Failed to GeneratePictureSource, gainmap is nullptr, path %{public}s",
+            DfxUtils::GetSafePath(data_.path).c_str());
+        return false;
+    }
+    if (pixelMap->GetWidth() * pixelMap->GetHeight() == 0) {
+        MEDIA_ERR_LOG("Failed to GeneratePictureSource, pixelMap size invalid, width: %{public}d, height: %{public}d,"
+            "path %{public}s", pixelMap->GetWidth(), pixelMap->GetHeight(), DfxUtils::GetSafePath(data_.path).c_str());
+        return false;
+    }
+    float widthScale = (1.0f * targetSize.width) / pixelMap->GetWidth();
+    float heightScale = (1.0f * targetSize.height) / pixelMap->GetHeight();
+    pixelMap->resize(widthScale, heightScale);
+    gainMap->resize(widthScale, heightScale);
+    data_.source.SetPicture(picture);
+    return true;
+}
+
+bool SourceLoader::GeneratePixelMapSource(std::unique_ptr<ImageSource> &imageSource, const Size &sourceSize,
+    const Size &targetSize)
+{
+    DecodeOptions decodeOpts;
+    uint32_t err = ERR_OK;
+    if (!GenDecodeOpts(sourceSize, targetSize, decodeOpts)) {
+        MEDIA_ERR_LOG("SourceLoader failed to generate decodeOpts, pixelmap path %{public}s",
+            DfxUtils::GetSafePath(data_.path).c_str());
+        return false;
+    }
+    std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+    if (err != E_OK || pixelMap == nullptr) {
+        MEDIA_ERR_LOG("SourceLoader failed to CreatePixelMap, err: %{public}d, pixelmap path %{public}s",
+            err, DfxUtils::GetSafePath(data_.path).c_str());
+        DfxManager::GetInstance()->HandleThumbnailError(data_.path, DfxType::IMAGE_SOURCE_CREATE_PIXELMAP, err);
+        return false;
+    }
+    if (!NeedAutoResize(targetSize) && !ThumbnailUtils::ScaleTargetPixelMap(pixelMap, targetSize,
+        Media::AntiAliasingOption::HIGH)) {
+        MEDIA_ERR_LOG("SourceLoader fail to scaleTarget, path %{public}s", DfxUtils::GetSafePath(data_.path).c_str());
+        return false;
+    }
+    data_.source.SetPixelMap(pixelMap);
+    return true;
+}
+
 bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 {
     MediaLibraryTracer tracer;
@@ -300,24 +362,20 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
             STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
-    DecodeOptions decodeOpts;
-    if (data_.loaderOpts.isHdr && imageSource->IsHdrImage()) {
-        decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
-    }
+
     Size targetSize = ConvertDecodeSize(data_, imageInfo.size, desiredSize_);
-    if (!GenDecodeOpts(imageInfo.size, targetSize, decodeOpts)) {
-        MEDIA_ERR_LOG("SourceLoader failed to generate decodeOpts, pixelmap path %{public}s",
+    Size sourceSize = imageInfo.size;
+    bool shouldGeneratePicture = data_.loaderOpts.isHdr && imageSource->IsHdrImage();
+    bool isGenerateSucceed = shouldGeneratePicture ?
+        GeneratePictureSource(imageSource, targetSize) : GeneratePixelMapSource(imageSource, sourceSize, targetSize);
+    if (!isGenerateSucceed && shouldGeneratePicture) {
+        MEDIA_ERR_LOG("SourceLoader generate picture source failed, generate pixelmap instead, path:%{public}s",
             DfxUtils::GetSafePath(data_.path).c_str());
-        return false;
+        isGenerateSucceed = GeneratePixelMapSource(imageSource, sourceSize, targetSize);
     }
-    data_.source = imageSource->CreatePixelMap(decodeOpts, err);
-    if ((err != E_OK) || (data_.source == nullptr)) {
-        DfxManager::GetInstance()->HandleThumbnailError(data_.path, DfxType::IMAGE_SOURCE_CREATE_PIXELMAP, err);
-        return false;
-    }
-    if (!NeedAutoResize(targetSize) && !ThumbnailUtils::ScaleTargetPixelMap(data_.source, targetSize,
-        Media::AntiAliasingOption::HIGH)) {
-        MEDIA_ERR_LOG("SourceLoader fail to scaleTarget, path %{public}s", DfxUtils::GetSafePath(data_.path).c_str());
+    if (!isGenerateSucceed) {
+        MEDIA_ERR_LOG("SourceLoader CreateImagePixelMap generate source failed, path:%{public}s",
+            DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
     tracer.Finish();
@@ -370,7 +428,7 @@ bool SourceLoader::RunLoading()
         return false;
     }
     state_ = SourceState::BEGIN;
-    data_.source = nullptr;
+    data_.source.ClearAllSource();
     SetCurrentStateFunction();
 
     // always check state not final after every state switch
@@ -398,9 +456,9 @@ bool SourceLoader::RunLoading()
         } while (0);
     };
     if (state_ == SourceState::ERROR) {
-        data_.source = nullptr;
+        data_.source.ClearAllSource();
     }
-    if (data_.source == nullptr) {
+    if (data_.source.IsEmptySource()) {
         MEDIA_ERR_LOG("SourceLoader source is nullptr, status:%{public}s, path:%{public}s",
             STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
         return false;

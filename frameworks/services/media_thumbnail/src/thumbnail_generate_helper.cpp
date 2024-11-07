@@ -17,7 +17,6 @@
 #include "thumbnail_generate_helper.h"
 
 #include <fcntl.h>
-#include <securec.h>
 
 #include "acl.h"
 #include "dfx_const.h"
@@ -589,8 +588,8 @@ int32_t ThumbnailGenerateHelper::GetKeyFrameThumbnailPixelMap(ThumbRdbOpt &opts,
 
     auto fd = open(absFilePath.c_str(), O_RDONLY);
     if (fd < 0) {
-        MEDIA_ERR_LOG("GetKeyFrameThumbnailPixelMap: open file failed path: %{public}s",
-            DfxUtils::GetSafePath(thumbnailData.path).c_str());
+        MEDIA_ERR_LOG("GetKeyFrameThumbnailPixelMap: open file failed path: %{public}s, errno:%{public}d",
+            DfxUtils::GetSafePath(thumbnailData.path).c_str(), errno);
         return E_ERR;
     }
     return fd;
@@ -694,13 +693,6 @@ int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts)
     }
 
     MEDIA_INFO_LOG("create astc for restored dual frame photos count:%{public}zu", infos.size());
-    ffrt_worker_num_param qosConfig;
-    if (memset_s(&qosConfig, sizeof(qosConfig), -1, sizeof(qosConfig)) == EOK) {
-        qosConfig.effectLen = 1;
-        qosConfig.qosConfigArray[0].qos = ffrt::qos_utility;
-        qosConfig.qosConfigArray[0].hardLimit = FFRT_MAX_RESTORE_ASTC_THREADS;
-        ffrt_set_qos_worker_num(&qosConfig);
-    }
 
     for (auto &info : infos) {
         opts.row = info.id;

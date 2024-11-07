@@ -181,7 +181,7 @@ static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
     selectionTotal = FILE_ID + " = " + fileId + " AND " + POSE + " = 1";
     DeleteFromVisionTables(fileId, selectionTotal, POSE, PAH_ANA_POSE);
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Can not get rdbstore");
         return;

@@ -54,7 +54,7 @@ const int32_t PRIORITY_DEFAULT = -1;
 const int32_t THUMBNAIL_TASK_TYPE_DEFAULT = -1;
 const string PHOTOS_TABLE = "Photos";
 const int32_t EVEN = 2;
-std::shared_ptr<NativeRdb::RdbStore> g_rdbStore;
+std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 
 static inline string FuzzString(const uint8_t *data, size_t size)
 {
@@ -129,12 +129,12 @@ static inline Media::ThumbnailTaskType FuzzThumbnailTaskType(const uint8_t* data
 
 static Media::ThumbRdbOpt FuzzThumbRdbOpt(const uint8_t* data, size_t size, bool isNeedNullptr)
 {
-    std::shared_ptr<NativeRdb::RdbStore> store;
+    std::shared_ptr<Media::MediaLibraryRdbStore> store;
     if (isNeedNullptr) {
         store = FuzzBool(data, size) ?
-            Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw() : nullptr;
+            Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore() : nullptr;
     } else {
-        store = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+        store = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     }
 
     Media::ThumbRdbOpt opt = {
@@ -275,11 +275,12 @@ static void Init()
         abilityContextImpl, sceneCode);
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
 
-    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr || rdbStore->GetRaw() == nullptr) {
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
         return;
     }
-    g_rdbStore = rdbStore->GetRaw();
+    g_rdbStore = rdbStore;
     SetTables();
 }
 

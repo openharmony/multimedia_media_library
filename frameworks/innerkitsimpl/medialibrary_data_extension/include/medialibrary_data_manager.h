@@ -33,6 +33,7 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_helper_container.h"
 #include "medialibrary_db_const.h"
+#include "medialibrary_rdbstore.h"
 #include "rdb_predicates.h"
 #include "rdb_store.h"
 #include "result_set_bridge.h"
@@ -93,7 +94,7 @@ public:
     // update burst photo from gallery
     EXPORT int32_t UpdateBurstFromGallery();
 
-    EXPORT std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    EXPORT std::shared_ptr<MediaLibraryRdbStore> rdbStore_;
 
     EXPORT int32_t InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context,
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext,

@@ -20,11 +20,15 @@
 #include <pixel_map.h>
 
 #include "medialibrary_restore.h"
+#define private public
 #include "medialibrary_rdbstore.h"
+#undef private
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "media_file_utils.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
 #include "rdb_store_config.h"
 
 namespace OHOS {
@@ -103,7 +107,7 @@ void WaitForBackup()
 const NativeRdb::RdbStoreConfig GetConfig()
 {
     NativeRdb::RdbStoreConfig config(DB_PATH);
-    config.SetHaMode(Media::HAMode::MANUAL_TRIGGER);
+    config.SetHaMode(NativeRdb::HAMode::MANUAL_TRIGGER);
     config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
     config.SetAllowRebuild(true);
     return config;
@@ -122,7 +126,10 @@ static void MediaLibraryRestoreTest(const uint8_t *data, size_t size)
     std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_1));
     rdb->IsSlaveDiffFromMaster();
 
-    Media::MediaLibraryDataManager::GetInstance()->rdbStore_ = rdb;
+    int32_t ret = Media::MediaLibraryUnitTestUtils::InitUnistore(config, RDB_VERSION, callBack);
+    if (ret != Media::E_OK) {
+        return;
+    }
     Media::MediaLibraryRestore::GetInstance().CheckBackup();
     Media::MediaLibraryRestore::GetInstance().IsBackuping();
     WaitForBackup();
@@ -135,6 +142,7 @@ static void MediaLibraryRestoreTest(const uint8_t *data, size_t size)
     std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_1));
     Media::MediaLibraryRestore::GetInstance().InterruptBackup();
 
+    Media::MediaLibraryUnitTestUtils::StopUnistore();
     NativeRdb::RdbHelper::DeleteRdbStore(config);
 }
 } // namespace OHOS

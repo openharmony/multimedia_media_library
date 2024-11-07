@@ -178,6 +178,9 @@ private:
     EXPORT bool CreateSourcePixelMap();
     EXPORT bool CreateImagePixelMap(const std::string &sourcePath);
     EXPORT bool CreateVideoFramePixelMap();
+    EXPORT bool GeneratePictureSource(std::unique_ptr<ImageSource> &imageSource, const Size &targetSize);
+    EXPORT bool GeneratePixelMapSource(std::unique_ptr<ImageSource> &imageSource, const Size &sourceSize,
+        const Size &targetSize);
 
     bool IsFinal();
 

@@ -23,6 +23,7 @@
 #include "album_plugin_config.h"
 #include "userfile_manager_types.h"
 #include "medialibrary_errno.h"
+#include "backup_database_utils.h"
 #include "medialibrary_rdb_transaction.h"
 
 namespace OHOS::Media {
@@ -193,14 +194,7 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const Phot
         MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
         return result;
     }
-    TransactionOperations transactionOprn(this->mediaLibraryRdb_);
-    auto errCode = transactionOprn.Start(true);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG(
-            "Media_Restore: INSERT INTO PhotoAlbum failed, can not get rdb transaction. err = %{public}d", errCode);
-        return result;
-    }
-    auto err = this->mediaLibraryRdb_->ExecuteSql(this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
+    auto err = BackupDatabaseUtils::ExecuteSQL(this->mediaLibraryRdb_, this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Media_Restore: INSERT INTO PhotoAlbum failed, err = %{public}d, executeSql = %{public}s, "
                       "bindArgs = %{public}s",
@@ -209,7 +203,6 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const Phot
             this->ToString(bindArgs).c_str());
         return result;
     }
-    transactionOprn.Finish();
     MEDIA_INFO_LOG("Media_Restore: INSERT INTO PhotoAlbum success, Object: %{public}s", this->ToString(album).c_str());
     return this->GetPhotoAlbum(album.lPath);
 }
@@ -242,7 +235,7 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
     for (const PhotoAlbumDao::PhotoAlbumRowData &data : photoAlbums) {
         std::vector<NativeRdb::ValueObject> bindArgs = {
             data.albumType, data.albumSubType, data.albumName, data.bundleName, data.lPath, data.priority};
-        err = this->mediaLibraryRdb_->ExecuteSql(this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
+        err = BackupDatabaseUtils::ExecuteSQL(this->mediaLibraryRdb_, this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
         if (err != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Media_Restore: restore albums failed, "
                           "err = %{public}d, executeSql = %{public}s, bindArgs = %{public}s",

@@ -80,6 +80,9 @@ void MtpOperation::Execute()
             SendR2Idata(errorCode);
         }
     }
+    if (errorCode == MTP_ERROR_TRANSFER_CANCELLED) {
+        return;
+    }
 
     SendMakeResponsePacket(errorCode);
 }

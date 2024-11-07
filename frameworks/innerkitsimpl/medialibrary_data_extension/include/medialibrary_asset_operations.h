@@ -33,6 +33,7 @@
 #include "photo_album.h"
 #include "value_object.h"
 #include "values_bucket.h"
+#include "medialibrary_rdb_transaction.h"
 
 namespace OHOS {
 namespace Media {
@@ -128,7 +129,8 @@ public:
     static int32_t DeleteToolOperation(MediaLibraryCommand &cmd);
 
     EXPORT static int32_t CreateAssetBucket(int32_t fileId, int32_t &bucketNum);
-    EXPORT static int32_t CreateAssetUniqueId(int32_t type);
+    EXPORT static int32_t CreateAssetUniqueId(int32_t type,
+        std::shared_ptr<TransactionOperations> trans = nullptr);
     EXPORT static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &filePath);
     EXPORT static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
@@ -156,15 +158,18 @@ protected:
 
     static int32_t CreateOperation(MediaLibraryCommand &cmd);
     static int32_t CloseOperation(MediaLibraryCommand &cmd);
-    static int32_t InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset);
+    static int32_t InsertAssetInDb(std::shared_ptr<TransactionOperations> trans,
+        MediaLibraryCommand &cmd, const FileAsset &fileAsset);
     static int32_t CheckWithType(bool isContains, const std::string &displayName,
          const std::string &extention, int32_t mediaType);
     static int32_t CheckDisplayNameWithType(const std::string &displayName, int32_t mediaType);
     static int32_t CheckExtWithType(const std::string &extention, int32_t mediaType);
     static int32_t CheckRelativePathWithType(const std::string &relativePath, int32_t mediaType);
     static void GetAssetRootDir(int32_t mediaType, std::string &rootDirPath);
-    EXPORT static int32_t SetAssetPathInCreate(FileAsset &fileAsset);
-    EXPORT static int32_t SetAssetPath(FileAsset &fileAsset, const std::string &extention);
+    EXPORT static int32_t SetAssetPathInCreate(FileAsset &fileAsset,
+        std::shared_ptr<TransactionOperations> trans = nullptr);
+    EXPORT static int32_t SetAssetPath(FileAsset &fileAsset, const std::string &extention,
+        std::shared_ptr<TransactionOperations> trans = nullptr);
     EXPORT static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd);
 
     EXPORT static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,

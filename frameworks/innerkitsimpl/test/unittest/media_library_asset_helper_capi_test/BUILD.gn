@@ -42,6 +42,8 @@ ohos_unittest("media_library_asset_helper_capi_test") {
     "./src/media_library_asset_helper_capi_test.cpp",
   ]
 
+  cflags = [ "-fno-access-control" ]
+
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library_packages",

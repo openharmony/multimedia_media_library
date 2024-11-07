@@ -20,6 +20,8 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_restore.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -102,7 +104,7 @@ int CorruptDb(bool isSlave)
     return ret;
 }
 
-int InsertRdbData(const std::shared_ptr<RdbStore> &rdb)
+int InsertRdbData(const std::shared_ptr<NativeRdb::RdbStore> &rdb)
 {
     int errCode = 0;
     for (int i = 0; i < INSERT_ROWS; i++) {
@@ -111,7 +113,7 @@ int InsertRdbData(const std::shared_ptr<RdbStore> &rdb)
     return errCode;
 }
 
-int IncreaseRdbData(const std::shared_ptr<RdbStore> &rdb)
+int IncreaseRdbData(const std::shared_ptr<NativeRdb::RdbStore> &rdb)
 {
     int errCode = rdb->ExecuteSql(INSERT_SQL);
     for (int i = 0; i < INCREASE_FORMULA; i++) {
@@ -132,8 +134,8 @@ void WaitForBackup()
 const NativeRdb::RdbStoreConfig GetConfig()
 {
     NativeRdb::RdbStoreConfig config(DB_PATH);
-    config.SetHaMode(HAMode::MANUAL_TRIGGER);
-    config.SetSecurityLevel(SecurityLevel::S3);
+    config.SetHaMode(NativeRdb::HAMode::MANUAL_TRIGGER);
+    config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
     config.SetAllowRebuild(true);
     return config;
 }
@@ -166,7 +168,10 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_001, testing::ex
     EXPECT_EQ(errCode, E_OK);
 
     ASSERT_TRUE(rdb->IsSlaveDiffFromMaster());
-    MediaLibraryDataManager::GetInstance()->rdbStore_ = rdb;
+
+    int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, RDB_VERSION, callBack);
+    EXPECT_EQ(ret, E_OK);
+
     MediaLibraryRestore::GetInstance().CheckBackup();
     EXPECT_EQ(MediaLibraryRestore::GetInstance().IsBackuping(), true);
     WaitForBackup();
@@ -190,6 +195,7 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_001, testing::ex
     int count;
     resultSet->GetRowCount(count);
     EXPECT_EQ(count, INSERT_ROWS);
+    MediaLibraryUnitTestUtils::StopUnistore();
     NativeRdb::RdbHelper::DeleteRdbStore(config);
     MEDIA_INFO_LOG("medialib_restore_test_restore_001 end");
 }
@@ -206,7 +212,9 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_002, testing::ex
     IncreaseRdbData(rdb);
     ASSERT_TRUE(rdb->IsSlaveDiffFromMaster());
 
-    MediaLibraryDataManager::GetInstance()->rdbStore_ = rdb;
+    int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, RDB_VERSION, callBack);
+    EXPECT_EQ(ret, E_OK);
+
     MediaLibraryRestore::GetInstance().CheckBackup();
     WaitForBackup();
     ASSERT_FALSE(rdb->IsSlaveDiffFromMaster());
@@ -216,6 +224,7 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_002, testing::ex
     errCode = rdb->ExecuteSql(UPDATE_SQL);
     ASSERT_TRUE(errCode == E_OK);
     ASSERT_TRUE(rdb->IsSlaveDiffFromMaster());
+    MediaLibraryUnitTestUtils::StopUnistore();
     NativeRdb::RdbHelper::DeleteRdbStore(config);
 
     MediaLibraryRestore::GetInstance().CheckBackup();
@@ -236,7 +245,9 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_003, testing::ex
     IncreaseRdbData(rdb);
     ASSERT_TRUE(rdb->IsSlaveDiffFromMaster());
 
-    MediaLibraryDataManager::GetInstance()->rdbStore_ = rdb;
+    int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, RDB_VERSION, callBack);
+    EXPECT_EQ(ret, E_OK);
+
     MediaLibraryRestore::GetInstance().CheckBackup();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_1));
@@ -244,6 +255,7 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_003, testing::ex
     EXPECT_EQ(MediaLibraryRestore::GetInstance().IsBackuping(), false);
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_2));
     ASSERT_TRUE(rdb->IsSlaveDiffFromMaster());
+    MediaLibraryUnitTestUtils::StopUnistore();
     NativeRdb::RdbHelper::DeleteRdbStore(config);
     MEDIA_INFO_LOG("medialib_restore_test_restore_003 end");
 }

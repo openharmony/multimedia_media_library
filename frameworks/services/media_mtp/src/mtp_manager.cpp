@@ -16,21 +16,19 @@
 
 #include "mtp_manager.h"
 #include "media_log.h"
-#include "mtp_subscriber.h"
-#include "usb_srv_support.h"
 #include "mtp_service.h"
+#include "mtp_subscriber.h"
 #include "usb_srv_client.h"
-#include "accesstoken_kit.h"
-#include "nativetoken_kit.h"
-#include "token_setproc.h"
-#include "access_token.h"
+#include "usb_srv_support.h"
 
 #include <thread>
 
 namespace OHOS {
 namespace Media {
 namespace {
+    static std::mutex mutex_;
     std::shared_ptr<MtpService> mtpServicePtr = nullptr;
+    std::atomic<bool> isMtpServiceRunning = false;
 } // namespace
 
 MtpManager &MtpManager::GetInstance()
@@ -39,14 +37,12 @@ MtpManager &MtpManager::GetInstance()
     return instance;
 }
 
-std::shared_ptr<MtpService> GetMtpServiceInstance()
+std::shared_ptr<MtpService> GetMtpService()
 {
-    if (mtpServicePtr == nullptr) {
+    static std::once_flag oc;
+    std::call_once(oc, []() {
         mtpServicePtr = std::make_shared<MtpService>();
-        if (mtpServicePtr != nullptr) {
-            mtpServicePtr->Init();
-        }
-    }
+    });
     return mtpServicePtr;
 }
 
@@ -74,24 +70,37 @@ void MtpManager::Init()
 void MtpManager::StartMtpService(const MtpMode mode)
 {
     MEDIA_INFO_LOG("MtpManager::StartMtpService is called");
-    auto service = GetMtpServiceInstance();
-    CHECK_AND_RETURN_LOG(service != nullptr, "MtpManager::GetInstance failed");
-    if (mtpMode_ != MtpMode::NONE_MODE) {
-        service->StopService();
+    {
+        std::unique_lock lock(mutex_);
+        if (isMtpServiceRunning.load()) {
+            MEDIA_INFO_LOG("MtpManager::StartMtpService -- service is already running");
+            return;
+        }
+        auto service = GetMtpService();
+        CHECK_AND_RETURN_LOG(service != nullptr, "MtpManager mtpServicePtr is nullptr");
+        if (mtpMode_ != MtpMode::NONE_MODE) {
+            service->StopService();
+        }
+        mtpMode_ = mode;
+        service->StartService();
+        isMtpServiceRunning = true;
     }
-    mtpMode_ = mode;
-    service->StartService();
 }
 
 void MtpManager::StopMtpService()
 {
     MEDIA_INFO_LOG("MtpManager::StopMtpService is called");
-    auto service = GetMtpServiceInstance();
-    CHECK_AND_RETURN_LOG(service != nullptr, "MtpManager::GetInstance failed");
-    mtpMode_ = MtpMode::NONE_MODE;
-    service->StopService();
-    if (mtpServicePtr != nullptr) {
-        mtpServicePtr.reset();
+    {
+        std::unique_lock lock(mutex_);
+        if (!isMtpServiceRunning.load()) {
+            MEDIA_INFO_LOG("MtpManager::StopMtpService -- service is already stopped");
+            return;
+        }
+        auto service = GetMtpService();
+        CHECK_AND_RETURN_LOG(service != nullptr, "MtpManager mtpServicePtr is nullptr");
+        mtpMode_ = MtpMode::NONE_MODE;
+        service->StopService();
+        isMtpServiceRunning = false;
     }
 }
 

@@ -243,20 +243,16 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
 static string GetDistTable(const string &table, const string &networkId)
 {
     string ret = MEDIALIBRARY_TABLE;
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        return ret;
-    }
-    auto rdbStorePtr = rdbStore->GetRaw();
-    if (rdbStorePtr == nullptr) {
         return ret;
     }
 
     int errCode = E_ERR;
     if (table == PhotoColumn::PHOTOS_TABLE || table == AudioColumn::AUDIOS_TABLE) {
-        ret = rdbStorePtr->ObtainDistributedTableName(networkId, table, errCode);
+        ret = rdbStore->ObtainDistributedTableName(networkId, table, errCode);
     } else {
-        ret = rdbStorePtr->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE, errCode);
+        ret = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE, errCode);
     }
     return ret;
 }

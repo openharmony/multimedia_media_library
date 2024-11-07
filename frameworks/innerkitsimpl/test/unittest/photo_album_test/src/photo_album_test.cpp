@@ -30,6 +30,7 @@
 #include "photo_map_column.h"
 #include "rdb_predicates.h"
 #include "result_set_utils.h"
+#include "medialibrary_unistore_manager.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -39,7 +40,7 @@ using namespace OHOS::DataShare;
 using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
 
-static shared_ptr<RdbStore> g_rdbStore;
+static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 const std::string URI_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_CREATE;
 const std::string URI_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_UPDATE;
 const std::string URI_ORDER_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM;
@@ -264,7 +265,7 @@ void GetMaxAlbumOrder(int32_t &maxAlbumOrder)
 void PhotoAlbumTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ClearUserAlbums();
     ClearTable(PhotoMap::TABLE);
 }

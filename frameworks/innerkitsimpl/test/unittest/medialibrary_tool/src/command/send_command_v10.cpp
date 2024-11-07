@@ -78,10 +78,13 @@ static inline int32_t GetFileInfo(const ExecEnv &env, const std::string &path, s
     return Media::E_ERR;
 }
 
-static inline int32_t GetDirInfo(const ExecEnv &env, const std::string &path, std::vector<FileInfo> &fileInfos)
+static int32_t GetDirInfo(const ExecEnv &env, const std::string &path, std::vector<FileInfo> &fileInfos)
 {
     std::vector<std::string> files;
     GetDirFiles(path, files);
+    if (!files.size() && errno) {
+        printf("%s can not get dir files. errno:%d\n", STR_FAIL.c_str(), errno);
+    }
     for (auto &file : files) {
         auto ret = GetFileInfo(env, file, fileInfos);
         if (ret != Media::E_OK) {

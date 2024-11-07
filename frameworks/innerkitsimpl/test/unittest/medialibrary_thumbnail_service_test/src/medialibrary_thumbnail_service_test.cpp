@@ -21,6 +21,8 @@
 #include "ithumbnail_helper.h"
 #include "thumbnail_generate_helper.h"
 #undef private
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
 
 using namespace std;
 using namespace OHOS;
@@ -40,8 +42,6 @@ const string ConfigTestOpenCall::CREATE_TABLE_TEST = string("CREATE TABLE IF NOT
     "(file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, media_type INTEGER," +
     " date_added TEXT, display_name TEXT, thumbnail_ready TEXT, position TEXT)";
 
-const int32_t E_THUMBNAIL_ASTC_ALL_EXIST = -2307;
-const int32_t E_THUMBNAIL_LCD_ALL_EXIST = -2308;
 const int32_t E_GETROUWCOUNT_ERROR = 27394103;
 
 int ConfigTestOpenCall::OnCreate(RdbStore &store)
@@ -53,17 +53,24 @@ int ConfigTestOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersio
 {
     return 0;
 }
-shared_ptr<NativeRdb::RdbStore> storePtr = nullptr;
+
+shared_ptr<MediaLibraryRdbStore> storePtr = nullptr;
+
 void MediaLibraryThumbnailServiceTest::SetUpTestCase(void)
 {
     const string dbPath = "/data/test/medialibrary_thumbnail_service_test.db";
     NativeRdb::RdbStoreConfig config(dbPath);
     ConfigTestOpenCall helper;
-    int errCode = 0;
-    shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
-    storePtr = store;
+    int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, 1, helper);
+    EXPECT_EQ(ret, E_OK);
+    storePtr = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    ASSERT_NE(storePtr, nullptr);
 }
-void MediaLibraryThumbnailServiceTest::TearDownTestCase(void) {}
+
+void MediaLibraryThumbnailServiceTest::TearDownTestCase(void)
+{
+    MediaLibraryUnitTestUtils::StopUnistore();
+}
 
 // SetUp:Execute before each test case
 void MediaLibraryThumbnailServiceTest::SetUp() {}
@@ -358,7 +365,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_007, T
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    data.source = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     auto res = IThumbnailHelper::TryLoadSource(opts, data);
     EXPECT_EQ(res, true);
 }
@@ -382,7 +390,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_010, T
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    data.source = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     auto res = IThumbnailHelper::IsCreateLcdSuccess(opts, data);
     EXPECT_EQ(res, false);
 }
@@ -408,7 +417,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_013, T
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    data.sourceEx = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     auto res = IThumbnailHelper::IsCreateLcdExSuccess(opts, data);
     EXPECT_EQ(res, false);
 }
@@ -427,7 +437,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_015, T
     ThumbRdbOpt opts;
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::LCD;
-    data.source = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     auto res = IThumbnailHelper::GenThumbnail(opts, data, type);
     EXPECT_EQ(res, false);
 }
@@ -437,7 +448,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_016, T
     ThumbRdbOpt opts;
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::THUMB;
-    data.source = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     auto res = IThumbnailHelper::GenThumbnail(opts, data, type);
     EXPECT_EQ(res, false);
 }
@@ -447,7 +459,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_017, T
     ThumbRdbOpt opts;
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::THUMB_ASTC;
-    data.source = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     auto res = IThumbnailHelper::GenThumbnail(opts, data, type);
     EXPECT_EQ(res, false);
 }
@@ -457,7 +470,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_018, T
     ThumbRdbOpt opts;
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::MTH_ASTC;
-    data.source = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     data.dateTaken = "default value";
     auto res = IThumbnailHelper::GenThumbnail(opts, data, type);
     EXPECT_EQ(res, false);
@@ -468,7 +482,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_019, T
     ThumbRdbOpt opts;
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::YEAR_ASTC;
-    data.source = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     data.dateTaken = "default value";
     auto res = IThumbnailHelper::GenThumbnail(opts, data, type);
     EXPECT_EQ(res, false);
@@ -528,7 +543,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_026, T
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    data.source = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     auto res = IThumbnailHelper::DoRotateThumbnail(opts, data);
     EXPECT_EQ(res, false);
 }
@@ -537,7 +553,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_027, T
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    data.source = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     auto res = IThumbnailHelper::DoCreateAstc(opts, data);
     EXPECT_EQ(res, false);
 }
@@ -546,7 +563,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_028, T
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    data.source = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     data.loaderOpts.needUpload = true;
     auto res = IThumbnailHelper::DoCreateAstc(opts, data);
     EXPECT_EQ(res, false);
@@ -836,7 +854,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_018, Te
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_019, TestSize.Level0)
 {
     ThumbnailData data;
-    data.source = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
     bool isSourceEx = false;
     auto res = ThumbnailUtils::ScaleThumbnailFromSource(data, isSourceEx);
     EXPECT_EQ(res, false);
