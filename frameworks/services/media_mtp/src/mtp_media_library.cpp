@@ -34,6 +34,7 @@ const std::string PUBLIC_REAL_PATH_END               = "/local/files/Docs";
 const std::string PUBLIC_DOC                         = "/storage/media/local/files/Docs";
 const std::string SD_DOC                             = "/storage/External";
 const std::string RECYCLE_NAME                       = ".Trash";
+const std::string PATH_SEPARATOR                     = "/";
 constexpr uint32_t BASE_USER_RANGE                   = 200000;
 static std::unordered_map<uint32_t, std::string> handleToPathMap;
 static std::unordered_map<std::string, uint32_t> pathToHandleMap;
@@ -67,7 +68,6 @@ std::shared_ptr<MtpMediaLibrary> MtpMediaLibrary::GetInstance()
 
 void MtpMediaLibrary::Init()
 {
-    MEDIA_INFO_LOG("MtpMediaLibrary::Init is called");
     id_ = START_ID;
     std::unordered_map<uint32_t, std::string>().swap(handleToPathMap);
     std::unordered_map<std::string, uint32_t>().swap(pathToHandleMap);
@@ -77,6 +77,7 @@ void MtpMediaLibrary::Init()
 
 void MtpMediaLibrary::Clear()
 {
+    MEDIA_INFO_LOG("MtpMediaLibrary::Clear is called");
     Init();
 }
 
@@ -107,10 +108,12 @@ uint32_t MtpMediaLibrary::ScanDirNoDepth(const sf::path &root, std::shared_ptr<U
     return MTP_SUCCESS;
 }
 
-void MtpMediaLibrary::AddToHandlePathMap(const std::string &path, const uint32_t &id)
+void MtpMediaLibrary::AddToHandlePathMap(const std::string &path, const uint32_t id)
 {
     if (handleToPathMap.find(id) != handleToPathMap.end()) {
         handleToPathMap.erase(id);
+    }
+    if (pathToHandleMap.find(path) != pathToHandleMap.end()) {
         pathToHandleMap.erase(path);
     }
     pathToHandleMap.emplace(path, id);
@@ -135,7 +138,7 @@ void MtpMediaLibrary::ModifyHandlePathMap(const std::string &from, const std::st
     }
 }
 
-void MtpMediaLibrary::ModifyPathHandleMap(const std::string &path, const uint32_t &id)
+void MtpMediaLibrary::ModifyPathHandleMap(const std::string &path, const uint32_t id)
 {
     auto it = pathToHandleMap.find(path);
     if (it == pathToHandleMap.end()) {
@@ -169,29 +172,14 @@ bool MtpMediaLibrary::StartsWith(const std::string& str, const std::string& pref
     return true;
 }
 
-void MtpMediaLibrary::DeletePathHandleMap(const std::string &path, const uint32_t &id)
-{
-    pathToHandleMap.erase(path);
-    handleToPathMap.erase(id);
-    for (auto it = pathToHandleMap.begin(); it != pathToHandleMap.end();) {
-        if (StartsWith(it->first, path + "/")) {
-            uint32_t originalId = it->second;
-            it = pathToHandleMap.erase(it);
-
-            auto it2 = handleToPathMap.find(originalId);
-            if (it2 != handleToPathMap.end()) {
-                handleToPathMap.erase(it2);
-            }
-        } else {
-            ++it;
-        }
-    }
-}
-
 void MtpMediaLibrary::DeleteHandlePathMap(const std::string &path, const uint32_t id)
 {
-    pathToHandleMap.erase(path);
-    handleToPathMap.erase(id);
+    if (pathToHandleMap.find(path) != pathToHandleMap.end()) {
+        pathToHandleMap.erase(path);
+    }
+    if (handleToPathMap.find(id) != handleToPathMap.end()) {
+        handleToPathMap.erase(id);
+    }
 }
 
 void MtpMediaLibrary::MoveHandlePathMap(const std::string &from, const std::string &to)
@@ -326,7 +314,8 @@ int32_t MtpMediaLibrary::GetObjectInfo(const std::shared_ptr<MtpOperationContext
     outObjectInfo->name = sf::path(it->second).filename().string();
     outObjectInfo->parent = GetParentId(it->second);
     outObjectInfo->storageID = context->storageID;
-    if (sf::is_directory(it->second)) {
+    std::error_code ec;
+    if (sf::is_directory(it->second, ec)) {
         outObjectInfo->format = MTP_FORMAT_ASSOCIATION_CODE;
     }
     struct stat statInfo;
@@ -361,12 +350,6 @@ int32_t MtpMediaLibrary::GetFd(const std::shared_ptr<MtpOperationContext> &conte
     return MtpErrorUtils::SolveGetFdError(E_HAS_FS_ERROR);
 }
 
-int32_t MtpMediaLibrary::GetThumb(const std::shared_ptr<MtpOperationContext> &context,
-    std::shared_ptr<UInt8List> &outThumb)
-{
-    return 0;
-}
-
 int32_t MtpMediaLibrary::SendObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
     uint32_t &outStorageID, uint32_t &outParent, uint32_t &outHandle)
 {
@@ -398,8 +381,7 @@ int32_t MtpMediaLibrary::SendObjectInfo(const std::shared_ptr<MtpOperationContex
         }
     }
 
-    uint32_t index = 0;
-    index = GetId();
+    uint32_t index = GetId();
     AddToHandlePathMap(path, index);
     outHandle = index;
     outStorageID = context->storageID;
@@ -479,18 +461,18 @@ int32_t MtpMediaLibrary::MoveObject(const std::shared_ptr<MtpOperationContext> &
         MEDIA_ERR_LOG("MtpMediaLibrary::MoveObject handle or parent not found");
         return MtpErrorUtils::SolveMoveObjectError(E_HAS_DB_ERROR);
     }
-    if (!sf::exists(handle->second) || !sf::exists(parent->second)) {
+    std::error_code ec;
+    if (!sf::exists(handle->second, ec) || !sf::exists(parent->second, ec)) {
         MEDIA_ERR_LOG("MtpMediaLibrary::MoveObject handle or parent path not found");
         return MtpErrorUtils::SolveMoveObjectError(E_HAS_DB_ERROR);
     }
-    if (!sf::is_directory(parent->second)) {
+    if (!sf::is_directory(parent->second, ec)) {
         MEDIA_ERR_LOG("MtpMediaLibrary::MoveObject parent path is not dir");
         return MtpErrorUtils::SolveMoveObjectError(E_HAS_DB_ERROR);
     }
-    std::error_code ec;
     auto fromPath = sf::path(handle->second);
     auto toPath = sf::path(parent->second) / sf::path(handle->second).filename();
-    bool isDir = sf::is_directory(fromPath);
+    bool isDir = sf::is_directory(fromPath, ec);
     sf::rename(fromPath, toPath, ec);
     MEDIA_INFO_LOG("MTP:MoveObject:from[%{public}s],to[%{public}s]", fromPath.c_str(), toPath.c_str());
     if (ec.value() != MTP_SUCCESS) {
@@ -531,8 +513,7 @@ int32_t MtpMediaLibrary::CopyObject(const std::shared_ptr<MtpOperationContext> &
     if (it != pathToHandleMap.end()) {
         oldHandle = it->second;
     }
-    uint32_t index = 0;
-    index = GetId();
+    uint32_t index = GetId();
     (it == pathToHandleMap.end()) ? AddToHandlePathMap(toPath.string(), index) :
         ModifyPathHandleMap(toPath.string(), index);
     outObjectHandle = index;
@@ -550,22 +531,24 @@ int32_t MtpMediaLibrary::DeleteObject(const std::shared_ptr<MtpOperationContext>
     }
     std::error_code ec;
     if (sf::exists(it->second, ec) == false) {
-        pathToHandleMap.erase(it->second);
-        if (handleToPathMap.find(it->first) != handleToPathMap.end()) {
-            handleToPathMap.erase(it->first);
-        }
+        DeleteHandlePathMap(it->second, it->first);
         return MTP_SUCCESS;
     }
     MEDIA_INFO_LOG("MtpMediaLibrary::DeleteObject path[%{public}s]", it->second.c_str());
     if (sf::is_directory(it->second, ec)) {
         sf::remove_all(it->second, ec);
-        DeletePathHandleMap(it->second, it->first);
+        if (ec.value() != MTP_SUCCESS) {
+            MEDIA_ERR_LOG("MtpMediaLibrary::DeleteObject remove_all failed");
+            return MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR);
+        }
+        ErasePathInfo(it->first, it->second);
     } else {
         sf::remove(it->second, ec);
-        pathToHandleMap.erase(it->second);
-        if (handleToPathMap.find(it->first) != handleToPathMap.end()) {
-            handleToPathMap.erase(it->first);
+        if (ec.value() != MTP_SUCCESS) {
+            MEDIA_ERR_LOG("MtpMediaLibrary::DeleteObject remove failed");
+            return MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR);
         }
+        DeleteHandlePathMap(it->second, it->first);
     }
     return MTP_SUCCESS;
 }
@@ -682,7 +665,7 @@ int32_t MtpMediaLibrary::GetObjectPropList(const std::shared_ptr<MtpOperationCon
 uint32_t MtpMediaLibrary::AddPathToMap(const sf::path &path)
 {
     uint32_t id;
-    auto it = pathToHandleMap.find(path);
+    auto it = pathToHandleMap.find(path.string());
     if (it == pathToHandleMap.end()) {
         id = GetId();
         AddToHandlePathMap(path.string(), id);
@@ -711,7 +694,7 @@ uint32_t MtpMediaLibrary::ScanDirWithType(const std::string &root,
             }
             out->emplace(AddPathToMap(entry.path().string()), entry.path().string());
         }
-    } else if (sf::exists(root) && sf::is_regular_file(root)) {
+    } else if (sf::exists(root, ec) && sf::is_regular_file(root, ec)) {
         out->emplace(AddPathToMap(root), root);
     }
     return MTP_SUCCESS;
@@ -799,9 +782,7 @@ void MtpMediaLibrary::GetExternalStorages()
 
         auto it = pathToHandleMap.find(entry.path().string());
         if (it != pathToHandleMap.end()) {
-            handleToPathMap.erase(it->second);
-            pathToHandleMap.erase(it);
-            ErasePathInfo(entry.path().string());
+            ErasePathInfo(it->second, it->first);
         }
         uint32_t id = SD_START_ID;
         for (id = SD_START_ID; id <= SD_END_ID; id++) {
@@ -829,20 +810,34 @@ void MtpMediaLibrary::GetExternalStorages()
     }
 }
 
-void MtpMediaLibrary::ErasePathInfo(const std::string &path)
+void MtpMediaLibrary::ErasePathInfo(const uint32_t handle, const std::string &path)
 {
     CHECK_AND_RETURN_LOG(!path.empty(), "path is empty");
-    const auto size = path.size();
-    std::vector<uint32_t> eraseHandles;
-    for (const auto &it : pathToHandleMap) {
-        if (path.compare(it.first.substr(0, size)) == 0) {
-            pathToHandleMap.erase(it.first);
-            eraseHandles.push_back(it.second);
-        }
-    }
-    for (const auto &handle : eraseHandles) {
+    if (handleToPathMap.find(handle) != handleToPathMap.end()) {
         handleToPathMap.erase(handle);
     }
+    if (pathToHandleMap.find(path) != pathToHandleMap.end()) {
+        pathToHandleMap.erase(path);
+    }
+
+    std::string prefix = path + PATH_SEPARATOR;
+    const auto size = prefix.size();
+    std::vector<std::string> erasePaths;
+    for (const auto &it : pathToHandleMap) {
+        if (prefix.compare(it.first.substr(0, size)) != 0) {
+            continue;
+        }
+        erasePaths.push_back(std::move(it.first));
+        if (handleToPathMap.find(it.second) != handleToPathMap.end()) {
+            handleToPathMap.erase(it.second);
+        }
+    }
+    for (const auto &p : erasePaths) {
+        if (pathToHandleMap.find(p) != pathToHandleMap.end()) {
+            pathToHandleMap.erase(p);
+        }
+    }
+    std::vector<std::string>().swap(erasePaths);
 }
 
 } // namespace Media
