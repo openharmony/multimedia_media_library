@@ -315,16 +315,8 @@ static bool isLocalAsset(shared_ptr<NativeRdb::ResultSet> &resultSet)
     return position != POSITION_CLOUD_FLAG;
 }
 
-static inline void buildTargetFilePath(const std::string &srcPath, std::string &targetPath, std::string displayName,
-    int32_t mediaType)
+static inline void buildTargetFilePath(std::string &targetPath, std::string displayName, int32_t mediaType)
 {
-    size_t underlineIndex = srcPath.find_last_of('_');
-    size_t dotIndex = srcPath.find_last_of('.');
-    if (underlineIndex == std::string::npos || dotIndex == std::string::npos || underlineIndex >= dotIndex) {
-        MEDIA_INFO_LOG("Invalid file path format : %{public}s", srcPath.c_str());
-        return;
-    }
-
     int32_t uniqueId = MediaLibraryAssetOperations::CreateAssetUniqueId(mediaType);
     int32_t errCode = MediaLibraryAssetOperations::CreateAssetPathById(uniqueId, mediaType,
         MediaFileUtils::GetExtensionFromPath(displayName), targetPath);
@@ -693,15 +685,14 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<
     }
     int32_t assetId;
     GetIntValueFromResultSet(resultSet, MediaColumn::MEDIA_ID, assetId);
-    MEDIA_INFO_LOG("begin copy local file, fileId is %{public}d, and target album is %{public}d",
-        assetId, ownerAlbumId);
+    MEDIA_INFO_LOG("begin copy local file, fileId:%{public}d, and target album:%{public}d", assetId, ownerAlbumId);
     std::string srcPath = "";
     std::string targetPath = "";
     GetSourceFilePath(srcPath, resultSet);
 
     int32_t mediaType;
     GetIntValueFromResultSet(resultSet, MediaColumn::MEDIA_TYPE, mediaType);
-    buildTargetFilePath(srcPath, targetPath, displayName, mediaType);
+    buildTargetFilePath(targetPath, displayName, mediaType);
     if (targetPath.empty()) {
         MEDIA_ERR_LOG("Build target path fail, origin file is %{public}s", srcPath.c_str());
         return E_INVALID_PATH;
@@ -732,9 +723,8 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<
     }
     err = UpdateRelationship(upgradeStore, assetId, newAssetId, ownerAlbumId, true);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("UpdateRelationship fail, "
-                      "assetId: %{public}d, newAssetId: %{public}lld, ownerAlbumId: %{public}d, ret = %{public}d",
-            assetId, (long long)newAssetId, ownerAlbumId, err);
+        MEDIA_ERR_LOG("UpdateRelationship fail, assetId: %{public}d, newAssetId: %{public}lld,
+            ownerAlbumId: %{public}d, ret = %{public}d", assetId, (long long)newAssetId, ownerAlbumId, err);
         return E_OK;
     }
     GenerateThumbnail(newAssetId, targetPath, resultSet);
@@ -760,7 +750,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(const std::shared_ptr<
     int32_t mediaType;
     GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_NAME, displayName);
     GetIntValueFromResultSet(resultSet, MediaColumn::MEDIA_TYPE, mediaType);
-    buildTargetFilePath(srcPath, targetPath, displayName, mediaType);
+    buildTargetFilePath(targetPath, displayName, mediaType);
     if (targetPath.empty()) {
         MEDIA_ERR_LOG("Build target path fail, origin file is %{public}s", srcPath.c_str());
         return E_INVALID_PATH;
