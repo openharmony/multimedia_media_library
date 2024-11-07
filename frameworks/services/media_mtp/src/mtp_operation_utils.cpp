@@ -77,6 +77,7 @@ static constexpr int ERROR_BATTERY = -1;
 #endif
 static constexpr int EMPTY_BATTERY = 0;
 static constexpr int STORAGE_MANAGER_UID = 5003;
+static constexpr int RECEVIE_OBJECT_CANCELLED = -20;
 
 static constexpr uint32_t HEADER_LEN = 12;
 static constexpr uint32_t READ_LEN = 1024;
@@ -417,7 +418,7 @@ uint16_t MtpOperationUtils::GetObject(shared_ptr<PayloadData> &data, int errorCo
     return CheckErrorCode(errorCode);
 }
 
-uint16_t MtpOperationUtils::DoRecevieSendObject()
+int32_t MtpOperationUtils::DoRecevieSendObject()
 {
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, MTP_INVALID_PARAMETER_CODE, "DoRecevieSendObject context_ is null");
     CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
@@ -444,19 +445,13 @@ uint16_t MtpOperationUtils::DoRecevieSendObject()
     object.fd = fd;
     object.offset = initialData;
     object.length = static_cast<int64_t>(context_->sendObjectFileSize) - static_cast<int64_t>(initialData);
-    errorCode = context_->mtpDriver->ReceiveObj(object);
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("DoRecevieSendObject ReceiveObj errorCode = %{public}d", errorCode);
-        PreDealFd(errorCode != MTP_SUCCESS, fd);
-        string filePath;
-        MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetPathById(context_->handle, filePath):
-            mtpMedialibraryManager_->GetPathById(context_->handle, filePath);
-        unlink(filePath.c_str());
-        if (MtpManager::GetInstance().IsMtpMode()) {
-            mtpMediaLibrary_->DeleteHandlePathMap(filePath, context_->handle);
-        }
+    errorCode = RecevieSendObject(object, fd);
+    if (errorCode == MTP_ERROR_TRANSFER_CANCELLED) {
+        MEDIA_DEBUG_LOG("DoRecevieSendObject ReceiveObj Cancelled = %{public}d", MTP_ERROR_TRANSFER_CANCELLED);
         return MTP_ERROR_TRANSFER_CANCELLED;
     }
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_RESPONSE_GENERAL,
+        "DoRecevieSendObject ReceiveObj fail errorCode = %{public}d", errorCode);
 
     errorCode = fsync(fd);
     PreDealFd(errorCode != MTP_SUCCESS, fd);
@@ -475,6 +470,32 @@ uint16_t MtpOperationUtils::DoRecevieSendObject()
 
     SendEventPacket(context_->handle, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
     return MTP_SUCCESS;
+}
+
+int32_t MtpOperationUtils::RecevieSendObject(MtpFileRange &object, int fd)
+{
+    MEDIA_DEBUG_LOG("RecevieSendObject begin");
+    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, MTP_INVALID_PARAMETER_CODE, "DoRecevieSendObject context_ is null");
+    CHECK_AND_RETURN_RET_LOG(context_->mtpDriver != nullptr, MTP_INVALID_PARAMETER_CODE,
+        "DoRecevieSendObject context_->mtpDriver is null");
+    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
+    CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
+        "mtpMedialibraryManager_ is null");
+
+    int32_t errorCode = context_->mtpDriver->ReceiveObj(object);
+    if (errorCode != RECEVIE_OBJECT_CANCELLED) {
+        return errorCode;
+    }
+
+    PreDealFd(errorCode != MTP_SUCCESS, fd);
+    string filePath;
+    MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetPathById(context_->handle, filePath):
+        mtpMedialibraryManager_->GetPathById(context_->handle, filePath);
+    unlink(filePath.c_str());
+    if (MtpManager::GetInstance().IsMtpMode()) {
+        mtpMediaLibrary_->DeleteHandlePathMap(filePath, context_->handle);
+    }
+    return MTP_ERROR_TRANSFER_CANCELLED;
 }
 
 void MtpOperationUtils::PreDealFd(const bool deal, const int fd)

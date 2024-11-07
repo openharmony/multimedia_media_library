@@ -81,6 +81,7 @@ void MtpOperation::Execute()
         }
     }
     if (errorCode == MTP_ERROR_TRANSFER_CANCELLED) {
+        MEDIA_INFO_LOG("File transfer canceled");
         return;
     }
 
