@@ -315,7 +315,8 @@ static bool isLocalAsset(shared_ptr<NativeRdb::ResultSet> &resultSet)
     return position != POSITION_CLOUD_FLAG;
 }
 
-static inline void buildTargetFilePath(const std::string &srcPath, std::string &targetPath)
+static inline void buildTargetFilePath(const std::string &srcPath, std::string &targetPath, std::string displayName,
+    int32_t mediaType)
 {
     size_t underlineIndex = srcPath.find_last_of('_');
     size_t dotIndex = srcPath.find_last_of('.');
@@ -323,9 +324,13 @@ static inline void buildTargetFilePath(const std::string &srcPath, std::string &
         MEDIA_INFO_LOG("Invalid file path format : %{public}s", srcPath.c_str());
         return;
     }
-    std::string currentTime = std::to_string(MediaFileUtils::UTCTimeMilliSeconds());
-    std::string timeStamp = currentTime.substr(currentTime.length() - TIME_STAMP_OFFSET, TIME_STAMP_OFFSET);
-    targetPath = srcPath.substr(0, underlineIndex + 1) + timeStamp + srcPath.substr(dotIndex);
+
+    int32_t uniqueId = MediaLibraryAssetOperations::CreateAssetUniqueId(mediaType);
+    int32_t errCode = MediaLibraryAssetOperations::CreateAssetPathById(uniqueId, mediaType,
+        MediaFileUtils::GetExtensionFromPath(displayName), targetPath);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Create targetPath failed, errCode=%{public}d", errCode);
+    }
 }
 
 static std::string getThumbnailPathFromOrignalPath(std::string srcPath)
@@ -693,7 +698,10 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<
     std::string srcPath = "";
     std::string targetPath = "";
     GetSourceFilePath(srcPath, resultSet);
-    buildTargetFilePath(srcPath, targetPath);
+
+    int32_t mediaType;
+    GetIntValueFromResultSet(resultSet, MediaColumn::MEDIA_TYPE, mediaType);
+    buildTargetFilePath(srcPath, targetPath, displayName, mediaType);
     if (targetPath.empty()) {
         MEDIA_ERR_LOG("Build target path fail, origin file is %{public}s", srcPath.c_str());
         return E_INVALID_PATH;
@@ -747,7 +755,12 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(const std::shared_ptr<
     std::string srcPath = "";
     std::string targetPath = "";
     GetSourceFilePath(srcPath, resultSet);
-    buildTargetFilePath(srcPath, targetPath);
+
+    std::string displayName;
+    int32_t mediaType;
+    GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_NAME, displayName);
+    GetIntValueFromResultSet(resultSet, MediaColumn::MEDIA_TYPE, mediaType);
+    buildTargetFilePath(srcPath, targetPath, displayName, mediaType);
     if (targetPath.empty()) {
         MEDIA_ERR_LOG("Build target path fail, origin file is %{public}s", srcPath.c_str());
         return E_INVALID_PATH;
