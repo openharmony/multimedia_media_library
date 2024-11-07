@@ -875,5 +875,63 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Test_005, TestSize.Level0)
     auto res4 = MediaFileUtils::GetTableNameByDisplayName(displayName4);
     EXPECT_EQ(res4, "");
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyDirectory_Test_001, TestSize.Level0)
+{
+    string oldDir;
+    string newDir;
+    int32_t ret = MediaFileUtils::CopyDirectory(oldDir, newDir);
+    EXPECT_EQ(ret, E_MODIFY_DATA_FAIL);
+
+    oldDir = "";
+    newDir = "datashare://test";
+    ret = MediaFileUtils::CopyDirectory(oldDir, newDir);
+    EXPECT_EQ(ret, E_MODIFY_DATA_FAIL);
+
+    oldDir = "datashare://test";
+    newDir = "";
+    ret = MediaFileUtils::CopyDirectory(oldDir, newDir);
+    EXPECT_EQ(ret, E_MODIFY_DATA_FAIL);
+
+    oldDir = "datashare://test";
+    newDir = "datashare://test/Photo";
+    ret = MediaFileUtils::CopyDirectory(oldDir, newDir);
+    EXPECT_EQ(ret, E_NO_SUCH_FILE);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyDirectory_Test_002, TestSize.Level0)
+{
+    string testPath = "/data/test/copydirectory_002";
+    string oldDir = testPath + "/copydirectory_002_srcdir";
+    string newDir = testPath + "/copydirectory_002_dstdir";
+    EXPECT_EQ(MediaFileUtils::CreateFile(oldDir), true);
+    int32_t ret = MediaFileUtils::CopyDirectory(oldDir, newDir);
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyDirectory_Test_003, TestSize.Level0)
+{
+    string testPath = "/data/test/copydirectory_003";
+    string oldDir = testPath + "/copydirectory_003_srcdir";
+    string newDir = testPath + "/copydirectory_003_dstdir";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(oldDir), true);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(newDir), true);
+    int32_t ret = MediaFileUtils::CopyDirectory(oldDir, newDir);
+    EXPECT_EQ(ret, E_FILE_EXIST);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyDirectory_Test_004, TestSize.Level0)
+{
+    string testPath = "/data/test/copydirectory_004";
+    string oldDir = testPath + "/copydirectory_004_srcdir";
+    string newDir = testPath + "/copydirectory_004_dstdir";
+    string subdirectory = oldDir + "/copydirectory_subdirectory";
+    string subfile = oldDir + "/copydirectory_subfile";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(oldDir), true);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(subdirectory), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(subfile), true);
+    int32_t ret = MediaFileUtils::CopyDirectory(oldDir, newDir);
+    EXPECT_EQ(ret, E_OK);
+}
 } // namespace Media
 } // namespace OHOS
