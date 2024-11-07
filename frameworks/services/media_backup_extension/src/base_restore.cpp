@@ -178,29 +178,32 @@ int32_t BaseRestore::CopyFile(const std::string &srcFile, const std::string &dst
     return E_OK;
 }
 
-bool BaseRestore::IsFileValid(FileInfo &fileInfo, const int32_t sceneCode)
+int32_t BaseRestore::IsFileValid(FileInfo &fileInfo, const int32_t sceneCode)
 {
-    if (!BackupFileUtils::IsFileValid(fileInfo.filePath, DUAL_FRAME_CLONE_RESTORE_ID,
-        fileInfo.relativePath, hasLowQualityImage_)) {
+    int32_t errCode = BackupFileUtils::IsFileValid(fileInfo.filePath, DUAL_FRAME_CLONE_RESTORE_ID,
+        fileInfo.relativePath, hasLowQualityImage_);
+    if (errCode != E_OK) {
         MEDIA_ERR_LOG("File is not valid: %{public}s, errno=%{public}d.",
             BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(), errno);
-        return false;
+        return errCode;
     }
 
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
-        if (!MediaFileUtils::IsFileValid(fileInfo.movingPhotoVideoPath)) {
+        errCode = MediaFileUtils::IsFileValid(fileInfo.movingPhotoVideoPath);
+        if (errCode != E_OK) {
             MEDIA_ERR_LOG("Moving photo video is not valid: %{public}s, errno=%{public}d.",
                 BackupFileUtils::GarbleFilePath(fileInfo.movingPhotoVideoPath, sceneCode).c_str(), errno);
-            return false;
+            return errCode;
         }
 
-        if (!MediaFileUtils::IsFileValid(fileInfo.extraDataPath)) {
+        errCode = MediaFileUtils::IsFileValid(fileInfo.extraDataPath);
+        if (errCode != E_OK) {
             MEDIA_WARN_LOG("Media extra data is not valid: %{public}s, errno=%{public}d.",
                 BackupFileUtils::GarbleFilePath(fileInfo.extraDataPath, sceneCode).c_str(), errno);
-            return false;
+            return errCode;
         }
     }
-    return true;
+    return E_OK;
 }
 
 static void RemoveDuplicateDualCloneFiles(const FileInfo &fileInfo)
@@ -217,20 +220,21 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
 {
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        if (!IsFileValid(fileInfos[i], sceneCode)) {
+        int32_t errCode = IsFileValid(fileInfos[i], sceneCode);
+        if (errCode != E_OK) {
             fileInfos[i].needMove = false;
-            if (fileInfos[i].fileSize == 0) {
-                MEDIA_ERR_LOG("this is file size is 0");
-            }
-            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, filePath: %{public}s",
+            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, filePath: %{public}s, "
+                "size: %{public}lld",
                 sceneCode,
                 sourceType,
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(),
+                (long long)fileInfos[i].fileSize);
+            CheckInvalidFile(fileInfos[i], errCode);
             continue;
         }
         std::string cloudPath;
         int32_t uniqueId = GetUniqueId(fileInfos[i].fileType);
-        int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
+        errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfos[i].displayName), cloudPath);
         if (errCode != E_OK) {
             fileInfos[i].needMove = false;
@@ -380,7 +384,6 @@ void BaseRestore::RecursiveCreateDir(std::string &relativePath, std::string &suf
     CreateDir(relativePath);
     size_t pos = suffix.find('/');
     if (pos == std::string::npos) {
-        MEDIA_ERR_LOG("Recursive completion, return.");
         return;
     }
     std::string prefix = suffix.substr(0, pos + 1);
@@ -399,6 +402,9 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     int32_t fileMoveCount = 0;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath)) {
+            MEDIA_ERR_LOG("File is not exist: filePath: %{public}s, size: %{public}lld",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(),
+                (long long)fileInfos[i].fileSize);
             continue;
         }
         string relativePath0 = RESTORE_MUSIC_LOCAL_DIR;
@@ -497,7 +503,7 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
         if (!fileInfos[i].needMove) {
             continue;
         }
-        if (!IsFileValid(fileInfos[i], sceneCode)) {
+        if (IsFileValid(fileInfos[i], sceneCode) != E_OK) {
             continue;
         }
         if (!MoveAndModifyFile(fileInfos[i], sceneCode)) {
@@ -1180,5 +1186,10 @@ void BaseRestore::RestoreThumbnail()
 
 void BaseRestore::StartBackup()
 {}
+
+void BaseRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode)
+{
+    return;
+}
 } // namespace Media
 } // namespace OHOS
