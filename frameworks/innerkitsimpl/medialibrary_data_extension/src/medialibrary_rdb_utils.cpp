@@ -283,7 +283,7 @@ static int32_t ForEachRow(const shared_ptr<MediaLibraryRdbStore> rdbStore, const
     int32_t err = NativeRdb::E_OK;
     while (resultSet->GoToNextRow() == E_OK) {
         std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-        err = trans->Start();
+        err = trans->Start(__func__);
         if (err != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
             return E_HAS_DB_ERROR;
@@ -1671,7 +1671,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<MediaLib
     while (albumResult->GoToNextRow() == E_OK) {
         int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
         std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-        err = trans->Start();
+        err = trans->Start(__func__);
         if (err != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
             return;

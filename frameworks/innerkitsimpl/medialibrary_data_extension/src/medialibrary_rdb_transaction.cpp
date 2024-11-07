@@ -27,10 +27,6 @@ using namespace OHOS::NativeRdb;
 constexpr int32_t E_HAS_DB_ERROR = -222;
 constexpr int32_t E_OK = 0;
 
-
-constexpr int32_t MAX_TRY_TIMES = 30;
-constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // in milliseconds.
-
 TransactionOperations::TransactionOperations() {}
 
 TransactionOperations::~TransactionOperations()
@@ -43,9 +39,10 @@ void TransactionOperations::SetBackupRdbStore(std::shared_ptr<OHOS::NativeRdb::R
     backupRdbStore_ = rdbStore;
 }
 
-int32_t TransactionOperations::Start(bool isBackup)
+int32_t TransactionOperations::Start(std::string funcName, bool isBackup)
 {
-    MEDIA_INFO_LOG("Start transaction_, time is :%{public}" PRId64, MediaFileUtils::UTCTimeSeconds());
+    funcName_ = funcName;
+    MEDIA_INFO_LOG("Start transaction_, funName is :%{public}s", funcName_.c_str());
     if (isBackup) {
         rdbStore_ = backupRdbStore_;
     } else {
@@ -57,9 +54,10 @@ int32_t TransactionOperations::Start(bool isBackup)
     }
 
     int currentTime = 0;
+    int32_t busyRetryTime = 0;
     int errCode = -1;
-    while (currentTime <= MAX_TRY_TIMES) {
-        auto [ret, transaction] = rdbStore_->CreateTransaction(OHOS::NativeRdb::Transaction::EXCLUSIVE);
+    while (busyRetryTime < MAX_BUSY_TRY_TIMES && currentTime <= MAX_TRY_TIMES) {
+        auto [ret, transaction] = rdbStore_->CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
         errCode = ret;
         if (ret == NativeRdb::E_OK) {
             transaction_ = transaction;
@@ -67,9 +65,12 @@ int32_t TransactionOperations::Start(bool isBackup)
         } else if (ret == NativeRdb::E_SQLITE_LOCKED) {
             this_thread::sleep_for(chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
             currentTime++;
-            MEDIA_ERR_LOG("ExecuteSqlInternal busy, ret:%{public}d, time:%{public}d", ret, currentTime);
+            MEDIA_ERR_LOG("CreateTransaction busy, ret:%{public}d, time:%{public}d", ret, currentTime);
+        } else if (ret == NativeRdb::E_SQLITE_BUSY || ret == NativeRdb::E_DATABASE_BUSY) {
+            busyRetryTime++;
+            MEDIA_ERR_LOG("CreateTransaction busy, ret:%{public}d, busyRetryTime:%{public}d", ret, busyRetryTime);
         } else {
-            MEDIA_ERR_LOG("ExecuteSqlInternal faile, ret = %{public}d", ret);
+            MEDIA_ERR_LOG("CreateTransaction faile, ret = %{public}d", ret);
             break;
         }
     }
@@ -85,7 +86,7 @@ int32_t TransactionOperations::Finish()
         MEDIA_ERR_LOG("transaction is null");
         return E_HAS_DB_ERROR;
     }
-    MEDIA_INFO_LOG("Commit transaction, time is :%{public}" PRId64, MediaFileUtils::UTCTimeSeconds());
+    MEDIA_INFO_LOG("Commit transaction, funcName is :%{public}s", funcName_.c_str());
     auto ret = transaction_->Commit();
     if (ret == NativeRdb::E_OK) {
         transaction_ = nullptr;

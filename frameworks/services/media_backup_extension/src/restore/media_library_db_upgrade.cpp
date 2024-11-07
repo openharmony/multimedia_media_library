@@ -25,9 +25,6 @@
 
 namespace OHOS::Media {
 namespace DataTransfer {
-constexpr int32_t MAX_TRY_TIMES_FOR_DB = 30;
-constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // 50 milliseconds.
-
 /**
  * @brief Upgrade the database, before data restore or clone.
  */
@@ -67,8 +64,9 @@ int32_t MediaLibraryDbUpgrade::ExecSqlsInternal(NativeRdb::RdbStore &store, cons
     const std::vector<NativeRdb::ValueObject> &args)
 {
     int currentTime = 0;
+    int32_t busyRetryTime = 0;
     int32_t err = NativeRdb::E_OK;
-    while (currentTime <= MAX_TRY_TIMES_FOR_DB) {
+    while (busyRetryTime < MAX_BUSY_TRY_TIMES && currentTime <= MAX_TRY_TIMES) {
         err = store.ExecuteSql(sql, args);
         if (err == NativeRdb::E_OK) {
             break;
@@ -76,6 +74,9 @@ int32_t MediaLibraryDbUpgrade::ExecSqlsInternal(NativeRdb::RdbStore &store, cons
             std::this_thread::sleep_for(std::chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
             currentTime++;
             MEDIA_ERR_LOG("ExecuteSqlInternal busy, ret:%{public}d, time:%{public}d", err, currentTime);
+        } else if (err == NativeRdb::E_SQLITE_BUSY || err == NativeRdb::E_DATABASE_BUSY) {
+            busyRetryTime++;
+            MEDIA_ERR_LOG("ExecuteSqlInternal busy, ret:%{public}d, busyRetryTime:%{public}d", err, busyRetryTime);
         } else {
             MEDIA_ERR_LOG("ExecuteSqlInternal faile, ret = %{public}d", err);
             break;
@@ -150,7 +151,8 @@ int32_t MediaLibraryDbUpgrade::DropPhotoAlbumTrigger(NativeRdb::RdbStore &store)
 {
     std::vector<std::string> executeSqls = this->SQL_PHOTO_ALBUM_TABLE_DROP_TRIGGER;
     int ret = NativeRdb::E_OK;
-    auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::EXCLUSIVE);
+    MEDIA_INFO_LOG("DropPhotoAlbumTrigger begin");
+    auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
     if (errCode != NativeRdb::E_OK || transaction == nullptr) {
         MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
         return errCode;
@@ -241,7 +243,8 @@ int32_t MediaLibraryDbUpgrade::MoveSingleRelationshipToPhotos(NativeRdb::RdbStor
     executeSqls.push_back(this->SQL_PHOTO_MAP_TABLE_DELETE_SINGLE_RELATIONSHIP);
     executeSqls.push_back(this->SQL_TEMP_PHOTO_MAP_TABLE_DROP);
     int ret = NativeRdb::E_OK;
-    auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::EXCLUSIVE);
+    MEDIA_INFO_LOG("MoveSingleRelationshipToPhotos begin");
+    auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
     if (errCode != NativeRdb::E_OK || transaction == nullptr) {
         MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
         return errCode;

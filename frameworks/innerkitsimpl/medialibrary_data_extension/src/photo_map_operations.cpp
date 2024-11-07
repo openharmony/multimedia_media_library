@@ -173,7 +173,7 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
     int32_t changedRows = 0;
     int32_t err = NativeRdb::E_OK;
-    err = trans->Start();
+    err = trans->Start(__func__);
     if (err != NativeRdb::E_OK) {
         return E_HAS_DB_ERROR;
     }
