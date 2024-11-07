@@ -1414,6 +1414,7 @@ int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
         MEDIA_ERR_LOG("failed to UpdateBurstPhotoByMembers.");
         return E_FAIL;
     }
+    MEDIA_INFO_LOG("End UpdateBurstFromGallery");
     return ret;
 }
 
