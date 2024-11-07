@@ -1989,6 +1989,11 @@ bool MediaFileUtils::CheckSupportedWatermarkType(int32_t watermarkType)
 
 int32_t MediaFileUtils::CopyDirectory(const std::string &srcDir, const std::string &dstDir)
 {
+    if (srcDir.empty() || dstDir.empty()) {
+        MEDIA_ERR_LOG("Failed to copy directory, srcDir:%{public}s or newPath:%{public}s is empty!",
+            DesensitizePath(srcDir).c_str(), DesensitizePath(dstDir).c_str());
+        return E_MODIFY_DATA_FAIL;
+    }
     if (!IsFileExists(srcDir)) {
         MEDIA_ERR_LOG("SrcDir:%{public}s is not exist", DesensitizePath(srcDir).c_str());
         return E_NO_SUCH_FILE;

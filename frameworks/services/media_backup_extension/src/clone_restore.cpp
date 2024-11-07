@@ -666,6 +666,11 @@ int32_t CloneRestore::MoveAstc(FileInfo &fileInfo)
         MEDIA_ERR_LOG("Kvstore is nullptr");
         return E_FAIL;
     }
+    if (fileInfo.fileIdOld <= 0 || fileInfo.fileIdNew <= 0) {
+        MEDIA_ERR_LOG("Old fileId:%{public}d or new fileId:%{public}d is invalid",
+            fileInfo.fileIdOld, fileInfo.fileIdNew);
+        return E_FAIL;
+    }
     string oldKey;
     string newKey;
     if (!GenerateKvStoreKey(to_string(fileInfo.fileIdOld), fileInfo.oldAstcDateKey, oldKey) ||
@@ -696,6 +701,11 @@ int32_t CloneRestore::MoveThumbnailDir(FileInfo &fileInfo)
 {
     string thumbnailOldDir = backupRestoreDir_ + RESTORE_FILES_LOCAL_DIR + ".thumbs" + fileInfo.relativePath;
     string thumbnailNewDir = GetThumbnailLocalPath(fileInfo.cloudPath);
+    if (fileInfo.relativePath.empty() || thumbnailNewDir.empty()) {
+        MEDIA_ERR_LOG("Old path:%{public}s or new path:%{public}s is invalid",
+            fileInfo.relativePath.c_str(), MediaFileUtils::DesensitizePath(fileInfo.cloudPath).c_str());
+        return E_FAIL;
+    }
     if (!MediaFileUtils::IsDirectory(thumbnailOldDir)) {
         MEDIA_ERR_LOG("Old dir is not a direcrory or does not exist, errno:%{public}d, dir:%{public}s",
             errno, MediaFileUtils::DesensitizePath(thumbnailOldDir).c_str());
@@ -729,6 +739,13 @@ int32_t CloneRestore::MoveThumbnailDir(FileInfo &fileInfo)
     return E_OK;
 }
 
+/**
+ * The processing logic of the MoveThumbnail function must match the logic of the GetThumbnailInsertValue function.
+ * If the status indicates that the thumbnail does not exist, the thumbnail does not need to be cloned and
+ * the status of the thumbnail needs to be set to the initial status in the GetThumbnailInsertValue function.
+ * If the status indicates that the thumbnail exists but the thumbnail fails to be transferred,
+ * the thumbnail status needs to be set to the initial status.
+*/
 int32_t CloneRestore::MoveThumbnail(FileInfo &fileInfo)
 {
     if (!hasCloneThumbnailDir_) {
@@ -804,21 +821,24 @@ bool CloneRestore::IsFilePathExist(const string &filePath) const
 void CloneRestore::GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values)
 {
     if (!hasCloneThumbnailDir_) {
+        // If there is no thumbnail directory, all statuses of thumbnail are set to the initial status.
         values.PutInt(PhotoColumn::PHOTO_LCD_VISIT_TIME, RESTORE_LCD_VISIT_TIME_NO_LCD);
         values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, RESTORE_THUMBNAIL_READY_NO_THUMBNAIL);
         values.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, RESTORE_THUMBNAIL_VISIBLE_FALSE);
         return;
     }
 
+    // The LCD status is same as the origin status.
     values.PutInt(PhotoColumn::PHOTO_LCD_VISIT_TIME, fileInfo.lcdVisitTime);
-    if (isInitKvstoreSuccess_ || fileInfo.thumbnailReady < RESTORE_THUMBNAIL_READY_SUCCESS) {
-        values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, fileInfo.thumbnailReady);
-        values.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, fileInfo.thumbnailReady >
-            RESTORE_THUMBNAIL_READY_NO_THUMBNAIL ? RESTORE_THUMBNAIL_VISIBLE_TRUE : RESTORE_THUMBNAIL_VISIBLE_FALSE);
+    if (!isInitKvstoreSuccess_ || fileInfo.thumbnailReady < RESTORE_THUMBNAIL_READY_SUCCESS) {
+        // The kvdb does not exist or the THM status indicates that there is no THM.
+        // Therefore, the THM status needs to be set to the initial status.
+        values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, RESTORE_THUMBNAIL_READY_NO_THUMBNAIL);
+        values.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, RESTORE_THUMBNAIL_VISIBLE_FALSE);
         return;
     }
-    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, RESTORE_THUMBNAIL_READY_NO_THUMBNAIL);
-    values.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, RESTORE_THUMBNAIL_VISIBLE_FALSE);
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, fileInfo.thumbnailReady);
+    values.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, RESTORE_THUMBNAIL_VISIBLE_TRUE);
 }
 
 NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, const string &newPath,
@@ -2353,8 +2373,8 @@ void CloneRestore::StartBackup()
 bool CloneRestore::BackupKvStore()
 {
     MEDIA_INFO_LOG("Start BackupKvstore");
-    if (MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR) && !MediaFileUtils::DeleteDir(CLONE_KVDB_BACKUP_DIR)) {
-        MEDIA_ERR_LOG("Delete old backup kvdb failed, errno:%{public}d", errno);
+    if (MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR)) {
+        MediaFileUtils::DeleteDir(CLONE_KVDB_BACKUP_DIR);
     }
 
     std::string backupKvdbPath = CLONE_KVDB_BACKUP_DIR + "/kvdb";
