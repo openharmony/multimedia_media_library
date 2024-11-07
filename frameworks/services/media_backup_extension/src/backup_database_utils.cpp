@@ -77,7 +77,7 @@ std::string BackupDatabaseUtils::IsCallerSelfFunc(const std::vector<std::string>
 
 static int32_t ExecSqlWithRetry(std::function<int32_t()> execSql)
 {
-    int currentTime = 0;
+    int32_t currentTime = 0;
     int32_t err = NativeRdb::E_OK;
     while (currentTime <= MAX_TRY_TIMES) {
         err = execSql();

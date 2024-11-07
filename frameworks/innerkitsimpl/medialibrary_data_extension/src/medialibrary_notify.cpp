@@ -367,7 +367,7 @@ void MediaLibraryNotify::GetNotifyUris(const NativeRdb::AbsRdbPredicates &predic
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetNotifyUris");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return;
     }

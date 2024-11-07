@@ -399,7 +399,7 @@ struct ShootingModeValueBucket {
 
 static int32_t ExecSqlWithRetry(std::function<int32_t()> execSql)
 {
-    int currentTime = 0;
+    int32_t currentTime = 0;
     int32_t busyRetryTime = 0;
     int32_t err = NativeRdb::E_OK;
     while (busyRetryTime < MAX_BUSY_TRY_TIMES && currentTime <= MAX_TRY_TIMES) {
@@ -617,6 +617,26 @@ int32_t MediaLibraryRdbStore::Init()
     return E_OK;
 }
 
+int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
+{
+    std::lock_guard<std::mutex> lock(rdbStoreMutex_);
+    MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", version);
+    if (rdbStore_ != nullptr) {
+        return E_OK;
+    }
+    int32_t errCode = 0;
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRdbStore::Init GetRdbStore with config");
+    rdbStore_ = RdbHelper::GetRdbStore(config, version, openCallback, errCode);
+    tracer.Finish();
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("GetRdbStore with config is failed");
+        return errCode;
+    }
+    MEDIA_INFO_LOG("MediaLibraryRdbStore::Init with config, SUCCESS");
+    return E_OK;
+}
+
 MediaLibraryRdbStore::~MediaLibraryRdbStore() = default;
 
 void MediaLibraryRdbStore::Stop()
@@ -717,7 +737,7 @@ int32_t MediaLibraryRdbStore::BatchInsert(MediaLibraryCommand &cmd, int64_t& out
     return ret;
 }
 
-static int32_t DoDeleteFromPredicates(const AbsRdbPredicates &predicates, int32_t &deletedRows)
+int32_t MediaLibraryRdbStore::DoDeleteFromPredicates(const AbsRdbPredicates &predicates, int32_t &deletedRows)
 {
     DfxTimer dfxTimer(DfxType::RDB_DELETE, INVALID_DFX, RDB_TIME_OUT, false);
     if (!MediaLibraryRdbStore::CheckRdbStore()) {
@@ -2197,7 +2217,7 @@ static void ModifySourceAlbumTriggers(RdbStore &store)
     };
     MEDIA_INFO_LOG("start modify source album triggers");
     ExecSqls(executeSqlStrs, store);
-    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw());
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
     MEDIA_INFO_LOG("end modify source album triggers");
 }
 
@@ -3344,7 +3364,7 @@ static void ReportFailInfoAsync(AsyncTaskData *data)
     MEDIA_INFO_LOG("Start ReportFailInfoAsync");
     const int32_t sleepTimeMs = 1000;
     this_thread::sleep_for(chrono::milliseconds(sleepTimeMs));
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("MediaDataAbility insert functionality rebStore is null.");
         return;
@@ -4031,6 +4051,16 @@ static void AddVideoFaceTable(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddGeoDefaultValue(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " DROP COLUMN " + GEO,
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + GEO + " INT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Add geo deault value start");
+    ExecSqls(sqls, store);
+}
+
 static void AddOCRCardColumns(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4096,6 +4126,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_HIGHLIGHT_VIDEO_COUNT_CAN_PACK) {
         AddHighlightVideoCountCanPack(store);
+    }
+
+    if (oldVersion < VERSION_ADD_GEO_DEFAULT_VALUE) {
+        AddGeoDefaultValue(store);
     }
 }
 
@@ -4575,6 +4609,16 @@ bool MediaLibraryRdbStore::IsSlaveDiffFromMaster() const
 int MediaLibraryRdbStore::Restore(const std::string &backupPath, const std::vector<uint8_t> &newKey)
 {
     return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->Restore(backupPath, newKey); });
+}
+
+int32_t MediaLibraryRdbStore::DataCallBackOnCreate()
+{
+    MediaLibraryDataCallBack callback;
+    int32_t ret = callback.OnCreate(*GetRaw());
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("MediaLibraryDataCallBack OnCreate error, ret: %{public}d", ret);
+    }
+    return ret;
 }
 
 #ifdef DISTRIBUTED

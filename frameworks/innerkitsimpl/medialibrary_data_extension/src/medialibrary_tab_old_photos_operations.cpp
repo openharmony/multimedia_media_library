@@ -27,7 +27,7 @@ namespace Media {
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryTabOldPhotosOperations::Query(
     const NativeRdb::RdbPredicates &rdbPredicate, const std::vector<std::string> &columns)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return nullptr;

@@ -217,7 +217,7 @@ void MovingPhotoProcessor::UpdateMovingPhotoData(const MovingPhotoData& movingPh
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, movingPhotoData.subtype);
     values.PutLong(PhotoColumn::MEDIA_SIZE, movingPhotoData.size);
     values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is null");
         return;
@@ -552,7 +552,7 @@ void MovingPhotoProcessor::UpdateLivePhotoData(const LivePhotoData& livePhotoDat
     ValuesBucket values;
     string whereClause = PhotoColumn::MEDIA_ID + " = ?";
     vector<string> whereArgs = { to_string(livePhotoData.fileId) };
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is null");
         return;

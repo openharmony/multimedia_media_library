@@ -189,7 +189,7 @@ inline int32_t DeletePhotoAlbum(DataSharePredicates &predicates)
 void ShootingModeAlbumTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ClearAnalysisAlbums();
     ClearTable(ANALYSIS_PHOTO_MAP_TABLE);
 }

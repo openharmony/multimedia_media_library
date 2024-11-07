@@ -1210,7 +1210,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QuerySync_Test_001, TestSi
 
 void ClearAnalysisAlbumTable()
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(rdbStore, nullptr);
     string sql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE;
     int err = rdbStore->ExecuteSql(sql);
@@ -1377,10 +1377,8 @@ struct BurstResult {
 
 void InsertBurstAsset(BurstResult &result)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     EXPECT_NE(rdbStore, nullptr);
-    auto rdbStorePtr = rdbStore->GetRaw();
-    EXPECT_NE(rdbStorePtr, nullptr);
 
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutInt(MediaColumn::MEDIA_TYPE, result.mediaType);
@@ -1391,32 +1389,28 @@ void InsertBurstAsset(BurstResult &result)
         valuesBucket.PutString(PhotoColumn::PHOTO_BURST_KEY, result.burstKey);
     }
     
-    int32_t ret = rdbStorePtr->Insert(result.fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    int32_t ret = rdbStore->Insert(result.fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
 }
 
 void InsertPhotomapForBurst(BurstResult result)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     EXPECT_NE(rdbStore, nullptr);
-    auto rdbStorePtr = rdbStore->GetRaw();
-    EXPECT_NE(rdbStorePtr, nullptr);
 
     int64_t fileId = -1;
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutInt(PhotoMap::ASSET_ID, result.fileId);
     valuesBucket.PutInt(PhotoMap::ALBUM_ID, result.mapAlbum);
 
-    int32_t ret = rdbStorePtr->Insert(fileId, PhotoMap::TABLE, valuesBucket);
+    int32_t ret = rdbStore->Insert(fileId, PhotoMap::TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
 }
 
 void ValidBurstValue(BurstResult &exResult)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     EXPECT_NE(rdbStore, nullptr);
-    auto rdbStorePtr = rdbStore->GetRaw();
-    EXPECT_NE(rdbStorePtr, nullptr);
 
     string querySql = "SELECT p1." + MediaColumn::MEDIA_ID + ", p1." + MediaColumn::MEDIA_TITLE + ", p1." +
         PhotoColumn::PHOTO_SUBTYPE + ", p1." + MediaColumn::MEDIA_IS_FAV + ", p1." + PhotoColumn::PHOTO_BURST_KEY +
@@ -1424,7 +1418,7 @@ void ValidBurstValue(BurstResult &exResult)
         PhotoColumn::PHOTOS_TABLE + " AS p1 JOIN " + PhotoMap::TABLE + " AS p2 ON p1." + MediaColumn::MEDIA_ID +
         " = p2." + PhotoMap::ASSET_ID + " WHERE p1." + MediaColumn::MEDIA_ID + " = " + to_string(exResult.fileId);
 
-    auto resultSet = rdbStorePtr->QueryByStep(querySql);
+    auto resultSet = rdbStore->QueryByStep(querySql);
     EXPECT_NE(resultSet, nullptr);
     EXPECT_EQ(resultSet->GoToFirstRow(), E_OK);
     int32_t count = -1;

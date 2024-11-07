@@ -175,7 +175,7 @@ InsertResult InsertPhoto(string &packageName)
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, ZERO);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, ZERO);
     EXPECT_NE((g_rdbStore == nullptr), true);
-    int32_t ret = g_rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    int32_t ret = g_rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
     InsertResult result;
@@ -207,7 +207,7 @@ InsertResult InsertPhotoWithEmptyPackageName()
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, ZERO);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, ZERO);
     EXPECT_NE((g_rdbStore == nullptr), true);
-    int32_t ret = g_rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    int32_t ret = g_rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
     InsertResult result;
@@ -327,7 +327,7 @@ void MediaLibraryAlbumSourceTest::SetUpTestCase()
 {
     MEDIA_INFO_LOG("MediaLibraryAlbumSourceTest SetUpTestCase start");
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
     ClearData();
     InitSourceAlbumTrigger();
@@ -344,7 +344,7 @@ void MediaLibraryAlbumSourceTest::TearDownTestCase()
 void MediaLibraryAlbumSourceTest::SetUp()
 {
     MEDIA_INFO_LOG("MediaLibraryAlbumSourceTest SetUp");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     rdbStore->ExecuteSql(PhotoColumn::INDEX_SCTHP_ADDTIME);
 }
 

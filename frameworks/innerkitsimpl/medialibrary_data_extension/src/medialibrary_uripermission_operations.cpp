@@ -95,7 +95,7 @@ int32_t UriPermissionOperations::UpdateOperation(MediaLibraryCommand &cmd,
 
 static void DeleteAllTemporaryOperation(AsyncTaskData *data)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("UriPermission update operation, rdbStore is null.");
     }
@@ -421,7 +421,7 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
     bool audioNeedToUpdate = false;
     bool needToInsert = false;
     bool isValid = false;
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (ValueBucketCheck(values) != E_OK || rdbStore == nullptr) {
         return E_ERR;
     }
