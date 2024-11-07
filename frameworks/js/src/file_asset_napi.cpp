@@ -3911,13 +3911,13 @@ static void CloneAssetHandlerCompleteCallback(napi_env env, napi_status status, 
     jsContext->status = false;
     if (context->error == ERR_DEFAULT) {
         napi_value jsFileAsset = nullptr;
-        auto fileAsset = context->objectPtr;
-        if (fileAsset == nullptr) {
+        int64_t assetId = context->assetId;
+        if (assetId == 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                 "Clone file asset failed");
             napi_get_undefined(env, &jsContext->data);
         } else {
-            shared_ptr<FileAsset> newFileAsset = getFileAsset(to_string(fileAsset->GetId()));
+            shared_ptr<FileAsset> newFileAsset = getFileAsset(to_string(assetId));
             CHECK_NULL_PTR_RETURN_VOID(newFileAsset, "newFileAset is null.");
 
             newFileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -3970,8 +3970,7 @@ static void CloneAssetHandlerExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Failed to clone asset, ret: %{public}d", newAssetId);
         return;
     }
-    fileAsset->SetId(newAssetId);
-    context->objectPtr = fileAsset;
+    context->assetId = newAssetId;
 }
 
 napi_value FileAssetNapi::PhotoAccessHelperCloneAsset(napi_env env, napi_callback_info info)
