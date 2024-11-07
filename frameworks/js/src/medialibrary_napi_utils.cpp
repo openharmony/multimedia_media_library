@@ -23,6 +23,7 @@
 #include "ipc_skeleton.h"
 #include "js_proxy.h"
 #include "cloud_enhancement_napi.h"
+#include "cloud_media_asset_manager_napi.h"
 #include "highlight_album_napi.h"
 #include "media_asset_change_request_napi.h"
 #include "media_assets_change_request_napi.h"
@@ -1748,6 +1749,10 @@ template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<Cloud
     napi_env env, napi_callback_info info, unique_ptr<CloudEnhancementAsyncContext>& asyncContext,
     const size_t minArgs, const size_t maxArgs);
 
+template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<CloudMediaAssetAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<CloudMediaAssetAsyncContext>& asyncContext,
+    const size_t minArgs, const size_t maxArgs);
+
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaLibraryAsyncContext>(napi_env env,
     unique_ptr<MediaLibraryAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
@@ -1798,6 +1803,10 @@ template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAssetManager
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<CloudEnhancementAsyncContext>(napi_env env,
     unique_ptr<CloudEnhancementAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<CloudMediaAssetAsyncContext>(napi_env env,
+    unique_ptr<CloudMediaAssetAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
 template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,

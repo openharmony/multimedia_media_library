@@ -44,6 +44,7 @@
 #include "location_column.h"
 #include "media_analysis_helper.h"
 #include "media_column.h"
+#include "cloud_media_asset_manager.h"
 #include "media_datashare_ext_ability.h"
 #include "media_directory_type_column.h"
 #include "media_file_utils.h"
@@ -505,6 +506,15 @@ void MediaLibraryDataManager::SetOwner(const shared_ptr<MediaDataShareExtAbility
 
 string MediaLibraryDataManager::GetType(const Uri &uri)
 {
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::GetType");
+    MediaLibraryCommand cmd(uri);
+    switch (cmd.GetOprnObject()) {
+        case OperationObject::CLOUD_MEDIA_ASSET_OPERATE:
+            return CloudMediaAssetManager::GetInstance().HandleCloudMediaAssetGetTypeOperations(cmd);
+        default:
+            break;
+    }
+
     MEDIA_INFO_LOG("GetType uri: %{private}s", uri.ToString().c_str());
     return "";
 }
@@ -959,6 +969,10 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
+    }
+
+    if (cmd.GetOprnObject() == OperationObject::CLOUD_MEDIA_ASSET_OPERATE) {
+        return CloudMediaAssetManager::GetInstance().HandleCloudMediaAssetUpdateOperations(cmd);
     }
 
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
