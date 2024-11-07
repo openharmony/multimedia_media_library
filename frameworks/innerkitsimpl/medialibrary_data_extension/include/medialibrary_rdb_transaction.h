@@ -27,6 +27,10 @@
 #include "transaction.h"
 
 namespace OHOS::Media {
+constexpr int32_t MAX_TRY_TIMES = 30;
+constexpr int32_t MAX_BUSY_TRY_TIMES = 2;
+constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // in milliseconds.
+
 #define EXPORT __attribute__ ((visibility ("default")))
 /**
  * This class is used for database transaction creation, commit, and rollback
@@ -45,7 +49,7 @@ class TransactionOperations {
 public:
     EXPORT TransactionOperations();
     EXPORT ~TransactionOperations();
-    EXPORT int32_t Start(bool isBackup = false);
+    EXPORT int32_t Start(std::string funcName, bool isBackup = false);
     EXPORT int32_t Finish();
     EXPORT int32_t Rollback();
     void SetBackupRdbStore(std::shared_ptr<OHOS::NativeRdb::RdbStore> rdbStore);
@@ -72,6 +76,7 @@ private:
     std::shared_ptr<OHOS::NativeRdb::Transaction> transaction_ = nullptr;
     std::shared_ptr<OHOS::NativeRdb::RdbStore> rdbStore_;
     std::shared_ptr<OHOS::NativeRdb::RdbStore> backupRdbStore_;
+    std::string funcName_ = "";
 };
 } // namespace OHOS::Media
 

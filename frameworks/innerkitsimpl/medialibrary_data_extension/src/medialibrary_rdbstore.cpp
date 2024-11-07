@@ -84,8 +84,6 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 namespace OHOS::Media {
-constexpr int32_t MAX_TRY_TIMES_FOR_DB = 30;
-constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // in milliseconds.
 const std::string DIR_ALL_AUDIO_CONTAINER_TYPE = "." + AUDIO_CONTAINER_TYPE_AAC + "?" +
                                                  "." + AUDIO_CONTAINER_TYPE_MP3 + "?" +
                                                  "." + AUDIO_CONTAINER_TYPE_FLAC + "?" +
@@ -402,8 +400,9 @@ struct ShootingModeValueBucket {
 static int32_t ExecSqlWithRetry(std::function<int32_t()> execSql)
 {
     int32_t currentTime = 0;
+    int32_t busyRetryTime = 0;
     int32_t err = NativeRdb::E_OK;
-    while (currentTime <= MAX_TRY_TIMES_FOR_DB) {
+    while (busyRetryTime < MAX_BUSY_TRY_TIMES && currentTime <= MAX_TRY_TIMES) {
         err = execSql();
         if (err == NativeRdb::E_OK) {
             break;
@@ -411,6 +410,9 @@ static int32_t ExecSqlWithRetry(std::function<int32_t()> execSql)
             std::this_thread::sleep_for(std::chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
             currentTime++;
             MEDIA_ERR_LOG("execSql busy, err: %{public}d, currentTime: %{public}d", err, currentTime);
+        } else if (err == NativeRdb::E_SQLITE_BUSY || err == NativeRdb::E_DATABASE_BUSY) {
+            busyRetryTime++;
+            MEDIA_ERR_LOG("execSql busy, ret:%{public}d, busyRetryTime:%{public}d", err, busyRetryTime);
         } else {
             MEDIA_ERR_LOG("execSql failed, err: %{public}d, currentTime: %{public}d", err, currentTime);
             break;
@@ -1241,7 +1243,8 @@ int32_t PrepareSystemAlbums(RdbStore &store)
 {
     ValuesBucket values;
     int32_t err = E_FAIL;
-    auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::EXCLUSIVE);
+    MEDIA_INFO_LOG("PrepareSystemAlbums start");
+    auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
     if (errCode != NativeRdb::E_OK || transaction == nullptr) {
         MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
     }

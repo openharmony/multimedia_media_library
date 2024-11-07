@@ -307,7 +307,7 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
     bool isValid = false;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    int32_t err = trans->Start();
+    int32_t err = trans->Start(__func__);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("transaction failed :%{public}d", err);
         return err;
