@@ -855,7 +855,7 @@ static string GetUriWithoutSeg(const string &oldUri)
     return oldUri;
 }
 
-static int32_t UpdataIsTempAndDirty(MediaLibraryCommand &cmd, const string &fileId)
+static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &fileId)
 {
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
@@ -871,7 +871,7 @@ static int32_t UpdataIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
     int32_t subType = stoi(subTypeStr);
     if (subType == static_cast<int32_t>(PhotoSubType::BURST)) {
         predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
-        predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+        predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::BURST)));
         values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
         updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
         if (updateDirtyRows < 0) {
@@ -911,8 +911,8 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         return 0;
     }
     MEDIA_INFO_LOG("start SaveCameraPhoto, fileId: %{public}s", fileId.c_str());
-    int32_t ret = UpdataIsTempAndDirty(cmd, fileId);
-    if (ret == E_ERR || ret < 0) {
+    int32_t ret = UpdateIsTempAndDirty(cmd, fileId);
+    if (ret < 0) {
         return 0;
     }
 
