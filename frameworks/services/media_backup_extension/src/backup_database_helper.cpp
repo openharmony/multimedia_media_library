@@ -110,6 +110,7 @@ void BackupDatabaseHelper::GetFileQueryInfo(int32_t sceneCode, const FileInfo &f
 {
     if (sceneCode == UPGRADE_RESTORE_ID) {
         fileQueryInfo = FileQueryInfo(DbType::EXTERNAL, "files", "_data", fileInfo.oldPath);
+        return;
     }
     int32_t dbType;
     if (fileInfo.isInternal) {
