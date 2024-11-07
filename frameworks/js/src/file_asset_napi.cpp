@@ -4690,6 +4690,39 @@ static int64_t ParseEditTime(FileAssetAsyncContext *context)
     return editTime;
 }
 
+static void ProcessEditData(FileAssetAsyncContext *context, const UniqueFd &uniqueFd)
+{
+    if (context == nullptr) {
+        NAPI_ERR_LOG("context nullptr");
+        return;
+    }
+    struct stat fileInfo;
+    if (fstat(uniqueFd.Get(), &fileInfo) == 0) {
+        off_t fileSize = fileInfo.st_size;
+        if (fileSize < 0) {
+            NAPI_ERR_LOG("fileBuffer error : %{public}ld", static_cast<long>(fileSize));
+            context->SaveError(E_FAIL);
+            return;
+        }
+        context->editDataBuffer = static_cast<char *>(malloc(fileSize + 1));
+        if (!context->editDataBuffer) {
+            NAPI_ERR_LOG("Photo request edit data failed, fd: %{public}d", uniqueFd.Get());
+            context->SaveError(E_FAIL);
+            return;
+        }
+        ssize_t bytes = read(uniqueFd.Get(), context->editDataBuffer, fileSize);
+        if (bytes < 0) {
+            NAPI_ERR_LOG("Read edit data failed, errno: %{public}d", errno);
+            context->SaveError(E_FAIL);
+            return;
+        }
+        context->editDataBuffer[bytes] = '\0';
+    } else {
+        NAPI_ERR_LOG("can not get stat errno:%{public}d", errno);
+        context->SaveError(E_FAIL);
+    }
+}
+
 static void PhotoAccessHelperRequestEditDataExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -4716,31 +4749,7 @@ static void PhotoAccessHelperRequestEditDataExecute(napi_env env, void *data)
         }
         NAPI_ERR_LOG("Photo request edit data failed, ret: %{public}d", uniqueFd.Get());
     } else {
-        struct stat fileInfo;
-        if (fstat(uniqueFd.Get(), &fileInfo) == 0) {
-            off_t fileSize = fileInfo.st_size;
-            if (fileSize < 0) {
-                NAPI_ERR_LOG("fileBuffer error : %{public}ld", static_cast<long>(fileSize));
-                context->SaveError(E_FAIL);
-                return;
-            }
-            context->editDataBuffer = static_cast<char*>(malloc(fileSize + 1));
-            if (!context->editDataBuffer) {
-                NAPI_ERR_LOG("Photo request edit data failed, fd: %{public}d", uniqueFd.Get());
-                context->SaveError(E_FAIL);
-                return;
-            }
-            ssize_t bytes = read(uniqueFd.Get(), context->editDataBuffer, fileSize);
-            if (bytes < 0) {
-                NAPI_ERR_LOG("Read edit data failed, errno: %{public}d", errno);
-                context->SaveError(E_FAIL);
-                return;
-            }
-            context->editDataBuffer[bytes] = '\0';
-        } else {
-            NAPI_ERR_LOG("can not get stat errno:%{public}d", errno);
-            context->SaveError(E_FAIL);
-        }
+        ProcessEditData(context, uniqueFd);
     }
 }
 
