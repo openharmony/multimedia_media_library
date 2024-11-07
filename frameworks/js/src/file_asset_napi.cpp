@@ -4667,7 +4667,7 @@ napi_value FileAssetNapi::PhotoAccessHelperIsEdited(napi_env env, napi_callback_
 
 static int64_t ParseEditTime(FileAssetAsyncContext *context)
 {
-    int64_t editTime = 0;
+    int64_t editTime = -1;
     if (context == nullptr) {
         NAPI_ERR_LOG("context nullptr");
         return editTime;
