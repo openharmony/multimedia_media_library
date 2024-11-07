@@ -269,8 +269,8 @@ bool UpdateEditAndTrashAndHiddenTime(int32_t fileId, double editedTime, double t
 void MediaLibraryCloudEnhancementGetPairTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
         exit(1);
     }
@@ -294,7 +294,7 @@ void MediaLibraryCloudEnhancementGetPairTest::TearDownTestCase(void)
 // SetUp:Execute before each test case
 void MediaLibraryCloudEnhancementGetPairTest::SetUp()
 {
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
         exit(1);
     }

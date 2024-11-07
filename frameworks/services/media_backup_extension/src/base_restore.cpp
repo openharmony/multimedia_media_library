@@ -43,6 +43,7 @@
 #include "userfilemgr_uri.h"
 #include "medialibrary_notify.h"
 #include "upgrade_restore_task_report.h"
+#include "medialibrary_rdb_transaction.h"
 
 namespace OHOS {
 namespace Media {
@@ -353,7 +354,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     InsertDateAdded(data, value);
     InsertOrientation(data, value, fileInfo, sceneCode_);
     int64_t dateAdded = 0;
-    ValueObject valueObject;
+    NativeRdb::ValueObject valueObject;
     if (value.GetObject(MediaColumn::MEDIA_DATE_ADDED, valueObject)) {
         valueObject.GetLong(dateAdded);
     }
@@ -570,19 +571,24 @@ int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vec
     if (values.empty()) {
         return 0;
     }
+
     int32_t errCode = E_ERR;
-    TransactionOperations transactionOprn(mediaLibraryRdb_);
-    errCode = transactionOprn.Start(true);
-    if (errCode != E_OK) {
+    TransactionOperations trans;
+    trans.SetBackupRdbStore(mediaLibraryRdb_);
+    errCode = trans.Start(__func__, true);
+    if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("can not get rdb before batch insert");
         return errCode;
     }
-    errCode = mediaLibraryRdb_->BatchInsert(rowNum, tableName, values);
+    errCode = trans.BatchInsert(rowNum, tableName, values);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
         return errCode;
     }
-    transactionOprn.Finish();
+    errCode = trans.Finish();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("BatchInsertWithRetry: tans finish fail!, ret:%{public}d", errCode);
+    }
     return errCode;
 }
 
@@ -1116,7 +1122,8 @@ void BaseRestore::UpdateDatabase()
     updateProcessStatus_ = ProcessStatus::START;
     GetUpdateTotalCount();
     MEDIA_INFO_LOG("Start update all albums");
-    MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
     MEDIA_INFO_LOG("Start update unique number");
     BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
     BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);

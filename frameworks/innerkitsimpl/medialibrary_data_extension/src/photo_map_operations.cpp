@@ -51,8 +51,13 @@ using namespace OHOS::DataShare;
 
 constexpr int32_t ALBUM_IS_REMOVED = 1;
 
-static int32_t InsertAnalysisAsset(const DataShareValuesBucket &value)
+static int32_t InsertAnalysisAsset(const DataShareValuesBucket &value,
+    std::shared_ptr<TransactionOperations> trans)
 {
+    if (trans == nullptr) {
+        MEDIA_ERR_LOG("transactionOperations is null");
+        return -EINVAL;
+    }
     /**
      * Build insert sql:
      * INSERT INTO AnalysisPhotoMap (map_album, map_asset) SELECT
@@ -62,14 +67,14 @@ static int32_t InsertAnalysisAsset(const DataShareValuesBucket &value)
      *     AND (EXISTS (SELECT file_id FROM Photos WHERE file_id = ?))
      *     AND (EXISTS (SELECT album_id FROM AnalysisAlbum WHERE album_id = ?));
      */
-    static const string INSERT_MAP_SQL = "INSERT INTO " + ANALYSIS_PHOTO_MAP_TABLE +
+    static const std::string INSERT_MAP_SQL = "INSERT OR IGNORE INTO " + ANALYSIS_PHOTO_MAP_TABLE +
         " (" + PhotoMap::ALBUM_ID + ", " + PhotoMap::ASSET_ID + ") " +
         "SELECT ?, ? WHERE " +
-        "(NOT EXISTS (SELECT * FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE " +
+        "(NOT EXISTS (SELECT 1 FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE " +
             PhotoMap::ALBUM_ID + " = ? AND " + PhotoMap::ASSET_ID + " = ?)) " +
-        "AND (EXISTS (SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+        "AND (EXISTS (SELECT 1 FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
             MediaColumn::MEDIA_ID + " = ?)) " +
-        "AND (EXISTS (SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE +
+        "AND (EXISTS (SELECT 1 FROM " + ANALYSIS_ALBUM_TABLE +
             " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = ? ));";
     bool isValid = false;
     int32_t albumId = value.Get(PhotoMap::ALBUM_ID, isValid);
@@ -81,12 +86,12 @@ static int32_t InsertAnalysisAsset(const DataShareValuesBucket &value)
         return -EINVAL;
     }
     vector<ValueObject> bindArgs = { albumId, assetId, albumId, assetId, assetId, albumId};
-    return  MediaLibraryRdbStore::ExecuteForLastInsertedRowId(INSERT_MAP_SQL, bindArgs);
+    return trans->ExecuteForLastInsertedRowId(INSERT_MAP_SQL, bindArgs);
 }
 
 int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &values)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
@@ -102,9 +107,9 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
             return changedRows;
         }
 
-        changedRows = MediaLibraryRdbUtils::UpdateOwnerAlbumId(rdbStore->GetRaw(), values, updateIds);
-        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore->GetRaw(), { to_string(albumId) });
-        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore->GetRaw(), {
+        changedRows = MediaLibraryRdbUtils::UpdateOwnerAlbumId(rdbStore, values, updateIds);
+        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { to_string(albumId) });
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
             to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::FAVORITE)
         });
@@ -137,7 +142,7 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
 
 static int32_t GetPortraitAlbumIds(const string &albumId, vector<string> &portraitAlbumIds)
 {
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
         return E_HAS_DB_ERROR;
@@ -158,31 +163,36 @@ static int32_t GetPortraitAlbumIds(const string &albumId, vector<string> &portra
 
 int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesBucket> &values)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
     if (values.empty()) {
         return 0;
     }
-    TransactionOperations op(rdbStore->GetRaw());
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
     int32_t changedRows = 0;
-    int32_t err = op.Start();
-    if (err != E_OK) {
+    int32_t err = NativeRdb::E_OK;
+    err = trans->Start(__func__);
+    if (err != NativeRdb::E_OK) {
         return E_HAS_DB_ERROR;
     }
     for (const auto &value : values) {
-        int ret =  InsertAnalysisAsset(value);
-        if (ret == E_HAS_DB_ERROR) {
-            return ret;
+        err =  InsertAnalysisAsset(value, trans);
+        if (err == E_HAS_DB_ERROR) {
+            MEDIA_WARN_LOG("InsertAnalysisAsset for db error, changedRows now: %{public}d", changedRows);
+            return err;
         }
-        if (ret > 0) {
+        if (err > 0) {
             changedRows++;
         }
     }
-    op.Finish();
+    err = trans->Finish();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("AddAnaLysisPhotoAssets: tans finish fail!, ret:%{public}d", err);
+    }
     bool isValid = false;
-    vector<string> albumIdList;
+    std::vector<string> albumIdList;
     for (const auto &value : values) {
         int32_t albumId = value.Get(PhotoMap::ALBUM_ID, isValid);
         if (!isValid || albumId <= 0) {
@@ -192,7 +202,7 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
         }
         albumIdList.push_back(to_string(albumId));
     }
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw(), albumIdList);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdList);
     return changedRows;
 }
 
@@ -232,7 +242,7 @@ int32_t DoDismissAssets(int32_t subtype, const string &albumId, const vector<str
         return deleteRow;
     }
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateAlbumIds, assetIds);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), updateAlbumIds, assetIds);
     return deleteRow;
 }
 
@@ -291,7 +301,7 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     }
     whereIdArgs.erase(whereIdArgs.begin());
     deleteRow = MediaLibraryRdbUtils::UpdateRemoveAsset(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), whereIdArgs);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), whereIdArgs);
 
     string strAlbumId = predicates.GetWhereArgs()[0];
     if (strAlbumId.empty()) {
@@ -304,7 +314,7 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
         return deleteRow;
     }
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { strAlbumId });
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { strAlbumId });
 
     auto watch = MediaLibraryNotify::GetInstance();
     for (size_t i = 1; i < whereArgs.size(); i++) {
@@ -322,7 +332,7 @@ bool IsQueryGroupPhotoAlbumAssets(const string &albumId, string &tagId, int32_t 
     RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
     vector<string> columns = {PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE, TAG_ID, IS_REMOVED};
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         return false;
     }
@@ -363,7 +373,7 @@ shared_ptr<OHOS::NativeRdb::ResultSet> QueryGroupPhotoAlbumAssets(const string &
         MediaColumn::MEDIA_TIME_PENDING + " = 0 GROUP BY P." + MediaColumn::MEDIA_ID +
         " HAVING COUNT(" + GROUP_TAG + ") = " + TOTAL_FACES + " AND " +
         " COUNT(DISTINCT " + GROUP_TAG +") = " + to_string(albumTagCount) + ";";
-    return MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw()->QuerySql(sql);
+    return MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->QuerySql(sql);
 }
 shared_ptr<OHOS::NativeRdb::ResultSet> PhotoMapOperations::QueryPhotoAssets(const RdbPredicates &rdbPredicate,
     const vector<string> &columns)
@@ -377,6 +387,6 @@ shared_ptr<OHOS::NativeRdb::ResultSet> PhotoMapOperations::QueryPhotoAssets(cons
         }
         return QueryGroupPhotoAlbumAssets(albumId, tagId, columns);
     }
-    return MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    return MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
 }
 } // namespace OHOS::Media

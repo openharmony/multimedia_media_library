@@ -46,10 +46,9 @@ using namespace std;
 using namespace OHOS::CameraStandard;
 #endif
 
-#define SAVE_PICTURE_TIMEOUT_SEC 20
-
 namespace OHOS {
 namespace Media {
+const int32_t SAVE_PICTURE_TIMEOUT_SEC = 20;
 
 MultiStagesPhotoCaptureManager::MultiStagesPhotoCaptureManager()
 {
@@ -406,6 +405,7 @@ void MultiStagesPhotoCaptureManager::SyncWithDeferredProcSessionInternal()
         int32_t deferredProcType = GetInt32Val(MEDIA_DATA_DB_DEFERRED_PROC_TYPE, resultSet);
         AddImageInternal(fileId, photoId, deferredProcType, isTrashed);
     } while (!resultSet->GoToNextRow());
+    resultSet->Close();
     
     deferredProcSession_->EndSynchronize();
     MEDIA_INFO_LOG("exit");

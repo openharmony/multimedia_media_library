@@ -20,6 +20,7 @@
 
 #include "fa_ability_context.h"
 #include "media_file_uri.h"
+#include "medialibrary_rdbstore.h"
 #include "pixel_map.h"
 #include "rdb_helper.h"
 #include "rdb_predicates.h"
@@ -59,7 +60,7 @@ public:
         bool isSync = false);
     void InvalidateThumbnail(const std::string &id, const std::string &tableName,
         const std::string &path = "", const std::string &dateTaken = "");
-    EXPORT void Init(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT void Init(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
 #ifdef DISTRIBUTED
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
 #endif
@@ -92,7 +93,7 @@ private:
 #ifdef DISTRIBUTED
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
 #endif
-    std::shared_ptr<NativeRdb::RdbStore> rdbStorePtr_;
+    std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr_;
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
     std::shared_ptr<NativeRdb::RdbPredicates> rdbPredicatePtr_;
     Size screenSize_;

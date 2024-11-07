@@ -454,7 +454,7 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t 
 }
 
 int32_t InitQueryParentResultSet(int32_t dirId, int32_t &parentIdVal, string &dirVal,
-    shared_ptr<MediaLibraryUnistore> &uniStore)
+    shared_ptr<MediaLibraryRdbStore> uniStore)
 {
     if (MediaLibraryObjectUtils::IsColumnValueExist(to_string(dirId), MEDIA_DATA_DB_PARENT_ID)) {
         return E_SUCCESS;
@@ -484,7 +484,7 @@ int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
     if (dirId <= 0) {
         return E_INVALID_FILEID;
     }
-    shared_ptr<MediaLibraryUnistore> uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    shared_ptr<MediaLibraryRdbStore> uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
         return E_HAS_DB_ERROR;
@@ -1019,7 +1019,7 @@ int32_t MediaLibraryObjectUtils::UpdateDateModified(const string &dirPath)
 unique_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetByPredicates(const NativeRdb::AbsRdbPredicates &predicates,
     const vector<string> &columns)
 {
-    auto absResultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto absResultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (absResultSet == nullptr) {
         return nullptr;
     }

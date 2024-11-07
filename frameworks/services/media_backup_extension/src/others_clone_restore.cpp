@@ -31,6 +31,7 @@
 #include "media_file_uri.h"
 #include "media_log.h"
 #include "media_scanner.h"
+#include "medialibrary_rdb_transaction.h"
 
 namespace OHOS {
 namespace Media {
@@ -361,8 +362,8 @@ int32_t OthersCloneRestore::GetAllfilesInCurrentDir(const std::string &path)
 
 void OthersCloneRestore::HandleInsertBatch(int32_t offset)
 {
-    auto totalNumber = photoInfos_.size();
-    totalNumber = totalNumber < (offset + QUERY_NUMBER) ? totalNumber : (offset + QUERY_NUMBER);
+    int32_t totalNumber = std::min(static_cast<int32_t>(photoInfos_.size()),
+        static_cast<int32_t>(offset + QUERY_NUMBER));
     vector<FileInfo> insertInfos;
     for (offset; offset < totalNumber; offset++) {
         FileInfo info = photoInfos_[offset];
@@ -387,7 +388,7 @@ void OthersCloneRestore::RestorePhoto()
     RestoreAlbum(photoInfos_);
     unsigned long pageSize = 200;
     vector<FileInfo> insertInfos;
-    auto totalNumber = photoInfos_.size();
+    int32_t totalNumber = static_cast<int32_t>(photoInfos_.size());
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_NUMBER) {
         ffrt::submit([this, offset]() {
             HandleInsertBatch(offset);
@@ -476,6 +477,15 @@ static std::string ParseSourcePathToLPath(int32_t sceneCode, const std::string &
     std::size_t pos = lPath.find_last_of(FILE_SEPARATOR);
     if (pos != std::string::npos) {
         lPath = lPath.substr(0, pos);
+    } else {
+        MEDIA_WARN_LOG("find error path is: %{public}s",
+            BackupFileUtils::GarbleFilePath(filePath, sceneCode).c_str());
+        lPath = FILE_SEPARATOR;
+    }
+    if (lPath.empty()) {
+        MEDIA_WARN_LOG("find path is empty: %{public}s",
+            BackupFileUtils::GarbleFilePath(filePath, sceneCode).c_str());
+        lPath = FILE_SEPARATOR;
     }
     return lPath;
 }

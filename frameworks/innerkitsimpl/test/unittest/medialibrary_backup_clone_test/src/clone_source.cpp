@@ -16,7 +16,11 @@
 #include <utility>
 
 #include "clone_source.h"
+#define private public
+#define protected public
 #include "medialibrary_unistore.h"
+#undef private
+#undef protected
 #include "media_column.h"
 #include "media_log.h"
 #include "photo_album_column.h"

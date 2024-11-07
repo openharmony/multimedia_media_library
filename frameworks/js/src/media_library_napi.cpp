@@ -349,6 +349,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("cancelPhotoUriPermission", PhotoAccessCancelPhotoUriPermission),
             DECLARE_NAPI_FUNCTION("createAssetsForAppWithMode", PhotoAccessHelperAgentCreateAssetsWithMode),
             DECLARE_NAPI_FUNCTION("getDataAnalysisProgress", PhotoAccessHelperGetDataAnalysisProgress),
+            DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", PhotoAccessGetSharedPhotoAssets),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -8766,6 +8767,42 @@ napi_value MediaLibraryNapi::StartPhotoPicker(napi_env env, napi_callback_info i
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "StrartPhotoPicker",
         StartPhotoPickerExecute, StartPhotoPickerAsyncCallbackComplete);
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetSharedPhotoAssets");
+    unique_ptr<MediaLibraryAsyncContext> asyncContext =
+        make_unique<MediaLibraryAsyncContext>();
+    asyncContext->assetType = TYPE_PHOTO;
+    CHECK_NULLPTR_RET(ParseArgsGetAssets(env, info, asyncContext));
+
+    MediaLibraryAsyncContext* context =
+        static_cast<MediaLibraryAsyncContext*>((asyncContext.get()));
+    string queryUri = PAH_QUERY_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+
+    Uri uri(queryUri);
+    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
+        context->predicates, context->fetchColumn);
+    CHECK_NULLPTR_RET(resultSet);
+
+    napi_value jsFileArray = 0;
+    napi_create_array(env, &jsFileArray);
+
+    int count = 0;
+    int err = resultSet->GoToFirstRow();
+    if (err != napi_ok) {
+        NAPI_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        return jsFileArray;
+    }
+    do {
+        napi_value item = MediaLibraryNapiUtils::GetNextRowObject(env, resultSet, true);
+        napi_set_element(env, jsFileArray, count++, item);
+    } while (!resultSet->GoToNextRow());
+    resultSet->Close();
+    return jsFileArray;
 }
 } // namespace Media
 } // namespace OHOS

@@ -52,7 +52,7 @@ constexpr int32_t APP_ID_INDEX = 3;
 const string DB_OPERATION = "uriSensitive_operation";
 
 int32_t UriSensitiveOperations::UpdateOperation(MediaLibraryCommand &cmd,
-    NativeRdb::RdbPredicates &rdbPredicate)
+    NativeRdb::RdbPredicates &rdbPredicate, std::shared_ptr<TransactionOperations> trans)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -60,7 +60,12 @@ int32_t UriSensitiveOperations::UpdateOperation(MediaLibraryCommand &cmd,
         return E_HAS_DB_ERROR;
     }
     cmd.SetTableName(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
-    int32_t updateRows = MediaLibraryRdbStore::Update(cmd.GetValueBucket(), rdbPredicate);
+    int32_t updateRows;
+    if (trans == nullptr) {
+        updateRows = MediaLibraryRdbStore::UpdateWithDateTime(cmd.GetValueBucket(), rdbPredicate);
+    } else {
+        updateRows = trans->Update(cmd.GetValueBucket(), rdbPredicate);
+    }
     if (updateRows < 0) {
         MEDIA_ERR_LOG("UriSensitive Update db failed, errCode = %{public}d", updateRows);
         return E_HAS_DB_ERROR;
@@ -70,7 +75,7 @@ int32_t UriSensitiveOperations::UpdateOperation(MediaLibraryCommand &cmd,
 
 static void DeleteAllSensitiveOperation(AsyncTaskData *data)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("UriSensitive update operation, rdbStore is null.");
     }
@@ -142,7 +147,7 @@ int32_t UriSensitiveOperations::InsertOperation(MediaLibraryCommand &cmd)
 }
 
 int32_t UriSensitiveOperations::BatchInsertOperation(MediaLibraryCommand &cmd,
-    const std::vector<ValuesBucket> &values)
+    const std::vector<ValuesBucket> &values, std::shared_ptr<TransactionOperations> trans)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -151,7 +156,12 @@ int32_t UriSensitiveOperations::BatchInsertOperation(MediaLibraryCommand &cmd,
     }
     cmd.SetTableName(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     int64_t outInsertNum = -1;
-    int32_t errCode = rdbStore->BatchInsert(cmd, outInsertNum, values);
+    int32_t errCode;
+    if (trans == nullptr) {
+        errCode = rdbStore->BatchInsert(cmd, outInsertNum, values);
+    } else {
+        errCode = trans->BatchInsert(cmd, outInsertNum, values);
+    }
     if (errCode != NativeRdb::E_OK || outInsertNum < 0) {
         MEDIA_ERR_LOG("UriSensitive Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
@@ -179,7 +189,7 @@ static void QueryUriSensitive(MediaLibraryCommand &cmd, const std::vector<DataSh
     predicates.In(AppUriSensitiveColumn::FILE_ID, predicateInColumns);
     predicates.And()->EqualTo(AppUriSensitiveColumn::APP_ID, appid);
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
-    resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
     return;
 }
 
@@ -221,7 +231,7 @@ static void GetAllUriDbOperation(const vector<DataShareValuesBucket> &values, ve
 }
 
 static void BatchUpdate(MediaLibraryCommand &cmd, std::vector<string> inColumn, int32_t tableType,
-    const std::vector<DataShareValuesBucket> &values)
+    const std::vector<DataShareValuesBucket> &values, std::shared_ptr<TransactionOperations> trans)
 {
     cmd.SetTableName(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     bool isValid;
@@ -240,7 +250,7 @@ static void BatchUpdate(MediaLibraryCommand &cmd, std::vector<string> inColumn, 
     }
     cmd.SetValueBucket(value);
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
-    UriSensitiveOperations::UpdateOperation(cmd, rdbPredicate);
+    UriSensitiveOperations::UpdateOperation(cmd, rdbPredicate, trans);
 }
 
 static void AppstateOberserverBuild(int32_t sensitiveType)
@@ -295,9 +305,13 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
     bool audioNeedToUpdate = false;
     bool needToInsert = false;
     bool isValid = false;
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    TransactionOperations op(rdbStore->GetRaw());
-    int32_t err = op.Start();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    int32_t err = trans->Start(__func__);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("transaction failed :%{public}d", err);
+        return err;
+    }
     if (ValueBucketCheck(values) != E_OK) {
         return E_ERR;
     }
@@ -321,15 +335,18 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
         }
     }
     if (photoNeedToUpdate) {
-        BatchUpdate(cmd, photosValues, PHOTOSTYPE, values);
+        BatchUpdate(cmd, photosValues, PHOTOSTYPE, values, trans);
     }
     if (audioNeedToUpdate) {
-        BatchUpdate(cmd, audiosValues, AUDIOSTYPE, values);
+        BatchUpdate(cmd, audiosValues, AUDIOSTYPE, values, trans);
     }
     if (needToInsert) {
-        UriSensitiveOperations::BatchInsertOperation(cmd, batchInsertBucket);
+        UriSensitiveOperations::BatchInsertOperation(cmd, batchInsertBucket, trans);
     }
-    op.Finish();
+    err = trans->Finish();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("GrantUriSensitive: tans finish fail!, ret:%{public}d", err);
+    }
     return E_OK;
 }
 
@@ -343,7 +360,7 @@ int32_t UriSensitiveOperations::QuerySensitiveType(const std::string &appId, con
     columns.push_back(AppUriSensitiveColumn::ID);
     columns.push_back(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
 
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
     if (resultSet == nullptr) {
         return 0;
     }
@@ -365,7 +382,7 @@ std::string UriSensitiveOperations::QueryAppId(const std::string &fileId)
     columns.push_back(MediaColumn::MEDIA_ID);
     columns.push_back(MediaColumn::MEDIA_OWNER_APPID);
 
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
     if (resultSet == nullptr) {
         return 0;
     }

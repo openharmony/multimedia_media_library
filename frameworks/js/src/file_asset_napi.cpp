@@ -3961,8 +3961,8 @@ static void CloneAssetHandlerExecute(napi_env env, void *data)
     DataShare::DataShareValuesBucket valuesBucket;
     string uri = PAH_CLONE_ASSET;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    MediaFileUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    MediaFileUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_TITLE, fileAsset->GetTitle());
+    valuesBucket.Put(MediaColumn::MEDIA_ID, fileAsset->GetId());
+    valuesBucket.Put(MediaColumn::MEDIA_TITLE, fileAsset->GetTitle());
     Uri cloneAssetUri(uri);
     int32_t newAssetId = UserFileClient::Insert(cloneAssetUri, valuesBucket);
     if (newAssetId < 0) {
@@ -4134,7 +4134,10 @@ napi_value FileAssetNapi::PhotoAccessHelperGetKeyFrameThumbnail(napi_env env, na
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperGetKeyFrameThumbnail");
-
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
@@ -4994,7 +4997,7 @@ static int32_t GetFileUriFd(FileAssetAsyncContext *context)
     }
     int32_t fd = open(uriRealPath.c_str(), O_RDONLY);
     if (fd < 0) {
-        NAPI_ERR_LOG("Can not open fileUri, ret: %{public}d", fd);
+        NAPI_ERR_LOG("Can not open fileUri, ret: %{public}d, errno:%{public}d", fd, errno);
         context->SaveError(E_FAIL);
         return E_FAIL;
     }

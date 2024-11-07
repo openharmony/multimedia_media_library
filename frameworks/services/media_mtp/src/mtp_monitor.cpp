@@ -38,6 +38,8 @@ void MtpMonitor::Start()
 void MtpMonitor::Stop()
 {
     interruptFlag = true;
+    // make sure stop done after other operations.
+    std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
 }
 
 void MtpMonitor::Run()

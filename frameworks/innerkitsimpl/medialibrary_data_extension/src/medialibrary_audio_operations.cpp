@@ -82,7 +82,7 @@ int32_t MediaLibraryAudioOperations::Delete(MediaLibraryCommand& cmd)
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAudioOperations::Query(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
-    return MediaLibraryRdbStore::Query(
+    return MediaLibraryRdbStore::QueryWithFilter(
         RdbUtils::ToPredicates(cmd.GetDataSharePred(), AudioColumn::AUDIOS_TABLE), columns);
 }
 
@@ -180,24 +180,27 @@ int32_t MediaLibraryAudioOperations::CreateV9(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check Dir and Extention, "
         "displayName=%{private}s, mediaType=%{public}d", displayName.c_str(), mediaType);
 
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    errCode = transactionOprn.Start();
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    errCode = trans->Start(__func__);
     if (errCode != E_OK) {
+        MEDIA_ERR_LOG("transactionOprn errCode:%{public}d", errCode);
         return errCode;
     }
-
-    errCode = SetAssetPathInCreate(fileAsset);
+    errCode = SetAssetPathInCreate(fileAsset, trans);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
         return errCode;
     }
 
-    int32_t outRow = InsertAssetInDb(cmd, fileAsset);
+    int32_t outRow = InsertAssetInDb(trans, cmd, fileAsset);
     if (outRow <= 0) {
         MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
         return E_HAS_DB_ERROR;
     }
-    transactionOprn.Finish();
+    errCode = trans->Finish();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("CreateV9: tans finish fail!, ret:%{public}d", errCode);
+    }
     return outRow;
 }
 
@@ -234,18 +237,22 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
     // Check rootdir and extention
     int32_t errCode = CheckWithType(isContains, displayName, extention, MediaType::MEDIA_TYPE_AUDIO);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    errCode = transactionOprn.Start();
-    CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
-    errCode = isContains ? SetAssetPathInCreate(fileAsset) : SetAssetPath(fileAsset, extention);
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    errCode = trans->Start(__func__);
+    CHECK_AND_RETURN_RET((errCode == E_OK), errCode);
+    errCode = isContains ? SetAssetPathInCreate(fileAsset, trans) :
+        SetAssetPath(fileAsset, extention, trans);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
         "Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
 
-    int32_t outRow = InsertAssetInDb(cmd, fileAsset);
+    int32_t outRow = InsertAssetInDb(trans, cmd, fileAsset);
     AuditLog auditLog = { true, "USER BEHAVIOR", "ADD", "io", 1, "running", "ok" };
     HiAudit::GetInstance().Write(auditLog);
     CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
-    transactionOprn.Finish();
+    errCode = trans->Finish();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("CreateV10: tans finish fail!, ret:%{public}d", errCode);
+    }
     fileAsset.SetId(outRow);
     string fileUri = CreateExtUriForV10Asset(fileAsset);
     if (isNeedGrant) {
@@ -267,11 +274,6 @@ int32_t MediaLibraryAudioOperations::DeleteAudio(const shared_ptr<FileAsset> &fi
     int32_t fileId = fileAsset->GetId();
     InvalidateThumbnail(to_string(fileId), fileAsset->GetMediaType());
 
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    int32_t errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        return errCode;
-    }
     string displayName = fileAsset->GetDisplayName();
     // delete file in db
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::DELETE);
@@ -281,7 +283,6 @@ int32_t MediaLibraryAudioOperations::DeleteAudio(const shared_ptr<FileAsset> &fi
         MEDIA_ERR_LOG("Delete audio in database failed, errCode=%{public}d", deleteRows);
         return E_HAS_DB_ERROR;
     }
-    transactionOprn.Finish();
 
     auto watch = MediaLibraryNotify::GetInstance();
     string notifyUri = MediaFileUtils::GetUriByExtrConditions(AudioColumn::AUDIO_URI_PREFIX, to_string(fileId),
@@ -314,18 +315,11 @@ int32_t MediaLibraryAudioOperations::UpdateV10(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Audio Name failed, fileName=%{private}s",
         fileAsset->GetDisplayName().c_str());
 
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        return errCode;
-    }
-
     int32_t rowId = UpdateFileInDb(cmd);
     if (rowId < 0) {
         MEDIA_ERR_LOG("Update Audio In database failed, rowId=%{public}d", rowId);
         return rowId;
     }
-    transactionOprn.Finish();
 
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
     errCode = SendTrashNotify(cmd, fileAsset->GetId(), extraUri);
@@ -367,18 +361,11 @@ int32_t MediaLibraryAudioOperations::UpdateV9(MediaLibraryCommand &cmd)
         UpdateVirtualPath(cmd, fileAsset);
     }
 
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        return errCode;
-    }
-
     int32_t rowId = UpdateFileInDb(cmd);
     if (rowId < 0) {
         MEDIA_ERR_LOG("Update Audio In database failed, rowId=%{public}d", rowId);
         return rowId;
     }
-    transactionOprn.Finish();
 
     errCode = SendTrashNotify(cmd, fileAsset->GetId());
     if (errCode == E_OK) {
@@ -412,7 +399,7 @@ void MediaLibraryAudioOperations::MoveToMusic()
 {
     RdbPredicates predicates(AudioColumn::AUDIOS_TABLE);
     vector<string> columns = {AudioColumn::MEDIA_NAME, MediaColumn::MEDIA_FILE_PATH};
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("result is nullptr or count is zero");
         return;
