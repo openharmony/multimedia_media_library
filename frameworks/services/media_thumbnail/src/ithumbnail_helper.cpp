@@ -375,7 +375,7 @@ void ThumbnailWait::Notify()
 
 bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (data.source != nullptr) {
+    if (!data.source.IsEmptySource()) {
         return true;
     }
 
@@ -454,6 +454,101 @@ void IThumbnailHelper::UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &
     }
 }
 
+bool SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceEx)
+{
+    shared_ptr<Picture> lcdSource = isSourceEx ? data.source.GetPictureEx() : data.source.GetPicture();
+    if (lcdSource == nullptr || lcdSource->GetMainPixel() == nullptr) {
+        MEDIA_ERR_LOG("SaveLcdPictureSource failed, lcdSource is null");
+        return false;
+    }
+    int lcdDesiredWidth;
+    int lcdDesiredHeight;
+    if (isSourceEx) {
+        lcdDesiredWidth = data.lcdDesiredSize.width;
+        lcdDesiredHeight = data.lcdDesiredSize.height;
+    } else {
+        lcdDesiredWidth = data.orientation % FLAT_ANGLE == 0 ? data.lcdDesiredSize.width : data.lcdDesiredSize.height;
+        lcdDesiredHeight = data.orientation % FLAT_ANGLE == 0 ? data.lcdDesiredSize.height : data.lcdDesiredSize.width;
+    }
+    std::shared_ptr<Picture> copySource;
+    if (lcdDesiredWidth != lcdSource->GetMainPixel()->GetWidth()) {
+        MEDIA_INFO_LOG("Copy and resize picture source for lcd desiredSize: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+        if (!ThumbnailUtils::CopyPictureSource(lcdSource, copySource)) {
+            MEDIA_ERR_LOG("CompressPicture failed, CopyPictureSource failed");
+            return false;
+        }
+        if (lcdSource->GetMainPixel()->GetWidth() * lcdSource->GetMainPixel()->GetHeight() == 0) {
+            MEDIA_ERR_LOG("CompressPicture failed, invalid mainpixel size");
+            return false;
+        }
+        float widthScale = (1.0f * lcdDesiredWidth) / lcdSource->GetMainPixel()->GetWidth();
+        float heightScale = (1.0f * lcdDesiredHeight) / lcdSource->GetMainPixel()->GetHeight();
+        lcdSource->GetMainPixel()->scale(widthScale, heightScale);
+        lcdSource->GetGainmapPixelMap()->scale(widthScale, heightScale);
+    }
+    if (!ThumbnailUtils::CompressPicture(data, isSourceEx)) {
+        MEDIA_ERR_LOG("CompressPicture failed");
+        return false;
+    }
+    if (copySource != nullptr) {
+        lcdSource = copySource;
+    }
+    if (!isSourceEx) {
+        UpdateLcdDbState(opts, data);
+    }
+    return true;
+}
+
+bool SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceEx)
+{
+    shared_ptr<PixelMap> lcdSource = isSourceEx ? data.source.GetPixelMapEx() : data.source.GetPixelMap();
+    if (lcdSource == nullptr) {
+        MEDIA_ERR_LOG("SaveLcdPixelMapSource failed, lcdSource is null");
+        return false;
+    }
+    int lcdDesiredWidth;
+    int lcdDesiredHeight;
+    if (isSourceEx) {
+        lcdDesiredWidth = data.lcdDesiredSize.width;
+        lcdDesiredHeight = data.lcdDesiredSize.height;
+    } else {
+        lcdDesiredWidth = data.orientation % FLAT_ANGLE == 0 ? data.lcdDesiredSize.width : data.lcdDesiredSize.height;
+        lcdDesiredHeight = data.orientation % FLAT_ANGLE == 0 ? data.lcdDesiredSize.height : data.lcdDesiredSize.width;
+    }
+    if (lcdDesiredWidth != lcdSource->GetWidth()) {
+        MEDIA_INFO_LOG("Copy and resize data source for lcd desiredSize: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+        Media::InitializationOptions initOpts;
+        auto copySource = PixelMap::Create(*lcdSource, initOpts);
+        lcdSource = std::move(copySource);
+        if (lcdSource->GetWidth() * lcdSource->GetHeight() == 0) {
+            MEDIA_ERR_LOG("CompressImage failed, invalid lcdSource");
+            return false;
+        }
+        float widthScale = (1.0f * lcdDesiredWidth) / lcdSource->GetWidth();
+        float heightScale = (1.0f * lcdDesiredHeight) / lcdSource->GetHeight();
+        lcdSource->scale(widthScale, heightScale);
+    }
+    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd,
+        data.mediaType == MEDIA_TYPE_AUDIO, false, false)) {
+        MEDIA_ERR_LOG("CompressImage failed");
+        return false;
+    }
+
+    int err = ThumbnailUtils::TrySaveFile(data, isSourceEx ? ThumbnailType::LCD_EX : ThumbnailType::LCD);
+    if (err < 0) {
+        MEDIA_ERR_LOG("SaveLcd PixelMap failed %{public}d", err);
+        return false;
+    }
+
+    data.lcd.clear();
+    if (!isSourceEx) {
+        UpdateLcdDbState(opts, data);
+    }
+    return true;
+}
+
 bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     data.loaderOpts.decodeInThumbSize = false;
@@ -463,44 +558,22 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
         return false;
     }
 
-    if (data.source == nullptr) {
+    if (data.source.IsEmptySource()) {
         MEDIA_ERR_LOG("Fail to create lcd, source is nullptr");
         return false;
     }
 
-    shared_ptr<PixelMap> lcdSource = data.source;
-    int lcdDesiredWidth = data.orientation % FLAT_ANGLE == 0 ? data.lcdDesiredSize.width : data.lcdDesiredSize.height;
-    int lcdDesiredHeight = data.orientation % FLAT_ANGLE == 0 ? data.lcdDesiredSize.height : data.lcdDesiredSize.width;
-    if (lcdDesiredWidth != data.source->GetWidth()) {
-        MEDIA_INFO_LOG("Copy and resize data source for lcd desiredSize: %{public}s",
-            DfxUtils::GetSafePath(opts.path).c_str());
-        Media::InitializationOptions initOpts;
-        auto copySource = PixelMap::Create(*data.source, initOpts);
-        lcdSource = std::move(copySource);
-        float widthScale = (1.0f * lcdDesiredWidth) / data.source->GetWidth();
-        float heightScale = (1.0f * lcdDesiredHeight) / data.source->GetHeight();
-        lcdSource->scale(widthScale, heightScale);
+    if (data.source.HasPictureSource()) {
+        return SaveLcdPictureSource(opts, data, false);
+    } else {
+        return SaveLcdPixelMapSource(opts, data, false);
     }
-    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO, false, false)) {
-        MEDIA_ERR_LOG("CompressImage faild");
-        return false;
-    }
-
-    int err = ThumbnailUtils::TrySaveFile(data, ThumbnailType::LCD);
-    if (err < 0) {
-        MEDIA_ERR_LOG("SaveLcd faild %{public}d", err);
-        return false;
-    }
-
-    data.lcd.clear();
-    UpdateLcdDbState(opts, data);
-    return true;
 }
 
 bool IThumbnailHelper::IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     if (!data.isLocalFile) {
-        MEDIA_INFO_LOG("Create lcd when cloud loading, no need to create THM_EX, path: %{public}s， id: %{public}s",
+        MEDIA_INFO_LOG("Create lcd when cloud loading, no need to create THM_EX, path: %{public}s, id: %{public}s",
             DfxUtils::GetSafePath(opts.path).c_str(), data.id.c_str());
         return false;
     }
@@ -512,44 +585,28 @@ bool IThumbnailHelper::IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &da
         return false;
     }
     
-    if (data.sourceEx == nullptr) {
+    if (data.source.IsEmptySource()) {
         MEDIA_ERR_LOG("Fail to create lcdEx, source is nullptr");
         return false;
     }
-    shared_ptr<PixelMap> lcdSourceEx = data.sourceEx;
-    if (data.lcdDesiredSize.width != data.sourceEx->GetWidth()) {
-        MEDIA_INFO_LOG("Copy and resize data source for lcdEx desiredSize: %{public}s",
-            DfxUtils::GetSafePath(opts.path).c_str());
-        Media::InitializationOptions initOpts;
-        auto copySource = PixelMap::Create(*data.sourceEx, initOpts);
-        lcdSourceEx = std::move(copySource);
-        float widthScale = (1.0f * data.lcdDesiredSize.width) / data.sourceEx->GetWidth();
-        float heightScale = (1.0f * data.lcdDesiredSize.height) / data.sourceEx->GetHeight();
-        lcdSourceEx->scale(widthScale, heightScale);
-    }
-    if (!ThumbnailUtils::CompressImage(lcdSourceEx, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO)) {
-        MEDIA_ERR_LOG("CompressImage faild");
-        return false;
-    }
 
-    int err = ThumbnailUtils::TrySaveFile(data, ThumbnailType::LCD_EX);
-    if (err < 0) {
-        MEDIA_ERR_LOG("SaveLcdEx faild %{public}d", err);
-        return false;
+    if (data.source.HasPictureSource()) {
+        return SaveLcdPictureSource(opts, data, true);
+    } else {
+        return SaveLcdPixelMapSource(opts, data, true);
     }
-    data.lcd.clear();
-    return true;
 }
 
 bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type)
 {
-    if (data.source == nullptr) {
+    auto pixelMap = data.source.GetPixelMap();
+    if (pixelMap == nullptr) {
         MEDIA_ERR_LOG("source is nullptr when generate type: %{public}s", TYPE_NAME_MAP.at(type).c_str());
         return false;
     }
 
     if (type == ThumbnailType::THUMB || type == ThumbnailType::THUMB_ASTC) {
-        if (!ThumbnailUtils::CompressImage(data.source, type == ThumbnailType::THUMB ? data.thumbnail : data.thumbAstc,
+        if (!ThumbnailUtils::CompressImage(pixelMap, type == ThumbnailType::THUMB ? data.thumbnail : data.thumbAstc,
             false, type == ThumbnailType::THUMB_ASTC)) {
             MEDIA_ERR_LOG("CompressImage faild id %{public}s", opts.row.c_str());
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
@@ -598,13 +655,14 @@ bool IThumbnailHelper::GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
-    if (data.sourceEx == nullptr) {
+    auto pixelMapEx = data.source.GetPixelMapEx();
+    if (pixelMapEx == nullptr) {
         MEDIA_ERR_LOG("sourceEx is nullptr when generate thumbnailEx, path: %{public}s",
             DfxUtils::GetSafePath(opts.path).c_str());
         return false;
     }
 
-    if (!ThumbnailUtils::CompressImage(data.sourceEx, data.thumbnail, false, false)) {
+    if (!ThumbnailUtils::CompressImage(pixelMapEx, data.thumbnail, false, false)) {
         MEDIA_ERR_LOG("CompressImage failed id %{public}s", opts.row.c_str());
         return false;
     }
@@ -629,16 +687,14 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
         MEDIA_ERR_LOG("invalid thumbnail type");
         return false;
     }
-
     ThumbnailUtils::GenTargetPixelmap(data, size);
-
+    auto pixelMap = data.source.GetPixelMap();
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (data.source->ApplyColorSpace(ColorManager::ColorSpaceName::DISPLAY_P3) != E_OK) {
+    if (pixelMap->ApplyColorSpace(ColorManager::ColorSpaceName::DISPLAY_P3) != E_OK) {
         MEDIA_ERR_LOG("ApplyColorSpace to p3 failed");
     }
 #endif
-
-    if (!ThumbnailUtils::CompressImage(data.source,
+    if (!ThumbnailUtils::CompressImage(pixelMap,
         (type == ThumbnailType::MTH_ASTC) ? data.monthAstc : data.yearAstc, false, true)) {
         MEDIA_ERR_LOG("CompressImage to astc failed");
         return false;
@@ -744,13 +800,11 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
         MEDIA_ERR_LOG("DoCreateThumbnail failed, try to load source failed, id: %{public}s", data.id.c_str());
         return false;
     }
-    if (data.source != nullptr && data.source->IsHdr()) {
-        data.source->ToSdr();
+    auto pixelMap = data.source.GetPixelMap();
+    if (pixelMap != nullptr && pixelMap->IsHdr()) {
+        pixelMap->ToSdr();
     }
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
     if (opts.table == AudioColumn::AUDIOS_TABLE) {
@@ -759,9 +813,6 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
     }
 
     if (ThumbnailUtils::IsSupportGenAstc() && !GenThumbnail(opts, data, ThumbnailType::THUMB_ASTC)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
-            {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
 
@@ -796,13 +847,14 @@ bool IThumbnailHelper::IsCreateThumbnailExSuccess(ThumbRdbOpt &opts, ThumbnailDa
 
 bool IThumbnailHelper::DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (data.source == nullptr) {
+    auto pixelMap = data.source.GetPixelMap();
+    if (pixelMap == nullptr) {
         MEDIA_ERR_LOG("source is nullptr when rotate thumbnail path: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
 
-    if (!ThumbnailUtils::CompressImage(data.source, data.thumbnail, false, false)) {
+    if (!ThumbnailUtils::CompressImage(pixelMap, data.thumbnail, false, false)) {
         MEDIA_ERR_LOG("CompressImage faild id %{public}s", data.id.c_str());
         return false;
     }
@@ -830,21 +882,24 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
     }
 
     data.loaderOpts.decodeInThumbSize = true;
-    if (data.source != nullptr && data.source->IsHdr()) {
-        data.source->ToSdr();
+    if (data.source.HasPictureSource()) {
+        MEDIA_INFO_LOG("Scale from picture source, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        auto mainPixelMap = data.source.GetPicture()->GetMainPixel();
+        data.source.SetPixelMap(mainPixelMap);
     }
     if (!ThumbnailUtils::ScaleThumbnailFromSource(data, false)) {
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
     
-    if (data.orientation != 0 && data.sourceEx != nullptr && data.sourceEx->IsHdr()) {
-        data.sourceEx->ToSdr();
+    if (data.orientation != 0 && data.source.HasPictureSource()) {
+        MEDIA_INFO_LOG("Scale from picture source, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        auto mainPixelMapEx = data.source.GetPictureEx()->GetMainPixel();
+        data.source.SetPixelMapEx(mainPixelMapEx);
     }
     if (data.orientation != 0 && !ThumbnailUtils::ScaleThumbnailFromSource(data, true)) {
         MEDIA_ERR_LOG("Fail to scale from LCD_EX to THM_EX, path: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
-        data.sourceEx = nullptr;
     }
 
     if (!DoCreateThumbnail(opts, data)) {
@@ -879,8 +934,9 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
         MEDIA_ERR_LOG("DoCreateAstc failed, try to load exist thumbnail failed, id: %{public}s", data.id.c_str());
         return false;
     }
-    if (data.source != nullptr && data.source->IsHdr()) {
-        data.source->ToSdr();
+    auto pixelMap = data.source.GetPixelMap();
+    if (pixelMap != nullptr && pixelMap->IsHdr()) {
+        pixelMap->ToSdr();
     }
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
         MEDIA_ERR_LOG("DoCreateAstc GenThumbnail THUMB failed, id: %{public}s", data.id.c_str());
@@ -967,8 +1023,9 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
     }
 
     data.loaderOpts.decodeInThumbSize = true;
-    if (data.source != nullptr && data.source->IsHdr()) {
-        data.source->ToSdr();
+    auto pixelMap = data.source.GetPixelMap();
+    if (pixelMap != nullptr && pixelMap->IsHdr()) {
+        pixelMap->ToSdr();
     }
     if (!ThumbnailUtils::ScaleThumbnailFromSource(data, false)) {
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
@@ -999,7 +1056,8 @@ bool IThumbnailHelper::DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &dat
         return ret == WaitStatus::WAIT_SUCCESS;
     }
     
-    auto dataSource = DecodeThumbnailFromFd(fd);
+    auto dataSourcePtr = DecodeThumbnailFromFd(fd);
+    std::shared_ptr<PixelMap> dataSource = std::move(dataSourcePtr);
     if (dataSource == nullptr) {
         MEDIA_ERR_LOG("GetThumbnailPixelMap failed, dataSource is nullptr, path: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
@@ -1010,8 +1068,8 @@ bool IThumbnailHelper::DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &dat
     }
     close(fd);
 
-    data.source = std::move(dataSource);
-    data.source->rotate(static_cast<float>(data.orientation));
+    dataSource->rotate(static_cast<float>(data.orientation));
+    data.source.SetPixelMap(dataSource);
     if (!GenerateRotatedThumbnail(opts, data, thumbType)) {
         MEDIA_ERR_LOG("GenerateRotatedThumbnail failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         thumbnailWait.UpdateCloudLoadThumbnailMap(thumbType == ThumbnailType::LCD ?
