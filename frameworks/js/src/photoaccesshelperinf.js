@@ -760,7 +760,7 @@ function PhotoSelectOptions() {
   this.isSearchSupported = true;
   this.isPhotoTakingSupported = true;
   this.isEditSupported = true;
-  this.isOriginalSupported = true;
+  this.isOriginalSupported = false;
   this.completeButtonText = CompleteButtonText.TEXT_DONE;
 }
 
