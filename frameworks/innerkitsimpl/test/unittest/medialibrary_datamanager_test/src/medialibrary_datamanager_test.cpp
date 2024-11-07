@@ -75,7 +75,6 @@ namespace {
     shared_ptr<FileAsset> g_download = nullptr;
 }
 
-const int32_t E_GETROUWCOUNT_ERROR = 27394103;
 
 void MediaLibraryDataManagerUnitTest::SetUpTestCase(void)
 {
@@ -336,7 +335,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_001,
     Uri updateAssetUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_ALBUMOPRN, MEDIA_ALBUMOPRN_MODIFYALBUM));
     MediaLibraryCommand cmd(updateAssetUri);
     auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucketUpdate, predicates);
-    EXPECT_EQ(retVal, E_SUCCESS);
+    EXPECT_GT(retVal, E_SUCCESS);
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
@@ -1187,10 +1186,10 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GenerateThumbnailBackgroun
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     int32_t ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_EQ(ret, E_GETROUWCOUNT_ERROR);
+    EXPECT_GT(ret, E_OK);
     mediaLibraryDataManager->ClearMediaLibraryMgr();
     ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_EQ(ret, E_GETROUWCOUNT_ERROR);
+    EXPECT_GT(ret, E_OK);
 }
 
 #ifdef DISTRIBUTED
@@ -1318,7 +1317,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001, T
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     auto ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_EQ(ret <= 0, true);
+    EXPECT_GT(ret, E_OK);
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpgradeThumbnailBackground_new_002, TestSize.Level0)

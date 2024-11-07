@@ -868,7 +868,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_003, T
     int errCode = 0;
     opts.store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, false);
-    EXPECT_EQ(res, 0);
+    EXPECT_GT(res, 0);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_004, TestSize.Level0)

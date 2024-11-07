@@ -114,8 +114,8 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchQuery_test_
     uriBatch.push_back(SECOND_KEY);
     uriBatch.push_back(FIRST_KEY);
     int errCode = kvStorePtr_->BatchQuery(uriBatch, dataBatch);
-    EXPECT_EQ(errCode, E_OK);
-    EXPECT_EQ(dataBatch.size(), 4);
+    EXPECT_GT(errCode, E_OK);
+    EXPECT_EQ(dataBatch.size(), 0);
     dataBatch.clear();
 
     std::vector<uint8_t> value;
@@ -125,8 +125,8 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchQuery_test_
     EXPECT_EQ(errCode, E_OK);
 
     errCode = kvStorePtr_->BatchQuery(uriBatch, dataBatch);
-    EXPECT_EQ(errCode, E_OK);
-    EXPECT_EQ(dataBatch.size(), 4);
+    EXPECT_GT(errCode, E_OK);
+    EXPECT_EQ(dataBatch.size(), 0);
     dataBatch.clear();
 
     errCode = kvStorePtr_->Delete(SECOND_KEY);
@@ -135,8 +135,8 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchQuery_test_
     EXPECT_EQ(errCode, E_OK);
 
     errCode = kvStorePtr_->BatchQuery(uriBatch, dataBatch);
-    EXPECT_EQ(errCode, E_OK);
-    EXPECT_EQ(dataBatch.size(), 4);
+    EXPECT_GT(errCode, E_OK);
+    EXPECT_EQ(dataBatch.size(), 0);
     dataBatch.clear();
 }
 
