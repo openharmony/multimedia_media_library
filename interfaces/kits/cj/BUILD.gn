@@ -29,7 +29,6 @@ config("ffi_config") {
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include/napi",
     "//third_party/e2fsprogs/e2fsprogs/lib",
-    "//foundation/distributeddatamgr/data_share/frameworks/cj/ffi/dataSharePredicates/include",
   ]
 
   if (defined(medialibrary_mtp_enable)) {
