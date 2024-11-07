@@ -45,8 +45,6 @@ public:
     EXPORT int32_t GetObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<ObjectInfo> &outObjectInfo);
     EXPORT int32_t GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd);
-    EXPORT int32_t GetThumb(const std::shared_ptr<MtpOperationContext> &context,
-        std::shared_ptr<UInt8List> &outThumb);
     EXPORT int32_t SendObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         uint32_t &outStorageID, uint32_t &outParent, uint32_t &outHandle);
     EXPORT int32_t GetPathById(const int32_t &id, std::string &outPath);
@@ -66,11 +64,10 @@ public:
     EXPORT void DeleteHandlePathMap(const std::string &path, const uint32_t id);
 
 private:
-    void AddToHandlePathMap(const std::string &path, const uint32_t &id);
+    void AddToHandlePathMap(const std::string &path, const uint32_t id);
     void ModifyHandlePathMap(const std::string &from, const std::string &to);
-    void ModifyPathHandleMap(const std::string &path, const uint32_t &id);
+    void ModifyPathHandleMap(const std::string &path, const uint32_t id);
     bool StartsWith(const std::string& str, const std::string& prefix);
-    void DeletePathHandleMap(const std::string &path, const uint32_t &id);
     void MoveHandlePathMap(const std::string &path, const std::string &to);
     void MoveRepeatDirHandlePathMap(const std::string &path, const std::string &to);
     uint32_t MoveObjectSub(const sf::path &fromPath, const sf::path &toPath, const bool &isDir,
@@ -86,7 +83,7 @@ private:
     std::shared_ptr<std::unordered_map<uint32_t, std::string>> GetHandlesMap(
         const std::shared_ptr<MtpOperationContext> &context);
     void GetExternalStorages();
-    void ErasePathInfo(const std::string &path);
+    void ErasePathInfo(const uint32_t handle, const std::string &path);
 
     static std::shared_ptr<MtpMediaLibrary> instance_;
     static std::atomic<uint32_t> id_;
