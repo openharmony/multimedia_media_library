@@ -22,10 +22,14 @@ ohos_fuzztest("MediaLibraryRestoreFuzzTest") {
     ".",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/include",
     "../../../../../../../../distributeddatamgr/relational_store/interfaces/inner_api/rdb/include",
   ]
 
-  sources = [ "./medialibraryrestore_fuzzer.cpp" ]
+  sources = [
+    "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "./medialibraryrestore_fuzzer.cpp",
+  ]
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
@@ -33,21 +37,23 @@ ohos_fuzztest("MediaLibraryRestoreFuzzTest") {
   ]
 
   external_deps = [
-    "ability_base:want",
     "ability_base:zuri",
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
+    "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
-    "ability_runtime:dataobs_manager",
-    "ability_runtime:extensionkit_native",
-    "ability_runtime:runtime",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
     "device_manager:devicemanagersdk",
+    "dfs_service:cloudsync_kit_inner",
+    "hilog:libhilog",
+    "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
+    "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
   ]

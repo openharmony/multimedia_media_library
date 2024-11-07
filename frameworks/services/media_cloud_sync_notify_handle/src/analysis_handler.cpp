@@ -92,7 +92,7 @@ static void AddNewNotify(CloudSyncHandleData &handleData, const list<Uri> &sendU
 
 void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Can not get rdbstore");
         return;

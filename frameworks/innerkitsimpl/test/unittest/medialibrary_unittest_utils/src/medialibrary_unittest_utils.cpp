@@ -66,6 +66,26 @@ int32_t MediaLibraryUnitTestUtils::InitUnistore()
     return ret;
 }
 
+int32_t MediaLibraryUnitTestUtils::InitUnistore(const NativeRdb::RdbStoreConfig &config, int version,
+    NativeRdb::RdbOpenCallback &openCallback)
+{
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    abilityContextImpl->SetStageContext(stageContext);
+    int32_t ret = MediaLibraryUnistoreManager::GetInstance().Init(abilityContextImpl, config, version, openCallback);
+    MediaLibraryDataManager::GetInstance()->rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("init MediaLibraryUnistoreManager with config failed");
+    }
+    return ret;
+}
+
+void MediaLibraryUnitTestUtils::StopUnistore()
+{
+    MediaLibraryDataManager::GetInstance()->rdbStore_ = nullptr;
+    MediaLibraryUnistoreManager::GetInstance().Stop();
+}
+
 void MediaLibraryUnitTestUtils::InitRootDirs()
 {
     for (const auto &dir : TEST_ROOT_DIRS) {

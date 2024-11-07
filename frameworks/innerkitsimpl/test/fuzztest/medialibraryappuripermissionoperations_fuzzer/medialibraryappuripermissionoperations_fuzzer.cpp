@@ -45,7 +45,7 @@ const int32_t PERMISSION_DEFAULT = -1;
 const int32_t URI_DEFAULT = 0;
 const int32_t BatchInsertNumber = 5;
 static const int32_t E_ERR = -1;
-std::shared_ptr<NativeRdb::RdbStore> g_rdbStore;
+std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
     return static_cast<int32_t>(*data);
@@ -200,11 +200,12 @@ static void Init()
         abilityContextImpl, sceneCode);
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
 
-    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr || rdbStore->GetRaw() == nullptr) {
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
         return;
     }
-    g_rdbStore = rdbStore->GetRaw();
+    g_rdbStore = rdbStore;
     SetTables();
 }
 } // namespace OHOS

@@ -141,7 +141,7 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
     const FileAsset &fileAsset, int32_t sourceFileId, shared_ptr<CloudEnhancementFileInfo> info,
     std::shared_ptr<TransactionOperations> trans)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "get rdb store failed");
     CHECK_AND_RETURN_RET_LOG(fileAsset.GetPath().empty() || !MediaFileUtils::IsFileExists(fileAsset.GetPath()),
         E_FILE_EXIST, "file %{private}s exists now", fileAsset.GetPath().c_str());

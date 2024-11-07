@@ -106,7 +106,7 @@ void PrepareUniqueNumberTable()
         MEDIA_ERR_LOG("can not get g_rdbstore");
         return;
     }
-    auto store = g_rdbStore->GetRaw();
+    auto store = g_rdbStore;
     if (store == nullptr) {
         MEDIA_ERR_LOG("can not get store");
         return;
@@ -190,8 +190,8 @@ void ClearAndRestart()
 void MediaLibraryAppUriPermissionOperationsTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryAppUriPermissionOperationsTest failed, can not get rdbstore");
         exit(1);
     }
@@ -214,7 +214,7 @@ void MediaLibraryAppUriPermissionOperationsTest::TearDownTestCase()
 
 void MediaLibraryAppUriPermissionOperationsTest::SetUp()
 {
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryAppUriPermissionOperationsTest failed, can not get rdbstore");
         exit(1);
     }

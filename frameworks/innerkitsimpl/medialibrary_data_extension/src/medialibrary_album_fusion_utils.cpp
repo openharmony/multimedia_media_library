@@ -818,7 +818,7 @@ void UpdateNewAssetAttr(const shared_ptr<MediaLibraryRdbStore> &rdbStore, RdbPre
 
 int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, const string title)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Failed to get rdbStore.");
         return E_DB_FAIL;
@@ -1665,7 +1665,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleMisMatchScreenRecord(
 int32_t MediaLibraryAlbumFusionUtils::RefreshAllAlbums()
 {
     MEDIA_INFO_LOG("Froce refresh all albums start");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
@@ -1679,10 +1679,10 @@ int32_t MediaLibraryAlbumFusionUtils::RefreshAllAlbums()
 
 int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Failed to get rdbstore, try again!");
-        rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+        rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         if (rdbStore == nullptr) {
             MEDIA_ERR_LOG("Fatal error! Failed to get rdbstore, new cloud data is not processed!!");
             return E_DB_FAIL;

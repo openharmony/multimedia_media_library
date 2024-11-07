@@ -247,7 +247,7 @@ static int32_t MaintainShootingModeMap(std::unique_ptr<Metadata> &data,
 
 static int32_t MaintainAlbumRelationship(std::unique_ptr<Metadata> &data)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbstore is nullptr");
         return E_HAS_DB_ERROR;

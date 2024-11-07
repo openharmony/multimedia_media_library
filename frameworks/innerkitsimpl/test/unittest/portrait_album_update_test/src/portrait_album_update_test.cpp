@@ -131,7 +131,7 @@ int64_t CreatePortraitAlbum(const string &tagId)
     valuesBucket.PutString(TAG_ID, tagId);
     valuesBucket.PutString(GROUP_TAG, tagId);
     EXPECT_NE(g_rdbStore, nullptr);
-    int32_t ret = g_rdbStore->GetRaw()->Insert(albumId, ANALYSIS_ALBUM_TABLE, valuesBucket);
+    int32_t ret = g_rdbStore->Insert(albumId, ANALYSIS_ALBUM_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("InsertAlbum albumId is %{public}s", to_string(albumId).c_str());
     return albumId;
@@ -154,7 +154,7 @@ PortraitData InsertPortraitToPhotos()
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
     EXPECT_NE((g_rdbStore == nullptr), true);
-    int32_t ret = g_rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    int32_t ret = g_rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
     PortraitData portraitData;
@@ -175,7 +175,7 @@ void InsertPortraitToImageFace(int64_t fileId, int totalFaces, const string &tag
         valuesBucket.PutInt(TOTAL_FACES, totalFaces);
         valuesBucket.PutString(TAG_ID, tagId);
         EXPECT_NE((g_rdbStore == nullptr), true);
-        int32_t ret = g_rdbStore->GetRaw()->Insert(rowId, VISION_IMAGE_FACE_TABLE, valuesBucket);
+        int32_t ret = g_rdbStore->Insert(rowId, VISION_IMAGE_FACE_TABLE, valuesBucket);
         EXPECT_EQ(ret, E_OK);
     }
 }
@@ -190,7 +190,7 @@ void InsertPortraitsToAlbum(const vector<PortraitData> &portraitData, int64_t al
         valuesBucket.PutInt(MAP_ALBUM, albumId);
         valuesBucket.PutInt(MAP_ASSET, data.fileId);
         EXPECT_NE((g_rdbStore == nullptr), true);
-        int32_t ret = g_rdbStore->GetRaw()->Insert(rowId, ANALYSIS_PHOTO_MAP_TABLE, valuesBucket);
+        int32_t ret = g_rdbStore->Insert(rowId, ANALYSIS_PHOTO_MAP_TABLE, valuesBucket);
         EXPECT_EQ(ret, E_OK);
     }
 
@@ -247,7 +247,7 @@ void PortraitAlbumUpdateTest::SetUpTestCase()
 {
     MEDIA_INFO_LOG("PortraitAlbumUpdateTest SetUpTestCase start");
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
     MEDIA_INFO_LOG("PortraitAlbumUpdateTest SetUpTestCase end");
 }
@@ -438,7 +438,7 @@ void InsertPortraitMap(const vector<PortraitData> &portraitData, int64_t albumId
         valuesBucket.PutInt(MAP_ALBUM, albumId);
         valuesBucket.PutInt(MAP_ASSET, data.fileId);
         EXPECT_NE((g_rdbStore == nullptr), true);
-        int32_t ret = g_rdbStore->GetRaw()->Insert(rowId, ANALYSIS_PHOTO_MAP_TABLE, valuesBucket);
+        int32_t ret = g_rdbStore->Insert(rowId, ANALYSIS_PHOTO_MAP_TABLE, valuesBucket);
         EXPECT_EQ(ret, E_OK);
     }
 }

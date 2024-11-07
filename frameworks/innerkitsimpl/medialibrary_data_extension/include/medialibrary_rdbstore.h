@@ -40,9 +40,9 @@ public:
     EXPORT virtual ~MediaLibraryRdbStore();
 
     EXPORT virtual int32_t Init() override;
+    EXPORT int32_t Init(const NativeRdb::RdbStoreConfig &config, int version, NativeRdb::RdbOpenCallback &openCallback);
     EXPORT virtual void Stop() override;
     EXPORT static bool CheckRdbStore();
-    EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
     EXPORT virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) override;
     EXPORT virtual int32_t BatchInsert(MediaLibraryCommand &cmd, int64_t& outInsertNum,
         const std::vector<NativeRdb::ValuesBucket>& values) override;
@@ -120,8 +120,11 @@ public:
     EXPORT int InterruptBackup();
     EXPORT bool IsSlaveDiffFromMaster() const;
     EXPORT int Restore(const std::string &backupPath, const std::vector<uint8_t> &newKey = {});
+    static int32_t DoDeleteFromPredicates(const NativeRdb::AbsRdbPredicates &predicates, int32_t &deletedRows);
+    int32_t DataCallBackOnCreate();
 
 private:
+    EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     friend class TransactionOperations;
