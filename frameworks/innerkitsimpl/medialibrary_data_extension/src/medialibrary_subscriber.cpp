@@ -26,6 +26,7 @@
 #include "bundle_info.h"
 #include "cloud_media_asset_manager.h"
 #include "cloud_media_asset_types.h"
+#include "cloud_sync_utils.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
 #include "common_event_utils.h"
@@ -357,20 +358,20 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
 void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadStatus(const AAFwk::Want &want,
     const StatusEventType statusEventType)
 {
-    if (statusEventType == StatusEventType::THERMAL_LEVEL_CHANGED) {
-        int32_t taskStatus = CloudMediaAssetManager::GetInstance().GetTaskStatus();
-        int32_t downloadType = CloudMediaAssetManager::GetInstance().GetDownloadType();
-        bool foregroundTemperature = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
-            COMMON_EVENT_KEY_GET_DEFAULT_PARAM) <= PROPER_DEVICE_TEMPERATURE_LEVEL_HOT;
-        if (!foregroundTemperature && downloadType == static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE)) {
-            CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::TEMPERATURE_LIMIT);
-            return;
-        }
-        if (foregroundTemperature && taskStatus == static_cast<int32_t>(CloudMediaAssetTaskStatus::PAUSE) &&
-            downloadType == static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE)) {
-            CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(
-                CloudMediaTaskRecoverCause::FOREGROUND_TEMPERATURE_PROPER);
-        }
+    if (statusEventType != StatusEventType::THERMAL_LEVEL_CHANGED) {
+        return;
+    }
+    int32_t taskStatus = CloudMediaAssetManager::GetInstance().GetTaskStatus();
+    int32_t downloadType = CloudMediaAssetManager::GetInstance().GetDownloadType();
+    bool foregroundTemperature = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
+        COMMON_EVENT_KEY_GET_DEFAULT_PARAM) <= PROPER_DEVICE_TEMPERATURE_LEVEL_HOT;
+    if (!foregroundTemperature && downloadType == static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE)) {
+        CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::TEMPERATURE_LIMIT);
+        return;
+    }
+    if (foregroundTemperature && taskStatus == static_cast<int32_t>(CloudMediaAssetTaskStatus::PAUSED)) {
+        CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(
+            CloudMediaTaskRecoverCause::FOREGROUND_TEMPERATURE_PROPER);
     }
 }
 
@@ -389,8 +390,8 @@ void MedialibrarySubscriber::UpdateCloudAssetNetStatus()
         CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(CloudMediaTaskRecoverCause::NETWORK_NORMAL);
         return;
     }
-    if (taskStatus == static_cast<int32_t>(CloudMediaAssetTaskStatus::PAUSE) &&
-        CommonEventUtils::IsUnlimitedTrafficStatusOn()) {
+    if (taskStatus == static_cast<int32_t>(CloudMediaAssetTaskStatus::PAUSED) &&
+        CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
         CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(
             CloudMediaTaskRecoverCause::NETWORK_FLOW_UNLIMIT);
     }

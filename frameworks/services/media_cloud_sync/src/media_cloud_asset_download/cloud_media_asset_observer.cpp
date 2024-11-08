@@ -20,6 +20,7 @@
 #include <list>
 
 #include "cloud_media_asset_download_operation.h"
+#include "cloud_sync_utils.h"
 #include "common_event_utils.h"
 #include "media_log.h"
 #include "uri.h"
@@ -34,7 +35,7 @@ static const std::string CLOUD_URI = CLOUD_DATASHARE_URI + "&key=useMobileNetwor
 
 void CloudMediaAssetObserver::OnChange(const ChangeInfo &changeInfo)
 {
-    if (operation_ == nullptr || operation_->taskStatus_ == CloudMediaAssetTaskStatus::IDLE) {
+    if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
         return;
     }
     if (CommonEventUtils::IsWifiConnected()) {
@@ -44,16 +45,16 @@ void CloudMediaAssetObserver::OnChange(const ChangeInfo &changeInfo)
     std::list<Uri> uris = changeInfo.uris_;
     for (auto uri : uris) {
         if (uri.ToString() == CLOUD_URI && changeInfo.changeType_ == DataShareObserver::ChangeType::UPDATE) {
-            if (operation_->taskStatus_ == CloudMediaAssetTaskStatus::DOWNLOADING &&
-                !CommonEventUtils::IsUnlimitedTrafficStatusOn()) {
+            if (operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::DOWNLOADING &&
+                !CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
                 operation_->PauseDownloadTask(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT);
                 MEDIA_INFO_LOG("Cloud media asset download paused, pauseCause: %{public}d.",
                     static_cast<int32_t>(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT));
                 return;
             }
 
-            if (operation_->taskStatus_ == CloudMediaAssetTaskStatus::PAUSE && operation_->isNetworkConnected_ &&
-                CommonEventUtils::IsUnlimitedTrafficStatusOn()) {
+            if (operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::PAUSED && operation_->isNetworkConnected_ &&
+                CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
                 operation_->PassiveStatusRecoverTask(CloudMediaTaskRecoverCause::NETWORK_FLOW_UNLIMIT);
                 MEDIA_INFO_LOG("Cloud media asset download recovered, recoverCause: %{public}d.",
                     static_cast<int32_t>(CloudMediaTaskRecoverCause::NETWORK_FLOW_UNLIMIT));

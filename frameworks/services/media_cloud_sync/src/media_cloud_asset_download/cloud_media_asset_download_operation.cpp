@@ -32,6 +32,7 @@
 #include "cloud_sync_common.h"
 #include "cloud_sync_constants.h"
 #include "cloud_sync_manager.h"
+#include "cloud_sync_utils.h"
 #include "datashare_helper.h"
 #include "iservice_registry.h"
 #include "media_column.h"
@@ -55,10 +56,10 @@
 using namespace std;
 using namespace OHOS::DataShare;
 using namespace OHOS::NativeRdb;
-using Status = OHOS::Media::CloudMediaAssetDownloadOperation::Status;
 namespace OHOS {
 namespace Media {
 using namespace FileManagement::CloudSync;
+using Status = CloudMediaAssetDownloadOperation::Status;
 std::mutex CloudMediaAssetDownloadOperation::mutex_;
 std::shared_ptr<CloudMediaAssetDownloadOperation> CloudMediaAssetDownloadOperation::instance_ = nullptr;
 static const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_HOT = 3;
@@ -72,6 +73,7 @@ static const std::string TOTAL_SIZE = "SUM(size)";
 static const bool NEED_CLEAN = true;
 static const int32_t EXIT_TASK = 1;
 static const int32_t SLEEP_FOR_LOCK = 100;
+static const int32_t STATUS_CHANGE_ARG_SIZE = 3;
 static const int32_t INDEX_ZERO = 0;
 static const int32_t INDEX_ONE = 1;
 static const int32_t INDEX_TWO = 2;
@@ -104,7 +106,6 @@ static const std::map<CloudMediaTaskRecoverCause, CloudMediaTaskPauseCause> RECO
 std::shared_ptr<CloudMediaAssetDownloadOperation> CloudMediaAssetDownloadOperation::GetInstance()
 {
     if (instance_ == nullptr) {
-        std::lock_guard<std::mutex> lock(mutex_);
         instance_ = std::make_shared<CloudMediaAssetDownloadOperation>();
         MEDIA_INFO_LOG("create cloud media asset task.");
     }
@@ -119,6 +120,10 @@ bool CloudMediaAssetDownloadOperation::IsProperFgTemperature()
 void CloudMediaAssetDownloadOperation::SetTaskStatus(Status status)
 {
     std::vector<int32_t> statusChangeVec = STATUS_MAP.at(status);
+    if (static_cast<int32_t>(statusChangeVec.size()) != STATUS_CHANGE_ARG_SIZE) {
+        MEDIA_ERR_LOG("change status failed.");
+        return;
+    }
     if (statusChangeVec[INDEX_ZERO] >= 0) {
         downloadType_ = static_cast<CloudMediaDownloadType>(statusChangeVec[INDEX_ZERO]);
     }
@@ -141,7 +146,8 @@ bool CloudMediaAssetDownloadOperation::IsDataEmpty(const CloudMediaAssetDownload
     return datas.fileDownloadMap.empty();
 }
 
-std::shared_ptr<NativeRdb::ResultSet> CloudMediaAssetDownloadOperation::QueryDownloadFilesNeeded(const bool &flag)
+std::shared_ptr<NativeRdb::ResultSet> CloudMediaAssetDownloadOperation::QueryDownloadFilesNeeded(
+    const bool &isQueryInfo)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -160,7 +166,7 @@ std::shared_ptr<NativeRdb::ResultSet> CloudMediaAssetDownloadOperation::QueryDow
     predicates.Or();
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(static_cast<int32_t>(MEDIA_TYPE_VIDEO)));
     predicates.EndWrap();
-    if (flag) {
+    if (isQueryInfo) {
         const std::vector<std::string> columns = {
             TOTAL_COUNT,
             TOTAL_SIZE
@@ -292,11 +298,11 @@ int32_t CloudMediaAssetDownloadOperation::SubmitBatchDownload(
 void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &isForeground)
 {
     if (isForeground && !IsProperFgTemperature()) {
-            SetTaskStatus(Status::PAUSE_FOR_TEMPERATURE_LIMIT);
-            MEDIA_ERR_LOG("Temperature is not suitable for foreground downloads.");
-            return;
+        SetTaskStatus(Status::PAUSE_FOR_TEMPERATURE_LIMIT);
+        MEDIA_ERR_LOG("Temperature is not suitable for foreground downloads.");
+        return;
     }
-    if (!CommonEventUtils::IsWifiConnected() && !CommonEventUtils::IsUnlimitedTrafficStatusOn()) {
+    if (!CommonEventUtils::IsWifiConnected() && !CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
         SetTaskStatus(Status::PAUSE_FOR_NETWORK_FLOW_LIMIT);
         MEDIA_ERR_LOG("No wifi and no cellular data.");
         return;
@@ -338,7 +344,7 @@ int32_t CloudMediaAssetDownloadOperation::DoForceTaskExecute()
         MEDIA_ERR_LOG("DoForceTaskExecute permission denied");
         return E_ERR;
     }
-    if (taskStatus_ == CloudMediaAssetTaskStatus::PAUSE) {
+    if (taskStatus_ == CloudMediaAssetTaskStatus::PAUSED) {
         MEDIA_INFO_LOG("pause cause is %{public}d", static_cast<int32_t>(pauseCause_));
         readyForDownload_ = ReadyDataForBatchDownload();
         if (IsDataEmpty(readyForDownload_)) {
@@ -391,7 +397,7 @@ int32_t CloudMediaAssetDownloadOperation::DoRecoverExecute()
 int32_t CloudMediaAssetDownloadOperation::ManualActiveRecoverTask(int32_t cloudMediaDownloadType)
 {
     MEDIA_INFO_LOG("enter ManualActiveRecoverTask.");
-    if (taskStatus_ != CloudMediaAssetTaskStatus::PAUSE) {
+    if (taskStatus_ != CloudMediaAssetTaskStatus::PAUSED) {
         MEDIA_ERR_LOG("ManualActiveRecoverTask permission denied");
         return E_ERR;
     }
@@ -422,7 +428,7 @@ int32_t CloudMediaAssetDownloadOperation::PassiveStatusRecover()
 
 int32_t CloudMediaAssetDownloadOperation::PassiveStatusRecoverTask(const CloudMediaTaskRecoverCause &recoverCause)
 {
-    if (taskStatus_ != CloudMediaAssetTaskStatus::PAUSE || pauseCause_ == CloudMediaTaskPauseCause::USER_PAUSE) {
+    if (taskStatus_ != CloudMediaAssetTaskStatus::PAUSED || pauseCause_ == CloudMediaTaskPauseCause::USER_PAUSED) {
         MEDIA_ERR_LOG("PassiveStatusRecoverTask permission denied, taskStatus: %{public}d, pauseCause: %{public}d,",
             static_cast<int32_t>(taskStatus_), static_cast<int32_t>(pauseCause_));
         return E_ERR;
@@ -445,7 +451,7 @@ int32_t CloudMediaAssetDownloadOperation::PassiveStatusRecoverTask(const CloudMe
 
 int32_t CloudMediaAssetDownloadOperation::PauseDownloadTask(const CloudMediaTaskPauseCause &pauseCause)
 {
-    if (taskStatus_ == CloudMediaAssetTaskStatus::IDLE || pauseCause_ == CloudMediaTaskPauseCause::USER_PAUSE) {
+    if (taskStatus_ == CloudMediaAssetTaskStatus::IDLE || pauseCause_ == CloudMediaTaskPauseCause::USER_PAUSED) {
         MEDIA_ERR_LOG("PauseDownloadTask permission denied");
         return E_ERR;
     }
@@ -454,7 +460,7 @@ int32_t CloudMediaAssetDownloadOperation::PauseDownloadTask(const CloudMediaTask
 
     pauseCause_ = pauseCause;
     if (taskStatus_ == CloudMediaAssetTaskStatus::DOWNLOADING) {
-        taskStatus_ = CloudMediaAssetTaskStatus::PAUSE;
+        taskStatus_ = CloudMediaAssetTaskStatus::PAUSED;
         if (downloadId_ != DOWNLOAD_ID_DEFAULT) {
             downloadIdCache_ = downloadId_;
             fileNumCache_ = dataForDownload_.fileDownloadMap.size();
@@ -525,7 +531,7 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
     MEDIA_INFO_LOG("success, path: %{public}s, size: %{public}s, batchSuccNum: %{public}s.",
         progress.path.c_str(), to_string(size).c_str(), to_string(progress.batchSuccNum).c_str());
 
-    if (taskStatus_ == CloudMediaAssetTaskStatus::PAUSE && progress.downloadId == downloadIdCache_ &&
+    if (taskStatus_ == CloudMediaAssetTaskStatus::PAUSED && progress.downloadId == downloadIdCache_ &&
         cacheForDownload_.fileDownloadMap.find(progress.path) == cacheForDownload_.fileDownloadMap.end()) {
         fileNumCache_--;
         MEDIA_INFO_LOG("wait for callback, fileNumCache: %{public}d.", fileNumCache_);
@@ -636,14 +642,19 @@ void CloudMediaAssetDownloadOperation::HandleStoppedCallback(const DownloadProgr
     MoveDownloadFileToCache(progress);
 }
 
-std::string CloudMediaAssetDownloadOperation::GetTaskStatus()
+CloudMediaDownloadType CloudMediaAssetDownloadOperation::GetDownloadType()
 {
-    return to_string(static_cast<int32_t>(taskStatus_));
+    return downloadType_;
 }
 
-std::string CloudMediaAssetDownloadOperation::GetTaskPauseCause()
+CloudMediaAssetTaskStatus CloudMediaAssetDownloadOperation::GetTaskStatus()
 {
-    return to_string(static_cast<int32_t>(pauseCause_));
+    return taskStatus_;
+}
+
+CloudMediaTaskPauseCause CloudMediaAssetDownloadOperation::GetTaskPauseCause()
+{
+    return pauseCause_;
 }
 
 std::string CloudMediaAssetDownloadOperation::GetTaskInfo()
