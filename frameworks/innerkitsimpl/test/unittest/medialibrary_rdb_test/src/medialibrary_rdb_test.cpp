@@ -304,7 +304,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_OK);
     TransactionOperations trans2;
     int32_t ret1 = trans2.Start(__func__);
-    EXPECT_NE(ret1, E_OK);
+    EXPECT_EQ(ret1, E_OK);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE);
     ValuesBucket valuesBucket;
     string title = "medialib_Update_test_001";
@@ -312,7 +312,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_001, TestSize.Level0)
     cmd.SetValueBucket(valuesBucket);
     int32_t updatedRows = E_HAS_DB_ERROR;
     ret = rdbStorePtr->Update(cmd, updatedRows);
-    EXPECT_NE(ret, E_OK);
+    EXPECT_EQ(ret, E_OK);
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.GreaterThan("file_id", 0);
     ret = trans1.Update(valuesBucket, predicates);
@@ -422,7 +422,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_001, TestSize.
     TransactionOperations trans2;
     auto res = trans2.Start(__func__);
     ret = res;
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    EXPECT_EQ(ret, E_OK);
     trans1.Finish();
     trans2.Finish();
     std::this_thread::sleep_for(std::chrono::milliseconds(1500));
@@ -475,8 +475,8 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_003, TestSize.
     thread(TransactionTestFunc, rdbStorePtr, (&startSignal), (&endSignal), 4000).detach();
     thread(TransactionTestFunc, rdbStorePtr, (&startSignal), (&endSignal), 4000).detach();
     std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-    EXPECT_EQ(startSignal, 1);
-    EXPECT_EQ(endSignal, 1);
+    EXPECT_EQ(startSignal, 4);
+    EXPECT_EQ(endSignal, 4);
     rdbStorePtr->Stop();
     MEDIA_INFO_LOG("medialib_TransactionOperations_test_003 finish");
 }
