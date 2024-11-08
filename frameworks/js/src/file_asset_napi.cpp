@@ -3962,7 +3962,7 @@ static void CloneAssetHandlerExecute(napi_env env, void *data)
     string uri = PAH_CLONE_ASSET;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileAsset->GetId());
-    valuesBucket.Put(MediaColumn::MEDIA_TITLE, fileAsset->GetTitle());
+    valuesBucket.Put(MediaColumn::MEDIA_TITLE, context->title);
     Uri cloneAssetUri(uri);
     int32_t newAssetId = UserFileClient::Insert(cloneAssetUri, valuesBucket);
     if (newAssetId < 0) {
@@ -3995,8 +3995,7 @@ napi_value FileAssetNapi::PhotoAccessHelperCloneAsset(napi_env env, napi_callbac
     MediaLibraryNapiUtils::GetParamStringWithLength(env, asyncContext->argv[ARGS_ZERO], maxTitleLength, title);
     CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckTitleName(title) == E_OK, "Input title is invalid.");
 
-    fileAsset->SetTitle(title);
-    asyncContext->objectPtr = fileAsset;
+    asyncContext->title = title;
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "CloneAssetHandlerExecute",
         CloneAssetHandlerExecute, CloneAssetHandlerCompleteCallback);
 }
