@@ -19,8 +19,8 @@
 
 namespace OHOS {
 namespace Media {
-constexpr int32_t NORMAL_INTERNVAL = 1000;
-constexpr int32_t OVERLOAD_INTERNVAL = 2500;
+constexpr int32_t NORMAL_INTERNVAL = 2000;
+constexpr int32_t OVERLOAD_INTERNVAL = 4000;
 
 int32_t PowerEfficiencyManager::sAlbumUpdateInterval_ = NORMAL_INTERNVAL;
 bool PowerEfficiencyManager::isCharging_ = false;
