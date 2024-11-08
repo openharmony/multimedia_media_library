@@ -20,6 +20,7 @@
 #include <securec.h>
 #include <dirent.h>
 
+#include "album_plugin_config.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
 #include "datashare_abs_result_set.h"
@@ -562,6 +563,40 @@ bool OthersCloneRestore::HasSameFileForDualClone(FileInfo &fileInfo)
     return true;
 }
 
+static std::string ToLower(const std::string &str)
+{
+    std::string lowerStr;
+    std::transform(
+        str.begin(), str.end(), std::back_inserter(lowerStr), [](unsigned char c) { return std::tolower(c); });
+    return lowerStr;
+}
+
+PhotoAlbumDao::PhotoAlbumRowData OthersCloneRestore::FindAlbumInfo(FileInfo &fileInfo)
+{
+    PhotoAlbumDao::PhotoAlbumRowData albumInfo;
+    if (fileInfo.lPath.empty()) {
+        MEDIA_ERR_LOG("others clone lPath is empty, path: %{public}s",
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode_).c_str());
+        return albumInfo;
+    }
+    if (ToLower(fileInfo.lPath) == ToLower(AlbumPlugin::LPATH_SCREEN_SHOTS) &&
+        fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
+        albumInfo = this->photoAlbumDao_.BuildAlbumInfoOfRecorders();
+        albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
+        MEDIA_INFO_LOG(
+            "others clone: screenshots redirect to screenrecords, path: %{public}s",
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode_).c_str());
+        fileInfo.lPath = AlbumPlugin::LPATH_SCREEN_RECORDS;
+        return albumInfo;
+    }
+    albumInfo = this->photoAlbumDao_.GetPhotoAlbum(fileInfo.lPath);
+    if (albumInfo.lPath.empty()) {
+        MEDIA_ERR_LOG("others clone: albumInfo is empty, path: %{public}s",
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode_).c_str());
+    }
+    return albumInfo;
+}
+
 void OthersCloneRestore::UpdateAlbumInfo(FileInfo &info)
 {
     if (sceneCode_ == I_PHONE_CLONE_RESTORE) {
@@ -572,7 +607,7 @@ void OthersCloneRestore::UpdateAlbumInfo(FileInfo &info)
         info.packageName = clonePhoneName_;
         info.bundleName = clonePhoneName_;
     } else if (sceneCode_ == OTHERS_PHONE_CLONE_RESTORE) {
-        PhotoAlbumDao::PhotoAlbumRowData albumInfo = photoAlbumDao_.GetPhotoAlbum(info.lPath);
+        PhotoAlbumDao::PhotoAlbumRowData albumInfo = FindAlbumInfo(info);
         info.mediaAlbumId = albumInfo.albumId;
         info.ownerAlbumId = albumInfo.albumId;
     }
