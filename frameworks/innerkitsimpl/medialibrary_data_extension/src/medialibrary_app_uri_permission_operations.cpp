@@ -110,7 +110,22 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
         return ERROR;
     }
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    int32_t errCode = trans->Start(__func__);
+    std::function<int(void)> func = [&]()->int {
+        return BatchInsertInner(cmd, values, trans);
+    };
+    int32_t errCode = trans->RetryTrans(func, __func__);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("BatchInsert: trans retry fail!, ret:%{public}d", errCode);
+    }
+    MEDIA_INFO_LOG("batch insert ok");
+    return SUCCEED;
+}
+
+int32_t MediaLibraryAppUriPermissionOperations::BatchInsertInner(
+    MediaLibraryCommand &cmd, const std::vector<DataShare::DataShareValuesBucket> &values,
+    std::shared_ptr<TransactionOperations> trans)
+{
+    int32_t errCode = NativeRdb::E_OK;
     std::vector<ValuesBucket> insertVector;
     for (auto it = values.begin(); it != values.end(); it++) {
         ValuesBucket value = RdbUtils::ToValuesBucket(*it);
@@ -152,14 +167,8 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
             MEDIA_ERR_LOG("batch insert err=%{public}d", errCode);
             return ERROR;
         }
-        errCode = trans->Finish();
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("BatchInsert: tans finish fail!, ret:%{public}d", errCode);
-        }
     }
-
-    MEDIA_INFO_LOG("batch insert ok");
-    return SUCCEED;
+    return errCode;
 }
 
 int32_t MediaLibraryAppUriPermissionOperations::DeleteOperation(NativeRdb::RdbPredicates &predicates)

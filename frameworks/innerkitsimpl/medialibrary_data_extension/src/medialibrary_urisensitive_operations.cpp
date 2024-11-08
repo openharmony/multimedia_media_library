@@ -334,43 +334,42 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
     bool isValid = false;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    int32_t err = trans->Start(__func__);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("transaction failed :%{public}d", err);
-        return err;
-    }
-    if (ValueBucketCheck(values) != E_OK) {
-        return E_ERR;
-    }
-    string appid = values.at(0).Get(AppUriSensitiveColumn::APP_ID, isValid);
-    int32_t sensitiveType = values.at(0).Get(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, isValid);
-    AppstateOberserverBuild(sensitiveType);
-    QueryUriSensitive(cmd, values, resultSet);
-    GetAllUriDbOperation(values, dbOperation, resultSet);
-    for (size_t i = 0; i < values.size(); i++) {
-        int32_t fileId = GetFileId(values.at(i), isValid);
-        int32_t uriType = values.at(i).Get(AppUriSensitiveColumn::URI_TYPE, isValid);
-        if ((dbOperation.at(i) == UPDATE_DB_OPERATION) && (uriType == PHOTOSTYPE)) {
-            photoNeedToUpdate = true;
-            photosValues.push_back(static_cast<string>(values.at(i).Get(AppUriSensitiveColumn::FILE_ID, isValid)));
-        } else if ((dbOperation.at(i) == UPDATE_DB_OPERATION) && (uriType == AUDIOSTYPE)) {
-            audioNeedToUpdate = true;
-            audiosValues.push_back(static_cast<string>(values.at(i).Get(AppUriSensitiveColumn::FILE_ID, isValid)));
-        } else if (dbOperation.at(i) == INSERT_DB_OPERATION) {
-            needToInsert = true;
-            InsertValueBucketPrepare(values, fileId, uriType, batchInsertBucket);
+    int32_t err = E_OK;
+    std::function<int(void)> func = [&]()->int {
+        if (ValueBucketCheck(values) != E_OK) {
+            return E_ERR;
         }
-    }
-    if (photoNeedToUpdate) {
-        BatchUpdate(cmd, photosValues, PHOTOSTYPE, values, trans);
-    }
-    if (audioNeedToUpdate) {
-        BatchUpdate(cmd, audiosValues, AUDIOSTYPE, values, trans);
-    }
-    if (needToInsert) {
-        UriSensitiveOperations::BatchInsertOperation(cmd, batchInsertBucket, trans);
-    }
-    err = trans->Finish();
+        string appid = values.at(0).Get(AppUriSensitiveColumn::APP_ID, isValid);
+        int32_t sensitiveType = values.at(0).Get(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, isValid);
+        AppstateOberserverBuild(sensitiveType);
+        QueryUriSensitive(cmd, values, resultSet);
+        GetAllUriDbOperation(values, dbOperation, resultSet);
+        for (size_t i = 0; i < values.size(); i++) {
+            int32_t fileId = GetFileId(values.at(i), isValid);
+            int32_t uriType = values.at(i).Get(AppUriSensitiveColumn::URI_TYPE, isValid);
+            if ((dbOperation.at(i) == UPDATE_DB_OPERATION) && (uriType == PHOTOSTYPE)) {
+                photoNeedToUpdate = true;
+                photosValues.push_back(static_cast<string>(values.at(i).Get(AppUriSensitiveColumn::FILE_ID, isValid)));
+            } else if ((dbOperation.at(i) == UPDATE_DB_OPERATION) && (uriType == AUDIOSTYPE)) {
+                audioNeedToUpdate = true;
+                audiosValues.push_back(static_cast<string>(values.at(i).Get(AppUriSensitiveColumn::FILE_ID, isValid)));
+            } else if (dbOperation.at(i) == INSERT_DB_OPERATION) {
+                needToInsert = true;
+                InsertValueBucketPrepare(values, fileId, uriType, batchInsertBucket);
+            }
+        }
+        if (photoNeedToUpdate) {
+            BatchUpdate(cmd, photosValues, PHOTOSTYPE, values, trans);
+        }
+        if (audioNeedToUpdate) {
+            BatchUpdate(cmd, audiosValues, AUDIOSTYPE, values, trans);
+        }
+        if (needToInsert) {
+            UriSensitiveOperations::BatchInsertOperation(cmd, batchInsertBucket, trans);
+        }
+        return err;
+    };
+    err = trans->RetryTrans(func, __func__);
     if (err != E_OK) {
         MEDIA_ERR_LOG("GrantUriSensitive: tans finish fail!, ret:%{public}d", err);
     }

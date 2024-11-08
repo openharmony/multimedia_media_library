@@ -20,6 +20,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "medialibrary_rdbstore.h"
+#include "cloud_sync_helper.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -31,6 +32,9 @@ TransactionOperations::TransactionOperations() {}
 
 TransactionOperations::~TransactionOperations()
 {
+    if (transaction_ == nullptr) {
+        return;
+    }
     Rollback();
 }
 
@@ -54,21 +58,17 @@ int32_t TransactionOperations::Start(std::string funcName, bool isBackup)
     }
 
     int currentTime = 0;
-    int32_t busyRetryTime = 0;
     int errCode = -1;
-    while (busyRetryTime < MAX_BUSY_TRY_TIMES && currentTime <= MAX_TRY_TIMES) {
+    while (currentTime <= MAX_TRY_TIMES) {
         auto [ret, transaction] = rdbStore_->CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
         errCode = ret;
         if (ret == NativeRdb::E_OK) {
             transaction_ = transaction;
             break;
-        } else if (ret == NativeRdb::E_SQLITE_LOCKED) {
+        } else if (ret == NativeRdb::E_SQLITE_LOCKED || ret == NativeRdb::E_DATABASE_BUSY) {
             this_thread::sleep_for(chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
             currentTime++;
             MEDIA_ERR_LOG("CreateTransaction busy, ret:%{public}d, time:%{public}d", ret, currentTime);
-        } else if (ret == NativeRdb::E_SQLITE_BUSY || ret == NativeRdb::E_DATABASE_BUSY) {
-            busyRetryTime++;
-            MEDIA_ERR_LOG("CreateTransaction busy, ret:%{public}d, busyRetryTime:%{public}d", ret, busyRetryTime);
         } else {
             MEDIA_ERR_LOG("CreateTransaction faile, ret = %{public}d", ret);
             break;
@@ -88,12 +88,58 @@ int32_t TransactionOperations::Finish()
     }
     MEDIA_INFO_LOG("Commit transaction, funcName is :%{public}s", funcName_.c_str());
     auto ret = transaction_->Commit();
-    if (ret == NativeRdb::E_OK) {
-        transaction_ = nullptr;
-        return NativeRdb::E_OK;
+    transaction_ = nullptr;
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("transaction commit fail!, ret:%{public}d", ret);
+        return ret;
     }
-    MEDIA_ERR_LOG("transaction commit fail!, ret:%{public}d", ret);
+#ifdef CLOUD_SYNC_MANAGER
+    if (isSkipCloudSync_) {
+        MEDIA_INFO_LOG("recover cloud sync for commit");
+        CloudSyncHelper::GetInstance()->StartSync();
+        isSkipCloudSync_ = false;
+    }
+#endif
     return ret;
+}
+
+int32_t TransactionOperations::TryTrans(std::function<int(void)> &func, std::string funcName, bool isBackup)
+{
+    int32_t err = NativeRdb::E_OK;
+    err = Start(funcName, isBackup);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
+        return err;
+    }
+    err = func();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("TryTrans: trans function fail!, ret:%{public}d", err);
+    }
+    err = Finish();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("TryTrans: trans finish fail!, ret:%{public}d", err);
+    }
+    return err;
+}
+
+int32_t TransactionOperations::RetryTrans(std::function<int(void)> &func, std::string funcName, bool isBackup)
+{
+    int32_t err = TryTrans(func, funcName, isBackup);
+    if (err == E_OK) {
+        return err;
+    }
+    if (err == NativeRdb::E_SQLITE_BUSY && !isSkipCloudSync_) {
+        MEDIA_ERR_LOG("TryTrans busy, err:%{public}d", err);
+#ifdef CLOUD_SYNC_MANAGER
+        MEDIA_INFO_LOG("Stop cloud sync");
+        FileManagement::CloudSync::CloudSyncManager::GetInstance()
+            .StopSync("com.ohos.medialibrary.medialibrarydata");
+        isSkipCloudSync_ = true;
+#endif
+    }
+    err = TryTrans(func, funcName, isBackup);
+    MEDIA_INFO_LOG("RetryTrans twice result is :%{public}d", err);
+    return err;
 }
 
 int32_t TransactionOperations::Rollback()
@@ -103,11 +149,18 @@ int32_t TransactionOperations::Rollback()
         return NativeRdb::E_OK;
     }
     auto ret = transaction_->Rollback();
-    if (ret == NativeRdb::E_OK) {
-        transaction_ = nullptr;
+    transaction_ = nullptr;
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Rollback fail:%{public}d", ret);
         return ret;
     }
-    MEDIA_ERR_LOG("Rollback fail:%{public}d", ret);
+#ifdef CLOUD_SYNC_MANAGER
+    if (isSkipCloudSync_) {
+        MEDIA_INFO_LOG("recover cloud sync for rollback");
+        CloudSyncHelper::GetInstance()->StartSync();
+        isSkipCloudSync_ = false;
+    }
+#endif
     return ret;
 }
 

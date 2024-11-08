@@ -51,8 +51,10 @@ public:
     EXPORT ~TransactionOperations();
     EXPORT int32_t Start(std::string funcName, bool isBackup = false);
     EXPORT int32_t Finish();
+    EXPORT int32_t TryTrans(std::function<int(void)> &func, std::string funcName, bool isBackup);
+    EXPORT int32_t RetryTrans(std::function<int(void)> &func, std::string funcName, bool isBackup = false);
     EXPORT int32_t Rollback();
-    void SetBackupRdbStore(std::shared_ptr<OHOS::NativeRdb::RdbStore> rdbStore);
+    EXPORT void SetBackupRdbStore(std::shared_ptr<OHOS::NativeRdb::RdbStore> rdbStore);
 
     EXPORT int32_t ExecuteSql(const std::string &sql, const std::vector<NativeRdb::ValueObject> &args = {});
     EXPORT int32_t Execute(const std::string &sql, const std::vector<NativeRdb::ValueObject> &args = {});
@@ -77,6 +79,7 @@ private:
     std::shared_ptr<OHOS::NativeRdb::RdbStore> rdbStore_;
     std::shared_ptr<OHOS::NativeRdb::RdbStore> backupRdbStore_;
     std::string funcName_ = "";
+    bool isSkipCloudSync_ = false;
 };
 } // namespace OHOS::Media
 
