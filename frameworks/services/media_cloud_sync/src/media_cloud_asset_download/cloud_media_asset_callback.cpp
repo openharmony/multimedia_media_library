@@ -13,9 +13,6 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_CLOUD_MEDIA_ASSET_CALLBACK_H
-#define OHOS_CLOUD_MEDIA_ASSET_CALLBACK_H
-
 #include "cloud_media_asset_callback.h"
 
 #include <string>
@@ -27,9 +24,12 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-
 void MediaCloudDownloadCallback::OnDownloadProcess(const DownloadProgressObj& progress)
 {
+    if (!operation_) {
+        MEDIA_ERR_LOG("operation is nullptr");
+        return;
+    }
     switch (progress.state) {
         case DownloadProgressObj::Status::COMPLETED: {
             if (progress.downloadErrorType == static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::NO_ERROR)) {
@@ -52,4 +52,3 @@ void MediaCloudDownloadCallback::OnDownloadProcess(const DownloadProgressObj& pr
 }
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_CLOUD_MEDIA_ASSET_OBSERVER_H

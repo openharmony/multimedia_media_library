@@ -31,7 +31,7 @@ enum class CloudMediaDownloadType : int32_t {
 
 enum class CloudMediaAssetTaskStatus : int32_t {
     DOWNLOADING = 0,
-    PAUSE,
+    PAUSED,
     IDLE,
 };
 
@@ -50,7 +50,7 @@ enum class CloudMediaTaskPauseCause : int32_t {
     BACKGROUND_TASK_UNAVAILABLE,
     FREQUENT_USER_REQUESTS,
     CLOUD_ERROR,
-    USER_PAUSE,
+    USER_PAUSED,
 };
 
 enum class CloudMediaTaskRecoverCause : int32_t {
