@@ -28,6 +28,7 @@
 #include "payload_data/get_object_props_supported_data.h"
 #include "payload_data.h"
 #include "rdb_errno.h"
+#include "playback_formats.h"
 
 using namespace std;
 namespace OHOS {
@@ -630,9 +631,15 @@ uint32_t MtpDataUtils::GetMtpFormatByPath(const std::string &path, uint16_t &out
     // ↑ has_extension already checked for file extension
     std::string extension = filePath.filename().extension().c_str();
     for (auto it = FormatMap.begin(); it != FormatMap.end(); it++) {
-        if (it->second.compare(extension) == 0) {
-            outFormat = it->first;
-            return MTP_SUCCESS;
+        if (it->second.compare(extension) != 0) {
+            continue;
+        }
+        // outFormat should also be in 'Playback Formats' return array of GetDeviceInfo cmd
+        for (uint16_t i = 0; i < sizeof(PLAYBACK_FORMATS) / sizeof(uint16_t); i++) {
+            if (it->first == PLAYBACK_FORMATS[i]) {
+                outFormat = it->first;
+                return MTP_SUCCESS;
+            }
         }
     }
     return MTP_ERROR_INVALID_OBJECTPROP_VALUE;

@@ -18,6 +18,7 @@
 #include "mtp_constants.h"
 #include "mtp_operation_utils.h"
 #include "mtp_packet_tools.h"
+#include "playback_formats.h"
 
 using namespace std;
 
@@ -26,34 +27,6 @@ namespace Media {
 static const char *EXTENSION_DESC = "microsoft.com: 1.0; openharmony: 1.0;";
 
 static const uint16_t CaptureFormats[] = {};
-static const uint16_t PlaybackFormats[] = {
-    MTP_FORMAT_UNDEFINED_CODE,
-    MTP_FORMAT_ASSOCIATION_CODE,
-    MTP_FORMAT_TEXT_CODE,
-    MTP_FORMAT_HTML_CODE,
-    MTP_FORMAT_WAV_CODE,
-    MTP_FORMAT_MP3_CODE,
-    MTP_FORMAT_MPEG_CODE,
-    MTP_FORMAT_EXIF_JPEG_CODE,
-    MTP_FORMAT_TIFF_EP_CODE,
-    MTP_FORMAT_BMP_CODE,
-    MTP_FORMAT_GIF_CODE,
-    MTP_FORMAT_JFIF_CODE,
-    MTP_FORMAT_PNG_CODE,
-    MTP_FORMAT_TIFF_CODE,
-    MTP_FORMAT_WMA_CODE,
-    MTP_FORMAT_OGG_CODE,
-    MTP_FORMAT_AAC_CODE,
-    MTP_FORMAT_MP4_CONTAINER_CODE,
-    MTP_FORMAT_MP2_CODE,
-    MTP_FORMAT_3GP_CONTAINER_CODE,
-    MTP_FORMAT_ABSTRACT_AUDIO_VIDEO_PLAYLIST_CODE,
-    MTP_FORMAT_WPL_PLAYLIST_CODE,
-    MTP_FORMAT_M3U_PLAYLIST_CODE,
-    MTP_FORMAT_PLS_PLAYLIST_CODE,
-    MTP_FORMAT_XML_DOCUMENT_CODE,
-    MTP_FORMAT_FLAC_CODE,
-};
 
 static const uint16_t DeviceProperties[] = {
     MTP_DEVICE_PROPERTY_SYNCHRONIZATION_PARTNER_CODE,
@@ -152,7 +125,7 @@ int GetDeviceInfoData::Maker(std::vector<uint8_t> &outBuffer)
     MtpPacketTool::PutAUInt16(outBuffer, Events, sizeof(Events) / sizeof(uint16_t));
     MtpPacketTool::PutAUInt16(outBuffer, DeviceProperties, sizeof(DeviceProperties) / sizeof(uint16_t));
     MtpPacketTool::PutAUInt16(outBuffer, CaptureFormats, sizeof(CaptureFormats) / sizeof(uint16_t));
-    MtpPacketTool::PutAUInt16(outBuffer, PlaybackFormats, sizeof(PlaybackFormats) / sizeof(uint16_t));
+    MtpPacketTool::PutAUInt16(outBuffer, PLAYBACK_FORMATS, sizeof(PLAYBACK_FORMATS) / sizeof(uint16_t));
     MtpPacketTool::PutString(outBuffer, manufacturer_);
     MtpPacketTool::PutString(outBuffer, model_);
     MtpPacketTool::PutString(outBuffer, version_);
