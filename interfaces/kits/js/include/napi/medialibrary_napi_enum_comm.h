@@ -142,6 +142,23 @@ const std::vector<std::string> videoEnhancementTypeEnum {
     "QUALITY_ENHANCEMENT_LOCAL", "QUALITY_ENHANCEMENT_CLOUD", "QUALITY_ENHANCEMENT_LOCAL_AND_CLOUD"
 };
 
+const std::vector<std::string> cloudMediaDownloadTypeEnum {
+    "DOWNLOAD_FORCE", "DOWNLOAD_GENTLE"
+};
+
+const std::vector<std::string> cloudMediaRetainTypeEnum {
+    "RETAIN_FORCE", "RETAIN_GENTLE"
+};
+
+const std::vector<std::string> cloudMediaAssetTaskStatusEnum {
+    "DOWNLOADING", "PAUSE", "IDLE"
+};
+
+const std::vector<std::string> cloudMediaTaskPauseCauseEnum {
+    "NO_PAUSE", "TEMPERATURE_LIMIT", "ROM_LIMIT", "NETWORK_FLOW_LIMIT", "WIFI_UNAVAILABLE",
+    "POWER_LIMIT", "BACKGROUND_TASK_UNAVAILABLE", "FREQUENT_USER_REQUESTS", "CLOUD_ERROR", "USER_PAUSE",
+};
+
 const std::vector<std::pair<std::string, std::string>> FILE_KEY_ENUM_PROPERTIES = {
     std::make_pair("ID",                        MEDIA_DATA_DB_ID),
     std::make_pair("RELATIVE_PATH",             MEDIA_DATA_DB_RELATIVE_PATH),
