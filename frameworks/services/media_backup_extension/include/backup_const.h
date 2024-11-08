@@ -165,12 +165,20 @@ const std::string GALLERY_ALBUM_BUCKETID = "relativeBucketId";
 const std::string GALLERY_ALBUM_IPATH = "lPath";
 const std::string GALLERY_NICK_NAME = "nick_name";
 
+/**
+ * If the value of thumbnail_ready is greater than or equal to 3, the THM is generated successfully.
+ * If the value of thumbnail_ready is greater than 0, the value of thumbnail_visible is 1, indicating
+ * that the THM has been generated(not necessarily successfully generated).
+ * If lcd_visit_time is 2, the LCD is generated successfully.
+ * If lcd_visit_time is 0, the LCD is not generated or fails to be generated.
+*/
 const int RESTORE_THUMBNAIL_READY_SUCCESS = 3;
 const int RESTORE_THUMBNAIL_READY_NO_THUMBNAIL = 0;
 const int RESTORE_THUMBNAIL_VISIBLE_FALSE = 0;
 const int RESTORE_THUMBNAIL_VISIBLE_TRUE = 1;
 const int RESTORE_LCD_VISIT_TIME_SUCCESS = 2;
 const int RESTORE_LCD_VISIT_TIME_NO_LCD = 0;
+
 const std::string MEDIA_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data";
 const std::string MEDIA_KVSTORE_YEAR_STOREID = "medialibrary_year_astc_data";
 const std::string CLONE_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data_clone";
