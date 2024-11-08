@@ -1162,42 +1162,39 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
             continue;
         }
         std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-        int32_t errCode = trans->Start(__func__);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("transaction operation start failed, error=%{public}d", errCode);
+        int32_t errCode = NativeRdb::E_OK;
+        std::function<int(void)> func = [&]()->int {
+            // Insert album item
+            NativeRdb::ValuesBucket valuesBucket;
+            SetValuesFromPhotoAlbum(iter, valuesBucket);
+            int64_t outRowId = -1;
+            errCode = trans->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+            if (errCode != NativeRdb::E_OK) {
+                MEDIA_ERR_LOG("InsertMetadataInDb: insert album failed, errCode = %{public}d", errCode);
+                return errCode;
+            }
+
+            // Update album order inserted just now
+            int32_t changedRows = -1;
+            NativeRdb::RdbPredicates predicatesOrder(PhotoAlbumColumns::TABLE);
+            predicatesOrder.And()->EqualTo(PhotoAlbumColumns::ALBUM_ID, outRowId)
+                                 ->And()
+                                 ->NotEqualTo(PhotoAlbumColumns::ALBUM_ORDER, iter->GetOrder());
+            valuesBucket.Clear();
+            valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_ORDER, iter->GetOrder());
+            errCode = trans->Update(changedRows, valuesBucket, predicatesOrder);
+            if (errCode != E_OK) {
+                MEDIA_ERR_LOG("Update album order failed, err = %{public}d", errCode);
+                return E_HAS_DB_ERROR;
+            }
+            if (changedRows > 0) {
+                MEDIA_INFO_LOG("Update album order");
+            }
             return errCode;
-        }
-
-        // Insert album item
-        NativeRdb::ValuesBucket valuesBucket;
-        SetValuesFromPhotoAlbum(iter, valuesBucket);
-        int64_t outRowId = -1;
-        errCode = trans->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
-        if (errCode != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("InsertMetadataInDb: insert album failed, errCode = %{public}d", errCode);
-            return errCode;
-        }
-
-        // Update album order inserted just now
-        int32_t changedRows = -1;
-        NativeRdb::RdbPredicates predicatesOrder(PhotoAlbumColumns::TABLE);
-        predicatesOrder.And()->EqualTo(PhotoAlbumColumns::ALBUM_ID, outRowId)
-                             ->And()
-                             ->NotEqualTo(PhotoAlbumColumns::ALBUM_ORDER, iter->GetOrder());
-        valuesBucket.Clear();
-        valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_ORDER, iter->GetOrder());
-        errCode = trans->Update(changedRows, valuesBucket, predicatesOrder);
+        };
+        errCode = trans->RetryTrans(func, __func__);
         if (errCode != E_OK) {
-            MEDIA_ERR_LOG("Update album order failed, err = %{public}d", errCode);
-            return E_HAS_DB_ERROR;
-        }
-        if (changedRows > 0) {
-            MEDIA_INFO_LOG("Update album order");
-        }
-
-        errCode = trans->Finish();
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("InsertMetadataInDb: tans finish fail!, ret:%{public}d", errCode);
+            MEDIA_ERR_LOG("InsertMetadataInDb: trans retry fail!, ret:%{public}d", errCode);
         }
     }
 

@@ -402,6 +402,7 @@ static int32_t ExecSqlWithRetry(std::function<int32_t()> execSql)
     int32_t currentTime = 0;
     int32_t busyRetryTime = 0;
     int32_t err = NativeRdb::E_OK;
+    bool isSkipCloudSync = false;
     while (busyRetryTime < MAX_BUSY_TRY_TIMES && currentTime <= MAX_TRY_TIMES) {
         err = execSql();
         if (err == NativeRdb::E_OK) {
@@ -412,11 +413,21 @@ static int32_t ExecSqlWithRetry(std::function<int32_t()> execSql)
             MEDIA_ERR_LOG("execSql busy, err: %{public}d, currentTime: %{public}d", err, currentTime);
         } else if (err == NativeRdb::E_SQLITE_BUSY || err == NativeRdb::E_DATABASE_BUSY) {
             busyRetryTime++;
-            MEDIA_ERR_LOG("execSql busy, ret:%{public}d, busyRetryTime:%{public}d", err, busyRetryTime);
+            MEDIA_ERR_LOG("execSql busy, err:%{public}d, busyRetryTime:%{public}d", err, busyRetryTime);
+            if (err == NativeRdb::E_SQLITE_BUSY && !isSkipCloudSync) {
+                MEDIA_INFO_LOG("Stop cloud sync");
+                FileManagement::CloudSync::CloudSyncManager::GetInstance()
+                    .StopSync("com.ohos.medialibrary.medialibrarydata");
+                isSkipCloudSync = true;
+            }
         } else {
             MEDIA_ERR_LOG("execSql failed, err: %{public}d, currentTime: %{public}d", err, currentTime);
             break;
         }
+    }
+    if (isSkipCloudSync) {
+        MEDIA_INFO_LOG("recover cloud sync after execsql busy");
+        CloudSyncHelper::GetInstance()->StartSync();
     }
     return err;
 }
