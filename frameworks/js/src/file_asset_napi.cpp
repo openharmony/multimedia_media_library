@@ -3911,13 +3911,13 @@ static void CloneAssetHandlerCompleteCallback(napi_env env, napi_status status, 
     jsContext->status = false;
     if (context->error == ERR_DEFAULT) {
         napi_value jsFileAsset = nullptr;
-        auto fileAsset = context->objectPtr;
-        if (fileAsset == nullptr) {
+        int64_t assetId = context->assetId;
+        if (assetId == 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                 "Clone file asset failed");
             napi_get_undefined(env, &jsContext->data);
         } else {
-            shared_ptr<FileAsset> newFileAsset = getFileAsset(to_string(fileAsset->GetId()));
+            shared_ptr<FileAsset> newFileAsset = getFileAsset(to_string(assetId));
             CHECK_NULL_PTR_RETURN_VOID(newFileAsset, "newFileAset is null.");
 
             newFileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -3962,7 +3962,7 @@ static void CloneAssetHandlerExecute(napi_env env, void *data)
     string uri = PAH_CLONE_ASSET;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileAsset->GetId());
-    valuesBucket.Put(MediaColumn::MEDIA_TITLE, fileAsset->GetTitle());
+    valuesBucket.Put(MediaColumn::MEDIA_TITLE, context->title);
     Uri cloneAssetUri(uri);
     int32_t newAssetId = UserFileClient::Insert(cloneAssetUri, valuesBucket);
     if (newAssetId < 0) {
@@ -3970,8 +3970,7 @@ static void CloneAssetHandlerExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Failed to clone asset, ret: %{public}d", newAssetId);
         return;
     }
-    fileAsset->SetId(newAssetId);
-    context->objectPtr = fileAsset;
+    context->assetId = newAssetId;
 }
 
 napi_value FileAssetNapi::PhotoAccessHelperCloneAsset(napi_env env, napi_callback_info info)
@@ -3996,8 +3995,7 @@ napi_value FileAssetNapi::PhotoAccessHelperCloneAsset(napi_env env, napi_callbac
     MediaLibraryNapiUtils::GetParamStringWithLength(env, asyncContext->argv[ARGS_ZERO], maxTitleLength, title);
     CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckTitleName(title) == E_OK, "Input title is invalid.");
 
-    fileAsset->SetTitle(title);
-    asyncContext->objectPtr = fileAsset;
+    asyncContext->title = title;
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "CloneAssetHandlerExecute",
         CloneAssetHandlerExecute, CloneAssetHandlerCompleteCallback);
 }

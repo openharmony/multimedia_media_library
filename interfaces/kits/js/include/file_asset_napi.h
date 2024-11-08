@@ -182,6 +182,8 @@ struct FileAssetAsyncContext : public NapiError {
     int32_t changedRows;
     int32_t fd;
     int32_t analysisType = AnalysisType::ANALYSIS_INVALID;
+    int64_t assetId = 0;
+    std::string title;
     bool isFavorite = false;
     bool isTrash = false;
     bool isHidden = false;
