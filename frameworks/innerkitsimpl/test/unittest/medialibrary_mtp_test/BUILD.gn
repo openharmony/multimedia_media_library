@@ -80,6 +80,7 @@ if (defined(medialibrary_mtp_enable)) {
       debug = false
     }
 
+    defines = [ "MEDIALIBRARY_MTP_ENABLE=1" ]
     if (defined(global_parts_info.powermgr_battery_manager)) {
       external_deps += [ "battery_manager:batterysrv_client" ]
       cflags_cc = [ "-DHAS_BATTERY_MANAGER_PART" ]
