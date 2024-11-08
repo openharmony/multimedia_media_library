@@ -53,9 +53,10 @@ private:
     bool isCharging_ {false};
     bool isPowerSufficient_{false};
     bool isDeviceTemperatureProper_{false};
-    bool isWifiConn_{ false };
+    bool isWifiConnected_{ false };
     bool currentStatus_{false};
     bool timerStatus_{false};
+    bool isNetworkConnected_{false};
     std::mutex mutex_;
     int32_t agingCount_ {0};
     int32_t deviceTemperatureLevel_ {0};
@@ -81,6 +82,7 @@ private:
     int64_t GetNowTime();
     void Init();
     void UpdateBackgroundOperationStatus(const AAFwk::Want &want, const StatusEventType statusEventType);
+    void UpdateCloudMediaAssetDownloadStatus(const AAFwk::Want &want, const StatusEventType statusEventType);
     void UpdateCurrentStatus();
     void CheckHalfDayMissions();
     void UpdateBackgroundTimer();
@@ -88,6 +90,7 @@ private:
     bool IsDelayTaskTimeOut();
     void EndBackgroundOperationThread();
     void UpdateSubcriberStatus();
+    void UpdateCloudAssetNetStatus();
 };
 }  // namespace Media
 }  // namespace OHOS

@@ -77,6 +77,45 @@ namespace OHOS {
 namespace AbilityRuntime {
 using namespace OHOS::AppExecFwk;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
+static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
+    OperationObject::PAH_PHOTO,
+    OperationObject::PAH_ALBUM,
+    OperationObject::PAH_MAP,
+    OperationObject::PAH_FORM_MAP,
+    OperationObject::ANALYSIS_PHOTO_ALBUM,
+    OperationObject::ANALYSIS_PHOTO_MAP,
+    OperationObject::VISION_OCR,
+    OperationObject::VISION_AESTHETICS,
+    OperationObject::VISION_LABEL,
+    OperationObject::VISION_VIDEO_LABEL,
+    OperationObject::VISION_IMAGE_FACE,
+    OperationObject::VISION_VIDEO_FACE,
+    OperationObject::VISION_FACE_TAG,
+    OperationObject::VISION_OBJECT,
+    OperationObject::VISION_RECOMMENDATION,
+    OperationObject::VISION_SEGMENTATION,
+    OperationObject::VISION_COMPOSITION,
+    OperationObject::VISION_SALIENCY,
+    OperationObject::VISION_HEAD,
+    OperationObject::VISION_POSE,
+    OperationObject::VISION_TOTAL,
+    OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
+    OperationObject::GEO_DICTIONARY,
+    OperationObject::GEO_KNOWLEDGE,
+    OperationObject::GEO_PHOTO,
+    OperationObject::PAH_MULTISTAGES_CAPTURE,
+    OperationObject::STORY_ALBUM,
+    OperationObject::STORY_COVER,
+    OperationObject::STORY_PLAY,
+    OperationObject::USER_PHOTOGRAPHY,
+    OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
+    OperationObject::INDEX_CONSTRUCTION_STATUS,
+    OperationObject::MEDIA_APP_URI_PERMISSION,
+    OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE,
+    OperationObject::ANALYSIS_ASSET_SD_MAP,
+    OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
+    OperationObject::CLOUD_MEDIA_ASSET_OPERATE,
+};
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const unique_ptr<Runtime>& runtime)
 {
@@ -482,45 +521,6 @@ static int32_t UserFileMgrPermissionCheck(MediaLibraryCommand &cmd, const bool i
 
 static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool isWrite)
 {
-    static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
-        OperationObject::PAH_PHOTO,
-        OperationObject::PAH_ALBUM,
-        OperationObject::PAH_MAP,
-        OperationObject::PAH_FORM_MAP,
-        OperationObject::ANALYSIS_PHOTO_ALBUM,
-        OperationObject::ANALYSIS_PHOTO_MAP,
-        OperationObject::VISION_OCR,
-        OperationObject::VISION_AESTHETICS,
-        OperationObject::VISION_LABEL,
-        OperationObject::VISION_VIDEO_LABEL,
-        OperationObject::VISION_IMAGE_FACE,
-        OperationObject::VISION_VIDEO_FACE,
-        OperationObject::VISION_FACE_TAG,
-        OperationObject::VISION_OBJECT,
-        OperationObject::VISION_RECOMMENDATION,
-        OperationObject::VISION_SEGMENTATION,
-        OperationObject::VISION_COMPOSITION,
-        OperationObject::VISION_SALIENCY,
-        OperationObject::VISION_HEAD,
-        OperationObject::VISION_POSE,
-        OperationObject::VISION_TOTAL,
-        OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
-        OperationObject::GEO_DICTIONARY,
-        OperationObject::GEO_KNOWLEDGE,
-        OperationObject::GEO_PHOTO,
-        OperationObject::PAH_MULTISTAGES_CAPTURE,
-        OperationObject::STORY_ALBUM,
-        OperationObject::STORY_COVER,
-        OperationObject::STORY_PLAY,
-        OperationObject::USER_PHOTOGRAPHY,
-        OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
-        OperationObject::INDEX_CONSTRUCTION_STATUS,
-        OperationObject::MEDIA_APP_URI_PERMISSION,
-        OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE,
-        OperationObject::ANALYSIS_ASSET_SD_MAP,
-        OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
-    };
-
     int32_t err = HandleSecurityComponentPermission(cmd);
     if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         return err;
@@ -946,9 +946,17 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
 string MediaDataShareExtAbility::GetType(const Uri &uri)
 {
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
-    auto ret = MediaLibraryDataManager::GetInstance()->GetType(uri);
-    MEDIA_INFO_LOG("%{public}s end.", __func__);
-    return ret;
+    MediaLibraryCommand cmd(uri);
+    int32_t err = CheckPermFromUri(cmd, false);
+    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
+    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
+    if (err != E_SUCCESS) {
+        MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
+        return "";
+    }
+    DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
+    string getTypeRet = MediaLibraryDataManager::GetInstance()->GetType(uri);
+    return getTypeRet;
 }
 
 int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const vector<DataShareValuesBucket> &values)

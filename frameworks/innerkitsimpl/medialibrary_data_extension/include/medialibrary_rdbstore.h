@@ -99,6 +99,7 @@ public:
         const int offset, const int limit);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> GetOtherDuplicateAssets(const std::vector<std::string> &columns,
         const int offset, const int limit);
+    EXPORT static int32_t ComletelyDeleteDBData(int32_t &deletedRows, const NativeRdb::AbsRdbPredicates &predicates);
     EXPORT int Update(int &changedRows, const std::string &table, const NativeRdb::ValuesBucket &row,
         const std::string &whereClause, const std::vector<std::string> &args);
     EXPORT std::string ObtainDistributedTableName(const std::string &device, const std::string &table, int &errCode);
