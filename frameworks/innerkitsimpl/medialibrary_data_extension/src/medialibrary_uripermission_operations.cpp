@@ -468,23 +468,22 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
         }
     }
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    int32_t errCode = trans->Start(__func__);
+    int32_t errCode = E_OK;
+    std::function<int(void)> func = [&]()->int {
+        if (photoNeedToUpdate) {
+            BatchUpdate(cmd, photosValues, PHOTOSTYPE, values, trans);
+        }
+        if (audioNeedToUpdate) {
+            BatchUpdate(cmd, audiosValues, AUDIOSTYPE, values, trans);
+        }
+        if (needToInsert) {
+            UriPermissionOperations::BatchInsertOperation(cmd, batchInsertBucket, trans);
+        }
+        return errCode;
+    };
+    errCode = trans->RetryTrans(func, __func__);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("TransactionOperations start error %{public}d", errCode);
-        return E_ERR;
-    }
-    if (photoNeedToUpdate) {
-        BatchUpdate(cmd, photosValues, PHOTOSTYPE, values, trans);
-    }
-    if (audioNeedToUpdate) {
-        BatchUpdate(cmd, audiosValues, AUDIOSTYPE, values, trans);
-    }
-    if (needToInsert) {
-        UriPermissionOperations::BatchInsertOperation(cmd, batchInsertBucket, trans);
-    }
-    errCode = trans->Finish();
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("GrantUriPermission: tans finish fail!, ret:%{public}d", errCode);
+        MEDIA_ERR_LOG("GrantUriPermission: trans retry fail!, ret:%{public}d", errCode);
     }
     return E_OK;
 }

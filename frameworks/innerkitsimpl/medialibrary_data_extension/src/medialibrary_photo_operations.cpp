@@ -582,23 +582,22 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check Dir and Extention, "
         "displayName=%{private}s, mediaType=%{public}d", displayName.c_str(), mediaType);
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    errCode = trans->Start(__func__);
-    if (errCode != E_OK) {
-        return errCode;
-    }
+    int32_t outRow = -1;
+    std::function<int(void)> func = [&]()->int {
+        errCode = SetAssetPathInCreate(fileAsset, trans);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
+            return errCode;
+        }
 
-    errCode = SetAssetPathInCreate(fileAsset, trans);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
+        outRow = InsertAssetInDb(trans, cmd, fileAsset);
+        if (outRow <= 0) {
+            MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
+            return E_HAS_DB_ERROR;
+        }
         return errCode;
-    }
-
-    int32_t outRow = InsertAssetInDb(trans, cmd, fileAsset);
-    if (outRow <= 0) {
-        MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
-        return E_HAS_DB_ERROR;
-    }
-    errCode = trans->Finish();
+    };
+    errCode = trans->RetryTrans(func, __func__);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("CreateV9: tans finish fail!, ret:%{public}d", errCode);
     }
@@ -660,20 +659,22 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     int32_t errCode = CheckWithType(isContains, displayName, extention, mediaType);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    errCode = trans->Start(__func__);
-    CHECK_AND_RETURN_RET((errCode == E_OK), errCode);
-    errCode = isContains ? SetAssetPathInCreate(fileAsset, trans) :
-        SetAssetPath(fileAsset, extention, trans);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Set Path, Name=%{private}s", displayName.c_str());
-    int32_t outRow = InsertAssetInDb(trans, cmd, fileAsset);
-    AuditLog auditLog = { true, "USER BEHAVIOR", "ADD", "io", 1, "running", "ok" };
-    HiAudit::GetInstance().Write(auditLog);
-    CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
-    fileAsset.SetId(outRow);
-    SolvePhotoAlbumInCreate(cmd, fileAsset);
-    errCode = trans->Finish();
+    int32_t outRow = -1;
+    std::function<int(void)> func = [&]()->int {
+        errCode = isContains ? SetAssetPathInCreate(fileAsset, trans) :
+            SetAssetPath(fileAsset, extention, trans);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Set Path, Name=%{private}s", displayName.c_str());
+        outRow = InsertAssetInDb(trans, cmd, fileAsset);
+        AuditLog auditLog = { true, "USER BEHAVIOR", "ADD", "io", 1, "running", "ok" };
+        HiAudit::GetInstance().Write(auditLog);
+        CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
+        fileAsset.SetId(outRow);
+        SolvePhotoAlbumInCreate(cmd, fileAsset);
+        return errCode;
+    };
+    errCode = trans->RetryTrans(func, __func__);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("CreateV10: tans finish fail!, ret:%{public}d", errCode);
+        MEDIA_ERR_LOG("CreateV10: trans retry fail!, ret:%{public}d", errCode);
     }
     string fileUri = CreateExtUriForV10Asset(fileAsset);
     if (isNeedGrant) {

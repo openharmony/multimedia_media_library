@@ -166,17 +166,18 @@ int32_t EnhancementServiceCallback::CreateCloudEnhancementPhoto(int32_t sourceFi
     int32_t errCode = CheckDisplayNameWithType(info->displayName, static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE));
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    errCode = trans->Start(__func__);
-    CHECK_AND_RETURN_RET((errCode == NativeRdb::E_OK), errCode);
-    errCode = SetAssetPathInCreate(fileAsset, trans);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
-        "Failed to Solve FileAsset Path and Name, displayName=%{private}s", info->displayName.c_str());
-    
-    int32_t outRow = EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(cmd, fileAsset,
-        sourceFileId, info);
-    CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
-    fileAsset.SetId(outRow);
-    errCode = trans->Finish();
+    int32_t outRow = -1;
+    std::function<int(void)> func = [&]()->int {
+        errCode = SetAssetPathInCreate(fileAsset, trans);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+            "Failed to Solve FileAsset Path and Name, displayName=%{private}s", info->displayName.c_str());
+        int32_t outRow = EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(cmd, fileAsset,
+            sourceFileId, info);
+        CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
+        fileAsset.SetId(outRow);
+        return errCode;
+    };
+    errCode = trans->RetryTrans(func, __func__);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("CreateCloudEnhancementPhoto: tans finish fail!, ret:%{public}d", errCode);
     }
