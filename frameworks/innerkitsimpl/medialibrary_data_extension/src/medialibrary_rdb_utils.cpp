@@ -283,17 +283,16 @@ static int32_t ForEachRow(const shared_ptr<MediaLibraryRdbStore> rdbStore, const
     int32_t err = NativeRdb::E_OK;
     while (resultSet->GoToNextRow() == E_OK) {
         std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-        err = trans->Start(__func__);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
-            return E_HAS_DB_ERROR;
-        }
-        // Ignore failure here, try to iterate rows as much as possible.
-        func(rdbStore, resultSet, hiddenState, trans);
-        err = trans->Finish();
+        std::function<int(void)> transFunc = [&]()->int {
+            // Ignore failure here, try to iterate rows as much as possible.
+            func(rdbStore, resultSet, hiddenState, trans);
+            return err;
+        };
+        err = trans->RetryTrans(transFunc, __func__);
         if (err != E_OK) {
-            MEDIA_ERR_LOG("ForEachRow: tans finish fail!, ret:%{public}d", err);
+            MEDIA_ERR_LOG("ForEachRow: trans retry fail!, ret:%{public}d", err);
         }
+        return err;
     }
     return E_SUCCESS;
 }
@@ -1671,18 +1670,16 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<MediaLib
     while (albumResult->GoToNextRow() == E_OK) {
         int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
         std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-        err = trans->Start(__func__);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
-            return;
-        }
-        auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
-        if (subtype == PhotoAlbumSubType::PORTRAIT) {
-            UpdatePortraitAlbumIfNeeded(rdbStore, albumResult, fileIds, trans);
-        } else {
-            UpdateAnalysisAlbumIfNeeded(rdbStore, albumResult, false, trans);
-        }
-        err = trans->Finish();
+        std::function<int(void)> func = [&]()->int {
+            auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
+            if (subtype == PhotoAlbumSubType::PORTRAIT) {
+                UpdatePortraitAlbumIfNeeded(rdbStore, albumResult, fileIds, trans);
+            } else {
+                UpdateAnalysisAlbumIfNeeded(rdbStore, albumResult, false, trans);
+            }
+            return err;
+        };
+        err = trans->RetryTrans(func, __func__);
         if (err != E_OK) {
             MEDIA_ERR_LOG("UpdateAnalysisAlbumInternal: tans finish fail!, ret:%{public}d", err);
         }

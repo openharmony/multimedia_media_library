@@ -173,23 +173,22 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
     int32_t changedRows = 0;
     int32_t err = NativeRdb::E_OK;
-    err = trans->Start(__func__);
-    if (err != NativeRdb::E_OK) {
-        return E_HAS_DB_ERROR;
-    }
-    for (const auto &value : values) {
-        err =  InsertAnalysisAsset(value, trans);
-        if (err == E_HAS_DB_ERROR) {
-            MEDIA_WARN_LOG("InsertAnalysisAsset for db error, changedRows now: %{public}d", changedRows);
-            return err;
+    std::function<int(void)> func = [&]()->int {
+        for (const auto &value : values) {
+            err =  InsertAnalysisAsset(value, trans);
+            if (err == E_HAS_DB_ERROR) {
+                MEDIA_WARN_LOG("InsertAnalysisAsset for db error, changedRows now: %{public}d", changedRows);
+                return err;
+            }
+            if (err > 0) {
+                changedRows++;
+            }
         }
-        if (err > 0) {
-            changedRows++;
-        }
-    }
-    err = trans->Finish();
+        return err;
+    };
+    err = trans->RetryTrans(func, __func__);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("AddAnaLysisPhotoAssets: tans finish fail!, ret:%{public}d", err);
+        MEDIA_ERR_LOG("AddAnaLysisPhotoAssets: trans retry fail!, ret:%{public}d", err);
     }
     bool isValid = false;
     std::vector<string> albumIdList;

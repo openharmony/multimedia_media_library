@@ -49,6 +49,9 @@ public:
     EXPORT static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
     EXPORT static int32_t BatchInsert(MediaLibraryCommand &cmd,
         const std::vector<DataShare::DataShareValuesBucket> &values);
+    EXPORT static int32_t BatchInsertInner(MediaLibraryCommand &cmd,
+        const std::vector<DataShare::DataShareValuesBucket> &values,
+        std::shared_ptr<TransactionOperations> trans);
     EXPORT static int32_t DeleteOperation(NativeRdb::RdbPredicates &predicates);
     EXPORT static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryOperation(
         DataShare::DataSharePredicates &predicates, std::vector<std::string> &fetchColumns);
