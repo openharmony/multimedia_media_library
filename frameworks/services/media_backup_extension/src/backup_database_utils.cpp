@@ -41,6 +41,7 @@ constexpr int32_t MAX_TRY_TIMES_FOR_DB = 30;
 constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // in milliseconds.
 const std::string LANDMARK_X = "x";
 const std::string LANDMARK_Y = "y";
+const std::string COLUMN_INTEGRITY_CHECK = "integrity_check";
 const std::vector<uint32_t> HEX_MAX = { 0xff, 0xffff, 0xffffff, 0xffffffff };
 static SafeMap<int32_t, int32_t> fileIdOld2NewForCloudEnhancement;
 
@@ -912,6 +913,19 @@ void BackupDatabaseUtils::UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbSt
         }
         fileIdOld2NewForCloudEnhancement.Erase(fileInfo.associateFileId);
     }
+}
+
+void BackupDatabaseUtils::CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
+    const std::string &dbTag)
+{
+    const std::string querySql = "PRAGMA " + COLUMN_INTEGRITY_CHECK;
+    auto resultSet = GetQueryResultSet(rdbStore, querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG ("Query resultSet is null or GoToFirstRow failed.");
+        return;
+    }
+    std::string result = GetStringVal(COLUMN_INTEGRITY_CHECK, resultSet);
+    MEDIA_INFO_LOG("Check db integrity: %{public}d, %{public}s, %{public}s", sceneCode, dbTag.c_str(), result.c_str());
 }
 } // namespace Media
 } // namespace OHOS
