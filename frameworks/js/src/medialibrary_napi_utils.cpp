@@ -766,7 +766,7 @@ napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork(napi_env env, unique_ptr<A
 
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, execute, complete,
         static_cast<void *>(asyncContext.get()), &asyncContext->work));
-    NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
+    NAPI_CALL(env, napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated));
     asyncContext.release();
 
     return result;

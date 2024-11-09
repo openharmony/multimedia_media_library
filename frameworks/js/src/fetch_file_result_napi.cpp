@@ -548,7 +548,7 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     } else {
@@ -596,7 +596,7 @@ napi_value FetchFileResultNapi::JSGetNextObject(napi_env env, napi_callback_info
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     } else {
@@ -644,7 +644,7 @@ napi_value FetchFileResultNapi::JSGetLastObject(napi_env env, napi_callback_info
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     } else {
@@ -705,7 +705,7 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     } else {
@@ -872,7 +872,7 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     } else {
