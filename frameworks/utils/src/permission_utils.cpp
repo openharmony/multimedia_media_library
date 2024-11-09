@@ -29,12 +29,15 @@
 #include "privacy_kit.h"
 #include "system_ability_definition.h"
 #include "tokenid_kit.h"
+#include "bundle_mgr_proxy.h"
+#include "bundle_info.h"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace OHOS::Security::AccessToken;
 using namespace OHOS::AppExecFwk::Constants;
+using namespace OHOS::AppExecFwk;
 
 const int32_t CAPACITY = 50;
 const int32_t HDC_SHELL_UID = 2000;
@@ -363,12 +366,105 @@ bool PermissionUtils::CheckPhotoCallerPermission(const vector<string> &perms)
     return true;
 }
 
+bool PermissionUtils::CheckPhotoCallerPermission(const string &permission, const AccessTokenID &tokenCaller)
+{
+    PermissionUsedType type = PermissionUsedTypeValue::NORMAL_TYPE;
+    int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (res != PermissionState::PERMISSION_GRANTED) {
+        CollectPermissionRecord(tokenCaller, permission, false, type);
+        return false;
+    }
+    CollectPermissionRecord(tokenCaller, permission, true, type);
+    return true;
+}
+
+bool PermissionUtils::GetTokenCallerForUid(const int &uid, AccessTokenID &tokenCaller)
+{
+    string bundleName;
+    int32_t appIndex;
+    bundleMgr_ = GetSysBundleManager();
+    if (bundleMgr_ == nullptr) {
+        MEDIA_ERR_LOG("Get BundleManager failed");
+        return false;
+    }
+    auto err = bundleMgr_->GetNameAndIndexForUid(uid, bundleName, appIndex);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Get bundleName failed");
+        return false;
+    }
+    OHOS::AppExecFwk::BundleInfo bundleInfo;
+    int32_t userId = uid / BASE_USER_RANGE;
+    if (appIndex == 0) {
+        err = bundleMgr_->GetBundleInfoV9(bundleName,
+            static_cast<int32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION), bundleInfo, userId);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("main app tokenid from uid fail");
+            return false;
+        }
+    } else {
+        err = bundleMgr_->GetCloneBundleInfo(bundleName,
+            static_cast<int32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION), appIndex, bundleInfo, userId);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("clone app get tokenid from uid fail");
+            return false;
+        }
+    }
+    tokenCaller = bundleInfo.applicationInfo.accessTokenId;
+    return true;
+}
+
+void PermissionUtils::CollectPermissionInfo(const string &permission,
+    const bool permGranted, const PermissionUsedType type, const int &uid)
+{
+    AccessTokenID tokenCaller;
+    GetTokenCallerForUid(uid, tokenCaller);
+    CollectPermissionRecord(tokenCaller, permission, permGranted, type);
+}
+
+bool PermissionUtils::CheckPhotoCallerPermission(const vector<string> &perms, const int &uid)
+{
+    if (perms.empty()) {
+        return false;
+    }
+    AccessTokenID tokenCaller;
+    bool err = GetTokenCallerForUid(uid, tokenCaller);
+    if (err == false) {
+        return false;
+    }
+    for (const auto &perm : perms) {
+        if (!CheckPhotoCallerPermission(perm, tokenCaller)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool PermissionUtils::CheckCallerPermission(const string &permission)
 {
     MediaLibraryTracer tracer;
     tracer.Start("CheckCallerPermission");
 
     AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+    int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (res != PermissionState::PERMISSION_GRANTED) {
+        MEDIA_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
+        AddPermissionRecord(tokenCaller, permission, false);
+        return false;
+    }
+    AddPermissionRecord(tokenCaller, permission, true);
+
+    return true;
+}
+
+bool PermissionUtils::CheckCallerPermission(const string &permission, const int &uid)
+{
+    AccessTokenID tokenCaller;
+    bool err = GetTokenCallerForUid(uid, tokenCaller);
+    if (err == false) {
+        MEDIA_ERR_LOG("get tokenid fail");
+        return false;
+    }
+    MEDIA_INFO_LOG("tokenid = %{public}d", tokenCaller);
     int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
     if (res != PermissionState::PERMISSION_GRANTED) {
         MEDIA_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
