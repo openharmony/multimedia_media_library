@@ -81,8 +81,9 @@ public:
     EXPORT void HandleFailedCallback(const DownloadProgressObj &progress);
     EXPORT void HandleStoppedCallback(const DownloadProgressObj &progress);
 
-    EXPORT std::string GetTaskStatus();
-    EXPORT std::string GetTaskPauseCause();
+    EXPORT CloudMediaDownloadType GetDownloadType();
+    EXPORT CloudMediaAssetTaskStatus GetTaskStatus();
+    EXPORT CloudMediaTaskPauseCause GetTaskPauseCause();
     EXPORT std::string GetTaskInfo();
 
 private:
@@ -95,7 +96,7 @@ private:
     void ResetParameter();
 
     void SetTaskStatus(Status status);
-    std::shared_ptr<NativeRdb::ResultSet> QueryDownloadFilesNeeded(const bool &flag);
+    std::shared_ptr<NativeRdb::ResultSet> QueryDownloadFilesNeeded(const bool &isQueryInfo);
     DownloadFileData ReadyDataForBatchDownload();
     int32_t DoForceTaskExecute();
     int32_t SubmitBatchDownload(DownloadFileData &datas, const bool &isCache);
@@ -108,12 +109,21 @@ private:
 
 public:
     static std::shared_ptr<CloudMediaAssetDownloadOperation> instance_;
-    std::shared_ptr<DataShare::DataShareHelper> cloudHelper_;
-    std::shared_ptr<CloudMediaAssetObserver> cloudMediaAssetObserver_;
-    std::shared_ptr<MediaCloudDownloadCallback> downloadCallback_;
+
+    // Confirmation of the notification
+    bool isThumbnailUpdate_ = true;
+    bool isNetworkConnected_ = false;
+    bool isBgDownloadPermission_ = false;
+
+private:
+    std::reference_wrapper<CloudSyncManager> cloudSyncManager_ = CloudSyncManager::GetInstance();
     CloudMediaAssetTaskStatus taskStatus_ = CloudMediaAssetTaskStatus::IDLE;
     CloudMediaDownloadType downloadType_;
     CloudMediaTaskPauseCause pauseCause_ = CloudMediaTaskPauseCause::NO_PAUSE;
+    std::shared_ptr<DataShare::DataShareHelper> cloudHelper_;
+    std::shared_ptr<CloudMediaAssetObserver> cloudMediaAssetObserver_;
+    std::shared_ptr<MediaCloudDownloadCallback> downloadCallback_;
+    static std::mutex mutex_;
 
     DownloadFileData readyForDownload_;
     DownloadFileData notFoundForDownload_;
@@ -129,11 +139,6 @@ public:
     int64_t downloadNum_ = 0;
     DownloadFileData dataForDownload_;
 
-    // Confirmation of the notification
-    bool isThumbnailUpdate_ = true;
-    bool isNetworkConnected_ = false;
-    bool isBgDownloadPermission_ = false;
-
     // common info
     int64_t batchDownloadTotalNum_ = 0;
     int64_t batchDownloadTotalSize_ = 0;
@@ -144,9 +149,6 @@ public:
     int64_t totalSize_ = 0;
     int64_t remainCount_ = 0;
     int64_t remainSize_ = 0;
-private:
-    std::reference_wrapper<CloudSyncManager> cloudSyncManager_ = CloudSyncManager::GetInstance();
-    static std::mutex mutex_;
 };
 } // namespace Media
 } // namespace OHOS

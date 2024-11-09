@@ -84,7 +84,6 @@ napi_value CloudMediaAssetManagerNapi::Constructor(napi_env env, napi_callback_i
         napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()), CloudMediaAssetManagerNapi::Destructor, nullptr,
             nullptr),
         JS_INNER_FAIL);
-    obj.release();
     return thisVar;
 }
 

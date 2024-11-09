@@ -46,6 +46,7 @@ public:
     EXPORT int32_t GetTaskStatus();
     EXPORT int32_t GetDownloadType();
     EXPORT bool SetBgDownloadPermission(const bool &flag);
+
 private:
     CloudMediaAssetManager() {}
     ~CloudMediaAssetManager() {}
