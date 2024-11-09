@@ -91,7 +91,6 @@ int32_t TransactionOperations::Finish()
     transaction_ = nullptr;
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("transaction commit fail!, ret:%{public}d", ret);
-        return ret;
     }
 #ifdef CLOUD_SYNC_MANAGER
     if (isSkipCloudSync_) {
@@ -152,7 +151,6 @@ int32_t TransactionOperations::Rollback()
     transaction_ = nullptr;
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Rollback fail:%{public}d", ret);
-        return ret;
     }
 #ifdef CLOUD_SYNC_MANAGER
     if (isSkipCloudSync_) {
