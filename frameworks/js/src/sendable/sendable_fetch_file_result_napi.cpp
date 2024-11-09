@@ -464,7 +464,7 @@ napi_value SendableFetchFileResultNapi::JSGetFirstObject(napi_env env, napi_call
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     } else {
@@ -512,7 +512,7 @@ napi_value SendableFetchFileResultNapi::JSGetNextObject(napi_env env, napi_callb
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     } else {
@@ -679,7 +679,7 @@ napi_value SendableFetchFileResultNapi::JSGetAllObject(napi_env env, napi_callba
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     } else {
@@ -954,7 +954,7 @@ napi_value SendableFetchFileResultNapi::JSGetLastObject(napi_env env, napi_callb
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     } else {
@@ -1015,7 +1015,7 @@ napi_value SendableFetchFileResultNapi::JSGetPositionObject(napi_env env, napi_c
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     } else {

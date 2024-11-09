@@ -1711,7 +1711,7 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     }
@@ -1990,7 +1990,7 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     }
@@ -2247,7 +2247,7 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     }
@@ -2468,7 +2468,7 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     }
@@ -2719,7 +2719,7 @@ napi_value FileAssetNapi::JSIsTrash(napi_env env, napi_callback_info info)
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     }
