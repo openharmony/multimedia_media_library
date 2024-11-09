@@ -921,11 +921,6 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     if (!fileType.empty()) {
         SavePicture(stoi(fileType), stoi(fileId));
     }
-    string uri = cmd.GetQuerySetParam(PhotoColumn::MEDIA_FILE_PATH);
-    auto watch = MediaLibraryNotify::GetInstance();
-    if (watch != nullptr) {
-        watch->Notify(GetUriWithoutSeg(uri), NOTIFY_ADD);
-    }
 
     string needScanStr = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId,
