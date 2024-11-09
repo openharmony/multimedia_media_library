@@ -61,8 +61,12 @@ ohos_shared_library("cj_photoaccesshelper_ffi") {
 
   sources = [
     "src/confirm_callback.cpp",
+    "src/delete_callback.cpp",
     "src/fetch_result_impl.cpp",
+    "src/media_album_change_request_impl.cpp",
+    "src/media_asset_change_request_impl.cpp",
     "src/media_asset_manager_ffi.cpp",
+    "src/media_change_request_impl.cpp",
     "src/modal_ui_callback.cpp",
     "src/moving_photo_impl.cpp",
     "src/photo_accesshelper_ffi.cpp",

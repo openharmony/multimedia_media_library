@@ -42,6 +42,11 @@ PhotoAssetImpl::PhotoAssetImpl(unique_ptr<FileAsset> fileAssetPtr_)
     fileAssetPtr = move(fileAssetPtr_);
 }
 
+PhotoAssetImpl::PhotoAssetImpl(shared_ptr<FileAsset> fileAssetPtr_)
+{
+    fileAssetPtr = fileAssetPtr_;
+}
+
 shared_ptr<FileAsset> PhotoAssetImpl::GetFileAssetInstance()
 {
     return fileAssetPtr;

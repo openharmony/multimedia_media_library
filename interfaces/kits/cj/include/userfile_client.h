@@ -36,6 +36,7 @@ public:
         const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns, int &errCode);
     static int Insert(Uri &uri, const DataShare::DataShareValuesBucket &value);
     static int InsertExt(Uri &uri, const DataShare::DataShareValuesBucket &value, std::string &result);
+    static int BatchInsert(Uri& uri, const std::vector<DataShare::DataShareValuesBucket>& values);
     static int Update(Uri &uri, const DataShare::DataSharePredicates &predicates,
         const DataShare::DataShareValuesBucket &value);
     static int Delete(Uri &uri, const DataShare::DataSharePredicates &predicates);

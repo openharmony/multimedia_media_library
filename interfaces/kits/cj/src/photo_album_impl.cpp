@@ -31,6 +31,11 @@ PhotoAlbumImpl::PhotoAlbumImpl(std::unique_ptr<PhotoAlbum> photoAlbumPtr_)
     photoAlbumPtr = move(photoAlbumPtr_);
 }
 
+PhotoAlbumImpl::PhotoAlbumImpl(std::shared_ptr<PhotoAlbum> photoAlbumPtr_)
+{
+    photoAlbumPtr = photoAlbumPtr_;
+}
+
 shared_ptr<PhotoAlbum> PhotoAlbumImpl::GetPhotoAlbumInstance()
 {
     return photoAlbumPtr;

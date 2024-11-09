@@ -19,6 +19,9 @@
 #include "ffi_remote_data.h"
 #include "fetch_result_impl.h"
 #include "media_asset_manager_ffi.h"
+#include "media_album_change_request_impl.h"
+#include "media_asset_change_request_impl.h"
+#include "media_asset_manager_ffi.h"
 #include "moving_photo_impl.h"
 #include "photo_album_impl.h"
 #include "photo_accesshelper_impl.h"
@@ -96,6 +99,32 @@ extern "C" {
         int32_t resourceType, char* fileUri, int32_t* errCode);
     FFI_EXPORT CArrUI8 FfiMovingPhotoRequestContentArrayBuffer(int64_t id,
         int32_t resourceType, int32_t* errCode);
+
+    // MediaAssetChangeRequest
+    FFI_EXPORT int64_t FfiMediaAssetChangeRequestImplConstructor(int64_t id, int32_t* errCode);
+    FFI_EXPORT int64_t FfiMediaAssetChangeRequestImplCreateImageAssetRequest(int64_t id, char* fileUri, int32_t* errCode);
+    FFI_EXPORT int64_t FfiMediaAssetChangeRequestImplCreateVideoAssetRequest(int64_t id, char* fileUri, int32_t* errCode);
+    FFI_EXPORT int64_t FfiMediaAssetChangeRequestImplCreateAssetRequest(
+        int64_t id, int32_t photoType, char* extension, char* title, int32_t subType, int32_t* errCode);
+    FFI_EXPORT int32_t FfiMediaAssetChangeRequestImplDeleteAssetsByObject(int64_t id, CArrI64 assets);
+    FFI_EXPORT int32_t FfiMediaAssetChangeRequestImplDeleteAssetsByString(int64_t id, CArrString assets);
+    FFI_EXPORT int64_t FfiMediaAssetChangeRequestImplGetAsset(int64_t id, int32_t* errCode);
+    FFI_EXPORT int32_t FfiMediaAssetChangeRequestImplSetTitle(int64_t id, char* title);
+    FFI_EXPORT int32_t FfiMediaAssetChangeRequestImplGetWriteCacheHandler(int64_t id, int32_t* errCode);
+    FFI_EXPORT int32_t FfiMediaAssetChangeRequestImplAddResourceByString(int64_t id, int32_t resourceType, char* fileUri);
+    FFI_EXPORT int32_t FfiMediaAssetChangeRequestImplAddResourceByBuffer(int64_t id, int32_t resourceType, CArrUI8 data);
+    FFI_EXPORT int32_t FfiMediaAssetChangeRequestImplSaveCameraPhoto(int64_t id);
+    FFI_EXPORT int32_t FfiMediaAssetChangeRequestImplDiscardCameraPhoto(int64_t id);
+    FFI_EXPORT int32_t FfiMediaAssetChangeRequestImplSetOrientation(int64_t id, int32_t orientation);
+    FFI_EXPORT int32_t FfiMediaAssetChangeRequestImplApplyChanges(int64_t id);
+
+    // MediaAlbumChangeRequest
+    FFI_EXPORT int64_t FfiMediaAlbumChangeRequestImplConstructor(int64_t id, int32_t* errCode);
+    FFI_EXPORT int64_t FfiMediaAlbumChangeRequestImplGetAlbum(int64_t id, int32_t* errCode);
+    FFI_EXPORT int32_t FfiMediaAlbumChangeRequestImplSetAlbumName(int64_t id, char* albumName);
+    FFI_EXPORT int32_t FfiMediaAlbumChangeRequestImplAddAssets(int64_t id, CArrI64 assets);
+    FFI_EXPORT int32_t FfiMediaAlbumChangeRequestImplRemoveAssets(int64_t id, CArrI64 assets);
+    FFI_EXPORT int32_t FfiMediaAlbumChangeRequestImplApplyChanges(int64_t id);
 }
 }
 }

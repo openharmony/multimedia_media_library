@@ -171,5 +171,14 @@ int UserFileClient::InsertExt(Uri &uri, const DataShareValuesBucket &value, stri
     int index = sDataShareHelper_->InsertExt(uri, value, result);
     return index;
 }
+
+int UserFileClient::BatchInsert(Uri& uri, const std::vector<DataShare::DataShareValuesBucket>& values)
+{
+    if (!IsValid()) {
+        LOGE("Batch insert fail, helper null");
+        return E_FAIL;
+    }
+    return sDataShareHelper_->BatchInsert(uri, values);
+}
 }
 }

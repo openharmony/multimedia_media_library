@@ -31,6 +31,7 @@ namespace Media {
 class PhotoAssetImpl : public OHOS::FFI::FFIData {
     DECL_TYPE(PhotoAssetImpl, OHOS::FFI::FFIData)
 public:
+    explicit PhotoAssetImpl(std::shared_ptr<FileAsset> fileAssetPtr_);
     explicit PhotoAssetImpl(std::unique_ptr<FileAsset> fileAssetPtr_);
     ~PhotoAssetImpl() override
     {
