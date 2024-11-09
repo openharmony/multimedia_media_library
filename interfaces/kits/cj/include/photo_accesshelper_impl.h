@@ -163,7 +163,7 @@ public:
     void UnRegisterNotifyChange(const std::string &uri, int64_t funcId, ChangeListener &listObj);
     void UnRegisterChange(char* uri, int64_t funcId);
     void ShowAssetsCreationDialog(CArrString &srcFileUris, PhotoCreationConfigs &photoCreationConfigs,
-        int64_t funcId, FfiBundleInfo &FfiBundleInfo, int32_t &errCode);
+        int64_t funcId, FfiBundleInfo &cBundleInfo, int32_t &errCode);
     void Release();
     void ParseArgsGetPhotoAlbum(int32_t type, int32_t subtype, COptions options,
         DataShare::DataSharePredicates &predicates, std::vector<std::string> &fetchColumn,

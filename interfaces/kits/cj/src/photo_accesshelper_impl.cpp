@@ -764,7 +764,7 @@ static bool InitConfirmRequest(OHOS::AAFwk::Want &want, shared_ptr<ConfirmCallba
 }
 
 void PhotoAccessHelperImpl::ShowAssetsCreationDialog(CArrString &srcFileUris,
-    PhotoCreationConfigs &photoCreationConfigs, int64_t funcId, FfiBundleInfo &FfiBundleInfo, int32_t &errCode)
+    PhotoCreationConfigs &photoCreationConfigs, int64_t funcId, FfiBundleInfo &cBundleInfo, int32_t &errCode)
 {
 #ifdef HAS_ACE_ENGINE_PART
     auto context = FFIData::GetData<AbilityRuntime::CJAbilityContext>(contextId);
@@ -788,9 +788,9 @@ void PhotoAccessHelperImpl::ShowAssetsCreationDialog(CArrString &srcFileUris,
     }
     // set want
     OHOS::AAFwk::Want want;
-    want.SetParam(CONFIRM_BOX_BUNDLE_NAME, string(FfiBundleInfo.bundleName));
-    want.SetParam(CONFIRM_BOX_APP_NAME, string(FfiBundleInfo.appName));
-    want.SetParam(CONFIRM_BOX_APP_ID, string(FfiBundleInfo.appId));
+    want.SetParam(CONFIRM_BOX_BUNDLE_NAME, string(cBundleInfo.bundleName));
+    want.SetParam(CONFIRM_BOX_APP_NAME, string(cBundleInfo.appName));
+    want.SetParam(CONFIRM_BOX_APP_ID, string(cBundleInfo.appId));
     auto callback = make_shared<ConfirmCallback>(uiContent, funcId);
     if (!InitConfirmRequest(want, callback, srcFileUris, photoCreationConfigs, errCode)) {
         LOGE("Parse input fail.");

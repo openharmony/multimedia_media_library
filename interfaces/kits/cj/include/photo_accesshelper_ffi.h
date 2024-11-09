@@ -39,7 +39,7 @@ extern "C" {
     FFI_EXPORT void FfiPhotoAccessHelperUnRegisterChange(int64_t id, char* uri, int64_t funcId, int32_t *errCode);
     FFI_EXPORT void FfiPhotoAccessHelperRelease(int64_t id, int32_t *errCode);
     FFI_EXPORT void FfiPhotoAccessHelperShowAssetsCreationDialog(int64_t id, CArrString srcFileUris,
-        PhotoCreationConfigs photoCreationConfigs, int64_t funcId, FfiBundleInfo FfiBundleInfo, int32_t *errCode);
+        PhotoCreationConfigs photoCreationConfigs, int64_t funcId, FfiBundleInfo cBundleInfo, int32_t *errCode);
     FFI_EXPORT PhotoSelectResult FfiPhotoAccessHelperStartPhotoPicker(int64_t id,
         PhotoSelectOptions option, int32_t *errCode);
 

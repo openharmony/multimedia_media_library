@@ -482,7 +482,7 @@ extern "C" {
     }
 
     void FfiPhotoAccessHelperShowAssetsCreationDialog(int64_t id, CArrString srcFileUris,
-        PhotoCreationConfigs photoCreationConfigs, int64_t funcId, FfiBundleInfo FfiBundleInfo, int32_t *errCode)
+        PhotoCreationConfigs photoCreationConfigs, int64_t funcId, FfiBundleInfo &cBundleInfo, int32_t *errCode)
     {
         auto photoAccessHelperImpl = FFIData::GetData<PhotoAccessHelperImpl>(id);
         if (photoAccessHelperImpl == nullptr) {
@@ -490,8 +490,8 @@ extern "C" {
             *errCode = OHOS_INVALID_PARAM_CODE;
             return;
         }
-        photoAccessHelperImpl->ShowAssetsCreationDialog(srcFileUris, 
-            photoCreationConfigs, funcId, FfiBundleInfo, *errCode);
+        photoAccessHelperImpl->ShowAssetsCreationDialog(srcFileUris,
+            photoCreationConfigs, funcId, cBundleInfo, *errCode);
     }
 
     PhotoSelectResult FfiPhotoAccessHelperStartPhotoPicker(int64_t id,
