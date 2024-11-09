@@ -31,6 +31,8 @@ enum PrivacyType {
 class MediaPrivacyManager {
 public:
     EXPORT MediaPrivacyManager(const std::string &path, const std::string &mode, const std::string &fileId);
+    EXPORT MediaPrivacyManager(const std::string &path, const std::string &mode, const std::string &fileId,
+        const std::string &appId, const std::string &clientBundle, const int32_t &uid);
     EXPORT virtual ~MediaPrivacyManager();
 
     EXPORT int32_t Open();
@@ -41,6 +43,10 @@ private:
     std::string fileId_;
     /* Privacy ranges in a file, specified by <begin, end> offsets of the file */
     std::vector<std::pair<uint32_t, uint32_t>> ranges_;
+    std::string appId_;
+    std::string clientBundle_;
+    int32_t uid_;
+    bool fuseFlag_;
 };
 } // namespace Media
 } // namespace OHOS

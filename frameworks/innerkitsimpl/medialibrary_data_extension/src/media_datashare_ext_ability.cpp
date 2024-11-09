@@ -64,6 +64,7 @@
 #include "db_permission_handler.h"
 #include "userfilemgr_uri.h"
 #include "mtp_manager.h"
+#include "media_fuse_manager.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -236,6 +237,9 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     }
     dataManager->SetOwner(static_pointer_cast<MediaDataShareExtAbility>(shared_from_this()));
 
+    // Start media fuse daemon
+    MediaFuseManager::GetInstance().Start();
+
     DfxManager::GetInstance();
     auto scannerManager = MediaScannerManager::GetInstance();
     if (scannerManager == nullptr) {
@@ -258,6 +262,7 @@ void MediaDataShareExtAbility::OnStop()
     if (scannerManager != nullptr) {
         scannerManager->Stop();
     }
+    MediaFuseManager::GetInstance().Stop();
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     MedialibraryAppStateObserverManager::GetInstance().UnSubscribeAppState();
     MEDIA_INFO_LOG("%{public}s end.", __func__);
