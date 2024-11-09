@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#define MLOG_TAG "MtpFileObserver"
 #include "mtp_file_observer.h"
 #include <memory>
 #include <securec.h>
@@ -19,6 +21,7 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 #include "media_log.h"
+#include "mtp_media_library.h"
 
 using namespace std;
 namespace OHOS {
@@ -34,18 +37,16 @@ const int LOW_BATTERY = 50;
 #endif
 void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &path, const ContextSptr &context)
 {
-    string fileName;
+    string fileName = path + "/" + event.name;
     std::shared_ptr<MtpEvent> eventPtr = std::make_shared<OHOS::Media::MtpEvent>(context);
     if ((event.mask & IN_CREATE) || (event.mask & IN_MOVED_TO)) {
-        fileName = path + "/" + event.name;
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents create/MOVED_TO: path:%{private}s", fileName.c_str());
+        MtpMediaLibrary::GetInstance()->ObserverAddPathToMap(fileName);
         eventPtr->SendObjectAdded(fileName);
     } else if ((event.mask & IN_DELETE) || (event.mask & IN_MOVED_FROM)) {
-        fileName = path + "/" + event.name;
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents delete/MOVED_FROM: path:%{private}s", fileName.c_str());
         eventPtr->SendObjectRemoved(fileName);
     } else if (event.mask & IN_CLOSE_WRITE) {
-        fileName = path + "/" + event.name;
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents IN_CLOSE_WRITE : path:%{private}s", fileName.c_str());
         eventPtr->SendObjectInfoChanged(fileName);
     }
@@ -147,7 +148,7 @@ void MtpFileObserver::AddFileInotify(const std::string &path, const std::string 
     if (inotifySuccess_) {
         lock_guard<mutex> lock(eventLock_);
         if (!path.empty() && !realPath.empty()) {
-            int ret = inotify_add_watch(inotifyFd_, realPath.c_str(),
+            int ret = inotify_add_watch(inotifyFd_, path.c_str(),
                 IN_CLOSE_WRITE | IN_MOVED_FROM | IN_MOVED_TO | IN_CREATE | IN_DELETE);
             watchMap_.insert(make_pair(ret, path));
         }
