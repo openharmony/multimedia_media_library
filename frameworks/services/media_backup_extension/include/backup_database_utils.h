@@ -112,6 +112,8 @@ public:
         const std::vector<FileInfo> &fileInfos);
     static int32_t BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
         std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum);
+    static void CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
+        const std::string &dbTag = "");
 
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
