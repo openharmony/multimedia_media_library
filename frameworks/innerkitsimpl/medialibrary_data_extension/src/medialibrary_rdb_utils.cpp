@@ -292,7 +292,6 @@ static int32_t ForEachRow(const shared_ptr<MediaLibraryRdbStore> rdbStore, const
         if (err != E_OK) {
             MEDIA_ERR_LOG("ForEachRow: trans retry fail!, ret:%{public}d", err);
         }
-        return err;
     }
     return E_SUCCESS;
 }
