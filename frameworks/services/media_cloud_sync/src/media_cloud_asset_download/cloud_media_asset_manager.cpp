@@ -23,6 +23,7 @@
 #include "abs_rdb_predicates.h"
 #include "cloud_media_asset_download_operation.h"
 #include "cloud_media_asset_types.h"
+#include "cloud_sync_utils.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -73,15 +74,15 @@ int32_t CloudMediaAssetManager::StartDownloadCloudAsset(const CloudMediaDownload
         return E_ERR;
     }
 
-    switch (operation_->taskStatus_) {
+    switch (operation_->GetTaskStatus()) {
         case CloudMediaAssetTaskStatus::IDLE: {
             return operation_->StartDownloadTask(static_cast<int32_t>(type));
         }
-        case CloudMediaAssetTaskStatus::PAUSE: {
+        case CloudMediaAssetTaskStatus::PAUSED: {
             return operation_->ManualActiveRecoverTask(static_cast<int32_t>(type));
         }
         case CloudMediaAssetTaskStatus::DOWNLOADING: {
-            if (type == operation_->downloadType_) {
+            if (type == operation_->GetDownloadType()) {
                 MEDIA_WARN_LOG("No status changed.");
                 return E_OK;
             }
@@ -93,7 +94,7 @@ int32_t CloudMediaAssetManager::StartDownloadCloudAsset(const CloudMediaDownload
         default: {
             MEDIA_ERR_LOG("StartDownloadCloudAsset failed. now: taskStatus_, %{public}d; \
                 downloadType_, %{public}d. input: type, %{public}d;",
-                static_cast<int32_t>(operation_->taskStatus_), static_cast<int32_t>(operation_->downloadType_),
+                static_cast<int32_t>(operation_->GetTaskStatus()), static_cast<int32_t>(operation_->GetDownloadType()),
                 static_cast<int32_t>(type));
             return E_ERR;
         }
@@ -102,11 +103,11 @@ int32_t CloudMediaAssetManager::StartDownloadCloudAsset(const CloudMediaDownload
 
 int32_t CloudMediaAssetManager::RecoverDownloadCloudAsset(const CloudMediaTaskRecoverCause &cause)
 {
-    if (operation_ == nullptr || operation_->taskStatus_ == CloudMediaAssetTaskStatus::IDLE) {
+    if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
         return E_ERR;
     }
     MEDIA_INFO_LOG("enter RecoverDownloadCloudAsset, RecoverCause: %{public}d", static_cast<int32_t>(cause));
-    if (operation_->taskStatus_ == CloudMediaAssetTaskStatus::DOWNLOADING) {
+    if (operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::DOWNLOADING) {
         MEDIA_WARN_LOG("The task status is download, no need to recover.");
         return E_OK;
     }
@@ -118,7 +119,7 @@ int32_t CloudMediaAssetManager::RecoverDownloadCloudAsset(const CloudMediaTaskRe
 
 int32_t CloudMediaAssetManager::PauseDownloadCloudAsset(const CloudMediaTaskPauseCause &pauseCause)
 {
-    if (operation_ == nullptr || operation_->taskStatus_ == CloudMediaAssetTaskStatus::IDLE) {
+    if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
         return E_ERR;
     }
     int32_t ret = operation_->PauseDownloadTask(pauseCause);
@@ -129,7 +130,7 @@ int32_t CloudMediaAssetManager::PauseDownloadCloudAsset(const CloudMediaTaskPaus
 
 int32_t CloudMediaAssetManager::CancelDownloadCloudAsset()
 {
-    if (operation_ == nullptr || operation_->taskStatus_ == CloudMediaAssetTaskStatus::IDLE) {
+    if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
         return E_ERR;
     }
     int32_t ret = operation_->CancelDownloadTask();
@@ -242,11 +243,12 @@ int32_t CloudMediaAssetManager::GentleRetainDownloadCloudMedia()
 
 std::string CloudMediaAssetManager::GetCloudMediaAssetTaskStatus()
 {
-    if (operation_ == nullptr || operation_->taskStatus_ == CloudMediaAssetTaskStatus::IDLE) {
+    if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
         MEDIA_ERR_LOG("cloud media download task not exit.");
         return to_string(static_cast<int32_t>(CloudMediaAssetTaskStatus::IDLE)) + ",0,0,0,0,0";
     }
-    return operation_->GetTaskStatus() + "," + operation_->GetTaskInfo() + "," + operation_->GetTaskPauseCause();
+    return to_string(static_cast<int32_t>(operation_->GetTaskStatus())) + "," + operation_->GetTaskInfo() + "," +
+        to_string(static_cast<int32_t>(operation_->GetTaskPauseCause()));
 }
 
 int32_t CloudMediaAssetManager::HandleCloudMediaAssetUpdateOperations(MediaLibraryCommand &cmd)
@@ -259,7 +261,7 @@ int32_t CloudMediaAssetManager::HandleCloudMediaAssetUpdateOperations(MediaLibra
             return StartDownloadCloudAsset(CloudMediaDownloadType::DOWNLOAD_GENTLE);
         }
         case OperationType::CLOUD_MEDIA_ASSET_TASK_PAUSE: {
-            return PauseDownloadCloudAsset(CloudMediaTaskPauseCause::USER_PAUSE);
+            return PauseDownloadCloudAsset(CloudMediaTaskPauseCause::USER_PAUSED);
         }
         case OperationType::CLOUD_MEDIA_ASSET_TASK_CANCEL: {
             return CancelDownloadCloudAsset();
@@ -292,7 +294,7 @@ string CloudMediaAssetManager::HandleCloudMediaAssetGetTypeOperations(MediaLibra
 
 bool CloudMediaAssetManager::SetIsThumbnailUpdate()
 {
-    if (operation_ == nullptr || operation_->taskStatus_ == CloudMediaAssetTaskStatus::IDLE) {
+    if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
         return false;
     }
     if (operation_->isThumbnailUpdate_) {
@@ -305,7 +307,7 @@ bool CloudMediaAssetManager::SetIsThumbnailUpdate()
 
 bool CloudMediaAssetManager::SetNetworkConnected(const bool &flag)
 {
-    if (operation_ == nullptr || operation_->taskStatus_ == CloudMediaAssetTaskStatus::IDLE) {
+    if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
         return false;
     }
     MEDIA_INFO_LOG("Success set NetworkConnected, flag: %{public}d.", static_cast<int32_t>(flag));
@@ -318,7 +320,7 @@ int32_t CloudMediaAssetManager::GetTaskStatus()
     if (operation_ == nullptr) {
         return static_cast<int32_t>(CloudMediaAssetTaskStatus::IDLE);
     }
-    return static_cast<int32_t>(operation_->taskStatus_);
+    return static_cast<int32_t>(operation_->GetTaskStatus());
 }
 
 int32_t CloudMediaAssetManager::GetDownloadType()
@@ -327,12 +329,12 @@ int32_t CloudMediaAssetManager::GetDownloadType()
         MEDIA_INFO_LOG("cloud media download task not exit.");
         return E_ERR;
     }
-    return static_cast<int32_t>(operation_->downloadType_);
+    return static_cast<int32_t>(operation_->GetDownloadType());
 }
 
 bool CloudMediaAssetManager::SetBgDownloadPermission(const bool &flag)
 {
-    if (operation_ == nullptr || operation_->taskStatus_ == CloudMediaAssetTaskStatus::IDLE) {
+    if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
         return false;
     }
     MEDIA_INFO_LOG("Success set isBgDownloadPermission, flag: %{public}d.", static_cast<int32_t>(flag));

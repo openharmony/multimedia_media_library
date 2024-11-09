@@ -51,7 +51,10 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/dfx",
   ]
 
-  include_cloud_asset_download = [ "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/media_cloud_asset_download" ]
+  include_cloud_asset_download = [
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_sync_utils",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/media_cloud_asset_download",
+  ]
 
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
@@ -241,6 +244,7 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   meidia_cloud_asset_download_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_sync_utils/cloud_sync_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_asset_callback.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_asset_download_operation.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_asset_manager.cpp",

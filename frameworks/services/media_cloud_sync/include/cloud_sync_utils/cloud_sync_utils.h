@@ -13,22 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIALIBRARY_COMMON_EVENT_UTILS_H
-#define OHOS_MEDIALIBRARY_COMMON_EVENT_UTILS_H
-
-#include <chrono>
+#ifndef OHOS_CLOUD_SYNC_UTILS_H
+#define OHOS_CLOUD_SYNC_UTILS_H
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-class CommonEventUtils {
+class CloudSyncUtils {
 public:
-    CommonEventUtils();
-    ~CommonEventUtils();
-    static int32_t GetThermalLevel();
-    static bool IsWifiConnected();
+    CloudSyncUtils();
+    ~CloudSyncUtils();
+    static bool IsUnlimitedTrafficStatusOn();
+    static bool IsCloudSyncSwitchOn();
 };
-
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_MEDIALIBRARY_COMMON_EVENT_UTILS_H
+#endif // OHOS_CLOUD_SYNC_UTILS_H
