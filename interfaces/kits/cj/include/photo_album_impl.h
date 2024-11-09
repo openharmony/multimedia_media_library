@@ -30,6 +30,7 @@ class PhotoAlbumImpl : public OHOS::FFI::FFIData {
     DECL_TYPE(PhotoAlbumImpl, OHOS::FFI::FFIData)
 public:
     explicit PhotoAlbumImpl(std::unique_ptr<PhotoAlbum> photoAlbumPtr_);
+    explicit PhotoAlbumImpl(std::shared_ptr<PhotoAlbum> photoAlbumPtr_);
     ~PhotoAlbumImpl() override
     {
         photoAlbumPtr = nullptr;

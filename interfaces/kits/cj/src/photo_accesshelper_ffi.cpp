@@ -482,7 +482,7 @@ extern "C" {
     }
 
     void FfiPhotoAccessHelperShowAssetsCreationDialog(int64_t id, CArrString srcFileUris,
-        PhotoCreationConfigs photoCreationConfigs, int64_t funcId, FfiBundleInfo &cBundleInfo, int32_t *errCode)
+        PhotoCreationConfigs photoCreationConfigs, int64_t funcId, FfiBundleInfo cBundleInfo, int32_t *errCode)
     {
         auto photoAccessHelperImpl = FFIData::GetData<PhotoAccessHelperImpl>(id);
         if (photoAccessHelperImpl == nullptr) {
@@ -587,6 +587,275 @@ extern "C" {
         char* cVideoFileUri, int32_t* errCode)
     {
         return MediaAssetManagerImpl::LoadMovingPhoto(contextId, cImageFileUri, cVideoFileUri, *errCode);
+    }
+
+    // MediaAssetChangeRequest
+
+    int64_t FfiMediaAssetChangeRequestImplConstructor(int64_t id, int32_t* errCode)
+    {
+        auto photoAssetImpl = FFIData::GetData<PhotoAssetImpl>(id);
+        if (!photoAssetImpl) {
+            *errCode = JS_INNER_FAIL;
+            return 0;
+        }
+        auto changeRequest = FFIData::Create<MediaAssetChangeRequestImpl>(photoAssetImpl, errCode);
+        if (!changeRequest) {
+            *errCode = JS_INNER_FAIL;
+            return 0;
+        }
+        return changeRequest->GetID();
+    }
+
+    int64_t FfiMediaAssetChangeRequestImplCreateImageAssetRequest(int64_t id, char* fileUri, int32_t* errCode)
+    {
+        std::string filePath(fileUri);
+        auto changeRequest =
+            FFIData::Create<MediaAssetChangeRequestImpl>(id, filePath, MediaType::MEDIA_TYPE_IMAGE, errCode);
+        if (!changeRequest) {
+            *errCode = JS_INNER_FAIL;
+            return 0;
+        }
+        return changeRequest->GetID();
+    }
+
+    int64_t FfiMediaAssetChangeRequestImplCreateVideoAssetRequest(int64_t id, char* fileUri, int32_t* errCode)
+    {
+        std::string filePath(fileUri);
+        auto changeRequest =
+            FFIData::Create<MediaAssetChangeRequestImpl>(id, filePath, MediaType::MEDIA_TYPE_VIDEO, errCode);
+        if (!changeRequest) {
+            *errCode = JS_INNER_FAIL;
+            return 0;
+        }
+        return changeRequest->GetID();
+    }
+
+    int64_t FfiMediaAssetChangeRequestImplCreateAssetRequest(
+        int64_t id, int32_t photoType, char* extension, char* title, int32_t subType, int32_t* errCode)
+    {
+        auto changeRequest =
+            FFIData::Create<MediaAssetChangeRequestImpl>(id, photoType, extension, title, subType, errCode);
+        if (!changeRequest) {
+            *errCode = JS_INNER_FAIL;
+            return 0;
+        }
+        return changeRequest->GetID();
+    }
+
+    static std::string GetUriFromAsset(const OHOS::sptr<PhotoAssetImpl> obj)
+    {
+        std::string displayName = obj->GetFileDisplayName();
+        // todo
+        std::string filePath = obj->GetFileAssetInstance()->GetFilePath();
+        return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, std::to_string(obj->GetFileId()),
+            MediaFileUtils::GetExtraUri(displayName, filePath));
+    }
+
+    static int32_t ParseAssetArray(CArrI64& assets, std::vector<std::string>& uriArray)
+    {
+        if (assets.size == 0) {
+            LOGE("array is empty");
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        for (size_t i = 0; i < assets.size; i++) {
+            auto photoAssetImpl = FFIData::GetData<PhotoAssetImpl>(assets.head[i]);
+            if (!photoAssetImpl) {
+                return JS_ERR_PARAMETER_INVALID;
+            }
+            if ((photoAssetImpl->GetMediaType() != MEDIA_TYPE_IMAGE &&
+                    photoAssetImpl->GetMediaType() != MEDIA_TYPE_VIDEO)) {
+                LOGE("Skip invalid asset, mediaType: %{public}d", photoAssetImpl->GetMediaType());
+                continue;
+            }
+            uriArray.push_back(GetUriFromAsset(photoAssetImpl));
+        }
+        return 0;
+    }
+
+    int32_t FfiMediaAssetChangeRequestImplDeleteAssetsByObject(int64_t id, CArrI64 assets)
+    {
+        if (assets.size == 0) {
+            LOGE("array is empty");
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        std::vector<std::string> uris;
+        if (ParseAssetArray(assets, uris) != 0) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        auto changeRequest = FFIData::GetData<MediaAssetChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->CJDeleteAssets(id, uris);
+    }
+
+    int32_t FfiMediaAssetChangeRequestImplDeleteAssetsByString(int64_t id, CArrString assets)
+    {
+        if (assets.size == 0) {
+            LOGE("array is empty");
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        std::vector<std::string> uris;
+        for (int64_t i = 0; i < assets.size; i++) {
+            uris.push_back(assets.head[i]);
+        }
+        auto changeRequest = FFIData::GetData<MediaAssetChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->CJDeleteAssets(id, uris);
+    }
+
+    int64_t FfiMediaAssetChangeRequestImplGetAsset(int64_t id, int32_t* errCode)
+    {
+        auto changeRequest = FFIData::GetData<MediaAssetChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->CJGetAsset(errCode);
+    }
+
+    int32_t FfiMediaAssetChangeRequestImplSetTitle(int64_t id, char* title)
+    {
+        auto changeRequest = FFIData::GetData<MediaAssetChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->CJSetTitle(title);
+    }
+
+    int32_t FfiMediaAssetChangeRequestImplGetWriteCacheHandler(int64_t id, int32_t* errCode)
+    {
+        auto changeRequest = FFIData::GetData<MediaAssetChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->CJGetWriteCacheHandler(errCode);
+    }
+
+    int32_t FfiMediaAssetChangeRequestImplAddResourceByString(int64_t id, int32_t resourceType, char* fileUri)
+    {
+        auto changeRequest = FFIData::GetData<MediaAssetChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->CJAddResource(resourceType, fileUri);
+    }
+
+    int32_t FfiMediaAssetChangeRequestImplAddResourceByBuffer(int64_t id, int32_t resourceType, CArrUI8 data)
+    {
+        auto changeRequest = FFIData::GetData<MediaAssetChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->CJAddResource(resourceType, data.head, data.size);
+    }
+
+    int32_t FfiMediaAssetChangeRequestImplSaveCameraPhoto(int64_t id)
+    {
+        auto changeRequest = FFIData::GetData<MediaAssetChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->CJSaveCameraPhoto();
+    }
+
+    int32_t FfiMediaAssetChangeRequestImplDiscardCameraPhoto(int64_t id)
+    {
+        auto changeRequest = FFIData::GetData<MediaAssetChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->CJDiscardCameraPhoto();
+    }
+
+    int32_t FfiMediaAssetChangeRequestImplSetOrientation(int64_t id, int32_t orientation)
+    {
+        auto changeRequest = FFIData::GetData<MediaAssetChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->CJSetOrientation(orientation);
+    }
+
+    int32_t FfiMediaAssetChangeRequestImplApplyChanges(int64_t id)
+    {
+        auto changeRequest = FFIData::GetData<MediaAssetChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->ApplyChanges();
+    }
+
+    // MediaAlbumChangeRequest
+
+    int64_t FfiMediaAlbumChangeRequestImplConstructor(int64_t id, int32_t* errCode)
+    {
+        auto photoAlbumImpl = FFIData::GetData<PhotoAlbumImpl>(id);
+        if (!photoAlbumImpl) {
+            *errCode = JS_INNER_FAIL;
+            return 0;
+        }
+        auto changeRequest = FFIData::Create<MediaAlbumChangeRequestImpl>(photoAlbumImpl, errCode);
+        if (!changeRequest) {
+            *errCode = JS_INNER_FAIL;
+            return 0;
+        }
+        return changeRequest->GetID();
+    }
+
+    int64_t FfiMediaAlbumChangeRequestImplGetAlbum(int64_t id, int32_t* errCode)
+    {
+        auto changeRequest = FFIData::GetData<MediaAlbumChangeRequestImpl>(id);
+        if (!changeRequest) {
+            *errCode = OHOS_INVALID_PARAM_CODE;
+            return 0;
+        }
+        return changeRequest->CJGetAlbum(errCode);
+    }
+
+    int32_t FfiMediaAlbumChangeRequestImplSetAlbumName(int64_t id, char* albumName)
+    {
+        auto changeRequest = FFIData::GetData<MediaAlbumChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->CJSetAlbumName(albumName);
+    }
+
+    int32_t FfiMediaAlbumChangeRequestImplAddAssets(int64_t id, CArrI64 assets)
+    {
+        auto changeRequest = FFIData::GetData<MediaAlbumChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        vector<string> assetUriArray;
+        if (ParseAssetArray(assets, assetUriArray) != 0) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->CJAddAssets(assetUriArray);
+    }
+
+    int32_t FfiMediaAlbumChangeRequestImplRemoveAssets(int64_t id, CArrI64 assets)
+    {
+        auto changeRequest = FFIData::GetData<MediaAlbumChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        vector<string> assetUriArray;
+        if (ParseAssetArray(assets, assetUriArray) != 0) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->CJRemoveAssets(assetUriArray);
+    }
+
+    int32_t FfiMediaAlbumChangeRequestImplApplyChanges(int64_t id)
+    {
+        auto changeRequest = FFIData::GetData<MediaAlbumChangeRequestImpl>(id);
+        if (!changeRequest) {
+            return OHOS_INVALID_PARAM_CODE;
+        }
+        return changeRequest->ApplyChanges();
     }
 }
 }
