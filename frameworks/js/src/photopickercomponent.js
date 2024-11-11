@@ -320,7 +320,7 @@ export class PhotoPickerComponent extends ViewPU {
 }
 let PickerController = class {
     setData(e, o) {
-        if (!o) {
+        if (o === undefined) {
             return;
         }
         if (e === DataType.SET_SELECTED_URIS) {
@@ -333,7 +333,7 @@ let PickerController = class {
             }
         } else if (e === DataType.SET_ALBUM_URI) {
             let e = o;
-            if (e) {
+            if (e !== undefined) {
                 this.data = new Map([['SET_ALBUM_URI', e]]);
                 console.info('PhotoPickerComponent SET_ALBUM_URI' + JSON.stringify(e));
             }

@@ -291,7 +291,7 @@ export class PickerController {
   data?: Map<string, Object>;
 
   setData(type: DataType, data: Object) {
-    if (!data) {
+    if (data === undefined) {
       return;
     }
     if (type === DataType.SET_SELECTED_URIS) {
@@ -304,7 +304,7 @@ export class PickerController {
       }
     } else if (type === DataType.SET_ALBUM_URI) {
       let albumUri: string = data as string;
-      if (albumUri) {
+      if (albumUri !== undefined) {
         this.data = new Map([['SET_ALBUM_URI', albumUri]]);
         console.info('PhotoPickerComponent SET_ALBUM_URI' + JSON.stringify(albumUri));
       }
