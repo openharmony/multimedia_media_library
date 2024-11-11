@@ -650,8 +650,16 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, 
     if (burstCoverLevel != 0) {
         outValues.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, burstCoverLevel);
     }
+
+    int32_t dirty = static_cast<int32_t>(DirtyTypes::TYPE_NEW);
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_DIRTY, value)) {
+        value.GetInt(dirty);
+    }
+    if (dirty != static_cast<int32_t>(DirtyTypes::TYPE_NEW)) {
+        outValues.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
+    }
     stringstream result;
-    for (int i = 0; i < displayName.length(); i++) {
+    for (int32_t i = 0; i < static_cast<int32_t>(displayName.length()); i++) {
         if (isdigit(displayName[i])) {
             result << displayName[i];
         }
@@ -705,7 +713,9 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
             assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo
         }
         HandleIsTemp(cmd, assetInfo);
-        HandleBurstPhoto(cmd, assetInfo, displayName);
+        if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
+            HandleBurstPhoto(cmd, assetInfo, displayName);
+        }
     }
 
     HandleCallingPackage(cmd, fileAsset, assetInfo);

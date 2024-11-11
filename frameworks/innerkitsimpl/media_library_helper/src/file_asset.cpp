@@ -547,6 +547,16 @@ void FileAsset::SetBurstKey(const std::string &burstKey)
     member_[PhotoColumn::PHOTO_BURST_KEY] = burstKey;
 }
 
+int32_t FileAsset::GetBurstCoverLevel() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_BURST_COVER_LEVEL);
+}
+
+void FileAsset::SetBurstCoverLevel(int32_t burstCoverLevel)
+{
+    member_[PhotoColumn::PHOTO_BURST_COVER_LEVEL] = burstCoverLevel;
+}
+
 int32_t FileAsset::GetCEAvailable() const
 {
     return GetInt32Member(PhotoColumn::PHOTO_CE_AVAILABLE);
