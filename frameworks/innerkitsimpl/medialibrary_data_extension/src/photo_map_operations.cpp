@@ -189,6 +189,7 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
     err = trans->RetryTrans(func, __func__);
     if (err != E_OK) {
         MEDIA_ERR_LOG("AddAnaLysisPhotoAssets: trans retry fail!, ret:%{public}d", err);
+        return err;
     }
     bool isValid = false;
     std::vector<string> albumIdList;

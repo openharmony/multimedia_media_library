@@ -180,6 +180,7 @@ int32_t EnhancementServiceCallback::CreateCloudEnhancementPhoto(int32_t sourceFi
     errCode = trans->RetryTrans(func, __func__);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("CreateCloudEnhancementPhoto: tans finish fail!, ret:%{public}d", errCode);
+        return errCode;
     }
     info->filePath = fileAsset.GetPath();
     return outRow;
