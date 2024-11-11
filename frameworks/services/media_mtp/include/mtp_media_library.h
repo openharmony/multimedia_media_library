@@ -25,6 +25,7 @@
 #include "mtp_operation_context.h"
 #include "object_info.h"
 #include "property.h"
+#include "pixel_map.h"
 
 namespace OHOS {
 namespace Media {
@@ -45,6 +46,8 @@ public:
     EXPORT int32_t GetObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<ObjectInfo> &outObjectInfo);
     EXPORT int32_t GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd);
+    EXPORT int32_t GetThumb(const std::shared_ptr<MtpOperationContext> &context,
+        std::shared_ptr<UInt8List> &outThumb);
     EXPORT int32_t SendObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         uint32_t &outStorageID, uint32_t &outParent, uint32_t &outHandle);
     EXPORT int32_t GetPathById(const int32_t id, std::string &outPath);
@@ -86,6 +89,12 @@ private:
         const std::shared_ptr<MtpOperationContext> &context);
     void GetExternalStorages();
     void ErasePathInfo(const uint32_t handle, const std::string &path);
+    bool CompressImage(PixelMap &pixelMap, std::vector<uint8_t> &data);
+    int32_t GetVideoThumb(const std::shared_ptr<MtpOperationContext> &context,
+        std::shared_ptr<UInt8List> &outThumb);
+    int32_t GetPictureThumb(const std::shared_ptr<MtpOperationContext> &context,
+        std::shared_ptr<UInt8List> &outThumb);
+    void CondCloseFd(const bool condition, const int fd);
 
     static std::shared_ptr<MtpMediaLibrary> instance_;
     static std::atomic<uint32_t> id_;

@@ -642,6 +642,10 @@ uint32_t MtpDataUtils::GetMtpFormatByPath(const std::string &path, uint16_t &out
             }
         }
     }
+    if (extension.compare(MTP_FORMAT_JPG) || extension.compare(MTP_FORMAT_JPEG)) {
+        outFormat = MTP_FORMAT_EXIF_JPEG_CODE;
+        return MTP_SUCCESS;
+    }
     return MTP_ERROR_INVALID_OBJECTPROP_VALUE;
 }
 
