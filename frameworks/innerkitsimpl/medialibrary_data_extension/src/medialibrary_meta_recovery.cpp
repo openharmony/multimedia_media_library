@@ -1195,6 +1195,7 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
         errCode = trans->RetryTrans(func, __func__);
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("InsertMetadataInDb: trans retry fail!, ret:%{public}d", errCode);
+            return errCode;
         }
     }
 

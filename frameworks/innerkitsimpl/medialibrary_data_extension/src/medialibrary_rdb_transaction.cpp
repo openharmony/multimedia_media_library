@@ -113,6 +113,8 @@ int32_t TransactionOperations::TryTrans(std::function<int(void)> &func, std::str
     err = func();
     if (err != E_OK) {
         MEDIA_ERR_LOG("TryTrans: trans function fail!, ret:%{public}d", err);
+        Rollback();
+        return err;
     }
     err = Finish();
     if (err != E_OK) {
