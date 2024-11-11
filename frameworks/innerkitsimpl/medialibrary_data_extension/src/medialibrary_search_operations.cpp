@@ -30,7 +30,7 @@ namespace OHOS {
 namespace Media {
 const std::string notTrashedAndHiddenCondition = MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " +
         MediaColumn::MEDIA_HIDDEN + " = 0 AND " + MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " +
-        PhotoColumn::PHOTO_CLEAN_FLAG + " = 0 AND ";
+        PhotoColumn::PHOTO_CLEAN_FLAG + " = 0 AND " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 AND ";
 const std::string analysisCompleteCondition = TBL_SEARCH_CV_STATUS + " = 1 AND (" + TBL_SEARCH_GEO_STATUS +
     " = 1 OR (" + PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = 0 AND " +
     PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LONGITUDE + " = 0)) ";
