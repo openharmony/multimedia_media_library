@@ -146,6 +146,10 @@ private:
         const std::vector<FileIdPair>& fileIdPairs);
     std::vector<ImageFaceTbl> QueryImageFaceTbl(int32_t offset, std::string &fileIdClause,
         const std::vector<std::string>& commonColumns);
+    std::vector<PortraitAlbumDfx> QueryAllPortraitAlbum(int32_t& offset, int32_t& rowCount);
+    void RecordOldPortraitAlbumDfx();
+    std::unordered_set<std::string> QueryAllPortraitAlbum();
+    void LogPortraitCloneDfx();
     void RestoreImageFaceInfo(std::vector<FileInfo> &fileInfos);
     NativeRdb::ValuesBucket CreateValuesBucketFromFaceTagTbl(const FaceTagTbl& faceTagTbl);
     void BatchInsertFaceTags(const std::vector<FaceTagTbl>& faceTagTbls);
@@ -196,6 +200,7 @@ private:
     std::unordered_set<std::string> albumToNotifySet_;
     std::string garbagePath_;
     std::vector<CoverUriInfo> coverUriInfo_;
+    std::vector<PortraitAlbumDfx> portraitAlbumDfx_;
     PhotoAlbumClone photoAlbumClone_;
     PhotosClone photosClone_;
     static constexpr int32_t INVALID_COVER_SATISFIED_STATUS = -1;
