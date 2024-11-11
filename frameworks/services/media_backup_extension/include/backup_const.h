@@ -464,6 +464,13 @@ struct AnalysisAlbumTbl {
     std::optional<int32_t> isCoverSatisfied;
 };
 
+struct PortraitAlbumDfx {
+    std::optional<std::string> albumName;
+    std::optional<std::string> coverUri;
+    std::optional<std::string> tagId;
+    std::optional<int32_t> count;
+};
+
 struct FaceTagTbl {
     std::optional<int32_t> id;
     std::optional<std::string> tagId;
