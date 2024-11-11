@@ -183,7 +183,11 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
     shared_ptr<BaseHandler> chain = nullptr;
 
     if (uriString.find(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX) != string::npos) {
-        chain = NotifyResponsibilityChainFactory::CreateChain(TRANSPARENT);
+        if (notifyInfo_.type == ChangeType::DELETE) {
+            chain = NotifyResponsibilityChainFactory::CreateChain(ALBUM_DELETE);
+        } else {
+            chain = NotifyResponsibilityChainFactory::CreateChain(TRANSPARENT);
+        }
     }
 
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos) {

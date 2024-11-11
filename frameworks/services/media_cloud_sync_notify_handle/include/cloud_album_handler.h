@@ -13,32 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_SERVICES_CLOUD_SYNC_NOTIFY_HANDLE_INCLUDE_NOTIFY_RESPONSIBILITY_CHAIN_FACTORY_H
-#define FRAMEWORKS_SERVICES_CLOUD_SYNC_NOTIFY_HANDLE_INCLUDE_NOTIFY_RESPONSIBILITY_CHAIN_FACTORY_H
+#ifndef FRAMEWORKS_SERVICES_CLOUD_SYNC_NOTIFY_HANDLE_INCLUDE_CLOUD_ALBUM_HANDLER_H
+#define FRAMEWORKS_SERVICES_CLOUD_SYNC_NOTIFY_HANDLE_INCLUDE_CLOUD_ALBUM_HANDLER_H
 
-#include <unordered_map>
-#include <list>
-
+#include <functional>
 #include "base_handler.h"
 
 namespace OHOS {
 namespace Media {
 
-enum ChainType {
-    TRANSPARENT = 0,
-    PHOTODELETE,
-    ALBUM_DELETE
-};
-
-class NotifyResponsibilityChainFactory {
+class CloudAlbumHandler : public BaseHandler {
 public:
-    NotifyResponsibilityChainFactory();
-    ~NotifyResponsibilityChainFactory();
-
-    static std::unordered_map<ChainType, std::list<std::shared_ptr<BaseHandler>>> handlerMap_;
-    static std::shared_ptr<BaseHandler> CreateChain(const ChainType &type);
+    void Handle(const CloudSyncHandleData &handleData) override;
 };
 } //namespace Media
 } //namespace OHOS
 
-#endif //FRAMEWORKS_SERVICES_CLOUD_SYNC_NOTIFY_HANDLE_INCLUDE_NOTIFY_RESPONSIBILITY_CHAIN_FACTORY_H
+#endif //FRAMEWORKS_SERVICES_CLOUD_SYNC_NOTIFY_HANDLE_INCLUDE_CLOUD_ALBUM_HANDLER_H
