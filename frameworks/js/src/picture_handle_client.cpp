@@ -76,8 +76,7 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture fd: %{public}d", fd);
     // 获取消息总长度
     void *msgLenAddr = mmap(nullptr, UINT32_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (msgLenAddr == nullptr) {
-        munmap(addr, msgLen);
+    if ((uint32_t*)msgLenAddr == nullptr) {
         return E_ERR;
     }
     uint32_t msgLen = *((uint32_t*)msgLenAddr);
