@@ -36,6 +36,8 @@ if (defined(medialibrary_mtp_enable)) {
       "${MEDIALIB_MTP_PATH}/include/",
     ]
 
+    cflags = [ "-fno-access-control" ]
+
     sources = [
       "src/debug_printf.cpp",
       "src/medialibrary_mtp_unit_test.cpp",
