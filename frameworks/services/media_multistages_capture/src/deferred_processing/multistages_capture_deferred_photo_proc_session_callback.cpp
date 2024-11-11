@@ -76,7 +76,7 @@ int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(c
     updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
     updateCmd.SetValueBucket(updateValues);
     updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
-    int32_t updatePhotoIdResult = DatabaseAdapter::Update(updateCmd);
+    int32_t updatePhotoQualityResult = DatabaseAdapter::Update(updateCmd);
 
     updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, false);
     updateCmd.GetAbsRdbPredicates()->NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
@@ -84,12 +84,12 @@ int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(c
     NativeRdb::ValuesBucket updateValuesDirty;
     updateValuesDirty.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
     updateCmd.SetValueBucket(updateValuesDirty);
-    auto isTempResult = DatabaseAdapter::Update(updateCmd);
-    if (isTempResult < 0) {
-        MEDIA_WARN_LOG("update temp flag fail, photoId: %{public}s", photoId.c_str());
+    auto isDirtyResult = DatabaseAdapter::Update(updateCmd);
+    if (isDirtyResult < 0) {
+        MEDIA_WARN_LOG("update dirty flag fail, photoId: %{public}s", photoId.c_str());
     }
 
-    return updatePhotoIdResult;
+    return updatePhotoQualityResult;
 }
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateCEAvailable(const string& photoId)
