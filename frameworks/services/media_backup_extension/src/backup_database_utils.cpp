@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "MediaLibraryBackupUtils"
+
 #include "backup_database_utils.h"
 
 #include <nlohmann/json.hpp>
@@ -21,7 +23,8 @@
 #include "backup_const_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_restore.h"
+#include "medialibrary_errno.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -49,8 +52,7 @@ int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbSto
     config.SetBundleName(bundleName);
     config.SetReadConSize(CONNECT_SIZE);
     config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
-    int32_t haMode = MediaLibraryRestore::GetInstance().DetectHaMode(dbName);
-    config.SetHaMode(std::move(haMode));
+    config.SetHaMode(NativeRdb::HAMode::MANUAL_TRIGGER);
     config.SetAllowRebuild(true);
     if (area != DEFAULT_AREA_VERSION) {
         config.SetArea(area);
@@ -150,55 +152,6 @@ int32_t BackupDatabaseUtils::InitGarbageAlbum(std::shared_ptr<NativeRdb::RdbStor
     return E_OK;
 }
 
-int32_t BackupDatabaseUtils::QueryGalleryAllCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_ALL_COUNT = "SELECT count(1) AS count FROM gallery_media";
-    return QueryInt(galleryRdb, QUERY_GALLERY_ALL_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryImageCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_IMAGE_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE media_type = 1 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_IMAGE_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryVideoCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_VIDEO_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE media_type = 3 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_VIDEO_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryHiddenCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_HIDDEN_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE local_media_id = -4 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_HIDDEN_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryTrashedCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_TRASHED_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE local_media_id = 0 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_TRASHED_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryFavoriteCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_FAVORITE_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE is_hw_favorite = 1 AND _size > 0 AND local_media_id != -1";
-    return QueryInt(galleryRdb, QUERY_GALLERY_FAVORITE_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryImportsCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_IMPORTS_COUNT =
-        string("SELECT count(1) AS count FROM gallery_media WHERE ") +
-        " _data LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND _size > 0 AND local_media_id != -1";
-    return QueryInt(galleryRdb, QUERY_GALLERY_IMPORTS_COUNT, CUSTOM_COUNT);
-}
-
 int32_t BackupDatabaseUtils::QueryGalleryCloneCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     static string QUERY_GALLERY_CLONE_COUNT =
@@ -208,55 +161,17 @@ int32_t BackupDatabaseUtils::QueryGalleryCloneCount(std::shared_ptr<NativeRdb::R
     return QueryInt(galleryRdb, QUERY_GALLERY_CLONE_COUNT, CUSTOM_COUNT);
 }
 
-int32_t BackupDatabaseUtils::QueryGallerySdCardCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
+void BackupDatabaseUtils::QueryGalleryDuplicateDataCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb,
+    int32_t &count, int32_t &total)
 {
-    static string QUERY_GALLERY_SD_CARD_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE storage_id NOT IN (0, 65537) AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_SD_CARD_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryScreenVideoCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_SCRENN_VIDEO_COUNT =
-        "SELECT count(1) AS count FROM gallery_media \
-        WHERE local_media_id = -3 AND bucket_id = 1028075469 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_SCRENN_VIDEO_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryCloudCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_CLOUD_COUNT =
-        "SELECT count(1) AS count FROM gallery_media \
-        WHERE local_media_id = -1 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_CLOUD_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryBurstCoverCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_BURST_COVER_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE is_hw_burst = 1 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_BURST_COVER_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryGalleryBurstTotalCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_BURST_TOTAL_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE is_hw_burst IN (1, 2) AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_BURST_TOTAL_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryExternalImageCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
-{
-    static string QUERY_EXTERNAL_IMAGE_COUNT =
-        "SELECT count(1) AS count FROM files WHERE  media_type = 1 AND _size > 0";
-    return QueryInt(externalRdb, QUERY_EXTERNAL_IMAGE_COUNT, CUSTOM_COUNT);
-}
-
-int32_t BackupDatabaseUtils::QueryExternalVideoCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
-{
-    static string QUERY_EXTERNAL_VIDEO_COUNT =
-        "SELECT count(1) AS count FROM files WHERE  media_type = 3 AND _size > 0";
-    return QueryInt(externalRdb, QUERY_EXTERNAL_VIDEO_COUNT, CUSTOM_COUNT);
+    static string QUERY_GALLERY_DUPLICATE_DATA_COUNT = "SELECT count(DISTINCT _data) as count, count(1) as total"
+        " FROM gallery_media WHERE _data IN (SELECT _data FROM gallery_media GROUP BY _data HAVING count(1) > 1)";
+    auto resultSet = GetQueryResultSet(galleryRdb, QUERY_GALLERY_DUPLICATE_DATA_COUNT);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return;
+    }
+    count = GetInt32Val("count", resultSet);
+    total = GetInt32Val("total", resultSet);
 }
 
 std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::GetQueryResultSet(
@@ -319,13 +234,6 @@ int32_t BackupDatabaseUtils::QueryUniqueNumber(const std::shared_ptr<NativeRdb::
 {
     const string querySql = "SELECT unique_number FROM UniqueNumber WHERE media_type = '" + type + "'";
     return QueryInt(rdbStore, querySql, UNIQUE_NUMBER);
-}
-
-int32_t BackupDatabaseUtils::QueryExternalAudioCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
-{
-    static string QUERY_EXTERNAL_AUDIO_COUNT = "SELECT count(1) as count FROM files WHERE media_type = 2 AND _size > 0 \
-        AND _data LIKE '/storage/emulated/0/Music%'";
-    return QueryInt(externalRdb, QUERY_EXTERNAL_AUDIO_COUNT, CUSTOM_COUNT);
 }
 
 void BackupDatabaseUtils::UpdateSelection(std::string &selection, const std::string &selectionToAdd, bool needWrap)
@@ -633,44 +541,6 @@ std::vector<std::string> BackupDatabaseUtils::GetCommonColumnInfos(std::shared_p
     return commonColumns;
 }
 
-void BackupDatabaseUtils::UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
-    const std::vector<FileInfo> &fileInfos)
-{
-    for (const FileInfo &fileInfo : fileInfos) {
-        if (fileInfo.associateFileId <= 0 || fileInfo.fileIdOld <= 0 || fileInfo.fileIdNew <= 0) {
-            continue;
-        }
-        int32_t updateAssociateId = -1;
-        bool ret = fileIdOld2NewForCloudEnhancement.Find(fileInfo.associateFileId, updateAssociateId);
-        if (!ret) {
-            fileIdOld2NewForCloudEnhancement.Insert(fileInfo.fileIdOld, fileInfo.fileIdNew);
-            continue;
-        }
-        int32_t changeRows = 0;
-        NativeRdb::ValuesBucket updatePostBucket;
-        updatePostBucket.Put(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, updateAssociateId);
-        std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
-            make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
-        predicates->SetWhereClause("file_id=?");
-        predicates->SetWhereArgs({ to_string(fileInfo.fileIdNew) });
-        BackupDatabaseUtils::Update(rdbStore, changeRows, updatePostBucket, predicates);
-        if (changeRows > 0) {
-            MEDIA_INFO_LOG("update, old:%{public}d, new:%{public}d, old_associate:%{public}d, new_associate:%{public}d",
-                fileInfo.fileIdOld, fileInfo.fileIdNew, fileInfo.associateFileId, updateAssociateId);
-        }
-
-        NativeRdb::ValuesBucket updatePreBucket;
-        updatePreBucket.Put(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, fileInfo.fileIdNew);
-        predicates->SetWhereArgs({ to_string(updateAssociateId) });
-        BackupDatabaseUtils::Update(rdbStore, changeRows, updatePreBucket, predicates);
-        if (changeRows > 0) {
-            MEDIA_INFO_LOG("update, old:%{public}d, new:%{public}d, new_associate:%{public}d",
-                fileInfo.associateFileId, updateAssociateId, fileInfo.fileIdNew);
-        }
-        fileIdOld2NewForCloudEnhancement.Erase(fileInfo.associateFileId);
-    }
-}
-
 std::vector<std::string> BackupDatabaseUtils::filterColumns(const std::vector<std::string>& allColumns,
     const std::vector<std::string>& excludedColumns)
 {
@@ -792,6 +662,10 @@ bool BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(const std::vector<std::st
 
 void BackupDatabaseUtils::ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql)
 {
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return;
+    }
     int ret = rdbStore->ExecuteSql(sql);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to execute SQL: %{public}s", sql.c_str());
@@ -971,6 +845,44 @@ void BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRd
 
     UpdateGroupTags(updatedPairs, groupTagMap);
     UpdateGroupTagColumn(updatedPairs, mediaLibraryRdb);
+}
+
+void BackupDatabaseUtils::UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+    const std::vector<FileInfo> &fileInfos)
+{
+    for (const FileInfo &fileInfo : fileInfos) {
+        if (fileInfo.associateFileId <= 0 || fileInfo.fileIdOld <= 0 || fileInfo.fileIdNew <= 0) {
+            continue;
+        }
+        int32_t updateAssociateId = -1;
+        bool ret = fileIdOld2NewForCloudEnhancement.Find(fileInfo.associateFileId, updateAssociateId);
+        if (!ret) {
+            fileIdOld2NewForCloudEnhancement.Insert(fileInfo.fileIdOld, fileInfo.fileIdNew);
+            continue;
+        }
+        int32_t changeRows = 0;
+        NativeRdb::ValuesBucket updatePostBucket;
+        updatePostBucket.Put(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, updateAssociateId);
+        std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+            make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
+        predicates->SetWhereClause("file_id=?");
+        predicates->SetWhereArgs({ to_string(fileInfo.fileIdNew) });
+        BackupDatabaseUtils::Update(rdbStore, changeRows, updatePostBucket, predicates);
+        if (changeRows > 0) {
+            MEDIA_INFO_LOG("update, old:%{public}d, new:%{public}d, old_associate:%{public}d, new_associate:%{public}d",
+                fileInfo.fileIdOld, fileInfo.fileIdNew, fileInfo.associateFileId, updateAssociateId);
+        }
+
+        NativeRdb::ValuesBucket updatePreBucket;
+        updatePreBucket.Put(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, fileInfo.fileIdNew);
+        predicates->SetWhereArgs({ to_string(updateAssociateId) });
+        BackupDatabaseUtils::Update(rdbStore, changeRows, updatePreBucket, predicates);
+        if (changeRows > 0) {
+            MEDIA_INFO_LOG("update, old:%{public}d, new:%{public}d, new_associate:%{public}d",
+                fileInfo.associateFileId, updateAssociateId, fileInfo.fileIdNew);
+        }
+        fileIdOld2NewForCloudEnhancement.Erase(fileInfo.associateFileId);
+    }
 }
 } // namespace Media
 } // namespace OHOS

@@ -50,6 +50,6 @@ private:
 
     static std::mutex mutex_;
 };
-} // Media
-} // OHOS
+} // namespace Media
+} // namespace OHOS
 #endif // FRAMEWORKS_SERVICES_MEDIA_CLOUD_ENHANCEMENT_INCLUDE_ENHANCEMENT_TASK_MANAGER_H

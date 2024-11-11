@@ -418,6 +418,7 @@ static std::map<int32_t, GroupPhotoAlbumInfo> GetAnalysisAlbumInfo()
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+        lastResultMap[albumId].albumId = albumId;
         lastResultMap[albumId].albumName = GetStringVal(GROUP_PHOTO_ALBUM_NAME, resultSet);
         lastResultMap[albumId].coverUri = GetStringVal(PhotoAlbumColumns::ALBUM_COVER_URI, resultSet);
         lastResultMap[albumId].count = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);

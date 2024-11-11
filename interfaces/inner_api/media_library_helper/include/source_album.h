@@ -22,7 +22,7 @@
 #include "vision_album_column.h"
 #include "vision_column.h"
 #include "vision_photo_map_column.h"
-
+ 
 namespace OHOS {
 namespace Media {
 const std::string COVER_URI_VALUE_INSERT =
@@ -87,14 +87,16 @@ const std::string UPDATE_ALBUM_BUNDLENAME =
     " AND " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " IS NULL;";
 
 const std::string SOURCE_ALBUM_WHERE =
-    " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME +
-    " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) +
-    " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC);
+    " WHERE (" + PhotoAlbumColumns::ALBUM_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME +
+    " OR (bundle_name = NEW.owner_package and COALESCE(NEW.owner_package, '') <>'')) AND " +
+    PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
+    PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC);
 
 const std::string SOURCE_ALBUM_WHERE_UPDATE =
     " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = OLD." + MediaColumn::MEDIA_PACKAGE_NAME +
-    " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) +
-    " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC);
+    " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
+    PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) +
+    " AND dirty != 4";
 
 const std::string WHEN_SOURCE_PHOTO_COUNT =
     " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND NEW." + MediaColumn::MEDIA_PACKAGE_NAME +
@@ -207,7 +209,9 @@ const std::string ADD_SOURCE_ALBUM_LOCAL_LANGUAGE = "ALTER TABLE " + PhotoAlbumC
 const std::string SOURCE_ALBUM_INDEX = "source_album_index";
 const std::string CREATE_SOURCE_ALBUM_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + SOURCE_ALBUM_INDEX + " ON " +
     PhotoAlbumColumns::TABLE + " (" + PhotoAlbumColumns::ALBUM_TYPE + ", " + PhotoAlbumColumns::ALBUM_SUBTYPE + ", " +
-    PhotoAlbumColumns::ALBUM_NAME + ", " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME + ") ";
+    PhotoAlbumColumns::ALBUM_NAME + ", " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME + ", " +
+    PhotoAlbumColumns::ALBUM_LPATH + ") ";
+
 const std::string DROP_SOURCE_ALBUM_INDEX = "DROP INDEX IF EXISTS " + SOURCE_ALBUM_INDEX;
 
 const std::string INSERT_SOURCE_ALBUMS_FROM_PHOTOS_FULL = "INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +

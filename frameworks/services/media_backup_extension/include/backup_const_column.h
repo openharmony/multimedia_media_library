@@ -17,6 +17,7 @@
 #define BACKUP_CONST_COLUMN_H
 
 #include "backup_const.h"
+#include "media_smart_album_column.h"
 
 namespace OHOS {
 namespace Media {

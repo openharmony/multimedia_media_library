@@ -843,9 +843,7 @@ inline void SetDefaultPredicatesCondition(DataSharePredicates &predicates, const
 int32_t SendableMediaLibraryNapiUtils::GetUserAlbumPredicates(
     const int32_t albumId, DataSharePredicates &predicates, const bool hiddenOnly)
 {
-    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
-    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
     SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     return E_SUCCESS;
 }
@@ -940,10 +938,12 @@ int32_t SendableMediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
     string imgFaceWidthClause = "( " + imgFaceWidthColumn + " > " + to_string(minSize) +
         " OR ( " + imgFaceWidthColumn + " <= 1.0 " + " AND " + imgFaceWidthColumn + " * " + imgWidthColumn +
         " > " + to_string(minSize) + " ) )";
+    string imgFaceOcclusionClause = "( " + VISION_IMAGE_FACE_TABLE + "." + FACE_OCCLUSION + " != 1 OR " +
+        VISION_IMAGE_FACE_TABLE + "." + FACE_OCCLUSION + " IS NULL )";
     string portraitRotationLimit = "BETWEEN -30 AND 30";
     onClause = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + " = " + VISION_IMAGE_FACE_TABLE + "." +
         MediaColumn::MEDIA_ID + " AND " + VISION_IMAGE_FACE_TABLE + "." + TOTAL_FACES + " = 1 AND " +
-        imgFaceHeightClause + " AND " + imgFaceWidthClause + " AND " +
+        imgFaceHeightClause + " AND " + imgFaceWidthClause + " AND " + imgFaceOcclusionClause + " AND " +
         VISION_IMAGE_FACE_TABLE + "." + PITCH + " " + portraitRotationLimit + " AND " +
         VISION_IMAGE_FACE_TABLE + "." + YAW + " " + portraitRotationLimit + " AND " +
         VISION_IMAGE_FACE_TABLE + "." + ROLL + " " + portraitRotationLimit;
@@ -1034,9 +1034,7 @@ static int32_t GetAllImagesPredicates(DataSharePredicates &predicates, const boo
 int32_t SendableMediaLibraryNapiUtils::GetSourceAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates,
     const bool hiddenOnly)
 {
-    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
-    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     return E_SUCCESS;
@@ -1084,7 +1082,7 @@ napi_value SendableMediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32
     double doubleVal = 0.0;
     napi_value value = nullptr;
     auto dataType = SendableMediaLibraryNapiUtils::GetTypeMap().at(name);
-    switch (dataType) {
+    switch (dataType.first) {
         case TYPE_STRING:
             status = resultSet->GetString(index, stringVal);
             napi_create_string_utf8(env, stringVal.c_str(), NAPI_AUTO_LENGTH, &value);
@@ -1106,11 +1104,42 @@ napi_value SendableMediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32
             asset->GetMemberMap().emplace(name, doubleVal);
             break;
         default:
-            NAPI_ERR_LOG("not match dataType %{public}d", dataType);
+            NAPI_ERR_LOG("not match dataType %{public}d", dataType.first);
             break;
     }
 
     return value;
+}
+
+void SendableMediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name, napi_value result,
+    int32_t index, const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
+{
+    if (TIME_COLUMN.count(name) == 0) {
+        return;
+    }
+    int64_t longVal = 0;
+    int status;
+    napi_value value = nullptr;
+    status = resultSet->GetLong(index, longVal);
+    int64_t modifieldValue = longVal / 1000;
+    napi_create_int64(env, modifieldValue, &value);
+    auto dataType = SendableMediaLibraryNapiUtils::GetTimeTypeMap().at(name);
+    napi_set_named_property(env, result, dataType.second.c_str(), value);
+}
+
+static void handleThumbnailReady(napi_env env, const std::string& name, napi_value result, int32_t index,
+    const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
+{
+    if (name != "thumbnail_ready") {
+        return;
+    }
+    int64_t longVal = 0;
+    int status;
+    napi_value value = nullptr;
+    status = resultSet->GetLong(index, longVal);
+    bool resultVal = longVal > 0;
+    napi_create_int32(env, resultVal, &value);
+    napi_set_named_property(env, result, "thumbnailReady", value);
 }
 
 napi_value SendableMediaLibraryNapiUtils::GetNextRowObject(napi_env env,
@@ -1137,7 +1166,10 @@ napi_value SendableMediaLibraryNapiUtils::GetNextRowObject(napi_env env,
             continue;
         }
         value = SendableMediaLibraryNapiUtils::CreateValueByIndex(env, index, name, resultSet, fileAsset);
-        napi_set_named_property(env, result, name.c_str(), value);
+        auto dataType = SendableMediaLibraryNapiUtils::GetTypeMap().at(name);
+        napi_set_named_property(env, result, dataType.second.c_str(), value);
+        handleTimeInfo(env, name, result, index, resultSet);
+        handleThumbnailReady(env, name, result, index, resultSet);
     }
 
     string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath(), false);

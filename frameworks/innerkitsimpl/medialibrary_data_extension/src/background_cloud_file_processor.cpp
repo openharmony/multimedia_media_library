@@ -58,9 +58,14 @@ std::vector<std::string> BackgroundCloudFileProcessor::curDownloadPaths_;
 bool BackgroundCloudFileProcessor::isUpdating_ = true;
 int32_t BackgroundCloudFileProcessor::currentUpdateOffset_ = 0;
 int32_t BackgroundCloudFileProcessor::currentRetryCount_ = 0;
+bool BackgroundCloudFileProcessor::isDownload_ = false;
 
 void BackgroundCloudFileProcessor::DownloadCloudFiles()
 {
+    if (!isDownload_) {
+        MEDIA_DEBUG_LOG("download task is closed");
+        return;
+    }
     MEDIA_DEBUG_LOG("Start downloading cloud files task");
     if (IsStorageInsufficient()) {
         MEDIA_WARN_LOG("Insufficient storage space, stop downloading cloud files");

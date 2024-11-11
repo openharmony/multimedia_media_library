@@ -372,6 +372,25 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::QueryRdb(
     return resultSet;
 }
 
+bool MediaAssetRdbStore::IsSupportSharedAssetQuery(Uri& uri, OperationObject& object, bool isIgnoreSELinux)
+{
+    if (access(MEDIA_DB_DIR.c_str(), E_OK) != 0) {
+        return false;
+    }
+    if (rdbStore_ == nullptr) {
+        if (TryGetRdbStore(isIgnoreSELinux) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("fail to acquire rdb when query");
+            return false;
+        }
+    }
+    OperationType type = GetOprnTypeFromUri(uri);
+    if (OPERATION_TYPE_SET.count(type) == 0) {
+        return false;
+    }
+    object = GetOprnObjectFromUri(uri);
+    return true;
+}
+
 int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::vector<std::string> &batchKeys)
 {
     MediaLibraryTracer tracer;
@@ -381,15 +400,16 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
         return NativeRdb::E_DB_NOT_EXIST;
     }
     DataShare::DataSharePredicates predicates;
-    predicates.And()->OrderByDesc(MediaColumn::MEDIA_DATE_ADDED)
+    predicates.And()->OrderByDesc(MediaColumn::MEDIA_DATE_TAKEN)
                     ->Limit(count, start)
+                    ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, "1")
                     ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0")
                     ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0")
                     ->EqualTo(MediaColumn::MEDIA_HIDDEN, "0")
                     ->EqualTo(PhotoColumn::PHOTO_IS_TEMP, "0")
                     ->EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
                               to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
-    std::vector<std::string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_DATE_ADDED};
+    std::vector<std::string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_DATE_TAKEN};
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     AddQueryFilter(rdbPredicates);
     auto resultSet = rdbStore_->Query(rdbPredicates, columns);
@@ -400,18 +420,18 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int columnIndex = 0;
-        int64_t dateAddedTime = 0;
+        int64_t dateTakenTime = 0;
         int fileId = 0;
 
-        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_ADDED, columnIndex) == NativeRdb::E_OK) {
-            resultSet->GetLong(columnIndex, dateAddedTime);
+        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_TAKEN, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetLong(columnIndex, dateTakenTime);
         }
         if (resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, columnIndex) == NativeRdb::E_OK) {
             resultSet->GetInt(columnIndex, fileId);
         }
 
-        std::string timeId = RBDSTORE_DATE_ADDED_TIME_TEMPLATE.substr(std::to_string(dateAddedTime).length()) +
-                             std::to_string(dateAddedTime) +
+        std::string timeId = RBDSTORE_DATE_ADDED_TIME_TEMPLATE.substr(std::to_string(dateTakenTime).length()) +
+                             std::to_string(dateTakenTime) +
                              RBDSTORE_FIELD_ID_TEMPLATE.substr(std::to_string(fileId).length()) +
                              std::to_string(fileId);
         batchKeys.emplace_back(std::move(timeId));

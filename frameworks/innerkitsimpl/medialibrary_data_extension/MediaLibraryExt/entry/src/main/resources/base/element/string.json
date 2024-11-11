@@ -61,6 +61,10 @@
       "value": "Allows read media after screenlock"
     },
     {
+      "name": "permission_read_imagevideo",
+      "value": "Allows read image video"
+    },
+    {
       "name": "permission_get_wifi_info",
       "value": "Allow MedialibrarySubscriber to obtain wifi information"
     },

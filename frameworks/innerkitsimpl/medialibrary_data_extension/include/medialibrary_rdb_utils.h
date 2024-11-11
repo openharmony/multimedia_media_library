@@ -26,6 +26,7 @@
 #include "rdb_store.h"
 #include "uri.h"
 #include "userfile_manager_types.h"
+#include "datashare_values_bucket.h"
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
@@ -85,6 +86,12 @@ public:
     EXPORT static void AddVirtualColumnsOfDateType(std::vector<std::string>& columns);
     EXPORT static void AddQueryIndex(NativeRdb::AbsPredicates& predicates, const std::vector<std::string>& columns);
     EXPORT static bool HasDataToAnalysis(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    EXPORT static int32_t UpdateTrashedAssetOnAlbum(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        NativeRdb::RdbPredicates &predicates);
+    EXPORT static int32_t UpdateOwnerAlbumId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        const std::vector<DataShare::DataShareValuesBucket> &values, std::vector<int32_t> &updateIds);
+    EXPORT static int32_t UpdateRemoveAsset(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        const std::vector<std::string> &whereIdArgs);
 
 private:
     static std::atomic<bool> isNeedRefreshAlbum;

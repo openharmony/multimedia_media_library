@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #define MLOG_TAG "EnhancementManager"
 
 #include "enhancement_manager.h"
@@ -30,6 +31,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_notify.h"
+#include "userfilemgr_uri.h"
 #include "medialibrary_async_worker.h"
 
 using namespace std;
@@ -42,22 +44,25 @@ using namespace OHOS::MediaEnhance;
 namespace OHOS {
 namespace Media {
 using json = nlohmann::json;
-const string FILE_TPYE = "fileType";
-const string IS_HDR_VIVID = "isHdrVivid";
-const string HAS_WATER_MARK_INFO = "hasCloudWaterMark";
-const string CLOUD_WATER_MARK_INFO = "cloudWaterMarkInfo";
-const int32_t NO = 0;
-const int32_t YES = 1;
-const string JPEG_STR = "image/jpeg";
-const string HEIF_STR = "image/heif";
-const string JPEG_TYPE = "JPEG";
-const string HEIF_TYPE = "HEIF";
-const unordered_map<string, string> CLOUD_ENHANCEMENT_MIME_TYPE_MAP = {
+static const string FILE_TPYE = "fileType";
+static const string IS_HDR_VIVID = "isHdrVivid";
+static const string HAS_WATER_MARK_INFO = "hasCloudWaterMark";
+static const string CLOUD_WATER_MARK_INFO = "cloudWaterMarkInfo";
+static const int32_t NO = 0;
+static const int32_t YES = 1;
+static const string JPEG_STR = "image/jpeg";
+static const string HEIF_STR = "image/heic";
+static const string JPEG_TYPE = "JPEG";
+static const string HEIF_TYPE = "HEIF";
+static const unordered_map<string, string> CLOUD_ENHANCEMENT_MIME_TYPE_MAP = {
     { JPEG_STR, JPEG_TYPE },
     { HEIF_STR, HEIF_TYPE },
 };
 
-EnhancementManager::EnhancementManager() {}
+EnhancementManager::EnhancementManager()
+{
+    threadManager_ = make_shared<EnhancementThreadManager>();
+}
 
 EnhancementManager::~EnhancementManager() {}
 
@@ -66,6 +71,7 @@ EnhancementManager& EnhancementManager::GetInstance()
     static EnhancementManager instance;
     return instance;
 }
+
 
 bool EnhancementManager::LoadService()
 {
@@ -102,7 +108,7 @@ static int32_t CheckResultSet(shared_ptr<ResultSet> &resultSet)
 }
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-static void FillBundleWithWaterMarkInfo(MediaEnhanceBundle &mediaEnhanceBundle,
+static void FillBundleWithWaterMarkInfo(MediaEnhanceBundleHandle* mediaEnhanceBundle,
     const string &mimeType, int32_t dynamicRangeType, const bool hasCloudWaterMark)
 {
     string filePath = CLOUD_ENHANCEMENT_WATER_MARK_DIR + "/" + "cloud_watermark_param.json";
@@ -132,7 +138,8 @@ static void FillBundleWithWaterMarkInfo(MediaEnhanceBundle &mediaEnhanceBundle,
     metaData[CLOUD_WATER_MARK_INFO] = jsonObject[CLOUD_WATER_MARK_INFO];
     string metaDataJson = metaData.dump();
     MEDIA_INFO_LOG("meta data json: %{public}s", metaDataJson.c_str());
-    mediaEnhanceBundle.PutString(MediaEnhanceBundleKey::METADATA, metaDataJson); // meta data
+    EnhancementManager::GetInstance().enhancementService_->PutString(mediaEnhanceBundle,
+        MediaEnhance_Bundle_Key::METADATA, metaDataJson.c_str());  // meta data
 }
 #endif
 
@@ -164,18 +171,20 @@ bool EnhancementManager::Init()
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     // restart
+    if (!LoadService()) {
+        MEDIA_ERR_LOG("load enhancement service error");
+        return false;
+    }
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     vector<string> columns = {
-        MediaColumn::MEDIA_ID,
-        MediaColumn::MEDIA_MIME_TYPE,
-        PhotoColumn::PHOTO_ID,
-        PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE,
-        PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK,
+        MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_ID,
+        PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK,
     };
     servicePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
         static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING));
     auto resultSet = MediaLibraryRdbStore::Query(servicePredicates, columns);
     if (CheckResultSet(resultSet) != E_OK) {
+        MEDIA_INFO_LOG("Init query no processing task");
         return false;
     }
     while (resultSet->GoToNextRow() == E_OK) {
@@ -185,14 +194,20 @@ bool EnhancementManager::Init()
         int32_t dynamicRangeType = GetInt32Val(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, resultSet);
         int32_t hasCloudWatermark = GetInt32Val(PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, resultSet);
         MEDIA_INFO_LOG("restart and submit: fileId: %{public}d, photoId: %{public}s", fileId, photoId.c_str());
-        MediaEnhanceBundle mediaEnhanceBundle;
-        mediaEnhanceBundle.PutInt(MediaEnhanceBundleKey::TRIGGER_TYPE, TaskTriggerType::TRIGGER_HIGH_LEVEL);
-        FillBundleWithWaterMarkInfo(mediaEnhanceBundle, mimeType, dynamicRangeType,
-            hasCloudWatermark == YES ? true : false);
-        if (!LoadService() || enhancementService_->AddTask(photoId, mediaEnhanceBundle) != E_OK) {
-            MEDIA_ERR_LOG("enhancment service error, photo_id: %{public}s", photoId.c_str());
+        MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
+        if (mediaEnhanceBundle == nullptr) {
             continue;
         }
+        enhancementService_->PutInt(mediaEnhanceBundle, MediaEnhance_Bundle_Key::TRIGGER_TYPE,
+            MediaEnhance_Trigger_Type::TRIGGER_HIGH_LEVEL);
+        FillBundleWithWaterMarkInfo(mediaEnhanceBundle, mimeType, dynamicRangeType,
+            hasCloudWatermark == YES ? true : false);
+        if (enhancementService_->AddTask(photoId, mediaEnhanceBundle) != E_OK) {
+            MEDIA_ERR_LOG("enhancment service error, photo_id: %{public}s", photoId.c_str());
+            enhancementService_->DestroyBundle(mediaEnhanceBundle);
+            continue;
+        }
+        enhancementService_->DestroyBundle(mediaEnhanceBundle);
         EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
     }
 #else
@@ -320,12 +335,16 @@ int32_t EnhancementManager::HandleEnhancementUpdateOperation(MediaLibraryCommand
 {
     switch (cmd.GetOprnType()) {
         case OperationType::ENHANCEMENT_ADD: {
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
             string hasCloudWatermark = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
             if (hasCloudWatermark.compare(to_string(YES)) == 0) {
                 return HandleAddOperation(cmd, true);
             } else {
                 return HandleAddOperation(cmd, false);
             }
+#else
+            return E_ERR;
+#endif
         }
         case OperationType::ENHANCEMENT_PRIORITIZE: {
             return HandlePrioritizeOperation(cmd);
@@ -362,20 +381,9 @@ shared_ptr<ResultSet> EnhancementManager::HandleEnhancementQueryOperation(MediaL
 }
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-int32_t EnhancementManager::AddServiceTask(MediaEnhanceBundle &mediaEnhanceBundle, int32_t fileId,
+int32_t EnhancementManager::AddServiceTask(MediaEnhanceBundleHandle* mediaEnhanceBundle, int32_t fileId,
     const string &photoId, const bool hasCloudWatermark)
 {
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    int32_t errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("begin transaction error, photoId: %{public}s", photoId.c_str());
-        return E_ERR;
-    }
-    if (!LoadService() || enhancementService_->AddTask(photoId, mediaEnhanceBundle) != E_OK) {
-        MEDIA_ERR_LOG("enhancment service error, photoId: %{public}s", photoId.c_str());
-        transactionOprn.Finish();
-        return E_ERR;
-    }
     EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     servicePredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
@@ -392,19 +400,34 @@ int32_t EnhancementManager::AddServiceTask(MediaEnhanceBundle &mediaEnhanceBundl
         static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING));
     if (hasCloudWatermark) {
         rdbValues.PutInt(PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, YES);
+    } else {
+        rdbValues.PutInt(PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, NO);
     }
-    errCode = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates);
+    int32_t errCode = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates);
     if (errCode != E_OK) {
+        EnhancementTaskManager::RemoveEnhancementTask(photoId);
         return E_ERR;
     }
-    transactionOprn.Finish();
-    return errCode;
+    if (enhancementService_->AddTask(photoId, mediaEnhanceBundle) != E_OK) {
+        MEDIA_ERR_LOG("enhancment service error, photoId: %{public}s", photoId.c_str());
+        enhancementService_->DestroyBundle(mediaEnhanceBundle);
+        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+        predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+        predicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
+            static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING));
+        ValuesBucket values;
+        values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
+            static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
+        EnhancementDatabaseOperations::Update(values, predicates);
+        EnhancementTaskManager::RemoveEnhancementTask(photoId);
+        return E_ERR;
+    }
+    enhancementService_->DestroyBundle(mediaEnhanceBundle);
+    return E_OK;
 }
-#endif
 
 int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const bool hasCloudWatermark)
 {
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     unordered_map<int32_t, string> fileId2Uri;
     vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE,
         PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE
@@ -432,12 +455,13 @@ int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const b
             errCode = E_ERR;
             continue;
         }
-        MediaEnhanceBundle mediaEnhanceBundle;
-        mediaEnhanceBundle.PutInt(MediaEnhanceBundleKey::TRIGGER_TYPE, TaskTriggerType::TRIGGER_HIGH_LEVEL);
+        if (!LoadService()) {
+            continue;
+        }
+        MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
+        enhancementService_->PutInt(mediaEnhanceBundle, MediaEnhance_Bundle_Key::TRIGGER_TYPE,
+            MediaEnhance_Trigger_Type::TRIGGER_HIGH_LEVEL);
         FillBundleWithWaterMarkInfo(mediaEnhanceBundle, mimeType, dynamicRangeType, hasCloudWatermark);
-        vector<string> taskUris;
-        taskUris.push_back(fileId2Uri[fileId]);
-        mediaEnhanceBundle.SetUrls(taskUris);
         errCode = AddServiceTask(mediaEnhanceBundle, fileId, photoId, hasCloudWatermark);
         if (errCode != E_OK) {
             continue;
@@ -446,11 +470,8 @@ int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const b
         watch->Notify(fileId2Uri[fileId], NotifyType::NOTIFY_UPDATE);
     }
     return errCode;
-#else
-    MEDIA_ERR_LOG("not supply cloud enhancement service");
-    return E_ERR;
-#endif
 }
+#endif
 
 int32_t EnhancementManager::HandlePrioritizeOperation(MediaLibraryCommand &cmd)
 {
@@ -480,13 +501,18 @@ int32_t EnhancementManager::HandlePrioritizeOperation(MediaLibraryCommand &cmd)
             photoId.c_str());
         return E_ERR;
     }
-    MediaEnhanceBundle mediaEnhanceBundle;
-    mediaEnhanceBundle.PutInt(MediaEnhanceBundleKey::TRIGGER_TYPE, TaskTriggerType::TRIGGER_HIGH_LEVEL);
-
     if (!LoadService()) {
+        MEDIA_ERR_LOG("load enhancement service error");
         return E_ERR;
     }
+    MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
+    if (mediaEnhanceBundle == nullptr) {
+        return E_ERR;
+    }
+    enhancementService_->PutInt(mediaEnhanceBundle, MediaEnhance_Bundle_Key::TRIGGER_TYPE,
+        MediaEnhance_Trigger_Type::TRIGGER_HIGH_LEVEL);
     int32_t ret = enhancementService_->AddTask(photoId, mediaEnhanceBundle);
+    enhancementService_->DestroyBundle(mediaEnhanceBundle);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "enhancment service error, photoId: %{public}s", photoId.c_str());
     return ret;
 #else
@@ -552,10 +578,7 @@ int32_t EnhancementManager::HandleCancelAllOperation()
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "cancel all tasks failed: enhancment service error");
     vector<string> taskIds;
     EnhancementTaskManager::RemoveAllEnhancementTask(taskIds);
-    if (taskIds.empty()) {
-        MEDIA_INFO_LOG("cloud enhancement tasks in cache are not processing");
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET_LOG(!taskIds.empty(), E_OK, "cloud enhancement tasks in cache are not processing");
     RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
     queryPredicates.In(PhotoColumn::PHOTO_ID, taskIds);
     vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
@@ -570,7 +593,8 @@ int32_t EnhancementManager::HandleCancelAllOperation()
         string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
         int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
         if (ceAvailable != static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING)) {
-            MEDIA_INFO_LOG("cloud enhancement task in db not processing, photoId: %{public}s", photoId.c_str());
+            MEDIA_INFO_LOG("cloud enhancement task in db not processing, photoId: %{public}s",
+                photoId.c_str());
             continue;
         }
         string uri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
@@ -592,6 +616,7 @@ int32_t EnhancementManager::HandleCancelAllOperation()
     }
     return E_OK;
 #else
+    MEDIA_ERR_LOG("not supply cloud enhancement service");
     return E_ERR;
 #endif
 }

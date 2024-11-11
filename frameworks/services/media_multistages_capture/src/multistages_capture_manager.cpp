@@ -63,6 +63,7 @@ void MultiStagesCaptureManager::RemovePhotos(const NativeRdb::AbsRdbPredicates &
         }
 
         int32_t mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, resultSet);
+        MEDIA_INFO_LOG("Media type is: %{public}d", mediaType);
         switch (mediaType) {
             case MediaType::MEDIA_TYPE_IMAGE:
                 MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(photoId, isRestorable);

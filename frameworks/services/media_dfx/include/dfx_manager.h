@@ -67,6 +67,8 @@ public:
     void HandleNoPermmison(int32_t type, int32_t object, int32_t error);
     void HandleHalfDayMissions();
     void HandleAdaptationToMovingPhoto(const std::string &appName, bool adapted);
+    void IsDirectoryExist(const std::string &dirName);
+    void CheckStatus();
 
 private:
     void Init();

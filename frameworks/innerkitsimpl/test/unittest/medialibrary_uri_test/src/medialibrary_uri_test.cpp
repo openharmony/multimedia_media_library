@@ -79,24 +79,24 @@ HWTEST_F(MediaLibraryUriTest, medialib_ParseThumbnailInfo_test_001, TestSize.Lev
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryUriTest, medialib_GetDateAddedFromUri_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUriTest, medialib_GetDateTakenFromUri_test_001, TestSize.Level0)
 {
-    string testDateAdded = "0001";
+    string testDateTaken = "0001";
     string uriString = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL;
-    string output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
+    string output = ThumbnailUriUtils::GetDateTakenFromUri(uriString);
     EXPECT_EQ(output, "");
 
-    uriString = TEST_STRING + ML_URI_DATE_ADDED + testDateAdded;
-    output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
+    uriString = TEST_STRING + ML_URI_DATE_TAKEN + testDateTaken;
+    output = ThumbnailUriUtils::GetDateTakenFromUri(uriString);
     EXPECT_EQ(output, "");
 
-    uriString = TEST_STRING + THUMBNAIL_OPERN_KEYWORD + "=" + testDateAdded;
-    output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
+    uriString = TEST_STRING + THUMBNAIL_OPERN_KEYWORD + "=" + testDateTaken;
+    output = ThumbnailUriUtils::GetDateTakenFromUri(uriString);
     EXPECT_EQ(output, "");
 
-    uriString = TEST_STRING + ML_URI_DATE_ADDED + "=" + testDateAdded;
-    output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
-    EXPECT_EQ(output, testDateAdded);
+    uriString = TEST_STRING + ML_URI_DATE_TAKEN + "=" + testDateTaken;
+    output = ThumbnailUriUtils::GetDateTakenFromUri(uriString);
+    EXPECT_EQ(output, testDateTaken);
 }
 
 HWTEST_F(MediaLibraryUriTest, medialib_GetFileUriFromUri_test_001, TestSize.Level0)

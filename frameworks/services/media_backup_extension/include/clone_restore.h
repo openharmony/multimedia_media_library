@@ -29,6 +29,8 @@
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_errno.h"
 #include "backup_database_utils.h"
+#include "photo_album_clone.h"
+#include "photos_clone.h"
 
 namespace OHOS {
 namespace Media {
@@ -40,15 +42,14 @@ public:
     void StartRestore(const std::string &backupRestorePath, const std::string &upgradePath) override;
     int32_t Init(const std::string &backupRestoreDir, const std::string &upgradeFilePath, bool isUpgrade) override;
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
-        int32_t sourceType) const override;
+        int32_t sourceType) override;
     std::string GetBackupInfo() override;
     using CoverUriInfo = std::pair<std::string, std::pair<std::string, int32_t>>;
 
 private:
     void RestorePhoto(void) override;
     void HandleRestData(void) override;
-    int32_t QueryTotalNumber(void) override;
-    std::vector<FileInfo> QueryFileInfos(int32_t offset) override;
+    std::vector<FileInfo> QueryFileInfos(int32_t offset, int32_t isRelatedToPhotoMap = 0);
     bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         std::string dbName = "") override;
     bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
@@ -83,7 +84,7 @@ private:
     void InsertAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<AlbumInfo> &albumInfos,
         const std::string &tableName);
-    bool HasSameAlbum(const AlbumInfo &albumInfo, const std::string &tableName) const;
+    bool HasSameAlbum(const AlbumInfo &albumInfo, const std::string &tableName);
     void BatchQueryAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
     void BatchInsertMap(const std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
     NativeRdb::ValuesBucket GetInsertValue(const MapInfo &mapInfo) const;
@@ -110,7 +111,7 @@ private:
         MediaType mediaType);
     std::string GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount, int64_t &videoFileMoveCount);
-    void RestorePhotoBatch(int32_t offset);
+    void RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap = 0);
     void RestoreAudioBatch(int32_t offset);
     void InsertPhotoRelated(std::vector<FileInfo> &fileInfos);
     void SetFileIdReference(const std::vector<FileInfo> &fileInfos, std::string &selection,
@@ -122,10 +123,11 @@ private:
         std::unordered_set<int32_t> &albumSet);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(const std::vector<MapInfo> &mapInfos);
     std::string GetQueryWhereClauseByTable(const std::string &tableName);
-    void QuerySource(std::vector<FileInfo> &fileInfos);
     void SetSpecialAttributes(const std::string &tableName, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         FileInfo &fileInfo);
     bool IsSameFileForClone(const std::string &tableName, FileInfo &fileInfo);
+    int32_t MovePicture(FileInfo &fileInfo);
+    int32_t MoveMovingPhotoVideo(FileInfo &fileInfo);
     NativeRdb::ValuesBucket GetInsertValue(const AnalysisAlbumTbl &portraitAlbumInfo);
     int32_t InsertPortraitAlbumByTable(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
     void InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
@@ -168,6 +170,7 @@ private:
     template<typename T>
     void PutWithDefault(NativeRdb::ValuesBucket& values, const std::string& columnName,
         const std::optional<T>& optionalValue, const T& defaultValue);
+    int32_t MoveEditedData(FileInfo &fileInfo);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
@@ -183,6 +186,8 @@ private:
     std::unordered_set<std::string> albumToNotifySet_;
     std::string garbagePath_;
     std::vector<CoverUriInfo> coverUriInfo_;
+    PhotoAlbumClone photoAlbumClone_;
+    PhotosClone photosClone_;
     static constexpr int32_t INVALID_COVER_SATISFIED_STATUS = -1;
 };
 
