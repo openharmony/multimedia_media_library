@@ -17,6 +17,7 @@
 
 #include "notify_handler.h"
 #include "analysis_handler.h"
+#include "cloud_album_handler.h"
 #include "uri_convert_handler.h"
 
 using namespace std;
@@ -33,7 +34,10 @@ unordered_map<ChainType, list<shared_ptr<BaseHandler>>> NotifyResponsibilityChai
         make_shared<AnalysisHandler>(),
         make_shared<UriConvertHandler>(),
         make_shared<NotifyHandler>()
-    }}
+    }},
+    {ALBUM_DELETE, {
+        make_shared<CloudAlbumHandler>()
+    }},
 };
 
 shared_ptr<BaseHandler> NotifyResponsibilityChainFactory::CreateChain(const ChainType &type)
