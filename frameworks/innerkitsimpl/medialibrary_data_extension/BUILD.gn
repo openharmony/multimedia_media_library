@@ -212,6 +212,7 @@ ohos_shared_library("medialibrary_data_extension") {
 
   media_cloud_sync_notify_handle_source = [
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/analysis_handler.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/cloud_album_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/uri_convert_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/notify_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/cloud_sync_observer.cpp",
