@@ -18,6 +18,7 @@
 
 #include "access_token.h"
 #include "accesstoken_kit.h"
+#include "el5_filekey_manager_kit.h"
 #include "ipc_skeleton.h"
 #include "iservice_registry.h"
 #include "media_file_utils.h"
@@ -484,6 +485,17 @@ string PermissionUtils::GetAppIdByBundleName(const string &bundleName, int32_t u
     GetAppIdFromCache(uid, bundleName, appId);
 
     return appId;
+}
+
+bool PermissionUtils::SetEPolicy()
+{
+    MEDIA_INFO_LOG("SetEPolicy for directory");
+    int ret = Security::AccessToken::El5FilekeyManagerKit::SetFilePathPolicy();
+    if (ret != 0) {
+        MEDIA_ERR_LOG("SetEPolicy fail of %{public}d", ret);
+        return false;
+    }
+    return true;
 }
 }  // namespace Media
 }  // namespace OHOS

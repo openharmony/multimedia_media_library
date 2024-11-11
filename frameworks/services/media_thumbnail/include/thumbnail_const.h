@@ -157,6 +157,8 @@ const int32_t CLOUD_THUMB_STATUS_DOWNLOAD = 0;
 const int32_t CLOUD_THUMBNAIL_DOWNLOAD_FINISH_NUMBER = 1000;
 const std::string RDB_QUERY_COUNT = "count";
 
+const int32_t THUMBNAIL_READY_FAILED = 2;
+
 static inline std::string GetThumbnailPath(const std::string &path, const std::string &key)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {

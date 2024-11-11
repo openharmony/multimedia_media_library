@@ -17,21 +17,37 @@
 #define OHOS_MEDIA_BACKUP_RESTORE_SERVICE_H
 
 #include <string>
+#include <context.h>
+
+#include "base_restore.h"
 
 namespace OHOS {
 namespace Media {
+
+using RestoreInfo = struct {
+    int32_t sceneCode;
+    std::string galleryAppName;
+    std::string mediaAppName;
+    std::string backupDir;
+    std::string bundleInfo;
+};
+
 class BackupRestoreService {
 public:
     virtual ~BackupRestoreService() = default;
     static BackupRestoreService &GetInstance(void);
-    void StartRestore(int32_t sceneCode, const std::string &galleryAppName, const std::string &mediaAppName,
-        const std::string &backupDir);
-    void StartRestoreEx(int32_t sceneCode, const std::string &galleryAppName, const std::string &mediaAppName,
-        const std::string &backupDir, std::string &restoreExInfo);
+    void Init(const RestoreInfo &info);
+    void StartRestore(const std::shared_ptr<AbilityRuntime::Context> &context, const RestoreInfo &info);
+    void StartRestoreEx(const std::shared_ptr<AbilityRuntime::Context> &context, const RestoreInfo &info,
+        std::string &restoreExInfo);
+
     void GetBackupInfo(int32_t sceneCode, std::string &backupInfo);
+    void GetProgressInfo(std::string &progressInfo);
 
 private:
     BackupRestoreService() = default;
+    std::string serviceBackupDir_;
+    std::unique_ptr<BaseRestore> restoreService_;
 };
 } // namespace Media
 } // namespace OHOS

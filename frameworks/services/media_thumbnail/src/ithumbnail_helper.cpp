@@ -118,19 +118,19 @@ void IThumbnailHelper::DeleteMonthAndYearAstc(std::shared_ptr<ThumbnailTaskData>
     }
     if (!ThumbnailUtils::DoDeleteMonthAndYearAstc(data->opts_)) {
         MEDIA_ERR_LOG("DeleteMonthAndYearAstc failed, key is %{public}s and %{public}s",
-            data->opts_.row.c_str(), data->opts_.dateAdded.c_str());
+            data->opts_.row.c_str(), data->opts_.dateTaken.c_str());
     }
 }
 
-void IThumbnailHelper::UpdateAstcDateAdded(std::shared_ptr<ThumbnailTaskData> &data)
+void IThumbnailHelper::UpdateAstcDateTaken(std::shared_ptr<ThumbnailTaskData> &data)
 {
     if (data == nullptr) {
-        MEDIA_ERR_LOG("UpdateAstcDateAdded failed, data is null");
+        MEDIA_ERR_LOG("UpdateAstcDateTaken failed, data is null");
         return;
     }
-    if (!ThumbnailUtils::DoUpdateAstcDateAdded(data->opts_, data->thumbnailData_)) {
-        MEDIA_ERR_LOG("UpdateAstcDateAdded failed, key is %{public}s and %{public}s",
-            data->opts_.row.c_str(), data->thumbnailData_.dateAdded.c_str());
+    if (!ThumbnailUtils::DoUpdateAstcDateTaken(data->opts_, data->thumbnailData_)) {
+        MEDIA_ERR_LOG("UpdateAstcDateTaken failed, key is %{public}s and %{public}s",
+            data->opts_.row.c_str(), data->thumbnailData_.dateTaken.c_str());
     }
 }
 
@@ -541,8 +541,8 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
             return false;
         }
     } else if (type == ThumbnailType::MTH_ASTC || type == ThumbnailType::YEAR_ASTC) {
-        if (!ThumbnailUtils::CheckDateAdded(opts, data)) {
-            MEDIA_ERR_LOG("CheckDateAdded failed in GenThumbnail");
+        if (!ThumbnailUtils::CheckDateTaken(opts, data)) {
+            MEDIA_ERR_LOG("CheckDateTaken failed in GenThumbnail");
             return false;
         }
         if (!GenMonthAndYearAstcData(data, type)) {
@@ -680,6 +680,7 @@ int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const Thum
     ValuesBucket values;
     int changedRows;
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, MediaFileUtils::UTCTimeMilliSeconds());
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 1);
     Size lcdSize;
     if (ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::LCD, lcdSize)) {
         ThumbnailUtils::SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);

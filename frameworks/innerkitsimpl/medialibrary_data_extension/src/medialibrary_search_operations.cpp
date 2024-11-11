@@ -29,10 +29,11 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 const std::string notTrashedAndHiddenCondition = MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " +
-        MediaColumn::MEDIA_HIDDEN + " = 0 AND ";
+        MediaColumn::MEDIA_HIDDEN + " = 0 AND " + MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " +
+        PhotoColumn::PHOTO_CLEAN_FLAG + " = 0 AND ";
 const std::string analysisCompleteCondition = TBL_SEARCH_CV_STATUS + " = 1 AND (" + TBL_SEARCH_GEO_STATUS +
     " = 1 OR (" + PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = 0 AND " +
-    PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = 0)) ";
+    PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LONGITUDE + " = 0)) ";
 const std::string selectAnalysisCompletedPhoto = "SELECT COUNT(case when " + notTrashedAndHiddenCondition +
     TBL_SEARCH_PHOTO_STATUS + " > 0 AND " + MediaColumn::MEDIA_TYPE + " = 1 AND " + analysisCompleteCondition +
     " then 1 end) as " + PHOTO_COMPLETE_NUM + ",";

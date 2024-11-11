@@ -16,10 +16,12 @@
 #ifndef OHOS_MEDIA_UPGRADE_RESTORE_H
 #define OHOS_MEDIA_UPGRADE_RESTORE_H
 
-#include "base_restore.h"
-#include "burst_key_generator.h"
 #include <libxml/tree.h>
 #include <libxml/parser.h>
+
+#include "base_restore.h"
+#include "burst_key_generator.h"
+#include "photos_restore.h"
 
 namespace OHOS {
 namespace Media {
@@ -30,10 +32,9 @@ public:
         const std::string &dualDirName);
     virtual ~UpgradeRestore() = default;
     int32_t Init(const std::string &backupRestorePath, const std::string &upgradePath, bool isUpgrade) override;
-    int32_t QueryTotalNumber(void) override;
-    std::vector<FileInfo> QueryFileInfos(int32_t offset) override;
+    std::vector<FileInfo> QueryFileInfos(int32_t offset);
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
-        int32_t sourceType) const override;
+        int32_t sourceType) override;
     std::vector<FileInfo> QueryFileInfosFromExternal(int32_t offset, int32_t maxId, bool isCamera);
     std::vector<FileInfo> QueryAudioFileInfosFromAudio(int32_t offset);
     int32_t QueryNotSyncTotalNumber(int32_t offset, bool isCamera);
@@ -64,36 +65,19 @@ private:
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath) override;
     void AnalyzeSource() override;
+    void AnalyzeGalleryErrorSource();
+    void AnalyzeGalleryDuplicateData();
     void AnalyzeGallerySource();
-    void AnalyzeExternalSource();
     void HandleCloneBatch(int32_t offset, int32_t maxId);
     void UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int32_t &number);
-    void RestoreFromGalleryAlbum();
-    std::vector<GalleryAlbumInfo> QueryGalleryAlbumInfos();
-    std::vector<AlbumInfo> QueryPhotoAlbumInfos();
-    int32_t QueryAlbumTotalNumber(const std::string &tableName, bool bgallery);
-    bool ParseAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, AlbumInfo &albumInfo);
-    bool ParseGalleryAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        GalleryAlbumInfo &galleryAlbumInfos);
-    void InsertAlbum(std::vector<GalleryAlbumInfo> &galleryAlbumInfos, bool bInsertScreenreCorderAlbum);
-    std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<GalleryAlbumInfo> &galleryAlbumInfos,
-        bool bInsertScreenreCorderAlbum);
-    void BatchQueryAlbum(std::vector<GalleryAlbumInfo> &galleryAlbumInfos);
-    void UpdateMediaScreenreCorderAlbumId();
-    void UpdatehiddenAlbumBucketId();
-    void UpdateHiddenAlbumToMediaAlbumId(const std::string &sourcePath, FileInfo &info);
-    void InstertHiddenAlbum(const std::string &ablumIPath, FileInfo &info);
-    void UpdateGalleryAlbumInfo(GalleryAlbumInfo &galleryAlbumInfo);
-    void IntegratedAlbum(GalleryAlbumInfo &galleryAlbumInfo);
-    void ParseResultSetForMap(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
-    void UpdateFileInfo(const GalleryAlbumInfo &galleryAlbumInfo, FileInfo &info);
-    int32_t InitDbAndXml(const std::string &xmlPath, bool isUpgrade);
+    int32_t InitDbAndXml(std::string xmlPath, bool isUpgrade);
     int32_t ParseXml(const std::string &path);
     int StringToInt(const std::string& str);
     int32_t HandleXmlNode(xmlNodePtr cur);
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath, FileInfo &fileInfo);
     void RestoreFromGalleryPortraitAlbum();
+    bool HasSameFileForDualClone(FileInfo &fileInfo) override;
     int32_t QueryPortraitAlbumTotalNumber();
     std::vector<PortraitAlbumInfo> QueryPortraitAlbumInfos(int32_t offset,
         std::vector<std::string>& tagNameToDeleteSelection);
@@ -144,6 +128,8 @@ private:
     std::string hiddenAlbumBucketId_;
     int32_t mediaScreenreCorderAlbumId_{-1};
     bool shouldIncludeSd_{false};
+    PhotoAlbumRestore photoAlbumRestore_;
+    PhotosRestore photosRestore_;
 };
 } // namespace Media
 } // namespace OHOS

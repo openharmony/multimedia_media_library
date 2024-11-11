@@ -43,6 +43,7 @@ static const string PATH_PHOTO_PREFIX = "datashare:///media/phaccess_photo_opera
 
 static bool ParseFileIdFromPredicates(const DataShare::DataSharePredicates &predicates, string &fileId)
 {
+    // parse fileId from operationList
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
     constexpr int32_t OPERATION_SIZE = 2;
@@ -59,8 +60,32 @@ static bool ParseFileIdFromPredicates(const DataShare::DataSharePredicates &pred
             return true;
         }
     }
-    MEDIA_ERR_LOG("parse fileId from predicates fail");
-    return false;
+
+    // parse fileId from whereClause
+    const string &clause = predicates.GetWhereClause();
+    const vector<string> &values = predicates.GetWhereArgs();
+    size_t pos = clause.find(MediaColumn::MEDIA_ID);
+    if (pos == string::npos) {
+        MEDIA_ERR_LOG("whereClause not include fileId");
+        return false;
+    }
+    size_t argIndex = 0;
+    constexpr char placeholder = '?';
+    for (size_t i = 0; i < pos; ++i) {
+        if (clause[i] == placeholder) {
+            ++argIndex;
+        }
+    }
+    if (argIndex >= values.size()) {
+        MEDIA_ERR_LOG("argIndex should less than values size");
+        return false;
+    }
+    fileId = values[argIndex];
+    if (!MediaLibraryDataManagerUtils::IsNumber(fileId)) {
+        MEDIA_ERR_LOG("whereArgs fileId=%{public}s is not num", fileId.c_str());
+        return false;
+    }
+    return true;
 }
 
 static bool ParseInfoFromCmd(MediaLibraryCommand &cmd, string &fileId, int32_t &uriType)

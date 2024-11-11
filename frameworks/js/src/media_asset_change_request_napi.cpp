@@ -1070,31 +1070,6 @@ napi_value MediaAssetChangeRequestNapi::JSSetTitle(napi_env env, napi_callback_i
     RETURN_NAPI_UNDEFINED(env);
 }
 
-napi_value MediaAssetChangeRequestNapi::JSSetVideoEnhancementAttr(napi_env env, napi_callback_info info)
-{
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return nullptr;
-    }
-
-    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
-    CHECK_COND_WITH_MESSAGE(env,
-        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) == napi_ok,
-        "Failed to get object info");
-    
-    int32_t videoEnhancementType;
-    string photoId;
-    MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[0], videoEnhancementType);
-    MediaLibraryNapiUtils::GetParamStringWithLength(env, asyncContext->argv[1], MAX_PHOTO_ID_LEN, photoId);
-
-    auto changeRequest = asyncContext->objectInfo;
-    changeRequest->fileAsset_->SetPhotoId(photoId);
-    auto fileAsset = changeRequest->GetFileAssetInstance();
-    CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
-    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_VIDEO_ENHANCEMENT_ATTR);
-    RETURN_NAPI_UNDEFINED(env);
-}
-
 napi_value MediaAssetChangeRequestNapi::JSSetLocation(napi_env env, napi_callback_info info)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -1262,6 +1237,32 @@ napi_value MediaAssetChangeRequestNapi::JSSaveCameraPhoto(napi_env env, napi_cal
         changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_FILTERS);
     }
     changeRequest->RecordChangeOperation(AssetChangeOperation::SAVE_CAMERA_PHOTO);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSSetVideoEnhancementAttr(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    NAPI_INFO_LOG("JSSetVideoEnhancementAttr in");
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) == napi_ok,
+        "Failed to get object info");
+
+    int32_t videoEnhancementType;
+    string photoId;
+    MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[0], videoEnhancementType);
+    MediaLibraryNapiUtils::GetParamStringWithLength(env, asyncContext->argv[1], MAX_PHOTO_ID_LEN, photoId);
+
+    auto changeRequest = asyncContext->objectInfo;
+    changeRequest->fileAsset_->SetPhotoId(photoId);
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_VIDEO_ENHANCEMENT_ATTR);
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -1460,7 +1461,10 @@ napi_value MediaAssetChangeRequestNapi::AddMovingPhotoVideoResource(napi_env env
     CHECK_COND_WITH_MESSAGE(env, napi_typeof(env, value, &valueType) == napi_ok, "Failed to get napi type");
     if (valueType == napi_string) { // addResource by file uri
         CHECK_COND(env, ParseFileUri(env, value, MediaType::MEDIA_TYPE_VIDEO, asyncContext), OHOS_INVALID_PARAM_CODE);
-        CHECK_COND(env, MediaFileUtils::CheckMovingPhotoVideo(asyncContext->realPath), OHOS_INVALID_PARAM_CODE);
+        if (!MediaFileUtils::CheckMovingPhotoVideo(asyncContext->realPath)) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check video resource of moving photo");
+            return nullptr;
+        }
         changeRequest->movingPhotoVideoRealPath_ = asyncContext->realPath;
         changeRequest->movingPhotoVideoResourceMode_ = AddResourceMode::FILE_URI;
     } else { // addResource by ArrayBuffer
@@ -1473,8 +1477,11 @@ napi_value MediaAssetChangeRequestNapi::AddMovingPhotoVideoResource(napi_env env
             "Failed to get data buffer");
         CHECK_COND_WITH_MESSAGE(env, changeRequest->movingPhotoVideoBufferSize_ > 0,
             "Failed to check size of data buffer");
-        CHECK_COND(env, CheckMovingPhotoVideo(changeRequest->movingPhotoVideoDataBuffer_,
-            changeRequest->movingPhotoVideoBufferSize_), OHOS_INVALID_PARAM_CODE);
+        if (!CheckMovingPhotoVideo(changeRequest->movingPhotoVideoDataBuffer_,
+            changeRequest->movingPhotoVideoBufferSize_)) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check video resource of moving photo");
+            return nullptr;
+        }
         changeRequest->movingPhotoVideoResourceMode_ = AddResourceMode::DATA_BUFFER;
     }
 
@@ -2215,7 +2222,7 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
 static bool SetVideoEnhancementAttr(MediaAssetChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("setVideoEnhancementAttr");
+    tracer.Start("SetVideoEnhancementAttr");
 
     auto changeOpreations = context.assetChangeOperations;
     DataShare::DataSharePredicates predicates;

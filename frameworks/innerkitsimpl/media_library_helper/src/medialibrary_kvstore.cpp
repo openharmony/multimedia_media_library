@@ -31,6 +31,11 @@ const OHOS::DistributedKv::StoreId KVSTORE_YEAR_STOREID = {"medialibrary_year_as
 const OHOS::DistributedKv::StoreId KVSTORE_MONTH_STOREID_OLD_VERSION = {"medialibrary_month_astc"};
 const OHOS::DistributedKv::StoreId KVSTORE_YEAR_STOREID_OLD_VERSION = {"medialibrary_year_astc"};
 
+MediaLibraryKvStore::~MediaLibraryKvStore()
+{
+    Close();
+}
+
 int32_t MediaLibraryKvStore::Init(
     const KvStoreRoleType &roleType, const KvStoreValueType &valueType, const std::string &baseDir)
 {

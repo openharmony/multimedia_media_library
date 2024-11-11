@@ -37,14 +37,20 @@ constexpr int32_t GALLERY_TRASHED_ID = 0;
 constexpr int32_t UPGRADE_RESTORE_ID = 0;
 constexpr int32_t DUAL_FRAME_CLONE_RESTORE_ID = 1;
 constexpr int32_t CLONE_RESTORE_ID = 2;
+constexpr int32_t I_PHONE_CLONE_RESTORE = 3;
+constexpr int32_t OTHERS_PHONE_CLONE_RESTORE = 4;
 constexpr int32_t DEFAULT_RESTORE_ID = -1;
 constexpr int32_t RETRY_TIME = 5;
 constexpr int32_t SLEEP_INTERVAL = 1;
 constexpr int32_t GARBAGE_PHOTO_SIZE = 2048;
 constexpr int32_t LIVE_PHOTO_TYPE = 50;
+constexpr int32_t LIVE_PHOTO_HDR_TYPE = 1050;
 constexpr size_t GARBLE_UNIT = 2;
-constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 constexpr uint32_t COVER_URI_NUM = 3;
+constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
+constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
+constexpr uint32_t THUMBNAIL_NUM = 500;
+constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
 
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
@@ -53,6 +59,7 @@ const std::string RESTORE_AUDIO_LOCAL_DIR = "/storage/media/local/files/Audio";
 const std::string RESTORE_MUSIC_LOCAL_DIR = "/storage/media/local/files/Docs/Music/";
 const std::string UPGRADE_FILE_DIR = "/storage/media/local/files/data";
 const std::string GARBLE_DUAL_FRAME_CLONE_DIR = "/storage/media/local/files/data/storage/emulated";
+const std::string OTHER_CLONE_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/";
 const std::string GARBLE = "***";
 const std::string GALLERT_IMPORT = "/Pictures/cloud/Imports";
 const std::string GALLERT_HIDDEN_ALBUM = "/Pictures/hiddenAlbum";
@@ -125,12 +132,23 @@ const std::string STAT_KEY_DUPLICATE_COUNT = "duplicateCount";
 const std::string STAT_KEY_FAILED_COUNT = "failedCount";
 const std::string STAT_KEY_DETAILS = "details";
 const std::string STAT_KEY_NUMBER = "number";
+const std::string STAT_KEY_PROGRESS_INFO = "progressInfo";
+const std::string STAT_KEY_NAME = "name";
+const std::string STAT_KEY_PROCESSED = "processed";
+const std::string STAT_KEY_TOTAL = "total";
+const std::string STAT_KEY_IS_PERCENTAGE = "isPercentage";
 const std::string STAT_VALUE_ERROR_INFO = "ErrorInfo";
 const std::string STAT_VALUE_COUNT_INFO = "CountInfo";
 const std::string STAT_TYPE_PHOTO = "photo";
 const std::string STAT_TYPE_VIDEO = "video";
 const std::string STAT_TYPE_AUDIO = "audio";
+const std::string STAT_TYPE_PHOTO_VIDEO = "photo&video";
+const std::string STAT_TYPE_UPDATE = "update";
+const std::string STAT_TYPE_OTHER = "other";
+const std::string STAT_TYPE_ONGOING = "ongoing";
 const std::vector<std::string> STAT_TYPES = { STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO };
+const std::vector<std::string> STAT_PROGRESS_TYPES = { STAT_TYPE_PHOTO_VIDEO, STAT_TYPE_AUDIO, STAT_TYPE_UPDATE,
+    STAT_TYPE_OTHER, STAT_TYPE_ONGOING };
 
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
@@ -190,6 +208,11 @@ enum RestoreError {
 enum class PhotoRelatedType {
     PHOTO_MAP = 0,
     PORTRAIT,
+};
+
+enum ProcessStatus {
+    STOP = 0,
+    START,
 };
 
 const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
@@ -285,6 +308,17 @@ struct FileInfo {
     int32_t associateFileId;
 
     bool needMove {true};
+
+    std::string sourcePath;
+    std::string lPath;
+    int32_t ownerAlbumId;
+    /**
+     * @brief The PhotoMap is Deprecated. Hitory Data may still be transfered from Old Device by PhotoMap.
+     *   Use the isRelatedToPhotoMap field to identify if the photo is related to PhotoMap.
+     *   0 - not related, 1 - related.
+     */
+    int32_t isRelatedToPhotoMap = 0;
+    int32_t photoQuality;
 };
 
 struct AlbumInfo {
@@ -294,6 +328,7 @@ struct AlbumInfo {
     std::string albumBundleName;
     PhotoAlbumType albumType;
     PhotoAlbumSubType albumSubType;
+    std::string lPath;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
 };
 
@@ -315,13 +350,40 @@ struct MapInfo {
     int32_t fileId {-1};
 };
 
+struct FailedFileInfo {
+    std::string albumName;
+    std::string displayName;
+    std::string errorCode;
+    FailedFileInfo() = default;
+    FailedFileInfo(int32_t sceneCode, const FileInfo &fileInfo, int32_t givenErrorCode)
+    {
+        displayName = fileInfo.displayName;
+        errorCode = std::to_string(givenErrorCode);
+        if (fileInfo.recycledTime > 0) {
+            albumName = "最近删除";
+            return;
+        }
+        if (fileInfo.hidden > 0) {
+            albumName = sceneCode == CLONE_RESTORE_ID ? "已隐藏" : "隐藏相册";
+            return;
+        }
+        albumName = fileInfo.packageName;
+    }
+};
+
 struct SubCountInfo {
     uint64_t successCount {0};
     uint64_t duplicateCount {0};
-    std::unordered_map<std::string, int32_t> failedFiles;
+    std::unordered_map<std::string, FailedFileInfo> failedFiles;
     SubCountInfo(int64_t successCount, int64_t duplicateCount,
-        const std::unordered_map<std::string, int32_t> &failedFiles)
+        const std::unordered_map<std::string, FailedFileInfo> &failedFiles)
         : successCount(successCount), duplicateCount(duplicateCount), failedFiles(failedFiles) {}
+};
+
+struct SubProcessInfo {
+    uint64_t processed {0};
+    uint64_t total {0};
+    SubProcessInfo(uint64_t processed, uint64_t total) : processed(processed), total(total) {}
 };
 
 struct PortraitAlbumInfo {
@@ -467,27 +529,9 @@ const std::string ALL_PHOTOS_ORDER_BY = " ORDER BY showDateToken ASC ";
 
 const std::string EXCLUDE_SD = " (storage_id IN (0, 65537)) ";
 
-const std::string QUERY_GALLERY_COUNT = "SELECT count(1) AS count FROM gallery_media ";
-
-const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + GALLERY_FILE_DATA + "," +
-    GALLERY_DISPLAY_NAME + "," + GALLERY_DESCRIPTION + "," + GALLERY_IS_FAVORITE + "," + GALLERY_RECYCLED_TIME +
-    "," + GALLERY_FILE_SIZE + "," + GALLERY_DURATION + "," + GALLERY_MEDIA_TYPE + "," + GALLERY_SHOW_DATE_TOKEN + "," +
-    GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + ", " +
-    EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID + "," + GALLERY_MEDIA_SOURCE_PATH + "," +
-    GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH + ", " + GALLERY_ID + "," +
-    GALLERY_SPECIAL_FILE_TYPE + "," + GALLERY_FIRST_UPDATE_TIME +  "," + GALLERY_DATE_TAKEN + "," +
-    GALLERY_DETAIL_TIME + " FROM gallery_media ";
-
 const std::string QUERY_MAX_ID = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
     (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
-
-const std::string QUERY_GALLERY_ALBUM_INFO = "SELECT " + GALLERY_ALBUM +
-                                     ".*, COALESCE(garbage_album.nick_name, '') AS " +
-                                     GALLERY_NICK_NAME + " FROM " + GALLERY_ALBUM + " LEFT JOIN garbage_album ON " +
-                                     GALLERY_ALBUM + ".lPath = garbage_album.nick_dir WHERE " + GALLERY_ALBUM +
-                                     ".lPath != '" + GALLERT_IMPORT + "'" + " AND " + GALLERY_ALBUM +
-                                     ".lPath != '" + GALLERT_HIDDEN_ALBUM + "'";
 
 const std::string DUAL_CLONE_AUDIO_FULL_TABLE = "mediainfo INNER JOIN mediafile ON mediainfo." + AUDIO_DATA +
     " = '/storage/emulated/0'||mediafile.filepath";
@@ -497,10 +541,6 @@ const std::string QUERY_ALL_AUDIOS_FROM_AUDIODB = "SELECT " + AUDIO_DATA + "," +
 
 const std::string QUERY_DUAL_CLONE_AUDIO_COUNT = "SELECT count(1) as count FROM " + DUAL_CLONE_AUDIO_FULL_TABLE;
 
-const std::string ALL_PHOTOS_WHERE_CLAUSE_WITH_LOW_QUALITY = " (local_media_id != -1) AND (relative_bucket_id \
-    IS NULL OR relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) \
-    AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
-    (_size > 0 OR (_size = 0 AND photo_quality = 0)) ";
 const std::vector<std::string> EXCLUDED_PORTRAIT_COLUMNS = {"album_id", "count", "rank"};
 const std::vector<std::string> EXCLUDED_FACE_TAG_COLUMNS = {"id", "user_operation", "rename_operation", "group_tag",
     "user_display_level", "tag_order", "is_me", "cover_uri", "count", "date_modify", "album_type", "is_removed"};

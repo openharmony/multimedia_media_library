@@ -37,6 +37,8 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
+const std::string MIME_TYPE_HEIF = "image/heif";
+const std::string MIME_TYPE_HEIC = "image/heic";
 FileUtils::FileUtils() {}
 
 FileUtils::~FileUtils() {}
@@ -153,7 +155,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     }
     Media::ImagePacker imagePacker;
     Media::PackOption packOption;
-    packOption.format = mime_type;
+    packOption.format = (mime_type == MIME_TYPE_HEIC) ? MIME_TYPE_HEIF : mime_type;
     packOption.needsPackProperties = true;
     packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
     packOption.isEditScene = false;
@@ -192,19 +194,19 @@ int32_t FileUtils::SaveVideo(const std::string &filePath, bool isEdited)
     if (isEdited) {
         targetPath = MediaLibraryAssetOperations::GetEditDataSourcePath(filePath);
     }
- 
+
     if (!IsFileExist(filePath)) {
         MEDIA_INFO_LOG("file not exist: %{public}s", filePath.c_str());
     }
- 
+
     if (!IsFileExist(tempPath)) {
         MEDIA_INFO_LOG("file not exist: %{public}s", tempPath.c_str());
     }
- 
+
     MEDIA_INFO_LOG("video rename targetPath: %{public}s, tempPath: %{public}s", targetPath.c_str(), tempPath.c_str());
     return rename(tempPath.c_str(), targetPath.c_str());
 }
- 
+
 int32_t FileUtils::DeleteTempVideoFile(const std::string &filePath)
 {
     MEDIA_INFO_LOG("filePath: %{public}s", filePath.c_str());

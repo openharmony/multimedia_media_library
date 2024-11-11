@@ -95,10 +95,12 @@ const std::string PhotoColumn::PHOTO_HAS_ASTC = "has_astc"; // This attribute ha
 const std::string PhotoColumn::PHOTO_IS_TEMP = "is_temp";
 const std::string PhotoColumn::PHOTO_THUMBNAIL_READY = "thumbnail_ready";
 const std::string PhotoColumn::PHOTO_COVER_POSITION = "cover_position";
+const std::string PhotoColumn::PHOTO_THUMBNAIL_VISIBLE = "thumbnail_visible";
 const std::string PhotoColumn::PHOTO_FRONT_CAMERA = "front_camera";
 const std::string PhotoColumn::PHOTO_BURST_COVER_LEVEL = "burst_cover_level";
 const std::string PhotoColumn::PHOTO_BURST_KEY = "burst_key";
 const std::string PhotoColumn::PHOTO_ORIGINAL_SUBTYPE = "original_subtype";
+
 const std::string PhotoColumn::PHOTO_CE_AVAILABLE = "ce_available";
 const std::string PhotoColumn::PHOTO_CE_STATUS_CODE = "ce_status_code";
 const std::string PhotoColumn::PHOTO_STRONG_ASSOCIATION = "strong_association";
@@ -106,6 +108,9 @@ const std::string PhotoColumn::PHOTO_ASSOCIATE_FILE_ID = "associate_file_id";
 const std::string PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK = "has_cloud_watermark";
 const std::string PhotoColumn::PHOTO_DETAIL_TIME = "detail_time";
 
+const std::string PhotoColumn::PHOTO_OWNER_ALBUM_ID = "owner_album_id";
+const std::string PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID = "original_asset_cloud_id";
+const std::string PhotoColumn::PHOTO_SOURCE_PATH = "source_path";
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_INDEX = "date_month_index";
@@ -132,6 +137,7 @@ const std::string PhotoColumn::DEFAULT_PHOTO_URI = "file://media/Photo";
 const std::string PhotoColumn::PHOTO_CACHE_URI_PREFIX = "file://media/Photo/cache/";
 const std::string PhotoColumn::PHOTO_TYPE_URI = "/Photo";
 const std::string PhotoColumn::HIGHTLIGHT_COVER_URI = "/highlight";
+const std::string PhotoColumn::HIGHTLIGHT_URI = "/highlight/video";
 
 const std::string PhotoColumn::PHOTO_CLOUD_URI_PREFIX = "file://cloudsync/Photo/";
 
@@ -215,8 +221,12 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_CE_STATUS_CODE + " INT, " +
     PHOTO_STRONG_ASSOCIATION + " INT DEFAULT 0, " +
     PHOTO_ASSOCIATE_FILE_ID + " INT DEFAULT 0, " +
-    PHOTO_HAS_CLOUD_WATERMARK + " INT DEFAULT 0, "+
-    PHOTO_DETAIL_TIME + " TEXT) ";
+    PHOTO_HAS_CLOUD_WATERMARK + " INT DEFAULT 0, " +
+    PHOTO_DETAIL_TIME + " TEXT, " +
+    PHOTO_OWNER_ALBUM_ID + " INT DEFAULT 0, " +
+    PHOTO_ORIGINAL_ASSET_CLOUD_ID + " TEXT, " +
+    PHOTO_THUMBNAIL_VISIBLE + " INT DEFAULT 0, " +
+    PHOTO_SOURCE_PATH + " TEXT)";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
     PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";
@@ -295,9 +305,9 @@ const std::string PhotoColumn::INDEX_CAMERA_SHOT_KEY =
 
 const std::string PhotoColumn::INDEX_SCHPT_READY =
     BaseColumn::CreateIndex() + PHOTO_SCHPT_READY_INDEX + " ON " + PHOTOS_TABLE +
-    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
-    "," + MEDIA_DATE_TRASHED + ", " + PHOTO_IS_TEMP + "," + PHOTO_THUMBNAIL_READY +
-    "," + MEDIA_DATE_TAKEN + " DESC);";
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + PHOTO_THUMBNAIL_VISIBLE + "," + MEDIA_DATE_TRASHED +
+    "," + MEDIA_TIME_PENDING + ", " + MEDIA_HIDDEN + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
+    "," + MEDIA_DATE_TAKEN + " DESC, " + MEDIA_ID + " DESC);";
 
 const std::string PhotoColumn::DROP_INDEX_SCHPT_READY = BaseColumn::DropIndex() + PHOTO_SCHPT_READY_INDEX;
 
@@ -364,7 +374,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_THUMB_SIZE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_COVER_POSITION,
     PhotoColumn::PHOTO_FRONT_CAMERA, PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY,
     PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, PhotoColumn::PHOTO_CE_AVAILABLE,
-    PhotoColumn::PHOTO_DETAIL_TIME,
+    PhotoColumn::PHOTO_DETAIL_TIME, PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::PHOTO_THUMBNAIL_VISIBLE,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
@@ -411,6 +421,8 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
         MOVING_PHOTO_EFFECT_MODE,
         PHOTO_COVER_POSITION,
         PHOTO_ORIGINAL_SUBTYPE,
+        PHOTO_OWNER_ALBUM_ID,
+        PHOTO_SOURCE_PATH,
     };
 
     std::string result = "(";

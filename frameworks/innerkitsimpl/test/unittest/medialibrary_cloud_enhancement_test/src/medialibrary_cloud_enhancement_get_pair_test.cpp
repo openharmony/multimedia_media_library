@@ -17,7 +17,7 @@
 
 
 #include "medialibrary_cloud_enhancement_get_pair_test.h"
- 
+
 #include <chrono>
 #include <thread>
 
@@ -51,12 +51,6 @@
 #undef private
 #undef protected
 
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-#include "media_enhance_client.h"
-#include "media_enhance_bundle.h"
-#include "media_enhance_constants.h"
-#endif
-
 using namespace std;
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
@@ -64,9 +58,6 @@ using namespace OHOS::DataShare;
 using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
 
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-using namespace OHOS::MediaEnhance;
-#endif
 namespace OHOS {
 namespace Media {
 static const string FIRST_TESTING_PHOTO_ID = "202408261737";
@@ -810,7 +801,6 @@ HWTEST_F(MediaLibraryCloudEnhancementGetPairTest, dfx_total_time_033, TestSize.L
     EXPECT_EQ(CloudEnhancementGetCount::GetInstance().GetStartTimes().empty(), true);
     MEDIA_INFO_LOG("dfx_total_time_033 End");
 }
-
 #endif
 }
 }

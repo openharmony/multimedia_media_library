@@ -21,9 +21,9 @@
 #include "backup_database_utils.h"
 #include "backup_dfx_utils.h"
 #include "backup_file_utils.h"
+#include "directory_ex.h"
 #include "extension_context.h"
 #include "media_column.h"
-#include "media_file_utils.h"
 #include "media_log.h"
 #include "media_file_utils.h"
 #include "media_scanner_manager.h"
@@ -40,6 +40,7 @@
 #include "result_set_utils.h"
 #include "userfilemgr_uri.h"
 #include "medialibrary_notify.h"
+#include "upgrade_restore_task_report.h"
 
 namespace OHOS {
 namespace Media {
@@ -62,16 +63,7 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
             (long long)migratePhotoDuplicateNumber_, (long long)migrateVideoDuplicateNumber_,
             (long long)migrateAudioDatabaseNumber_, (long long)migrateAudioFileNumber_,
             (long long)migrateAudioDuplicateNumber_, (long long) migrateDatabaseMapNumber_);
-        MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
-        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
-        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
-        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, audioNumber_, AUDIO_ASSET_TYPE);
-        auto watch = MediaLibraryNotify::GetInstance();
-        if (watch == nullptr) {
-            MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
-            return;
-        }
-        watch->Notify(PhotoColumn::DEFAULT_PHOTO_URI, NotifyType::NOTIFY_ADD);
+        UpdateDatabase();
     } else {
         if (errorCode != EXTERNAL_DB_NOT_EXIST) {
             SetErrorCode(RestoreError::INIT_FAILED);
@@ -165,14 +157,21 @@ int32_t BaseRestore::MoveFile(const std::string &srcFile, const std::string &dst
     if (errCode == E_SUCCESS) {
         return E_OK;
     }
+    if (this->CopyFile(srcFile, dstFile) != E_OK) {
+        return E_FAIL;
+    }
+    (void)MediaFileUtils::DeleteFile(srcFile);
+    return E_OK;
+}
 
+int32_t BaseRestore::CopyFile(const std::string &srcFile, const std::string &dstFile) const
+{
     if (!MediaFileUtils::CopyFileUtil(srcFile, dstFile)) {
         MEDIA_ERR_LOG("CopyFile failed, src: %{public}s, dst: %{public}s, errMsg: %{public}s",
             BackupFileUtils::GarbleFilePath(srcFile, sceneCode_).c_str(),
             BackupFileUtils::GarbleFilePath(srcFile, DEFAULT_RESTORE_ID).c_str(), strerror(errno));
         return E_FAIL;
     }
-    (void)MediaFileUtils::DeleteFile(srcFile);
     return E_OK;
 }
 
@@ -221,11 +220,11 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
             fileInfos[i].needMove = false;
             if (fileInfos[i].fileSize == 0) {
                 MEDIA_ERR_LOG("this is file size is 0");
-                continue;
             }
-            if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
-                UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::FILE_INVALID);
-            }
+            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, filePath: %{public}s",
+                sceneCode,
+                sourceType,
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
         std::string cloudPath;
@@ -234,15 +233,14 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
             MediaFileUtils::GetExtensionFromPath(fileInfos[i].displayName), cloudPath);
         if (errCode != E_OK) {
             fileInfos[i].needMove = false;
-            MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d", errCode);
-            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::GET_PATH_FAILED);
+            MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d, path: %{public}s", errCode,
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
         fileInfos[i].cloudPath = cloudPath;
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
         SetValueFromMetaData(fileInfos[i], value);
-        if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID && maxFileId_ > 0 &&
-            HasSameFileForDualClone(mediaLibraryRdb_, PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
+        if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID && this->HasSameFileForDualClone(fileInfos[i])) {
             fileInfos[i].needMove = false;
             RemoveDuplicateDualCloneFiles(fileInfos[i]);
             MEDIA_WARN_LOG("File %{public}s already exists.",
@@ -253,53 +251,6 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         values.emplace_back(value);
     }
     return values;
-}
-
-void BaseRestore::GetMaxFileId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
-{
-    string maxFileId = "max(" + MediaColumn::MEDIA_ID + ")";
-    string querySql = "SELECT " + maxFileId + "," + MEDIA_COLUMN_COUNT_1 + " FROM Photos";
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        maxFileId_ = 0;
-        return;
-    }
-    maxFileId_ = GetInt32Val(maxFileId, resultSet);
-    maxCount_ = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
-    MEDIA_INFO_LOG("maxFIleId:%{public}d, maxCount:%{public}d", maxFileId_, maxCount_);
-}
-
-bool BaseRestore::HasSameFileForDualClone(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const std::string &tableName, FileInfo &fileInfo)
-{
-    string querySql = "SELECT p." + MediaColumn::MEDIA_ID + " , p." + MediaColumn::MEDIA_FILE_PATH +
-        " FROM (SELECT file_id, size, orientation, data FROM Photos " + \
-        " where file_id <= " + to_string(maxFileId_) + " AND display_name = '" + fileInfo.displayName + "' limit " + \
-        to_string(maxCount_) + ") as p INNER JOIN PhotoMap ON p.file_id = PhotoMap.map_asset " + \
-        "INNER JOIN PhotoAlbum ON PhotoAlbum.album_id = PhotoMap.map_album Where size = " +
-        to_string(fileInfo.fileSize) + \
-        " AND (((PhotoAlbum.bundle_name = '' OR PhotoAlbum.bundle_name is null ) AND PhotoAlbum.album_name = '" +
-        fileInfo.packageName + "') OR (((PhotoAlbum.bundle_name != '' AND PhotoAlbum.bundle_name is not null) " + \
-        "AND PhotoAlbum.bundle_name = '" + fileInfo.bundleName + "') OR PhotoAlbum.album_name = '" +
-        fileInfo.packageName + "'))";
-
-    if (fileInfo.fileType != MEDIA_TYPE_VIDEO) {
-        querySql += " AND p.orientation = " + to_string(fileInfo.orientation);
-    }
-    querySql += " LIMIT 1 ";
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return false;
-    }
-    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    if (fileId <= 0 || cloudPath.empty()) {
-        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d", fileId);
-        return false;
-    }
-    fileInfo.fileIdNew = fileId;
-    fileInfo.cloudPath = cloudPath;
-    return true;
 }
 
 static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
@@ -315,17 +266,11 @@ static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::Valu
         int64_t dateModified = metadata->GetFileDateModified();
         if (dateModified == 0) {
             dateAdded = MediaFileUtils::UTCTimeMilliSeconds();
-            MEDIA_WARN_LOG("Invalid dateAdded time, use current time instead: %{public}lld",
-                static_cast<long long>(dateAdded));
         } else {
             dateAdded = dateModified;
-            MEDIA_WARN_LOG("Invalid dateAdded time, use dateModified instead: %{public}lld",
-                static_cast<long long>(dateAdded));
         }
     } else {
         dateAdded = dateTaken;
-        MEDIA_WARN_LOG("Invalid dateAdded time, use dateTaken instead: %{public}lld",
-            static_cast<long long>(dateAdded));
     }
     value.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
 }
@@ -351,7 +296,14 @@ static void SetCoverPosition(const FileInfo &fileInfo,
         uint32_t version = 0;
         uint32_t frameIndex = 0;
         bool hasCinemagraphInfo = false;
-        UniqueFd extraDataFd(open(fileInfo.extraDataPath.c_str(), O_RDONLY));
+        string absExtraDataPath;
+        if (!PathToRealPath(fileInfo.extraDataPath, absExtraDataPath)) {
+            MEDIA_ERR_LOG("file is not real path: %{private}s, errno: %{public}d",
+                fileInfo.extraDataPath.c_str(), errno);
+            value.PutLong(PhotoColumn::PHOTO_COVER_POSITION, static_cast<int64_t>(coverPosition));
+            return;
+        }
+        UniqueFd extraDataFd(open(absExtraDataPath.c_str(), O_RDONLY));
         (void)MovingPhotoFileUtils::GetVersionAndFrameNum(extraDataFd.Get(), version, frameIndex, hasCinemagraphInfo);
         (void)MovingPhotoFileUtils::GetCoverPosition(fileInfo.movingPhotoVideoPath,
             frameIndex, coverPosition, Scene::AV_META_SCENE_CLONE);
@@ -365,6 +317,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     data->SetFilePath(fileInfo.filePath);
     data->SetFileMediaType(fileInfo.fileType);
     data->SetFileDateModified(fileInfo.dateModified);
+    data->SetFileName(fileInfo.displayName);
     BackupFileUtils::FillMetadata(data);
     MediaType mediaType = data->GetFileMediaType();
 
@@ -450,14 +403,16 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
         string dstPath = RESTORE_MUSIC_LOCAL_DIR + relativePath1;
         RecursiveCreateDir(relativePath0, relativePath1);
         if (MediaFileUtils::IsFileExists(dstPath)) {
-            MEDIA_INFO_LOG("dstPath %{private}s already exists.", dstPath.c_str());
+            MEDIA_INFO_LOG("dstPath %{public}s already exists.",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+            UpdateDuplicateNumber(fileInfos[i].fileType);
             continue;
         }
         int32_t moveErrCode = BackupFileUtils::MoveFile(fileInfos[i].filePath, dstPath, sceneCode);
         if (moveErrCode != E_SUCCESS) {
             MEDIA_ERR_LOG("MoveFile failed, filePath: %{public}s, errCode: %{public}d, errno: %{public}d",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(), moveErrCode, errno);
-            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::MOVE_FAILED);
+            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
             continue;
         }
         BackupFileUtils::ModifyFile(dstPath, fileInfos[i].dateModified / MSEC_TO_SEC);
@@ -508,7 +463,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
             BackupFileUtils::GarbleFilePath(localPath, sceneCode).c_str(), errCode, errno);
         return false;
     }
-    BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified);
+    BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
 
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
         string tmpVideoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(fileInfo.cloudPath);
@@ -522,7 +477,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
             (void)MediaFileUtils::DeleteFile(localPath);
             return false;
         }
-        BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified);
+        BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified / MSEC_TO_SEC);
         return MoveExtraData(fileInfo, sceneCode);
     }
     return true;
@@ -540,7 +495,7 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
             continue;
         }
         if (!MoveAndModifyFile(fileInfos[i], sceneCode)) {
-            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::MOVE_FAILED);
+            UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
             moveFailedData.push_back(fileInfos[i].cloudPath);
             continue;
         }
@@ -581,6 +536,7 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     int32_t fileMoveCount = 0;
     int32_t videoFileMoveCount = 0;
     MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
+    this->tabOldPhotosRestore_.Restore(this->mediaLibraryRdb_, fileInfos);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related"
         " cost %{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld.",
@@ -625,28 +581,39 @@ int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vec
     return errCode;
 }
 
-int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string &dstDir) const
+int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string &dstDir, bool deleteOriginalFile) const
 {
     if (!MediaFileUtils::CreateDirectory(dstDir)) {
         MEDIA_ERR_LOG("Create dstDir %{public}s failed",
             BackupFileUtils::GarbleFilePath(dstDir, DEFAULT_RESTORE_ID).c_str());
         return E_FAIL;
     }
+    if (!MediaFileUtils::IsFileExists(srcDir)) {
+        MEDIA_WARN_LOG("%{public}s doesn't exist, skip.", srcDir.c_str());
+        return E_OK;
+    }
     for (const auto &dirEntry : std::filesystem::directory_iterator{ srcDir }) {
         std::string srcFilePath = dirEntry.path();
         std::string tmpFilePath = srcFilePath;
         std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
-        if (MoveFile(srcFilePath, dstFilePath) != E_OK) {
-            MEDIA_ERR_LOG("Move file from %{public}s to %{public}s failed",
+        int32_t opRet = E_FAIL;
+        if (deleteOriginalFile) {
+            opRet = this->MoveFile(srcFilePath, dstFilePath);
+        } else {
+            opRet = this->CopyFile(srcFilePath, dstFilePath);
+        }
+        if (opRet != E_OK) {
+            MEDIA_ERR_LOG("Move file from %{public}s to %{public}s failed, deleteOriginalFile=%{public}d",
                 BackupFileUtils::GarbleFilePath(srcFilePath, sceneCode_).c_str(),
-                BackupFileUtils::GarbleFilePath(dstFilePath, DEFAULT_RESTORE_ID).c_str());
+                BackupFileUtils::GarbleFilePath(dstFilePath, DEFAULT_RESTORE_ID).c_str(),
+                deleteOriginalFile);
             return E_FAIL;
         }
     }
     return E_OK;
 }
 
-bool BaseRestore::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+bool BaseRestore::IsSameAudioFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
     FileInfo &fileInfo)
 {
     string srcPath = fileInfo.filePath;
@@ -666,7 +633,7 @@ bool BaseRestore::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStor
         return false;
     }
     if ((srcStatInfo.st_size != dstStatInfo.st_size || srcStatInfo.st_mtime != dstStatInfo.st_mtime) &&
-        !HasSameFile(rdbStore, tableName, fileInfo)) { /* file size & last modify time */
+        !HasSameAudioFile(rdbStore, tableName, fileInfo)) { /* file size & last modify time */
         MEDIA_INFO_LOG("Size (%{public}lld -> %{public}lld) or mtime (%{public}lld -> %{public}lld) differs",
             (long long)srcStatInfo.st_size, (long long)dstStatInfo.st_size, (long long)srcStatInfo.st_mtime,
             (long long)dstStatInfo.st_mtime);
@@ -676,18 +643,13 @@ bool BaseRestore::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStor
     return true;
 }
 
-bool BaseRestore::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+bool BaseRestore::HasSameAudioFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
     FileInfo &fileInfo)
 {
-    string querySql;
-    if (tableName != PhotoColumn::PHOTOS_TABLE) {
-        querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
-            tableName + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
-            MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
-            MediaColumn::MEDIA_DATE_MODIFIED + " = " + to_string(fileInfo.dateModified);
-    } else {
-        querySql = GetSameFileQuerySql(fileInfo);
-    }
+    string querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
+        tableName + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
+        MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
+        MediaColumn::MEDIA_DATE_MODIFIED + " = " + to_string(fileInfo.dateModified);
     querySql += " LIMIT 1";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -696,7 +658,6 @@ bool BaseRestore::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbSto
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     if (fileId <= 0 || cloudPath.empty()) {
-        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d", fileId);
         return false;
     }
     fileInfo.fileIdNew = fileId;
@@ -776,6 +737,7 @@ void BaseRestore::StartRestoreEx(const std::string &backupRetoreDir, const std::
 {
     StartRestore(backupRetoreDir, upgradePath);
     restoreExInfo = GetRestoreExInfo();
+    UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).Report(restoreExInfo);
 }
 
 std::string BaseRestore::GetRestoreExInfo()
@@ -801,19 +763,20 @@ nlohmann::json BaseRestore::GetCountInfoJson(const std::vector<std::string> &cou
 {
     nlohmann::json countInfoJson;
     countInfoJson[STAT_KEY_TYPE] = STAT_VALUE_COUNT_INFO;
+    size_t limit = MAX_FAILED_FILES_LIMIT;
     for (const auto &type : countInfoTypes) {
         SubCountInfo subCountInfo = GetSubCountInfo(type);
         MEDIA_INFO_LOG("SubCountInfo %{public}s success: %{public}lld, duplicate: %{public}lld, failed: %{public}zu",
             type.c_str(), (long long)subCountInfo.successCount, (long long)subCountInfo.duplicateCount,
             subCountInfo.failedFiles.size());
-        countInfoJson[STAT_KEY_INFOS].push_back(GetSubCountInfoJson(type, subCountInfo));
+        countInfoJson[STAT_KEY_INFOS].push_back(GetSubCountInfoJson(type, subCountInfo, limit));
     }
     return countInfoJson;
 }
 
 SubCountInfo BaseRestore::GetSubCountInfo(const std::string &type)
 {
-    std::unordered_map<std::string, int32_t> failedFiles = GetFailedFiles(type);
+    std::unordered_map<std::string, FailedFileInfo> failedFiles = GetFailedFiles(type);
     if (type == STAT_TYPE_PHOTO) {
         return SubCountInfo(migrateFileNumber_ - migrateVideoFileNumber_, migratePhotoDuplicateNumber_, failedFiles);
     }
@@ -823,9 +786,10 @@ SubCountInfo BaseRestore::GetSubCountInfo(const std::string &type)
     return SubCountInfo(migrateAudioFileNumber_, migrateAudioDuplicateNumber_, failedFiles);
 }
 
-std::unordered_map<std::string, int32_t> BaseRestore::GetFailedFiles(const std::string &type)
+std::unordered_map<std::string, FailedFileInfo> BaseRestore::GetFailedFiles(const std::string &type)
 {
-    std::unordered_map<std::string, int32_t> failedFiles;
+    std::lock_guard<mutex> lock(failedFilesMutex_);
+    std::unordered_map<std::string, FailedFileInfo> failedFiles;
     auto iter = failedFilesMap_.find(type);
     if (iter != failedFilesMap_.end()) {
         return iter->second;
@@ -833,14 +797,27 @@ std::unordered_map<std::string, int32_t> BaseRestore::GetFailedFiles(const std::
     return failedFiles;
 }
 
-nlohmann::json BaseRestore::GetSubCountInfoJson(const std::string &type, const SubCountInfo &subCountInfo)
+nlohmann::json BaseRestore::GetSubCountInfoJson(const std::string &type, const SubCountInfo &subCountInfo,
+    size_t &limit)
 {
     nlohmann::json subCountInfoJson;
     subCountInfoJson[STAT_KEY_BACKUP_INFO] = type;
     subCountInfoJson[STAT_KEY_SUCCESS_COUNT] = subCountInfo.successCount;
     subCountInfoJson[STAT_KEY_DUPLICATE_COUNT] = subCountInfo.duplicateCount;
     subCountInfoJson[STAT_KEY_FAILED_COUNT] = subCountInfo.failedFiles.size();
-    subCountInfoJson[STAT_KEY_DETAILS] = BackupFileUtils::GetDetailsPath(type, subCountInfo.failedFiles);
+    // update currentLimit = min(limit, failedFiles.size())
+    size_t currentLimit = limit <= subCountInfo.failedFiles.size() ? limit : subCountInfo.failedFiles.size();
+    std::string detailsPath;
+    std::vector<std::string> failedFilesList;
+    if (sceneCode_ == UPGRADE_RESTORE_ID) {
+        detailsPath = BackupFileUtils::GetDetailsPath(sceneCode_, type, subCountInfo.failedFiles, currentLimit);
+        subCountInfoJson[STAT_KEY_DETAILS] = detailsPath;
+    } else {
+        failedFilesList = BackupFileUtils::GetFailedFilesList(sceneCode_, subCountInfo.failedFiles, currentLimit);
+        subCountInfoJson[STAT_KEY_DETAILS] = failedFilesList;
+    }
+    MEDIA_INFO_LOG("Get %{public}s details size: %{public}zu", type.c_str(), currentLimit);
+    limit -= currentLimit; // update total limit
     return subCountInfoJson;
 }
 
@@ -860,37 +837,36 @@ void BaseRestore::SetErrorCode(int32_t errorCode)
     errorInfo_ = iter->second;
 }
 
-void BaseRestore::UpdateFailedFileByFileType(int32_t fileType, const std::string &filePath, int32_t errorCode)
+void BaseRestore::UpdateFailedFileByFileType(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode)
 {
     std::lock_guard<mutex> lock(failedFilesMutex_);
+    FailedFileInfo failedFileInfo(sceneCode_, fileInfo, errorCode);
     if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE)) {
-        failedFilesMap_[STAT_TYPE_PHOTO][filePath] = errorCode;
+        failedFilesMap_[STAT_TYPE_PHOTO].emplace(fileInfo.oldPath, failedFileInfo);
         return;
     }
     if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
-        failedFilesMap_[STAT_TYPE_VIDEO][filePath] = errorCode;
+        failedFilesMap_[STAT_TYPE_VIDEO].emplace(fileInfo.oldPath, failedFileInfo);
         return;
     }
     if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_AUDIO)) {
-        failedFilesMap_[STAT_TYPE_AUDIO][filePath] = errorCode;
+        failedFilesMap_[STAT_TYPE_AUDIO].emplace(fileInfo.oldPath, failedFileInfo);
         return;
     }
     MEDIA_ERR_LOG("Unsupported file type: %{public}d", fileType);
 }
 
-void BaseRestore::UpdateFailedFiles(int32_t fileType, const std::string &filePath, int32_t errorCode)
+void BaseRestore::UpdateFailedFiles(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode)
 {
     SetErrorCode(errorCode);
-    std::string realPath = sceneCode_ != CLONE_RESTORE_ID ? filePath :
-        BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL, filePath);
-    UpdateFailedFileByFileType(fileType, realPath, errorCode);
+    UpdateFailedFileByFileType(fileType, fileInfo, errorCode);
 }
 
 void BaseRestore::UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode)
 {
     SetErrorCode(errorCode);
     for (const auto &fileInfo : fileInfos) {
-        UpdateFailedFileByFileType(fileInfo.fileType, fileInfo.oldPath, errorCode);
+        UpdateFailedFileByFileType(fileInfo.fileType, fileInfo, errorCode);
     }
 }
 
@@ -927,36 +903,6 @@ void BaseRestore::StopParameterForClone(int32_t sceneCode)
     if (!retFlag) {
         MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
     }
-}
-
-std::string BaseRestore::GetSameFileQuerySql(const FileInfo &fileInfo)
-{
-    std::string querySql = "SELECT P." + MediaColumn::MEDIA_ID + ", P." + MediaColumn::MEDIA_FILE_PATH;
-    if (!fileInfo.packageName.empty() || !fileInfo.bundleName.empty()) {
-        querySql += " FROM (SELECT file_id, size, orientation, data, date_added FROM Photos WHERE file_id <= " +
-            to_string(maxFileId_) + " AND display_name = '" + fileInfo.displayName + "' LIMIT " +
-            to_string(maxCount_) + ") AS P INNER JOIN PhotoMap AS PM ON P.file_id = PM.map_asset " +
-            "INNER JOIN PhotoAlbum AS PA ON PA.album_id = PM.map_album AND PA.album_type = " +
-            to_string(PhotoAlbumType::SOURCE) + " AND PA.album_subtype = " +
-            to_string(PhotoAlbumSubType::SOURCE_GENERIC) + " WHERE P.size = " + to_string(fileInfo.fileSize) +
-            " AND (((PA.bundle_name = '' OR PA.bundle_name is null ) AND PA.album_name = '" + fileInfo.packageName +
-            "') OR (((PA.bundle_name != '' AND PA.bundle_name is not null) AND PA.bundle_name = '" +
-            fileInfo.bundleName + "') OR PA.album_name = '" + fileInfo.packageName + "'))";
-    } else {
-        querySql += " FROM " + PhotoColumn::PHOTOS_TABLE + " AS P WHERE " + MediaColumn::MEDIA_ID + " <= " +
-            to_string(maxFileId_) + " AND " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
-            MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND NOT EXISTS (SELECT 1 FROM " +
-            PhotoMap::TABLE + " AS PM INNER JOIN " + PhotoAlbumColumns::TABLE + " AS PA ON PM." + PhotoMap::ALBUM_ID +
-            " = PA." + PhotoAlbumColumns::ALBUM_ID + " WHERE PA." + PhotoAlbumColumns::ALBUM_TYPE + " = " +
-            to_string(PhotoAlbumType::SOURCE) + " AND PA." + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " +
-            to_string(PhotoAlbumSubType::SOURCE_GENERIC) + " AND PM." + PhotoMap::ASSET_ID + " = P." +
-            MediaColumn::MEDIA_ID + ")";
-    }
-    if (fileInfo.fileType != MEDIA_TYPE_VIDEO) {
-        querySql += " AND P.orientation = " + to_string(fileInfo.orientation);
-    }
-    querySql += " ORDER BY ABS(P." + MediaColumn::MEDIA_DATE_ADDED + " - " + to_string(fileInfo.dateAdded) + ")";
-    return querySql;
 }
 
 void BaseRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType)
@@ -1087,6 +1033,129 @@ int32_t BaseRestore::GetUniqueId(int32_t fileType)
             MEDIA_ERR_LOG("Unsupported file type: %{public}d", fileType);
     }
     return uniqueId;
+}
+
+std::string BaseRestore::GetProgressInfo()
+{
+    nlohmann::json progressInfoJson;
+    for (const auto &type : STAT_PROGRESS_TYPES) {
+        SubProcessInfo subProcessInfo = GetSubProcessInfo(type);
+        progressInfoJson[STAT_KEY_PROGRESS_INFO].push_back(GetSubProcessInfoJson(type, subProcessInfo));
+    }
+    return progressInfoJson.dump();
+}
+
+SubProcessInfo BaseRestore::GetSubProcessInfo(const std::string &type)
+{
+    uint64_t success = 0;
+    uint64_t duplicate = 0;
+    uint64_t failed = 0;
+    uint64_t total = 0;
+    if (type == STAT_TYPE_PHOTO_VIDEO) {
+        success = migrateFileNumber_;
+        duplicate = migratePhotoDuplicateNumber_ + migrateVideoDuplicateNumber_;
+        failed = static_cast<uint64_t>(GetFailedFiles(STAT_TYPE_PHOTO).size() + GetFailedFiles(STAT_TYPE_VIDEO).size());
+        total = totalNumber_;
+    } else if (type == STAT_TYPE_AUDIO) {
+        success = migrateAudioFileNumber_;
+        duplicate = migrateAudioDuplicateNumber_;
+        failed = static_cast<uint64_t>(GetFailedFiles(type).size());
+        total = audioTotalNumber_;
+    } else if (type == STAT_TYPE_UPDATE) {
+        UpdateProcessedNumber(updateProcessStatus_, updateProcessedNumber_, updateTotalNumber_);
+        success = updateProcessedNumber_;
+        total = updateTotalNumber_;
+    } else if (type == STAT_TYPE_OTHER) {
+        UpdateProcessedNumber(otherProcessStatus_, otherProcessedNumber_, otherTotalNumber_);
+        success = otherProcessedNumber_;
+        total = otherTotalNumber_;
+    } else {
+        ongoingTotalNumber_++;
+        success = ongoingTotalNumber_;
+        total = ongoingTotalNumber_; // make sure progressInfo changes as process goes on
+    }
+    uint64_t processed = success + duplicate + failed;
+    return SubProcessInfo(processed, total);
+}
+
+void BaseRestore::UpdateProcessedNumber(const std::atomic<int32_t> &processStatus,
+    std::atomic<uint64_t> &processedNumber, const std::atomic<uint64_t> &totalNumber)
+{
+    if (processStatus == ProcessStatus::STOP) {
+        processedNumber = totalNumber.load();
+        return;
+    }
+    processedNumber += processedNumber < totalNumber ? 1 : 0;
+}
+
+nlohmann::json BaseRestore::GetSubProcessInfoJson(const std::string &type, const SubProcessInfo &subProcessInfo)
+{
+    nlohmann::json subProcessInfoJson;
+    subProcessInfoJson[STAT_KEY_NAME] = type;
+    subProcessInfoJson[STAT_KEY_PROCESSED] = subProcessInfo.processed;
+    subProcessInfoJson[STAT_KEY_TOTAL] = subProcessInfo.total;
+    subProcessInfoJson[STAT_KEY_IS_PERCENTAGE] = false;
+    return subProcessInfoJson;
+}
+
+void BaseRestore::UpdateDatabase()
+{
+    updateProcessStatus_ = ProcessStatus::START;
+    GetUpdateTotalCount();
+    MEDIA_INFO_LOG("Start update all albums");
+    MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
+    MEDIA_INFO_LOG("Start update unique number");
+    BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
+    BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
+    BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, audioNumber_, AUDIO_ASSET_TYPE);
+    MEDIA_INFO_LOG("Start notify");
+    NotifyAlbum();
+    updateProcessStatus_ = ProcessStatus::STOP;
+}
+
+void BaseRestore::NotifyAlbum()
+{
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
+        return;
+    }
+    watch->Notify(PhotoColumn::DEFAULT_PHOTO_URI, NotifyType::NOTIFY_ADD);
+}
+
+void BaseRestore::GetUpdateTotalCount()
+{
+    GetUpdateAllAlbumsCount();
+    GetUpdateUniqueNumberCount();
+}
+
+void BaseRestore::GetUpdateAllAlbumsCount()
+{
+    const std::vector<std::string> ALBUM_TABLE_LIST = { "PhotoAlbum", "AnalysisAlbum" };
+    int32_t albumTotalCount = 0;
+    for (const auto &tableName : ALBUM_TABLE_LIST) {
+        std::string querySql = "SELECT count(1) as count FROM " + tableName;
+        albumTotalCount += BackupDatabaseUtils::QueryInt(mediaLibraryRdb_, querySql, CUSTOM_COUNT);
+    }
+    updateTotalNumber_ += static_cast<uint64_t>(albumTotalCount);
+    MEDIA_INFO_LOG("onProcess Update updateTotalNumber_: %{public}lld", (long long)updateTotalNumber_);
+}
+
+void BaseRestore::GetUpdateUniqueNumberCount()
+{
+    updateTotalNumber_ += UNIQUE_NUMBER_NUM;
+    MEDIA_INFO_LOG("onProcess Update updateTotalNumber_: %{public}lld", (long long)updateTotalNumber_);
+}
+
+void BaseRestore::RestoreThumbnail()
+{
+    // restore thumbnail for date fronted 500 photos
+    MEDIA_INFO_LOG("Start RestoreThumbnail");
+    otherProcessStatus_ = ProcessStatus::START;
+    otherTotalNumber_ += THUMBNAIL_NUM;
+    MEDIA_INFO_LOG("onProcess Update otherTotalNumber_: %{public}lld", (long long)otherTotalNumber_);
+    BackupFileUtils::GenerateThumbnailsAfterRestore();
+    otherProcessStatus_ = ProcessStatus::STOP;
 }
 } // namespace Media
 } // namespace OHOS

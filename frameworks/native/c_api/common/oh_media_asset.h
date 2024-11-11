@@ -27,4 +27,4 @@ struct OH_MediaAsset : public OHOS::RefBase {
     std::shared_ptr<OHOS::Media::MediaAsset> mediaAsset_ = nullptr;
 };
 
-#endif // MULTIMEDIA_MEDIA_LIBRARY_NATIVE_OH_MEDIA_ASSET_H
+#endif // MULTIMEDIA_MEDIA_LIBRARY_NATIVE_OH_MEDIA_ASSET_H

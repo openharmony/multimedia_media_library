@@ -15,7 +15,7 @@
 
 #define MLOG_TAG "MultiStagesPhotoCaptureManager"
 
-#include "multistages_capture_manager.h"
+#include "multistages_photo_capture_manager.h"
 
 #include "database_adapter.h"
 #include "image_packer.h"
@@ -39,7 +39,6 @@
 #include "multistages_capture_request_task_manager.h"
 #include "request_policy.h"
 #include "result_set_utils.h"
-#include "userfilemgr_uri.h"
 
 using namespace std;
 #ifdef ABILITY_CAMERA_SUPPORT
@@ -149,7 +148,6 @@ void MultiStagesPhotoCaptureManager::DealLowQualityPicture(const std::string &im
     if (pictureManagerThread == nullptr) {
         return;
     }
-    pictureManagerThread->Start();
     if (pictureManagerThread->IsExsitPictureByImageId(imageId)) {
         return;
     }
@@ -181,7 +179,6 @@ void MultiStagesPhotoCaptureManager::SaveLowQualityPicture(const std::string &im
     if (pictureManagerThread == nullptr) {
         return;
     }
-    pictureManagerThread->Start();
     pictureManagerThread->SaveLowQualityPicture(imageId);
 }
 
@@ -194,7 +191,6 @@ void MultiStagesPhotoCaptureManager::DealHighQualityPicture(const std::string &i
     if (pictureManagerThread == nullptr) {
         return;
     }
-    pictureManagerThread->Start();
     // 将低质量图存入缓存
     time_t currentTime;
     if ((currentTime = time(NULL)) == -1) {
@@ -211,19 +207,13 @@ int32_t MultiStagesPhotoCaptureManager::UpdateDbInfo(MediaLibraryCommand &cmd)
 {
     MediaLibraryCommand cmdLocal (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     auto values = cmd.GetValueBucket();
-    int32_t subType = 0;
     ValueObject valueObject;
-    if (values.GetObject(PhotoColumn::PHOTO_SUBTYPE, valueObject)) {
-        valueObject.GetInt(subType);
-    }
-
     int32_t photoQuality = static_cast<int32_t>(MultiStagesPhotoQuality::LOW);
     if (values.GetObject(PhotoColumn::PHOTO_QUALITY, valueObject)) {
         valueObject.GetInt(photoQuality);
     }
-    if ((photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) &&
-        (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO))) {
-        values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
+    if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) {
+        values.PutInt(MEDIA_DATA_DB_DIRTY, -1); // prevent uploading low-quality photo
     }
     cmdLocal.SetValueBucket(values);
     cmdLocal.GetAbsRdbPredicates()->SetWhereClause(cmd.GetAbsRdbPredicates()->GetWhereClause());
@@ -331,7 +321,6 @@ void MultiStagesPhotoCaptureManager::AddImage(MediaLibraryCommand &cmd)
     if (pictureManagerThread == nullptr) {
         return;
     }
-    pictureManagerThread->Start();
     if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
         pictureManagerThread->SavePictureWithImageId(photoId);
         UpdatePictureQuality(photoId);

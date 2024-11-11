@@ -419,6 +419,14 @@ static int32_t HandleShortPermission(bool &need)
     return err;
 }
 
+static int32_t HandleRestorePermission(MediaLibraryCommand &cmd)
+{
+    if (cmd.GetUriStringWithoutSegment() == PAH_GENERATE_THUMBNAILS_RESTORE) {
+        return PermissionUtils::CheckCallerPermission(PERM_READ_IMAGEVIDEO) ? E_SUCCESS : E_PERMISSION_DENIED;
+    }
+    return E_PERMISSION_DENIED;
+}
+
 static int32_t UserFileMgrPermissionCheck(MediaLibraryCommand &cmd, const bool isWrite)
 {
     static const set<OperationObject> USER_FILE_MGR_OBJECTS = {
@@ -462,6 +470,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::VISION_LABEL,
         OperationObject::VISION_VIDEO_LABEL,
         OperationObject::VISION_IMAGE_FACE,
+        OperationObject::VISION_VIDEO_FACE,
         OperationObject::VISION_FACE_TAG,
         OperationObject::VISION_OBJECT,
         OperationObject::VISION_RECOMMENDATION,
@@ -483,6 +492,8 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::INDEX_CONSTRUCTION_STATUS,
         OperationObject::MEDIA_APP_URI_PERMISSION,
         OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE,
+        OperationObject::ANALYSIS_ASSET_SD_MAP,
+        OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);
@@ -711,7 +722,9 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     if (command.GetUri().ToString().find(PhotoColumn::PHOTO_CACHE_URI_PREFIX) != string::npos) {
         command.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     }
-    if (command.GetUri().ToString().find(MEDIA_DATA_DB_HIGHLIGHT) != string::npos) {
+    if (command.GetUri().ToString().find(PhotoColumn::HIGHTLIGHT_URI) != string::npos) {
+        command.SetOprnObject(OperationObject::HIGHLIGHT_URI);
+    } else if (command.GetUri().ToString().find(MEDIA_DATA_DB_HIGHLIGHT) != string::npos) {
         command.SetOprnObject(OperationObject::HIGHLIGHT_COVER);
     }
     if (command.GetUri().ToString().find(PhotoColumn::PHOTO_REQUEST_PICTURE) != string::npos) {
@@ -794,6 +807,9 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
     if (err != E_SUCCESS) {
         err = CheckPermFromUri(cmd, true);
+    }
+    if (err != E_SUCCESS) {
+        err = HandleRestorePermission(cmd);
     }
     bool isMediatoolOperation = IsMediatoolOperation(cmd);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());

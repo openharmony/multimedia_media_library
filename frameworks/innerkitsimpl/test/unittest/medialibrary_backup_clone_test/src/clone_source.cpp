@@ -135,14 +135,6 @@ void CloneSource::InsertByType(InsertType insertType)
             InsertPhoto();
             break;
         }
-        case InsertType::FACE_TAG_TBL: {
-            InsertFaceTag();
-            break;
-        }
-        case InsertType::IMG_FACE_TBL: {
-            InsertImgFaceTbl();
-            break;
-        }
         case InsertType::PHOTO_ALBUM: {
             InsertPhotoAlbum();
             break;
@@ -153,6 +145,14 @@ void CloneSource::InsertByType(InsertType insertType)
         }
         case InsertType::ANALYSIS_ALBUM: {
             InsertAnalysisAlbum();
+            break;
+        }
+        case InsertType::FACE_TAG_TBL: {
+            InsertFaceTag();
+            break;
+        }
+        case InsertType::IMG_FACE_TBL: {
+            InsertImgFaceTbl();
             break;
         }
         case InsertType::ANALYSIS_PHOTO_MAP: {

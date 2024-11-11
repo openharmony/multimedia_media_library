@@ -45,6 +45,7 @@ struct ThumbRdbOpt {
     EXPORT std::string row;
     EXPORT std::string uri;
     EXPORT std::string dateAdded;
+    EXPORT std::string dateTaken;
     EXPORT std::string fileUri;
     EXPORT std::string fileId;
     EXPORT Size screenSize;
@@ -89,7 +90,7 @@ public:
     EXPORT static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data, int &err, LcdReady status);
-    EXPORT static bool DoUpdateAstcDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool DoUpdateAstcDateTaken(ThumbRdbOpt &opts, ThumbnailData &data);
 #ifdef DISTRIBUTED
     EXPORT static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
 #endif
@@ -123,7 +124,7 @@ public:
     EXPORT static bool IsSupportGenAstc();
     EXPORT static void QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::string &id,
         ThumbnailData &data, int &err);
-    EXPORT static bool CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool CheckDateTaken(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
     EXPORT static bool ScaleThumbnailFromSource(ThumbnailData &data, bool isSourceEx);
     EXPORT static bool ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize,
@@ -136,15 +137,15 @@ public:
         LoadSourceType sourceType);
     EXPORT static void RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats);
 
-    EXPORT static bool QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
-        const std::string &table, std::vector<ThumbnailData> &infos);
     EXPORT static bool GenerateOldKvStoreKey(const std::string &fieldId, const std::string &dateAdded,
         std::string &key);
-    EXPORT static bool GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
+    EXPORT static bool GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key);
     EXPORT static bool GetLocalThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size);
     EXPORT static void SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column);
     EXPORT static bool LoadVideoFile(ThumbnailData &data, Size &desiredSize);
     EXPORT static bool CheckCloudThumbnailDownloadFinish(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr);
+    EXPORT static bool QueryOldKeyAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
+        const std::string &table, std::vector<ThumbnailData> &infos);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
@@ -183,7 +184,7 @@ private:
 
     EXPORT static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
     EXPORT static bool DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type);
-    EXPORT static bool UpdateAstcDateAddedFromKvStore(ThumbRdbOpt &opts, const ThumbnailData &data);
+    EXPORT static bool UpdateAstcDateTakenFromKvStore(ThumbRdbOpt &opts, const ThumbnailData &data);
 };
 } // namespace Media
 } // namespace OHOS

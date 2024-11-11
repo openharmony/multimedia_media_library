@@ -19,11 +19,12 @@
 #include <memory>
 #include <string>
 
+#include "enhancement_thread_manager.h"
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-#include "media_enhance_client.h"
-#include "media_enhance_bundle.h"
-#include "media_enhance_constants.h"
-#include "cloud_enhancement_dfx_get_count.h"
+#include "media_enhance_constants_c_api.h"
+#include "media_enhance_handles.h"
+#include "media_enhance_client_c_api.h"
+#include "media_enhance_bundle_c_api.h"
 #endif
 
 namespace OHOS {
@@ -42,23 +43,28 @@ struct CloudEnhancementFileInfo {
         displayName(displayName), subtype(subtype), hidden(hidden) {}
 };
 
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-class EnhancementServiceCallback : public MediaEnhance::MediaEnhanceResultCallback {
+class EnhancementServiceCallback {
 public:
     EXPORT EnhancementServiceCallback();
     EXPORT ~EnhancementServiceCallback();
 
-    void OnSuccess(std::string taskId, MediaEnhance::MediaEnhanceBundle& bundle) override;
-    void OnFailed(std::string taskId, MediaEnhance::MediaEnhanceBundle& bundle) override;
-    void OnServiceReconnected() override;
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    EXPORT static void OnSuccess(const char* photoId, MediaEnhance::MediaEnhanceBundleHandle* bundle);
+    EXPORT static void OnFailed(const char* photoId, MediaEnhance::MediaEnhanceBundleHandle* bundle);
+    EXPORT static void OnServiceReconnected();
+    EXPORT static void DealWithSuccessedTask(CloudEnhancementThreadTask& task);
+    EXPORT static void DealWithFailedTask(CloudEnhancementThreadTask& task);
+    EXPORT static void UpdateAlbumsForCloudEnhancement();
+#endif
 
 private:
-    EXPORT int32_t SaveCloudEnhancementPhoto(std::shared_ptr<CloudEnhancementFileInfo> info,
-        const MediaEnhance::RawData &rawData);
-    EXPORT int32_t CreateCloudEnhancementPhoto(int32_t sourceFileId,
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    EXPORT static int32_t SaveCloudEnhancementPhoto(std::shared_ptr<CloudEnhancementFileInfo> info,
+        CloudEnhancementThreadTask& task);
+    EXPORT static int32_t CreateCloudEnhancementPhoto(int32_t sourceFileId,
         std::shared_ptr<CloudEnhancementFileInfo> info);
-};
 #endif
+};
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_CLOUD_ENHANCEMENT_INCLUDE_ENHANCEMENT_SERVICE_CALLBACK_H
