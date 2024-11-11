@@ -194,29 +194,23 @@ void MtpMediaLibrary::DeleteHandlePathMap(const std::string &path, const uint32_
 
 int MtpMediaLibrary::ObserverAddPathToMap(const std::string &path)
 {
-    uint32_t id = GetId();
-    auto it = pathToHandleMap.find(path);
-    if (it == pathToHandleMap.end()) {
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::ObserverAddPathToMap path[%{public}s]", path.c_str());
+    {
         WriteLock lock(g_mutex);
-        pathToHandleMap.emplace(path, id);
-        handleToPathMap.emplace(id, path);
-    } else {
-        id = it->second;
+        return AddPathToMap(path);
     }
-    return id;
 }
 
 void MtpMediaLibrary::ObserverDeletePathToMap(const std::string &path)
 {
-    auto it = pathToHandleMap.find(path);
-    if (it != pathToHandleMap.end()) {
-        uint32_t id = it->second;
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::ObserverDeletePathToMap path[%{public}s]", path.c_str());
+    uint32_t id;
+    if (GetIdByPath(path, id) != MTP_SUCCESS) {
+        return;
+    }
+    {
         WriteLock lock(g_mutex);
-        pathToHandleMap.erase(path);
-        auto iter = handleToPathMap.find(id);
-        if (iter != handleToPathMap.end()) {
-            handleToPathMap.erase(id);
-        }
+        ErasePathInfo(id, path);
     }
 }
 
@@ -439,7 +433,7 @@ int32_t MtpMediaLibrary::SendObjectInfo(const std::shared_ptr<MtpOperationContex
 
 int32_t MtpMediaLibrary::GetPathById(const int32_t id, std::string &outPath)
 {
-    MEDIA_INFO_LOG("MtpMediaLibrary::GetPathById id[%{public}d]", id);
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::GetPathById id[%{public}d]", id);
     ReadLock lock(g_mutex);
     auto it = handleToPathMap.find(id);
     if (it != handleToPathMap.end()) {
@@ -451,7 +445,7 @@ int32_t MtpMediaLibrary::GetPathById(const int32_t id, std::string &outPath)
 
 int32_t MtpMediaLibrary::GetIdByPath(const std::string &path, uint32_t &outId)
 {
-    MEDIA_INFO_LOG("MtpMediaLibrary::GetIdByPath path[%{public}s]", path.c_str());
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::GetIdByPath path[%{public}s]", path.c_str());
     ReadLock lock(g_mutex);
     auto it = pathToHandleMap.find(path);
     if (it != pathToHandleMap.end()) {
@@ -588,7 +582,7 @@ int32_t MtpMediaLibrary::DeleteObject(const std::shared_ptr<MtpOperationContext>
         DeleteHandlePathMap(path, context->handle);
         return MTP_SUCCESS;
     }
-    MEDIA_INFO_LOG("MtpMediaLibrary::DeleteObject path[%{public}s]", path.c_str());
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::DeleteObject path[%{public}s]", path.c_str());
     if (sf::is_directory(path, ec)) {
         sf::remove_all(path, ec);
         if (ec.value() != MTP_SUCCESS) {
@@ -642,6 +636,9 @@ int32_t MtpMediaLibrary::SetObjectPropValue(const std::shared_ptr<MtpOperationCo
     {
         WriteLock lock(g_mutex);
         ModifyHandlePathMap(path, to);
+        if (sf::is_directory(to, ec)) {
+            MoveHandlePathMap(path, to);
+        }
     }
     return MTP_SUCCESS;
 }
