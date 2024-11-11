@@ -93,7 +93,7 @@ const std::string MIME_TYPE_JPEG = "image/jpeg";
 const std::string MIME_TYPE_HEIF = "image/heif";
 
 const std::string EXTENSION_JPEG = ".jpg";
- 
+
 const std::string EXTENSION_HEIF = ".heic";
 
 const std::unordered_map<ImageFileType, std::string> IMAGE_FILE_TYPE_MAP = {
@@ -355,6 +355,7 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     PhotoColumn::PHOTO_SUBTYPE,
     PhotoColumn::PHOTO_COVER_POSITION,
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+    PhotoColumn::PHOTO_BURST_COVER_LEVEL,
 };
 
 bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
@@ -792,47 +793,71 @@ static string GetUriWithoutSeg(const string &oldUri)
     return oldUri;
 }
 
+static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &fileId)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
+
+    int32_t updateDirtyRows = 0;
+    string subTypeStr = cmd.GetQuerySetParam(PhotoColumn::PHOTO_SUBTYPE);
+    if (subTypeStr.empty()) {
+        MEDIA_ERR_LOG("get subType fail");
+        return E_ERR;
+    }
+    int32_t subType = stoi(subTypeStr);
+    if (subType == static_cast<int32_t>(PhotoSubType::BURST)) {
+        predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
+        predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::BURST)));
+        values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+        updateDirtyRows = MediaLibraryRdbStore::Update(values, predicates);
+        if (updateDirtyRows < 0) {
+            MEDIA_INFO_LOG("burst photo update temp and dirty flag fail.");
+            return E_ERR;
+        }
+    } else {
+        int32_t updateIsTempRows = MediaLibraryRdbStore::Update(values, predicates);
+        if (updateIsTempRows < 0) {
+            MEDIA_ERR_LOG("update temp flag fail.");
+            return E_ERR;
+        }
+        if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            predicates.EqualTo(PhotoColumn::PHOTO_QUALITY,
+                to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
+            predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
+                to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+            ValuesBucket valuesBucketDirty;
+            valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+            updateDirtyRows = MediaLibraryRdbStore::Update(valuesBucketDirty, predicates);
+            if (updateDirtyRows < 0) {
+                MEDIA_INFO_LOG("update dirty flag fail.");
+                return E_ERR;
+            }
+        }
+    }
+    return updateDirtyRows;
+}
+
 int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::SaveCameraPhoto");
-    MEDIA_INFO_LOG("start");
     string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
     if (fileId.empty()) {
-        MEDIA_ERR_LOG("get fileId fail");
+        MEDIA_ERR_LOG("SaveCameraPhoto, get fileId fail");
         return 0;
     }
+    MEDIA_INFO_LOG("start SaveCameraPhoto, fileId: %{public}s", fileId.c_str());
 
     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
     if (!fileType.empty()) {
         SavePicture(stoi(fileType), stoi(fileId));
     }
 
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
-    ValuesBucket values;
-    values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-    int32_t updatedRows = MediaLibraryRdbStore::Update(values, predicates);
-    if (updatedRows < 0) {
-        MEDIA_ERR_LOG("update temp flag fail.");
+    int32_t ret = UpdateIsTempAndDirty(cmd, fileId);
+    if (ret < 0) {
         return 0;
-    }
-
-    string subTypeStr = cmd.GetQuerySetParam(PhotoColumn::PHOTO_SUBTYPE);
-    if (subTypeStr.empty()) {
-        MEDIA_ERR_LOG("get subType fail");
-        return updatedRows;
-    }
-    int32_t subType = stoi(subTypeStr);
-    if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
-        predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
-        ValuesBucket valuesBucketDirty;
-        valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-        int32_t updatedDirtyRows = MediaLibraryRdbStore::Update(values, predicates);
-        if (updatedDirtyRows < 0) {
-            MEDIA_INFO_LOG("update temp flag fail.");
-        }
     }
     string uri = cmd.GetQuerySetParam(PhotoColumn::MEDIA_FILE_PATH);
     auto watch = MediaLibraryNotify::GetInstance();
@@ -844,11 +869,16 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId,
                                                          OperationObject::FILESYSTEM_PHOTO, PHOTO_COLUMN_VECTOR);
     std::string path = fileAsset->GetPath();
+    int32_t burstCoverLevel = fileAsset->GetBurstCoverLevel();
     if (!path.empty()) {
-        ScanFile(path, false, true, true, stoi(fileId));
+        if (burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
+            ScanFile(path, false, true, true, stoi(fileId));
+        } else {
+            MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, true, true, stoi(fileId));
+        }
     }
-    MEDIA_INFO_LOG("Success, updatedRows: %{public}d, needScanStr: %{public}s", updatedRows, needScanStr.c_str());
-    return updatedRows;
+    MEDIA_INFO_LOG("Success, ret: %{public}d, needScanStr: %{public}s", ret, needScanStr.c_str());
+    return ret;
 }
 
 int32_t MediaLibraryPhotoOperations::SetVideoEnhancementAttr(MediaLibraryCommand &cmd)

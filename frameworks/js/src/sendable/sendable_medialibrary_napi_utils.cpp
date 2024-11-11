@@ -43,6 +43,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_pose_column.h"
 #include "vision_image_face_column.h"
+#include "userfile_manager_types.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -835,6 +836,8 @@ inline void SetDefaultPredicatesCondition(DataSharePredicates &predicates, const
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(isHidden));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(timePending));
     predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(isTemp));
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
 }
 
 int32_t SendableMediaLibraryNapiUtils::GetUserAlbumPredicates(
@@ -995,6 +998,8 @@ static int32_t GetTrashPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     predicates.EndWrap();
     return E_SUCCESS;
 }

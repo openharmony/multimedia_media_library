@@ -199,6 +199,9 @@ public:
     EXPORT const std::string &GetBurstKey() const;
     EXPORT void SetBurstKey(const std::string &burstKey);
 
+    EXPORT int32_t GetBurstCoverLevel() const;
+    EXPORT void SetBurstCoverLevel(int32_t burstCoverLevel);
+
     EXPORT int32_t GetCEAvailable() const;
     EXPORT void SetCEAvailable(int32_t ceAvailable);
 

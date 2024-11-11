@@ -406,6 +406,10 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.SetWhereClause(strQueryCondition);
     rdbPredicates.SetWhereArgs(selectionArgs);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return nullptr;
+    }
     return opts.store->QueryByStep(rdbPredicates, column);
 }
 
@@ -447,6 +451,10 @@ bool ThumbnailUtils::QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err
     }
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("ResultSet is nullptr");
@@ -485,6 +493,10 @@ bool ThumbnailUtils::QueryLcdCountByTime(const int64_t &time, const bool &before
     }
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("ResultSet is nullptr");
@@ -515,6 +527,10 @@ bool ThumbnailUtils::QueryDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount
     RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
     rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (resultSet == nullptr) {
         return false;
@@ -548,6 +564,10 @@ bool ThumbnailUtils::QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimi
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
 
     rdbPredicates.Limit(LcdLimit);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -587,6 +607,10 @@ bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
     if (opts.table == PhotoColumn::PHOTOS_TABLE) {
         rdbPredicates.OrderByAsc(PhotoColumn::PHOTO_LAST_VISIT_TIME);
     }
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -619,6 +643,10 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &i
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_LCD_VISIT_TIME, "0");
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("QueryNoLcdInfos failed %{public}d", err);
@@ -646,11 +674,7 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &i
 
 bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
-    vector<string> column = {
-        MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_FILE_PATH,
-        MEDIA_DATA_DB_MEDIA_TYPE,
-    };
+    vector<string> column = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_MEDIA_TYPE };
     RdbPredicates rdbPredicates(opts.table);
     if (opts.table == PhotoColumn::PHOTOS_TABLE) {
         rdbPredicates.EqualTo(PhotoColumn::PHOTO_LAST_VISIT_TIME, "0");
@@ -669,10 +693,12 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
         rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->
             EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
     }
-
     rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
-
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -681,13 +707,11 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
         }
         return false;
     }
-
     err = resultSet->GoToFirstRow();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
         return false;
     }
-
     ThumbnailData data;
     do {
         ParseQueryResult(resultSet, data, err, column);
@@ -715,6 +739,10 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
         rdbPredicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, "2");
     }
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -756,6 +784,10 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
         EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     rdbPredicates.Limit(ASTC_GENERATE_COUNT_AFTER_RESTORE);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -784,32 +816,26 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
 bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
-        MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_FILE_PATH,
-        MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_DATE_ADDED,
-        MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_POSITION,
-        MEDIA_DATA_DB_ORIENTATION,
+        MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_ORIENTATION,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.BeginWrap()
         ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0")
-        ->Or()
-        ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "2")
-        ->Or()
-        ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "7")
+        ->Or()->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "2")
+        ->Or()->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "7")
         ->EndWrap();
     rdbPredicates.BeginWrap()
         ->BeginWrap()
         ->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->EqualTo(PhotoColumn::PHOTO_POSITION, "3")
-        ->EndWrap()
-        ->Or()
-        ->BeginWrap()
+        ->EndWrap()->Or()->BeginWrap()
         ->EqualTo(PhotoColumn::PHOTO_POSITION, "2")->And()->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, "0")
-        ->EndWrap()
-        ->EndWrap();
+        ->EndWrap()->EndWrap();
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -888,7 +914,10 @@ bool ThumbnailUtils::QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &ti
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
 
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
-
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("ResultSet is nullptr");
@@ -925,6 +954,10 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
     if (GetLocalThumbSize(data, ThumbnailType::LCD, lcdSize)) {
         SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
     }
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
@@ -946,6 +979,10 @@ bool ThumbnailUtils::UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int
     int changedRows;
     int64_t timeNow = UTCTimeMilliSeconds();
     values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
@@ -960,6 +997,10 @@ bool ThumbnailUtils::UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data
     ValuesBucket values;
     int changedRows;
     values.PutLong(PhotoColumn::PHOTO_LCD_VISIT_TIME, static_cast<int64_t>(status));
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
@@ -980,6 +1021,10 @@ bool ThumbnailUtils::QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, vector<Thumb
     };
     RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -1009,6 +1054,10 @@ bool ThumbnailUtils::GetUdidByNetworkId(ThumbRdbOpt &opts, const string &network
     };
     RdbPredicates rdbPredicates(DEVICE_TABLE);
     rdbPredicates.EqualTo(DEVICE_DB_NETWORK_ID, networkId);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -1045,6 +1094,10 @@ bool ThumbnailUtils::QueryRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data
     RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_FILE_ID, data.id);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, data.udid);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -1122,6 +1175,10 @@ bool ThumbnailUtils::UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData 
     }
 
     int changedRows;
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     err = opts.store->Update(changedRows, values, rdbPredicates);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
@@ -1145,6 +1202,10 @@ bool ThumbnailUtils::InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData 
     }
 
     int64_t outRowId = -1;
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     err = opts.store->Insert(outRowId, REMOTE_THUMBNAIL_TABLE, values);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
@@ -1170,6 +1231,10 @@ bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool 
         }
     }
     int changedRows;
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     auto err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
@@ -1195,6 +1260,10 @@ bool ThumbnailUtils::CleanDistributeLcdInfo(ThumbRdbOpt &opts)
     vector<string> whereArgs = { udid, opts.row };
     string deleteCondition = REMOTE_THUMBNAIL_DB_UDID + " = ? AND " +
         REMOTE_THUMBNAIL_DB_FILE_ID + " = ?";
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     auto ret = opts.store->Update(changedRows, REMOTE_THUMBNAIL_TABLE, values, deleteCondition, whereArgs);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Delete failed! %{public}d", ret);
@@ -1209,6 +1278,10 @@ bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts)
     vector<string> whereArgs = { opts.udid, opts.row };
     string deleteCondition = REMOTE_THUMBNAIL_DB_UDID + " = ? AND " +
         REMOTE_THUMBNAIL_DB_FILE_ID + " = ?";
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     auto err = opts.store->Delete(changedRows, REMOTE_THUMBNAIL_TABLE, deleteCondition, whereArgs);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Delete failed! %{public}d", err);
@@ -1852,6 +1925,10 @@ bool ThumbnailUtils::CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data)
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.SetWhereClause(strQueryCondition);
     rdbPredicates.SetWhereArgs(selectionArgs);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
 
     int err;
@@ -1897,6 +1974,10 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
         MEDIA_DATA_DB_ORIENTATION,
         MEDIA_DATA_DB_POSITION,
     };
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return;
+    }
     auto resultSet = opts.store->QueryByStep(predicates, columns);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("ResultSet is nullptr");
@@ -2150,14 +2231,8 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
     std::vector<ThumbnailData> &infos, NativeRdb::RdbPredicates &rdbPredicate, int &err)
 {
     vector<string> column = {
-        MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_FILE_PATH,
-        MEDIA_DATA_DB_HEIGHT,
-        MEDIA_DATA_DB_WIDTH,
-        MEDIA_DATA_DB_POSITION,
-        MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_DATE_ADDED,
-        MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_HEIGHT, MEDIA_DATA_DB_WIDTH,
+        MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_NAME,
         MEDIA_DATA_DB_ORIENTATION,
     };
     rdbPredicate.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
@@ -2173,6 +2248,10 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
     rdbPredicate.EqualTo(MEDIA_DATA_DB_DATE_TRASHED, "0");
     rdbPredicate.EqualTo(COMPAT_HIDDEN, "0");
     rdbPredicate.Limit(THUMBNAIL_GENERATE_BATCH_COUNT);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicate, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
