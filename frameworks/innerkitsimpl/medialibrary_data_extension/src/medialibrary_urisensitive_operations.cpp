@@ -15,6 +15,11 @@
 
 #include "medialibrary_urisensitive_operations.h"
 
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <cstdint>
+
 #include "common_func.h"
 #include "ipc_skeleton.h"
 #include "medialibrary_errno.h"
@@ -183,11 +188,33 @@ static void QueryUriSensitive(MediaLibraryCommand &cmd, const std::vector<DataSh
     return;
 }
 
+static bool CanConvertToInt32(const std::string &str)
+{
+    std::istringstream iss(str);
+    int32_t num = 0;
+    iss >> num;
+    return iss.eof() && !iss.fail();
+}
+
+static int32_t GetFileId(const DataShareValuesBucket &values, bool &isValid)
+{
+    int32_t ret = E_ERR;
+    string fileIdStr = static_cast<string>(values.Get(AppUriSensitiveColumn::FILE_ID, isValid));
+    if (CanConvertToInt32(fileIdStr)) {
+        ret = static_cast<int32_t>(std::stoi(fileIdStr));
+    }
+    return ret;
+}
+
 static void GetSingleDbOperation(const vector<DataShareValuesBucket> &values, vector<int32_t> &dbOperation,
     vector<int32_t> &querySingleResultSet, int index)
 {
     bool isValid;
-    int32_t fileId = std::stoi((static_cast<string>(values.at(index).Get(AppUriSensitiveColumn::FILE_ID, isValid))));
+    int32_t fileId = GetFileId(values.at(index), isValid);
+    if (fileId == E_ERR) {
+        MEDIA_ERR_LOG("Failed GetFileId.");
+        return;
+    }
     int32_t uriType = values.at(index).Get(AppUriSensitiveColumn::URI_TYPE, isValid);
     int32_t sensitiveType = values.at(index).Get(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, isValid);
     if ((fileId == querySingleResultSet.at(FILE_ID_INDEX)) && (uriType == querySingleResultSet.at(URI_TYPE_INDEX))) {
@@ -307,7 +334,7 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
     QueryUriSensitive(cmd, values, resultSet);
     GetAllUriDbOperation(values, dbOperation, resultSet);
     for (size_t i = 0; i < values.size(); i++) {
-        int32_t fileId = std::stoi((static_cast<string>(values.at(i).Get(AppUriSensitiveColumn::FILE_ID, isValid))));
+        int32_t fileId = GetFileId(values.at(i), isValid);
         int32_t uriType = values.at(i).Get(AppUriSensitiveColumn::URI_TYPE, isValid);
         if ((dbOperation.at(i) == UPDATE_DB_OPERATION) && (uriType == PHOTOSTYPE)) {
             photoNeedToUpdate = true;

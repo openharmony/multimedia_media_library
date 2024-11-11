@@ -141,6 +141,7 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
         values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
             photoProxy->IsCoverPhoto() ? static_cast<int32_t>(BurstCoverLevelType::COVER)
                                        : static_cast<int32_t>(BurstCoverLevelType::MEMBER));
+        values.Put(PhotoColumn::PHOTO_DIRTY, -1);
     }
     values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
     values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
