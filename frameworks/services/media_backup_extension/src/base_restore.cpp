@@ -142,7 +142,8 @@ bool BaseRestore::ConvertPathToRealPath(const std::string &srcPath, const std::s
             }
         }
     }
-    newPath = prefix + relativePath;
+    std::string extraPrefix = BackupFileUtils::GetExtraPrefixForRealPath(sceneCode_, srcPath);
+    newPath = prefix + extraPrefix + relativePath;
     return true;
 }
 

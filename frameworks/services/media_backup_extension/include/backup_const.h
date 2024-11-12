@@ -70,6 +70,7 @@ const std::string GALLERT_ROOT_PATH = "/storage/emulated/";
 const std::string RESTORE_FAILED_FILES_PATH = "/storage/media/local/files/Docs/Documents/restore_failed_files";
 const std::string PHOTO_FILTER_SELECTED_SIZE = "filter_selected_size";
 const std::string RESTORE_SANDBOX_DIR = "/data/storage/el2/base/.backup/restore";
+const std::string INTERNAL_PREFIX = "/storage/emulated";
 
 // DB field for update scene
 const std::string GALLERY_ID = "_id";
