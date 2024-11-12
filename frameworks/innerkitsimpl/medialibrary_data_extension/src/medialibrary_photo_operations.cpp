@@ -600,6 +600,7 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
     errCode = trans->RetryTrans(func, __func__);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("CreateV9: tans finish fail!, ret:%{public}d", errCode);
+        return errCode;
     }
     return outRow;
 }
@@ -675,6 +676,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     errCode = trans->RetryTrans(func, __func__);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("CreateV10: trans retry fail!, ret:%{public}d", errCode);
+        return errCode;
     }
     string fileUri = CreateExtUriForV10Asset(fileAsset);
     if (isNeedGrant) {
