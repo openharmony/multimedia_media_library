@@ -116,6 +116,7 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
     int32_t errCode = trans->RetryTrans(func, __func__);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("BatchInsert: trans retry fail!, ret:%{public}d", errCode);
+        return errCode;
     }
     MEDIA_INFO_LOG("batch insert ok");
     return SUCCEED;

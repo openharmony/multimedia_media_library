@@ -372,6 +372,7 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
     err = trans->RetryTrans(func, __func__);
     if (err != E_OK) {
         MEDIA_ERR_LOG("GrantUriSensitive: tans finish fail!, ret:%{public}d", err);
+        return err;
     }
     return E_OK;
 }
