@@ -22,6 +22,21 @@
 
 namespace OHOS {
 namespace Media {
+
+struct AlbumFusionDfxDataPoint {
+    int64_t albumFusionTag;
+    int64_t reportTimeStamp;
+    int32_t albumFusionState; // 1: Before fusion starts 2: After fusion successfully finished 3: when fusion fails
+    int32_t imageAssetCount;
+    int32_t videoAssetCount;
+    int32_t numberOfSourceAlbum;
+    int32_t numberOfUserAlbum;
+    int32_t totalAssetsInSourceAlbums;
+    int32_t totalAssetsInUserAlbums;
+    std::string albumDetails;
+    std::string hiddenAssetInfo;
+};
+
 class DfxReporter {
 public:
     DfxReporter();
@@ -48,6 +63,7 @@ public:
     static void ReportStartResult(int32_t scene, int32_t errorCode, int32_t startTime);
     void ReportPhotoRecordInfo();
     static int32_t ReportMedialibraryAPI(const std::string& callerPackage, const std::string& saveUri);
+    static int32_t ReportAlbumFusion(const AlbumFusionDfxDataPoint& reportData);
 };
 } // namespace Media
 } // namespace OHOS

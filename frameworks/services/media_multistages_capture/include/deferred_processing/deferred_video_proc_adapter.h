@@ -39,7 +39,8 @@ public:
 #ifdef ABILITY_CAMERA_SUPPORT
     void AddVideo(const std::string &videoId, int srcFd, int dstFd);
 #endif
-    EXPORT virtual void RemoveVideo(const std::string &videoId, const bool isRestorable = true);
+    EXPORT virtual void RemoveVideo(
+        const std::string &videoId, const bool isRestorable = true);
     EXPORT void RestoreVideo(const std::string &videoId);
 
 private:

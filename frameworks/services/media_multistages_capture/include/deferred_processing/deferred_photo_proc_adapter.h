@@ -21,10 +21,10 @@
 #ifdef ABILITY_CAMERA_SUPPORT
 #include "deferred_proc_session/deferred_photo_proc_session.h"
 #endif
+
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-// 延时子服务适配器
 #ifdef ABILITY_CAMERA_SUPPORT
 class DeferredPhotoProcessingAdapter : public RefBase {
 #else
@@ -37,7 +37,8 @@ public:
     EXPORT virtual void BeginSynchronize();
     EXPORT virtual void EndSynchronize();
 #ifdef ABILITY_CAMERA_SUPPORT
-    void AddImage(const std::string &imageId, CameraStandard::DpsMetadata &metadata, const bool isTrashed = false);
+    void AddImage(const std::string &imageId,
+        CameraStandard::DpsMetadata &metadata, const bool isTrashed = false);
 #endif
     EXPORT virtual void RemoveImage(const std::string &imageId, const bool isRestorable = true);
     EXPORT void RestoreImage(const std::string &imageId);
@@ -50,4 +51,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_DEFERRED_PHOTO_PROC_ADAPTER_H
+#endif // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_DEFERRED_PHOTO_PROC_ADAPTER_H

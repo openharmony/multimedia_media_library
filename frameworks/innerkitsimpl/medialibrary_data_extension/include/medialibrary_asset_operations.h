@@ -65,6 +65,7 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_LONGITUDE, MEMBER_TYPE_DOUBLE },
     { PhotoColumn::PHOTO_HEIGHT, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_WIDTH, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_ALL_EXIF, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_LCD_VISIT_TIME, MEMBER_TYPE_INT64 },
     { PhotoColumn::PHOTO_EDIT_TIME, MEMBER_TYPE_INT64 },
     { PhotoColumn::PHOTO_SUBTYPE, MEMBER_TYPE_INT32 },
@@ -74,6 +75,7 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_CE_AVAILABLE, MEMBER_TYPE_INT32 },
     { AudioColumn::AUDIO_ALBUM, MEMBER_TYPE_STRING },
     { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_OWNER_ALBUM_ID, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_BURST_KEY, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_BURST_COVER_LEVEL, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_THUMBNAIL_READY, MEMBER_TYPE_INT64 }
@@ -96,6 +98,8 @@ public:
     EXPORT static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
         const bool compatible = false);
     static std::string GetEditDataSourcePath(const std::string &path);
+    EXPORT static int32_t GetAlbumIdByPredicates(const std::string &whereClause,
+        const std::vector<std::string> &whereArgs);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
@@ -123,6 +127,7 @@ protected:
 
     static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
+    static int32_t UpdateAllExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t SetUserComment(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t UpdateRelativePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
@@ -132,10 +137,12 @@ protected:
         MediaLibraryApi api, bool isMovingPhotoVideo = false);
     static int32_t OpenHighlightCover(MediaLibraryCommand &cmd, const std::string &mode);
     static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync = false);
+    static int32_t OpenHighlightVideo(MediaLibraryCommand &cmd, const std::string &mode);
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset,
         const std::string &extraUri = "");
+    static void UpdateOwnerAlbumIdOnMove(MediaLibraryCommand &cmd, int32_t &targetAlbumId, int32_t &oriAlbumId);
     static int32_t SendModifyUserCommentNotify(MediaLibraryCommand &cmd, int32_t rowId,
         const std::string &extraUri = "");
     static int32_t SetPendingStatus(MediaLibraryCommand &cmd);

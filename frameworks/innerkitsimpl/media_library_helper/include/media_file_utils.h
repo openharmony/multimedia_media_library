@@ -28,7 +28,6 @@ namespace OHOS::Media {
 EXPORT const std::string MOVING_PHOTO_URI_SPLIT = ";";
 EXPORT const uint8_t MOVING_PHOTO_IMAGE_POS = 0;
 EXPORT const uint8_t MOVING_PHOTO_VIDEO_POS = 1;
-EXPORT const std::string E_POLICY = "E";
 EXPORT const std::string MEDIA_FILEMODE_READONLY = "r";
 EXPORT const std::string MEDIA_FILEMODE_WRITEONLY = "w";
 EXPORT const std::string MEDIA_FILEMODE_READWRITE = "rw";
@@ -118,6 +117,7 @@ public:
     EXPORT static std::string GetNetworkIdFromUri(const std::string &uri);
     EXPORT static std::string UpdatePath(const std::string &path, const std::string &uri);
     EXPORT static MediaType GetMediaType(const std::string &filePath);
+    EXPORT static MediaType GetMediaTypeNotSupported(const std::string &filePath);
     EXPORT static std::string SplitByChar(const std::string &str, const char split);
     EXPORT static std::string GetExtensionFromPath(const std::string &path);
     EXPORT static int32_t OpenFile(const std::string &path, const std::string &mode,
@@ -143,6 +143,7 @@ public:
     EXPORT static std::string Encode(const std::string &uri);
     EXPORT static bool CheckDisplayLevel(const int32_t &displayLevel);
     EXPORT static std::string GetHighlightPath(const std::string &uri);
+    EXPORT static std::string GetHighlightVideoPath(const std::string &uri);
     EXPORT static std::string GetTableNameByDisplayName(const std::string &displayName);
 #ifdef MEDIALIBRARY_COMPATIBILITY
     EXPORT static std::string GetTableFromVirtualUri(const std::string &uri);
@@ -157,6 +158,7 @@ public:
     EXPORT static int64_t Timespec2Millisecond(const struct timespec &time);
     EXPORT static std::string GetMovingPhotoVideoPath(const std::string &imagePath);
     EXPORT static bool CheckMovingPhotoExtension(const std::string &extension);
+    EXPORT static bool IsMovingPhotoMimeType(const std::string &mimeType);
     EXPORT static bool CheckMovingPhotoVideoExtension(const std::string &extension);
     EXPORT static bool CheckMovingPhotoImage(const std::string &path);
     EXPORT static bool CheckMovingPhotoVideo(const std::string &path);
@@ -166,7 +168,6 @@ public:
     EXPORT static bool GetFileSize(const std::string &filePath, size_t &size);
     EXPORT static bool SplitMovingPhotoUri(const std::string &uri, std::vector<std::string> &ret);
     EXPORT static bool IsMediaLibraryUri(const std::string &uri);
-    EXPORT static bool SetEPolicy();
     EXPORT static void PrintStatInformation(const std::string& path);
     EXPORT static void MediaFileDeletionRecord();
     EXPORT static void SetDeletionRecord(int fd, const std::string &fileName);
@@ -175,6 +176,9 @@ public:
     EXPORT static std::string DesensitizePath(const std::string &path);
     EXPORT static void CheckDirStatus(const std::unordered_set<std::string> &dirCheckSet, const std::string &dir);
     EXPORT static std::string GetUriWithoutDisplayname(const std::string &uri);
+    EXPORT static int32_t CreateDirectoryAndCopyFiles(const std::string &srcDir, const std::string &dstDir);
+    EXPORT static void ModifyFile(const std::string path, int64_t modifiedTime);
+
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
     static int32_t RemoveDirectory(const std::string &path);

@@ -28,6 +28,7 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "hi_audit.h"
+#include "medialibrary_errno.h"
 
 using namespace std;
 
@@ -314,6 +315,26 @@ void DfxManager::HandleHalfDayMissions()
     }
 }
 
+void DfxManager::IsDirectoryExist(const string& dirName)
+{
+    struct stat statInfo {};
+    if (stat(dirName.c_str(), &statInfo) == E_SUCCESS) {
+        if (statInfo.st_mode & S_IFDIR) {
+            return;
+        }
+        MEDIA_ERR_LOG("Not Is DIR, errno is %{public}d", errno);
+        return;
+    }
+    MEDIA_ERR_LOG("Directory Not Exist, errno is %{public}d", errno);
+    return;
+}
+
+void DfxManager::CheckStatus()
+{
+    const std::string CLOUD_FILE_PATH = "/storage/cloud/files";
+    IsDirectoryExist(CLOUD_FILE_PATH);
+}
+
 void DfxManager::HandleFiveMinuteTask()
 {
     if (!isInitSuccess_) {
@@ -327,6 +348,7 @@ void DfxManager::HandleFiveMinuteTask()
     dfxAnalyzer_->FlushThumbnail(result);
     AdaptationToMovingPhotoInfo adaptationInfo = dfxCollector_->GetAdaptationToMovingPhotoInfo();
     dfxAnalyzer_->FlushAdaptationToMovingPhoto(adaptationInfo);
+    CheckStatus();
 }
 
 void DfxManager::HandleDeleteBehaviors()

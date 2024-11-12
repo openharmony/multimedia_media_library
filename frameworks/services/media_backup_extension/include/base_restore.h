@@ -25,6 +25,8 @@
 #include "nlohmann/json.hpp"
 #include "rdb_helper.h"
 #include "result_set.h"
+#include "media_file_utils.h"
+#include "tab_old_photos_restore.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,15 +36,14 @@ public:
     virtual ~BaseRestore() = default;
     virtual void StartRestore(const std::string &backupRetorePath, const std::string &upgradePath);
     virtual int32_t Init(const std::string &backupRetorePath, const std::string &upgradePath, bool isUpgrade) = 0;
-    virtual int32_t QueryTotalNumber(void) = 0;
-    virtual std::vector<FileInfo> QueryFileInfos(int32_t offset) = 0;
     virtual NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
-        int32_t sourceType) const = 0;
+        int32_t sourceType) = 0;
     virtual std::string GetBackupInfo();
     void StartRestoreEx(const std::string &backupRetorePath, const std::string &upgradePath,
         std::string &restoreExInfo);
     std::string GetRestoreExInfo();
     void ReportPortraitStat(int32_t sceneCode);
+    std::string GetProgressInfo();
 
 protected:
     int32_t Init(void);
@@ -62,6 +63,7 @@ protected:
         int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
+    int32_t CopyFile(const std::string &srcFile, const std::string &dstFile) const;
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
@@ -70,27 +72,28 @@ protected:
     void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
         int64_t &rowNum);
-    int32_t MoveDirectory(const std::string &srcDir, const std::string &dstDir) const;
-    bool IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+    int32_t MoveDirectory(const std::string &srcDir, const std::string &dstDir, bool deleteOriginalFile = true) const;
+    bool IsSameAudioFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
         FileInfo &fileInfo);
-    bool HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+    bool HasSameAudioFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
         FileInfo &fileInfo);
-    bool HasSameFileForDualClone(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
-        FileInfo &fileInfo);
+    virtual bool HasSameFileForDualClone(FileInfo &fileInfo)
+    {
+        return false;
+    }
     void InsertPhotoMap(std::vector<FileInfo> &fileInfos, int64_t &mapRowNum);
     void BatchQueryPhoto(std::vector<FileInfo> &fileInfos, bool isFull, const NeedQueryMap &needQueryMap);
     void BatchInsertMap(const std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
     nlohmann::json GetErrorInfoJson();
     nlohmann::json GetCountInfoJson(const std::vector<std::string> &countInfoTypes);
     SubCountInfo GetSubCountInfo(const std::string &type);
-    std::unordered_map<std::string, int32_t> GetFailedFiles(const std::string &type);
-    nlohmann::json GetSubCountInfoJson(const std::string &type, const SubCountInfo &subCountInfo);
+    std::unordered_map<std::string, FailedFileInfo> GetFailedFiles(const std::string &type);
+    nlohmann::json GetSubCountInfoJson(const std::string &type, const SubCountInfo &subCountInfo, size_t &limit);
     void SetErrorCode(int32_t errorCode);
-    void UpdateFailedFileByFileType(int32_t fileType, const std::string &filePath, int32_t errorCode);
-    void UpdateFailedFiles(int32_t fileType, const std::string &filePath, int32_t errorCode);
+    void UpdateFailedFileByFileType(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode);
+    void UpdateFailedFiles(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode);
     void UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode);
     void UpdateDuplicateNumber(int32_t fileType);
-    void GetMaxFileId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     void DeleteMoveFailedData(std::vector<std::string> &moveFailedData);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
         int32_t sceneCode);
@@ -107,13 +110,30 @@ protected:
     bool IsFileValid(FileInfo &fileInfo, const int32_t sceneCode);
     void CreateDir(std::string &dir);
     void RecursiveCreateDir(std::string &relativePath, std::string &suffix);
+    SubProcessInfo GetSubProcessInfo(const std::string &type);
+    void UpdateProcessedNumber(const std::atomic<int32_t> &processStatus, std::atomic<uint64_t> &processedNumber,
+        const std::atomic<uint64_t> &totalNumber);
+    nlohmann::json GetSubProcessInfoJson(const std::string &type, const SubProcessInfo &subProcessInfo);
+    void UpdateDatabase();
+    void NotifyAlbum();
+    void GetUpdateTotalCount();
+    void GetUpdateAllAlbumsCount();
+    void GetUpdateUniqueNumberCount();
+    void RestoreThumbnail();
 
 protected:
-    std::atomic<uint64_t> migrateDatabaseNumber_;
-    std::atomic<uint64_t> migrateFileNumber_;
-    std::atomic<uint64_t> migrateVideoFileNumber_;
-    std::atomic<uint64_t> migrateAudioDatabaseNumber_;
-    std::atomic<uint64_t> migrateAudioFileNumber_;
+    std::atomic<uint64_t> migrateDatabaseNumber_{0};
+    std::atomic<uint64_t> migrateFileNumber_{0};
+    std::atomic<uint64_t> migrateVideoFileNumber_{0};
+    std::atomic<uint64_t> migrateAudioDatabaseNumber_{0};
+    std::atomic<uint64_t> migrateAudioFileNumber_{0};
+    std::atomic<uint64_t> totalNumber_{0};
+    std::atomic<uint64_t> audioTotalNumber_{0};
+    std::atomic<uint64_t> updateTotalNumber_{0};
+    std::atomic<uint64_t> otherTotalNumber_{0};
+    std::atomic<uint64_t> ongoingTotalNumber_{0};
+    std::atomic<uint64_t> updateProcessedNumber_{0};
+    std::atomic<uint64_t> otherProcessedNumber_{0};
     std::atomic<uint64_t> migratePhotoDuplicateNumber_{0};
     std::atomic<uint64_t> migrateVideoDuplicateNumber_{0};
     std::atomic<uint64_t> migrateAudioDuplicateNumber_{0};
@@ -121,10 +141,12 @@ protected:
     std::atomic<uint64_t> migratePortraitFaceNumber_{0};
     std::atomic<uint64_t> migratePortraitAlbumNumber_{0};
     std::atomic<uint64_t> migratePortraitTotalTimeCost_{0};
-    std::atomic<uint32_t> imageNumber_;
-    std::atomic<uint32_t> videoNumber_;
+    std::atomic<uint32_t> imageNumber_{0};
+    std::atomic<uint32_t> videoNumber_{0};
     std::atomic<uint64_t> migrateDatabaseMapNumber_{0};
-    std::atomic<uint32_t> audioNumber_;
+    std::atomic<uint32_t> audioNumber_{0};
+    std::atomic<int32_t> updateProcessStatus_{ProcessStatus::STOP};
+    std::atomic<int32_t> otherProcessStatus_{ProcessStatus::STOP};
     std::string dualDirName_ = "";
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::string backupRestoreDir_;
@@ -134,14 +156,14 @@ protected:
     std::mutex failedFilesMutex_;
     int32_t errorCode_{RestoreError::SUCCESS};
     std::string errorInfo_;
-    std::unordered_map<std::string, std::unordered_map<std::string, int32_t>> failedFilesMap_;
-    int maxFileId_ = 0;
-    int maxCount_ = 0;
+    std::unordered_map<std::string, std::unordered_map<std::string, FailedFileInfo>> failedFilesMap_;
     int fileMinSize_ = 0;
     int32_t sceneCode_ = DEFAULT_RESTORE_ID;
     std::unordered_map<std::string, std::string> tagIdMap_;
     std::unordered_map<std::string, int32_t> portraitAlbumIdMap_;
     bool hasLowQualityImage_ = false;
+    std::string taskId_ = std::to_string(MediaFileUtils::UTCTimeSeconds());
+    TabOldPhotosRestore tabOldPhotosRestore_;
 };
 } // namespace Media
 } // namespace OHOS

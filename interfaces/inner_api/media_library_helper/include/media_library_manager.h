@@ -122,6 +122,16 @@ public:
     EXPORT int32_t QueryTotalSize(MediaVolume &outMediaVolume);
 
     /**
+     * @brief Query new uri by old uri
+     *
+     * @param uris old uris
+     * @return map of old uris to new uris
+     * @since 1.0
+     * @version 1.0
+     */
+    EXPORT std::unordered_map<std::string, std::string> GetUrisByOldUris(std::vector<std::string> uris);
+
+    /**
      * @brief Make a query from database
      *
      * @param columnName a column name in datebase
@@ -244,6 +254,9 @@ public:
      */
     EXPORT int32_t GrantPhotoUriPermission(const string &appid, const std::vector<string> &uris,
         PhotoPermissionType photoPermissionType, HideSensitiveType hideSensitiveTpye);
+
+    sptr<IRemoteObject> InitToken();
+    int32_t CheckResultSet(std::shared_ptr<DataShareResultSet> &resultSet);
 
 private:
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size, bool isAstc);

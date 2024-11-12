@@ -16,11 +16,6 @@
 
 #include "notify_test.h"
 
-#include <memory>
-#include <vector>
-#include <algorithm>
-#include <string>
-
 #include "ability_context_impl.h"
 #include "fetch_result.h"
 #include "get_self_permissions.h"

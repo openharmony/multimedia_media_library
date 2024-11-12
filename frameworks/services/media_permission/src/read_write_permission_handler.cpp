@@ -137,6 +137,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::VISION_LABEL,
         OperationObject::VISION_VIDEO_LABEL,
         OperationObject::VISION_IMAGE_FACE,
+        OperationObject::VISION_VIDEO_FACE,
         OperationObject::VISION_FACE_TAG,
         OperationObject::VISION_OBJECT,
         OperationObject::VISION_RECOMMENDATION,
@@ -156,6 +157,8 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::USER_PHOTOGRAPHY,
         OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
         OperationObject::INDEX_CONSTRUCTION_STATUS,
+        OperationObject::ANALYSIS_ASSET_SD_MAP,
+        OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);
@@ -223,6 +226,7 @@ static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
         OperationObject::ALL_DEVICE,
         OperationObject::ACTIVE_DEVICE,
         OperationObject::MISCELLANEOUS,
+        OperationObject::TAB_OLD_PHOTO,
     };
 
     string uri = cmd.GetUri().ToString();

@@ -92,7 +92,7 @@ const string DATE_FUNCTION = "DATE(";
 const int32_t FORMID_MAX_LEN = 19;
 const int32_t SLEEP_TIME = 100;
 const int64_t MAX_INT64 = 9223372036854775807;
-const uint32_t MAX_UINT32 = 4294967295;
+const int32_t MAX_QUERY_LIMIT = 15;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
@@ -135,7 +135,7 @@ const std::string SHORT_TERM_TITLE = "title";
 const std::string SHORT_TERM_EXTENSION = "extension";
 const std::string SHORT_TERM_PHOTO_TYPE = "photoType";
 const std::string SHORT_TERM_PHOTO_SUB_TYPE = "photoSubType";
-const std::string CONFIRM_BOX_PACKAGE_NAME = "com.ohos.photos";
+const std::string CONFIRM_BOX_PACKAGE_NAME = "com.huawei.hmos.photos";
 const std::string CONFIRM_BOX_EXT_ABILITY_NAME = "SaveUIExtensionAbility";
 const std::string CONFIRM_BOX_EXTENSION_TYPE = "ability.want.params.uiExtensionType";
 const std::string CONFIRM_BOX_REQUEST_TYPE = "sysDialog/common";
@@ -2480,6 +2480,138 @@ static napi_status SetValueArray(const napi_env& env,
     return status;
 }
 
+static string GetFileIdFromUri(const string& uri)
+{
+    auto startIndex = uri.find(PhotoColumn::PHOTO_URI_PREFIX);
+    if (startIndex == std::string::npos) {
+        return "";
+    }
+    auto endIndex = uri.find("/", startIndex + PhotoColumn::PHOTO_URI_PREFIX.length());
+    if (endIndex == std::string::npos) {
+        return uri.substr(startIndex + PhotoColumn::PHOTO_URI_PREFIX.length());
+    }
+    return uri.substr(startIndex + PhotoColumn::PHOTO_URI_PREFIX.length(),
+        endIndex - startIndex - PhotoColumn::PHOTO_URI_PREFIX.length());
+}
+
+static string GetAlbumIdFromUri(const string& uri)
+{
+    string albumId = "";
+    auto startIndex = uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX);
+    if (startIndex != std::string::npos) {
+        albumId = uri.substr(startIndex + PhotoAlbumColumns::ALBUM_URI_PREFIX.length());
+    }
+    return albumId;
+}
+
+static napi_value GetSharedPhotoAssets(const napi_env& env, vector<string>& fileIds)
+{
+    string queryUri = PAH_QUERY_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri photoUri(queryUri);
+    DataShare::DataSharePredicates predicates;
+    predicates.In(MediaColumn::MEDIA_ID, fileIds);
+    std::vector<std::string> columns = PHOTO_COLUMN;
+    std::shared_ptr<NativeRdb::AbsSharedResultSet> result = UserFileClient::QueryRdb(photoUri, predicates, columns);
+    napi_value value = nullptr;
+    napi_status status = napi_create_array_with_length(env, fileIds.size(), &value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create array error!");
+        return value;
+    }
+    if (result == nullptr) {
+        return value;
+    }
+    int elementIndex = 0;
+    int err = result->GoToFirstRow();
+    if (err != napi_ok) {
+        NAPI_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        return value;
+    }
+    do {
+        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
+        if (assetValue == nullptr) {
+            return nullptr;
+        }
+        status = napi_set_element(env, value, elementIndex++, assetValue);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Set photo asset Value failed");
+            return nullptr;
+        }
+    } while (result->GoToNextRow() == E_OK);
+    result->Close();
+    return value;
+}
+
+static napi_value GetSharedAlbumAssets(const napi_env& env, vector<string>& albumIds)
+{
+    string queryUri = PAH_QUERY_PHOTO_ALBUM;
+    Uri albumUri(queryUri);
+    DataShare::DataSharePredicates predicates;
+    predicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
+    std::vector<std::string> columns = ALBUM_COLUMN;
+    std::shared_ptr<NativeRdb::AbsSharedResultSet> result = UserFileClient::QueryRdb(albumUri, predicates, columns);
+    napi_value value = nullptr;
+    napi_status status = napi_create_array_with_length(env, albumIds.size(), &value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create array error!");
+        return value;
+    }
+    if (result == nullptr) {
+        return value;
+    }
+    int err = result->GoToFirstRow();
+    if (err != napi_ok) {
+        NAPI_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        return value;
+    }
+    int elementIndex = 0;
+    do {
+        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowAlbumObject(env, result);
+        if (assetValue == nullptr) {
+            return nullptr;
+        }
+        status = napi_set_element(env, value, elementIndex++, assetValue);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Set albumn asset Value failed");
+            return nullptr;
+        }
+    } while (result->GoToNextRow() == E_OK);
+    result->Close();
+    return value;
+}
+
+static napi_status SetSharedAssetArray(const napi_env& env, const char* fieldStr,
+    const std::list<Uri>& listValue, napi_value& result, bool isPhoto)
+{
+    std::vector<std::string> assetIds;
+    napi_status status = napi_ok;
+    if (listValue.size() > MAX_QUERY_LIMIT) {
+        return status;
+    }
+    for (auto& uri : listValue) {
+        string assetId = isPhoto ? GetFileIdFromUri(uri.ToString()) : GetAlbumIdFromUri(uri.ToString());
+        if (assetId == "") {
+            NAPI_ERR_LOG("Failed to read assetId");
+            status = napi_invalid_arg;
+            return status;
+        }
+        assetIds.push_back(assetId);
+    }
+    napi_value assetResults = isPhoto ? GetSharedPhotoAssets(env, assetIds) :
+        GetSharedAlbumAssets(env, assetIds);
+    if (assetResults == nullptr) {
+        NAPI_ERR_LOG("Failed to get assets Result from rdb");
+        status = napi_invalid_arg;
+        return status;
+    }
+    status = napi_set_named_property(env, result, fieldStr, assetResults);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: %{public}s", fieldStr);
+    }
+    return status;
+}
+
 static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParcel> parcel, napi_value& result)
 {
     uint32_t len = 0;
@@ -2488,13 +2620,14 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
         NAPI_ERR_LOG("Failed to read sub uri list length");
         return status;
     }
-    napi_value subUriArray = nullptr;
-    napi_create_array_with_length(env, len, &subUriArray);
-    int subElementIndex = 0;
-    if (len > MAX_UINT32) {
+    if (len > MAX_QUERY_LIMIT) {
         NAPI_ERR_LOG("suburi length exceed the limit.");
         return status;
     }
+    napi_value subUriArray = nullptr;
+    napi_create_array_with_length(env, len, &subUriArray);
+    int subElementIndex = 0;
+    vector<std::string> fileIds;
     for (uint32_t i = 0; i < len; i++) {
         string subUri = parcel->ReadString();
         if (subUri.empty()) {
@@ -2504,10 +2637,24 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
         napi_value subUriRet = nullptr;
         napi_create_string_utf8(env, subUri.c_str(), NAPI_AUTO_LENGTH, &subUriRet);
         napi_set_element(env, subUriArray, subElementIndex++, subUriRet);
+        string fileId = GetFileIdFromUri(subUri);
+        if (fileId == "") {
+            NAPI_ERR_LOG("Failed to read sub uri fileId");
+            continue;
+        }
+        fileIds.push_back(fileId);
     }
     status = napi_set_named_property(env, result, "extraUris", subUriArray);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Set subUri named property error!");
+    }
+    napi_value photoAssetArray = GetSharedPhotoAssets(env, fileIds);
+    if (photoAssetArray == nullptr) {
+        NAPI_ERR_LOG("Failed to get sharedPhotoAsset");
+    }
+    status = napi_set_named_property(env, result, "sharedExtraPhotoAssets", photoAssetArray);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Set extraAssets named property error!");
     }
     return status;
 }
@@ -2547,6 +2694,14 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
     }
     napi_create_object(env, &result);
     SetValueArray(env, "uris", msg->changeInfo_.uris_, result);
+    if (msg->strUri_.find(PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
+        SetSharedAssetArray(env, "sharedAlbumAssets", msg->changeInfo_.uris_, result, false);
+    } else if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
+        SetSharedAssetArray(env, "sharedPhotoAssets", msg->changeInfo_.uris_, result, true);
+    } else {
+        NAPI_DEBUG_LOG("other albums notify");
+    }
+
     if (msg->changeInfo_.uris_.size() == DEFAULT_ALBUM_COUNT) {
         if (msg->changeInfo_.uris_.front().ToString().compare(GetTrashAlbumUri()) == 0) {
             if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -6426,6 +6581,7 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
         { "ANALYSIS_HUMAN_FACE_TAG", AnalysisType::ANALYSIS_HUMAN_FACE_TAG },
         { "ANALYSIS_HEAD_POSITION", AnalysisType::ANALYSIS_HEAD_POSITION },
         { "ANALYSIS_BONE_POSE", AnalysisType::ANALYSIS_BONE_POSE },
+        { "ANALYSIS_MULTI_CROP", AnalysisType::ANALYSIS_MULTI_CROP },
     };
 
     napi_value result = nullptr;
@@ -6522,11 +6678,6 @@ napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
     return CreateNumberEnumProperty(env, resourceTypeEnum, sResourceTypeEnumRef_, startIdx);
 }
 
-napi_value MediaLibraryNapi::CreateVideoEnhancementTypeEnum(napi_env env)
-{
-    return CreateNumberEnumProperty(env, videoEnhancementTypeEnum, sVideoEnhancementTypeEnumRef_);
-}
-
 napi_value MediaLibraryNapi::CreateMovingPhotoEffectModeEnum(napi_env env)
 {
     napi_value result = nullptr;
@@ -6550,6 +6701,11 @@ napi_value MediaLibraryNapi::CreateCloudEnhancementTaskStageEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateCloudEnhancementStateEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, cloudEnhancementStateEnum, sCloudEnhancementStateEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreateVideoEnhancementTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, videoEnhancementTypeEnum, sVideoEnhancementTypeEnumRef_);
 }
 
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,

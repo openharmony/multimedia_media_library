@@ -22,6 +22,7 @@
 #include "location_column.h"
 #include "media_app_uri_permission_column.h"
 #include "media_column.h"
+#include "media_old_photos_column.h"
 #include "medialibrary_db_const.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -84,6 +85,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_BATCH_THUMBNAIL_OPERATE, OperationObject::PAH_BATCH_THUMBNAIL_OPERATE },
         { CHECK_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
         { PAH_CLOUD_ENHANCEMENT_OPERATE, OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE },
+        { TAB_OLD_PHOTO, OperationObject::TAB_OLD_PHOTO },
 
         // use in Vision
         { PAH_ANA_OCR, OperationObject::VISION_OCR },
@@ -92,6 +94,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ANA_ATTS, OperationObject::VISION_AESTHETICS },
         { PAH_ANA_TOTAL, OperationObject::VISION_TOTAL },
         { VISION_IMAGE_FACE_TABLE, OperationObject::VISION_IMAGE_FACE },
+        { VISION_VIDEO_FACE_TABLE, OperationObject::VISION_VIDEO_FACE },
         { VISION_FACE_TAG_TABLE, OperationObject::VISION_FACE_TAG },
         { VISION_SALIENCY_TABLE, OperationObject::VISION_SALIENCY },
         { PAH_ANA_FACE, OperationObject::VISION_IMAGE_FACE },
@@ -121,6 +124,8 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { USER_PHOTOGRAPHY_INFO_TABLE, OperationObject::USER_PHOTOGRAPHY },
         { PAH_HIGHLIGHT_COVER, OperationObject::STORY_COVER },
         { PAH_HIGHLIGHT_PLAY, OperationObject::STORY_PLAY },
+        { PAH_ANA_ASSET_SD, OperationObject::ANALYSIS_ASSET_SD_MAP },
+        { PAH_ANA_ALBUM_ASSET, OperationObject::ANALYSIS_ALBUM_ASSET_MAP },
 
         // others
         { MISC_OPERATION, OperationObject::MISCELLANEOUS },
@@ -173,6 +178,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::VISION_POSE, { { OperationType::UNKNOWN_TYPE, VISION_POSE_TABLE } } },
         { OperationObject::VISION_TOTAL, { { OperationType::UNKNOWN_TYPE, VISION_TOTAL_TABLE } } },
         { OperationObject::VISION_IMAGE_FACE, { { OperationType::UNKNOWN_TYPE, VISION_IMAGE_FACE_TABLE } } },
+        { OperationObject::VISION_VIDEO_FACE, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_FACE_TABLE } } },
         { OperationObject::VISION_FACE_TAG, { { OperationType::UNKNOWN_TYPE, VISION_FACE_TAG_TABLE } } },
         { OperationObject::GEO_DICTIONARY, { { OperationType::UNKNOWN_TYPE, GEO_DICTIONARY_TABLE } } },
         { OperationObject::GEO_KNOWLEDGE, { { OperationType::UNKNOWN_TYPE, GEO_KNOWLEDGE_TABLE } } },
@@ -180,6 +186,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::ANALYSIS_PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_TABLE } } },
         { OperationObject::ANALYSIS_PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
         { OperationObject::PAH_FORM_MAP, { { OperationType::UNKNOWN_TYPE, FormMap::FORM_MAP_TABLE } } },
+        { OperationObject::TAB_OLD_PHOTO, { { OperationType::UNKNOWN_TYPE, TabOldPhotosColumn::OLD_PHOTOS_TABLE } }},
 
         // search
         { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },
@@ -190,6 +197,9 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::STORY_ALBUM, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_ALBUM_TABLE } } },
         { OperationObject::STORY_COVER, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_COVER_INFO_TABLE } } },
         { OperationObject::STORY_PLAY, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_PLAY_INFO_TABLE } } },
+        { OperationObject::ANALYSIS_ASSET_SD_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ASSET_SD_MAP_TABLE } } },
+        { OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
+            { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_ASSET_MAP_TABLE } } },
         { OperationObject::USER_PHOTOGRAPHY, { { OperationType::UNKNOWN_TYPE, USER_PHOTOGRAPHY_INFO_TABLE } } },
         { OperationObject::APP_URI_PERMISSION_INNER,
             { { OperationType::UNKNOWN_TYPE, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE } } },
@@ -230,6 +240,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_DELETE, OperationType::DELETE },
         { OPRN_QUERY, OperationType::QUERY },
         { OPRN_UPDATE, OperationType::UPDATE },
+        { OPRN_ALBUM_SET_NAME, OperationType::ALBUM_SET_NAME },
         { OPRN_ALBUM_ADD_PHOTOS, OperationType::ALBUM_ADD_PHOTOS },
         { OPRN_ALBUM_REMOVE_PHOTOS, OperationType::ALBUM_REMOVE_PHOTOS },
         { OPRN_RECOVER_PHOTOS, OperationType::ALBUM_RECOVER_ASSETS },
@@ -257,6 +268,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_SUBMIT_CACHE, OperationType::SUBMIT_CACHE },
         { OPRN_BATCH_UPDATE_FAV, OperationType::BATCH_UPDATE_FAV },
         { OPRN_BATCH_UPDATE_USER_COMMENT, OperationType::BATCH_UPDATE_USER_COMMENT },
+        { OPRN_BATCH_UPDATE_OWNER_ALBUM_ID, OperationType::BATCH_UPDATE_OWNER_ALBUM_ID },
         { OPRN_SET_PHOTO_QUALITY, OperationType::SET_PHOTO_QUALITY },
         { OPRN_ADD_IMAGE, OperationType::ADD_IMAGE },
         { OPRN_PROCESS_IMAGE, OperationType::PROCESS_IMAGE },
@@ -269,6 +281,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_REMOVE_MSC_TASK, OperationType::REMOVE_MSC_TASK },
         { OPRN_START_GENERATE_THUMBNAILS, OperationType::START_GENERATE_THUMBNAILS },
         { OPRN_STOP_GENERATE_THUMBNAILS, OperationType::STOP_GENERATE_THUMBNAILS },
+        { OPRN_GENERATE_THUMBNAILS_RESTORE, OperationType::GENERATE_THUMBNAILS_RESTORE },
         { OPRN_TOOL_QUERY_BY_DISPLAY_NAME, OperationType::TOOL_QUERY_BY_DISPLAY_NAME },
         { OPRN_GROUP_DISMISS, OperationType::DISMISS },
         { OPRN_GROUP_ALBUM_NAME, OperationType::GROUP_ALBUM_NAME },
@@ -286,6 +299,8 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_ENHANCEMENT_GET_PAIR, OperationType::ENHANCEMENT_GET_PAIR},
         { OPRN_SET_VIDEO_ENHANCEMENT_ATTR, OperationType::SET_VIDEO_ENHANCEMENT_ATTR },
         { "log_medialibrary_api", OperationType::LOG_MEDIALIBRARY_API},
+        { OPRN_SAVE_PICTURE, OperationType::SAVE_PICTURE},
+        { OPRN_DEGENERATE_MOVING_PHOTO, OperationType::DEGENERATE_MOVING_PHOTO },
     };
     return oprnTypeMap;
 }

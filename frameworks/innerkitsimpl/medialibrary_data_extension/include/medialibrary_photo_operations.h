@@ -65,6 +65,9 @@ public:
         const std::string& editDataCameraSourcePath, const std::string& mimeType);
     EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, const std::string &path);
     EXPORT static int32_t RemoveTempVideo(const std::string &path);
+    EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs);
+    EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris);
+
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);
@@ -111,7 +114,9 @@ private:
         const std::string &cachePath, const std::string &destPath);
     static int32_t UpdateMovingPhotoSubtype(int32_t fileId, int32_t currentPhotoSubType);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
+    static int32_t UpdateExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
+    static int32_t BatchSetOwnerAlbumId(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,
         const std::string &editdata, const std::string &photoStatus = "");
     static int32_t RevertToOriginalEffectMode(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
@@ -122,6 +127,8 @@ private:
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static std::shared_ptr<FileAsset> GetFileAsset(MediaLibraryCommand &cmd);
     static int32_t SetVideoEnhancementAttr(MediaLibraryCommand &cmd);
+    static int32_t ForceSavePicture(MediaLibraryCommand& cmd);
+    static int32_t DegenerateMovingPhoto(MediaLibraryCommand &cmd);
 private:
     static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension,
         const std::string mimeType, std::string &oldFilePath);

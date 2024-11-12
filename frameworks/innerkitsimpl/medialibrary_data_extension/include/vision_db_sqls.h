@@ -24,6 +24,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_head_column.h"
 #include "vision_image_face_column.h"
+#include "vision_video_face_column.h"
 #include "vision_label_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
@@ -214,7 +215,8 @@ const std::string CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE = "CREATE TABLE IF NOT 
     COMPOSITION + " INT, " +
     SALIENCY + " INT, " +
     HEAD + " INT, " +
-    POSE + " INT) ";
+    POSE + " INT, " +
+    GEO + " INT) ";
 
 const std::string CREATE_TAB_IMAGE_FACE = "CREATE TABLE IF NOT EXISTS " + VISION_IMAGE_FACE_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -243,6 +245,28 @@ const std::string CREATE_TAB_IMAGE_FACE = "CREATE TABLE IF NOT EXISTS " + VISION
     FACE_AESTHETICS_SCORE + " REAL, " +
     BEAUTY_BOUNDER_VERSION + " TEXT DEFAULT '', " +
     IS_EXCLUDED + " INT DEFAULT 0) ";
+
+const std::string CREATE_TAB_VIDEO_FACE = "CREATE TABLE IF NOT EXISTS " + VISION_VIDEO_FACE_TABLE + " (" +
+    ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    FILE_ID + " INTEGER, " +
+    FACE_ID + " TEXT, " +
+    TAG_ID +  " TEXT, " +
+    SCALE_X + " BLOB, " +
+    SCALE_Y + " BLOB, " +
+    SCALE_WIDTH + " BLOB, " +
+    SCALE_HEIGHT + " BLOB, " +
+    LANDMARKS + " BLOB, " +
+    PITCH + " BLOB, " +
+    YAW + " BLOB, " +
+    ROLL + " BLOB, " +
+    PROB + " BLOB, " +
+    TOTAL_FACES + " INTEGER, " +
+    FRAME_ID + " INT, " +
+    FRAME_TIMESTAMP + " INT, " +
+    TRACKS + " TEXT, " +
+    ALGO_VERSION + " TEXT, " +
+    FEATURES + " BLOB, " +
+    ANALYSIS_VERSION + " TEXT) ";
 
 const std::string CREATE_TAB_FACE_TAG = "CREATE TABLE IF NOT EXISTS " + VISION_FACE_TAG_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -461,6 +485,10 @@ const std::string UPDATE_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " 
 const std::string IMAGE_FACE_INDEX = "image_face_index";
 const std::string CREATE_IMAGE_FACE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + IMAGE_FACE_INDEX + " ON " +
     VISION_IMAGE_FACE_TABLE + " (" + FILE_ID + "," + FACE_ID + ")";
+
+const std::string VIDEO_FACE_INDEX = "video_face_index";
+const std::string CREATE_VIDEO_FACE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + VIDEO_FACE_INDEX + " ON " +
+    VISION_VIDEO_FACE_TABLE + " (" + FILE_ID + "," + FACE_ID + ")";
 
 const std::string ADD_SALIENCY_STATUS_COLUMN = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + SALIENCY + " INT";
 const std::string UPDATE_SALIENCY_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE +

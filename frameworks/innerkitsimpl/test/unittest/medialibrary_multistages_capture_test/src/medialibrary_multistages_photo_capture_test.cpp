@@ -538,7 +538,7 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_trigger_ratio_001, TestSiz
 
     MEDIA_INFO_LOG("dfx_trigger_ratio_001 End");
 }
-
+ 
 HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, manager_photo_id_add_and_rmv_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("manager_photo_id_add_and_rmv_001 Start");

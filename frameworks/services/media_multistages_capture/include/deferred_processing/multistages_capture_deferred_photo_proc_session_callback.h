@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MULTISTAGES_CAPTURE_DEFERRED_PHOTO_PROC_SESSION_CALLBACK_H
-#define MULTISTAGES_CAPTURE_DEFERRED_PHOTO_PROC_SESSION_CALLBACK_H
+#ifndef FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_MULTISTAGES_CAPTURE_DEFERRED_PHOTO_PROC_SESSION_CALLBACK_H
+#define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_MULTISTAGES_CAPTURE_DEFERRED_PHOTO_PROC_SESSION_CALLBACK_H
 
 #ifdef ABILITY_CAMERA_SUPPORT
 #include <memory>
@@ -43,11 +43,11 @@ public:
 private:
     EXPORT int32_t UpdatePhotoQuality(const std::string &photoId);
     EXPORT void UpdateCEAvailable(const std::string &photoId);
-    void GetCommandByImageId(const std::string &imageId, MediaLibraryCommand &cmd, string &photoId);
+    void GetCommandByImageId(const std::string &imageId, MediaLibraryCommand &cmd);
     void UpdateHighQualityPictureInfo(const std::string &imageId, bool isCloudEnhancementAvailable);
     void NotifyIfTempFile(std::shared_ptr<NativeRdb::ResultSet> resultSet);
 };
 } // namespace Media
 } // namespace OHOS
 #endif
-#endif  // MULTISTAGES_CAPTURE_DEFERRED_PHOTO_PROC_SESSION_CALLBACK_H
+#endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_MULTISTAGES_CAPTURE_DEFERRED_PHOTO_PROC_SESSION_CALLBACK_H

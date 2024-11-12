@@ -205,6 +205,32 @@ static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &va
     HandleDateAdded(metadata, isInsert, values);
 }
 
+static void HandleMovingPhotoDirty(const Metadata &metadata, ValuesBucket &values)
+{
+    if (metadata.GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+        metadata.GetDirty() != -1) {
+        return;
+    }
+
+    if (metadata.GetPhotoQuality() != static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
+        MEDIA_DEBUG_LOG("moving photo is not high-quality");
+        return;
+    }
+
+    if (metadata.GetIsTemp() != 0) {
+        MEDIA_DEBUG_LOG("moving photo is temp, not saved");
+        return;
+    }
+
+    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(metadata.GetFilePath());
+    size_t videoSize = 0;
+    if (!MediaFileUtils::GetFileSize(videoPath, videoSize) || videoSize == 0) {
+        MEDIA_DEBUG_LOG("video of moving photo cannot upload");
+        return;
+    }
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
+}
+
 static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &values, bool isInsert,
     bool skipPhoto = true)
 {
@@ -240,12 +266,9 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutLong(PhotoColumn::PHOTO_COVER_POSITION, metadata.GetCoverPosition());
         values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, metadata.GetFrontCamera());
         values.PutString(PhotoColumn::PHOTO_DETAIL_TIME, metadata.GetDetailTime());
-
         if (metadata.GetPhotoSubType() != 0) {
             values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
-        }
-        if (metadata.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-            values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo
+            HandleMovingPhotoDirty(metadata, values);
         }
     } else if (mediaType == MediaType::MEDIA_TYPE_AUDIO) {
         values.PutString(AudioColumn::AUDIO_ALBUM, metadata.GetAlbum());
@@ -500,7 +523,7 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
                 MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING,
                 MediaColumn::MEDIA_DATE_ADDED, PhotoColumn::PHOTO_DATE_DAY, MediaColumn::MEDIA_OWNER_PACKAGE,
                 PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
-                MediaColumn::MEDIA_DATE_TAKEN
+                PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_QUALITY, MediaColumn::MEDIA_DATE_TAKEN,
             };
         } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
             columns = {
@@ -1082,7 +1105,7 @@ std::string MediaScannerDb::MakeFileUri(const std::string &mediaTypeUri, const M
 {
     return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(metadata.GetFileId()),
         MediaFileUtils::GetExtraUri(metadata.GetFileName(), metadata.GetFilePath())) + "?api_version=10" +
-        "&date_added=" + to_string(metadata.GetFileDateAdded());
+        "&date_taken=" + to_string(metadata.GetDateTaken());
 }
 } // namespace Media
 } // namespace OHOS

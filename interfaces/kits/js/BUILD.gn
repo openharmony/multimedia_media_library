@@ -83,6 +83,12 @@ config("napi_config") {
     include_dirs += [ "${MEDIALIB_MTP_PATH}/include" ]
   }
 
+  if (defined(global_parts_info) &&
+      defined(
+          global_parts_info.device_cloud_gateway_media_cloud_enhance_service)) {
+    include_dirs += [ "${MEDIALIB_CLOUD_ENHANCEMENT_SERVICE_PATH}/interfaces/inner_api/include/c_api" ]
+  }
+
   ldflags = [ "-Wl,--gc-sections" ]
 
   cflags = [
@@ -211,8 +217,6 @@ ohos_shared_library("medialibrary_nutils") {
       defined(
           global_parts_info.device_cloud_gateway_media_cloud_enhance_service)) {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
-    external_deps +=
-        [ "media_cloud_enhance_service:media_cloud_enhance_client" ]
   }
 
   if (ability_runtime_graphics) {

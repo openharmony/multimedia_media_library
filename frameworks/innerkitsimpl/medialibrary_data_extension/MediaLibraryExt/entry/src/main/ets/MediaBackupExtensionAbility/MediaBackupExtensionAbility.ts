@@ -20,15 +20,18 @@ import mediabackup from '@ohos.multimedia.mediabackup';
 
 const TAG = 'MediaBackupExtAbility';
 
-const documentPath = '/storage/media/local/files/Docs/Documents';
 const galleryAppName = 'com.huawei.photos';
 const mediaAppName = 'com.android.providers.media.module';
 
 const UPGRADE_RESTORE : number = 0;
 const DUAL_FRAME_CLONE_RESTORE : number = 1;
 const CLONE_RESTORE : number = 2;
+const I_PHONE_CLONE_RESTORE : number = 3;
+const OTHERS_PHONE_CLONE_RESTORE : number = 4;
 
 const UPGRADE_NAME = '0.0.0.0';
+const I_PHONE_FRAME_CLONE_NAME = '99.99.99.997';
+const OTHERS_PHONE_FRAME_CLONE_NAME = '99.99.99.998';
 const DUAL_FRAME_CLONE_NAME = '99.99.99.999';
 const STAT_KEY_RESULT_INFO = 'resultInfo';
 const STAT_KEY_TYPE = 'type';
@@ -41,14 +44,24 @@ const STAT_KEY_DUPLICATE_COUNT = 'duplicateCount';
 const STAT_KEY_FAILED_COUNT = 'failedCount';
 const STAT_KEY_DETAILS = 'details';
 const STAT_KEY_NUMBER = 'number';
+const STAT_KEY_PROGRESS_INFO = 'progressInfo';
+const STAT_KEY_NAME = 'name';
+const STAT_KEY_PROCESSED = 'processed';
+const STAT_KEY_TOTAL = 'total';
+const STAT_KEY_IS_PERCENTAGE = 'isPercentage';
 const STAT_VALUE_ERROR_INFO = 'ErrorInfo';
 const STAT_VALUE_COUNT_INFO = 'CountInfo';
 const STAT_TYPE_PHOTO = 'photo';
 const STAT_TYPE_VIDEO = 'video';
 const STAT_TYPE_AUDIO = 'audio';
+const STAT_TYPE_PHOTO_VIDEO = 'photo&video';
+const STAT_TYPE_UPDATE = 'update';
+const STAT_TYPE_OTHER = 'other';
+const STAT_TYPE_ONGOING = 'ongoing';
 const STAT_TYPES = [STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO];
 const RESULT_INFO_NUM = 2;
 const JS_TYPE_STRING = 'string';
+const JS_TYPE_BOOLEAN = 'boolean';
 const DEFAULT_RESTORE_EX_INFO = {
   'resultInfo':
   [
@@ -100,6 +113,39 @@ const DEFAULT_BACKUP_INFO = [
     'number': 0
   }
 ];
+const DEFAULT_PROGRESS_INFO = {
+  'progressInfo': [
+  {
+    'name': STAT_TYPE_PHOTO_VIDEO,
+    'processed': 0,
+    'total': 0,
+    'isPercentage': false
+  },
+  {
+    'name': STAT_TYPE_AUDIO,
+    'processed': 0,
+    'total': 0,
+    'isPercentage': false
+  },
+  {
+    'name': STAT_TYPE_UPDATE,
+    'processed': 0,
+    'total': 0,
+    'isPercentage': false
+  },
+  {
+    'name': STAT_TYPE_OTHER,
+    'processed': 0,
+    'total': 0,
+    'isPercentage': false
+  },
+  {
+    'name': STAT_TYPE_ONGOING,
+    'processed': 0,
+    'total': 0,
+    'isPercentage': false
+  }]
+};
 
 export default class MediaBackupExtAbility extends BackupExtensionAbility {
   async onBackup() : Promise<void> {
@@ -110,13 +156,8 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.log(TAG, `onRestore ok ${JSON.stringify(bundleVersion)}`);
     console.time(TAG + ' RESTORE');
     const backupDir = this.context.backupDir + 'restore';
-    if (bundleVersion.name.startsWith(UPGRADE_NAME)) {
-      await mediabackup.startRestore(UPGRADE_RESTORE, galleryAppName, mediaAppName, backupDir);
-    } else if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
-      await mediabackup.startRestore(DUAL_FRAME_CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
-    } else {
-      await mediabackup.startRestore(CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
-    }
+    let sceneCode: number = this.getSceneCode(bundleVersion);
+    await mediabackup.startRestore(this.context, sceneCode, galleryAppName, mediaAppName, backupDir);
     console.timeEnd(TAG + ' RESTORE');
   }
 
@@ -124,16 +165,10 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.log(TAG, `onRestoreEx ok ${JSON.stringify(bundleVersion)}, ${JSON.stringify(bundleInfo)}`);
     console.time(TAG + ' RESTORE EX');
     const backupDir = this.context.backupDir + 'restore';
-    let restoreExResult: string;
-    if (bundleVersion.name.startsWith(UPGRADE_NAME)) {
-      restoreExResult = await mediabackup.startRestoreEx(UPGRADE_RESTORE, galleryAppName, mediaAppName, backupDir);
-    } else if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
-      restoreExResult = await mediabackup.startRestoreEx(DUAL_FRAME_CLONE_RESTORE, galleryAppName, mediaAppName,
-        backupDir);
-    } else {
-      restoreExResult = await mediabackup.startRestoreEx(CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
-    }
-    let restoreExInfo: string = await this.getRestoreExInfo(restoreExResult);
+    let sceneCode: number = this.getSceneCode(bundleVersion);
+    let restoreExResult: string = await mediabackup.startRestoreEx(this.context, sceneCode, galleryAppName, mediaAppName, backupDir,
+      bundleInfo);
+    let restoreExInfo: string = await this.getRestoreExInfo(sceneCode, restoreExResult);
     console.log(TAG, `GET restoreExInfo: ${restoreExInfo}`);
     console.timeEnd(TAG + ' RESTORE EX');
     return restoreExInfo;
@@ -153,10 +188,24 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     return backupInfo;
   }
 
-  private async getRestoreExInfo(restoreExResult: string): Promise<string> {
+  onProcess(): string {
+    console.log(TAG, 'onProcess ok');
+    let progressInfo: string = mediabackup.getProgressInfo();
+    if (progressInfo.length === 0 || !this.isProgressInfoValid(progressInfo)) {
+      console.error(TAG, 'progressInfo is empty or invalid, return default');
+      progressInfo = JSON.stringify(DEFAULT_PROGRESS_INFO);
+    }
+    console.log(TAG, `GET progressInfo: ${progressInfo}`);
+    return progressInfo;
+  }
+
+  private async getRestoreExInfo(sceneCode: number, restoreExResult: string): Promise<string> {
     if (!this.isRestoreExResultValid(restoreExResult)) {
       console.error(TAG, 'restoreEx result is invalid, use default');
       return JSON.stringify(DEFAULT_RESTORE_EX_INFO);
+    }
+    if (sceneCode !== UPGRADE_RESTORE) {
+      return restoreExResult;
     }
     try {
       let jsonObject = JSON.parse(restoreExResult);
@@ -183,7 +232,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       return null;
     }
     let file = await fs.open(detailsPath);
-    console.log(TAG, `${type} details path: ${detailsPath}, fd: ${file.fd}`);
+    console.log(TAG, `${type} details fd: ${file.fd}`);
     return file.fd;
   }
 
@@ -314,5 +363,49 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       return false;
     }
     return true;
+  }
+
+  private isProgressInfoValid(progressInfo: string): boolean {
+    try {
+      let jsonObject = JSON.parse(progressInfo);
+      if (!this.hasKey(jsonObject, STAT_KEY_PROGRESS_INFO)) {
+        return false;
+      }
+      let subProcessInfos = jsonObject[STAT_KEY_PROGRESS_INFO];
+      for (let subProcessInfo of subProcessInfos) {
+        if (!this.isSubProcessInfoValid(subProcessInfo)) {
+          return false;
+        }
+      }
+      return true;
+    } catch (err) {
+      console.error(TAG, `isProgressInfoValid error message: ${err.message}, code: ${err.code}`);
+      return false;
+    }
+  }
+
+  private isSubProcessInfoValid(subProcessInfo: JSON): boolean {
+    if (!this.hasKey(subProcessInfo, STAT_KEY_NAME) || !this.hasKey(subProcessInfo, STAT_KEY_PROCESSED) ||
+      !this.hasKey(subProcessInfo, STAT_KEY_TOTAL) || !this.hasKey(subProcessInfo, STAT_KEY_IS_PERCENTAGE)) {
+      return false;
+    }
+    return !isNaN(subProcessInfo[STAT_KEY_PROCESSED]) && !isNaN(subProcessInfo[STAT_KEY_TOTAL]) &&
+      this.checkType(typeof subProcessInfo[STAT_KEY_IS_PERCENTAGE], JS_TYPE_BOOLEAN);
+  }
+
+  private getSceneCode(bundleVersion: BundleVersion): number {
+    if (bundleVersion.name.startsWith(UPGRADE_NAME)) {
+      return UPGRADE_RESTORE;
+    }
+    if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
+      return DUAL_FRAME_CLONE_RESTORE;
+    }
+    if (bundleVersion.name === OTHERS_PHONE_FRAME_CLONE_NAME && bundleVersion.code === 0) {
+      return OTHERS_PHONE_CLONE_RESTORE;
+    }
+    if (bundleVersion.name === I_PHONE_FRAME_CLONE_NAME && bundleVersion.code === 0) {
+      return I_PHONE_CLONE_RESTORE;
+    }
+    return CLONE_RESTORE;
   }
 }

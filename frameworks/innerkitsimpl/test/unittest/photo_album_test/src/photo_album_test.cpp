@@ -606,31 +606,6 @@ HWTEST_F(PhotoAlbumTest, photoalbum_update_album_004, TestSize.Level0)
 }
 
 /**
- * @tc.name: photoalbum_update_album_005
- * @tc.desc: Update photo album info.
- *           1. Update system album info, no changes shall be made.
- * @tc.type: FUNC
- * @tc.require: issueI6P7NG
- */
-HWTEST_F(PhotoAlbumTest, photoalbum_update_album_005, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("photoalbum_update_album_005 enter");
-
-    // Build empty values
-    DataShareValuesBucket values;
-    values.Put(PhotoAlbumColumns::ALBUM_NAME, "NewAlbumName5");
-    values.Put(PhotoAlbumColumns::ALBUM_COVER_URI, "file://media/asset/10");
-
-    // Try to update favorite system
-    DataSharePredicates predicates;
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::FAVORITE));
-    EXPECT_EQ(UpdatePhotoAlbum(values, predicates), 0);
-    CheckUpdatedSystemAlbum(PhotoAlbumSubType::FAVORITE, "", "");
-    MEDIA_INFO_LOG("photoalbum_update_album_005 end");
-}
-
-/**
  * @tc.name: photoalbum_order_album_006
  * @tc.desc: order photo album.
  *           move current album before reference album

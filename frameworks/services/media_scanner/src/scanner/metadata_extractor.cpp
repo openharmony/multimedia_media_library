@@ -16,6 +16,7 @@
 
 #include "metadata_extractor.h"
 
+#include "directory_ex.h"
 #include <fcntl.h>
 #include "hitrace_meter.h"
 #include "media_exif.h"
@@ -201,13 +202,12 @@ static void ExtractDetailTimeMetadata(unique_ptr<ImageSource>& imageSource, uniq
 
 static void ExtractDateTakenMetadata(unique_ptr<ImageSource>& imageSource, unique_ptr<Metadata>& data)
 {
-    uint32_t err = E_ERR;
     string dateString;
     string timeString;
     int64_t int64Time = 0;
     int32_t offsetTime = 0;
     string offsetString;
-    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL, timeString);
+    uint32_t err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL, timeString);
     if (err == E_OK && !timeString.empty()) {
         err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_OFFSET_TIME_ORIGINAL, offsetString);
         if (err == E_OK && offsetTimeToSeconds(offsetString, offsetTime) == E_OK) {
@@ -248,7 +248,8 @@ static void ExtractDateTakenMetadata(unique_ptr<ImageSource>& imageSource, uniqu
         }
     }
     // use modified time as date taken time when date taken not set
-    data->SetDateTaken(data->GetDateTaken() == 0 ? data->GetFileDateModified() : data->GetDateTaken());
+    data->SetDateTaken((data->GetDateTaken() == 0 || data->GetDateTaken() == data->GetFileDateAdded()) ?
+        data->GetFileDateModified() : data->GetDateTaken());
     MEDIA_DEBUG_LOG("Set date_taken use modified time");
 }
 
@@ -506,11 +507,12 @@ void PopulateExtractedAVLocationMeta(std::shared_ptr<Meta> &meta, std::unique_pt
 static void ParseLivePhotoCoverPosition(std::unique_ptr<Metadata> &data)
 {
     string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(data->GetMovingPhotoImagePath());
-    if (!MediaFileUtils::IsFileExists(extraPath)) {
-        MEDIA_ERR_LOG("file not exists, path:%{private}s", extraPath.c_str());
+    string absExtraPath;
+    if (!PathToRealPath(extraPath, absExtraPath)) {
+        MEDIA_ERR_LOG("file is not real path: %{private}s", extraPath.c_str());
         return;
     }
-    UniqueFd fd(open(extraPath.c_str(), O_RDONLY));
+    UniqueFd fd(open(absExtraPath.c_str(), O_RDONLY));
     uint32_t version{0};
     uint32_t frameIndex{0};
     bool hasCinemagraphInfo{false};

@@ -104,7 +104,7 @@ int32_t SetEdited(int fileId)
 
 string ReadFileContent(const string &filePath)
 {
-    int fileFd = open(filePath.c_str(), O_RDONLY | O_CLOEXEC);
+    int fileFd = open(filePath.c_str(), O_RDONLY);
     if (fileFd == -1) {
         return "";
     }
@@ -339,7 +339,7 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_remove_video_001, Test
     instance.RemoveVideo(videoId, true);
 
     EXPECT_TRUE(PathToRealPath(filePath, absFilePath));
-    EXPECT_NE(!PathToRealPath(tempFilePath, absTempFilePath), true);
+    EXPECT_TRUE(!PathToRealPath(tempFilePath, absTempFilePath));
 
     EXPECT_EQ(ReadFileContent(filePath), BASE_VIDEO_FILE_INNER);
 
@@ -441,11 +441,11 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, callback_on_process_video_done
     callback->OnProcessVideoDone(videoId, ipcFd);
 
     EXPECT_TRUE(PathToRealPath(filePath, absFilePath));
-    EXPECT_NE(!PathToRealPath(tempFilePath, absTempFilePath), true);
+    EXPECT_TRUE(!PathToRealPath(tempFilePath, absTempFilePath));
     EXPECT_EQ(ReadFileContent(filePath), BASE_VIDEO_FILE_INNER);
 
     int32_t quality = GetQuality(fileId);
-    EXPECT_NE(quality, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+    EXPECT_EQ(quality, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
 
     MEDIA_INFO_LOG("callback_on_process_video_done_002 End");
 }
@@ -512,7 +512,7 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, callback_on_error_001, TestSiz
     EXPECT_TRUE(PathToRealPath(filePath, absFilePath));
     EXPECT_TRUE(PathToRealPath(tempFilePath, absTempFilePath));
     EXPECT_EQ(ReadFileContent(filePath), BASE_VIDEO_FILE_INNER);
-    EXPECT_NE(ReadFileContent(tempFilePath), "");
+    EXPECT_EQ(ReadFileContent(tempFilePath), "");
 
     int32_t quality = GetQuality(fileId);
     EXPECT_EQ(quality, static_cast<int32_t>(MultiStagesPhotoQuality::LOW));

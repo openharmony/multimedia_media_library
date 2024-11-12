@@ -69,7 +69,7 @@ private:
     static void SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t size,
         const sptr<PhotoProxy> &photoProxy, int fd);
     static std::string LocationValueToString(double value);
-    
+
     static void SetPhotoIdForAsset(const sptr<PhotoProxy> &photoProxy, DataShare::DataShareValuesBucket &values);
 
     sptr<PhotoProxy> photoProxy_;
@@ -79,6 +79,7 @@ private:
     uint32_t callingUid_ {0};
     int32_t userId_ {0};
     PhotoSubType subType_ = PhotoSubType::DEFAULT;
+    bool isMovingPhotoVideoSaved_ = false;
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
 };
 } // Media

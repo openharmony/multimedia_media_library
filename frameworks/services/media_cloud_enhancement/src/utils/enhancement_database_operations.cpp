@@ -26,6 +26,7 @@
 #include "mimetype_utils.h"
 #include "result_set_utils.h"
 #include "rdb_utils.h"
+#include "photo_album_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -33,6 +34,8 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
+static const int32_t MAX_UPDATE_RETRY_TIMES = 5;
+
 std::shared_ptr<ResultSet> EnhancementDatabaseOperations::Query(MediaLibraryCommand &cmd,
     RdbPredicates &servicePredicates, const vector<string> &columns)
 {
@@ -75,9 +78,16 @@ std::shared_ptr<ResultSet> EnhancementDatabaseOperations::BatchQuery(MediaLibrar
 
 int32_t EnhancementDatabaseOperations::Update(ValuesBucket &rdbValues, AbsRdbPredicates &predicates)
 {
-    int32_t changedRows = MediaLibraryRdbStore::Update(rdbValues, predicates);
+    int32_t changedRows = -1;
+    for (int32_t i = 0; i < MAX_UPDATE_RETRY_TIMES; i++) {
+        changedRows = MediaLibraryRdbStore::Update(rdbValues, predicates);
+        if (changedRows >= 0) {
+            break;
+        }
+        MEDIA_ERR_LOG("Update DB failed! changedRows: %{public}d times: %{public}d", changedRows, i);
+    }
     if (changedRows <= 0) {
-        MEDIA_ERR_LOG("Update DB failed");
+        MEDIA_INFO_LOG("Update DB failed! changedRows: %{public}d", changedRows);
         return E_HAS_DB_ERROR;
     }
     return E_OK;
@@ -95,6 +105,22 @@ static void HandleDateAdded(const int64_t dateAdded, const MediaType type, Value
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
     outValues.PutString(PhotoColumn::PHOTO_DATE_DAY,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
+    outValues.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateAdded);
+}
+
+static void SetOwnerAlbumId(ValuesBucket &assetInfo)
+{
+    RdbPredicates queryPredicates(PhotoAlbumColumns::TABLE);
+    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
+    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT));
+    vector<string> columns = { PhotoAlbumColumns::ALBUM_ID };
+    shared_ptr<ResultSet> resultSet = MediaLibraryRdbStore::Query(queryPredicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query cloud enhancement album id!");
+        return;
+    }
+    int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+    assetInfo.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
 }
 
 int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibraryCommand &cmd,
@@ -139,6 +165,7 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
     assetInfo.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
         static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT));
     assetInfo.PutInt(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, sourceFileId);
+    SetOwnerAlbumId(assetInfo);
     cmd.SetValueBucket(assetInfo);
     cmd.SetTableName(PhotoColumn::PHOTOS_TABLE);
     int64_t outRowId = -1;

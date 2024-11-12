@@ -406,7 +406,7 @@ int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId
 
 void ParseLivePhoto(const std::string& path, const std::unique_ptr<Metadata>& data)
 {
-    if (data->GetFileMimeType() != "image/jpeg") {
+    if (!MediaFileUtils::IsMovingPhotoMimeType(data->GetFileMimeType())) {
         return;
     }
     if (!MovingPhotoFileUtils::IsLivePhoto(path)) {
@@ -431,6 +431,47 @@ void ParseLivePhoto(const std::string& path, const std::unique_ptr<Metadata>& da
         }
         data->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
+}
+
+static void GetFileInfo(const string &path, int64_t &size, int64_t &dateModified)
+{
+    struct stat statInfo {};
+    if (stat(path.c_str(), &statInfo) != E_OK) {
+        MEDIA_ERR_LOG("stat error, path: %{public}s, errno: %{public}d", path.c_str(), errno);
+        return;
+    }
+    size = statInfo.st_size;
+    dateModified = MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim);
+}
+
+static void GetMovingPhotoFileInfo(const string &imagePath, int64_t &movingPhotoSize,
+    int64_t &movingPhotoDateModified)
+{
+    int64_t imageSize = 0;
+    int64_t videoSize = 0;
+    size_t extraDataSize = 0;
+    int64_t imageDateModified = 0;
+    int64_t videoDateModified = 0;
+    string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(imagePath);
+    string extraDataPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(imagePath);
+    GetFileInfo(imagePath, imageSize, imageDateModified);
+    GetFileInfo(videoPath, videoSize, videoDateModified);
+    (void)MediaFileUtils::GetFileSize(extraDataPath, extraDataSize);
+    movingPhotoSize = imageSize + videoSize + static_cast<int64_t>(extraDataSize);
+    movingPhotoDateModified = imageDateModified >= videoDateModified ? imageDateModified : videoDateModified;
+}
+
+static bool IsFileNotChanged(const unique_ptr<Metadata> &data, const struct stat &statInfo)
+{
+    int64_t previousDateModified = data->GetFileDateModified();
+    int64_t previousSize = data->GetFileSize();
+    int64_t currentDateModified = MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim);
+    int64_t currentSize = statInfo.st_size;
+    if (data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+        data->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+        GetMovingPhotoFileInfo(data->GetFilePath(), currentSize, currentDateModified);
+    }
+    return previousDateModified == currentDateModified && previousSize == currentSize;
 }
 
 int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
@@ -463,9 +504,10 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
         data_->SetForAdd(true);
     }
 
+    // file path
+    data_->SetFilePath(path_);
     // may need isPending here
-    if ((data_->GetFileDateModified() == MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim)) &&
-        (data_->GetFileSize() == statInfo.st_size) && (!isForceScan_)) {
+    if (IsFileNotChanged(data_, statInfo) && !isForceScan_) {
         scannedIds_.insert(make_pair(data_->GetTableName(), data_->GetFileId()));
         if (path_.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
             MEDIA_WARN_LOG("no need to scan, date_modified:%{public}ld, size:%{public}ld, pending:%{public}ld",
@@ -475,8 +517,6 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
         return E_SCANNED;
     }
 
-    // file path
-    data_->SetFilePath(path_);
     if (data_->GetFileId() == FILE_ID_DEFAULT) {
         data_->SetFileName(ScannerUtils::GetFileNameFromUri(path_));
     }
