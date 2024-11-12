@@ -450,16 +450,16 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_DeleteOriginImage_test_001, TestSize.Le
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateAstcDateAddedFromKvStore_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateAstcDateTakenFromKvStore_test_001, TestSize.Level0)
 {
     ThumbnailData data;
-    const string testStr = "medialib_UpdateAstcDateAddedFromKvStore_test_001";
-    data.dateAdded = testStr;
+    const string testStr = "medialib_UpdateAstcDateTakenFromKvStore_test_001";
+    data.dateTaken = testStr;
     ThumbRdbOpt opts = {
-        .dateAdded = testStr,
+        .dateTaken = testStr,
         .row = testStr,
     };
-    bool ret = ThumbnailUtils::UpdateAstcDateAddedFromKvStore(opts, data);
+    bool ret = ThumbnailUtils::UpdateAstcDateTakenFromKvStore(opts, data);
     EXPECT_EQ(ret, false);
 }
 
@@ -545,18 +545,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Leve
     data.source = make_shared<PixelMap>();
     ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, true);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_setSource_test_001, TestSize.Level0)
-{
-    int32_t ret = ThumbnailUtils::SetSource(nullptr, "");
-    EXPECT_EQ(ret, E_ERR);
-    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
-    ret = ThumbnailUtils::SetSource(avMetadataHelper, "");
-    EXPECT_EQ(ret, E_ERR);
-    string path = "//storage/cloud/files";
-    ret = ThumbnailUtils::SetSource(avMetadataHelper, path);
-    EXPECT_EQ(ret, E_ERR);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_uTCTimeSeconds_test_001, TestSize.Level0)

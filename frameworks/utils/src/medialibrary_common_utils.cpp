@@ -23,6 +23,7 @@
 #include "media_device_column.h"
 #include "media_directory_type_column.h"
 #include "media_log.h"
+#include "media_old_photos_column.h"
 #include "media_smart_album_column.h"
 #include "openssl/sha.h"
 #include "vision_aesthetics_score_column.h"
@@ -166,6 +167,8 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     PhotoColumn::PHOTO_LCD_VISIT_TIME,
     PhotoColumn::PHOTO_CE_AVAILABLE,
     PhotoColumn::PHOTO_DETAIL_TIME,
+    TabOldPhotosColumn::MEDIA_OLD_ID,
+    TabOldPhotosColumn::MEDIA_OLD_FILE_PATH,
 
     // Photos table columns
     COMPAT_HIDDEN,

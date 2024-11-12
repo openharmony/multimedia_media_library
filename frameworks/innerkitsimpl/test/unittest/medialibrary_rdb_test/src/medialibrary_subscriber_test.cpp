@@ -18,6 +18,7 @@
 #include "medialibrary_object_utils.h"
 #define private public
 #include "medialibrary_subscriber.h"
+#include "moving_photo_processor.h"
 #undef private
 
 using namespace std;
@@ -99,6 +100,14 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_005, TestSize.Level0)
     medialibrarySubscriber.StopBackgroundOperation();
     medialibrarySubscriber.AbortCommonEvent();
     sleep(SLEEP_TIME);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_MovingPhotoProcessor_test_001, TestSize.Level0)
+{
+    MovingPhotoProcessor::StartProcess();
+    EXPECT_EQ(MovingPhotoProcessor::isProcessing_, false); // no moving photo to process
+    MovingPhotoProcessor::StopProcess();
+    EXPECT_EQ(MovingPhotoProcessor::isProcessing_, false);
 }
 } // namespace Media
 } // namespace OHOS

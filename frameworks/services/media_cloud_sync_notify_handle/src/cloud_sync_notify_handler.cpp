@@ -15,6 +15,7 @@
 
 #include "cloud_sync_notify_handler.h"
 
+#include "medialibrary_album_fusion_utils.h"
 #include "notify_responsibility_chain_factory.h"
 #include "thumbnail_service.h"
 #include "medialibrary_rdb_utils.h"
@@ -39,7 +40,7 @@ static bool IsCloudInsertTaskPriorityHigh()
 
 static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
 {
-    if (cloudNotifyInfo.empty() || cloudNotifyInfo == "0") {
+    if (cloudNotifyInfo.empty()) {
         return false;
     }
     for (char const& ch : cloudNotifyInfo) {
@@ -64,7 +65,7 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
             continue;
         }
         string idString = uriString.substr(pos + 1);
-        if (!IsCloudNotifyInfoValid(idString)) {
+        if (idString.compare(INVALID_ZERO_ID) == 0 || !IsCloudNotifyInfoValid(idString)) {
             MEDIA_WARN_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
             continue;
         }
@@ -77,23 +78,23 @@ void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
 {
     for (auto &uri : uris) {
         string uriString = uri.ToString();
-        auto dateAddedPos = uriString.rfind('/');
-        if (dateAddedPos == string::npos) {
+        auto dateTakenPos = uriString.rfind('/');
+        if (dateTakenPos == string::npos) {
             continue;
         }
-        auto fileIdPos = uriString.rfind('/', dateAddedPos - 1);
+        auto fileIdPos = uriString.rfind('/', dateTakenPos - 1);
         if (fileIdPos == string::npos) {
             continue;
         }
 
-        string dateAdded = uriString.substr(dateAddedPos + 1);
-        string fileId = uriString.substr(fileIdPos + 1, dateAddedPos - fileIdPos - 1);
-        if (!IsCloudNotifyInfoValid(dateAdded) || !IsCloudNotifyInfoValid(fileId)) {
+        string dateTaken = uriString.substr(dateTakenPos + 1);
+        string fileId = uriString.substr(fileIdPos + 1, dateTakenPos - fileIdPos - 1);
+        if (!IsCloudNotifyInfoValid(dateTaken) || !IsCloudNotifyInfoValid(fileId)) {
             MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
             continue;
         }
 
-        ThumbnailService::GetInstance()->DeleteAstcWithFileIdAndDateAdded(fileId, dateAdded);
+        ThumbnailService::GetInstance()->DeleteAstcWithFileIdAndDateTaken(fileId, dateTaken);
     }
 }
 
@@ -101,29 +102,29 @@ void CloudSyncNotifyHandler::HandleTimeUpdateEvent(const std::list<Uri> &uris)
 {
     for (auto &uri : uris) {
         string uriString = uri.ToString();
-        auto newDateAddedPos = uriString.rfind('/');
-        if (newDateAddedPos == string::npos) {
+        auto newDateTakenPos = uriString.rfind('/');
+        if (newDateTakenPos == string::npos) {
             continue;
         }
-        auto formerDateAddedPos = uriString.rfind('/', newDateAddedPos - 1);
-        if (formerDateAddedPos == string::npos) {
+        auto formerDateTakenPos = uriString.rfind('/', newDateTakenPos - 1);
+        if (formerDateTakenPos == string::npos) {
             continue;
         }
-        auto fileIdPos = uriString.rfind('/', formerDateAddedPos - 1);
+        auto fileIdPos = uriString.rfind('/', formerDateTakenPos - 1);
         if (fileIdPos == string::npos) {
             continue;
         }
 
-        string newDateAdded = uriString.substr(newDateAddedPos + 1);
-        string formerDateAdded = uriString.substr(formerDateAddedPos + 1, newDateAddedPos - formerDateAddedPos - 1);
-        string fileId = uriString.substr(fileIdPos + 1, formerDateAddedPos - fileIdPos - 1);
-        if (!IsCloudNotifyInfoValid(newDateAdded) || !IsCloudNotifyInfoValid(formerDateAdded) ||
+        string newDateTaken = uriString.substr(newDateTakenPos + 1);
+        string formerDateTaken = uriString.substr(formerDateTakenPos + 1, newDateTakenPos - formerDateTakenPos - 1);
+        string fileId = uriString.substr(fileIdPos + 1, formerDateTakenPos - fileIdPos - 1);
+        if (!IsCloudNotifyInfoValid(newDateTaken) || !IsCloudNotifyInfoValid(formerDateTaken) ||
             !IsCloudNotifyInfoValid(fileId)) {
             MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
             continue;
         }
 
-        ThumbnailService::GetInstance()->UpdateAstcWithNewDateAdded(fileId, newDateAdded, formerDateAdded);
+        ThumbnailService::GetInstance()->UpdateAstcWithNewDateTaken(fileId, newDateTaken, formerDateTaken);
     }
 }
 
@@ -168,6 +169,12 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
 
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos) {
         ThumbnailObserverOnChange(notifyInfo_.uris, notifyInfo_.type);
+    }
+
+    if (uriString.find("file://cloudsync/Photo/RebuildCloudData/") != string::npos) {
+        MEDIA_INFO_LOG("Get cloud rebuild cloud data notification : %{public}s",
+            "file://cloudsync/Photo/RebuildCloudData/");
+        MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
     }
 
     shared_ptr<BaseHandler> chain = nullptr;

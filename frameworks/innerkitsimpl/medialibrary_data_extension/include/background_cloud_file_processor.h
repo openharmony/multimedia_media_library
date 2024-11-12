@@ -100,6 +100,7 @@ private:
     static bool isUpdating_;
     static int32_t currentUpdateOffset_;
     static int32_t currentRetryCount_;
+    static bool isDownload_;
 };
 } // namespace Media
 } // namespace OHOS

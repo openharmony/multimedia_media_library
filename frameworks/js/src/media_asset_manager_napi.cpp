@@ -916,29 +916,23 @@ static string PhotoQualityToString(MultiStagesCapturePhotoStatus photoQuality)
 static napi_value GetInfoMapNapiValue(napi_env env, AssetHandler* assetHandler)
 {
     napi_status status;
-    napi_value global;
-    status = napi_get_global(env, &global);
-    CHECK_COND_RET(status == napi_ok, nullptr, "Failed to get global object, napi status: %{public}d",
-        static_cast<int>(status));
+    napi_value mapNapiValue {nullptr};
+    status = napi_create_map(env, &mapNapiValue);
+    CHECK_COND_RET(status == napi_ok && mapNapiValue != nullptr, nullptr,
+        "Failed to create map napi value, napi status: %{public}d", static_cast<int>(status));
 
-    napi_value mapConstructor;
-    status = napi_get_named_property(env, global, "Map", &mapConstructor);
-    CHECK_COND_RET(status == napi_ok, nullptr, "Failed to get map constructor, napi status: %{public}d",
-        static_cast<int>(status));
-
-    napi_value mapNapiValue;
-    status = napi_new_instance(env, mapConstructor, 0, NULL, &mapNapiValue);
-    CHECK_COND_RET(status == napi_ok, nullptr, "Failed to create map napi value, napi status: %{public}d",
-        static_cast<int>(status));
-
-    napi_value qualityInfo;
+    napi_value qualityInfo {nullptr};
     status = napi_create_string_utf8(env, PhotoQualityToString(assetHandler->photoQuality).c_str(),
         NAPI_AUTO_LENGTH, &qualityInfo);
-    CHECK_COND_RET(status == napi_ok, nullptr, "Failed to create quality string, napi status: %{public}d",
-        static_cast<int>(status));
+    CHECK_COND_RET(status == napi_ok && qualityInfo != nullptr, nullptr,
+        "Failed to create quality string, napi status: %{public}d", static_cast<int>(status));
 
     status = napi_set_named_property(env, mapNapiValue, "quality", qualityInfo);
-    CHECK_COND_RET(status == napi_ok, nullptr, "Failed to set quality key-value, napi status: %{public}d",
+    CHECK_COND_RET(status == napi_ok, nullptr, "Failed to set quality property, napi status: %{public}d",
+        static_cast<int>(status));
+
+    status = napi_map_set_named_property(env, mapNapiValue, "quality", qualityInfo);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Failed to set quality map key-value, napi status: %{public}d",
         static_cast<int>(status));
 
     return mapNapiValue;
@@ -968,6 +962,28 @@ static napi_value GetNapiValueOfMedia(napi_env env, const std::shared_ptr<NapiMe
         NAPI_ERR_LOG("source mode type invalid");
     }
     return napiValueOfMedia;
+}
+
+static void SavePicture(const std::shared_ptr<NapiMediaAssetDataHandler>& dataHandler)
+{
+    if (dataHandler->GetReturnDataType() != ReturnDataType::TYPE_ARRAY_BUFFER &&
+        dataHandler->GetReturnDataType() != ReturnDataType::TYPE_IMAGE_SOURCE) {
+        return;
+    }
+    string fileUri = dataHandler->GetRequestUri();
+    std::string uriStr = PATH_SAVE_PICTURE;
+    std::string tempStr = fileUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length());
+    std::size_t index = tempStr.find("/");
+    std::string fileId = tempStr.substr(0, index);
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, fileId);
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, IMAGE_FILE_TYPE, "1");
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, "uri", fileUri);
+    Uri uri(uriStr);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
+    DataShare::DataSharePredicates predicate;
+    UserFileClient::Update(uri, predicate, valuesBucket);
 }
 
 void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *context, void *data)
@@ -1001,6 +1017,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         }
     }
     bool isPicture = true;
+    SavePicture(dataHandler);
     napi_value napiValueOfMedia = GetNapiValueOfMedia(env, dataHandler, isPicture);
     if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
         if (isPicture) {

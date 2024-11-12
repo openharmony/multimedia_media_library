@@ -123,7 +123,7 @@ static off_t GetFileSize(const string& path)
 
 static int32_t WriteContentTofile(const UniqueFd& destFd, const UniqueFd& srcFd)
 {
-    const uint32_t BUFFER_LENGTH = 4096;
+    const uint32_t BUFFER_LENGTH = 16 * 1024; // 16KB
     if (lseek(srcFd.Get(), 0, SEEK_SET) == E_ERR) {
         MEDIA_ERR_LOG("failed to lseek file, errno: %{public}d", errno);
         return E_ERR;
@@ -147,8 +147,9 @@ static int32_t WriteContentTofile(const UniqueFd& destFd, const UniqueFd& srcFd)
 static int32_t AddStringToFile(const UniqueFd& destFd, const string& temp)
 {
     ssize_t ret = write(destFd.Get(), temp.c_str(), temp.size());
-    if (ret < 0 || ret != temp.size()) {
-        MEDIA_ERR_LOG("failed to write file, errno: %{public}d, ret: %{public}" PRId64, errno, int64_t(ret));
+    if (ret < 0 || static_cast<size_t>(ret) != temp.size()) {
+        MEDIA_ERR_LOG("failed to write file, errno: %{public}d, ret: %{public}" PRId64, errno,
+            static_cast<int64_t>(ret));
         return E_ERR;
     }
     return E_OK;
@@ -161,7 +162,7 @@ static string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off
         MEDIA_ERR_LOG("failed to lseek extra file errno: %{public}d", errno);
         return "";
     }
-    char* buffer = new char[needSize + 1];
+    char* buffer = new (std::nothrow) char[needSize + 1];
     if (buffer == nullptr) {
         MEDIA_ERR_LOG("failed to allocate buffer");
         return "";
@@ -349,12 +350,18 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         livePhotoPath = cachePath;
         return E_OK;
     }
-    UniqueFd imageFd(open(imagePath.c_str(), O_RDONLY));
+    string absImagePath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(imagePath, absImagePath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", imagePath.c_str(), errno);
+    UniqueFd imageFd(open(absImagePath.c_str(), O_RDONLY));
     if (imageFd.Get() == E_ERR) {
         MEDIA_ERR_LOG("failed to open image file");
         return E_ERR;
     }
-    UniqueFd videoFd(open(videoPath.c_str(), O_RDONLY));
+    string absVideoPath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(videoPath, absVideoPath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", videoPath.c_str(), errno);
+    UniqueFd videoFd(open(absVideoPath.c_str(), O_RDONLY));
     if (videoFd.Get() == E_ERR) {
         MEDIA_ERR_LOG("failed to open video file");
         return E_ERR;
@@ -363,7 +370,10 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         MEDIA_ERR_LOG("Failed to create file, path:%{private}s", cachePath.c_str());
         return E_ERR;
     }
-    UniqueFd livePhotoFd(open(cachePath.c_str(), O_WRONLY | O_TRUNC));
+    string absCachePath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(cachePath, absCachePath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", cachePath.c_str(), errno);
+    UniqueFd livePhotoFd(open(absCachePath.c_str(), O_WRONLY | O_TRUNC));
     if (livePhotoFd.Get() == E_ERR) {
         MEDIA_ERR_LOG("failed to open live photo file");
         return E_ERR;
@@ -372,7 +382,7 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         MEDIA_ERR_LOG("failed to MergeFile file");
         return E_ERR;
     }
-    livePhotoPath = cachePath;
+    livePhotoPath = absCachePath;
     return E_OK;
 }
 
@@ -394,24 +404,32 @@ int32_t MovingPhotoFileUtils::ConvertToSourceLivePhoto(const string& movingPhoto
         MEDIA_INFO_LOG("source live photo exists: %{private}s", sourceCachePath.c_str());
         return E_OK;
     }
-
-    UniqueFd imageFd(open(sourceImagePath.c_str(), O_RDONLY));
+    string absSourceImagePath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(sourceImagePath, absSourceImagePath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", sourceImagePath.c_str(), errno);
+    UniqueFd imageFd(open(absSourceImagePath.c_str(), O_RDONLY));
     CHECK_AND_RETURN_RET_LOG(imageFd.Get() >= 0, E_HAS_FS_ERROR,
         "Failed to open source image:%{private}s, errno:%{public}d", sourceImagePath.c_str(), errno);
-    UniqueFd videoFd(open(sourceVideoPath.c_str(), O_RDONLY));
+    string absSourceVideoPath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(sourceVideoPath, absSourceVideoPath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", sourceVideoPath.c_str(), errno);
+    UniqueFd videoFd(open(absSourceVideoPath.c_str(), O_RDONLY));
     CHECK_AND_RETURN_RET_LOG(videoFd.Get() >= 0, E_HAS_FS_ERROR,
         "Failed to open source video:%{private}s, errno:%{public}d", sourceVideoPath.c_str(), errno);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateAsset(sourceCachePath) == E_OK, E_HAS_FS_ERROR,
         "Failed to create source live photo:%{private}s, errno:%{public}d", sourceCachePath.c_str(), errno);
-    UniqueFd livePhotoFd(open(sourceCachePath.c_str(), O_WRONLY | O_TRUNC));
+    string absSourceCachePath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(sourceCachePath, absSourceCachePath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", sourceCachePath.c_str(), errno);
+    UniqueFd livePhotoFd(open(absSourceCachePath.c_str(), O_WRONLY | O_TRUNC));
     CHECK_AND_RETURN_RET_LOG(livePhotoFd.Get() >= 0, E_HAS_FS_ERROR,
-        "Failed to open source live photo:%{private}s, errno:%{public}d", sourceCachePath.c_str(), errno);
+        "Failed to open source live photo:%{private}s, errno:%{public}d", absSourceCachePath.c_str(), errno);
 
     if (MergeFile(imageFd, videoFd, livePhotoFd, extraDataPath, 0) != E_OK) {
         MEDIA_ERR_LOG("Failed to merge file of sourve live photo");
         return E_ERR;
     }
-    sourceLivePhotoPath = sourceCachePath;
+    sourceLivePhotoPath = absSourceCachePath;
     return E_OK;
 }
 
@@ -537,8 +555,7 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
         return E_HAS_FS_ERROR;
     }
     CHECK_AND_RETURN_RET_LOG(livePhotoPath.compare(movingPhotoVideoPath) != 0 &&
-        livePhotoPath.compare(extraDataPath) != 0, E_INVALID_VALUES,
-        "Failed to check dest path of moving photo");
+        livePhotoPath.compare(extraDataPath) != 0, E_INVALID_VALUES, "Failed to check dest path");
     UniqueFd livePhotoFd(open(absLivePhotoPath.c_str(), O_RDONLY));
     CHECK_AND_RETURN_RET_LOG(livePhotoFd.Get() >= 0, E_HAS_FS_ERROR,
         "Failed to open live photo:%{private}s, errno:%{public}d", absLivePhotoPath.c_str(), errno);
@@ -549,11 +566,12 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
     int64_t totalSize = st.st_size;
     CHECK_AND_RETURN_RET_LOG(totalSize > MIN_STANDARD_SIZE, E_INVALID_LIVE_PHOTO,
         "Failed to check live photo, total size is %{public}" PRId64, totalSize);
-    char liveTag[LIVE_TAG_LEN + 1];
+    char liveTag[LIVE_TAG_LEN + 1] = {0};
     CHECK_AND_RETURN_RET_LOG(lseek(livePhotoFd.Get(), -LIVE_TAG_LEN, SEEK_END) != -1, E_HAS_FS_ERROR,
         "Failed to lseek live tag, errno:%{public}d", errno);
     CHECK_AND_RETURN_RET_LOG(read(livePhotoFd.Get(), liveTag, LIVE_TAG_LEN) != -1, E_HAS_FS_ERROR,
         "Failed to read live tag, errno:%{public}d", errno);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::StartsWith(liveTag, LIVE_TAG), E_INVALID_VALUES, "Invalid live photo");
 
     int64_t extraDataSize = 0;
     int32_t err = GetExtraDataSize(livePhotoFd, extraDataSize);

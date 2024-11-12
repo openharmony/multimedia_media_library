@@ -29,9 +29,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <unordered_map>
+#include <utime.h>
 
 #include "avmetadatahelper.h"
-#include "el5_filekey_manager_kit.h"
 #include "directory_ex.h"
 #include "hmdfs.h"
 #include "ipc_skeleton.h"
@@ -166,6 +166,60 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIM
     { "text/markdown", { "md", "markdown" } },
     { "text/x-java", { "java" } },
     { "text/x-python", { "py" } }
+};
+
+static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_EXTRA_MIME_TYPE_MAP = {
+    { "image/ief", { "ief" } },
+    { "image/jp2", { "jp2", "jpg2" } },
+    { "image/ipm", { "ipm" } },
+    { "image/ipx", { "jpx", "jpf" } },
+    { "image/pcx", { "pcx" } },
+    { "image/svg+xml", { "svgz" } },
+    { "image/tiff", { "tiff", "tif" } },
+    { "image/vnd.divu", { "djvu", "djv" } },
+    { "image/vnd.wap.wbmp", { "wbmp" } },
+    { "image/x-canon-cr2", { "cr2" } },
+    { "image/x-canon-crw", { "crw" } },
+    { "image/x-cmu-raster", { "ras" } },
+    { "image/x-coreldraw", { "cdr" } },
+    { "image/x-coreldrawpattern", { "pat" } },
+    { "image/x-coreldrawtemplate", { "cdt" } },
+    { "image/x-corelphotopaint", { "cpt" } },
+    { "image/x-epson-erf", { "erf" } },
+    { "image/x-jg", { "art" } },
+    { "image/x-jng", { "jng" } },
+    { "image/x-nikon-nef", { "nef" } },
+    { "image/x-olvmpus-orf", { "orf" } },
+    { "image/x-photoshop", { "psd" } },
+    { "image/x-portable-anymap", { "pnm" } },
+    { "image/x-portable-bitmap", { "pbm" } },
+    { "image/x-portable-graymap", { "pgm" } },
+    { "image/x-portable-pixmap", { "ppm" } },
+    { "image/x-rgb", { "rgb" } },
+    { "image/x-xbitmap", { "xbm" } },
+    { "image/x-xpixmap", { "xpm" } },
+    { "image/x-xwindowdump", { "xwd" } },
+    { "video/avi", { "avi" } },
+    { "video/x-pn-realvideo", { "rmvb" } },
+    { "video/annodex", { "axv" } },
+    { "video/dl", { "dl" } },
+    { "video/dv", { "dif" } },
+    { "video/fli", { "fli" } },
+    { "video/gl", { "gl" } },
+    { "video/mpeg", { "mpe" } },
+    { "video/quicktime", { "qt" } },
+    { "video/ogg", { "ogv" } },
+    { "video/vnd.mpegurl", { "mxu" } },
+    { "video/x-flv", { "flv" } },
+    { "video/x-la-asf", { "lsf",  "lsx" } },
+    { "video/x-mng", { "mng" } },
+    { "video/x-ms-asf", { "asf", "asx" } },
+    { "video/x-ms-wm", { "wm" } },
+    { "video/x-ms-wmv", { "wmv" } },
+    { "video/x-ms-wmx", { "wmx" } },
+    { "video/x-ms-wvx", { "wvx" } },
+    { "video/x-sgi-movie", { "movie" } },
+    { "video/x-matroska", { "mpv" } }
 };
 
 int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, struct FTW *ftwbuf)
@@ -525,7 +579,7 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
         return errCode;
     }
     if (absFilePath.empty()) {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path%{private}s %{public}d",
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path:%{public}s %{public}d",
                       filePath.c_str(), errno);
         return errCode;
     }
@@ -558,17 +612,6 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
     close(dest);
 
     return errCode;
-}
-
-bool MediaFileUtils::SetEPolicy()
-{
-    MEDIA_INFO_LOG("SetEPolicy for directory");
-    int ret = Security::AccessToken::El5FilekeyManagerKit::SetFilePathPolicy();
-    if (ret != 0) {
-        MEDIA_ERR_LOG("SetEPolicy fail of %{public}d", ret);
-        return false;
-    }
-    return true;
 }
 
 void MediaFileUtils::SetDeletionRecord(int fd, const string &fileName)
@@ -862,6 +905,21 @@ string MediaFileUtils::GetHighlightPath(const string &uri)
     return path;
 }
 
+string MediaFileUtils::GetHighlightVideoPath(const string &uri)
+{
+    int prefixLen = 0;
+    string uriPrefix = "datashare:///media";
+    if (uri.find(uriPrefix) != string::npos) {
+        prefixLen = static_cast<int>(uriPrefix.length());
+    } else if (uri.find(ML_FILE_URI_PREFIX) != string::npos) {
+        prefixLen = static_cast<int>(ML_FILE_URI_PREFIX.length());
+    } else {
+        return "";
+    }
+    string path = "/storage/cloud/files" + uri.substr(prefixLen);
+    return path;
+}
+
 void MediaFileUtils::FormatRelativePath(string &relativePath)
 {
     if (relativePath.empty()) {
@@ -1061,6 +1119,17 @@ MediaType MediaFileUtils::GetMediaType(const string &filePath)
 
     string extention = GetExtensionFromPath(filePath);
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extention, MEDIA_MIME_TYPE_MAP);
+    return MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
+}
+
+MediaType MediaFileUtils::GetMediaTypeNotSupported(const string &filePath)
+{
+    if (filePath.empty()) {
+        return MEDIA_TYPE_ALL;
+    }
+
+    string extention = GetExtensionFromPath(filePath);
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extention, MEDIA_EXTRA_MIME_TYPE_MAP);
     return MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
 }
 
@@ -1663,9 +1732,13 @@ string MediaFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
 
 bool MediaFileUtils::CheckMovingPhotoExtension(const string &extension)
 {
-    // image of moving photo must be image/jpeg or image/heif
-    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP);
-    return mimeType == "image/jpeg" || mimeType == "image/heif";
+    return IsMovingPhotoMimeType(MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP));
+}
+
+bool MediaFileUtils::IsMovingPhotoMimeType(const string &mimeType)
+{
+    // image of moving photo must be image/jpeg, image/heif or image/heic
+    return mimeType == "image/jpeg" || mimeType == "image/heif" || mimeType == "image/heic";
 }
 
 bool MediaFileUtils::CheckMovingPhotoVideoExtension(const string &extension)
@@ -1819,5 +1892,48 @@ void MediaFileUtils::CheckDirStatus(const std::unordered_set<std::string> &dirCh
         return;
     }
     PrintStatInformation(dir);
+}
+
+int32_t MediaFileUtils::CreateDirectoryAndCopyFiles(const std::string &srcDir, const std::string &dstDir)
+{
+    if (!MediaFileUtils::IsFileExists(srcDir)) {
+        MEDIA_WARN_LOG("%{public}s doesn't exist, skip.", srcDir.c_str());
+        return E_OK;
+    }
+    if (!MediaFileUtils::IsDirectory(srcDir)) {
+        MEDIA_WARN_LOG("%{public}s is not an directory, skip.", srcDir.c_str());
+        return E_OK;
+    }
+    if (!MediaFileUtils::CreateDirectory(dstDir)) {
+        MEDIA_ERR_LOG("Create dstDir %{public}s failed", dstDir.c_str());
+        return E_FAIL;
+    }
+    for (const auto &dirEntry : std::filesystem::directory_iterator{srcDir}) {
+        std::string srcFilePath = dirEntry.path();
+        std::string tmpFilePath = srcFilePath;
+        std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
+        if (!MediaFileUtils::CopyFileUtil(srcFilePath, dstFilePath)) {
+            MEDIA_ERR_LOG("Copy file from %{public}s to %{public}s failed.",
+                srcFilePath.c_str(),
+                dstFilePath.c_str());
+            return E_FAIL;
+        }
+    }
+    return E_OK;
+}
+
+void MediaFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
+{
+    if (modifiedTime <= 0) {
+        MEDIA_ERR_LOG("ModifyTime error!");
+        return;
+    }
+    struct utimbuf buf;
+    buf.actime = modifiedTime; // second
+    buf.modtime = modifiedTime; // second
+    int ret = utime(path.c_str(), &buf);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Modify file failed: %{public}d", ret);
+    }
 }
 } // namespace OHOS::Media

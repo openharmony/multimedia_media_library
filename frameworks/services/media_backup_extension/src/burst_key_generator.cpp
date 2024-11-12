@@ -12,15 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "burst_key_generator.h"
- 
+
 #include <uuid.h>
- 
+#include <algorithm>
+#include <sstream>
+
 #include "media_log.h"
- 
-namespace OHOS {
-namespace Media {
+
+namespace OHOS::Media {
 /**
  * @brief find prefix contains "_BURST" of fileInfo.title
  *
@@ -29,13 +30,15 @@ namespace Media {
  */
 std::string BurstKeyGenerator::FindTitlePrefix(const FileInfo &fileInfo)
 {
-    auto suffixIndex = fileInfo.title.find(TITLE_KEY_WORDS_OF_BURST);
-    if (suffixIndex == std::string::npos) {
+    std::string displayName = fileInfo.displayName;
+    auto pos = displayName.find(this->TITLE_KEY_WORDS_OF_BURST);
+    if (pos == std::string::npos) {
+        MEDIA_ERR_LOG("Media_Restore: cannot find _BURST. Object: %{public}s", this->ToString(fileInfo).c_str());
         return "";
     }
-    return fileInfo.title.substr(0, suffixIndex + TITLE_KEY_WORDS_OF_BURST.size());
+    return displayName.substr(0, std::min<int32_t>(pos, DISPLAY_NAME_PREFIX_LENGTH) + 1);
 }
- 
+
 /**
  * @brief find group hash based on fileInfo.relativeBucketId, fileInfo.title and groupIndex
  *
@@ -46,7 +49,7 @@ std::string BurstKeyGenerator::FindGroupHash(const FileInfo &fileInfo)
 {
     return fileInfo.relativeBucketId + "#" + FindTitlePrefix(fileInfo) + "#" + std::to_string(FindGroupIndex(fileInfo));
 }
- 
+
 /**
  * @brief find groupIndex based on objectHash
  *
@@ -68,7 +71,7 @@ int32_t BurstKeyGenerator::FindGroupIndex(const FileInfo &fileInfo)
     objectHashMap_[objectHash] = groupIndex;
     return groupIndex;
 }
- 
+
 /**
  * @brief find objectHash based on fileInfo.relativeBucketId, fileInfo.title and fileInfo.hashCode
  *
@@ -79,7 +82,7 @@ std::string BurstKeyGenerator::FindObjectHash(const FileInfo &fileInfo)
 {
     return fileInfo.relativeBucketId + "#" + FindTitlePrefix(fileInfo) + "#" + fileInfo.hashCode;
 }
- 
+
 /**
  * @brief generate a uuid without '-'
  *
@@ -93,7 +96,7 @@ std::string BurstKeyGenerator::GenerateUuid()
     uuid_unparse(uuid, str);
     return str;
 }
- 
+
 /**
  * @brief find burstKey for burst photo in Album and Recycle-Bin
  *
@@ -106,14 +109,26 @@ std::string BurstKeyGenerator::FindBurstKey(const FileInfo &fileInfo)
     if (fileInfo.isBurst != BURST_COVER_TYPE && fileInfo.isBurst != BURST_MEMBER_TYPE) {
         return "";
     }
+    std::unique_lock<std::mutex> lock(this->burstKeyLock_);
     std::string groupHash = FindGroupHash(fileInfo);
     auto it = groupHashMap_.find(groupHash);
     if (it == groupHashMap_.end()) {
         groupHashMap_[groupHash] = GenerateUuid();
     }
-    MEDIA_INFO_LOG("burst photo, objectHash: %{public}s, groupHash: %{public}s, burstKey: %{public}s",
-        FindObjectHash(fileInfo).c_str(), groupHash.c_str(), groupHashMap_[groupHash].c_str());
+    MEDIA_INFO_LOG("Media_Restore: burst photo, objectHash: %{public}s, groupHash: %{public}s, burstKey: %{public}s",
+        FindObjectHash(fileInfo).c_str(),
+        groupHash.c_str(),
+        groupHashMap_[groupHash].c_str());
     return groupHashMap_[groupHash];
 }
-}  // namespace Media
-}  // namespace OHOS
+
+std::string BurstKeyGenerator::ToString(const FileInfo &fileInfo)
+{
+    std::stringstream ss;
+    ss << "FileInfo[ fileId: " << fileInfo.fileIdOld << ", displayName: " << fileInfo.displayName
+       << ", bundleName: " << fileInfo.bundleName << ", lPath: " << fileInfo.lPath << ", size: " << fileInfo.fileSize
+       << ", fileType: " << fileInfo.fileType << ", oldPath: " << fileInfo.oldPath
+       << ", sourcePath: " << fileInfo.sourcePath << " ]";
+    return ss.str();
+}
+}  // namespace OHOS::Media

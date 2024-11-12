@@ -28,7 +28,8 @@ enum class DirtyTypes : int32_t {
     TYPE_FDIRTY,
     TYPE_DELETED,
     TYPE_RETRY,
-    TYPE_SDIRTY
+    TYPE_SDIRTY,
+    TYPE_COPY
 };
 
 enum class ExtraChangeType : uint32_t {
@@ -100,6 +101,7 @@ public:
     static const std::string MOVING_PHOTO_EFFECT_MODE EXPORT;
     static const std::string PHOTO_HAS_ASTC EXPORT; // This attribute has been replaced by "thumbnail_ready"
     static const std::string PHOTO_THUMBNAIL_READY EXPORT;
+    static const std::string PHOTO_THUMBNAIL_VISIBLE EXPORT;
 
     static const std::string PHOTO_SYNCING EXPORT;
     static const std::string PHOTO_DATE_YEAR EXPORT;
@@ -121,11 +123,13 @@ public:
     static const std::string PHOTO_BURST_COVER_LEVEL EXPORT;
     static const std::string PHOTO_BURST_KEY EXPORT;
     static const std::string PHOTO_ORIGINAL_SUBTYPE EXPORT;
-    static const std::string PHOTO_DETAIL_TIME EXPORT;
+    static const std::string PHOTO_OWNER_ALBUM_ID EXPORT;
+    static const std::string PHOTO_ORIGINAL_ASSET_CLOUD_ID EXPORT;
+    static const std::string PHOTO_SOURCE_PATH EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
-
+    static const std::string PHOTO_DETAIL_TIME EXPORT;
     // index in PhotoTable
     static const std::string PHOTO_CLOUD_ID_INDEX EXPORT;
     static const std::string PHOTO_DATE_YEAR_INDEX EXPORT;
@@ -214,6 +218,7 @@ public:
     static const std::string QUERY_MEDIA_VOLUME EXPORT;
 
     static const std::string HIGHTLIGHT_COVER_URI EXPORT;
+    static const std::string HIGHTLIGHT_URI EXPORT;
 
     EXPORT static bool IsPhotoColumn(const std::string &columnName);
     EXPORT static std::string CheckUploadPhotoColumns();

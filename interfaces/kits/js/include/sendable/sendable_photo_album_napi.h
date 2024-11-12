@@ -77,7 +77,7 @@ private:
     EXPORT static napi_value JSPhotoAccessGetAlbumVideoCount(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSPhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSPhotoAccessGetPhotoAssetsSync(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
     EXPORT static napi_value ConvertToPhotoAlbum(napi_env env, napi_callback_info info);

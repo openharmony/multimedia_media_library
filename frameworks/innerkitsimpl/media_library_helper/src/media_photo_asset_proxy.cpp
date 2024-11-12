@@ -68,7 +68,21 @@ PhotoAssetProxy::PhotoAssetProxy(shared_ptr<DataShare::DataShareHelper> dataShar
         static_cast<int32_t>(cameraShotType), callingUid, userId);
 }
 
-PhotoAssetProxy::~PhotoAssetProxy() {}
+PhotoAssetProxy::~PhotoAssetProxy()
+{
+    if (cameraShotType_ == CameraShotType::MOVING_PHOTO && !isMovingPhotoVideoSaved_) {
+        string uri = PAH_DEGENERATE_MOVING_PHOTO;
+        MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri updateUri(uri);
+        DataShare::DataSharePredicates predicates;
+        DataShare::DataShareValuesBucket valuesBucket;
+        string fileId = MediaFileUtils::GetIdFromUri(uri_);
+        predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+        valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
+        int32_t changeRows = dataShareHelper_->Update(updateUri, predicates, valuesBucket);
+        MEDIA_WARN_LOG("Degenerate moving photo: %{public}s, ret: %{public}d", fileId.c_str(), changeRows);
+    }
+}
 
 // 调用之前，必须先AddPhotoProxy，否则无法获取FileAsset对象
 unique_ptr<FileAsset> PhotoAssetProxy::GetFileAsset()
@@ -167,6 +181,11 @@ static bool isHighQualityPhotoExist(string uri)
 
 void PhotoAssetProxy::SetPhotoIdForAsset(const sptr<PhotoProxy> &photoProxy, DataShare::DataShareValuesBucket &values)
 {
+    if (photoProxy == nullptr) {
+        MEDIA_ERR_LOG("input param invalid, SetPhotoIdForAsset is failed");
+        return;
+    }
+
     if (photoProxy->GetPhotoId() == "") {
         stringstream result;
         string displayName = photoProxy->GetTitle();
@@ -485,6 +504,7 @@ int32_t PhotoAssetProxy::GetVideoFd()
 
 void PhotoAssetProxy::NotifyVideoSaveFinished()
 {
+    isMovingPhotoVideoSaved_ = true;
     if (dataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("datashareHelper is nullptr");
         return;

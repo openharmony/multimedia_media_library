@@ -25,7 +25,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t MEDIA_RDB_VERSION = 108;
+const int32_t MEDIA_RDB_VERSION = 137;
 
 enum {
     VERSION_ADD_CLOUD = 2,
@@ -135,7 +135,15 @@ enum {
     VERSION_ADD_INDEX_FOR_FILEID = 105,
     VERSION_MOVE_AUDIOS = 106,
     VERSION_FIX_PHOTO_SCHPT_MEDIA_TYPE_INDEX = 107,
-    VERSION_ADD_DETAIL_TIME = 108,
+    VERSION_ADD_OWNER_ALBUM_ID = 108,
+    VERSION_ADD_THUMBNAIL_VISIBLE = 130,
+    VERSION_ADD_DETAIL_TIME = 131,
+    VERSION_COMPAT_LIVE_PHOTO = 132,
+    VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM = 133,
+    VERSION_ADD_THUMBNAIL_VISIBLE_FIX = 134,
+    VERSION_ADD_HIGHLIGHT_MAP_TABLES = 135,
+    VERSION_UPDATE_SEARCH_INDEX_TRIGGER_FOR_CLEAN_FLAG = 136,
+    VERSION_CREATE_TAB_OLD_PHOTOS = 137,
 };
 
 enum {
@@ -178,6 +186,7 @@ const std::string ML_URI_NETWORKID_EQUAL = "?networkid=";
 const std::string ML_URI_TIME_ID = "&time_id=";
 const std::string ML_URI_OFFSET = "&offset=";
 const std::string ML_URI_DATE_ADDED = "date_added";
+const std::string ML_URI_DATE_TAKEN = "date_taken";
 const std::string ML_URI_AUTHORITY = "media";
 const std::string ML_DATA_SHARE_SCHEME = "datashare";
 const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "datashare://";
@@ -387,6 +396,11 @@ const std::string OPEN_PRIVATE_LIVE_PHOTO = "open_private_live_photo";
 
 // db sandbox directory
 const std::string MEDIA_DB_DIR = "/data/medialibrary/database";
+
+// slave medialibrary db file path
+const std::string MEDIA_DB_FILE_SLAVE = "/data/storage/el2/database/rdb/media_library_slave.db";
+const std::string MEDIA_DB_FILE_SLAVE_SHM = "/data/storage/el2/database/rdb/media_library_slave.db-shm";
+const std::string MEDIA_DB_FILE_SLAVE_WAL = "/data/storage/el2/database/rdb/media_library_slave.db-wal";
 
 // requestId for generating thumbnail in batches
 const std::string THUMBNAIL_BATCH_GENERATE_REQUEST_ID = "thumbnail_request_id";

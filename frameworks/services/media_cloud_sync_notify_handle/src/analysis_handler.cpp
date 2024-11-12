@@ -48,8 +48,7 @@ static shared_ptr<ResultSet> GetUpdateAnalysisAlbumsInfo(const shared_ptr<Native
     const vector<string> &fileIds)
 {
     vector<string> columns = {
-        ANALYSIS_PHOTO_MAP_TABLE + "." + PhotoMap::ALBUM_ID,
-        ANALYSIS_PHOTO_MAP_TABLE + "." + PhotoMap::ASSET_ID
+        "DISTINCT (map_album)"
     };
     RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
     predicates.In(PhotoMap::ASSET_ID, fileIds);
@@ -121,15 +120,20 @@ void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
             return;
         }
         if (count > 0) {
+            MEDIA_INFO_LOG("%{public}d analysis album need update", count);
             list<Uri> sendUris = UpdateAnalysisAlbumsForCloudSync(rdbStore, resultSet, fileIds);
             AddNewNotify(newHandleData, sendUris);
         }
+    } else {
+        string uriString = newHandleData.orgInfo.uris.front().ToString();
+        MEDIA_INFO_LOG("refresh: %{public}s, type: %{public}d", uriString.c_str(),
+            static_cast<int32_t>(newHandleData.orgInfo.type));
+        refreshAlbumsFunc_(true);
     }
 
     if (nextHandler_ != nullptr) {
         nextHandler_->Handle(newHandleData);
     }
-    refreshAlbumsFunc_(true);
 }
 } //namespace Media
 } //namespace OHOS

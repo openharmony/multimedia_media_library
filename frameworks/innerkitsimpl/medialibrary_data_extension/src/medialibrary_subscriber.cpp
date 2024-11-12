@@ -37,6 +37,7 @@
 #include "thermal_mgr_client.h"
 #endif
 
+#include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
@@ -51,12 +52,15 @@
 #include "dfx_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_rdb_utils.h"
+#include "moving_photo_processor.h"
 #include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "parameters.h"
 
 #ifdef HAS_WIFI_MANAGER_PART
 #include "wifi_device.h"
 #endif
+#include "power_efficiency_manager.h"
 
 using namespace OHOS::AAFwk;
 
@@ -75,10 +79,11 @@ const int32_t WIFI_STATE_CONNECTED = 4;
 
 const int32_t DELAY_TASK_TIME = 30000;
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
-const int32_t MB_SHIFT = 20;
+const int32_t MegaByte = 1024 * 1024;
 const int32_t MAX_FILE_SIZE_MB = 200;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
+const std::string KEY_HIVIEW_VERSION_TYPE = "const.logsystem.versiontype";
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
     EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING,
@@ -150,6 +155,13 @@ bool MedialibrarySubscriber::Subscribe(void)
     return EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber);
 }
 
+static bool IsBetaVersion()
+{
+    static const string versionType = system::GetParameter(KEY_HIVIEW_VERSION_TYPE, "unknown");
+    static bool isBetaVersion = versionType.find("beta") != std::string::npos;
+    return isBetaVersion;
+}
+
 static void UploadDBFile()
 {
     int64_t begin = MediaFileUtils::UTCTimeMilliSeconds();
@@ -167,9 +179,10 @@ static void UploadDBFile()
         }
         totalFileSize += statInfo.st_size;
     }
-    totalFileSize >>= MB_SHIFT; // Convert bytes to MB
+    totalFileSize /= MegaByte; // Convert bytes to MB
     if (totalFileSize > MAX_FILE_SIZE_MB) {
-        MEDIA_WARN_LOG("DB file over 200MB are not uploaded, totalFileSize is %{public}ld MB", (long)totalFileSize);
+        MEDIA_WARN_LOG("DB file over 200MB are not uploaded, totalFileSize is %{public}ld MB",
+            static_cast<long>(totalFileSize));
         return ;
     }
     if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateDirectory(destPath)) {
@@ -183,19 +196,22 @@ static void UploadDBFile()
     }
     dataManager->UploadDBFileInner();
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("Handle %{public}ld MB DBFile success, cost %{public}ld ms", (long)totalFileSize,
-        (long)(end - begin));
+    MEDIA_INFO_LOG("Handle %{public}ld MB DBFile success, cost %{public}ld ms", static_cast<long>(totalFileSize),
+        static_cast<long>(end - begin));
 }
 
 void MedialibrarySubscriber::CheckHalfDayMissions()
 {
     if (isScreenOff_ && isCharging_) {
-        UploadDBFile();
+        if (IsBetaVersion()) {
+            MEDIA_INFO_LOG("Version is BetaVersion, UploadDBFile");
+            UploadDBFile();
+        }
         DfxManager::GetInstance()->HandleHalfDayMissions();
-        MediaLibraryRestore::GetInstance().DoRdbHAModeSwitch();
+        MediaLibraryRestore::GetInstance().CheckBackup();
     }
     if (!isScreenOff_ || !isCharging_) {
-        MediaLibraryRestore::GetInstance().InterruptRdbHAModeSwitch();
+        MediaLibraryRestore::GetInstance().InterruptBackup();
     }
 }
 
@@ -245,10 +261,12 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             isPowerSufficient_ = want.GetIntParam(COMMON_EVENT_KEY_BATTERY_CAPACITY,
                 COMMON_EVENT_KEY_GET_DEFAULT_PARAM) >= PROPER_DEVICE_BATTERY_CAPACITY;
             break;
-        case StatusEventType::THERMAL_LEVEL_CHANGED:
+        case StatusEventType::THERMAL_LEVEL_CHANGED: {
             isDeviceTemperatureProper_ = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
                 COMMON_EVENT_KEY_GET_DEFAULT_PARAM) <= PROPER_DEVICE_TEMPERATURE_LEVEL;
+            PowerEfficiencyManager::UpdateAlbumUpdateInterval(isDeviceTemperatureProper_);
             break;
+        }
         default:
             MEDIA_WARN_LOG("StatusEventType:%{public}d is not invalid", statusEventType);
             return;
@@ -416,6 +434,10 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         MEDIA_ERR_LOG("DoUpdateBurstFromGallery faild");
     }
 
+    // compat old-version moving photo
+    MovingPhotoProcessor::StartProcess();
+
+    MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
     auto watch = MediaLibraryInotify::GetInstance();
     if (watch != nullptr) {
         watch->DoAging();
@@ -424,6 +446,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
 
 void MedialibrarySubscriber::StopBackgroundOperation()
 {
+    MovingPhotoProcessor::StopProcess();
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
 }
 

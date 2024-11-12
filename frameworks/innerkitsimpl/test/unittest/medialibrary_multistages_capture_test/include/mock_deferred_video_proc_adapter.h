@@ -12,20 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef MOCK_DEFERRED_VIDEO_PROC_ADAPTER_H
 #define MOCK_DEFERRED_VIDEO_PROC_ADAPTER_H
- 
+
 #include "deferred_video_proc_adapter.h"
 #include "gmock/gmock.h"
- 
+
 namespace OHOS {
 namespace Media {
 class MockDeferredVideoProcessingAdapter : public DeferredVideoProcessingAdapter {
 public:
     MockDeferredVideoProcessingAdapter() {};
     ~MockDeferredVideoProcessingAdapter() {};
- 
+
     MOCK_METHOD0(BeginSynchronize, void());
     MOCK_METHOD0(EndSynchronize, void());
     MOCK_METHOD2(RemoveVideo, void(const std::string&, const bool));

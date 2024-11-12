@@ -32,12 +32,13 @@
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
-#include "permission_utils.h"
 #include "media_exif.h"
 #include "media_library_manager.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_urisensitive_operations.h"
 #include "medialibrary_tracer.h"
+#include "parameters.h"
+#include "permission_utils.h"
 
 using namespace std;
 using PrivacyRanges = vector<pair<uint32_t, uint32_t>>;
@@ -399,13 +400,26 @@ static int32_t GetPrivacyRanges(const string &path, const string &mode, const st
     return SortRangesAndCheck(ranges);
 }
 
+static bool IsDeveloperMediaTool()
+{
+    if (!PermissionUtils::IsRootShell() && !PermissionUtils::IsHdcShell()) {
+        MEDIA_ERR_LOG("Mediatool permission check failed: target is not root");
+        return false;
+    }
+    if (!OHOS::system::GetBoolParameter("const.security.developermode.state", true)) {
+        MEDIA_ERR_LOG("Mediatool permission check failed: target is not in developer mode");
+        return false;
+    }
+    return true;
+}
+
 int32_t MediaPrivacyManager::Open()
 {
     int err = GetPrivacyRanges(path_, mode_, fileId_, ranges_);
     if (err < 0) {
         return err;
     }
-    if (ranges_.size() > 0) {
+    if (ranges_.size() > 0 && !IsDeveloperMediaTool()) {
         return OpenFilterProxyFd(path_, mode_, ranges_);
     }
     return OpenOriginFd(path_, mode_);

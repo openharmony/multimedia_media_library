@@ -286,7 +286,7 @@ static int32_t ValueBucketCheck(const std::vector<DataShareValuesBucket> &values
         val.Get(AppUriSensitiveColumn::URI_TYPE, isValidArr[URI_TYPE_INDEX]);
         val.Get(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, isValidArr[SENSITIVE_TYPE_INDEX]);
         val.Get(AppUriSensitiveColumn::APP_ID, isValidArr[APP_ID_INDEX]);
-        for (int i = 0; i < sizeof(isValidArr); i++) {
+        for (size_t i = 0; i < sizeof(isValidArr); i++) {
             if ((isValidArr[i]) == false) {
                 return E_ERR;
             }

@@ -682,8 +682,8 @@ static napi_value ParseArgsAddAssets(napi_env env, napi_callback_info info,
     int32_t albumId = photoAlbum->GetAlbumId();
     for (const auto &assetId : assetsArray) {
         DataShareValuesBucket valuesBucket;
-        valuesBucket.Put(PhotoMap::ALBUM_ID, albumId);
-        valuesBucket.Put(PhotoMap::ASSET_ID, assetId);
+        valuesBucket.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
+        valuesBucket.Put(PhotoColumn::MEDIA_ID, assetId);
         context->valuesBuckets.push_back(valuesBucket);
     }
 
@@ -824,8 +824,8 @@ static napi_value ParseArgsRemoveAssets(napi_env env, napi_callback_info info,
         CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
         return result;
     }
-    context->predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
-    context->predicates.And()->In(PhotoMap::ASSET_ID, assetsArray);
+    context->predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
+    context->predicates.And()->In(PhotoColumn::MEDIA_ID, assetsArray);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);

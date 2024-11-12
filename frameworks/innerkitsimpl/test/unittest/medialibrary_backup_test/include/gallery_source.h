@@ -32,6 +32,7 @@ public:
     void InitGalleryMediaTwo();
     void InitGalleryMediaThree();
     void InitGalleryMediaFour();
+    void InitGalleryMediaFive();
     void InitGarbageAlbum();
     void InitGalleryAlbumOne();
     void InitGalleryAlbumTwo();

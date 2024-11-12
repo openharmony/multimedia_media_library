@@ -43,6 +43,7 @@ const std::string PERM_WRITE_AUDIO = "ohos.permission.WRITE_AUDIO";
 const std::string PERM_WRITE_DOCUMENT = "ohos.permission.WRITE_DOCUMENT";
 const std::string PERM_MANAGE_PRIVATE_PHOTOS = "ohos.permission.MANAGE_PRIVATE_PHOTOS";
 const std::string PERM_SHORT_TERM_WRITE_IMAGEVIDEO = "ohos.permission.SHORT_TERM_WRITE_IMAGEVIDEO";
+const std::string E_POLICY = "E";
 constexpr int THREE_HUNDERD_S = 300;
 
 enum SaveType {
@@ -82,6 +83,7 @@ public:
     static bool CheckPhotoCallerPermission(const std::string &permission);
     static void CollectPermissionInfo(const std::string &permission, const bool permGranted,
         const Security::AccessToken::PermissionUsedType type);
+    static bool SetEPolicy();
 
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();

@@ -108,7 +108,6 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnError(const std::stri
         case ERROR_VIDEO_PROC_FAILED: {
             MultiStagesVideoCaptureManager::GetInstance().RemoveVideo(videoId, false);
             UpdateVideoQuality(videoId);
-            MEDIA_ERR_LOG("error %{public}d, videoId: %{public}s", static_cast<int32_t>(errorCode), videoId.c_str());
             break;
         }
         default:

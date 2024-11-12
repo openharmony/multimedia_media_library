@@ -64,5 +64,22 @@ HWTEST_F(MediaLibraryVisitorDbTest, Visitor_Query_Test_001, TestSize.Level0)
     }
 }
 
+HWTEST_F(MediaLibraryVisitorDbTest, Visitor_Query_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Visitor_Query_Test_002::Start");
+    Uri uri("hh");
+    int id = 1;
+    OperationObject object = OperationObject::UNKNOWN_OBJECT;
+    DataShare::DataSharePredicates predicates;
+    if (MediaAssetRdbStore::GetInstance()->IsSupportSharedAssetQuery(uri, object, true)) {
+        predicates.EqualTo(MediaColumn::MEDIA_ID, id);
+        vector<string> columns = {
+            MEDIA_DATA_DB_ID,
+        };
+        auto resultSet = MediaAssetRdbStore::GetInstance()->QueryRdb(predicates, columns, object);
+        EXPECT_NE(resultSet, nullptr);
+    }
+}
+
 } // namespace Media
 } // namespace OHOS

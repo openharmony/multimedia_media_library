@@ -31,6 +31,12 @@
 #include "media_file_utils.h"
 #include "result_set_utils.h"
 #include "cloud_enhancement_task_state_napi.h"
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+#include "media_enhance_constants_c_api.h"
+#include "media_enhance_handles.h"
+#include "media_enhance_client_c_api.h"
+#include "media_enhance_bundle_c_api.h"
+#endif
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -44,6 +50,238 @@ static const string CLOUD_ENHANCEMENT_CLASS = "CloudEnhancement";
 thread_local napi_ref CloudEnhancementNapi::constructor_ = nullptr;
 
 constexpr int32_t STRONG_ASSOCIATION = 1;
+
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+static void* dynamicHandler = nullptr;
+static MediaEnhanceClientHandle* clientWrapper = nullptr;
+static mutex mtx;
+
+using CreateMCEClient = MediaEnhanceClientHandle* (*)(MediaEnhance_TASK_TYPE taskType);
+using DestroyMCEClient = void (*)(MediaEnhanceClientHandle* client);
+using CreateMCEBundle = MediaEnhanceBundleHandle* (*)();
+using DestroyMCEBundle = void (*)(MediaEnhanceBundleHandle* bundle);
+using ClientLoadSA = int32_t (*)(MediaEnhanceClientHandle* client);
+using ClientIsConnected = bool (*)(MediaEnhanceClientHandle* client);
+using ClientQueryTaskState = MediaEnhanceBundleHandle* (*)(MediaEnhanceClientHandle* client, const char* taskId);
+using BundleHandleGetInt = int32_t (*)(MediaEnhanceBundleHandle* bundle, const char* key);
+
+
+static CreateMCEClient createMCEClientFunc = nullptr;
+static DestroyMCEClient destroyMCEClientFunc = nullptr;
+static CreateMCEBundle createMCEBundleFunc = nullptr;
+static DestroyMCEBundle destroyMCEBundleFunc = nullptr;
+static ClientLoadSA clientLoadSaFunc = nullptr;
+static ClientIsConnected clientIsConnectedFunc = nullptr;
+static ClientQueryTaskState clientQueryTaskStateFunc = nullptr;
+static BundleHandleGetInt bundleHandleGetIntFunc = nullptr;
+
+static void InitCloudEnhancementBasicFunc(void* dynamicHandler)
+{
+    if (dynamicHandler == nullptr) {
+        NAPI_ERR_LOG("dynamicHandler is null. error:%{public}s", dlerror());
+        return;
+    }
+
+    if (createMCEClientFunc == nullptr) {
+        createMCEClientFunc = (CreateMCEClient)dlsym(dynamicHandler, "CreateMediaEnhanceClient");
+    }
+    if (createMCEClientFunc == nullptr) {
+        NAPI_ERR_LOG("CreateMediaEnhanceClient dlsym failed.error:%{public}s", dlerror());
+        return;
+    }
+
+    if (destroyMCEClientFunc == nullptr) {
+        destroyMCEClientFunc = (DestroyMCEClient)dlsym(dynamicHandler, "DestroyMediaEnhanceClient");
+    }
+    if (destroyMCEClientFunc == nullptr) {
+        NAPI_ERR_LOG("DestroyMediaEnhanceClient dlsym failed.error:%{public}s", dlerror());
+        return;
+    }
+
+    if (createMCEBundleFunc == nullptr) {
+        createMCEBundleFunc = (CreateMCEBundle)dlsym(dynamicHandler, "CreateMediaEnhanceBundle");
+    }
+    if (createMCEBundleFunc == nullptr) {
+        NAPI_ERR_LOG("CreateMediaEnhanceBundle dlsym failed.error:%{public}s", dlerror());
+        return;
+    }
+
+    if (destroyMCEBundleFunc == nullptr) {
+        destroyMCEBundleFunc = (DestroyMCEBundle)dlsym(dynamicHandler, "DestroyMediaEnhanceBundle");
+    }
+    if (destroyMCEBundleFunc == nullptr) {
+        NAPI_ERR_LOG("DestroyMediaEnhanceBundle dlsym failed.error:%{public}s", dlerror());
+        return;
+    }
+}
+
+static void InitCloudEnhancementExtraFunc(void* dynamicHandler)
+{
+    if (dynamicHandler == nullptr) {
+        NAPI_ERR_LOG("dynamicHandler is null. error:%{public}s", dlerror());
+        return;
+    }
+
+    if (clientLoadSaFunc == nullptr) {
+        clientLoadSaFunc = (ClientLoadSA)dlsym(dynamicHandler, "MediaEnhanceClient_LoadSA");
+    }
+    if (clientLoadSaFunc == nullptr) {
+        NAPI_ERR_LOG("MediaEnhanceClient_LoadSA dlsym failed.error:%{public}s", dlerror());
+        return;
+    }
+
+    if (clientIsConnectedFunc == nullptr) {
+        clientIsConnectedFunc = (ClientIsConnected)dlsym(dynamicHandler, "MediaEnhanceClient_IsConnected");
+    }
+    if (clientIsConnectedFunc == nullptr) {
+        NAPI_ERR_LOG("MediaEnhanceClient_IsConnected dlsym failed.error:%{public}s", dlerror());
+        return;
+    }
+
+    if (clientQueryTaskStateFunc == nullptr) {
+        clientQueryTaskStateFunc = (ClientQueryTaskState)dlsym(dynamicHandler, "MediaEnhanceClient_QueryTaskState");
+    }
+    if (clientQueryTaskStateFunc == nullptr) {
+        NAPI_ERR_LOG("MediaEnhanceClient_QueryTaskState dlsym failed. error:%{public}s", dlerror());
+        return;
+    }
+
+    if (bundleHandleGetIntFunc == nullptr) {
+        bundleHandleGetIntFunc = (BundleHandleGetInt)dlsym(dynamicHandler, "MediaEnhanceBundle_GetInt");
+    }
+    if (bundleHandleGetIntFunc == nullptr) {
+        NAPI_ERR_LOG("MediaEnhanceBundle_GetInt dlsym failed. error:%{public}s", dlerror());
+        return;
+    }
+}
+
+static void InitEnhancementClient()
+{
+    if (createMCEClientFunc == nullptr) {
+        createMCEClientFunc = (CreateMCEClient)dlsym(dynamicHandler, "CreateMediaEnhanceClient");
+    }
+    if (createMCEClientFunc == nullptr) {
+        NAPI_ERR_LOG("CreateMediaEnhanceClient dlsym failed.error:%{public}s", dlerror());
+        return;
+    }
+    if (clientWrapper == nullptr && createMCEClientFunc != nullptr) {
+        NAPI_INFO_LOG("createMCEClientFunc by dlopen func.");
+        clientWrapper = createMCEClientFunc(MediaEnhance_TASK_TYPE::TYPE_CAMERA);
+    }
+}
+
+static void DestroyEnhancementClient()
+{
+    if (destroyMCEClientFunc == nullptr) {
+        destroyMCEClientFunc = (DestroyMCEClient)dlsym(dynamicHandler, "DestroyMediaEnhanceClient");
+    }
+    if (destroyMCEClientFunc == nullptr) {
+        NAPI_ERR_LOG("DestroyMediaEnhanceClient dlsym failed.error:%{public}s", dlerror());
+        return;
+    }
+    destroyMCEClientFunc(clientWrapper);
+    clientWrapper = nullptr;
+}
+
+static MediaEnhanceBundleHandle* CreateBundle()
+{
+    if (createMCEBundleFunc == nullptr) {
+        createMCEBundleFunc = (CreateMCEBundle)dlsym(dynamicHandler, "CreateMediaEnhanceBundle");
+    }
+    if (createMCEBundleFunc == nullptr) {
+        NAPI_ERR_LOG("createMCEBundleFunc dlsym failed.error:%{public}s", dlerror());
+        return nullptr;
+    }
+    return createMCEBundleFunc();
+}
+
+static void DestroyBundle(MediaEnhanceBundleHandle* bundle)
+{
+    if (destroyMCEBundleFunc == nullptr) {
+        destroyMCEBundleFunc = (DestroyMCEBundle)dlsym(dynamicHandler,
+            "DestroyMediaEnhanceBundle");
+    }
+    if (destroyMCEBundleFunc == nullptr) {
+        NAPI_ERR_LOG("destroyMCEBundleFunc dlsym failed.error:%{public}s", dlerror());
+        return;
+    }
+    destroyMCEBundleFunc(bundle);
+}
+
+static int32_t LoadSA()
+{
+    if (clientWrapper == nullptr) {
+        NAPI_ERR_LOG("clientWrapper is nullptr!");
+        return E_ERR;
+    }
+    if (clientLoadSaFunc == nullptr) {
+        clientLoadSaFunc = (ClientLoadSA)dlsym(dynamicHandler, "MediaEnhanceClient_LoadSA");
+    }
+    if (clientLoadSaFunc == nullptr) {
+        NAPI_ERR_LOG("MediaEnhanceClient_LoadSA dlsym failed.error:%{public}s", dlerror());
+        return E_ERR;
+    }
+    int32_t ret = clientLoadSaFunc(clientWrapper);
+    if (ret != E_OK) {
+        NAPI_ERR_LOG("Enhancement Service LoadSA failed:%{public}d", ret);
+    }
+    return ret;
+}
+
+static bool IsConnected(MediaEnhanceClientHandle* clientWrapper)
+{
+    if (clientWrapper == nullptr) {
+        NAPI_ERR_LOG("clientWrapper is nullptr!");
+        return E_ERR;
+    }
+    if (clientIsConnectedFunc == nullptr) {
+        clientIsConnectedFunc = (ClientIsConnected)dlsym(dynamicHandler,
+            "MediaEnhanceClient_IsConnected");
+    }
+    if (clientIsConnectedFunc == nullptr) {
+        NAPI_ERR_LOG("MediaEnhanceClient_IsConnected dlsym failed.error:%{public}s", dlerror());
+        return false;
+    }
+    return clientIsConnectedFunc(clientWrapper);
+}
+
+static MediaEnhanceBundleHandle* QueryTaskState(const string &photoId)
+{
+    if (clientWrapper == nullptr) {
+        NAPI_ERR_LOG("clientWrapper is nullptr!");
+        return nullptr;
+    }
+    if (clientQueryTaskStateFunc == nullptr) {
+        clientQueryTaskStateFunc = (ClientQueryTaskState)dlsym(dynamicHandler, "MediaEnhanceClient_QueryTaskState");
+    }
+    if (clientQueryTaskStateFunc == nullptr) {
+        NAPI_ERR_LOG("MediaEnhanceClient_QueryTaskState dlsym failed. error:%{public}s", dlerror());
+        return nullptr;
+    }
+    NAPI_INFO_LOG("QueryTaskState photoId: %{public}s", photoId.c_str());
+    return clientQueryTaskStateFunc(clientWrapper, photoId.c_str());
+}
+
+static int32_t GetInt(MediaEnhanceBundleHandle* bundle, const char* key)
+{
+    if (bundleHandleGetIntFunc == nullptr) {
+        bundleHandleGetIntFunc = (BundleHandleGetInt)dlsym(dynamicHandler, "MediaEnhanceBundle_GetInt");
+    }
+    if (bundleHandleGetIntFunc == nullptr) {
+        NAPI_ERR_LOG("MediaEnhanceBundle_GetInt dlsym failed. error:%{public}s", dlerror());
+        return E_ERR;
+    }
+    return bundleHandleGetIntFunc(bundle, key);
+}
+
+static void InitCloudEnhancementFunc()
+{
+    string path = "/system/lib64/platformsdk/libmedia_cloud_enhance_plugin.z.so";
+    dynamicHandler = dlopen(path.c_str(), RTLD_NOW);
+    InitCloudEnhancementBasicFunc(dynamicHandler);
+    InitCloudEnhancementExtraFunc(dynamicHandler);
+}
+#endif
 
 napi_value CloudEnhancementNapi::Init(napi_env env, napi_value exports)
 {
@@ -61,6 +299,9 @@ napi_value CloudEnhancementNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getCloudEnhancementPair", JSGetCloudEnhancementPair),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    InitCloudEnhancementFunc();
+#endif
     return exports;
 }
 
@@ -517,30 +758,47 @@ static napi_status ParseArgQuery(napi_env env, napi_callback_info info,
 static void FillTaskStageWithClientQuery(CloudEnhancementAsyncContext* context, string &photoId)
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    shared_ptr<MediaEnhanceClient> enhancementClient_ = make_shared<MediaEnhanceClient>(TASK_TYPE::TYPE_CAMERA);
-    if (!enhancementClient_->IsConnected()) {
-        enhancementClient_->LoadSA();
-    }
-    MediaEnhanceBundle queryResult = enhancementClient_->QueryTaskState(photoId);
-    int32_t currentState = queryResult.GetInt(QueryConstants::CURRENT_STATE);
-    if (currentState == QueryConstants::EN_EXCEPTION) {
-        context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_EXCEPTION;
+    lock_guard<mutex> lock(mtx);
+    InitCloudEnhancementFunc();
+    if (dynamicHandler == nullptr) {
+        NAPI_ERR_LOG("dynamicHandler is nullptr!");
         return;
     }
-    if (currentState == QueryConstants::EN_PREPARING) {
-        context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_PREPARING;
-    } else if (currentState == QueryConstants::EN_UPLOADING) {
-        context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_UPLOADING;
-        context->transferredFileSize_ = queryResult.GetInt(QueryConstants::UPLOAD_PROGRESS);
-        context->totalFileSize_ = queryResult.GetInt(QueryConstants::UPLOAD_SIZE);
-    } else if (currentState == QueryConstants::EN_EXECUTING) {
-        context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_EXECUTING;
-        context->expectedDuration_ = queryResult.GetInt(QueryConstants::EXECUTE_TIME);
-    } else if (currentState == QueryConstants::EN_DOWNLOADING) {
-        context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_DOWNLOADING;
-        context->transferredFileSize_ = queryResult.GetInt(QueryConstants::DOWNLOAD_PROGRESS);
-        context->totalFileSize_ = queryResult.GetInt(QueryConstants::DOWNLOAD_SIZE);
+    InitEnhancementClient();
+    if (clientWrapper == nullptr) {
+        NAPI_ERR_LOG("clientWrapper is nullptr!");
+        return;
     }
+    if (!IsConnected(clientWrapper)) {
+        LoadSA();
+    }
+    MediaEnhanceBundleHandle* bundle = CreateBundle();
+    bundle = QueryTaskState(photoId);
+    if (bundle == nullptr) {
+        NAPI_ERR_LOG("queryTaskState result is nullptr!");
+        DestroyEnhancementClient();
+        return;
+    }
+    int32_t currentState = GetInt(bundle, MediaEnhance_Query::CURRENT_STATE);
+    NAPI_INFO_LOG("clientQueryTaskStateFunc stage = %{public}d", currentState);
+    if (currentState == MediaEnhance_Query::EN_EXCEPTION) {
+        context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_EXCEPTION;
+    } else if (currentState == MediaEnhance_Query::EN_PREPARING) {
+        context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_PREPARING;
+    } else if (currentState == MediaEnhance_Query::EN_UPLOADING) {
+        context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_UPLOADING;
+        context->transferredFileSize_ = GetInt(bundle, MediaEnhance_Query::UPLOAD_PROGRESS);
+        context->totalFileSize_ = GetInt(bundle, MediaEnhance_Query::UPLOAD_SIZE);
+    } else if (currentState == MediaEnhance_Query::EN_EXECUTING) {
+        context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_EXECUTING;
+        context->expectedDuration_ = GetInt(bundle, MediaEnhance_Query::EXECUTE_TIME);
+    } else if (currentState == MediaEnhance_Query::EN_DOWNLOADING) {
+        context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_DOWNLOADING;
+        context->transferredFileSize_ = GetInt(bundle, MediaEnhance_Query::DOWNLOAD_PROGRESS);
+        context->totalFileSize_ = GetInt(bundle, MediaEnhance_Query::DOWNLOAD_SIZE);
+    }
+    DestroyBundle(bundle);
+    DestroyEnhancementClient();
 #endif
 }
 

@@ -32,13 +32,8 @@
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "enhancement_thread_manager.h"
 #include "cloud_enhancement_dfx_get_count.h"
-
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-#include "media_enhance_client.h"
-#include "media_enhance_bundle.h"
-#include "media_enhance_constants.h"
-#endif
 
 namespace OHOS {
 namespace Media {
@@ -56,7 +51,8 @@ public:
     EXPORT bool RevertEditUpdateInternal(int32_t fileId);
     EXPORT bool RecoverTrashUpdateInternal(const std::vector<std::string> &fildIds);
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    EXPORT int32_t AddServiceTask(MediaEnhance::MediaEnhanceBundle &mediaEnhanceBundle, int32_t fileId,
+    EXPORT int32_t HandleAddOperation(MediaLibraryCommand &cmd, const bool hasCloudWatermark);
+    EXPORT int32_t AddServiceTask(OHOS::MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle, int32_t fileId,
         const std::string &photoId, const bool hasCloudWatermark);
 #endif
 
@@ -64,7 +60,6 @@ public:
     EXPORT std::shared_ptr<NativeRdb::ResultSet> HandleEnhancementQueryOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
 
-    EXPORT int32_t HandleAddOperation(MediaLibraryCommand &cmd, const bool hasCloudWatermark);
     EXPORT int32_t HandlePrioritizeOperation(MediaLibraryCommand &cmd);
     EXPORT std::shared_ptr<NativeRdb::ResultSet> HandleQueryOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
@@ -73,15 +68,16 @@ public:
     EXPORT int32_t HandleSyncOperation();
     EXPORT std::shared_ptr<NativeRdb::ResultSet> HandleGetPairOperation(MediaLibraryCommand &cmd);
 
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    std::shared_ptr<EnhancementServiceAdapter> enhancementService_;
+#endif
+    std::shared_ptr<EnhancementThreadManager> threadManager_;
+
 private:
     EnhancementManager();
     ~EnhancementManager();
     EnhancementManager(const EnhancementManager &manager) = delete;
     const EnhancementManager &operator=(const EnhancementManager &manager) = delete;
-
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    std::shared_ptr<EnhancementServiceAdapter> enhancementService_;
-#endif
 };
 } // namespace Media
 } // namespace OHOS

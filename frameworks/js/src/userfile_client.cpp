@@ -28,6 +28,15 @@ using namespace OHOS::DataShare;
 using namespace OHOS::AppExecFwk;
 namespace OHOS {
 namespace Media {
+static void DataShareCreator(const sptr<IRemoteObject> &token, shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
+{
+    dataShareHelper = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    if (dataShareHelper == nullptr) {
+        NAPI_ERR_LOG("dataShareHelper Creator failed");
+        dataShareHelper = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    }
+}
+
 shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelper(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_ONE;
@@ -49,14 +58,14 @@ shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelper(napi_e
             NAPI_ERR_LOG("Failed to get native context instance");
             return nullptr;
         }
-        dataShareHelper = DataShare::DataShareHelper::Creator(context->GetToken(), MEDIALIBRARY_DATA_URI);
+        DataShareCreator(context->GetToken(), dataShareHelper);
     } else {
         auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
         if (context == nullptr) {
             NAPI_ERR_LOG("Failed to get native stage context instance");
             return nullptr;
         }
-        dataShareHelper = DataShare::DataShareHelper::Creator(context->GetToken(), MEDIALIBRARY_DATA_URI);
+        DataShareCreator(context->GetToken(), dataShareHelper);
     }
     MediaLibraryHelperContainer::GetInstance()->SetDataShareHelper(dataShareHelper);
     return dataShareHelper;
@@ -166,7 +175,7 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> UserFileClient::QueryRdb(Uri &uri
 {
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = nullptr;
     OperationObject object = OperationObject::UNKNOWN_OBJECT;
-    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates)) {
+    if (MediaAssetRdbStore::GetInstance()->IsSupportSharedAssetQuery(uri, object)) {
         resultSet = MediaAssetRdbStore::GetInstance()->QueryRdb(predicates, columns, object);
     }
     return resultSet;

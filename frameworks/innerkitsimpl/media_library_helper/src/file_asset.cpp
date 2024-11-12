@@ -330,7 +330,7 @@ void FileAsset::SetPhotoId(const string &photoId)
 {
     member_[MEDIA_DATA_DB_PHOTO_ID] = photoId;
 }
- 
+
 string FileAsset::GetPhotoId() const
 {
     return GetStrMember(MEDIA_DATA_DB_PHOTO_ID);

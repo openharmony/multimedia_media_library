@@ -15,7 +15,6 @@
 #ifndef OHOS_MEDIALIBRARY_RESTORE_H
 #define OHOS_MEDIALIBRARY_RESTORE_H
 
-#include <mutex>
 #include <string>
 #include <memory>
 #include "result_set.h"
@@ -29,28 +28,25 @@ public:
     virtual ~MediaLibraryRestore() = default;
     EXPORT static MediaLibraryRestore &GetInstance();
 
-    EXPORT int32_t DetectHaMode(const std::string &dbPath);
     EXPORT void CheckRestore(const int32_t &errCode);
     EXPORT bool IsRestoring() const;
     EXPORT bool IsBackuping() const;
     EXPORT bool IsWaiting() const;
-    EXPORT void DoRdbHAModeSwitch();
-    EXPORT void InterruptRdbHAModeSwitch();
-    EXPORT int32_t GetHaMode() const;
-    EXPORT void ResetHaMode();
+    EXPORT void CheckBackup();
+    EXPORT void InterruptBackup();
     EXPORT void CheckResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet);
 private:
 #ifdef CLOUD_SYNC_MANAGER
     void StopCloudSync();
+    void StartCloudSync();
 #endif
-    void SaveHAModeToPara();
+    void DoRdbBackup();
+    void ResetHAModeSwitchStatus();
     void SaveHAModeSwitchStatusToPara(const uint32_t &status);
-    void ReadHAModeFromPara();
     bool isRestoring_{false};
     std::atomic<bool> isBackuping_{false};
     std::atomic<bool> isWaiting_{false};
     std::atomic<bool> isInterrupting_{false};
-    int32_t haMode_{0};
 };
 } // namespace Media
 } // namespace OHOS

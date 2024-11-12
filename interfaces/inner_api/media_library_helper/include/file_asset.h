@@ -124,7 +124,7 @@ public:
     EXPORT int64_t GetDateTrashed() const;
     EXPORT void SetDateTrashed(int64_t dateTrashed);
 
-    EXPORT std::string GetPhotoId() const; 
+    EXPORT std::string GetPhotoId() const;
     EXPORT void SetPhotoId(const std::string &photoId);
 
     EXPORT std::pair<std::string, int> GetPhotoIdAndQuality() const;
