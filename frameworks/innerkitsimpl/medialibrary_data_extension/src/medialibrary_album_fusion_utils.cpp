@@ -701,8 +701,8 @@ static int32_t CopyLocalFile(shared_ptr<NativeRdb::ResultSet> &resultSet, const 
     return E_OK;
 }
 
-static int32_t CopyMateData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int64_t &newAssetId, std::string &targetPath, const MediaAssetCopyInfo &copyInfo)
+static int32_t CopyMateData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, shared_ptr<NativeRdb::ResultSet>
+    &resultSet, int64_t &newAssetId, std::string &targetPath, const MediaAssetCopyInfo &copyInfo)
 {
     NativeRdb::ValuesBucket values;
     int32_t err = BuildInsertValuesBucket(upgradeStore, values, resultSet, copyInfo);
@@ -757,8 +757,8 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<
     return E_OK;
 }
 
-static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, const int32_t &ownerAlbumId,
-    shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId, const std::string displayName)
+static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, const int32_t
+    &ownerAlbumId, shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId, const std::string displayName)
 {
     if (upgradeStore == nullptr) {
         MEDIA_INFO_LOG("fail to get rdbstore");
