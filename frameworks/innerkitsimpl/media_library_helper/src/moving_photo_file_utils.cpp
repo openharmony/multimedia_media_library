@@ -546,7 +546,7 @@ static bool IsValidHexInteger(const string &hexStr)
     return true;
 }
 
-static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataSize)
+static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataSize, int64_t maxFileSize)
 {
     struct stat64 st;
     CHECK_AND_RETURN_RET_LOG(fstat64(livePhotoFd.Get(), &st) == 0, E_HAS_FS_ERROR,
@@ -593,6 +593,10 @@ static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataS
         return E_OK;
     }
     extraDataSize = MIN_STANDARD_SIZE + std::stoi(cinemagraphSizeStream.str(), 0, HEX_BASE);
+    if (extraDataSize > maxFileSize) {
+        extraDataSize = MIN_STANDARD_SIZE;
+        MEDIA_WARN_LOG("extra data size over total file size %{public}ld", extraDataSize);
+    }
     return E_OK;
 }
 
@@ -623,12 +627,12 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
         "Failed to read live tag, errno:%{public}d", errno);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::StartsWith(liveTag, LIVE_TAG), E_INVALID_VALUES, "Invalid live photo");
 
-    int64_t extraDataSize = 0;
-    int32_t err = GetExtraDataSize(livePhotoFd, extraDataSize);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_INVALID_LIVE_PHOTO,
-        "Failed to get size of extra data, err:%{public}" PRId64, extraDataSize);
     int64_t liveSize = atoi(liveTag + LIVE_TAG.length());
     int64_t imageSize = totalSize - liveSize - LIVE_TAG_LEN - PLAY_INFO_LEN;
+    int64_t extraDataSize = 0;
+    int32_t err = GetExtraDataSize(livePhotoFd, extraDataSize, totalSize - imageSize);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_INVALID_LIVE_PHOTO,
+        "Failed to get size of extra data, err:%{public}" PRId64, extraDataSize);
     int64_t videoSize = totalSize - imageSize - extraDataSize;
     CHECK_AND_RETURN_RET_LOG(imageSize > 0 && videoSize > 0, E_INVALID_LIVE_PHOTO,
         "Failed to check live photo, image size:%{public}" PRId64 "video size:%{public}" PRId64, imageSize, videoSize);
