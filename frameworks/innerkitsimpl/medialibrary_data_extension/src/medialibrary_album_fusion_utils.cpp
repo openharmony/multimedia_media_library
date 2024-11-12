@@ -533,7 +533,7 @@ static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& 
     }
 }
 
-static int32_t BuildInsertValuesBucket(NativeRdb::RdbStore *upgradeStore rdbStore,
+static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     NativeRdb::ValuesBucket &values, shared_ptr<NativeRdb::ResultSet> &resultSet, const MediaAssetCopyInfo &copyInfo)
 {
     std::string targetPath = copyInfo.targetPath;
