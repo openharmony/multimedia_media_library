@@ -337,7 +337,7 @@ bool SourceLoader::GeneratePixelMapSource(std::unique_ptr<ImageSource> &imageSou
         return false;
     }
     if (!NeedAutoResize(targetSize) && !ThumbnailUtils::ScaleTargetPixelMap(pixelMap, targetSize,
-        Media::AntiAliasingOption::HIGH)) {
+        Media::AntiAliasingOption::SLR)) {
         MEDIA_ERR_LOG("SourceLoader fail to scaleTarget, path %{public}s", DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
