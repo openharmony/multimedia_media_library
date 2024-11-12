@@ -22,6 +22,7 @@
 #include "pixel_map.h"
 #include "unique_fd.h"
 #include "media_photo_asset_proxy.h"
+#include "media_library_extend_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -29,25 +30,6 @@ using namespace std;
 using namespace OHOS::DataShare;
 #define EXPORT __attribute__ ((visibility ("default")))
 struct UriParams;
-/**
- * @brief Interface for accessing all the File operation and AlbumAsset operation APIs
- *
- * @since 1.0
- * @version 1.0
- */
-enum class PhotoPermissionType : int32_t {
-    TEMPORARY_READ_IMAGEVIDEO = 0,
-    PERSIST_READ_IMAGEVIDEO,
-    TEMPORARY_WRITE_IMAGEVIDEO,
-    TEMPORARY_READWRITE_IMAGEVIDEO
-};
-
-enum class HideSensitiveType : int32_t {
-    ALL_DESENSITIZE = 0,
-    GEOGRAPHIC_LOCATION_DESENSITIZE,
-    SHOOTING_PARAM_DESENSITIZE,
-    NO_DESENSITIZE
-};
 
 class MediaLibraryManager {
 public:

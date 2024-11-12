@@ -27,6 +27,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "media_file_utils.h"
+#include "media_library_extend_manager.h"
 #include "media_library_manager.h"
 #include "media_log.h"
 #include "media_volume.h"
@@ -106,6 +107,7 @@ static const unsigned char FILE_CONTENT_MP4[] = {
 };
 
 MediaLibraryManager* mediaLibraryManager = MediaLibraryManager::GetMediaLibraryManager();
+MediaLibraryExtendManager* mediaLibraryExtendManager = MediaLibraryExtendManager::GetMediaLibraryExtendManager();
 
 void MediaLibraryManagerTest::SetUpTestCase(void)
 {
@@ -133,6 +135,7 @@ void MediaLibraryManagerTest::SetUpTestCase(void)
     valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
     sDataShareHelper_->Insert(scanUri, valuesBucket);
     sleep(SCAN_WAIT_TIME);
+    mediaLibraryExtendManager->InitMediaLibraryExtendManager();
 
     MEDIA_INFO_LOG("MediaLibraryManagerTest::SetUpTestCase:: Finish");
 }
@@ -2014,6 +2017,46 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
     auto ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
     EXPECT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_013 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CancelPhotoUriPermission_test_001
+ * @tc.name      : cancel permission
+ * @tc.desc      : cancel permission success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CancelPhotoUriPermission_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CancelPhotoUriPermission_test_001 enter");
+    string appid = "canceltest2";
+    vector<string> uris;
+    vector<string> inColumn;
+    for (int i = 0; i < 5; i++) {
+        auto uri = CreatePhotoAsset("test.mp4");
+        uris.push_back(uri);
+        inColumn.push_back(MediaFileUtils::GetIdFromUri(uri));
+    }
+    auto permissionType = PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    int32_t ret = mediaLibraryExtendManager->GrantPhotoUriPermission(appid, uris, permissionType, SensitiveType);
+    EXPECT_EQ(ret, 0);
+    ret = mediaLibraryExtendManager->CancelPhotoUriPermission(appid, uris);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("MediaLibraryManager_CancelPhotoUriPermission_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CancelPhotoUriPermission_test_002
+ * @tc.name      : cancel permission
+ * @tc.desc      : cancel permission fail
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CancelPhotoUriPermission_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CancelPhotoUriPermission_test_002 enter");
+    string appid = "canceltest2";
+    vector<string> uris;
+    int32_t ret = mediaLibraryExtendManager->CancelPhotoUriPermission(appid, uris);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("MediaLibraryManager_CancelPhotoUriPermission_test_002 exit");
 }
 
 HWTEST_F(MediaLibraryManagerTest, GetUriFromFilePath_001, TestSize.Level0)
