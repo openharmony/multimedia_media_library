@@ -533,7 +533,7 @@ static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& 
     }
 }
 
-static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+static int32_t BuildInsertValuesBucket(NativeRdb::RdbStore *upgradeStore rdbStore,
     NativeRdb::ValuesBucket &values, shared_ptr<NativeRdb::ResultSet> &resultSet, const MediaAssetCopyInfo &copyInfo)
 {
     std::string targetPath = copyInfo.targetPath;
@@ -701,11 +701,11 @@ static int32_t CopyLocalFile(shared_ptr<NativeRdb::ResultSet> &resultSet, const 
     return E_OK;
 }
 
-static int32_t CopyMateData(NativeRdb::RdbStore *upgradeStore, shared_ptr<NativeRdb::ResultSet> &resultSet,
+static int32_t CopyMateData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, shared_ptr<NativeRdb::ResultSet> &resultSet,
     int64_t &newAssetId, std::string &targetPath, const MediaAssetCopyInfo &copyInfo)
 {
     NativeRdb::ValuesBucket values;
-    int32_t err = BuildInsertValuesBucket(*upgradeStore, values, resultSet, copyInfo);
+    int32_t err = BuildInsertValuesBucket(upgradeStore, values, resultSet, copyInfo);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Insert meta data fail and delete migrated file %{public}s ", targetPath.c_str());
         DeleteFile(targetPath);
@@ -721,7 +721,7 @@ static int32_t CopyMateData(NativeRdb::RdbStore *upgradeStore, shared_ptr<Native
     return E_OK;
 }
 
-int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(NativeRdb::RdbStore *upgradeStore,
+int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
     const int32_t &ownerAlbumId, shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId,
     const std::string displayName)
 {
@@ -757,7 +757,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(NativeRdb::RdbStore *u
     return E_OK;
 }
 
-static int32_t CopyLocalSingleFileSync(NativeRdb::RdbStore *upgradeStore, const int32_t &ownerAlbumId,
+static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, const int32_t &ownerAlbumId,
     shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId, const std::string displayName)
 {
     if (upgradeStore == nullptr) {
