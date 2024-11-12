@@ -203,7 +203,7 @@ static int32_t IfHandledDataCountMatched(const std::shared_ptr<MediaLibraryRdbSt
     }
     return E_DB_FAIL;
 }
- 
+
 int32_t MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
 {
     MEDIA_INFO_LOG("ALBUM_FUSE: STEP_1: Start handle matched relationship");
@@ -917,13 +917,26 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
     return newAssetId;
 }
 
+static void GetNoOwnerDataCnt(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    NativeRdb::RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, 0);
+    vector<string> columns;
+    int rowCount = 0;
+    shared_ptr<NativeRdb::ResultSet> resultSet = store->Query(rdbPredicates, columns);
+    if (resultSet == nullptr || resultSet->GetRowCount(rowCount) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Query not matched data fails");
+    }
+    MEDIA_INFO_LOG("Begin handle no owner data: count %{public}d", rowCount);
+}
+
 int32_t MediaLibraryAlbumFusionUtils::HandleNoOwnerData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
 {
-    MEDIA_INFO_LOG("Begin handle no owner data");
     if (upgradeStore == nullptr) {
         MEDIA_INFO_LOG("fail to get rdbstore");
         return E_DB_FAIL;
     }
+    GetNoOwnerDataCnt(upgradeStore);
     const std::string UPDATE_NO_OWNER_ASSET_INTO_OTHER_ALBUM = "UPDATE PHOTOS SET owner_album_id = "
         "(SELECT album_id FROM PhotoAlbum where album_name = '其它') WHERE owner_album_id = 0";
     int32_t ret = upgradeStore->ExecuteSql(UPDATE_NO_OWNER_ASSET_INTO_OTHER_ALBUM);
@@ -1528,7 +1541,7 @@ int32_t MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus()
         return ALBUM_FUSION_UPGRADE_FAIL;
     }
 }
- 
+
 int32_t MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(int32_t upgradeStatus)
 {
     if (upgradeStatus != ALBUM_FUSION_UPGRADE_SUCCESS && upgradeStatus != ALBUM_FUSION_UPGRADE_FAIL) {
