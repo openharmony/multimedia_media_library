@@ -39,13 +39,17 @@ void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &p
 {
     string fileName = path + "/" + event.name;
     std::shared_ptr<MtpEvent> eventPtr = std::make_shared<OHOS::Media::MtpEvent>(context);
+    CHECK_AND_RETURN_LOG(eventPtr != nullptr, "MtpFileObserver SendEvent eventPtr is null");
     if ((event.mask & IN_CREATE) || (event.mask & IN_MOVED_TO)) {
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents create/MOVED_TO: path:%{private}s", fileName.c_str());
         MtpMediaLibrary::GetInstance()->ObserverAddPathToMap(fileName);
         eventPtr->SendObjectAdded(fileName);
     } else if ((event.mask & IN_DELETE) || (event.mask & IN_MOVED_FROM)) {
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents delete/MOVED_FROM: path:%{private}s", fileName.c_str());
-        eventPtr->SendObjectRemoved(fileName);
+        uint32_t id = 0;
+        if (MtpMediaLibrary::GetInstance()->GetIdByPath(fileName, id) == 0) {
+            eventPtr->SendObjectRemoved(fileName);
+        }
     } else if (event.mask & IN_CLOSE_WRITE) {
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents IN_CLOSE_WRITE : path:%{private}s", fileName.c_str());
         eventPtr->SendObjectInfoChanged(fileName);

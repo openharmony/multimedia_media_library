@@ -331,10 +331,10 @@ void MtpOperation::ResetOperation()
     if (mtpContextPtr_ != nullptr) {
         mtpContextPtr_->operationCode = 0;
         mtpContextPtr_->transactionID = 0;
+        mtpContextPtr_->indata = false;
     }
 
     responseCode_ = MTP_OK_CODE;
-    mtpContextPtr_->indata = false;
 }
 
 void MtpOperation::AddStorage(shared_ptr<Storage> &storage)
