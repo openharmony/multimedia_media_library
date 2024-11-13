@@ -382,7 +382,6 @@ const std::string SQL_QUERY_OTHER_DUPLICATE_ASSETS_COUNT = "\
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
 
 std::mutex MediaLibraryRdbStore::reconstructLock_;
-std::mutex MediaLibraryRdbStore::rdbStoreMutex_;
 
 int32_t oldVersion_ = -1;
 struct UniqueMemberValuesBucket {
@@ -599,7 +598,6 @@ void MediaLibraryRdbStore::UpdateIndexForCover(const shared_ptr<MediaLibraryRdbS
 
 int32_t MediaLibraryRdbStore::Init()
 {
-    std::lock_guard<std::mutex> lock(rdbStoreMutex_);
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
     if (rdbStore_ != nullptr) {
         return E_OK;
@@ -630,7 +628,6 @@ int32_t MediaLibraryRdbStore::Init()
 
 int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
 {
-    std::lock_guard<std::mutex> lock(rdbStoreMutex_);
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", version);
     if (rdbStore_ != nullptr) {
         return E_OK;
@@ -652,19 +649,16 @@ MediaLibraryRdbStore::~MediaLibraryRdbStore() = default;
 
 void MediaLibraryRdbStore::Stop()
 {
-    std::lock_guard<std::mutex> lock(rdbStoreMutex_);
     rdbStore_ = nullptr;
 }
 
 bool MediaLibraryRdbStore::CheckRdbStore()
 {
-    std::lock_guard<std::mutex> lock(rdbStoreMutex_);
     return rdbStore_ != nullptr;
 }
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw()
 {
-    std::lock_guard<std::mutex> lock(rdbStoreMutex_);
     return rdbStore_;
 }
 
@@ -1273,6 +1267,7 @@ int32_t PrepareSystemAlbums(RdbStore &store)
     auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
     if (errCode != NativeRdb::E_OK || transaction == nullptr) {
         MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
+        return errCode;
     }
     for (int32_t i = PhotoAlbumSubType::SYSTEM_START; i <= PhotoAlbumSubType::SYSTEM_END; i++) {
         values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SYSTEM);

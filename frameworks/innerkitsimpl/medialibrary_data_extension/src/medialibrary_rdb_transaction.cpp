@@ -53,7 +53,7 @@ int32_t TransactionOperations::Start(std::string funcName, bool isBackup)
         rdbStore_ = MediaLibraryRdbStore::GetRaw();
     }
     if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore_ is null");
+        MEDIA_ERR_LOG("rdbStore_ is null, isBackup = %{public}d", isBackup);
         return E_HAS_DB_ERROR;
     }
 
