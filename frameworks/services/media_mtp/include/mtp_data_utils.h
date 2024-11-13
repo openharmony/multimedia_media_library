@@ -52,6 +52,8 @@ const std::string MTP_FORMAT_ASF = ".asf"; // ASF files
 // Unknown image files which are not specified in PTP specification
 const std::string MTP_FORMAT_DEFINED = ".image"; // Unknown image files
 const std::string MTP_FORMAT_EXIF_JPEG = ".jpeg?.jpg"; // JPEG image files
+const std::string MTP_FORMAT_JPEG = ".jpeg";
+const std::string MTP_FORMAT_JPG = ".jpg";
 const std::string MTP_FORMAT_TIFF_EP = ".tiff"; // TIFF EP image files
 const std::string MTP_FORMAT_FLASHPIX = ".swf";
 const std::string MTP_FORMAT_BMP = ".bmp"; // BMP image files
@@ -130,6 +132,7 @@ public:
         const std::shared_ptr<MtpOperationContext> &context, shared_ptr<vector<Property>> &outPropValue);
     static int32_t GetMtpPropValue(const std::string &path,
         const uint32_t property, const uint16_t format, PropertyValue &outPropValue);
+    static uint32_t GetMtpFormatByPath(const std::string &path, uint16_t &outFormat);
 private:
     static int32_t GetPropList(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
         const std::shared_ptr<UInt16List> &properties, std::shared_ptr<std::vector<Property>> &outProps);
@@ -148,7 +151,6 @@ private:
     // MTP
     static void GetMtpOneRowProp(const std::shared_ptr<UInt16List> &properties, const uint32_t &parentId,
         std::unordered_map<uint32_t, std::string>::iterator it, shared_ptr<vector<Property>> &outProps);
-    static uint32_t GetMtpFormatByPath(const std::string &path, uint16_t &outFormat);
     static void SetMtpProperty(const std::string &column, const std::string &path,
         ResultSetDataType &type, Property &prop);
 };
