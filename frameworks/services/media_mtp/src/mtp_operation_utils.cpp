@@ -524,6 +524,11 @@ void MtpOperationUtils::PreDealFd(const bool deal, const int fd)
 
 uint16_t MtpOperationUtils::GetThumb(shared_ptr<PayloadData> &data, uint16_t containerType, int &errorCode)
 {
+    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, MTP_INVALID_PARAMETER_CODE, "DoRecevieSendObject context_ is null");
+    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
+    CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
+        "mtpMedialibraryManager_ is null");
+
     if (containerType != DATA_CONTAINER_TYPE) {
         data = make_shared<RespCommonData>();
         return CheckErrorCode(errorCode);
@@ -535,7 +540,8 @@ uint16_t MtpOperationUtils::GetThumb(shared_ptr<PayloadData> &data, uint16_t con
     }
 
     shared_ptr<UInt8List> thumb = make_shared<UInt8List>();
-    errorCode = mtpMedialibraryManager_->GetThumb(context_, thumb);
+    errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetThumb(context_, thumb) :
+        mtpMedialibraryManager_->GetThumb(context_, thumb);
     if (errorCode != MTP_SUCCESS) {
         data = make_shared<RespCommonData>();
         return CheckErrorCode(errorCode);
