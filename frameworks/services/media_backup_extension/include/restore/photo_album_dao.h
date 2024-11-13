@@ -47,17 +47,22 @@ public:
     PhotoAlbumRowData GetOrCreatePhotoAlbum(const PhotoAlbumRowData &album);
     int32_t RestoreAlbums(std::vector<PhotoAlbumRowData> &photoAlbums);
     PhotoAlbumRowData BuildAlbumInfoOfRecorders();
+    std::string ParseSourcePathToLPath(const std::string &sourcePath);
+    PhotoAlbumRowData BuildAlbumInfoByLPath(const std::string &lPath);
     std::string ToString(const PhotoAlbumRowData &albumInfo)
     {
         return "albumId: " + std::to_string(albumInfo.albumId) + ", albumType: " + std::to_string(albumInfo.albumType) +
                ", albumSubType: " + std::to_string(albumInfo.albumSubType) + ", albumName: " + albumInfo.albumName +
                ", lPath: " + albumInfo.lPath + ", bundleName: " + albumInfo.bundleName;
     }
+    void LoadPhotoAlbums();
 
 private:
     std::string FindUniqueAlbumName(const PhotoAlbumRowData &photoAlbum);
     bool CheckAlbumNameUnique(const std::string &albumName, const std::string &lPath);
     std::string ToString(const std::vector<NativeRdb::ValueObject> &bindArgs);
+    PhotoAlbumRowData BuildAlbumInfoByLPath(
+        const std::string &lPath, const int32_t albumType, const int32_t albumSubType);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
