@@ -1273,6 +1273,7 @@ int32_t PrepareSystemAlbums(RdbStore &store)
     auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
     if (errCode != NativeRdb::E_OK || transaction == nullptr) {
         MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
+        return errCode;
     }
     for (int32_t i = PhotoAlbumSubType::SYSTEM_START; i <= PhotoAlbumSubType::SYSTEM_END; i++) {
         values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SYSTEM);
