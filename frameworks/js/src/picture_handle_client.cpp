@@ -86,12 +86,13 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
 
     // 获取消息
     uint8_t *addr = (uint8_t*)mmap(nullptr, msgLen, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    uint32_t readoffset = UINT32_LEN;
     if (addr == nullptr) {
         MEDIA_ERR_LOG("PictureHandlerService::ReadPicture addr is null!");
         munmap(addr, msgLen);
         return E_ERR;
     }
+    uint32_t readoffset = UINT32_LEN;
+
     uint32_t readoffset = UINT32_LEN;
 
     // 读取dataSize

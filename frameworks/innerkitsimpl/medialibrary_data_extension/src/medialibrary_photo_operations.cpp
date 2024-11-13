@@ -930,6 +930,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId,
                                                          OperationObject::FILESYSTEM_PHOTO, PHOTO_COLUMN_VECTOR);
     if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("SaveCameraPhoto, get fileAsset fail");
         return 0;
     }
     string path = fileAsset->GetPath();
