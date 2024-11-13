@@ -226,8 +226,8 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
         asyncContext->photoUri, mediaAssetDataHandler, threadSafeFunc);
     assetHandler->photoQuality = asyncContext->photoQuality;
     assetHandler->needsExtraInfo = asyncContext->needsExtraInfo;
-    NAPI_INFO_LOG("Add %{public}d, %{public}s, %{public}s, %{public}p", notifyMode, asyncContext->photoUri.c_str(),
-        asyncContext->requestId.c_str(), assetHandler);
+    NAPI_INFO_LOG("Add %{public}d, %{public}s, %{public}s", notifyMode, asyncContext->photoUri.c_str(),
+        asyncContext->requestId.c_str());
 
     switch (notifyMode) {
         case NotifyMode::FAST_NOTIFY: {
@@ -1035,7 +1035,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         dataHandler->JsOnDataPrepared(env, napiValueOfMedia, napiValueOfInfoMap);
     }
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
-    NAPI_INFO_LOG("delete assetHandler: %{public}p", assetHandler);
+    NAPI_DEBUG_LOG("delete assetHandler");
     DeleteAssetHandlerSafe(assetHandler, env);
 }
 
