@@ -46,51 +46,6 @@ int32_t PhotosRestore::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQua
 }
 
 /**
- * @brief Parse the sourcePath to lPath.
- * example, sourcePath=/storage/emulated/0/DCIM/Camera/IMG_20240829_072213.jpg, lPath=/DCIM/Camera
- * if the sourcePath can not be parsed, return /Pictures/其它.
- */
-std::string PhotosRestore::ParseSourcePathToLPath(const std::string &sourcePath)
-{
-    size_t start_pos = sourcePath.find(GALLERT_ROOT_PATH);
-    size_t end_pos = sourcePath.find_last_of("/");
-
-    std::string result = "/Pictures/其它";
-    if (start_pos != std::string::npos && end_pos != std::string::npos) {
-        start_pos += GALLERT_ROOT_PATH.length();
-        result = sourcePath.substr(start_pos, end_pos - start_pos);
-        start_pos = result.find_first_of("/");
-        if (start_pos != std::string::npos) {
-            result = result.substr(start_pos);
-        }
-    }
-    return result;
-}
-
-/**
- * @brief Build PhotoAlbumRowData from lPath.
- */
-PhotoAlbumDao::PhotoAlbumRowData PhotosRestore::BuildAlbumInfoByLPath(const std::string &lPath)
-{
-    PhotoAlbumDao::PhotoAlbumRowData albumInfo;
-    // find albumName from lPath
-    std::string albumName = "其它";
-    std::string albumlPath = lPath;
-    size_t fileIndex = albumlPath.find_last_of(FILE_SEPARATOR);
-    if (fileIndex != string::npos) {
-        albumName = albumlPath.substr(fileIndex + 1);
-    } else {
-        albumlPath = "/Pictures/其它";
-    }
-    albumInfo.albumName = albumName;
-    albumInfo.lPath = albumlPath;
-    albumInfo.albumType = static_cast<int32_t>(PhotoAlbumType::SOURCE);
-    albumInfo.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC);
-    albumInfo.priority = 1;
-    return albumInfo;
-}
-
-/**
  * @brief Get the PhotoAlbum basic info.
  */
 PhotoAlbumDao::PhotoAlbumRowData PhotosRestore::FindAlbumInfo(const FileInfo &fileInfo)
@@ -98,23 +53,24 @@ PhotoAlbumDao::PhotoAlbumRowData PhotosRestore::FindAlbumInfo(const FileInfo &fi
     PhotoAlbumDao::PhotoAlbumRowData albumInfo;
     // Scenario 1, WHEN FileInfo is in /Pictures/Screenshots and Video type, THEN redirect to /Pictures/Screenrecords
     std::string lPathForScreenshot =
-        fileInfo.lPath.empty() ? this->ParseSourcePathToLPath(fileInfo.sourcePath) : fileInfo.lPath;
+        fileInfo.lPath.empty() ? this->photoAlbumDao_.ParseSourcePathToLPath(fileInfo.sourcePath) : fileInfo.lPath;
     if (this->ToLower(lPathForScreenshot) == this->ToLower(AlbumPlugin::LPATH_SCREEN_SHOTS) &&
         fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
-        MEDIA_INFO_LOG("Media_Restore: screenshots redirect to screenrecords, fileInfo.lPath: %{public}s, "
-                       "lPathForScreenshot: %{public}s, Object: %{public}s",
-            fileInfo.lPath.c_str(),
-            lPathForScreenshot.c_str(),
-            this->ToString(fileInfo).c_str());
         albumInfo = this->photoAlbumDao_.BuildAlbumInfoOfRecorders();
         albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
+        MEDIA_INFO_LOG("Media_Restore: screenshots redirect to screenrecords, fileInfo.lPath: %{public}s, "
+                       "lPathForScreenshot: %{public}s, Object: %{public}s, albumInfo: %{public}s",
+            fileInfo.lPath.c_str(),
+            lPathForScreenshot.c_str(),
+            this->ToString(fileInfo).c_str(),
+            this->photoAlbumDao_.ToString(albumInfo).c_str());
         return albumInfo;
     }
     // Scenario 2, WHEN FileInfo is in hidden album, THEN override lPath to the folder in sourcePath.
     // Scenario 3, WHEN FileInfo is not belongs to any album, THEN override lPath to the folder in sourcePath.
     if (fileInfo.lPath.empty() || this->ToLower(fileInfo.lPath) == this->ToLower(GALLERT_HIDDEN_ALBUM)) {
-        std::string lPathFromSourcePath = this->ParseSourcePathToLPath(fileInfo.sourcePath);
-        albumInfo = this->BuildAlbumInfoByLPath(lPathFromSourcePath);
+        std::string lPathFromSourcePath = this->photoAlbumDao_.ParseSourcePathToLPath(fileInfo.sourcePath);
+        albumInfo = this->photoAlbumDao_.BuildAlbumInfoByLPath(lPathFromSourcePath);
         albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
         MEDIA_INFO_LOG("Media_Restore: fix lPath of album.fileInfo.lPath: %{public}s, "
                        "lPathFromSourcePath: %{public}s, lowercase: %{public}s, "
@@ -338,5 +294,22 @@ int32_t PhotosRestore::FindMediaType(const FileInfo &fileInfo)
         mediaType,
         fileInfo.displayName.c_str());
     return mediaType;
+}
+
+/**
+ * @brief Find source_path for the target device by FileInfo.
+ */
+std::string PhotosRestore::FindSourcePath(const FileInfo &fileInfo)
+{
+    if (!fileInfo.sourcePath.empty()) {
+        return fileInfo.sourcePath;
+    }
+    std::string lPath = "/Pictures/其它";
+    if (!fileInfo.lPath.empty()) {
+        lPath = fileInfo.lPath;
+    } else {
+        MEDIA_ERR_LOG("Media_Restore: fileInfo.lPath is empty. Use default lPath: %{public}s", lPath.c_str());
+    }
+    return this->SOURCE_PATH_PREFIX + lPath + "/" + fileInfo.displayName;
 }
 }  // namespace OHOS::Media
