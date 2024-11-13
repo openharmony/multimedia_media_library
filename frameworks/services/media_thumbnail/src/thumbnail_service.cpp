@@ -105,21 +105,6 @@ bool ThumbnailService::CheckSizeValid()
     return true;
 }
 
-static void UpdateAstcInfo(ThumbRdbOpt &opts, std::string id)
-{
-    if (id.empty()) {
-        return;
-    }
-
-    ValuesBucket values;
-    int changedRows;
-    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, MediaFileUtils::UTCTimeMilliSeconds());
-    int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?", vector<string> { id });
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-    }
-}
-
 void ThumbnailService::Init(const shared_ptr<MediaLibraryRdbStore> rdbStore,
 #ifdef DISTRIBUTED
     const shared_ptr<SingleKvStore> &kvStore,
@@ -757,8 +742,8 @@ void ThumbnailService::AstcChangeKeyFromDateAddedToDateTaken()
     for (size_t i = 0; i < infos.size(); i++) {
         std::string oldKey;
         std::string newKey;
-        if (!ThumbnailUtils::GenerateKvStoreKey(infos[i].id, infos[i].dateAdded, oldKey) ||
-            !ThumbnailUtils::GenerateKvStoreKey(infos[i].id, infos[i].dateTaken, newKey)) {
+        if (!MediaFileUtils::GenerateKvStoreKey(infos[i].id, infos[i].dateAdded, oldKey) ||
+            !MediaFileUtils::GenerateKvStoreKey(infos[i].id, infos[i].dateTaken, newKey)) {
             continue;
         }
         if (!IsAstcChangeOldKeyToNewKeySuccess(monthKvStore, yearKvStore, oldKey, newKey)) {

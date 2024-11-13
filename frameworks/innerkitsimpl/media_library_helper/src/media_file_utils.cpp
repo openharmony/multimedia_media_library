@@ -69,6 +69,8 @@ const std::string CLOUD_FILE_PATH = "/storage/cloud/files";
 const std::vector<std::string> SET_LISTEN_DIR = {
     PHOTO_DIR, AUDIO_DIR, THUMBS_DIR, EDIT_DATA_DIR, THUMBS_PHOTO_DIR, EDIT_DATA_PHOTO_DIR
 };
+const std::string KVSTORE_FILE_ID_TEMPLATE = "0000000000";
+const std::string KVSTORE_DATE_KEY_TEMPLATE = "0000000000000";
 #define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)
 #define HMFS_IOCTL_HW_SET_FLAGS _IOR(0XF5, 71, unsigned int)
 
@@ -2032,5 +2034,22 @@ int32_t MediaFileUtils::CopyDirectory(const std::string &srcDir, const std::stri
         }
     }
     return E_OK;
+}
+
+bool MediaFileUtils::GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key)
+{
+    if (fileId.empty() || dateKey.empty()) {
+        MEDIA_ERR_LOG("FileId:%{public}s or dateKey:%{public}s is empty", fileId.c_str(), dateKey.c_str());
+        return false;
+    }
+
+    if (fileId.length() > KVSTORE_FILE_ID_TEMPLATE.length() ||
+        dateKey.length() > KVSTORE_DATE_KEY_TEMPLATE.length()) {
+        MEDIA_ERR_LOG("FileId:%{public}s or dateKey:%{public}s is too long", fileId.c_str(), dateKey.c_str());
+        return false;
+    }
+    key = KVSTORE_DATE_KEY_TEMPLATE.substr(dateKey.length()) + dateKey +
+          KVSTORE_FILE_ID_TEMPLATE.substr(fileId.length()) + fileId;
+    return true;
 }
 } // namespace OHOS::Media
