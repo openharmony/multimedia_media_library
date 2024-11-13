@@ -358,7 +358,7 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
         return false;
     }
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
-    MEDIA_INFO_LOG("Delete assetHandler");
+    MEDIA_DEBUG_LOG("Delete assetHandler");
     DeleteAssetHandlerSafe(assetHandler);
     return true;
 }
