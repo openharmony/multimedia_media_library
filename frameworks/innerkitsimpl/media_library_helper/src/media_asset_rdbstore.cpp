@@ -341,12 +341,53 @@ bool MediaAssetRdbStore::IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& 
     return true;
 }
 
+std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::AddQueryDateTakenTime(
+    std::vector<std::string>& columns)
+{
+    auto it = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT);
+    if (it == columns.end()) {
+        return nullptr;
+    }
+    auto itData = find(columns.begin(), columns.end(), MEDIA_DATA_DB_DATE_TAKEN_MS);
+    if (itData == columns.end()) {
+        return nullptr;
+    }
+    std::string sql = "\
+        WITH DateGrouped AS ( \
+            SELECT \
+                strftime('%Y%m%d', date_taken / 1000, 'unixepoch', 'localtime') AS date_day, \
+                count(*) as count, date_taken, burst_key, display_name, file_id, media_type, subtype \
+            FROM Photos \
+            WHERE sync_status = 0 AND clean_flag = 0 AND date_trashed = 0 AND time_pending = 0 AND \
+                hidden = 0 AND is_temp = 0 AND burst_cover_level = 1 GROUP BY date_day \
+        ) \
+        SELECT \
+            count, date_taken, date_day, burst_key, display_name, file_id, media_type, subtype \
+        FROM DateGrouped \
+        ORDER BY date_day DESC;";
+
+    auto resultSet = rdbStore_->QuerySql(sql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("fail to acquire result from visitor query");
+        return nullptr;
+    }
+    int rowCount = 0;
+    if (!resultSet->GetRowCount(rowCount) && rowCount == 0) {
+        MEDIA_ERR_LOG("fail to acquire result GetRowCount");
+    }
+    return resultSet;
+}
+
 std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::QueryRdb(
     const DataShare::DataSharePredicates& predicates, std::vector<std::string>& columns, OperationObject& object)
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("fail to acquire rdb when query");
         return nullptr;
+    }
+    auto ret = AddQueryDateTakenTime(columns);
+    if (ret != nullptr) {
+        return ret;
     }
     std::string tableName = GetTableNameFromOprnObject(object);
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, tableName);

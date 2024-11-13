@@ -58,6 +58,7 @@
 #include "wifi_device.h"
 #include "post_event_utils.h"
 #include "dfx_manager.h"
+#include "image_format_convert.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -222,11 +223,18 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     ConvertDecodeSize(data, {videoWidth, videoHeight}, desiredSize);
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
-    data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
+    data.source = avMetadataHelper->FetchFrameYuv(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
         param);
     if (data.source == nullptr) {
         DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
         return false;
+    }
+    if (data.source->GetPixelFormat() == PixelFormat::YCBCR_P010) {
+        uint32_t ret = ImageFormatConvert::ConvertImageFormat(data.source, PixelFormat::RGBA_1010102);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("PixelMapYuv10ToRGBA_1010102: source ConvertImageFormat fail");
+            return false;
+        }
     }
     data.orientation = 0;
     data.stats.sourceWidth = data.source->GetWidth();
