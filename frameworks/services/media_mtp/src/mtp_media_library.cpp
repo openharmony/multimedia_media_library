@@ -320,6 +320,7 @@ int32_t MtpMediaLibrary::GetHandles(const std::shared_ptr<MtpOperationContext> &
         WriteLock lock(g_mutex);
         errCode = ScanDirNoDepth(path, outHandles);
     }
+    context->parent = parentId;
     return errCode;
 }
 
