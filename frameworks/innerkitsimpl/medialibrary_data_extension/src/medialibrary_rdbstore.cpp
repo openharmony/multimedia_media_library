@@ -1265,7 +1265,9 @@ int32_t PrepareSystemAlbums(RdbStore &store)
     int32_t err = E_FAIL;
     MEDIA_INFO_LOG("PrepareSystemAlbums start");
     auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
+    DfxTransaction reporter{ __func__ };
     if (errCode != NativeRdb::E_OK || transaction == nullptr) {
+        reporter.ReportError(DfxTransaction::AbnormalType::CREATE_ERROR, errCode);
         MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
         return errCode;
     }
@@ -1284,12 +1286,20 @@ int32_t PrepareSystemAlbums(RdbStore &store)
         auto res = transaction->Execute(sql, bindArgs);
         err = res.first;
         if (err != E_OK) {
+            reporter.ReportError(DfxTransaction::AbnormalType::EXECUTE_ERROR, err);
             transaction->Rollback();
+            MEDIA_ERR_LOG("Execute sql failed, err: %{public}d", err);
             return err;
         }
         values.Clear();
     }
-    transaction->Commit();
+    err = transaction->Commit();
+    if (err != NativeRdb::E_OK) {
+        reporter.ReportError(DfxTransaction::AbnormalType::COMMIT_ERROR, err);
+        MEDIA_ERR_LOG("transaction Commit failed, err: %{public}d", err);
+    } else {
+        reporter.ReportIfTimeout();
+    }
     return E_OK;
 }
 
