@@ -1161,7 +1161,7 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
             MEDIA_ERR_LOG("skip duplicate lpath %{public}s", iter->GetLPath().c_str());
             continue;
         }
-        std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+        std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
         int32_t errCode = NativeRdb::E_OK;
         std::function<int(void)> func = [&]()->int {
             // Insert album item
@@ -1192,7 +1192,7 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
             }
             return errCode;
         };
-        errCode = trans->RetryTrans(func, __func__);
+        errCode = trans->RetryTrans(func);
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("InsertMetadataInDb: trans retry fail!, ret:%{public}d", errCode);
             return errCode;

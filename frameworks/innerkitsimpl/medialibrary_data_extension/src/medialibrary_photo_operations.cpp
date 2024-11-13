@@ -581,7 +581,7 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
     errCode = CheckDisplayNameWithType(displayName, mediaType);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check Dir and Extention, "
         "displayName=%{private}s, mediaType=%{public}d", displayName.c_str(), mediaType);
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t outRow = -1;
     std::function<int(void)> func = [&]()->int {
         errCode = SetAssetPathInCreate(fileAsset, trans);
@@ -597,7 +597,7 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
         }
         return errCode;
     };
-    errCode = trans->RetryTrans(func, __func__);
+    errCode = trans->RetryTrans(func);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("CreateV9: tans finish fail!, ret:%{public}d", errCode);
         return errCode;
@@ -659,7 +659,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     // Check rootdir and extention
     int32_t errCode = CheckWithType(isContains, displayName, extention, mediaType);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t outRow = -1;
     std::function<int(void)> func = [&]()->int {
         errCode = isContains ? SetAssetPathInCreate(fileAsset, trans) :
@@ -673,7 +673,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         SolvePhotoAlbumInCreate(cmd, fileAsset);
         return errCode;
     };
-    errCode = trans->RetryTrans(func, __func__);
+    errCode = trans->RetryTrans(func);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("CreateV10: trans retry fail!, ret:%{public}d", errCode);
         return errCode;
