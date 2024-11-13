@@ -108,26 +108,40 @@ std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetPhotosNotInPhotoMap(int32_
 PhotoAlbumDao::PhotoAlbumRowData PhotosClone::FindAlbumInfo(const FileInfo &fileInfo)
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo;
-    if (fileInfo.lPath.empty()) {
-        MEDIA_ERR_LOG("Media_Restore: lPath is empty, Object: %{public}s", this->ToString(fileInfo).c_str());
-        return albumInfo;
-    }
-    if (this->ToLower(fileInfo.lPath) == this->ToLower(AlbumPlugin::LPATH_SCREEN_SHOTS) &&
+    // Scenario 1, WHEN FileInfo is in /Pictures/Screenshots and Video type, THEN redirect to /Pictures/Screenrecords
+    std::string lPathForScreenshot =
+        fileInfo.lPath.empty() ? this->photoAlbumDao_.ParseSourcePathToLPath(fileInfo.sourcePath) : fileInfo.lPath;
+    if (this->ToLower(lPathForScreenshot) == this->ToLower(AlbumPlugin::LPATH_SCREEN_SHOTS) &&
         fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
         albumInfo = this->photoAlbumDao_.BuildAlbumInfoOfRecorders();
         albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
-        MEDIA_INFO_LOG(
-            "Media_Restore: screenshots redirect to screenrecords, Object: %{public}s, albumInfo: %{public}s",
+        MEDIA_INFO_LOG("Media_Restore: screenshots redirect to screenrecords, fileInfo.lPath: %{public}s, "
+                       "lPathForScreenshot: %{public}s, Object: %{public}s, albumInfo: %{public}s",
+            fileInfo.lPath.c_str(),
+            lPathForScreenshot.c_str(),
             this->ToString(fileInfo).c_str(),
             this->photoAlbumDao_.ToString(albumInfo).c_str());
         return albumInfo;
     }
-    albumInfo = this->photoAlbumDao_.GetPhotoAlbum(fileInfo.lPath);
-    if (albumInfo.lPath.empty()) {
-        MEDIA_ERR_LOG("Media_Restore: albumInfo is empty, albumInfo: %{public}s, Object: %{public}s",
-            this->photoAlbumDao_.ToString(albumInfo).c_str(),
-            this->ToString(fileInfo).c_str());
+    // Scenario 2, WHEN FileInfo is in hidden album, THEN override lPath to the folder in sourcePath.
+    // Scenario 3, WHEN FileInfo is not belongs to any album, THEN override lPath to the folder in sourcePath.
+    // Note, sourcePath is a sign of the possible scenaio that the file is not in any album.
+    bool islPathMiss = !fileInfo.sourcePath.empty() && (fileInfo.hidden == 1 || fileInfo.recycledTime != 0);
+    islPathMiss = islPathMiss || fileInfo.lPath.empty();
+    if (!islPathMiss) {
+        return this->photoAlbumDao_.GetPhotoAlbum(fileInfo.lPath);
     }
+    std::string lPathFromSourcePath = this->photoAlbumDao_.ParseSourcePathToLPath(fileInfo.sourcePath);
+    albumInfo = this->photoAlbumDao_.BuildAlbumInfoByLPath(lPathFromSourcePath);
+    albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
+    MEDIA_INFO_LOG("Media_Restore: fix lPath of album.fileInfo.lPath: %{public}s, "
+                   "lPathFromSourcePath: %{public}s, lowercase: %{public}s, "
+                   "FileInfo Object: %{public}s, AlbumInfo Object: %{public}s",
+        fileInfo.lPath.c_str(),
+        lPathFromSourcePath.c_str(),
+        this->ToLower(lPathFromSourcePath).c_str(),
+        this->ToString(fileInfo).c_str(),
+        this->photoAlbumDao_.ToString(albumInfo).c_str());
     return albumInfo;
 }
 
@@ -248,9 +262,12 @@ int32_t PhotosClone::FixDuplicateBurstKeyInDifferentAlbum(std::atomic<uint64_t> 
 {
     std::vector<PhotosDao::PhotosRowData> duplicateBurstKeyList = this->FindDuplicateBurstKey();
     totalNumber += static_cast<uint64_t>(duplicateBurstKeyList.size());
-    MEDIA_INFO_LOG("onProcess Update otherTotalNumber_: %{public}lld", (long long)totalNumber);
+    MEDIA_INFO_LOG("Media_Restore: onProcess Update otherTotalNumber_: %{public}lld", (long long)totalNumber);
     std::string executeSql = this->SQL_PHOTOS_TABLE_BURST_KEY_UPDATE;
     for (auto &info : duplicateBurstKeyList) {
+        if (info.burstKey.empty()) {
+            continue;
+        }
         std::string burstKeyNew = this->GenerateUuid();
         std::vector<NativeRdb::ValueObject> bindArgs = {burstKeyNew, info.ownerAlbumId, info.burstKey};
         MEDIA_INFO_LOG("Media_Restore: executeSql = %{public}s, bindArgs=%{public}s",
@@ -270,5 +287,19 @@ int32_t PhotosClone::FixDuplicateBurstKeyInDifferentAlbum(std::atomic<uint64_t> 
         }
     }
     return 0;
+}
+
+std::string PhotosClone::FindSourcePath(const FileInfo &fileInfo)
+{
+    if (fileInfo.lPath.empty()) {
+        return fileInfo.sourcePath;
+    }
+    if (!fileInfo.sourcePath.empty()) {
+        return fileInfo.sourcePath;
+    }
+    if (fileInfo.hidden == 0 && fileInfo.recycledTime == 0) {
+        return fileInfo.sourcePath;
+    }
+    return this->SOURCE_PATH_PREFIX + fileInfo.lPath + "/" + fileInfo.displayName;
 }
 }  // namespace OHOS::Media

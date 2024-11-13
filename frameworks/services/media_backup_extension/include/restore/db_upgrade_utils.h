@@ -25,6 +25,10 @@ class DbUpgradeUtils {
 public:
     bool IsTableExists(NativeRdb::RdbStore &store, const std::string &tableName);
     bool IsColumnExists(NativeRdb::RdbStore &store, const std::string &tableName, const std::string &columnName);
+    int32_t DropAllTriggers(NativeRdb::RdbStore &store, const std::string &tableName);
+
+private:
+    std::vector<std::string> GetAllTriggers(NativeRdb::RdbStore &store, const std::string &tableName);
 
 private:
     const std::string SQL_PRAGMA_TABLE_INFO_QUERY = "\
@@ -44,6 +48,15 @@ private:
             tbl_name \
         FROM sqlite_master \
         WHERE type='table' AND \
+            tbl_name = ?;";
+    const std::string SQL_SQLITE_MASTER_QUERY_TRIGGER = "\
+        SELECT \
+            type, \
+            name, \
+            tbl_name \
+        FROM sqlite_master \
+        WHERE \
+            type='trigger' AND \
             tbl_name = ?;";
 };
 }  // namespace DataTransfer

@@ -115,7 +115,7 @@ std::string BurstKeyGenerator::FindBurstKey(const FileInfo &fileInfo)
     if (it == groupHashMap_.end()) {
         groupHashMap_[groupHash] = GenerateUuid();
     }
-    MEDIA_INFO_LOG("Media_Restore: burst photo, objectHash: %{public}s, groupHash: %{public}s, burstKey: %{public}s",
+    MEDIA_DEBUG_LOG("Media_Restore: burst photo, objectHash: %{public}s, groupHash: %{public}s, burstKey: %{public}s",
         FindObjectHash(fileInfo).c_str(),
         groupHash.c_str(),
         groupHashMap_[groupHash].c_str());
