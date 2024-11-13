@@ -133,11 +133,11 @@ std::unique_ptr<Media::Picture> ReadPicturePtr(uint8_t *pictureParcelData, uint3
     MessageParcel pictureParcel;
     pictureParcel.ParseFrom(reinterpret_cast<uintptr_t>(pictureParcelData), dataSize);
 
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture read mainPixelMap");
+    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicturePtr read mainPixelMap");
     std::shared_ptr<PixelMap> mainPixelMap = ReadPixelMap(pictureParcel);
     std::unique_ptr<Media::Picture> picturePtr = Picture::Create(mainPixelMap);
     if (picturePtr == nullptr) {
-        MEDIA_ERR_LOG("PictureHandlerService::ReadPicture picturePtr is nullptr!");
+        MEDIA_ERR_LOG("PictureHandlerService::ReadPicturePtr picturePtr is nullptr!");
         munmap(addr, msgLen);
         return E_ERR;
     }
@@ -146,7 +146,7 @@ std::unique_ptr<Media::Picture> ReadPicturePtr(uint8_t *pictureParcelData, uint3
     ReadMaintenanceData(pictureParcel, picturePtr);
 
     for (size_t i = 1; i <= auxiliaryPictureSize; i++) {
-        MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture read auxiliaryPicture, index:%{public}zu", i);
+        MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicturePtr read auxiliaryPicture, index:%{public}zu", i);
         ReadAuxiliaryPicture(pictureParcel, picturePtr);
     }
     return picturePtr;
