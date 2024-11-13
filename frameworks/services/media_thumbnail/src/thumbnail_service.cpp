@@ -52,6 +52,7 @@ std::mutex ThumbnailService::instanceLock_;
 ThumbnailService::ThumbnailService(void)
 {
     rdbStorePtr_ = nullptr;
+    rdbPredicatePtr_ = nullptr;
 #ifdef DISTRIBUTED
     kvStorePtr_ = nullptr;
 #endif
@@ -119,7 +120,7 @@ static void UpdateAstcInfo(ThumbRdbOpt &opts, std::string id)
     }
 }
 
-void ThumbnailService::Init(const shared_ptr<RdbStore> &rdbStore,
+void ThumbnailService::Init(const shared_ptr<MediaLibraryRdbStore> rdbStore,
 #ifdef DISTRIBUTED
     const shared_ptr<SingleKvStore> &kvStore,
 #endif
@@ -150,7 +151,7 @@ void ThumbnailService::ReleaseService()
 }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
-static int32_t GetPathFromDb(const shared_ptr<NativeRdb::RdbStore> &rdbStorePtr, const string &fileId,
+static int32_t GetPathFromDb(const shared_ptr<MediaLibraryRdbStore> rdbStorePtr, const string &fileId,
     const string &table, string &path)
 {
     if (rdbStorePtr == nullptr) {
@@ -619,19 +620,19 @@ int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbP
         MEDIA_ERR_LOG("create astc batch failed, invalid request id:%{public}d", requestId);
         return E_INVALID_VALUES;
     }
-
-    ThumbnailTaskType readyTaskPriority = ThumbnailTaskType::FOREGROUND;
-#ifdef HAS_THERMAL_MANAGER_PART
-    auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
-    readyTaskPriority = static_cast<int32_t>(thermalMgrClient.GetThermalLevel()) <
-        READY_TEMPERATURE_LEVEL ? ThumbnailTaskType::FOREGROUND : ThumbnailTaskType::BACKGROUND;
-#endif
     CancelAstcBatchTask(requestId - 1);
+    if (GetCurrentTemperatureLevel() >= READY_TEMPERATURE_LEVEL) {
+        isTemperatureHighForReady_ = true;
+        currentRequestId_ = requestId;
+        rdbPredicatePtr_ = make_shared<NativeRdb::RdbPredicates>(rdbPredicate);
+        MEDIA_INFO_LOG("temperature is too high, the operation is suspended");
+        return E_OK;
+    }
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE
     };
-    return ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, rdbPredicate, readyTaskPriority, requestId);
+    return ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, rdbPredicate, requestId);
 }
 
 void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
@@ -641,22 +642,17 @@ void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
         return;
     }
 
+    if (isTemperatureHighForReady_) {
+        currentRequestId_ = 0;
+    }
     MEDIA_INFO_LOG("CancelAstcBatchTask requestId: %{public}d", requestId);
-    std::shared_ptr<ThumbnailGenerateWorker> thumbnailForegroundWorker =
+    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
-    if (thumbnailForegroundWorker == nullptr) {
-        MEDIA_ERR_LOG("thumbnailForegroundWorker is null");
-    } else {
-        thumbnailForegroundWorker->IgnoreTaskByRequestId(requestId);
+    if (thumbnailWorker == nullptr) {
+        MEDIA_ERR_LOG("thumbnailWorker is null");
+        return;
     }
-
-    std::shared_ptr<ThumbnailGenerateWorker> thumbnailBackgroundWorker =
-        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::BACKGROUND);
-    if (thumbnailBackgroundWorker == nullptr) {
-        MEDIA_ERR_LOG("thumbnailBackgroundWorker is null");
-    } else {
-        thumbnailBackgroundWorker->IgnoreTaskByRequestId(requestId);
-    }
+    thumbnailWorker->IgnoreTaskByRequestId(requestId);
 }
 
 void ThumbnailService::UpdateAstcWithNewDateTaken(const std::string &fileId, const std::string &newDateTaken,
@@ -783,5 +779,23 @@ bool ThumbnailService::GetCurrentStatusForTask()
 {
     return currentStatusForTask_;
 }
+
+void ThumbnailService::NotifyTempStatusForReady(const int32_t &currentTemperatureLevel)
+{
+    currentTemperatureLevel_ = currentTemperatureLevel;
+    if (isTemperatureHighForReady_ && currentTemperatureLevel_ < READY_TEMPERATURE_LEVEL) {
+        MEDIA_INFO_LOG("temperature is normal, the opreation is resumed");
+        isTemperatureHighForReady_ = false;
+        if (rdbPredicatePtr_ != nullptr && currentRequestId_ > 0) {
+            CreateAstcBatchOnDemand(*rdbPredicatePtr_, currentRequestId_);
+        }
+    }
+}
+
+int32_t ThumbnailService::GetCurrentTemperatureLevel()
+{
+    return currentTemperatureLevel_;
+}
+
 } // namespace Media
 } // namespace OHOS

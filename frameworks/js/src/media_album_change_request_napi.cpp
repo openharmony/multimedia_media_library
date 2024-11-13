@@ -533,6 +533,7 @@ napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callb
 
 napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callback_info info)
 {
+    NAPI_INFO_LOG("enter");
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;

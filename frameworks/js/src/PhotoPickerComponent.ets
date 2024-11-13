@@ -291,7 +291,7 @@ export class PickerController {
   data?: Map<string, Object>;
 
   setData(type: DataType, data: Object) {
-    if (!data) {
+    if (data === undefined) {
       return;
     }
     if (type === DataType.SET_SELECTED_URIS) {

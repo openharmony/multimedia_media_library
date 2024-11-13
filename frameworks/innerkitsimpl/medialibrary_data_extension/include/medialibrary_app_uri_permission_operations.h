@@ -25,6 +25,7 @@
 #include "rdb_predicates.h"
 #include "result_set.h"
 #include "datashare_values_bucket.h"
+#include "medialibrary_rdb_transaction.h"
 
 namespace OHOS {
 namespace Media {
@@ -48,6 +49,9 @@ public:
     EXPORT static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
     EXPORT static int32_t BatchInsert(MediaLibraryCommand &cmd,
         const std::vector<DataShare::DataShareValuesBucket> &values);
+    EXPORT static int32_t BatchInsertInner(MediaLibraryCommand &cmd,
+        const std::vector<DataShare::DataShareValuesBucket> &values,
+        std::shared_ptr<TransactionOperations> trans);
     EXPORT static int32_t DeleteOperation(NativeRdb::RdbPredicates &predicates);
     EXPORT static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryOperation(
         DataShare::DataSharePredicates &predicates, std::vector<std::string> &fetchColumns);
@@ -73,7 +77,7 @@ private:
      * @param valueBucketParam must contain permissionType value.
      */
     static int UpdatePermissionType(std::shared_ptr<OHOS::NativeRdb::ResultSet> &resultSetDB,
-        int &permissionTypeParam);
+        int &permissionTypeParam, std::shared_ptr<TransactionOperations> trans = nullptr);
     static bool IsValidPermissionType(int &permissionType);
     static bool CanOverride(int &permissionTypeParam, int &permissionTypeDB);
     static bool IsPhotoExist(int &photoFileId);

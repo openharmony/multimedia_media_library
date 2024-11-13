@@ -20,6 +20,7 @@
 
 #include "fa_ability_context.h"
 #include "media_file_uri.h"
+#include "medialibrary_rdbstore.h"
 #include "pixel_map.h"
 #include "rdb_helper.h"
 #include "rdb_predicates.h"
@@ -59,7 +60,7 @@ public:
         bool isSync = false);
     void InvalidateThumbnail(const std::string &id, const std::string &tableName,
         const std::string &path = "", const std::string &dateTaken = "");
-    EXPORT void Init(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT void Init(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
 #ifdef DISTRIBUTED
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
 #endif
@@ -76,6 +77,8 @@ public:
     EXPORT void AstcChangeKeyFromDateAddedToDateTaken();
     EXPORT void UpdateCurrentStatusForTask(const bool &currentStatusForTask);
     EXPORT bool GetCurrentStatusForTask();
+    EXPORT void NotifyTempStatusForReady(const int32_t &currentTemperatureLevel);
+    EXPORT int32_t GetCurrentTemperatureLevel();
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();
@@ -90,11 +93,15 @@ private:
 #ifdef DISTRIBUTED
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
 #endif
-    std::shared_ptr<NativeRdb::RdbStore> rdbStorePtr_;
+    std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr_;
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
+    std::shared_ptr<NativeRdb::RdbPredicates> rdbPredicatePtr_;
     Size screenSize_;
+    int32_t currentRequestId_ = 0;
+    int32_t currentTemperatureLevel_ = 0;
     bool isScreenSizeInit_ = false;
     bool currentStatusForTask_ = false;
+    bool isTemperatureHighForReady_ = false;
 };
 } // namespace Media
 } // namespace OHOS

@@ -14,6 +14,7 @@
  */
 #include "media_library_tab_old_photos_client.h"
 
+#include <limits>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -142,6 +143,13 @@ std::vector<TabOldPhotosClient::TabOldPhotosClientObj> TabOldPhotosClient::Parse
     return result;
 }
 
+static bool StoiBoundCheck(std::string toCheck)
+{
+    const std::string intMax = std::to_string(std::numeric_limits<int>::max());
+
+    return toCheck.length() < intMax.length();
+}
+
 std::vector<TabOldPhotosClient::RequestUriObj> TabOldPhotosClient::Parse(
     std::vector<std::string> &queryTabOldPhotosUris)
 {
@@ -160,8 +168,8 @@ std::vector<TabOldPhotosClient::RequestUriObj> TabOldPhotosClient::Parse(
                 continue;
             }
             std::string idStr = uri.substr(lastSlashPos + 1);
-            if (!(!idStr.empty() && std::all_of(idStr.begin(), idStr.end(), ::isdigit))) {
-                MEDIA_ERR_LOG("Media id is empty or contains invalid character in uri: %{public}s", uri.c_str());
+            if (!(!idStr.empty() && std::all_of(idStr.begin(), idStr.end(), ::isdigit)) || !StoiBoundCheck(idStr)) {
+                MEDIA_ERR_LOG("Media id is invalid in uri: %{public}s", uri.c_str());
                 continue;
             }
             obj.type = URI_TYPE_ID_LINK;
@@ -169,7 +177,7 @@ std::vector<TabOldPhotosClient::RequestUriObj> TabOldPhotosClient::Parse(
         } else if (uri.find(GALLERY_PATH) != std::string::npos) {
             obj.type = URI_TYPE_PATH;
             obj.oldData = uri;
-        } else if (!uri.empty() && std::all_of(uri.begin(), uri.end(), ::isdigit)) {
+        } else if (!uri.empty() && std::all_of(uri.begin(), uri.end(), ::isdigit) && StoiBoundCheck(uri)) {
             int oldFileId = std::stoi(uri);
             obj.type = URI_TYPE_ID;
             obj.oldFileId = oldFileId;

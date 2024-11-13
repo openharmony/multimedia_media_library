@@ -12,10 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "photos_dao.h"
+
 #include <string>
 #include <vector>
+#include <sstream>
 
-#include "photos_dao.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
@@ -96,5 +98,91 @@ PhotosDao::PhotosBasicInfo PhotosDao::GetBasicInfo()
     basicInfo.count = GetInt32Val("count", resultSet);
     MEDIA_INFO_LOG("Media_Restore: max_file_id: %{public}d, count: %{public}d", basicInfo.maxFileId, basicInfo.count);
     return basicInfo;
+}
+
+/**
+ * @brief Find same file info by lPath, displayName, size, orientation.
+ * lPath - if original fileInfo's lPath is empty, it will be ignored.
+ * orientation - if original fileInfo's fileType is not Video(2), it will be ignored.
+ */
+PhotosDao::PhotosRowData PhotosDao::FindSameFile(const FileInfo &fileInfo, const int32_t maxFileId)
+{
+    PhotosDao::PhotosRowData rowData;
+    if (maxFileId <= 0) {
+        return rowData;
+    }
+    if (fileInfo.lPath.empty()) {
+        rowData = this->FindSameFileWithoutAlbum(fileInfo, maxFileId);
+        MEDIA_ERR_LOG("Media_Restore: FindSameFile - lPath is empty, DB Info: %{public}s, Object: %{public}s",
+            this->ToString(rowData).c_str(),
+            this->ToString(fileInfo).c_str());
+        return rowData;
+    }
+    rowData = this->FindSameFileInAlbum(fileInfo, maxFileId);
+    if (!rowData.data.empty() || rowData.fileId != 0) {
+        return rowData;
+    }
+    rowData = this->FindSameFileBySourcePath(fileInfo, maxFileId);
+    if (!rowData.data.empty() || rowData.fileId != 0) {
+        MEDIA_WARN_LOG("Media_Restore: FindSameFile - find Photos by sourcePath, "
+                       "DB Info: %{public}s, Object: %{public}s",
+            this->ToString(rowData).c_str(),
+            this->ToString(fileInfo).c_str());
+        return rowData;
+    }
+    return rowData;
+}
+
+/**
+ * @brief Find FileInfo not related PhotoAlbum, by sourcePath, displayName, fileSize and orientation.
+ */
+PhotosDao::PhotosRowData PhotosDao::FindSameFileBySourcePath(const FileInfo &fileInfo, const int32_t maxFileId)
+{
+    PhotosDao::PhotosRowData rowData;
+    if (maxFileId <= 0) {
+        return rowData;
+    }
+    // pictureFlag: 0 for video, 1 for photo; Only search for photo in this case.
+    int pictureFlag = fileInfo.fileType == MEDIA_TYPE_VIDEO ? 0 : 1;
+    std::string sourcePath = this->SOURCE_PATH_PREFIX + fileInfo.lPath + "/" + fileInfo.displayName;
+    const std::vector<NativeRdb::ValueObject> params = {
+        sourcePath, maxFileId, fileInfo.displayName, fileInfo.fileSize, pictureFlag, fileInfo.orientation};
+    std::string querySql = this->SQL_PHOTOS_FIND_SAME_FILE_BY_SOURCE_PATH;
+    if (this->mediaLibraryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
+        return rowData;
+    }
+    auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return rowData;
+    }
+    rowData.fileId = GetInt32Val("file_id", resultSet);
+    rowData.data = GetStringVal("data", resultSet);
+    return rowData;
+}
+
+std::string PhotosDao::ToString(const FileInfo &fileInfo)
+{
+    std::stringstream ss;
+    ss << "FileInfo[ fileId: " << fileInfo.fileIdOld << ", displayName: " << fileInfo.displayName
+       << ", bundleName: " << fileInfo.bundleName << ", lPath: " << fileInfo.lPath << ", size: " << fileInfo.fileSize
+       << ", fileType: " << fileInfo.fileType << ", oldPath: " << fileInfo.oldPath
+       << ", sourcePath: " << fileInfo.sourcePath << " ]";
+    return ss.str();
+}
+
+std::string PhotosDao::ToString(const PhotosDao::PhotosRowData &rowData)
+{
+    std::stringstream ss;
+    ss << "PhotosRowData[ fileId: " << rowData.fileId << ", data: " << rowData.data << " ]";
+    return ss.str();
+}
+
+std::string PhotosDao::ToLower(const std::string &str)
+{
+    std::string lowerStr;
+    std::transform(
+        str.begin(), str.end(), std::back_inserter(lowerStr), [](unsigned char c) { return std::tolower(c); });
+    return lowerStr;
 }
 }  // namespace OHOS::Media

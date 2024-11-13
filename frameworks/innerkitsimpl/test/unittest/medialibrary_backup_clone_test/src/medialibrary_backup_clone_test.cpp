@@ -17,26 +17,26 @@
 
 #include "medialibrary_backup_clone_test.h"
 
+#define private public
+#define protected public
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
 #include "clone_source.h"
-#include "medialibrary_rdbstore.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_unistore_manager.h"
-#include "medialibrary_unittest_utils.h"
 #include "media_column.h"
 #include "media_log.h"
 #include "media_file_utils.h"
-#define private public
-#define protected public
 #include "backup_restore_service.h"
 #include "base_restore.h"
 #include "clone_restore.h"
+#include "medialibrary_rdb_utils.h"
+#include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
 #include "others_clone_restore.h"
-#undef private
-#undef protected
 #include "burst_key_generator.h"
 #include "backup_const.h"
+#undef protected
+#undef private
 
 using namespace std;
 using namespace OHOS;
@@ -54,6 +54,7 @@ string TEST_BACKUP_PATH = "/data/test/backup/db";
 string TEST_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
 string TEST_BACKUP_DB_PATH = TEST_BACKUP_PATH + TEST_DB_PATH;
 string TEST_FAKE_FILE_DIR = "/fake/fake/fake.fake";
+const string TEST_PATH = "/data/test";
 const string SHOOTING_MODE_PORTRAIT_ALBUM_NAME = "1";
 const string WHERE_CLAUSE_SHOOTING_MODE = "shooting_mode = '1'";
 const string WHERE_CLAUSE_TRASHED = "date_trashed > 0";
@@ -127,7 +128,7 @@ void ClearData()
 {
     MEDIA_INFO_LOG("Start clear data");
     ExecuteSqls(g_rdbStore->GetRaw(), CLEAR_SQLS);
-    MediaLibraryRdbUtils::UpdateAllAlbums(g_rdbStore->GetRaw());
+    MediaLibraryRdbUtils::UpdateAllAlbums(g_rdbStore);
     MEDIA_INFO_LOG("End clear data");
 }
 
@@ -167,7 +168,7 @@ void MediaLibraryBackupCloneTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("Start Init");
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
     MEDIA_INFO_LOG("Start init restoreService");
     restoreService = make_unique<CloneRestore>();
@@ -400,9 +401,9 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_is_file_valid_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_is_file_valid_test_001 start");
-    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_DB_PATH, CLONE_RESTORE_ID), true);
-    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_BACKUP_PATH, CLONE_RESTORE_ID), false); // directory
-    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_FAKE_FILE_DIR, CLONE_RESTORE_ID), false); // not exist
+    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_DB_PATH, CLONE_RESTORE_ID), E_OK);
+    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_BACKUP_PATH, CLONE_RESTORE_ID), E_FAIL); // directory
+    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_FAKE_FILE_DIR, CLONE_RESTORE_ID), E_NO_SUCH_FILE); // not exist
 }
 
 void ClearRestoreExInfo()
@@ -1344,18 +1345,10 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAl
 
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
-    
-    string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
-    system(cmdMkdir.c_str());
-    std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
-    NativeRdb::RdbStoreConfig config(path);
-    CloneOpenCall helper;
-    int errCode = 0;
-    othersClone->mediaLibraryRdb_ = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
 
     std::vector<FileInfo> fileInfos;
     othersClone->RestoreAlbum(fileInfos);
-    EXPECT_FALSE(othersClone->photoAlbumDao_.mediaLibraryRdb_ == nullptr);
+    EXPECT_TRUE(othersClone->photoAlbumDao_.mediaLibraryRdb_ == nullptr);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAlbum_002, TestSize.Level0)
@@ -1365,7 +1358,9 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAl
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
     
+    FileInfo fileInfo;
     std::vector<FileInfo> fileInfos;
+    fileInfos.push_back(fileInfo);
     othersClone->RestoreAlbum(fileInfos);
     EXPECT_TRUE(othersClone->photoAlbumDao_.mediaLibraryRdb_ == nullptr);
 }
@@ -1643,6 +1638,175 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleIns
     }
     othersClone->HandleInsertBatch(offset);
     EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_service_start_rebackup_001 start");
+    EXPECT_NO_FATAL_FAILURE(BackupRestoreService::GetInstance().StartBackup(UPGRADE_RESTORE_ID, EMPTY_STR, EMPTY_STR));
+    EXPECT_NO_FATAL_FAILURE(BackupRestoreService::GetInstance().StartBackup(CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR));
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_thumbnail_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_move_thumbnail_test_001");
+    restoreService->hasCloneThumbnailDir_ = false;
+    FileInfo testFileInfo;
+    int32_t ret = restoreService->MoveThumbnail(testFileInfo);
+    EXPECT_EQ(ret, E_NO_SUCH_FILE);
+
+    restoreService->hasCloneThumbnailDir_ = true;
+    testFileInfo.thumbnailReady = 0;
+    testFileInfo.lcdVisitTime = 0;
+    ret = restoreService->MoveThumbnail(testFileInfo);
+    EXPECT_EQ(ret, E_NO_SUCH_FILE);
+
+    restoreService->hasCloneThumbnailDir_ = true;
+    testFileInfo.thumbnailReady = 4;
+    testFileInfo.lcdVisitTime = 0;
+    testFileInfo.relativePath = "";
+    ret = restoreService->MoveThumbnail(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+
+    restoreService->hasCloneThumbnailDir_ = true;
+    testFileInfo.thumbnailReady = 0;
+    testFileInfo.lcdVisitTime = 2;
+    testFileInfo.relativePath = "";
+    ret = restoreService->MoveThumbnail(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_thumbnail_dir_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_move_thumbnail_dir_test_001");
+    FileInfo testFileInfo;
+    testFileInfo.relativePath = "";
+    int32_t ret = restoreService->MoveThumbnailDir(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+
+    testFileInfo.relativePath = "testPath";
+    testFileInfo.cloudPath = "";
+    ret = restoreService->MoveThumbnailDir(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+
+    testFileInfo.relativePath = "testPath";
+    testFileInfo.cloudPath = "/storage/cloud/files/test";
+    ret = restoreService->MoveThumbnailDir(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_astc_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_move_astc_test_001");
+    FileInfo testFileInfo;
+    restoreService->oldMonthKvStorePtr_ = nullptr;
+    int32_t ret = restoreService->MoveAstc(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+
+    restoreService->oldMonthKvStorePtr_ = std::make_shared<MediaLibraryKvStore>();
+    restoreService->oldYearKvStorePtr_ = nullptr;
+    ret = restoreService->MoveAstc(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+
+    restoreService->oldYearKvStorePtr_ = std::make_shared<MediaLibraryKvStore>();
+    restoreService->newMonthKvStorePtr_ = nullptr;
+    ret = restoreService->MoveAstc(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+
+    restoreService->newMonthKvStorePtr_ = std::make_shared<MediaLibraryKvStore>();
+    restoreService->newYearKvStorePtr_ = nullptr;
+    ret = restoreService->MoveAstc(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_astc_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_move_astc_test_002");
+    FileInfo testFileInfo;
+    restoreService->oldMonthKvStorePtr_ = std::make_shared<MediaLibraryKvStore>();
+    restoreService->oldYearKvStorePtr_ = std::make_shared<MediaLibraryKvStore>();
+    restoreService->newMonthKvStorePtr_ = std::make_shared<MediaLibraryKvStore>();
+    restoreService->newYearKvStorePtr_ = std::make_shared<MediaLibraryKvStore>();
+
+    testFileInfo.fileIdOld = -1;
+    int32_t ret = restoreService->MoveAstc(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+
+    testFileInfo.fileIdOld = 1;
+    testFileInfo.fileIdNew = -1;
+    ret = restoreService->MoveAstc(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+
+    testFileInfo.fileIdOld = 1;
+    testFileInfo.fileIdNew = 1;
+    testFileInfo.oldAstcDateKey = "";
+    ret = restoreService->MoveAstc(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+
+    testFileInfo.oldAstcDateKey = RESTORE_KVSTORE_DATE_KEY_TEMPLATE + "0";
+    ret = restoreService->MoveAstc(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+
+    testFileInfo.oldAstcDateKey = RESTORE_KVSTORE_DATE_KEY_TEMPLATE;
+    testFileInfo.newAstcDateKey = "";
+    ret = restoreService->MoveAstc(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+
+    testFileInfo.oldAstcDateKey = "0";
+    testFileInfo.newAstcDateKey = RESTORE_KVSTORE_DATE_KEY_TEMPLATE + "0";
+    ret = restoreService->MoveAstc(testFileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_astc_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_move_astc_test_003");
+    FileInfo testFileInfo;
+    std::string testStoreId = "medialibrary_backup_clone_restore_move_astc_test_003";
+    std::vector<uint8_t> testValue;
+    testValue.assign(testStoreId.begin(), testStoreId.end());
+    restoreService->oldMonthKvStorePtr_ = std::make_shared<MediaLibraryKvStore>();
+    restoreService->oldYearKvStorePtr_ = std::make_shared<MediaLibraryKvStore>();
+    restoreService->newMonthKvStorePtr_ = std::make_shared<MediaLibraryKvStore>();
+    restoreService->newYearKvStorePtr_ = std::make_shared<MediaLibraryKvStore>();
+    int32_t testFileId = 1;
+    std::string testAstcDateKey = "1";
+    testFileInfo.fileIdOld = testFileId;
+    testFileInfo.oldAstcDateKey = testAstcDateKey;
+    testFileInfo.fileIdNew = testFileId;
+    testFileInfo.newAstcDateKey = testAstcDateKey;
+    testFileInfo.isRelatedToPhotoMap = 1;
+    std::string testAstckey = RESTORE_KVSTORE_DATE_KEY_TEMPLATE.substr(1) + testAstcDateKey +
+                              RESTORE_KVSTORE_FILE_ID_TEMPLATE.substr(1) + to_string(testFileId);
+    EXPECT_EQ(restoreService->MoveAstc(testFileInfo), E_FAIL);
+
+    restoreService->oldMonthKvStorePtr_ = MediaLibraryKvStoreManager::GetInstance()
+        .GetSingleKvStore(KvStoreRoleType::OWNER, testStoreId + "old_month", TEST_PATH);
+    if (restoreService->oldMonthKvStorePtr_ == nullptr) {
+        return;
+    }
+    EXPECT_EQ(restoreService->oldMonthKvStorePtr_->Insert(testAstckey, testValue), E_OK);
+    EXPECT_EQ(restoreService->MoveAstc(testFileInfo), E_FAIL);
+
+    restoreService->newMonthKvStorePtr_ = MediaLibraryKvStoreManager::GetInstance()
+        .GetSingleKvStore(KvStoreRoleType::OWNER, testStoreId + "new_month", TEST_PATH);
+    ASSERT_NE(restoreService->newMonthKvStorePtr_, nullptr);
+    EXPECT_EQ(restoreService->MoveAstc(testFileInfo), E_FAIL);
+
+    restoreService->oldYearKvStorePtr_ = MediaLibraryKvStoreManager::GetInstance()
+        .GetSingleKvStore(KvStoreRoleType::OWNER, testStoreId + "old_year", TEST_PATH);
+    ASSERT_NE(restoreService->oldYearKvStorePtr_, nullptr);
+    EXPECT_EQ(restoreService->oldYearKvStorePtr_->Insert(testAstckey, testValue), E_OK);
+    EXPECT_EQ(restoreService->MoveAstc(testFileInfo), E_FAIL);
+
+    restoreService->newYearKvStorePtr_ = MediaLibraryKvStoreManager::GetInstance()
+        .GetSingleKvStore(KvStoreRoleType::OWNER, testStoreId + "new_year", TEST_PATH);
+    ASSERT_NE(restoreService->newYearKvStorePtr_, nullptr);
+    EXPECT_EQ(restoreService->MoveAstc(testFileInfo), E_OK);
+
+    testFileInfo.isRelatedToPhotoMap = 0;
+    EXPECT_EQ(restoreService->MoveAstc(testFileInfo), E_OK);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_move_astc_test_003");
 }
 } // namespace Media
 } // namespace OHOS

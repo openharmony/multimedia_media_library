@@ -106,6 +106,9 @@ public:
     EXPORT int32_t GetAlbumId() const;
     EXPORT void SetAlbumId(int32_t albumId);
 
+    EXPORT int32_t GetOwnerAlbumId() const;
+    EXPORT void SetOwnerAlbumId(int32_t albumId);
+
     EXPORT const std::string &GetAlbumName() const;
     EXPORT void SetAlbumName(const std::string &albumName);
 

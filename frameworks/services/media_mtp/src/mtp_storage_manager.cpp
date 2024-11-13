@@ -14,10 +14,8 @@
  */
 #define MLOG_TAG "MtpStorageManager"
 #include "mtp_storage_manager.h"
+#include <filesystem>
 #include <mutex>
-#include <sys/statvfs.h>
-
-#include "ipc_skeleton.h"
 #include "iservice_registry.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
@@ -36,7 +34,7 @@ enum SizeType {
     FREE,
     USED
 };
-static const char *PATH_DATA = "/mnt/hmdfs/100/account";
+const std::string PUBLIC_PATH_DATA  = "/storage/media/local/files/Docs";
 MtpStorageManager::MtpStorageManager(void)
 {
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
@@ -59,26 +57,30 @@ std::shared_ptr<MtpStorageManager> MtpStorageManager::GetInstance()
     return instance_;
 }
 
-int64_t MtpStorageManager::GetTotalSize()
+int64_t MtpStorageManager::GetTotalSize(const std::string &path)
 {
-    int64_t totalSize = 0;
-    int32_t ret = GetSizeOfPath(PATH_DATA, SizeType::TOTAL, totalSize);
-    if (ret != E_OK) {
+    std::string p = path.empty() ? PUBLIC_PATH_DATA : path;
+    std::error_code ec;
+    auto info = std::filesystem::space(p, ec);
+    if (ec.value() != E_OK) {
         MEDIA_ERR_LOG("GetTotalSize failed, errno: %{public}d", errno);
-        return MTP_FAIL;
+        return 0;
     }
-    return totalSize;
+
+    return info.capacity;
 }
 
-int64_t MtpStorageManager::GetFreeSize()
+int64_t MtpStorageManager::GetFreeSize(const std::string &path)
 {
-    int64_t freeSize = 0;
-    int32_t ret = GetSizeOfPath(PATH_DATA, SizeType::FREE, freeSize);
-    if (ret != E_OK) {
+    std::string p = path.empty() ? PUBLIC_PATH_DATA : path;
+    std::error_code ec;
+    auto info = std::filesystem::space(p, ec);
+    if (ec.value() != E_OK) {
         MEDIA_ERR_LOG("GetFreeSize failed, errno: %{public}d", errno);
-        return MTP_FAIL;
+        return 0;
     }
-    return freeSize;
+
+    return info.free;
 }
 
 void MtpStorageManager::AddStorage(shared_ptr<Storage> &storage)
@@ -124,26 +126,15 @@ bool MtpStorageManager::HasStorage(uint32_t id)
     return result;
 }
 
-int32_t MtpStorageManager::GetSizeOfPath(const char *path, int32_t type, int64_t &size)
-{
-    struct statvfs diskInfo;
-    int ret = statvfs(path, &diskInfo);
-    if (ret != E_OK) {
-        return E_ERR;
-    }
-    if (type == SizeType::TOTAL) {
-        size = (int64_t)diskInfo.f_bsize * (int64_t)diskInfo.f_blocks;
-    } else if (type == SizeType::FREE) {
-        size = (int64_t)diskInfo.f_bsize * (int64_t)diskInfo.f_bavail;
-    } else {
-        size = (int64_t)diskInfo.f_bsize * ((int64_t)diskInfo.f_blocks - (int64_t)diskInfo.f_bavail);
-    }
-    return E_OK;
-}
-
 std::vector<std::shared_ptr<Storage>> MtpStorageManager::GetStorages()
 {
     return storages;
 }
+
+void MtpStorageManager::ClearStorages()
+{
+    std::vector<std::shared_ptr<Storage>>().swap(storages);
+}
+
 }  // namespace Media
 }  // namespace OHOS

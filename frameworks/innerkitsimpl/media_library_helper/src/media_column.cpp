@@ -351,20 +351,14 @@ const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
                         " SELECT cloud_sync_func(); " +
                         " END;";
 
-const std::string PhotoColumn::DROP_INSERT_GENERATE_HIGHLIGHT_THUMBNAIL =
-                        "DROP TRIGGER IF EXISTS insert_generate_highlight_thumbnail_trigger;";
-
-const std::string PhotoColumn::DROP_UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL =
-                        "DROP TRIGGER IF EXISTS update_generate_highlight_thumbnail_trigger;";
-
 const std::string PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL =
-                        "CREATE TRIGGER insert_generate_highlight_thumbnail_trigger AFTER INSERT ON " +
+                        "CREATE TRIGGER IF NOT EXISTS insert_generate_highlight_thumbnail_trigger AFTER INSERT ON " +
                         PhotoColumn::HIGHLIGHT_TABLE + " BEGIN SELECT begin_generate_highlight_thumbnail " +
                         "(NEW." + MEDIA_DATA_DB_ID + ", NEW." + MEDIA_DATA_DB_VIDEO_TRACKS +
                         ", NEW." + MEDIA_DATA_DB_HIGHLIGHT_TRIGGER + ", '" + MEDIA_DATA_DB_INSERT_TYPE + "'); END;";
 
 const std::string PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL =
-                        "CREATE TRIGGER update_generate_highlight_thumbnail_trigger AFTER UPDATE ON " +
+                        "CREATE TRIGGER IF NOT EXISTS update_generate_highlight_thumbnail_trigger AFTER UPDATE ON " +
                         PhotoColumn::HIGHLIGHT_TABLE + " FOR EACH ROW " + " WHEN OLD." +
                         MEDIA_DATA_DB_HIGHLIGHT_TRIGGER + "= 1 " + "AND NEW." + MEDIA_DATA_DB_HIGHLIGHT_TRIGGER +
                         "= 0 BEGIN SELECT begin_generate_highlight_thumbnail " +
@@ -372,7 +366,8 @@ const std::string PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL =
                         ", NEW." + MEDIA_DATA_DB_HIGHLIGHT_TRIGGER + ", '" + MEDIA_DATA_DB_UPDATE_TYPE + "'); END;";
 
 const std::string PhotoColumn::INDEX_HIGHLIGHT_FILEID =
-                        BaseColumn::CreateIndex() + MEDIA_DATA_DB_ID + " ON " + HIGHLIGHT_TABLE + " (" + MEDIA_ID +");";
+                        BaseColumn::CreateIndex() + MEDIA_DATA_DB_HIGHLIGHT_INDEX + " ON " +
+                        HIGHLIGHT_TABLE + " (" + MEDIA_ID + ");";
 
 const std::string  PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC =
                         " CREATE TRIGGER IF NOT EXISTS photo_insert_cloud_sync_trigger AFTER INSERT ON " +

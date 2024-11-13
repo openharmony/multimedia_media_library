@@ -248,8 +248,8 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
         asyncContext->photoUri, mediaAssetDataHandler, threadSafeFunc);
     assetHandler->photoQuality = asyncContext->photoQuality;
     assetHandler->needsExtraInfo = asyncContext->needsExtraInfo;
-    NAPI_INFO_LOG("Add %{public}d, %{public}s, %{public}s, %{public}p", notifyMode, asyncContext->photoUri.c_str(),
-        asyncContext->requestId.c_str(), assetHandler);
+    NAPI_INFO_LOG("Add %{public}d, %{public}s, %{public}s", notifyMode, asyncContext->photoUri.c_str(),
+        asyncContext->requestId.c_str());
 
     switch (notifyMode) {
         case NotifyMode::FAST_NOTIFY: {
@@ -277,7 +277,7 @@ static ProgressHandler* InsertProgressHandler(napi_env env, MediaAssetManagerAsy
     ProgressHandler *progressHandler = new ProgressHandler(env, threadSafeFunc, asyncContext->requestId,
         retProgressValue, dataHandlerRef);
     MediaAssetManagerNapi::progressHandlerMap_.EnsureInsert(asyncContext->requestId, progressHandler);
-    NAPI_INFO_LOG("InsertProgressHandler %{public}p", progressHandler);
+    NAPI_DEBUG_LOG("InsertProgressHandler");
     return  progressHandler;
 }
 
@@ -1218,7 +1218,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         }
     }
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
-    NAPI_INFO_LOG("delete assetHandler: %{public}p", assetHandler);
+    NAPI_INFO_LOG("delete assetHandler");
     DeleteAssetHandlerSafe(assetHandler, env);
 }
 
@@ -1249,7 +1249,7 @@ void CallPreparedCallbackAfterProgress(napi_env env, ProgressHandler *progressHa
         }
     }
     dataHandler->JsOnDataPrepared(env, napiValueOfMedia, napiValueOfInfoMap);
-    NAPI_INFO_LOG("delete assetHandler: %{public}p", assetHandler);
+    NAPI_INFO_LOG("delete assetHandler");
     DeleteProcessHandlerSafe(progressHandler, env);
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     DeleteAssetHandlerSafe(assetHandler, env);

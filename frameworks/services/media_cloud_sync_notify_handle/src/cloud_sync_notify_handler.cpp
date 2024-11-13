@@ -15,6 +15,7 @@
 
 #include "cloud_sync_notify_handler.h"
 
+#include "cloud_media_asset_manager.h"
 #include "medialibrary_album_fusion_utils.h"
 #include "notify_responsibility_chain_factory.h"
 #include "thumbnail_service.h"
@@ -70,9 +71,9 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
             MEDIA_WARN_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
             continue;
         }
-
         ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString, isCloudInsertTaskPriorityHigh);
     }
+    CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
 }
 
 void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)

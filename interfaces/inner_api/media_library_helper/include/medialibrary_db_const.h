@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 130;
+const int32_t MEDIA_RDB_VERSION = 132;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -156,6 +156,8 @@ enum {
     VERSION_CREATE_TAB_OLD_PHOTOS = 128,
     VERSION_ADD_HIGHLIGHT_TRIGGER = 129,
     VERSION_ALTER_THUMBNAIL_VISIBLE = 130,
+    VERSION_ADD_HIGHLIGHT_VIDEO_COUNT_CAN_PACK = 131,
+    VERSION_ADD_GEO_DEFAULT_VALUE = 132,
 };
 
 enum {
@@ -308,6 +310,7 @@ const std::string MEDIA_DATA_DB_BEGIN_STAMP = "begin_stamp";
 const std::string MEDIA_DATA_DB_TYPE = "type";
 const std::string MEDIA_DATA_DB_INSERT_TYPE = "insert";
 const std::string MEDIA_DATA_DB_UPDATE_TYPE = "update ";
+const std::string MEDIA_DATA_DB_HIGHLIGHT_INDEX = "highlight_id_index";
 
 const std::string MEDIA_DATA_CALLING_UID = "calling_uid";
 
@@ -395,6 +398,7 @@ const std::string CACHE_MOVING_PHOTO_VIDEO_NAME = "cache_moving_photo_video_name
 const std::string OPEN_MOVING_PHOTO_VIDEO = "open_video"; // MEDIA_MOVING_PHOTO_OPRN_KEYWORD=OPEN_MOVING_PHOTO_VIDEO
 const std::string OPEN_PRIVATE_LIVE_PHOTO = "open_private_live_photo";
 const std::string OPEN_MOVING_PHOTO_VIDEO_CLOUD = "open_moving_photo_video_cloud";
+const std::string NOTIFY_VIDEO_SAVE_FINISHED = "notify_video_save_finished"; // movingPhoto video save finish
 
 // db sandbox directory
 const std::string MEDIA_DB_DIR = "/data/medialibrary/database";

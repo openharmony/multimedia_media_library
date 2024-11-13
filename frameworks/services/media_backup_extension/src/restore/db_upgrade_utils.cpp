@@ -19,6 +19,7 @@
 
 #include "rdb_store.h"
 #include "media_log.h"
+#include "result_set_utils.h"
 
 namespace OHOS::Media {
 namespace DataTransfer {
@@ -31,7 +32,7 @@ bool DbUpgradeUtils::IsTableExists(NativeRdb::RdbStore &store, const std::string
     std::vector<NativeRdb::ValueObject> bindArgs = {tableName};
     auto resultSet = store.QuerySql(querySql, bindArgs);
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
+        MEDIA_WARN_LOG("Query resultSql is null. tableName: %{public}s is not exists.", tableName.c_str());
         return false;
     }
     int rowCount = 0;
@@ -50,7 +51,9 @@ bool DbUpgradeUtils::IsColumnExists(
     std::vector<NativeRdb::ValueObject> bindArgs = {tableName, columnName};
     auto resultSet = store.QuerySql(querySql, bindArgs);
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
+        MEDIA_WARN_LOG("Query resultSql is null. tableName: %{public}s, columnName: %{public}s is not exists.",
+            tableName.c_str(),
+            columnName.c_str());
         return false;
     }
     int rowCount = 0;
@@ -60,6 +63,37 @@ bool DbUpgradeUtils::IsColumnExists(
         columnName.c_str(),
         isExists);
     return isExists;
+}
+
+std::vector<std::string> DbUpgradeUtils::GetAllTriggers(NativeRdb::RdbStore &store, const std::string &tableName)
+{
+    std::string querySql = this->SQL_SQLITE_MASTER_QUERY_TRIGGER;
+    std::vector<NativeRdb::ValueObject> bindArgs = {tableName};
+    auto resultSet = store.QuerySql(querySql, bindArgs);
+    std::vector<std::string> result;
+    if (resultSet == nullptr) {
+        MEDIA_WARN_LOG("Query resultSql is null. tableName: %{public}s does not have any triggers.", tableName.c_str());
+        return result;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string triggerName = GetStringVal("name", resultSet);
+        result.emplace_back(triggerName);
+    }
+    return result;
+}
+
+int32_t DbUpgradeUtils::DropAllTriggers(NativeRdb::RdbStore &store, const std::string &tableName)
+{
+    const std::vector<std::string> triggerNames = this->GetAllTriggers(store, tableName);
+    std::string prefix = "DROP TRIGGER IF EXISTS ";
+    for (auto &triggerName : triggerNames) {
+        std::string deleteTriggerSql = prefix + triggerName + ";";
+        int32_t ret = store.ExecuteSql(deleteTriggerSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Media_Restore: Drop trigger failed, triggerName=%{public}s", triggerName.c_str());
+        }
+    }
+    return NativeRdb::E_OK;
 }
 }  // namespace DataTransfer
 }  // namespace OHOS::Media

@@ -16,32 +16,13 @@
 #include "mtp_service.h"
 #include "media_log.h"
 #include "mtp_file_observer.h"
-#include <thread>
+#include "mtp_media_library.h"
 
-#include "accesstoken_kit.h"
-#include "nativetoken_kit.h"
-#include "token_setproc.h"
 using namespace std;
 namespace OHOS {
 namespace Media {
-std::shared_ptr<MtpService> MtpService::mtpServiceInstance_{nullptr};
-std::mutex MtpService::instanceLock_;
-
 MtpService::MtpService(void) : monitorPtr_(nullptr), isMonitorRun_(false)
 {
-}
-
-std::shared_ptr<MtpService> MtpService::GetInstance()
-{
-    if (mtpServiceInstance_ == nullptr) {
-        std::lock_guard<std::mutex> lockGuard(instanceLock_);
-        mtpServiceInstance_ = std::shared_ptr<MtpService>(new MtpService());
-        if (mtpServiceInstance_ != nullptr) {
-            mtpServiceInstance_->Init();
-        }
-    }
-
-    return mtpServiceInstance_;
 }
 
 void MtpService::Init()
@@ -53,25 +34,34 @@ void MtpService::Init()
 
 void MtpService::StartService()
 {
-    CHECK_AND_RETURN_LOG(monitorPtr_ != nullptr, "MtpService::StartService monitor is nullptr");
-    if (!isMonitorRun_) {
-        monitorPtr_->Start();
-        MtpFileObserver::GetInstance().StartFileInotify();
-        isMonitorRun_ = true;
+    MEDIA_INFO_LOG("MtpService::StartService");
+    {
+        std::unique_lock lock(mutex_);
+        Init();
+        CHECK_AND_RETURN_LOG(!isMonitorRun_, "MtpService::StartService -- monitor is already running, return");
+        CHECK_AND_RETURN_LOG(monitorPtr_ != nullptr, "MtpService::StartService monitorPtr_ is nullptr");
+        if (!isMonitorRun_) {
+            monitorPtr_->Start();
+            MtpFileObserver::GetInstance().StartFileInotify();
+            isMonitorRun_ = true;
+        }
     }
 }
 
 void MtpService::StopService()
 {
-    if (!isMonitorRun_ || monitorPtr_ == nullptr) {
-        MEDIA_INFO_LOG("MtpService::StopService monitor is not running");
-        return;
+    MEDIA_INFO_LOG("MtpService::StopService");
+    {
+        std::unique_lock lock(mutex_);
+        CHECK_AND_RETURN_LOG(isMonitorRun_, "MtpService::StopService -- monitor is not running, return");
+        CHECK_AND_RETURN_LOG(monitorPtr_ != nullptr, "MtpService::StopService monitorPtr_ is nullptr");
+        monitorPtr_->Stop();
+        MtpFileObserver::GetInstance().StopFileInotify();
+        isMonitorRun_ = false;
+        monitorPtr_.reset();
+        // after stop mtp service, clear the unordered_map memory of the MtpMediaLibrary
+        MtpMediaLibrary::GetInstance()->Clear();
     }
-    monitorPtr_->Stop();
-    MtpFileObserver::GetInstance().StopFileInotify();
-    isMonitorRun_ = false;
-    mtpServiceInstance_.reset();
-    monitorPtr_.reset();
 }
 } // namespace Media
 } // namespace OHOS

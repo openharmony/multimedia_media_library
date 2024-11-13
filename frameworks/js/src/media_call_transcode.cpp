@@ -24,6 +24,7 @@ namespace OHOS {
 namespace Media {
 
 static MediaCallTranscode::CallbackType callback_;
+static std::mutex transCoderMapMutex_;
 static std::map<std::string, std::shared_ptr<TransCoder>> transCoderMap_;
 static const int32_t INFO_TYPE_ERROR = 2;
 void MediaCallTranscode::TransCodeError(napi_env env, napi_value &result,
@@ -44,7 +45,10 @@ void MediaCallTranscode::CallTranscodeHandle(napi_env env, int srcFd, int destFd
         TransCodeError(env, result, srcFd, destFd, "Failed to create TransCoder");
         return;
     }
-    transCoderMap_.insert(std::pair<std::string, std::shared_ptr<TransCoder>>(requestId, transCoder));
+    {
+        std::lock_guard<std::mutex> lock(transCoderMapMutex_);
+        transCoderMap_.insert(std::pair<std::string, std::shared_ptr<TransCoder>>(requestId, transCoder));
+    }
     auto transCoderCb = std::make_shared<OHOS::Media::MediaAssetManagerCallback>();
     if (transCoderCb == nullptr) {
         TransCodeError(env, result, srcFd, destFd, "Failed to create MediaAssetManagerCallback");
@@ -86,6 +90,7 @@ void MediaCallTranscode::CallTranscodeHandle(napi_env env, int srcFd, int destFd
 
 void MediaCallTranscode::CallTranscodeRelease(const std::string& requestId)
 {
+    std::lock_guard<std::mutex> lock(transCoderMapMutex_);
     auto tcm = transCoderMap_.find(requestId);
     if (tcm == transCoderMap_.end()) {
         return;
@@ -109,6 +114,7 @@ void MediaAssetManagerCallback::OnInfo(int32_t type, int32_t extra)
 
 void MediaAssetManagerCallback::OnError(int32_t errCode, const std::string &errorMsg)
 {
+    std::lock_guard<std::mutex> lock(transCoderMapMutex_);
     auto tcm = transCoderMap_.find(requestId_);
     transCoderMap_.erase(tcm);
     NAPI_ERR_LOG("MediaAssetManagerCallback OnInfo errorMsg:%{public}s", errorMsg.c_str());

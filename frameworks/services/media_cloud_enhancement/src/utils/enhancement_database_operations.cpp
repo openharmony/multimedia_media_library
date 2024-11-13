@@ -26,6 +26,7 @@
 #include "mimetype_utils.h"
 #include "result_set_utils.h"
 #include "rdb_utils.h"
+#include "photo_album_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -47,7 +48,7 @@ std::shared_ptr<ResultSet> EnhancementDatabaseOperations::Query(MediaLibraryComm
     }
     string fileId = MediaFileUri::GetPhotoId(uri);
     servicePredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    return MediaLibraryRdbStore::Query(servicePredicates, columns);
+    return MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
 }
 
 std::shared_ptr<ResultSet> EnhancementDatabaseOperations::BatchQuery(MediaLibraryCommand &cmd,
@@ -72,14 +73,14 @@ std::shared_ptr<ResultSet> EnhancementDatabaseOperations::BatchQuery(MediaLibrar
         return nullptr;
     }
     servicePredicates.In(MediaColumn::MEDIA_ID, whereIdArgs);
-    return MediaLibraryRdbStore::Query(servicePredicates, columns);
+    return MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
 }
 
 int32_t EnhancementDatabaseOperations::Update(ValuesBucket &rdbValues, AbsRdbPredicates &predicates)
 {
     int32_t changedRows = -1;
     for (int32_t i = 0; i < MAX_UPDATE_RETRY_TIMES; i++) {
-        changedRows = MediaLibraryRdbStore::Update(rdbValues, predicates);
+        changedRows = MediaLibraryRdbStore::UpdateWithDateTime(rdbValues, predicates);
         if (changedRows >= 0) {
             break;
         }
@@ -104,12 +105,43 @@ static void HandleDateAdded(const int64_t dateAdded, const MediaType type, Value
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
     outValues.PutString(PhotoColumn::PHOTO_DATE_DAY,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
+    outValues.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateAdded);
+}
+
+static void SetOwnerAlbumId(ValuesBucket &assetInfo)
+{
+    RdbPredicates queryPredicates(PhotoAlbumColumns::TABLE);
+    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
+    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT));
+    vector<string> columns = { PhotoAlbumColumns::ALBUM_ID };
+    shared_ptr<ResultSet> resultSet = MediaLibraryRdbStore::QueryWithFilter(queryPredicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query cloud enhancement album id!");
+        return;
+    }
+    int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+    assetInfo.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
+}
+
+static void SetSupportedWatermarkType(int32_t sourceFileId, ValuesBucket &assetInfo)
+{
+    RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
+    queryPredicates.EqualTo(MediaColumn::MEDIA_ID, to_string(sourceFileId));
+    vector<string> columns = { PhotoColumn::SUPPORTED_WATERMARK_TYPE };
+    shared_ptr<ResultSet> resultSet = MediaLibraryRdbStore::Query(queryPredicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query supported watermark type!");
+        return;
+    }
+    int32_t supportedWatermarkType = GetInt32Val(PhotoColumn::SUPPORTED_WATERMARK_TYPE, resultSet);
+    assetInfo.PutInt(PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWatermarkType);
 }
 
 int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibraryCommand &cmd,
-    const FileAsset &fileAsset, int32_t sourceFileId, shared_ptr<CloudEnhancementFileInfo> info)
+    const FileAsset &fileAsset, int32_t sourceFileId, shared_ptr<CloudEnhancementFileInfo> info,
+    std::shared_ptr<TransactionOperations> trans)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "get rdb store failed");
     CHECK_AND_RETURN_RET_LOG(fileAsset.GetPath().empty() || !MediaFileUtils::IsFileExists(fileAsset.GetPath()),
         E_FILE_EXIST, "file %{private}s exists now", fileAsset.GetPath().c_str());
@@ -134,7 +166,7 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
         RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
         queryPredicates.EqualTo(MediaColumn::MEDIA_ID, sourceFileId);
         vector<string> columns = { PhotoColumn::PHOTO_DIRTY };
-        shared_ptr<ResultSet> resultSet = MediaLibraryRdbStore::Query(queryPredicates, columns);
+        shared_ptr<ResultSet> resultSet = MediaLibraryRdbStore::QueryWithFilter(queryPredicates, columns);
         if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Failed to query dirty!");
         }
@@ -148,10 +180,17 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
     assetInfo.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
         static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT));
     assetInfo.PutInt(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, sourceFileId);
+    SetOwnerAlbumId(assetInfo);
+    SetSupportedWatermarkType(sourceFileId, assetInfo);
     cmd.SetValueBucket(assetInfo);
     cmd.SetTableName(PhotoColumn::PHOTOS_TABLE);
     int64_t outRowId = -1;
-    int32_t errCode = rdbStore->Insert(cmd, outRowId);
+    int32_t errCode;
+    if (trans == nullptr) {
+        errCode = rdbStore->Insert(cmd, outRowId);
+    } else {
+        errCode = trans->Insert(cmd, outRowId);
+    }
     CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "Insert into db failed, errCode = %{public}d", errCode);
     MEDIA_INFO_LOG("insert success, rowId = %{public}d", (int)outRowId);
@@ -210,14 +249,14 @@ std::shared_ptr<NativeRdb::ResultSet> EnhancementDatabaseOperations::GetPair(Med
     vector<string> queryColumns = {PhotoColumn::PHOTO_EDIT_TIME, MediaColumn::MEDIA_DATE_TRASHED,
         PhotoColumn::PHOTO_HIDDEN_TIME};
     firstServicePredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    auto resultSet = MediaLibraryRdbStore::Query(firstServicePredicates, queryColumns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(firstServicePredicates, queryColumns);
     if (IsEditedTrashedHidden(resultSet)) {
         MEDIA_INFO_LOG("success into query stage after IsEditedTrashedHidden");
         RdbPredicates secondServicePredicates(PhotoColumn::PHOTOS_TABLE);
         secondServicePredicates.EqualTo(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, fileId);
         vector<string> columns = {};
         MEDIA_INFO_LOG("start query");
-        auto resultSetCallback = MediaLibraryRdbStore::Query(secondServicePredicates, columns);
+        auto resultSetCallback = MediaLibraryRdbStore::QueryWithFilter(secondServicePredicates, columns);
         if (IsEditedTrashedHidden(resultSetCallback)) {
             return resultSetCallback;
         }

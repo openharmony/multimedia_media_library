@@ -277,6 +277,10 @@ int32_t MediaLibraryKvStore::BatchInsert(const std::vector<DistributedKv::Entry>
         MEDIA_ERR_LOG("KvStorePtr is nullptr");
         return E_HAS_DB_ERROR;
     }
+    if (entries.empty()) {
+        MEDIA_ERR_LOG("Entries is empty");
+        return E_ERR;
+    }
 
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryKvStore::BatchInsert");

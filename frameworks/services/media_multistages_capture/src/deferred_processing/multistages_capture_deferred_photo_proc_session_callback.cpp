@@ -56,6 +56,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(shared
     string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    resultSet->Close();
 
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch != nullptr) {
@@ -121,6 +122,7 @@ int32_t QuerySubType(const string &photoId)
         return static_cast<int32_t>(PhotoSubType::CAMERA);
     }
     int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    resultSet->Close();
     return subType == 0 ? static_cast<int32_t>(PhotoSubType::CAMERA) : subType;
 }
 
@@ -225,13 +227,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::GetCommandByImageId(con
     string where = "";
     vector<string> whereArgs;
     if (slashIndex != string::npos) {
-        string displayName = imageId.substr(slashIndex + 1);
-        stringstream result;
-        for (size_t i = 0; i < displayName.length(); i++) {
-            if (isdigit(displayName[i])) {
-                result << displayName[i];
-            }
-        }
         string fileId = MediaFileUtils::GetIdFromUri(imageId);
         where = PhotoColumn::MEDIA_ID + " = ? ";
         whereArgs = { fileId };
@@ -279,6 +274,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityIma
     string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
+    resultSet->Close();
     MultiStagesPhotoCaptureManager::GetInstance().DealLowQualityPicture(photoId, std::move(picture), isEdited);
     MEDIA_INFO_LOG("save low quality image end");
 }

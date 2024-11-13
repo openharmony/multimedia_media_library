@@ -13,8 +13,10 @@
  * limitations under the License.
  */
 
+#include <chrono>
 #include <vector>
 #include <string>
+#include <thread>
 
 #include "cloud_sync_observer.h"
 
@@ -37,11 +39,6 @@ static void HandleCloudNotify(AsyncTaskData *data)
     notifyHandler->MakeResponsibilityChain();
 }
 
-CloudSyncObserver::CloudSyncObserver() : timer_("CloudSyncObserver")
-{
-    timer_.Setup();
-}
-
 void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
 {
     CloudSyncNotifyInfo notifyInfo = {changeInfo.uris_, changeInfo.changeType_};
@@ -49,7 +46,10 @@ void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos && notifyInfo.type == ChangeType::OTHER) {
         lock_guard<mutex> lock(syncMutex_);
         if (!isPending_) {
-            timerId_ = timer_.Register(bind(&CloudSyncObserver::HandleIndex, this), SYNC_INTERVAL, true);
+            MEDIA_INFO_LOG("set timer handle index");
+            std::thread([this]() {
+                this->HandleIndex();
+            }).detach();
             isPending_ = true;
         }
     }
@@ -74,13 +74,14 @@ void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
 
 void CloudSyncObserver::HandleIndex()
 {
+    std::this_thread::sleep_for(std::chrono::milliseconds(SYNC_INTERVAL));
     lock_guard<mutex> lock(syncMutex_);
     std::vector<std::string> idToDeleteIndex;
     MediaAnalysisHelper::AsyncStartMediaAnalysisService(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_DELETE_INDEX), idToDeleteIndex);
 
     //update index
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
         return;

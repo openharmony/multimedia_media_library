@@ -684,7 +684,7 @@ napi_value SendablePhotoAccessHelper::JSRelease(napi_env env, napi_callback_info
     if (status != napi_ok) {
         napi_get_undefined(env, &result);
     } else {
-        napi_queue_async_work(env, asyncContext->work);
+        napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
         asyncContext.release();
     }
 

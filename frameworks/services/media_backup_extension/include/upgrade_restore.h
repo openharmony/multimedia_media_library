@@ -19,6 +19,7 @@
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 
+#include "backup_database_helper.h"
 #include "base_restore.h"
 #include "burst_key_generator.h"
 #include "photos_restore.h"
@@ -107,6 +108,7 @@ private:
     void UpdateFaceAnalysisStatus();
     void UpdateDualCloneFaceAnalysisStatus();
     bool HasLowQualityImage();
+    void CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode) override;
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
@@ -130,6 +132,7 @@ private:
     bool shouldIncludeSd_{false};
     PhotoAlbumRestore photoAlbumRestore_;
     PhotosRestore photosRestore_;
+    BackupDatabaseHelper backupDatabaseHelper_;
 };
 } // namespace Media
 } // namespace OHOS

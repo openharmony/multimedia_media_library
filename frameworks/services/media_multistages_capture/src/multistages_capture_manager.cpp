@@ -40,7 +40,7 @@ void MultiStagesCaptureManager::RemovePhotos(const NativeRdb::AbsRdbPredicates &
         return;
     }
 
-    AbsRdbPredicates predicatesNew(predicates.GetTableName());
+    NativeRdb::AbsRdbPredicates predicatesNew(predicates.GetTableName());
     string where = predicates.GetWhereClause() + " AND " + PhotoColumn::PHOTO_QUALITY + "=" +
         to_string(static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
 
@@ -49,7 +49,7 @@ void MultiStagesCaptureManager::RemovePhotos(const NativeRdb::AbsRdbPredicates &
     vector<string> columns { MediaColumn::MEDIA_ID, MEDIA_DATA_DB_PHOTO_ID, MEDIA_DATA_DB_PHOTO_QUALITY,
         MEDIA_DATA_DB_MEDIA_TYPE };
     auto resultSet = MediaLibraryRdbStore::Query(predicatesNew, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_INFO_LOG("Result set is empty");
         return;
     }
@@ -84,15 +84,15 @@ void MultiStagesCaptureManager::RestorePhotos(const NativeRdb::AbsRdbPredicates 
         return;
     }
 
-    AbsRdbPredicates predicatesNew(predicates.GetTableName());
+    NativeRdb::AbsRdbPredicates predicatesNew(predicates.GetTableName());
     string where = predicates.GetWhereClause() + " AND " + PhotoColumn::PHOTO_QUALITY + "=" +
         to_string(static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
     predicatesNew.SetWhereClause(where);
     predicatesNew.SetWhereArgs(predicates.GetWhereArgs());
     vector<string> columns { MediaColumn::MEDIA_ID, MEDIA_DATA_DB_PHOTO_ID, MEDIA_DATA_DB_PHOTO_QUALITY,
         MEDIA_DATA_DB_MEDIA_TYPE };
-    auto resultSet = MediaLibraryRdbStore::Query(predicatesNew, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicatesNew, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_INFO_LOG("Result set is empty");
         return;
     }

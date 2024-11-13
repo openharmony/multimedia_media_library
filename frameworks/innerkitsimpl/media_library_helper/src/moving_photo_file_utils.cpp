@@ -44,6 +44,7 @@ const std::string LIVE_PHOTO_CINEMAGRAPH_INFO = "CinemagraphInfo";
 const std::string LIVE_PHOTO_VIDEO_INFO_METADATA = "VideoInfoMetadata";
 const std::string LIVE_PHOTO_SIGHT_TREMBLE_META_DATA = "SightTrembleMetadata";
 const std::string LIVE_PHOTO_VERSION_AND_FRAME_NUM = "VersionAndFrameNum";
+constexpr int32_t HEX_BASE = 16;
 
 static string GetVersionPositionTag(uint32_t frame, bool hasExtraData, const string& data = "")
 {
@@ -190,7 +191,7 @@ static int32_t ReadExtraFile(const std::string& extraPath, map<string, string>& 
     }
     UniqueFd fd(open(absExtraPath.c_str(), O_RDONLY));
     if (fd.Get() == E_ERR) {
-        MEDIA_ERR_LOG("failed to open extra file");
+        MEDIA_ERR_LOG("failed to open extra file, errno: %{public}d", errno);
         return E_ERR;
     }
     uint32_t version{0};
@@ -327,7 +328,8 @@ uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
         MEDIA_ERR_LOG("AV metadata helper is null");
         return index;
     }
-    if (avMetadataHelper->SetSource(fd, 0, static_cast<int64_t>(GetFileSize(fd)), AV_META_USAGE_FRAME_INDEX_CONVERT) != E_OK) {
+    if (avMetadataHelper->SetSource(fd, 0, static_cast<int64_t>(GetFileSize(fd)),
+        AV_META_USAGE_FRAME_INDEX_CONVERT) != E_OK) {
         MEDIA_ERR_LOG("failed to set source");
         return index;
     }
@@ -358,7 +360,7 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", imagePath.c_str(), errno);
     UniqueFd imageFd(open(absImagePath.c_str(), O_RDONLY));
     if (imageFd.Get() == E_ERR) {
-        MEDIA_ERR_LOG("failed to open image file");
+        MEDIA_ERR_LOG("failed to open image file, errno: %{public}d", errno);
         return E_ERR;
     }
     string absVideoPath;
@@ -366,7 +368,7 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", videoPath.c_str(), errno);
     UniqueFd videoFd(open(absVideoPath.c_str(), O_RDONLY));
     if (videoFd.Get() == E_ERR) {
-        MEDIA_ERR_LOG("failed to open video file");
+        MEDIA_ERR_LOG("failed to open video file, errno: %{public}d", errno);
         return E_ERR;
     }
     if (MediaFileUtils::CreateAsset(cachePath) != E_OK) {
@@ -378,11 +380,14 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", cachePath.c_str(), errno);
     UniqueFd livePhotoFd(open(absCachePath.c_str(), O_WRONLY | O_TRUNC));
     if (livePhotoFd.Get() == E_ERR) {
-        MEDIA_ERR_LOG("failed to open live photo file");
+        MEDIA_ERR_LOG("failed to open live photo file, errno: %{public}d", errno);
         return E_ERR;
     }
     if (MergeFile(imageFd, videoFd, livePhotoFd, extraPath, GetFrameIndex(coverPosition, videoFd.Get())) == E_ERR) {
         MEDIA_ERR_LOG("failed to MergeFile file");
+        if (!MediaFileUtils::DeleteFile(absCachePath)) {
+            MEDIA_ERR_LOG("failed to delete cache file, errno: %{public}d", errno);
+        }
         return E_ERR;
     }
     livePhotoPath = absCachePath;
@@ -529,6 +534,19 @@ static int32_t SendLivePhoto(const UniqueFd &livePhotoFd, const string &destPath
     return E_OK;
 }
 
+static bool IsValidHexInteger(const string &hexStr)
+{
+    constexpr int32_t HEX_INT_LENGTH = 8;
+    if (hexStr.length() > HEX_INT_LENGTH) {
+        return false;
+    }
+    uint64_t num = stoull(hexStr, nullptr, HEX_BASE);
+    if (num > numeric_limits<int32_t>::max()) {
+        return false;
+    }
+    return true;
+}
+
 static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataSize)
 {
     struct stat64 st;
@@ -538,7 +556,7 @@ static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataS
     CHECK_AND_RETURN_RET_LOG(totalSize > MIN_STANDARD_SIZE, E_INVALID_LIVE_PHOTO,
         "Failed to check live photo, total size is %{public}" PRId64, totalSize);
 
-    char versionTag[VERSION_TAG_LEN + 1];
+    char versionTag[VERSION_TAG_LEN + 1] = {0};
     CHECK_AND_RETURN_RET_LOG(lseek(livePhotoFd.Get(), -MIN_STANDARD_SIZE, SEEK_END) != -1, E_HAS_FS_ERROR,
         "Failed to lseek version tag, errno:%{public}d", errno);
     CHECK_AND_RETURN_RET_LOG(read(livePhotoFd.Get(), versionTag, VERSION_TAG_LEN) != -1, E_HAS_FS_ERROR,
@@ -561,7 +579,7 @@ static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataS
     // extra data with cinemagraph
     CHECK_AND_RETURN_RET_LOG(totalSize > MIN_STANDARD_SIZE + CINEMAGRAPH_INFO_SIZE_LEN, E_INVALID_LIVE_PHOTO,
         "Failed to check live photo with cinemagraph, total size is %{public}" PRId64, totalSize);
-    char cinemagraphSize[CINEMAGRAPH_INFO_SIZE_LEN];
+    char cinemagraphSize[CINEMAGRAPH_INFO_SIZE_LEN] = {0};
     CHECK_AND_RETURN_RET_LOG(lseek(livePhotoFd.Get(), -(MIN_STANDARD_SIZE + CINEMAGRAPH_INFO_SIZE_LEN), SEEK_END) != -1,
         E_HAS_FS_ERROR, "Failed to lseek cinemagraph size, errno:%{public}d", errno);
     CHECK_AND_RETURN_RET_LOG(read(livePhotoFd.Get(), cinemagraphSize, CINEMAGRAPH_INFO_SIZE_LEN) != -1, E_HAS_FS_ERROR,
@@ -570,7 +588,11 @@ static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataS
     for (int32_t i = 0; i < CINEMAGRAPH_INFO_SIZE_LEN; i++) {
         cinemagraphSizeStream << hex << static_cast<int32_t>(cinemagraphSize[i]);
     }
-    constexpr int32_t HEX_BASE = 16;
+    if (!IsValidHexInteger(cinemagraphSizeStream.str())) {
+        extraDataSize = MIN_STANDARD_SIZE;
+        MEDIA_WARN_LOG("hex string over int max %{public}s", cinemagraphSizeStream.str().c_str());
+        return E_OK;
+    }
     extraDataSize = MIN_STANDARD_SIZE + std::stoi(cinemagraphSizeStream.str(), 0, HEX_BASE);
     return E_OK;
 }
@@ -704,8 +726,8 @@ int32_t MovingPhotoFileUtils::GetVersionAndFrameNum(const string &tag,
 
     constexpr int32_t VERSION_POSITION = 1;
     constexpr int32_t FRAME_INDEX_POSITION = 2;
-    version = static_cast<uint32_t>(stoi(result[VERSION_POSITION]));
-    frameIndex = static_cast<uint32_t>(stoi(result[FRAME_INDEX_POSITION]));
+    version = static_cast<uint32_t>(atoi(result[VERSION_POSITION].str().c_str()));
+    frameIndex = static_cast<uint32_t>(atoi(result[FRAME_INDEX_POSITION].str().c_str()));
     size_t blankIndex = tag.find_first_of(' ');
     string tagTrimmed = tag;
     if (blankIndex != string::npos) {
@@ -726,7 +748,7 @@ int32_t MovingPhotoFileUtils::GetVersionAndFrameNum(int32_t fd,
     CHECK_AND_RETURN_RET_LOG(totalSize >= MIN_STANDARD_SIZE, E_INVALID_LIVE_PHOTO,
         "Failed to fetch version tag, total size is %{public}" PRId64, totalSize);
 
-    char versionTag[VERSION_TAG_LEN + 1];
+    char versionTag[VERSION_TAG_LEN + 1] = {0};
     CHECK_AND_RETURN_RET_LOG(lseek(fd, -MIN_STANDARD_SIZE, SEEK_END) != -1, E_HAS_FS_ERROR,
         "Failed to lseek version tag, errno:%{public}d", errno);
     CHECK_AND_RETURN_RET_LOG(read(fd, versionTag, VERSION_TAG_LEN) != -1, E_HAS_FS_ERROR,

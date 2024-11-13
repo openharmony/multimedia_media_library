@@ -20,6 +20,7 @@
 #include <securec.h>
 #include <dirent.h>
 
+#include "album_plugin_config.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
 #include "datashare_abs_result_set.h"
@@ -31,6 +32,7 @@
 #include "media_file_uri.h"
 #include "media_log.h"
 #include "media_scanner.h"
+#include "medialibrary_rdb_transaction.h"
 
 namespace OHOS {
 namespace Media {
@@ -361,8 +363,8 @@ int32_t OthersCloneRestore::GetAllfilesInCurrentDir(const std::string &path)
 
 void OthersCloneRestore::HandleInsertBatch(int32_t offset)
 {
-    auto totalNumber = photoInfos_.size();
-    totalNumber = totalNumber < (offset + QUERY_NUMBER) ? totalNumber : (offset + QUERY_NUMBER);
+    int32_t totalNumber = std::min(static_cast<int32_t>(photoInfos_.size()),
+        static_cast<int32_t>(offset + QUERY_NUMBER));
     vector<FileInfo> insertInfos;
     for (offset; offset < totalNumber; offset++) {
         FileInfo info = photoInfos_[offset];
@@ -387,7 +389,7 @@ void OthersCloneRestore::RestorePhoto()
     RestoreAlbum(photoInfos_);
     unsigned long pageSize = 200;
     vector<FileInfo> insertInfos;
-    auto totalNumber = photoInfos_.size();
+    int32_t totalNumber = static_cast<int32_t>(photoInfos_.size());
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_NUMBER) {
         ffrt::submit([this, offset]() {
             HandleInsertBatch(offset);
@@ -476,6 +478,15 @@ static std::string ParseSourcePathToLPath(int32_t sceneCode, const std::string &
     std::size_t pos = lPath.find_last_of(FILE_SEPARATOR);
     if (pos != std::string::npos) {
         lPath = lPath.substr(0, pos);
+    } else {
+        MEDIA_WARN_LOG("find error path is: %{public}s",
+            BackupFileUtils::GarbleFilePath(filePath, sceneCode).c_str());
+        lPath = FILE_SEPARATOR;
+    }
+    if (lPath.empty()) {
+        MEDIA_WARN_LOG("find path is empty: %{public}s",
+            BackupFileUtils::GarbleFilePath(filePath, sceneCode).c_str());
+        lPath = FILE_SEPARATOR;
     }
     return lPath;
 }
@@ -552,6 +563,40 @@ bool OthersCloneRestore::HasSameFileForDualClone(FileInfo &fileInfo)
     return true;
 }
 
+static std::string ToLower(const std::string &str)
+{
+    std::string lowerStr;
+    std::transform(
+        str.begin(), str.end(), std::back_inserter(lowerStr), [](unsigned char c) { return std::tolower(c); });
+    return lowerStr;
+}
+
+PhotoAlbumDao::PhotoAlbumRowData OthersCloneRestore::FindAlbumInfo(FileInfo &fileInfo)
+{
+    PhotoAlbumDao::PhotoAlbumRowData albumInfo;
+    if (fileInfo.lPath.empty()) {
+        MEDIA_ERR_LOG("others clone lPath is empty, path: %{public}s",
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode_).c_str());
+        return albumInfo;
+    }
+    if (ToLower(fileInfo.lPath) == ToLower(AlbumPlugin::LPATH_SCREEN_SHOTS) &&
+        fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
+        albumInfo = this->photoAlbumDao_.BuildAlbumInfoOfRecorders();
+        albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
+        MEDIA_INFO_LOG(
+            "others clone: screenshots redirect to screenrecords, path: %{public}s",
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode_).c_str());
+        fileInfo.lPath = AlbumPlugin::LPATH_SCREEN_RECORDS;
+        return albumInfo;
+    }
+    albumInfo = this->photoAlbumDao_.GetPhotoAlbum(fileInfo.lPath);
+    if (albumInfo.lPath.empty()) {
+        MEDIA_ERR_LOG("others clone: albumInfo is empty, path: %{public}s",
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode_).c_str());
+    }
+    return albumInfo;
+}
+
 void OthersCloneRestore::UpdateAlbumInfo(FileInfo &info)
 {
     if (sceneCode_ == I_PHONE_CLONE_RESTORE) {
@@ -562,7 +607,7 @@ void OthersCloneRestore::UpdateAlbumInfo(FileInfo &info)
         info.packageName = clonePhoneName_;
         info.bundleName = clonePhoneName_;
     } else if (sceneCode_ == OTHERS_PHONE_CLONE_RESTORE) {
-        PhotoAlbumDao::PhotoAlbumRowData albumInfo = photoAlbumDao_.GetPhotoAlbum(info.lPath);
+        PhotoAlbumDao::PhotoAlbumRowData albumInfo = FindAlbumInfo(info);
         info.mediaAlbumId = albumInfo.albumId;
         info.ownerAlbumId = albumInfo.albumId;
     }

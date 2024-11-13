@@ -94,13 +94,13 @@ private:
     int32_t UpdateMetadataFlagInDb(const int32_t fieldId, const MetadataFlags &flag);
 
     // cloudsync
-    void StopCloudSync();
-    void RestartCloudSync();
+    EXPORT void StopCloudSync();
+    EXPORT void RestartCloudSync();
 
     // RecoveryPhotosTableColumn
-    ResultSetDataType GetDataType(const std::string &name);
-    const std::unordered_map<std::string, ResultSetDataType> &GetRecoveryPhotosTableColumnInfo();
-    std::unordered_map<std::string, ResultSetDataType> QueryRecoveryPhotosTableColumnInfo();
+    EXPORT ResultSetDataType GetDataType(const std::string &name);
+    EXPORT const std::unordered_map<std::string, ResultSetDataType> &GetRecoveryPhotosTableColumnInfo();
+    EXPORT std::unordered_map<std::string, ResultSetDataType> QueryRecoveryPhotosTableColumnInfo();
 
 private:
     std::atomic<MediaLibraryMetaRecoveryState> recoveryState_{MediaLibraryMetaRecoveryState::STATE_NONE};

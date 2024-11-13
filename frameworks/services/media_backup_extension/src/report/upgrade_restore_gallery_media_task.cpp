@@ -28,7 +28,7 @@ static constexpr char MEDIA_LIBRARY[] = "MEDIALIBRARY";
 int32_t UpgradeRestoreGalleryMediaTask::Report(const std::string &taskInfo)
 {
     UpgradeRestoreGalleryMediaTask::ResultData resultData = this->ParseFromJsonStr(taskInfo);
-    MEDIA_INFO_LOG("UpgradeRestoreGalleryMediaTask, resultData: %{public}s", this->ToString(resultData).c_str());
+    MEDIA_INFO_LOG("GET restoreExInfo: %{public}s", this->ToString(resultData).c_str());
     for (const auto &eventInfo : this->Parse(resultData)) {
         int32_t ret = HiSysEventWrite(MEDIA_LIBRARY,
             "MEDIALIB_BACKUP_RESTORE_RESULT",

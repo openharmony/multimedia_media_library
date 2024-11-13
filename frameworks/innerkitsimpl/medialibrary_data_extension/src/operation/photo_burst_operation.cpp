@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define MLOG_TAG "PhotoFileOperation"
+#define MLOG_TAG "PhotoBurstOperation"
 
 #include "photo_burst_operation.h"
 
@@ -30,26 +30,20 @@
 #include "media_log.h"
 
 namespace OHOS::Media {
+PhotoBurstOperation &PhotoBurstOperation::SetTargetPhotoInfo(const PhotoAssetInfo &photoAssetInfo)
+{
+    this->photoAssetInfo_ = photoAssetInfo;
+    this->photoAssetInfo_.burstGroupName = this->FindBurstGroupName(photoAssetInfo.displayName);
+    return *this;
+}
+
 /**
  * @brief Find burstKey from the given albumId, only for BURST photo.
  * @return burstKey, if found; empty string, otherwise.
  */
-std::string PhotoBurstOperation::FindBurstKey(NativeRdb::RdbStore &rdbStore,
-    const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t targetAlbumId,
-    const std::string &uniqueDisplayName)
+std::string PhotoBurstOperation::FindBurstKey(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore)
 {
-    if (resultSet == nullptr || targetAlbumId <= 0 || uniqueDisplayName.empty()) {
-        MEDIA_ERR_LOG("Media_Operation: FindBurstKey: resultSet is null or targetAlbumId is invalid");
-        return "";
-    }
-    // Build the photo asset info.
-    PhotoBurstOperation::PhotoAssetInfo photoAssetInfo;
-    photoAssetInfo.displayName =
-        uniqueDisplayName.empty() ? GetStringVal(MediaColumn::MEDIA_NAME, resultSet) : uniqueDisplayName;
-    photoAssetInfo.subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-    photoAssetInfo.ownerAlbumId = targetAlbumId;
-    photoAssetInfo.burstGroupName = this->FindBurstGroupName(photoAssetInfo.displayName);
-    return this->FindBurstKey(rdbStore, photoAssetInfo);
+    return this->FindBurstKey(rdbStore, this->photoAssetInfo_);
 }
 
 /**
@@ -57,10 +51,10 @@ std::string PhotoBurstOperation::FindBurstKey(NativeRdb::RdbStore &rdbStore,
  * @return burstKey, if found; empty string, otherwise.
  */
 std::string PhotoBurstOperation::FindBurstKey(
-    NativeRdb::RdbStore &rdbStore, const PhotoBurstOperation::PhotoAssetInfo &photoAssetInfo)
+    const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, const PhotoAssetInfo &photoAssetInfo)
 {
     if (photoAssetInfo.ownerAlbumId <= 0 || photoAssetInfo.burstGroupName.empty() ||
-        photoAssetInfo.subtype != static_cast<int32_t>(PhotoSubType::BURST)) {
+        photoAssetInfo.subtype != static_cast<int32_t>(PhotoSubType::BURST) || rdbStore == nullptr) {
         return "";
     }
     std::string burstKey = this->QueryBurstKeyFromDB(rdbStore, photoAssetInfo);
@@ -68,17 +62,9 @@ std::string PhotoBurstOperation::FindBurstKey(
         burstKey = this->GenerateUuid();
         MEDIA_INFO_LOG("Media_Operation: burstKey is empty, create a new one [%{public}s]. Object: %{public}s",
             burstKey.c_str(),
-            this->ToString(photoAssetInfo).c_str());
+            photoAssetInfo.ToString().c_str());
     }
     return burstKey;
-}
-
-std::string PhotoBurstOperation::ToString(const PhotoBurstOperation::PhotoAssetInfo &photoInfo)
-{
-    std::stringstream ss;
-    ss << "PhotoAssetInfo[displayName: " << photoInfo.displayName << ", subtype: " << photoInfo.subtype
-       << ", ownerAlbumId: " << photoInfo.ownerAlbumId << ", burstGroupName: " << photoInfo.burstGroupName << "]";
-    return ss.str();
 }
 
 std::string PhotoBurstOperation::ToString(const std::vector<NativeRdb::ValueObject> &values)
@@ -123,18 +109,19 @@ std::string PhotoBurstOperation::FindBurstGroupName(const std::string &displayNa
 }
 
 std::string PhotoBurstOperation::QueryBurstKeyFromDB(
-    NativeRdb::RdbStore &rdbStore, const PhotoBurstOperation::PhotoAssetInfo &photoAssetInfo)
+    const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, const PhotoAssetInfo &photoAssetInfo)
 {
     int32_t ownerAlbumId = photoAssetInfo.ownerAlbumId;
     std::string burstGroupName = photoAssetInfo.burstGroupName;
     // Avoid full table scan: if the burstGroupName is empty, return empty string.
-    if (ownerAlbumId <= 0 || burstGroupName.empty()) {
+    if (ownerAlbumId <= 0 || burstGroupName.empty() || rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Media_Operation: object invalid. Object: %{public}s", photoAssetInfo.ToString().c_str());
         return "";
     }
     std::string querySql = this->SQL_PHOTOS_TABLE_QUERY_BURST_KEY;
     std::string burstGroupNameCondition = burstGroupName + "%";
     const std::vector<NativeRdb::ValueObject> bindArgs = {ownerAlbumId, burstGroupNameCondition};
-    auto resultSet = rdbStore.QuerySql(querySql, bindArgs);
+    auto resultSet = rdbStore->QuerySql(querySql, bindArgs);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_WARN_LOG("Media_Operation: resultSet is null or no data found! "
                        "querySql: %{public}s, bindArgs: %{public}s",

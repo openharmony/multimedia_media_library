@@ -42,7 +42,7 @@ namespace Media {
 class EnhancementManager {
 public:
     EXPORT static EnhancementManager& GetInstance();
-    EXPORT bool Init(bool isReconnected = false);
+    EXPORT bool Init();
     EXPORT bool InitAsync();
     EXPORT bool LoadService();
     EXPORT void CancelTasksInternal(const std::vector<std::string> &fildIds, std::vector<std::string> &photoIds,

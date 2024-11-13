@@ -37,12 +37,14 @@
 #include "dfx_manager.h"
 #include "dfx_reporter.h"
 #include "dfx_utils.h"
+#include "directory_ex.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
 #include "location_column.h"
 #include "media_analysis_helper.h"
 #include "media_column.h"
+#include "cloud_media_asset_manager.h"
 #include "media_datashare_ext_ability.h"
 #include "media_directory_type_column.h"
 #include "media_file_utils.h"
@@ -108,6 +110,9 @@
 #include "parameter.h"
 #include "parameters.h"
 #include "uuid.h"
+#ifdef DEVICE_STANDBY_ENABLE
+#include "medialibrary_standby_service_subscriber.h"
+#endif
 #ifdef HAS_THERMAL_MANAGER_PART
 #include "thermal_mgr_client.h"
 #endif
@@ -133,6 +138,10 @@ mutex MediaLibraryDataManager::mutex_;
 static const int32_t UUID_STR_LENGTH = 37;
 const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 2;
 
+#ifdef DEVICE_STANDBY_ENABLE
+static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
+static const std::string MODULE_NAME = "com.ohos.medialibrary.medialibrarydata";
+#endif
 #ifdef DISTRIBUTED
 static constexpr int MAX_QUERY_THUMBNAIL_KEY_COUNT = 20;
 #endif
@@ -230,19 +239,16 @@ static int32_t ReconstructMediaLibraryPhotoMap()
     if (system::GetParameter("persist.multimedia.medialibrary.albumFusion.status", "1") == "1") {
         return E_OK;
     }
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Failed to get rdbstore, try again!");
-        rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+        rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         if (rdbStore == nullptr) {
             MEDIA_ERR_LOG("Fatal error! Failed to get rdbstore, new cloud data is not processed!!");
             return E_DB_FAIL;
         }
     }
-    auto upgradeStorePtr = rdbStore->GetRaw();
-    NativeRdb::RdbStore *upgradeStore = upgradeStorePtr.get();
-    RdbStore &store = *upgradeStore;
-    MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(store);
+    MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(rdbStore);
     return E_OK;
 }
 
@@ -323,6 +329,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     HandleUpgradeRdbAsync();
     CloudSyncSwitchManager cloudSyncSwitchManager;
     cloudSyncSwitchManager.RegisterObserver();
+    SubscriberPowerConsumptionDetection();
 
     refCnt_++;
 
@@ -340,7 +347,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()
 {
     std::thread([&] {
-        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         if (rdbStore == nullptr) {
             MEDIA_ERR_LOG("rdbStore is nullptr!");
             return;
@@ -350,40 +357,35 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync()
             MEDIA_INFO_LOG("No need to upgrade rdb, oldVersion: %{public}d", oldVersion);
             return;
         }
-        auto rawStore = rdbStore->GetRaw();
-        if (rawStore == nullptr) {
-            MEDIA_ERR_LOG("rawStore is nullptr!");
-            return;
-        }
         MEDIA_INFO_LOG("oldVersion:%{public}d", oldVersion);
         // compare older version, update and set old version
         if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
-            MediaLibraryRdbStore::CreateBurstIndex(*rawStore);
+            MediaLibraryRdbStore::CreateBurstIndex(rdbStore);
             rdbStore->SetOldVersion(VERSION_CREATE_BURSTKEY_INDEX);
         }
 
         if (oldVersion < VERSION_UPDATE_BURST_DIRTY) {
-            MediaLibraryRdbStore::UpdateBurstDirty(*rawStore);
+            MediaLibraryRdbStore::UpdateBurstDirty(rdbStore);
             rdbStore->SetOldVersion(VERSION_UPDATE_BURST_DIRTY);
         }
 
         if (oldVersion < VERSION_UPGRADE_THUMBNAIL) {
-            MediaLibraryRdbStore::UpdateReadyOnThumbnailUpgrade(*rawStore);
+            MediaLibraryRdbStore::UpdateReadyOnThumbnailUpgrade(rdbStore);
             rdbStore->SetOldVersion(VERSION_UPGRADE_THUMBNAIL);
         }
         if (oldVersion < VERSION_ADD_DETAIL_TIME) {
-            MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(*rawStore);
-            MediaLibraryRdbStore::UpdateDateTakenIndex(*rawStore);
+            MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(rdbStore);
+            MediaLibraryRdbStore::UpdateDateTakenIndex(rdbStore);
             ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
             rdbStore->SetOldVersion(VERSION_ADD_DETAIL_TIME);
         }
         if (oldVersion < VERSION_MOVE_AUDIOS) {
             MediaLibraryAudioOperations::MoveToMusic();
-            MediaLibraryRdbStore::ClearAudios(*rawStore);
+            MediaLibraryRdbStore::ClearAudios(rdbStore);
             rdbStore->SetOldVersion(VERSION_MOVE_AUDIOS);
         }
         if (oldVersion < VERSION_UPDATE_INDEX_FOR_COVER) {
-            MediaLibraryRdbStore::UpdateIndexForCover(*rawStore);
+            MediaLibraryRdbStore::UpdateIndexForCover(rdbStore);
             rdbStore->SetOldVersion(VERSION_UPDATE_INDEX_FOR_COVER);
         }
 
@@ -473,7 +475,7 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
         MEDIA_ERR_LOG("init MediaLibraryUnistoreManager failed");
         return ret;
     }
-    rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return E_ERR;
@@ -504,6 +506,15 @@ void MediaLibraryDataManager::SetOwner(const shared_ptr<MediaDataShareExtAbility
 
 string MediaLibraryDataManager::GetType(const Uri &uri)
 {
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::GetType");
+    MediaLibraryCommand cmd(uri);
+    switch (cmd.GetOprnObject()) {
+        case OperationObject::CLOUD_MEDIA_ASSET_OPERATE:
+            return CloudMediaAssetManager::GetInstance().HandleCloudMediaAssetGetTypeOperations(cmd);
+        default:
+            break;
+    }
+
     MEDIA_INFO_LOG("GetType uri: %{private}s", uri.ToString().c_str());
     return "";
 }
@@ -900,7 +911,8 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
             }
             break;
         }
-        case OperationObject::MEDIA_APP_URI_PERMISSION: {
+        case OperationObject::MEDIA_APP_URI_PERMISSION:
+        case OperationObject::APP_URI_PERMISSION_INNER: {
             return MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
         }
         case OperationObject::FILESYSTEM_PHOTO:
@@ -958,6 +970,10 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
+    }
+
+    if (cmd.GetOprnObject() == OperationObject::CLOUD_MEDIA_ASSET_OPERATE) {
+        return CloudMediaAssetManager::GetInstance().HandleCloudMediaAssetUpdateOperations(cmd);
     }
 
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
@@ -1221,24 +1237,17 @@ int32_t MediaLibraryDataManager::RestoreThumbnailDualFrame()
 
 static void CacheAging()
 {
-    filesystem::path cacheDir(MEDIA_CACHE_DIR);
-    if (!filesystem::exists(cacheDir)) {
+    if (!MediaFileUtils::IsDirectory(MEDIA_CACHE_DIR)) {
         return;
     }
-
-    std::error_code errCode;
     time_t now = time(nullptr);
     constexpr int thresholdSeconds = 24 * 60 * 60; // 24 hours
-    for (const auto& entry : filesystem::recursive_directory_iterator(cacheDir)) {
-        string filePath = entry.path().string();
-        if (!entry.is_regular_file()) {
-            MEDIA_WARN_LOG("skip %{private}s, not regular file", filePath.c_str());
-            continue;
-        }
-
+    vector<string> files;
+    GetDirFiles(MEDIA_CACHE_DIR, files);
+    for (auto &file : files) {
         struct stat statInfo {};
-        if (stat(filePath.c_str(), &statInfo) != 0) {
-            MEDIA_WARN_LOG("skip %{private}s , stat errno: %{public}d", filePath.c_str(), errno);
+        if (stat(file.c_str(), &statInfo) != 0) {
+            MEDIA_WARN_LOG("skip %{private}s , stat errno: %{public}d", file.c_str(), errno);
             continue;
         }
         time_t timeModified = statInfo.st_mtime;
@@ -1246,9 +1255,8 @@ static void CacheAging()
         if (duration < thresholdSeconds) {
             continue;
         }
-
-        if (!filesystem::remove(entry.path(), errCode)) {
-            MEDIA_WARN_LOG("Failed to remove %{private}s, err: %{public}d", filePath.c_str(), errCode.value());
+        if (!MediaFileUtils::DeleteFile(file)) {
+            MEDIA_ERR_LOG("delete failed %{public}s, errno: %{public}d", file.c_str(), errno);
         }
     }
 }
@@ -1328,7 +1336,7 @@ static string generateUpdateSql(const bool isCover, const string title, const in
     return updateSql;
 }
 
-static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::RdbStore> rdbStore,
+static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibraryRdbStore> rdbStore,
     shared_ptr<NativeRdb::ResultSet> resultSet)
 {
     int32_t count;
@@ -1367,7 +1375,7 @@ static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::RdbSto
     return ret;
 }
 
-static shared_ptr<NativeRdb::ResultSet> QueryBurst(shared_ptr<NativeRdb::RdbStore> rdbStore,
+static shared_ptr<NativeRdb::ResultSet> QueryBurst(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const string globNameRule1, const string globNameRule2)
 {
     string querySql = "SELECT " + MediaColumn::MEDIA_TITLE + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
@@ -1421,6 +1429,7 @@ int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
         MEDIA_ERR_LOG("failed to UpdateBurstPhotoByMembers.");
         return E_FAIL;
     }
+    MEDIA_INFO_LOG("End UpdateBurstFromGallery");
     return ret;
 }
 
@@ -1651,12 +1660,12 @@ shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
     if (CheckIsPortraitAlbum(cmd)) {
         return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
     }
-    return MediaLibraryRdbStore::Query(rdbPredicates, columns);
+    return MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
 }
 
 shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, const vector<string> &columns)
 {
-    auto queryResult = MediaLibraryRdbStore::Query(rdbPredicates, columns);
+    auto queryResult = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
     if (queryResult == nullptr) {
         MEDIA_ERR_LOG("Query Geographic Information Failed, queryResult is nullptr");
         return queryResult;
@@ -1697,7 +1706,7 @@ shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, co
         }
 
         if (parseResult) {
-            queryResult = MediaLibraryRdbStore::Query(rdbPredicates, columns);
+            queryResult = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
         }
         MEDIA_INFO_LOG("ParseGeoInfo completed, fileId: %{public}s, parseResult: %{public}d", fileId.c_str(),
             parseResult);
@@ -1728,7 +1737,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::PAH_MOVING_PHOTO:
             return MediaLibraryAssetOperations::QueryOperation(cmd, columns);
         case OperationObject::VISION_START ... OperationObject::VISION_END:
-            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+            return MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, cmd.GetTableName()),
+                columns);
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
         case OperationObject::GEO_PHOTO:
@@ -1738,7 +1748,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
         case OperationObject::APP_URI_PERMISSION_INNER:
-            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+            return MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, cmd.GetTableName()),
+                columns);
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
             return MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
         case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
@@ -2067,25 +2078,30 @@ int32_t MediaLibraryDataManager::CheckCloudThumbnailDownloadFinish()
 
 void MediaLibraryDataManager::UploadDBFileInner()
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr!");
-        return;
-    }
-    auto rawStore = rdbStore->GetRaw();
-    if (rawStore == nullptr) {
-        MEDIA_ERR_LOG("rawStore is nullptr!");
         return;
     }
 
     std::string destPath = "/data/storage/el2/log/logpack/media_library.db";
     std::string tmpPath = MEDIA_DB_DIR + "/rdb/media_library_tmp.db";
-    int32_t errCode = rawStore->Backup(tmpPath);
+    int32_t errCode = rdbStore->Backup(tmpPath);
     if (errCode != 0) {
         MEDIA_ERR_LOG("rdb backup fail: %{public}d", errCode);
         return;
     }
     MediaFileUtils::CopyFileUtil(tmpPath, destPath);
+}
+
+void MediaLibraryDataManager::SubscriberPowerConsumptionDetection()
+{
+#ifdef DEVICE_STANDBY_ENABLE
+    auto subscriber = new (std::nothrow) MediaLibraryStandbyServiceSubscriber();
+    subscriber->SetSubscriberName(SUBSCRIBER_NAME);
+    subscriber->SetModuleName(MODULE_NAME);
+    DevStandbyMgr::StandbyServiceClient::GetInstance().SubscribeStandbyCallback(subscriber);
+#endif
 }
 }  // namespace Media
 }  // namespace OHOS

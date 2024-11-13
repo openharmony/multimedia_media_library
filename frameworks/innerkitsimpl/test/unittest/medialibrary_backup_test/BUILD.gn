@@ -24,6 +24,10 @@ ohos_unittest("medialibrary_backup_test") {
   module_out_path = "media_library/medialibraryextention"
   include_dirs = [
     "./include",
+    "./include/database",
+    "./include/restore",
+    "./include/utils",
+    "${MEDIALIB_CLOUD_SYNC_PATH}/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_UTILS_PATH}/include",
@@ -40,6 +44,7 @@ ohos_unittest("medialibrary_backup_test") {
 
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/event_handler/album_plugin_table_event_handler.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_database_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_database_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_dfx_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_file_utils.cpp",
@@ -64,6 +69,7 @@ ohos_unittest("medialibrary_backup_test") {
     "./src/external_source.cpp",
     "./src/gallery_source.cpp",
     "./src/medialibrary_backup_test.cpp",
+    "./src/restore/photo_album_dao_test.cpp",
   ]
 
   deps = [

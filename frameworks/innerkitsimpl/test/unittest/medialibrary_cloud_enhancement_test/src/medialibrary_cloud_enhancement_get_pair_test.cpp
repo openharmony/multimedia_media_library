@@ -269,8 +269,8 @@ bool UpdateEditAndTrashAndHiddenTime(int32_t fileId, double editedTime, double t
 void MediaLibraryCloudEnhancementGetPairTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
         exit(1);
     }
@@ -294,7 +294,7 @@ void MediaLibraryCloudEnhancementGetPairTest::TearDownTestCase(void)
 // SetUp:Execute before each test case
 void MediaLibraryCloudEnhancementGetPairTest::SetUp()
 {
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
         exit(1);
     }
@@ -793,10 +793,10 @@ HWTEST_F(MediaLibraryCloudEnhancementGetPairTest, dfx_total_time_033, TestSize.L
     MEDIA_INFO_LOG("dfx_total_time_033 Start");
     string photoId = "1234566";
     string type = "TestType";
-    CloudEnhancementGetCount::GetInstance().AddStartTimes(photoId);
-    EXPECT_EQ(CloudEnhancementGetCount::GetInstance().empty(), false);
+    CloudEnhancementGetCount::GetInstance().AddStartTime(photoId);
+    EXPECT_EQ(CloudEnhancementGetCount::GetInstance().GetStartTimes().empty(), false);
     // sleep for 1234 millseconds
-    this_theard::sleep_for(chrono::milliseconds(1234));
+    this_thread::sleep_for(chrono::milliseconds(1234));
     CloudEnhancementGetCount::GetInstance().Report(type, photoId);
     EXPECT_EQ(CloudEnhancementGetCount::GetInstance().GetStartTimes().empty(), true);
     MEDIA_INFO_LOG("dfx_total_time_033 End");

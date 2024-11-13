@@ -69,6 +69,7 @@ const std::string OPRN_SET_LOCATION = "set_location";
 const std::string OPRN_SET_PHOTO_QUALITY = "set_photo_quality";
 const std::string OPRN_CANCEL_PROCESS_IMAGE = "cancel_process_image";
 const std::string OPRN_MOVING_PHOTO_SCAN = "moving_photo_scan";
+const std::string OPRN_DEGENERATE_MOVING_PHOTO = "degenerate_moving_photo";
 const std::string OPRN_START_GENERATE_THUMBNAILS = "start_generate_thumbnails";
 const std::string OPRN_STOP_GENERATE_THUMBNAILS = "stop_generate_thumbnails";
 const std::string OPRN_GENERATE_THUMBNAILS_RESTORE = "generate_thumbnails_restore";
@@ -76,6 +77,7 @@ const std::string OPRN_ADD_FILTERS = "add_filters";
 const std::string OPRN_DISCARD_CAMERA_PHOTO = "discard_camera_photo";
 const std::string OPRN_SAVE_CAMERA_PHOTO = "save_camera_photo";
 const std::string OPRN_SAVE_PICTURE = "save_picture";
+const std::string OPRN_CLONE_ASSET = "clone_asset";
 const std::string OPRN_REMOVE_MSC_TASK = "remove_msc_task"; // remove multistages capture task
 const std::string OPRN_GROUP_DISMISS = "dismiss";
 const std::string OPRN_GROUP_ALBUM_NAME = "group_album_name";
@@ -280,6 +282,7 @@ const std::string PAH_SCAN_WITHOUT_ALBUM_UPDATE = MEDIALIBRARY_DATA_URI + "/" + 
 const std::string PATH_SAVE_PICTURE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SAVE_PICTURE;
 const std::string PAH_ALL_DUPLICATE_ASSETS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + URI_ALL_DUPLICATE_ASSETS;
 const std::string PAH_OTHER_DUPLICATE_ASSETS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + URI_OTHER_DUPLICATE_ASSETS;
+const std::string PAH_CLONE_ASSET = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CLONE_ASSET;
 
 // MultiStages capture related operation uri
 const std::string PAH_SET_PHOTO_QUALITY = MEDIALIBRARY_DATA_URI + "/ "+ PAH_PHOTO + "/" + OPRN_SET_PHOTO_QUALITY;
@@ -378,6 +381,8 @@ const std::string PAH_UPDATE_ANA_FACE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_FA
 // PhotoAccessHelper moving photo
 const std::string PAH_MOVING_PHOTO_SCAN = MEDIALIBRARY_DATA_URI + "/" + MEDIA_MOVING_PHOTO_OPRN_KEYWORD + "/" +
     OPRN_MOVING_PHOTO_SCAN;
+const std::string PAH_DEGENERATE_MOVING_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" +
+    OPRN_DEGENERATE_MOVING_PHOTO;
 
 // PhotoAccessHelper cloud enhancement
 const std::string PAH_CLOUD_ENHANCEMENT_ADD = MEDIALIBRARY_DATA_URI + "/" + PAH_CLOUD_ENHANCEMENT_OPERATE + "/" +
@@ -447,6 +452,32 @@ const std::string MEDIALIBRARY_REMOTEFILE_URI = MEDIALIBRARY_DATA_URI + '/' + "r
 
 const std::string TAB_OLD_PHOTO = "tab_old_photos_operation";
 const std::string QUERY_TAB_OLD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_OLD_PHOTO + "/" + OPRN_QUERY;
+
+// cloud media asset manager
+const std::string CLOUD_MEDIA_ASSET_OPERATE = "cloud_media_asset_operate";
+
+const std::string CLOUD_MEDIA_ASSET_TASK_START_FORCE = "cloud_media_asset_task_start_force";
+const std::string CLOUD_MEDIA_ASSET_TASK_START_GENTLE = "cloud_media_asset_task_start_gentle";
+const std::string CLOUD_MEDIA_ASSET_TASK_PAUSE = "cloud_media_asset_task_pause";
+const std::string CLOUD_MEDIA_ASSET_TASK_CANCEL = "cloud_media_asset_task_cancel";
+const std::string CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE = "cloud_media_asset_task_retain_force";
+const std::string CLOUD_MEDIA_ASSET_TASK_RETAIN_GENTLE = "cloud_media_asset_task_retain_gentle";
+const std::string CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY = "cloud_media_asset_task_status_query";
+
+const std::string CMAM_CLOUD_MEDIA_ASSET_TASK_START_FORCE = MEDIALIBRARY_DATA_URI + "/" + CLOUD_MEDIA_ASSET_OPERATE +
+    "/" + CLOUD_MEDIA_ASSET_TASK_START_FORCE;
+const std::string CMAM_CLOUD_MEDIA_ASSET_TASK_START_GENTLE = MEDIALIBRARY_DATA_URI + "/" + CLOUD_MEDIA_ASSET_OPERATE +
+    "/" + CLOUD_MEDIA_ASSET_TASK_START_GENTLE;
+const std::string CMAM_CLOUD_MEDIA_ASSET_TASK_PAUSE = MEDIALIBRARY_DATA_URI + "/" + CLOUD_MEDIA_ASSET_OPERATE + "/" +
+    CLOUD_MEDIA_ASSET_TASK_PAUSE;
+const std::string CMAM_CLOUD_MEDIA_ASSET_TASK_CANCEL = MEDIALIBRARY_DATA_URI + "/" + CLOUD_MEDIA_ASSET_OPERATE + "/" +
+    CLOUD_MEDIA_ASSET_TASK_CANCEL;
+const std::string CMAM_CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE = MEDIALIBRARY_DATA_URI + "/" + CLOUD_MEDIA_ASSET_OPERATE +
+    "/" + CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE;
+const std::string CMAM_CLOUD_MEDIA_ASSET_TASK_RETAIN_GENTLE = MEDIALIBRARY_DATA_URI + "/" + CLOUD_MEDIA_ASSET_OPERATE +
+    "/" + CLOUD_MEDIA_ASSET_TASK_RETAIN_GENTLE;
+const std::string CMAM_CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY = MEDIALIBRARY_DATA_URI + "/" + CLOUD_MEDIA_ASSET_OPERATE +
+    "/" + CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY;
 } // namespace Media
 } // namespace OHOS
 

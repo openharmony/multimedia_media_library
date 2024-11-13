@@ -320,7 +320,7 @@ export class PhotoPickerComponent extends ViewPU {
 }
 let PickerController = class {
     setData(e, o) {
-        if (!o) {
+        if (o === undefined) {
             return;
         }
         if (e === DataType.SET_SELECTED_URIS) {
