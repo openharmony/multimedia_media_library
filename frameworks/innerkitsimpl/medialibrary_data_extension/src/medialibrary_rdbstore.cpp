@@ -3621,6 +3621,41 @@ static void CreatePhotosExtTable(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void UpgradeExtensionExt(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_BUNDLENAME) {
+        UpdateInsertPhotoUpdateAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_TIGGER) {
+        UpdatePhotoAlbumTigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_THUMB_LCD_SIZE_COLUMN) {
+        AddLcdAndThumbSizeColumns(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_HIGHLIGHT_TABLE_PRIMARY_KEY) {
+        UpdateHighlightTablePrimaryKey(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_VISION_TRIGGER_FOR_VIDEO_LABEL) {
+        UpdateVisionTriggerForVideoLabel(store);
+    }
+
+    if (oldVersion < VERSION_ADD_FACE_OCCLUSION_AND_POSE_TYPE_COLUMN) {
+        AddFaceOcclusionAndPoseTypeColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_MOVING_PHOTO_EFFECT_MODE) {
+        AddMovingPhotoEffectMode(store);
+    }
+
+    if (oldVersion < VERSION_ADD_IS_TEMP) {
+        AddIsTemp(store);
+    }
+}
+
 static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_UPDATE_SEARCH_INDEX) {
@@ -3655,38 +3690,7 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
         AddDynamicRangeType(store);
     }
 
-    if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_BUNDLENAME) {
-        UpdateInsertPhotoUpdateAlbumTrigger(store);
-    }
-
-    if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_TIGGER) {
-        UpdatePhotoAlbumTigger(store);
-    }
-
-    if (oldVersion < VERSION_ADD_THUMB_LCD_SIZE_COLUMN) {
-        AddLcdAndThumbSizeColumns(store);
-    }
-
-    if (oldVersion < VERSION_UPDATE_HIGHLIGHT_TABLE_PRIMARY_KEY) {
-        UpdateHighlightTablePrimaryKey(store);
-    }
-
-    if (oldVersion < VERSION_UPDATE_VISION_TRIGGER_FOR_VIDEO_LABEL) {
-        UpdateVisionTriggerForVideoLabel(store);
-    }
-
-    if (oldVersion < VERSION_ADD_FACE_OCCLUSION_AND_POSE_TYPE_COLUMN) {
-        AddFaceOcclusionAndPoseTypeColumn(store);
-    }
-
-    if (oldVersion < VERSION_ADD_MOVING_PHOTO_EFFECT_MODE) {
-        AddMovingPhotoEffectMode(store);
-    }
-
-    if (oldVersion < VERSION_ADD_IS_TEMP) {
-        AddIsTemp(store);
-    }
-
+    UpgradeExtensionExt(store, oldVersion);
     UpgradeExtensionPart1(store, oldVersion);
     // !! Do not add upgrade code here !!
 }
