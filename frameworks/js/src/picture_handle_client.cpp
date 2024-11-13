@@ -93,8 +93,6 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     }
     uint32_t readoffset = UINT32_LEN;
 
-    uint32_t readoffset = UINT32_LEN;
-
     // 读取dataSize
     uint32_t dataSize = *reinterpret_cast<const uint32_t*>(addr + readoffset);
     readoffset += UINT32_LEN;
