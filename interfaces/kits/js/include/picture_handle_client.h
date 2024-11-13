@@ -32,6 +32,8 @@ public:
 private:
     static void FinishRequestPicture(const int32_t &fileId);
     static int32_t ReadPicture(const int32_t &fd, const int32_t &fileId, std::shared_ptr<Media::Picture> &picture);
+    static std::shared_ptr<Media::Picture> ReadPicturePtr(uint8_t &pictureParcelData, uint32_t &dataSize,
+    uint8_t &addr, uint32_t &msgLen, uint32_t &auxiliaryPictureSize);
     static std::shared_ptr<PixelMap> ReadPixelMap(MessageParcel &data);
     static bool ReadAuxiliaryPicture(MessageParcel &data, std::unique_ptr<Media::Picture> &picture);
     static bool ReadAuxiliaryPictureInfo(MessageParcel &data, AuxiliaryPictureInfo &auxiliaryPictureInfo);
