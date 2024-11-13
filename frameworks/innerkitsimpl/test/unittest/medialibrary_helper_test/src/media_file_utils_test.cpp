@@ -933,5 +933,35 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyDirectory_Test_004, Test
     int32_t ret = MediaFileUtils::CopyDirectory(oldDir, newDir);
     EXPECT_EQ(ret, E_OK);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GenerateKvStoreKey_Test_001, TestSize.Level0)
+{
+    std::string fileId;
+    std::string datekey;
+    std::string key;
+    fileId = "";
+    auto res = MediaFileUtils::GenerateKvStoreKey(fileId, datekey, key);
+    EXPECT_EQ(res, false);
+
+    fileId = "a";
+    datekey = "";
+    res = MediaFileUtils::GenerateKvStoreKey(fileId, datekey, key);
+    EXPECT_EQ(res, false);
+    
+    fileId = "0000000000a";
+    datekey = "a";
+    res = MediaFileUtils::GenerateKvStoreKey(fileId, datekey, key);
+    EXPECT_EQ(res, false);
+
+    fileId = "0000000000";
+    datekey = "0000000000000a";
+    res = MediaFileUtils::GenerateKvStoreKey(fileId, datekey, key);
+    EXPECT_EQ(res, false);
+
+    fileId = "0000000000";
+    datekey = "0000000000000";
+    res = MediaFileUtils::GenerateKvStoreKey(fileId, datekey, key);
+    EXPECT_EQ(res, true);
+}
 } // namespace Media
 } // namespace OHOS

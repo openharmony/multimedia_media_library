@@ -147,9 +147,6 @@ public:
         LoadSourceType sourceType);
     EXPORT static void RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats);
 
-    EXPORT static bool GenerateOldKvStoreKey(const std::string &fieldId, const std::string &dateAdded,
-        std::string &key);
-    EXPORT static bool GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key);
     EXPORT static bool GetLocalThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size);
     EXPORT static void SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column);
     EXPORT static bool LoadVideoFile(ThumbnailData &data, Size &desiredSize);

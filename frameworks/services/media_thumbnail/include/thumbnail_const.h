@@ -105,16 +105,11 @@ constexpr int32_t LCD_LONG_SIDE_THRESHOLD = 1920;
 constexpr int32_t MAXIMUM_LCD_LONG_SIDE = 4096;
 constexpr int32_t ASPECT_RATIO_THRESHOLD = 3;
 constexpr int32_t MIN_COMPRESS_BUF_SIZE = 8192;
-constexpr int32_t MAX_FIELD_LENGTH = 10;
-constexpr int32_t MAX_TIMEID_LENGTH_OLD_VERSION = 10;
-constexpr int32_t MAX_DATE_ADDED_LENGTH = 13;
 constexpr int32_t DECODE_SCALE_BASE = 2;
 constexpr int32_t FLAT_ANGLE = 180;
 constexpr int32_t THUMBNAIL_GENERATE_BATCH_COUNT = 200;
 constexpr int32_t ASTC_GENERATE_COUNT_AFTER_RESTORE = 500;
 constexpr int32_t READY_TEMPERATURE_LEVEL = 4;
-const std::string KVSTORE_FIELD_ID_TEMPLATE = "0000000000";
-const std::string KVSTORE_DATE_ADDED_TEMPLATE = "0000000000000";
 const std::string DEFAULT_EXIF_ORIENTATION = "1";
 
 const std::string THUMBNAIL_LCD_SUFFIX = "LCD";     // The size fit to screen
