@@ -49,6 +49,7 @@ std::vector<PhotoAlbumRestore::GalleryAlbumRowData> PhotoAlbumRestore::GetGaller
         }
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             PhotoAlbumRestore::GalleryAlbumRowData albumInfo;
+            albumInfo.albumId = GetStringVal(this->GALLERY_ALBUM_ID, resultSet);
             albumInfo.albumName = GetStringVal(this->GALLERY_ALBUM_NAME, resultSet);
             albumInfo.relativeBucketId = GetStringVal(this->GALLERY_ALBUM_BUCKET_ID, resultSet);
             albumInfo.lPath = GetStringVal(this->GALLERY_ALBUM_lPATH, resultSet);

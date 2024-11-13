@@ -39,20 +39,14 @@ private:
     int32_t AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store);
     int32_t AddlPathColumn(NativeRdb::RdbStore &store);
     int32_t MoveSingleRelationshipToPhotos(NativeRdb::RdbStore &store);
-    int32_t DropPhotoAlbumTrigger(NativeRdb::RdbStore &store);
     int32_t UpdatelPathColumn(NativeRdb::RdbStore &store);
+    int32_t ExecSqlsInternal(NativeRdb::RdbStore &store, const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &args = {});
 
 private:
     DbUpgradeUtils dbUpgradeUtils_;
 
 private:
-    const std::vector<std::string> SQL_PHOTO_ALBUM_TABLE_DROP_TRIGGER = {"DROP TRIGGER IF EXISTS album_delete_trigger",
-        "DROP TRIGGER IF EXISTS album_insert_cloud_sync_trigger",
-        "DROP TRIGGER IF EXISTS album_modify_trigger",
-        "DROP TRIGGER IF EXISTS album_update_search_trigger",
-        "DROP TRIGGER IF EXISTS insert_order_trigger",
-        "DROP TRIGGER IF EXISTS photo_album_clear_map",
-        "DROP TRIGGER IF EXISTS update_order_trigger"};
     const std::string SQL_PHOTO_ALBUM_TABLE_ADD_LPATH_COLUMN = "ALTER TABLE PhotoAlbum ADD COLUMN lpath TEXT;";
     const std::string SQL_PHOTO_ALBUM_TABLE_UPDATE_LPATH_COLUMN = "\
         UPDATE PhotoAlbum \
@@ -60,17 +54,26 @@ private:
         ( \
             SELECT \
                 CASE \
-                    WHEN COALESCE(album_plugin.bundle_name, '') <> '' \
-                        AND COALESCE(album_plugin.lpath, '') <> '' THEN album_plugin.lpath \
-                    WHEN album_type=2048 THEN '/Pictures/'||PA.album_name \
-                    WHEN album_type=0 THEN '/Pictures/Users/'||PA.album_name \
+                    WHEN COALESCE(album_plugin.lpath, '') <> '' THEN album_plugin.lpath \
+                    WHEN COALESCE(plugin_v2.lpath, '') <> '' THEN plugin_v2.lpath \
+                    WHEN album_type = 2048 THEN '/Pictures/'||PA.album_name \
+                    WHEN album_type = 0 THEN '/Pictures/Users/'||PA.album_name \
                     ELSE '/Pictures/其它' \
-                END AS lpath \
+                END AS s_lpath \
             FROM PhotoAlbum AS PA \
                 LEFT JOIN album_plugin \
-                ON PA.bundle_name = album_plugin.bundle_name \
-            WHERE PhotoAlbum.album_id=PA.album_id \
-            ORDER BY album_plugin.priority DESC, album_plugin.lpath ASC \
+                ON COALESCE(PA.bundle_name, '') <> '' AND PA.bundle_name = album_plugin.bundle_name \
+                LEFT JOIN album_plugin AS plugin_v2 \
+                ON PA.album_type = 2048 AND PA.album_name = plugin_v2.album_name \
+            WHERE PhotoAlbum.album_id = PA.album_id \
+            ORDER BY \
+                ( \
+                CASE \
+                    WHEN COALESCE(album_plugin.lpath, '') <> '' THEN album_plugin.priority \
+                    WHEN COALESCE(plugin_v2.lpath, '') <> '' THEN plugin_v2.priority \
+                    ELSE 1 \
+                END \
+                ) DESC, s_lpath ASC \
             LIMIT 1 \
         ) \
         WHERE COALESCE(PhotoAlbum.album_name, '') <> '' AND \
@@ -88,7 +91,8 @@ private:
         FROM PhotoMap \
             INNER JOIN Photos \
             ON PhotoMap.map_asset=Photos.file_id \
-        WHERE position IN (1, 3) \
+        WHERE position IN (1, 3) AND \
+            COALESCE(owner_album_id, 0) = 0 \
         GROUP BY map_asset;";
     const std::vector<std::string> SQL_TEMP_PHOTO_MAP_TABLE_CREATE_INDEX_ARRAY = {
         "CREATE INDEX IF NOT EXISTS unique_index_temp_photo_map_map_asset ON temp_photo_map ( \
@@ -97,23 +101,6 @@ private:
         "CREATE UNIQUE INDEX IF NOT EXISTS unique_index_temp_photo_map_all ON temp_photo_map ( \
             map_album, map_asset \
         );"};
-    const std::vector<std::string> SQL_PHOTOS_TABLE_DROP_TRIGGER_ARRAY = {
-        "DROP TRIGGER IF EXISTS photos_delete_trigger;",
-        "DROP TRIGGER IF EXISTS photos_fdirty_trigger;",
-        "DROP TRIGGER IF EXISTS photos_mdirty_trigger;",
-        "DROP TRIGGER IF EXISTS photo_insert_cloud_sync_trigger;",
-        "DROP TRIGGER IF EXISTS photo_update_cloud_sync_trigger;",
-        "DROP TRIGGER IF EXISTS delete_photo_clear_map;",
-        "DROP TRIGGER IF EXISTS update_vision_trigger;",
-        "DROP TRIGGER IF EXISTS delete_vision_trigger;",
-        "DROP TRIGGER IF EXISTS insert_vision_trigger;",
-        "DROP TRIGGER IF EXISTS insert_photo_insert_source_album;",
-        "DROP TRIGGER IF EXISTS insert_photo_update_source_album;",
-        "DROP TRIGGER IF EXISTS insert_photo_update_album_bundlename;",
-        "DROP TRIGGER IF EXISTS insert_search_trigger;",
-        "DROP TRIGGER IF EXISTS update_search_trigger;",
-        "DROP TRIGGER IF EXISTS update_search_status_trigger;",
-        "DROP TRIGGER IF EXISTS delete_search_trigger;"};
     // owner_album_id 默认值是 0，使用 UNION 避免无查询结果时，被更新为 NULL
     const std::string SQL_PHOTOS_TABLE_UPDATE_ALBUM_ID = "\
         UPDATE Photos SET owner_album_id = \
@@ -127,11 +114,6 @@ private:
             LIMIT 1 \
         ) \
         WHERE COALESCE(owner_album_id, 0)=0;";
-    const std::vector<std::string> SQL_PHOTO_MAP_TABLE_DROP_TRIGGER_ARRAY = {
-        "DROP TRIGGER IF EXISTS album_map_delete_search_trigger;",
-        "DROP TRIGGER IF EXISTS album_map_delete_trigger;",
-        "DROP TRIGGER IF EXISTS album_map_insert_cloud_sync_trigger;",
-        "DROP TRIGGER IF EXISTS album_map_insert_search_trigger;"};
     const std::string SQL_PHOTO_MAP_TABLE_DELETE_SINGLE_RELATIONSHIP = "\
         DELETE FROM PhotoMap \
         WHERE EXISTS \

@@ -19,29 +19,24 @@
 #include <string>
 #include <vector>
 
-#include "rdb_store.h"
+#include "medialibrary_rdbstore.h"
+#include "photo_asset_copy_operation.h"
+#include "photo_asset_info.h"
 
 namespace OHOS::Media {
 class PhotoBurstOperation {
-private:
-    struct PhotoAssetInfo {
-        std::string displayName;
-        int32_t subtype;
-        int32_t ownerAlbumId;
-        std::string burstGroupName;
-    };
-
 public:
-    std::string FindBurstKey(NativeRdb::RdbStore &rdbStore, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        const int32_t targetAlbumId, const std::string &uniqueDisplayName);
+    PhotoBurstOperation &SetTargetPhotoInfo(const PhotoAssetInfo &photoAssetInfo);
+    std::string FindBurstKey(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
 
 private:
-    std::string FindBurstKey(NativeRdb::RdbStore &rdbStore, const PhotoAssetInfo &photoAssetInfo);
-    std::string ToString(const PhotoAssetInfo &photoInfo);
+    std::string FindBurstKey(
+        const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, const PhotoAssetInfo &photoAssetInfo);
     std::string ToString(const std::vector<NativeRdb::ValueObject> &values);
     std::string GenerateUuid();
     std::string FindBurstGroupName(const std::string &displayName);
-    std::string QueryBurstKeyFromDB(NativeRdb::RdbStore &rdbStore, const PhotoAssetInfo &photoAssetInfo);
+    std::string QueryBurstKeyFromDB(
+        const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, const PhotoAssetInfo &photoAssetInfo);
 
 private:
     enum { UUID_STR_LENGTH = 37, DISPLAY_NAME_PREFIX_LENGTH = 20 };
@@ -57,6 +52,7 @@ private:
             display_name LIKE ? \
         ORDER BY file_id \
         LIMIT 1;";
+    PhotoAssetInfo photoAssetInfo_;
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTO_BURST_OPERATIOIN_H

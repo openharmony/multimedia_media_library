@@ -44,24 +44,23 @@ using namespace OHOS::MediaEnhance;
 namespace OHOS {
 namespace Media {
 using json = nlohmann::json;
-const string FILE_TPYE = "fileType";
-const string IS_HDR_VIVID = "isHdrVivid";
-const string HAS_WATER_MARK_INFO = "hasCloudWaterMark";
-const string CLOUD_WATER_MARK_INFO = "cloudWaterMarkInfo";
-const int32_t NO = 0;
-const int32_t YES = 1;
-const string JPEG_STR = "image/jpeg";
-const string HEIF_STR = "image/heic";
-const string JPEG_TYPE = "JPEG";
-const string HEIF_TYPE = "HEIF";
-const unordered_map<string, string> CLOUD_ENHANCEMENT_MIME_TYPE_MAP = {
+static const string FILE_TPYE = "fileType";
+static const string IS_HDR_VIVID = "isHdrVivid";
+static const string HAS_WATER_MARK_INFO = "hasCloudWaterMark";
+static const string CLOUD_WATER_MARK_INFO = "cloudWaterMarkInfo";
+static const int32_t NO = 0;
+static const int32_t YES = 1;
+static const string JPEG_STR = "image/jpeg";
+static const string HEIF_STR = "image/heic";
+static const string JPEG_TYPE = "JPEG";
+static const string HEIF_TYPE = "HEIF";
+static const unordered_map<string, string> CLOUD_ENHANCEMENT_MIME_TYPE_MAP = {
     { JPEG_STR, JPEG_TYPE },
     { HEIF_STR, HEIF_TYPE },
 };
 
 EnhancementManager::EnhancementManager()
 {
-    LoadService();
     threadManager_ = make_shared<EnhancementThreadManager>();
 }
 
@@ -89,7 +88,7 @@ bool EnhancementManager::LoadService()
 #endif
 }
 
-static int32_t CheckResultSet(shared_ptr<ResultSet> &resultSet)
+static int32_t CheckResultSet(shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultset is nullptr");
@@ -168,10 +167,14 @@ bool EnhancementManager::InitAsync()
     return true;
 }
 
-bool EnhancementManager::Init(bool isReconnected)
+bool EnhancementManager::Init()
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     // restart
+    if (!LoadService()) {
+        MEDIA_ERR_LOG("load enhancement service error");
+        return false;
+    }
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     vector<string> columns = {
         MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_ID,
@@ -179,7 +182,7 @@ bool EnhancementManager::Init(bool isReconnected)
     };
     servicePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
         static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING));
-    auto resultSet = MediaLibraryRdbStore::Query(servicePredicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
     if (CheckResultSet(resultSet) != E_OK) {
         MEDIA_INFO_LOG("Init query no processing task");
         return false;
@@ -191,13 +194,6 @@ bool EnhancementManager::Init(bool isReconnected)
         int32_t dynamicRangeType = GetInt32Val(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, resultSet);
         int32_t hasCloudWatermark = GetInt32Val(PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, resultSet);
         MEDIA_INFO_LOG("restart and submit: fileId: %{public}d, photoId: %{public}s", fileId, photoId.c_str());
-        if (isReconnected) {
-            enhancementService_ = make_shared<EnhancementServiceAdapter>();
-        }
-        if (!LoadService()) {
-            MEDIA_ERR_LOG("load enhancement service error");
-            continue;
-        }
         MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
         if (mediaEnhanceBundle == nullptr) {
             continue;
@@ -275,7 +271,7 @@ void EnhancementManager::RemoveTasksInternal(const vector<string> &fileIds, vect
     queryPredicates.In(MediaColumn::MEDIA_ID, fileIds);
     queryPredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
         static_cast<int32_t>(CloudEnhancementAvailableType::TRASH));
-    shared_ptr<ResultSet> resultSet = MediaLibraryRdbStore::Query(queryPredicates, columns);
+    shared_ptr<NativeRdb::ResultSet> resultSet = MediaLibraryRdbStore::QueryWithFilter(queryPredicates, columns);
     CHECK_AND_RETURN_LOG(CheckResultSet(resultSet) == E_OK, "result set is invalid");
     while (resultSet->GoToNextRow() == E_OK) {
         string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
@@ -369,7 +365,7 @@ int32_t EnhancementManager::HandleEnhancementUpdateOperation(MediaLibraryCommand
     return E_OK;
 }
 
-shared_ptr<ResultSet> EnhancementManager::HandleEnhancementQueryOperation(MediaLibraryCommand &cmd,
+shared_ptr<NativeRdb::ResultSet> EnhancementManager::HandleEnhancementQueryOperation(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
     switch (cmd.GetOprnType()) {
@@ -492,6 +488,7 @@ int32_t EnhancementManager::HandlePrioritizeOperation(MediaLibraryCommand &cmd)
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
     int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
+    resultSet->Close();
     MEDIA_INFO_LOG("HandlePrioritizeOperation fileId: %{public}d, photoId: %{public}s, ceAvailable: %{public}d",
         fileId, photoId.c_str(), ceAvailable);
     if (ceAvailable != static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING)) {
@@ -588,7 +585,7 @@ int32_t EnhancementManager::HandleCancelAllOperation()
     vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
         MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE
     };
-    auto resultSet = MediaLibraryRdbStore::Query(queryPredicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(queryPredicates, columns);
     CHECK_AND_RETURN_RET_LOG(CheckResultSet(resultSet) == E_OK, E_ERR, "result set invalid");
     while (resultSet->GoToNextRow() == E_OK) {
         int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);

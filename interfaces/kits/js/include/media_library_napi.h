@@ -303,6 +303,7 @@ private:
     EXPORT static napi_value PhotoAccessStopCreateThumbnailTask(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetBurstAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetDataAnalysisProgress(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
@@ -323,6 +324,10 @@ private:
     EXPORT static napi_value CreateCloudEnhancementStateEnum(napi_env env);
     EXPORT static napi_value CreateSupportedWatermarkTypeEnum(napi_env env);
     EXPORT static napi_value CreateVideoEnhancementTypeEnum(napi_env env);
+    EXPORT static napi_value CreateCloudMediaDownloadTypeEnum(napi_env env);
+    EXPORT static napi_value CreateCloudMediaRetainTypeEnum(napi_env env);
+    EXPORT static napi_value CreateCloudMediaAssetTaskStatusEnum(napi_env env);
+    EXPORT static napi_value CreateCloudMediaTaskPauseCauseEnum(napi_env env);
 
     EXPORT static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
@@ -383,6 +388,10 @@ private:
     static thread_local napi_ref sAuthorizationModeEnumRef_;
     static thread_local napi_ref sSupportedWatermarkTypeEnumRef_;
     static thread_local napi_ref sVideoEnhancementTypeEnumRef_;
+    static thread_local napi_ref sCloudMediaDownloadTypeEnumRef_;
+    static thread_local napi_ref sCloudMediaRetainTypeEnumRef_;
+    static thread_local napi_ref sCloudMediaAssetTaskStatusEnumRef_;
+    static thread_local napi_ref sCloudMediaTaskPauseCauseEnumRef_;
 
     static std::mutex sOnOffMutex_;
 };

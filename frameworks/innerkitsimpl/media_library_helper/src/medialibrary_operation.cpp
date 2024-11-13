@@ -86,6 +86,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { CHECK_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
         { PAH_CLOUD_ENHANCEMENT_OPERATE, OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE },
         { TAB_OLD_PHOTO, OperationObject::TAB_OLD_PHOTO },
+        { CLOUD_MEDIA_ASSET_OPERATE, OperationObject::CLOUD_MEDIA_ASSET_OPERATE},
 
         // use in Vision
         { PAH_ANA_OCR, OperationObject::VISION_OCR },
@@ -207,6 +208,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::USER_PHOTOGRAPHY, { { OperationType::UNKNOWN_TYPE, USER_PHOTOGRAPHY_INFO_TABLE } } },
         { OperationObject::APP_URI_PERMISSION_INNER,
             { { OperationType::UNKNOWN_TYPE, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE } } },
+        { OperationObject::CLOUD_MEDIA_ASSET_OPERATE, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
     };
     return tableNameMap;
 }
@@ -301,10 +303,19 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_ENHANCEMENT_QUERY, OperationType::ENHANCEMENT_QUERY},
         { OPRN_ENHANCEMENT_GET_PAIR, OperationType::ENHANCEMENT_GET_PAIR},
         { OPRN_SAVE_PICTURE, OperationType::SAVE_PICTURE},
+        { OPRN_CLONE_ASSET, OperationType::CLONE_ASSET},
         { "log_medialibrary_api", OperationType::LOG_MEDIALIBRARY_API},
         { OPRN_SET_VIDEO_ENHANCEMENT_ATTR, OperationType::SET_VIDEO_ENHANCEMENT_ATTR },
         { OPRN_ALL_DUPLICATE_ASSETS, OperationType::ALL_DUPLICATE_ASSETS },
         { OPRN_OTHER_DUPLICATE_ASSETS, OperationType::OTHER_DUPLICATE_ASSETS },
+        { OPRN_DEGENERATE_MOVING_PHOTO, OperationType::DEGENERATE_MOVING_PHOTO },
+        { CLOUD_MEDIA_ASSET_TASK_START_FORCE, OperationType::CLOUD_MEDIA_ASSET_TASK_START_FORCE },
+        { CLOUD_MEDIA_ASSET_TASK_START_GENTLE, OperationType::CLOUD_MEDIA_ASSET_TASK_START_GENTLE },
+        { CLOUD_MEDIA_ASSET_TASK_PAUSE, OperationType::CLOUD_MEDIA_ASSET_TASK_PAUSE },
+        { CLOUD_MEDIA_ASSET_TASK_CANCEL, OperationType::CLOUD_MEDIA_ASSET_TASK_CANCEL },
+        { CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE, OperationType::CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE },
+        { CLOUD_MEDIA_ASSET_TASK_RETAIN_GENTLE, OperationType::CLOUD_MEDIA_ASSET_TASK_RETAIN_GENTLE },
+        { CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY, OperationType::CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY },
     };
     return oprnTypeMap;
 }

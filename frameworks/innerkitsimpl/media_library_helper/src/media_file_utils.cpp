@@ -530,7 +530,7 @@ void MediaFileUtils::RecoverMediaTempDir()
     if (!IsDirEmpty(recoverPath)) {
         DIR *dir = opendir((recoverPath).c_str());
         if (dir == nullptr) {
-            MEDIA_ERR_LOG("Error opening temp directory");
+            MEDIA_ERR_LOG("Error opening temp directory, errno: %{public}d", errno);
             return;
         }
         
@@ -587,7 +587,7 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
 
     int32_t source = open(absFilePath.c_str(), O_RDONLY);
     if (source == -1) {
-        MEDIA_ERR_LOG("Open failed for source file");
+        MEDIA_ERR_LOG("Open failed for source file, errno: %{public}d", errno);
         return errCode;
     }
 
@@ -813,6 +813,26 @@ static inline int32_t CheckTitle(const string &title)
     return E_OK;
 }
 
+int32_t MediaFileUtils::CheckTitleName(const string &title)
+    {
+        return CheckTitle(title);
+    }
+
+std::string MediaFileUtils::GetFileAssetUri(const std::string &fileAssetData, const std::string &displayName,
+    const int32_t &fileId)
+{
+    std::string filePath = fileAssetData;
+    std::string baseUri = "file://media";
+    size_t lastSlashInData = filePath.rfind('/');
+    std::string fileNameInData =
+        (lastSlashInData != std::string::npos) ? filePath.substr(lastSlashInData + 1) : filePath;
+    size_t dotPos = fileNameInData.rfind('.');
+    if (dotPos != std::string::npos) {
+        fileNameInData = fileNameInData.substr(0, dotPos);
+    }
+    return baseUri + "/Photo/" + std::to_string(fileId) + "/" + fileNameInData + "/" + displayName;
+}
+
 int32_t MediaFileUtils::CheckDisplayName(const string &displayName)
 {
     int err = CheckStringSize(displayName, DISPLAYNAME_MAX);
@@ -902,7 +922,13 @@ string MediaFileUtils::GetHighlightPath(const string &uri)
         return "";
     }
 
-    string path = "/storage/cloud/files/.thumbs" + uri.substr(prefixLen);
+    string path;
+    if (IsFileExists(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD)) {
+        path = "/storage/cloud/files/.thumbs" + uri.substr(prefixLen);
+    } else {
+        path = "/storage/cloud/files" + uri.substr(prefixLen);
+    }
+    
     return path;
 }
 
@@ -1688,7 +1714,7 @@ std::string MediaFileUtils::GetUriWithoutDisplayname(const string &uri)
         return uri;
     }
 
-    return uri.substr(0, index);
+    return uri.substr(0, index + 1);
 }
 
 string MediaFileUtils::Encode(const string &uri)
@@ -1854,9 +1880,9 @@ std::string MediaFileUtils::GetTableNameByDisplayName(const std::string &display
 
 bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
 {
-    // duration of moving photo video must be 0~3 s
+    // duration of moving photo video must be 0~10 s
     constexpr int32_t MIN_DURATION_MS = 0;
-    constexpr int32_t MAX_DURATION_MS = 3000;
+    constexpr int32_t MAX_DURATION_MS = 10000;
     return duration > MIN_DURATION_MS && duration <= MAX_DURATION_MS;
 }
 
@@ -1963,6 +1989,11 @@ bool MediaFileUtils::CheckSupportedWatermarkType(int32_t watermarkType)
 
 int32_t MediaFileUtils::CopyDirectory(const std::string &srcDir, const std::string &dstDir)
 {
+    if (srcDir.empty() || dstDir.empty()) {
+        MEDIA_ERR_LOG("Failed to copy directory, srcDir:%{public}s or newPath:%{public}s is empty!",
+            DesensitizePath(srcDir).c_str(), DesensitizePath(dstDir).c_str());
+        return E_MODIFY_DATA_FAIL;
+    }
     if (!IsFileExists(srcDir)) {
         MEDIA_ERR_LOG("SrcDir:%{public}s is not exist", DesensitizePath(srcDir).c_str());
         return E_NO_SUCH_FILE;

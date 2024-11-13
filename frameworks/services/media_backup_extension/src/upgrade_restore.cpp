@@ -40,6 +40,7 @@
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
 #include "gallery_report.h"
+#include "medialibrary_rdb_transaction.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -52,7 +53,6 @@ constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
-constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 const std::string INTERNAL_PREFIX = "/storage/emulated";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
@@ -83,6 +83,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         photosPreferencesPath = backupRetoreDir + "/" + galleryAppName_ + "_preferences.xml";
         // gallery db may include both internal & external, set flag to differentiate, default false
         shouldIncludeSd_ = BackupFileUtils::ShouldIncludeSd(filePath_);
+        backupDatabaseHelper_.Init(sceneCode_, shouldIncludeSd_, filePath_);
         SetParameterForClone();
 #ifdef CLOUD_SYNC_MANAGER
         FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
@@ -104,6 +105,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
             MEDIA_ERR_LOG("External init rdb fail, err = %{public}d", externalErr);
             return E_FAIL;
         }
+        backupDatabaseHelper_.AddDb(BackupDatabaseHelper::DbType::EXTERNAL, externalRdb_);
     }
     MEDIA_INFO_LOG("Shoud include Sd: %{public}d", static_cast<int32_t>(shouldIncludeSd_));
     return InitDbAndXml(photosPreferencesPath, isUpgrade);
@@ -426,12 +428,6 @@ void UpgradeRestore::HandleCloneBatch(int32_t offset, int32_t maxId)
 void UpgradeRestore::UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int32_t &number)
 {
     int32_t errCode = E_ERR;
-    TransactionOperations transactionOprn(galleryRdb_);
-    errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("can not get rdb before update clone");
-        return;
-    }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t id = GetInt32Val(GALLERY_ID, resultSet);
         std::string data = GetStringVal(GALLERY_FILE_DATA, resultSet);
@@ -449,11 +445,11 @@ void UpgradeRestore::UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::Resul
         }
         number += changeRows;
     }
-    transactionOprn.Finish();
 }
 
 void UpgradeRestore::RestoreFromGallery()
 {
+    this->photosRestore_.LoadPhotoAlbums();
     HasLowQualityImage();
     int32_t totalNumber = this->photosRestore_.GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
@@ -692,7 +688,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.burstKey = burstKeyGenerator_.FindBurstKey(info);
     // Pre-Fetch: sourcePath, lPath
     info.sourcePath = GetStringVal(GALLERY_MEDIA_SOURCE_PATH, resultSet);
-    info.lPath = GetStringVal("lPath", resultSet);
+    info.lPath = GetStringVal(GALLERY_ALBUM_IPATH, resultSet);
     // Find lPath, bundleName, packageName by sourcePath, lPath
     info.lPath = this->photosRestore_.FindlPath(info);
     info.bundleName = this->photosRestore_.FindBundleName(info);
@@ -756,13 +752,15 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
+    values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, this->photosRestore_.FindSubtype(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestore_.FindBurstCoverLevel(fileInfo));
     values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestore_.FindBurstKey(fileInfo));
     // find album_id by lPath.
-    values.PutInt("owner_album_id", this->photosRestore_.FindAlbumId(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
+    values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, this->photosRestore_.FindAlbumId(fileInfo));
+    // fill the source_path at last.
+    values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, this->photosRestore_.FindSourcePath(fileInfo));
     return values;
 }
 
@@ -795,6 +793,7 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
     } else {
         newPath = prefix + relativePath; // others, remove sd prefix, use relative path
     }
+    fileInfo.isInternal = false;
     return true;
 }
  
@@ -1255,6 +1254,18 @@ void UpgradeRestore::UpdateDualCloneFaceAnalysisStatus()
     BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
+}
+
+void UpgradeRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode)
+{
+    if (errCode != E_NO_SUCH_FILE) {
+        return;
+    }
+    int32_t dbType = BackupDatabaseHelper::DbType::DEFAULT;
+    int32_t dbStatus = E_OK;
+    int32_t fileStatus = E_OK;
+    backupDatabaseHelper_.IsFileExist(sceneCode_, fileInfo, dbType, dbStatus, fileStatus);
+    MEDIA_INFO_LOG("Check status type: %{public}d, db: %{public}d, file: %{public}d", dbType, dbStatus, fileStatus);
 }
 } // namespace Media
 } // namespace OHOS

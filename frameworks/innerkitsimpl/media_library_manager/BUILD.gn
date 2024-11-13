@@ -101,3 +101,66 @@ ohos_shared_library("media_library_manager") {
   part_name = "media_library"
   subsystem_name = "multimedia"
 }
+
+ohos_shared_library("media_library_extend_manager") {
+  install_enable = true
+
+  sources = [ "./media_library_extend_manager.cpp" ]
+
+  include_dirs = [
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
+  ]
+
+  deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
+
+  external_deps = [
+    "ability_base:want",
+    "ability_base:zuri",
+    "ability_runtime:ability_manager",
+    "ability_runtime:abilitykit_native",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libprivacy_sdk",
+    "access_token:libtokenid_sdk",
+    "app_file_service:fileuri_native",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
+    "samgr:samgr_proxy",
+  ]
+
+  ldflags = [ "-Wl,--gc-sections" ]
+
+  cflags = [
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-Os",
+  ]
+
+  cflags_cc = [ "-Os" ]
+
+  if (!media_library_link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
+    }
+  }
+
+  defines = []
+  defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
+
+  part_name = "media_library"
+  subsystem_name = "multimedia"
+}

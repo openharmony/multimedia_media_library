@@ -242,8 +242,8 @@ static AssetHandler* InsertDataHandler(NativeNotifyMode notifyMode,
     mediaAssetDataHandler->SetNotifyMode(notifyMode);
     AssetHandler *assetHandler = CreateAssetHandler(asyncContext->photoId, asyncContext->requestId,
         asyncContext->requestUri, asyncContext->destUri, mediaAssetDataHandler);
-    MEDIA_INFO_LOG("Add %{public}d, %{private}s, %{private}s, %{public}p", notifyMode,
-        asyncContext->requestUri.c_str(), asyncContext->requestId.c_str(), assetHandler);
+    MEDIA_INFO_LOG("Add %{public}d, %{private}s, %{private}s", notifyMode,
+        asyncContext->requestUri.c_str(), asyncContext->requestId.c_str());
 
     switch (notifyMode) {
         case NativeNotifyMode::FAST_NOTIFY: {
@@ -358,7 +358,7 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
         return false;
     }
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
-    MEDIA_INFO_LOG("Delete assetHandler: %{public}p", assetHandler);
+    MEDIA_INFO_LOG("Delete assetHandler");
     DeleteAssetHandlerSafe(assetHandler);
     return true;
 }

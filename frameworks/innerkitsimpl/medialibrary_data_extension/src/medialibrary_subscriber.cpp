@@ -24,8 +24,12 @@
 #include "battery_srv_client.h"
 #endif
 #include "bundle_info.h"
+#include "cloud_media_asset_manager.h"
+#include "cloud_media_asset_types.h"
+#include "cloud_sync_utils.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
+#include "common_event_utils.h"
 #include "dfx_cloud_manager.h"
 
 #include "want.h"
@@ -55,6 +59,7 @@
 #include "dfx_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_rdb_utils.h"
+#include "medialibrary_type_const.h"
 #include "moving_photo_processor.h"
 #include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
@@ -73,9 +78,8 @@ namespace Media {
 const int32_t PROPER_DEVICE_BATTERY_CAPACITY = 50;
 
 // The task can be performed only when the temperature of the device is lower than the value
-// Level 0: The device temperature is lower than 35℃
-// Level 1: The device temperature ranges from 35℃ to 37℃
 const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 1;
+const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_HOT = 3;
 
 // WIFI should be available in this state
 const int32_t WIFI_STATE_CONNECTED = 4;
@@ -89,6 +93,8 @@ const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
 std::mutex MedialibrarySubscriber::timeMutex_;
 uint32_t MedialibrarySubscriber::timerId_ = 0;
 Utils::Timer MedialibrarySubscriber::timer_("medialibrary_subscriber");
+// The network should be available in this state
+const int32_t NET_CONN_STATE_CONNECTED = 3;
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
     EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING,
@@ -97,7 +103,8 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED,
     EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED,
     EventFwk::CommonEventSupport::COMMON_EVENT_THERMAL_LEVEL_CHANGED,
-    EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE
+    EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE,
+    EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE
 };
 
 const std::map<std::string, StatusEventType> BACKGROUND_OPERATION_STATUS_MAP = {
@@ -125,22 +132,22 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
 #endif
 #ifdef HAS_THERMAL_MANAGER_PART
     auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
-    isDeviceTemperatureProper_ = static_cast<int32_t>(
-        thermalMgrClient.GetThermalLevel()) <= PROPER_DEVICE_TEMPERATURE_LEVEL;
+    newTemperatureLevel_ = static_cast<int32_t>(thermalMgrClient.GetThermalLevel());
+    isDeviceTemperatureProper_ = newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL;
 #endif
 #ifdef HAS_WIFI_MANAGER_PART
     auto wifiDevicePtr = Wifi::WifiDevice::GetInstance(WIFI_DEVICE_ABILITY_ID);
     if (wifiDevicePtr == nullptr) {
         MEDIA_ERR_LOG("MedialibrarySubscriber wifiDevicePtr is null");
     } else {
-        ErrCode ret = wifiDevicePtr->IsConnected(isWifiConn_);
+        ErrCode ret = wifiDevicePtr->IsConnected(isWifiConnected_);
         if (ret != Wifi::WIFI_OPT_SUCCESS) {
             MEDIA_ERR_LOG("MedialibrarySubscriber Get-IsConnected-fail: -%{public}d", ret);
         }
     }
 #endif
     MEDIA_DEBUG_LOG("MedialibrarySubscriber current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
-        isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_, isWifiConn_);
+        isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_, isWifiConnected_);
 }
 
 MedialibrarySubscriber::~MedialibrarySubscriber()
@@ -227,10 +234,14 @@ void MedialibrarySubscriber::UpdateSubcriberStatus()
 #endif
 #ifdef HAS_THERMAL_MANAGER_PART
     auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
-    isDeviceTemperatureProper_ = static_cast<int32_t>(
-        thermalMgrClient.GetThermalLevel()) <= PROPER_DEVICE_TEMPERATURE_LEVEL;
+    newTemperatureLevel_ = static_cast<int32_t>(thermalMgrClient.GetThermalLevel());
+    isDeviceTemperatureProper_ = newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL;
 #endif
     std::lock_guard<std::mutex> lock(mutex_);
+    if (deviceTemperatureLevel_ != newTemperatureLevel_) {
+        deviceTemperatureLevel_ = newTemperatureLevel_;
+        ThumbnailService::GetInstance()->NotifyTempStatusForReady(deviceTemperatureLevel_);
+    }
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
 
     if (currentStatus_ == newStatus) {
@@ -278,6 +289,10 @@ void MedialibrarySubscriber::ShutDownTimer()
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    if (deviceTemperatureLevel_ != newTemperatureLevel_) {
+        deviceTemperatureLevel_ = newTemperatureLevel_;
+        ThumbnailService::GetInstance()->NotifyTempStatusForReady(deviceTemperatureLevel_);
+    }
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
 
     if (currentStatus_ == newStatus) {
@@ -286,6 +301,7 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
 
     MEDIA_INFO_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
         currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
+    PowerEfficiencyManager::SetSubscriberStatus(isCharging_, isScreenOff_);
     currentStatus_ = newStatus;
     ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(newStatus);
     EndBackgroundOperationThread();
@@ -324,8 +340,9 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
                 COMMON_EVENT_KEY_GET_DEFAULT_PARAM) >= PROPER_DEVICE_BATTERY_CAPACITY;
             break;
         case StatusEventType::THERMAL_LEVEL_CHANGED: {
-            isDeviceTemperatureProper_ = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
-                COMMON_EVENT_KEY_GET_DEFAULT_PARAM) <= PROPER_DEVICE_TEMPERATURE_LEVEL;
+            newTemperatureLevel_ = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
+                COMMON_EVENT_KEY_GET_DEFAULT_PARAM);
+            isDeviceTemperatureProper_ = newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL;
             PowerEfficiencyManager::UpdateAlbumUpdateInterval(isDeviceTemperatureProper_);
             break;
         }
@@ -338,6 +355,48 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
     UpdateBackgroundTimer();
 }
 
+void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadStatus(const AAFwk::Want &want,
+    const StatusEventType statusEventType)
+{
+    if (statusEventType != StatusEventType::THERMAL_LEVEL_CHANGED) {
+        return;
+    }
+    int32_t taskStatus = CloudMediaAssetManager::GetInstance().GetTaskStatus();
+    int32_t downloadType = CloudMediaAssetManager::GetInstance().GetDownloadType();
+    bool foregroundTemperature = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
+        COMMON_EVENT_KEY_GET_DEFAULT_PARAM) <= PROPER_DEVICE_TEMPERATURE_LEVEL_HOT;
+    if (!foregroundTemperature && downloadType == static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE)) {
+        CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::TEMPERATURE_LIMIT);
+        return;
+    }
+    if (foregroundTemperature && taskStatus == static_cast<int32_t>(CloudMediaAssetTaskStatus::PAUSED)) {
+        CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(
+            CloudMediaTaskRecoverCause::FOREGROUND_TEMPERATURE_PROPER);
+    }
+}
+
+void MedialibrarySubscriber::UpdateCloudAssetNetStatus()
+{
+    if (!CloudMediaAssetManager::GetInstance().SetNetworkConnected(isNetworkConnected_)) {
+        return;
+    }
+    int32_t taskStatus = CloudMediaAssetManager::GetInstance().GetTaskStatus();
+    if (!isNetworkConnected_) {
+        CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::WIFI_UNAVAILABLE);
+        return;
+    }
+
+    if (CommonEventUtils::IsWifiConnected()) {
+        CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(CloudMediaTaskRecoverCause::NETWORK_NORMAL);
+        return;
+    }
+    if (taskStatus == static_cast<int32_t>(CloudMediaAssetTaskStatus::PAUSED) &&
+        CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
+        CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(
+            CloudMediaTaskRecoverCause::NETWORK_FLOW_UNLIMIT);
+    }
+}
+
 void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
 {
     const AAFwk::Want &want = eventData.GetWant();
@@ -346,10 +405,14 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
     }
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
-        isWifiConn_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
+        isWifiConnected_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
         UpdateBackgroundTimer();
+    } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE) {
+        isNetworkConnected_ = eventData.GetCode() == NET_CONN_STATE_CONNECTED;
+        UpdateCloudAssetNetStatus();
     } else if (BACKGROUND_OPERATION_STATUS_MAP.count(action) != 0) {
         UpdateBackgroundOperationStatus(want, BACKGROUND_OPERATION_STATUS_MAP.at(action));
+        UpdateCloudMediaAssetDownloadStatus(want, BACKGROUND_OPERATION_STATUS_MAP.at(action));
     } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED) == 0) {
         string packageName = want.GetElement().GetBundleName();
         RevertPendingByPackage(packageName);
@@ -414,7 +477,7 @@ void MedialibrarySubscriber::DoThumbnailOperation()
         return;
     }
     
-    if (isWifiConn_ && dataManager->CheckCloudThumbnailDownloadFinish() != E_OK) {
+    if (isWifiConnected_ && dataManager->CheckCloudThumbnailDownloadFinish() != E_OK) {
         MEDIA_INFO_LOG("CheckCloudThumbnailDownloadFinish failed");
         return;
     }
@@ -424,7 +487,7 @@ void MedialibrarySubscriber::DoThumbnailOperation()
         MEDIA_ERR_LOG("GenerateThumbnailBackground faild");
     }
 
-    result = dataManager->UpgradeThumbnailBackground(isWifiConn_);
+    result = dataManager->UpgradeThumbnailBackground(isWifiConnected_);
     if (result != E_OK) {
         MEDIA_ERR_LOG("UpgradeThumbnailBackground faild");
     }
@@ -480,6 +543,18 @@ static int32_t DoUpdateBurstFromGallery()
     return E_SUCCESS;
 }
 
+static void RecoverBackgroundDownloadCloudMediaAsset()
+{
+    if (!CloudMediaAssetManager::GetInstance().SetBgDownloadPermission(true)) {
+        return;
+    }
+    int32_t ret = CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(
+        CloudMediaTaskRecoverCause::BACKGROUND_TASK_AVAILABLE);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("RecoverDownloadCloudAsset faild");
+    }
+}
+
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     if (!IsDelayTaskTimeOut() || !currentStatus_) {
@@ -506,6 +581,21 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         MEDIA_ERR_LOG("DoUpdateBurstFromGallery faild");
     }
 
+    // migration highlight info to new path
+    if (MediaFileUtils::IsFileExists(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD)) {
+        MEDIA_INFO_LOG("Migration highlight info to new path");
+        bool retMigration = MediaFileUtils::CopyDirAndDelSrc(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD,
+            ROOT_MEDIA_DIR + HIGHLIGHT_INFO_NEW);
+        if (retMigration) {
+            bool retDelete = MediaFileUtils::DeleteDir(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD);
+            if (!retDelete) {
+                MEDIA_ERR_LOG("Delete old highlight path fail");
+            }
+        }
+    }
+
+    RecoverBackgroundDownloadCloudMediaAsset();
+
     // compat old-version moving photo
     MovingPhotoProcessor::StartProcess();
 
@@ -516,6 +606,20 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     }
 }
 
+static void PauseBackgroundDownloadCloudMedia()
+{
+    if (!CloudMediaAssetManager::GetInstance().SetBgDownloadPermission(false)) {
+        return;
+    }
+    int32_t taskStatus = static_cast<int32_t>(CloudMediaAssetTaskStatus::DOWNLOADING);
+    int32_t downloadType = static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_GENTLE);
+    if (CloudMediaAssetManager::GetInstance().GetTaskStatus() == taskStatus &&
+        CloudMediaAssetManager::GetInstance().GetDownloadType() == downloadType) {
+        CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(
+            CloudMediaTaskPauseCause::BACKGROUND_TASK_UNAVAILABLE);
+    }
+}
+
 void MedialibrarySubscriber::StopBackgroundOperation()
 {
 #ifdef META_RECOVERY_SUPPORT
@@ -523,6 +627,7 @@ void MedialibrarySubscriber::StopBackgroundOperation()
 #endif
     MovingPhotoProcessor::StopProcess();
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
+    PauseBackgroundDownloadCloudMedia();
 }
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
@@ -551,7 +656,8 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
     ThumbnailGenerateWorkerManager::GetInstance().TryCloseThumbnailWorkerTimer();
 
     std::lock_guard<std::mutex> lock(mutex_);
-    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_ && isWifiConn_;
+    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ &&
+        isDeviceTemperatureProper_ && isWifiConnected_;
     if (timerStatus_ == newStatus) {
         return;
     }
@@ -559,7 +665,7 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
     MEDIA_INFO_LOG("update timer status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, "
         "%{public}d, %{public}d",
         timerStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_,
-        isWifiConn_);
+        isWifiConnected_);
 
     timerStatus_ = newStatus;
     if (timerStatus_) {

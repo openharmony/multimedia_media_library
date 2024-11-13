@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import("//foundation/multimedia/media_library/media_library.gni")
 group("test") {
   testonly = true
 
@@ -70,9 +70,6 @@ group("test") {
 
   if (defined(global_parts_info.hdf_drivers_interface_usb) &&
       defined(medialibrary_mtp_enable)) {
-    deps += [
-      "unittest/medialibrary_mtp_test:unittest",
-      "unittest/mtp_native_test:unittest",
-    ]
+    deps += [ "unittest/medialibrary_mtp_test:unittest" ]
   }
 }

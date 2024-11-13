@@ -78,7 +78,8 @@
           "preferences",
           "wifi",
           "libxml2",
-          "zlib"
+          "zlib",
+          "device_standby"
         ],
         "third_party": [
           "e2fsprogs",
@@ -129,6 +130,15 @@
                   ]
                 },
                 "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
+                "header_files": [
+                  "media_library_extend_manager.h"
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_extend_manager"
             },
             {
               "header": {

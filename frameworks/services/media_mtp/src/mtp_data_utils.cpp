@@ -28,6 +28,7 @@
 #include "payload_data/get_object_props_supported_data.h"
 #include "payload_data.h"
 #include "rdb_errno.h"
+#include "playback_formats.h"
 
 using namespace std;
 namespace OHOS {
@@ -557,9 +558,9 @@ int32_t MtpDataUtils::GetMtpPropList(const std::shared_ptr<std::unordered_map<ui
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "context is nullptr");
     shared_ptr<UInt16List> properties = make_shared<UInt16List>();
     if (context->property == MTP_PROPERTY_ALL_CODE) {
-        shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
-        context->format = context->format;
-        shared_ptr<GetObjectPropsSupportedData> payLoadData = make_shared<GetObjectPropsSupportedData>(context);
+        shared_ptr<MtpOperationContext> mtpContext = make_shared<MtpOperationContext>();
+        mtpContext->format = context->format;
+        shared_ptr<GetObjectPropsSupportedData> payLoadData = make_shared<GetObjectPropsSupportedData>(mtpContext);
         payLoadData->GetObjectProps(*properties);
     } else {
         properties->push_back(context->property);
@@ -571,7 +572,7 @@ int32_t MtpDataUtils::GetMtpPropList(const std::shared_ptr<std::unordered_map<ui
 
     CHECK_AND_RETURN_RET_LOG(handles != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "handles is nullptr");
     for (auto it = handles->begin(); it != handles->end(); it++) {
-        uint32_t parentId = 0;
+        uint32_t parentId = DEFAULT_STORAGE_ID;
         auto iterator = pathHandles.find(std::filesystem::path(it->second).parent_path().string());
         if (iterator != pathHandles.end()) {
             parentId = iterator->second;
@@ -617,23 +618,28 @@ uint32_t MtpDataUtils::GetMtpFormatByPath(const std::string &path, uint16_t &out
         MEDIA_ERR_LOG("path is nullptr");
         return MTP_ERROR_INVALID_OBJECTPROP_VALUE;
     }
+    CHECK_AND_RETURN_RET_LOG(access(path.c_str(), R_OK) == 0, E_ERR, "access failed path[%{public}s]", path.c_str());
     if (std::filesystem::is_directory(path)) {
-        MEDIA_ERR_LOG("path is dir");
         outFormat = MTP_FORMAT_ASSOCIATION_CODE;
         return MTP_SUCCESS;
     }
 
     std::filesystem::path filePath(path);
     if (!filePath.filename().has_extension()) {
-        MEDIA_ERR_LOG("extension is empty");
         return MTP_ERROR_INVALID_OBJECTPROP_VALUE;
     }
-
+    // ↑ has_extension already checked for file extension
     std::string extension = filePath.filename().extension().c_str();
     for (auto it = FormatMap.begin(); it != FormatMap.end(); it++) {
-        if (it->second.compare(extension) == 0) {
-            outFormat = it->first;
-            return MTP_SUCCESS;
+        if (it->second.compare(extension) != 0) {
+            continue;
+        }
+        // outFormat should also be in 'Playback Formats' return array of GetDeviceInfo cmd
+        for (uint16_t i = 0; i < sizeof(PLAYBACK_FORMATS) / sizeof(uint16_t); i++) {
+            if (it->first == PLAYBACK_FORMATS[i]) {
+                outFormat = it->first;
+                return MTP_SUCCESS;
+            }
         }
     }
     return MTP_ERROR_INVALID_OBJECTPROP_VALUE;
@@ -655,7 +661,7 @@ void MtpDataUtils::SetMtpProperty(const std::string &column, const std::string &
         prop.currentValue->bin_.i64 = statInfo.st_size;
     }
     if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
-        prop.currentValue->bin_.i64 = statInfo.st_mtime;
+        prop.currentValue->str_ = make_shared<std::string>(MtpPacketTool::FormatDateTime((statInfo.st_mtime)));
     }
     if (column.compare(MEDIA_DATA_DB_DATE_ADDED) == 0) {
         prop.currentValue->bin_.i64 = statInfo.st_ctime;

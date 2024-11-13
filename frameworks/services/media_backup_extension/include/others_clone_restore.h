@@ -62,6 +62,7 @@ private:
         std::vector<CloneDbInfo> &mediaDbInfo);
     void CloneInfoPushBack(std::vector<CloneDbInfo> &pushInfos, std::vector<CloneDbInfo> &popInfos);
     void HandleInsertBatch(int32_t offset);
+    PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(FileInfo &fileInfo);
 
 private:
     std::mutex cloneMutex_;

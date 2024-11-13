@@ -22,31 +22,14 @@
 #include "pixel_map.h"
 #include "unique_fd.h"
 #include "media_photo_asset_proxy.h"
+#include "media_library_extend_manager.h"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace OHOS::DataShare;
 #define EXPORT __attribute__ ((visibility ("default")))
-/**
- * @brief Interface for accessing all the File operation and AlbumAsset operation APIs
- *
- * @since 1.0
- * @version 1.0
- */
-enum class PhotoPermissionType : int32_t {
-    TEMPORARY_READ_IMAGEVIDEO = 0,
-    PERSIST_READ_IMAGEVIDEO,
-    TEMPORARY_WRITE_IMAGEVIDEO,
-    TEMPORARY_READWRITE_IMAGEVIDEO
-};
-
-enum class HideSensitiveType : int32_t {
-    ALL_DESENSITIZE = 0,
-    GEOGRAPHIC_LOCATION_DESENSITIZE,
-    SHOOTING_PARAM_DESENSITIZE,
-    NO_DESENSITIZE
-};
+struct UriParams;
 
 class MediaLibraryManager {
 public:
@@ -276,8 +259,8 @@ public:
 private:
     int32_t ReadMovingPhotoVideo(const string &uri, const string &option);
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size, bool isAstc);
-    static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, const string &path, bool isAstc);
-    static unique_ptr<PixelMap> DecodeThumbnail(UniqueFd& uniqueFd, const Size& size, const std::string& uri = "");
+    static unique_ptr<PixelMap> QueryThumbnail(UriParams& params);
+    static unique_ptr<PixelMap> DecodeThumbnail(UniqueFd& uniqueFd, const Size& size, DecodeDynamicRange dynamicRange);
     static unique_ptr<PixelMap> GetPixelMapWithoutDecode(UniqueFd &uniqueFd, const Size& size);
     static unique_ptr<PixelMap> DecodeAstc(UniqueFd &uniqueFd);
 

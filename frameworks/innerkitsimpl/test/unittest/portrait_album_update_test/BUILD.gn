@@ -20,6 +20,7 @@ ohos_unittest("PortraitAlbumUpdateTest") {
     "./include",
     "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_CLOUD_SYNC_PATH}/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -66,6 +67,11 @@ ohos_unittest("PortraitAlbumUpdateTest") {
   ]
 
   defines = []
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.filemanagement_dfs_service)) {
+    defines += [ "CLOUD_SYNC_MANAGER" ]
+    external_deps += [ "dfs_service:cloudsync_kit_inner" ]
+  }
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
   sanitize = {

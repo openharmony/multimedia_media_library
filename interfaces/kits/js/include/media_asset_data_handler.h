@@ -78,7 +78,7 @@ private:
     std::string destUri_;
     SourceMode sourceMode_;
     NotifyMode notifyMode_ = NotifyMode::FAST_NOTIFY;
-    CompatibleMode compatibleMode_;
+    CompatibleMode compatibleMode_ {0};
     std::string requestId_;
     static std::mutex dataHandlerRefMutex_;
 };

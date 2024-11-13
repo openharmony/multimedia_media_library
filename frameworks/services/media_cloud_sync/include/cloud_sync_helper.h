@@ -27,14 +27,17 @@
 
 namespace OHOS {
 namespace Media {
+
+#define EXPORT __attribute__ ((visibility ("default")))
+
 constexpr int32_t SYNC_INTERVAL = 5000;
 
 class CloudSyncHelper final {
 public:
-    static std::shared_ptr<CloudSyncHelper> GetInstance();
+    EXPORT static std::shared_ptr<CloudSyncHelper> GetInstance();
     virtual ~CloudSyncHelper();
 
-    void StartSync();
+    EXPORT void StartSync();
 
 private:
     CloudSyncHelper();

@@ -20,6 +20,8 @@
 #include "media_mtp_utils.h"
 #include "mtp_packet.h"
 #include "mtp_packet_tools.h"
+#include "mtp_media_library.h"
+
 using namespace std;
 namespace OHOS {
 namespace Media {
@@ -60,6 +62,7 @@ void MtpEvent::SendObjectRemoved(const std::string &path)
         if (handleptr_->GetHandleByPaths(path, handle) == E_SUCCESS) {
             mtpContextPtr_->eventHandle = handle;
             SendEvent(MTP_EVENT_OBJECT_REMOVED_CODE);
+            MtpMediaLibrary::GetInstance()->ObserverDeletePathToMap(path);
             return;
         }
         i++;

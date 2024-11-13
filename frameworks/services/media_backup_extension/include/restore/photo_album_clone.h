@@ -19,6 +19,7 @@
 
 #include "rdb_store.h"
 #include "photo_album_dao.h"
+#include "backup_const.h"
 
 namespace OHOS::Media {
 class PhotoAlbumClone {
@@ -42,6 +43,8 @@ public:
         PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->photoAlbumDao_.GetPhotoAlbum(lPath);
         return !albumInfo.lPath.empty();
     }
+    void TRACE_LOG(const std::string &tableName, std::vector<AlbumInfo> &albumInfos);
+    void TRACE_LOG(std::vector<PhotoAlbumDao::PhotoAlbumRowData> &albumInfos);
 
 private:
     std::string ToString(const std::vector<NativeRdb::ValueObject> &bindArgs);

@@ -213,10 +213,8 @@ public:
     static const std::string MEDIA_DATA_DB_HIGHLIGHT_TRIGGER EXPORT;
     static const std::string INSERT_GENERATE_HIGHLIGHT_THUMBNAIL EXPORT;
     static const std::string UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL EXPORT;
-    static const std::string DROP_INSERT_GENERATE_HIGHLIGHT_THUMBNAIL EXPORT;
-    static const std::string DROP_UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL EXPORT;
     static const std::string INDEX_HIGHLIGHT_FILEID EXPORT;
-    
+
     // photo uri
     static const std::string PHOTO_URI_PREFIX EXPORT;
     static const std::string PHOTO_TYPE_URI EXPORT;

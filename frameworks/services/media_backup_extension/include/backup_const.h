@@ -51,6 +51,7 @@ constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
 constexpr uint32_t THUMBNAIL_NUM = 500;
 constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
+constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 
 const std::string RESTORE_FILES_CLOUD_DIR = "/storage/cloud/files/";
 const std::string RESTORE_FILES_LOCAL_DIR = "/storage/media/local/files/";
@@ -155,8 +156,8 @@ const std::vector<std::string> STAT_PROGRESS_TYPES = { STAT_TYPE_PHOTO_VIDEO, ST
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
 const std::string AUDIO_DB_NAME = "audio_MediaInfo.db";
-const std::string PHOTO_SD_DB_NAME = "photo_sd_MediaInfo.db";
-const std::string VIDEO_SD_DB_NAME = "video_sd_MediaInfo.db";
+const std::string PHOTO_SD_DB_NAME = "photo_sd_Cache.db";
+const std::string VIDEO_SD_DB_NAME = "video_sd_Cache.db";
 
 const std::string GALLERY_ALBUM = "gallery_album";
 const std::string GALLERY_ALBUM_NAME = "albumName";
@@ -164,12 +165,20 @@ const std::string GALLERY_ALBUM_BUCKETID = "relativeBucketId";
 const std::string GALLERY_ALBUM_IPATH = "lPath";
 const std::string GALLERY_NICK_NAME = "nick_name";
 
+/**
+ * If the value of thumbnail_ready is greater than or equal to 3, the THM is generated successfully.
+ * If the value of thumbnail_ready is greater than 0, the value of thumbnail_visible is 1, indicating
+ * that the THM has been generated(not necessarily successfully generated).
+ * If lcd_visit_time is 2, the LCD is generated successfully.
+ * If lcd_visit_time is 0, the LCD is not generated or fails to be generated.
+*/
 const int RESTORE_THUMBNAIL_READY_SUCCESS = 3;
 const int RESTORE_THUMBNAIL_READY_NO_THUMBNAIL = 0;
 const int RESTORE_THUMBNAIL_VISIBLE_FALSE = 0;
 const int RESTORE_THUMBNAIL_VISIBLE_TRUE = 1;
 const int RESTORE_LCD_VISIT_TIME_SUCCESS = 2;
 const int RESTORE_LCD_VISIT_TIME_NO_LCD = 0;
+
 const std::string MEDIA_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data";
 const std::string MEDIA_KVSTORE_YEAR_STOREID = "medialibrary_year_astc_data";
 const std::string CLONE_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data_clone";
@@ -338,6 +347,7 @@ struct FileInfo {
     int32_t photoQuality;
     std::string oldAstcDateKey;
     std::string newAstcDateKey;
+    bool isInternal {true};
 };
 
 struct AlbumInfo {
@@ -452,6 +462,13 @@ struct AnalysisAlbumTbl {
     std::optional<int32_t> renameOperation;
     std::optional<int32_t> isLocal;
     std::optional<int32_t> isCoverSatisfied;
+};
+
+struct PortraitAlbumDfx {
+    std::optional<std::string> albumName;
+    std::optional<std::string> coverUri;
+    std::optional<std::string> tagId;
+    std::optional<int32_t> count;
 };
 
 struct FaceTagTbl {
