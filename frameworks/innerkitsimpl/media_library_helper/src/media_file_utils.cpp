@@ -989,6 +989,7 @@ int32_t MediaFileUtils::CheckAlbumName(const string &albumName)
 {
     int err = CheckStringSize(albumName, DISPLAYNAME_MAX);
     if (err < 0) {
+        MEDIA_ERR_LOG("Album name string size check failed: %{public}d, size is %{public}zu", err, albumName.length());
         return err;
     }
 
