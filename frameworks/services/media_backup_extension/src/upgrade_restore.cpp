@@ -387,6 +387,7 @@ void UpgradeRestore::InitGarbageAlbum()
 
 void UpgradeRestore::RestoreFromGallery()
 {
+    this->photosRestore_.LoadPhotoAlbums();
     HasLowQualityImage();
     int32_t totalNumber = this->photosRestore_.GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
@@ -644,7 +645,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.burstKey = burstKeyGenerator_.FindBurstKey(info);
     // Pre-Fetch: sourcePath, lPath
     info.sourcePath = GetStringVal(GALLERY_MEDIA_SOURCE_PATH, resultSet);
-    info.lPath = GetStringVal("lPath", resultSet);
+    info.lPath = GetStringVal(GALLERY_ALBUM_IPATH, resultSet);
     // Find lPath, bundleName, packageName by sourcePath, lPath
     info.lPath = this->photosRestore_.FindlPath(info);
     info.bundleName = this->photosRestore_.FindBundleName(info);
@@ -709,13 +710,15 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
+    values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, this->photosRestore_.FindSubtype(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestore_.FindBurstCoverLevel(fileInfo));
     values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestore_.FindBurstKey(fileInfo));
     // find album_id by lPath.
-    values.PutInt("owner_album_id", this->photosRestore_.FindAlbumId(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
+    values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, this->photosRestore_.FindAlbumId(fileInfo));
+    // fill the source_path at last.
+    values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, this->photosRestore_.FindSourcePath(fileInfo));
     return values;
 }
 
