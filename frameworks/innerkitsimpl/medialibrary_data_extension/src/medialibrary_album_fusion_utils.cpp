@@ -521,7 +521,7 @@ static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& 
     int32_t photoQuality = 0;
     GetIntValueFromResultSet(resultSet, PhotoColumn::PHOTO_QUALITY, photoQuality);
     if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) {
-        photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL);
+        photoQuality = static_cast<int32_t>(MultiStagesPhotoQuality::FULL);
         dirty = static_cast<int32_t>(DirtyType::TYPE_NEW);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
     }
