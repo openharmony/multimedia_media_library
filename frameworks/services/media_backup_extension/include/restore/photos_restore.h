@@ -34,12 +34,15 @@ public:
      */
     void OnStart(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
     {
-        this->mediaLibraryRdb_ = mediaLibraryRdb;
-        this->galleryRdb_ = galleryRdb;
-        this->photosDao_.SetMediaLibraryRdb(mediaLibraryRdb);
-        this->photoAlbumDao_.SetMediaLibraryRdb(mediaLibraryRdb);
-        this->photosBasicInfo_ = this->photosDao_.GetBasicInfo();
-        this->galleryMediaDao_.SetGalleryRdb(galleryRdb);
+        this->SetMediaLibraryRdb(mediaLibraryRdb).SetGalleryRdb(galleryRdb).LoadBasicInfo();
+    }
+
+    /**
+     * @brief Load the PhotoAlbum cache of target media_library.db for quick access.
+     */
+    void LoadPhotoAlbums()
+    {
+        this->photoAlbumDao_.LoadPhotoAlbums();
     }
 
     PhotosDao::PhotosRowData FindSameFile(const FileInfo &fileInfo)
@@ -66,10 +69,26 @@ public:
     int64_t FindDateTrashed(const FileInfo &fileInfo);
     int32_t FindPhotoQuality(const FileInfo &fileInfo);
     int32_t FindMediaType(const FileInfo &fileInfo);
+    std::string FindSourcePath(const FileInfo &fileInfo);
 
 private:
-    std::string ParseSourcePathToLPath(const std::string &sourcePath);
-    PhotoAlbumDao::PhotoAlbumRowData BuildAlbumInfoByLPath(const std::string &lPath);
+    PhotosRestore &SetMediaLibraryRdb(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
+    {
+        this->mediaLibraryRdb_ = mediaLibraryRdb;
+        this->photosDao_.SetMediaLibraryRdb(mediaLibraryRdb);
+        this->photoAlbumDao_.SetMediaLibraryRdb(mediaLibraryRdb);
+        return *this;
+    }
+    PhotosRestore &SetGalleryRdb(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
+    {
+        this->galleryRdb_ = galleryRdb;
+        this->galleryMediaDao_.SetGalleryRdb(galleryRdb);
+        return *this;
+    }
+    void LoadBasicInfo()
+    {
+        this->photosBasicInfo_ = this->photosDao_.GetBasicInfo();
+    }
     PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(const FileInfo &fileInfo);
     std::string ToLower(const std::string &str)
     {
@@ -106,6 +125,7 @@ private:
         GROUP BY _data \
         HAVING count(1) > 1 \
         LIMIT ?, ?;";
+    const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
 };
 }  // namespace OHOS::Media
 

@@ -254,7 +254,7 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
  */
 PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::BuildAlbumInfoOfRecorders()
 {
-    PhotoAlbumRowData albumInfo;
+    PhotoAlbumDao::PhotoAlbumRowData albumInfo;
     // bind albumName and bundleName by lPath.
     albumInfo.albumName = AlbumPlugin::ALBUM_NAME_SCREEN_RECORDS;
     albumInfo.bundleName = AlbumPlugin::BUNDLE_NAME_SCREEN_RECORDS;
@@ -263,5 +263,87 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::BuildAlbumInfoOfRecorders()
     albumInfo.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC);
     albumInfo.priority = 1;
     return albumInfo;
+}
+
+void PhotoAlbumDao::LoadPhotoAlbums()
+{
+    std::vector<PhotoAlbumDao::PhotoAlbumRowData> photoAlbums = this->GetPhotoAlbums();
+    for (const auto &album : photoAlbums) {
+        if (album.lPath.empty()) {
+            continue;
+        }
+        this->photoAlbumCache_.Insert(StringUtils::ToLower(album.lPath), album);
+    }
+    MEDIA_INFO_LOG(
+        "Media_Restore: LoadPhotoAlbums success, %{public}d albums", static_cast<int32_t>(photoAlbums.size()));
+}
+
+/**
+ * @brief Parse the sourcePath to lPath.
+ * example, sourcePath=/storage/emulated/0/DCIM/Camera/IMG_20240829_072213.jpg, lPath=/DCIM/Camera
+ * if the sourcePath can not be parsed, return /Pictures/其它.
+ */
+std::string PhotoAlbumDao::ParseSourcePathToLPath(const std::string &sourcePath)
+{
+    size_t start_pos = sourcePath.find(GALLERT_ROOT_PATH);
+    size_t end_pos = sourcePath.find_last_of("/");
+
+    std::string result = "/Pictures/其它";
+    if (start_pos != std::string::npos && end_pos != std::string::npos) {
+        start_pos += GALLERT_ROOT_PATH.length();
+        result = sourcePath.substr(start_pos, end_pos - start_pos);
+        start_pos = result.find_first_of("/");
+        if (start_pos != std::string::npos) {
+            result = result.substr(start_pos);
+        }
+    }
+    return result;
+}
+
+/**
+ * @brief Build PhotoAlbumRowData from lPath.
+ */
+PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::BuildAlbumInfoByLPath(
+    const std::string &lPath, const int32_t albumType, const int32_t albumSubType)
+{
+    PhotoAlbumDao::PhotoAlbumRowData albumInfo;
+    // find albumName from lPath
+    std::string albumName = "其它";
+    std::string albumlPath = lPath;
+    int32_t albumTypeTmp = albumType;
+    int32_t albumSubTypeTmp = albumSubType;
+    size_t fileIndex = albumlPath.find_last_of(FILE_SEPARATOR);
+    if (fileIndex != string::npos) {
+        albumName = albumlPath.substr(fileIndex + 1);
+    } else {
+        albumlPath = "/Pictures/其它";
+        albumTypeTmp = static_cast<int32_t>(PhotoAlbumType::SOURCE);
+        albumSubTypeTmp = static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC);
+    }
+    albumInfo.albumName = albumName;
+    albumInfo.lPath = albumlPath;
+    albumInfo.albumType = albumTypeTmp;
+    albumInfo.albumSubType = albumSubTypeTmp;
+    albumInfo.priority = 1;
+    return albumInfo;
+}
+
+/**
+ * @brief Build PhotoAlbumRowData from lPath.
+ */
+PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::BuildAlbumInfoByLPath(const std::string &lPath)
+{
+    int32_t albumType = static_cast<int32_t>(PhotoAlbumType::SOURCE);
+    int32_t albumSubType = static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC);
+
+    std::string target = "/Pictures/Users/";
+    std::transform(target.begin(), target.end(), target.begin(), ::tolower);
+    std::string lPathLower = lPath;
+    std::transform(lPathLower.begin(), lPathLower.end(), lPathLower.begin(), ::tolower);
+    if (lPathLower.find(target) == 0) {
+        albumType = static_cast<int32_t>(PhotoAlbumType::USER);
+        albumSubType = static_cast<int32_t>(PhotoAlbumSubType::USER_GENERIC);
+    }
+    return this->BuildAlbumInfoByLPath(lPath, albumType, albumSubType);
 }
 }  // namespace OHOS::Media
