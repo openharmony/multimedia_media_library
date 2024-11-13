@@ -1341,7 +1341,8 @@ int32_t MediaLibraryDataCallBack::InsertDirValues(const DirValuesBucket &dirValu
     valuesBucket.PutString(DIRECTORY_DB_EXTENSION, dirValuesBucket.extensionValues);
     int64_t outRowId = -1;
     int32_t insertResult = ExecSqlWithRetry([&]() {
-        return store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
+        return store.InsertWithConflictResolution(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket,
+            ConflictResolution::ON_CONFLICT_REPLACE);
     });
     MEDIA_DEBUG_LOG("insert dir outRowId: %{public}ld insertResult: %{public}d", (long)outRowId, insertResult);
     return insertResult;
@@ -1380,7 +1381,8 @@ static int32_t InsertShootingModeAlbumValues(
     valuesBucket.PutInt(MEDIA_DATA_DB_IS_LOCAL, 1); // local album is 1.
     int64_t outRowId = -1;
     int32_t insertResult = ExecSqlWithRetry([&]() {
-        return store.Insert(outRowId, ANALYSIS_ALBUM_TABLE, valuesBucket);
+        return store.InsertWithConflictResolution(outRowId, ANALYSIS_ALBUM_TABLE, valuesBucket,
+            ConflictResolution::ON_CONFLICT_REPLACE);
     });
     return insertResult;
 }
@@ -1436,7 +1438,8 @@ int32_t MediaLibraryDataCallBack::InsertSmartAlbumValues(const SmartAlbumValuesB
     valuesBucket.PutInt(SMARTALBUM_DB_ALBUM_TYPE, smartAlbum.albumType);
     int64_t outRowId = -1;
     int32_t insertResult = ExecSqlWithRetry([&]() {
-        return store.Insert(outRowId, SMARTALBUM_TABLE, valuesBucket);
+        return store.InsertWithConflictResolution(outRowId, SMARTALBUM_TABLE, valuesBucket,
+            ConflictResolution::ON_CONFLICT_REPLACE);
     });
     return insertResult;
 }
@@ -1449,7 +1452,8 @@ static int32_t InsertUniqueMemberTableValues(const UniqueMemberValuesBucket &uni
     valuesBucket.PutInt(UNIQUE_NUMBER, uniqueMemberValues.startNumber);
     int64_t outRowId = -1;
     int32_t insertResult = ExecSqlWithRetry([&]() {
-        return store.Insert(outRowId, ASSET_UNIQUE_NUMBER_TABLE, valuesBucket);
+        return store.InsertWithConflictResolution(outRowId, ASSET_UNIQUE_NUMBER_TABLE, valuesBucket,
+            ConflictResolution::ON_CONFLICT_REPLACE);
     });
     return insertResult;
 }

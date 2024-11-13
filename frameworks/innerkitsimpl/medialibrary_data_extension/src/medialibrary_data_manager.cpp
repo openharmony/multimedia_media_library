@@ -911,7 +911,8 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
             }
             break;
         }
-        case OperationObject::MEDIA_APP_URI_PERMISSION: {
+        case OperationObject::MEDIA_APP_URI_PERMISSION:
+        case OperationObject::APP_URI_PERMISSION_INNER: {
             return MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
         }
         case OperationObject::FILESYSTEM_PHOTO:

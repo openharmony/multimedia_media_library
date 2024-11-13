@@ -337,7 +337,7 @@ bool SourceLoader::GeneratePixelMapSource(std::unique_ptr<ImageSource> &imageSou
         return false;
     }
     if (!NeedAutoResize(targetSize) && !ThumbnailUtils::ScaleTargetPixelMap(pixelMap, targetSize,
-        Media::AntiAliasingOption::HIGH)) {
+        Media::AntiAliasingOption::SLR)) {
         MEDIA_ERR_LOG("SourceLoader fail to scaleTarget, path %{public}s", DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
@@ -365,7 +365,11 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 
     Size targetSize = ConvertDecodeSize(data_, imageInfo.size, desiredSize_);
     Size sourceSize = imageInfo.size;
-    bool shouldGeneratePicture = data_.loaderOpts.isHdr && imageSource->IsHdrImage();
+
+    // When encode picture, if mainPixel width or height is odd, hard encode would fail.
+    // For the safety of encode process, only those of even desiredSize is allowed to generate througth picture.
+    bool shouldGeneratePicture = data_.loaderOpts.isHdr && imageSource->IsHdrImage() &&
+        data_.lcdDesiredSize.width % 2 == 0 && data_.lcdDesiredSize.height % 2 == 0;
     bool isGenerateSucceed = shouldGeneratePicture ?
         GeneratePictureSource(imageSource, targetSize) : GeneratePixelMapSource(imageSource, sourceSize, targetSize);
     if (!isGenerateSucceed && shouldGeneratePicture) {

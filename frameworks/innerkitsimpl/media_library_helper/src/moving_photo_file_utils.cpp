@@ -593,9 +593,9 @@ static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataS
         return E_OK;
     }
     extraDataSize = MIN_STANDARD_SIZE + std::stoi(cinemagraphSizeStream.str(), 0, HEX_BASE);
-    if (extraDataSize > maxFileSize) {
+    if (extraDataSize >= maxFileSize) {
         extraDataSize = MIN_STANDARD_SIZE;
-        MEDIA_WARN_LOG("extra data size over total file size %{public}ld", extraDataSize);
+        MEDIA_WARN_LOG("extra data size over total file size %{public}lld", extraDataSize);
     }
     return E_OK;
 }
