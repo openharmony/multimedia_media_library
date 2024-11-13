@@ -71,6 +71,7 @@ int32_t AlbumPluginTableEventHandler::InitiateData(NativeRdb::RdbStore &store)
         auto res = trans->Execute(this->INSERT_DATA_SQL, bindArgs);
         err = res.first;
         if (err != NativeRdb::E_OK) {
+            trans->Rollback();
             return err;
         }
     }
