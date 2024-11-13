@@ -136,7 +136,6 @@ private:
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     EXPORT static const std::string BeginGenerateHighlightThumbnail(const std::vector<std::string>& args);
     static std::mutex reconstructLock_;
-    static std::mutex rdbStoreMutex_;
 #ifdef DISTRIBUTED
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
 #endif
