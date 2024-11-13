@@ -750,50 +750,37 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUr
 
 void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereArgs)
 {
-    const std::string sourcePathPrefix = "/storage/emulated/0";
+    if (whereArgs.empty()) {
+        return;
+    }
+
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    for (auto assetId: whereArgs) {
-        const std::string QUERY_FILE_ASSET_INFO = "SELECT * FROM Photos WHERE file_id = " + assetId;
-        shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
-        if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Query not matched data fails on update source path");
-            continue;
-        }
-        int displayNameIndex = -1;
-        string displayName;
-        resultSet->GetColumnIndex(MediaColumn::MEDIA_NAME, displayNameIndex);
-        if (resultSet->GetString(displayNameIndex, displayName) != NativeRdb::E_OK) {
-            continue;
-        }
-        int ownerAlbumIdIndex;
-        int32_t ownerAlbumId;
-        resultSet->GetColumnIndex(PhotoColumn::PHOTO_OWNER_ALBUM_ID, ownerAlbumIdIndex);
-        if (resultSet->GetInt(ownerAlbumIdIndex, ownerAlbumId) != NativeRdb::E_OK) {
-            continue;
-        }
-        resultSet->Close();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("RdbStore is null");
+        return;
+    }
 
-        const std::string QUERY_LPATH_INFO = "SELECT * FROM PhotoAlbum WHERE album_id = " + to_string(ownerAlbumId);
-        shared_ptr<NativeRdb::ResultSet> resultSetAlbum = rdbStore->QuerySql(QUERY_LPATH_INFO);
-        if (resultSetAlbum == nullptr || resultSetAlbum->GoToFirstRow() != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Query not matched data fails on update source path");
-            continue;
+    std::string inClause;
+    for (uint32_t i = 0; i < whereArgs.size(); ++i) {
+        if (i > 0) {
+            inClause += ",";
         }
-        int lpathIndex;
-        string lpath;
-        resultSetAlbum->GetColumnIndex(PhotoAlbumColumns::ALBUM_LPATH, lpathIndex);
-        if (resultSetAlbum->GetString(lpathIndex, lpath) != NativeRdb::E_OK) {
-            continue;
-        }
-        resultSetAlbum->Close();
+        inClause += whereArgs[i];
+    }
 
-        string newSourcePath = sourcePathPrefix + lpath + "/" + displayName;
-        ValuesBucket values;
-        values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, newSourcePath);
-        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-        predicates.EqualTo(MediaColumn::MEDIA_ID, assetId);
-        int32_t changedRows = 0;
-        rdbStore->Update(changedRows, values, predicates);
+    const std::string updateSql = "UPDATE Photos"
+        " SET source_path = ( SELECT"
+        " '/storage/emulated/0' || COALESCE(PhotoAlbum.lpath, '/Pictures/其它') || '/' || SubPhotos.display_name "
+        " FROM Photos AS SubPhotos "
+        " LEFT JOIN PhotoAlbum ON SubPhotos.owner_album_id = PhotoAlbum.album_id "
+        " WHERE SubPhotos.file_id = Photos.file_id"
+        " LIMIT 1"
+        ") "
+        "WHERE file_id IN (" + inClause + ")";
+
+    int32_t result = rdbStore->ExecuteSql(updateSql);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to update source path, error code: %{private}d", result);
     }
 }
 
