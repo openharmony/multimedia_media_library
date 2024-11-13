@@ -78,14 +78,20 @@ static constexpr int ERROR_BATTERY = -1;
 static constexpr int EMPTY_BATTERY = 0;
 static constexpr int STORAGE_MANAGER_UID = 5003;
 static constexpr int RECEVIE_OBJECT_CANCELLED = -20;
+static constexpr int RECEVIE_OBJECT_FAILED = -17;
 
 static constexpr uint32_t HEADER_LEN = 12;
 static constexpr uint32_t READ_LEN = 1024;
 MtpOperationUtils::MtpOperationUtils(const shared_ptr<MtpOperationContext> &context) : context_(context)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    CHECK_AND_RETURN_LOG(saManager != nullptr, "GetSystemAbilityManager failed, saManager is null");
+
     auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID);
     mtpMedialibraryManager_ = MtpMedialibraryManager::GetInstance();
+    CHECK_AND_RETURN_LOG(mtpMedialibraryManager_ != nullptr,
+        "MtpMedialibraryManager failed, mtpMedialibraryManager_ is null");
+
     mtpMedialibraryManager_->Init(token);
     mtpMediaLibrary_ = MtpMediaLibrary::GetInstance();
 }
@@ -483,7 +489,7 @@ int32_t MtpOperationUtils::RecevieSendObject(MtpFileRange &object, int fd)
         "mtpMedialibraryManager_ is null");
 
     int32_t errorCode = context_->mtpDriver->ReceiveObj(object);
-    if (errorCode != RECEVIE_OBJECT_CANCELLED) {
+    if (errorCode != RECEVIE_OBJECT_CANCELLED && errorCode != RECEVIE_OBJECT_FAILED) {
         return errorCode;
     }
 
