@@ -98,7 +98,7 @@ const int32_t THIRD_ENUM = 3;
 const int32_t FORMID_MAX_LEN = 19;
 const int32_t SLEEP_TIME = 100;
 const int64_t MAX_INT64 = 9223372036854775807;
-const int32_t MAX_QUERY_LIMIT = 15;
+const int32_t MAX_QUERY_LIMIT = 80;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
 const double PERCENT_95 = 0.95;
@@ -2649,10 +2649,6 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
         NAPI_ERR_LOG("Failed to read sub uri list length");
         return status;
     }
-    if (len > MAX_QUERY_LIMIT) {
-        NAPI_ERR_LOG("suburi length exceed the limit.");
-        return status;
-    }
     napi_value subUriArray = nullptr;
     napi_create_array_with_length(env, len, &subUriArray);
     int subElementIndex = 0;
@@ -2676,6 +2672,10 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
     status = napi_set_named_property(env, result, "extraUris", subUriArray);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Set subUri named property error!");
+    }
+    if (len > MAX_QUERY_LIMIT) {
+        NAPI_ERR_LOG("suburi length exceed the limit.");
+        return napi_ok;
     }
     napi_value photoAssetArray = GetSharedPhotoAssets(env, fileIds);
     if (photoAssetArray == nullptr) {
