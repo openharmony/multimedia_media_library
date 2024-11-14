@@ -44,7 +44,8 @@ public:
     int32_t GetFileId();
 
     PhotoAssetMember UserFileMgrGet(std::string &inputKey, int32_t &errCode);
-    bool HandleParamSet(const std::string &inputKey, const std::string &value, ResultNapiType resultNapiType);
+    bool HandleParamSet(const std::string &inputKey, const std::string &value,
+        ResultNapiType resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     void UserFileMgrSet(std::string &inputKey, std::string &value, int32_t &errCode);
     void CommitModify(int32_t &errCode);
     int64_t GetThumbnail(CSize cSize, int32_t &errCode);

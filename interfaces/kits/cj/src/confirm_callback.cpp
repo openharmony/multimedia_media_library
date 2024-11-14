@@ -77,7 +77,7 @@ void ConfirmCallback::OnResult(int32_t resultCode, const OHOS::AAFwk::Want &want
 
 void ConfirmCallback::OnError(int32_t code, const std::string &name, const std::string &message)
 {
-    LOGI("Code is %{public}d, name is %{public}s, message is %{public}s.", code, name.c_str(),
+    LOGI("OnError. Code is %{public}d, name is %{public}s, message is %{public}s.", code, name.c_str(),
         message.c_str());
 
     this->resultCode_ = JS_INNER_FAIL;
