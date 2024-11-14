@@ -761,7 +761,7 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
     }
 
     std::string inClause;
-    for (uint32_t i = 0; i < whereArgs.size(); ++i) {
+    for (size_t i = 0; i < whereArgs.size(); ++i) {
         if (i > 0) {
             inClause += ",";
         }
