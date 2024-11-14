@@ -36,8 +36,7 @@ const std::string INVALID_ZERO_ID = "0";
 static bool IsCloudInsertTaskPriorityHigh()
 {
     int32_t cloudSyncStatus = static_cast<int32_t>(system::GetParameter(CLOUDSYNC_STATUS_KEY, "0").at(0) - '0');
-    return cloudSyncStatus == CloudSyncStatus::FIRST_FIVE_HUNDRED ||
-        cloudSyncStatus == CloudSyncStatus::INCREMENT_DOWNLOAD;
+    return cloudSyncStatus == CloudSyncStatus::FIRST_FIVE_HUNDRED;
 }
 
 static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
