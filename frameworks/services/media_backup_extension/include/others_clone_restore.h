@@ -26,8 +26,9 @@ namespace Media {
 
 struct CloneDbInfo {
     std::string displayName;
-    double dateModified;
-    double dateTaken;
+    std::string data;
+    double dateModified {0.0};
+    double dateTaken {0.0};
 };
 
 class OthersCloneRestore : public BaseRestore {
@@ -56,14 +57,25 @@ private:
     int32_t GetAllfilesInCurrentDir(const std::string &path);
     void UpDateFileModifiedTime(FileInfo &fileInfo);
     void GetCloneDbInfos(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo);
+    bool HasSameFileForDualClone(FileInfo &fileInfo);
+    void HandleSelectBatch(std::shared_ptr<NativeRdb::RdbStore> mediaRdb, int32_t offset, int32_t sceneCode,
+        std::vector<CloneDbInfo> &mediaDbInfo);
+    void CloneInfoPushBack(std::vector<CloneDbInfo> &pushInfos, std::vector<CloneDbInfo> &popInfos);
+    void HandleInsertBatch(int32_t offset);
+    PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(FileInfo &fileInfo);
 
 private:
+    std::mutex cloneMutex_;
     std::string clonePhoneName_;
     std::string mediaAppName_;
     std::vector<FileInfo> photoInfos_;
+    std::vector<FileInfo> audioInfos_;
     std::vector<CloneDbInfo> photoDbInfo_;
+    std::vector<CloneDbInfo> audioDbInfo_;
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     PhotoAlbumDao photoAlbumDao_;
+    PhotoAlbumRestore photoAlbumRestore_;
+    PhotosRestore photosRestore_;
 };
 } // namespace Media
 } // namespace OHOS
