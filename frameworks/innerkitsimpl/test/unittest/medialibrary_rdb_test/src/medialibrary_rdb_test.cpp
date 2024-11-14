@@ -302,9 +302,9 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_001, TestSize.Level0)
     TransactionOperations trans1{ __func__ };
     int32_t ret = trans1.Start();
     EXPECT_EQ(ret, E_OK);
-    TransactionOperations trans2;
-    int32_t ret1 = trans2.Start(__func__);
-    EXPECT_NE(ret1, E_OK);
+    TransactionOperations trans2{ __func__ };
+    int32_t ret1 = trans2.Start();
+    EXPECT_EQ(ret1, E_OK);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE);
     ValuesBucket valuesBucket;
     string title = "medialib_Update_test_001";
