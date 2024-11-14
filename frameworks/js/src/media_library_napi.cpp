@@ -1880,6 +1880,8 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
+
+    NAPI_INFO_LOG("End create asset.");
     delete context;
 }
 
