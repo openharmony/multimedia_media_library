@@ -276,7 +276,10 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS = "\
       (\
       SELECT\
         SELECT_COLUMNS ,\
-        ROW_NUMBER( ) OVER ( PARTITION BY display_name, size, orientation ORDER BY album_id DESC ) AS img_row_num,\
+        ROW_NUMBER( ) OVER ( \
+          PARTITION BY display_name, size, orientation \
+          ORDER BY album_id DESC, owner_album_id ASC \
+        ) AS img_row_num,\
         COUNT( ) OVER ( PARTITION BY display_name, size, orientation ) AS img_cnt \
       FROM\
         Photos\
@@ -298,7 +301,10 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS = "\
       (\
       SELECT\
         SELECT_COLUMNS ,\
-        ROW_NUMBER( ) OVER ( PARTITION BY display_name, size ORDER BY album_id DESC ) AS vid_row_num,\
+        ROW_NUMBER( ) OVER ( \
+          PARTITION BY display_name, size \
+          ORDER BY album_id DESC, owner_album_id ASC \
+        ) AS vid_row_num,\
         COUNT( ) OVER ( PARTITION BY display_name, size ) AS vid_cnt \
       FROM\
         Photos\
@@ -331,7 +337,10 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT = "\
         (\
         SELECT\
           file_id,\
-          ROW_NUMBER( ) OVER ( PARTITION BY display_name, size, orientation ORDER BY album_id DESC ) AS img_row_num,\
+          ROW_NUMBER( ) OVER ( \
+            PARTITION BY display_name, size, orientation \
+            ORDER BY album_id DESC, owner_album_id ASC \
+          ) AS img_row_num,\
           COUNT( ) OVER ( PARTITION BY display_name, size, orientation ) AS img_cnt \
         FROM\
           Photos\
@@ -353,7 +362,10 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT = "\
         (\
         SELECT\
           file_id,\
-          ROW_NUMBER( ) OVER ( PARTITION BY display_name, size ORDER BY album_id DESC ) AS vid_row_num,\
+          ROW_NUMBER( ) OVER ( \
+            PARTITION BY display_name, size \
+            ORDER BY album_id DESC, owner_album_id ASC \
+          ) AS vid_row_num,\
           COUNT( ) OVER ( PARTITION BY display_name, size ) AS vid_cnt \
         FROM\
           Photos\
