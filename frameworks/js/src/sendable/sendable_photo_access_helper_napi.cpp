@@ -802,8 +802,8 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
         case TYPE_PHOTO: {
             if (context->uri == URI_ALL_DUPLICATE_ASSETS) {
                 queryUri = PAH_ALL_DUPLICATE_ASSETS;
-            } else if (context->uri == URI_OTHER_DUPLICATE_ASSETS) {
-                queryUri = PAH_OTHER_DUPLICATE_ASSETS;
+            } else if (context->uri == URI_CAN_DEL_DUPLICATE_ASSETS) {
+                queryUri = PAH_CAN_DEL_DUPLICATE_ASSETS;
             } else {
                 queryUri = PAH_QUERY_PHOTO;
             }

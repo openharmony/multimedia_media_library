@@ -345,8 +345,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
     if (cmd.GetOprnType() == OperationType::ALL_DUPLICATE_ASSETS) {
         return MediaLibraryRdbStore::GetAllDuplicateAssets(columns, offset, limit);
     }
-    if (cmd.GetOprnType() == OperationType::OTHER_DUPLICATE_ASSETS) {
-        return MediaLibraryRdbStore::GetOtherDuplicateAssets(columns, offset, limit);
+    if (cmd.GetOprnType() == OperationType::CAN_DEL_DUPLICATE_ASSETS) {
+        return MediaLibraryRdbStore::GetCanDelDuplicateAssets(columns, offset, limit);
     }
     MediaLibraryRdbUtils::AddQueryIndex(predicates, columns);
     return MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
