@@ -88,7 +88,10 @@ void MtpMediaLibrary::Init()
         std::unordered_map<std::string, uint32_t>().swap(pathToHandleMap);
     }
     // clear all storages, otherwise it maybe has duty data.
-    MtpStorageManager::GetInstance()->ClearStorages();
+    auto manager = MtpStorageManager::GetInstance();
+    if (manager != nullptr) {
+        manager->ClearStorages();
+    }
 }
 
 void MtpMediaLibrary::Clear()
@@ -104,6 +107,7 @@ uint32_t MtpMediaLibrary::GetId()
 
 uint32_t MtpMediaLibrary::ScanDirNoDepth(const std::string &root, std::shared_ptr<UInt32List> &out)
 {
+    CHECK_AND_RETURN_RET_LOG(out != nullptr, E_ERR, "out is nullptr");
     CHECK_AND_RETURN_RET_LOG(access(root.c_str(), R_OK) == 0, E_ERR, "access failed root[%{public}s]", root.c_str());
     if (!sf::exists(root) || !sf::is_directory(root)) {
         MEDIA_ERR_LOG("MtpMediaLibrary::ScanDirNoDepth root[%{public}s] is not exists", root.c_str());
@@ -344,7 +348,7 @@ uint32_t MtpMediaLibrary::GetSizeFromOfft(const off_t &size)
 int32_t MtpMediaLibrary::GetObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
     std::shared_ptr<ObjectInfo> &outObjectInfo)
 {
-    if (context == nullptr || context->handle <= 0) {
+    if (context == nullptr || context->handle <= 0 || outObjectInfo == nullptr) {
         MEDIA_ERR_LOG("handle error");
         return MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR);
     }
@@ -419,11 +423,11 @@ bool MtpMediaLibrary::CompressImage(PixelMap &pixelMap, std::vector<uint8_t> &da
     CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, false, "Failed to StartPacking %{public}d", errorCode);
 
     errorCode = imagePacker.AddImage(pixelMap);
-    CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, false, "Failed to StartPacking %{public}d", errorCode);
+    CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, false, "Failed to AddImage %{public}d", errorCode);
 
     int64_t packedSize = 0;
     errorCode = imagePacker.FinalizePacking(packedSize);
-    CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, false, "Failed to StartPacking %{public}d", errorCode);
+    CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, false, "Failed to FinalizePacking %{public}d", errorCode);
 
     data.resize(packedSize);
     return true;
@@ -464,7 +468,8 @@ int32_t MtpMediaLibrary::GetVideoThumb(const std::shared_ptr<MtpOperationContext
 
     sPixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     CloseFd(context, fd);
-    CompressImage(*sPixelMap.get(), *outThumb);
+    bool isCompressImageSuccess = CompressImage(*sPixelMap.get(), *outThumb);
+    CHECK_AND_RETURN_RET_LOG(isCompressImageSuccess == true, MTP_ERROR_NO_THUMBNAIL_PRESENT, "CompressImage is fail");
     return MTP_SUCCESS;
 }
 
@@ -494,7 +499,8 @@ int32_t MtpMediaLibrary::GetPictureThumb(const std::shared_ptr<MtpOperationConte
     CHECK_AND_RETURN_RET_LOG(cropPixelMap != nullptr, MTP_ERROR_NO_THUMBNAIL_PRESENT, "cropPixelMap is nullptr");
 
     CloseFd(context, fd);
-    CompressImage(*cropPixelMap, *outThumb);
+    bool isCompressImageSuccess = CompressImage(*cropPixelMap, *outThumb);
+    CHECK_AND_RETURN_RET_LOG(isCompressImageSuccess == true, MTP_ERROR_NO_THUMBNAIL_PRESENT, "CompressImage is fail");
     return MTP_SUCCESS;
 }
 
