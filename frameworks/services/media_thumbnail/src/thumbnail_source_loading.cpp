@@ -286,6 +286,7 @@ void SourceLoader::SetCurrentStateFunction()
 bool SourceLoader::GeneratePictureSource(std::unique_ptr<ImageSource> &imageSource, const Size &targetSize)
 {
     DecodingOptionsForPicture pictureOpts;
+    pictureOpts.desireAuxiliaryPictures = {AuxiliaryPictureType::GAINMAP};
     uint32_t errorCode = ERR_OK;
     auto picturePtr = imageSource->CreatePicture(pictureOpts, errorCode);
     if (errorCode != E_OK || picturePtr == nullptr) {
