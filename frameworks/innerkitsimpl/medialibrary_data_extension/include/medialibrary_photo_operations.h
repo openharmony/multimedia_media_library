@@ -56,10 +56,11 @@ public:
     EXPORT static int32_t Save(bool isEdited, const std::string &path,
         const uint8_t *addr, const long bytes, int32_t fileId);
     EXPORT static int32_t AddFiltersToPicture(std::shared_ptr<Media::Picture>& inPicture,
-        const std::string &outputPath, std::string &editdata, const std::string &mime_type);
+        const std::string &outputPath, std::string &editdata, const std::string &mime_type,
+        bool isHighQualityPicture);
     EXPORT static int32_t SavePicture(const int32_t &fileType, const int32_t &fileId);
     EXPORT static int32_t GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
-        bool isCleanImmediately, std::string &photoId);
+        bool isCleanImmediately, std::string &photoId, bool &isHighQualityPicture);
     EXPORT static int32_t FinishRequestPicture(MediaLibraryCommand &cmd);
     EXPORT static int32_t AddFiltersForCloudEnhancementPhoto(int32_t fileId, const std::string& assetPath,
         const std::string& editDataCameraSourcePath, const std::string& mimeType);
@@ -130,8 +131,8 @@ private:
     static int32_t ForceSavePicture(MediaLibraryCommand& cmd);
     static int32_t DegenerateMovingPhoto(MediaLibraryCommand &cmd);
 private:
-    static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension,
-        const std::string mimeType, std::string &oldFilePath);
+    static int32_t UpdateExtension(const int32_t &fileId, std::string &mimeType, const int32_t &fileType,
+        std::string &oldFilePath);
     static void UpdateEditDataPath(std::string filePath, const std::string &extension);
     static void DeleteAbnormalFile(std::string &assetPath, const int32_t &fileId, const std::string &oldFilePath);
     static std::mutex saveCameraPhotoMutex_;
