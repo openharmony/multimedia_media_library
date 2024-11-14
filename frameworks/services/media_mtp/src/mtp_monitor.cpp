@@ -50,7 +50,9 @@ void MtpMonitor::Run()
         if (operationPtr_ == nullptr) {
             operationPtr_ = make_shared<MtpOperation>();
         }
-        operationPtr_->Execute();
+        if (operationPtr_ != nullptr) {
+            operationPtr_->Execute();
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
     }
     if (operationPtr_ != nullptr) {
