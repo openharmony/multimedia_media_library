@@ -579,7 +579,7 @@ int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vec
     }
 
     int32_t errCode = E_ERR;
-    TransactionOperations trans;
+    TransactionOperations trans{ __func__ };
     trans.SetBackupRdbStore(mediaLibraryRdb_);
     std::function<int(void)> func = [&]()->int {
         errCode = trans.BatchInsert(rowNum, tableName, values);
@@ -588,7 +588,7 @@ int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vec
         }
         return errCode;
     };
-    errCode = trans.RetryTrans(func, __func__, true);
+    errCode = trans.RetryTrans(func, true);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("BatchInsertWithRetry: tans finish fail!, ret:%{public}d", errCode);
     }

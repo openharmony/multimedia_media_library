@@ -19,6 +19,7 @@
 
 #include "album_plugin_table_event_handler.h"
 #include "album_plugin_config.h"
+#include "dfx_transaction.h"
 #include "rdb_store.h"
 #include "rdb_errno.h"
 #include "result_set_utils.h"
@@ -54,7 +55,9 @@ int32_t AlbumPluginTableEventHandler::InitiateData(NativeRdb::RdbStore &store)
     int32_t err = NativeRdb::E_OK;
     MEDIA_INFO_LOG("InitiateData begin initiate %{public}s table data.", TABLE_NAME.c_str());
     auto [errCode, trans] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
+    DfxTransaction reporter{ __func__ };
     if (errCode != NativeRdb::E_OK || trans == nullptr) {
+        reporter.ReportError(DfxTransaction::AbnormalType::CREATE_ERROR, errCode);
         MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
         return errCode;
     }
@@ -71,13 +74,18 @@ int32_t AlbumPluginTableEventHandler::InitiateData(NativeRdb::RdbStore &store)
         auto res = trans->Execute(this->INSERT_DATA_SQL, bindArgs);
         err = res.first;
         if (err != NativeRdb::E_OK) {
+            reporter.ReportError(DfxTransaction::AbnormalType::EXECUTE_ERROR, err);
             trans->Rollback();
+            MEDIA_ERR_LOG("Execute sql failed, err: %{public}d", err);
             return err;
         }
     }
     err = trans->Commit();
     if (err != NativeRdb::E_OK) {
+        reporter.ReportError(DfxTransaction::AbnormalType::COMMIT_ERROR, err);
         MEDIA_ERR_LOG("InitiateData tans finish fail!, ret:%{public}d", err);
+    } else {
+        reporter.ReportIfTimeout();
     }
     MEDIA_INFO_LOG("InitiateData end initiate %{public}s table data %{public}d.",
         TABLE_NAME.c_str(),
