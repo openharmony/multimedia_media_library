@@ -113,7 +113,7 @@ static void GetFileAssetObj(unique_ptr<FileAsset> fileAsset,
             errCode = JS_INNER_FAIL;
         }
     } else {
-        errCode = JS_ERR_PARAMETER_INVALID;
+        errCode = JS_INNER_FAIL;
     }
 }
 
@@ -130,7 +130,7 @@ static void GetPhotoAlbumObj(unique_ptr<PhotoAlbum> photoAlbum,
             errCode = JS_INNER_FAIL;
         }
     } else {
-        errCode = JS_ERR_PARAMETER_INVALID;
+        errCode = JS_INNER_FAIL;
     }
 }
 

@@ -995,11 +995,6 @@ int64_t MediaAssetManagerImpl::LoadMovingPhoto(int64_t contextId,
     }
     string imageFileUri(cImageFileUri);
     string videoFileUri(cVideoFileUri);
-    if (imageFileUri.empty() || videoFileUri.empty()) {
-        LOGE("Get FileUri failed.");
-        errCode = OHOS_INVALID_PARAM_CODE;
-        return -1;
-    }
     string uri(imageFileUri + MOVING_PHOTO_URI_SPLIT + videoFileUri);
     auto nativeMovingPhoto = FFIData::Create<FfiMovingPhotoImpl>(uri, SourceMode::EDITED_MODE);
     if (!nativeMovingPhoto) {

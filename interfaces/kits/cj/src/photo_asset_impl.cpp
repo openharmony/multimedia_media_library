@@ -228,7 +228,7 @@ bool PhotoAssetImpl::HandleParamSet(const string &inputKey, const string &value,
 
 void PhotoAssetImpl::UserFileMgrSet(string &inputKey, string &value, int32_t &errCode)
 {
-    if (!HandleParamSet(inputKey, value, fileAssetPtr->GetResultNapiType())) {
+    if (!HandleParamSet(inputKey, value)) {
         errCode = JS_E_FILE_KEY;
     }
 }
@@ -267,8 +267,8 @@ int64_t PhotoAssetImpl::GetThumbnail(CSize cSize, int32_t &errCode)
 {
     int result = -1;
     Size size = {
-        .width = cSize.width <= 0 ? DEFAULT_THUMB_SIZE : cSize.width,
-        .height = cSize.height <= 0 ? DEFAULT_THUMB_SIZE : cSize.height
+        .width = cSize.width < 0 ? DEFAULT_THUMB_SIZE : cSize.width,
+        .height = cSize.height < 0 ? DEFAULT_THUMB_SIZE : cSize.height
     };
     string path = fileAssetPtr->GetPath();
 #ifndef MEDIALIBRARY_COMPATIBILITY

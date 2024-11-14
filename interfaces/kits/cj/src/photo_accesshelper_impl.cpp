@@ -78,6 +78,7 @@ static map<int32_t, string> PHOTO_VIEW_MIME_TYPE_MAP = {
 const int32_t SLEEP_TIME = 100;
 const int32_t MAX_QUERY_LIMIT = 500;
 const int32_t DEFAULT_SESSION_ID = 0;
+constexpr uint32_t CONFIRM_BOX_ARRAY_MIN_LENGTH = 1;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 
 const std::string EXTENSION = "fileNameExtension";
@@ -247,6 +248,7 @@ bool PhotoAccessHelperImpl::GetPhotoAccessHelper(int64_t id)
         LOGE("Init MediaLibrary Instance is failed");
         return false;
     }
+    g_listObj = make_unique<ChangeListener>();
     return true;
 }
 
@@ -469,7 +471,7 @@ void PhotoAccessHelperImpl::ParseArgsGetPhotoAlbum(int32_t type, int32_t subtype
 }
 
 shared_ptr<FetchResult<PhotoAlbum>> PhotoAccessHelperImpl::GetAlbums(int32_t type, int32_t subtype,
-        COptions options, int32_t &errCode)
+    COptions options, int32_t &errCode)
 {
     DataSharePredicates predicates;
     vector<string> fetchColumn;
@@ -695,8 +697,13 @@ static bool ParseAndSetFileUriArray(OHOS::AAFwk::Want &want, CArrString srcFileU
         LOGE("Array size over 100.");
         return false;
     }
+    if (srcFileUris.size < CONFIRM_BOX_ARRAY_MIN_LENGTH) {
+        errCode = OHOS_INVALID_PARAM_CODE;
+        LOGE("Array size invalid");
+        return false;
+    }
     vector<string> srcFileUri;
-    for (int i = 0; i < srcFileUris.size; i++) {
+    for (int64_t i = 0; i < srcFileUris.size; i++) {
         srcFileUri.emplace_back(string(srcFileUris.head[i]));
     }
     want.SetParam(CONFIRM_BOX_SRC_FILE_URIS, srcFileUri);
@@ -711,12 +718,16 @@ static bool ParseAndSetConfigArray(OHOS::AAFwk::Want &want,
         LOGE("Array size over 100.");
         return false;
     }
-
+    if (photoCreationConfigs.size < CONFIRM_BOX_ARRAY_MIN_LENGTH) {
+        errCode = OHOS_INVALID_PARAM_CODE;
+        LOGE("Array size invalid");
+        return false;
+    }
     vector<string> titleList;
     vector<string> extensionList;
     vector<int32_t> photoTypeList;
     vector<int32_t> photoSubTypeList;
-    for (int i = 0; i < photoCreationConfigs.size; i++) {
+    for (int64_t i = 0; i < photoCreationConfigs.size; i++) {
         string title(photoCreationConfigs.head[i].title);
         string fileNameExtension(photoCreationConfigs.head[i].fileNameExtension);
         int32_t photoType = photoCreationConfigs.head[i].photoType;
@@ -748,6 +759,11 @@ static bool ParseAndSetConfigArray(OHOS::AAFwk::Want &want,
 static bool InitConfirmRequest(OHOS::AAFwk::Want &want, shared_ptr<ConfirmCallback> &callback,
     CArrString srcFileUris, PhotoCreationConfigs &photoCreationConfigs, int32_t &errCode)
 {
+    if (srcFileUris.size != photoCreationConfigs.size) {
+        errCode = OHOS_INVALID_PARAM_CODE;
+        LOGE("the length of srcFileUris and photoCreationConfigs must be same.");
+        return false;
+    }
     want.SetElementName(CONFIRM_BOX_PACKAGE_NAME, CONFIRM_BOX_EXT_ABILITY_NAME);
     want.SetParam(CONFIRM_BOX_EXTENSION_TYPE, CONFIRM_BOX_REQUEST_TYPE);
     want.AddFlags(Want::FLAG_AUTH_READ_URI_PERMISSION);
@@ -763,27 +779,37 @@ static bool InitConfirmRequest(OHOS::AAFwk::Want &want, shared_ptr<ConfirmCallba
     return true;
 }
 
-void PhotoAccessHelperImpl::ShowAssetsCreationDialog(CArrString &srcFileUris,
-    PhotoCreationConfigs &photoCreationConfigs, int64_t funcId, FfiBundleInfo &cBundleInfo, int32_t &errCode)
+static Ace::UIContent* GetUIContentForDialog(int64_t contextId, int32_t &errCode)
 {
-#ifdef HAS_ACE_ENGINE_PART
     auto context = FFIData::GetData<AbilityRuntime::CJAbilityContext>(contextId);
     if (context == nullptr) {
         LOGE("get context failed.");
-        errCode = JS_INNER_FAIL;
-        return;
+        errCode = JS_ERR_PARAMETER_INVALID;
+        return nullptr;
     }
     shared_ptr<AbilityRuntime::AbilityContext> abilityContext = context->GetAbilityContext();
     if (abilityContext == nullptr) {
         LOGE("AbilityContext is null");
-        errCode = JS_INNER_FAIL;
-        return;
+        errCode = JS_ERR_PARAMETER_INVALID;
+        return nullptr;
     }
     // get uiContent from abilityContext, this api should be called after loadContent, otherwise uiContent is nullptr
     auto uiContent = abilityContext->GetUIContent();
     if (uiContent == nullptr) {
         LOGE("UiContent is null");
-        errCode = JS_INNER_FAIL;
+        errCode = JS_ERR_PARAMETER_INVALID;
+        return nullptr;
+    }
+    return uiContent;
+}
+
+void PhotoAccessHelperImpl::ShowAssetsCreationDialog(CArrString &srcFileUris,
+    PhotoCreationConfigs &photoCreationConfigs, int64_t funcId, FfiBundleInfo &cBundleInfo, int32_t &errCode)
+{
+#ifdef HAS_ACE_ENGINE_PART
+    auto uiContent = GetUIContentForDialog(contextId, errCode);
+    if (uiContent == nullptr) {
+        LOGE("GetUIContentForDialog failed.");
         return;
     }
     // set want
@@ -794,7 +820,7 @@ void PhotoAccessHelperImpl::ShowAssetsCreationDialog(CArrString &srcFileUris,
     auto callback = make_shared<ConfirmCallback>(uiContent, funcId);
     if (!InitConfirmRequest(want, callback, srcFileUris, photoCreationConfigs, errCode)) {
         LOGE("Parse input fail.");
-        errCode = OHOS_INVALID_PARAM_CODE;
+        errCode = JS_ERR_PARAMETER_INVALID;
         return;
     }
     // regist callback and config
@@ -815,9 +841,9 @@ void PhotoAccessHelperImpl::ShowAssetsCreationDialog(CArrString &srcFileUris,
     OHOS::Ace::ModalUIExtensionConfig config;
     config.isProhibitBack = true;
     int32_t sessionId = uiContent->CreateModalUIExtension(want, extensionCallback, config);
-    if (sessionId != DEFAULT_SESSION_ID) {
+    if (sessionId == DEFAULT_SESSION_ID) {
         LOGE("CreateModalUIExtension fail.");
-        errCode = OHOS_INVALID_PARAM_CODE;
+        errCode = JS_ERR_PARAMETER_INVALID;
         return;
     }
     callback->SetSessionId(sessionId);

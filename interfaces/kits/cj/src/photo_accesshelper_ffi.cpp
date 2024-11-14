@@ -113,7 +113,7 @@ extern "C" {
         auto fetchResultImpl = FFIData::GetData<FetchResultImpl>(id);
         if (fetchResultImpl == nullptr) {
             LOGE("Invalid object FetchResultImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return 0;
         }
         return fetchResultImpl->GetCount(*errCode);
@@ -124,7 +124,7 @@ extern "C" {
         auto fetchResultImpl = FFIData::GetData<FetchResultImpl>(id);
         if (fetchResultImpl == nullptr) {
             LOGE("Invalid object FetchResultImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return false;
         }
         return fetchResultImpl->IsAfterLast(*errCode);
@@ -149,7 +149,7 @@ extern "C" {
         auto fetchResultImpl = FFIData::GetData<FetchResultImpl>(id);
         if (fetchResultImpl == nullptr) {
             LOGE("Invalid object FetchResultImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return fetchResultObject;
         }
         return fetchResultImpl->GetFirstObject(*errCode);
@@ -164,7 +164,7 @@ extern "C" {
         auto fetchResultImpl = FFIData::GetData<FetchResultImpl>(id);
         if (fetchResultImpl == nullptr) {
             LOGE("Invalid object FetchResultImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return fetchResultObject;
         }
         return fetchResultImpl->GetNextObject(*errCode);
@@ -179,7 +179,7 @@ extern "C" {
         auto fetchResultImpl = FFIData::GetData<FetchResultImpl>(id);
         if (fetchResultImpl == nullptr) {
             LOGE("Invalid object FetchResultImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return fetchResultObject;
         }
         return fetchResultImpl->GetLastObject(*errCode);
@@ -194,7 +194,7 @@ extern "C" {
         auto fetchResultImpl = FFIData::GetData<FetchResultImpl>(id);
         if (fetchResultImpl == nullptr) {
             LOGE("Invalid object FetchResultImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return fetchResultObject;
         }
         return fetchResultImpl->GetObjectAtPosition(position, *errCode);
@@ -209,7 +209,7 @@ extern "C" {
         auto fetchResultImpl = FFIData::GetData<FetchResultImpl>(id);
         if (fetchResultImpl == nullptr) {
             LOGE("Invalid object FetchResultImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return cArrayFetchResultObject;
         }
         return fetchResultImpl->GetAllObjects(*errCode);
@@ -371,7 +371,7 @@ extern "C" {
         auto photoAccessHelperImpl = FFIData::GetData<PhotoAccessHelperImpl>(id);
         if (photoAccessHelperImpl == nullptr) {
             LOGE("Invalid object photoAccessHelperImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return result;
         }
         auto fetchFileResult = photoAccessHelperImpl->GetAssets(options, *errCode);
@@ -398,7 +398,7 @@ extern "C" {
         auto photoAccessHelperImpl = FFIData::GetData<PhotoAccessHelperImpl>(id);
         if (photoAccessHelperImpl == nullptr) {
             LOGE("Invalid object photoAccessHelperImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return result;
         }
         auto fetchFileResult = photoAccessHelperImpl->GetBurstAssets(cBurstKey, options, *errCode);
@@ -426,7 +426,7 @@ extern "C" {
         auto photoAccessHelperImpl = FFIData::GetData<PhotoAccessHelperImpl>(id);
         if (photoAccessHelperImpl == nullptr) {
             LOGE("Invalid object photoAccessHelperImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return result;
         }
         auto fetchPhotoAlbumResult = photoAccessHelperImpl->GetAlbums(type, subtype, options, *errCode);
@@ -453,7 +453,7 @@ extern "C" {
         auto photoAccessHelperImpl = FFIData::GetData<PhotoAccessHelperImpl>(id);
         if (photoAccessHelperImpl == nullptr) {
             LOGE("Invalid object photoAccessHelperImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return;
         }
         photoAccessHelperImpl->RegisterChange(uri, forChildUris, funcId, *errCode);
@@ -464,7 +464,7 @@ extern "C" {
         auto photoAccessHelperImpl = FFIData::GetData<PhotoAccessHelperImpl>(id);
         if (photoAccessHelperImpl == nullptr) {
             LOGE("Invalid object photoAccessHelperImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return;
         }
         photoAccessHelperImpl->UnRegisterChange(uri, funcId);
@@ -475,7 +475,7 @@ extern "C" {
         auto photoAccessHelperImpl = FFIData::GetData<PhotoAccessHelperImpl>(id);
         if (photoAccessHelperImpl == nullptr) {
             LOGE("Invalid object photoAccessHelperImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return;
         }
         photoAccessHelperImpl->Release();
@@ -487,7 +487,7 @@ extern "C" {
         auto photoAccessHelperImpl = FFIData::GetData<PhotoAccessHelperImpl>(id);
         if (photoAccessHelperImpl == nullptr) {
             LOGE("Invalid object photoAccessHelperImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return;
         }
         photoAccessHelperImpl->ShowAssetsCreationDialog(srcFileUris,
