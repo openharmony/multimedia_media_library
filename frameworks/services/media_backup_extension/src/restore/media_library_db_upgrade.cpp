@@ -231,6 +231,7 @@ int32_t MediaLibraryDbUpgrade::MoveSingleRelationshipToPhotos(NativeRdb::RdbStor
     if (ret != NativeRdb::E_OK) {
         reporter.ReportError(DfxTransaction::AbnormalType::COMMIT_ERROR, ret);
         MEDIA_ERR_LOG("MoveSingleRelationshipToPhotos: tans finish fail!, ret:%{public}d", ret);
+        transaction->Rollback();
     } else {
         reporter.ReportIfTimeout();
     }
