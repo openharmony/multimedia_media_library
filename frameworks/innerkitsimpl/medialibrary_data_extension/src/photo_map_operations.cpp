@@ -170,7 +170,7 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
     if (values.empty()) {
         return 0;
     }
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t changedRows = 0;
     int32_t err = NativeRdb::E_OK;
     std::function<int(void)> func = [&]()->int {
@@ -186,7 +186,7 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
         }
         return err;
     };
-    err = trans->RetryTrans(func, __func__);
+    err = trans->RetryTrans(func);
     if (err != E_OK) {
         MEDIA_ERR_LOG("AddAnaLysisPhotoAssets: trans retry fail!, ret:%{public}d", err);
         return err;

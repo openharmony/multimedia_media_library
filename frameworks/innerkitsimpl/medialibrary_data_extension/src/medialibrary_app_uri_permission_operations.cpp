@@ -109,11 +109,11 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
     if (!IsPhotosAllExist(values)) {
         return ERROR;
     }
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     std::function<int(void)> func = [&]()->int {
         return BatchInsertInner(cmd, values, trans);
     };
-    int32_t errCode = trans->RetryTrans(func, __func__);
+    int32_t errCode = trans->RetryTrans(func);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("BatchInsert: trans retry fail!, ret:%{public}d", errCode);
         return errCode;

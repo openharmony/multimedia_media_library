@@ -20,6 +20,8 @@
 #include <condition_variable>
 #include <cstdint>
 #include <mutex>
+
+#include "dfx_transaction.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_unistore.h"
 #include "timer.h"
@@ -47,12 +49,12 @@ constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // in milliseconds.
  */
 class TransactionOperations {
 public:
-    EXPORT TransactionOperations();
+    EXPORT TransactionOperations(std::string funcName);
     EXPORT ~TransactionOperations();
-    EXPORT int32_t Start(std::string funcName, bool isBackup = false);
+    EXPORT int32_t Start(bool isBackup = false);
     EXPORT int32_t Finish();
-    EXPORT int32_t TryTrans(std::function<int(void)> &func, std::string funcName, bool isBackup);
-    EXPORT int32_t RetryTrans(std::function<int(void)> &func, std::string funcName, bool isBackup = false);
+    EXPORT int32_t TryTrans(std::function<int(void)> &func, bool isBackup);
+    EXPORT int32_t RetryTrans(std::function<int(void)> &func, bool isBackup = false);
     EXPORT int32_t Rollback();
     EXPORT void SetBackupRdbStore(std::shared_ptr<OHOS::NativeRdb::RdbStore> rdbStore);
 
@@ -73,13 +75,12 @@ public:
     EXPORT int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows);
 
 private:
-    int32_t TransactionCommit();
-
     std::shared_ptr<OHOS::NativeRdb::Transaction> transaction_ = nullptr;
     std::shared_ptr<OHOS::NativeRdb::RdbStore> rdbStore_;
     std::shared_ptr<OHOS::NativeRdb::RdbStore> backupRdbStore_;
     std::string funcName_ = "";
     bool isSkipCloudSync_ = false;
+    DfxTransaction reporter_;
 };
 } // namespace OHOS::Media
 

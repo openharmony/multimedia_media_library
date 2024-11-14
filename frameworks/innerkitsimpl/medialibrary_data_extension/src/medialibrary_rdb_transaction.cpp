@@ -28,7 +28,9 @@ using namespace OHOS::NativeRdb;
 constexpr int32_t E_HAS_DB_ERROR = -222;
 constexpr int32_t E_OK = 0;
 
-TransactionOperations::TransactionOperations() {}
+TransactionOperations::TransactionOperations(std::string funcName)
+    : funcName_(funcName), reporter_(funcName)
+{}
 
 TransactionOperations::~TransactionOperations()
 {
@@ -43,9 +45,8 @@ void TransactionOperations::SetBackupRdbStore(std::shared_ptr<OHOS::NativeRdb::R
     backupRdbStore_ = rdbStore;
 }
 
-int32_t TransactionOperations::Start(std::string funcName, bool isBackup)
+int32_t TransactionOperations::Start(bool isBackup)
 {
-    funcName_ = funcName;
     MEDIA_INFO_LOG("Start transaction_, funName is :%{public}s", funcName_.c_str());
     if (isBackup) {
         rdbStore_ = backupRdbStore_;
@@ -53,7 +54,8 @@ int32_t TransactionOperations::Start(std::string funcName, bool isBackup)
         rdbStore_ = MediaLibraryRdbStore::GetRaw();
     }
     if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore_ is null");
+        reporter_.ReportError(DfxTransaction::AbnormalType::NULLPTR_ERROR, E_HAS_DB_ERROR);
+        MEDIA_ERR_LOG("rdbStore_ is null, isBackup = %{public}d", isBackup);
         return E_HAS_DB_ERROR;
     }
 
@@ -75,6 +77,7 @@ int32_t TransactionOperations::Start(std::string funcName, bool isBackup)
         }
     }
     if (errCode != NativeRdb::E_OK) {
+        reporter_.ReportError(DfxTransaction::AbnormalType::CREATE_ERROR, errCode);
         errCode = E_HAS_DB_ERROR;
     }
     return errCode;
@@ -83,6 +86,7 @@ int32_t TransactionOperations::Start(std::string funcName, bool isBackup)
 int32_t TransactionOperations::Finish()
 {
     if (transaction_ == nullptr) {
+        reporter_.ReportError(DfxTransaction::AbnormalType::NULLPTR_ERROR, E_HAS_DB_ERROR);
         MEDIA_ERR_LOG("transaction is null");
         return E_HAS_DB_ERROR;
     }
@@ -90,7 +94,10 @@ int32_t TransactionOperations::Finish()
     auto ret = transaction_->Commit();
     transaction_ = nullptr;
     if (ret != NativeRdb::E_OK) {
+        reporter_.ReportError(DfxTransaction::AbnormalType::COMMIT_ERROR, ret);
         MEDIA_ERR_LOG("transaction commit fail!, ret:%{public}d", ret);
+    } else {
+        reporter_.ReportIfTimeout();
     }
 #ifdef CLOUD_SYNC_MANAGER
     if (isSkipCloudSync_) {
@@ -102,10 +109,10 @@ int32_t TransactionOperations::Finish()
     return ret;
 }
 
-int32_t TransactionOperations::TryTrans(std::function<int(void)> &func, std::string funcName, bool isBackup)
+int32_t TransactionOperations::TryTrans(std::function<int(void)> &func, bool isBackup)
 {
     int32_t err = NativeRdb::E_OK;
-    err = Start(funcName, isBackup);
+    err = Start(isBackup);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
         return err;
@@ -123,9 +130,9 @@ int32_t TransactionOperations::TryTrans(std::function<int(void)> &func, std::str
     return err;
 }
 
-int32_t TransactionOperations::RetryTrans(std::function<int(void)> &func, std::string funcName, bool isBackup)
+int32_t TransactionOperations::RetryTrans(std::function<int(void)> &func, bool isBackup)
 {
-    int32_t err = TryTrans(func, funcName, isBackup);
+    int32_t err = TryTrans(func, isBackup);
     if (err == E_OK) {
         return err;
     }
@@ -138,7 +145,8 @@ int32_t TransactionOperations::RetryTrans(std::function<int(void)> &func, std::s
         isSkipCloudSync_ = true;
 #endif
     }
-    err = TryTrans(func, funcName, isBackup);
+    reporter_.Restart();
+    err = TryTrans(func, isBackup);
     MEDIA_INFO_LOG("RetryTrans twice result is :%{public}d", err);
     return err;
 }
@@ -152,6 +160,7 @@ int32_t TransactionOperations::Rollback()
     auto ret = transaction_->Rollback();
     transaction_ = nullptr;
     if (ret != NativeRdb::E_OK) {
+        reporter_.ReportError(DfxTransaction::AbnormalType::ROLLBACK_ERROR, ret);
         MEDIA_ERR_LOG("Rollback fail:%{public}d", ret);
     }
 #ifdef CLOUD_SYNC_MANAGER

@@ -567,8 +567,8 @@ int CreatePhotoAlbum(const string &albumName)
     PrepareUserAlbum(albumName, albumValues);
 
     // try to reuse previously deleted record first
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
-    int32_t errCode = trans->Start(__func__);
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    int32_t errCode = trans->Start();
     if (errCode != E_OK) {
         return errCode;
     }
