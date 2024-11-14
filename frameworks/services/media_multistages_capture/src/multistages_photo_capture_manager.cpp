@@ -45,10 +45,9 @@ using namespace std;
 using namespace OHOS::CameraStandard;
 #endif
 
-#define SAVE_PICTURE_TIMEOUT_SEC 20
-
 namespace OHOS {
 namespace Media {
+const int32_t SAVE_PICTURE_TIMEOUT_SEC = 20;
 
 MultiStagesPhotoCaptureManager::MultiStagesPhotoCaptureManager()
 {

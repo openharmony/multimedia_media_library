@@ -181,10 +181,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
         MEDIA_INFO_LOG("result set is empty.");
         // 高质量图先上来，直接保存
         MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false);
-        MultiStagesCaptureDfxTotalTime::GetInstance().RemoveStartTime(imageId);
-        MultiStagesCaptureDfxResult::Report(imageId,
-            static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR),
-            static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
         return;
     }
     tracer.Finish();
@@ -229,13 +225,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::GetCommandByImageId(con
     string where = "";
     vector<string> whereArgs;
     if (slashIndex != string::npos) {
-        string displayName = imageId.substr(slashIndex + 1);
-        stringstream result;
-        for (size_t i = 0; i < displayName.length(); i++) {
-            if (isdigit(displayName[i])) {
-                result << displayName[i];
-            }
-        }
         string fileId = MediaFileUtils::GetIdFromUri(imageId);
         where = PhotoColumn::MEDIA_ID + " = ? ";
         whereArgs = { fileId };
