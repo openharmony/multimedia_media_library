@@ -1,0 +1,480 @@
+From 3c5a85b071abf781ddaff172129f7ac3282a33bb Mon Sep 17 00:00:00 2001
+From: f00880772 <f00880772@notesmail.huawei.com/>
+Date: Wed, 6 Nov 2024 10:26:28 +0800
+Subject: [PATCH] TicketNo: DTS2024102971556 Description:modify water-mark
+ missing & highqualitypicture saving-updateDB Team:EMUI Feature or
+ Bugfix:Bugfix Binary Source: sync from gitee PrivateCode(Yes/No):No ------ DO
+ NOT MODIFY, AUTO-GENERATED! ------ Gitee-Issue: #IB1N3Y Time:
+ "2024-11-04T07:52:45.431Z" PR-Num: 5081 Gitee-PR:
+ https://openharmony.gitee.com/openharmony/multimedia_media_library/pulls/5081
+
+Change-Id: I17307067509357cdf23950a27d61a30ab0a60fa4
+Reviewed-by: j00586257
+Approved-by: c00513016
+Merged-on: https://open.codehub.huawei.com/OpenSourceCenter_CR/openharmony/multimedia_media_library/-/change_requests/5271
+Merged-by: public hisicitools
+---
+ .../include/medialibrary_photo_operations.h   |   9 +-
+ .../include/picture_data_operations.h         |   6 +-
+ .../include/picture_manager_thread.h          |   2 +-
+ .../src/medialibrary_photo_operations.cpp     | 111 ++++++++++--------
+ .../src/picture_data_operations.cpp           |   8 +-
+ .../src/picture_handle_service.cpp            |   3 +-
+ .../src/picture_manager_thread.cpp            |   4 +-
+ .../include/utils/file_utils.h                |   4 +-
+ ...e_deferred_photo_proc_session_callback.cpp |   7 --
+ .../src/multistages_photo_capture_manager.cpp |   3 +-
+ .../src/utils/file_utils.cpp                  |  11 +-
+ 11 files changed, 88 insertions(+), 80 deletions(-)
+
+diff --git a/frameworks/innerkitsimpl/medialibrary_data_extension/include/medialibrary_photo_operations.h b/frameworks/innerkitsimpl/medialibrary_data_extension/include/medialibrary_photo_operations.h
+index f99af010a..7327f1577 100644
+--- a/frameworks/innerkitsimpl/medialibrary_data_extension/include/medialibrary_photo_operations.h
++++ b/frameworks/innerkitsimpl/medialibrary_data_extension/include/medialibrary_photo_operations.h
+@@ -56,10 +56,11 @@ public:
+     EXPORT static int32_t Save(bool isEdited, const std::string &path,
+         const uint8_t *addr, const long bytes, int32_t fileId);
+     EXPORT static int32_t AddFiltersToPicture(std::shared_ptr<Media::Picture>& inPicture,
+-        const std::string &outputPath, std::string &editdata, const std::string &mime_type);
++        const std::string &outputPath, std::string &editdata, const std::string &mime_type,
++        bool isHighQualityPicture);
+     EXPORT static int32_t SavePicture(const int32_t &fileType, const int32_t &fileId);
+     EXPORT static int32_t GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
+-        bool isCleanImmediately, std::string &photoId);
++        bool isCleanImmediately, std::string &photoId, bool &isHighQualityPicture);
+     EXPORT static int32_t FinishRequestPicture(MediaLibraryCommand &cmd);
+     EXPORT static int32_t AddFiltersForCloudEnhancementPhoto(int32_t fileId, const std::string& assetPath,
+         const std::string& editDataCameraSourcePath, const std::string& mimeType);
+@@ -130,8 +131,8 @@ private:
+     static int32_t ForceSavePicture(MediaLibraryCommand& cmd);
+     static int32_t DegenerateMovingPhoto(MediaLibraryCommand &cmd);
+ private:
+-    static int32_t UpdateExtension(const int32_t &fileId, const std::string &extension,
+-        const std::string mimeType, std::string &oldFilePath);
++    static int32_t UpdateExtension(const int32_t &fileId, std::string &mimeType, const int32_t &fileType,
++        std::string &oldFilePath);
+     static void UpdateEditDataPath(std::string filePath, const std::string &extension);
+     static void DeleteAbnormalFile(std::string &assetPath, const int32_t &fileId, const std::string &oldFilePath);
+     static std::mutex saveCameraPhotoMutex_;
+diff --git a/frameworks/innerkitsimpl/medialibrary_data_extension/include/picture_data_operations.h b/frameworks/innerkitsimpl/medialibrary_data_extension/include/picture_data_operations.h
+index 05e5e0779..65c2fac74 100644
+--- a/frameworks/innerkitsimpl/medialibrary_data_extension/include/picture_data_operations.h
++++ b/frameworks/innerkitsimpl/medialibrary_data_extension/include/picture_data_operations.h
+@@ -94,10 +94,10 @@ public:
+     void CleanDateForPeriodical();
+     void CleanPictureMapData(std::map<std::string, sptr<PicturePair>>& pictureMap, PictureType pictureType);
+     void InsertPictureData(const std::string& imageId, sptr<PicturePair>& picturePair, PictureType pictureType);
+-    std::shared_ptr<Media::Picture> GetDataWithImageId(const std::string& imageId, bool isCleanImmediately = true);
++    std::shared_ptr<Media::Picture> GetDataWithImageId(const std::string& imageId,
++        bool &isHighQualityPicture, bool isCleanImmediately = true);
+     std::shared_ptr<Media::Picture> GetDataWithImageIdAndPictureType(const std::string& imageId,
+-        PictureType pictureType,
+-    bool isCleanImmediately = true);
++        PictureType pictureType, bool isCleanImmediately = true);
+     void DeleteDataWithImageId(const std::string& imageId, PictureType pictureType);
+     bool IsExsitDataForPictureType(PictureType pictureType);
+     bool IsExsitDataForPictureType(const std::string& imageId, PictureType pictureType);
+diff --git a/frameworks/innerkitsimpl/medialibrary_data_extension/include/picture_manager_thread.h b/frameworks/innerkitsimpl/medialibrary_data_extension/include/picture_manager_thread.h
+index b113f968c..c8cacf981 100644
+--- a/frameworks/innerkitsimpl/medialibrary_data_extension/include/picture_manager_thread.h
++++ b/frameworks/innerkitsimpl/medialibrary_data_extension/include/picture_manager_thread.h
+@@ -49,7 +49,7 @@ public:
+     void Resume();
+     EXPORT void InsertPictureData(const std::string& imageId, sptr<PicturePair>& picturePair, PictureType pictureType);
+     EXPORT std::shared_ptr<Media::Picture> GetDataWithImageId(const std::string& imageId,
+-        bool isCleanImmediately = false);
++        bool &isHighQualityPicture, bool isCleanImmediately = false);
+     EXPORT bool IsExsitDataForPictureType(PictureType pictureType);
+     EXPORT bool IsExsitPictureByImageId(const std::string& imageId);
+     EXPORT void SaveLowQualityPicture(const std::string& imageId = "default");
+diff --git a/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_photo_operations.cpp b/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_photo_operations.cpp
+index 21d0e218d..033f303a2 100644
+--- a/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_photo_operations.cpp
++++ b/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_photo_operations.cpp
+@@ -882,17 +882,14 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
+         return 0;
+     }
+     MEDIA_INFO_LOG("start SaveCameraPhoto, fileId: %{public}s", fileId.c_str());
+-
+-    string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
+-    if (!fileType.empty()) {
+-        SavePicture(stoi(fileType), stoi(fileId));
+-    }
+-
+     int32_t ret = UpdateIsTempAndDirty(cmd, fileId);
+     if (ret < 0) {
+         return 0;
+     }
+-
++    string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
++    if (!fileType.empty()) {
++        SavePicture(stoi(fileType), stoi(fileId));
++    }
+     string uri = cmd.GetQuerySetParam(PhotoColumn::MEDIA_FILE_PATH);
+     auto watch = MediaLibraryNotify::GetInstance();
+     if (watch != nullptr) {
+@@ -1728,9 +1725,22 @@ static void GetModityExtensionPath(std::string &path, std::string &modifyFilePat
+     modifyFilePath = path.substr(0, pos) + extension;
+ }
+ 
+-int32_t MediaLibraryPhotoOperations::UpdateExtension(const int32_t &fileId, const std::string &extension,
+-    const std::string mimeType, std::string &oldFilePath)
++int32_t MediaLibraryPhotoOperations::UpdateExtension(const int32_t &fileId, std::string &mimeType,
++    const int32_t &fileType, std::string &oldFilePath)
+ {
++    ImageFileType type = static_cast<ImageFileType>(fileType);
++    auto itr = IMAGE_FILE_TYPE_MAP.find(type);
++    if (itr == IMAGE_FILE_TYPE_MAP.end()) {
++        MEDIA_ERR_LOG("fileType : %{public} is not support", fileType);
++        return E_INVALID_ARGUMENTS;
++    }
++    mimeType = itr->second;
++    auto extensionItr = IMAGE_EXTENSION_MAP.find(type);
++    if (itr == IMAGE_EXTENSION_MAP.end()) {
++        MEDIA_ERR_LOG("fileType : %{public} is not support", fileType);
++        return E_INVALID_ARGUMENTS;
++    }
++    std::string extension = extensionItr->second;
+     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+     if (rdbStore == nullptr) {
+         MEDIA_ERR_LOG("Failed to get rdbStore when updating mime type");
+@@ -2390,7 +2400,7 @@ std::shared_ptr<FileAsset> MediaLibraryPhotoOperations::GetFileAsset(MediaLibrar
+ }
+ 
+ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
+-    bool isCleanImmediately, std::string &photoId)
++    bool isCleanImmediately, std::string &photoId, bool &isHighQualityPicture)
+ {
+     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+     predicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileId));
+@@ -2410,7 +2420,7 @@ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shar
+     MEDIA_INFO_LOG("photoId: %{public}s", photoId.c_str());
+     auto pictureManagerThread = PictureManagerThread::GetInstance();
+     if (pictureManagerThread != nullptr) {
+-        picture = pictureManagerThread->GetDataWithImageId(photoId, isCleanImmediately);
++        picture = pictureManagerThread->GetDataWithImageId(photoId, isHighQualityPicture, isCleanImmediately);
+     }
+     if (picture == nullptr) {
+         MEDIA_ERR_LOG("picture is not exists!");
+@@ -2483,40 +2493,44 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
+ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const int32_t &fileId)
+ {
+     MEDIA_DEBUG_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
+-
+-    auto pictureManagerThread = PictureManagerThread::GetInstance();
+-    if (pictureManagerThread == nullptr) {
+-        return E_ERR;
+-    }
+     std::shared_ptr<Media::Picture> picture;
+     std::string photoId;
+-    if (GetPicture(fileId, picture, false, photoId) != E_OK) {
++    bool isHighQualityPicture = false;
++    if (GetPicture(fileId, picture, false, photoId, isHighQualityPicture) != E_OK) {
+         MEDIA_ERR_LOG("Failed to get picture");
+         return E_FILE_EXIST;
+     }
+ 
+-    ImageFileType type = static_cast<ImageFileType>(fileType);
+-    auto itr = IMAGE_FILE_TYPE_MAP.find(type);
+-    if (itr == IMAGE_FILE_TYPE_MAP.end()) {
+-        MEDIA_ERR_LOG("fileType : %{public} is not support", fileType);
+-        return E_INVALID_ARGUMENTS;
+-    }
+-    std::string format = itr->second;
+-    auto extensionItr = IMAGE_EXTENSION_MAP.find(type);
+-    if (itr == IMAGE_EXTENSION_MAP.end()) {
+-        MEDIA_ERR_LOG("fileType : %{public} is not support", fileType);
+-        return E_INVALID_ARGUMENTS;
+-    }
+-    std::string extension = extensionItr->second;
++    std::string format = MIME_TYPE_JPEG;
+     std::string oldFilePath = "";
+-    int32_t updateResult = UpdateExtension(fileId, extension, format, oldFilePath);
++    int32_t updateResult = UpdateExtension(fileId, format, fileType, oldFilePath);
+     auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileId),
+                                         OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
+     string assetPath = fileAsset->GetFilePath();
+     CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
+ 
+-    FileUtils::DealPicture(format, assetPath, picture);
++    FileUtils::DealPicture(format, assetPath, picture, isHighQualityPicture);
++    string editData = "";
++    string editDataCameraPath = GetEditDataCameraPath(assetPath);
++    if (ReadEditdataFromFile(editDataCameraPath, editData) == E_OK &&
++        GetPicture(fileId, picture, false, photoId, isHighQualityPicture) == E_OK) {
++        MediaFileUtils::CopyFileUtil(assetPath, GetEditDataSourcePath(assetPath));
++        int32_t ret = MediaChangeEffect::TakeEffectForPicture(picture, editData);
++        FileUtils::DealPicture(format, assetPath, picture, isHighQualityPicture);
++    }
++    if (isHighQualityPicture) {
++        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
++        predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
++        ValuesBucket values;
++        values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
++        values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
++        int32_t updatedRows = MediaLibraryRdbStore::Update(values, predicates);
++        if (updatedRows < 0) {
++            MEDIA_ERR_LOG("update photo quality fail.");
++        }
++    }
+ 
++    auto pictureManagerThread = PictureManagerThread::GetInstance();
+     if (pictureManagerThread != nullptr) {
+         pictureManagerThread->FinishAccessingPicture(photoId);
+         pictureManagerThread->DeleteDataWithImageId(lastPhotoId_, LOW_QUALITY_PICTURE);
+@@ -2557,24 +2571,17 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
+     // 淇濆瓨editdata_camera鏂囦欢
+     string editData;
+     SaveEditDataCamera(cmd, assetPath, editData);
+-    std::shared_ptr<Media::Picture> picture;
+-    string photoId;
+-    if (GetPicture(fileId, picture, false, photoId) == E_OK) {
+-        string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
+-        FileUtils::SavePicture(sourcePath, picture, fileType);
+-        int32_t ret = MediaChangeEffect::TakeEffectForPicture(picture, editData);
+-        auto pictureManagerThread = PictureManagerThread::GetInstance();
+-        if (pictureManagerThread != nullptr) {
+-            pictureManagerThread->FinishAccessingPicture(photoId);
+-        }
+-        MediaLibraryObjectUtils::ScanFileAsync(sourcePath, to_string(fileId), MediaLibraryApi::API_10);
+-        return ret;
+-    }
+     // 鐢熸垚姘村嵃
+     int32_t ret = AddFiltersToPhoto(sourcePath, assetPath, editData);
+     if (ret == E_OK) {
+         MediaLibraryObjectUtils::ScanFileAsync(assetPath, to_string(fileAsset->GetId()), MediaLibraryApi::API_10);
+     }
++    std::shared_ptr<Media::Picture> picture;
++    std::string photoId;
++    bool isHighQualityPicture = false;
++    if (GetPicture(fileId, picture, true, photoId, isHighQualityPicture) == E_OK) {
++        return E_OK;
++    }
+     return ret;
+ }
+ 
+@@ -2930,17 +2937,17 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
+ 
+     if (isEdited) {
+         // 鍥剧墖缂栬緫杩囦簡鍙浛鎹綆璐ㄩ噺瑁稿浘
+-        return FileUtils::SavePicture(editDataSourcePath, picture, mime_type, isEdited);
++        return FileUtils::SavePicture(editDataSourcePath, picture, mime_type, true);
+     } else {
+         if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
+             // 鍥剧墖娌＄紪杈戣繃涓旀病鏈塭ditdata_camera锛屽彧钀界洏鍦≒hoto鐩綍
+-            return FileUtils::SavePicture(path, picture, mime_type, isEdited);
++            return FileUtils::SavePicture(path, picture, mime_type, true);
+         } else {
+             // 鍥剧墖娌＄紪杈戣繃涓旀湁editdata_camera
+             MediaLibraryTracer tracer;
+             tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto AddFiltersToPhoto");
+             // (1) 鍏堟浛鎹綆璐ㄩ噺瑁稿浘
+-            int ret = FileUtils::SavePicture(editDataSourcePath, picture, mime_type, isEdited);
++            int ret = FileUtils::SavePicture(editDataSourcePath, picture, mime_type, true);
+             if (ret != E_OK) {
+                 return ret;
+             }
+@@ -2948,7 +2955,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
+             string editData;
+             CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
+                 "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
+-            CHECK_AND_RETURN_RET_LOG(AddFiltersToPicture(picture, path, editData, mime_type) == E_OK, E_FAIL,
++            CHECK_AND_RETURN_RET_LOG(AddFiltersToPicture(picture, path, editData, mime_type, true) == E_OK, E_FAIL,
+                 "Failed to add filters to photo");
+             return E_OK;
+         }
+@@ -2972,6 +2979,8 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
+     ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info);
+     if (ret != E_OK) {
+         MEDIA_ERR_LOG("MediaLibraryPhotoOperations: AddFiltersToPhoto: TakeEffect error. ret = %d", ret);
++        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
++            "Failed to delete temp filters file, errno: %{public}d", errno);
+         return E_ERR;
+     }
+ 
+@@ -2995,7 +3004,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
+ }
+ 
+ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::Picture> &inPicture,
+-    const std::string &outputPath, string &editdata, const std::string &mime_type)
++    const std::string &outputPath, string &editdata, const std::string &mime_type, bool isHighQualityPicture)
+ {
+     if (inPicture == nullptr) {
+         MEDIA_ERR_LOG("AddFiltersToPicture: picture is null");
+@@ -3007,7 +3016,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
+     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
+         "Failed to check outputPath: %{public}s", outputPath.c_str());
+     int32_t ret = MediaChangeEffect::TakeEffectForPicture(inPicture, editdata);
+-    FileUtils::DealPicture(mime_type, outputPath, inPicture);
++    FileUtils::DealPicture(mime_type, outputPath, inPicture, isHighQualityPicture);
+     return E_OK;
+ }
+ 
+diff --git a/frameworks/innerkitsimpl/medialibrary_data_extension/src/picture_data_operations.cpp b/frameworks/innerkitsimpl/medialibrary_data_extension/src/picture_data_operations.cpp
+index 325f35f43..217fe6197 100644
+--- a/frameworks/innerkitsimpl/medialibrary_data_extension/src/picture_data_operations.cpp
++++ b/frameworks/innerkitsimpl/medialibrary_data_extension/src/picture_data_operations.cpp
+@@ -25,6 +25,7 @@ using namespace std;
+ namespace OHOS {
+ namespace Media {
+ int32_t PictureDataOperations::taskSize = 0;
++const int32_t SAVE_PICTURE_TIMEOUT_SEC = 20;
+ 
+ PictureDataOperations::PictureDataOperations()
+ {
+@@ -44,7 +45,8 @@ void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<Pictu
+     auto iter = pictureMap.begin();
+     while (iter != pictureMap.end()) {
+         time_t now = time(nullptr);
+-        if (((iter->second)->expireTime_ < now) && ((iter->second)->isCleanImmediately_)) {
++        bool isNeedDeletePicture = ((iter->second)->expireTime_ < now) && ((iter->second)->isCleanImmediately_);
++        if (isNeedDeletePicture || ((iter->second)->expireTime_ + SAVE_PICTURE_TIMEOUT_SEC) < now) {
+             if (pictureType == LOW_QUALITY_PICTURE) {
+                 FileUtils::SavePicture(iter->first, (iter->second)->picture_, false, true);
+             }
+@@ -143,16 +145,18 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
+ }
+ 
+ std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageId(const std::string& imageId,
+-    bool isCleanImmediately)
++    bool &isHighQualityPicture, bool isCleanImmediately)
+ {
+     MEDIA_DEBUG_LOG("enter %{public}s enter", imageId.c_str());
+     enum PictureType pictureType;
+     std::shared_ptr<Media::Picture> picture;
++    isHighQualityPicture = false;
+     for (pictureType = HIGH_QUALITY_PICTURE; pictureType >= LOW_QUALITY_PICTURE;
+         pictureType = (PictureType)(pictureType - 1)) {
+         picture = GetDataWithImageIdAndPictureType(imageId, pictureType, isCleanImmediately);
+         if (picture != nullptr && picture->GetMainPixel() != nullptr) {
+             MEDIA_DEBUG_LOG("GetDataWithImageId is not null ");
++            isHighQualityPicture = (pictureType == HIGH_QUALITY_PICTURE);
+             return picture;
+         } else {
+             MEDIA_DEBUG_LOG("GetDataWithImageId is not found ");
+diff --git a/frameworks/innerkitsimpl/medialibrary_data_extension/src/picture_handle_service.cpp b/frameworks/innerkitsimpl/medialibrary_data_extension/src/picture_handle_service.cpp
+index 683b42477..467738d9d 100644
+--- a/frameworks/innerkitsimpl/medialibrary_data_extension/src/picture_handle_service.cpp
++++ b/frameworks/innerkitsimpl/medialibrary_data_extension/src/picture_handle_service.cpp
+@@ -100,7 +100,8 @@ bool PictureHandlerService::WritePicture(const int32_t &fileId, MessageParcel &d
+     MEDIA_DEBUG_LOG("PictureHandlerService WritePicture enter, fileId: %{public}d", fileId);
+     std::shared_ptr<Media::Picture> picture;
+     std::string photoId;
+-    int32_t ret = MediaLibraryPhotoOperations::GetPicture(fileId, picture, false, photoId);
++    bool isHighQualityPicture = false;
++    int32_t ret = MediaLibraryPhotoOperations::GetPicture(fileId, picture, false, photoId, isHighQualityPicture);
+     if (ret != E_OK) {
+         MEDIA_ERR_LOG("PictureHandlerService::GetPicture picture is not exist, fileId: %{public}d", fileId);
+         return false;
+diff --git a/frameworks/innerkitsimpl/medialibrary_data_extension/src/picture_manager_thread.cpp b/frameworks/innerkitsimpl/medialibrary_data_extension/src/picture_manager_thread.cpp
+index 8db09ac96..b93968aef 100644
+--- a/frameworks/innerkitsimpl/medialibrary_data_extension/src/picture_manager_thread.cpp
++++ b/frameworks/innerkitsimpl/medialibrary_data_extension/src/picture_manager_thread.cpp
+@@ -148,14 +148,14 @@ void PictureManagerThread::DeleteDataWithImageId(const std::string& imageId, Pic
+ }
+ 
+ std::shared_ptr<Media::Picture> PictureManagerThread::GetDataWithImageId(const std::string& imageId,
+-    bool isCleanImmediately)
++    bool &isHighQualityPicture, bool isCleanImmediately)
+ {
+     MEDIA_DEBUG_LOG("enter ");
+     if (pictureDataOperations_ == nullptr) {
+         MEDIA_ERR_LOG("GetDataWithImageId failed, pictureDataOperations_ is null");
+         return nullptr;
+     }
+-    return pictureDataOperations_->GetDataWithImageId(imageId, isCleanImmediately);
++    return pictureDataOperations_->GetDataWithImageId(imageId, isHighQualityPicture, isCleanImmediately);
+ }
+ 
+ void PictureManagerThread::SavePictureWithImageId(const std::string& imageId)
+diff --git a/frameworks/services/media_multistages_capture/include/utils/file_utils.h b/frameworks/services/media_multistages_capture/include/utils/file_utils.h
+index 47785dd87..e9b3dca24 100644
+--- a/frameworks/services/media_multistages_capture/include/utils/file_utils.h
++++ b/frameworks/services/media_multistages_capture/include/utils/file_utils.h
+@@ -30,9 +30,9 @@ public:
+     EXPORT static int32_t SavePicture(const std::string &imageId,
+         std::shared_ptr<Media::Picture> &picture, bool isEdited, bool isLowQualityPicure = false);
+     EXPORT static int32_t SavePicture(const std::string &path, std::shared_ptr<Media::Picture> &picture,
+-        const std::string &mime_type, bool isEdited = false);
++        const std::string &mime_type, bool isHighQualityPicture = false);
+     EXPORT static int DealPicture(const std::string &mime_type, const std::string &path,
+-    std::shared_ptr<Media::Picture> &picture);
++    std::shared_ptr<Media::Picture> &picture, bool isHighQualityPicture);
+     EXPORT static int32_t SaveVideo(const std::string &filePath, bool isEdited = false);
+     EXPORT static int32_t DeleteTempVideoFile(const std::string &filePath);
+ 
+diff --git a/frameworks/services/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_photo_proc_session_callback.cpp b/frameworks/services/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_photo_proc_session_callback.cpp
+index a918868db..a2de8ad10 100644
+--- a/frameworks/services/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_photo_proc_session_callback.cpp
++++ b/frameworks/services/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_photo_proc_session_callback.cpp
+@@ -229,13 +229,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::GetCommandByImageId(con
+     string where = "";
+     vector<string> whereArgs;
+     if (slashIndex != string::npos) {
+-        string displayName = imageId.substr(slashIndex + 1);
+-        stringstream result;
+-        for (size_t i = 0; i < displayName.length(); i++) {
+-            if (isdigit(displayName[i])) {
+-                result << displayName[i];
+-            }
+-        }
+         string fileId = MediaFileUtils::GetIdFromUri(imageId);
+         where = PhotoColumn::MEDIA_ID + " = ? ";
+         whereArgs = { fileId };
+diff --git a/frameworks/services/media_multistages_capture/src/multistages_photo_capture_manager.cpp b/frameworks/services/media_multistages_capture/src/multistages_photo_capture_manager.cpp
+index 6edc23f81..d4a401e19 100644
+--- a/frameworks/services/media_multistages_capture/src/multistages_photo_capture_manager.cpp
++++ b/frameworks/services/media_multistages_capture/src/multistages_photo_capture_manager.cpp
+@@ -45,10 +45,9 @@ using namespace std;
+ using namespace OHOS::CameraStandard;
+ #endif
+ 
+-#define SAVE_PICTURE_TIMEOUT_SEC 20
+-
+ namespace OHOS {
+ namespace Media {
++const int32_t SAVE_PICTURE_TIMEOUT_SEC = 20;
+ 
+ MultiStagesPhotoCaptureManager::MultiStagesPhotoCaptureManager()
+ {
+diff --git a/frameworks/services/media_multistages_capture/src/utils/file_utils.cpp b/frameworks/services/media_multistages_capture/src/utils/file_utils.cpp
+index 2a8b33a3d..db66c54e4 100644
+--- a/frameworks/services/media_multistages_capture/src/utils/file_utils.cpp
++++ b/frameworks/services/media_multistages_capture/src/utils/file_utils.cpp
+@@ -134,20 +134,20 @@ int32_t FileUtils::SavePicture(const string &imageId, std::shared_ptr<Media::Pic
+         return -1;
+     }
+ 
+-    int ret = DealPicture(mime_type, sourcePath, picture);
++    int ret = DealPicture(mime_type, sourcePath, picture, !isLowQualityPicture);
+     return ret;
+ }
+ 
+ int32_t FileUtils::SavePicture(const string &path, std::shared_ptr<Media::Picture> &picture,
+-    const std::string &mime_type, bool isEdited)
++    const std::string &mime_type, bool isHighQualityPicture)
+ {
+     MEDIA_INFO_LOG("SavePicture width %{public}d, heigh %{public}d, mime_type %{public}sd",
+         picture->GetMainPixel()->GetWidth(), picture->GetMainPixel()->GetHeight(), mime_type.c_str());
+-    return DealPicture(mime_type, path, picture);
++    return DealPicture(mime_type, path, picture, isHighQualityPicture);
+ }
+ 
+ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &path,
+-    std::shared_ptr<Media::Picture> &picture)
++    std::shared_ptr<Media::Picture> &picture, bool isHighQualityPicture)
+ {
+     MEDIA_DEBUG_LOG("DealPicture %{public}s", path.c_str());
+     if (picture == nullptr) {
+@@ -162,7 +162,8 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
+     size_t lastSlash = path.rfind('/');
+     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && path.size() > (lastSlash + 1), E_INVALID_VALUES,
+         "Failed to check outputPath: %{public}s", path.c_str());
+-    string tempOutputPath = path.substr(0, lastSlash) + "/temp_" + path.substr(lastSlash + 1);
++    string tempInternal = isHighQualityPicture ? "high_" :"low_";
++    string tempOutputPath = path.substr(0, lastSlash) + tempInternal + path.substr(lastSlash + 1);
+     int32_t ret = MediaFileUtils::CreateAsset(tempOutputPath);
+     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_HAS_FS_ERROR,
+         "Failed to create temp filters file %{private}s", tempOutputPath.c_str());
+-- 
+2.45.2.huawei.6
