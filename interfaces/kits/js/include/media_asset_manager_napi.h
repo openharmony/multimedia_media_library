@@ -104,6 +104,8 @@ public:
     static void NotifyMediaDataPrepared(AssetHandler *assetHandler);
     static void DeleteInProcessMapRecord(const std::string &requestUri);
     static void NotifyDataPreparedWithoutRegister(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
+    static int32_t HandleValueOfMedia(napi_env env, MediaAssetDataHandlerPtr dataHandler,
+        AssetHandler *assetHandler, napi_value napiValueOfInfoMap);
     static void OnDataPrepared(napi_env env, napi_value cb, void *context, void *data);
     static void RegisterTaskObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void GetByteArrayNapiObject(const std::string &requestUri, napi_value &arrayBuffer, bool isSource,
