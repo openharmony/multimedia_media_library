@@ -109,6 +109,8 @@ public:
         const std::vector<std::string>& tagIds);
     static void UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
         const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap);
+    static void CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
+        const std::string &dbTag = "");
 
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
