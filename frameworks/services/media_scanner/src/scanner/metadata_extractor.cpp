@@ -249,7 +249,7 @@ static void ExtractDateTakenMetadata(unique_ptr<ImageSource>& imageSource, uniqu
         }
     }
     // use modified time as date taken time when date taken not set
-    data->SetDateTaken((data->GetDateTaken() == 0 || data->GetDateTaken() == data->GetFileDateAdded()) ?
+    data->SetDateTaken((data->GetDateTaken() == 0 || data->GetForAdd()) ?
         data->GetFileDateModified() : data->GetDateTaken());
     MEDIA_DEBUG_LOG("Set date_taken use modified time");
 }

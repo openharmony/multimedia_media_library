@@ -26,6 +26,8 @@
 #include "mtp_error_utils.h"
 #include "mtp_packet_tools.h"
 #include "mtp_storage_manager.h"
+#include "image_packer.h"
+#include "avmetadatahelper.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,6 +41,11 @@ const std::string SD_DOC                             = "/storage/External";
 const std::string RECYCLE_NAME                       = ".Trash";
 const std::string PATH_SEPARATOR                     = "/";
 constexpr uint32_t BASE_USER_RANGE                   = 200000;
+constexpr int32_t NORMAL_WIDTH = 256;
+constexpr int32_t NORMAL_HEIGHT = 256;
+constexpr int32_t COMPRE_SIZE_LEVEL_2 = 204800;
+const std::string THUMBNAIL_FORMAT = "image/jpeg";
+static constexpr uint8_t THUMBNAIL_MID = 90;
 static std::unordered_map<uint32_t, std::string> handleToPathMap;
 static std::unordered_map<std::string, uint32_t> pathToHandleMap;
 static std::shared_mutex g_mutex;
@@ -314,6 +321,7 @@ int32_t MtpMediaLibrary::GetHandles(const std::shared_ptr<MtpOperationContext> &
         WriteLock lock(g_mutex);
         errCode = ScanDirNoDepth(path, outHandles);
     }
+    context->parent = parentId;
     return errCode;
 }
 
@@ -351,6 +359,15 @@ int32_t MtpMediaLibrary::GetObjectInfo(const std::shared_ptr<MtpOperationContext
     outObjectInfo->name = sf::path(path).filename().string();
     outObjectInfo->parent = GetParentId(path);
     outObjectInfo->storageID = context->storageID;
+    MtpDataUtils::GetMtpFormatByPath(path, outObjectInfo->format);
+    MediaType mediaType;
+    MtpDataUtils::GetMediaTypeByformat(outObjectInfo->format, mediaType);
+    if (mediaType == MediaType::MEDIA_TYPE_IMAGE || mediaType == MediaType::MEDIA_TYPE_VIDEO) {
+        outObjectInfo->thumbCompressedSize = COMPRE_SIZE_LEVEL_2;
+        outObjectInfo->thumbFormat = MTP_FORMAT_EXIF_JPEG_CODE;
+        outObjectInfo->thumbPixHeight = NORMAL_HEIGHT;
+        outObjectInfo->thumbPixWidth = NORMAL_WIDTH;
+    }
 
     std::error_code ec;
     if (sf::is_directory(path, ec)) {
@@ -386,6 +403,133 @@ int32_t MtpMediaLibrary::GetFd(const std::shared_ptr<MtpOperationContext> &conte
         return MtpErrorUtils::SolveGetFdError(E_SUCCESS);
     }
     return MtpErrorUtils::SolveGetFdError(E_HAS_FS_ERROR);
+}
+
+bool MtpMediaLibrary::CompressImage(PixelMap &pixelMap, std::vector<uint8_t> &data)
+{
+    PackOption option = {
+        .format = THUMBNAIL_FORMAT,
+        .quality = THUMBNAIL_MID,
+        .numberHint = 1
+    };
+    data.resize(pixelMap.GetByteCount());
+
+    ImagePacker imagePacker;
+    uint32_t errorCode = imagePacker.StartPacking(data.data(), data.size(), option);
+    CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, false, "Failed to StartPacking %{public}d", errorCode);
+
+    errorCode = imagePacker.AddImage(pixelMap);
+    CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, false, "Failed to StartPacking %{public}d", errorCode);
+
+    int64_t packedSize = 0;
+    errorCode = imagePacker.FinalizePacking(packedSize);
+    CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, false, "Failed to StartPacking %{public}d", errorCode);
+
+    data.resize(packedSize);
+    return true;
+}
+
+int32_t MtpMediaLibrary::GetVideoThumb(const std::shared_ptr<MtpOperationContext> &context,
+    std::shared_ptr<UInt8List> &outThumb)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_CONTEXT_IS_NULL, "context is nullptr");
+
+    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    CHECK_AND_RETURN_RET_LOG(avMetadataHelper != nullptr, MTP_ERROR_NO_THUMBNAIL_PRESENT,
+        "avMetadataHelper is nullptr");
+
+    int32_t fd = 0;
+    int error = GetFd(context, fd);
+    CHECK_AND_RETURN_RET_LOG(error == MTP_SUCCESS, MTP_ERROR_NO_THUMBNAIL_PRESENT, "GetFd failed");
+
+    struct stat64 st;
+    int32_t ret = fstat64(fd, &st);
+    CondCloseFd(ret != 0, fd);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, MTP_ERROR_NO_THUMBNAIL_PRESENT, "Get file state failed, err %{public}d", errno);
+
+    int64_t length = static_cast<int64_t>(st.st_size);
+    ret = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_PIXEL_MAP);
+    CondCloseFd(ret != 0, fd);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, MTP_ERROR_NO_THUMBNAIL_PRESENT, "SetSource failed, ret %{public}d", ret);
+
+    PixelMapParams param = {
+        .dstWidth = NORMAL_WIDTH,
+        .dstHeight = NORMAL_HEIGHT,
+        .colorFormat = PixelFormat::RGBA_8888
+    };
+    shared_ptr<PixelMap> sPixelMap = avMetadataHelper->FetchFrameYuv(0,
+        AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC, param);
+    CondCloseFd(sPixelMap == nullptr, fd);
+    CHECK_AND_RETURN_RET_LOG(sPixelMap != nullptr, MTP_ERROR_NO_THUMBNAIL_PRESENT, "sPixelMap is nullptr");
+
+    sPixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    CloseFd(context, fd);
+    CompressImage(*sPixelMap.get(), *outThumb);
+    return MTP_SUCCESS;
+}
+
+int32_t MtpMediaLibrary::GetPictureThumb(const std::shared_ptr<MtpOperationContext> &context,
+    std::shared_ptr<UInt8List> &outThumb)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_CONTEXT_IS_NULL, "context is nullptr");
+
+    int32_t fd;
+    uint32_t errorCode = MTP_SUCCESS;
+    errorCode = GetFd(context, fd);
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_NO_THUMBNAIL_PRESENT, "GetFd failed");
+
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
+    CondCloseFd(imageSource == nullptr, fd);
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, MTP_ERROR_NO_THUMBNAIL_PRESENT, "imageSource is nullptr");
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize = {
+        .width = NORMAL_WIDTH,
+        .height = NORMAL_HEIGHT
+    };
+
+    std::unique_ptr<PixelMap> cropPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    CondCloseFd(cropPixelMap == nullptr, fd);
+    CHECK_AND_RETURN_RET_LOG(cropPixelMap != nullptr, MTP_ERROR_NO_THUMBNAIL_PRESENT, "cropPixelMap is nullptr");
+
+    CloseFd(context, fd);
+    CompressImage(*cropPixelMap, *outThumb);
+    return MTP_SUCCESS;
+}
+
+void MtpMediaLibrary::CondCloseFd(const bool condition, const int fd)
+{
+    if (!condition || fd <= 0) {
+        return;
+    }
+    int32_t ret = close(fd);
+    if (ret != MTP_SUCCESS) {
+        MEDIA_ERR_LOG("DealFd CloseFd fail!");
+    }
+}
+
+
+int32_t MtpMediaLibrary::GetThumb(const std::shared_ptr<MtpOperationContext> &context,
+    std::shared_ptr<UInt8List> &outThumb)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_CONTEXT_IS_NULL, "context is nullptr");
+    auto it = handleToPathMap.find(context->handle);
+    if (it == handleToPathMap.end()) {
+        MEDIA_ERR_LOG("MtpMediaLibrary::GetThumb handle not found");
+        return MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR);
+    }
+
+    uint16_t format;
+    MtpDataUtils::GetMtpFormatByPath(it->second, format);
+    MediaType mediaType;
+    MtpDataUtils::GetMediaTypeByformat(format, mediaType);
+    if (mediaType == MediaType::MEDIA_TYPE_IMAGE) {
+        return GetPictureThumb(context, outThumb);
+    } else if (mediaType == MediaType::MEDIA_TYPE_VIDEO) {
+        return GetVideoThumb(context, outThumb);
+    }
+    return MTP_SUCCESS;
 }
 
 int32_t MtpMediaLibrary::SendObjectInfo(const std::shared_ptr<MtpOperationContext> &context,

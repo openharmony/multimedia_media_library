@@ -1447,10 +1447,15 @@ void MediaAssetManagerNapi::GetPictureNapiObject(const std::string &fileUri, nap
     std::string tempStr = fileUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length());
     std::size_t index = tempStr.find("/");
     std::string fileId = tempStr.substr(0, index);
-    auto pic = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()));
+    std::string uri = fileUri;
+    int32_t errCode = E_OK;
+    auto pic = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()), errCode);
     if (pic == nullptr) {
         NAPI_ERR_LOG("picture is null");
         isPicture = false;
+        if (errCode == E_ERR) {
+            SavePicture(uri);
+        }
         GetImageSourceNapiObject(fileUri, pictureNapiObj, isSource, env);
         return;
     }
