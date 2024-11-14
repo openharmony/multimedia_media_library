@@ -635,12 +635,17 @@ uint32_t MtpDataUtils::GetMtpFormatByPath(const std::string &path, uint16_t &out
             continue;
         }
         // outFormat should also be in 'Playback Formats' return array of GetDeviceInfo cmd
-        for (uint16_t i = 0; i < sizeof(PLAYBACK_FORMATS) / sizeof(uint16_t); i++) {
+        uint16_t size = sizeof(PLAYBACK_FORMATS) / sizeof(uint16_t);
+        for (uint16_t i = 0; i < size; i++) {
             if (it->first == PLAYBACK_FORMATS[i]) {
                 outFormat = it->first;
                 return MTP_SUCCESS;
             }
         }
+    }
+    if (extension.compare(MTP_FORMAT_JPG) || extension.compare(MTP_FORMAT_JPEG)) {
+        outFormat = MTP_FORMAT_EXIF_JPEG_CODE;
+        return MTP_SUCCESS;
     }
     return MTP_ERROR_INVALID_OBJECTPROP_VALUE;
 }

@@ -78,14 +78,20 @@ static constexpr int ERROR_BATTERY = -1;
 static constexpr int EMPTY_BATTERY = 0;
 static constexpr int STORAGE_MANAGER_UID = 5003;
 static constexpr int RECEVIE_OBJECT_CANCELLED = -20;
+static constexpr int RECEVIE_OBJECT_FAILED = -17;
 
 static constexpr uint32_t HEADER_LEN = 12;
 static constexpr uint32_t READ_LEN = 1024;
 MtpOperationUtils::MtpOperationUtils(const shared_ptr<MtpOperationContext> &context) : context_(context)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    CHECK_AND_RETURN_LOG(saManager != nullptr, "GetSystemAbilityManager failed, saManager is null");
+
     auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID);
     mtpMedialibraryManager_ = MtpMedialibraryManager::GetInstance();
+    CHECK_AND_RETURN_LOG(mtpMedialibraryManager_ != nullptr,
+        "MtpMedialibraryManager failed, mtpMedialibraryManager_ is null");
+
     mtpMedialibraryManager_->Init(token);
     mtpMediaLibrary_ = MtpMediaLibrary::GetInstance();
 }
@@ -483,7 +489,7 @@ int32_t MtpOperationUtils::RecevieSendObject(MtpFileRange &object, int fd)
         "mtpMedialibraryManager_ is null");
 
     int32_t errorCode = context_->mtpDriver->ReceiveObj(object);
-    if (errorCode != RECEVIE_OBJECT_CANCELLED) {
+    if (errorCode != RECEVIE_OBJECT_CANCELLED && errorCode != RECEVIE_OBJECT_FAILED) {
         return errorCode;
     }
 
@@ -518,6 +524,11 @@ void MtpOperationUtils::PreDealFd(const bool deal, const int fd)
 
 uint16_t MtpOperationUtils::GetThumb(shared_ptr<PayloadData> &data, uint16_t containerType, int &errorCode)
 {
+    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, MTP_INVALID_PARAMETER_CODE, "DoRecevieSendObject context_ is null");
+    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
+    CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
+        "mtpMedialibraryManager_ is null");
+
     if (containerType != DATA_CONTAINER_TYPE) {
         data = make_shared<RespCommonData>();
         return CheckErrorCode(errorCode);
@@ -529,7 +540,8 @@ uint16_t MtpOperationUtils::GetThumb(shared_ptr<PayloadData> &data, uint16_t con
     }
 
     shared_ptr<UInt8List> thumb = make_shared<UInt8List>();
-    errorCode = mtpMedialibraryManager_->GetThumb(context_, thumb);
+    errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetThumb(context_, thumb) :
+        mtpMedialibraryManager_->GetThumb(context_, thumb);
     if (errorCode != MTP_SUCCESS) {
         data = make_shared<RespCommonData>();
         return CheckErrorCode(errorCode);
