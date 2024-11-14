@@ -94,8 +94,8 @@ const std::string OPRN_ENHANCEMENT_GET_PAIR = "get_pair_enhancement";
 const std::string OPRN_SET_VIDEO_ENHANCEMENT_ATTR = "set_video_enhancement_attr";
 const std::string OPRN_ALL_DUPLICATE_ASSETS = "all_duplicate_assets";
 const std::string URI_ALL_DUPLICATE_ASSETS = "/" + OPRN_ALL_DUPLICATE_ASSETS;
-const std::string OPRN_OTHER_DUPLICATE_ASSETS = "other_duplicate_assets";
-const std::string URI_OTHER_DUPLICATE_ASSETS = "/" + OPRN_OTHER_DUPLICATE_ASSETS;
+const std::string OPRN_CAN_DEL_DUPLICATE_ASSETS = "can_del_duplicate_assets";
+const std::string URI_CAN_DEL_DUPLICATE_ASSETS = "/" + OPRN_CAN_DEL_DUPLICATE_ASSETS;
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
 const std::string MEDIA_PHOTOOPRN = "photo_operation";
@@ -281,7 +281,7 @@ const std::string PAH_SCAN_WITHOUT_ALBUM_UPDATE = MEDIALIBRARY_DATA_URI + "/" + 
     OPRN_SCAN_WITHOUT_ALBUM_UPDATE;
 const std::string PATH_SAVE_PICTURE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SAVE_PICTURE;
 const std::string PAH_ALL_DUPLICATE_ASSETS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + URI_ALL_DUPLICATE_ASSETS;
-const std::string PAH_OTHER_DUPLICATE_ASSETS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + URI_OTHER_DUPLICATE_ASSETS;
+const std::string PAH_CAN_DEL_DUPLICATE_ASSETS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + URI_CAN_DEL_DUPLICATE_ASSETS;
 const std::string PAH_CLONE_ASSET = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CLONE_ASSET;
 
 // MultiStages capture related operation uri
