@@ -87,6 +87,7 @@ bool PictureHandlerService::OpenPicture(const std::string &fileId, int32_t &fd)
     if (memcpy_s(addr, msgParcel.GetDataSize(), (void*)msgParcel.GetData(), msgParcel.GetDataSize())) {
         MEDIA_ERR_LOG("PictureHandlerService::OpenPicture memcpy_s failed!");
         close(fd);
+        munmap(addr, msgParcel.GetDataSize());
         return false;
     }
     munmap(addr, msgParcel.GetDataSize());
