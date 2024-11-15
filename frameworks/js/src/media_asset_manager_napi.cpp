@@ -1218,7 +1218,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         }
     }
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
-    NAPI_INFO_LOG("delete assetHandler");
+    NAPI_DEBUG_LOG("delete assetHandler");
     DeleteAssetHandlerSafe(assetHandler, env);
 }
 
