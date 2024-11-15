@@ -227,6 +227,7 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
         MEDIA_ERR_LOG("Init remote medialibrary rdb fail, err = %{public}d", err);
         return E_FAIL;
     }
+    BackupDatabaseUtils::CheckDbIntegrity(mediaRdb_, sceneCode_, "OLD_MEDIA_LIBRARY");
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
     MEDIA_INFO_LOG("Init db succ.");
