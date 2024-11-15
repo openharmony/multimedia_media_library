@@ -461,7 +461,7 @@ static int32_t QueryExistingDeletedAlbumByLpath(const string& lpath)
     }
     if (rowCount == 0) {
         // No existing deleted album with same lpath is found
-        return E_OK;
+        return E_FAIL;
     }
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to go to first row, lpath is: %{public}s", lpath.c_str());
@@ -551,7 +551,7 @@ static int32_t ReuseDeletedPhotoAlbum(int32_t id, const string& lpath, const Val
     int32_t ret = trans->ExecuteSql(sql, bindArgs);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Update failed, lpath is: %{public}s", lpath.c_str());
-        return ret;
+        return E_DB_FAIL;
     }
     return E_OK;
 }
@@ -567,27 +567,26 @@ int CreatePhotoAlbum(const string &albumName)
     PrepareUserAlbum(albumName, albumValues);
 
     // try to reuse previously deleted record first
-    int32_t id = -1;
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
-    std::function<int(void)> tryReuseDeleted = [&]()->int {
-        id = QueryExistingDeletedAlbumByLpath(ALBUM_LPATH_PREFIX + albumName);
-        if (id < 0) {
-            return id;
-        }
-        if (id > 0) {
-            MEDIA_INFO_LOG("Previously deleted photo album with same lpath exists, reuse the record id %{public}d", id);
-            return ReuseDeletedPhotoAlbum(id, ALBUM_LPATH_PREFIX + albumName, albumValues, trans);
-        }
-        return E_OK;
-    };
-    int ret = trans->RetryTrans(tryReuseDeleted, __func__);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Try trans fail!, ret: %{public}d", ret);
-        return ret;
+    int32_t errCode = trans->Start();
+    if (errCode != E_OK) {
+        return errCode;
     }
+    int32_t id = QueryExistingDeletedAlbumByLpath(ALBUM_LPATH_PREFIX + albumName);
     if (id > 0) {
-        return id;
+        MEDIA_INFO_LOG("Previously deleted photo album with same lpath exists, reuse the record id %{public}d", id);
+        int32_t ret = ReuseDeletedPhotoAlbum(id, ALBUM_LPATH_PREFIX + albumName, albumValues, trans);
+        errCode = trans->Finish();
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("tans finish fail!, ret:%{public}d", errCode);
+        }
+        return ret < 0 ? ret : id;
     }
+    errCode = trans->Finish();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("tans finish fail!, ret:%{public}d", errCode);
+    }
+
     // no existing record available, create a new one
     return DoCreatePhotoAlbum(albumName, "", albumValues);
 }
