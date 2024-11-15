@@ -330,6 +330,9 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, PermParam &perm
 {
     MEDIA_DEBUG_LOG("uri: %{private}s mode: %{private}s",
         cmd.GetUri().ToString().c_str(), permParam.openFileNode.c_str());
+    if (cmd.GetOprnObject() == OperationObject::PTP_OPERATION) {
+        return E_SUCCESS;
+    }
     MediaType mediaType = MediaFileUri::GetMediaTypeFromUri(cmd.GetUri().ToString());
     const bool containsRead = ContainsFlag(permParam.openFileNode, 'r');
     const bool containsWrite = ContainsFlag(permParam.openFileNode, 'w');

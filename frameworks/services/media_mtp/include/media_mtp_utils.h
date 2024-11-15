@@ -36,6 +36,7 @@ const std::string DEFAULT_PRODUCT_MODEL = "ohos";
 const std::string DEFAULT_PRODUCT_MANUFACTURER = "default";
 const std::string DEFAULT_PRODUCT_HARDWARE_VERSION = "default";
 const std::string DEFAULT_PRODUCT_SOFTWARE_VERSION = "OpenHarmony 3.2";
+constexpr int32_t PHOTES_FILE_ID = 100000000;
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MTP_SERVICE_INCLUDE_MEDIA_MTP_UTILS_H_

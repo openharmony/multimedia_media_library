@@ -185,6 +185,7 @@ public:
     EXPORT static std::string GetUriWithoutDisplayname(const std::string &uri);
     EXPORT static bool CheckSupportedWatermarkType(int32_t watermarkType);
     EXPORT static int32_t CopyDirectory(const std::string &srcDir, const std::string &dstDir);
+    EXPORT static bool CallingTokenIdIsSelf();
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
