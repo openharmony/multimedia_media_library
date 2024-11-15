@@ -208,7 +208,7 @@ shared_ptr<FetchResult<FileAsset>> PhotoAlbumImpl::GetAssets(COptions options, i
 }
 
 static void ParseArgsCommitModify(const shared_ptr<PhotoAlbum>& photoAlbumPtr, DataSharePredicates &predicates,
-    DataShareValuesBucket valuesBucket, int32_t &errCode)
+    DataShareValuesBucket &valuesBucket, int32_t &errCode)
 {
     if (photoAlbumPtr == nullptr) {
         LOGE("photoAlbumPtr is nullptr.");

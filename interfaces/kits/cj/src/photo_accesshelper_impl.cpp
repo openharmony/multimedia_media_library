@@ -858,6 +858,7 @@ void PhotoAccessHelperImpl::ShowAssetsCreationDialog(CArrString &srcFileUris,
 Ace::UIContent *GetSubWindowUIContent(PhotoSelectOptions &option)
 {
     if (option.subWindowName == nullptr) {
+        LOGE("failed to get the value of subWindow name");
         return nullptr;
     }
     string subWindowName(option.subWindowName);
@@ -909,8 +910,39 @@ static bool InnerSetWantParamsArrayString(
     }
 }
 
+static AAFwk::WantParams UnwrapWantParams(PhotoSelectOptions &option)
+{
+    AAFwk::WantParams wantParams;
+    if (option.preselectedUris.size > 0) {
+        vector<string> preselectedUris;
+        for (int64_t i = 0; i < option.preselectedUris.size; i++) {
+            preselectedUris.push_back(string(option.preselectedUris.head[i]));
+        }
+        InnerSetWantParamsArrayString("preselectedUris", preselectedUris, wantParams);
+    }
+    AAFwk::WantParams wp;
+    if (option.recommendationOptions.recommendationType != -1) {
+        wp.SetParam("recommendationType",
+            AAFwk::Integer::Box(option.recommendationOptions.recommendationType));
+    }
+    if (option.recommendationOptions.textContextInfo.text != nullptr) {
+        AAFwk::WantParams wpText;
+        wpText.SetParam("text", AAFwk::String::Box(string(option.recommendationOptions.textContextInfo.text)));
+        sptr<AAFwk::IWantParams> wantParamsText = AAFwk::WantParamWrapper::Box(wpText);
+        if (wantParamsText != nullptr) {
+            wp.SetParam("textContextInfo", wantParamsText);
+        }
+    }
+    sptr<AAFwk::IWantParams> pWantParams = AAFwk::WantParamWrapper::Box(wp);
+    if (pWantParams != nullptr) {
+        wantParams.SetParam("recommendationOptions", pWantParams);
+    }
+    return wantParams;
+}
+
 static void SetRequestInfo(PhotoSelectOptions &option, AAFwk::Want &request)
 {
+    request.SetParams(UnwrapWantParams(option));
     std::string targetType = "photoPicker";
     request.SetParam(ABILITY_WANT_PARAMS_UIEXTENSIONTARGETTYPE, targetType);
     request.SetAction(OHOS_WANT_ACTION_PHOTOPICKER);
@@ -922,38 +954,13 @@ static void SetRequestInfo(PhotoSelectOptions &option, AAFwk::Want &request)
     }
     request.SetType(type);
     request.SetParam("uri", uri);
+    request.SetParam("maxSelectCount", option.maxSelectNumber);
     request.SetParam("filterMediaType", filterMediaType);
     request.SetParam("isPhotoTakingSupported", option.isPhotoTakingSupported);
     request.SetParam("isSearchSupported", option.isSearchSupported);
     request.SetParam("isPreviewForSingleSelectionSupported", option.isPreviewForSingleSelectionSupported);
     request.SetParam("isEditSupported", option.isEditSupported);
     request.SetParam("isOriginalSupported", option.isOriginalSupported);
-    AAFwk::WantParams wantParams;
-    if (option.preselectedUris.size > 0) {
-        vector<string> preselectedUris;
-        for (int64_t i = 0; i < option.preselectedUris.size; i++) {
-            preselectedUris.push_back(string(option.preselectedUris.head[i]));
-        }
-        InnerSetWantParamsArrayString("preselectedUris", preselectedUris, wantParams);
-    }
-    if (option.recommendationOptions.recommendationType != -1) {
-        AAFwk::WantParams wp;
-        wp.SetParam("recommendationType",
-            AAFwk::Integer::Box(option.recommendationOptions.recommendationType));
-        if (option.recommendationOptions.textContextInfo.text != nullptr) {
-            AAFwk::WantParams wpText;
-            wpText.SetParam("text", AAFwk::String::Box(string(option.recommendationOptions.textContextInfo.text)));
-            sptr<AAFwk::IWantParams> wantParamsText = AAFwk::WantParamWrapper::Box(wpText);
-            if (wantParamsText != nullptr) {
-                wp.SetParam("textContextInfo", wantParamsText);
-            }
-        }
-        sptr<AAFwk::IWantParams> pWantParams = AAFwk::WantParamWrapper::Box(wp);
-        if (pWantParams != nullptr) {
-           wantParams.SetParam("recommendationOptions", pWantParams);
-        }
-    }
-    request.SetParams(wantParams);
 }
 
 static bool ParseArgsStartPhotoPicker(int64_t id, PhotoSelectOptions &option,

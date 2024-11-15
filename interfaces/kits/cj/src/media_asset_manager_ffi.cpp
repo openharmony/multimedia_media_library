@@ -417,7 +417,11 @@ void MediaAssetManagerImpl::GetByteArrayObject(const string &requestUri,
         return;
     }
     ssize_t imgLen = lseek(imageFd, 0, SEEK_END);
-    void* buffer = nullptr;
+    void* buffer = malloc(imgLen);
+    if (buffer == nullptr) {
+        LOGE("malloc buffer failed");
+        return;
+    }
     lseek(imageFd, 0, SEEK_SET);
     ssize_t readRet = read(imageFd, buffer, imgLen);
     close(imageFd);

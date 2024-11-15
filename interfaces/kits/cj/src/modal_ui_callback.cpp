@@ -36,7 +36,7 @@ void ModalUICallback::SetSessionId(int32_t sessionId)
 
 void ModalUICallback::OnRelease(int32_t releaseCode)
 {
-    LOGE("OnRelease enter. release code is %{public}d", releaseCode);
+    LOGI("OnRelease enter. release code is %{public}d", releaseCode);
     this->uiContent->CloseModalUIExtension(this->sessionId_);
     pickerCallBack_->ready = true;
 }
@@ -53,7 +53,7 @@ void ModalUICallback::OnError(int32_t code, const std::string& name, const std::
 
 void ModalUICallback::OnResultForModal(int32_t resultCode, const OHOS::AAFwk::Want &result)
 {
-    LOGE("OnResultForModal enter. resultCode is %{public}d", resultCode);
+    LOGI("OnResultForModal enter. resultCode is %{public}d", resultCode);
     pickerCallBack_->uris = result.GetStringArrayParam("select-item-list");
     pickerCallBack_->isOrigin = result.GetBoolParam("isOriginal", false);
     pickerCallBack_->resultCode = resultCode;
@@ -61,12 +61,12 @@ void ModalUICallback::OnResultForModal(int32_t resultCode, const OHOS::AAFwk::Wa
 
 void ModalUICallback::OnReceive(const OHOS::AAFwk::WantParams &request)
 {
-    LOGE("OnReceive enter.");
+    LOGI("OnReceive enter.");
 }
 
 void ModalUICallback::OnDestroy()
 {
-    LOGE("OnDestroy enter.");
+    LOGI("OnDestroy enter.");
 }
 } // namespace Media
 } // namespace OHOS
