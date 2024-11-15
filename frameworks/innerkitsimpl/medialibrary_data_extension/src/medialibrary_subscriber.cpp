@@ -555,6 +555,39 @@ static void RecoverBackgroundDownloadCloudMediaAsset()
     }
 }
 
+static void UpdateDateTakenWhenZero(AsyncTaskData *data)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    if (dataManager == nullptr) {
+        MEDIA_ERR_LOG("Failed to MediaLibraryDataManager instance!");
+        return;
+    }
+
+    int32_t result = dataManager->UpdateDateTakenWhenZero();
+    if (result != E_OK) {
+        MEDIA_ERR_LOG("UpdateDateTakenWhenZero faild, result = %{public}d", result);
+    }
+}
+
+static int32_t DoUpdateDateTakenWhenZero()
+{
+    MEDIA_INFO_LOG("Begin DoUpdateDateTakenWhenZero");
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Failed to get async worker instance!");
+        return E_FAIL;
+    }
+    shared_ptr<MediaLibraryAsyncTask> UpdateDateTakenWhenZeroTask =
+        make_shared<MediaLibraryAsyncTask>(UpdateDateTakenWhenZero, nullptr);
+    if (UpdateDateTakenWhenZeroTask != nullptr) {
+        asyncWorker->AddTask(UpdateDateTakenWhenZeroTask, false);
+    } else {
+        MEDIA_ERR_LOG("Failed to create async task for UpdateDateTakenWhenZeroTask !");
+        return E_FAIL;
+    }
+    return E_SUCCESS;
+}
+
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     if (!IsDelayTaskTimeOut() || !currentStatus_) {
@@ -592,6 +625,10 @@ void MedialibrarySubscriber::DoBackgroundOperation()
                 MEDIA_ERR_LOG("Delete old highlight path fail");
             }
         }
+    }
+    ret = DoUpdateDateTakenWhenZero();
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("DoUpdateDateTakenWhenZero faild");
     }
 
     RecoverBackgroundDownloadCloudMediaAsset();
