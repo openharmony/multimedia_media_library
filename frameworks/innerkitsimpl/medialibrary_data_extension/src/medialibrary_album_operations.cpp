@@ -580,7 +580,7 @@ int CreatePhotoAlbum(const string &albumName)
         }
         return E_OK;
     };
-    int ret = trans->RetryTrans(tryReuseDeleted, __func__);
+    int ret = trans->RetryTrans(tryReuseDeleted);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Try trans fail!, ret: %{public}d", ret);
         return ret;
