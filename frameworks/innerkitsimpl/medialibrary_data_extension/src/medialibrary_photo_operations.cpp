@@ -899,6 +899,10 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     string needScanStr = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId,
                                                          OperationObject::FILESYSTEM_PHOTO, PHOTO_COLUMN_VECTOR);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("SaveCameraPhoto, get fileAsset fail");
+        return 0;
+    }
     std::string path = fileAsset->GetPath();
     int32_t burstCoverLevel = fileAsset->GetBurstCoverLevel();
     if (!path.empty()) {
