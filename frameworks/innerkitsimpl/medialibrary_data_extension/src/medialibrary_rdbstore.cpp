@@ -279,8 +279,7 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS = "\
         ROW_NUMBER( ) OVER ( \
           PARTITION BY display_name, size, orientation \
           ORDER BY album_id DESC, owner_album_id ASC \
-        ) AS img_row_num,\
-        COUNT( ) OVER ( PARTITION BY display_name, size, orientation ) AS img_cnt \
+        ) AS img_row_num \
       FROM\
         Photos\
         LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
@@ -293,8 +292,7 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS = "\
         AND media_type = 1 \
       ) \
     WHERE\
-      img_cnt > 1 \
-      AND img_row_num > 1 UNION\
+      img_row_num > 1 UNION\
     SELECT\
       SELECT_COLUMNS \
     FROM\
@@ -304,8 +302,7 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS = "\
         ROW_NUMBER( ) OVER ( \
           PARTITION BY display_name, size \
           ORDER BY album_id DESC, owner_album_id ASC \
-        ) AS vid_row_num,\
-        COUNT( ) OVER ( PARTITION BY display_name, size ) AS vid_cnt \
+        ) AS vid_row_num \
       FROM\
         Photos\
         LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
@@ -318,8 +315,7 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS = "\
         AND media_type = 2 \
       ) \
     WHERE\
-      vid_cnt > 1 \
-      AND vid_row_num > 1 \
+      vid_row_num > 1 \
     ORDER BY\
       display_name,\
       size,\
@@ -340,8 +336,7 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT = "\
           ROW_NUMBER( ) OVER ( \
             PARTITION BY display_name, size, orientation \
             ORDER BY album_id DESC, owner_album_id ASC \
-          ) AS img_row_num,\
-          COUNT( ) OVER ( PARTITION BY display_name, size, orientation ) AS img_cnt \
+          ) AS img_row_num \
         FROM\
           Photos\
           LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
@@ -354,8 +349,7 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT = "\
           AND media_type = 1 \
         ) \
       WHERE\
-        img_cnt > 1 \
-        AND img_row_num > 1 UNION\
+        img_row_num > 1 UNION\
       SELECT\
         file_id \
       FROM\
@@ -365,8 +359,7 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT = "\
           ROW_NUMBER( ) OVER ( \
             PARTITION BY display_name, size \
             ORDER BY album_id DESC, owner_album_id ASC \
-          ) AS vid_row_num,\
-          COUNT( ) OVER ( PARTITION BY display_name, size ) AS vid_cnt \
+          ) AS vid_row_num \
         FROM\
           Photos\
           LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
@@ -379,8 +372,7 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT = "\
           AND media_type = 2 \
         ) \
       WHERE\
-        vid_cnt > 1 \
-      AND vid_row_num > 1 \
+      vid_row_num > 1 \
       ) ";
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
@@ -883,7 +875,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetAllDuplicateAssets(con
     MediaLibraryTracer tracer;
     if (find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT) != columns.end()) {
         tracer.Start("QueryAllDuplicateAssets_count");
-        return MediaLibraryRdbStore::GetRaw()->QuerySql(SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT);
+        return MediaLibraryRdbStore::GetRaw()->QueryByStep(SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT);
     }
 
     tracer.Start("QueryAllDuplicateAssets_records");
@@ -901,7 +893,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetAllDuplicateAssets(con
     MediaFileUtils::ReplaceAll(sql, SELECT_COLUMNS, selectColumns);
 
     const std::vector<ValueObject> bindArgs{ ValueObject(limit), ValueObject(offset) };
-    return MediaLibraryRdbStore::GetRaw()->QuerySql(sql, bindArgs);
+    return MediaLibraryRdbStore::GetRaw()->QueryByStep(sql, bindArgs);
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetCanDelDuplicateAssets(const vector<string> &columns,
@@ -914,7 +906,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetCanDelDuplicateAssets(
     MediaLibraryTracer tracer;
     if (find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT) != columns.end()) {
         tracer.Start("QueryCanDelDuplicateAssets_count");
-        return MediaLibraryRdbStore::GetRaw()->QuerySql(SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT);
+        return MediaLibraryRdbStore::GetRaw()->QueryByStep(SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT);
     }
 
     tracer.Start("QueryCanDelDuplicateAssets_records");
@@ -926,7 +918,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetCanDelDuplicateAssets(
     MediaFileUtils::ReplaceAll(sql, SELECT_COLUMNS, selectColumns);
 
     const std::vector<ValueObject> bindArgs{ ValueObject(limit), ValueObject(offset) };
-    return MediaLibraryRdbStore::GetRaw()->QuerySql(sql, bindArgs);
+    return MediaLibraryRdbStore::GetRaw()->QueryByStep(sql, bindArgs);
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUriForPhotos(const AbsRdbPredicates &predicates,
