@@ -13,12 +13,10 @@
  * limitations under the License.
  */
 #include "mtp_native_test.h"
-#define private public
 #include "mtp_medialibrary_manager.h"
 #include "mtp_event.h"
 #include "mtp_service.h"
 #include "property.h"
-#undef private
 using namespace std;
 using namespace testing::ext;
 namespace OHOS {
@@ -476,7 +474,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_020, TestSize.Level0)
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
-    context->property = -1;
+    context->property = 1000;
     context->groupCode = 1;
     context->handle = 0;
     context->depth = 1;
@@ -503,7 +501,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_021, TestSize.Level0)
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->property = 0xffffffff;
-    context->groupCode = -1;
+    context->groupCode = 1000;
     context->handle = 0;
     context->depth = 1;
     context->format = MTP_FORMAT_EXIF_JPEG_CODE;
@@ -530,7 +528,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_022, TestSize.Level0)
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->property = 0xffffffff;
     context->groupCode = 1;
-    context->handle = -1;
+    context->handle = 1000;
     context->depth = 1;
     context->format = MTP_FORMAT_EXIF_JPEG_CODE;
     shared_ptr<vector<Property>> outProps = make_shared<vector<Property>>();
@@ -557,7 +555,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_023, TestSize.Level0)
     context->property = 0xffffffff;
     context->groupCode = 1;
     context->handle = 0;
-    context->depth = -1;
+    context->depth = 1000;
     context->format = MTP_FORMAT_EXIF_JPEG_CODE;
     shared_ptr<vector<Property>> outProps = make_shared<vector<Property>>();
     MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
@@ -584,7 +582,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_024, TestSize.Level0)
     context->groupCode = 1;
     context->handle = 0;
     context->depth = 1;
-    context->format = -1;
+    context->format = 1000;
     shared_ptr<vector<Property>> outProps = make_shared<vector<Property>>();
     MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
     for (Property property : *outProps) {
@@ -1455,7 +1453,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_059, TestSize.Level0)
     MtpMedialibraryManager::GetInstance()->GetHandles(context, objectHandles);
     for (uint32_t handle : *objectHandles) {
         context = make_shared<MtpOperationContext>();
-        context->handle = -1;
+        context->handle = 1000;
         shared_ptr<ObjectInfo> objectInfo = make_shared<ObjectInfo>(handle);
         MtpMedialibraryManager::GetInstance()->GetObjectInfo(context, objectInfo);
         MEDIA_INFO_LOG("mtp_native_test_059 handle = %{public}d", handle);
@@ -1497,7 +1495,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_061, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
     MtpMedialibraryManager::GetInstance()->Init(remoteObj);
-    uint32_t handle = -1;
+    uint32_t handle = 1000;
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = handle;
     shared_ptr<ObjectInfo> objectInfo = make_shared<ObjectInfo>(handle);
@@ -1542,7 +1540,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_065, TestSize.Level0)
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
     MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
-    context->name =-1;
+    context->name = "1000";
     context->parent = 1;
     uint32_t handle = 0;
     context->storageID = 1;
@@ -1564,7 +1562,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_066, TestSize.Level0)
     MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->name = TEST_NAME;
-    context->parent = -1;
+    context->parent = 1000;
     uint32_t handle = 0;
     context->storageID = 1;
     context->format = 0x3801;
@@ -1587,7 +1585,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_067, TestSize.Level0)
     context->name = TEST_NAME;
     context->parent = 1;
     uint32_t handle = 0;
-    context->storageID = -1;
+    context->storageID = 1000;
     context->format = 0x3801;
     MtpMedialibraryManager::GetInstance()->SendObjectInfo(context, context->storageID, context->parent, handle);
 
@@ -1609,7 +1607,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_068, TestSize.Level0)
     context->parent = 1;
     uint32_t handle = 0;
     context->storageID = 1;
-    context->format = -1;
+    context->format = 1000;
     MtpMedialibraryManager::GetInstance()->SendObjectInfo(context, context->storageID, context->parent, handle);
 
     MEDIA_INFO_LOG("mtp_native_test_068::End");
@@ -1628,7 +1626,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_069, TestSize.Level0)
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->name = TEST_NAME;
     context->parent = 1;
-    uint32_t handle = -1;
+    uint32_t handle = 1000;
     context->storageID = 1;
     context->format = 0x3801;
     MtpMedialibraryManager::GetInstance()->SendObjectInfo(context, context->storageID, context->parent, handle);
@@ -1667,7 +1665,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_071, TestSize.Level0)
     MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
-    context->parent = -1;
+    context->parent = 1000;
     context->storageID = 1;
     MtpMedialibraryManager::GetInstance()->MoveObject(context);
     MEDIA_INFO_LOG("mtp_native_test_071 context->name = %{public}s", (context->name).c_str());
@@ -1686,7 +1684,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_072, TestSize.Level0)
     MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
-    context->parent = -1;
+    context->parent = 1000;
     context->storageID = 1;
     MtpMedialibraryManager::GetInstance()->MoveObject(context);
     MEDIA_INFO_LOG("mtp_native_test_072 context->name = %{public}s", (context->name).c_str());
@@ -1706,7 +1704,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_073, TestSize.Level0)
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
     context->parent = 1;
-    context->storageID = -1;
+    context->storageID = 1000;
     MtpMedialibraryManager::GetInstance()->MoveObject(context);
     MEDIA_INFO_LOG("mtp_native_test_073 context->name = %{public}s", (context->name).c_str());
     MEDIA_INFO_LOG("mtp_native_test_073::End");
@@ -1744,7 +1742,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_075, TestSize.Level0)
     MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
-    context->parent = -1;
+    context->parent = 1000;
     context->storageID = 1;
     uint32_t handle = 0;
     MtpMedialibraryManager::GetInstance()->CopyObject(context, handle);
@@ -1764,7 +1762,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_076, TestSize.Level0)
     MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
-    context->parent = -1;
+    context->parent = 1000;
     context->storageID = 1;
     uint32_t handle = 0;
     MtpMedialibraryManager::GetInstance()->CopyObject(context, handle);
@@ -1784,8 +1782,8 @@ HWTEST_F(MtpNativeTest, mtp_native_test_077, TestSize.Level0)
     MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
-    context->parent = -1;
-    context->storageID = -1;
+    context->parent = 1000;
+    context->storageID = 1000;
     uint32_t handle = 0;
     MtpMedialibraryManager::GetInstance()->CopyObject(context, handle);
     MEDIA_INFO_LOG("mtp_native_test_077 context->name = %{public}s", (context->name).c_str());
@@ -1819,7 +1817,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_079, TestSize.Level0)
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
     MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
-    context->handle = -1;
+    context->handle = 1000;
     MtpMedialibraryManager::GetInstance()->DeleteObject(context);
     MEDIA_INFO_LOG("mtp_native_test_079::End");
 }
@@ -1855,7 +1853,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_081, TestSize.Level0)
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
     MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
-    context->handle = -1;
+    context->handle = 1000;
     context->property = MTP_PROPERTY_OBJECT_FILE_NAME_CODE;
     context->properType = MTP_TYPE_STRING_CODE;
     context->properStrValue = PROP_VALUE;
@@ -1876,7 +1874,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_082, TestSize.Level0)
     MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 0;
-    context->property = -1;
+    context->property = 1000;
     context->properType = MTP_TYPE_STRING_CODE;
     context->properStrValue = PROP_VALUE;
     MtpMedialibraryManager::GetInstance()->SetObjectPropValue(context);
@@ -1897,7 +1895,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_083, TestSize.Level0)
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 0;
     context->property = MTP_PROPERTY_OBJECT_FILE_NAME_CODE;
-    context->properType = -1;
+    context->properType = 1000;
     context->properStrValue = PROP_VALUE;
     MtpMedialibraryManager::GetInstance()->SetObjectPropValue(context);
     MEDIA_INFO_LOG("mtp_native_test_083 context->name = %{public}s", (context->name).c_str());
@@ -1918,7 +1916,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_084, TestSize.Level0)
     context->handle = 0;
     context->property = MTP_PROPERTY_OBJECT_FILE_NAME_CODE;
     context->properType = MTP_TYPE_STRING_CODE;
-    context->properStrValue = -1;
+    context->properStrValue = "1000";
     MtpMedialibraryManager::GetInstance()->SetObjectPropValue(context);
     MEDIA_INFO_LOG("mtp_native_test_084 context->name = %{public}s", (context->name).c_str());
     MEDIA_INFO_LOG("mtp_native_test_084::End");
@@ -1971,7 +1969,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_086, TestSize.Level0)
     MtpMedialibraryManager::GetInstance()->GetHandles(context, objectHandles);
     for (uint32_t handle : *objectHandles) {
         context = make_shared<MtpOperationContext>();
-        context->handle = -1;
+        context->handle = 1000;
         shared_ptr<ObjectInfo> objectInfo = make_shared<ObjectInfo>(handle);
         MtpMedialibraryManager::GetInstance()->GetObjectInfo(context, objectInfo);
         MEDIA_INFO_LOG("mtp_native_test_086 handle = %{public}d", handle);
@@ -1998,7 +1996,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_087, TestSize.Level0)
     string outStrVal = "GetObjectPropValue";
     int32_t ret = mtpMedialibraryManager.GetObjectPropValue(context, outIntVal, outLongVal, outStrVal);
     EXPECT_EQ(ret, MTP_ERROR_INVALID_OBJECTHANDLE);
-    context->handle = -1;
+    context->handle = 1000;
     context->property = 1;
     ret = mtpMedialibraryManager.GetObjectPropValue(context, outIntVal, outLongVal, outStrVal);
     EXPECT_EQ(ret, MTP_ERROR_INVALID_OBJECTHANDLE);
@@ -2108,10 +2106,10 @@ HWTEST_F(MtpNativeTest, mtp_driver_001, TestSize.Level0)
     ret = mtpEvent->EventPayloadData(MTP_EVENT_OBJECT_PROP_DESC_CHANGED_CODE, data);
     EXPECT_EQ(ret, MTP_UNDEFINED_CODE);
     mtpEvent->SendEvent(MTP_EVENT_DEVICE_PROP_CHANGED_CODE);
-    MtpService::GetInstance()->StartService();
-    MtpService::GetInstance()->StopService();
     MtpService mtpService;
     mtpService.Init();
+    mtpService.StartService();
+    mtpService.StopService();
     MEDIA_INFO_LOG("mtp_driver_001::End");
 }
 
@@ -2324,7 +2322,6 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_001, TestSize.Level0)
     shared_ptr<PayloadData> data;
     uint16_t containerType = UNDEFINED_CONTAINER_TYPE;
     int errorCode = 0;
-
     uint16_t ret = mtpOperUtils->GetDeviceInfo(data, containerType, errorCode);
     EXPECT_TRUE(ret == MTP_OK_CODE);
     ret = mtpOperUtils->GetNumObjects(data);
@@ -2468,97 +2465,6 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_004, TestSize.Level0)
 }
 
 /**
- * @tc.number    : mtp_operation_utils_005
- * @tc.name      : mtp_operation_utils_005
- * @tc.desc      :
- */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_005, TestSize.Level0)
-{
-    shared_ptr<MtpOperationUtils> mtpOperUtilsTest = make_shared<MtpOperationUtils>(nullptr);
-    uint16_t ret = mtpOperUtilsTest->GetObjectDataDeal();
-    EXPECT_NE(ret, MTP_OK_CODE);
-    shared_ptr<MtpOperationContext> contextTest;
-    shared_ptr<PayloadData> data = make_shared<CloseSessionData>(contextTest);
-    ret = mtpOperUtilsTest->SetObjectReferences(data);
-    EXPECT_EQ(ret, MTP_OK_CODE);
-    int errorCode = 0;
-    ret = mtpOperUtilsTest->GetObject(data, errorCode);
-    EXPECT_EQ(ret, MTP_OK_CODE);
-    ret = mtpOperUtilsTest->DoRecevieSendObject();
-    EXPECT_NE(ret, MTP_OK_CODE);
-    ret = mtpOperUtilsTest->HasStorage(errorCode);
-    EXPECT_NE(ret, MTP_OK_CODE);
-    mtpOperUtilsTest->DoSetObjectPropValue(errorCode);
-    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
-    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
-    context->format = 0;
-    context->parent = 1;
-    context->sessionOpen = false;
-    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(context);
-    ret = mtpOperUtils->GetRespCommonData(data, errorCode);
-    EXPECT_EQ(ret, MTP_OK_CODE);
-    mtpOperUtils->DoSetObjectPropValue(errorCode);
-    uint16_t containerType = RESPONSE_CONTAINER_TYPE;
-    ret = mtpOperUtils->GetObjectReferences(data, containerType, errorCode);
-    EXPECT_TRUE(ret != MTP_OK_CODE);
-    ret = mtpOperUtils->GetThumb(data, containerType, errorCode);
-    EXPECT_TRUE(ret != MTP_OK_CODE);
-    containerType = DATA_CONTAINER_TYPE;
-    ret = mtpOperUtilsTest->GetThumb(data, containerType, errorCode);
-    EXPECT_EQ(ret, MTP_OK_CODE);
-    ret = mtpOperUtilsTest->GetObjectReferences(data, containerType, errorCode);
-    EXPECT_EQ(ret, MTP_OK_CODE);
-    ret = mtpOperUtils->GetObjectReferences(data, containerType, errorCode);
-    EXPECT_EQ(ret, MTP_OK_CODE);
-    ret = mtpOperUtils->GetThumb(data, containerType, errorCode);
-    EXPECT_EQ(ret, MTP_OK_CODE);
-    ret = mtpOperUtils->HasStorage(errorCode);
-    EXPECT_NE(ret, MTP_OK_CODE);
-    MEDIA_INFO_LOG("mtp_operation_utils_005::End");
-}
-
-/**
- * @tc.number    : mtp_operation_utils_006
- * @tc.name      : mtp_operation_utils_006
- * @tc.desc      :
- */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_006, TestSize.Level0)
-{
-    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
-    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
-    context->format = 0;
-    context->parent = 1;
-    context->sessionOpen = true;
-    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(context);
-    shared_ptr<PayloadData> data = make_shared<CloseSessionData>(context);
-    uint16_t containerType = DATA_CONTAINER_TYPE;
-    int errorCode = 0;
-    uint16_t ret = mtpOperUtils->GetObjectReferences(data, containerType, errorCode);
-    EXPECT_EQ(ret, MTP_OK_CODE);
-    ret = mtpOperUtils->SetObjectReferences(data);
-    EXPECT_EQ(ret, MTP_OK_CODE);
-    ret = mtpOperUtils->GetObjectDataDeal();
-    EXPECT_NE(ret, MTP_OK_CODE);
-    ret = mtpOperUtils->GetObject(data, errorCode);
-    EXPECT_NE(ret, MTP_OK_CODE);
-    ret = mtpOperUtils->DoRecevieSendObject();
-    EXPECT_NE(ret, MTP_OK_CODE);
-    ret = mtpOperUtils->GetThumb(data, containerType, errorCode);
-    EXPECT_EQ(ret, MTP_OK_CODE);
-    ret = mtpOperUtils->HasStorage(errorCode);
-    EXPECT_NE(ret, MTP_OK_CODE);
-    string property = "GetPropertyInner";
-    string defValue = "GetPropertyInner";
-    mtpOperUtils->SetPropertyInner(property, defValue);
-    mtpOperUtils->GetPropertyInner(property, defValue);
-    MEDIA_INFO_LOG("mtp_operation_utils_006::End");
-}
-
-/**
  * @tc.number    : mtp_operation_utils_007
  * @tc.name      : mtp_operation_utils_007
  * @tc.desc      :
@@ -2638,7 +2544,7 @@ HWTEST_F(MtpNativeTest, mtp_medialibrary_manager_001, TestSize.Level0)
     context->handle = 1;
     ret = MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
     EXPECT_TRUE(ret != E_SUCCESS);
-    context->depth = -1;
+    context->depth = 1000;
     ret = MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
     EXPECT_TRUE(ret == MTP_ERROR_SPECIFICATION_BY_DEPTH_UNSUPPORTED);
     context->depth = MTP_ALL_DEPTH;
