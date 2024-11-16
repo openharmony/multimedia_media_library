@@ -34,7 +34,7 @@ namespace sf = std::filesystem;
 class MtpMediaLibrary {
 public:
     EXPORT MtpMediaLibrary() = default;
-    EXPORT virtual ~MtpMediaLibrary();
+    EXPORT virtual ~MtpMediaLibrary() = default;
     EXPORT static std::shared_ptr<MtpMediaLibrary> GetInstance();
 
     EXPORT void Init();

@@ -38,7 +38,12 @@ const std::string PUBLIC_REAL_PATH_PRE               = "/storage/media/";
 const std::string PUBLIC_REAL_PATH_END               = "/local/files/Docs";
 const std::string PUBLIC_DOC                         = "/storage/media/local/files/Docs";
 const std::string SD_DOC                             = "/storage/External";
-const std::string RECYCLE_NAME                       = ".Trash";
+const std::string TRASH_DIR_NAME                     = "/storage/media/local/files/Docs/.Trash";
+const std::string RECENT_DIR_NAME                    = "/storage/media/local/files/Docs/.Recent";
+const std::string THUMBS_DIR_NAME                    = "/storage/media/local/files/Docs/.thumbs";
+const std::string BACKUP_DIR_NAME                    = "/storage/media/local/files/Docs/.backup";
+const std::string APPDATA_DIR_NAME                   = "/storage/media/local/files/Docs/appdata";
+const std::string DESKTOP_NAME                       = "/storage/media/local/files/Docs/Desktop";
 const std::string PATH_SEPARATOR                     = "/";
 constexpr uint32_t BASE_USER_RANGE                   = 200000;
 constexpr int32_t NORMAL_WIDTH = 256;
@@ -59,11 +64,6 @@ enum HANDLE_DEFAULT_ID : uint32_t {
 
 std::atomic<uint32_t> MtpMediaLibrary::id_ = 0;
 std::shared_ptr<MtpMediaLibrary> MtpMediaLibrary::instance_ = nullptr;
-
-MtpMediaLibrary::~MtpMediaLibrary()
-{
-    Init();
-}
 
 std::shared_ptr<MtpMediaLibrary> MtpMediaLibrary::GetInstance()
 {
@@ -105,6 +105,23 @@ uint32_t MtpMediaLibrary::GetId()
     return id_++;
 }
 
+static bool IsHiddenDirectory(const std::string &dir)
+{
+    CHECK_AND_RETURN_RET_LOG(!dir.empty(), false, "dir is empty");
+    static const std::unordered_map<std::string, uint8_t> hiddenDirs = {
+        {TRASH_DIR_NAME, 0},
+        {RECENT_DIR_NAME, 0},
+        {THUMBS_DIR_NAME, 0},
+        {BACKUP_DIR_NAME, 0},
+        {APPDATA_DIR_NAME, 0},
+        {DESKTOP_NAME, 0}
+    };
+    if (hiddenDirs.find(dir) == hiddenDirs.end()) {
+        return false;
+    }
+    return true;
+}
+
 uint32_t MtpMediaLibrary::ScanDirNoDepth(const std::string &root, std::shared_ptr<UInt32List> &out)
 {
     CHECK_AND_RETURN_RET_LOG(out != nullptr, E_ERR, "out is nullptr");
@@ -119,7 +136,7 @@ uint32_t MtpMediaLibrary::ScanDirNoDepth(const std::string &root, std::shared_pt
             continue;
         }
         // show not recycle dir
-        if (sf::is_directory(entry.path(), ec) && entry.path().filename().string() == RECYCLE_NAME) {
+        if (sf::is_directory(entry.path(), ec) && IsHiddenDirectory(entry.path().string())) {
             continue;
         }
         uint32_t id = AddPathToMap(entry.path().string());
@@ -902,7 +919,7 @@ uint32_t MtpMediaLibrary::ScanDirWithType(const std::string &root,
             if (ec.value() != MTP_SUCCESS) {
                 continue;
             }
-            if (sf::is_directory(entry.path(), ec) && entry.path().filename().string() == RECYCLE_NAME) {
+            if (sf::is_directory(entry.path(), ec) && IsHiddenDirectory(entry.path().string())) {
                 continue;
             }
             out->emplace(AddPathToMap(entry.path().string()), entry.path().string());
@@ -926,7 +943,7 @@ uint32_t MtpMediaLibrary::ScanDirTraverseWithType(const std::string &root,
             if (ec.value() != MTP_SUCCESS) {
                 continue;
             }
-            if (sf::is_directory(entry.path(), ec) && entry.path().filename().string() == RECYCLE_NAME) {
+            if (sf::is_directory(entry.path(), ec) && IsHiddenDirectory(entry.path().string())) {
                 continue;
             }
             out->emplace(AddPathToMap(entry.path().string()), entry.path().string());
@@ -989,7 +1006,7 @@ void MtpMediaLibrary::GetExternalStorages()
     std::error_code ec;
     CHECK_AND_RETURN_LOG(sf::exists(SD_DOC, ec) && sf::is_directory(SD_DOC, ec), "SD_DOC is not exists");
     for (const auto& entry : sf::directory_iterator(SD_DOC, ec)) {
-        if (!sf::is_directory(entry.path(), ec) || entry.path().filename().string() == RECYCLE_NAME) {
+        if (!sf::is_directory(entry.path(), ec) || IsHiddenDirectory(entry.path().string())) {
             continue;
         }
         MEDIA_INFO_LOG("Mtp GetExternalStorages path[%{public}s]", entry.path().c_str());
