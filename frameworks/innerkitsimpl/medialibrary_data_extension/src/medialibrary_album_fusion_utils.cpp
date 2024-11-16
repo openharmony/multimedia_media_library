@@ -55,6 +55,10 @@ const std::string ALBUM_FUSION_UPGRADE_STATUS_FLAG = "persist.multimedia.mediali
 const int32_t ALBUM_FUSION_UPGRADE_SUCCESS = 1;
 const int32_t ALBUM_FUSION_UPGRADE_FAIL = 0;
 const int32_t ALBUM_FUSION_BATCH_COUNT = 200;
+const string SQL_GET_DUPLICATE_PHOTO = "SELECT p.file_id FROM Photos p "
+            "LEFT JOIN PhotoAlbum a ON p.owner_album_id = a.album_id "
+            "WHERE p.dirty = 7 AND a.album_id IS NULL LIMIT 500";
+
 
 static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {MediaColumn::MEDIA_SIZE, ResultSetDataType::TYPE_INT64},
@@ -203,7 +207,7 @@ static int32_t IfHandledDataCountMatched(const std::shared_ptr<MediaLibraryRdbSt
     }
     return E_DB_FAIL;
 }
- 
+
 int32_t MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
 {
     MEDIA_INFO_LOG("ALBUM_FUSE: STEP_1: Start handle matched relationship");
@@ -1482,7 +1486,7 @@ int32_t MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus()
         return ALBUM_FUSION_UPGRADE_FAIL;
     }
 }
- 
+
 int32_t MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(int32_t upgradeStatus)
 {
     if (upgradeStatus != ALBUM_FUSION_UPGRADE_SUCCESS && upgradeStatus != ALBUM_FUSION_UPGRADE_FAIL) {
@@ -1504,6 +1508,78 @@ static std::string ToLower(const std::string &str)
     std::transform(
         str.begin(), str.end(), std::back_inserter(lowerStr), [](unsigned char c) { return std::tolower(c); });
     return lowerStr;
+}
+
+static int32_t DeleteDuplicatePhoto(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    const string sql = "UPDATE Photos SET dirty = 8 WHERE file_id IN ( " +
+        SQL_GET_DUPLICATE_PHOTO + " )";
+
+    int32_t err = store->ExecuteSql(sql);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("DeleteDuplicatePhoto fail %{public}d", err);
+    }
+    return err;
+}
+
+void DuplicateDebugPrint(const vector<int32_t> &idArr)
+{
+    constexpr int32_t maxPrintWidth = 50;
+    string assetStr;
+    for (auto assetId: idArr) {
+        assetStr += to_string(assetId) + ",";
+        if (assetStr.size() > maxPrintWidth) {
+            MEDIA_DEBUG_LOG("delete dup photo %{public}s", assetStr.c_str());
+            assetStr = "";
+        }
+    }
+    if (assetStr.size() != 0) {
+        MEDIA_DEBUG_LOG("delete dup photo %{public}s", assetStr.c_str());
+    }
+}
+
+void DuplicateDebug(std::shared_ptr<NativeRdb::ResultSet> resultSet, vector<int32_t> &idArr)
+{
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t colIndex = -1;
+        int32_t assetId = 0;
+        resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, colIndex);
+        if (resultSet->GetInt(colIndex, assetId) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("db error");
+            break;
+        }
+        idArr.push_back(assetId);
+    }
+}
+
+static int32_t HandleDuplicatePhoto(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    int32_t row = 0;
+    int32_t count = 0;
+    // set max loop count to avoid trapped in loop if delete fail
+    constexpr int32_t maxLoopCount = 1000;
+    do {
+        count++;
+        shared_ptr<NativeRdb::ResultSet> resultSet = store->QuerySql(SQL_GET_DUPLICATE_PHOTO);
+        if (resultSet == nullptr || resultSet->GetRowCount(row) != NativeRdb::E_OK) {
+            MEDIA_INFO_LOG("rdb fail");
+            return E_DB_FAIL;
+        }
+        MEDIA_INFO_LOG("duplicate photo %{public}d, need to delete", row);
+        if (row == 0) {
+            return E_OK;
+        }
+        vector<int32_t> idArr;
+        DuplicateDebug(resultSet, idArr);
+        auto err = DeleteDuplicatePhoto(store);
+        if (err == NativeRdb::E_OK) {
+            DuplicateDebugPrint(idArr);
+        } else {
+            MEDIA_ERR_LOG("duplicate photo %{public}d, delete fail %{public}d", row, err);
+        }
+    } while (row > 0 && count < maxLoopCount);
+
+    return E_OK;
 }
 
 int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
@@ -1722,6 +1798,7 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
         }
     }
     HandleDuplicateAlbum(rdbStore);
+    HandleDuplicatePhoto(rdbStore);
     // Put no relationship asset into other album
     HandleNoOwnerData(rdbStore);
     // Clean duplicative album and rebuild expired album
