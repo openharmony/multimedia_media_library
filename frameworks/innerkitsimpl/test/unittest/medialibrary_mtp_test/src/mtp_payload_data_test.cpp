@@ -18,7 +18,6 @@
 #include "mtp_constants.h"
 #include "mtp_storage_manager.h"
 #include "property.h"
-#define private public
 #include "payload_data/close_session_data.h"
 #include "payload_data/copy_object_data.h"
 #include "payload_data/delete_object_data.h"
@@ -46,7 +45,6 @@
 #include "payload_data/send_object_info_data.h"
 #include "payload_data/set_device_prop_value_data.h"
 #include "payload_data/set_object_references_data.h"
-#undef private
 
 using namespace std;
 using namespace testing::ext;

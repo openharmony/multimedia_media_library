@@ -16,9 +16,7 @@
 #include "medialibrary_errno.h"
 #include "mtp_storage_manager.h"
 #include "medialibrary_mtp_unit_test.h"
-#define private public
 #include "payload_data/set_object_prop_value_data.h"
-#undef private
 using namespace std;
 using namespace testing::ext;
 static constexpr int32_t SIZE_NUM_BIG = 30;

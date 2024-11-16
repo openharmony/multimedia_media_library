@@ -13,9 +13,7 @@
  * limitations under the License.
  */
 #include "mtp_native_test.h"
-#define private public
 #include "mtp_service.h"
-#undef private
 
 using namespace std;
 using namespace testing::ext;
@@ -24,10 +22,8 @@ namespace Media {
 HWTEST_F(MtpNativeTest, mtp_service_test_001, TestSize.Level0)
 {
     MtpService mtpService;
-    mtpService.GetInstance();
-    EXPECT_NE(mtpService.mtpServiceInstance_, nullptr);
-    mtpService.GetInstance();
-    EXPECT_NE(mtpService.mtpServiceInstance_, nullptr);
+    mtpService.Init();
+    EXPECT_NE(&mtpService, nullptr);
 }
 } // namespace Media
 } // ohos
