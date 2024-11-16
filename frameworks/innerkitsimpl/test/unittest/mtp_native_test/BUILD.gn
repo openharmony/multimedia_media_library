@@ -48,6 +48,8 @@ if (defined(medialibrary_mtp_enable)) {
       "./src/mtp_test.cpp",
     ]
 
+    cflags = [ "-fno-access-control" ]
+
     deps = [
       "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
       "${MEDIALIB_INNERKITS_PATH}/media_library_manager:media_library_manager",
@@ -87,6 +89,7 @@ if (defined(medialibrary_mtp_enable)) {
       debug = false
     }
 
+    defines = [ "MEDIALIBRARY_MTP_ENABLE=1" ]
     if (defined(global_parts_info.powermgr_battery_manager)) {
       external_deps += [ "battery_manager:batterysrv_client" ]
       cflags_cc = [ "-DHAS_BATTERY_MANAGER_PART" ]

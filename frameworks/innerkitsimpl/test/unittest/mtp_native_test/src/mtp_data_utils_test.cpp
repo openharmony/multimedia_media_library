@@ -13,9 +13,7 @@
  * limitations under the License.
  */
 #include "mtp_native_test.h"
-#define private public
 #include "mtp_data_utils.h"
-#undef private
 
 using namespace std;
 using namespace testing::ext;
