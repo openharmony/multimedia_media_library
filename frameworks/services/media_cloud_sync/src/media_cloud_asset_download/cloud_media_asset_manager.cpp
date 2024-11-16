@@ -120,7 +120,8 @@ int32_t CloudMediaAssetManager::RecoverDownloadCloudAsset(const CloudMediaTaskRe
 int32_t CloudMediaAssetManager::PauseDownloadCloudAsset(const CloudMediaTaskPauseCause &pauseCause)
 {
     if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
-        return E_ERR;
+        MEDIA_INFO_LOG("no need to pause");
+        return E_OK;
     }
     int32_t ret = operation_->PauseDownloadTask(pauseCause);
     MEDIA_INFO_LOG("end to PauseDownloadCloudAsset, status: %{public}s, ret: %{public}d.",
@@ -131,7 +132,8 @@ int32_t CloudMediaAssetManager::PauseDownloadCloudAsset(const CloudMediaTaskPaus
 int32_t CloudMediaAssetManager::CancelDownloadCloudAsset()
 {
     if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
-        return E_ERR;
+        MEDIA_INFO_LOG("no need to cancel");
+        return E_OK;
     }
     int32_t ret = operation_->CancelDownloadTask();
     operation_.reset();
@@ -173,7 +175,7 @@ int32_t CloudMediaAssetManager::DataReadyForDelete(std::shared_ptr<NativeRdb::Re
             MEDIA_WARN_LOG("Failed to get path!");
             continue;
         }
-        MEDIA_WARN_LOG("get path: %{public}s.", path.c_str());
+        MEDIA_WARN_LOG("get path: %{public}s.", MediaFileUtils::DesensitizePath(path).c_str());
 
         pathVec.push_back(path);
         if (pathVec.size() == BATCH_DELETE_CLOUD_FILE) {
@@ -182,16 +184,18 @@ int32_t CloudMediaAssetManager::DataReadyForDelete(std::shared_ptr<NativeRdb::Re
         }
         size_t pos = path.find(PHOTO_RELATIVE_PATH);
         if (pos == string::npos) {
-            MEDIA_INFO_LOG("The path is invalid, path: %{public}s.", path.c_str());
+            MEDIA_INFO_LOG("The path is invalid, path: %{public}s.", MediaFileUtils::DesensitizePath(path).c_str());
             continue;
         }
         std::string thumbnailPath = path.replace(pos, PHOTO_RELATIVE_PATH.length(), THUMBNAIL_RELATIVE_PATH);
         if (!MediaFileUtils::IsFileExists(thumbnailPath)) {
-            MEDIA_INFO_LOG("Thumbnail path not exit, path: %{public}s.", thumbnailPath.c_str());
+            MEDIA_INFO_LOG("Thumbnail path not exit, path: %{public}s.",
+                MediaFileUtils::DesensitizePath(thumbnailPath).c_str());
             continue;
         }
         if (!MediaFileUtils::DeleteDir(thumbnailPath)) {
-            MEDIA_INFO_LOG("Delete thumbnail path failed, path: %{public}s.", thumbnailPath.c_str());
+            MEDIA_INFO_LOG("Delete thumbnail path failed, path: %{public}s.",
+                MediaFileUtils::DesensitizePath(thumbnailPath).c_str());
         }
     }
     resultSet->Close();
