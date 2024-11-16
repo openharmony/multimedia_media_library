@@ -923,6 +923,7 @@ static void DeleteAssetsCompleteCallback(napi_env env, napi_status status, void*
 
 napi_value MediaAssetChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callback_info info)
 {
+    NAPI_INFO_LOG("enter");
     MediaLibraryTracer tracer;
     tracer.Start("JSDeleteAssets");
 

@@ -7689,6 +7689,7 @@ static void PhotoAccessHelperTrashExecute(napi_env env, void *data)
 
 napi_value MediaLibraryNapi::PhotoAccessHelperTrashAsset(napi_env env, napi_callback_info info)
 {
+    NAPI_INFO_LOG("enter");
     napi_value ret = nullptr;
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
