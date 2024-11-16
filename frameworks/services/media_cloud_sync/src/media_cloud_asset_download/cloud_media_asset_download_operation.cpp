@@ -228,7 +228,7 @@ CloudMediaAssetDownloadOperation::DownloadFileData CloudMediaAssetDownloadOperat
         std::string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSetForDownload);
         if (fileId.empty() || path.empty()) {
             MEDIA_ERR_LOG("empty fileId or filePath, fileId: %{public}s, filePath: %{public}s.",
-                fileId.c_str(), path.c_str());
+                fileId.c_str(), MediaFileUtils::DesensitizePath(path).c_str());
             continue;
         }
         int64_t fileSize = GetInt64Val(PhotoColumn::MEDIA_SIZE, resultSetForDownload);
@@ -517,7 +517,8 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
     if (progress.downloadId != downloadId_ ||
         dataForDownload_.fileDownloadMap.find(progress.path) == dataForDownload_.fileDownloadMap.end()) {
         MEDIA_WARN_LOG("this path is unknown, path: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
-            progress.path.c_str(), to_string(progress.downloadId).c_str(), to_string(downloadId_).c_str());
+            MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
+            to_string(downloadId_).c_str());
         return;
     }
 
@@ -529,9 +530,10 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
     dataForDownload_.fileDownloadMap.erase(progress.path);
 
     MEDIA_INFO_LOG("success, path: %{public}s, size: %{public}s, batchSuccNum: %{public}s.",
-        progress.path.c_str(), to_string(size).c_str(), to_string(progress.batchSuccNum).c_str());
+        MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(size).c_str(),
+        to_string(progress.batchSuccNum).c_str());
 
-    if (taskStatus_ == CloudMediaAssetTaskStatus::PAUSED && progress.downloadId == downloadIdCache_ &&
+    if (taskStatus_ == CloudMediaAssetTaskStatus::PAUSED && progress.downloadId == downloadId_ &&
         cacheForDownload_.fileDownloadMap.find(progress.path) == cacheForDownload_.fileDownloadMap.end()) {
         fileNumCache_--;
         MEDIA_INFO_LOG("wait for callback, fileNumCache: %{public}d.", fileNumCache_);
@@ -551,13 +553,15 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
 
 void CloudMediaAssetDownloadOperation::MoveDownloadFileToCache(const DownloadProgressObj& progress)
 {
-    if (progress.downloadId != downloadIdCache_) {
+    if (progress.downloadId != downloadId_) {
         MEDIA_ERR_LOG("This file is unknown, path: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
-            progress.path.c_str(), to_string(progress.downloadId).c_str(), to_string(downloadId_).c_str());
+            MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
+            to_string(downloadId_).c_str());
         return;
     }
     if (cacheForDownload_.fileDownloadMap.find(progress.path) != cacheForDownload_.fileDownloadMap.end()) {
-        MEDIA_INFO_LOG("file is in fileDownloadCacheMap_, path: %{public}s.", progress.path.c_str());
+        MEDIA_INFO_LOG("file is in fileDownloadCacheMap_, path: %{public}s.",
+            MediaFileUtils::DesensitizePath(progress.path).c_str());
         return;
     }
     cacheForDownload_.pathVec.push_back(progress.path);
@@ -568,7 +572,7 @@ void CloudMediaAssetDownloadOperation::MoveDownloadFileToCache(const DownloadPro
         downloadId_ = DOWNLOAD_ID_DEFAULT;
         SubmitBatchDownload(cacheForDownload_, true);
     }
-    MEDIA_INFO_LOG("success, path: %{public}s.", progress.path.c_str());
+    MEDIA_INFO_LOG("success, path: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
 }
 
 void CloudMediaAssetDownloadOperation::MoveDownloadFileToNotFound(const DownloadProgressObj& progress)
@@ -576,17 +580,19 @@ void CloudMediaAssetDownloadOperation::MoveDownloadFileToNotFound(const Download
     if (progress.downloadId != downloadId_ ||
         dataForDownload_.fileDownloadMap.find(progress.path) != dataForDownload_.fileDownloadMap.end()) {
         MEDIA_ERR_LOG("This file is known, path: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
-            progress.path.c_str(), to_string(progress.downloadId).c_str(), to_string(downloadId_).c_str());
+            MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
+            to_string(downloadId_).c_str());
         return;
     }
     if (notFoundForDownload_.fileDownloadMap.find(progress.path) != notFoundForDownload_.fileDownloadMap.end()) {
-        MEDIA_INFO_LOG("file is in notFoundForDownload_, path: %{public}s.", progress.path.c_str());
+        MEDIA_INFO_LOG("file is in notFoundForDownload_, path: %{public}s.",
+            MediaFileUtils::DesensitizePath(progress.path).c_str());
         return;
     }
     notFoundForDownload_.fileDownloadMap[progress.path] = dataForDownload_.fileDownloadMap.at(progress.path);
     downloadNum_--;
     dataForDownload_.fileDownloadMap.erase(progress.path);
-    MEDIA_INFO_LOG("success, path: %{public}s.", progress.path.c_str());
+    MEDIA_INFO_LOG("success, path: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
 }
 
 void CloudMediaAssetDownloadOperation::MoveAllDownloadFileToCache(const DownloadProgressObj& progress)
@@ -603,7 +609,7 @@ void CloudMediaAssetDownloadOperation::MoveAllDownloadFileToCache(const Download
 void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgressObj& progress)
 {
     MEDIA_INFO_LOG("Download error type: %{public}d, path: %{public}s.", progress.downloadErrorType,
-        progress.path.c_str());
+        MediaFileUtils::DesensitizePath(progress.path).c_str());
     switch (progress.downloadErrorType) {
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::UNKNOWN_ERROR): {
             SetTaskStatus(Status::PAUSE_FOR_CLOUD_ERROR);
@@ -638,7 +644,7 @@ void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgre
 
 void CloudMediaAssetDownloadOperation::HandleStoppedCallback(const DownloadProgressObj& progress)
 {
-    MEDIA_INFO_LOG("enter DownloadStopped, path: %{public}s.", progress.path.c_str());
+    MEDIA_INFO_LOG("enter DownloadStopped, path: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
     MoveDownloadFileToCache(progress);
 }
 
@@ -659,8 +665,8 @@ CloudMediaTaskPauseCause CloudMediaAssetDownloadOperation::GetTaskPauseCause()
 
 std::string CloudMediaAssetDownloadOperation::GetTaskInfo()
 {
-    return to_string(static_cast<int64_t>(totalCount_)) + "," + to_string(static_cast<int64_t>(totalSize_)) + "," +
-        to_string(static_cast<int64_t>(remainCount_)) + "," + to_string(static_cast<int64_t>(remainSize_));
+    return to_string(totalCount_) + "," + to_string(totalSize_) + "," +
+        to_string(remainCount_) + "," + to_string(remainSize_);
 }
 } // namespace Media
 } // namespace OHOS
