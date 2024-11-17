@@ -2262,15 +2262,15 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     auto changeOpreations = context.assetChangeOperations;
     bool containsAddResource = std::find(changeOpreations.begin(), changeOpreations.end(),
         AssetChangeOperation::ADD_RESOURCE) != changeOpreations.end();
-    DataShare::DataShareValuesBucket valuesBucket;
+    std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
     if (containsAddResource && !MediaLibraryNapiUtils::IsSystemApp()) {
         // remove high quality photo
         NAPI_INFO_LOG("discard high quality photo because add resource by third app");
         DiscardHighQualityPhoto(context);
 
-        // update photo_quality and dirty flag
-        valuesBucket.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
-        valuesBucket.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+        // update photo_quality and dirty flag for save camera photo
+        MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_DIRTY,
+            to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)));
     }
 
     // The watermark will trigger the scan. If the watermark is turned on, there is no need to trigger the scan again.
@@ -2286,7 +2286,7 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
         NAPI_ERR_LOG("fileAsset is nullptr");
         return false;
     }
-    std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
+    
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, to_string(needScan));
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_FILE_PATH, fileAsset->GetUri());
@@ -2296,6 +2296,7 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, IMAGE_FILE_TYPE,
         to_string(context.objectInfo->GetImageFileType()));
     Uri uri(uriStr);
+    DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
     DataShare::DataSharePredicates predicates;
     auto ret = UserFileClient::Update(uri, predicates, valuesBucket);
