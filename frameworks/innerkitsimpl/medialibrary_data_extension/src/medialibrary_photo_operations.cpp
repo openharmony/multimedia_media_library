@@ -879,10 +879,8 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
             return E_ERR;
         }
         if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-            if (!dirty) {
-                predicates.EqualTo(PhotoColumn::PHOTO_QUALITY,
-                    to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
-            }
+            predicates.EqualTo(PhotoColumn::PHOTO_QUALITY,
+                to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
             predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
                 to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
             ValuesBucket valuesBucketDirty;
