@@ -851,6 +851,7 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
+    bool dirty = cmd.GetQuerySetParam(PhotoColumn::PHOTO_DIRTY) == to_string(static_cast<int32_t>(DirtyType::TYPE_NEW));
 
     int32_t updateDirtyRows = 0;
     string subTypeStr = cmd.GetQuerySetParam(PhotoColumn::PHOTO_SUBTYPE);
@@ -869,14 +870,19 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
             return E_ERR;
         }
     } else {
+        if (dirty) {
+            values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+        }
         int32_t updateIsTempRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
         if (updateIsTempRows < 0) {
             MEDIA_ERR_LOG("update temp flag fail.");
             return E_ERR;
         }
         if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-            predicates.EqualTo(PhotoColumn::PHOTO_QUALITY,
-                to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
+            if (!dirty) {
+                predicates.EqualTo(PhotoColumn::PHOTO_QUALITY,
+                    to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
+            }
             predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
                 to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
             ValuesBucket valuesBucketDirty;
