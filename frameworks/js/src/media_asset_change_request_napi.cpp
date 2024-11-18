@@ -2268,7 +2268,7 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
         NAPI_INFO_LOG("discard high quality photo because add resource by third app");
         DiscardHighQualityPhoto(context);
 
-        // set dirty flag for saving camera photo
+        // set dirty flag when third-party hap calling addResource to save camera photo
         MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_DIRTY,
             to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)));
     }
