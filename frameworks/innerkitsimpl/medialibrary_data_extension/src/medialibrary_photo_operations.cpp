@@ -851,7 +851,7 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-    // Only third-party apps will bring dirty in cmd
+    // Only third-party apps will bring dirty flag in MediaLibraryCommand
     bool isDirty =
         (cmd.GetQuerySetParam(PhotoColumn::PHOTO_DIRTY) == to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)));
 
@@ -872,8 +872,10 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
             return E_ERR;
         }
     } else {
-        // When a third-party app brings dirty, need to first change the quality to high quality before updating
         if (isDirty) {
+            // Only third-party app save photo, it will bring dirty flag
+            // The photo saved by third-party apps, whether of low or high quality, should set dirty to TYPE_NEW
+            // Need to change the quality to high quality before updating
             values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
         }
         int32_t updateIsTempRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
