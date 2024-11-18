@@ -61,10 +61,12 @@ namespace Media {
 using namespace FileManagement::CloudSync;
 using Status = CloudMediaAssetDownloadOperation::Status;
 std::mutex CloudMediaAssetDownloadOperation::mutex_;
+std::mutex CloudMediaAssetDownloadOperation::callbackMutex_;
 std::shared_ptr<CloudMediaAssetDownloadOperation> CloudMediaAssetDownloadOperation::instance_ = nullptr;
 static const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_HOT = 3;
-static const int32_t BATCH_DOWNLOAD_CLOUD_FILE = 400;
+static const int32_t BATCH_DOWNLOAD_CLOUD_FILE = 50;
 static constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
+static constexpr int CLOUD_MANAGER_MANAGER_ID = 5204;
 static const std::string CLOUD_DATASHARE_URI = "datashareproxy://generic.cloudstorage/cloud_sp?Proxy=true";
 static const std::string CLOUD_URI = CLOUD_DATASHARE_URI + "&key=useMobileNetworkData";
 static const int64_t DOWNLOAD_ID_DEFAULT = -1;
@@ -102,6 +104,21 @@ static const std::map<CloudMediaTaskRecoverCause, CloudMediaTaskPauseCause> RECO
     { CloudMediaTaskRecoverCause::RETRY_FOR_FREQUENT_REQUESTS, CloudMediaTaskPauseCause::FREQUENT_USER_REQUESTS },
     { CloudMediaTaskRecoverCause::RETRY_FOR_CLOUD_ERROR, CloudMediaTaskPauseCause::CLOUD_ERROR },
 };
+
+void CloudDeathRecipient::OnRemoteDied(const wptr<IRemoteObject> &object)
+{
+    MEDIA_INFO_LOG("enter.");
+    if (!operation_) {
+        MEDIA_ERR_LOG("operation is nullptr");
+        return;
+    }
+    if (object == nullptr) {
+        MEDIA_ERR_LOG("remote object is nullptr");
+        return;
+    }
+    object->RemoveDeathRecipient(this);
+    operation_->CancelDownloadTask();
+}
 
 std::shared_ptr<CloudMediaAssetDownloadOperation> CloudMediaAssetDownloadOperation::GetInstance()
 {
@@ -256,7 +273,6 @@ int32_t CloudMediaAssetDownloadOperation::SubmitBatchDownload(
     if (IsDataEmpty(datas)) {
         MEDIA_INFO_LOG("No data need to submit.");
         if (!isCache_) {
-            SetTaskStatus(Status::IDLE);
             CancelDownloadTask();
             return EXIT_TASK;
         }
@@ -309,6 +325,25 @@ void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &i
     }
 }
 
+int32_t CloudMediaAssetDownloadOperation::SetDeathRecipient()
+{
+    auto saMgr = OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (saMgr == nullptr) {
+        MEDIA_ERR_LOG("Failed to get SystemAbilityManagerClient");
+        return E_ERR;
+    }
+    cloudRemoteObject_ = saMgr->CheckSystemAbility(CLOUD_MANAGER_MANAGER_ID);
+    if (cloudRemoteObject_ == nullptr) {
+        MEDIA_ERR_LOG("Token is null.");
+        return E_ERR;
+    }
+    if (!cloudRemoteObject_->AddDeathRecipient(sptr(new CloudDeathRecipient(instance_)))) {
+        MEDIA_ERR_LOG("Failed to add death recipient.");
+        return E_ERR;
+    }
+    return E_OK;
+}
+
 int32_t CloudMediaAssetDownloadOperation::DoRelativedRegister()
 {
     // register unlimit traffic status
@@ -332,6 +367,11 @@ int32_t CloudMediaAssetDownloadOperation::DoRelativedRegister()
     int32_t ret = cloudSyncManager_.get().RegisterDownloadFileCallback(downloadCallback_);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("failed to register downloadCallback, ret: %{public}d.", ret);
+        return ret;
+    }
+    ret = SetDeathRecipient();
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("failed to register death recipient, ret: %{public}d.", ret);
         return ret;
     }
     MEDIA_INFO_LOG("success to register");
@@ -358,13 +398,15 @@ int32_t CloudMediaAssetDownloadOperation::DoForceTaskExecute()
 
 int32_t CloudMediaAssetDownloadOperation::StartDownloadTask(int32_t cloudMediaDownloadType)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("StartDownloadTask");
     if (taskStatus_ != CloudMediaAssetTaskStatus::IDLE) {
         MEDIA_ERR_LOG("permission denied");
         return E_ERR;
     }
     MEDIA_INFO_LOG("enter, download type: %{public}d", cloudMediaDownloadType);
     int32_t ret = DoRelativedRegister();
-    if (ret < 0) {
+    if (ret != E_OK) {
         return ret;
     }
     if (cloudMediaDownloadType == static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE)) {
@@ -451,6 +493,8 @@ int32_t CloudMediaAssetDownloadOperation::PassiveStatusRecoverTask(const CloudMe
 
 int32_t CloudMediaAssetDownloadOperation::PauseDownloadTask(const CloudMediaTaskPauseCause &pauseCause)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("PauseDownloadTask");
     if (taskStatus_ == CloudMediaAssetTaskStatus::IDLE || pauseCause_ == CloudMediaTaskPauseCause::USER_PAUSED) {
         MEDIA_ERR_LOG("PauseDownloadTask permission denied");
         return E_ERR;
@@ -495,14 +539,14 @@ int32_t CloudMediaAssetDownloadOperation::CancelDownloadTask()
         MEDIA_ERR_LOG("CancelDownloadTask permission denied");
         return E_ERR;
     }
+    int32_t ret = cloudSyncManager_.get().UnregisterDownloadFileCallback();
     SetTaskStatus(Status::IDLE);
     if (downloadId_ != DOWNLOAD_ID_DEFAULT) {
         cloudSyncManager_.get().StopFileCache(downloadId_, NEED_CLEAN);
     }
-
-    int32_t ret = cloudSyncManager_.get().UnregisterDownloadFileCallback();
     ResetParameter();
     downloadCallback_ = nullptr;
+    cloudRemoteObject_ = nullptr;
     if (cloudHelper_ == nullptr) {
         return ret;
     }
@@ -514,6 +558,8 @@ int32_t CloudMediaAssetDownloadOperation::CancelDownloadTask()
 
 void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgressObj& progress)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("HandleSuccessCallback");
     if (progress.downloadId != downloadId_ ||
         dataForDownload_.fileDownloadMap.find(progress.path) == dataForDownload_.fileDownloadMap.end()) {
         MEDIA_WARN_LOG("this path is unknown, path: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
@@ -528,6 +574,7 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
     hasDownloadNum_++;
     hasDownloadSize_ += size;
     dataForDownload_.fileDownloadMap.erase(progress.path);
+    downloadNum_--;
 
     MEDIA_INFO_LOG("success, path: %{public}s, size: %{public}s, batchSuccNum: %{public}s.",
         MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(size).c_str(),
@@ -544,7 +591,7 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
         }
     }
 
-    if (progress.batchSuccNum == downloadNum_) {
+    if (downloadNum_ == 0) {
         MEDIA_INFO_LOG("success download %{public}s files.", to_string(progress.batchSuccNum).c_str());
         downloadId_ = DOWNLOAD_ID_DEFAULT;
         SubmitBatchDownload(readyForDownload_, false);
@@ -553,6 +600,7 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
 
 void CloudMediaAssetDownloadOperation::MoveDownloadFileToCache(const DownloadProgressObj& progress)
 {
+    std::lock_guard<std::mutex> lock(callbackMutex_);
     if (progress.downloadId != downloadId_) {
         MEDIA_ERR_LOG("This file is unknown, path: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
             MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
@@ -595,19 +643,14 @@ void CloudMediaAssetDownloadOperation::MoveDownloadFileToNotFound(const Download
     MEDIA_INFO_LOG("success, path: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
 }
 
-void CloudMediaAssetDownloadOperation::MoveAllDownloadFileToCache(const DownloadProgressObj& progress)
-{
-    fileNumCache_ = 0;
-    cacheForDownload_ = dataForDownload_;
-    cacheForDownload_.pathVec.clear();
-    for (const auto& cacheMap : cacheForDownload_.fileDownloadMap) {
-        cacheForDownload_.pathVec.push_back(cacheMap.first);
-    }
-    MEDIA_INFO_LOG("success, count: %{public}d.", static_cast<int32_t>(cacheForDownload_.pathVec.size()));
-}
-
 void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgressObj& progress)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("HandleFailedCallback");
+    if (taskStatus_ == CloudMediaAssetTaskStatus::PAUSED && pauseCause_ == CloudMediaTaskPauseCause::USER_PAUSED) {
+        MEDIA_INFO_LOG("pauseCause_ is USER_PAUSED");
+        return;
+    }
     MEDIA_INFO_LOG("Download error type: %{public}d, path: %{public}s.", progress.downloadErrorType,
         MediaFileUtils::DesensitizePath(progress.path).c_str());
     switch (progress.downloadErrorType) {
@@ -618,7 +661,7 @@ void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgre
         }
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::NETWORK_UNAVAILABLE): {
             SetTaskStatus(Status::PAUSE_FOR_WIFI_UNAVAILABLE);
-            MoveAllDownloadFileToCache(progress);
+            MoveDownloadFileToCache(progress);
             break;
         }
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::LOCAL_STORAGE_FULL): {
@@ -644,6 +687,8 @@ void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgre
 
 void CloudMediaAssetDownloadOperation::HandleStoppedCallback(const DownloadProgressObj& progress)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("HandleStoppedCallback");
     MEDIA_INFO_LOG("enter DownloadStopped, path: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
     MoveDownloadFileToCache(progress);
 }

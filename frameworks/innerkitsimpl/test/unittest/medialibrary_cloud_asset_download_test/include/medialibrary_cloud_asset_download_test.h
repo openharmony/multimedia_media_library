@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,20 +13,21 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_CLOUD_SYNC_UTILS_H
-#define OHOS_CLOUD_SYNC_UTILS_H
+#ifndef FRAMEWORKS_SERVICES_MEDIALIBRARY_CLOUD_ASSET_DOWNLOAD_TEST_H
+#define FRAMEWORKS_SERVICES_MEDIALIBRARY_CLOUD_ASSET_DOWNLOAD_TEST_H
+
+#include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {
-#define EXPORT __attribute__ ((visibility ("default")))
-class CloudSyncUtils {
+class MediaLibraryCloudAssetDownloadTest : public testing::Test {
 public:
-    CloudSyncUtils();
-    ~CloudSyncUtils();
-    static bool IsUnlimitedTrafficStatusOn();
-    static bool IsCloudSyncSwitchOn();
-    static bool IsCloudDataAgingPolicyOn();
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
 };
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_CLOUD_SYNC_UTILS_H
+
+#endif // FRAMEWORKS_SERVICES_MEDIALIBRARY_CLOUD_ASSET_DOWNLOAD_TEST_H

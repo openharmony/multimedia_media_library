@@ -28,6 +28,7 @@
 #include "acl.h"
 #include "background_cloud_file_processor.h"
 #include "background_task_mgr_helper.h"
+#include "cloud_media_asset_manager.h"
 #include "cloud_sync_switch_observer.h"
 #include "datashare_abs_result_set.h"
 #ifdef DISTRIBUTED
@@ -44,7 +45,6 @@
 #include "location_column.h"
 #include "media_analysis_helper.h"
 #include "media_column.h"
-#include "cloud_media_asset_manager.h"
 #include "media_datashare_ext_ability.h"
 #include "media_directory_type_column.h"
 #include "media_file_utils.h"
@@ -970,10 +970,6 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
-    }
-
-    if (cmd.GetOprnObject() == OperationObject::CLOUD_MEDIA_ASSET_OPERATE) {
-        return CloudMediaAssetManager::GetInstance().HandleCloudMediaAssetUpdateOperations(cmd);
     }
 
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
