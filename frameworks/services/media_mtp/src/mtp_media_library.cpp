@@ -995,7 +995,6 @@ int MtpMediaLibrary::GetStorageIds()
     {
         WriteLock lock(g_mutex);
         AddToHandlePathMap(PUBLIC_DOC, PUBLIC_DOC_ID);
-        GetExternalStorages();
     }
     return MTP_SUCCESS;
 }
