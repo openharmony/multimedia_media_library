@@ -75,12 +75,12 @@ static inline uint32_t FuzzUInt32(const uint8_t *data, size_t size)
     return static_cast<uint32_t>(*data);
 }
 
-static inline int32_t FuzzBool(const uint8_t *data, size_t size)
+static inline bool FuzzBool(const uint8_t* data, size_t size)
 {
-    if (size % isEven == 0) {
-        return true;
+    if (size == 0) {
+        return false;
     }
-    return false;
+    return (data[0] % isEven) == 0;
 }
 
 static inline string FuzzString(const uint8_t *data, size_t size)
