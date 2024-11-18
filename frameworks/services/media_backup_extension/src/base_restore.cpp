@@ -189,18 +189,16 @@ int32_t BaseRestore::IsFileValid(FileInfo &fileInfo, const int32_t sceneCode)
     }
 
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
-        errCode = MediaFileUtils::IsFileValid(fileInfo.movingPhotoVideoPath);
-        if (errCode != E_OK) {
+        if (!MediaFileUtils::IsFileValid(fileInfo.movingPhotoVideoPath)) {
             MEDIA_ERR_LOG("Moving photo video is not valid: %{public}s, errno=%{public}d.",
                 BackupFileUtils::GarbleFilePath(fileInfo.movingPhotoVideoPath, sceneCode).c_str(), errno);
-            return errCode;
+            return E_FAIL;
         }
 
-        errCode = MediaFileUtils::IsFileValid(fileInfo.extraDataPath);
-        if (errCode != E_OK) {
+        if (!MediaFileUtils::IsFileValid(fileInfo.extraDataPath)) {
             MEDIA_WARN_LOG("Media extra data is not valid: %{public}s, errno=%{public}d.",
                 BackupFileUtils::GarbleFilePath(fileInfo.extraDataPath, sceneCode).c_str(), errno);
-            return errCode;
+            return E_FAIL;
         }
     }
     return E_OK;
