@@ -63,12 +63,14 @@ private:
     int32_t QueryGalleryBurstTotalCount();
     bool HasLowQualityImage();
     int32_t GetGalleryMediaCount();
+    int32_t GetGalleryAppTwinDataCount();
     AlbumMediaStatisticInfo GetAllStatInfo();
     AlbumMediaStatisticInfo GetSdCardStatInfo();
     AlbumMediaStatisticInfo GetScreenStatInfo();
     AlbumMediaStatisticInfo GetImportsStatInfo();
     AlbumMediaStatisticInfo GetAllRestoreStatInfo();
     AlbumMediaStatisticInfo GetDuplicateStatInfo();
+    AlbumMediaStatisticInfo GetAppTwinStatInfo();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

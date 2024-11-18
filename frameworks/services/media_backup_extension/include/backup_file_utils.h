@@ -71,8 +71,9 @@ public:
         string relativePath, bool hasLowQualityImage);
     static size_t GetLastSlashPosFromPath(const std::string &path);
     static std::string GetFileFolderFromPath(const std::string &path, bool shouldStartWithSlash = true);
-    static std::string GetExtraPrefixForRealPath(int32_t sceneCode, const std::string &srcPath);
-    static bool IsAppTwinData(const std::string &srcPath);
+    static std::string GetExtraPrefixForRealPath(int32_t sceneCode, const std::string &path);
+    static bool IsAppTwinData(const std::string &path);
+    static int32_t GetUserId(const std::string &path);
 
 private:
     static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;

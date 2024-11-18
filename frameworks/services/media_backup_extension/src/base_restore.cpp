@@ -222,12 +222,11 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         int32_t errCode = IsFileValid(fileInfos[i], sceneCode);
         if (errCode != E_OK) {
             fileInfos[i].needMove = false;
-            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, filePath: %{public}s, "
-                "size: %{public}lld",
-                sceneCode,
-                sourceType,
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(),
-                (long long)fileInfos[i].fileSize);
+            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, size: %{public}lld, "
+                "local_media_id: %{public}d, userId: %{public}d, isInternal: %{public}d, filePath: %{public}s",
+                sceneCode, sourceType, (long long)fileInfos[i].fileSize,
+                fileInfos[i].localMediaId, fileInfos[i].userId, static_cast<int32_t>(fileInfos[i].isInternal),
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             CheckInvalidFile(fileInfos[i], errCode);
             continue;
         }

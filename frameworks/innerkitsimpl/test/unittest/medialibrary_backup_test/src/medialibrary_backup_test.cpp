@@ -1901,75 +1901,73 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_media_type_beyong_1_3, Tes
     MEDIA_INFO_LOG("medialib_backup_test_media_type end");
 }
 
+void TestAppTwinData(const string &path, const string &expectedExtraPrefix, int32_t sceneCode = UPGRADE_RESTORE_ID)
+{
+    string extraPrefix = BackupFileUtils::GetExtraPrefixForRealPath(sceneCode, path);
+    MEDIA_INFO_LOG("path: %{public}s, extraPrefix: %{public}s", path.c_str(), extraPrefix.c_str());
+    EXPECT_EQ(extraPrefix, expectedExtraPrefix);
+}
+
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_001 start");
-    string extraPrefix = BackupFileUtils::GetExtraPrefixForRealPath(CLONE_RESTORE_ID, "");
-    EXPECT_EQ(extraPrefix.empty(), true); // not upgrade
+    TestAppTwinData("", "", CLONE_RESTORE_ID); // not upgrade
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_001 end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_002 start");
-    string extraPrefix = BackupFileUtils::GetExtraPrefixForRealPath(UPGRADE_RESTORE_ID, "");
-    EXPECT_EQ(extraPrefix.empty(), true); // not app twin data: empty
+    TestAppTwinData("", ""); // not app twin data: empty
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_002 end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_003 start");
-    string extraPrefix = BackupFileUtils::GetExtraPrefixForRealPath(UPGRADE_RESTORE_ID, "/storage/ABCE-EFGH/0/");
-    EXPECT_EQ(extraPrefix.empty(), true); // not app twin data: external
+    TestAppTwinData("/storage/ABCE-EFGH/0/", ""); // not app twin data: external
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_003 end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_004 start");
-    string extraPrefix = BackupFileUtils::GetExtraPrefixForRealPath(UPGRADE_RESTORE_ID, "/storage/emulated/0/");
-    EXPECT_EQ(extraPrefix.empty(), true); // not app twin data: main user
+    TestAppTwinData("/storage/emulated/0/", ""); // not app twin data: main user
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_004 end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_005 start");
-    string extraPrefix = BackupFileUtils::GetExtraPrefixForRealPath(UPGRADE_RESTORE_ID, "/storage/emulated");
-    EXPECT_EQ(extraPrefix.empty(), true); // not app twin data: first / not found
+    TestAppTwinData("/storage/emulated", ""); // not app twin data: first / not found
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_005 end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_006, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_006 start");
-    string extraPrefix = BackupFileUtils::GetExtraPrefixForRealPath(UPGRADE_RESTORE_ID, "/storage/emulated/");
-    EXPECT_EQ(extraPrefix.empty(), true); // not app twin data: second / not found
+    TestAppTwinData("/storage/emulated/", ""); // not app twin data: second / not found
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_006 end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_007, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_007 start");
-    string extraPrefix = BackupFileUtils::GetExtraPrefixForRealPath(UPGRADE_RESTORE_ID, "/storage/emulated/abc/");
-    EXPECT_EQ(extraPrefix.empty(), true); // not app twin data: not number
+    TestAppTwinData("/storage/emulated/abc/", ""); // not app twin data: not number
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_007 end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_008, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_008 start");
-    string extraPrefix = BackupFileUtils::GetExtraPrefixForRealPath(UPGRADE_RESTORE_ID, "/storage/emulated/1234/");
-    EXPECT_EQ(extraPrefix.empty(), true); // not app twin data: not in [128, 147]
+    TestAppTwinData("/storage/emulated/1234/", ""); // not app twin data: not in [128, 147]
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_008 end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_009, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_009 start");
-    string extraPrefix = BackupFileUtils::GetExtraPrefixForRealPath(UPGRADE_RESTORE_ID, "/storage/emulated/128/");
-    EXPECT_EQ(extraPrefix, APP_TWIN_DATA_PREFIX); // app twin data
+    TestAppTwinData("/storage/emulated/128/", APP_TWIN_DATA_PREFIX); // app twin data
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_009 end");
 }
 } // namespace Media
