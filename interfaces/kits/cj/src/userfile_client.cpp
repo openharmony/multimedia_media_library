@@ -50,7 +50,8 @@ void UserFileClient::Init(int64_t contextId)
         LOGE("Failed to get native stage context instance");
         return;
     }
-    std::shared_ptr<DataShare::DataShareHelper> dataShareHelper = DataShare::DataShareHelper::Creator(context->GetToken(), MEDIALIBRARY_DATA_URI);
+    std::shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(context->GetToken(), MEDIALIBRARY_DATA_URI);
     MediaLibraryHelperContainer::GetInstance()->SetDataShareHelper(dataShareHelper);
     sDataShareHelper_ = dataShareHelper;
 }

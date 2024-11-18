@@ -92,13 +92,14 @@ MediaAssetChangeRequestImpl::MediaAssetChangeRequestImpl(OHOS::sptr<PhotoAssetIm
     auto fileAssetPtr = photoAssert->GetFileAssetInstance();
     if (fileAssetPtr == nullptr) {
         *errCode = OHOS_INVALID_PARAM_CODE;
+        LOGE("fileAsset is null");
         return;
     }
-    if (fileAssetPtr->GetResultNapiType() == ResultNapiType::TYPE_PHOTOACCESS_HELPER &&
-        (fileAssetPtr->GetMediaType() == MEDIA_TYPE_IMAGE || fileAssetPtr->GetMediaType() == MEDIA_TYPE_VIDEO)) {
+    if (fileAssetPtr->GetMediaType() == MEDIA_TYPE_IMAGE || fileAssetPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
         fileAsset_ = fileAssetPtr;
         return;
     }
+    LOGE("Unsupported type of fileAsset");
     *errCode = OHOS_INVALID_PARAM_CODE;
     return;
 }
@@ -178,6 +179,7 @@ MediaAssetChangeRequestImpl::MediaAssetChangeRequestImpl(
     MediaType mediaType = static_cast<MediaType>(photoType);
     if (mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO &&
         mediaType != MediaFileUtils::GetMediaType("." + extension)) {
+        LOGE("Invalid photoType or failed to check extension");
         *errCode = OHOS_INVALID_PARAM_CODE;
         return;
     }
@@ -200,8 +202,8 @@ MediaAssetChangeRequestImpl::MediaAssetChangeRequestImpl(
         newTitle += MediaFileUtils::StrCreateTime(DEFAULT_TITLE_TIME_FORMAT, MediaFileUtils::UTCTimeSeconds());
         valuesBucket.Put(PhotoColumn::MEDIA_TITLE, newTitle);
     }
-    std::string displayName = title + "." + extension;
-    if (!MediaFileUtils::CheckDisplayName(displayName)) {
+    std::string displayName = newTitle + "." + extension;
+    if (MediaFileUtils::CheckDisplayName(displayName) != E_OK) {
         *errCode = OHOS_INVALID_PARAM_CODE;
         return;
     }
@@ -213,7 +215,7 @@ MediaAssetChangeRequestImpl::MediaAssetChangeRequestImpl(
     emptyFileAsset->SetPhotoSubType(subType);
     emptyFileAsset->SetTimePending(CREATE_ASSET_REQUEST_PENDING);
     emptyFileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
-    PhotoAssetImpl fileAssetImpl = PhotoAssetImpl(std::move(emptyFileAsset));
+    fileAsset_ = std::move(emptyFileAsset);
     creationValuesBucket_ = std::move(valuesBucket);
     RecordChangeOperation(AssetChangeOperation::CREATE_FROM_SCRATCH);
 }
@@ -228,7 +230,7 @@ static int32_t ParseArgsDeleteAssets(int64_t contextId, std::vector<std::string>
         return OHOS_INVALID_PARAM_CODE;
     }
     for (const auto& uri : uris) {
-        if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != std::string::npos) {
+        if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == std::string::npos) {
             return JS_E_URI;
         }
     }
@@ -284,11 +286,11 @@ static int32_t DeleteAssetsExecute(OHOS::DataShare::DataSharePredicates& predica
 
 int32_t MediaAssetChangeRequestImpl::CJDeleteAssets(int64_t contextId, std::vector<std::string> uris)
 {
-    OHOS::DataShare::DataSharePredicates predicates;
-    OHOS::DataShare::DataShareValuesBucket valuesBucket;
     if (ParseArgsDeleteAssets(contextId, uris) != 0) {
         return OHOS_INVALID_PARAM_CODE;
     }
+    OHOS::DataShare::DataSharePredicates predicates;
+    OHOS::DataShare::DataShareValuesBucket valuesBucket;
     predicates.In(PhotoColumn::MEDIA_ID, uris);
     valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
     if (MediaLibraryNapiUtils::IsSystemApp()) {
@@ -303,7 +305,7 @@ int32_t MediaAssetChangeRequestImpl::CJDeleteAssets(int64_t contextId, std::vect
         return OHOS_INVALID_PARAM_CODE;
     }
     auto cjAbilityContext = FFI::FFIData::GetData<AbilityRuntime::CJAbilityContext>(contextId);
-    if (cjAbilityContext == nullptr) {
+    if (cjAbilityContext == nullptr || cjAbilityContext->GetAbilityContext() == nullptr) {
         LOGE("Failed to get native stage context instance");
         return JS_INNER_FAIL;
     }
@@ -359,31 +361,6 @@ int64_t MediaAssetChangeRequestImpl::CJGetAsset(int32_t* errCode)
     return 0;
 }
 
-MediaAssetChangeRequestImpl::MediaAssetChangeRequestImpl(const std::string& realPath, int32_t* errCode)
-{
-    std::string displayName = MediaFileUtils::GetFileName(realPath);
-    if (MediaFileUtils::CheckDisplayName(displayName) != E_OK) {
-        *errCode = OHOS_INVALID_PARAM_CODE;
-        return;
-    }
-    std::string title = MediaFileUtils::GetTitleFromDisplayName(displayName);
-    MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
-    auto emptyFileAsset = std::make_unique<FileAsset>();
-    emptyFileAsset->SetDisplayName(displayName);
-    emptyFileAsset->SetTitle(title);
-    emptyFileAsset->SetMediaType(mediaType);
-    emptyFileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::DEFAULT));
-    emptyFileAsset->SetTimePending(CREATE_ASSET_REQUEST_PENDING);
-    emptyFileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
-    PhotoAssetImpl fileAssetImpl = PhotoAssetImpl(std::move(emptyFileAsset));
-    realPath_ = realPath;
-    creationValuesBucket_.Put(MEDIA_DATA_DB_NAME, displayName);
-    creationValuesBucket_.Put(ASSET_EXTENTION, MediaFileUtils::GetExtensionFromPath(displayName));
-    creationValuesBucket_.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
-    creationValuesBucket_.Put(PhotoColumn::MEDIA_TITLE, title);
-    RecordChangeOperation(AssetChangeOperation::CREATE_FROM_URI);
-}
-
 MediaAssetChangeRequestImpl::MediaAssetChangeRequestImpl(
     int64_t contextId, const std::string& filePath, MediaType meidiaType, int32_t* errCode)
 {
@@ -392,12 +369,29 @@ MediaAssetChangeRequestImpl::MediaAssetChangeRequestImpl(
         return;
     }
     std::string realPath;
-    if (meidiaType == MediaType::MEDIA_TYPE_IMAGE && ParseFileUri(filePath, MediaType::MEDIA_TYPE_IMAGE, realPath)) {
-        MediaAssetChangeRequestImpl(realPath, errCode);
-        return;
-    }
-    if (meidiaType == MediaType::MEDIA_TYPE_VIDEO && ParseFileUri(filePath, MediaType::MEDIA_TYPE_VIDEO, realPath)) {
-        MediaAssetChangeRequestImpl(realPath, errCode);
+    if ((meidiaType == MediaType::MEDIA_TYPE_IMAGE && ParseFileUri(filePath, MediaType::MEDIA_TYPE_IMAGE, realPath)) ||
+        (meidiaType == MediaType::MEDIA_TYPE_VIDEO && ParseFileUri(filePath, MediaType::MEDIA_TYPE_VIDEO, realPath))) {
+        std::string displayName = MediaFileUtils::GetFileName(realPath);
+        if (MediaFileUtils::CheckDisplayName(displayName) != E_OK) {
+            *errCode = OHOS_INVALID_PARAM_CODE;
+            return;
+        }
+        std::string title = MediaFileUtils::GetTitleFromDisplayName(displayName);
+        MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
+        auto emptyFileAsset = std::make_unique<FileAsset>();
+        emptyFileAsset->SetDisplayName(displayName);
+        emptyFileAsset->SetTitle(title);
+        emptyFileAsset->SetMediaType(mediaType);
+        emptyFileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::DEFAULT));
+        emptyFileAsset->SetTimePending(CREATE_ASSET_REQUEST_PENDING);
+        emptyFileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+        fileAsset_ = std::move(emptyFileAsset);
+        realPath_ = realPath;
+        creationValuesBucket_.Put(MEDIA_DATA_DB_NAME, displayName);
+        creationValuesBucket_.Put(ASSET_EXTENTION, MediaFileUtils::GetExtensionFromPath(displayName));
+        creationValuesBucket_.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
+        creationValuesBucket_.Put(PhotoColumn::MEDIA_TITLE, title);
+        RecordChangeOperation(AssetChangeOperation::CREATE_FROM_URI);
         return;
     }
     *errCode = OHOS_INVALID_PARAM_CODE;
@@ -1055,7 +1049,7 @@ int32_t MediaAssetChangeRequestImpl::CJAddResource(int32_t resourceType, std::st
         return OHOS_INVALID_PARAM_CODE;
     }
     std::string realPath;
-    if (!ParseFileUri(fileUri, MediaType::MEDIA_TYPE_VIDEO, realPath)) {
+    if (!ParseFileUri(fileUri, fileAsset_->GetMediaType(), realPath)) {
         return OHOS_INVALID_PARAM_CODE;
     }
     realPath_ = realPath;
@@ -1194,7 +1188,6 @@ static bool SendToCacheFile(
 int32_t MediaAssetChangeRequestImpl::SubmitCache(bool isCreation, bool isSetEffectMode)
 {
     if (fileAsset_ == nullptr) {
-        LOGE("Failed to check fileAsset_");
         return E_FAIL;
     }
     if (cacheFileName_.empty() && cacheMovingPhotoVideoName_.empty()) {

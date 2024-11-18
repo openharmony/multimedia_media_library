@@ -46,164 +46,165 @@
 
 namespace OHOS {
 namespace Media {
-    struct CSize {
-        int32_t width = 0;
-        int32_t height = 0;
-    };
+extern "C" {
+enum FfiListenerType {
+    CJ_INVALID_LISTENER = -1,
+    CJ_AUDIO_LISTENER,
+    CJ_VIDEO_LISTENER,
+    CJ_IMAGE_LISTENER,
+    CJ_FILE_LISTENER,
+    CJ_SMARTCJ_ALBUM_LISTENER,
+    CJ_DEVICE_LISTENER,
+    CJ_REMOTECJ_FILE_LISTENER,
+    CJ_ALBUM_LISTENER
+};
 
-    struct PhotoAssetMember {
-        int32_t memberType;
-        int64_t intValue;
-        char* stringValue;
-        bool boolValue;
-    };
+enum class ReturnDataType {
+    TYPE_IMAGE_SOURCE = 0,
+    TYPE_ARRAY_BUFFER,
+    TYPE_MOVING_PHOTO,
+    TYPE_TARGET_PATH,
+    TYPE_PICTURE,
+};
 
-    struct FetchResultObject {
-        int64_t id;
-        int32_t fetchResType;
-    };
+enum class DeliveryMode {
+    FAST = 0,
+    HIGH_QUALITY,
+    BALANCED_MODE,
+};
 
-    struct CArrayFetchResultObject {
-        FetchResultObject* head;
-        int64_t size;
-    };
+enum class SourceMode {
+    ORIGINAL_MODE = 0,
+    EDITED_MODE,
+};
 
-    struct COptions {
-        CArrString fetchColumns;
-        int64_t predicates;
-    };
+struct CSize {
+    int32_t width = 0;
+    int32_t height = 0;
+};
 
-    struct CreateOptions {
-        char* title;
-        int32_t subtype;
-    };
+struct PhotoAssetMember {
+    int32_t memberType;
+    int64_t intValue;
+    char* stringValue;
+    bool boolValue;
+};
 
-    struct ChangeData {
-        int32_t type;
-        CArrString uris;
-        CArrString extraUris;
-    };
+struct FetchResultObject {
+    int64_t id;
+    int32_t fetchResType;
+};
 
-    enum FfiListenerType {
-        CJ_INVALID_LISTENER = -1,
+struct CArrayFetchResultObject {
+    FetchResultObject* head;
+    int64_t size;
+};
 
-        CJ_AUDIO_LISTENER,
-        CJ_VIDEO_LISTENER,
-        CJ_IMAGE_LISTENER,
-        CJ_FILE_LISTENER,
-        CJ_SMARTCJ_ALBUM_LISTENER,
-        CJ_DEVICE_LISTENER,
-        CJ_REMOTECJ_FILE_LISTENER,
-        CJ_ALBUM_LISTENER
-    };
+struct COptions {
+    CArrString fetchColumns;
+    int64_t predicates;
+};
 
-    struct PhotoCreationConfig {
-        char* title;
-        char* fileNameExtension;
-        int32_t photoType;
-        int32_t subtype;
-    };
+struct CreateOptions {
+    char* title;
+    int32_t subtype;
+};
 
-    struct PhotoCreationConfigs {
-        PhotoCreationConfig* head;
-        int64_t size;
-    };
+struct ChangeData {
+    int32_t type;
+    CArrString uris;
+    CArrString extraUris;
+};
 
-    struct FfiBundleInfo {
-        char* bundleName;
-        char* appName;
-        char* appId;
-    };
+struct PhotoCreationConfig {
+    char* title;
+    char* fileNameExtension;
+    int32_t photoType;
+    int32_t subtype;
+};
 
-    struct TextContextInfo {
-        char* text;
-    };
+struct PhotoCreationConfigs {
+    PhotoCreationConfig* head;
+    int64_t size;
+};
 
-    struct RecommendationOptions {
-        int32_t recommendationType;
-        TextContextInfo textContextInfo;
-    };
+struct FfiBundleInfo {
+    char* bundleName;
+    char* appName;
+    char* appId;
+};
 
-    struct PhotoSelectOptions {
-        int32_t MIMEType;
-        int32_t maxSelectNumber;
-        bool isPhotoTakingSupported;
-        bool isSearchSupported;
-        RecommendationOptions recommendationOptions;
-        CArrString preselectedUris;
-        bool isPreviewForSingleSelectionSupported;
-        bool isEditSupported;
-        bool isOriginalSupported;
-        char* subWindowName;
-    };
+struct TextContextInfo {
+    char* text;
+};
 
-    struct PhotoSelectResult {
-        CArrString photoUris;
-        bool isOriginalPhoto;
-    };
+struct RecommendationOptions {
+    int32_t recommendationType;
+    TextContextInfo textContextInfo;
+};
 
-    enum class ReturnDataType {
-        TYPE_IMAGE_SOURCE = 0,
-        TYPE_ARRAY_BUFFER,
-        TYPE_MOVING_PHOTO,
-        TYPE_TARGET_PATH,
-        TYPE_PICTURE,
-    };
+struct PhotoSelectOptions {
+    int32_t MIMEType;
+    int32_t maxSelectNumber;
+    bool isPhotoTakingSupported;
+    bool isSearchSupported;
+    RecommendationOptions recommendationOptions;
+    CArrString preselectedUris;
+    bool isPreviewForSingleSelectionSupported;
+    bool isEditSupported;
+    bool isOriginalSupported;
+    char* subWindowName;
+};
 
-    enum class DeliveryMode {
-        FAST = 0,
-        HIGH_QUALITY,
-        BALANCED_MODE,
-    };
+struct PhotoSelectResult {
+    CArrString photoUris;
+    bool isOriginalPhoto;
+};
 
-    enum class SourceMode {
-        ORIGINAL_MODE = 0,
-        EDITED_MODE,
-    };
+struct RequestOptions {
+    int32_t deliveryMode;
+};
 
-    struct RequestOptions {
-        int32_t deliveryMode;
-    };
+struct KeyValue {
+    char* key;
+    char* value;
+};
 
-    struct KeyValue {
-        char* key;
-        char* value;
-    };
+struct HashMapArray {
+    KeyValue* head;
+    int64_t size;
+};
 
-    struct HashMapArray {
-        KeyValue* head;
-        int64_t size;
-    };
+struct MediaObject {
+    ReturnDataType returnDataType;
+    CArrUI8 imageData;
+    int64_t imageId = -1;
+    int64_t movingPhotoId = -1;
+    bool videoFile = false;
+};
 
-    struct MediaObject {
-        ReturnDataType returnDataType;
-        CArrUI8 imageData;
-        int64_t imageId = -1;
-        int64_t movingPhotoId = -1;
-        bool videoFile = false;
-    };
+struct ExtraInfo {
+    FetchOptionType fetchOptType;
+    std::string networkId;
+    std::string uri;
+};
+}
 
-    struct PickerCallBack {
-        bool ready = false;
-        bool isOrigin;
-        int32_t resultCode;
-        std::vector<std::string> uris;
-    };
+struct PickerCallBack {
+    bool ready = false;
+    bool isOrigin;
+    int32_t resultCode;
+    std::vector<std::string> uris;
+};
 
-    struct ExtraInfo {
-        FetchOptionType fetchOptType;
-        std::string networkId;
-        std::string uri;
-    };
-
-    char *MallocCString(const std::string &origin);
-    bool GetPredicate(COptions options, DataShare::DataSharePredicates &predicates,
-        std::vector<std::string> &fetchColumn, ExtraInfo &extraInfo, int32_t &errCode);
-    void GetFetchOption(COptions options, DataShare::DataSharePredicates &predicates,
-        std::vector<std::string> &fetchColumn, ExtraInfo &extraInfo, int32_t &errCode);
-    void AddDefaultAssetColumns(std::vector<std::string> &fetchColumn,
-        std::function<bool(const std::string &columnName)> isValidColumn, NapiAssetType assetType,
-        int32_t &errCode, const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
+char *MallocCString(const std::string &origin);
+bool GetPredicate(COptions options, DataShare::DataSharePredicates &predicates,
+    std::vector<std::string> &fetchColumn, ExtraInfo &extraInfo, int32_t &errCode);
+void GetFetchOption(COptions options, DataShare::DataSharePredicates &predicates,
+    std::vector<std::string> &fetchColumn, ExtraInfo &extraInfo, int32_t &errCode);
+void AddDefaultAssetColumns(std::vector<std::string> &fetchColumn,
+    std::function<bool(const std::string &columnName)> isValidColumn, NapiAssetType assetType,
+    int32_t &errCode, const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
 }
 }
 #endif

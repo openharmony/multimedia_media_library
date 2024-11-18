@@ -152,7 +152,7 @@ static void SetSubUris(const shared_ptr<MessageParcel> parcel, ChangeData &chang
         LOGE("Failed to read sub uri list length");
         return;
     }
-     if (len > MAX_QUERY_LIMIT) {
+    if (len > MAX_QUERY_LIMIT) {
         LOGE("suburi length exceed the limit.");
         return;
     }
@@ -299,6 +299,7 @@ shared_ptr<FetchResult<FileAsset>> PhotoAccessHelperImpl::GetAssets(COptions opt
         return nullptr;
     }
     shared_ptr<FetchResult<FileAsset>> fetchResult = make_shared<FetchResult<FileAsset>>(move(resultSet));
+    fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     return fetchResult;
 }
 
@@ -358,6 +359,7 @@ shared_ptr<FetchResult<FileAsset>> PhotoAccessHelperImpl::GetBurstAssets(char* c
         return nullptr;
     }
     shared_ptr<FetchResult<FileAsset>> fetchResult = make_shared<FetchResult<FileAsset>>(move(resultSet));
+    fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     return fetchResult;
 }
 
@@ -584,8 +586,7 @@ static int32_t GetFfiListenerType(const string &str)
     return iter->second;
 }
 
-void PhotoAccessHelperImpl::UnRegisterChange(const string &type,
-    ChangeListener &listObj)
+void PhotoAccessHelperImpl::UnRegisterChange(const string &type, ChangeListener &listObj)
 {
     MediaType mediaType;
     int32_t typeEnum = GetFfiListenerType(type);
@@ -616,16 +617,6 @@ void PhotoAccessHelperImpl::UnRegisterChange(const string &type,
             UserFileClient::UnregisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
                 listObj.smartAlbumDataObserver_);
             listObj.smartAlbumDataObserver_ = nullptr;
-            break;
-        case CJ_DEVICE_LISTENER:
-            mediaType = MEDIA_TYPE_DEVICE;
-            UserFileClient::UnregisterObserver(Uri(MEDIALIBRARY_DEVICE_URI), listObj.deviceDataObserver_);
-            listObj.deviceDataObserver_ = nullptr;
-            break;
-        case CJ_REMOTECJ_FILE_LISTENER:
-            mediaType = MEDIA_TYPE_REMOTEFILE;
-            UserFileClient::UnregisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.remoteFileDataObserver_);
-            listObj.remoteFileDataObserver_ = nullptr;
             break;
         case CJ_ALBUM_LISTENER:
             mediaType = MEDIA_TYPE_ALBUM;
