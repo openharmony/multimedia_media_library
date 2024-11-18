@@ -70,6 +70,7 @@ ohos_unittest("medialibrary_backup_test") {
     "./src/gallery_source.cpp",
     "./src/medialibrary_backup_test.cpp",
     "./src/restore/photo_album_dao_test.cpp",
+    "./src/restore/photos_restore_test.cpp",
   ]
 
   deps = [
