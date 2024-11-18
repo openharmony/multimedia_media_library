@@ -1743,17 +1743,17 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_ast
     ret = restoreService->MoveAstc(testFileInfo);
     EXPECT_EQ(ret, E_FAIL);
 
-    testFileInfo.oldAstcDateKey = RESTORE_KVSTORE_DATE_KEY_TEMPLATE + "0";
+    testFileInfo.oldAstcDateKey = "0000000000000a";
     ret = restoreService->MoveAstc(testFileInfo);
     EXPECT_EQ(ret, E_FAIL);
 
-    testFileInfo.oldAstcDateKey = RESTORE_KVSTORE_DATE_KEY_TEMPLATE;
+    testFileInfo.oldAstcDateKey = "0000000000000";
     testFileInfo.newAstcDateKey = "";
     ret = restoreService->MoveAstc(testFileInfo);
     EXPECT_EQ(ret, E_FAIL);
 
     testFileInfo.oldAstcDateKey = "0";
-    testFileInfo.newAstcDateKey = RESTORE_KVSTORE_DATE_KEY_TEMPLATE + "0";
+    testFileInfo.newAstcDateKey = "0000000000000a";
     ret = restoreService->MoveAstc(testFileInfo);
     EXPECT_EQ(ret, E_FAIL);
 }
@@ -1776,8 +1776,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_ast
     testFileInfo.fileIdNew = testFileId;
     testFileInfo.newAstcDateKey = testAstcDateKey;
     testFileInfo.isRelatedToPhotoMap = 1;
-    std::string testAstckey = RESTORE_KVSTORE_DATE_KEY_TEMPLATE.substr(1) + testAstcDateKey +
-                              RESTORE_KVSTORE_FILE_ID_TEMPLATE.substr(1) + to_string(testFileId);
+    std::string testAstckey;
+    EXPECT_EQ(MediaFileUtils::GenerateKvStoreKey(to_string(testFileId), testAstcDateKey, testAstckey), true);
     EXPECT_EQ(restoreService->MoveAstc(testFileInfo), E_FAIL);
 
     restoreService->oldMonthKvStorePtr_ = MediaLibraryKvStoreManager::GetInstance()
