@@ -28,25 +28,36 @@ using namespace OHOS::DataShare;
 namespace OHOS {
 namespace Media {
 static constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
-static const std::string CLOUD_DATASHARE_URI = "datashareproxy://generic.cloudstorage/cloud_sp?Proxy=true";
+static const std::string CLOUD_BASE_URI = "datashareproxy://generic.cloudstorage/";
+static const std::string CLOUD_DATASHARE_URI = CLOUD_BASE_URI + "cloud_sp?Proxy=true";
 static const std::string CLOUD_URI = CLOUD_DATASHARE_URI + "&key=useMobileNetworkData";
-static const std::string CLOUD_SYNC_SWITCH_URI = CLOUD_DATASHARE_URI + "/sync_switch";
+static const std::string CLOUD_AGING_URI = CLOUD_DATASHARE_URI + "&key=dataAgingPolicy";
+static const std::string CLOUD_SYNC_URI = CLOUD_BASE_URI + "sync_module_data?Proxy=true";
+static const std::string CLOUD_SYNC_SWITCH_URI = CLOUD_BASE_URI + "sync_switch&bundleName=generic.cloudstorage";
 static const std::string MOBILE_NETWORK_STATUS_ON = "1";
 
-bool CloudSyncUtils::IsUnlimitedTrafficStatusOn()
+static std::shared_ptr<DataShare::DataShareHelper> GetCloudHelper(const std::string &uri)
 {
+    if (uri.empty()) {
+        MEDIA_ERR_LOG("uri is empty.");
+        return nullptr;
+    }
     auto saMgr = OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saMgr == nullptr) {
         MEDIA_ERR_LOG("Failed to get SystemAbilityManagerClient");
-        return E_ERR;
+        return nullptr;
     }
     OHOS::sptr<OHOS::IRemoteObject> remoteObject = saMgr->CheckSystemAbility(STORAGE_MANAGER_MANAGER_ID);
     if (remoteObject == nullptr) {
         MEDIA_ERR_LOG("Token is null.");
-        return E_ERR;
+        return nullptr;
     }
-    std::shared_ptr<DataShare::DataShareHelper> cloudHelper = DataShare::DataShareHelper::Creator(remoteObject,
-        CLOUD_DATASHARE_URI);
+    return DataShare::DataShareHelper::Creator(remoteObject, uri);
+}
+
+bool CloudSyncUtils::IsUnlimitedTrafficStatusOn()
+{
+    std::shared_ptr<DataShare::DataShareHelper> cloudHelper = GetCloudHelper(CLOUD_DATASHARE_URI);
     if (cloudHelper == nullptr) {
         MEDIA_INFO_LOG("cloudHelper is null");
         return false;
@@ -70,18 +81,7 @@ bool CloudSyncUtils::IsUnlimitedTrafficStatusOn()
 
 bool CloudSyncUtils::IsCloudSyncSwitchOn()
 {
-    auto saMgr = OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saMgr == nullptr) {
-        MEDIA_ERR_LOG("Failed to get SystemAbilityManagerClient");
-        return E_ERR;
-    }
-    OHOS::sptr<OHOS::IRemoteObject> remoteObject = saMgr->CheckSystemAbility(STORAGE_MANAGER_MANAGER_ID);
-    if (remoteObject == nullptr) {
-        MEDIA_ERR_LOG("Token is null.");
-        return E_ERR;
-    }
-    std::shared_ptr<DataShare::DataShareHelper> cloudHelper = DataShare::DataShareHelper::Creator(remoteObject,
-        CLOUD_DATASHARE_URI);
+    std::shared_ptr<DataShare::DataShareHelper> cloudHelper = GetCloudHelper(CLOUD_SYNC_URI);
     if (cloudHelper == nullptr) {
         MEDIA_INFO_LOG("cloudHelper is null");
         return false;
@@ -97,6 +97,30 @@ bool CloudSyncUtils::IsCloudSyncSwitchOn()
         return false;
     }
 
+    string switchOn = "0";
+    if (resultSet->GoToNextRow() == E_OK) {
+        resultSet->GetString(0, switchOn);
+    }
+    return switchOn == MOBILE_NETWORK_STATUS_ON;
+}
+
+bool CloudSyncUtils::IsCloudDataAgingPolicyOn()
+{
+    std::shared_ptr<DataShare::DataShareHelper> cloudHelper = GetCloudHelper(CLOUD_DATASHARE_URI);
+    if (cloudHelper == nullptr) {
+        MEDIA_INFO_LOG("cloudHelper is null");
+        return false;
+    }
+    
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo("key", "dataAgingPolicy");
+    Uri cloudUri(CLOUD_AGING_URI);
+    vector<string> columns = { "value" };
+    shared_ptr<DataShare::DataShareResultSet> resultSet = cloudHelper->Query(cloudUri, predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_INFO_LOG("resultSet is nullptr");
+        return false;
+    }
     string switchOn = "0";
     if (resultSet->GoToNextRow() == E_OK) {
         resultSet->GetString(0, switchOn);

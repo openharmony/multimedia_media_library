@@ -20,6 +20,8 @@
 
 #include "ability_info.h"
 #include "app_mgr_client.h"
+#include "cloud_media_asset_manager.h"
+#include "cloud_sync_utils.h"
 #include "dataobs_mgr_client.h"
 #include "datashare_ext_ability_context.h"
 #include "hilog_wrapper.h"
@@ -77,6 +79,7 @@ namespace OHOS {
 namespace AbilityRuntime {
 using namespace OHOS::AppExecFwk;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
+const std::string PERM_CLOUD_SYNC_MANAGER = "ohos.permission.CLOUDFILE_SYNC_MANAGER";
 static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::PAH_PHOTO,
     OperationObject::PAH_ALBUM,
@@ -201,6 +204,22 @@ static bool CheckUnlockScene(int64_t startTime)
     return true;
 }
 
+static void RestartCloudMediaAssetDownload()
+{
+    std::thread([&] {
+        MEDIA_INFO_LOG("enter RestartCloudMediaAssetDownload.");
+        if (!CloudSyncUtils::IsCloudSyncSwitchOn()) {
+            MEDIA_INFO_LOG("Cloud sync switch off");
+            return;
+        }
+        if (!CloudSyncUtils::IsCloudDataAgingPolicyOn()) {
+            CloudMediaAssetManager::GetInstance().CancelDownloadCloudAsset();
+            return;
+        }
+        CloudMediaAssetManager::GetInstance().StartDownloadCloudAsset(CloudMediaDownloadType::DOWNLOAD_GENTLE);
+    }).detach();
+}
+
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 {
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
@@ -243,11 +262,10 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
         DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
         return;
     }
-
     OnStartSub(want);
-
     Media::MedialibrarySubscriber::Subscribe();
     dataManager->SetStartupParameter();
+    RestartCloudMediaAssetDownload();
     DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
 }
 
@@ -824,10 +842,25 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     return ret;
 }
 
+static bool CheckCloudSyncPermission()
+{
+    if (!PermissionUtils::CheckCallerPermission(PERM_CLOUD_SYNC_MANAGER)) {
+        MEDIA_ERR_LOG("permission denied");
+        return false;
+    }
+    return true;
+}
+
 int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &predicates,
     const DataShareValuesBucket &value)
 {
     MediaLibraryCommand cmd(uri);
+    if (cmd.GetOprnObject() == OperationObject::CLOUD_MEDIA_ASSET_OPERATE) {
+        if (!CheckCloudSyncPermission()) {
+            return E_PERMISSION_DENIED;
+        }
+        return CloudMediaAssetManager::GetInstance().HandleCloudMediaAssetUpdateOperations(cmd);
+    }
     PermParam permParam = {
         .isWrite = true,
     };

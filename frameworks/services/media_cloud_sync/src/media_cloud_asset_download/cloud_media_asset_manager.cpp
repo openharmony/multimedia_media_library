@@ -301,11 +301,14 @@ bool CloudMediaAssetManager::SetIsThumbnailUpdate()
     if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
         return false;
     }
-    if (operation_->isThumbnailUpdate_) {
-        return false;
+    if (!operation_->isThumbnailUpdate_) {
+        MEDIA_INFO_LOG("Success set isThumbnailUpdate.");
+        operation_->isThumbnailUpdate_ = true;
     }
-    MEDIA_INFO_LOG("Success set isThumbnailUpdate.");
-    operation_->isThumbnailUpdate_ = true;
+    if (operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::PAUSED) {
+        MEDIA_INFO_LOG("Update count and size of download cloud media asset.");
+        operation_->InitDownloadTaskInfo();
+    }
     return true;
 }
 
