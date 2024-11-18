@@ -851,11 +851,23 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-    // Only third-party apps will bring dirty flag in MediaLibraryCommand
-    bool isDirty =
-        (cmd.GetQuerySetParam(PhotoColumn::PHOTO_DIRTY) == to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)));
 
     int32_t updateDirtyRows = 0;
+    if (cmd.GetQuerySetParam(PhotoColumn::PHOTO_DIRTY) == to_string(static_cast<int32_t>(DirtyType::TYPE_NEW))) {
+        // Only third-party app save photo, it will bring dirty flag
+        // The photo saved by third-party apps, whether of low or high quality, should set dirty to TYPE_NEW
+        // Every subtype of photo saved by third-party apps, should set dirty to TYPE_NEW
+        // Need to change the quality to high quality before updating
+        values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+        values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+        updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
+        if (updateDirtyRows < 0) {
+            MEDIA_ERR_LOG("update third party photo temp and dirty flag fail.");
+            return E_ERR;
+        }
+        return updateDirtyRows;
+    }
+
     string subTypeStr = cmd.GetQuerySetParam(PhotoColumn::PHOTO_SUBTYPE);
     if (subTypeStr.empty()) {
         MEDIA_ERR_LOG("get subType fail");
@@ -868,33 +880,28 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
         values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
         updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
         if (updateDirtyRows < 0) {
-            MEDIA_INFO_LOG("burst photo update temp and dirty flag fail.");
+            MEDIA_ERR_LOG("burst photo update temp and dirty flag fail.");
             return E_ERR;
         }
-    } else {
-        if (isDirty) {
-            // Only third-party app save photo, it will bring dirty flag
-            // The photo saved by third-party apps, whether of low or high quality, should set dirty to TYPE_NEW
-            // Need to change the quality to high quality before updating
-            values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
-        }
-        int32_t updateIsTempRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
-        if (updateIsTempRows < 0) {
-            MEDIA_ERR_LOG("update temp flag fail.");
+        return updateDirtyRows;
+    }
+
+    int32_t updateIsTempRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
+    if (updateIsTempRows < 0) {
+        MEDIA_ERR_LOG("update temp flag fail.");
+        return E_ERR;
+    }
+    if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        predicates.EqualTo(PhotoColumn::PHOTO_QUALITY,
+            to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
+        predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
+            to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+        ValuesBucket valuesBucketDirty;
+        valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+        updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(valuesBucketDirty, predicates);
+        if (updateDirtyRows < 0) {
+            MEDIA_ERR_LOG("update dirty flag fail.");
             return E_ERR;
-        }
-        if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-            predicates.EqualTo(PhotoColumn::PHOTO_QUALITY,
-                to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
-            predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
-                to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
-            ValuesBucket valuesBucketDirty;
-            valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-            updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(valuesBucketDirty, predicates);
-            if (updateDirtyRows < 0) {
-                MEDIA_INFO_LOG("update dirty flag fail.");
-                return E_ERR;
-            }
         }
     }
     return updateDirtyRows;
