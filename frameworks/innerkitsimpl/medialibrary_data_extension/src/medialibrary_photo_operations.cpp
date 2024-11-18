@@ -845,6 +845,14 @@ static string GetUriWithoutSeg(const string &oldUri)
     return oldUri;
 }
 
+static int32_t UpdateDirtyWithoutIsTemp(RdbPredicates &predicates)
+{
+    ValuesBucket valuesBucketDirty;
+    valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    int32_t updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(valuesBucketDirty, predicates);
+    return updateDirtyRows;
+}
+
 static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &fileId)
 {
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
@@ -894,9 +902,7 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
     if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
         predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
         predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
-        ValuesBucket valuesBucketDirty;
-        valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-        updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(valuesBucketDirty, predicates);
+        updateDirtyRows = UpdateDirtyWithoutIsTemp(predicates);
         if (updateDirtyRows < 0) {
             MEDIA_ERR_LOG("update dirty flag fail.");
             return E_ERR;
