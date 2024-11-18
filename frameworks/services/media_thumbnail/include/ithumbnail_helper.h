@@ -99,6 +99,7 @@ public:
         ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority);
     EXPORT static void AddThumbnailGenBatchTask(ThumbnailGenerateExecute executor,
         ThumbRdbOpt &opts, ThumbnailData &thumbData, int32_t requestId = 0);
+    EXPORT static void AddThumbnailCancelTask(ThumbnailGenerateExecute executor, int32_t requestId = 0);
     EXPORT static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
     EXPORT static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
@@ -111,6 +112,7 @@ public:
     EXPORT static void UpdateAstcDateTaken(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static bool UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess);
     EXPORT static void UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static void CancelThumbGenBatchTask(std::shared_ptr<ThumbnailTaskData> &data);
 private:
     EXPORT static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
     EXPORT static bool GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data);

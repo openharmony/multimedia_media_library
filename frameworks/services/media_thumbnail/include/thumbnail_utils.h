@@ -116,8 +116,9 @@ public:
     EXPORT static bool QueryNoAstcInfosRestored(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNoAstcInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count, int &err);
-    EXPORT static bool QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
-        std::vector<ThumbnailData> &infos, NativeRdb::RdbPredicates &rdbPredicate, int &err);
+    EXPORT static void AddQueryNoAstcRulesOnlyLocal(NativeRdb::RdbPredicates &rdbPredicate);
+    EXPORT static bool QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts, NativeRdb::RdbPredicates rdbPredicate, int &err);
+
     EXPORT static bool QueryNoHighlightInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNoHighlightPath(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool QueryHighlightTriggerPath(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
