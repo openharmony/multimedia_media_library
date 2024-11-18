@@ -1217,6 +1217,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetCameraShotKey(napi_env env, napi_ca
 
 napi_value MediaAssetChangeRequestNapi::JSSaveCameraPhoto(napi_env env, napi_callback_info info)
 {
+    NAPI_INFO_LOG("Begin MediaAssetChangeRequestNapi::JSSaveCameraPhoto");
     constexpr size_t minArgs = ARGS_ZERO;
     constexpr size_t maxArgs = ARGS_ONE;
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
@@ -2176,6 +2177,7 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SaveCameraPhotoExecute");
+    NAPI_INFO_LOG("Begin SaveCameraPhotoExecute");
 
     auto changeOpreations = context.assetChangeOperations;
     bool containsAddResource = std::find(changeOpreations.begin(), changeOpreations.end(),
@@ -2379,6 +2381,7 @@ static void ApplyAssetChangeRequestCompleteCallback(napi_env env, napi_status st
 
 napi_value MediaAssetChangeRequestNapi::ApplyChanges(napi_env env, napi_callback_info info)
 {
+    NAPI_INFO_LOG("Begin MediaAssetChangeRequestNapi::ApplyChanges");
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
