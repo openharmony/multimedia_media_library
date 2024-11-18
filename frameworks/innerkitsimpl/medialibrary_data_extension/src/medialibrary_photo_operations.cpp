@@ -851,7 +851,9 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-    bool dirty = cmd.GetQuerySetParam(PhotoColumn::PHOTO_DIRTY) == to_string(static_cast<int32_t>(DirtyType::TYPE_NEW));
+    // 只有三方APP才会在cmd中带入dirty
+    bool isDirty =
+        (cmd.GetQuerySetParam(PhotoColumn::PHOTO_DIRTY) == to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)));
 
     int32_t updateDirtyRows = 0;
     string subTypeStr = cmd.GetQuerySetParam(PhotoColumn::PHOTO_SUBTYPE);
@@ -870,7 +872,8 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
             return E_ERR;
         }
     } else {
-        if (dirty) {
+        // 三方APP带入dirty时，需要先将quality变为高质量，再去更新
+        if (isDirty) {
             values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
         }
         int32_t updateIsTempRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
