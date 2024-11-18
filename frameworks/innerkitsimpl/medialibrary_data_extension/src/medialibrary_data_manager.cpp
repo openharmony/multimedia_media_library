@@ -2126,9 +2126,9 @@ static int32_t SearchDateTakenWhenZero(const shared_ptr<MediaLibraryRdbStore> rd
     }
     if (count == 0) {
         MEDIA_INFO_LOG("No dateTaken need to update");
-        needUpdate = false;
         return E_OK;
     }
+    needUpdate = true;
     MEDIA_INFO_LOG("Have dateTaken need to update, count = %{public}d", count);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId =
@@ -2147,10 +2147,10 @@ int32_t MediaLibraryDataManager::UpdateDateTakenWhenZero()
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
         return E_FAIL;
     }
-    bool needUpdate = true;
+    bool needUpdate = false;
     unordered_map<string, string> updateData;
     int32_t ret = SearchDateTakenWhenZero(rdbStore_, needUpdate, updateData);
-    if (ret) {
+    if (ret != E_OK) {
         MEDIA_ERR_LOG("SerchDateTaken failed, ret = %{public}d", ret);
         return ret;
     }
@@ -2169,7 +2169,7 @@ int32_t MediaLibraryDataManager::UpdateDateTakenWhenZero()
     for (const auto& data : updateData) {
         ThumbnailService::GetInstance()->UpdateAstcWithNewDateTaken(data.first, data.second, "0");
     }
-    MEDIA_DEBUG_LOG("UpdateDateTakenWhenZero start");
+    MEDIA_DEBUG_LOG("UpdateDateTakenWhenZero end");
     return ret;
 }
 }  // namespace Media
