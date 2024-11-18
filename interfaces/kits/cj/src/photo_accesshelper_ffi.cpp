@@ -29,8 +29,7 @@ extern "C" {
             return nullptr;
         }
         auto fileDisplayName = photoAssetImpl->GetFileDisplayName();
-        char* displayName = MallocCString(fileDisplayName);
-        return displayName;
+        return MallocCString(fileDisplayName);
     }
 
     char* FfiPhotoAssetGetFileUri(int64_t id)
@@ -41,8 +40,7 @@ extern "C" {
             return nullptr;
         }
         auto fileUri = photoAssetImpl->GetFileUri();
-        char* uri = MallocCString(fileUri);
-        return uri;
+        return MallocCString(fileUri);
     }
 
     int32_t FfiPhotoAssetGetMediaType(int64_t id)
@@ -52,8 +50,7 @@ extern "C" {
             LOGE("Invalid object PhotoAssetImpl");
             return 0;
         }
-        int32_t mediaType = static_cast<int32_t>(photoAssetImpl->GetMediaType());
-        return mediaType;
+        return static_cast<int32_t>(photoAssetImpl->GetMediaType());
     }
 
     PhotoAssetMember FfiPhotoAssetUserFileMgrGet(int64_t id, char* member, int32_t *errCode)
@@ -66,7 +63,7 @@ extern "C" {
         auto photoAssetImpl = FFIData::GetData<PhotoAssetImpl>(id);
         if (photoAssetImpl == nullptr) {
             LOGE("Invalid object PhotoAssetImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return assetMember;
         }
         std::string inputKey(member);
@@ -78,7 +75,7 @@ extern "C" {
         auto photoAssetImpl = FFIData::GetData<PhotoAssetImpl>(id);
         if (photoAssetImpl == nullptr) {
             LOGE("Invalid object PhotoAssetImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return;
         }
         std::string inputKey(member);
@@ -91,7 +88,7 @@ extern "C" {
         auto photoAssetImpl = FFIData::GetData<PhotoAssetImpl>(id);
         if (photoAssetImpl == nullptr) {
             LOGE("Invalid object PhotoAssetImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return;
         }
         photoAssetImpl->CommitModify(*errCode);
@@ -102,7 +99,7 @@ extern "C" {
         auto photoAssetImpl = FFIData::GetData<PhotoAssetImpl>(id);
         if (photoAssetImpl == nullptr) {
             LOGE("Invalid object PhotoAssetImpl");
-            *errCode = OHOS_INVALID_PARAM_CODE;
+            *errCode = JS_ERR_PARAMETER_INVALID;
             return 0;
         }
         return photoAssetImpl->GetThumbnail(cSize, *errCode);
@@ -630,16 +627,18 @@ extern "C" {
         return changeRequest->GetID();
     }
 
-    int64_t FfiMediaAssetChangeRequestImplCreateAssetRequest(
-        int64_t id, int32_t photoType, char* extension, char* title, int32_t subType, int32_t* errCode)
+    RetDataI64 FfiMediaAssetChangeRequestImplCreateAssetRequest(
+        int64_t id, int32_t photoType, char* extension, char* title, int32_t subType)
     {
+        RetDataI64 ret = {};
         auto changeRequest =
-            FFIData::Create<MediaAssetChangeRequestImpl>(id, photoType, extension, title, subType, errCode);
+            FFIData::Create<MediaAssetChangeRequestImpl>(id, photoType, extension, title, subType, &ret.code);
         if (!changeRequest) {
-            *errCode = JS_INNER_FAIL;
-            return 0;
+            ret.code = JS_INNER_FAIL;
+            return ret;
         }
-        return changeRequest->GetID();
+        ret.data = changeRequest->GetID();
+        return ret;
     }
 
     static std::string GetUriFromAsset(const OHOS::sptr<PhotoAssetImpl> obj)

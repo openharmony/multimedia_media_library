@@ -101,7 +101,6 @@ public:
     int32_t GetImageFileType();
 
     MediaAssetChangeRequestImpl(OHOS::sptr<PhotoAssetImpl> photoAssert, int32_t* errCode);
-    MediaAssetChangeRequestImpl(const std::string& realPath, int32_t* errCode);
     MediaAssetChangeRequestImpl(int64_t contextId, const std::string& filePath, MediaType meidiaType, int32_t* errCode);
     MediaAssetChangeRequestImpl(int64_t contextId, int32_t photoType, std::string extension, std::string title,
         int32_t subType, int32_t* errCode);

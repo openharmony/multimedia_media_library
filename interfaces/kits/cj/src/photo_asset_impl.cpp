@@ -108,7 +108,7 @@ static PhotoAssetMember HandleDateTransitionKey(const string &key,
 
     auto m = fileAssetPtr->GetMemberMap().at(key);
     if (m.index() == MEMBER_TYPE_INT64) {
-        assetMember.memberType = 0; // int64_t
+        assetMember.memberType = MEMBER_TYPE_INT32; // int64_t
         assetMember.intValue = get<int64_t>(m);
     } else {
         errCode = JS_ERR_PARAMETER_INVALID;
@@ -136,7 +136,7 @@ static PhotoAssetMember HandleGettingSpecialKey(const string &key, const shared_
         .stringValue = nullptr
     };
     if (key == PENDING_STATUS) {
-        assetMember.memberType = 2;
+        assetMember.memberType = MEMBER_TYPE_STRING; // 2
         if (fileAssetPtr->GetTimePending() == 0) {
             assetMember.boolValue = false;
         } else {
@@ -181,13 +181,13 @@ PhotoAssetMember PhotoAssetImpl::UserFileMgrGet(string &inputKey, int32_t &errCo
 
     auto m = fileAssetPtr->GetMemberMap().at(inputKey);
     if (m.index() == MEMBER_TYPE_STRING) {
-        assetMember.memberType = 1;
+        assetMember.memberType = MEMBER_TYPE_INT64; // 1
         assetMember.stringValue = MallocCString(get<string>(m));
     } else if (m.index() == MEMBER_TYPE_INT32) {
-        assetMember.memberType = 0;
+        assetMember.memberType = MEMBER_TYPE_INT32;
         assetMember.intValue = static_cast<int64_t>(get<int32_t>(m));
     } else if (m.index() == MEMBER_TYPE_INT64) {
-        assetMember.memberType = 0;
+        assetMember.memberType = MEMBER_TYPE_INT32;
         assetMember.intValue = GetCompatDate(inputKey, get<int64_t>(m));
     } else {
         errCode = JS_ERR_PARAMETER_INVALID;

@@ -204,6 +204,7 @@ shared_ptr<FetchResult<FileAsset>> PhotoAlbumImpl::GetAssets(COptions options, i
         return nullptr;
     }
     shared_ptr<FetchResult<FileAsset>> fetchResult = make_shared<FetchResult<FileAsset>>(move(resultSet));
+    fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     return fetchResult;
 }
 

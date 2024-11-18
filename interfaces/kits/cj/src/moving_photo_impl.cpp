@@ -29,9 +29,6 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-namespace {
-constexpr size_t bufferSize = 4096;
-}
 FfiMovingPhotoImpl::FfiMovingPhotoImpl(const string& photoUri, SourceMode sourceMode)
 {
     this->photoUri_ = photoUri;
@@ -137,6 +134,7 @@ int32_t FfiMovingPhotoImpl::OpenReadOnlyLivePhoto(const string& destLivePhotoUri
 
 static int32_t CopyFileFromMediaLibrary(int32_t srcFd, int32_t destFd)
 {
+    size_t bufferSize = 4096;
     char buffer[bufferSize];
     ssize_t bytesRead;
     ssize_t bytesWritten;
@@ -256,7 +254,7 @@ static int32_t AcquireFdForArrayBuffer(string movingPhotoUri, SourceMode sourceM
         MediaFileUtils::UriAppendKeyValue(movingPhotoUri, MEDIA_OPERN_KEYWORD, SOURCE_REQUEST);
     }
     switch (resourceType) {
-        case ResourceType::IMAGE_RESOURCE: 
+        case ResourceType::IMAGE_RESOURCE:
             fd = FfiMovingPhotoImpl::OpenReadOnlyFile(movingPhotoUri, true);
             if (!HandleFd(fd)) {
                 LOGE("Open source image file failed");

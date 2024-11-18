@@ -109,12 +109,10 @@ static void GetFileAssetObj(unique_ptr<FileAsset> fileAsset,
         auto native = FFIData::Create<PhotoAssetImpl>(move(fileAsset));
         if (native != nullptr) {
             fetchResultObject.id = native->GetID();
-        } else {
-            errCode = JS_INNER_FAIL;
+            return;
         }
-    } else {
-        errCode = JS_INNER_FAIL;
     }
+    errCode = JS_INNER_FAIL;
 }
 
 static void GetPhotoAlbumObj(unique_ptr<PhotoAlbum> photoAlbum,

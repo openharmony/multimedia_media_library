@@ -78,8 +78,9 @@ bool ParseArgGetPhotoAsset(int64_t photoAssetId, int &fileId, string &uri,
 
 bool ParseArgGetRequestOption(RequestOptions &requestOptions, DeliveryMode &deliveryMode, SourceMode &sourceMode)
 {
-    if (requestOptions.deliveryMode < 0 || requestOptions.deliveryMode > 2) {
-        LOGE("delivery mode invalid argument ");
+    if (requestOptions.deliveryMode < static_cast<int32_t>(DeliveryMode::FAST) ||
+        requestOptions.deliveryMode > static_cast<int32_t>(DeliveryMode::BALANCED_MODE)) {
+        LOGE("delivery mode invalid argument.");
         return false;
     }
     deliveryMode = static_cast<DeliveryMode>(requestOptions.deliveryMode);
@@ -102,7 +103,7 @@ static bool IsMovingPhoto(int32_t photoSubType)
 bool MediaAssetManagerImpl::ParseRequestMediaArgs(int64_t photoAssetId,
     RequestOptions &requestOptions, unique_ptr<MediaAssetManagerContext> &asyncContext)
 {
-    if(!ParseArgGetPhotoAsset(photoAssetId, asyncContext->fileId, asyncContext->photoUri,
+    if (!ParseArgGetPhotoAsset(photoAssetId, asyncContext->fileId, asyncContext->photoUri,
         asyncContext->displayName, asyncContext->subType)) {
         LOGE("requestMedia ParseArgGetPhotoAsset error");
         return false;
@@ -302,14 +303,18 @@ static void GetInfoMapValue(AssetHandler* assetHandler, HashMapArray &valueOfInf
 {
     int64_t mapValueLength = 1; // only support quality
     KeyValue* head = static_cast<KeyValue*>(malloc(sizeof(KeyValue) * mapValueLength));
-    string quality = "quality";
-    string qualityInfo = PhotoQualityToString(assetHandler->photoQuality);
-    for (int64_t i = 0; i < mapValueLength; i++) {
-        head[i].key = MallocCString(quality);
-        head[i].value = MallocCString(qualityInfo);
+    if (head != nullptr) {
+        string quality = "quality";
+        string qualityInfo = PhotoQualityToString(assetHandler->photoQuality);
+        for (int64_t i = 0; i < mapValueLength; i++) {
+            head[i].key = MallocCString(quality);
+            head[i].value = MallocCString(qualityInfo);
+        }
+        valueOfInfoMap.head = head;
+        valueOfInfoMap.size = mapValueLength;
+    } else {
+        LOGE("malloc KeyValue failed.");
     }
-    valueOfInfoMap.head = head;
-    valueOfInfoMap.size = mapValueLength;
 }
 
 static void OnDataPrepared(MediaObject &mediaObject, AssetHandler* assetHandler, HashMapArray &valueOfInfoMap)
@@ -383,6 +388,18 @@ bool IsSaveCallbackInfoByTranscoder(MediaObject &mediaObject,
         return true;
     }
     OnDataPrepared(mediaObject, assetHandler, valueOfInfoMap);
+    if (mediaObject.imageData.head != nullptr) {
+        free(mediaObject.imageData.head);
+        mediaObject.imageData.size = 0;
+    }
+    if (valueOfInfoMap.head != nullptr) {
+        for (int64_t i = 0; i < valueOfInfoMap.size; i++) {
+            free(valueOfInfoMap.head[i].key);
+            free(valueOfInfoMap.head[i].value);
+        }
+        free(valueOfInfoMap.head);
+        valueOfInfoMap.size = 0;
+    }
     return false;
 }
 
@@ -460,7 +477,6 @@ void MediaAssetManagerImpl::GetImageSourceObject(const std::string &fileUri,
         LOGE("get ImageSourceImpl::Create failed");
         return;
     }
-    nativeImageSource->SetFd(fd);
     mediaObject.imageId = nativeImageSource->GetID();
 }
 
@@ -578,20 +594,16 @@ static void DeleteInProcessMapRecord(const string &requestUri, const string &req
     if (inProcessUriMap.find(uriLocal) == inProcessUriMap.end()) {
         return;
     }
-
     std::map<std::string, AssetHandler*> assetHandlers = inProcessUriMap[uriLocal];
     if (assetHandlers.find(requestId) == assetHandlers.end()) {
         return;
     }
-
     assetHandlers.erase(requestId);
     if (!assetHandlers.empty()) {
         inProcessUriMap[uriLocal] = assetHandlers;
         return;
     }
-
     inProcessUriMap.erase(uriLocal);
-
     if (multiStagesObserverMap.find(uriLocal) != multiStagesObserverMap.end()) {
         UserFileClient::UnregisterObserverExt(Uri(uriLocal),
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(multiStagesObserverMap[uriLocal]));
