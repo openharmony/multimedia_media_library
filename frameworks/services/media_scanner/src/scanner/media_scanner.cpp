@@ -519,6 +519,7 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
 
     // statinfo
     data_->SetFileSize(statInfo.st_size);
+    // 临时文件不会发送通知，不修改FileDataModified，保持IsForAdd为true
     if (!data_->GetIsTemp()) {
         data_->SetFileDateModified(static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim)));
     }
