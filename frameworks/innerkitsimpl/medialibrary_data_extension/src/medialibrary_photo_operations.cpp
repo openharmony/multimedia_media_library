@@ -851,7 +851,7 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-    // 只有三方APP才会在cmd中带入dirty
+    // Only third-party apps will bring dirty in cmd
     bool isDirty =
         (cmd.GetQuerySetParam(PhotoColumn::PHOTO_DIRTY) == to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)));
 
@@ -872,7 +872,7 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
             return E_ERR;
         }
     } else {
-        // 三方APP带入dirty时，需要先将quality变为高质量，再去更新
+        // When a third-party app brings dirty, need to first change the quality to high quality before updating
         if (isDirty) {
             values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
         }
