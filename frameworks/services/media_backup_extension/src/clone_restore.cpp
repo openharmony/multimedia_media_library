@@ -392,12 +392,11 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
     for (size_t i = 0; i < fileInfos.size(); i++) {
         int32_t errCode = BackupFileUtils::IsFileValid(fileInfos[i].filePath, CLONE_RESTORE_ID);
         if (errCode != E_OK) {
-            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, filePath: %{public}s, "
-                "name: %{public}s, size: %{public}lld",
-                sceneCode,
-                sourceType,
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
-                BackupFileUtils::GarbleFileName(fileInfos[i].displayName).c_str(), (long long)fileInfos[i].fileSize);
+            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, size: %{public}lld, "
+                "name: %{public}s, filePath: %{public}s",
+                sceneCode, sourceType, (long long)fileInfos[i].fileSize,
+                BackupFileUtils::GarbleFileName(fileInfos[i].displayName).c_str(),
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
             continue;
         }
         if (!PrepareCloudPath(PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
@@ -1464,9 +1463,9 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
     int64_t fileMoveCount = 0;
     for (auto& fileInfo : fileInfos) {
         if (BackupFileUtils::IsFileValid(fileInfo.filePath, CLONE_RESTORE_ID) != E_OK) {
-            MEDIA_ERR_LOG("File is invalid: filePath: %{public}s, name: %{public}s, size: %{public}lld",
-                BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
-                BackupFileUtils::GarbleFileName(fileInfo.displayName).c_str(), (long long)fileInfo.fileSize);
+            MEDIA_ERR_LOG("File is invalid: size: %{public}lld, name: %{public}s, filePath: %{public}s",
+                (long long)fileInfo.fileSize, BackupFileUtils::GarbleFileName(fileInfo.displayName).c_str(),
+                BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
             continue;
         }
         if (!PrepareCloudPath(AudioColumn::AUDIOS_TABLE, fileInfo)) {

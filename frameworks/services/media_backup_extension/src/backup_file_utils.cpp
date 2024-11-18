@@ -20,6 +20,7 @@
 #include <utime.h>
 #include <sys/types.h>
 
+#include "backup_const_column.h"
 #include "scanner_utils.h"
 #include "media_file_uri.h"
 #include "metadata_extractor.h"
@@ -38,7 +39,6 @@ const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
 const string LOW_QUALITY_PATH = "Documents/cameradata/";
 const size_t INVALID_RET = -1;
-const string APP_TWIN_DATA_PREFIX = "/AppTwinData";
 const int32_t APP_TWIN_DATA_START = 128;
 const int32_t APP_TWIN_DATA_END = 147;
 
@@ -646,41 +646,44 @@ std::string BackupFileUtils::GetFileFolderFromPath(const std::string &path, bool
     return path.substr(startPos, endPos - startPos);
 }
 
-std::string BackupFileUtils::GetExtraPrefixForRealPath(int32_t sceneCode, const std::string &srcPath)
+std::string BackupFileUtils::GetExtraPrefixForRealPath(int32_t sceneCode, const std::string &path)
 {
-    if (sceneCode != UPGRADE_RESTORE_ID || !IsAppTwinData(srcPath)) {
-        return "";
-    }
-    return APP_TWIN_DATA_PREFIX;
+    return sceneCode == UPGRADE_RESTORE_ID && IsAppTwinData(path) ? APP_TWIN_DATA_PREFIX : "";
 }
 
 bool BackupFileUtils::IsAppTwinData(const std::string &path)
 {
-    if (!MediaFileUtils::StartsWith(path, INTERNAL_PREFIX)) {
-        return false;
+    int32_t userId = GetUserId(path);
+    return userId >= APP_TWIN_DATA_START && userId <= APP_TWIN_DATA_END;
+}
+
+int32_t BackupFileUtils::GetUserId(const std::string &path)
+{
+    int32_t userId = INVALID_RET;
+     if (!MediaFileUtils::StartsWith(path, INTERNAL_PREFIX)) {
+        return userId;
     }
     std::string tmpPath = path.substr(INTERNAL_PREFIX.size());
     if (tmpPath.empty()) {
         MEDIA_ERR_LOG("Get substr failed, path: %{public}s", path.c_str());
-        return false;
+        return userId;
     }
     size_t posStart = tmpPath.find_first_of("/");
     if (posStart == std::string::npos) {
         MEDIA_ERR_LOG("Get first / failed, path: %{public}s", path.c_str());
-        return false;
+        return userId;
     }
     size_t posEnd = tmpPath.find_first_of("/", posStart + 1);
     if (posEnd == std::string::npos) {
         MEDIA_ERR_LOG("Get second / failed, path: %{public}s", path.c_str());
-        return false;
+        return userId;
     }
     std::string userIdStr = tmpPath.substr(posStart + 1, posEnd - posStart -1);
     if (userIdStr.empty() || !MediaLibraryDataManagerUtils::IsNumber(userIdStr)) {
         MEDIA_ERR_LOG("Get userId failed, empty or not number, path: %{public}s", path.c_str());
-        return false;
+        return userId;
     }
-    int32_t userIdInt = std::atoi(userIdStr.c_str());
-    return userIdInt >= APP_TWIN_DATA_START && userIdInt <= APP_TWIN_DATA_END;
+    return std::atoi(userIdStr.c_str());
 }
 } // namespace Media
 } // namespace OHOS
