@@ -42,7 +42,7 @@ private:
 #endif
     void DoRdbBackup();
     void ResetHAModeSwitchStatus();
-    void SaveHAModeSwitchStatusToPara(const uint32_t &status);
+    void SaveHAModeSwitchStatusToPara(const int64_t &status);
     bool isRestoring_{false};
     std::atomic<bool> isBackuping_{false};
     std::atomic<bool> isWaiting_{false};
