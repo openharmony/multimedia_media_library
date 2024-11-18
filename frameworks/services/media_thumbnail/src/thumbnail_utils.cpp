@@ -54,11 +54,13 @@
 #include "result_set_utils.h"
 #include "thumbnail_const.h"
 #include "thumbnail_source_loading.h"
+#include "thumbnail_ready_manager.h"
 #include "unique_fd.h"
 #include "wifi_device.h"
 #include "post_event_utils.h"
 #include "dfx_manager.h"
 #include "image_format_convert.h"
+
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -2613,22 +2615,26 @@ static bool IsMobileNetworkEnabled()
     cloudHelper->Release();
     return switchOn == "1";
 }
-
-bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
-    std::vector<ThumbnailData> &infos, NativeRdb::RdbPredicates &rdbPredicate, int &err)
+void ThumbnailUtils::AddQueryNoAstcRulesOnlyLocal(NativeRdb::RdbPredicates &rdbPredicate)
 {
+    rdbPredicate.BeginWrap();
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_POSITION, "1");
+    rdbPredicate.Or();
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_POSITION, "3");
+    rdbPredicate.EndWrap();
+}
+
+bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts, NativeRdb::RdbPredicates rdbPredicate, int &err)
+{
+    auto thumbReadyTaskData = ReadyTaskManager::GetInstance()->GetReadyTaskData();
     vector<string> column = {
         MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_HEIGHT, MEDIA_DATA_DB_WIDTH,
         MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_NAME,
         MEDIA_DATA_DB_ORIENTATION, MEDIA_DATA_DB_DATE_TAKEN,
     };
     rdbPredicate.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
-    if (!IsMobileNetworkEnabled()) {
-        rdbPredicate.BeginWrap();
-        rdbPredicate.EqualTo(PhotoColumn::PHOTO_POSITION, "1");
-        rdbPredicate.Or();
-        rdbPredicate.EqualTo(PhotoColumn::PHOTO_POSITION, "3");
-        rdbPredicate.EndWrap();
+    if (!IsMobileNetworkEnabled() || thumbReadyTaskData->timeoutCount >= RETRY_DOWNLOAD_THUMB_LIMIT) {
+        AddQueryNoAstcRulesOnlyLocal(rdbPredicate);
     }
     rdbPredicate.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
     rdbPredicate.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, "0");
@@ -2652,12 +2658,16 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
         MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
         return false;
     }
-
     ThumbnailData data;
     do {
         ParseQueryResult(resultSet, data, err, column);
         if (!data.path.empty()) {
-            infos.push_back(data);
+            if (data.isLocalFile) {
+                thumbReadyTaskData->localInfos.push_back(data);
+            } else {
+                thumbReadyTaskData->cloudPaths.push_back(data.path);
+                thumbReadyTaskData->downloadThumbMap[data.path] = data;
+            }
         }
     } while (resultSet->GoToNextRow() == E_OK);
     return true;

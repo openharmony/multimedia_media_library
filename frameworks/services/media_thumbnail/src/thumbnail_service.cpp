@@ -34,6 +34,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_helper.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_ready_manager.h"
 #include "thumbnail_uri_utils.h"
 #include "post_event_utils.h"
 #ifdef HAS_THERMAL_MANAGER_PART
@@ -632,6 +633,13 @@ int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbP
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE
     };
+    auto readyTask = ReadyTaskManager::GetInstance();
+    if (readyTask == nullptr) {
+        MEDIA_ERR_LOG("thumbReadyTaskData is null");
+        return E_INVALID_VALUES;
+    }
+    readyTask->InitReadyTaskData();
+    readyTask->StartReadyTaskTimer(requestId);
     return ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, rdbPredicate, requestId);
 }
 
@@ -645,6 +653,13 @@ void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
     if (isTemperatureHighForReady_) {
         currentRequestId_ = 0;
     }
+    auto readyTask = ReadyTaskManager::GetInstance();
+    if (readyTask == nullptr) {
+        MEDIA_ERR_LOG("readyTask is null");
+        return;
+    }
+    readyTask->EndDownloadThumbTimeoutWatcherThread();
+    ThumbnailGenerateHelper::StopDownloadThumbBatchOnDemand(requestId);
     MEDIA_INFO_LOG("CancelAstcBatchTask requestId: %{public}d", requestId);
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);

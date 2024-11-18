@@ -167,6 +167,37 @@ void IThumbnailHelper::AddThumbnailGenBatchTask(ThumbnailGenerateExecute executo
     thumbnailWorker->AddTask(task, ThumbnailTaskPriority::LOW);
 }
 
+void IThumbnailHelper::AddThumbnailCancelTask(ThumbnailGenerateExecute executor, int32_t requestId)
+{
+    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
+        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
+    if (thumbnailWorker == nullptr) {
+        MEDIA_ERR_LOG("thumbnailWorker is null");
+        return;
+    }
+
+    std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(requestId);
+    std::shared_ptr<ThumbnailGenerateTask> task = std::make_shared<ThumbnailGenerateTask>(executor, taskData);
+    thumbnailWorker->AddTask(task, ThumbnailTaskPriority::LOW);
+}
+
+void IThumbnailHelper::CancelThumbGenBatchTask(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("CancelThumbGenBatchTask faild, data is null");
+        return;
+    }
+    int32_t requestId = data->requestId_;
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("watch is nullptr");
+        return;
+    }
+    MEDIA_INFO_LOG("Cancel Thumb Batch Task requestId is: %{public}d", requestId);
+    std::string notifyUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
+    watch->Notify(notifyUri, NotifyType::NOTIFY_THUMB_ADD);
+}
+
 ThumbnailWait::ThumbnailWait(bool release) : needRelease_(release)
 {}
 

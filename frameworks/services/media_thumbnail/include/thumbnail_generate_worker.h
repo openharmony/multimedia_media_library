@@ -45,6 +45,8 @@ enum class ThumbnailTaskPriority {
 
 class ThumbnailTaskData {
 public:
+    ThumbnailTaskData(int32_t requestId) : requestId_(requestId) {}
+
     ThumbnailTaskData(ThumbRdbOpt &opts, ThumbnailData &data) : opts_(opts), thumbnailData_(data) {}
 
     ThumbnailTaskData(ThumbRdbOpt &opts, ThumbnailData &data,
@@ -92,9 +94,6 @@ private:
     bool WaitForTask(std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus);
 
     bool NeedIgnoreTask(int32_t requestId);
-    void IncreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task);
-    void DecreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task);
-    void NotifyTaskFinished(int32_t requestId);
     void ClearWorkerThreads();
     void TryClearWorkerThreads();
     void RegisterWorkerTimer();

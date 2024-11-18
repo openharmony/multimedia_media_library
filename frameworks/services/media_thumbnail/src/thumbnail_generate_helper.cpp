@@ -36,6 +36,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_source_loading.h"
+#include "thumbnail_ready_manager.h"
 #include "thumbnail_utils.h"
 
 using namespace std;
@@ -48,6 +49,29 @@ const int FFRT_MAX_RESTORE_ASTC_THREADS = 4;
 const std::string SQL_REFRESH_THUMBNAIL_READY =
     " Update " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_THUMBNAIL_READY + " = 7 " +
     " WHERE " + PhotoColumn::PHOTO_THUMBNAIL_READY + " != 0; END;";
+
+void ThumbnailCloudDownloadCallback::OnDownloadProcess(const DownloadProgressObj &progress)
+{
+    if (progress.state == DownloadProgressObj::Status::COMPLETED) {
+        ThumbnailGenerateHelper::CreateAstcAfterDownloadThumbOnDemand(progress.path);
+    } else if (progress.state == DownloadProgressObj::Status::FAILED) {
+        MEDIA_INFO_LOG("download thumbnail file faild, file path is %{public}s", progress.path.c_str());
+    }
+    if (progress.batchState == DownloadProgressObj::Status::COMPLETED ||
+        progress.batchState == DownloadProgressObj::Status::FAILED ||
+        progress.batchState == DownloadProgressObj::Status::STOPPED) {
+        auto readyTask = ReadyTaskManager::GetInstance();
+        if (readyTask == nullptr) {
+            MEDIA_ERR_LOG("thumbReadyTaskData is null");
+            return;
+        }
+        auto thumbReadyTaskData = readyTask->GetReadyTaskData();
+        if (!thumbReadyTaskData->isCloudTaskFinish && thumbReadyTaskData->downloadId == progress.downloadId) {
+            thumbReadyTaskData->isCloudTaskFinish = true;
+            ThumbnailGenerateHelper::CreateAstcBatchOnDemandTaskFinish();
+        }
+    }
+}
 
 int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bool isSync)
 {
@@ -189,33 +213,128 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
         MEDIA_ERR_LOG("rdbStore is not init");
         return E_ERR;
     }
-
     vector<ThumbnailData> infos;
     int32_t err = 0;
-    if (!ThumbnailUtils::QueryNoAstcInfosOnDemand(opts, infos, predicate, err)) {
+    auto readyTask = ReadyTaskManager::GetInstance();
+    if (readyTask == nullptr) {
+        MEDIA_ERR_LOG("thumbReadyTaskData is null");
+        return E_ERR;
+    }
+    auto thumbReadyTaskData = readyTask->GetReadyTaskData();
+    thumbReadyTaskData->opts = opts;
+    if (!ThumbnailUtils::QueryNoAstcInfosOnDemand(opts, predicate, err)) {
         MEDIA_ERR_LOG("Failed to QueryNoAstcInfos %{public}d", err);
         return err;
     }
-    if (infos.empty()) {
+    if (!thumbReadyTaskData->localInfos.empty()) thumbReadyTaskData->allLocalFileFinished = false;
+    if (thumbReadyTaskData->localInfos.empty() && thumbReadyTaskData->timeoutCount >= RETRY_DOWNLOAD_THUMB_LIMIT) {
+        thumbReadyTaskData->allLocalFileFinished = true;
+        thumbReadyTaskData->timeoutCount = 0;
+        if (!ThumbnailUtils::QueryNoAstcInfosOnDemand(opts, predicate, err)) {
+            MEDIA_ERR_LOG("Failed to QueryNoAstcInfos %{public}d", err);
+            return err;
+        }
+    }
+    if (thumbReadyTaskData->localInfos.empty() && thumbReadyTaskData->cloudPaths.empty()) {
         MEDIA_INFO_LOG("No need create Astc.");
         return E_THUMBNAIL_ASTC_ALL_EXIST;
     }
-
-    MEDIA_INFO_LOG("no astc data size: %{public}d, requestId: %{public}d", static_cast<int>(infos.size()), requestId);
-    for (auto& info : infos) {
+    MEDIA_INFO_LOG("no astc cloud size: %{public}d, local size: %{public}d, requestId is: %{public}d",
+        static_cast<int>(thumbReadyTaskData->cloudPaths.size()),
+        static_cast<int>(thumbReadyTaskData->localInfos.size()), requestId);
+    thumbReadyTaskData->requestId = requestId;
+    thumbReadyTaskData->isCloudTaskFinish = thumbReadyTaskData->cloudPaths.empty();
+    thumbReadyTaskData->isLocalTaskFinish = thumbReadyTaskData->localInfos.empty();
+    HandleDownloadBatch();
+    for (auto& info : thumbReadyTaskData->localInfos) {
         opts.row = info.id;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
-        if (info.isLocalFile) {
             info.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
             IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateThumbnail, opts, info, requestId);
-        } else {
-            info.loaderOpts.loadingStates = info.mediaType == MEDIA_TYPE_VIDEO ?
-                SourceLoader::ALL_SOURCE_LOADING_CLOUD_VIDEO_STATES : SourceLoader::ALL_SOURCE_LOADING_STATES;
-            IThumbnailHelper::AddThumbnailGenBatchTask(info.orientation == 0 ?
-                IThumbnailHelper::CreateAstc : IThumbnailHelper::CreateAstcEx, opts, info, requestId);
+    }
+    thumbReadyTaskData->isLocalTaskFinish = true;
+    CreateAstcBatchOnDemandTaskFinish();
+    return E_OK;
+}
+
+void ThumbnailGenerateHelper::CreateAstcBatchOnDemandTaskFinish()
+{
+    auto readyTask = ReadyTaskManager::GetInstance();
+    if (readyTask == nullptr) {
+        MEDIA_ERR_LOG("thumbReadyTaskData is null");
+        return;
+    }
+    auto thumbReadyTaskData = readyTask->GetReadyTaskData();
+    if (!thumbReadyTaskData->isLocalTaskFinish || !thumbReadyTaskData->isCloudTaskFinish) {
+        return;
+    }
+    MEDIA_INFO_LOG("CreateAstcBatchOnDemand cloud and local task all finish, requestId: %{public}d",
+        thumbReadyTaskData->requestId);
+    IThumbnailHelper::AddThumbnailCancelTask(IThumbnailHelper::CancelThumbGenBatchTask, thumbReadyTaskData->requestId);
+}
+
+void ThumbnailGenerateHelper::StopDownloadThumbBatchOnDemand(int32_t requestId)
+{
+    auto readyTask = ReadyTaskManager::GetInstance();
+    if (readyTask == nullptr) {
+        MEDIA_ERR_LOG("thumbReadyTaskData is null");
+        return;
+    }
+    auto thumbReadyTaskData = readyTask->GetReadyTaskData();
+    if (requestId <= 0 || thumbReadyTaskData->downloadId < 0) {
+        return;
+    }
+    MEDIA_INFO_LOG("Stop Download Thumb Batch task, downloadId is: %{public}lld", thumbReadyTaskData->downloadId);
+    CloudSyncManager::GetInstance().StopFileCache(thumbReadyTaskData->downloadId, true);
+}
+
+void ThumbnailGenerateHelper::CreateAstcAfterDownloadThumbOnDemand(const std::string &path)
+{
+    auto readyTask = ReadyTaskManager::GetInstance();
+    if (readyTask == nullptr) {
+        MEDIA_ERR_LOG("thumbReadyTaskData is null");
+        return;
+    }
+    auto thumbReadyTaskData = readyTask->GetReadyTaskData();
+    auto data = thumbReadyTaskData->downloadThumbMap[path];
+    ThumbRdbOpt opts = thumbReadyTaskData->opts;
+    opts.row = data.id;
+    ThumbnailUtils::RecordStartGenerateStats(data.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
+    ValuesBucket values;
+    Size lcdSize;
+    if (data.mediaType == MEDIA_TYPE_VIDEO && ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::LCD, lcdSize)) {
+        ThumbnailUtils::SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
+        int changedRows;
+        int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+        vector<string> { data.id });
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("RdbStore lcd size failed! %{public}d", err);
         }
     }
-    return E_OK;
+    data.loaderOpts.loadingStates = SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
+    if (data.orientation != 0) {
+        IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstcEx, opts,
+            data, thumbReadyTaskData->requestId);
+    } else {
+        IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstc, opts,
+            data, thumbReadyTaskData->requestId);
+    }
+}
+
+void ThumbnailGenerateHelper::HandleDownloadBatch()
+{
+    auto readyTask = ReadyTaskManager::GetInstance();
+    if (readyTask == nullptr) {
+        MEDIA_ERR_LOG("thumbReadyTaskData is null");
+        return;
+    }
+    auto thumbReadyTaskData = readyTask->GetReadyTaskData();
+    if (!thumbReadyTaskData->cloudPaths.empty()) {
+        auto downloadCallback = std::make_shared<ThumbnailCloudDownloadCallback>();
+        CloudSyncManager::GetInstance().RegisterDownloadFileCallback(downloadCallback);
+        CloudSyncManager::GetInstance().StartFileCache(thumbReadyTaskData->cloudPaths,
+            thumbReadyTaskData->downloadId, DownloadFileType::TYPE_LCD);
+    }
 }
 
 int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
