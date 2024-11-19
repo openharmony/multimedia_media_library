@@ -28,6 +28,7 @@
 #include "acl.h"
 #include "background_cloud_file_processor.h"
 #include "background_task_mgr_helper.h"
+#include "cloud_media_asset_manager.h"
 #include "cloud_sync_switch_observer.h"
 #include "datashare_abs_result_set.h"
 #ifdef DISTRIBUTED
@@ -44,7 +45,6 @@
 #include "location_column.h"
 #include "media_analysis_helper.h"
 #include "media_column.h"
-#include "cloud_media_asset_manager.h"
 #include "media_datashare_ext_ability.h"
 #include "media_directory_type_column.h"
 #include "media_file_utils.h"
@@ -970,10 +970,6 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
-    }
-
-    if (cmd.GetOprnObject() == OperationObject::CLOUD_MEDIA_ASSET_OPERATE) {
-        return CloudMediaAssetManager::GetInstance().HandleCloudMediaAssetUpdateOperations(cmd);
     }
 
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
@@ -2126,9 +2122,9 @@ static int32_t SearchDateTakenWhenZero(const shared_ptr<MediaLibraryRdbStore> rd
     }
     if (count == 0) {
         MEDIA_INFO_LOG("No dateTaken need to update");
-        needUpdate = false;
         return E_OK;
     }
+    needUpdate = true;
     MEDIA_INFO_LOG("Have dateTaken need to update, count = %{public}d", count);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId =
@@ -2147,10 +2143,10 @@ int32_t MediaLibraryDataManager::UpdateDateTakenWhenZero()
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
         return E_FAIL;
     }
-    bool needUpdate = true;
+    bool needUpdate = false;
     unordered_map<string, string> updateData;
     int32_t ret = SearchDateTakenWhenZero(rdbStore_, needUpdate, updateData);
-    if (ret) {
+    if (ret != E_OK) {
         MEDIA_ERR_LOG("SerchDateTaken failed, ret = %{public}d", ret);
         return ret;
     }
@@ -2169,7 +2165,7 @@ int32_t MediaLibraryDataManager::UpdateDateTakenWhenZero()
     for (const auto& data : updateData) {
         ThumbnailService::GetInstance()->UpdateAstcWithNewDateTaken(data.first, data.second, "0");
     }
-    MEDIA_DEBUG_LOG("UpdateDateTakenWhenZero start");
+    MEDIA_DEBUG_LOG("UpdateDateTakenWhenZero end");
     return ret;
 }
 }  // namespace Media

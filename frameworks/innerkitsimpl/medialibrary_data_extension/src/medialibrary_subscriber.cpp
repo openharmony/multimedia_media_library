@@ -571,7 +571,7 @@ static void UpdateDateTakenWhenZero(AsyncTaskData *data)
 
 static int32_t DoUpdateDateTakenWhenZero()
 {
-    MEDIA_INFO_LOG("Begin DoUpdateDateTakenWhenZero");
+    MEDIA_DEBUG_LOG("Begin DoUpdateDateTakenWhenZero");
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
         MEDIA_ERR_LOG("Failed to get async worker instance!");

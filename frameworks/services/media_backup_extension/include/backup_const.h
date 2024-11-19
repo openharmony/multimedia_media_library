@@ -185,8 +185,6 @@ const std::string CLONE_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data_cl
 const std::string CLONE_KVSTORE_YEAR_STOREID = "medialibrary_year_astc_data_clone";
 const std::string MEDIA_KVDB_DIR = "/data/storage/el2/database";
 const std::string CLONE_KVDB_BACKUP_DIR = "/storage/media/local/files/.backup/backup/media_temp_kvdb";
-const std::string RESTORE_KVSTORE_FILE_ID_TEMPLATE = "0000000000";
-const std::string RESTORE_KVSTORE_DATE_KEY_TEMPLATE = "0000000000000";
 
 const std::string FILE_SEPARATOR = "/";
 

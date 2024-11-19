@@ -27,6 +27,8 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 constexpr int32_t E_HAS_DB_ERROR = -222;
 constexpr int32_t E_OK = 0;
+constexpr int32_t RETRY_TRANS_MAX_TIMES = 2;
+constexpr int32_t RETRY_TRANS_MAX_TIMES_FOR_BACKUP = 10;
 
 TransactionOperations::TransactionOperations(std::string funcName)
     : funcName_(funcName), reporter_(funcName)
@@ -132,22 +134,27 @@ int32_t TransactionOperations::TryTrans(std::function<int(void)> &func, bool isB
 
 int32_t TransactionOperations::RetryTrans(std::function<int(void)> &func, bool isBackup)
 {
-    int32_t err = TryTrans(func, isBackup);
-    if (err == E_OK) {
-        return err;
-    }
-    if (err == NativeRdb::E_SQLITE_BUSY && !isSkipCloudSync_) {
-        MEDIA_ERR_LOG("TryTrans busy, err:%{public}d", err);
+    int32_t currentTime = 0;
+    int maxTryTimes = isBackup ? RETRY_TRANS_MAX_TIMES_FOR_BACKUP : RETRY_TRANS_MAX_TIMES;
+    int32_t err = NativeRdb::E_OK;
+    while (currentTime < maxTryTimes) {
+        err = TryTrans(func, isBackup);
+        if (err == E_OK) {
+            return err;
+        }
+        if (err == NativeRdb::E_SQLITE_BUSY && !isSkipCloudSync_) {
+            MEDIA_ERR_LOG("TryTrans busy, err:%{public}d", err);
 #ifdef CLOUD_SYNC_MANAGER
-        MEDIA_INFO_LOG("Stop cloud sync");
-        FileManagement::CloudSync::CloudSyncManager::GetInstance()
-            .StopSync("com.ohos.medialibrary.medialibrarydata");
-        isSkipCloudSync_ = true;
+            MEDIA_INFO_LOG("Stop cloud sync");
+            FileManagement::CloudSync::CloudSyncManager::GetInstance()
+                .StopSync("com.ohos.medialibrary.medialibrarydata");
+            isSkipCloudSync_ = true;
 #endif
+        }
+        currentTime++;
+        reporter_.Restart();
     }
-    reporter_.Restart();
-    err = TryTrans(func, isBackup);
-    MEDIA_INFO_LOG("RetryTrans twice result is :%{public}d", err);
+    MEDIA_INFO_LOG("RetryTrans result is :%{public}d", err);
     return err;
 }
 
