@@ -93,7 +93,7 @@ ohos_shared_library("cj_photoaccesshelper_ffi") {
     "access_token:libtokenid_sdk",
     "app_file_service:fileuri_native",
     "c_utils:utils",
-    "data_share:cj_dataSharePredicates_ffi",
+    "data_share:cj_data_share_predicates_ffi",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "hilog:libhilog",
@@ -139,10 +139,6 @@ ohos_shared_library("cj_photoaccesshelper_ffi") {
       "image_framework:image_native",
     ]
     cflags_cc = [ "-DHAS_ACE_ENGINE_PART" ]
-  }
-
-  if (is_ohos) {
-    defines += [ "OHOS_PLATFORM" ]
   }
 
   innerapi_tags = [ "platformsdk" ]
