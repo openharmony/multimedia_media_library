@@ -3306,7 +3306,7 @@ static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
 {
     std::string checkSql = "SELECT " + columnName + " FROM " +
                           PhotoColumn::PHOTOS_TABLE + " LIMIT 1";
-    int32_t ret = store.ExecuteSql(checkSql);
+    int32_t ret = ExecSqls(checkSql, store);
     return ret == E_OK;
 }
 
