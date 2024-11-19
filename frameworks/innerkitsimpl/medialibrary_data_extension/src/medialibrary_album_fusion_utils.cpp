@@ -733,6 +733,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<
     }
 
     MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName);
+    GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_NAME, displayName);
     err = CopyMateData(upgradeStore, resultSet, newAssetId, targetPath, copyInfo);
     if (err != E_OK) {
         MEDIA_INFO_LOG("Failed to copy local file.");
