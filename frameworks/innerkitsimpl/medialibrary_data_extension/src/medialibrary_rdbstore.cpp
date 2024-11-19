@@ -3302,6 +3302,32 @@ static void AddCloudEnhancementColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
+{
+    std::string checkSql = "SELECT " + columnName + " FROM " +
+                          PhotoColumn::PHOTOS_TABLE + " LIMIT 1";
+    int32_t ret = store.ExecuteSql(checkSql);
+    return ret == E_OK;
+}
+
+static void AddCloudEnhanceColsFix(RdbStore& store)
+{
+    bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_CE_AVAILABLE);
+    if (!hasColumn) {
+        AddCloudEnhancementColumns(store);
+        MEDIA_INFO_LOG("Add Cloud Enhance Cols completed successfully");
+    }
+}
+
+static void AddDynamicRangeColsFix(RdbStore& store)
+{
+    bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE);
+    if (!hasColumn) {
+        AddDynamicRangeType(store);
+        MEDIA_INFO_LOG("Add Dynamic Range Cols completed successfully");
+    }
+}
+
 static void AddSupportedWatermarkType(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4161,6 +4187,11 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_GEO_DEFAULT_VALUE) {
         AddGeoDefaultValue(store);
+    }
+
+    if (oldVersion < VERSION_HDR_AND_CLOUD_ENAHCNEMENT_FIX) {
+        AddDynamicRangeColsFix(store);
+        AddCloudEnhanceColsFix(store);
     }
 }
 
