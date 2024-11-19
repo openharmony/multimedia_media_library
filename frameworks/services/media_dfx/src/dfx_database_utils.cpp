@@ -150,13 +150,13 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
         MediaColumn::MEDIA_DURATION + " = 0 ) AND " + MediaColumn::MEDIA_TYPE + " = " +
         std::to_string(MEDIA_TYPE_VIDEO) + " )) AND " + filterCondition;
     
-    const string duplicateLpathCountQuerySql = "SELECT count(*) AS" + RECORD_COUNT + " FROM " +
+    const string duplicateLpathCountQuerySql = "SELECT COUNT(*) AS" + RECORD_COUNT + " FROM " +
         PhotoAlbumColumns::TABLE + " WHERE COALESCE(lpath, '') IN (SELECT lpath FROM " +
         PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " IN (0, 2048) AND " +
         "COALESCE(lpath, '') <> '' AND " + PhotoAlbumColumns::ALBUM_DIRTY +
-        " <> 4 GROUP BY lpath HAVING COUNT(1) > 1 AND COALESCE(PhotoAlbum.dirty, 1) <> 4";
+        " <> 4 GROUP BY lpath HAVING COUNT(1) > 1) AND COALESCE(PhotoAlbum.dirty, 1) <> 4";
     
-    const string abnormalLpathCountQuerySql = "SELECT count(*) AS" + RECORD_COUNT + " FROM " +
+    const string abnormalLpathCountQuerySql = "SELECT COUNT(*) AS" + RECORD_COUNT + " FROM " +
         PhotoAlbumColumns::TABLE + " WHERE COALESCE(lpath, '') = '' AND " +
         PhotoAlbumColumns::ALBUM_TYPE + " != " + std::to_string(PhotoAlbumType::SYSTEM) + " AND " +
         PhotoAlbumColumns::ALBUM_DIRTY + " !=4 ";
