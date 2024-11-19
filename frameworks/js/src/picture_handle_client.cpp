@@ -141,6 +141,7 @@ std::unique_ptr<Media::Picture> PictureHandlerClient::ParsePicture(MessageParcel
     bool ret = ReadMaintenanceData(pictureParcel, picturePtr, err);
     if (!ret) {
         MEDIA_ERR_LOG("Failed to ReadMaintenanceData");
+        return nullptr;
     }
     return picturePtr;
 }
