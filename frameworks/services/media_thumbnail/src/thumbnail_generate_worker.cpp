@@ -93,7 +93,6 @@ int32_t ThumbnailGenerateWorker::ReleaseTaskQueue(const ThumbnailTaskPriority &t
 int32_t ThumbnailGenerateWorker::AddTask(
     const std::shared_ptr<ThumbnailGenerateTask> &task, const ThumbnailTaskPriority &taskPriority)
 {
-    IncreaseRequestIdTaskNum(task);
     if (taskPriority == ThumbnailTaskPriority::HIGH) {
         highPriorityTaskQueue_.Push(task);
     } else if (taskPriority == ThumbnailTaskPriority::MID) {
@@ -160,7 +159,6 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
             }
             task->executor_(task->data_);
             ++(threadStatus->taskNum_);
-            DecreaseRequestIdTaskNum(task);
             continue;
         }
 
@@ -170,7 +168,6 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
             }
             task->executor_(task->data_);
             ++(threadStatus->taskNum_);
-            DecreaseRequestIdTaskNum(task);
             continue;
         }
 
@@ -180,7 +177,6 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
             }
             task->executor_(task->data_);
             ++(threadStatus->taskNum_);
-            DecreaseRequestIdTaskNum(task);
         }
     }
     MEDIA_INFO_LOG("ThumbnailGenerateWorker thread finish, taskType:%{public}d, id:%{public}d",
@@ -190,54 +186,6 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
 bool ThumbnailGenerateWorker::NeedIgnoreTask(int32_t requestId)
 {
     return ignoreRequestId_ != 0 && ignoreRequestId_ == requestId;
-}
-
-void ThumbnailGenerateWorker::IncreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task)
-{
-    if (task == nullptr || task->data_->requestId_ == 0) {
-        // If requestId is 0, no need to manager this task.
-        return;
-    }
-
-    std::unique_lock<std::mutex> lock(requestIdMapLock_);
-    int32_t requestId = task->data_->requestId_;
-    auto pos = requestIdTaskMap_.find(requestId);
-    if (pos == requestIdTaskMap_.end()) {
-        requestIdTaskMap_.insert(std::make_pair(requestId, 1));
-        return;
-    }
-    ++(pos->second);
-}
-
-void ThumbnailGenerateWorker::DecreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task)
-{
-    if (task == nullptr || task->data_->requestId_ == 0) {
-        // If requestId is 0, no need to manager this task.
-        return;
-    }
-
-    std::unique_lock<std::mutex> lock(requestIdMapLock_);
-    int32_t requestId = task->data_->requestId_;
-    auto pos = requestIdTaskMap_.find(requestId);
-    if (pos == requestIdTaskMap_.end()) {
-        return;
-    }
-
-    if (--(pos->second) == 0) {
-        requestIdTaskMap_.erase(requestId);
-        NotifyTaskFinished(requestId);
-    }
-}
-
-void ThumbnailGenerateWorker::NotifyTaskFinished(int32_t requestId)
-{
-    auto watch = MediaLibraryNotify::GetInstance();
-    if (watch == nullptr) {
-        MEDIA_ERR_LOG("watch is nullptr");
-        return;
-    }
-    std::string notifyUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
-    watch->Notify(notifyUri, NotifyType::NOTIFY_THUMB_ADD);
 }
 
 void ThumbnailGenerateWorker::ClearWorkerThreads()
