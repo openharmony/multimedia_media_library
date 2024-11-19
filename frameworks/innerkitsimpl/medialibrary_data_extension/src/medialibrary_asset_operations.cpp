@@ -139,6 +139,7 @@ int32_t MediaLibraryAssetOperations::CreateOperation(MediaLibraryCommand &cmd)
     // CreateAsset specify type
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_PHOTO:
+        case OperationObject::PTP_OPERATION:
             return MediaLibraryPhotoOperations::Create(cmd);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Create(cmd);
@@ -218,6 +219,7 @@ int32_t MediaLibraryAssetOperations::OpenOperation(MediaLibraryCommand &cmd, con
     // Open specify type
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_PHOTO:
+        case OperationObject::PTP_OPERATION:
             return MediaLibraryPhotoOperations::Open(cmd, mode);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Open(cmd, mode);
@@ -239,6 +241,7 @@ int32_t MediaLibraryAssetOperations::CloseOperation(MediaLibraryCommand &cmd)
     // Close specify type
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_PHOTO:
+        case OperationObject::PTP_OPERATION:
             return MediaLibraryPhotoOperations::Close(cmd);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Close(cmd);

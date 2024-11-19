@@ -30,7 +30,10 @@ const uint16_t EVENT_CONTAINER_TYPE = 4;
 const uint32_t PACKET_HEADER_LENGETH = 12;
 const uint32_t READ_DATA_BUFFER_MAX_SIZE = 16384;
 const uint32_t READ_BUFFER_MAX_SIZE = 512;
-
+constexpr uint32_t PHOTES_FILE_ID = 100000000;
+constexpr uint32_t PHOTES_FILE_ID_TWO = 200000000;
+constexpr uint32_t PHOTES_FILE_ID_THREE = 300000000;
+constexpr uint32_t PHOTES_FILE_ID_FOUR = 400000000;
 const std::string DEFAULT_PRODUCT_NAME = "OpenHarmony Device";
 const std::string DEFAULT_PRODUCT_MODEL = "ohos";
 const std::string DEFAULT_PRODUCT_MANUFACTURER = "default";

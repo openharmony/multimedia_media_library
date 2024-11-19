@@ -91,7 +91,7 @@ MtpOperationUtils::MtpOperationUtils(const shared_ptr<MtpOperationContext> &cont
     mtpMedialibraryManager_ = MtpMedialibraryManager::GetInstance();
     CHECK_AND_RETURN_LOG(mtpMedialibraryManager_ != nullptr,
         "MtpMedialibraryManager failed, mtpMedialibraryManager_ is null");
-
+    mtpMedialibraryManager_->SetContext(context);
     mtpMedialibraryManager_->Init(token);
     mtpMediaLibrary_ = MtpMediaLibrary::GetInstance();
 }
