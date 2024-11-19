@@ -1563,10 +1563,10 @@ int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(const std::shared_ptr
     int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("Begin clean duplicated album");
     const std::string QUERY_DUPLICATE_ALBUM =
-        "SELECT DISTINCT a1.* FROM (SELECT * FROM PhotoAlbum WHERE COALESCE(dirty, 1) != 4 "
-        "AND COALESCE(lpath, '') <> '') AS a1 INNER JOIN (SELECT * FROM PhotoAlbum WHERE COALESCE(dirty, 1) != 4 "
-        "AND COALESCE(lpath, '') <> '') AS a2 ON a1.lpath = a2.lpath WHERE a1.album_id <> a2.album_id "
-        "order by lpath asc, album_subtype desc, cloud_id desc, count desc";
+        "SELECT DISTINCT a1.* FROM PhotoAlbum a1 JOIN PhotoAlbum a2 ON a1.album_name = a2.album_name "
+        "AND a1.cloud_id <> a2.cloud_id AND a1.priority = a2.priority AND "
+        "(a1.priority is null OR a1.priority ='1') order by "
+        "album_name asc, album_subtype desc, cloud_id desc, count desc";
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_DUPLICATE_ALBUM);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_DB_FAIL, "Query duplicate album fail");
     int32_t rowCount = 0;
