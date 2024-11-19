@@ -279,8 +279,8 @@ shared_ptr<FetchResult<FileAsset>> PhotoAccessHelperImpl::GetAssets(COptions opt
     string queryUri;
     if (extraInfo.uri == URI_ALL_DUPLICATE_ASSETS) {
         queryUri = PAH_ALL_DUPLICATE_ASSETS;
-    } else if (extraInfo.uri == URI_OTHER_DUPLICATE_ASSETS) {
-        queryUri = PAH_OTHER_DUPLICATE_ASSETS;
+    } else if (extraInfo.uri == URI_CAN_DEL_DUPLICATE_ASSETS) {
+        queryUri = PAH_CAN_DEL_DUPLICATE_ASSETS;
     } else {
         queryUri = PAH_QUERY_PHOTO;
     }
@@ -303,9 +303,10 @@ shared_ptr<FetchResult<FileAsset>> PhotoAccessHelperImpl::GetAssets(COptions opt
     return fetchResult;
 }
 
-static void ParseArgsGetBurstAssets(char* cBurstKey, COptions options, DataSharePredicates &predicates,
-    vector<string> &fetchColumn, ExtraInfo &extraInfo, int32_t &errCode)
+static int32_t ParseArgsGetBurstAssets(char* cBurstKey, COptions options, DataSharePredicates &predicates,
+    vector<string> &fetchColumn, ExtraInfo &extraInfo)
 {
+    int32_t errCode = E_SUCCESS;
     string burstKey(cBurstKey);
     if (burstKey.size() > PATH_MAX) {
         burstKey = burstKey.substr(0, PATH_MAX);
@@ -313,16 +314,21 @@ static void ParseArgsGetBurstAssets(char* cBurstKey, COptions options, DataShare
     if (burstKey.empty()) {
         LOGE("The input burstkey cannot be empty");
         errCode = OHOS_INVALID_PARAM_CODE;
-        return;
+        return errCode;
     }
     extraInfo.fetchOptType = ASSET_FETCH_OPT;
     GetFetchOption(options, predicates, fetchColumn, extraInfo, errCode);
+    if (errCode != E_SUCCESS) {
+        LOGE("GetFetchOption failed");
+        return errCode;
+    }
     AddDefaultAssetColumns(fetchColumn, PhotoColumn::IsPhotoColumn,
         TYPE_PHOTO, errCode);
     predicates.And()->EqualTo(PhotoColumn::PHOTO_BURST_KEY, burstKey);
     predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
     predicates.OrderByAsc(MediaColumn::MEDIA_NAME);
+    return errCode;
 }
 
 shared_ptr<FetchResult<FileAsset>> PhotoAccessHelperImpl::GetBurstAssets(char* cBurstKey,
@@ -331,7 +337,7 @@ shared_ptr<FetchResult<FileAsset>> PhotoAccessHelperImpl::GetBurstAssets(char* c
     DataSharePredicates predicates;
     vector<string> fetchColumn;
     ExtraInfo extraInfo;
-    ParseArgsGetBurstAssets(cBurstKey, options, predicates, fetchColumn, extraInfo, errCode);
+    errCode = ParseArgsGetBurstAssets(cBurstKey, options, predicates, fetchColumn, extraInfo);
     if (errCode != E_SUCCESS) {
         LOGE("ParseArgsGetBurstAssets failed.");
         return nullptr;
@@ -339,8 +345,8 @@ shared_ptr<FetchResult<FileAsset>> PhotoAccessHelperImpl::GetBurstAssets(char* c
     string queryUri = PAH_QUERY_PHOTO;
     if (extraInfo.uri == URI_ALL_DUPLICATE_ASSETS) {
         queryUri = PAH_ALL_DUPLICATE_ASSETS;
-    } else if (extraInfo.uri == URI_OTHER_DUPLICATE_ASSETS) {
-        queryUri = PAH_OTHER_DUPLICATE_ASSETS;
+    } else if (extraInfo.uri == URI_CAN_DEL_DUPLICATE_ASSETS) {
+        queryUri = PAH_CAN_DEL_DUPLICATE_ASSETS;
     } else {
         queryUri = PAH_QUERY_PHOTO;
     }

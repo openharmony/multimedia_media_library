@@ -19,7 +19,7 @@
 #include <string>
 #include <sys/sendfile.h>
 #include <unordered_map>
-#include <uuid/uuid.h>
+#include <uuid.h>
 
 #include "access_token.h"
 #include "accesstoken_kit.h"
@@ -434,9 +434,15 @@ void MediaAssetManagerImpl::GetByteArrayObject(const string &requestUri,
         return;
     }
     ssize_t imgLen = lseek(imageFd, 0, SEEK_END);
+    if (imgLen <= 0) {
+        LOGE("imgLen is error");
+        close(imageFd);
+        return;
+    }
     void* buffer = malloc(imgLen);
     if (buffer == nullptr) {
         LOGE("malloc buffer failed");
+        close(imageFd);
         return;
     }
     lseek(imageFd, 0, SEEK_SET);

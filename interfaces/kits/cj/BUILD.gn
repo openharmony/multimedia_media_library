@@ -19,6 +19,7 @@ config("ffi_config") {
   include_dirs = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
@@ -28,7 +29,6 @@ config("ffi_config") {
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include/napi",
-    "${MEDIALIB_THIRD_PARTY_PATH}/e2fsprogs/e2fsprogs/lib",
   ]
 
   if (defined(medialibrary_mtp_enable)) {
@@ -96,6 +96,7 @@ ohos_shared_library("cj_photoaccesshelper_ffi") {
     "data_share:cj_data_share_predicates_ffi",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
+    "e2fsprogs:libext2_uuid",
     "hilog:libhilog",
     "image_framework:cj_image_ffi",
     "image_framework:image",
@@ -113,8 +114,6 @@ ohos_shared_library("cj_photoaccesshelper_ffi") {
     "relational_store:rdb_data_share_adapter",
     "window_manager:libwm",
   ]
-
-  public_external_deps = [ "e2fsprogs:libext2_uuid" ]
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]

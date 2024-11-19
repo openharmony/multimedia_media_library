@@ -284,6 +284,23 @@ static int32_t DeleteAssetsExecute(OHOS::DataShare::DataSharePredicates& predica
     return 0;
 }
 
+static int32_t SetSessionId(std::string &appName, std::vector<std::string> &uris, Ace::UIContent* uiContent,
+    std::shared_ptr<DeleteCallback>& callback, Ace::ModalUIExtensionCallbacks &extensionCallback)
+{
+    OHOS::AAFwk::Want request;
+    if (!InitDeleteRequest(appName, uris, request, callback)) {
+        return JS_INNER_FAIL;
+    }
+    OHOS::Ace::ModalUIExtensionConfig config;
+    config.isProhibitBack = true;
+    int32_t sessionId = uiContent->CreateModalUIExtension(request, extensionCallback, config);
+    if (sessionId == 0) {
+        return JS_INNER_FAIL;
+    }
+    callback->SetSessionId(sessionId);
+    return 0;
+}
+
 int32_t MediaAssetChangeRequestImpl::CJDeleteAssets(int64_t contextId, std::vector<std::string> uris)
 {
     if (ParseArgsDeleteAssets(contextId, uris) != 0) {
@@ -326,18 +343,7 @@ int32_t MediaAssetChangeRequestImpl::CJDeleteAssets(int64_t contextId, std::vect
             callback->OnError(code, name, message);
         },
     };
-    OHOS::AAFwk::Want request;
-    if (!InitDeleteRequest(appName, uris, request, callback)) {
-        return JS_INNER_FAIL;
-    }
-    OHOS::Ace::ModalUIExtensionConfig config;
-    config.isProhibitBack = true;
-    int32_t sessionId = uiContent->CreateModalUIExtension(request, extensionCallback, config);
-    if (sessionId == 0) {
-        return JS_INNER_FAIL;
-    }
-    callback->SetSessionId(sessionId);
-    return 0;
+    return SetSessionId(appName, uris, uiContent, callback, extensionCallback);
 #else
     LOGE("ace_engine is not support");
     return JS_INNER_FAIL;

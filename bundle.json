@@ -42,6 +42,7 @@
           "device_security_level",
           "dfs_service",
           "drivers_interface_usb",
+          "e2fsprogs",
           "eventhandler",
           "file_api",
           "graphic_2d",
@@ -82,7 +83,6 @@
           "device_standby"
         ],
         "third_party": [
-          "e2fsprogs",
           "openssl"
         ]
       },
