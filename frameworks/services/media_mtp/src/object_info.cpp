@@ -40,12 +40,12 @@ void ObjectInfo::Dump()
         protectionStatus, compressedSize, size);
 
     MEDIA_DEBUG_LOG("    image={pixWidth=%{private}u, pixHeight=%{private}u, pixDepth=%{private}u}",
-        imagePixWidth, imagePixHeight, imagePixDepth);
+        imagePixelWidth, imagePixelHeight, imagePixelDepth);
 
     MEDIA_DEBUG_LOG("    thumb={format=%{private}s(%{private}x), compressedSize=%{private}u,"
         " pixWidth=%{private}u, pixHeight=%{private}u}",
         MtpPacketTool::GetFormatName(thumbFormat).c_str(), thumbFormat, thumbCompressedSize,
-        thumbPixWidth, thumbPixHeight);
+        thumbPixelWidth, thumbPixelHeight);
 
     MEDIA_DEBUG_LOG("    keywords=[%{private}s]", keywords.c_str());
     MEDIA_DEBUG_LOG("--- ObjectInfo end ---");

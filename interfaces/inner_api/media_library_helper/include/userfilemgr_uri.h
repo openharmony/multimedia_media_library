@@ -96,6 +96,8 @@ const std::string OPRN_ALL_DUPLICATE_ASSETS = "all_duplicate_assets";
 const std::string URI_ALL_DUPLICATE_ASSETS = "/" + OPRN_ALL_DUPLICATE_ASSETS;
 const std::string OPRN_CAN_DEL_DUPLICATE_ASSETS = "can_del_duplicate_assets";
 const std::string URI_CAN_DEL_DUPLICATE_ASSETS = "/" + OPRN_CAN_DEL_DUPLICATE_ASSETS;
+const std::string PTP_OPERATION = "ptp_operation";
+const std::string URI_MTP_OPERATION = MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION;
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
 const std::string MEDIA_PHOTOOPRN = "photo_operation";

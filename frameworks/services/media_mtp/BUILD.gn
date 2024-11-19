@@ -77,6 +77,7 @@ if (defined(medialibrary_mtp_enable)) {
       "src/payload_data/set_object_prop_value_data.cpp",
       "src/payload_data/set_object_references_data.cpp",
       "src/property.cpp",
+      "src/ptp_media_sync_observer.cpp",
       "src/storage.cpp",
     ]
 
@@ -92,7 +93,11 @@ if (defined(medialibrary_mtp_enable)) {
       "${MEDIALIB_MTP_PATH}/include",
       "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
       "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+      "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+      "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
+      "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
       "${MEDIALIB_SERVICES_PATH}/media_library/include",
+      "${MEDIALIB_SERVICES_PATH}/media_distributed/include/database_manage",
       "${MEDIALIB_UTILS_PATH}/include",
       "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
       "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -109,7 +114,6 @@ if (defined(medialibrary_mtp_enable)) {
       "ability_runtime:dataobs_manager",
       "access_token:libaccesstoken_sdk",
       "access_token:libnativetoken_shared",
-      "access_token:libtokensetproc_shared",
       "c_utils:utils",
       "common_event_service:cesfwk_innerkits",
       "data_share:datashare_common",
