@@ -726,7 +726,11 @@ bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const Thumbna
         MEDIA_ERR_LOG("watch is nullptr");
         return false;
     }
-    watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_ADD);
+    if (data.isThumbExisted) {
+        watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_UPDATE);
+    } else {
+        watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_ADD);
+    }
     return true;
 }
 
@@ -739,7 +743,6 @@ bool IThumbnailHelper::UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailD
     ValuesBucket values;
     int changedRows;
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
-    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 1);
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { data.id });
     if (err != NativeRdb::E_OK) {
