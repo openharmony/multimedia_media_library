@@ -46,19 +46,24 @@ const std::string APPDATA_DIR_NAME                   = "/storage/media/local/fil
 const std::string DESKTOP_NAME                       = "/storage/media/local/files/Docs/Desktop";
 const std::string PATH_SEPARATOR                     = "/";
 constexpr uint32_t BASE_USER_RANGE                   = 200000;
-constexpr int32_t NORMAL_WIDTH = 256;
-constexpr int32_t NORMAL_HEIGHT = 256;
-constexpr int32_t COMPRE_SIZE_LEVEL_2 = 204800;
-const std::string THUMBNAIL_FORMAT = "image/jpeg";
-static constexpr uint8_t THUMBNAIL_MID = 90;
+constexpr int32_t NORMAL_WIDTH                       = 256;
+constexpr int32_t NORMAL_HEIGHT                      = 256;
+constexpr int32_t COMPRE_SIZE_LEVEL_2                = 204800;
+const std::string THUMBNAIL_FORMAT                   = "image/jpeg";
+static constexpr uint8_t THUMBNAIL_MID               = 90;
 static std::unordered_map<uint32_t, std::string> handleToPathMap;
 static std::unordered_map<std::string, uint32_t> pathToHandleMap;
 static std::shared_mutex g_mutex;
 enum HANDLE_DEFAULT_ID : uint32_t {
-    PUBLIC_DOC_ID = DEFAULT_STORAGE_ID,
-    SD_START_ID = PUBLIC_DOC_ID + 1,
-    SD_END_ID = SD_START_ID + 127,
-    START_ID = SD_END_ID + 1
+    DEFAULT_PARENT_ID = 0,
+    START_ID
+};
+
+static std::unordered_map<uint32_t, std::string> storageIdToPathMap;
+enum STORAGE_ID : uint32_t {
+    INNER_STORAGE_ID = 1,
+    SD_START_ID = INNER_STORAGE_ID + 1,
+    SD_END_ID = SD_START_ID + 127
 };
 } // namespace
 
@@ -84,8 +89,10 @@ void MtpMediaLibrary::Init()
         WriteLock lock(g_mutex);
         handleToPathMap.clear();
         pathToHandleMap.clear();
+        storageIdToPathMap.clear();
         std::unordered_map<uint32_t, std::string>().swap(handleToPathMap);
         std::unordered_map<std::string, uint32_t>().swap(pathToHandleMap);
+        std::unordered_map<uint32_t, std::string>().swap(storageIdToPathMap);
     }
     // clear all storages, otherwise it maybe has duty data.
     auto manager = MtpStorageManager::GetInstance();
@@ -328,12 +335,9 @@ int32_t MtpMediaLibrary::GetHandles(const std::shared_ptr<MtpOperationContext> &
     CHECK_AND_RETURN_RET_LOG(context != nullptr,
         MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "context is nullptr");
     uint32_t parentId = context->parent;
-    if (parentId == 0 || parentId == MTP_ALL_HANDLE_ID) {
-        parentId = context->storageID;
-    }
     std::string path("");
-    if (GetPathById(parentId, path) != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::GetHandles parent not found");
+    if (GetPathByContextParent(context, path) != MTP_SUCCESS) {
+        MEDIA_ERR_LOG("MtpMediaLibrary::GetHandles parent[%{public}d] not found", parentId);
         return MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR);
     }
     MEDIA_DEBUG_LOG("MtpMediaLibrary::GetHandles path[%{public}s]", path.c_str());
@@ -342,7 +346,6 @@ int32_t MtpMediaLibrary::GetHandles(const std::shared_ptr<MtpOperationContext> &
         WriteLock lock(g_mutex);
         errCode = ScanDirNoDepth(path, outHandles);
     }
-    context->parent = parentId;
     return errCode;
 }
 
@@ -397,7 +400,7 @@ int32_t MtpMediaLibrary::GetObjectInfo(const std::shared_ptr<MtpOperationContext
     struct stat statInfo;
     if (stat(path.c_str(), &statInfo) != 0) {
         MEDIA_ERR_LOG("MtpMediaLibrary::GetObjectInfo stat failed");
-        return MtpErrorUtils::SolveGetObjectInfoError(E_HAS_FS_ERROR);
+        return MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR);
     }
     outObjectInfo->size = GetSizeFromOfft(statInfo.st_size);
     outObjectInfo->dateCreated = statInfo.st_ctime;
@@ -559,13 +562,8 @@ int32_t MtpMediaLibrary::SendObjectInfo(const std::shared_ptr<MtpOperationContex
     uint32_t &outStorageID, uint32_t &outParent, uint32_t &outHandle)
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
-    uint32_t parent = context->parent;
-    if (parent == 0 || parent == MTP_ALL_HANDLE_ID) {
-        parent = context->storageID;
-    }
-
     std::string doc("");
-    if (GetPathById(parent, doc) != MTP_SUCCESS) {
+    if (GetPathByContextParent(context, doc) != MTP_SUCCESS) {
         MEDIA_ERR_LOG("MtpMediaLibrary::SendObjectInfo parent not found");
         return MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR);
     }
@@ -608,6 +606,20 @@ int32_t MtpMediaLibrary::GetPathById(const int32_t id, std::string &outPath)
         return MTP_SUCCESS;
     }
     return E_ERR;
+}
+
+int32_t MtpMediaLibrary::GetPathByContextParent(const std::shared_ptr<MtpOperationContext> &context, std::string &path)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_CONTEXT_IS_NULL, "context is nullptr");
+    if (context->parent == 0 || context->parent == MTP_ALL_HANDLE_ID) {
+        auto it = storageIdToPathMap.find(context->storageID);
+        if (it != storageIdToPathMap.end()) {
+            path = it->second;
+            return MTP_SUCCESS;
+        }
+        return E_ERR;
+    }
+    return GetPathById(context->parent, path);
 }
 
 int32_t MtpMediaLibrary::GetIdByPath(const std::string &path, uint32_t &outId)
@@ -668,7 +680,7 @@ int32_t MtpMediaLibrary::MoveObject(const std::shared_ptr<MtpOperationContext> &
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
     std::string from("");
     std::string to("");
-    if (GetPathById(context->handle, from) != MTP_SUCCESS || GetPathById(context->parent, to) != MTP_SUCCESS) {
+    if (GetPathById(context->handle, from) != MTP_SUCCESS || GetPathByContextParent(context, to) != MTP_SUCCESS) {
         MEDIA_ERR_LOG("MtpMediaLibrary::MoveObject from or to not found");
         return MtpErrorUtils::SolveMoveObjectError(E_HAS_DB_ERROR);
     }
@@ -704,7 +716,7 @@ int32_t MtpMediaLibrary::CopyObject(const std::shared_ptr<MtpOperationContext> &
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
     std::string from("");
     std::string to("");
-    if (GetPathById(context->handle, from) != MTP_SUCCESS || GetPathById(context->parent, to) != MTP_SUCCESS) {
+    if (GetPathById(context->handle, from) != MTP_SUCCESS || GetPathByContextParent(context, to) != MTP_SUCCESS) {
         MEDIA_ERR_LOG("MtpMediaLibrary::CopyObject from or to not found");
         return MtpErrorUtils::SolveMoveObjectError(E_HAS_DB_ERROR);
     }
@@ -720,6 +732,10 @@ int32_t MtpMediaLibrary::CopyObject(const std::shared_ptr<MtpOperationContext> &
     std::error_code ec;
     auto fromPath = sf::path(from);
     auto toPath = sf::path(to) / sf::path(from).filename();
+    if (sf::exists(toPath, ec)) {
+        MEDIA_ERR_LOG("MtpMediaLibrary::CopyObject toPath exists");
+        return MtpErrorUtils::SolveCopyObjectError(E_FILE_EXIST);
+    }
     sf::copy(fromPath, toPath, sf::copy_options::recursive | sf::copy_options::overwrite_existing, ec);
     if (ec.value() != MTP_SUCCESS) {
         MEDIA_ERR_LOG("MtpMediaLibrary::CopyObject failed");
@@ -818,13 +834,28 @@ int32_t MtpMediaLibrary::CloseFd(const std::shared_ptr<MtpOperationContext> &con
     return MtpErrorUtils::SolveCloseFdError(errCode);
 }
 
+void MtpMediaLibrary::GetHandles(const uint32_t handle, const std::string &root,
+    std::shared_ptr<std::unordered_map<uint32_t, std::string>> &out)
+{
+    auto it = handleToPathMap.find(handle);
+    if (it == handleToPathMap.end()) {
+        auto ite = pathToHandleMap.find(root);
+        if (ite != pathToHandleMap.end()) {
+            out->emplace(ite->second, root);
+        }
+        return;
+    }
+    out->emplace(handle, it->second);
+}
+
 std::shared_ptr<std::unordered_map<uint32_t, std::string>> MtpMediaLibrary::GetHandlesMap(
     const std::shared_ptr<MtpOperationContext> &context)
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, nullptr, "context is nullptr");
     auto handlesMap = std::make_shared<std::unordered_map<uint32_t, std::string>>();
-    auto it = handleToPathMap.find(context->storageID);
-    const std::string root = (it == handleToPathMap.end()) ? PUBLIC_DOC : it->second;
+    CHECK_AND_RETURN_RET_LOG(handlesMap != nullptr, nullptr, "handlesMap is nullptr");
+    auto it = storageIdToPathMap.find(context->storageID);
+    const std::string root = (it == storageIdToPathMap.end()) ? PUBLIC_DOC : it->second;
     if (context->depth == MTP_ALL_DEPTH && (context->handle == 0 || context->handle == MTP_ALL_HANDLE_ID)) {
         context->handle = MTP_ALL_HANDLE_ID;
         context->depth = 0;
@@ -834,9 +865,7 @@ std::shared_ptr<std::unordered_map<uint32_t, std::string>> MtpMediaLibrary::GetH
             if (context->handle == MTP_ALL_HANDLE_ID) {
                 ScanDirTraverseWithType(root, handlesMap);
             } else {
-                auto it = handleToPathMap.find(context->handle);
-                std::string path = (it == handleToPathMap.end()) ? root : it->second;
-                ScanDirTraverseWithType(path, handlesMap);
+                GetHandles(context->handle, root, handlesMap);
             }
         }
         if (context->depth == 1) {
@@ -870,14 +899,14 @@ int32_t MtpMediaLibrary::GetObjectPropList(const std::shared_ptr<MtpOperationCon
         context->handle = MTP_ALL_HANDLE_ID;
         context->depth = 0;
     }
-    MEDIA_INFO_LOG("MtpMediaLibrary::GetObjectPropList handle[0x%{public}x], depth[0x%{public}x]",
-        context->handle, context->depth);
+    MEDIA_DEBUG_LOG("GetObjectPropList handle[0x%{public}x], depth[0x%{public}x] parent[%{public}d]",
+        context->handle, context->depth, context->parent);
     if (!(context->depth == 0 || context->depth == 1)) {
         MEDIA_ERR_LOG("depth error");
         return MTP_ERROR_SPECIFICATION_BY_DEPTH_UNSUPPORTED;
     }
 
-    MEDIA_INFO_LOG("MtpMediaLibrary::GetObjectPropList storageID[%{public}d],format[%{public}d],property[0x%{public}x]",
+    MEDIA_DEBUG_LOG("GetObjectPropList storageID[%{public}d],format[%{public}d],property[0x%{public}x]",
         context->storageID, context->format, context->property);
     int32_t errCode = MTP_ERROR_INVALID_OBJECTHANDLE;
     {
@@ -892,13 +921,13 @@ int32_t MtpMediaLibrary::GetObjectPropList(const std::shared_ptr<MtpOperationCon
     return errCode;
 }
 
-uint32_t MtpMediaLibrary::AddPathToMap(const sf::path &path)
+uint32_t MtpMediaLibrary::AddPathToMap(const std::string &path)
 {
     uint32_t id;
-    auto it = pathToHandleMap.find(path.string());
+    auto it = pathToHandleMap.find(path);
     if (it == pathToHandleMap.end()) {
         id = GetId();
-        AddToHandlePathMap(path.string(), id);
+        AddToHandlePathMap(path, id);
     } else {
         id = it->second;
     }
@@ -981,20 +1010,24 @@ int32_t MtpMediaLibrary::GetObjectPropValue(const std::shared_ptr<MtpOperationCo
 
 int MtpMediaLibrary::GetStorageIds()
 {
-    MtpStorageManager::GetInstance()->ClearStorages();
+    auto manager = MtpStorageManager::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(manager != nullptr, E_ERR, "MtpStorageManager instance is nullptr");
+
     auto storage = make_shared<Storage>();
-    storage->SetStorageID(DEFAULT_STORAGE_ID);
+    CHECK_AND_RETURN_RET_LOG(storage != nullptr, E_ERR, "storage is nullptr");
+    storage->SetStorageID(INNER_STORAGE_ID);
     storage->SetStorageType(MTP_STORAGE_FIXEDRAM);
     storage->SetFilesystemType(MTP_FILESYSTEM_GENERICHIERARCHICAL);
     storage->SetAccessCapability(MTP_ACCESS_READ_WRITE);
-    storage->SetMaxCapacity(MtpStorageManager::GetInstance()->GetTotalSize(PUBLIC_DOC));
-    storage->SetFreeSpaceInBytes(MtpStorageManager::GetInstance()->GetFreeSize(PUBLIC_DOC));
+    storage->SetMaxCapacity(manager->GetTotalSize(PUBLIC_DOC));
+    storage->SetFreeSpaceInBytes(manager->GetFreeSize(PUBLIC_DOC));
     storage->SetFreeSpaceInObjects(0);
-    storage->SetStorageDescription("Inner Storage");
-    MtpStorageManager::GetInstance()->AddStorage(storage);
+    storage->SetStorageDescription(manager->GetStorageDescription(MTP_STORAGE_FIXEDRAM));
+    manager->AddStorage(storage);
     {
         WriteLock lock(g_mutex);
-        AddToHandlePathMap(PUBLIC_DOC, PUBLIC_DOC_ID);
+        AddToHandlePathMap(PUBLIC_DOC, DEFAULT_PARENT_ID);
+        storageIdToPathMap[INNER_STORAGE_ID] = PUBLIC_DOC;
     }
     return MTP_SUCCESS;
 }
@@ -1005,7 +1038,7 @@ void MtpMediaLibrary::GetExternalStorages()
     std::error_code ec;
     CHECK_AND_RETURN_LOG(sf::exists(SD_DOC, ec) && sf::is_directory(SD_DOC, ec), "SD_DOC is not exists");
     for (const auto& entry : sf::directory_iterator(SD_DOC, ec)) {
-        if (!sf::is_directory(entry.path(), ec) || IsHiddenDirectory(entry.path().string())) {
+        if (!sf::is_directory(entry.path(), ec)) {
             continue;
         }
         MEDIA_INFO_LOG("Mtp GetExternalStorages path[%{public}s]", entry.path().c_str());

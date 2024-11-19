@@ -51,6 +51,7 @@ public:
     EXPORT int32_t SendObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         uint32_t &outStorageID, uint32_t &outParent, uint32_t &outHandle);
     EXPORT int32_t GetPathById(const int32_t id, std::string &outPath);
+    EXPORT int32_t GetPathByContextParent(const std::shared_ptr<MtpOperationContext> &context, std::string &path);
     EXPORT int32_t GetIdByPath(const std::string &path, uint32_t &outId);
     EXPORT int32_t MoveObject(const std::shared_ptr<MtpOperationContext> &context, uint32_t &repeatHandle);
     EXPORT int32_t CopyObject(const std::shared_ptr<MtpOperationContext> &context,
@@ -84,10 +85,12 @@ private:
     uint32_t ScanDirTraverseWithType(const std::string &root,
         std::shared_ptr<std::unordered_map<uint32_t, std::string>> &out);
     uint32_t GetSizeFromOfft(const off_t &size);
-    uint32_t AddPathToMap(const sf::path &path);
+    uint32_t AddPathToMap(const std::string &path);
     std::shared_ptr<std::unordered_map<uint32_t, std::string>> GetHandlesMap(
         const std::shared_ptr<MtpOperationContext> &context);
     void GetExternalStorages();
+    void GetHandles(const uint32_t handle, const std::string &root,
+        std::shared_ptr<std::unordered_map<uint32_t, std::string>> &out);
     void ErasePathInfo(const uint32_t handle, const std::string &path);
     bool CompressImage(PixelMap &pixelMap, std::vector<uint8_t> &data);
     int32_t GetVideoThumb(const std::shared_ptr<MtpOperationContext> &context,

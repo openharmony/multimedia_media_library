@@ -22,14 +22,13 @@
 #include <vector>
 
 #include "mtp_constants.h"
-#include "storage_manager_proxy.h"
 #include "storage.h"
 
 namespace OHOS {
 namespace Media {
 class MtpStorageManager {
 public:
-    ~MtpStorageManager();
+    ~MtpStorageManager() = default;
     static std::shared_ptr<MtpStorageManager> GetInstance();
     int64_t GetTotalSize(const std::string &path = std::string(""));
     int64_t GetFreeSize(const std::string &path = std::string(""));
@@ -41,9 +40,10 @@ public:
     std::shared_ptr<Storage> GetStorage(uint32_t id);
     bool HasStorage(uint32_t id = MTP_STORAGE_ID_ALL2);
     std::vector<std::shared_ptr<Storage>> GetStorages();
+    std::string GetSystemLanguage();
+    std::string GetStorageDescription(const uint16_t type);
 private:
-    MtpStorageManager();
-    sptr<StorageManager::IStorageManager> proxy_;
+    MtpStorageManager() = default;
     std::vector<std::shared_ptr<Storage>> storages;
 };
 } // namespace Media
