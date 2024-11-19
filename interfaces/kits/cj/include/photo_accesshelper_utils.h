@@ -22,7 +22,7 @@
 
 #include "cj_common_ffi.h"
 #include "cj_data_ffi.h"
-#include "cj_dataSharePredicates_impl.h"
+#include "data_share_predicates_impl.h"
 #include "datashare_predicates.h"
 #include "datashare_result_set.h"
 #include "ffi_remote_data.h"
