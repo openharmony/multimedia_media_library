@@ -328,7 +328,8 @@ uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
         MEDIA_ERR_LOG("AV metadata helper is null");
         return index;
     }
-    if (avMetadataHelper->SetSource(fd, 0, static_cast<int64_t>(GetFileSize(fd)), AV_META_USAGE_META_ONLY) != E_OK) {
+    if (avMetadataHelper->SetSource(fd, 0, static_cast<int64_t>(GetFileSize(fd)),
+        AV_META_USAGE_FRAME_INDEX_CONVERT) != E_OK) {
         MEDIA_ERR_LOG("failed to set source");
         return index;
     }
@@ -595,7 +596,7 @@ static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataS
     extraDataSize = MIN_STANDARD_SIZE + std::stoi(cinemagraphSizeStream.str(), 0, HEX_BASE);
     if (extraDataSize >= maxFileSize) {
         extraDataSize = MIN_STANDARD_SIZE;
-        MEDIA_WARN_LOG("extra data size over total file size %{public}lld", extraDataSize);
+        MEDIA_WARN_LOG("extra data size over total file size %{public}" PRId64, extraDataSize);
     }
     return E_OK;
 }
@@ -669,7 +670,7 @@ static int32_t GetMovingPhotoCoverPosition(const UniqueFd &uniqueFd, const int64
     if (scene == Scene::AV_META_SCENE_CLONE) {
         helper->SetScene(static_cast<Scene>(scene));
     }
-    int32_t err = helper->SetSource(uniqueFd.Get(), 0, size, AV_META_USAGE_META_ONLY);
+    int32_t err = helper->SetSource(uniqueFd.Get(), 0, size, AV_META_USAGE_FRAME_INDEX_CONVERT);
     tracer.Finish();
     if (err != 0) {
         MEDIA_ERR_LOG("SetSource failed for the given fd, err = %{public}d", err);

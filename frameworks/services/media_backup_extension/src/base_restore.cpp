@@ -189,18 +189,16 @@ int32_t BaseRestore::IsFileValid(FileInfo &fileInfo, const int32_t sceneCode)
     }
 
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
-        errCode = MediaFileUtils::IsFileValid(fileInfo.movingPhotoVideoPath);
-        if (errCode != E_OK) {
+        if (!MediaFileUtils::IsFileValid(fileInfo.movingPhotoVideoPath)) {
             MEDIA_ERR_LOG("Moving photo video is not valid: %{public}s, errno=%{public}d.",
                 BackupFileUtils::GarbleFilePath(fileInfo.movingPhotoVideoPath, sceneCode).c_str(), errno);
-            return errCode;
+            return E_FAIL;
         }
 
-        errCode = MediaFileUtils::IsFileValid(fileInfo.extraDataPath);
-        if (errCode != E_OK) {
+        if (!MediaFileUtils::IsFileValid(fileInfo.extraDataPath)) {
             MEDIA_WARN_LOG("Media extra data is not valid: %{public}s, errno=%{public}d.",
                 BackupFileUtils::GarbleFilePath(fileInfo.extraDataPath, sceneCode).c_str(), errno);
-            return errCode;
+            return E_FAIL;
         }
     }
     return E_OK;
@@ -245,8 +243,8 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         fileInfos[i].cloudPath = cloudPath;
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
         SetValueFromMetaData(fileInfos[i], value);
-        if ((sceneCode == DUAL_FRAME_CLONE_RESTORE_ID || sceneCode == OTHERS_PHONE_CLONE_RESTORE) &&
-            this->HasSameFileForDualClone(fileInfos[i])) {
+        if ((sceneCode == DUAL_FRAME_CLONE_RESTORE_ID || sceneCode == OTHERS_PHONE_CLONE_RESTORE ||
+            sceneCode == I_PHONE_CLONE_RESTORE) && this->HasSameFileForDualClone(fileInfos[i])) {
             fileInfos[i].needMove = false;
             RemoveDuplicateDualCloneFiles(fileInfos[i]);
             MEDIA_WARN_LOG("File %{public}s already exists.",
