@@ -292,7 +292,7 @@ static void InsertOrientation(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
         value.Delete(PhotoColumn::PHOTO_ORIENTATION);
     }
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata->GetOrientation()); // video use orientation in metadata
-    if (sceneCode == OTHERS_PHONE_CLONE_RESTORE) {
+    if (sceneCode == OTHERS_PHONE_CLONE_RESTORE || sceneCode == I_PHONE_CLONE_RESTORE) {
         fileInfo.orientation = metadata->GetOrientation();
     }
 }
