@@ -175,6 +175,13 @@ uint16_t MtpOperationUtils::GetObjectHandles(shared_ptr<PayloadData> &data, uint
     shared_ptr<UInt32List> objectHandles = make_shared<UInt32List>();
     if (MtpManager::GetInstance().IsMtpMode()) {
         errorCode = mtpMediaLibrary_->GetHandles(context_, objectHandles);
+        if (context_->parent == 0) {
+            string path;
+            string realPath;
+            mtpMediaLibrary_->GetPathByContextParent(context_, path);
+            mtpMediaLibrary_->GetRealPath(path, realPath);
+            MtpFileObserver::GetInstance().AddFileInotify(path, realPath, context_);
+        }
     } else {
         errorCode = mtpMedialibraryManager_->GetHandles(context_, objectHandles);
     }

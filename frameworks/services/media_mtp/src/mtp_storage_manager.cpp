@@ -16,35 +16,35 @@
 #include "mtp_storage_manager.h"
 #include <filesystem>
 #include <mutex>
-#include "iservice_registry.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
-#include "system_ability_definition.h"
-#include "istorage_manager.h"
+#include "parameter.h"
 
 using namespace std;
 
 namespace OHOS {
 namespace Media {
-
-std::shared_ptr<MtpStorageManager> MtpStorageManager::instance_ = nullptr;
-std::mutex MtpStorageManager::mutex_;
+namespace {
 enum SizeType {
     TOTAL,
     FREE,
     USED
 };
-const std::string PUBLIC_PATH_DATA  = "/storage/media/local/files/Docs";
-MtpStorageManager::MtpStorageManager(void)
-{
-    auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    auto remote = samgr->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
-    proxy_ = iface_cast<StorageManager::IStorageManager>(remote);
-}
+const std::string PUBLIC_PATH_DATA      = "/storage/media/local/files/Docs";
+const std::string CHINESE_ABBREVIATION  = "zh-Hans";
+const std::string ENGLISH_ABBREVIATION  = "en-Latn-US";
+const std::string INNER_STORAGE_DESC_ZH = "内部存储";
+const std::string INNER_STORAGE_DESC_EN = "Internal storage";
+const std::string EXTER_STORAGE_DESC_ZH = "存储卡";
+const std::string EXTER_STORAGE_DESC_EN = "Memory Card";
+const std::string UNSPECIFIED           = "Unspecified";
+const std::string LANGUAGE_KEY          = "persist.global.language";
+const std::string DEFAULT_LANGUAGE_KEY  = "const.global.language";
+constexpr int32_t SYSPARA_SIZE          = 64;
+} // namespace
 
-MtpStorageManager::~MtpStorageManager(void)
-{
-}
+std::shared_ptr<MtpStorageManager> MtpStorageManager::instance_ = nullptr;
+std::mutex MtpStorageManager::mutex_;
 
 std::shared_ptr<MtpStorageManager> MtpStorageManager::GetInstance()
 {
@@ -134,6 +134,38 @@ std::vector<std::shared_ptr<Storage>> MtpStorageManager::GetStorages()
 void MtpStorageManager::ClearStorages()
 {
     std::vector<std::shared_ptr<Storage>>().swap(storages);
+}
+
+std::string MtpStorageManager::GetSystemLanguage()
+{
+    char param[SYSPARA_SIZE] = {0};
+    int status = GetParameter(LANGUAGE_KEY.c_str(), "", param, SYSPARA_SIZE);
+    if (status > 0) {
+        return param;
+    }
+    status = GetParameter(DEFAULT_LANGUAGE_KEY.c_str(), "", param, SYSPARA_SIZE);
+    if (status > 0) {
+        return param;
+    }
+    MEDIA_ERR_LOG("Failed to get system language");
+    return "";
+}
+
+std::string MtpStorageManager::GetStorageDescription(const uint16_t type)
+{
+    std::string language = GetSystemLanguage();
+    if (language.empty()) {
+        language = CHINESE_ABBREVIATION;
+    }
+    switch (type) {
+        case MTP_STORAGE_FIXEDRAM:
+            return language == CHINESE_ABBREVIATION ? INNER_STORAGE_DESC_ZH : INNER_STORAGE_DESC_EN;
+        case MTP_STORAGE_REMOVABLERAM:
+            return language == CHINESE_ABBREVIATION ? EXTER_STORAGE_DESC_ZH : EXTER_STORAGE_DESC_EN;
+        default:
+            break;
+    }
+    return UNSPECIFIED;
 }
 
 }  // namespace Media
