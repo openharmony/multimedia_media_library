@@ -3306,8 +3306,10 @@ static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
 {
     std::string checkSql = "SELECT " + columnName + " FROM " +
                           PhotoColumn::PHOTOS_TABLE + " LIMIT 1";
-    int32_t ret = ExecSqls(checkSql, store);
-    return ret == E_OK;
+    std::vector<std::string> sqls;
+    sqls.emplace_back(checkSql);
+    int32_t ret = ExecSqls(sqls, store);
+    return ret == NativeRdb::E_OK;
 }
 
 static void AddCloudEnhanceColsFix(RdbStore& store)
