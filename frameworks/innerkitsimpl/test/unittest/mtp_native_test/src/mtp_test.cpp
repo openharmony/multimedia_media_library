@@ -13,14 +13,12 @@
  * limitations under the License.
  */
 #include "mtp_native_test.h"
-#define private public
 #include "mtp_file_observer.h"
 #include "mtp_monitor.h"
 #include "mtp_operation.h"
 #include "mtp_packet.h"
 #include "mtp_packet_tools.h"
 #include "property.h"
-#undef private
 
 using namespace std;
 using namespace testing::ext;
@@ -595,35 +593,6 @@ HWTEST_F(MtpNativeTest, mtp_operation_test_003, TestSize.Level0)
     mtpOperation.DealRequest(operationCode, errorCode);
     operationCode = MTP_INVALID_PARAMETER_CODE;
     mtpOperation.DealRequest(operationCode, errorCode);
-}
-
-HWTEST_F(MtpNativeTest, mtp_file_observer_test_001, TestSize.Level0)
-{
-    MtpFileObserver mtpFileObserver;
-    ContextSptr context = make_shared<MtpOperationContext>();
-    mtpFileObserver.AddFileInotify("", "", context);
-    bool ret = mtpFileObserver.StartFileInotify();
-    EXPECT_EQ(ret, true);
-    string path = "/data";
-    string realPath = "StartFileInotify";
-    mtpFileObserver.AddFileInotify(path, realPath, context);
-    mtpFileObserver.AddFileInotify("", "", context);
-    int inotifyFd = 1;
-    ret = MtpFileObserver::AddInotifyEvents(inotifyFd, context);
-    EXPECT_EQ(ret, false);
-    MtpFileObserver::SendBattery(context);
-    context->format = 0;
-    context->parent = 1;
-    shared_ptr<MtpEvent> mtpEvent = make_shared<MtpEvent>(context);
-    inotify_event event;
-    event.mask = 0;
-    MtpFileObserver::SendEvent(event, path, context);
-    ret = mtpFileObserver.StopFileInotify();
-    EXPECT_EQ(ret, false);
-    MtpMonitor mtpMonitor;
-    mtpMonitor.Start();
-    mtpMonitor.Init();
-    mtpMonitor.Stop();
 }
 
 HWTEST_F(MtpNativeTest, mtp_packet_002, TestSize.Level0)

@@ -39,6 +39,16 @@ namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 using namespace FileManagement::CloudSync;
 
+class CloudDeathRecipient : public IRemoteObject::DeathRecipient {
+public:
+    CloudDeathRecipient(std::shared_ptr<CloudMediaAssetDownloadOperation> operation) : operation_(operation) {}
+    ~CloudDeathRecipient() {}
+    void OnRemoteDied(const wptr<IRemoteObject> &object);
+
+private:
+    std::shared_ptr<CloudMediaAssetDownloadOperation> operation_ = nullptr;
+};
+
 class CloudMediaAssetDownloadOperation {
 public:
     struct DownloadFileData {
@@ -85,27 +95,27 @@ public:
     EXPORT CloudMediaAssetTaskStatus GetTaskStatus();
     EXPORT CloudMediaTaskPauseCause GetTaskPauseCause();
     EXPORT std::string GetTaskInfo();
+    EXPORT int32_t InitDownloadTaskInfo();
 
 private:
     void ClearData(DownloadFileData &datas);
     bool IsDataEmpty(const DownloadFileData &datas);
     int32_t DoRelativedRegister();
+    int32_t SetDeathRecipient();
     bool IsProperFgTemperature();
     void InitStartDownloadTaskStatus(const bool &isForeground);
-    int32_t InitDownloadTaskInfo();
     void ResetParameter();
 
     void SetTaskStatus(Status status);
     std::shared_ptr<NativeRdb::ResultSet> QueryDownloadFilesNeeded(const bool &isQueryInfo);
     DownloadFileData ReadyDataForBatchDownload();
-    int32_t DoForceTaskExecute();
-    int32_t SubmitBatchDownload(DownloadFileData &datas, const bool &isCache);
+    EXPORT int32_t DoForceTaskExecute();
+    EXPORT int32_t SubmitBatchDownload(DownloadFileData &datas, const bool &isCache);
     int32_t DoRecoverExecute();
     int32_t PassiveStatusRecover();
     
     void MoveDownloadFileToCache(const DownloadProgressObj &progress);
     void MoveDownloadFileToNotFound(const DownloadProgressObj &progress);
-    void MoveAllDownloadFileToCache(const DownloadProgressObj &progress);
 
 public:
     static std::shared_ptr<CloudMediaAssetDownloadOperation> instance_;
@@ -123,7 +133,9 @@ private:
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper_;
     std::shared_ptr<CloudMediaAssetObserver> cloudMediaAssetObserver_;
     std::shared_ptr<MediaCloudDownloadCallback> downloadCallback_;
+    OHOS::sptr<OHOS::IRemoteObject> cloudRemoteObject_;
     static std::mutex mutex_;
+    static std::mutex callbackMutex_;
 
     DownloadFileData readyForDownload_;
     DownloadFileData notFoundForDownload_;

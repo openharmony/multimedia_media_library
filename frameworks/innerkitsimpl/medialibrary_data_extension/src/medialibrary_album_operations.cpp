@@ -438,7 +438,7 @@ int DoCreatePhotoAlbum(const string &albumName, const string &relativePath, cons
     return lastInsertRowId;
 }
 
-static int32_t QueryExistingDeletedAlbumByLpath(const string& lpath)
+static int32_t QueryExistingAlbumByLpath(const string& lpath, bool& isDeleted)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -446,9 +446,9 @@ static int32_t QueryExistingDeletedAlbumByLpath(const string& lpath)
         return E_FAIL;
     }
 
-    const string sql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
-        " WHERE lpath = ? AND dirty = ?";
-    const vector<ValueObject> bindArgs { lpath, static_cast<int32_t>(DirtyType::TYPE_DELETED) };
+    const string sql = "SELECT album_id, dirty FROM " + PhotoAlbumColumns::TABLE +
+        " WHERE lpath = ?";
+    const vector<ValueObject> bindArgs { lpath };
     auto resultSet = rdbStore->QueryByStep(sql, bindArgs);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query failed, lpath is: %{public}s", lpath.c_str());
@@ -460,13 +460,15 @@ static int32_t QueryExistingDeletedAlbumByLpath(const string& lpath)
         return E_FAIL;
     }
     if (rowCount == 0) {
-        // No existing deleted album with same lpath is found
+        // No existing album with same lpath is found
         return E_OK;
     }
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to go to first row, lpath is: %{public}s", lpath.c_str());
         return E_FAIL;
     }
+    isDeleted =
+        GetInt32Val(PhotoAlbumColumns::ALBUM_DIRTY, resultSet) == static_cast<int32_t>(DirtyTypes::TYPE_DELETED);
     return GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
 }
 
@@ -542,7 +544,7 @@ static unordered_map<string, pair<bool, string>> QueryPhotoAlbumSchema()
     return photoAlbumSchema;
 }
 
-static int32_t ReuseDeletedPhotoAlbum(int32_t id, const string& lpath, const ValuesBucket& albumValues,
+static int32_t UpdateDeletedPhotoAlbum(int32_t id, const string& lpath, const ValuesBucket& albumValues,
     std::shared_ptr<TransactionOperations>& trans)
 {
     unordered_map<string, pair<bool, string>> photoAlbumSchema = QueryPhotoAlbumSchema();
@@ -551,7 +553,7 @@ static int32_t ReuseDeletedPhotoAlbum(int32_t id, const string& lpath, const Val
     int32_t ret = trans->ExecuteSql(sql, bindArgs);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Update failed, lpath is: %{public}s", lpath.c_str());
-        return ret;
+        return E_HAS_DB_ERROR;
     }
     return E_OK;
 }
@@ -566,28 +568,33 @@ int CreatePhotoAlbum(const string &albumName)
     ValuesBucket albumValues;
     PrepareUserAlbum(albumName, albumValues);
 
-    // try to reuse previously deleted record first
+    // try to reuse existing record with same lpath first
     int32_t id = -1;
+    bool isDeleted = false;
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     std::function<int(void)> tryReuseDeleted = [&]()->int {
-        id = QueryExistingDeletedAlbumByLpath(ALBUM_LPATH_PREFIX + albumName);
-        if (id < 0) {
+        id = QueryExistingAlbumByLpath(ALBUM_LPATH_PREFIX + albumName, isDeleted);
+        if (id <= 0) {
+            // id < 0 means error has occurred, id == 0 means no existing record.
+            // needs to return in either case.
             return id;
         }
-        if (id > 0) {
-            MEDIA_INFO_LOG("Previously deleted photo album with same lpath exists, reuse the record id %{public}d", id);
-            return ReuseDeletedPhotoAlbum(id, ALBUM_LPATH_PREFIX + albumName, albumValues, trans);
+        MEDIA_INFO_LOG("%{public}s photo album with the same lpath exists, reuse the record id %{public}d.",
+            isDeleted ? "Deleted" : "Existing", id);
+        if (isDeleted) {
+            return UpdateDeletedPhotoAlbum(id, ALBUM_LPATH_PREFIX + albumName, albumValues, trans);
         }
         return E_OK;
     };
-    int ret = trans->RetryTrans(tryReuseDeleted, __func__);
+    int ret = trans->RetryTrans(tryReuseDeleted);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Try trans fail!, ret: %{public}d", ret);
-        return ret;
+        return E_HAS_DB_ERROR;
     }
     if (id > 0) {
         return id;
     }
+
     // no existing record available, create a new one
     return DoCreatePhotoAlbum(albumName, "", albumValues);
 }

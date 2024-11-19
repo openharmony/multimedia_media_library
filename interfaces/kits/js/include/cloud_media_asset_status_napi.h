@@ -48,7 +48,7 @@ private:
     void SetCloudMediaTaskPauseCause(CloudMediaTaskPauseCause cloudMediaTaskPauseCause);
 
     std::string GetTaskInfo() const;
-    void SetTaskInfo(std::string taskInfo);
+    void SetTaskInfo(const std::string &taskInfo);
 
     static thread_local napi_ref constructor_;
     CloudMediaAssetTaskStatus cloudMediaAssetTaskStatus_ = CloudMediaAssetTaskStatus::IDLE;

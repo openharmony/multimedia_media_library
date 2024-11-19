@@ -21,6 +21,8 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 const int EVENT_LENGTH = 16;
+const uint32_t BATCH_SIZE = 200000;
+
 MtpPacket::MtpPacket(std::shared_ptr<MtpOperationContext> &context)
     : context_(context), readSize_(0), headerData_(nullptr), payloadData_(nullptr)
 {
@@ -137,7 +139,19 @@ int MtpPacket::Write()
         mtpDriver_->WriteEvent(event);
         return MTP_SUCCESS;
     }
-    mtpDriver_->Write(writeBuffer_, writeSize_);
+    // Due to the USB module using IPC for communication, and the maximum length supported by IPC is 248000,
+    // when the write buffer is too large, it needs to be split into multiple calls.
+    if (writeBuffer_.size() > BATCH_SIZE) {
+        uint32_t total = writeBuffer_.size();
+        for (uint32_t i = 0; i < writeBuffer_.size(); i += BATCH_SIZE) {
+            uint32_t end = std::min(i + BATCH_SIZE, total);
+            std::vector<uint8_t> batch(writeBuffer_.begin() + i, writeBuffer_.begin() + end);
+            mtpDriver_->Write(batch, end);
+            std::vector<uint8_t>().swap(batch);
+        }
+    } else {
+        mtpDriver_->Write(writeBuffer_, writeSize_);
+    }
     return MTP_SUCCESS;
 }
 

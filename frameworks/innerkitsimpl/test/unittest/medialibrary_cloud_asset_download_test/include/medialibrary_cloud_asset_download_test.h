@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,18 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mtp_native_test.h"
-#include "mtp_service.h"
 
-using namespace std;
-using namespace testing::ext;
+#ifndef FRAMEWORKS_SERVICES_MEDIALIBRARY_CLOUD_ASSET_DOWNLOAD_TEST_H
+#define FRAMEWORKS_SERVICES_MEDIALIBRARY_CLOUD_ASSET_DOWNLOAD_TEST_H
+
+#include <gtest/gtest.h>
+
 namespace OHOS {
 namespace Media {
-HWTEST_F(MtpNativeTest, mtp_service_test_001, TestSize.Level0)
-{
-    MtpService mtpService;
-    mtpService.Init();
-    EXPECT_NE(&mtpService, nullptr);
-}
+class MediaLibraryCloudAssetDownloadTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+};
 } // namespace Media
-} // ohos
+} // namespace OHOS
+
+#endif // FRAMEWORKS_SERVICES_MEDIALIBRARY_CLOUD_ASSET_DOWNLOAD_TEST_H

@@ -614,39 +614,6 @@ static std::string GetThumbnailLocalPath(const string path)
     return RESTORE_FILES_LOCAL_DIR + ".thumbs/" + suffixStr;
 }
 
-static bool GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key)
-{
-    if (fileId.empty()) {
-        MEDIA_ERR_LOG("FileId is empty");
-        return false;
-    }
-    if (dateKey.empty()) {
-        MEDIA_ERR_LOG("DateKey is empty");
-        return false;
-    }
-
-    size_t length = fileId.length();
-    if (length >= RESTORE_KVSTORE_FILE_ID_TEMPLATE.length()) {
-        MEDIA_ERR_LOG("FileId too long");
-        return false;
-    }
-    std::string assembledFileId = RESTORE_KVSTORE_FILE_ID_TEMPLATE.substr(length) + fileId;
-
-    length = dateKey.length();
-    size_t dateKeyMaxLength = RESTORE_KVSTORE_DATE_KEY_TEMPLATE.length();
-    std::string assembledDateKey;
-    if (length > dateKeyMaxLength) {
-        MEDIA_ERR_LOG("DateKey invalid, id:%{public}s", fileId.c_str());
-        return false;
-    } else if (length == dateKeyMaxLength) {
-        assembledDateKey = dateKey;
-    } else {
-        assembledDateKey = RESTORE_KVSTORE_DATE_KEY_TEMPLATE.substr(length) + dateKey;
-    }
-    key = assembledDateKey + assembledFileId;
-    return true;
-}
-
 int32_t CloneRestore::MoveAstc(FileInfo &fileInfo)
 {
     if (oldMonthKvStorePtr_ == nullptr || oldYearKvStorePtr_ == nullptr ||
@@ -661,8 +628,8 @@ int32_t CloneRestore::MoveAstc(FileInfo &fileInfo)
     }
     string oldKey;
     string newKey;
-    if (!GenerateKvStoreKey(to_string(fileInfo.fileIdOld), fileInfo.oldAstcDateKey, oldKey) ||
-        !GenerateKvStoreKey(to_string(fileInfo.fileIdNew), fileInfo.newAstcDateKey, newKey)) {
+    if (!MediaFileUtils::GenerateKvStoreKey(to_string(fileInfo.fileIdOld), fileInfo.oldAstcDateKey, oldKey) ||
+        !MediaFileUtils::GenerateKvStoreKey(to_string(fileInfo.fileIdNew), fileInfo.newAstcDateKey, newKey)) {
         return E_FAIL;
     }
 
@@ -2506,6 +2473,7 @@ bool CloneRestore::BackupKvStore()
 {
     MEDIA_INFO_LOG("Start BackupKvstore");
     if (MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR)) {
+        // Delete only redundant data and do not need to be returned.
         MediaFileUtils::DeleteDir(CLONE_KVDB_BACKUP_DIR);
     }
 
