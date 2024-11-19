@@ -2184,7 +2184,7 @@ bool ThumbnailUtils::IsSupportGenAstc()
 int ThumbnailUtils::SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type)
 {
     string key;
-    if (!GenerateKvStoreKey(data.id, data.dateTaken, key)) {
+    if (!MediaFileUtils::GenerateKvStoreKey(data.id, data.dateTaken, key)) {
         MEDIA_ERR_LOG("GenerateKvStoreKey failed");
         return E_ERR;
     }
@@ -2213,66 +2213,6 @@ int ThumbnailUtils::SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailTy
     }
     MEDIA_INFO_LOG("type:%{public}d, field_id:%{public}s, status:%{public}d", type, key.c_str(), status);
     return status;
-}
-
-bool ThumbnailUtils::GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key)
-{
-    if (fileId.empty()) {
-        MEDIA_ERR_LOG("fileId is empty");
-        return false;
-    }
-    if (dateKey.empty()) {
-        MEDIA_ERR_LOG("dateKey is empty");
-        return false;
-    }
-
-    size_t length = fileId.length();
-    if (length >= MAX_FIELD_LENGTH) {
-        MEDIA_ERR_LOG("fileId too long");
-        return false;
-    }
-    std::string assembledFileId = KVSTORE_FIELD_ID_TEMPLATE.substr(length) + fileId;
-
-    length = dateKey.length();
-    std::string assembledDateKey;
-    if (length > MAX_DATE_ADDED_LENGTH) {
-        MEDIA_ERR_LOG("dateKey invalid, id:%{public}s", fileId.c_str());
-        return false;
-    } else if (length == MAX_DATE_ADDED_LENGTH) {
-        assembledDateKey = dateKey;
-    } else {
-        assembledDateKey = KVSTORE_DATE_ADDED_TEMPLATE.substr(length) + dateKey;
-    }
-    key = assembledDateKey + assembledFileId;
-    return true;
-}
-
-bool ThumbnailUtils::GenerateOldKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key)
-{
-    if (fieldId.empty() || dateAdded.empty()) {
-        MEDIA_ERR_LOG("fieldId or dateAdded is empty");
-        return false;
-    }
-
-    size_t length = fieldId.length();
-    if (length >= MAX_FIELD_LENGTH) {
-        MEDIA_ERR_LOG("fieldId length too long");
-        return false;
-    }
-    std::string assembledFieldId = KVSTORE_FIELD_ID_TEMPLATE.substr(length) + fieldId;
-
-    length = dateAdded.length();
-    std::string assembledDateAdded;
-    if (length > MAX_DATE_ADDED_LENGTH) {
-        MEDIA_ERR_LOG("dateAdded length too long, fieldId:%{public}s", fieldId.c_str());
-        return false;
-    } else if (length == MAX_DATE_ADDED_LENGTH) {
-        assembledDateAdded = dateAdded;
-    } else {
-        assembledDateAdded = KVSTORE_DATE_ADDED_TEMPLATE.substr(length) + dateAdded;
-    }
-    key = assembledDateAdded.substr(0, MAX_TIMEID_LENGTH_OLD_VERSION) + assembledFieldId;
-    return true;
 }
 
 bool ThumbnailUtils::CheckDateTaken(ThumbRdbOpt &opts, ThumbnailData &data)
@@ -2368,7 +2308,7 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
 bool ThumbnailUtils::DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type)
 {
     string key;
-    if (!GenerateKvStoreKey(opts.row, opts.dateTaken, key)) {
+    if (!MediaFileUtils::GenerateKvStoreKey(opts.row, opts.dateTaken, key)) {
         MEDIA_ERR_LOG("GenerateKvStoreKey failed");
         return false;
     }
@@ -2397,8 +2337,8 @@ bool ThumbnailUtils::UpdateAstcDateTakenFromKvStore(ThumbRdbOpt &opts, const Thu
 {
     std::string formerKey;
     std::string newKey;
-    if (!GenerateKvStoreKey(opts.row, opts.dateTaken, formerKey) ||
-        !GenerateKvStoreKey(opts.row, data.dateTaken, newKey)) {
+    if (!MediaFileUtils::GenerateKvStoreKey(opts.row, opts.dateTaken, formerKey) ||
+        !MediaFileUtils::GenerateKvStoreKey(opts.row, data.dateTaken, newKey)) {
         MEDIA_ERR_LOG("UpdateAstcDateTakenFromKvStore GenerateKvStoreKey failed");
         return false;
     }
@@ -2416,18 +2356,18 @@ bool ThumbnailUtils::UpdateAstcDateTakenFromKvStore(ThumbRdbOpt &opts, const Thu
 
     std::vector<uint8_t> monthValue;
     if (monthKvStore->Query(formerKey, monthValue) != E_OK || monthKvStore->Insert(newKey, monthValue) != E_OK) {
-        MEDIA_ERR_LOG("MonthValue update failed, fileId %{pubilc}s", opts.row.c_str());
+        MEDIA_ERR_LOG("MonthValue update failed, fileId %{public}s", opts.row.c_str());
         return false;
     }
     std::vector<uint8_t> yearValue;
     if (yearKvStore->Query(formerKey, yearValue) != E_OK || yearKvStore->Insert(newKey, yearValue) != E_OK) {
-        MEDIA_ERR_LOG("YearValue update failed, fileId %{pubilc}s", opts.row.c_str());
+        MEDIA_ERR_LOG("YearValue update failed, fileId %{public}s", opts.row.c_str());
         return false;
     }
 
     int status = monthKvStore->Delete(formerKey) && yearKvStore->Delete(formerKey);
     if (status != E_OK) {
-        MEDIA_ERR_LOG("Former kv delete failed, fileId %{pubilc}s", opts.row.c_str());
+        MEDIA_ERR_LOG("Former kv delete failed, fileId %{public}s", opts.row.c_str());
         return false;
     }
     return true;
@@ -2493,7 +2433,7 @@ bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, bool isSource
     }
     Size desiredSize;
     Size targetSize = ConvertDecodeSize(data, {dataSource->GetWidth(), dataSource->GetHeight()}, desiredSize);
-    if (!ScaleTargetPixelMap(dataSource, targetSize, Media::AntiAliasingOption::SLR)) {
+    if (!ScaleTargetPixelMap(dataSource, targetSize, Media::AntiAliasingOption::HIGH)) {
         MEDIA_ERR_LOG("Fail to scale to targetSize");
         return false;
     }

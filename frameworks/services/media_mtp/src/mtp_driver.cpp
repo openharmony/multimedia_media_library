@@ -115,10 +115,10 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
 void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t &bufferSize)
 {
     CHECK_AND_RETURN_LOG(usbfnMtpInterface != nullptr, "Write: usbfnMtpInterface is nullptr");
-    MEDIA_DEBUG_LOG("MtpDriver::Write start");
+    MEDIA_DEBUG_LOG("MtpDriver::Write start, buffer.size:%{public}zu", buffer.size());
     auto ret = usbfnMtpInterface->Write(buffer);
     bufferSize = static_cast<uint32_t>(ret);
-    MEDIA_DEBUG_LOG("MtpDriver::Write end");
+    MEDIA_DEBUG_LOG("MtpDriver::Write end, ret:%{public}d", ret);
 }
 
 int MtpDriver::ReceiveObj(MtpFileRange &mfr)

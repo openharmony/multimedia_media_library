@@ -25,6 +25,7 @@ public:
     ~CloudSyncUtils();
     static bool IsUnlimitedTrafficStatusOn();
     static bool IsCloudSyncSwitchOn();
+    static bool IsCloudDataAgingPolicyOn();
 };
 } // namespace Media
 } // namespace OHOS

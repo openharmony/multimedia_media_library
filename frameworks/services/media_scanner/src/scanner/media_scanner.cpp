@@ -519,7 +519,10 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
 
     // statinfo
     data_->SetFileSize(statInfo.st_size);
-    data_->SetFileDateModified(static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim)));
+    // Temp file will not be notified. Do not set fileDateModified to keep GetForAdd true
+    if (!data_->GetIsTemp()) {
+        data_->SetFileDateModified(static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim)));
+    }
 
     // extension and type
     string extension = ScannerUtils::GetFileExtension(path_);

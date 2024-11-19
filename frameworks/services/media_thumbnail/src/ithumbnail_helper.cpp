@@ -1032,6 +1032,11 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
     }
 
     data.loaderOpts.decodeInThumbSize = true;
+    if (data.source.HasPictureSource()) {
+        MEDIA_INFO_LOG("Scale from picture source, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        auto mainPixelMap = data.source.GetPicture()->GetMainPixel();
+        data.source.SetPixelMap(mainPixelMap);
+    }
     if (!ThumbnailUtils::ScaleThumbnailFromSource(data, false)) {
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;

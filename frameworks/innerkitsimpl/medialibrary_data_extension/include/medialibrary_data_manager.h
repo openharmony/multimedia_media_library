@@ -110,6 +110,7 @@ public:
     EXPORT void ReCreateMediaDir();
     EXPORT int32_t CheckCloudThumbnailDownloadFinish();
     EXPORT void UploadDBFileInner();
+    EXPORT int32_t UpdateDateTakenWhenZero();
 
 private:
     int32_t InitMediaLibraryRdbStore();

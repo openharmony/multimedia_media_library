@@ -105,7 +105,7 @@ std::string CloudMediaAssetStatusNapi::GetTaskInfo() const
     return this->taskInfo_;
 }
 
-void CloudMediaAssetStatusNapi::SetTaskInfo(std::string taskInfo)
+void CloudMediaAssetStatusNapi::SetTaskInfo(const std::string &taskInfo)
 {
     this->taskInfo_ = taskInfo;
 }
