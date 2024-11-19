@@ -95,11 +95,13 @@ int32_t MediaAlbumChangeRequestImpl::CJSetAlbumName(std::string albumName)
         LOGE("photoAlbum is null")
         return OHOS_INVALID_PARAM_CODE;
     }
-    if (!(PhotoAlbum::IsUserPhotoAlbum(photoAlbum_->GetPhotoAlbumType(), photoAlbum_->GetPhotoAlbumSubType()) ||
-            PhotoAlbum::IsSmartPortraitPhotoAlbum(
-                photoAlbum_->GetPhotoAlbumType(), photoAlbum_->GetPhotoAlbumSubType()) ||
-            PhotoAlbum::IsSmartGroupPhotoAlbum(
-                photoAlbum_->GetPhotoAlbumType(), photoAlbum_->GetPhotoAlbumSubType()))) {
+    bool isUserPhotoAlbum = PhotoAlbum::IsUserPhotoAlbum(photoAlbum_->GetPhotoAlbumType(),
+        photoAlbum_->GetPhotoAlbumSubType());
+    bool isSmartPortraitPhotoAlbum = PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum_->GetPhotoAlbumType(),
+        photoAlbum_->GetPhotoAlbumSubType());
+    bool isSmartGroupPhotoAlbum = PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum_->GetPhotoAlbumType(),
+        photoAlbum_->GetPhotoAlbumSubType());
+    if (!(isUserPhotoAlbum || isSmartPortraitPhotoAlbum || isSmartGroupPhotoAlbum)) {
         LOGE("Only user album, smart portrait album and group photo can set album name");
         return OHOS_INVALID_PARAM_CODE;
     }

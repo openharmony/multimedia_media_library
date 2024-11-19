@@ -153,10 +153,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
   ]
 
-  deps = [
-    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
-    "//third_party/e2fsprogs:libext2_uuid",
-  ]
+  deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
 
   external_deps = [
     "ability_base:want",
@@ -181,6 +178,7 @@ ohos_shared_library("medialibrary_nutils") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
+    "e2fsprogs:libext2_uuid",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "i18n:intl_util",
