@@ -1383,7 +1383,7 @@ static int32_t MergeScreenShotAlbum(const std::shared_ptr<MediaLibraryRdbStore> 
     GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, oldAlbumId);
     const std::string QUERY_NEW_SCREEN_SHOT_ALBUM_INFO =
         "SELECT * FROM PhotoAlbum WHERE album_type = 2048 AND bundle_name = 'com.huawei.hmos.screenshot'"
-        " AND lpath IS NULL AND dirty != 4";
+        " AND dirty != 4";
     shared_ptr<NativeRdb::ResultSet> newAlbumResultSet = upgradeStore->QuerySql(QUERY_NEW_SCREEN_SHOT_ALBUM_INFO);
     MEDIA_INFO_LOG("Begin merge screenshot album, old album is %{public}d", oldAlbumId);
     if (newAlbumResultSet == nullptr || newAlbumResultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -1412,7 +1412,7 @@ static int32_t MergeScreenRecordAlbum(const std::shared_ptr<MediaLibraryRdbStore
     GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, oldAlbumId);
     const std::string QUERY_NEW_SCREEN_RECORD_ALBUM_INFO =
         "SELECT * FROM PhotoAlbum WHERE album_type = 2048 AND bundle_name = 'com.huawei.hmos.screenrecorder'"
-        " AND lpath IS NULL AND dirty != 4";
+        " AND dirty != 4";
     shared_ptr<NativeRdb::ResultSet> newAlbumResultSet = upgradeStore->QuerySql(QUERY_NEW_SCREEN_RECORD_ALBUM_INFO);
     if (newAlbumResultSet == nullptr || newAlbumResultSet->GoToFirstRow() != NativeRdb::E_OK) {
         // Create a new bundle name screenshot album
@@ -1436,7 +1436,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleChangeNameAlbum(const std::shared_pt
     const std::string QUERY_CHANGE_NAME_ALBUM_INFO =
         "SELECT * FROM PhotoAlbum WHERE album_type = 2048"
         " AND (bundle_name = 'com.huawei.ohos.screenshot' OR bundle_name = 'com.huawei.ohos.screenrecorder')"
-        " AND lpath IS NULL AND dirty != 4";
+        " AND dirty != 4";
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_CHANGE_NAME_ALBUM_INFO);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query expired bundle_name fails");
