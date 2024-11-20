@@ -17,6 +17,7 @@
 #include "media_log.h"
 #include "mtp_file_observer.h"
 #include "mtp_manager.h"
+#include "mtp_global.h"
 #include "mtp_media_library.h"
 
 using namespace std;
@@ -41,13 +42,12 @@ void MtpService::StartService()
         Init();
         CHECK_AND_RETURN_LOG(!isMonitorRun_, "MtpService::StartService -- monitor is already running, return");
         CHECK_AND_RETURN_LOG(monitorPtr_ != nullptr, "MtpService::StartService monitorPtr_ is nullptr");
-        if (!isMonitorRun_) {
-            monitorPtr_->Start();
-            if (MtpManager::GetInstance().IsMtpMode()) {
-                MtpFileObserver::GetInstance().StartFileInotify();
-            }
-            isMonitorRun_ = true;
+        MtpGlobal::ResetBlockStatus();
+        monitorPtr_->Start();
+        if (MtpManager::GetInstance().IsMtpMode()) {
+            MtpFileObserver::GetInstance().StopFileInotify();
         }
+        isMonitorRun_ = true;
     }
 }
 

@@ -716,7 +716,7 @@ static int32_t CopyMateData(const std::shared_ptr<MediaLibraryRdbStore> upgradeS
 
 int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
     const int32_t &ownerAlbumId, shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId,
-    const std::string displayName)
+    std::string displayName)
 {
     if (upgradeStore == nullptr) {
         MEDIA_INFO_LOG("fail to get rdbstore");
@@ -725,6 +725,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<
 
     int32_t assetId;
     GetIntValueFromResultSet(resultSet, MediaColumn::MEDIA_ID, assetId);
+    GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_NAME, displayName);
     std::string targetPath = "";
     int32_t err = CopyLocalFile(resultSet, ownerAlbumId, displayName, targetPath, assetId);
     if (err != E_OK) {

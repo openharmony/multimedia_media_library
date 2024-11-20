@@ -35,6 +35,8 @@ private:
     void ResetOperation();
     uint16_t GetPayloadData(std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<PayloadData> &data, uint16_t containerType, int &errorCode);
+    uint16_t GetPayloadDataSub(std::shared_ptr<MtpOperationContext> &context,
+        std::shared_ptr<PayloadData> &data, uint16_t containerType, int &errorCode);
     uint16_t GetPayloadDataMore(std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<PayloadData> &data, uint16_t containerType, int &errorCode);
     void ReceiveRequestPacket(int &errorCode);
