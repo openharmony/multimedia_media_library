@@ -104,7 +104,9 @@ private:
             relative_path, \
             priority \
         FROM PhotoAlbum \
-        WHERE LOWER(lpath) = LOWER(?) ;";
+        WHERE LOWER(lpath) = LOWER(?) \
+        ORDER BY album_id DESC \
+        LIMIT 1 ;";
     // The albumName of PhotoAlbum, which is not in album_plugin, should be unique.
     const std::string SQL_PHOTO_ALBUM_CHECK_ALBUM_NAME_UNIQUE = "\
         SELECT COUNT(1) AS count \
