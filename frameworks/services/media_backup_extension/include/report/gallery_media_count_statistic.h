@@ -63,7 +63,7 @@ private:
     int32_t QueryGalleryBurstTotalCount();
     bool HasLowQualityImage();
     int32_t GetGalleryMediaCount();
-    int32_t GetGalleryAppTwinDataCount();
+    int32_t QueryGalleryAppTwinDataCount();
     AlbumMediaStatisticInfo GetAllStatInfo();
     AlbumMediaStatisticInfo GetSdCardStatInfo();
     AlbumMediaStatisticInfo GetScreenStatInfo();

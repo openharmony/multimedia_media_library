@@ -23,6 +23,7 @@
 
 #define private public
 #define protected public
+#include "backup_const_column.h"
 #include "backup_const_map.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
