@@ -326,11 +326,10 @@ int32_t MtpMedialibraryManager::SetObject(const std::shared_ptr<DataShare::DataS
         outObjectInfo->size = GetSizeFromOfft(statInfo.st_size);
         outObjectInfo->dateCreated = statInfo.st_ctime;
         outObjectInfo->dateModified = statInfo.st_mtime;
-        MEDIA_ERR_LOG("MtpMedialibraryManager::SetObject TTTTTTTTTTTTTTTTTTTTTT");
         outObjectInfo->thumbCompressedSize = COMPRE_SIZE_LEVEL_2;
         outObjectInfo->thumbFormat = MTP_FORMAT_EXIF_JPEG_CODE;
-        outObjectInfo->thumbPixHeight = NORMAL_HEIGHT;
-        outObjectInfo->thumbPixWidth = NORMAL_WIDTH;
+        outObjectInfo->thumbPixelHeight = NORMAL_HEIGHT;
+        outObjectInfo->thumbPixelWidth = NORMAL_WIDTH;
     }
     return MtpErrorUtils::SolveGetObjectInfoError(E_SUCCESS);
 }
@@ -567,7 +566,7 @@ int32_t MtpMedialibraryManager::GetAssetById(const int32_t id, shared_ptr<FileAs
 {
     DataShare::DataSharePredicates predicates;
     string whereClause = MEDIA_DATA_DB_ID + " = ?" ;
-    int32_t field_id = id;
+    uint32_t field_id = id;
     if (field_id > PHOTES_FILE_ID) {
         field_id = id - PHOTES_FILE_ID;
     }
@@ -767,7 +766,6 @@ int32_t MtpMedialibraryManager::CloseFd(const shared_ptr<MtpOperationContext> &c
     CHECK_AND_RETURN_RET_LOG(fd > 0, E_ERR, "wrong fd");
     if (context->handle > PHOTES_FILE_ID_TWO) {
         errCode = close(fd);
-        MEDIA_INFO_LOG("CloseFd OK!!!!!!!!!!!!");
         return MtpErrorUtils::SolveCloseFdError(errCode);
     }
     shared_ptr<FileAsset> fileAsset;

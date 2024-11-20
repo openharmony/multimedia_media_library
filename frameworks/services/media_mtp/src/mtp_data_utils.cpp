@@ -310,22 +310,15 @@ int32_t MtpDataUtils::GetPropList(const std::shared_ptr<MtpOperationContext> &co
     int32_t handle = 0;
     for (int32_t row = 0; row < count; row++) {
         resultSet->GoToRow(row);
-        MEDIA_ERR_LOG(" MtpDataUtils::GetMovingOrEnditOneRowPropList handle:%{public}d,number:%{public}d",
-            context->handle, PHOTES_FILE_ID_TWO);
         if (context->handle > PHOTES_FILE_ID_TWO) {
-            MEDIA_ERR_LOG(" MtpDataUtils::GetMovingOrEnditOneRowPropList11111");
             string data = GetStringVal("data", resultSet);
             string displayName = GetStringVal("display_name", resultSet);
-            MEDIA_ERR_LOG(" MtpDataUtils::GetMovingOrEnditOneRowPropList11111 data:%{public}s", data.c_str());
             int32_t subtype = GetInt32Val("subtype", resultSet);
             string path = GetMovingOrEnditSourcePath(data, subtype, context);
-            MEDIA_ERR_LOG(" MtpDataUtils::GetMovingOrEnditOneRowPropList2222");
             if (path.empty()) {
                 MEDIA_ERR_LOG(" MtpDataUtils::GetPropList get sourcePath failed");
                 return E_FAIL;
             }
-            MEDIA_ERR_LOG(" MtpDataUtils::GetMovingOrEnditOneRowPropList path:%{public}s, handle:%{public}d",
-                path.c_str(), context->handle);
             GetMovingOrEnditOneRowPropList(properties, path, context, outProps, displayName);
         } else {
             handle = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, resultSet, idType));
@@ -341,7 +334,6 @@ void MtpDataUtils::GetMovingOrEnditOneRowPropList(const shared_ptr<UInt16List> &
     const std::shared_ptr<MtpOperationContext> &context, shared_ptr<vector<Property>> &outProps,
     const std::string &displayName)
 {
-    MEDIA_ERR_LOG(" MtpDataUtils::GetMovingOrEnditOneRowPropList path:%{public}s", path.c_str());
     CHECK_AND_RETURN_LOG(outProps != nullptr, "outProps is nullptr");
     std::string column;
     for (uint16_t property : *properties) {
@@ -760,7 +752,6 @@ void MtpDataUtils::SetPtpProperty(const std::string &column, const std::string &
 string MtpDataUtils::GetMovingOrEnditSourcePath(const std::string &path, const int32_t &subtype,
     const shared_ptr<MtpOperationContext> &context)
 {
-    MEDIA_ERR_LOG(" mtp DataUtils::GetMovingOrEnditSourcePath22222");
     string sourcePath;
     MEDIA_INFO_LOG("mtp GetMovingOrEnditSourcePath path:%{public}s, subtype:%{public}d", path.c_str(), subtype);
     switch (static_cast<int32_t>(context->handle / PHOTES_FILE_ID)) {
