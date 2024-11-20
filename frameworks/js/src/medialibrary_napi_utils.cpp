@@ -1453,7 +1453,7 @@ void MediaLibraryNapiUtils::HandleCoverSharedPhotoAsset(napi_env env, int32_t in
     }
     vector<string> albumIds;
     albumIds.push_back(GetFileIdFromUriString(coverUri));
-    napi_value coverValue = GetSharedPhotoAssets(env, albumIds);
+    napi_value coverValue = GetSharedPhotoAssets(env, albumIds, true);
     napi_set_named_property(env, result, "coverSharedPhotoAsset", coverValue);
 }
 
@@ -1512,7 +1512,8 @@ string MediaLibraryNapiUtils::GetAlbumIdFromUriString(const string& uri)
     return albumId;
 }
 
-napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env, vector<string>& fileIds)
+napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env, vector<string>& fileIds,
+    bool isSingleResult)
 {
     string queryUri = PAH_QUERY_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
@@ -1529,6 +1530,12 @@ napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env, vect
     }
     if (result == nullptr) {
         return value;
+    }
+    int count = 0;
+    if (isSingleResult && result->GetRowCount(count), count == 1) {
+        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
+        result->Close();
+        return assetValue;
     }
     int elementIndex = 0;
     int err = result->GoToFirstRow();

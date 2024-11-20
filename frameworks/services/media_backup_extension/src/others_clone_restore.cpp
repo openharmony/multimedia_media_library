@@ -26,6 +26,7 @@
 #include "datashare_abs_result_set.h"
 #include "directory_ex.h"
 #include "ffrt.h"
+#include "ffrt_inner.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "media_file_utils.h"
@@ -43,7 +44,7 @@ const int PHONE_FOURTH_NUMBER = 111;
 const int PHONE_FIFTH_NUMBER = 110;
 const int PHONE_SIXTH_NUMBER = 101;
 const int QUERY_NUMBER = 200;
-constexpr int32_t MAX_THREAD_NUM = 4;
+constexpr int32_t MAX_CLONE_THREAD_NUM = 2;
 constexpr int64_t SECONDS_LEVEL_LIMIT = 1e10;
 const std::string I_PHONE_LPATH = "/Pictures/";
 const std::string PHONE_TYPE = "type";
@@ -159,6 +160,7 @@ void OthersCloneRestore::GetCloneDbInfos(const std::string &dbName, std::vector<
     std::string selectTotalCloneMediaNumber = "SELECT count(1) AS count FROM mediainfo";
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(mediaRdb, selectTotalCloneMediaNumber, CUSTOM_COUNT);
     MEDIA_INFO_LOG("dbName = %{public}s, totalNumber = %{public}d", dbName.c_str(), totalNumber);
+    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_CLONE_THREAD_NUM);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_NUMBER) {
         ffrt::submit([this, mediaRdb, offset, &mediaDbInfo]() {
             HandleSelectBatch(mediaRdb, offset, sceneCode_, mediaDbInfo);
@@ -390,6 +392,7 @@ void OthersCloneRestore::RestorePhoto()
     unsigned long pageSize = 200;
     vector<FileInfo> insertInfos;
     int32_t totalNumber = static_cast<int32_t>(photoInfos_.size());
+    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_CLONE_THREAD_NUM);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_NUMBER) {
         ffrt::submit([this, offset]() {
             HandleInsertBatch(offset);
