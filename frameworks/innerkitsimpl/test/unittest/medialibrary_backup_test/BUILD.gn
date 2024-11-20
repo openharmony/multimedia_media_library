@@ -61,6 +61,7 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/media_library_db_upgrade.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photo_album_dao.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photo_album_restore.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_dao.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/tab_old_photos_restore.cpp",
@@ -70,6 +71,7 @@ ohos_unittest("medialibrary_backup_test") {
     "./src/gallery_source.cpp",
     "./src/medialibrary_backup_test.cpp",
     "./src/restore/photo_album_dao_test.cpp",
+    "./src/restore/photos_clone_test.cpp",
     "./src/restore/photos_restore_test.cpp",
   ]
 
