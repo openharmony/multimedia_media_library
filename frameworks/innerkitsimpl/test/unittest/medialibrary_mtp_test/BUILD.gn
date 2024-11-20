@@ -68,6 +68,7 @@ if (defined(medialibrary_mtp_enable)) {
       "drivers_interface_usb:usbfn_mtp_idl_headers",
       "hilog:libhilog",
       "hitrace:hitrace_meter",
+      "image_framework:image_native",
       "init:libbegetutil",
       "ipc:ipc_core",
       "player_framework:media_client",
