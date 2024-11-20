@@ -170,6 +170,7 @@ static void JSGetHighlightAlbumInfoExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Invalid highlightAlbumInfoType");
         return;
     }
+    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "objectInfo is null");
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is null");
     int albumId = photoAlbum->GetAlbumId();

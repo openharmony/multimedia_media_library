@@ -118,6 +118,7 @@ int32_t FileUtils::SavePicture(const string &imageId, std::shared_ptr<Media::Pic
     string sourcePath = isEdited ? MediaLibraryAssetOperations::GetEditDataSourcePath(path) : path;
     //查询是否编辑 编辑目录下
     string mime_type = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
+    resultSet->Close();
     if (mime_type == "") {
         mime_type = "image/jpeg";
     }
