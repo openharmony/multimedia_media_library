@@ -229,6 +229,7 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
 
     MEDIA_INFO_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
         currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
+    PowerEfficiencyManager::SetSubscriberStatus(isCharging_, isScreenOff_);
 
     currentStatus_ = newStatus;
     ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(newStatus);
