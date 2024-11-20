@@ -320,7 +320,7 @@ void MedialibrarySubscriber::CheckPoint()
 {
     struct stat fileStat;
     const std::string fileName = MEDIA_DB_DIR + "/rdb/media_library.db";
-    if (fileName.empty() || stat((fileName + "-wal").c_str(), &fileStat) < 0) {
+    if (stat((fileName + "-wal").c_str(), &fileStat) < 0) {
         if (errno != ENOENT) {
             MEDIA_ERR_LOG("wal_checkpoint stat failed, errno: %{public}d", errno);
         }
