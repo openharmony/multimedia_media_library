@@ -3308,7 +3308,8 @@ static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
                           PhotoColumn::PHOTOS_TABLE + " LIMIT 1";
 
     int32_t ret = true;
-    auto resultSet = store.QuerySql(checkSql);
+    std::vector<NativeRdb::ValueObject> args;
+    auto resultSet = store.QuerySql(checkSql, args);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         ret = false;
     }
