@@ -3310,7 +3310,7 @@ static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
     int32_t ret = true;
     std::vector<NativeRdb::ValueObject> args;
     auto resultSet = store.QuerySql(checkSql, args);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr) {
         ret = false;
     }
 
