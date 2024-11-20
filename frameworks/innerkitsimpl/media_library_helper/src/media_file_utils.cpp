@@ -1452,7 +1452,8 @@ string MediaFileUtils::GetVirtualUriFromRealUri(const string &uri, const string 
 {
     if ((uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) ||
         (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos) ||
-        (uri.find(PhotoColumn::HIGHTLIGHT_COVER_URI) != string::npos)) {
+        (uri.find(PhotoColumn::HIGHTLIGHT_COVER_URI) != string::npos) ||
+        (uri.find(URI_MTP_OPERATION) != string::npos)) {
         return uri;
     }
 
@@ -1527,7 +1528,8 @@ string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
 {
     if ((uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) ||
         (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos) ||
-        (uri.find(PhotoColumn::HIGHTLIGHT_COVER_URI) != string::npos)) {
+        (uri.find(PhotoColumn::HIGHTLIGHT_COVER_URI) != string::npos) ||
+        (uri.find(URI_MTP_OPERATION) != string::npos)) {
         return uri;
     }
 
@@ -2035,6 +2037,14 @@ int32_t MediaFileUtils::CopyDirectory(const std::string &srcDir, const std::stri
         }
     }
     return E_OK;
+}
+
+bool MediaFileUtils::CallingTokenIdIsSelf()
+{
+    if (IPCSkeleton::GetCallingFullTokenID() == IPCSkeleton::GetSelfTokenID()) {
+        return E_OK;
+    }
+    return E_FAIL;
 }
 
 bool MediaFileUtils::GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key)

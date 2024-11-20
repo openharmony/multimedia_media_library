@@ -119,8 +119,8 @@ public:
         std::string &outColName, std::variant<int64_t, std::string> &outColVal);
     static void GetMediaTypeByformat(const uint16_t format, MediaType &outMediaType);
     static void GetPropGropByMediaType(const MediaType &mediaType, std::vector<std::string> &outPropGrop);
-    static int32_t GetPropListBySet(const uint32_t property,
-        const uint16_t format, const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
+    static int32_t GetPropListBySet(const std::shared_ptr<MtpOperationContext> &context,
+        const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
         std::shared_ptr<std::vector<Property>> &outProps);
     static int32_t GetPropValueBySet(const uint32_t property,
         const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
@@ -133,8 +133,11 @@ public:
     static int32_t GetMtpPropValue(const std::string &path,
         const uint32_t property, const uint16_t format, PropertyValue &outPropValue);
     static uint32_t GetMtpFormatByPath(const std::string &path, uint16_t &outFormat);
+    static std::string GetMovingOrEnditSourcePath(const std::string &path, const int32_t &subtype,
+        const std::shared_ptr<MtpOperationContext> &context);
 private:
-    static int32_t GetPropList(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
+    static int32_t GetPropList(const std::shared_ptr<MtpOperationContext> &context,
+        const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
         const std::shared_ptr<UInt16List> &properties, std::shared_ptr<std::vector<Property>> &outProps);
     static void GetFormatByPath(const std::string &path, uint16_t &outFormat);
     static std::variant<int32_t, int64_t, std::string> ReturnError(const std::string &errMsg,
@@ -153,6 +156,11 @@ private:
         std::unordered_map<uint32_t, std::string>::iterator it, shared_ptr<vector<Property>> &outProps);
     static void SetMtpProperty(const std::string &column, const std::string &path,
         ResultSetDataType &type, Property &prop);
+    static void SetPtpProperty(const std::string &column, const std::string &path, const std::string &displayName,
+        Property &prop);
+    static void GetMovingOrEnditOneRowPropList(const shared_ptr<UInt16List> &properties, const std::string &path,
+        const std::shared_ptr<MtpOperationContext> &context, shared_ptr<vector<Property>> &outProps,
+        const std::string &displayName);
 };
 } // namespace Media
 } // namespace OHOS

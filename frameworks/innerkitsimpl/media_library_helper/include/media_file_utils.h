@@ -186,6 +186,7 @@ public:
     EXPORT static bool CheckSupportedWatermarkType(int32_t watermarkType);
     EXPORT static int32_t CopyDirectory(const std::string &srcDir, const std::string &dstDir);
     EXPORT static bool GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key);
+    EXPORT static bool CallingTokenIdIsSelf();
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
