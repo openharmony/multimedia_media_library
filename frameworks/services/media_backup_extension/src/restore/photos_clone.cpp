@@ -100,6 +100,7 @@ std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetPhotosNotInPhotoMap(int32_
     }
     return this->mediaLibraryOriginalRdb_->QuerySql(this->SQL_PHOTOS_TABLE_QUERY_NOT_IN_PHOTO_MAP, bindArgs);
 }
+
 /**
  * @note If the lPath is empty, return '/Pictures/其它' string.
  *      If the lPath is '/Pictures/ScreenShots', return '/Pictures/ScreenShots' string.
@@ -108,41 +109,36 @@ std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetPhotosNotInPhotoMap(int32_
 PhotoAlbumDao::PhotoAlbumRowData PhotosClone::FindAlbumInfo(const FileInfo &fileInfo)
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo;
-    // Scenario 1, WHEN FileInfo is in /Pictures/Screenshots and Video type, THEN redirect to /Pictures/Screenrecords
-    std::string lPathForScreenshot =
-        fileInfo.lPath.empty() ? this->photoAlbumDao_.ParseSourcePathToLPath(fileInfo.sourcePath) : fileInfo.lPath;
-    if (this->ToLower(lPathForScreenshot) == this->ToLower(AlbumPlugin::LPATH_SCREEN_SHOTS) &&
-        fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
-        albumInfo = this->photoAlbumDao_.BuildAlbumInfoOfRecorders();
-        albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
-        MEDIA_INFO_LOG("Media_Restore: screenshots redirect to screenrecords, fileInfo.lPath: %{public}s, "
-                       "lPathForScreenshot: %{public}s, Object: %{public}s, albumInfo: %{public}s",
-            fileInfo.lPath.c_str(),
-            lPathForScreenshot.c_str(),
-            this->ToString(fileInfo).c_str(),
-            this->photoAlbumDao_.ToString(albumInfo).c_str());
-        return albumInfo;
-    }
+    std::string lPath = fileInfo.lPath;
     // Scenario 2, WHEN FileInfo is in hidden album, THEN override lPath to the folder in sourcePath.
     // Scenario 3, WHEN FileInfo is not belongs to any album, THEN override lPath to the folder in sourcePath.
     // Note, sourcePath is a sign of the possible scenaio that the file is not in any album.
     bool islPathMiss = !fileInfo.sourcePath.empty() && (fileInfo.hidden == 1 || fileInfo.recycledTime != 0);
     islPathMiss = islPathMiss || fileInfo.lPath.empty();
-    if (!islPathMiss) {
-        return this->photoAlbumDao_.GetPhotoAlbum(fileInfo.lPath);
+    if (islPathMiss) {
+        lPath = this->photoAlbumDao_.ParseSourcePathToLPath(fileInfo.sourcePath);
+        MEDIA_INFO_LOG("Media_Restore: fix lPath of album.fileInfo.lPath: %{public}s, "
+                       "lPathFromSourcePath: %{public}s, lowercase: %{public}s, FileInfo Object: %{public}s",
+            fileInfo.lPath.c_str(),
+            lPath.c_str(),
+            this->ToLower(lPath).c_str(),
+            this->ToString(fileInfo).c_str());
     }
-    std::string lPathFromSourcePath = this->photoAlbumDao_.ParseSourcePathToLPath(fileInfo.sourcePath);
-    albumInfo = this->photoAlbumDao_.BuildAlbumInfoByLPath(lPathFromSourcePath);
-    albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
-    MEDIA_INFO_LOG("Media_Restore: fix lPath of album.fileInfo.lPath: %{public}s, "
-                   "lPathFromSourcePath: %{public}s, lowercase: %{public}s, "
-                   "FileInfo Object: %{public}s, AlbumInfo Object: %{public}s",
-        fileInfo.lPath.c_str(),
-        lPathFromSourcePath.c_str(),
-        this->ToLower(lPathFromSourcePath).c_str(),
-        this->ToString(fileInfo).c_str(),
-        this->photoAlbumDao_.ToString(albumInfo).c_str());
-    return albumInfo;
+    // Scenario 1, WHEN FileInfo is in /Pictures/Screenshots and Video type, THEN redirect to /Pictures/Screenrecords
+    if (this->ToLower(lPath) == this->ToLower(AlbumPlugin::LPATH_SCREEN_SHOTS) &&
+        fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
+        albumInfo = this->photoAlbumDao_.BuildAlbumInfoOfRecorders();
+        albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
+        MEDIA_INFO_LOG("Media_Restore: screenshots redirect to screenrecords, fileInfo.lPath: %{public}s, "
+                       "lPath: %{public}s, Object: %{public}s, albumInfo: %{public}s",
+            fileInfo.lPath.c_str(),
+            lPath.c_str(),
+            this->ToString(fileInfo).c_str(),
+            this->photoAlbumDao_.ToString(albumInfo).c_str());
+        return albumInfo;
+    }
+    albumInfo = this->photoAlbumDao_.BuildAlbumInfoByLPath(lPath);
+    return this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
 }
 
 /**
