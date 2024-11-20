@@ -69,7 +69,7 @@ protected:
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
-    void InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
+    int InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
     void InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfos);
     void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
@@ -164,6 +164,7 @@ protected:
     bool hasLowQualityImage_ = false;
     std::string taskId_ = std::to_string(MediaFileUtils::UTCTimeSeconds());
     TabOldPhotosRestore tabOldPhotosRestore_;
+    bool needReportFailed_ = false;
 };
 } // namespace Media
 } // namespace OHOS
