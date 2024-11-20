@@ -3304,17 +3304,22 @@ static void AddCloudEnhancementColumns(RdbStore &store)
 
 static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
 {
-    std::string checkSql = "SELECT " + columnName + " FROM " +
-                          PhotoColumn::PHOTOS_TABLE + " LIMIT 1";
-
-    int32_t ret = true;
+    std::string checkSql = "PRAGMA table_info(" + PhotoColumn::PHOTOS_TABLE + ")";
     std::vector<NativeRdb::ValueObject> args;
     auto resultSet = store.QuerySql(checkSql, args);
     if (resultSet == nullptr) {
-        ret = false;
+        return false;
     }
 
-    return ret;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string name;
+        resultSet->GetString(1, name);
+        if (name == columnName) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 static void AddCloudEnhanceColsFix(RdbStore& store)
