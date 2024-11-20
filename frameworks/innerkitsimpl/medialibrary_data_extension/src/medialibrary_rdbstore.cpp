@@ -3322,7 +3322,7 @@ static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
     return false;
 }
 
-static void AddCloudEnhanceColsFix(RdbStore& store)
+static void AddCloudEnhanceColumnsFix(RdbStore& store)
 {
     bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_CE_AVAILABLE);
     if (!hasColumn) {
@@ -3331,7 +3331,7 @@ static void AddCloudEnhanceColsFix(RdbStore& store)
     }
 }
 
-static void AddDynamicRangeColsFix(RdbStore& store)
+static void AddDynamicRangeColumnsFix(RdbStore& store)
 {
     bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE);
     if (!hasColumn) {
@@ -4202,8 +4202,8 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
     }
 
     if (oldVersion < VERSION_HDR_AND_CLOUD_ENAHCNEMENT_FIX) {
-        AddDynamicRangeColsFix(store);
-        AddCloudEnhanceColsFix(store);
+        AddDynamicRangeColumnsFix(store);
+        AddCloudEnhanceColumnsFix(store);
     }
 }
 
