@@ -284,7 +284,7 @@ void ThumbnailGenerateHelper::StopDownloadThumbBatchOnDemand(int32_t requestId)
     if (requestId <= 0 || thumbReadyTaskData->downloadId < 0) {
         return;
     }
-    MEDIA_INFO_LOG("Stop Download Thumb Batch task, downloadId is: %{public}lld", thumbReadyTaskData->downloadId);
+    MEDIA_INFO_LOG("Stop Download Thumb, downloadId is: %{public}lld", (long long)thumbReadyTaskData->downloadId);
     CloudSyncManager::GetInstance().StopFileCache(thumbReadyTaskData->downloadId, true);
 }
 
