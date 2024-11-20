@@ -386,8 +386,8 @@ int32_t MtpMediaLibrary::GetObjectInfo(const std::shared_ptr<MtpOperationContext
     if (mediaType == MediaType::MEDIA_TYPE_IMAGE || mediaType == MediaType::MEDIA_TYPE_VIDEO) {
         outObjectInfo->thumbCompressedSize = COMPRE_SIZE_LEVEL_2;
         outObjectInfo->thumbFormat = MTP_FORMAT_EXIF_JPEG_CODE;
-        outObjectInfo->thumbPixHeight = NORMAL_HEIGHT;
-        outObjectInfo->thumbPixWidth = NORMAL_WIDTH;
+        outObjectInfo->thumbPixelHeight = NORMAL_HEIGHT;
+        outObjectInfo->thumbPixelWidth = NORMAL_WIDTH;
     }
 
     std::error_code ec;
