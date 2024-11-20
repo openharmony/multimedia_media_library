@@ -15,7 +15,10 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
 ohos_static_library("medialibrary_async_worker") {
-  sources = [ "src/medialibrary_async_worker.cpp" ]
+  sources = [ 
+    "src/medialibrary_async_worker.cpp",
+    "src/medialibrary_period_worker.cpp"
+  ]
   include_dirs = [
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
