@@ -74,6 +74,8 @@ private:
     EXPORT void DoBackgroundOperation();
     EXPORT void StopBackgroundOperation();
     EXPORT void StartAnalysisService();
+    void CheckPointAsync();
+    static void CheckPoint();
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();
