@@ -95,5 +95,35 @@ int32_t DbUpgradeUtils::DropAllTriggers(NativeRdb::RdbStore &store, const std::s
     }
     return NativeRdb::E_OK;
 }
+std::vector<std::string> DbUpgradeUtils::GetAllUniqueIndex(NativeRdb::RdbStore &store, const std::string &tableName)
+{
+    std::string querySql = this->SQL_SQLITE_MASTER_QUERY_UNIQUE_INDEX;
+    std::vector<NativeRdb::ValueObject> bindArgs = {tableName};
+    auto resultSet = store.QuerySql(querySql, bindArgs);
+    std::vector<std::string> result;
+    if (resultSet == nullptr) {
+        MEDIA_WARN_LOG("resultSet is null. tableName: %{public}s does not have any unique index.", tableName.c_str());
+        return result;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string uniqueIndexName = GetStringVal("name", resultSet);
+        result.emplace_back(uniqueIndexName);
+    }
+    return result;
+}
+
+int32_t DbUpgradeUtils::DropAllUniqueIndex(NativeRdb::RdbStore &store, const std::string &tableName)
+{
+    const std::vector<std::string> uniqueIndexNames = this->GetAllUniqueIndex(store, tableName);
+    std::string prefix = "DROP INDEX IF EXISTS ";
+    for (auto &indexName : uniqueIndexNames) {
+        std::string deleteIndexSql = prefix + indexName + ";";
+        int32_t ret = store.ExecuteSql(deleteIndexSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Media_Restore: Drop trigger failed, indexName=%{public}s", indexName.c_str());
+        }
+    }
+    return NativeRdb::E_OK;
+}
 }  // namespace DataTransfer
 }  // namespace OHOS::Media

@@ -138,6 +138,10 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotoAlbum(NativeRdb::RdbStore &store)
     if (ret != NativeRdb::E_OK) {
         return ret;
     }
+    ret = this->dbUpgradeUtils_.DropAllUniqueIndex(store, "PhotoAlbum");
+    if (ret != NativeRdb::E_OK) {
+        return ret;
+    }
     ret = this->AddlPathColumn(store);
     if (ret != NativeRdb::E_OK) {
         return ret;
@@ -209,7 +213,7 @@ int32_t MediaLibraryDbUpgrade::MoveSingleRelationshipToPhotos(NativeRdb::RdbStor
     int ret = NativeRdb::E_OK;
     MEDIA_INFO_LOG("MoveSingleRelationshipToPhotos begin");
     auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
-    DfxTransaction reporter{ __func__ };
+    DfxTransaction reporter{__func__};
     if (errCode != NativeRdb::E_OK || transaction == nullptr) {
         reporter.ReportError(DfxTransaction::AbnormalType::CREATE_ERROR, errCode);
         MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
