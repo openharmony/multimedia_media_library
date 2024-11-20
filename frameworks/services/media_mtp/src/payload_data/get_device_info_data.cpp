@@ -130,6 +130,8 @@ int GetDeviceInfoData::Maker(std::vector<uint8_t> &outBuffer)
     MtpPacketTool::PutString(outBuffer, model_);
     MtpPacketTool::PutString(outBuffer, version_);
     MtpPacketTool::PutString(outBuffer, serialNum_);
+
+    MtpPacketTool::Dump(outBuffer, 0);
     return MTP_SUCCESS;
 }
 
