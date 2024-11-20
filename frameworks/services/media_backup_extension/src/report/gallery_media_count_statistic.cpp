@@ -145,10 +145,10 @@ int32_t GalleryMediaCountStatistic::GetGalleryMediaCount()
     return GalleryMediaDao(this->galleryRdb_).GetGalleryMediaCount(this->shouldIncludeSd_, hasLowQualityImage);
 }
 
-bool GalleryMediaCountStatistic::QueryGalleryAppTwinDataCount()
+int32_t GalleryMediaCountStatistic::QueryGalleryAppTwinDataCount()
 {
-    std::string sql = "SELECT count(1) AS count FROM gallery_media WHERE _data REGEXP '/storage/emulated/[128, 147]/*' \
-        AND _size > 0";
+    std::string sql = "SELECT count(1) AS count FROM gallery_media WHERE _data LIKE '/storage/emulated/%' AND "
+        "CAST (substr(_data, length('/storage/emulated/') + 1, 3) AS INTEGER) BETWEEN 128 AND 147 AND _size > 0";
     return BackupDatabaseUtils::QueryInt(galleryRdb_, sql, CUSTOM_COUNT);
 }
 

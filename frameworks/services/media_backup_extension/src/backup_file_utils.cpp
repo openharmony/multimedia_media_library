@@ -659,7 +659,7 @@ bool BackupFileUtils::IsAppTwinData(const std::string &path)
 
 int32_t BackupFileUtils::GetUserId(const std::string &path)
 {
-    int32_t userId = INVALID_RET;
+    int32_t userId = -1;
      if (!MediaFileUtils::StartsWith(path, INTERNAL_PREFIX)) {
         return userId;
     }
