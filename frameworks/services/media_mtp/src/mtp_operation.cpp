@@ -19,6 +19,7 @@
 #include "media_log.h"
 #include "media_mtp_utils.h"
 #include "mtp_constants.h"
+#include "mtp_global.h"
 #include "mtp_packet.h"
 #include "mtp_packet_tools.h"
 #include "mtp_operation_context.h"
@@ -219,6 +220,22 @@ uint16_t MtpOperation::GetPayloadData(shared_ptr<MtpOperationContext> &context, 
         case MTP_OPERATION_OPEN_SESSION_CODE:
             responseCode_ = operationUtils_->GetOpenSession(data, errorCode);
             break;
+        case MTP_OPERATION_SET_DEVICE_PROP_VALUE_CODE:
+            responseCode_ = operationUtils_->SetDevicePropValueResp(data);
+            break;
+        default:
+            responseCode_ = GetPayloadDataSub(context, data, containerType, errorCode);
+            break;
+    }
+    return responseCode_;
+}
+
+uint16_t MtpOperation::GetPayloadDataSub(shared_ptr<MtpOperationContext> &context, shared_ptr<PayloadData> &data,
+    uint16_t containerType, int &errorCode)
+{
+    responseCode_ = MTP_UNDEFINED_CODE;
+    CHECK_AND_RETURN_RET_LOG(!MtpGlobal::IsBlocked(), responseCode_, "Not support operation in blocked mode");
+    switch (context->operationCode) {
         case MTP_OPERATION_RESET_DEVICE_CODE:
         case MTP_OPERATION_CLOSE_SESSION_CODE:
             responseCode_ = operationUtils_->GetCloseSession(data);
@@ -285,9 +302,6 @@ uint16_t MtpOperation::GetPayloadDataMore(shared_ptr<MtpOperationContext> &conte
             break;
         case MTP_OPERATION_GET_DEVICE_PROP_VALUE_CODE:
             responseCode_ = operationUtils_->GetPropValue(data, containerType, errorCode);
-            break;
-        case MTP_OPERATION_SET_DEVICE_PROP_VALUE_CODE:
-            responseCode_ = operationUtils_->SetDevicePropValueResp(data);
             break;
         case MTP_OPERATION_RESET_DEVICE_PROP_VALUE_CODE:
             responseCode_ = operationUtils_->ResetDevicePropResp(data);
