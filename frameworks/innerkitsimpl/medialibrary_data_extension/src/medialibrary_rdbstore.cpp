@@ -3302,6 +3302,44 @@ static void AddCloudEnhancementColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
+{
+    std::string checkSql = "PRAGMA table_info(" + PhotoColumn::PHOTOS_TABLE + ")";
+    std::vector<NativeRdb::ValueObject> args;
+    auto resultSet = store.QuerySql(checkSql, args);
+    if (resultSet == nullptr) {
+        return false;
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string name;
+        resultSet->GetString(1, name);
+        if (name == columnName) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void AddCloudEnhanceColumnsFix(RdbStore& store)
+{
+    bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_CE_AVAILABLE);
+    if (!hasColumn) {
+        AddCloudEnhancementColumns(store);
+        MEDIA_INFO_LOG("Add Cloud Enhance Cols completed successfully");
+    }
+}
+
+static void AddDynamicRangeColumnsFix(RdbStore& store)
+{
+    bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE);
+    if (!hasColumn) {
+        AddDynamicRangeType(store);
+        MEDIA_INFO_LOG("Add Dynamic Range Cols completed successfully");
+    }
+}
+
 static void AddSupportedWatermarkType(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4161,6 +4199,11 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_GEO_DEFAULT_VALUE) {
         AddGeoDefaultValue(store);
+    }
+
+    if (oldVersion < VERSION_HDR_AND_CLOUD_ENAHCNEMENT_FIX) {
+        AddDynamicRangeColumnsFix(store);
+        AddCloudEnhanceColumnsFix(store);
     }
 }
 
