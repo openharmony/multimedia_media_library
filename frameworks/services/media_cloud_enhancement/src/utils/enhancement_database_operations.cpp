@@ -108,24 +108,21 @@ static void HandleDateAdded(const int64_t dateAdded, const MediaType type, Value
     outValues.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateAdded);
 }
 
-static void SetOwnerAlbumId(ValuesBucket &assetInfo)
+static void SetOwnerAlbumId(ValuesBucket &assetInfo, shared_ptr<NativeRdb::ResultSet> resultSet)
 {
-    RdbPredicates queryPredicates(PhotoAlbumColumns::TABLE);
-    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
-    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT));
-    vector<string> columns = { PhotoAlbumColumns::ALBUM_ID };
-    shared_ptr<ResultSet> resultSet = MediaLibraryRdbStore::QueryWithFilter(queryPredicates, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to query cloud enhancement album id!");
-        return;
-    }
-    int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+    int32_t albumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
+    string ownerPackage = GetStringVal(MediaColumn::MEDIA_OWNER_PACKAGE, resultSet);
+    string ownerAppId = GetStringVal(MediaColumn::MEDIA_OWNER_APPID, resultSet);
+    string packageName = GetStringVal(MediaColumn::MEDIA_PACKAGE_NAME, resultSet);
     assetInfo.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
+    assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, ownerPackage);
+    assetInfo.PutString(MediaColumn::MEDIA_OWNER_APPID, ownerAppId);
+    assetInfo.PutString(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
 }
 
 int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibraryCommand &cmd,
     const FileAsset &fileAsset, int32_t sourceFileId, shared_ptr<CloudEnhancementFileInfo> info,
-    std::shared_ptr<TransactionOperations> trans)
+    shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<TransactionOperations> trans)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "get rdb store failed");
@@ -145,17 +142,9 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
     HandleDateAdded(nowTime, MEDIA_TYPE_PHOTO, assetInfo);
     // Set subtype if source image is moving photo
-    MEDIA_DEBUG_LOG("source file subtype: %{public}d, hidden: %{public}d", info->subtype, info->hidden);
     assetInfo.PutInt(MediaColumn::MEDIA_HIDDEN, info->hidden);
     if (info->subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
-        RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
-        queryPredicates.EqualTo(MediaColumn::MEDIA_ID, sourceFileId);
-        vector<string> columns = { PhotoColumn::PHOTO_DIRTY };
-        shared_ptr<ResultSet> resultSet = MediaLibraryRdbStore::QueryWithFilter(queryPredicates, columns);
-        if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to query dirty!");
-        }
         int32_t dirty = GetInt32Val(PhotoColumn::PHOTO_DIRTY, resultSet);
         if (dirty < 0) {
             assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
@@ -166,7 +155,7 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
     assetInfo.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
         static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT));
     assetInfo.PutInt(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, sourceFileId);
-    SetOwnerAlbumId(assetInfo);
+    SetOwnerAlbumId(assetInfo, resultSet);
     cmd.SetValueBucket(assetInfo);
     cmd.SetTableName(PhotoColumn::PHOTOS_TABLE);
     int64_t outRowId = -1;
