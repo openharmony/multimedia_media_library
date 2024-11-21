@@ -2699,6 +2699,16 @@ static void AddCloudEnhancementColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddThumbnailReady(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_THUMBNAIL_READY + " INT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("start add thumbnail ready columns");
+    ExecSqls(sqls, store);
+}
+
 static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
 {
     std::string checkSql = "PRAGMA table_info(" + PhotoColumn::PHOTOS_TABLE + ")";
@@ -2725,6 +2735,15 @@ static void AddCloudEnhanceColumnsFix(RdbStore& store)
     if (!hasColumn) {
         AddCloudEnhancementColumns(store);
         MEDIA_INFO_LOG("Add Cloud Enhance Cols completed successfully");
+    }
+}
+
+static void AddThumbnailReadyColumnsFix(RdbStore& store)
+{
+    bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_THUMBNAIL_READY);
+    if (!hasColumn) {
+        AddThumbnailReady(store);
+        MEDIA_INFO_LOG("Add ThumbnailReady Column");
     }
 }
 
@@ -3522,6 +3541,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_HDR_AND_CLOUD_ENAHCNEMENT_FIX) {
         AddDynamicRangeColumnsFix(store);
         AddCloudEnhanceColumnsFix(store);
+    }
+
+    if (oldVersion < VERSION_THUMBNAIL_READY_FIX) {
+        AddThumbnailReadyColumnsFix(store);
     }
 }
 
