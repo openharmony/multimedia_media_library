@@ -4603,6 +4603,10 @@ void MediaLibraryRdbStore::AddColumnIfNotExists(
 int MediaLibraryRdbStore::Update(int &changedRows, const std::string &table, const ValuesBucket &row,
     const std::string &whereClause, const std::vector<std::string> &args)
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
     return ExecSqlWithRetry(
         [&]() { return MediaLibraryRdbStore::GetRaw()->Update(changedRows, table, row, whereClause, args); });
 }
@@ -4610,78 +4614,134 @@ int MediaLibraryRdbStore::Update(int &changedRows, const std::string &table, con
 std::string MediaLibraryRdbStore::ObtainDistributedTableName(const std::string &device, const std::string &table,
     int &errCode)
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return "";
+    }
     return MediaLibraryRdbStore::GetRaw()->ObtainDistributedTableName(device, table, errCode);
 }
 
 int MediaLibraryRdbStore::Backup(const std::string &databasePath, const std::vector<uint8_t> &encryptKey)
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
     return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->Backup(databasePath, encryptKey); });
 }
 
 int MediaLibraryRdbStore::Sync(const DistributedRdb::SyncOption &option, const AbsRdbPredicates &predicate,
     const DistributedRdb::AsyncBrief &async)
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
     return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->Sync(option, predicate, async); });
 }
 
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryByStep(const std::string &sql,
     const std::vector<ValueObject> &args)
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return nullptr;
+    }
     return MediaLibraryRdbStore::GetRaw()->QueryByStep(sql, args);
 }
 
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryByStep(const AbsRdbPredicates &predicates,
     const std::vector<std::string> &columns)
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return nullptr;
+    }
     return MediaLibraryRdbStore::GetRaw()->QueryByStep(predicates, columns);
 }
 
 int MediaLibraryRdbStore::Update(int &changedRows, const ValuesBucket &row, const AbsRdbPredicates &predicates)
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
     return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->Update(changedRows, row, predicates); });
 }
 
 int MediaLibraryRdbStore::Insert(int64_t &outRowId, const std::string &table, const ValuesBucket &row)
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
     return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->Insert(outRowId, table, row); });
 }
 
 int MediaLibraryRdbStore::Delete(int &deletedRows, const std::string &table, const std::string &whereClause,
     const std::vector<std::string> &args)
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
     return ExecSqlWithRetry(
         [&]() { return MediaLibraryRdbStore::GetRaw()->Delete(deletedRows, table, whereClause, args); });
 }
 
 int MediaLibraryRdbStore::Delete(int &deletedRows, const AbsRdbPredicates &predicates)
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
     return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->Delete(deletedRows, predicates); });
 }
 
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const NativeRdb::AbsRdbPredicates &predicates,
     const std::vector<std::string> &columns)
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return nullptr;
+    }
     return MediaLibraryRdbStore::GetRaw()->Query(predicates, columns);
 }
 
 std::shared_ptr<AbsSharedResultSet> MediaLibraryRdbStore::QuerySql(const std::string &sql,
     const std::vector<ValueObject> &args)
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return nullptr;
+    }
     return MediaLibraryRdbStore::GetRaw()->QuerySql(sql, args);
 }
 
 int MediaLibraryRdbStore::InterruptBackup()
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
     return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->InterruptBackup(); });
 }
 
 bool MediaLibraryRdbStore::IsSlaveDiffFromMaster() const
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return false;
+    }
     return MediaLibraryRdbStore::GetRaw()->IsSlaveDiffFromMaster();
 }
 
 int MediaLibraryRdbStore::Restore(const std::string &backupPath, const std::vector<uint8_t> &newKey)
 {
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
     return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->Restore(backupPath, newKey); });
 }
 
