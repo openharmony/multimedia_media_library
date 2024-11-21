@@ -111,10 +111,6 @@ int32_t ThumbnailGenerateWorker::AddTask(
 
 void ThumbnailGenerateWorker::IgnoreTaskByRequestId(int32_t requestId)
 {
-    if (highPriorityTaskQueue_.Empty() && midPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty()) {
-        MEDIA_INFO_LOG("task queue empty, no need to ignore task requestId: %{public}d", requestId);
-        return;
-    }
     ignoreRequestId_.store(requestId);
 
     std::unique_lock<std::mutex> lock(requestIdMapLock_);
