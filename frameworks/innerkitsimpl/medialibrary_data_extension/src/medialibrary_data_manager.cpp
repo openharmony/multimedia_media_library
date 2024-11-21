@@ -104,6 +104,9 @@
 #include "parameter.h"
 #include "uuid.h"
 #include "parameters.h"
+#ifdef DEVICE_STANDBY_ENABLE
+#include "medialibrary_standby_service_subscriber.h"
+#endif
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -125,6 +128,10 @@ unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
 static const int32_t UUID_STR_LENGTH = 37;
 
+#ifdef DEVICE_STANDBY_ENABLE
+static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
+static const std::string MODULE_NAME = "com.ohos.medialibrary.medialibrarydata";
+#endif
 #ifdef DISTRIBUTED
 static constexpr int MAX_QUERY_THUMBNAIL_KEY_COUNT = 20;
 #endif
@@ -316,6 +323,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     HandleUpgradeRdbAsync();
     CloudSyncSwitchManager cloudSyncSwitchManager;
     cloudSyncSwitchManager.RegisterObserver();
+    SubscriberPowerConsumptionDetection();
 
     refCnt_++;
     return E_OK;
@@ -1998,6 +2006,16 @@ void MediaLibraryDataManager::UploadDBFileInner()
         return;
     }
     MediaFileUtils::CopyFileUtil(tmpPath, destPath);
+}
+
+void MediaLibraryDataManager::SubscriberPowerConsumptionDetection()
+{
+#ifdef DEVICE_STANDBY_ENABLE
+    auto subscriber = new (std::nothrow) MediaLibraryStandbyServiceSubscriber();
+    subscriber->SetSubscriberName(SUBSCRIBER_NAME);
+    subscriber->SetModuleName(MODULE_NAME);
+    DevStandbyMgr::StandbyServiceClient::GetInstance().SubscribeStandbyCallback(subscriber);
+#endif
 }
 }  // namespace Media
 }  // namespace OHOS
