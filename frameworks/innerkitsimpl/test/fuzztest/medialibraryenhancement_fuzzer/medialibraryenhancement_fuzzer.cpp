@@ -338,8 +338,16 @@ static void EnhancementServiceCallbackTest(const uint8_t *data, size_t size)
         FuzzInt32(data, size), FuzzString(data, size), displayName, FuzzPhotoSubType(data, size), hidden);
     Media::CloudEnhancementThreadTask task(FuzzString(data, size),
         FuzzInt32(data, size), buffer, FuzzUInt32(data, size), FuzzBool(data, size));
-    Media::EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task);
-    Media::EnhancementServiceCallback::CreateCloudEnhancementPhoto(FuzzInt32(data, size), fileInfo);
+    vector<string> columns;
+    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO,
+        Media::OperationType::QUERY, Media::MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(Media::PhotoColumn::PHOTO_ID, photoId);
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == E_OK) {
+        Media::EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, resultSet);
+        Media::EnhancementServiceCallback::CreateCloudEnhancementPhoto(FuzzInt32(data, size), fileInfo,
+            resultSet);
+    }
     Media::EnhancementServiceCallback::DealWithSuccessedTask(task);
     Media::EnhancementServiceCallback::DealWithFailedTask(task);
     Media::EnhancementServiceCallback::UpdateAlbumsForCloudEnhancement();
