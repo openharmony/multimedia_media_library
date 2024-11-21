@@ -140,13 +140,9 @@ void PrepareUniqueNumberTable()
         MEDIA_ERR_LOG("can not get g_rdbstore");
         return;
     }
-    auto store = g_rdbStore->GetRaw();
-    if (store == nullptr) {
-        MEDIA_ERR_LOG("can not get store");
-        return;
-    }
+
     string queryRowSql = "SELECT COUNT(*) as count FROM " + ASSET_UNIQUE_NUMBER_TABLE;
-    auto resultSet = store->QuerySql(queryRowSql);
+    auto resultSet = g_rdbStore->QuerySql(queryRowSql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Can not get AssetUniqueNumberTable count");
         return;
@@ -169,7 +165,7 @@ void PrepareUniqueNumberTable()
         valuesBucket.PutString(ASSET_MEDIA_TYPE, uniqueNumberValueBucket.assetMediaType);
         valuesBucket.PutInt(UNIQUE_NUMBER, uniqueNumberValueBucket.startNumber);
         int64_t outRowId = -1;
-        int32_t insertResult = store->Insert(outRowId, ASSET_UNIQUE_NUMBER_TABLE, valuesBucket);
+        int32_t insertResult = g_rdbStore->Insert(outRowId, ASSET_UNIQUE_NUMBER_TABLE, valuesBucket);
         if (insertResult != NativeRdb::E_OK || outRowId <= 0) {
             MEDIA_ERR_LOG("Prepare smartAlbum failed");
         }
@@ -483,7 +479,7 @@ int32_t MovingPhotoEditByCache(int32_t fileId, string &fileName, string &videoFi
 
 int32_t UpdateEditTime(int64_t fileId, int64_t time)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
@@ -622,7 +618,7 @@ static int32_t TestQueryAssetStringParams(const string &stringValue, const strin
 int32_t TestQueryAsset(const string &queryKey, const string &queryValue, const string &columnKey,
     const string &columnValue, MediaLibraryApi api)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
         return E_HAS_DB_ERROR;
@@ -901,8 +897,8 @@ static bool QueryPhotoThumbnailVolumn(int32_t photoId, size_t& queryResult)
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
         exit(1);
     }
@@ -925,7 +921,7 @@ void MediaLibraryPhotoOperationsTest::TearDownTestCase()
 
 void MediaLibraryPhotoOperationsTest::SetUp()
 {
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
         exit(1);
     }

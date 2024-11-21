@@ -2290,7 +2290,7 @@ bool ThumbnailUtils::ConvertStrToInt32(const std::string &str, int32_t &ret)
     return true;
 }
 
-bool ThumbnailUtils::CheckCloudThumbnailDownloadFinish(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr)
+bool ThumbnailUtils::CheckCloudThumbnailDownloadFinish(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr)
 {
     if (rdbStorePtr == nullptr) {
         MEDIA_ERR_LOG("RdbStorePtr is nullptr!");
@@ -2318,7 +2318,7 @@ bool ThumbnailUtils::CheckCloudThumbnailDownloadFinish(const std::shared_ptr<Nat
     return true;
 }
 
-bool ThumbnailUtils::QueryOldKeyAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
+bool ThumbnailUtils::QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr,
     const std::string &table, std::vector<ThumbnailData> &infos)
 {
     vector<string> column = {

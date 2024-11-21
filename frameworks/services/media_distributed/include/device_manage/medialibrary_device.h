@@ -93,7 +93,7 @@ private:
     std::mutex devMtx_;
     std::unordered_map<std::string, OHOS::Media::MediaLibraryDeviceInfo> deviceInfoMap_;
     std::map<std::string, std::set<int>> excludeMap_;
-    std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore_;
     std::shared_ptr<DistributedKv::SingleKvStore> kvStore_;
     std::shared_ptr<DevicesInfoInteract> devsInfoInter_;
     std::string bundleName_;

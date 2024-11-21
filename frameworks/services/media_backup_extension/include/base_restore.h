@@ -21,7 +21,6 @@
 #include <unordered_map>
 
 #include "backup_const.h"
-#include "medialibrary_rdb_transaction.h"
 #include "nlohmann/json.hpp"
 #include "rdb_helper.h"
 #include "result_set.h"
