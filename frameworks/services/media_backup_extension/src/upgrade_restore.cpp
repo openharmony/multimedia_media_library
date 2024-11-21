@@ -455,18 +455,26 @@ void UpgradeRestore::RestoreFromGallery()
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
+    needReportFailed_ = false;
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
+    size_t vectorLen = galleryFailedOffsets.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestoreBatch(galleryFailedOffsets[offset]);
+    }
 }
 
 void UpgradeRestore::RestoreBatch(int32_t offset)
 {
     MEDIA_INFO_LOG("start restore from gallery, offset: %{public}d", offset);
     std::vector<FileInfo> infos = QueryFileInfos(offset);
-    InsertPhoto(sceneCode_, infos, SourceType::GALLERY);
+    if (InsertPhoto(sceneCode_, infos, SourceType::GALLERY) != E_OK) {
+        galleryFailedOffsets.push_back(offset);
+    }
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
 }
@@ -481,19 +489,27 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
     MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
+    needReportFailed_ = false;
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset, maxId, isCamera, type]() {
                 RestoreExternalBatch(offset, maxId, isCamera, type);
             }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
+    size_t vectorLen = externalFailedOffsets.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestoreExternalBatch(externalFailedOffsets[offset], maxId, isCamera, type);
+    }
 }
 
 void UpgradeRestore::RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type)
 {
     MEDIA_INFO_LOG("start restore from external, offset: %{public}d", offset);
     std::vector<FileInfo> infos = QueryFileInfosFromExternal(offset, maxId, isCamera);
-    InsertPhoto(sceneCode_, infos, type);
+    if (InsertPhoto(sceneCode_, infos, type) != E_OK) {
+        externalFailedOffsets.push_back(offset);
+    }
 }
 
 int32_t UpgradeRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
