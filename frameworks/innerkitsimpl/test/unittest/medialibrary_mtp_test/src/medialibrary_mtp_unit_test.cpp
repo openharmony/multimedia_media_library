@@ -237,7 +237,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_005, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 35, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 9, 32, 35, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -505,45 +505,6 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_011, TestS
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: MTP_OPERATION_SEND_OBJECT_INFO_CODE
- */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_012, TestSize.Level0)
-{
-    std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
-    std::shared_ptr<MtpOperation> operationPtr_;
-    if (operationPtr_ == nullptr) {
-        operationPtr_ = make_shared<MtpOperation>();
-    }
-
-    // set test data
-    mtpTest->setOutBuffer(testData_open);
-    // execute
-    operationPtr_->Execute();
-
-    // MTP_OPERATION_SEND_OBJECT_INFO_CODE
-    static std::vector<uint8_t> testData = { 0x14, 0x00, 0x00, 0x00, 0x01, 0x00, 0x0c, 0x10, 0xac, 0x00, 0x00,
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x07, 0x00, 0x00, 0x00 };
-    mtpTest->setOutBuffer(testData);
-    operationPtr_->Execute();
-
-    // get output
-    std::vector<uint8_t> output;
-    mtpTest->getOutBuffer(output);
-    for (auto && i : output) {
-        MEDIA_DEBUG_LOG("i: %{public}d", i);
-    }
-    std::vector<uint8_t> targetData = { 24, 0, 0, 0, 3, 0, 1, 32, 172, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-    MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
-    EXPECT_EQ(output, targetData);
-}
-
-/*
- * Feature: MediaLibraryMTP
- * Function:
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_SEND_OBJECT_CODE
  */
 HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_013, TestSize.Level0)
@@ -570,7 +531,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_013, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 188, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 9, 32, 188, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -628,7 +589,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_014, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 92, 1, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 9, 32, 92, 1, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -744,7 +705,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_017, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 200, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 9, 32, 200, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -937,7 +898,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_021, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 139, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 9, 32, 139, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -949,7 +910,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_021, TestS
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: MTP_SESSION_NOT_OPEN_CODE
+ * CaseDescription: MTP_OPERATION_GET_STORAGE_IDS_CODE
  */
 HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_023, TestSize.Level0)
 {
@@ -972,7 +933,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_023, TestS
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
     // MTP_SESSION_NOT_OPEN_CODE
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 3, 32, 33, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 33, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -1371,7 +1332,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_036, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 3, 32, 1, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 1, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -1576,7 +1537,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_041, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 113, 1, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 19, 32, 113, 1, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -1622,7 +1583,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_042, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 200, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 9, 32, 200, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -1668,7 +1629,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_043, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 200, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 9, 32, 200, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -1702,7 +1663,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_044, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 24, 0, 0, 0, 3, 0, 1, 32, 172, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 19, 32, 172, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -1749,7 +1710,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_045, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 4, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 19, 32, 4, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -1921,7 +1882,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_049, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 24, 0, 0, 0, 3, 0, 1, 32, 172, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 19, 32, 172, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -1954,7 +1915,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_050, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 188, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 19, 32, 188, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -2197,7 +2158,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_057, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 139, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 19, 32, 139, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -2243,7 +2204,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_058, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 139, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 19, 32, 139, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -2288,7 +2249,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_059, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 16, 0, 0, 0, 3, 0, 1, 32, 183, 0, 0, 0, 0, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 16, 0, 0, 0, 3, 0, 19, 32, 183, 0, 0, 0, 0, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -2630,7 +2591,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_068, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 3, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
