@@ -126,7 +126,7 @@ vector<PortraitAlbumData> CreatePortraitAlbum()
         valuesBucket.PutString(GROUP_TAG, tag[index]);
         valuesBucket.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
         EXPECT_NE(g_rdbStore, nullptr);
-        int32_t ret = g_rdbStore->GetRaw()->Insert(albumId, ANALYSIS_ALBUM_TABLE, valuesBucket);
+        int32_t ret = g_rdbStore->Insert(albumId, ANALYSIS_ALBUM_TABLE, valuesBucket);
         EXPECT_EQ(ret, E_OK);
         MEDIA_INFO_LOG("InsertAlbum albumId is %{public}s", to_string(albumId).c_str());
         data.albumId = albumId;
@@ -153,7 +153,7 @@ PortraitData InsertPortraitToPhotos()
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
     EXPECT_NE((g_rdbStore == nullptr), true);
-    int32_t ret = g_rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    int32_t ret = g_rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
     PortraitData portraitData;
@@ -174,7 +174,7 @@ void InsertPortraitToImageFace(int64_t fileId, int totalFaces, const vector<stri
         valuesBucket.PutInt(TOTAL_FACES, totalFaces);
         valuesBucket.PutString(TAG_ID, tag[faceId]);
         EXPECT_NE((g_rdbStore == nullptr), true);
-        int32_t ret = g_rdbStore->GetRaw()->Insert(rowId, VISION_IMAGE_FACE_TABLE, valuesBucket);
+        int32_t ret = g_rdbStore->Insert(rowId, VISION_IMAGE_FACE_TABLE, valuesBucket);
         EXPECT_EQ(ret, E_OK);
     }
 }
@@ -192,7 +192,7 @@ void InsertPortraitsToAlbum(const vector<PortraitData> &portraitData,
                 valuesBucket.PutInt(MAP_ALBUM, albumData.albumId);
                 valuesBucket.PutInt(MAP_ASSET, data.fileId);
                 EXPECT_NE((g_rdbStore == nullptr), true);
-                int32_t ret = g_rdbStore->GetRaw()->Insert(rowId, ANALYSIS_PHOTO_MAP_TABLE, valuesBucket);
+                int32_t ret = g_rdbStore->Insert(rowId, ANALYSIS_PHOTO_MAP_TABLE, valuesBucket);
                 EXPECT_EQ(ret, E_OK);
                 coverUri = GetCoverUri(data);
             }
@@ -308,8 +308,8 @@ void MediaLibraryAnalysisAlbumOperationTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("Vision_Test::Start");
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
         exit(1);
     }

@@ -35,7 +35,6 @@
 #include "medialibrary_inotify.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_rdbstore.h"
-#include "medialibrary_rdb_transaction.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
@@ -155,8 +154,6 @@ string GetDisplayName(string &title)
 InsertResult InsertPhoto(string &packageName)
 {
     MEDIA_INFO_LOG("InsertPhoto packageName is: %{public}s", packageName.c_str());
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int64_t fileId = -1;
     int64_t timestamp = GetTimestamp();
     string title = GetTitle(timestamp);
@@ -178,9 +175,8 @@ InsertResult InsertPhoto(string &packageName)
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, ZERO);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, ZERO);
     EXPECT_NE((g_rdbStore == nullptr), true);
-    int32_t ret = g_rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    int32_t ret = g_rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
     MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
     InsertResult result;
     result.fileId = fileId;
@@ -192,8 +188,6 @@ InsertResult InsertPhoto(string &packageName)
 InsertResult InsertPhotoWithEmptyPackageName()
 {
     MEDIA_INFO_LOG("InsertPhoto packageName is empty");
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int64_t fileId = -1;
     int64_t timestamp = GetTimestamp();
     string title = GetTitle(timestamp);
@@ -213,9 +207,8 @@ InsertResult InsertPhotoWithEmptyPackageName()
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, ZERO);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, ZERO);
     EXPECT_NE((g_rdbStore == nullptr), true);
-    int32_t ret = g_rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    int32_t ret = g_rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
     MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
     InsertResult result;
     result.fileId = fileId;
@@ -227,8 +220,6 @@ InsertResult InsertPhotoWithEmptyPackageName()
 void UpdatePhotoTrashed(int64_t &fileId, bool isDelete)
 {
     ASSERT_NE(g_rdbStore, nullptr);
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int32_t changedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     ValuesBucket updateValues;
@@ -241,14 +232,11 @@ void UpdatePhotoTrashed(int64_t &fileId, bool isDelete)
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
 }
 
 void HidePhoto(int64_t fileId, int value)
 {
     ASSERT_NE(g_rdbStore, nullptr);
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int32_t changedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     ValuesBucket updateValues;
@@ -257,14 +245,11 @@ void HidePhoto(int64_t fileId, int value)
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
 }
 
 void UpdateDisplayName(int64_t &fileId, string &displayName)
 {
     ASSERT_NE(g_rdbStore, nullptr);
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int32_t changedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     ValuesBucket updateValues;
@@ -274,13 +259,12 @@ void UpdateDisplayName(int64_t &fileId, string &displayName)
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
 }
 
 void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptPhotoCount,
     string exceptCoverUri)
 {
-    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(g_rdbStore->GetRaw());
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(g_rdbStore);
     vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI,
         PhotoAlbumColumns::ALBUM_BUNDLE_NAME};
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::QUERY,
@@ -332,13 +316,10 @@ void DeletePhoto(int64_t &fileId)
 {
     MEDIA_INFO_LOG("DeletePhoto fileId is %{public}s", to_string(fileId).c_str());
     ASSERT_NE(g_rdbStore, nullptr);
-    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
-    transactionOprn.Start();
     int32_t deletedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::DELETE);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     g_rdbStore->Delete(cmd, deletedRows);
-    transactionOprn.Finish();
     MEDIA_INFO_LOG("DeletePhoto deletedRows is %{public}d", deletedRows);
 }
 
@@ -346,7 +327,7 @@ void MediaLibraryAlbumSourceTest::SetUpTestCase()
 {
     MEDIA_INFO_LOG("MediaLibraryAlbumSourceTest SetUpTestCase start");
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
     ClearData();
     InitSourceAlbumTrigger();
@@ -363,7 +344,7 @@ void MediaLibraryAlbumSourceTest::TearDownTestCase()
 void MediaLibraryAlbumSourceTest::SetUp()
 {
     MEDIA_INFO_LOG("MediaLibraryAlbumSourceTest SetUp");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     rdbStore->ExecuteSql(PhotoColumn::INDEX_SCTHP_ADDTIME);
 }
 

@@ -78,12 +78,12 @@ static void ThumhnailTest(const uint8_t* data, size_t size)
 
 static void ThumbnailHelperTest(const uint8_t* data, size_t size)
 {
-    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return;
     }
     Media::ThumbRdbOpt opts = {
-        .store = rdbStore->GetRaw(),
+        .store = rdbStore,
         .table = "Photos",
     };
     Media::ThumbnailGenerateHelper::GetThumbnailPixelMap(opts,

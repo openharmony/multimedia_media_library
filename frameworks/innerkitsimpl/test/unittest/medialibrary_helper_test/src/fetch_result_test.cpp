@@ -33,7 +33,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-shared_ptr<NativeRdb::RdbStore> rdbStore = nullptr;
+shared_ptr<MediaLibraryRdbStore> rdbStore = nullptr;
 
 static const int32_t TEST_IS_TRASH = 0;
 static const int64_t TEST_SIZE = 0;
@@ -43,7 +43,7 @@ static const string TEST_URI = MEDIALIBRARY_DATA_URI;
 void MediaLibraryHelperUnitTest::SetUpTestCase(void)
 {
     int32_t ret = MediaLibraryUnitTestUtils::InitUnistore();
-    rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     EXPECT_EQ(ret, NativeRdb::E_OK);
     EXPECT_NE(rdbStore, nullptr);
 
