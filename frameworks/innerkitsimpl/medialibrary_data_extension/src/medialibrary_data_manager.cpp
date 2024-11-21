@@ -388,6 +388,10 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync()
             MediaLibraryRdbStore::UpdateIndexForCover(rdbStore);
             rdbStore->SetOldVersion(VERSION_UPDATE_INDEX_FOR_COVER);
         }
+        if (oldVersion < VERSION_UPDATE_DATETAKEN_AND_DETAILTIME) {
+            MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(rdbStore);
+            rdbStore->SetOldVersion(VERSION_UPDATE_DATETAKEN_AND_DETAILTIME);
+        }
 
         rdbStore->SetOldVersion(MEDIA_RDB_VERSION);
     }).detach();

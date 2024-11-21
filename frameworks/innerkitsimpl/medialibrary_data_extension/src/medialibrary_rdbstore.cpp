@@ -571,6 +571,24 @@ void MediaLibraryRdbStore::UpdateDateTakenIndex(const shared_ptr<MediaLibraryRdb
     MEDIA_INFO_LOG("update index for datetaken change end");
 }
 
+void MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("UpdateDateTakenAndDetalTime start");
+    string updateDateTakenSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + MediaColumn::MEDIA_DATE_TAKEN +
+            " = " + PhotoColumn::MEDIA_DATE_MODIFIED + "," + PhotoColumn::PHOTO_DETAIL_TIME +
+            " = strftime('%Y:%m:%d %H:%M:%S', " + MediaColumn::MEDIA_DATE_MODIFIED +
+            "/1000, 'unixepoch', 'localtime')" + " WHERE " + MediaColumn::MEDIA_DATE_TAKEN + " = 0";
+    string updateDetalTimeSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_DETAIL_TIME +
+            " = strftime('%Y:%m:%d %H:%M:%S', " + MediaColumn::MEDIA_DATE_TAKEN + "/1000, 'unixepoch', 'localtime')" +
+            " WHERE " + PhotoColumn::PHOTO_DETAIL_TIME + " IS NULL";
+    const vector<string> updateSql = {
+        updateDateTakenSql,
+        updateDetalTimeSql,
+    };
+    ExecSqls(updateSql, *store->GetRaw().get());
+    MEDIA_INFO_LOG("UpdateDateTakenAndDetalTime end");
+}
+
 void MediaLibraryRdbStore::ClearAudios(const shared_ptr<MediaLibraryRdbStore> store)
 {
     const vector<string> sqls = {
