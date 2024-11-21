@@ -377,6 +377,10 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync()
             ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
             rdbStore->SetOldVersion(VERSION_ADD_DETAIL_TIME);
         }
+        if (oldVersion < VERSION_UPDATE_DATETAKEN_AND_DETAILTIME) {
+            MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(rdbStore);
+            rdbStore->SetOldVersion(VERSION_UPDATE_DATETAKEN_AND_DETAILTIME);
+        }
 
         HandleUpgradeRdbAsyncExtension(rdbStore, oldVersion);
         // !! Do not add upgrade code here !!
