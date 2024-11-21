@@ -281,7 +281,7 @@ void ThumbnailGenerateHelper::StopDownloadThumbBatchOnDemand(int32_t requestId)
         return;
     }
     auto thumbReadyTaskData = readyTask->GetReadyTaskData();
-    if (requestId <= 0 || thumbReadyTaskData->downloadId < 0) {
+    if (requestId < 0 || thumbReadyTaskData->downloadId < 0) {
         return;
     }
     MEDIA_INFO_LOG("Stop Download Thumb, downloadId is: %{public}lld", (long long)thumbReadyTaskData->downloadId);
