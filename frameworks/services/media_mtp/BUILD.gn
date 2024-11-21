@@ -130,7 +130,6 @@ if (defined(medialibrary_mtp_enable)) {
       "relational_store:native_rdb",
       "safwk:system_ability_fwk",
       "samgr:samgr_proxy",
-      "storage_service:storage_manager_sa_proxy",
       "usb_manager:usbsrv_client",
     ]
 
