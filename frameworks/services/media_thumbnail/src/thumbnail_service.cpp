@@ -630,6 +630,13 @@ int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbP
 
 void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
 {
+    auto readyTask = ReadyTaskManager::GetInstance();
+    if (readyTask == nullptr) {
+        MEDIA_ERR_LOG("readyTask is null");
+        return;
+    }
+    readyTask->EndDownloadThumbTimeoutWatcherThread();
+    ThumbnailGenerateHelper::StopDownloadThumbBatchOnDemand(requestId);
     if (requestId <= 0) {
         MEDIA_ERR_LOG("cancel astc batch failed, invalid request id:%{public}d", requestId);
         return;
@@ -638,13 +645,6 @@ void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
     if (isTemperatureHighForReady_) {
         currentRequestId_ = 0;
     }
-    auto readyTask = ReadyTaskManager::GetInstance();
-    if (readyTask == nullptr) {
-        MEDIA_ERR_LOG("readyTask is null");
-        return;
-    }
-    readyTask->EndDownloadThumbTimeoutWatcherThread();
-    ThumbnailGenerateHelper::StopDownloadThumbBatchOnDemand(requestId);
     MEDIA_INFO_LOG("CancelAstcBatchTask requestId: %{public}d", requestId);
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
