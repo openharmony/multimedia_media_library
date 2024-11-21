@@ -346,6 +346,7 @@ struct FileInfo {
     std::string oldAstcDateKey;
     std::string newAstcDateKey;
     bool isInternal {true};
+    int32_t userId {-1};
 };
 
 struct AlbumInfo {
