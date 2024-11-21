@@ -36,4 +36,9 @@ MEDIALIB_CLOUD_ENHANCEMENT_SERVICE_PATH =
 
 declare_args() {
   media_library_link_opt = false
+  resourceschedule_device_standby = true
+  if (defined(global_parts_info) &&
+      !defined(global_parts_info.resourceschedule_device_standby)) {
+    resourceschedule_device_standby = false
+  }
 }
