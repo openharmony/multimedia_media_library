@@ -307,6 +307,22 @@ void TestCloudEnhancementImage(vector<string> &columns, int32_t associateFileId,
     EXPECT_EQ(FileUtils::IsFileExist(newFilePath), true);
 }
 
+shared_ptr<NativeRdb::ResultSet> GetQueryResultSet(string photoId)
+{
+    vector<string> columns;
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
+    if (g_rdbStore == nullptr) {
+        return nullptr;
+    }
+    
+    shared_ptr<NativeRdb::ResultSet> resultSet = g_rdbStore->Query(cmd, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == E_OK) {
+        return resultSet;
+    }
+    return nullptr;
+}
+
 
 void MediaLibraryCloudEnhancementTest::SetUpTestCase(void)
 {
@@ -801,29 +817,31 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_save_cloud_enhan
     int32_t sourceSubtype = 0;
     shared_ptr<CloudEnhancementFileInfo> fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath,
         sourceDisplayName, sourceSubtype, 0);
-    int32_t ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task);
-    EXPECT_EQ(ret, -1);
 
     string photoId = "202408302001001";
     sourceFileId = PrepareHighQualityPhoto(photoId, "test.jpg");
     sourceDisplayName = "a.f";
-    fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath,
-        sourceDisplayName, sourceSubtype, 0);
-    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task);
+    fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath, sourceDisplayName, sourceSubtype, 0);
+    
+    auto resultSet = GetQueryResultSet(photoId);
+    ASSERT_NE(resultSet, nullptr);
+
+    int32_t ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, resultSet);
     EXPECT_EQ(ret <= 0, true);
     sourceDisplayName = "test.jpg";
-    fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath,
-        sourceDisplayName, sourceSubtype, 0);
-    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task);
+    fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath, sourceDisplayName, sourceSubtype, 0);
+
+    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, resultSet);
     EXPECT_EQ(ret, -1);
 
     string photoId2 = "202408302001002";
     sourceFileId = PrepareHighQualityPhoto(photoId2, TESTING_DISPLAYNAME);
     task.addr = buffer;
     task.bytes = size;
-    fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath,
-        sourceDisplayName, sourceSubtype, 0);
-    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task);
+    fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath, sourceDisplayName, sourceSubtype, 0);
+    resultSet = GetQueryResultSet(photoId2);
+    ASSERT_NE(resultSet, nullptr);
+    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, resultSet);
     EXPECT_GT(ret, 0);
 
     string photoId3 = "202408302001003";
@@ -834,9 +852,10 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_save_cloud_enhan
         buffer[i] = BUFFER[i];
     }
     task.addr = buffer;
-    fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath,
-        sourceDisplayName, sourceSubtype, 0);
-    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task);
+    fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath, sourceDisplayName, sourceSubtype, 0);
+    resultSet = GetQueryResultSet(photoId3);
+    ASSERT_NE(resultSet, nullptr);
+    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, resultSet);
     EXPECT_GT(ret, 0);
     MEDIA_INFO_LOG("enhancement_callback_save_cloud_enhancement_photo_002 End");
 }
@@ -844,25 +863,16 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_save_cloud_enhan
 HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_create_cloud_enhancement_photo_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("enhancement_callback_create_cloud_enhancement_photo_003 Start");
-    string displayName = "test.";
-    int32_t sourceFileId = -1;
     string filePath;
-    shared_ptr<CloudEnhancementFileInfo> info = make_shared<CloudEnhancementFileInfo>(0, filePath, displayName,
-        0, 0);
-    int32_t ret = EnhancementServiceCallback::CreateCloudEnhancementPhoto(sourceFileId, info);
-    EXPECT_LT(ret, 0);
-    displayName = "test.txt";
-    info = make_shared<CloudEnhancementFileInfo>(0, filePath, displayName, 0, 0);
-    ret = EnhancementServiceCallback::CreateCloudEnhancementPhoto(sourceFileId, info);
-    EXPECT_LT(ret, 0);
-    ret = EnhancementServiceCallback::CreateCloudEnhancementPhoto(sourceFileId, info);
-    EXPECT_LT(ret, 0);
-
-    displayName = TESTING_DISPLAYNAME;
+    string displayName = TESTING_DISPLAYNAME;
     string photoId = "202408302001001";
-    sourceFileId = PrepareHighQualityPhoto(photoId, displayName);
-    info = make_shared<CloudEnhancementFileInfo>(sourceFileId, filePath, displayName, 0, 0);
-    int32_t newFileId = EnhancementServiceCallback::CreateCloudEnhancementPhoto(sourceFileId, info);
+    int32_t sourceFileId = PrepareHighQualityPhoto(photoId, displayName);
+    shared_ptr<CloudEnhancementFileInfo> info = make_shared<CloudEnhancementFileInfo>(sourceFileId,
+        filePath, displayName, 0, 0);
+    auto resultSet = GetQueryResultSet(photoId);
+    ASSERT_NE(resultSet, nullptr);
+    int32_t newFileId = EnhancementServiceCallback::CreateCloudEnhancementPhoto(sourceFileId, info,
+        resultSet);
     EXPECT_GT(newFileId, 0);
 
     vector<string> columns = {
@@ -872,7 +882,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_create_cloud_enh
     cmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, to_string(newFileId));
     ASSERT_NE(g_rdbStore, nullptr);
 
-    auto resultSet = g_rdbStore->Query(cmd, columns);
+    resultSet = g_rdbStore->Query(cmd, columns);
     ASSERT_NE(resultSet, nullptr);
     ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
 
@@ -1103,7 +1113,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_database_operations_inser
     info->hidden = 0;
     info->subtype = 3; // moving photo
     int32_t ret = EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(cmd, fileAsset,
-        fileId, info);
+        fileId, info, resultSet);
     EXPECT_GT(ret, 0);
     resultSet = g_rdbStore->Query(cmd, columns);
     ASSERT_NE(resultSet, nullptr);
@@ -1116,8 +1126,10 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_database_operations_inser
     string displayName = "CloudEnhancementTest002.jpg";
     fileId = PrepareHighQualityPhoto(photoId, displayName);
     info->subtype = 1;
+    resultSet = GetQueryResultSet(photoId);
+    ASSERT_NE(resultSet, nullptr);
     ret = EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(cmd, fileAsset,
-        fileId, info);
+        fileId, info, resultSet);
     EXPECT_GT(ret, 0);
 
     MEDIA_INFO_LOG("enhancement_database_operations_insert_004 End");

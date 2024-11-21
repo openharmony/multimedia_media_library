@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 
+#include "abs_shared_result_set.h"
 #include "enhancement_thread_manager.h"
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 #include "media_enhance_constants_c_api.h"
@@ -60,9 +61,9 @@ public:
 private:
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     EXPORT static int32_t SaveCloudEnhancementPhoto(std::shared_ptr<CloudEnhancementFileInfo> info,
-        CloudEnhancementThreadTask& task);
+        CloudEnhancementThreadTask& task, std::shared_ptr<NativeRdb::Result> resultSet);
     EXPORT static int32_t CreateCloudEnhancementPhoto(int32_t sourceFileId,
-        std::shared_ptr<CloudEnhancementFileInfo> info);
+        std::shared_ptr<CloudEnhancementFileInfo> info, std::shared_ptr<NativeRdb::Result> resultSet);
 #endif
 };
 } // namespace Media

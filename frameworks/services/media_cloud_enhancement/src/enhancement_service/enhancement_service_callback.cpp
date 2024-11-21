@@ -108,7 +108,7 @@ static int32_t checkAddrAndBytes(CloudEnhancementThreadTask& task)
 }
 
 int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEnhancementFileInfo> info,
-    CloudEnhancementThreadTask& task)
+    CloudEnhancementThreadTask& task, shared_ptr<NativeRdb::ResultSet> resultSet)
 {
     CHECK_AND_RETURN_RET(checkAddrAndBytes(task) == E_OK, E_ERR);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckDisplayName(info->displayName) == E_OK,
@@ -121,7 +121,7 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
     int32_t newFileId = -1;
     shared_ptr<CloudEnhancementFileInfo> newFileInfo = make_shared<CloudEnhancementFileInfo>(0, newFilePath,
         newDisplayName, info->subtype, info->hidden);
-    newFileId = CreateCloudEnhancementPhoto(info->fileId, newFileInfo);
+    newFileId = CreateCloudEnhancementPhoto(info->fileId, newFileInfo, resultSet);
     CHECK_AND_RETURN_RET_LOG(newFileId > 0, newFileId, "insert file in db failed, error = %{public}d", newFileId);
     int32_t ret = FileUtils::SaveImage(newFileInfo->filePath, (void*)(task.addr), static_cast<size_t>(task.bytes));
     delete[] task.addr;
@@ -155,7 +155,7 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
 }
 
 int32_t EnhancementServiceCallback::CreateCloudEnhancementPhoto(int32_t sourceFileId,
-    shared_ptr<CloudEnhancementFileInfo> info)
+    shared_ptr<CloudEnhancementFileInfo> info, shared_ptr<NativeRdb::ResultSet> resultSet)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE);
     FileAsset fileAsset;
@@ -172,7 +172,7 @@ int32_t EnhancementServiceCallback::CreateCloudEnhancementPhoto(int32_t sourceFi
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
             "Failed to Solve FileAsset Path and Name, displayName=%{private}s", info->displayName.c_str());
         outRow = EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(cmd, fileAsset,
-            sourceFileId, info, trans);
+            sourceFileId, info, resultSet, trans);
         CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
         fileAsset.SetId(outRow);
         return errCode;
@@ -230,8 +230,7 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
     NativeRdb::RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     servicePredicates.SetWhereClause(where);
     servicePredicates.SetWhereArgs(whereArgs);
-    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_NAME,
-        MediaColumn::MEDIA_HIDDEN, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_CE_AVAILABLE};
+    vector<string> columns;
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
     CHECK_AND_RETURN_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == E_OK,
         "enhancement callback error: query result set is empty");
@@ -246,8 +245,9 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
     // save 120 per
     shared_ptr<CloudEnhancementFileInfo> info = make_shared<CloudEnhancementFileInfo>(sourceFileId,
         sourceFilePath, sourceDisplayName, sourceSubtype, hidden);
-    int32_t newFileId = SaveCloudEnhancementPhoto(info, task);
+    int32_t newFileId = SaveCloudEnhancementPhoto(info, task, resultSet);
     CHECK_AND_RETURN_LOG(newFileId > 0, "invalid file id");
+    resultSet->Close();
     NativeRdb::ValuesBucket rdbValues;
     rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
     rdbValues.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
@@ -283,6 +283,7 @@ void EnhancementServiceCallback::DealWithFailedTask(CloudEnhancementThreadTask& 
     string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
+    resultSet->Close();
     CHECK_AND_PRINT_LOG(ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING),
         "enhancement callback error: db CE_AVAILABLE status not processing, file_id: %{public}d", fileId);
     NativeRdb::ValuesBucket valueBucket;
