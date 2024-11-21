@@ -43,7 +43,6 @@ if (defined(medialibrary_mtp_enable)) {
       "src/debug_printf.cpp",
       "src/medialibrary_mtp_unit_test.cpp",
       "src/mock_mtp_driver.cpp",
-      "src/mock_mtp_operation_utils.cpp",
       "src/mtp_media_library_unit_test.cpp",
       "src/mtp_payload_data_test.cpp",
       "src/mtp_set_object_prop_test.cpp",
