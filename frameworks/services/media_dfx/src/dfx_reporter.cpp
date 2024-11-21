@@ -405,6 +405,8 @@ void DfxReporter::ReportPhotoRecordInfo()
     int32_t abnormalVideoDurationCount = photoRecordInfo.abnormalVideoDurationCount;
     int32_t toBeUpdatedRecordCount = photoRecordInfo.toBeUpdatedRecordCount;
     int64_t dbFileSize = photoRecordInfo.dbFileSize;
+    int32_t duplicateLpathCount = photoRecordInfo.duplicateLpathCount;
+    int32_t abnormalLpathCount = photoRecordInfo.abnormalLpathCount;
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
         "MEDIALIB_DATABASE_INFO",
@@ -415,7 +417,9 @@ void DfxReporter::ReportPhotoRecordInfo()
         "ABNORMAL_SIZE_COUNT", abnormalSizeCount,
         "ABNORMAL_WIDTH_OR_HEIGHT_COUNT", abnormalWidthOrHeightCount,
         "ABNORMAL_VIDEO_DURATION_COUNT", abnormalVideoDurationCount,
-        "ABNORMAL_COUNT_TO_UPDATE", toBeUpdatedRecordCount);
+        "ABNORMAL_COUNT_TO_UPDATE", toBeUpdatedRecordCount,
+        "DUPLICATE_LPATH_COUNT", duplicateLpathCount,
+        "ABNORMAL_LPATH_COUNT", abnormalLpathCount);
     if (ret != 0) {
         MEDIA_ERR_LOG("ReportPhotoRecordInfo error:%{public}d", ret);
     }
