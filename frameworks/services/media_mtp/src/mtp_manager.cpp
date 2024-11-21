@@ -18,6 +18,7 @@
 #include "media_log.h"
 #include "mtp_service.h"
 #include "mtp_subscriber.h"
+#include "os_account_manager.h"
 #include "usb_srv_client.h"
 #include "usb_srv_support.h"
 
@@ -70,6 +71,13 @@ void MtpManager::Init()
 void MtpManager::StartMtpService(const MtpMode mode)
 {
     MEDIA_INFO_LOG("MtpManager::StartMtpService is called");
+    bool isForeground = true;
+    OHOS::ErrCode errCode = OHOS::AccountSA::OsAccountManager::IsOsAccountForeground(isForeground);
+    // not current user foreground, return
+    if (errCode == ERR_OK && !isForeground) {
+        MEDIA_ERR_LOG("StartMtpService errCode = %{public}d isForeground %{public}d", errCode, isForeground);
+        return;
+    }
     {
         std::unique_lock lock(mutex_);
         if (isMtpServiceRunning.load()) {
