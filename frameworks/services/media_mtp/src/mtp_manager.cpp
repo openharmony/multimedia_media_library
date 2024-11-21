@@ -59,9 +59,14 @@ void MtpManager::Init()
         CHECK_AND_RETURN_LOG(ret == 0, "GetCurrentFunctions failed");
         if (funcs & USB::UsbSrvSupport::Function::FUNCTION_MTP) {
             MtpManager::GetInstance().StartMtpService(MtpMode::MTP_MODE);
+            return;
         }
         if (funcs & USB::UsbSrvSupport::Function::FUNCTION_PTP) {
             MtpManager::GetInstance().StartMtpService(MtpMode::PTP_MODE);
+            return;
+        }
+        if (funcs & USB::UsbSrvSupport::Function::FUNCTION_HDC) {
+            MtpManager::GetInstance().StopMtpService();
         }
         MEDIA_INFO_LOG("MtpManager Init success end");
     }).detach();

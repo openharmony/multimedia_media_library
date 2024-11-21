@@ -620,6 +620,7 @@ int32_t MtpDataUtils::GetMtpPropList(const std::shared_ptr<std::unordered_map<ui
         if (iterator != pathHandles.end()) {
             parentId = iterator->second;
         }
+        parentId = (parentId == DEFAULT_STORAGE_ID) ? 0 : parentId;
         GetMtpOneRowProp(properties, parentId, it, outProps);
     }
     return MTP_SUCCESS;
@@ -686,7 +687,7 @@ uint32_t MtpDataUtils::GetMtpFormatByPath(const std::string &path, uint16_t &out
             }
         }
     }
-    if (extension.compare(MTP_FORMAT_JPG) || extension.compare(MTP_FORMAT_JPEG)) {
+    if (extension.compare(MTP_FORMAT_JPG) == 0 || extension.compare(MTP_FORMAT_JPEG) == 0) {
         outFormat = MTP_FORMAT_EXIF_JPEG_CODE;
         return MTP_SUCCESS;
     }
@@ -698,6 +699,7 @@ void MtpDataUtils::SetMtpProperty(const std::string &column, const std::string &
 {
     if (column.compare(MEDIA_DATA_DB_NAME) == 0) {
         prop.currentValue->str_ = make_shared<std::string>(std::filesystem::path(path).filename().c_str());
+        return;
     }
 
     struct stat statInfo;
@@ -707,12 +709,15 @@ void MtpDataUtils::SetMtpProperty(const std::string &column, const std::string &
     }
     if (column.compare(MEDIA_DATA_DB_SIZE) == 0) {
         prop.currentValue->bin_.i64 = statInfo.st_size;
+        return;
     }
     if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
         prop.currentValue->str_ = make_shared<std::string>(MtpPacketTool::FormatDateTime((statInfo.st_mtime)));
+        return;
     }
     if (column.compare(MEDIA_DATA_DB_DATE_ADDED) == 0) {
         prop.currentValue->bin_.i64 = statInfo.st_ctime;
+        return;
     }
 }
 
@@ -786,6 +791,7 @@ int32_t MtpDataUtils::GetMtpPropValue(const std::string &path,
     std::string column = PropColumnMap.at(property);
     if (column.compare(MEDIA_DATA_DB_NAME) == 0) {
         outPropValue.outStrVal = std::filesystem::path(path).filename().c_str();
+        return MTP_SUCCESS;
     }
 
     struct stat statInfo;
@@ -795,9 +801,11 @@ int32_t MtpDataUtils::GetMtpPropValue(const std::string &path,
     }
     if (column.compare(MEDIA_DATA_DB_SIZE) == 0) {
         outPropValue.outIntVal = statInfo.st_size;
+        return MTP_SUCCESS;
     }
     if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
         outPropValue.outStrVal = Strftime("%Y-%m-%d %H:%M:%S", statInfo.st_mtime);
+        return MTP_SUCCESS;
     }
     if (column.compare(MEDIA_DATA_DB_DATE_ADDED) == 0) {
         outPropValue.outIntVal = statInfo.st_ctime;

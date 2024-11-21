@@ -68,7 +68,11 @@ void MtpSubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
     if (isPtp) {
         MEDIA_INFO_LOG("MtpSubscriber OnReceiveEvent USB PTP connected");
         MtpManager::GetInstance().StartMtpService(MtpManager::MtpMode::PTP_MODE);
+        return;
     }
+    MEDIA_INFO_LOG("MtpSubscriber OnReceiveEvent USB NOT MTP/PTP, Only HDC");
+    MtpManager::GetInstance().StopMtpService();
+    return;
 }
 } // namespace Media
 } // namespace OHOS
