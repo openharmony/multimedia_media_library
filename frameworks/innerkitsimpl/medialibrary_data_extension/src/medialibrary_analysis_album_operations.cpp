@@ -454,6 +454,7 @@ static bool UpdateGroupPhotoAlbum(vector<GroupPhotoAlbumInfo> &updateAlbums, vec
             lastResultMap.erase(albumId);
         }
     }
+    resultSet->Close();
 
     UpdateGroupPhotoAlbumInfo(updateAlbums);
     InsertGroupPhotoAlbumInfo(insertAlbums, insertAlbumsId);
@@ -706,6 +707,7 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
             deleteId.push_back(info.albumId);
         }
     }
+    resultSet->Close();
     return UpdateForMergeGroupAlbums(uniStore, deleteId, updateMap);
 }
 
@@ -836,6 +838,7 @@ void MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(int32_t albu
             break;
         }
     }
+    resultSet->Close();
     UpdateGroupPhotoAlbumInfo(updateAlbums);
 }
 
