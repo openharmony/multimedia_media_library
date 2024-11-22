@@ -42,9 +42,10 @@ static constexpr int32_t INTTYPE16 = 16;
 static constexpr int32_t INTTYPE128 = 128;
 static constexpr int32_t STRINGTYPE = -1;
 static const string MEDIA_DATA_DB_FORMAT = "format";
-static constexpr int32_t NUMBER_TWO = 2;
-static constexpr int32_t NUMBER_THREE = 3;
-static constexpr int32_t NUMBER_FOUR = 4;
+static constexpr int32_t EDITED_PHOTO_TYPE = 2;
+static constexpr int32_t MOVING_PHOTO_TYPE = 3;
+static constexpr int32_t EDITED_MOVING_TYPE = 4;
+static constexpr int64_t MILLI_TO_SECOND = 1000;
 
 static const map<uint16_t, string> FormatMap = {
     { 0, MTP_FORMAT_ALL},
@@ -310,10 +311,10 @@ int32_t MtpDataUtils::GetPropList(const std::shared_ptr<MtpOperationContext> &co
     int32_t handle = 0;
     for (int32_t row = 0; row < count; row++) {
         resultSet->GoToRow(row);
-        if (context->handle > PHOTES_FILE_ID_TWO) {
-            string data = GetStringVal("data", resultSet);
-            string displayName = GetStringVal("display_name", resultSet);
-            int32_t subtype = GetInt32Val("subtype", resultSet);
+        if (context->handle > EDITED_PHOTOS_OFFSET) {
+            string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+            string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+            int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
             string path = GetMovingOrEnditSourcePath(data, subtype, context);
             if (path.empty()) {
                 MEDIA_ERR_LOG(" MtpDataUtils::GetPropList get sourcePath failed");
@@ -473,8 +474,8 @@ void MtpDataUtils::SetProperty(const std::string &column, const shared_ptr<DataS
             break;
         case TYPE_INT64:
             if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
-                prop.currentValue->str_ =
-                    make_shared<std::string>(MtpPacketTool::FormatDateTime(get<int64_t>(columnValue)));
+                prop.currentValue->str_ = make_shared<std::string>(
+                    MtpPacketTool::FormatDateTime(get<int64_t>(columnValue) / MILLI_TO_SECOND));
             } else {
                 prop.currentValue->bin_.i64 = get<int64_t>(columnValue);
             }
@@ -728,13 +729,20 @@ void MtpDataUtils::SetPtpProperty(const std::string &column, const std::string &
         std::string filename = std::filesystem::path(path).filename();
         size_t filename_pos = filename.find_last_of('.');
         if (filename_pos == std::string::npos) {
+            MEDIA_ERR_LOG("get file name failed");
             return;
         }
         size_t displayName_pos = displayName.find_last_of('.');
         if (displayName_pos == std::string::npos) {
+            MEDIA_ERR_LOG("get file name failed");
             return;
         }
-        std::string value = displayName.substr(0, displayName_pos) + "." + filename.substr(filename_pos + 1);
+        std::string value;
+        if (filename_pos + 1 >= filename.size()) {
+            MEDIA_ERR_LOG("get file name failed");
+            return;
+        }
+        value = displayName.substr(0, displayName_pos) + "." + filename.substr(filename_pos + 1);
         prop.currentValue->str_ = make_shared<std::string>(value);
     }
 
@@ -759,18 +767,18 @@ string MtpDataUtils::GetMovingOrEnditSourcePath(const std::string &path, const i
 {
     string sourcePath;
     MEDIA_INFO_LOG("mtp GetMovingOrEnditSourcePath path:%{public}s, subtype:%{public}d", path.c_str(), subtype);
-    switch (static_cast<int32_t>(context->handle / PHOTES_FILE_ID)) {
-        case NUMBER_TWO:
+    switch (static_cast<int32_t>(context->handle / COMMON_PHOTOS_OFFSET)) {
+        case EDITED_PHOTO_TYPE:
             if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
                 sourcePath = MovingPhotoFileUtils::GetSourceMovingPhotoImagePath(path);
             } else {
                 sourcePath = PhotoFileUtils::GetEditDataSourcePath(path);
             }
             break;
-        case NUMBER_THREE:
+        case MOVING_PHOTO_TYPE:
             sourcePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(path);
             break;
-        case NUMBER_FOUR:
+        case EDITED_MOVING_TYPE:
             sourcePath = MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(path);
             break;
         default:

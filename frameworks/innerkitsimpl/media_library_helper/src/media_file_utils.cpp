@@ -43,6 +43,7 @@
 #include "medialibrary_type_const.h"
 #include "mimetype_utils.h"
 #include "medialibrary_tracer.h"
+#include "ptp_medialibrary_manager_uri.h"
 #include "string_ex.h"
 #include "userfilemgr_uri.h"
 
@@ -2039,7 +2040,7 @@ int32_t MediaFileUtils::CopyDirectory(const std::string &srcDir, const std::stri
     return E_OK;
 }
 
-bool MediaFileUtils::CallingTokenIdIsSelf()
+bool MediaFileUtils::IsCalledBySelf()
 {
     if (IPCSkeleton::GetCallingFullTokenID() == IPCSkeleton::GetSelfTokenID()) {
         return E_OK;
