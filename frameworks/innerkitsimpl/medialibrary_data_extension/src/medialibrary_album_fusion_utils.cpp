@@ -172,6 +172,7 @@ static int32_t PrepareTempUpgradeTable(const std::shared_ptr<MediaLibraryRdbStor
         return E_DB_FAIL;
     }
     resultSet->GetInt(0, matchedCount);
+    resultSet->Close();
     MEDIA_INFO_LOG("ALBUM_FUSE: There are %{public}d matched items", matchedCount);
     err = upgradeStore->ExecuteSql(CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_MAP_ASSET);
     if (err != NativeRdb::E_OK) {
@@ -657,6 +658,7 @@ static int32_t UpdateCoverInfoForAlbum(const std::shared_ptr<MediaLibraryRdbStor
         MEDIA_INFO_LOG("No need to update cover_uri");
         return E_OK;
     }
+    resultSet->Close();
     string newCoverUri = MediaLibraryFormMapOperations::GetUriByFileId(newAssetId, targetPath);
     MEDIA_INFO_LOG("New cover uri is %{public}s", targetPath.c_str());
     const std::string UPDATE_ALBUM_COVER_URI =
@@ -907,6 +909,7 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
 
     string newFileAssetUri = MediaFileUtils::GetFileAssetUri(GetStringVal(MediaColumn::MEDIA_FILE_PATH, newResultSet),
         displayName, newAssetId);
+    newResultSet->Close();
     SendNewAssetNotify(newFileAssetUri, rdbStore);
     MEDIA_INFO_LOG("End clone asset, newAssetId = %{public}lld", (long long)newAssetId);
     return newAssetId;
@@ -1285,12 +1288,18 @@ int32_t MediaLibraryAlbumFusionUtils::HandleExpiredAlbumData(const std::shared_p
         MEDIA_ERR_LOG("Query not matched data fails");
         return E_HAS_DB_ERROR;
     }
+    std::vector<std::tuple<int32_t, int64_t, bool>> infos;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t oldAlbumId = -1;
         int64_t newAlbumId = -1;
+        bool isCloudAlbum = IsCloudAlbum(resultSet);
         GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, oldAlbumId);
         CopyAlbumMetaData(upgradeStore, resultSet, oldAlbumId, newAlbumId);
-        DeleteAlbumAndUpdateRelationship(upgradeStore, oldAlbumId, newAlbumId, IsCloudAlbum(resultSet));
+        infos.emplace_back(oldAlbumId, newAlbumId, isCloudAlbum);
+    }
+    resultSet->Close();
+    for (auto [oldAlbumId, newAlbumId, isCloud] : infos) {
+        DeleteAlbumAndUpdateRelationship(upgradeStore, oldAlbumId, newAlbumId, isCloud);
         MEDIA_ERR_LOG("Finish handle old album %{public}d, new inserted album id is %{public}" PRId64,
             oldAlbumId, newAlbumId);
     }
@@ -1390,6 +1399,7 @@ static int32_t MergeScreenShotAlbum(const std::shared_ptr<MediaLibraryRdbStore> 
     } else {
         GetLongValueFromResultSet(newAlbumResultSet, PhotoAlbumColumns::ALBUM_ID, newAlbumId);
     }
+    newAlbumResultSet->Close();
     MEDIA_INFO_LOG("Begin merge screenshot album, new album is %{public}" PRId64, newAlbumId);
     MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(upgradeStore, resultSet, oldAlbumId, newAlbumId);
     MEDIA_INFO_LOG("End handle expired screen shot album data ");
@@ -1418,6 +1428,7 @@ static int32_t MergeScreenRecordAlbum(const std::shared_ptr<MediaLibraryRdbStore
     } else {
         GetLongValueFromResultSet(newAlbumResultSet, PhotoAlbumColumns::ALBUM_ID, newAlbumId);
     }
+    newAlbumResultSet->Close();
     MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(upgradeStore, resultSet, oldAlbumId, newAlbumId);
     MEDIA_INFO_LOG("End merge screenrecord album");
     return E_OK;
@@ -1460,15 +1471,14 @@ int32_t MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(
         MEDIA_ERR_LOG("invalid rdbstore or nullptr map");
         return E_INVALID_ARGUMENTS;
     }
-    const std::string QUERY_COMPENSATE_ALBUM_INFO =
-        "SELECT * FROM PhotoAlbum WHERE cloud_id IS NULL"
+    const std::string QUERY_COMPENSATE_ALBUM_INFO = "SELECT * FROM PhotoAlbum WHERE cloud_id IS NULL"
         " AND (priority IS NULL OR lpath IS NULL) AND dirty != 4 AND album_type IN (0, 2048)";
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_COMPENSATE_ALBUM_INFO);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query album info fails");
         return E_HAS_DB_ERROR;
     }
-
+    std::vector<std::tuple<int, int32_t, std::string, std::string, std::string>> infos;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int album_id = -1;
         int32_t album_type = -1;
@@ -1481,7 +1491,10 @@ int32_t MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(
         GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_NAME, album_name);
         GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundle_name);
         GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_LPATH, lpath);
-
+        infos.emplace_back(album_id, album_type, album_name, bundle_name, lpath);
+    }
+    resultSet->Close();
+    for (auto [album_id, album_type, album_name, bundle_name, lpath] : infos) {
         if (lpath.empty()) {
             if (album_type == OHOS::Media::PhotoAlbumType::SOURCE) {
                 QuerySourceAlbumLPath(upgradeStore, lpath, bundle_name, album_name);
@@ -1491,8 +1504,7 @@ int32_t MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(
             }
         }
 
-        const std::string UPDATE_COMPENSATE_ALBUM_DATA =
-            "UPDATE PhotoAlbum SET lpath = '" + lpath + "', "
+        const std::string UPDATE_COMPENSATE_ALBUM_DATA = "UPDATE PhotoAlbum SET lpath = '" + lpath + "', "
             "priority = COALESCE ((SELECT priority FROM album_plugin WHERE lpath = '" + lpath + "'), 1) "
             "WHERE album_id = " + to_string(album_id);
         int32_t err = upgradeStore->ExecuteSql(UPDATE_COMPENSATE_ALBUM_DATA);
@@ -1697,7 +1709,11 @@ static int32_t TransferMisMatchScreenRecord(const std::shared_ptr<MediaLibraryRd
     const std::string QUERY_SCREEN_RECORD_ALBUM =
         "SELECT album_id FROM PhotoAlbum WHERE bundle_name ='com.huawei.hmos.screenrecorder' AND dirty <>4";
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_SCREEN_RECORD_ALBUM);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    bool notGoToFirstRow = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    if (resultSet != nullptr) {
+        resultSet->Close();
+    }
+    if (notGoToFirstRow) {
         MEDIA_INFO_LOG("No screen record album");
         const std::string CREATE_SCREEN_RECORDS_ALBUM =
             "INSERT INTO " + PhotoAlbumColumns::TABLE +
@@ -1738,7 +1754,11 @@ int32_t MediaLibraryAlbumFusionUtils::HandleMisMatchScreenRecord(
         "(SELECT album_id FROM PhotoAlbum WHERE bundle_name ='com.huawei.hmos.screenshot' AND dirty <>4) "
         " AND media_type =2";
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_MISS_MATCHED_RECORDS);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    bool notGoToFirstRow = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    if (resultSet != nullptr) {
+        resultSet->Close();
+    }
+    if (notGoToFirstRow) {
         MEDIA_INFO_LOG("No miss matched screen record");
         return E_OK;
     }

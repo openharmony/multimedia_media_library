@@ -1047,6 +1047,7 @@ void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
         fileInfos[index].fileIdNew = fileId;
         fileInfos[index].newAstcDateKey = dateTaken;
     }
+    resultSet->Close();
     BackupDatabaseUtils::UpdateAssociateFileId(mediaLibraryRdb_, fileInfos);
 }
 

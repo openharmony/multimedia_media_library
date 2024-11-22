@@ -1337,45 +1337,6 @@ static string generateUpdateSql(const bool isCover, const string title, const in
     return updateSql;
 }
 
-static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    shared_ptr<NativeRdb::ResultSet> resultSet)
-{
-    int32_t count;
-    int32_t retCount = resultSet->GetRowCount(count);
-    if (count == 0) {
-        if (isCover) {
-            MEDIA_INFO_LOG("No burst cover need to update");
-        } else {
-            MEDIA_INFO_LOG("No burst member need to update");
-        }
-        return E_SUCCESS;
-    }
-    if (retCount != E_SUCCESS || count < 0) {
-        return E_ERR;
-    }
-
-    int32_t ret = E_ERR;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int columnIndex = 0;
-        string title;
-        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_TITLE, columnIndex) == NativeRdb::E_OK) {
-            resultSet->GetString(columnIndex, title);
-        }
-        int32_t ownerAlbumId = 0;
-        if (resultSet->GetColumnIndex(PhotoColumn::PHOTO_OWNER_ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
-            resultSet->GetInt(columnIndex, ownerAlbumId);
-        }
-
-        string updateSql = generateUpdateSql(isCover, title, ownerAlbumId);
-        ret = rdbStore->ExecuteSql(updateSql);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("rdbStore->ExecuteSql failed, ret = %{public}d", ret);
-            return E_HAS_DB_ERROR;
-        }
-    }
-    return ret;
-}
-
 static shared_ptr<NativeRdb::ResultSet> QueryBurst(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const string globNameRule1, const string globNameRule2)
 {
@@ -1391,6 +1352,55 @@ static shared_ptr<NativeRdb::ResultSet> QueryBurst(const shared_ptr<MediaLibrary
         MEDIA_ERR_LOG("failed to acquire result from visitor query.");
     }
     return resultSet;
+}
+
+static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const string globNameRule1, const string globNameRule2)
+{
+    auto resultSet = QueryBurst(rdbStore, globNameRule1, globNameRule2);
+    if (resultSet == nullptr) {
+        return E_ERR;
+    }
+
+    int32_t count;
+    int32_t retCount = resultSet->GetRowCount(count);
+    if (count == 0) {
+        if (isCover) {
+            MEDIA_INFO_LOG("No burst cover need to update");
+        } else {
+            MEDIA_INFO_LOG("No burst member need to update");
+        }
+        return E_SUCCESS;
+    }
+    if (retCount != E_SUCCESS || count < 0) {
+        return E_ERR;
+    }
+
+    int32_t ret = E_ERR;
+    std::vector<std::pair<string, int32_t>> infos;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int columnIndex = 0;
+        string title;
+        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_TITLE, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetString(columnIndex, title);
+        }
+        int32_t ownerAlbumId = 0;
+        if (resultSet->GetColumnIndex(PhotoColumn::PHOTO_OWNER_ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetInt(columnIndex, ownerAlbumId);
+        }
+        infos.emplace_back(title, ownerAlbumId);
+    }
+    resultSet->Close();
+
+    for (auto [title, ownerAlbumId] : infos) {
+        string updateSql = generateUpdateSql(isCover, title, ownerAlbumId);
+        ret = rdbStore->ExecuteSql(updateSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("rdbStore->ExecuteSql failed, ret = %{public}d", ret);
+            return E_HAS_DB_ERROR;
+        }
+    }
+    return ret;
 }
 
 int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
@@ -1416,16 +1426,14 @@ int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
     // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx_COVER, 'x' represents a number
     string globCoverStr1 = globMemberStr1 + "_COVER";
     string globCoverStr2 = globMemberStr2 + "_COVER";
-    
-    auto resultSet = QueryBurst(rdbStore_, globCoverStr1, globCoverStr2);
-    int32_t ret = UpdateBurstPhoto(true, rdbStore_, resultSet);
+
+    int32_t ret = UpdateBurstPhoto(true, rdbStore_, globCoverStr1, globCoverStr2);
     if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("failed to UpdateBurstPhotoByCovers.");
         return E_FAIL;
     }
 
-    resultSet = QueryBurst(rdbStore_, globMemberStr1, globMemberStr2);
-    ret = UpdateBurstPhoto(false, rdbStore_, resultSet);
+    ret = UpdateBurstPhoto(false, rdbStore_, globMemberStr1, globMemberStr2);
     if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("failed to UpdateBurstPhotoByMembers.");
         return E_FAIL;
@@ -1581,7 +1589,7 @@ int32_t MediaLibraryDataManager::SyncPullThumbnailKeys(const Uri &uri)
         thumbnailKeys.push_back(lcdKey);
         count++;
     }
-
+    resultset->Close();
     if (thumbnailKeys.empty()) {
         return E_NO_SUCH_FILE;
     }
