@@ -49,22 +49,22 @@ public:
     EXPORT MediaLibraryCommand(MediaLibraryCommand &&) = delete;
     EXPORT MediaLibraryCommand &operator=(MediaLibraryCommand &&) = delete;
 
-    OperationObject GetOprnObject() const;
-    OperationType GetOprnType() const;
-    const std::string &GetTableName();
-    NativeRdb::ValuesBucket &GetValueBucket();
+    EXPORT OperationObject GetOprnObject() const;
+    EXPORT OperationType GetOprnType() const;
+    EXPORT const std::string &GetTableName();
+    EXPORT NativeRdb::ValuesBucket &GetValueBucket();
     EXPORT NativeRdb::AbsRdbPredicates *GetAbsRdbPredicates();
     EXPORT const std::string &GetOprnFileId();
-    const std::string &GetOprnDevice();
-    const Uri &GetUri() const;
-    const std::string &GetBundleName();
-    const std::string &GetDeviceName();
+    EXPORT const std::string &GetOprnDevice();
+    EXPORT const Uri &GetUri() const;
+    EXPORT const std::string &GetBundleName();
+    EXPORT const std::string &GetDeviceName();
     EXPORT std::string GetUriStringWithoutSegment() const;
-    MediaLibraryApi GetApi();
-    std::string GetQuerySetParam(const std::string &key);
+    EXPORT MediaLibraryApi GetApi();
+    EXPORT std::string GetQuerySetParam(const std::string &key);
     EXPORT void SetDataSharePred(const DataShare::DataSharePredicates &pred);
-    const DataShare::DataSharePredicates &GetDataSharePred() const;
-    const std::string &GetResult();
+    EXPORT const DataShare::DataSharePredicates &GetDataSharePred() const;
+    EXPORT const std::string &GetResult();
 
     EXPORT void SetOprnObject(OperationObject object);
     EXPORT void SetOprnAssetId(const std::string &oprnId);

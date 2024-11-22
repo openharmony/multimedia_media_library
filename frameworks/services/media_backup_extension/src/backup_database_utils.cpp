@@ -78,6 +78,27 @@ std::string BackupDatabaseUtils::IsCallerSelfFunc(const std::vector<std::string>
     return "false";
 }
 
+static int32_t ExecSqlWithRetry(std::function<int32_t()> execSql)
+{
+    int32_t currentTime = 0;
+    int32_t err = NativeRdb::E_OK;
+    while (currentTime <= MAX_TRY_TIMES) {
+        err = execSql();
+        if (err == NativeRdb::E_OK) {
+            break;
+        } else if (err == NativeRdb::E_SQLITE_LOCKED || err == NativeRdb::E_DATABASE_BUSY ||
+            err == NativeRdb::E_SQLITE_BUSY) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
+            currentTime++;
+            MEDIA_ERR_LOG("execSql busy, err: %{public}d, currentTime: %{public}d", err, currentTime);
+        } else {
+            MEDIA_ERR_LOG("execSql failed, err: %{public}d, currentTime: %{public}d", err, currentTime);
+            break;
+        }
+    }
+    return err;
+}
+
 int32_t BackupDatabaseUtils::QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
     const std::string &column)
 {
@@ -100,7 +121,7 @@ int32_t BackupDatabaseUtils::Update(std::shared_ptr<NativeRdb::RdbStore> &rdbSto
         MEDIA_ERR_LOG("rdb_ is nullptr, Maybe init failed.");
         return E_FAIL;
     }
-    return rdbStore->Update(changeRows, valuesBucket, *predicates);
+    return ExecSqlWithRetry([&]() { return rdbStore->Update(changeRows, valuesBucket, *predicates); });
 }
 
 int32_t BackupDatabaseUtils::Delete(NativeRdb::AbsRdbPredicates &predicates, int32_t &changeRows,
@@ -110,7 +131,7 @@ int32_t BackupDatabaseUtils::Delete(NativeRdb::AbsRdbPredicates &predicates, int
         MEDIA_ERR_LOG("rdb is nullptr");
         return E_FAIL;
     }
-    return rdbStore->Delete(changeRows, predicates);
+    return ExecSqlWithRetry([&]() { return rdbStore->Delete(changeRows, predicates); });
 }
 
 int32_t BackupDatabaseUtils::InitGarbageAlbum(std::shared_ptr<NativeRdb::RdbStore> galleryRdb,
@@ -224,7 +245,7 @@ void BackupDatabaseUtils::UpdateUniqueNumber(const std::shared_ptr<NativeRdb::Rd
 {
     const string updateSql =
         "UPDATE UniqueNumber SET unique_number = " + to_string(number) + " WHERE media_type = '" + type + "'";
-    int32_t erroCode = rdbStore->ExecuteSql(updateSql);
+    int32_t erroCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
     if (erroCode < 0) {
         MEDIA_ERR_LOG("execute update unique number failed, ret=%{public}d", erroCode);
     }
@@ -313,7 +334,7 @@ void BackupDatabaseUtils::UpdateAnalysisTotalStatus(std::shared_ptr<NativeRdb::R
         (SELECT 1 FROM tab_analysis_image_face WHERE tab_analysis_image_face.file_id = tab_analysis_total.file_id \
         AND tag_id = '-1') THEN 2 ELSE 3 END WHERE EXISTS (SELECT 1 FROM tab_analysis_image_face WHERE \
         tab_analysis_image_face.file_id = tab_analysis_total.file_id)";
-    int32_t errCode = rdbStore->ExecuteSql(updateSql);
+    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
     if (errCode < 0) {
         MEDIA_ERR_LOG("execute update analysis total failed, ret=%{public}d", errCode);
     }
@@ -323,7 +344,7 @@ void BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb:
 {
     std::string updateSql = "UPDATE tab_analysis_face_tag SET count = (SELECT count(1) from tab_analysis_image_face \
         WHERE tab_analysis_image_face.tag_id = tab_analysis_face_tag.tag_id)";
-    int32_t errCode = rdbStore->ExecuteSql(updateSql);
+    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
     if (errCode < 0) {
         MEDIA_ERR_LOG("execute update analysis face tag count failed, ret=%{public}d", errCode);
     }
@@ -348,7 +369,7 @@ void BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb
                       "WHERE tab_analysis_image_face.file_id = tab_analysis_total.file_id "
                       "AND " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause + ")";
 
-    int32_t errCode = rdbStore->ExecuteSql(updateSql);
+    int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
     if (errCode < 0) {
         MEDIA_ERR_LOG("execute update analysis total failed, ret=%{public}d", errCode);
     }
@@ -561,7 +582,7 @@ void BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(std::shared_ptr<NativeRdb
         "FROM AnalysisAlbum "
         "INNER JOIN tab_analysis_image_face ON AnalysisAlbum.tag_id = tab_analysis_image_face.tag_id";
 
-    int32_t ret = rdbStore->ExecuteSql(insertSql);
+    int32_t ret = BackupDatabaseUtils::ExecuteSQL(rdbStore, insertSql);
     if (ret < 0) {
         MEDIA_ERR_LOG("execute update AnalysisPhotoMap failed, ret=%{public}d", ret);
     }
@@ -661,16 +682,24 @@ bool BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(const std::vector<std::st
     return true;
 }
 
-void BackupDatabaseUtils::ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql)
+int BackupDatabaseUtils::ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql,
+    const std::vector<NativeRdb::ValueObject> &args)
 {
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
-        return;
+        return E_FAIL;
     }
-    int ret = rdbStore->ExecuteSql(sql);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to execute SQL: %{public}s", sql.c_str());
+    return ExecSqlWithRetry([&]() { return rdbStore->ExecuteSql(sql, args); });
+}
+
+int32_t BackupDatabaseUtils::BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+    const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum)
+{
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return E_FAIL;
     }
+    return ExecSqlWithRetry([&]() { return rdbStore->BatchInsert(rowNum, tableName, value); });
 }
 
 std::string BackupDatabaseUtils::GetFileIdNewFilterClause(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,

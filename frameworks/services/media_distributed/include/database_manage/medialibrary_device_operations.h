@@ -44,7 +44,7 @@ public:
 
     static bool InsertDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
-    static bool UpdateDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    static bool UpdateDeviceInfo(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
     static bool DeleteDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &udid);
     static bool UpdateSyncStatus(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &udid,

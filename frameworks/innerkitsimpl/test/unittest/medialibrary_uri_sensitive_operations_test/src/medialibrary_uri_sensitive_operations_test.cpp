@@ -30,7 +30,6 @@
 #include "medialibrary_app_uri_sensitive_operations.h"
 #include "datashare_predicates_objects.h"
 #include "medialibrary_appstate_observer.h"
-#include "medialibrary_rdb_transaction.h"
 #include "media_file_uri.h"
 #include "rdb_utils.h"
 #include "datashare_predicates.h"
@@ -108,13 +107,9 @@ void PrepareUniqueNumberTable()
         MEDIA_ERR_LOG("can not get g_rdbstore");
         return;
     }
-    auto store = g_rdbStore->GetRaw();
-    if (store == nullptr) {
-        MEDIA_ERR_LOG("can not get store");
-        return;
-    }
+
     string queryRowSql = "SELECT COUNT(*) as count FROM " + ASSET_UNIQUE_NUMBER_TABLE;
-    auto resultSet = store->QuerySql(queryRowSql);
+    auto resultSet = g_rdbStore->QuerySql(queryRowSql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Can not get AssetUniqueNumberTable count");
         return;
@@ -137,7 +132,7 @@ void PrepareUniqueNumberTable()
         valuesBucket.PutString(ASSET_MEDIA_TYPE, uniqueNumberValueBucket.assetMediaType);
         valuesBucket.PutInt(UNIQUE_NUMBER, uniqueNumberValueBucket.startNumber);
         int64_t outRowId = -1;
-        int32_t insertResult = store->Insert(outRowId, ASSET_UNIQUE_NUMBER_TABLE, valuesBucket);
+        int32_t insertResult = g_rdbStore->Insert(outRowId, ASSET_UNIQUE_NUMBER_TABLE, valuesBucket);
         if (insertResult != NativeRdb::E_OK || outRowId <= 0) {
             MEDIA_ERR_LOG("Prepare smartAlbum failed");
         }
@@ -192,8 +187,8 @@ void ClearAndRestart()
 void MediaLibraryUriSensitiveOperationsTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryUriSensitiveOperationsTest failed, can not get rdbstore");
         exit(1);
     }
@@ -216,7 +211,7 @@ void MediaLibraryUriSensitiveOperationsTest::TearDownTestCase()
 
 void MediaLibraryUriSensitiveOperationsTest::SetUp()
 {
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryUriSensitiveOperationsTest failed, can not get rdbstore");
         exit(1);
     }

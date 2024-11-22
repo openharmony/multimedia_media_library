@@ -28,6 +28,7 @@
 #include "source_album.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_rdb_utils.h"
+#include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore.h"
 #include "medialibrary_unistore_manager.h"
 
@@ -41,47 +42,49 @@ enum class AlbumFusionState {
 };
 class MediaLibraryAlbumFusionUtils {
 public:
-    EXPORT static int32_t RemoveMisAddedHiddenData(NativeRdb::RdbStore *upgradeStore);
-    EXPORT static int32_t HandleMatchedDataFusion(NativeRdb::RdbStore *upgradeStore);
-    EXPORT static int32_t HandleNotMatchedDataFusion(NativeRdb::RdbStore *upgradeStore);
-    EXPORT static int32_t HandleNotMatchedDataMigration(NativeRdb::RdbStore *upgradeStore,
+    EXPORT static int32_t RemoveMisAddedHiddenData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    EXPORT static int32_t HandleMatchedDataFusion(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    EXPORT static int32_t HandleNotMatchedDataFusion(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    EXPORT static int32_t HandleNotMatchedDataMigration(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         std::multimap<int32_t, std::vector<int32_t>> &notMatchedMap);
-    EXPORT static int32_t HandleSingleFileCopy(NativeRdb::RdbStore *upgradeStore, const int32_t &assetId,
-        const int32_t &ownerAlbumId, int64_t &newAssetId);
-    EXPORT static int32_t RebuildAlbumAndFillCloudValue(NativeRdb::RdbStore *upgradeStore);
-    EXPORT static int32_t HandleChangeNameAlbum(NativeRdb::RdbStore *upgradeStore);
-    EXPORT static int32_t CompensateLpathForLocalAlbum(NativeRdb::RdbStore *upgradeStore);
-    EXPORT static int32_t MergeClashSourceAlbum(NativeRdb::RdbStore *upgradeStore,
+    EXPORT static int32_t HandleSingleFileCopy(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+        const int32_t &assetId, const int32_t &ownerAlbumId, int64_t &newAssetId);
+    EXPORT static int32_t RebuildAlbumAndFillCloudValue(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    EXPORT static int32_t HandleChangeNameAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    EXPORT static int32_t CompensateLpathForLocalAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    EXPORT static int32_t MergeClashSourceAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t &sourceAlbumId, const int64_t &targetAlbumId);
     EXPORT static void SetParameterToStopSync();
     EXPORT static void SetParameterToStartSync();
     EXPORT static int32_t CleanInvalidCloudAlbumAndData();
-    EXPORT static int32_t CopyLocalSingleFile(NativeRdb::RdbStore *upgradeStore, const int32_t &assetId,
-        const int32_t &ownerAlbumId, std::shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId);
-    EXPORT static int32_t CopyCloudSingleFile(NativeRdb::RdbStore *upgradeStore, const int32_t &assetId,
-        const int32_t &ownerAlbumId, std::shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId);
-    EXPORT static int32_t DeleteALbumAndUpdateRelationship(NativeRdb::RdbStore *upgradeStore,
+    EXPORT static int32_t CopyLocalSingleFile(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+        const int32_t &assetId, const int32_t &ownerAlbumId, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        int64_t &newAssetId);
+    EXPORT static int32_t CopyCloudSingleFile(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+        const int32_t &assetId, const int32_t &ownerAlbumId, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        int64_t &newAssetId);
+    EXPORT static int32_t DeleteALbumAndUpdateRelationship(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         const int32_t &oldAlbumId, const int64_t &newAlbumId, bool isCloudAblum);
     EXPORT static bool IsCloudAlbum(std::shared_ptr<NativeRdb::ResultSet> resultSet);
-    EXPORT static void BuildAlbumInsertValuesSetName(NativeRdb::RdbStore *upgradeStore,
+    EXPORT static void BuildAlbumInsertValuesSetName(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         NativeRdb::ValuesBucket &values, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::string &newAlbumName);
     EXPORT static int32_t RefreshAllAlbums();
     EXPORT static int32_t GetAlbumFuseUpgradeStatus();
     EXPORT static int32_t SetAlbumFuseUpgradeStatus(int32_t upgradeStatus);
     EXPORT static void ReportAlbumFusionData(int64_t albumFusionTag, AlbumFusionState albumFusionState,
-        NativeRdb::RdbStore* rdbStore);
+        const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
 private:
-    static int32_t HandleRestData(NativeRdb::RdbStore *upgradeStore, const int32_t &assetId,
+    static int32_t HandleRestData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, const int32_t &assetId,
         const std::vector<int32_t> &restOwnerAlbumIds, int32_t &handledCount);
-    static int32_t HandleNoOwnerData(NativeRdb::RdbStore *upgradeStore);
-    static int32_t HandleExpiredAlbumData(NativeRdb::RdbStore *upgradeStore);
-    static int32_t QueryNoMatchedMap(NativeRdb::RdbStore *upgradeStore,
+    static int32_t HandleNoOwnerData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    static int32_t HandleExpiredAlbumData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    static int32_t QueryNoMatchedMap(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         std::multimap<int32_t, std::vector<int32_t>> &notMatchedMap, bool isUpgrade);
-    static int32_t HandleNewCloudDirtyData(NativeRdb::RdbStore *upgradeStore,
+    static int32_t HandleNewCloudDirtyData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         std::multimap<int32_t, std::vector<int32_t>> &notMatchedMap);
-    static int32_t HandleDuplicateAlbum(NativeRdb::RdbStore *upgradeStore);
-    static int32_t HandleMisMatchScreenRecord(NativeRdb::RdbStore *upgradeStore);
+    static int32_t HandleDuplicateAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    static int32_t HandleMisMatchScreenRecord(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
 
 private:
     static std::mutex cloudAlbumAndDataMutex_;

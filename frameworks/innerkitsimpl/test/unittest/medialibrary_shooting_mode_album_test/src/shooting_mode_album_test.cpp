@@ -36,6 +36,7 @@
 #include "result_set_utils.h"
 #include "shooting_mode_column.h"
 #include "vision_column.h"
+#include "medialibrary_unistore_manager.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -45,7 +46,7 @@ using namespace OHOS::DataShare;
 using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
 
-static shared_ptr<RdbStore> g_rdbStore;
+static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 const std::string URI_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_CREATE;
 const std::string URI_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_UPDATE;
 const std::string URI_ORDER_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM;
@@ -124,7 +125,7 @@ struct ShootingModeValueBucket {
 };
 
 static int32_t InsertShootingModeAlbumValues(
-    const ShootingModeValueBucket &shootingModeAlbum, shared_ptr<RdbStore> store)
+    const ShootingModeValueBucket &shootingModeAlbum, shared_ptr<MediaLibraryRdbStore> store)
 {
     ValuesBucket valuesBucket;
     valuesBucket.PutInt(SMARTALBUM_DB_ALBUM_TYPE, shootingModeAlbum.albumType);
@@ -188,7 +189,7 @@ inline int32_t DeletePhotoAlbum(DataSharePredicates &predicates)
 void ShootingModeAlbumTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ClearAnalysisAlbums();
     ClearTable(ANALYSIS_PHOTO_MAP_TABLE);
 }

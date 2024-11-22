@@ -359,8 +359,8 @@ void MediaLibraryPhotoEditTest::SetUpTestCase()
 {
     MEDIA_INFO_LOG("MediaLibraryPhotoEditTest SetUpTestCase start");
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
         exit(1);
     }

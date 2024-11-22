@@ -41,6 +41,8 @@ private:
     int32_t MoveSingleRelationshipToPhotos(NativeRdb::RdbStore &store);
     int32_t DropPhotoAlbumTrigger(NativeRdb::RdbStore &store);
     int32_t UpdatelPathColumn(NativeRdb::RdbStore &store);
+    int32_t ExecSqlsInternal(NativeRdb::RdbStore &store, const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &args = {});
 
 private:
     DbUpgradeUtils dbUpgradeUtils_;

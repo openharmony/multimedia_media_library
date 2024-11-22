@@ -50,7 +50,8 @@ int32_t MediaLibraryDeviceDb::DeleteDeviceInfo(const std::string &udid,
     return (deletedRows > 0) ? E_SUCCESS : E_FAIL;
 }
 
-int32_t MediaLibraryDeviceDb::UpdateDeviceInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+int32_t MediaLibraryDeviceDb::UpdateDeviceInfo(const ValuesBucket &values,
+    const shared_ptr<MediaLibraryRdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DEVICE_OPER_ERR, "Invalid input");
 

@@ -88,7 +88,7 @@ bool EnhancementManager::LoadService()
 #endif
 }
 
-static int32_t CheckResultSet(shared_ptr<ResultSet> &resultSet)
+static int32_t CheckResultSet(shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultset is nullptr");
@@ -182,7 +182,7 @@ bool EnhancementManager::Init()
     };
     servicePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
         static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING));
-    auto resultSet = MediaLibraryRdbStore::Query(servicePredicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
     if (CheckResultSet(resultSet) != E_OK) {
         MEDIA_INFO_LOG("Init query no processing task");
         return false;
@@ -271,7 +271,7 @@ void EnhancementManager::RemoveTasksInternal(const vector<string> &fileIds, vect
     queryPredicates.In(MediaColumn::MEDIA_ID, fileIds);
     queryPredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
         static_cast<int32_t>(CloudEnhancementAvailableType::TRASH));
-    shared_ptr<ResultSet> resultSet = MediaLibraryRdbStore::Query(queryPredicates, columns);
+    shared_ptr<ResultSet> resultSet = MediaLibraryRdbStore::QueryWithFilter(queryPredicates, columns);
     CHECK_AND_RETURN_LOG(CheckResultSet(resultSet) == E_OK, "result set is invalid");
     while (resultSet->GoToNextRow() == E_OK) {
         string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
@@ -365,7 +365,7 @@ int32_t EnhancementManager::HandleEnhancementUpdateOperation(MediaLibraryCommand
     return E_OK;
 }
 
-shared_ptr<ResultSet> EnhancementManager::HandleEnhancementQueryOperation(MediaLibraryCommand &cmd,
+shared_ptr<NativeRdb::ResultSet> EnhancementManager::HandleEnhancementQueryOperation(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
     switch (cmd.GetOprnType()) {
@@ -585,7 +585,7 @@ int32_t EnhancementManager::HandleCancelAllOperation()
     vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
         MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE
     };
-    auto resultSet = MediaLibraryRdbStore::Query(queryPredicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(queryPredicates, columns);
     CHECK_AND_RETURN_RET_LOG(CheckResultSet(resultSet) == E_OK, E_ERR, "result set invalid");
     while (resultSet->GoToNextRow() == E_OK) {
         int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
