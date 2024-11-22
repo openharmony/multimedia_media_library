@@ -4242,7 +4242,7 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
         AddGeoDefaultValue(store);
     }
 
-    if (oldVersion < VERSION_HDR_AND_CLOUD_ENAHCNEMENT_FIX) {
+    if (oldVersion < VERSION_HDR_AND_CLOUD_ENHANCEMENT_FIX) {
         AddDynamicRangeColumnsFix(store);
         AddCloudEnhanceColumnsFix(store);
     }
