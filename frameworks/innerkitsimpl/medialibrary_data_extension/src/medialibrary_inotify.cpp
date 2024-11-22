@@ -33,7 +33,7 @@ namespace OHOS {
 namespace Media {
 std::shared_ptr<MediaLibraryInotify> MediaLibraryInotify::instance_ = nullptr;
 std::mutex MediaLibraryInotify::mutex_;
-const int32_t MAX_WATCH_LIST = 200;
+const int32_t MAX_WATCH_LIST = 500;
 const int32_t MAX_AGING_WATCH_LIST = 100;
 
 shared_ptr<MediaLibraryInotify> MediaLibraryInotify::GetInstance()
@@ -69,6 +69,7 @@ void MediaLibraryInotify::WatchCallBack()
 {
     string name("MediaLibraryInotify");
     pthread_setname_np(pthread_self(), name.c_str());
+    MEDIA_INFO_LOG("MediaLibraryInotify start watchthread");
     const int32_t READ_LEN = 255;
     char data[READ_LEN] = {0};
     while (isWatching_) {
@@ -195,7 +196,9 @@ int32_t MediaLibraryInotify::AddWatchList(const string &path, const string &uri,
     lock_guard<mutex> lock(mutex_);
     if (watchList_.size() > MAX_WATCH_LIST) {
         MEDIA_ERR_LOG("watch list full, add uri:%{public}s fail", uri.c_str());
-        return E_FAIL;
+        // reset watchlist
+        Init();
+        isWatching_ = false;
     }
     int32_t wd = inotify_add_watch(inotifyFd_, path.c_str(), IN_CLOSE | IN_MODIFY);
     if (wd > 0) {
@@ -206,6 +209,7 @@ int32_t MediaLibraryInotify::AddWatchList(const string &path, const string &uri,
     if (!isWatching_.load()) {
         isWatching_ = true;
         thread(&MediaLibraryInotify::WatchCallBack, this).detach();
+        MEDIA_INFO_LOG("start inotify thread end");
     }
     return E_SUCCESS;
 }
