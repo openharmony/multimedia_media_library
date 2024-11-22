@@ -1917,6 +1917,7 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
             MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
             return isDelete;
         }
+        rdbSet->Close();
     }
     MEDIA_INFO_LOG("Start DeleteOriginImage, id: %{public}s, path: %{public}s",
         opts.row.c_str(), DfxUtils::GetSafePath(tmpData.path).c_str());
