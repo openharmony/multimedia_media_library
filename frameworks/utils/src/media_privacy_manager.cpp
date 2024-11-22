@@ -107,7 +107,12 @@ const std::vector<std::string> SHOOTING_PARAM_EXIF = {
 };
 
 MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode, const string &fileId)
-    : path_(path), mode_(mode), fileId_(fileId)
+    : path_(path), mode_(mode), fileId_(fileId), fuseFlag_(false)
+{}
+
+MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode, const string &fileId,
+    const string &appId, const string &clientBundle, const int32_t &uid)
+    : path_(path), mode_(mode), fileId_(fileId), appId_(appId), clientBundle_(clientBundle), uid_(uid), fuseFlag_(true)
 {}
 
 MediaPrivacyManager::~MediaPrivacyManager()
@@ -201,11 +206,13 @@ static int32_t SendRangesToIoctl(const int32_t originFd, const int32_t proxyFd, 
 }
 
 /* Caller is responsible to close the returned fd */
-static int32_t OpenOriginFd(const string &path, const string &mode)
+static int32_t OpenOriginFd(const string &path, const string &mode, string &clientBundle, const bool fuseFlag)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaPrivacyManager::OpenOriginFd");
-    string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    if (fuseFlag == false) {
+        clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    }
     if (clientBundle.empty()) {
         MEDIA_DEBUG_LOG("clientBundleName is empty");
     }
@@ -218,13 +225,14 @@ static int32_t OpenOriginFd(const string &path, const string &mode)
  *
  * Caller is responsible to close the returned @filterProxyFd.
  */
-static int32_t OpenFilterProxyFd(const string &path, const string &mode, const PrivacyRanges &ranges)
+static int32_t OpenFilterProxyFd(const string &path, const string &mode, const PrivacyRanges &ranges,
+    string &clientBundle, const bool &fuseFlag)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaPrivacyManager::OpenFilterProxyFd");
     if (!CheckFsMounted(FS_TYPE_EPFS, EPFS_MOUNT_POINT)) {
         MEDIA_INFO_LOG("Epfs is currently not supported yet");
-        return OpenOriginFd(path, mode);
+        return OpenOriginFd(path, mode, clientBundle, fuseFlag);
     }
 
     int32_t originFd = open(path.c_str(), O_RDONLY);
@@ -356,7 +364,8 @@ static int32_t CollectRanges(const string &path, const HideSensitiveType &sensit
  * o Read jpeg with MEDIA_LOCATION: return success with empty ranges
  * o Other cases: return negative error code.
  */
-static int32_t GetPrivacyRanges(const string &path, const string &mode, const string &fileId, PrivacyRanges &ranges)
+static int32_t GetPrivacyRanges(const string &path, const string &mode, const string &fileId, PrivacyRanges &ranges,
+    string &appId, const uid_t &uid, const bool &fuseFlag)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaPrivacyManager::GetPrivacyRanges");
@@ -371,10 +380,22 @@ static int32_t GetPrivacyRanges(const string &path, const string &mode, const st
     if (mode.find('w') != string::npos) {
         return E_SUCCESS;
     }
-
+    if (fuseFlag == false) {
+        string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+        appId = PermissionUtils::GetAppIdByBundleName(bundleName);
+    }
+    string appIdFile = UriSensitiveOperations::QueryAppId(fileId);
+    if (appId == appIdFile) {
+        return E_SUCCESS;
+    }
+    bool result;
     for (auto &item : PRIVACY_PERMISSION_MAP) {
         const string &perm = item.second;
-        bool result = PermissionUtils::CheckCallerPermission(perm);
+        if (fuseFlag == false) {
+            result = PermissionUtils::CheckCallerPermission(perm);
+        } else {
+            result = PermissionUtils::CheckCallerPermission(perm, uid);
+        }
         if ((result == false) && (perm == PERMISSION_NAME_MEDIA_LOCATION) && IsWriteMode(mode)) {
             MEDIA_ERR_LOG("Write is not allowed if have no location permission");
             return E_PERMISSION_DENIED;
@@ -383,19 +404,13 @@ static int32_t GetPrivacyRanges(const string &path, const string &mode, const st
             continue;
         }
         //collect ranges by hideSensitiveType
-        string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-        string appId = PermissionUtils::GetAppIdByBundleName(bundleName);
-        string appIdFile = UriSensitiveOperations::QueryAppId(fileId);
-        if (appId == appIdFile) {
-            continue;
-        }
-
         HideSensitiveType sensitiveType =
             static_cast<HideSensitiveType>(UriSensitiveOperations::QuerySensitiveType(appId, fileId));
         int32_t err = CollectRanges(path, sensitiveType, ranges);
         if (err < 0) {
             return err;
         }
+        MEDIA_INFO_LOG("get privacy type = %{public}d", sensitiveType);
     }
     return SortRangesAndCheck(ranges);
 }
@@ -415,14 +430,14 @@ static bool IsDeveloperMediaTool()
 
 int32_t MediaPrivacyManager::Open()
 {
-    int err = GetPrivacyRanges(path_, mode_, fileId_, ranges_);
+    int err = GetPrivacyRanges(path_, mode_, fileId_, ranges_, appId_, uid_, fuseFlag_);
     if (err < 0) {
         return err;
     }
     if (ranges_.size() > 0 && !IsDeveloperMediaTool()) {
-        return OpenFilterProxyFd(path_, mode_, ranges_);
+        return OpenFilterProxyFd(path_, mode_, ranges_, clientBundle_, fuseFlag_);
     }
-    return OpenOriginFd(path_, mode_);
+    return OpenOriginFd(path_, mode_, clientBundle_, fuseFlag_);
 }
 } // namespace Media
 } // namespace OHOS
