@@ -21,6 +21,7 @@
 #include "application_context.h"
 #include "backup_file_utils.h"
 #include "ffrt.h"
+#include "ffrt_inner.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -271,6 +272,7 @@ void CloneRestore::RestorePhoto()
     MEDIA_INFO_LOG("GetPhotosRowCountInPhotoMap, totalNumber = %{public}d", totalNumberInPhotoMap);
     totalNumber_ += static_cast<uint64_t>(totalNumberInPhotoMap);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
+    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
     for (int32_t offset = 0; offset < totalNumberInPhotoMap; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestorePhotoBatch(offset, 1); }, {&offset}, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));

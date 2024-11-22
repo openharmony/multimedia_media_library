@@ -460,6 +460,7 @@ void UpgradeRestore::RestoreFromGallery()
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     needReportFailed_ = false;
+    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -494,6 +495,7 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     needReportFailed_ = false;
+    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset, maxId, isCamera, type]() {
                 RestoreExternalBatch(offset, maxId, isCamera, type);
