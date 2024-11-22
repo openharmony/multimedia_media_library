@@ -1191,6 +1191,7 @@ static bool HasSameLpath(const string &lPath, const string &assetId)
         if (albumResultSet->GetInt(albumIdIndex, albumId) != NativeRdb::E_OK) {
             return false;
         }
+        albumResultSet->Close();
         const std::string UPDATE_ALBUM_ID_IN_PHOTOS = "UPDATE Photos Set owner_album_id = " +
             to_string(albumId) + " WHERE file_id = " + assetId;
         int ret = rdbStore->ExecuteSql(UPDATE_ALBUM_ID_IN_PHOTOS);
@@ -1235,7 +1236,9 @@ static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUse
         GetStringValueFromResultSet(albumPluginResultSet, PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundleName);
         GetStringValueFromResultSet(albumPluginResultSet, PhotoAlbumColumns::ALBUM_NAME, albumName);
     }
-
+    if (albumPluginResultSet != nullptr) {
+        albumPluginResultSet->Close();
+    }
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, 1);
     values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, albumType);
@@ -1258,13 +1261,9 @@ static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUse
     }
 }
 
-static int32_t RebuildDeletedAlbum(shared_ptr<NativeRdb::ResultSet> &photoResultSet, std::string &assetId)
+static int32_t RebuildDeletedAlbum(const string &sourcePath, int32_t mediaType, std::string &assetId)
 {
-    string sourcePath;
     string lPath;
-    GetStringValueFromResultSet(photoResultSet, PhotoColumn::PHOTO_SOURCE_PATH, sourcePath);
-    int32_t mediaType =
-        GetInt32Val(PhotoColumn::MEDIA_TYPE, photoResultSet);
     bool isUserAlbum = false;
     int64_t newAlbumId = -1;
     GetLPathFromSourcePath(sourcePath, lPath, mediaType);
@@ -1287,15 +1286,8 @@ static int32_t RebuildDeletedAlbum(shared_ptr<NativeRdb::ResultSet> &photoResult
 }
 
 static void CheckAlbumStatusAndFixDirtyState(shared_ptr<MediaLibraryRdbStore> uniStore,
-    shared_ptr<NativeRdb::ResultSet> &resultSetAlbum, int32_t &ownerAlbumId)
+    int32_t dirty, int32_t &ownerAlbumId)
 {
-    int dirtyIndex;
-    int32_t dirty;
-    resultSetAlbum->GetColumnIndex(PhotoColumn::PHOTO_DIRTY, dirtyIndex);
-    if (resultSetAlbum->GetInt(dirtyIndex, dirty) != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Can not find dirty status for album %{public}d", ownerAlbumId);
-        return;
-    }
     if (dirty == static_cast<int32_t>(DirtyType::TYPE_DELETED)) {
         std::string updateDirtyForRecoverAlbum = "UPDATE PhotoAlbum SET dirty = '1'"
         " WHERE album_id =" + to_string(ownerAlbumId);
@@ -1325,15 +1317,28 @@ void MediaLibraryAlbumOperations::DealwithNoAlbumAssets(const vector<string> &wh
         }
         int32_t ownerAlbumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_OWNER_ALBUM_ID,
             resultSetPhoto, TYPE_INT32));
+        string sourcePath;
+        GetStringValueFromResultSet(resultSetPhoto, PhotoColumn::PHOTO_SOURCE_PATH, sourcePath);
+        int32_t mediaType = GetInt32Val(PhotoColumn::MEDIA_TYPE, resultSetPhoto);
+        resultSetPhoto->Close();
+
         const std::string queryAlbum = "SELECT * FROM PhotoAlbum WHERE album_id = " + to_string(ownerAlbumId);
         shared_ptr<NativeRdb::ResultSet> resultSetAlbum = uniStore->QuerySql(queryAlbum);
-        if (resultSetAlbum == nullptr || resultSetAlbum->GoToFirstRow() != NativeRdb::E_OK) {
-            int32_t err = RebuildDeletedAlbum(resultSetPhoto, assetId);
+        bool notGoToFirstRow = (resultSetAlbum == nullptr || resultSetAlbum->GoToFirstRow() != NativeRdb::E_OK);
+        int32_t dirty = -1;
+        if (resultSetAlbum != nullptr) {
+            int dirtyIndex = -1;
+            resultSetAlbum->GetColumnIndex(PhotoColumn::PHOTO_DIRTY, dirtyIndex);
+            resultSetAlbum->GetInt(dirtyIndex, dirty);
+            resultSetAlbum->Close();
+        }
+        if (notGoToFirstRow) {
+            int32_t err = RebuildDeletedAlbum(sourcePath, mediaType, assetId);
             if (err == E_INVALID_ARGUMENTS) {
                 continue;
             }
         } else {
-            CheckAlbumStatusAndFixDirtyState(uniStore, resultSetAlbum, ownerAlbumId);
+            CheckAlbumStatusAndFixDirtyState(uniStore, dirty, ownerAlbumId);
             MEDIA_INFO_LOG("no need to build exits album");
             continue;
         }
@@ -2367,6 +2372,7 @@ int32_t SetIsMe(const ValuesBucket &values, const DataSharePredicates &predicate
     }
     int tartgetUserDisplayLevel;
     GetIntValueFromResultSet(tartGetResultSet, USER_DISPLAY_LEVEL, tartgetUserDisplayLevel);
+    tartGetResultSet->Close();
     int updateTargetDisplayLevel = (tartgetUserDisplayLevel != FAVORITE_PAGE) ? 1 : tartgetUserDisplayLevel;
 
     std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1, " + RENAME_OPERATION +
