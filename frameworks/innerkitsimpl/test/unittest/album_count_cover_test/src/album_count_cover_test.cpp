@@ -36,6 +36,9 @@
 #include "rdb_utils.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
+#define private public
+#include "medialibrary_rdbstore.h"
+#undef private
 
 namespace OHOS::Media {
 using namespace std;
@@ -45,7 +48,7 @@ using namespace OHOS::DataShare;
 using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
 
-static shared_ptr<RdbStore> g_rdbStore;
+static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 constexpr int32_t SLEEP_INTERVAL = 1;   // in seconds
 
 const vector<bool> HIDDEN_STATE = {
@@ -143,7 +146,7 @@ string GetFilePath(int fileId)
         MEDIA_ERR_LOG("can not get rdbstore");
         return "";
     }
-    auto resultSet = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->Query(cmd, columns);
+    auto resultSet = MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Can not get file Path");
         return "";
@@ -180,7 +183,7 @@ int32_t MakePhotoUnpending(int fileId, bool isRefresh)
     cmd.SetValueBucket(values);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t changedRows = -1;
-    errCode = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->Update(cmd, changedRows);
+    errCode = MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->Update(cmd, changedRows);
     if (errCode != E_OK || changedRows <= 0) {
         MEDIA_ERR_LOG("Update pending failed, errCode = %{public}d, changeRows = %{public}d",
             errCode, changedRows);
@@ -189,9 +192,9 @@ int32_t MakePhotoUnpending(int fileId, bool isRefresh)
 
     if (isRefresh) {
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
         MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
     }
     return E_OK;
 }
@@ -213,16 +216,16 @@ int32_t SetDefaultPhotoApi10(int mediaType, const std::string &displayName, bool
 void UpdateRefreshFlag()
 {
     MediaLibraryRdbUtils::UpdateSystemAlbumCountInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
     MediaLibraryRdbUtils::UpdateUserAlbumCountInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
 }
 
 void CheckIfNeedRefresh(bool isNeedRefresh)
 {
     bool signal = false;
     int32_t ret = MediaLibraryRdbUtils::IsNeedRefreshByCheckTable(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), signal);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), signal);
     EXPECT_EQ(ret, 0);
     if (ret != 0) {
         MEDIA_ERR_LOG("IsNeedRefreshByCheckTable false");
@@ -236,7 +239,7 @@ void CheckIfNeedRefresh(bool isNeedRefresh)
 void RefreshTable()
 {
     int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
         [] (PhotoAlbumType type, PhotoAlbumSubType a, int b) {}, [] () {});
     EXPECT_EQ(ret, 0);
 }
@@ -518,7 +521,7 @@ int32_t InitPhotoTrigger()
 void AlbumCountCoverTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Failed to get rdb store!");
         return;

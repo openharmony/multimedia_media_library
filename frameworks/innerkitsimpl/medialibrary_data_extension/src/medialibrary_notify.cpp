@@ -364,15 +364,15 @@ static void GetNotifyUri(shared_ptr<NativeRdb::ResultSet> &resultSet, vector<str
     notifyUris.push_back(notifyUri);
 }
 
-void MediaLibraryNotify::GetNotifyUris(const AbsRdbPredicates &predicates, vector<string> &notifyUris)
+void MediaLibraryNotify::GetNotifyUris(const NativeRdb::AbsRdbPredicates &predicates, vector<string> &notifyUris)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetNotifyUris");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return;
     }
-    auto resultSet = rdbStore->Query(predicates, {
+    auto resultSet = rdbStore->QueryWithFilter(predicates, {
         PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_NAME

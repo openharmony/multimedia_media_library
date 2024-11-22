@@ -20,10 +20,17 @@
 #include <condition_variable>
 #include <cstdint>
 #include <mutex>
-
-#include "rdb_store.h"
+#include "medialibrary_async_worker.h"
+#include "medialibrary_unistore.h"
+#include "timer.h"
+#include "value_object.h"
+#include "transaction.h"
 
 namespace OHOS::Media {
+constexpr int32_t MAX_TRY_TIMES = 30;
+constexpr int32_t MAX_BUSY_TRY_TIMES = 2;
+constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // in milliseconds.
+
 #define EXPORT __attribute__ ((visibility ("default")))
 /**
  * This class is used for database transaction creation, commit, and rollback
@@ -40,24 +47,39 @@ namespace OHOS::Media {
  */
 class TransactionOperations {
 public:
-    EXPORT TransactionOperations(const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
+    EXPORT TransactionOperations();
     EXPORT ~TransactionOperations();
-    EXPORT int32_t Start(bool isUpgrade = false);
-    EXPORT void Finish();
+    EXPORT int32_t Start(std::string funcName, bool isBackup = false);
+    EXPORT int32_t Finish();
+    EXPORT int32_t TryTrans(std::function<int(void)> &func, std::string funcName, bool isBackup);
+    EXPORT int32_t RetryTrans(std::function<int(void)> &func, std::string funcName, bool isBackup = false);
+    EXPORT int32_t Rollback();
+    EXPORT void SetBackupRdbStore(std::shared_ptr<OHOS::NativeRdb::RdbStore> rdbStore);
+
+    EXPORT int32_t ExecuteSql(const std::string &sql, const std::vector<NativeRdb::ValueObject> &args = {});
+    EXPORT int32_t Execute(const std::string &sql, const std::vector<NativeRdb::ValueObject> &args = {});
+    EXPORT int32_t ExecuteForLastInsertedRowId(const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &bindArgs);
+    EXPORT int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId);
+    EXPORT int32_t Insert(int64_t &rowId, const std::string tableName, const NativeRdb::ValuesBucket &values);
+    EXPORT int32_t BatchInsert(int64_t &outRowId, const std::string &table,
+        const std::vector<NativeRdb::ValuesBucket> &values);
+    EXPORT int32_t BatchInsert(MediaLibraryCommand &cmd, int64_t &outInsertNum,
+        const std::vector<NativeRdb::ValuesBucket> &values);
+    EXPORT int32_t Update(NativeRdb::ValuesBucket &values, const NativeRdb::AbsRdbPredicates &predicates);
+    EXPORT int32_t Update(int32_t &changedRows, NativeRdb::ValuesBucket &values,
+        const NativeRdb::AbsRdbPredicates &predicates);
+    EXPORT int32_t Update(MediaLibraryCommand &cmd, int32_t &changedRows);
+    EXPORT int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows);
 
 private:
-    int32_t BeginTransaction(bool isUpgrade = false);
     int32_t TransactionCommit();
-    int32_t TransactionRollback();
 
+    std::shared_ptr<OHOS::NativeRdb::Transaction> transaction_ = nullptr;
     std::shared_ptr<OHOS::NativeRdb::RdbStore> rdbStore_;
-    bool isStart = false;
-    bool isFinish = false;
-    bool isSkipCloudSync = false;
-
-    static std::mutex transactionMutex_;
-    static std::condition_variable transactionCV_;
-    static std::atomic<bool> isInTransaction_;
+    std::shared_ptr<OHOS::NativeRdb::RdbStore> backupRdbStore_;
+    std::string funcName_ = "";
+    bool isSkipCloudSync_ = false;
 };
 } // namespace OHOS::Media
 

@@ -79,7 +79,7 @@ int32_t MediaLibraryAppUriPermissionOperations::HandleInsertOperation(MediaLibra
         MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
     }
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("get rdbStore error");
         return ERROR;
@@ -105,16 +105,27 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
     MediaLibraryCommand &cmd, const std::vector<DataShare::DataShareValuesBucket> &values)
 {
     MEDIA_INFO_LOG("batch insert begin");
-    TransactionOperations transactionOprn(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    int32_t errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("start transaction error, errCode = %{public}d", errCode);
-        return ERROR;
-    }
+
     if (!IsPhotosAllExist(values)) {
         return ERROR;
     }
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    std::function<int(void)> func = [&]()->int {
+        return BatchInsertInner(cmd, values, trans);
+    };
+    int32_t errCode = trans->RetryTrans(func, __func__);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("BatchInsert: trans retry fail!, ret:%{public}d", errCode);
+    }
+    MEDIA_INFO_LOG("batch insert ok");
+    return SUCCEED;
+}
+
+int32_t MediaLibraryAppUriPermissionOperations::BatchInsertInner(
+    MediaLibraryCommand &cmd, const std::vector<DataShare::DataShareValuesBucket> &values,
+    std::shared_ptr<TransactionOperations> trans)
+{
+    int32_t errCode = NativeRdb::E_OK;
     std::vector<ValuesBucket> insertVector;
     for (auto it = values.begin(); it != values.end(); it++) {
         ValuesBucket value = RdbUtils::ToValuesBucket(*it);
@@ -131,7 +142,7 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
         }
 
         value.Delete(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
-        
+
         if (queryFlag == 0) {
             // delete the temporary permission when the app dies
             if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
@@ -144,18 +155,20 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
             return ERROR;
         }
     }
+
     if (!insertVector.empty()) {
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("start transaction error, errCode = %{public}d", errCode);
+            return ERROR;
+        }
         int64_t outRowId = -1;
-        int32_t ret = MediaLibraryRdbStore::BatchInsert(outRowId, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE,
-            insertVector);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("batch insert err=%{public}d", ret);
+        errCode = trans->BatchInsert(outRowId, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE, insertVector);
+        if (errCode != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("batch insert err=%{public}d", errCode);
             return ERROR;
         }
     }
-    transactionOprn.Finish();
-    MEDIA_INFO_LOG("batch insert ok");
-    return SUCCEED;
+    return errCode;
 }
  
 int32_t MediaLibraryAppUriPermissionOperations::DeleteOperation(NativeRdb::RdbPredicates &predicates)
@@ -171,7 +184,8 @@ std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriPermissionOperatio
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates,
         AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
-    std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = MediaLibraryRdbStore::Query(rdbPredicates, fetchColumns);
+    std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet =
+        MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, fetchColumns);
     if (resultSet == nullptr) {
         return nullptr;
     }
@@ -239,7 +253,7 @@ bool MediaLibraryAppUriPermissionOperations::GetIntFromValuesBucket(
 }
 
 int MediaLibraryAppUriPermissionOperations::UpdatePermissionType(shared_ptr<ResultSet> &resultSetDB,
-    int &permissionTypeParam)
+    int &permissionTypeParam, std::shared_ptr<TransactionOperations> trans)
 {
     int32_t permissionTypeDB =
         MediaLibraryRdbStore::GetInt(resultSetDB, AppUriPermissionColumn::PERMISSION_TYPE);
@@ -263,7 +277,12 @@ int MediaLibraryAppUriPermissionOperations::UpdatePermissionType(shared_ptr<Resu
     updatePredicates.EqualTo(AppUriPermissionColumn::ID, idDB);
     RdbPredicates updateRdbPredicates =
         RdbUtils::ToPredicates(updatePredicates, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
-    int32_t updateRows = MediaLibraryRdbStore::Update(updateVB, updateRdbPredicates);
+    int32_t updateRows = 0;
+    if (trans == nullptr) {
+        updateRows = MediaLibraryRdbStore::UpdateWithDateTime(updateVB, updateRdbPredicates);
+    } else {
+        updateRows = trans->Update(updateVB, updateRdbPredicates);
+    }
     if (updateRows < 1) {
         MEDIA_ERR_LOG("upgrade permissionType error,idDB=%{public}d", idDB);
         return ERROR;
@@ -325,7 +344,8 @@ bool MediaLibraryAppUriPermissionOperations::IsPhotoExist(int32_t &photoFileId)
     rdbPredicates.And()->EqualTo(PhotoColumn::MEDIA_ID, std::to_string(photoFileId));
     vector<string> photoColumns;
     photoColumns.push_back(PhotoColumn::MEDIA_ID);
-    shared_ptr<NativeRdb::ResultSet> photoRestultSet = MediaLibraryRdbStore::Query(rdbPredicates, photoColumns);
+    shared_ptr<NativeRdb::ResultSet> photoRestultSet =
+        MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, photoColumns);
     if (photoRestultSet == nullptr) {
         MEDIA_ERR_LOG("query photoRestultSet is null,fileId=%{public}d", photoFileId);
         return false;
@@ -357,7 +377,8 @@ bool MediaLibraryAppUriPermissionOperations::IsPhotosAllExist(
     rdbPredicates.And()->In(MediaColumn::MEDIA_ID, fileIds);
     vector<string> photoColumns;
     photoColumns.push_back(PhotoColumn::MEDIA_ID);
-    shared_ptr<NativeRdb::ResultSet> photoRestultSet = MediaLibraryRdbStore::Query(rdbPredicates, photoColumns);
+    shared_ptr<NativeRdb::ResultSet> photoRestultSet =
+        MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, photoColumns);
     if (photoRestultSet == nullptr) {
         MEDIA_ERR_LOG("query photoRestultSet is null");
         return false;

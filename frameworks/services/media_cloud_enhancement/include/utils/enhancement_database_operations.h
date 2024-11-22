@@ -22,6 +22,7 @@
 #include "result_set.h"
 #include "medialibrary_command.h"
 #include "rdb_predicates.h"
+#include "medialibrary_rdb_transaction.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,7 +35,8 @@ public:
         const std::vector<std::string> &columns, std::unordered_map<int32_t, std::string> &fileId2Uri);
     EXPORT static int32_t Update(NativeRdb::ValuesBucket &rdbValues, NativeRdb::AbsRdbPredicates &predicates);
     EXPORT static int32_t InsertCloudEnhancementImageInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset,
-        int32_t sourceFileId, std::shared_ptr<CloudEnhancementFileInfo> info);
+        int32_t sourceFileId, std::shared_ptr<CloudEnhancementFileInfo> info,
+        std::shared_ptr<TransactionOperations> trans = nullptr);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> GetPair(MediaLibraryCommand &cmd);
 };
 } // namespace Media
