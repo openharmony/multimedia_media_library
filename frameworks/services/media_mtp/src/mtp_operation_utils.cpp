@@ -502,15 +502,17 @@ int32_t MtpOperationUtils::RecevieSendObject(MtpFileRange &object, int fd)
 
     PreDealFd(errorCode != MTP_SUCCESS, fd);
     string filePath;
-    MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetPathById(context_->handle, filePath):
-        mtpMedialibraryManager_->GetPathById(context_->handle, filePath);
-    if (filePath.empty()) {
-        MEDIA_ERR_LOG("File path is invalid!");
-        return MTP_ERROR_TRANSFER_CANCELLED;
-    }
-    unlink(filePath.c_str());
     if (MtpManager::GetInstance().IsMtpMode()) {
+        mtpMediaLibrary_->GetPathById(context_->handle, filePath);
+        if (filePath.empty()) {
+            MEDIA_ERR_LOG("File path is invalid!");
+            return MTP_ERROR_TRANSFER_CANCELLED;
+        }
+        int ret = unlink(filePath.c_str());
+        CHECK_AND_RETURN_RET_LOG(ret == 0, MTP_ERROR_TRANSFER_CANCELLED, "unlink file fail");
         mtpMediaLibrary_->DeleteHandlePathMap(filePath, context_->handle);
+    } else {
+        mtpMedialibraryManager_->DeleteCanceledObject(context_->handle);
     }
     return MTP_ERROR_TRANSFER_CANCELLED;
 }

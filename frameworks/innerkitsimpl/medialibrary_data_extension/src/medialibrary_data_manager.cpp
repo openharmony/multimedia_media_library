@@ -1120,7 +1120,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::PAH_PHOTO:
         case OperationObject::PAH_VIDEO:
         case OperationObject::FILESYSTEM_PHOTO:
-        case OperationObject::FILESYSTEM_AUDIO: {
+        case OperationObject::FILESYSTEM_AUDIO:
+        case OperationObject::PTP_OPERATION: {
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
         }
         case OperationObject::ANALYSIS_PHOTO_ALBUM: {
