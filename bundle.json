@@ -79,7 +79,8 @@
           "wifi",
           "libxml2",
           "zlib",
-          "device_standby"
+          "device_standby",
+          "libfuse"
         ],
         "third_party": [
           "e2fsprogs",

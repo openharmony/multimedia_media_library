@@ -25,6 +25,7 @@ ohos_prebuilt_etc("userfilemanager_mimetypes.json") {
 
 config("media_data_extension_public_config") {
   include_fileext = [ "${MEDIALIB_SERVICES_PATH}/media_file_extension/include" ]
+  include_fuse = [ "${MEDIALIB_SERVICES_PATH}/media_fuse/include" ]
   include_distributed = [
     "${MEDIALIB_SERVICES_PATH}/media_distributed/include/database_manage",
     "${MEDIALIB_SERVICES_PATH}/media_distributed/include/device_manage",
@@ -76,6 +77,7 @@ config("media_data_extension_public_config") {
     "../../../../../bundlemanager/bundle_framework/interfaces/kits/js/common",
   ]
   include_dirs += include_fileext
+  include_dirs += include_fuse
   include_dirs += include_distributed
   include_dirs += include_scanner
   include_dirs += include_multistages_capture
@@ -158,6 +160,11 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/metadata.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/metadata_extractor.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/scanner_utils.cpp",
+  ]
+
+  media_fuse_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_fuse/src/media_fuse_daemon.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_fuse/src/media_fuse_manager.cpp",
   ]
 
   media_thumbnail_source = [
@@ -319,6 +326,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/zip_util.cpp",
   ]
   sources += media_scan_source
+  sources += media_fuse_source
   sources += media_thumbnail_source
   sources += media_cloud_sync_source
   sources += media_rdb_utils_source
@@ -379,6 +387,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "libexif:libexif",
+    "libfuse:libfuse",
     "napi:ace_napi",
     "os_account:os_account_innerkits",
     "player_framework:media_client",
@@ -388,6 +397,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "relational_store:rdb_data_share_adapter",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
+    "storage_service:storage_manager_sa_proxy",
     "window_manager:libdm",
     "zlib:shared_libz",
   ]
