@@ -2222,10 +2222,10 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
     std::string &path, std::string &sourcePath)
 {
     string editDataCameraPath = GetEditDataCameraPath(path);
+    int32_t subtype = static_cast<int32_t>(fileAsset->GetPhotoSubType());
     if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(sourcePath, path) == E_OK, E_HAS_FS_ERROR,
             "Can not modify %{private}s to %{private}s", sourcePath.c_str(), path.c_str());
-        int32_t subtype = static_cast<int32_t>(fileAsset->GetPhotoSubType());
         if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
             string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
             string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourcePath);
@@ -2238,8 +2238,10 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
             "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
         CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourcePath, path, editData) == E_OK, E_FAIL,
             "Failed to add filters to photo");
-        CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset) == E_OK, E_FAIL,
-            "Failed to add filters to video");
+        if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset) == E_OK, E_FAIL,
+                "Failed to add filters to video");
+        }
     }
     return E_OK;
 }
