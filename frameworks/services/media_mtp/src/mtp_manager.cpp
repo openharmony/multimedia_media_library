@@ -16,6 +16,7 @@
 
 #include "mtp_manager.h"
 #include "media_log.h"
+#include "mtp_file_observer.h"
 #include "mtp_service.h"
 #include "mtp_subscriber.h"
 #include "os_account_manager.h"
@@ -95,6 +96,9 @@ void MtpManager::StartMtpService(const MtpMode mode)
             service->StopService();
         }
         mtpMode_ = mode;
+        if (mode == MtpMode::MTP_MODE) {
+            MtpFileObserver::GetInstance().StartFileInotify();
+        }
         service->StartService();
         isMtpServiceRunning = true;
     }
@@ -111,6 +115,9 @@ void MtpManager::StopMtpService()
         }
         auto service = GetMtpService();
         CHECK_AND_RETURN_LOG(service != nullptr, "MtpManager mtpServicePtr is nullptr");
+        if (mtpMode_ == MtpMode::MTP_MODE) {
+            MtpFileObserver::GetInstance().StopFileInotify();
+        }
         mtpMode_ = MtpMode::NONE_MODE;
         service->StopService();
         isMtpServiceRunning = false;
