@@ -42,6 +42,7 @@
           "device_security_level",
           "dfs_service",
           "drivers_interface_usb",
+          "e2fsprogs",
           "eventhandler",
           "file_api",
           "graphic_2d",
@@ -83,7 +84,6 @@
           "libfuse"
         ],
         "third_party": [
-          "e2fsprogs",
           "openssl"
         ]
       },
@@ -102,6 +102,7 @@
             "//foundation/multimedia/media_library/interfaces/kits/js:photopickercomponent",
             "//foundation/multimedia/media_library/interfaces/kits/js:photopickercomponent_js",
             "//foundation/multimedia/media_library/interfaces/kits/c:native_media_asset_manager",
+            "//foundation/multimedia/media_library/interfaces/kits/cj:cj_photoaccesshelper_ffi",
             "//foundation/multimedia/media_library/interfaces/kits/js:albumpickercomponent",
             "//foundation/multimedia/media_library/interfaces/kits/js:albumpickercomponent_js",
             "//foundation/multimedia/media_library/interfaces/kits/js:sendablephotoaccesshelper",
