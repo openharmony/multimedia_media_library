@@ -41,7 +41,7 @@ static inline Uri FuzzUri(const uint8_t *data, size_t size)
     return Uri(FuzzString(data, size));
 }
 
-static inline DataShareValuesBucket FuzzDataShareValuesBucket(const uint8_t *data, size_t size)
+static inline DataShareValuesBucket FuzzDataShareValuesBucket()
 {
     return {};
 }
@@ -50,7 +50,7 @@ static inline void InsertFuzzer(MediaDataShareExtAbility &extension, const uint8
 {
     DataSharePredicates predicates;
     DataShareValuesBucket values;
-    extension.Insert(FuzzUri(data, size), FuzzDataShareValuesBucket(data, size));
+    extension.Insert(FuzzUri(data, size), FuzzDataShareValuesBucket());
 }
 
 static inline MediaDataShareExtAbility Init()

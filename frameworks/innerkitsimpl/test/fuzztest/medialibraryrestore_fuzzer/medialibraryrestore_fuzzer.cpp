@@ -113,7 +113,7 @@ const NativeRdb::RdbStoreConfig GetConfig()
     return config;
 }
 
-static void MediaLibraryRestoreTest(const uint8_t *data, size_t size)
+static void MediaLibraryRestoreTest()
 {
     auto config = GetConfig();
     Media::FuzzRestoreDataCallback callBack;
@@ -151,6 +151,6 @@ static void MediaLibraryRestoreTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::MediaLibraryRestoreTest(data, size);
+    OHOS::MediaLibraryRestoreTest();
     return 0;
 }

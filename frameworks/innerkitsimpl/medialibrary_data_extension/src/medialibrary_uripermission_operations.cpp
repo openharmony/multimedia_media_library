@@ -103,6 +103,7 @@ static void DeleteAllTemporaryOperation(AsyncTaskData *data)
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("UriPermission update operation, rdbStore is null.");
+        return;
     }
     NativeRdb::RdbPredicates rdbPredicate(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     vector<string> permissionTypes;
