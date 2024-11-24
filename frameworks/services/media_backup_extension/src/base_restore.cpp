@@ -138,7 +138,8 @@ bool BaseRestore::ConvertPathToRealPath(const std::string &srcPath, const std::s
             }
         }
     }
-    newPath = prefix + relativePath;
+    std::string extraPrefix = BackupFileUtils::GetExtraPrefixForRealPath(sceneCode_, srcPath);
+    newPath = prefix + extraPrefix + relativePath;
     return true;
 }
 
@@ -222,9 +223,10 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
             if (fileInfos[i].fileSize == 0) {
                 MEDIA_ERR_LOG("this is file size is 0");
             }
-            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, filePath: %{public}s",
-                sceneCode,
-                sourceType,
+            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, size: %{public}lld, "
+                "local_media_id: %{public}d, userId: %{public}d, isInternal: %{public}d, filePath: %{public}s",
+                sceneCode, sourceType, (long long)fileInfos[i].fileSize,
+                fileInfos[i].localMediaId, fileInfos[i].userId, static_cast<int32_t>(fileInfos[i].isInternal),
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
@@ -235,7 +237,6 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         if (errCode != E_OK) {
             fileInfos[i].needMove = false;
             MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d, path: %{public}s", errCode,
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
         fileInfos[i].cloudPath = cloudPath;
