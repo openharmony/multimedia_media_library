@@ -23,7 +23,7 @@ namespace Media {
 
 shared_ptr<MediaLibraryPeriodWorker> MediaLibraryPeriodWorker::periodWorkerInstance_{nullptr};
 mutex MediaLibraryPeriodWorker::instanceMtx_;
-static constexpr int32_t THREAD_NUM = 3;
+static constexpr int32_t THREAD_NUM = 2;
 
 shared_ptr<MediaLibraryPeriodWorker> MediaLibraryPeriodWorker::GetInstance()
 {
@@ -68,6 +68,23 @@ int32_t MediaLibraryPeriodWorker::AddTask(const shared_ptr<MedialibraryPeriodTas
     task->isThreadRunning_.store(true);
     task->isTaskRunning_.store(true);
     task->thread_ = thread([this, threadId]() { this->Worker(threadId); });
+    tasks_[threadId] = task;
+    return threadId;
+}
+
+int32_t MediaLibraryPeriodWorker::AddTask(const shared_ptr<MedialibraryPeriodTask> &task,
+    shared_ptr<BaseHandler> &handle, function<void(bool)> &refreshAlbumsFunc)
+{
+    int32_t threadId = GetValidId();
+    if (threadId == -1) {
+        MEDIA_ERR_LOG("task is over size");
+        return threadId;
+    }
+    task->isThreadRunning_.store(true);
+    task->isTaskRunning_.store(true);
+    task->thread_ = thread([this, threadId, &handle, &refreshAlbumsFunc]() {
+        this->Worker(threadId, handle, refreshAlbumsFunc);
+    });
     tasks_[threadId] = task;
     return threadId;
 }
@@ -143,19 +160,37 @@ void MediaLibraryPeriodWorker::WaitForTask(const std::shared_ptr<MedialibraryPer
 
 void MediaLibraryPeriodWorker::Worker(int32_t threadId)
 {
+    string name("NotifyWorker");
+    pthread_setname_np(pthread_self(), name.c_str());
     auto task = tasks_.find(threadId);
     if (task == tasks_.end()) {
         return;
     }
-    while (true) {
-        if (!task->second->isThreadRunning_.load()) {
-            return;
-        }
+    while (task->second->isThreadRunning_.load()) {
         WaitForTask(task->second);
         if (!task->second->isThreadRunning_.load()) {
             return;
         }
         task->second->executor_();
+        this_thread::sleep_for(chrono::milliseconds(task->second->period_));
+    }
+}
+
+void MediaLibraryPeriodWorker::Worker(int32_t threadId,
+    shared_ptr<BaseHandler> &handle, function<void(bool)> &refreshAlbumsFunc)
+{
+    string name("AnalysisAlbumWorker");
+    pthread_setname_np(pthread_self(), name.c_str());
+    auto task = tasks_.find(threadId);
+    if (task == tasks_.end()) {
+        return;
+    }
+    while (task->second->isThreadRunning_.load()) {
+        WaitForTask(task->second);
+        if (!task->second->isThreadRunning_.load()) {
+            return;
+        }
+        task->second->analysisHandlerExecutor_(handle, refreshAlbumsFunc);
         this_thread::sleep_for(chrono::milliseconds(task->second->period_));
     }
 }
