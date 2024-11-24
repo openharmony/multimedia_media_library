@@ -50,7 +50,7 @@ public:
     static bool IsFileValid(const std::string &filePath, int32_t sceneCode);
     static std::string GetFileNameFromPath(const string &path);
     static std::string GetFileTitle(const string &displayName);
-    static bool IsFileValid(std::string &filePath, int32_t sceneCode,
+    static int32_t IsFileValid(std::string &filePath, int32_t sceneCode,
         string relativePath = "", bool hasLowQualityImage = false);
     static std::string GetDetailsPath(int32_t sceneCode, const std::string &type,
         const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit);
@@ -66,7 +66,7 @@ public:
     static bool ShouldIncludeSd(const std::string &prefix);
     static void DeleteSdDatabase(const std::string &prefix);
     static string ConvertLowQualityPath(int32_t sceneCode, const std::string &filePath, const string &relativePath);
-    static bool IsLowQualityImage(std::string &filePath, int32_t sceneCode,
+    static int32_t IsLowQualityImage(std::string &filePath, int32_t sceneCode,
         string relativePath, bool hasLowQualityImage);
     static bool IsLivePhoto(const FileInfo &fileInfo);
     static bool ConvertToMovingPhoto(FileInfo &fileInfo);
