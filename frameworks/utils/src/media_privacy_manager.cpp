@@ -364,39 +364,38 @@ static int32_t CollectRanges(const string &path, const HideSensitiveType &sensit
  * o Read jpeg with MEDIA_LOCATION: return success with empty ranges
  * o Other cases: return negative error code.
  */
-static int32_t GetPrivacyRanges(const string &path, const string &mode, const string &fileId, PrivacyRanges &ranges,
-    string &appId, const uid_t &uid, const bool &fuseFlag)
+int32_t MediaPrivacyManager::GetPrivacyRanges()
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaPrivacyManager::GetPrivacyRanges");
-    if (!IsTargetExtension(path)) {
+    if (!IsTargetExtension(path_)) {
         return E_SUCCESS;
     }
 
-    if (fileId.empty()) {
+    if (fileId_.empty()) {
         return E_SUCCESS;
     }
 
-    if (mode.find('w') != string::npos) {
+    if (mode_.find('w') != string::npos) {
         return E_SUCCESS;
     }
-    if (fuseFlag == false) {
+    if (fuseFlag_ == false) {
         string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-        appId = PermissionUtils::GetAppIdByBundleName(bundleName);
+        appId_ = PermissionUtils::GetAppIdByBundleName(bundleName);
     }
-    string appIdFile = UriSensitiveOperations::QueryAppId(fileId);
-    if (appId == appIdFile) {
+    string appIdFile = UriSensitiveOperations::QueryAppId(fileId_);
+    if (appId_ == appIdFile) {
         return E_SUCCESS;
     }
     bool result;
     for (auto &item : PRIVACY_PERMISSION_MAP) {
         const string &perm = item.second;
-        if (fuseFlag == false) {
+        if (fuseFlag_ == false) {
             result = PermissionUtils::CheckCallerPermission(perm);
         } else {
-            result = PermissionUtils::CheckCallerPermission(perm, uid);
+            result = PermissionUtils::CheckCallerPermission(perm, uid_);
         }
-        if ((result == false) && (perm == PERMISSION_NAME_MEDIA_LOCATION) && IsWriteMode(mode)) {
+        if ((result == false) && (perm == PERMISSION_NAME_MEDIA_LOCATION) && IsWriteMode(mode_)) {
             MEDIA_ERR_LOG("Write is not allowed if have no location permission");
             return E_PERMISSION_DENIED;
         }
@@ -405,14 +404,14 @@ static int32_t GetPrivacyRanges(const string &path, const string &mode, const st
         }
         //collect ranges by hideSensitiveType
         HideSensitiveType sensitiveType =
-            static_cast<HideSensitiveType>(UriSensitiveOperations::QuerySensitiveType(appId, fileId));
-        int32_t err = CollectRanges(path, sensitiveType, ranges);
+            static_cast<HideSensitiveType>(UriSensitiveOperations::QuerySensitiveType(appId_, fileId_));
+        int32_t err = CollectRanges(path_, sensitiveType, ranges_);
         if (err < 0) {
             return err;
         }
         MEDIA_INFO_LOG("get privacy type = %{public}d", sensitiveType);
     }
-    return SortRangesAndCheck(ranges);
+    return SortRangesAndCheck(ranges_);
 }
 
 static bool IsDeveloperMediaTool()
@@ -430,7 +429,7 @@ static bool IsDeveloperMediaTool()
 
 int32_t MediaPrivacyManager::Open()
 {
-    int err = GetPrivacyRanges(path_, mode_, fileId_, ranges_, appId_, uid_, fuseFlag_);
+    int err = GetPrivacyRanges();
     if (err < 0) {
         return err;
     }
