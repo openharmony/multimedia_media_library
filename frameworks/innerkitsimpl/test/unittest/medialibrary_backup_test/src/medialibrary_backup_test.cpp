@@ -1971,5 +1971,112 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_009, TestSiz
     TestAppTwinData("/storage/emulated/128/", APP_TWIN_DATA_PREFIX); // app twin data
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_009 end");
 }
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetFileFolderFromPath, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_GetFileFolderFromPath start");
+    // test case 1 empty path
+    string path;
+    auto result = BackupFileUtils::GetFileFolderFromPath(path, true);
+    EXPECT_EQ(result.empty(), true);
+
+    // test case 2 : no '/' in path
+    path = "GHY.txt";
+    result = BackupFileUtils::GetFileFolderFromPath(path, true);
+    EXPECT_EQ(result.empty(), true);
+
+    // test case 3 : normal path
+    path = "/data/test/GHY.txt";
+    result = BackupFileUtils::GetFileFolderFromPath(path, true);
+    EXPECT_EQ(result, "/data/test");
+
+    // test case 4 : end > start
+    path = "/GHY.txt";
+    result = BackupFileUtils::GetFileFolderFromPath(path, true);
+    EXPECT_EQ(result.empty(), true);
+    MEDIA_INFO_LOG("medialib_backup_test_GetFileFolderFromPath end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_PreparePath, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_PreparePath start");
+    // test case 1 empty path
+    string path;
+    auto result = BackupFileUtils::PreparePath(path);
+    EXPECT_EQ(result, E_CHECK_DIR_FAIL);
+
+    // test case 2 path end with '/'
+    path = "GHY.txt/";
+    result = BackupFileUtils::PreparePath(path);
+    EXPECT_EQ(result, E_CHECK_DIR_FAIL);
+
+    // normal dir and file
+    path = "/data/test/GYH/test.txt";
+    MediaFileUtils::CreateDirectory("/data/test/GYH/");
+    MediaFileUtils::CreateFile("path");
+    result = BackupFileUtils::PreparePath(path);
+    EXPECT_EQ(result, E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_PreparePath end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GarbleFilePath, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_GarbleFilePath start");
+    string path = "/data/test/GYH/test.txt";
+    string clonePath;
+    // test case 1 invalid sceneCode
+    string result = BackupFileUtils::GarbleFilePath(path, -1, clonePath);
+    EXPECT_EQ(result, path);
+
+    // test case 2 sceneCode = OTHERS_PHONE_CLONE_RESTORE
+    result = BackupFileUtils::GarbleFilePath(path, OTHERS_PHONE_CLONE_RESTORE, clonePath);
+    EXPECT_EQ(result, "***/test.txt");
+    MEDIA_INFO_LOG("medialib_backup_test_GarbleFilePath end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_CreatePath, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_CreatePath start");
+    // invalid data type
+    string displayName = "GHY.mp3";
+    string path = "data/test/GYH";
+    auto ret = BackupFileUtils::CreatePath(-1, displayName, path);
+    EXPECT_EQ(ret, E_INVALID_FILEID);
+    MEDIA_INFO_LOG("medialib_backup_test_CreatePath end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_IsLowQualityImage, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_IsLowQualityImage start");
+    string filePath = "/data/test/GYH/GYH.mp3";
+    int sceneCode = -1;
+    string relativePath;
+    bool hasLowQualityImage = false;
+    auto ret = BackupFileUtils::IsLowQualityImage(filePath, sceneCode, relativePath, hasLowQualityImage);
+    EXPECT_EQ(ret, E_FAIL);
+    MEDIA_INFO_LOG("medialib_backup_test_IsLowQualityImage end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertLowQualityPath, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_ConvertLowQualityPath start");
+    int sceneCode = 0;
+    string filePath;
+    string relativePath;
+    // test case 1 empty file path
+    auto result = BackupFileUtils::ConvertLowQualityPath(sceneCode, filePath, relativePath);
+    EXPECT_EQ(result.empty(), true);
+
+    // test case 2 no '/' in path
+    filePath = "GHY.txt";
+    result = BackupFileUtils::ConvertLowQualityPath(sceneCode, filePath, relativePath);
+    EXPECT_EQ(result, "GHY.txt");
+
+    // test cast no dot in path and empty relativePath
+    filePath = "/data/test/GYH/GYHmp3";
+    result = BackupFileUtils::ConvertLowQualityPath(sceneCode, filePath, relativePath);
+    EXPECT_EQ(result, "/data/test/GYH/GYHmp3");
+    MEDIA_INFO_LOG("medialib_backup_test_ConvertLowQualityPath end");
+}
 } // namespace Media
 } // namespace OHOS
