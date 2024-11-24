@@ -22,6 +22,7 @@
 #include <map>
 #include <mutex>
 #include <thread>
+#include "base_handler.h"
 
 namespace OHOS {
 namespace Media {
@@ -30,14 +31,17 @@ namespace Media {
 #define COMPILE_HIDDEN __attribute__ ((visibility ("hidden")))
 
 using MediaLibraryPeriodExecute = void (*)();
+using AnalysisHandlerPeriodExecute = void (*)(std::shared_ptr<BaseHandler> &, std::function<void(bool)> &);
 
-class MedialibraryPeriodTask
-{ 
+class MedialibraryPeriodTask {
 public:
     MedialibraryPeriodTask(MediaLibraryPeriodExecute executor, int32_t period)
         : executor_(executor), period_(period) {}
+    MedialibraryPeriodTask(AnalysisHandlerPeriodExecute executor, int32_t period)
+        : analysisHandlerExecutor_(executor), period_(period) {}
     virtual ~MedialibraryPeriodTask() {}
     MediaLibraryPeriodExecute executor_;
+    AnalysisHandlerPeriodExecute analysisHandlerExecutor_;
     std::thread thread_;
     std::atomic<bool> isThreadRunning_{false};
     std::atomic<bool> isTaskRunning_{false};
@@ -54,6 +58,8 @@ public:
     EXPORT void CloseThreadById(int32_t threadId);
     EXPORT bool IsThreadRunning(int32_t threadId);
     EXPORT int32_t AddTask(const std::shared_ptr<MedialibraryPeriodTask> &task);
+    EXPORT int32_t AddTask(const std::shared_ptr<MedialibraryPeriodTask> &task,
+        std::shared_ptr<BaseHandler> &handle, std::function<void(bool)> &refreshAlbumsFunc);
 
 private:
     COMPILE_HIDDEN MediaLibraryPeriodWorker();
@@ -61,6 +67,8 @@ private:
     COMPILE_HIDDEN int32_t GetValidId();
     COMPILE_HIDDEN void WaitForTask(const std::shared_ptr<MedialibraryPeriodTask> &task);
     COMPILE_HIDDEN void Worker(int32_t threadId);
+    COMPILE_HIDDEN void Worker(int32_t threadId,
+        std::shared_ptr<BaseHandler> &handle, std::function<void(bool)> &refreshAlbumsFunc);
 
     COMPILE_HIDDEN static std::shared_ptr<MediaLibraryPeriodWorker> periodWorkerInstance_;
     COMPILE_HIDDEN static std::mutex instanceMtx_;

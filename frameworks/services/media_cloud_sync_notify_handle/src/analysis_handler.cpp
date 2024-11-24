@@ -15,10 +15,13 @@
 
 #include "analysis_handler.h"
 
+#include "medialibrary_errno.h"
+#include "medialibrary_period_worker.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_rdb_utils.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
+#include "power_efficiency_manager.h"
 #include "result_set_utils.h"
 #include "vision_column.h"
 
@@ -28,6 +31,21 @@ namespace OHOS {
 namespace Media {
 
 using ChangeType = DataShare::DataShareObserver::ChangeType;
+
+std::mutex AnalysisHandler::mtx_;
+queue<CloudSyncHandleData> AnalysisHandler::taskQueue_;
+int32_t AnalysisHandler::threadId_{-1};
+std::atomic<uint16_t> AnalysisHandler::counts_(0);
+static constexpr uint16_t HANDLE_IDLING_TIME = 5;
+
+AnalysisHandler::~AnalysisHandler()
+{
+    auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
+    if (periodWorker == nullptr) {
+        MEDIA_ERR_LOG("failed to get period worker instance");
+    }
+    periodWorker->CloseThreadById(AnalysisHandler::threadId_);
+}
 
 static vector<string> GetFileIds(const CloudSyncHandleData &handleData)
 {
@@ -90,14 +108,39 @@ static void AddNewNotify(CloudSyncHandleData &handleData, const list<Uri> &sendU
     return;
 }
 
-void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
+static int32_t GetHandleData(CloudSyncHandleData &handleData)
 {
+    lock_guard<mutex> lockGuard(AnalysisHandler::mtx_);
+    if (AnalysisHandler::taskQueue_.empty()) {
+        ++AnalysisHandler::counts_;
+        if (AnalysisHandler::counts_.load() > HANDLE_IDLING_TIME) {
+            auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
+            if (periodWorker == nullptr) {
+                MEDIA_ERR_LOG("failed to get period worker instance");
+                return E_ERR;
+            }
+            periodWorker->StopThreadById(AnalysisHandler::threadId_);
+        }
+        return E_ERR;
+    } else {
+        AnalysisHandler::counts_.store(0);
+        handleData = AnalysisHandler::taskQueue_.front();
+        AnalysisHandler::taskQueue_.pop();
+    }
+    return E_OK;
+}
+
+static void ProcessHandleData(shared_ptr<BaseHandler> &handle, function<void(bool)> &refreshAlbumsFunc)
+{
+    CloudSyncHandleData handleData;
+    if (GetHandleData(handleData) != E_OK) {
+        return;
+    }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Can not get rdbstore");
         return;
     }
-
     vector<string> fileIds;
     if (handleData.orgInfo.type == ChangeType::OTHER) {
         MEDIA_INFO_LOG("Update the AnalysisAlbum for ChangeType being OTHER");
@@ -128,11 +171,69 @@ void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
         string uriString = newHandleData.orgInfo.uris.front().ToString();
         MEDIA_INFO_LOG("refresh: %{public}s, type: %{public}d", uriString.c_str(),
             static_cast<int32_t>(newHandleData.orgInfo.type));
-        refreshAlbumsFunc_(true);
+        refreshAlbumsFunc(true);
     }
+    if (handle != nullptr) {
+        handle->Handle(newHandleData);
+    }
+}
 
-    if (nextHandler_ != nullptr) {
-        nextHandler_->Handle(newHandleData);
+void AnalysisHandler::init()
+{
+    if (AnalysisHandler::threadId_ != E_ERR) {
+        return;
+    }
+    auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
+    if (periodWorker == nullptr) {
+        MEDIA_ERR_LOG("failed to get period worker instance");
+        return;
+    }
+    auto periodTask = make_shared<MedialibraryPeriodTask>(ProcessHandleData,
+        PowerEfficiencyManager::GetAlbumUpdateInterval());
+    AnalysisHandler::threadId_ = periodWorker->AddTask(periodTask, nextHandler_, refreshAlbumsFunc_);
+    if (AnalysisHandler::threadId_ == E_ERR) {
+        MEDIA_ERR_LOG("failed to add task");
+        return;
+    }
+    return;
+}
+
+void AnalysisHandler::MergeTask(const CloudSyncHandleData &handleData)
+{
+    lock_guard<mutex> lockGuard(AnalysisHandler::mtx_);
+    if (AnalysisHandler::taskQueue_.empty()) {
+        AnalysisHandler::taskQueue_.push(handleData);
+        return;
+    }
+    CloudSyncHandleData &tempHandleData = AnalysisHandler::taskQueue_.front();
+    if (tempHandleData.orgInfo.type == ChangeType::OTHER) {
+        return;
+    } else {
+        for (auto info : handleData.notifyInfo) {
+            auto it = tempHandleData.notifyInfo.find(info.first);
+            if (it != tempHandleData.notifyInfo.end()) {
+                tempHandleData.notifyInfo[info.first].splice(
+                    tempHandleData.notifyInfo[info.first].end(), info.second);
+            } else {
+                tempHandleData.notifyInfo[info.first] = info.second;
+            }
+        }
+    }
+}
+
+void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
+{
+    MergeTask(handleData);
+    auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
+    if (periodWorker == nullptr) {
+        MEDIA_ERR_LOG("failed to get period worker instance");
+        return;
+    }
+    if (interval_ != PowerEfficiencyManager::GetAlbumUpdateInterval()) {
+        interval_ = PowerEfficiencyManager::GetAlbumUpdateInterval();
+        periodWorker->StartThreadById(AnalysisHandler::threadId_, interval_);
+    } else if (!periodWorker->IsThreadRunning(AnalysisHandler::threadId_)) {
+        periodWorker->StartThreadById(AnalysisHandler::threadId_, interval_);
     }
 }
 } //namespace Media
