@@ -235,6 +235,7 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         if (errCode != E_OK) {
             fileInfos[i].needMove = false;
             MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d, path: %{public}s", errCode,
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
         fileInfos[i].cloudPath = cloudPath;
