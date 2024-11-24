@@ -619,8 +619,9 @@ int32_t MtpDataUtils::GetMtpPropList(const std::shared_ptr<std::unordered_map<ui
         auto iterator = pathHandles.find(std::filesystem::path(it->second).parent_path().string());
         if (iterator != pathHandles.end()) {
             parentId = iterator->second;
+        } else {
+            parentId = 0;
         }
-        parentId = (parentId == DEFAULT_STORAGE_ID) ? 0 : parentId;
         GetMtpOneRowProp(properties, parentId, it, outProps);
     }
     return MTP_SUCCESS;
