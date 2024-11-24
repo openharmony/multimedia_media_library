@@ -319,6 +319,7 @@ struct FileInfo {
      */
     int32_t isRelatedToPhotoMap = 0;
     int32_t photoQuality;
+    int32_t userId {-1};
 };
 
 struct AlbumInfo {

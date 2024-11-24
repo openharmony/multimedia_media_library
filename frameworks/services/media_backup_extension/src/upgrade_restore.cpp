@@ -54,7 +54,6 @@ constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
-const std::string INTERNAL_PREFIX = "/storage/emulated";
 constexpr int32_t MAX_THREAD_NUM = 4;
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
@@ -664,6 +663,7 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.firstUpdateTime = GetInt64Val(GALLERY_FIRST_UPDATE_TIME, resultSet);
     info.dateTaken = GetInt64Val(GALLERY_DATE_TAKEN, resultSet);
     info.detailTime = GetStringVal(GALLERY_DETAIL_TIME, resultSet);
+    info.userId = BackupFileUtils::GetUserId(info.oldPath);
     return true;
 }
 
