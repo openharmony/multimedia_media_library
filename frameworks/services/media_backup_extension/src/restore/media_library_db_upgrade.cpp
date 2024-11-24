@@ -90,8 +90,9 @@ int32_t MediaLibraryDbUpgrade::MergeAlbumFromOldBundleNameToNewBundleName(Native
 {
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::MergeAlbumFromOldBundleNameToNewBundleName start");
     int32_t ret = NativeRdb::E_OK;
-    for (const auto &executeSql : this->SQL_MERGE_ALBUM_FROM_OLD_BUNDLE_NAME_TO_NEW_BUNDLE_NAME) {
-        ret = ExecSqlsInternal(store, executeSql);
+    std::vector<NativeRdb::ValueObject> args;
+    for (auto &executeSql : SQL_MERGE_ALBUM_FROM_OLD_BUNDLE_NAME_TO_NEW_BUNDLE_NAME) {
+        ret = ExecSqlsInternal(store, executeSql, args);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Media_Restore: executeSql failed, sql: %{public}s", executeSql.c_str());
             return ret;
@@ -105,8 +106,9 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotosBelongsToAlbum(NativeRdb::RdbStore &
 {
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::UpgradePhotosBelongsToAlbum start");
     int32_t ret = NativeRdb::E_OK;
+    std::vector<NativeRdb::ValueObject> args;
     for (const auto &executeSql : this->SQL_PHOTOS_NEED_TO_BELONGS_TO_ALBUM) {
-        ret = ExecSqlsInternal(store, executeSql);
+        ret = ExecSqlsInternal(store, executeSql, args);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Media_Restore: executeSql failed, sql: %{public}s", executeSql.c_str());
             return ret;
@@ -155,7 +157,8 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotoAlbum(NativeRdb::RdbStore &store)
 int32_t MediaLibraryDbUpgrade::UpdatelPathColumn(NativeRdb::RdbStore &store)
 {
     std::string executeSql = this->SQL_PHOTO_ALBUM_TABLE_UPDATE_LPATH_COLUMN;
-    int32_t ret = ExecSqlsInternal(store, executeSql);
+    std::vector<NativeRdb::ValueObject> args;
+    int32_t ret = ExecSqlsInternal(store, executeSql, args);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Media_Restore: MediaLibraryDbUpgrade::UpdatelPathColumn failed, ret=%{public}d, sql=%{public}s",
             ret,
@@ -174,8 +177,10 @@ int32_t MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store)
     if (this->dbUpgradeUtils_.IsColumnExists(store, "Photos", "owner_album_id")) {
         return NativeRdb::E_OK;
     }
+
+    std::vector<NativeRdb::ValueObject> args;
     std::string sql = this->SQL_PHOTOS_TABLE_ADD_OWNER_ALBUM_ID;
-    int32_t ret = ExecSqlsInternal(store, sql);
+    int32_t ret = ExecSqlsInternal(store, sql, args);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG(
             "Media_Restore: MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn failed, ret=%{public}d, sql=%{public}s",
@@ -194,8 +199,9 @@ int32_t MediaLibraryDbUpgrade::AddlPathColumn(NativeRdb::RdbStore &store)
     if (this->dbUpgradeUtils_.IsColumnExists(store, "PhotoAlbum", "lpath")) {
         return NativeRdb::E_OK;
     }
+    std::vector<NativeRdb::ValueObject> args;
     std::string sql = this->SQL_PHOTO_ALBUM_TABLE_ADD_LPATH_COLUMN;
-    return ExecSqlsInternal(store, sql);
+    return ExecSqlsInternal(store, sql, args);
 }
 
 /**
