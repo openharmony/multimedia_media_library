@@ -41,7 +41,7 @@ private:
     int32_t MoveSingleRelationshipToPhotos(NativeRdb::RdbStore &store);
     int32_t UpdatelPathColumn(NativeRdb::RdbStore &store);
     int32_t ExecSqlsInternal(NativeRdb::RdbStore &store, const std::string &sql,
-        const std::vector<NativeRdb::ValueObject> &args = {});
+        const std::vector<NativeRdb::ValueObject> &args);
 
 private:
     DbUpgradeUtils dbUpgradeUtils_;
@@ -126,18 +126,19 @@ private:
     /* Clear the cache table. */
     const std::string SQL_TEMP_ALBUM_BUNDLE_NAME_DELETE = "\
         DROP TABLE IF EXISTS temp_album_bundle_name;";
+
     /* Cache the mapping of old to new bundle names */
-    const std::string SQL_TEMP_ALBUM_BUNDLE_NAME_CREATE = "\
-        CREATE TABLE IF NOT EXISTS temp_album_bundle_name \
-        AS \
-        SELECT \
-            'com.huawei.ohos.screenrecorder' AS bundle_name_old, \
-            'com.huawei.hmos.screenrecorder' AS bundle_name_new \
-        UNION \
-        SELECT \
-            'com.huawei.ohos.screenshot' AS bundle_name_old, \
-            'com.huawei.hmos.screenshot' AS bundle_name_new \
-        ;";
+    const std::string SQL_TEMP_ALBUM_BUNDLE_NAME_CREATE =
+        "CREATE TABLE IF NOT EXISTS temp_album_bundle_name ("
+        "bundle_name_old TEXT,"
+        "bundle_name_new TEXT"
+        ");";
+
+    const std::string SQL_TEMP_ALBUM_BUNDLE_NAME_INSERT =
+        "INSERT INTO temp_album_bundle_name (bundle_name_old, bundle_name_new) VALUES "
+        "('com.huawei.ohos.screenrecorder', 'com.huawei.hmos.screenrecorder'),"
+        "('com.huawei.ohos.screenshot', 'com.huawei.hmos.screenshot');";
+
     /* Create the Album if it doesn't exist */
     const std::string SQL_PHOTO_ALBUM_INSERT_NEW_ALBUM = "\
         INSERT INTO PhotoAlbum( \
@@ -234,6 +235,7 @@ private:
     const std::vector<std::string> SQL_MERGE_ALBUM_FROM_OLD_BUNDLE_NAME_TO_NEW_BUNDLE_NAME = {
         SQL_TEMP_ALBUM_BUNDLE_NAME_DELETE,
         SQL_TEMP_ALBUM_BUNDLE_NAME_CREATE,
+        SQL_TEMP_ALBUM_BUNDLE_NAME_INSERT,
         SQL_PHOTO_ALBUM_INSERT_NEW_ALBUM,
         SQL_PHOTO_MAP_INSERT_NEW_ALBUM,
         SQL_PHOTO_MAP_DELETE_OLD_ALBUM,
