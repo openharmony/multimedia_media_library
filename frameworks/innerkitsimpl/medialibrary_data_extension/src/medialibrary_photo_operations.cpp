@@ -1543,6 +1543,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
             return SetVideoEnhancementAttr(cmd);
         case OperationType::DEGENERATE_MOVING_PHOTO:
             return DegenerateMovingPhoto(cmd);
+        case OperationType::SET_OWNER_ALBUM_ID:
+            return UpdateOwnerAlbumId(cmd);
         default:
             return UpdateFileAsset(cmd);
     }
@@ -3512,6 +3514,26 @@ int32_t MediaLibraryPhotoOperations::DegenerateMovingPhoto(MediaLibraryCommand &
         MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()), extraUri),
         NotifyType::NOTIFY_UPDATE);
     return updatedRows;
+}
+
+int32_t MediaLibraryPhotoOperations::UpdateOwnerAlbumId(MediaLibraryCommand &cmd)
+{
+    const ValuesBucket &values = cmd.GetValueBucket();
+    int32_t targetAlbumId = 0;
+    CHECK_AND_RETURN_RET(
+        GetInt32FromValuesBucket(values, PhotoColumn::PHOTO_OWNER_ALBUM_ID, targetAlbumId), E_HAS_DB_ERROR);
+    int32_t rowId = UpdateFileInDb(cmd);
+    if (rowId < 0) {
+        MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
+        return rowId;
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) });
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) });
+    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
+    return rowId;
 }
 } // namespace Media
 } // namespace OHOS
