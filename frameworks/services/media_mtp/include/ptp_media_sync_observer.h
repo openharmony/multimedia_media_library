@@ -23,7 +23,7 @@
 #include "mtp_operation_context.h"
 #include "media_mtp_utils.h"
 #include "medialibrary_async_worker.h"
-#include "userfile_manager_types.h"
+#include "userfilemgr_uri.h"
 
 namespace OHOS {
 namespace Media {
@@ -40,10 +40,12 @@ public:
 
     void OnChange(const ChangeInfo &changeInfo) override;
     std::shared_ptr<MtpOperationContext> context_ = nullptr;
+    std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_ = nullptr;
 private:
     void SendEventPackets(uint32_t objectHandle, uint16_t eventCode);
     void SendEventPacketAlbum(uint32_t objectHandle, uint16_t eventCode);
     void SendPhotoEvent(ChangeType changeType, std::string suffixString);
+    std::vector<int32_t> GetHandlesFromPhotosInfoBurstKeys(int32_t handle);
 };
 
 class MediaSyncNotifyData : public AsyncTaskData {
@@ -55,4 +57,4 @@ public:
 } // namespace Media
 } // namespace OHOS
 
-#endif //FRAMEWORKS_SERVICES_CLOUD_SYNC_NOTIFY_HANDLE_INCLUDE_CLOUDE_SYNC_OBSERVER_H
+#endif //FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_PTP_MEDIA_SYNC_OBSERVER_H_
