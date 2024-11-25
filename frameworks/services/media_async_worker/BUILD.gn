@@ -15,9 +15,13 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
 ohos_static_library("medialibrary_async_worker") {
-  sources = [ "src/medialibrary_async_worker.cpp" ]
+  sources = [
+    "src/medialibrary_async_worker.cpp",
+    "src/medialibrary_period_worker.cpp",
+  ]
   include_dirs = [
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_UTILS_PATH}/include",
   ]
@@ -25,6 +29,8 @@ ohos_static_library("medialibrary_async_worker") {
   deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
 
   external_deps = [
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
   ]

@@ -34,6 +34,7 @@ public:
 
 public:
     virtual void Handle(const CloudSyncHandleData &handleData) = 0;
+    virtual void init() {}
     void SetNextHandler(const std::shared_ptr<BaseHandler> &nextHandler)
     {
         nextHandler_ = nextHandler;
