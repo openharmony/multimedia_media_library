@@ -54,6 +54,7 @@ shared_ptr<ReadyTaskData> ReadyTaskManager::GetReadyTaskData()
 
 void ReadyTaskManager::StartReadyTaskTimer(int32_t requestId)
 {
+    MEDIA_INFO_LOG("start ready task timer, requestId is: %{public}d", requestId);
     isDownloadTaskWaiting_ = true;
     DownloadThumbTimeoutWatcherThread_ = std::thread([this, requestId] {
         this->ThumbTimeoutWatcher(requestId);
