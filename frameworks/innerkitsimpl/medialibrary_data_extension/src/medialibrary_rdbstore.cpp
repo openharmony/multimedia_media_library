@@ -1495,7 +1495,6 @@ static int32_t PrepareUniqueMemberTable(RdbStore &store)
         MEDIA_DEBUG_LOG("AssetUniqueNumberTable is already inited");
         return E_OK;
     }
-    resultSet->Close();
 
     UniqueMemberValuesBucket imageBucket = { IMAGE_ASSET_TYPE, 0 };
     UniqueMemberValuesBucket videoBucket = { VIDEO_ASSET_TYPE, 0 };
@@ -3712,9 +3711,6 @@ static void AddMergeInfoColumnForAlbum(RdbStore &store)
         "SELECT album_id FROM PhotoAlbum WHERE album_name = '.hiddenAlbum'";
     auto resultSet = store.QuerySql(queryHiddenAlbumId);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        if (resultSet != nullptr) {
-            resultSet->Close();
-        }
         int32_t err = ExecSqlWithRetry([&]() { return store.ExecuteSql(CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET); });
         if (err != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Failed to exec: %{private}s", CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET.c_str());
