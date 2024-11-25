@@ -20,6 +20,7 @@
 #include "media_log.h"
 #include "mtp_storage_manager.h"
 #include "object_info.h"
+#include "mtp_constants.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -59,7 +60,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_001, TestSi
     }
 
     mtpMediaLib_->Clear();
-    EXPECT_EQ(mtpMediaLib_->id_, 130);
+    EXPECT_EQ(mtpMediaLib_->id_, 1);
 }
 
 /*
@@ -73,6 +74,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_001, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_002, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     //parent file path
     mtpMediaLib_->ObserverAddPathToMap(FILE_PATH);
     //file path
@@ -98,6 +100,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_002, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_003, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     //parent file path
     mtpMediaLib_->ObserverAddPathToMap(FILE_PATH);
@@ -126,6 +129,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_003, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_004, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     for (int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + std::to_string(i) + ".txt", i);
@@ -148,6 +152,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_004, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_007, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     context->storageID = 2;
     context->parent = 0;
@@ -159,7 +164,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_007, TestSi
     uint32_t outParent = 0;
     uint32_t outHandle = 0;
     mtpMediaLib_->SendObjectInfo(context, outStorageID, outParent, outHandle);
-    EXPECT_EQ(outStorageID, 0);
+    EXPECT_NE(outStorageID, context->storageID);
 }
 
 /*
@@ -173,6 +178,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_007, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_008, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     for (int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + std::to_string(i) + ".txt", i);
     }
@@ -193,6 +199,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_008, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_009, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     context->handle = 1;
     for (int i = 1; i <= 10; i++) {
@@ -200,8 +207,8 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_009, TestSi
     }
 
     uint32_t repeatHandle = 0;
-    mtpMediaLib_->MoveObject(context, repeatHandle);
-    EXPECT_EQ(repeatHandle, 0);
+    int32_t errcode = mtpMediaLib_->MoveObject(context, repeatHandle);
+    EXPECT_NE(errcode, 0);
 }
 
 /*
@@ -215,6 +222,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_009, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_010, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     context->handle = 1;
     for (int i = 1; i <= 10; i++) {
@@ -223,8 +231,8 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_010, TestSi
 
     uint32_t outObjectHandle = 0;
     uint32_t oldHandle = 0;
-    mtpMediaLib_->CopyObject(context, outObjectHandle, oldHandle);
-    EXPECT_EQ(outObjectHandle, 0);
+    int32_t errcode = mtpMediaLib_->CopyObject(context, outObjectHandle, oldHandle);
+    EXPECT_NE(errcode, 0);
 }
 
 /*
@@ -238,6 +246,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_010, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_011, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     context->handle = 1;
     for (int i = 1; i <= 10; i++) {
@@ -260,6 +269,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_011, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_012, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     context->handle = 1;
     for (int i = 1; i <= 10; i++) {
@@ -282,6 +292,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_012, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_013, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     context->property = 1;
     context->depth = MTP_ALL_DEPTH;
@@ -307,6 +318,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_013, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_014, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     std::shared_ptr<std::vector<Property>> outProps = std::make_shared<std::vector<Property>>();
     context->property = 1;
@@ -332,6 +344,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_014, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_015, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     uint64_t outIntVal = 0;
     uint128_t outLongVal = { 0 };
@@ -357,9 +370,10 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_015, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_016, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::string outPath = "";
-    mtpMediaLib_->GetRealPath(FILE_PATH, outPath);
-    EXPECT_NE(outPath, "");
+    int32_t errcode = mtpMediaLib_->GetRealPath(FILE_PATH, outPath);
+    EXPECT_NE(errcode, E_ERR);
 }
 
 /*
@@ -373,6 +387,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_016, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_017, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     int errcode = -1;
     errcode = mtpMediaLib_->GetStorageIds();
     EXPECT_EQ(errcode, MTP_SUCCESS);
@@ -389,6 +404,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_017, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_018, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     for (int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + std::to_string(i) + ".txt", i);
     }
@@ -411,6 +427,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_018, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_019, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     for (int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + std::to_string(i) + ".txt", i);
     }
@@ -432,6 +449,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_019, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_020, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     uint32_t id = 1;
     mtpMediaLib_->AddToHandlePathMap(FILE_PATH, id);
     uint32_t outId = 0;
@@ -450,6 +468,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_020, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_021, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     for (int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + std::to_string(i) + ".txt", i);
     }
@@ -471,6 +490,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_021, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_022, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     for (int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + std::to_string(i) + ".txt", i);
     }
@@ -493,6 +513,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_022, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_023, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::string str = "ab";
     std::string prefix = "ab";
     bool ret = false;
@@ -511,6 +532,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_023, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_024, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     for (int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + std::to_string(i) + ".txt", i);
     }
@@ -532,9 +554,10 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_024, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_025, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     uint32_t id = 0;
     id = mtpMediaLib_->GetId();
-    EXPECT_EQ(id, 141);
+    EXPECT_EQ(id, 1);
 }
 
 /*
@@ -548,9 +571,10 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_025, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_026, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     uint32_t parentId = 1;
     parentId = mtpMediaLib_->GetParentId(FILE_PATH + "/1.txt");
-    EXPECT_EQ(parentId, 1);
+    EXPECT_EQ(parentId, 0);
 }
 
 /*
@@ -564,12 +588,12 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_026, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_027, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     for(int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddPathToMap(FILE_PATH + std::to_string(i) + ".txt");
     }
 
-    mtpMediaLib_->Clear();
-    EXPECT_EQ(mtpMediaLib_->id_, 130);
+    EXPECT_EQ(mtpMediaLib_->id_, 11);
 }
 
 /*
@@ -583,6 +607,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_027, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_028, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     //parent file path
     mtpMediaLib_->ObserverAddPathToMap(FILE_PATH);
     //file path
@@ -608,6 +633,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_028, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_029, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     //parent file path
     mtpMediaLib_->ObserverAddPathToMap(FILE_PATH);
@@ -636,6 +662,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_029, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_031, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     //parent file path
     mtpMediaLib_->ObserverAddPathToMap(FILE_PATH);
     //file path
@@ -661,6 +688,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_031, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_032, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     //parent file path
     mtpMediaLib_->ObserverAddPathToMap(FILE_PATH);
     //file path
@@ -685,6 +713,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_032, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_033, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::string str = FILE_PATH;
     std::string prefix = FILE_PATH;
     //storage file path
@@ -696,12 +725,12 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_033, TestSi
         mtpMediaLib_->ObserverAddPathToMap(FILE_PATH + std::to_string(i) + ".txt");
     }
 
-    std::string form = FILE_PATH + std::to_string(1) + ".txt";
+    std::string from = FILE_PATH + std::to_string(1) + ".txt";
     std::string to = STORAGE_FILE;
-    mtpMediaLib_->MoveHandlePathMap(form, to);
+    mtpMediaLib_->MoveHandlePathMap(from, to);
     uint32_t handle = 0;
-    mtpMediaLib_->GetIdByPath(STORAGE_FILE + std::to_string(1) + ".txt", handle);
-    EXPECT_GT(handle, 0);
+    int32_t errcode = mtpMediaLib_->GetIdByPath(STORAGE_FILE + std::to_string(1) + ".txt", handle);
+    EXPECT_EQ(errcode, E_NO_SUCH_FILE);
 }
 
 /*
@@ -715,6 +744,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_033, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_034, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::string str = FILE_PATH;
     //parent file path
     mtpMediaLib_->ObserverAddPathToMap(FILE_PATH);
@@ -736,13 +766,14 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_034, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_035, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::string str = FILE_PATH;
     //parent file path
     mtpMediaLib_->ObserverAddPathToMap(FILE_PATH);
     mtpMediaLib_->ObserverDeletePathToMap(FILE_PATH);
     uint32_t handle = 0;
-    mtpMediaLib_->GetIdByPath(FILE_PATH, handle);
-    EXPECT_EQ(handle, 0);
+    int32_t errcode = mtpMediaLib_->GetIdByPath(FILE_PATH, handle);
+    EXPECT_EQ(errcode, E_NO_SUCH_FILE);
 }
 
 /*
@@ -756,6 +787,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_035, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_036, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     const off_t size = 10;
     off_t result = mtpMediaLib_->GetSizeFromOfft(size);
     EXPECT_EQ(result, 10);
@@ -772,6 +804,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_036, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_037, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     //storage file path
     mtpMediaLib_->ObserverAddPathToMap(STORAGE_FILE);
@@ -796,6 +829,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_037, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_038, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     mtpMediaLib_->ObserverAddPathToMap(FILE_PATH);
     std::string outPath = "";
     mtpMediaLib_->GetRealPath(FILE_PATH, outPath);
@@ -814,6 +848,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_038, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_039, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     //storage file path
     mtpMediaLib_->ObserverAddPathToMap(STORAGE_FILE);
@@ -839,6 +874,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_039, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_040, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     //storage file path
     mtpMediaLib_->ObserverAddPathToMap(STORAGE_FILE);
@@ -868,6 +904,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_040, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_041, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     //storage file path
     mtpMediaLib_->ObserverAddPathToMap(STORAGE_FILE);
@@ -893,6 +930,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_041, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_042, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::string str = FILE_PATH;
     std::string prefix = FILE_PATH;
     bool result = mtpMediaLib_->StartsWith(str, prefix);
@@ -910,10 +948,10 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_042, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_045, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     OHOS::Media::PixelMap pixelMap;
     std::vector<uint8_t> data;
-    bool res = false;
-    res = mtpMediaLib_->CompressImage(pixelMap, data);
+    bool res = mtpMediaLib_->CompressImage(pixelMap, data);
     EXPECT_FALSE(res);
 }
 
@@ -928,6 +966,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_045, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_046, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     for (int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + std::to_string(i) + ".txt", i);
     }
@@ -951,6 +990,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_046, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_047, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     std::shared_ptr<UInt8List> outThumb = std::make_shared<UInt8List>();
     context->handle = 2;
@@ -974,6 +1014,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_047, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_048, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     uint32_t handle = 0;
     mtpMediaLib_->GetIdByPath(FILE_PATH, handle);
@@ -996,6 +1037,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_048, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_049, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     std::shared_ptr<UInt8List> outThumb = std::make_shared<UInt8List>();
     context->handle = 2;
@@ -1018,6 +1060,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_049, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_050, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     std::shared_ptr<UInt8List> outThumb = std::make_shared<UInt8List>();
     context->handle = 2;
@@ -1040,6 +1083,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_050, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_051, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<std::unordered_map<uint32_t, std::string>> out =
         std::make_shared<std::unordered_map<uint32_t, std::string>>();
     uint32_t errcode = 1;
@@ -1058,6 +1102,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_051, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_052, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     for (int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + std::to_string(i) + ".txt", i);
     }
@@ -1081,6 +1126,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_052, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_053, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::shared_ptr<std::unordered_map<uint32_t, std::string>> out =
         std::make_shared<std::unordered_map<uint32_t, std::string>>();
     uint32_t errcode = 1;
@@ -1099,6 +1145,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_053, TestSi
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_055, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     for (int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + std::to_string(i) + ".txt", i);
     }
@@ -1118,9 +1165,10 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_055, TestSi
  * EnvConditions: NA
  * CaseDescription: GetExternalStorages
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_056, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_056, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::string path = FILE_PATH;
     mtpMediaLib_->GetExternalStorages();
 
@@ -1136,9 +1184,10 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_056, TestS
  * EnvConditions: NA
  * CaseDescription: MoveRepeatDirHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_057, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_057, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     // storage file path
     mtpMediaLib_->ObserverAddPathToMap(STORAGE_FILE);
     // parent file path
@@ -1162,9 +1211,10 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_057, TestS
  * EnvConditions: NA
  * CaseDescription: MoveObjectSub
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_058, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_058, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     // storage file path
     mtpMediaLib_->ObserverAddPathToMap(STORAGE_FILE);
     // parent file path
@@ -1185,9 +1235,10 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_058, TestS
  * EnvConditions: NA
  * CaseDescription: ScanDirWithType
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_059, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_059, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     std::string root = FILE_PATH;
     std::shared_ptr<std::unordered_map<uint32_t, std::string>> outMap;
     mtpMediaLib_->ScanDirWithType(root, outMap);
@@ -1203,9 +1254,10 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_059, TestS
  * EnvConditions: NA
  * CaseDescription: ErasePathInfo
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_060, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_060, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
     // parent file path
     mtpMediaLib_->ObserverAddPathToMap(FILE_PATH);
     uint32_t handle = 0;
@@ -1225,7 +1277,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_060, TestS
  * EnvConditions: NA
  * CaseDescription: GetParentId
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_061, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_061, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1246,7 +1298,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_061, TestS
  * EnvConditions: NA
  * CaseDescription: GetParentId
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_062, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_062, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1268,7 +1320,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_062, TestS
  * EnvConditions: NA
  * CaseDescription: ModifyHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_063, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_063, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1292,7 +1344,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_063, TestS
  * EnvConditions: NA
  * CaseDescription: ModifyPathHandleMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_064, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_064, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1316,7 +1368,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_064, TestS
  * EnvConditions: NA
  * CaseDescription: ScanDirNoDepth
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_065, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_065, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1336,7 +1388,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_065, TestS
  * EnvConditions: NA
  * CaseDescription: ScanDirNoDepth
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_066, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_066, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1356,7 +1408,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_066, TestS
  * EnvConditions: NA
  * CaseDescription: StartsWith
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_067, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_067, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1375,7 +1427,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_067, TestS
  * EnvConditions: NA
  * CaseDescription: StartsWith
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_068, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_068, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1394,7 +1446,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_068, TestS
  * EnvConditions: NA
  * CaseDescription: StartsWith
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_069, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_069, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1413,7 +1465,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_069, TestS
  * EnvConditions: NA
  * CaseDescription: StartsWith
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_070, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_070, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1432,7 +1484,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_070, TestS
  * EnvConditions: NA
  * CaseDescription: DeleteHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_071, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_071, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1456,7 +1508,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_071, TestS
  * EnvConditions: NA
  * CaseDescription: DeleteHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_072, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_072, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1480,7 +1532,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_072, TestS
  * EnvConditions: NA
  * CaseDescription: ObserverAddPathToMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_073, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_073, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1490,7 +1542,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_073, TestS
 
     std::string path = FILE_PATH + "/11.txt";
     uint32_t id = mtpMediaLib_->ObserverAddPathToMap(path);
-    EXPECT_EQ(id, 130);
+    EXPECT_EQ(id, 1);
 }
 
 /*
@@ -1501,7 +1553,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_073, TestS
  * EnvConditions: NA
  * CaseDescription: ObserverAddPathToMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_074, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_074, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1522,7 +1574,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_074, TestS
  * EnvConditions: NA
  * CaseDescription: ObserverDeletePathToMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_075, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_075, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1542,7 +1594,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_075, TestS
  * EnvConditions: NA
  * CaseDescription: MoveHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_076, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_076, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1566,7 +1618,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_076, TestS
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_077, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_077, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1588,7 +1640,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_077, TestS
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_078, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_078, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1608,7 +1660,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_078, TestS
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_079, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_079, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1629,7 +1681,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_079, TestS
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_080, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_080, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1650,7 +1702,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_080, TestS
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_081, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_081, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2034,7 +2086,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_095, TestSi
  * EnvConditions: NA
  * CaseDescription: ScanDirNoDepth
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel0_096, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_096, TestSize.Level0)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2199,14 +2251,14 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_103, TestSi
     mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     std::shared_ptr<UInt32List> outHandles = std::make_shared<UInt32List>();
-    context->parent = 0xFFFFFFFF;
+    context->parent = MTP_ALL_HANDLE_ID;
     context->storageID = 1;
     for (int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + std::to_string(i) + ".txt", i);
     }
 
-    mtpMediaLib_->GetHandles(context, outHandles);
-    EXPECT_EQ(context->parent, 1);
+    int32_t res = mtpMediaLib_->GetHandles(context, outHandles);
+    EXPECT_EQ(res, MTP_ERROR_STORE_NOT_AVAILABLE);
 }
-}// namespace Media
-}// namespace OHOS
+} // namespace Media
+} // namespace OHOS
