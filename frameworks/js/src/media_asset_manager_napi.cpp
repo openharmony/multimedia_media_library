@@ -964,8 +964,13 @@ static napi_value GetNapiValueOfMedia(napi_env env, const std::shared_ptr<NapiMe
     return napiValueOfMedia;
 }
 
-static void SavePicture(const std::string &fileUri)
+static void SavePicture(const std::shared_ptr<NapiMediaAssetDataHandler>& dataHandler)
 {
+    if (dataHandler->GetReturnDataType() != ReturnDataType::TYPE_ARRAY_BUFFER &&
+        dataHandler->GetReturnDataType() != ReturnDataType::TYPE_IMAGE_SOURCE) {
+        return;
+    }
+    string fileUri = dataHandler->GetRequestUri();
     std::string uriStr = PATH_SAVE_PICTURE;
     std::string tempStr = fileUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length());
     std::size_t index = tempStr.find("/");
@@ -979,34 +984,6 @@ static void SavePicture(const std::string &fileUri)
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
     DataShare::DataSharePredicates predicate;
     UserFileClient::Update(uri, predicate, valuesBucket);
-}
-
-int32_t MediaAssetManagerNapi::HandleValueOfMedia(napi_env env, MediaAssetDataHandlerPtr dataHandler,
-    AssetHandler *assetHandler, napi_value napiValueOfInfoMap)
-{
-    bool isPicture = true;
-    if (dataHandler->GetReturnDataType() != ReturnDataType::TYPE_ARRAY_BUFFER &&
-        dataHandler->GetReturnDataType() != ReturnDataType::TYPE_IMAGE_SOURCE) {
-        string uri = dataHandler->GetRequestUri();
-        SavePicture(uri);
-    }
-    napi_value napiValueOfMedia = GetNapiValueOfMedia(env, dataHandler, isPicture);
-    if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
-        if (isPicture) {
-            dataHandler->JsOnDataPrepared(env, napiValueOfMedia, nullptr, napiValueOfInfoMap);
-        } else {
-            if (napiValueOfMedia == nullptr) {
-                napi_get_undefined(env, &napiValueOfMedia);
-            }
-            dataHandler->JsOnDataPrepared(env, nullptr, napiValueOfMedia, napiValueOfInfoMap);
-        }
-    } else {
-        if (napiValueOfMedia == nullptr) {
-            napi_get_undefined(env, &napiValueOfMedia);
-        }
-        dataHandler->JsOnDataPrepared(env, napiValueOfMedia, napiValueOfInfoMap);
-    }
-    return E_OK;
 }
 
 void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *context, void *data)
@@ -1039,9 +1016,23 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
             napi_get_undefined(env, &napiValueOfInfoMap);
         }
     }
-    int32_t ret = HandleValueOfMedia(env, dataHandler, assetHandler, napiValueOfInfoMap);
-    if (ret != E_OK) {
-        return;
+    bool isPicture = true;
+    SavePicture(dataHandler);
+    napi_value napiValueOfMedia = GetNapiValueOfMedia(env, dataHandler, isPicture);
+    if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
+        if (isPicture) {
+            dataHandler->JsOnDataPrepared(env, napiValueOfMedia, nullptr, napiValueOfInfoMap);
+        } else {
+            if (napiValueOfMedia == nullptr) {
+                napi_get_undefined(env, &napiValueOfMedia);
+            }
+            dataHandler->JsOnDataPrepared(env, nullptr, napiValueOfMedia, napiValueOfInfoMap);
+        }
+    } else {
+        if (napiValueOfMedia == nullptr) {
+            napi_get_undefined(env, &napiValueOfMedia);
+        }
+        dataHandler->JsOnDataPrepared(env, napiValueOfMedia, napiValueOfInfoMap);
     }
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     NAPI_DEBUG_LOG("delete assetHandler");
@@ -1140,15 +1131,10 @@ void MediaAssetManagerNapi::GetPictureNapiObject(const std::string &fileUri, nap
     std::string tempStr = fileUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length());
     std::size_t index = tempStr.find("/");
     std::string fileId = tempStr.substr(0, index);
-    std::string uri = fileUri;
-    int32_t errCode = E_OK;
-    auto pic = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()), errCode);
+    auto pic = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()));
     if (pic == nullptr) {
         NAPI_ERR_LOG("picture is null");
         isPicture = false;
-        if (errCode == E_ERR) {
-            SavePicture(uri);
-        }
         GetImageSourceNapiObject(fileUri, pictureNapiObj, isSource, env);
         return;
     }
