@@ -604,7 +604,6 @@ int32_t MediaLibraryObjectUtils::DeleteInfoRecursively(const shared_ptr<FileAsse
             CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret,
                 "Delete file info in database failed, file_id: %{public}d, ret: %{public}d", childAsset->GetId(), ret);
         }
-        result->Close();
     }
 
     InvalidateThumbnail(fileId);
