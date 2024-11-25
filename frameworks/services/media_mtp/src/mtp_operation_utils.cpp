@@ -417,7 +417,7 @@ uint16_t MtpOperationUtils::GetObjectDataDeal()
         return MTP_ERROR_INCOMPLETE_TRANSFER;
     }
     int32_t ret = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->CloseFd(context_, fd) :
-        mtpMedialibraryManager_->CloseFd(context_, fd);
+        mtpMedialibraryManager_->CloseFdForGet(context_, fd);
     if (ret != MTP_SUCCESS) {
         MEDIA_ERR_LOG("DealFd CloseFd fail!");
         return E_ERR;
@@ -525,7 +525,7 @@ void MtpOperationUtils::PreDealFd(const bool deal, const int fd)
     CHECK_AND_RETURN_LOG(mtpMediaLibrary_ != nullptr, "mtpMediaLibrary_ is null");
     CHECK_AND_RETURN_LOG(mtpMedialibraryManager_ != nullptr, "mtpMedialibraryManager_ is null");
     int32_t ret = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->CloseFd(context_, fd) :
-        mtpMedialibraryManager_->CloseFd(context_, fd);
+        mtpMedialibraryManager_->CloseFdForGet(context_, fd);
     if (ret != MTP_SUCCESS) {
         MEDIA_ERR_LOG("DealFd CloseFd fail!");
     }
