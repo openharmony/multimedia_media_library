@@ -138,13 +138,9 @@ static int32_t UpdateDeviceSyncStatus(const shared_ptr<MediaLibraryRdbStore> rdb
     AbsRdbPredicates absPredDevice(DEVICE_TABLE);
     absPredDevice.EqualTo(DEVICE_DB_UDID, deviceUdid);
     auto queryResultSet = rdbStore->QueryByStep(absPredDevice, columns);
-    if (queryResultSet == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
 
     auto count = 0;
     int32_t ret = queryResultSet->GetRowCount(count);
-    queryResultSet->Close();
     if (ret != NativeRdb::E_OK) {
         return ret;
     }

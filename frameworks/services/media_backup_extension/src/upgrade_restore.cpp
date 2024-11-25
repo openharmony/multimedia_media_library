@@ -414,27 +414,22 @@ void UpgradeRestore::HandleCloneBatch(int32_t offset, int32_t maxId)
     std::string queryExternalMayClonePhoto = "SELECT _id, _data FROM files WHERE (is_pending = 0) AND\
         (storage_id IN (0, 65537)) AND " + COMPARE_ID + std::to_string(maxId) + " AND " +
         QUERY_NOT_SYNC + "limit " + std::to_string(offset) + ", " + std::to_string(PRE_CLONE_PHOTO_BATCH_COUNT);
-    int32_t number = 0;
-    UpdateCloneWithRetry(queryExternalMayClonePhoto, number);
-    MEDIA_INFO_LOG("%{public}d rows change clone flag", number);
-}
-
-void UpgradeRestore::UpdateCloneWithRetry(const std::string &queryCmd, int32_t &number)
-{
-    auto resultSet = externalRdb_->QuerySql(queryCmd);
+    auto resultSet = externalRdb_->QuerySql(queryExternalMayClonePhoto);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
         return;
     }
+    int32_t number = 0;
+    UpdateCloneWithRetry(resultSet, number);
+    MEDIA_INFO_LOG("%{public}d rows change clone flag", number);
+}
 
-    std::vector<std::pair<int32_t, std::string>> infos;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        infos.emplace_back(GetInt32Val(GALLERY_ID, resultSet), GetStringVal(GALLERY_FILE_DATA, resultSet));
-    }
-    resultSet->Close();
-
+void UpgradeRestore::UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int32_t &number)
+{
     int32_t errCode = E_ERR;
-    for (auto [id, data] : infos) {
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t id = GetInt32Val(GALLERY_ID, resultSet);
+        std::string data = GetStringVal(GALLERY_FILE_DATA, resultSet);
         int32_t changeRows = 0;
         NativeRdb::ValuesBucket valuesBucket;
         valuesBucket.Put(GALLERY_LOCAL_MEDIA_ID, id);
