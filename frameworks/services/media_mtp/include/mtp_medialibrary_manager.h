@@ -49,6 +49,7 @@ public:
     int32_t DeleteObject(const std::shared_ptr<MtpOperationContext> &context);
     int32_t SetObjectPropValue(const std::shared_ptr<MtpOperationContext> &context);
     int32_t CloseFd(const std::shared_ptr<MtpOperationContext> &context, int32_t fd);
+    int32_t CloseFdForGet(const std::shared_ptr<MtpOperationContext> &context, int32_t fd);
     int32_t GetObjectPropList(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<std::vector<Property>> &outProps);
     int32_t GetObjectPropValue(const std::shared_ptr<MtpOperationContext> &context,
@@ -72,7 +73,7 @@ private:
         bool isHandle);
     std::shared_ptr<DataShare::DataShareResultSet> GetPhotosInfo(const std::shared_ptr<MtpOperationContext> &context,
         bool isHandle);
-    void HaveMovingPhotesHandle(const std::shared_ptr<DataShare::DataShareResultSet> resultSet,
+    int32_t HaveMovingPhotesHandle(const std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         std::shared_ptr<UInt32List> &outHandles, const uint32_t parent);
     uint32_t GetSizeFromOfft(const off_t &size);
     std::vector<std::string> GetBurstKeyFromPhotosInfo();
