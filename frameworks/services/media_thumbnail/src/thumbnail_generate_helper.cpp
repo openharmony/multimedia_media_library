@@ -52,6 +52,15 @@ const std::string SQL_REFRESH_THUMBNAIL_READY =
 
 void ThumbnailCloudDownloadCallback::OnDownloadProcess(const DownloadProgressObj &progress)
 {
+    auto readyTask = ReadyTaskManager::GetInstance();
+    if (readyTask == nullptr) {
+        MEDIA_ERR_LOG("thumbReadyTaskData is null");
+        return;
+    }
+    auto thumbReadyTaskData = readyTask->GetReadyTaskData();
+    if (thumbReadyTaskData->downloadId != progress.downloadId) {
+        return;
+    }
     if (progress.state == DownloadProgressObj::Status::COMPLETED) {
         ThumbnailGenerateHelper::CreateAstcAfterDownloadThumbOnDemand(progress.path);
     } else if (progress.state == DownloadProgressObj::Status::FAILED) {
@@ -60,14 +69,10 @@ void ThumbnailCloudDownloadCallback::OnDownloadProcess(const DownloadProgressObj
     if (progress.batchState == DownloadProgressObj::Status::COMPLETED ||
         progress.batchState == DownloadProgressObj::Status::FAILED ||
         progress.batchState == DownloadProgressObj::Status::STOPPED) {
-        auto readyTask = ReadyTaskManager::GetInstance();
-        if (readyTask == nullptr) {
-            MEDIA_ERR_LOG("thumbReadyTaskData is null");
-            return;
-        }
-        auto thumbReadyTaskData = readyTask->GetReadyTaskData();
-        if (!thumbReadyTaskData->isCloudTaskFinish && thumbReadyTaskData->downloadId == progress.downloadId) {
+        std::unique_lock<std::mutex> lock(readyTask->readyTaskLock_);
+        if (!thumbReadyTaskData->isCloudTaskFinish) {
             thumbReadyTaskData->isCloudTaskFinish = true;
+            lock.unlock();
             ThumbnailGenerateHelper::CreateAstcBatchOnDemandTaskFinish();
         }
     }
@@ -296,6 +301,10 @@ void ThumbnailGenerateHelper::CreateAstcAfterDownloadThumbOnDemand(const std::st
         return;
     }
     auto thumbReadyTaskData = readyTask->GetReadyTaskData();
+    if (thumbReadyTaskData->downloadThumbMap.find(path) == thumbReadyTaskData->downloadThumbMap.end()) {
+        MEDIA_ERR_LOG("downloaded thumbnail path not found");
+        return;
+    }
     auto data = thumbReadyTaskData->downloadThumbMap[path];
     ThumbRdbOpt opts = thumbReadyTaskData->opts;
     opts.row = data.id;
