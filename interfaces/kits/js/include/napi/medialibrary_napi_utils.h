@@ -401,7 +401,7 @@ public:
 
     static int TransErrorCode(const std::string &Name, std::shared_ptr<DataShare::DataShareResultSet> resultSet);
 
-    static int TransErrorCode(const std::string &Name, int error);
+    EXPORT static int TransErrorCode(const std::string &Name, int error);
 
     static void HandleError(napi_env env, int error, napi_value &errorObj, const std::string &Name);
 
@@ -433,25 +433,25 @@ public:
 
     static napi_value GetDoubleArg(napi_env env, napi_value arg, double &value);
 
-    static void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value);
+    EXPORT static void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value);
 
     static napi_value AddDefaultAssetColumns(napi_env env, std::vector<std::string> &fetchColumn,
         std::function<bool(const std::string &columnName)> isValidColumn, NapiAssetType assetType,
         const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
 
-    static int32_t GetSystemAlbumPredicates(const PhotoAlbumSubType subType,
+    EXPORT static int32_t GetSystemAlbumPredicates(const PhotoAlbumSubType subType,
         DataShare::DataSharePredicates &predicates, const bool hiddenOnly);
-    static int32_t GetUserAlbumPredicates(const int32_t albumId,
+    EXPORT static int32_t GetUserAlbumPredicates(const int32_t albumId,
         DataShare::DataSharePredicates &predicates, const bool hiddenOnly);
-    static int32_t GetAnalysisAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
-    static int32_t GetFeaturedSinglePortraitAlbumPredicates(
+    EXPORT static int32_t GetAnalysisAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
+    EXPORT static int32_t GetFeaturedSinglePortraitAlbumPredicates(
         const int32_t albumId, DataShare::DataSharePredicates &predicates);
-    static int32_t GetPortraitAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
-    static int32_t GetAllLocationPredicates(DataShare::DataSharePredicates &predicates);
-    static int32_t GetSourceAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates,
+    EXPORT static int32_t GetPortraitAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
+    EXPORT static int32_t GetAllLocationPredicates(DataShare::DataSharePredicates &predicates);
+    EXPORT static int32_t GetSourceAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates,
         const bool hiddenOnly);
-    static bool IsFeaturedSinglePortraitAlbum(std::string albumName, DataShare::DataSharePredicates &predicates);
-    static bool IsSystemApp();
+    EXPORT static bool IsFeaturedSinglePortraitAlbum(std::string albumName, DataShare::DataSharePredicates &predicates);
+    EXPORT static bool IsSystemApp();
     static std::string GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
         const std::string &propertyName);
     EXPORT static std::string ParseResultSet2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
