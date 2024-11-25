@@ -2471,24 +2471,18 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     int fileId = std::atoi(cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID).c_str());
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileId));
-    vector<string> columns = { PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::MEDIA_FILE_PATH };
-    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    vector<string> columns = { PhotoColumn::PHOTO_IS_TEMP };
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet ==nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("result set is empty");
         return E_ERR;
     }
-    size_t size = -1;
-    std::string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    if (path.empty()) {
-        MEDIA_ERR_LOG("path is empty");
-        return E_ERR;
-    }
-    MediaFileUtils::GetFileSize(path, size);
-    if (GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet) == 0 || size > 0) {
+    if (GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet) == 0) {
         return E_OK;
     }
-    resultSet->Close();
+    string uri = cmd.GetQuerySetParam("uri");
     SavePicture(fileType, fileId);
+    string path = MediaFileUri::GetPathFromUri(uri, true);
     MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId);
     return E_OK;
 }
