@@ -140,7 +140,6 @@ void OthersCloneRestore::HandleSelectBatch(std::shared_ptr<NativeRdb::RdbStore> 
         }
         infos.push_back(tmpDbInfo);
     };
-    resultSet->Close();
     CloneInfoPushBack(mediaDbInfo, infos);
 }
 
