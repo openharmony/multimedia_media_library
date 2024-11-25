@@ -90,8 +90,6 @@ const int32_t MegaByte = 1024*1024;
 const int32_t MAX_FILE_SIZE_MB = 200;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
-constexpr ssize_t DB_WAL_SIZE_LIMIT_MAX = 50 * 1024 * 1024; /* default wal file maximum size : 50MB */
-std::mutex MedialibrarySubscriber::walCheckPointMutex_;
 std::mutex MedialibrarySubscriber::timeMutex_;
 uint32_t MedialibrarySubscriber::timerId_ = 0;
 Utils::Timer MedialibrarySubscriber::timer_("medialibrary_subscriber");
@@ -317,46 +315,12 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
     }
 }
 
-void MedialibrarySubscriber::WalCheckPoint()
-{
-    std::unique_lock<std::mutex> lock(walCheckPointMutex_, std::defer_lock);
-    if (!lock.try_lock()) {
-        MEDIA_WARN_LOG("wal_checkpoint in progress, skip this operation");
-        return;
-    }
-    struct stat fileStat;
-    const std::string walFile = MEDIA_DB_DIR + "/rdb/media_library.db-wal";
-    if (stat(walFile.c_str(), &fileStat) < 0) {
-        if (errno != ENOENT) {
-            MEDIA_ERR_LOG("wal_checkpoint stat failed, errno: %{public}d", errno);
-        }
-        return;
-    }
-    ssize_t size = fileStat.st_size;
-    if (size < 0) {
-        MEDIA_ERR_LOG("Invalid size for wal_checkpoint, size: %{public}zd", size);
-        return;
-    }
-    if (size <= DB_WAL_SIZE_LIMIT_MAX) {
-        return;
-    }
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("wal_checkpoint rdbStore is nullptr!");
-        return;
-    }
-    auto errCode = rdbStore->ExecuteSql("PRAGMA wal_checkpoint(TRUNCATE)");
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("wal_checkpoint ExecuteSql failed, errCode: %{public}d", errCode);
-    }
-}
-
 void MedialibrarySubscriber::WalCheckPointAsync()
 {
     if (!isScreenOff_ || !isCharging_) {
         return;
     }
-    std::thread(WalCheckPoint).detach();
+    std::thread(MediaLibraryRdbStore::WalCheckPoint).detach();
 }
 
 void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
