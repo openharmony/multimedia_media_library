@@ -46,7 +46,6 @@ void CloudSyncSwitchObserver::OnChange()
     while (resultSet != nullptr && resultSet->GoToNextRow() == NativeRdb::E_OK) {
         idToDeleteIndex.push_back(to_string(GetInt32Val("file_id", resultSet)));
     }
-    resultSet->Close();
     MEDIA_INFO_LOG("idToDeleteIndex size: %{public}zu", idToDeleteIndex.size());
     if (!idToDeleteIndex.empty()) {
         MediaAnalysisHelper::AsyncStartMediaAnalysisService(
@@ -64,7 +63,6 @@ void CloudSyncSwitchObserver::OnChange()
     while (resultSetUpdateIndex->GoToNextRow() == NativeRdb::E_OK) {
         idToUpdateIndex.push_back(to_string(GetInt32Val("file_id", resultSetUpdateIndex)));
     }
-    resultSetUpdateIndex->Close();
     MEDIA_INFO_LOG("idToUpdateIndex size: %{public}zu", idToUpdateIndex.size());
     if (!idToUpdateIndex.empty()) {
         MediaAnalysisHelper::AsyncStartMediaAnalysisService(

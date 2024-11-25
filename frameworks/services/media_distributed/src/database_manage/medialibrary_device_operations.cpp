@@ -51,7 +51,6 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
 
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
-    queryResultSet->Close();
     MEDIA_INFO_LOG("MediaLibraryDeviceOperations::InsertDeviceInfo ret = %{public}d, count = %{public}d", ret, count);
     if (ret == NativeRdb::E_OK) {
         if (count > 0) {
@@ -115,7 +114,6 @@ bool MediaLibraryDeviceOperations::UpdateDeviceInfo(const shared_ptr<MediaLibrar
                 int64_t now = MediaFileUtils::UTCTimeSeconds();
                 valuesBucket.PutLong(DEVICE_DB_DATE_MODIFIED, now);
             }
-            queryResultSet->Close();
             return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == E_SUCCESS;
         }
     }
@@ -136,13 +134,9 @@ bool MediaLibraryDeviceOperations::UpdateSyncStatus(const std::shared_ptr<Native
 
     absPredDevice.EqualTo(DEVICE_DB_UDID, udid);
     auto queryResultSet = rdbStore->QueryByStep(absPredDevice, columns);
-    if (queryResultSet == nullptr) {
-        return false;
-    }
 
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
-    queryResultSet->Close();
     if (ret == NativeRdb::E_OK) {
         if (count > 0) {
             // 更新数据库
