@@ -331,6 +331,14 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
         }
         return HandleIndexOfUri(cmd, predicates, photoId, albumId);
     }
+    int limit = predicates.GetLimit();
+    int offset = predicates.GetOffset();
+    if (cmd.GetOprnType() == OperationType::ALL_DUPLICATE_ASSETS) {
+        return MediaLibraryRdbStore::GetAllDuplicateAssets(columns, offset, limit);
+    }
+    if (cmd.GetOprnType() == OperationType::CAN_DEL_DUPLICATE_ASSETS) {
+        return MediaLibraryRdbStore::GetCanDelDuplicateAssets(columns, offset, limit);
+    }
     MediaLibraryRdbUtils::AddQueryIndex(predicates, columns);
     return MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
 }

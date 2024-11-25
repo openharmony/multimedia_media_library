@@ -1627,6 +1627,15 @@ bool MediaFileUtils::StartsWith(const std::string &str, const std::string &prefi
     return str.compare(0, prefix.size(), prefix) == 0;
 }
 
+void MediaFileUtils::ReplaceAll(std::string &str, const std::string &from, const std::string &to)
+{
+    size_t startPos = 0;
+    while ((startPos = str.find(from, startPos)) != std::string::npos) {
+        str.replace(startPos, from.length(), to);
+        startPos += to.length();
+    }
+}
+
 void MediaFileUtils::UriAppendKeyValue(string &uri, const string &key, std::string value)
 {
     string uriKey = key + '=';

@@ -301,6 +301,8 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { "log_medialibrary_api", OperationType::LOG_MEDIALIBRARY_API},
         { OPRN_SAVE_PICTURE, OperationType::SAVE_PICTURE},
         { OPRN_DEGENERATE_MOVING_PHOTO, OperationType::DEGENERATE_MOVING_PHOTO },
+        { OPRN_ALL_DUPLICATE_ASSETS, OperationType::ALL_DUPLICATE_ASSETS },
+        { OPRN_CAN_DEL_DUPLICATE_ASSETS, OperationType::CAN_DEL_DUPLICATE_ASSETS },
     };
     return oprnTypeMap;
 }

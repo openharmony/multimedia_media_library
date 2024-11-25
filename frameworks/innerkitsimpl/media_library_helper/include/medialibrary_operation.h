@@ -173,6 +173,8 @@ enum class EXPORT OperationType : uint32_t {
     LOG_MEDIALIBRARY_API,
     SAVE_PICTURE,
     DEGENERATE_MOVING_PHOTO,
+    ALL_DUPLICATE_ASSETS,
+    CAN_DEL_DUPLICATE_ASSETS,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()
