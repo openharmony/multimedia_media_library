@@ -122,6 +122,7 @@ public:
     EXPORT int Restore(const std::string &backupPath, const std::vector<uint8_t> &newKey = {});
     static int32_t DoDeleteFromPredicates(const NativeRdb::AbsRdbPredicates &predicates, int32_t &deletedRows);
     int32_t DataCallBackOnCreate();
+    static void WalCheckPoint();
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
@@ -131,6 +132,7 @@ private:
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     static std::mutex reconstructLock_;
     static std::mutex rdbStoreMutex_;
+    static std::mutex walCheckPointMutex_;
 #ifdef DISTRIBUTED
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
 #endif
