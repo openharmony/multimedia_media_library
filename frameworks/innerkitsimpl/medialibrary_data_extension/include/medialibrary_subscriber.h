@@ -65,7 +65,6 @@ private:
     static Utils::Timer timer_;
     static uint32_t timerId_;
     static std::mutex timeMutex_;
-    static std::mutex walCheckPointMutex_;
 
     std::mutex delayTaskLock_;
     std::condition_variable delayTaskCv_;
@@ -76,7 +75,6 @@ private:
     EXPORT void StopBackgroundOperation();
     EXPORT void StartAnalysisService();
     void WalCheckPointAsync();
-    static void WalCheckPoint();
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();
