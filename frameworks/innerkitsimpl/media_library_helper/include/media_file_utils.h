@@ -135,6 +135,7 @@ public:
     EXPORT static std::string GetVirtualUriFromRealUri(const std::string &uri, const std::string &extrUri = "");
     EXPORT static std::string GetRealUriFromVirtualUri(const std::string &uri);
     EXPORT static bool StartsWith(const std::string &str, const std::string &prefix);
+    EXPORT static void ReplaceAll(std::string &str, const std::string &from, const std::string &to);
     EXPORT static void UriAppendKeyValue(std::string &uri, const std::string &key, std::string value = "10");
     EXPORT static std::string GetExtraUri(const std::string &displayName, const std::string &path,
         const bool isNeedEncode = true);
