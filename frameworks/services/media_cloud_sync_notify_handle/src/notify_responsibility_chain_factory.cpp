@@ -47,6 +47,7 @@ shared_ptr<BaseHandler> NotifyResponsibilityChainFactory::CreateChain(const Chai
         shared_ptr<BaseHandler> preHandler = nullptr;
 
         for (const auto& handler : handlerList) {
+            handler->init();
             if (preHandler != nullptr) {
                 preHandler->SetNextHandler(handler);
             }
