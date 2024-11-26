@@ -278,6 +278,12 @@ void CloneRestore::RestorePhoto()
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
+    size_t vectorLen = photosFailedOffsets.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestorePhotoBatch(offset, 1);
+    }
+    needReportFailed_ = false;
     // Scenario 2, clone photos from Photos only.
     int32_t totalNumber = this->photosClone_.GetPhotosRowCountNotInPhotoMap();
     MEDIA_INFO_LOG("QueryTotalNumberNot, totalNumber = %{public}d", totalNumber);
@@ -288,6 +294,11 @@ void CloneRestore::RestorePhoto()
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
+    vectorLen = photosFailedOffsets.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestorePhotoBatch(offset);
+    }
     this->photosClone_.OnStop(otherTotalNumber_, otherProcessStatus_);
 
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
@@ -351,15 +362,15 @@ void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fi
     migrateVideoFileNumber_ += videoFileMoveCount;
 }
 
-void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
+int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
 {
     if (mediaLibraryRdb_ == nullptr) {
         MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
-        return;
+        return E_OK;
     }
     if (fileInfos.empty()) {
         MEDIA_ERR_LOG("fileInfos are empty");
-        return;
+        return E_OK;
     }
     int64_t startGenerate = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(CLONE_RESTORE_ID, fileInfos, SourceType::PHOTOS);
@@ -367,8 +378,10 @@ void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     int64_t photoRowNum = 0;
     int32_t errCode = BatchInsertWithRetry(PhotoColumn::PHOTOS_TABLE, values, photoRowNum);
     if (errCode != E_OK) {
-        UpdateFailedFiles(fileInfos, RestoreError::INSERT_FAILED);
-        return;
+        if (needReportFailed_) {
+            UpdateFailedFiles(fileInfos, RestoreError::INSERT_FAILED);
+        }
+        return errCode;
     }
     migrateDatabaseNumber_ += photoRowNum;
 
@@ -385,6 +398,7 @@ void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
         (long)(startInsertPhoto - startGenerate), (long)photoRowNum, (long)(startInsertRelated - startInsertPhoto),
         (long)(startMove - startInsertRelated), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
         (long)videoFileMoveCount, (long)(end - startMove));
+    return E_OK;
 }
 
 vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode, vector<FileInfo> &fileInfos,
@@ -1557,7 +1571,9 @@ void CloneRestore::RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap
     MEDIA_INFO_LOG(
         "start restore photo, offset: %{public}d, isRelatedToPhotoMap: %{public}d", offset, isRelatedToPhotoMap);
     vector<FileInfo> fileInfos = QueryFileInfos(offset, isRelatedToPhotoMap);
-    InsertPhoto(fileInfos);
+    if (InsertPhoto(fileInfos) != E_OK) {
+        photosFailedOffsets.push_back(offset);
+    }
     BatchNotifyPhoto(fileInfos);
     RestoreImageFaceInfo(fileInfos);
 
