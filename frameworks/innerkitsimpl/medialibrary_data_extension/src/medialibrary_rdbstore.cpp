@@ -122,6 +122,9 @@ const std::string RDB_CONFIG = "/data/storage/el2/base/preferences/rdb_config.xm
 
 const std::string RDB_OLD_VERSION = "rdb_old_version";
 
+constexpr ssize_t RDB_CHECK_WAL_SIZE = 50 * 1024 * 1024;   /* check wal file size : 50MB */
+std::mutex MediaLibraryRdbStore::walCheckPointMutex_;
+
 const std::string SELECT_COLUMNS = "SELECT_COLUMNS";
 
 const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
@@ -4400,6 +4403,42 @@ int32_t MediaLibraryRdbStore::DataCallBackOnCreate()
         MEDIA_ERR_LOG("MediaLibraryDataCallBack OnCreate error, ret: %{public}d", ret);
     }
     return ret;
+}
+
+void MediaLibraryRdbStore::WalCheckPoint()
+{
+    std::unique_lock<std::mutex> lock(walCheckPointMutex_, std::defer_lock);
+    if (!lock.try_lock()) {
+        MEDIA_WARN_LOG("wal_checkpoint in progress, skip this operation");
+        return;
+    }
+
+    struct stat fileStat;
+    const std::string walFile = MEDIA_DB_DIR + "/rdb/media_library.db-wal";
+    if (stat(walFile.c_str(), &fileStat) < 0) {
+        if (errno != ENOENT) {
+            MEDIA_ERR_LOG("wal_checkpoint stat failed, errno: %{public}d", errno);
+        }
+        return;
+    }
+    ssize_t size = fileStat.st_size;
+    if (size < 0) {
+        MEDIA_ERR_LOG("Invalid size for wal_checkpoint, size: %{public}zd", size);
+        return;
+    }
+    if (size <= RDB_CHECK_WAL_SIZE) {
+        return;
+    }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("wal_checkpoint rdbStore is nullptr!");
+        return;
+    }
+    auto errCode = rdbStore->ExecuteSql("PRAGMA wal_checkpoint(TRUNCATE)");
+    if (errCode != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("wal_checkpoint ExecuteSql failed, errCode: %{public}d", errCode);
+    }
 }
 
 #ifdef DISTRIBUTED

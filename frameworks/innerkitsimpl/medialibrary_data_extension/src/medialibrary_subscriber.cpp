@@ -242,6 +242,14 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
     }
 }
 
+void MedialibrarySubscriber::WalCheckPointAsync()
+{
+    if (!isScreenOff_ || !isCharging_) {
+        return;
+    }
+    std::thread(MediaLibraryRdbStore::WalCheckPoint).detach();
+}
+
 void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
     const AAFwk::Want &want, const StatusEventType statusEventType)
 {
@@ -249,6 +257,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
         case StatusEventType::SCREEN_OFF:
             isScreenOff_ = true;
             CheckHalfDayMissions();
+            WalCheckPointAsync();
             break;
         case StatusEventType::SCREEN_ON:
             isScreenOff_ = false;
@@ -257,6 +266,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
         case StatusEventType::CHARGING:
             isCharging_ = true;
             CheckHalfDayMissions();
+            WalCheckPointAsync();
             break;
         case StatusEventType::DISCHARGING:
             isCharging_ = false;
