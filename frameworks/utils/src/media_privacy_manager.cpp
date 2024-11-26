@@ -333,9 +333,8 @@ static int32_t CollectRanges(const string &path, const HideSensitiveType &sensit
             return E_SUCCESS;
     }
 
-    if ((err != E_SUCCESS) && (err != E_NO_EXIF) && (err != E_NO_PRIVACY_EXIF_TAG)) {
-        MEDIA_ERR_LOG("Failed to get privacy area with type %{public}d, err: %{public}u", sensitiveType, err);
-        return E_ERR;
+    if (err != E_SUCCESS) {
+        MEDIA_WARN_LOG("Failed to get privacy area with type %{public}d, err: %{public}u", sensitiveType, err);
     }
     for (auto &range : areas) {
         ranges.insert(ranges.end(), std::make_pair(range.first, range.first + range.second));
