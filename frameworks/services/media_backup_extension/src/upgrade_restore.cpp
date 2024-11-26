@@ -306,16 +306,10 @@ bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::
 
 void UpgradeRestore::RestorePhoto()
 {
+    // upgrade gallery.db
+    DataTransfer::GalleryDbUpgrade().OnUpgrade(this->galleryRdb_);
     AnalyzeSource();
     InitGarbageAlbum();
-
-    // upgrade gallery.db
-    if (this->galleryRdb_ != nullptr) {
-        DataTransfer::GalleryDbUpgrade galleryDbUpgrade;
-        galleryDbUpgrade.OnUpgrade(*this->galleryRdb_);
-    } else {
-        MEDIA_WARN_LOG("galleryRdb_ is nullptr, Maybe init failed, skip gallery db upgrade.");
-    }
     // restore PhotoAlbum
     this->photoAlbumRestore_.Restore();
     RestoreFromGalleryPortraitAlbum();

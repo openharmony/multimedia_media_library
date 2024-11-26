@@ -16,6 +16,7 @@
 #define OHOS_MEDIA_BACKUP_REPORT_DATA_TYPE_H
 
 #include <string>
+#include <sstream>
 
 namespace OHOS::Media {
 struct AlbumMediaStatisticInfo {
@@ -32,7 +33,9 @@ struct AlbumMediaStatisticInfo {
     int32_t burstCoverCount;
     int32_t burstTotalCount;
 };
-struct MediaRestoreResultInfo {
+
+class MediaRestoreResultInfo {
+public:
     int32_t sceneCode;
     std::string taskId;
     std::string errorCode;
@@ -42,6 +45,84 @@ struct MediaRestoreResultInfo {
     int duplicateCount;
     int failedCount;
     int successCount;
+
+public:
+    std::string ToString() const
+    {
+        std::stringstream ss;
+        ss << "MediaRestoreResultInfo["
+           << ", sceneCode: " << this->sceneCode << ", taskId: " << this->taskId << ", errorCode: " << this->errorCode
+           << ", errorInfo: " << this->errorInfo << "type: " << this->type << ", backupInfo: " << this->backupInfo
+           << ", duplicateCount: " << this->duplicateCount << ", failedCount: " << this->failedCount
+           << ", successCount: " << this->successCount << "]";
+        return ss.str();
+    }
+};
+
+class CallbackBackupInfo {
+public:
+    std::string backupInfo;
+    std::string details;
+    int duplicateCount;
+    int failedCount;
+    int successCount;
+
+public:
+    std::string ToString() const
+    {
+        std::stringstream ss;
+        ss << "BackupInfo[ "
+           << "backupInfo: " << this->backupInfo << ", "
+           << "details: " << this->details << ", "
+           << "duplicateCount: " << this->duplicateCount << ", "
+           << "failedCount: " << this->failedCount << ", "
+           << "successCount: " << this->successCount << " ]";
+        return ss.str();
+    }
+};
+
+class CallbackResultInfo {
+public:
+    std::string errorCode;
+    std::string errorInfo;
+    std::string type;
+
+public:
+    std::string ToString() const
+    {
+        std::stringstream ss;
+        ss << "ResultInfo[ "
+           << "errorCode: " << this->errorCode << ", "
+           << "errorInfo: " << this->errorInfo << ", "
+           << "type: " << this->type << " ]";
+        return ss.str();
+    }
+};
+
+class CallbackResultData {
+public:
+    CallbackResultInfo resultInfo;
+    std::vector<CallbackBackupInfo> infos;
+
+private:
+    std::string ToString(const std::vector<CallbackBackupInfo> &infoList) const
+    {
+        std::stringstream ss;
+        ss << "infos[ ";
+        for (const auto &info : infoList) {
+            ss << info.ToString() << ", ";
+        }
+        ss << " ]";
+        return ss.str();
+    }
+
+public:
+    std::string ToString() const
+    {
+        std::stringstream ss;
+        ss << "ResultData[ " << this->resultInfo.ToString() << ", " << this->ToString(this->infos) << " ]";
+        return ss.str();
+    }
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_BACKUP_REPORT_DATA_TYPE_H
