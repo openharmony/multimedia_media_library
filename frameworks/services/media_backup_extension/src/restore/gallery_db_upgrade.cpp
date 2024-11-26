@@ -24,6 +24,18 @@ namespace DataTransfer {
 /**
  * @brief Upgrade the database, before data restore or clone.
  */
+int32_t GalleryDbUpgrade::OnUpgrade(std::shared_ptr<NativeRdb::RdbStore> galleryRdbPtr)
+{
+    if (galleryRdbPtr == nullptr) {
+        MEDIA_WARN_LOG("galleryRdbPtr is nullptr, Maybe init failed, skip gallery db upgrade.");
+        return -1;
+    }
+    return this->OnUpgrade(*galleryRdbPtr);
+}
+
+/**
+ * @brief Upgrade the database, before data restore or clone.
+ */
 int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
 {
     MEDIA_INFO_LOG("GalleryDbUpgrade::OnUpgrade start.");
@@ -31,7 +43,9 @@ int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     int32_t ret = handler.OnUpgrade(store, 0, 0);
     MEDIA_INFO_LOG("GalleryDbUpgrade::OnUpgrade end, ret: %{public}d", ret);
     this->AddPhotoQualityOfGalleryMedia(store);
-    return this->AddRelativeBucketIdOfGalleryAlbum(store);
+    this->AddRelativeBucketIdOfGalleryAlbum(store);
+    this->GarbageAlbumUpgrade(store);
+    return NativeRdb::E_OK;
 }
 
 /**
@@ -71,6 +85,44 @@ int32_t GalleryDbUpgrade::AddRelativeBucketIdOfGalleryAlbum(NativeRdb::RdbStore 
             sql.c_str());
     }
     MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddRelativeBucketIdOfGalleryAlbum success");
+    return ret;
+}
+
+int32_t GalleryDbUpgrade::GarbageAlbumUpgrade(NativeRdb::RdbStore &store)
+{
+    this->GarbageAlbumCheckOrAddRelativeBucketId(store);
+    this->GarbageAlbumCheckOrAddType(store);
+    return NativeRdb::E_OK;
+}
+
+int32_t GalleryDbUpgrade::GarbageAlbumCheckOrAddRelativeBucketId(NativeRdb::RdbStore &store)
+{
+    if (this->dbUpgradeUtils_.IsColumnExists(store, "garbage_album", "relative_bucket_id")) {
+        return NativeRdb::E_OK;
+    }
+    std::string sql = this->SQL_GARBAGE_ALBUM_TABLE_ADD_RELATIVE_BUCKET_ID;
+    int32_t ret = store.ExecuteSql(sql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Media_Restore: GarbageAlbumCheckOrAddRelativeBucketId failed, ret=%{public}d, sql=%{public}s",
+            ret,
+            sql.c_str());
+    }
+    MEDIA_INFO_LOG("Media_Restore: GarbageAlbumCheckOrAddRelativeBucketId success");
+    return ret;
+}
+
+int32_t GalleryDbUpgrade::GarbageAlbumCheckOrAddType(NativeRdb::RdbStore &store)
+{
+    if (this->dbUpgradeUtils_.IsColumnExists(store, "garbage_album", "type")) {
+        return NativeRdb::E_OK;
+    }
+    std::string sql = this->SQL_GARBAGE_ALBUM_TABLE_ADD_TYPE;
+    int32_t ret = store.ExecuteSql(sql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG(
+            "Media_Restore: GarbageAlbumCheckOrAddType failed, ret=%{public}d, sql=%{public}s", ret, sql.c_str());
+    }
+    MEDIA_INFO_LOG("Media_Restore: GarbageAlbumCheckOrAddType success");
     return ret;
 }
 }  // namespace DataTransfer

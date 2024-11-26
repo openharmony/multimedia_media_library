@@ -22,26 +22,6 @@
 
 namespace OHOS::Media {
 class UpgradeRestoreGalleryMediaTask {
-private:
-    struct BackupInfo {
-        std::string backupInfo;
-        std::string details;
-        int duplicateCount;
-        int failedCount;
-        int successCount;
-    };
-
-    struct ResultInfo {
-        std::string errorCode;
-        std::string errorInfo;
-        std::string type;
-        std::vector<BackupInfo> infos;
-    };
-
-    struct ResultData {
-        std::vector<ResultInfo> resultInfo;
-    };
-
 public:
     UpgradeRestoreGalleryMediaTask &SetSceneCode(int32_t sceneCode)
     {
@@ -56,9 +36,8 @@ public:
     int32_t Report(const std::string &taskInfo);
 
 private:
-    ResultData ParseFromJsonStr(const std::string &jsonStr);
-    std::vector<MediaRestoreResultInfo> Parse(const ResultData &resultData);
-    std::string ToString(const ResultData &resultData);
+    CallbackResultData ParseFromJsonStr(const std::string &jsonStr);
+    std::vector<MediaRestoreResultInfo> Parse(const CallbackResultData &resultData);
 
 private:
     int32_t sceneCode_;
