@@ -51,6 +51,10 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/dfx",
   ]
 
+  include_cloud_dirty_handle = [
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_dirty_handle",
+  ]
+
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -76,6 +80,7 @@ config("media_data_extension_public_config") {
   include_dirs += include_multistages_capture
   include_dirs += include_dfx
   include_dirs += include_cloud_enhancement
+  include_dirs += include_cloud_dirty_handle
 
   if (defined(global_parts_info) &&
       defined(
@@ -240,6 +245,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_power_efficiency/src/medialibrary_standby_service_subscriber.cpp",
   ]
 
+  media_cloud_dirty_handle_source = [ "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_dirty_handle/cloud_upload_checker.cpp" ]
+
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
@@ -309,6 +316,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_permission_source
   sources += media_cloud_enhancement_source
   sources += media_power_efficiency_source
+  sources += media_cloud_dirty_handle_source
 
   public_configs = [ ":media_data_extension_public_config" ]
 
