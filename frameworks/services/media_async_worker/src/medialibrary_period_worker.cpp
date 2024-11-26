@@ -15,6 +15,7 @@
 
 #include "medialibrary_period_worker.h"
 #include "media_log.h"
+#include "power_efficiency_manager.h"
 
 using namespace std;
 
@@ -191,6 +192,9 @@ void MediaLibraryPeriodWorker::Worker(int32_t threadId,
             return;
         }
         task->second->analysisHandlerExecutor_(handle, refreshAlbumsFunc);
+        if (task->second->period_ != PowerEfficiencyManager::GetAlbumUpdateInterval()) {
+            task->second->period_ = PowerEfficiencyManager::GetAlbumUpdateInterval();
+        }
         this_thread::sleep_for(chrono::milliseconds(task->second->period_));
     }
 }
