@@ -264,6 +264,9 @@ int32_t MtpMedialibraryManager::HaveMovingPhotesHandle(const shared_ptr<DataShar
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         outHandles->push_back(id);
+        if (id < COMMON_PHOTOS_OFFSET) {
+            continue;
+        }
         int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
         int32_t editTime = GetInt32Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet);
         MEDIA_INFO_LOG("MtpMedialibraryManager::HaveMovingPhotesHandle subtype:%{public}d, editTime:%{public}d",
@@ -791,6 +794,7 @@ int32_t MtpMedialibraryManager::SetObjectPropValue(const std::shared_ptr<MtpOper
 
 int32_t MtpMedialibraryManager::CloseFdForGet(const std::shared_ptr<MtpOperationContext> &context, int32_t fd)
 {
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
     MEDIA_INFO_LOG("CloseFd  handle::%{public}u", context->handle);
     CHECK_AND_RETURN_RET_LOG(fd > 0, E_ERR, "wrong fd");
     int errCode = close(fd);
@@ -799,6 +803,7 @@ int32_t MtpMedialibraryManager::CloseFdForGet(const std::shared_ptr<MtpOperation
 
 int32_t MtpMedialibraryManager::CloseFd(const shared_ptr<MtpOperationContext> &context, int32_t fd)
 {
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
     MEDIA_INFO_LOG("CloseFd  handle::%{public}u", context->handle);
     int32_t errCode = E_SUCCESS;
     CHECK_AND_RETURN_RET_LOG(fd > 0, E_ERR, "wrong fd");
