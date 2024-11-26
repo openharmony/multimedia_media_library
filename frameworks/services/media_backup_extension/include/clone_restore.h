@@ -57,7 +57,7 @@ private:
     void RestoreAlbum(void);
     void RestoreAudio(void) override;
     void NotifyAlbum() override;
-    void InsertPhoto(std::vector<FileInfo> &fileInfos);
+    int InsertPhoto(std::vector<FileInfo> &fileInfos);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
@@ -194,6 +194,7 @@ private:
     PhotoAlbumClone photoAlbumClone_;
     PhotosClone photosClone_;
     static constexpr int32_t INVALID_COVER_SATISFIED_STATUS = -1;
+    std::vector<int> photosFailedOffsets;
 };
 
 template<typename T>
