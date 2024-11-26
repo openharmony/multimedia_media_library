@@ -1557,24 +1557,29 @@ bool ThumbnailUtils::CopyPictureSource(std::shared_ptr<Picture> &picture, std::s
     if (pixelMap == nullptr || gainMap == nullptr) {
         return false;
     }
-    Size pixelMapSize = {pixelMap->GetWidth(), pixelMap->GetHeight()};
-    Media::InitializationOptions opts = {
-        .size = pixelMapSize,
+    Media::InitializationOptions pixelMapOpts = {
+        .size = {pixelMap->GetWidth(), pixelMap->GetHeight()},
         .pixelFormat = pixelMap->GetPixelFormat(),
         .alphaType = pixelMap->GetAlphaType()
     };
-
-    auto copyPixelMapPtr = PixelMap::Create(*pixelMap, opts);
+    auto copyPixelMapPtr = PixelMap::Create(*pixelMap, pixelMapOpts);
     std::shared_ptr<PixelMap> copyPixelMap = std::move(copyPixelMapPtr);
     if (copyPixelMap == nullptr) {
         return false;
     }
-    auto copyGainMapPtr = PixelMap::Create(*gainMap, opts);
+
+    Media::InitializationOptions gainMapOpts = {
+        .size = {gainMap->GetWidth(), gainMap->GetHeight()},
+        .pixelFormat = gainMap->GetPixelFormat(),
+        .alphaType = gainMap->GetAlphaType()
+    };
+    auto copyGainMapPtr = PixelMap::Create(*gainMap, gainMapOpts);
     std::shared_ptr<PixelMap> copyGainMap = std::move(copyGainMapPtr);
     if (copyGainMap == nullptr) {
         return false;
     }
-    auto auxiliaryPicturePtr = AuxiliaryPicture::Create(copyGainMap, AuxiliaryPictureType::GAINMAP, pixelMapSize);
+    Size copyGainMapSize = {copyGainMap->GetWidth(), copyGainMap->GetHeight()};
+    auto auxiliaryPicturePtr = AuxiliaryPicture::Create(copyGainMap, AuxiliaryPictureType::GAINMAP, copyGainMapSize);
     std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = std::move(auxiliaryPicturePtr);
     if (auxiliaryPicture == nullptr) {
         return false;
