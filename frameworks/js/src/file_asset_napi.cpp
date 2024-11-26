@@ -1585,14 +1585,14 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
 #endif
     Uri closeAssetUri(closeUri);
     bool isValid = false;
-    UniqueFd unifd(context->valuesBucket.Get(MEDIA_FILEDESCRIPTOR, isValid));
     if (!isValid) {
         context->error = ERR_INVALID_OUTPUT;
         NAPI_ERR_LOG("getting fd is invalid");
         return;
     }
 
-    if (!CheckFileOpenStatus(context, unifd.Get())) {
+    int32_t uniFd = context->valuesBucket.Get(MEDIA_FILEDESCRIPTOR, isValid);
+    if (!CheckFileOpenStatus(context, uniFd)) {
         return;
     }
 
@@ -3300,8 +3300,8 @@ static void UserFileMgrCloseExecute(napi_env env, void *data)
     tracer.Start("UserFileMgrCloseExecute");
 
     auto *context = static_cast<FileAssetAsyncContext*>(data);
-    UniqueFd unifd(context->fd);
-    if (!CheckFileOpenStatus(context, unifd.Get())) {
+    int32_t unifd = context->fd;
+    if (!CheckFileOpenStatus(context, unifd)) {
         return;
     }
     string closeUri;
@@ -3812,8 +3812,8 @@ static void PhotoAccessHelperCloseExecute(napi_env env, void *data)
     tracer.Start("PhotoAccessHelperCloseExecute");
 
     auto *context = static_cast<FileAssetAsyncContext*>(data);
-    UniqueFd unifd(context->fd);
-    if (!CheckFileOpenStatus(context, unifd.Get())) {
+    int32_t unifd = context->fd;
+    if (!CheckFileOpenStatus(context, unifd)) {
         return;
     }
     string closeUri;
