@@ -283,7 +283,6 @@ static int32_t DropAllTables(const shared_ptr<MediaLibraryRdbStore> rdbStore)
             dropSqlsVec.push_back(sql);
         }
     }
-    dropSqlsResultSet->Close();
 
     for (const auto &dropSql : dropSqlsVec) {
         rdbStore->ExecuteSql(dropSql);
