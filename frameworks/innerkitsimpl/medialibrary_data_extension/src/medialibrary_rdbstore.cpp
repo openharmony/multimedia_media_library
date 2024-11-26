@@ -459,6 +459,24 @@ const std::string MediaLibraryRdbStore::IsCallerSelfFunc(const std::vector<std::
     return "true";
 }
 
+const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<std::string> &args)
+{
+    if (args.size() < 1) {
+        MEDIA_ERR_LOG("Invalid input: args must contain at least 1 strings");
+        return "";
+    }
+    std::string albumId = args[0].c_str();
+    MEDIA_DEBUG_LOG("albumId = %{public}s", albumId.c_str());
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("Failed to get MediaLibraryNotify");
+        return "";
+    }
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX, albumId),
+        NotifyType::NOTIFY_ADD);
+    return "";
+}
+
 MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
     if (context == nullptr) {
@@ -480,6 +498,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
     config_.SetScalarFunction("begin_generate_highlight_thumbnail", STAMP_PARAM, BeginGenerateHighlightThumbnail);
     config_.SetWalLimitSize(RDB_WAL_LIMIT_SIZE);
+    config_.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
 }
 
 bool g_upgradeErr = false;
@@ -3382,6 +3401,17 @@ static void AddThumbnailReadyColumnsFix(RdbStore& store)
     }
 }
 
+static void UpdateSourcePhotoAlbumTrigger(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start update source photo album trigger");
+    const vector<string> sqls = {
+        DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end update source photo album trigger");
+}
+
 static void AddSupportedWatermarkType(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4250,6 +4280,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_THUMBNAIL_READY_FIX) {
         AddThumbnailReadyColumnsFix(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER) {
+        UpdateSourcePhotoAlbumTrigger(store);
     }
 }
 
