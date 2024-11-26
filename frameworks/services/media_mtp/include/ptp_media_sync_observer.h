@@ -41,11 +41,14 @@ public:
     void OnChange(const ChangeInfo &changeInfo) override;
     std::shared_ptr<MtpOperationContext> context_ = nullptr;
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_ = nullptr;
+    void OnChangeEx(const ChangeInfo &changeInfo);
 private:
     void SendEventPackets(uint32_t objectHandle, uint16_t eventCode);
     void SendEventPacketAlbum(uint32_t objectHandle, uint16_t eventCode);
     void SendPhotoEvent(ChangeType changeType, std::string suffixString);
     std::vector<int32_t> GetHandlesFromPhotosInfoBurstKeys(int32_t handle);
+    void SendEventToPTP(int32_t suff_int, ChangeType changeType);
+    std::shared_ptr<DataShare::DataShareResultSet> GetAlbumInfo();
 };
 
 class MediaSyncNotifyData : public AsyncTaskData {

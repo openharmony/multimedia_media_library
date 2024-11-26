@@ -14,6 +14,7 @@
  */
 
 #include "media_log.h"
+#include "ptp_album_handles.h"
 #include "ptp_media_sync_observer.h"
 #include "photo_album_column.h"
 #include "datashare_predicates.h"
@@ -28,6 +29,8 @@ constexpr int32_t RESERVE_ALBUM = 10;
 constexpr int32_t PARENT_ID = 0;
 const string BURST_COVER_LEVEL = "1";
 const string BURST_NOT_COVER_LEVEL = "2";
+const string IS_LOCAL = "2";
+const std::string HIDDEN_ALBUM = ".hiddenAlbum";
 bool startsWith(const std::string& str, const std::string& prefix)
 {
     if (prefix.size() > str.size() || prefix.empty() || str.empty()) {
@@ -136,15 +139,6 @@ void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixStrin
         case static_cast<int32_t>(NotifyType::NOTIFY_ADD):
             MEDIA_DEBUG_LOG("MtpMediaLibrary PHOTO ADD");
             SendEventPackets(stoi(suffixString) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
-            columns.push_back(MediaColumn::MEDIA_NAME);
-            predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(stoi(suffixString)));
-            predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
-            CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "Mtp dataShareHelper_ is nullptr");
-            resultSet = dataShareHelper_->Query(uri, predicates, columns);
-            CHECK_AND_RETURN_LOG(resultSet != nullptr, "Mtp fail to get handles");
-            if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-                SendEventPackets(stoi(suffixString) + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
-            }
             break;
         case static_cast<int32_t>(NotifyType::NOTIFY_UPDATE):
             MEDIA_DEBUG_LOG("MtpMediaLibrary PHOTO UPDATE");
@@ -166,7 +160,67 @@ void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixStrin
     }
 }
 
-void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
+std::shared_ptr<DataShare::DataShareResultSet> MediaSyncObserver::GetAlbumInfo()
+{
+    DataShare::DataSharePredicates predicates;
+    Uri uri(PAH_QUERY_PHOTO_ALBUM);
+    vector<string> columns;
+    columns.push_back(PhotoAlbumColumns::ALBUM_ID + " as " + MEDIA_DATA_DB_ID);
+    predicates.IsNotNull(MEDIA_DATA_DB_ALBUM_NAME);
+    predicates.NotEqualTo(MEDIA_DATA_DB_ALBUM_NAME, HIDDEN_ALBUM);
+    predicates.BeginWrap();
+    predicates.NotEqualTo(MEDIA_DATA_DB_IS_LOCAL, IS_LOCAL);
+    predicates.Or();
+    predicates.IsNull(MEDIA_DATA_DB_IS_LOCAL);
+    predicates.EndWrap();
+    return dataShareHelper_->Query(uri, predicates, columns);
+}
+
+void MediaSyncObserver::SendEventToPTP(int32_t suff_int, ChangeType changeType)
+{
+    auto albumHandles = PtpAlbumHandles::GetInstance();
+    if (albumHandles == nullptr) {
+        MEDIA_ERR_LOG("albumHandles is nullptr");
+        return;
+    }
+    switch (changeType) {
+        case static_cast<int32_t>(NotifyType::NOTIFY_ADD):
+            MEDIA_DEBUG_LOG("MtpMediaLibrary ALBUM ADD");
+            albumHandles->AddHandle(suff_int);
+            SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_ADDED_CODE);
+            SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+            SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+            break;
+        case static_cast<int32_t>(NotifyType::NOTIFY_UPDATE):
+            MEDIA_DEBUG_LOG("MtpMediaLibrary ALBUM UPDATE");
+            if (albumHandles->FindHandle(suff_int)) {
+                SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+                SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+            } else {
+                albumHandles->AddHandle(suff_int);
+                auto suff_removed_int = albumHandles->ChangeHandle(GetAlbumInfo());
+                if (suff_removed_int != E_ERR) {
+                    albumHandles->RemoveHandle(suff_removed_int);
+                    SendEventPacketAlbum(suff_removed_int, MTP_EVENT_OBJECT_REMOVED_CODE);
+                    SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+                }
+                SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_ADDED_CODE);
+                SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+                SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+            }
+            break;
+        case static_cast<int32_t>(NotifyType::NOTIFY_REMOVE):
+            MEDIA_DEBUG_LOG("MtpMediaLibrary ALBUM REMOVE");
+            albumHandles->RemoveHandle(suff_int);
+            SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_REMOVED_CODE);
+            SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+            break;
+        default:
+            break;
+    }
+}
+
+void MediaSyncObserver::OnChangeEx(const ChangeInfo &changeInfo)
 {
     std::string PhotoPrefix = PhotoColumn::PHOTO_URI_PREFIX;
     std::string PhotoAlbumPrefix = PhotoAlbumColumns::ALBUM_URI_PREFIX;
@@ -192,28 +246,14 @@ void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
             if (suff_int <= RESERVE_ALBUM) {
                 continue;
             }
-            switch (changeInfo.changeType_) {
-                case static_cast<int32_t>(NotifyType::NOTIFY_ADD):
-                    MEDIA_DEBUG_LOG("MtpMediaLibrary ALBUM ADD");
-                    SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_ADDED_CODE);
-                    SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-                    SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-                    break;
-                case static_cast<int32_t>(NotifyType::NOTIFY_UPDATE):
-                    MEDIA_DEBUG_LOG("MtpMediaLibrary ALBUM UPDATE");
-                    SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-                    SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-                    break;
-                case static_cast<int32_t>(NotifyType::NOTIFY_REMOVE):
-                    MEDIA_DEBUG_LOG("MtpMediaLibrary ALBUM REMOVE");
-                    SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_REMOVED_CODE);
-                    SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-                    break;
-                default:
-                    break;
-            }
+            SendEventToPTP(suff_int, changeInfo.changeType_);
         }
     }
+}
+
+void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
+{
+    std::thread([this, changeInfo] { this->OnChangeEx(changeInfo); }).detach();
 }
 } // namespace Media
 } // namespace OHOS
