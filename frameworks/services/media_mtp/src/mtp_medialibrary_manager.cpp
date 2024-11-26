@@ -684,8 +684,8 @@ int32_t MtpMedialibraryManager::SendObjectInfo(const std::shared_ptr<MtpOperatio
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
     DataShare::DataShareValuesBucket valuesBucket;
     MediaType mediaType;
-    int errCode = MtpDataUtils::SolveSendObjectFormatData(context->format, mediaType);
-    CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, errCode, "fail to SolveSendObjectFormatData");
+    int errCode = MtpDataUtils::GetMediaTypeByName(context->name, mediaType);
+    CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, errCode, "fail to GetMediaTypeByName");
     if ((mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) || context->parent == uint32_t(-1)) {
         MEDIA_ERR_LOG("file type not support");
         return MTP_ERROR_INVALID_OBJECTHANDLE;
