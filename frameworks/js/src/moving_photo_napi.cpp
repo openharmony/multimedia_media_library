@@ -117,7 +117,7 @@ static int32_t OpenReadOnlyVideo(const std::string& videoUri, bool isMediaLibUri
     std::string realPath = fileUri.GetRealPath();
     int32_t fd = open(realPath.c_str(), O_RDONLY);
     if (fd < 0) {
-        NAPI_ERR_LOG("Failed to open read only video file");
+        NAPI_ERR_LOG("Failed to open read only video file, errno:%{public}d", errno);
         return -1;
     }
     return fd;
@@ -133,7 +133,7 @@ static int32_t OpenReadOnlyImage(const std::string& imageUri, bool isMediaLibUri
     std::string realPath = fileUri.GetRealPath();
     int32_t fd = open(realPath.c_str(), O_RDONLY);
     if (fd < 0) {
-        NAPI_ERR_LOG("Failed to open read only image file");
+        NAPI_ERR_LOG("Failed to open read only image file, errno: %{public}d", errno);
         return -1;
     }
     return fd;
