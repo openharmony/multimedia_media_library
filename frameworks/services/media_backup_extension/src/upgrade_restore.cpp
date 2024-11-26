@@ -53,8 +53,6 @@ constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
-constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
-const std::string INTERNAL_PREFIX = "/storage/emulated";
 constexpr int32_t MAX_THREAD_NUM = 4;
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
@@ -85,6 +83,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         photosPreferencesPath = backupRetoreDir + "/" + galleryAppName_ + "_preferences.xml";
         // gallery db may include both internal & external, set flag to differentiate, default false
         shouldIncludeSd_ = BackupFileUtils::ShouldIncludeSd(filePath_);
+        backupDatabaseHelper_.Init(sceneCode_, shouldIncludeSd_, filePath_);
         SetParameterForClone();
 #ifdef CLOUD_SYNC_MANAGER
         FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
@@ -106,6 +105,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
             MEDIA_ERR_LOG("External init rdb fail, err = %{public}d", externalErr);
             return E_FAIL;
         }
+        backupDatabaseHelper_.AddDb(BackupDatabaseHelper::DbType::EXTERNAL, externalRdb_);
         if (sceneCode_ == UPGRADE_RESTORE_ID) {
             MediaLibraryDataManager::GetInstance()->ReCreateMediaDir();
         }
@@ -664,6 +664,7 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.firstUpdateTime = GetInt64Val(GALLERY_FIRST_UPDATE_TIME, resultSet);
     info.dateTaken = GetInt64Val(GALLERY_DATE_TAKEN, resultSet);
     info.detailTime = GetStringVal(GALLERY_DETAIL_TIME, resultSet);
+    info.userId = BackupFileUtils::GetUserId(info.oldPath);
     return true;
 }
 
@@ -792,6 +793,7 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
     } else {
         newPath = prefix + relativePath; // others, remove sd prefix, use relative path
     }
+    fileInfo.isInternal = false;
     return true;
 }
  
@@ -1252,6 +1254,18 @@ void UpgradeRestore::UpdateDualCloneFaceAnalysisStatus()
     BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
+}
+
+void UpgradeRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode)
+{
+    if (errCode != E_NO_SUCH_FILE) {
+        return;
+    }
+    int32_t dbType = BackupDatabaseHelper::DbType::DEFAULT;
+    int32_t dbStatus = E_OK;
+    int32_t fileStatus = E_OK;
+    backupDatabaseHelper_.IsFileExist(sceneCode_, fileInfo, dbType, dbStatus, fileStatus);
+    MEDIA_INFO_LOG("Check status type: %{public}d, db: %{public}d, file: %{public}d", dbType, dbStatus, fileStatus);
 }
 } // namespace Media
 } // namespace OHOS

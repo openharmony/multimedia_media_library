@@ -392,9 +392,9 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_is_file_valid_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_is_file_valid_test_001 start");
-    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_DB_PATH, CLONE_RESTORE_ID), true);
-    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_BACKUP_PATH, CLONE_RESTORE_ID), false); // directory
-    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_FAKE_FILE_DIR, CLONE_RESTORE_ID), false); // not exist
+    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_DB_PATH, CLONE_RESTORE_ID), E_OK);
+    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_BACKUP_PATH, CLONE_RESTORE_ID), E_FAIL); // directory
+    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_FAKE_FILE_DIR, CLONE_RESTORE_ID), E_NO_SUCH_FILE); // not exist
 }
 
 void ClearRestoreExInfo()

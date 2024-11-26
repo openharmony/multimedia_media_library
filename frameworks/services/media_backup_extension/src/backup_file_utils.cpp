@@ -20,6 +20,7 @@
 #include <utime.h>
 #include <sys/types.h>
 
+#include "backup_const_column.h"
 #include "scanner_utils.h"
 #include "media_file_uri.h"
 #include "metadata_extractor.h"
@@ -28,6 +29,7 @@
 #include "media_log.h"
 #include "media_file_utils.h"
 #include "medialibrary_asset_operations.h"
+#include "medialibrary_data_manager_utils.h"
 #include "moving_photo_file_utils.h"
 
 namespace OHOS {
@@ -37,6 +39,8 @@ const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
 const string LOW_QUALITY_PATH = "Documents/cameradata/";
 const size_t INVALID_RET = -1;
+const int32_t APP_TWIN_DATA_START = 128;
+const int32_t APP_TWIN_DATA_END = 147;
 
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
 std::shared_ptr<DataShare::DataShareHelper> BackupFileUtils::sDataShareHelper_ = nullptr;
@@ -360,37 +364,36 @@ void BackupFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
     }
 }
 
-bool BackupFileUtils::IsLowQualityImage(std::string &filePath, int32_t sceneCode,
+int32_t BackupFileUtils::IsLowQualityImage(std::string &filePath, int32_t sceneCode,
     string relativePath, bool hasLowQualityImage)
 {
     struct stat statInfo {};
     std::string garbledFilePath = BackupFileUtils::GarbleFilePath(filePath, sceneCode);
     if (!hasLowQualityImage) {
-        MEDIA_ERR_LOG("Invalid file (%{public}s), get statInfo failed, err: %{public}d", garbledFilePath.c_str(),
+        MEDIA_ERR_LOG("Invalid file (%{public}s), no low quality image, err: %{public}d", garbledFilePath.c_str(),
             errno);
-        return false;
+        return E_FAIL;
     }
     string realPath = ConvertLowQualityPath(sceneCode, filePath, relativePath);
-    if (stat(realPath.c_str(), &statInfo) == E_SUCCESS) {
-        MEDIA_INFO_LOG("Low quality image!");
-        filePath = realPath;
-    } else {
+    if (stat(realPath.c_str(), &statInfo) != E_SUCCESS) {
         MEDIA_ERR_LOG("Invalid Low quality image! file:%{public}s, err:%{public}d", garbledFilePath.c_str(), errno);
-        return false;
+        return E_NO_SUCH_FILE;
     }
+    MEDIA_INFO_LOG("Low quality image! file: %{public}s", garbledFilePath.c_str());
+    filePath = realPath;
     if (statInfo.st_mode & S_IFDIR) {
         MEDIA_ERR_LOG("Invalid file (%{public}s), is a directory", garbledFilePath.c_str());
-        return false;
+        return E_FAIL;
     }
     if (statInfo.st_size <= 0) {
         MEDIA_ERR_LOG("Invalid file (%{public}s), get size (%{public}lld) <= 0", garbledFilePath.c_str(),
             (long long)statInfo.st_size);
-        return false;
+        return E_FAIL;
     }
-    return true;
+    return E_OK;
 }
 
-bool BackupFileUtils::IsFileValid(std::string &filePath, int32_t sceneCode,
+int32_t BackupFileUtils::IsFileValid(std::string &filePath, int32_t sceneCode,
     string relativePath, bool hasLowQualityImage)
 {
     std::string garbledFilePath = BackupFileUtils::GarbleFilePath(filePath, sceneCode);
@@ -400,22 +403,21 @@ bool BackupFileUtils::IsFileValid(std::string &filePath, int32_t sceneCode,
         if (fileAccessHelper_ != nullptr) {
             res = fileAccessHelper_->GetValidPath(filePath);
         }
-        MEDIA_INFO_LOG("after getValidPath:%{public}s, res:%{public}d",
-            BackupFileUtils::GarbleFilePath(filePath, sceneCode).c_str(), res);
         if (stat(filePath.c_str(), &statInfo) != E_SUCCESS) {
-            return IsLowQualityImage(filePath, sceneCode, relativePath, hasLowQualityImage);
+            return hasLowQualityImage ? IsLowQualityImage(filePath, sceneCode, relativePath, hasLowQualityImage) :
+                E_NO_SUCH_FILE;
         }
     }
     if (statInfo.st_mode & S_IFDIR) {
         MEDIA_ERR_LOG("Invalid file (%{public}s), is a directory", garbledFilePath.c_str());
-        return false;
+        return E_FAIL;
     }
     if (statInfo.st_size <= 0) {
         MEDIA_ERR_LOG("Invalid file (%{public}s), get size (%{public}lld) <= 0", garbledFilePath.c_str(),
             (long long)statInfo.st_size);
-        return false;
+        return E_FAIL;
     }
-    return true;
+    return E_OK;
 }
 
 string BackupFileUtils::GetFileNameFromPath(const string &path)
@@ -642,6 +644,46 @@ std::string BackupFileUtils::GetFileFolderFromPath(const std::string &path, bool
         return "";
     }
     return path.substr(startPos, endPos - startPos);
+}
+
+std::string BackupFileUtils::GetExtraPrefixForRealPath(int32_t sceneCode, const std::string &path)
+{
+    return sceneCode == UPGRADE_RESTORE_ID && IsAppTwinData(path) ? APP_TWIN_DATA_PREFIX : "";
+}
+
+bool BackupFileUtils::IsAppTwinData(const std::string &path)
+{
+    int32_t userId = GetUserId(path);
+    return userId >= APP_TWIN_DATA_START && userId <= APP_TWIN_DATA_END;
+}
+
+int32_t BackupFileUtils::GetUserId(const std::string &path)
+{
+    int32_t userId = -1;
+     if (!MediaFileUtils::StartsWith(path, INTERNAL_PREFIX)) {
+        return userId;
+    }
+    std::string tmpPath = path.substr(INTERNAL_PREFIX.size());
+    if (tmpPath.empty()) {
+        MEDIA_ERR_LOG("Get substr failed, path: %{public}s", path.c_str());
+        return userId;
+    }
+    size_t posStart = tmpPath.find_first_of("/");
+    if (posStart == std::string::npos) {
+        MEDIA_ERR_LOG("Get first / failed, path: %{public}s", path.c_str());
+        return userId;
+    }
+    size_t posEnd = tmpPath.find_first_of("/", posStart + 1);
+    if (posEnd == std::string::npos) {
+        MEDIA_ERR_LOG("Get second / failed, path: %{public}s", path.c_str());
+        return userId;
+    }
+    std::string userIdStr = tmpPath.substr(posStart + 1, posEnd - posStart -1);
+    if (userIdStr.empty() || !MediaLibraryDataManagerUtils::IsNumber(userIdStr)) {
+        MEDIA_ERR_LOG("Get userId failed, empty or not number, path: %{public}s", path.c_str());
+        return userId;
+    }
+    return std::atoi(userIdStr.c_str());
 }
 } // namespace Media
 } // namespace OHOS

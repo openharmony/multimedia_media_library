@@ -60,6 +60,8 @@ protected:
     virtual bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
     virtual void InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
         int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum);
+    virtual void NotifyAlbum();
+    virtual void CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
     int32_t CopyFile(const std::string &srcFile, const std::string &dstFile) const;
@@ -98,7 +100,6 @@ protected:
         int32_t sceneCode);
     void SetParameterForClone();
     void StopParameterForClone(int32_t sceneCode);
-    std::string GetSameFileQuerySql(const FileInfo &fileInfo);
     void InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType);
     bool NeedBatchQueryPhoto(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
     bool NeedBatchQueryPhotoForPhotoMap(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
@@ -106,7 +107,7 @@ protected:
     bool NeedQueryByPhotoRelatedType(const FileInfo &fileInfo, PhotoRelatedType photoRelatedType,
         const std::unordered_set<std::string> &needQuerySet);
     int32_t GetUniqueId(int32_t fileType);
-    bool IsFileValid(FileInfo &fileInfo, const int32_t sceneCode);
+    int32_t IsFileValid(FileInfo &fileInfo, const int32_t sceneCode);
     void CreateDir(std::string &dir);
     void RecursiveCreateDir(std::string &relativePath, std::string &suffix);
     SubProcessInfo GetSubProcessInfo(const std::string &type);
@@ -114,7 +115,6 @@ protected:
         const std::atomic<uint64_t> &totalNumber);
     nlohmann::json GetSubProcessInfoJson(const std::string &type, const SubProcessInfo &subProcessInfo);
     void UpdateDatabase();
-    void NotifyAlbum();
     void GetUpdateTotalCount();
     void GetUpdateAllAlbumsCount();
     void GetUpdateUniqueNumberCount();
