@@ -123,14 +123,14 @@ static inline DataSharePredicates FuzzDataSharePredicates(const uint8_t *data, s
     return DataSharePredicates(FuzzVectorOperationItem(data, size));
 }
 
-static inline DataShareValuesBucket FuzzDataShareValuesBucket(const uint8_t *data, size_t size)
+static inline DataShareValuesBucket FuzzDataShareValuesBucket()
 {
     return {};
 }
 
-static inline vector<DataShareValuesBucket> FuzzVectorDataShareValuesBucket(const uint8_t *data, size_t size)
+static inline vector<DataShareValuesBucket> FuzzVectorDataShareValuesBucket()
 {
-    return {FuzzDataShareValuesBucket(data, size)};
+    return {FuzzDataShareValuesBucket()};
 }
 
 static inline DatashareBusinessError FuzzDataShareBusinessError(const uint8_t *data, size_t size)
@@ -176,18 +176,18 @@ static inline void OpenRawFileFuzzer(MediaDataShareExtAbility &extension, const 
 
 static inline void InsertFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
 {
-    extension.Insert(FuzzUri(data, size), FuzzDataShareValuesBucket(data, size));
+    extension.Insert(FuzzUri(data, size), FuzzDataShareValuesBucket());
 }
 
 static inline void InsertExtFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
 {
     string uri;
-    extension.InsertExt(FuzzUri(data, size), FuzzDataShareValuesBucket(data, size), uri);
+    extension.InsertExt(FuzzUri(data, size), FuzzDataShareValuesBucket(), uri);
 }
 
 static inline void UpdateFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
 {
-    extension.Update(FuzzUri(data, size), FuzzDataSharePredicates(data, size), FuzzDataShareValuesBucket(data, size));
+    extension.Update(FuzzUri(data, size), FuzzDataSharePredicates(data, size), FuzzDataShareValuesBucket());
 }
 
 static inline void DeleteFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
@@ -209,7 +209,7 @@ static inline void GetTypeFuzzer(MediaDataShareExtAbility &extension, const uint
 
 static inline void BatchInsertFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
 {
-    extension.BatchInsert(FuzzUri(data, size), FuzzVectorDataShareValuesBucket(data, size));
+    extension.BatchInsert(FuzzUri(data, size), FuzzVectorDataShareValuesBucket());
 }
 
 static inline void RegisterObserverFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)

@@ -110,7 +110,7 @@ static inline DataSharePredicates FuzzDataSharePredicates(const uint8_t *data, s
     return DataSharePredicates(FuzzVectorOperationItem(data, size));
 }
 
-static inline DataShareValuesBucket FuzzDataShareValuesBucket(const uint8_t *data, size_t size)
+static inline DataShareValuesBucket FuzzDataShareValuesBucket()
 {
     return {};
 }
@@ -118,7 +118,7 @@ static inline DataShareValuesBucket FuzzDataShareValuesBucket(const uint8_t *dat
 static inline void UpdateFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
 {
     DataSharePredicates predicates;
-    extension.Update(FuzzUri(data, size), FuzzDataSharePredicates(data, size), FuzzDataShareValuesBucket(data, size));
+    extension.Update(FuzzUri(data, size), FuzzDataSharePredicates(data, size), FuzzDataShareValuesBucket());
 }
 
 static inline MediaDataShareExtAbility Init()

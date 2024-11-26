@@ -41,19 +41,19 @@ static inline Uri FuzzUri(const uint8_t *data, size_t size)
     return Uri(FuzzString(data, size));
 }
 
-static inline DataShareValuesBucket FuzzDataShareValuesBucket(const uint8_t *data, size_t size)
+static inline DataShareValuesBucket FuzzDataShareValuesBucket()
 {
     return {};
 }
 
-static inline vector<DataShareValuesBucket> FuzzVectorDataShareValuesBucket(const uint8_t *data, size_t size)
+static inline vector<DataShareValuesBucket> FuzzVectorDataShareValuesBucket()
 {
-    return {FuzzDataShareValuesBucket(data, size)};
+    return {FuzzDataShareValuesBucket()};
 }
 
 static inline void BatchInsertFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
 {
-    extension.BatchInsert(FuzzUri(data, size), FuzzVectorDataShareValuesBucket(data, size));
+    extension.BatchInsert(FuzzUri(data, size), FuzzVectorDataShareValuesBucket());
 }
 
 static inline MediaDataShareExtAbility Init()
