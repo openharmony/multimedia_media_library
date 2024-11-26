@@ -42,7 +42,6 @@ private:
     void MergeTask(const CloudSyncHandleData &handleData);
 
     std::function<void(bool)> refreshAlbumsFunc_;
-    int32_t interval_{0};
 };
 } //namespace Media
 } //namespace OHOS
