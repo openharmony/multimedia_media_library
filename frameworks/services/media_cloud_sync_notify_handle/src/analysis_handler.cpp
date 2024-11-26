@@ -119,7 +119,7 @@ static int32_t GetHandleData(CloudSyncHandleData &handleData)
                 MEDIA_ERR_LOG("failed to get period worker instance");
                 return E_ERR;
             }
-            periodWorker->StopThreadById(AnalysisHandler::threadId_);
+            periodWorker->CloseThreadById(AnalysisHandler::threadId_);
         }
         return E_ERR;
     } else {
@@ -229,11 +229,14 @@ void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
         MEDIA_ERR_LOG("failed to get period worker instance");
         return;
     }
-    if (interval_ != PowerEfficiencyManager::GetAlbumUpdateInterval()) {
-        interval_ = PowerEfficiencyManager::GetAlbumUpdateInterval();
-        periodWorker->StartThreadById(AnalysisHandler::threadId_, interval_);
-    } else if (!periodWorker->IsThreadRunning(AnalysisHandler::threadId_)) {
-        periodWorker->StartThreadById(AnalysisHandler::threadId_, interval_);
+    if (!periodWorker->IsThreadRunning(AnalysisHandler::threadId_)) {
+        auto periodTask = make_shared<MedialibraryPeriodTask>(ProcessHandleData,
+            PowerEfficiencyManager::GetAlbumUpdateInterval());
+        AnalysisHandler::threadId_ = periodWorker->AddTask(periodTask, nextHandler_, refreshAlbumsFunc_);
+        if (AnalysisHandler::threadId_ == E_ERR) {
+            MEDIA_ERR_LOG("failed to add task");
+            return;
+        }
     }
 }
 } //namespace Media
