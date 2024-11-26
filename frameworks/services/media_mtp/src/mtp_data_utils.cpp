@@ -646,8 +646,7 @@ int32_t MtpDataUtils::GetMediaTypeByName(std::string &displayName, MediaType &ou
     }
     if (UndefinedImageFormatSet.find(extension) != UndefinedImageFormatSet.end()) {
         format = MTP_FORMAT_DEFINED_CODE;
-    }
-    if (UndefinedVideoFormatSet.find(extension) != UndefinedVideoFormatSet.end()) {
+    } else if (UndefinedVideoFormatSet.find(extension) != UndefinedVideoFormatSet.end()) {
         format = MTP_FORMAT_UNDEFINED_VIDEO_CODE;
     }
     GetMediaTypeByformat(format, outMediaType);
