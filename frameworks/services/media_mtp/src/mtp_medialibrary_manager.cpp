@@ -36,6 +36,7 @@
 #include "photo_album_column.h"
 #include "ptp_media_sync_observer.h"
 #include "pixel_map.h"
+#include "ptp_album_handles.h"
 #include "ptp_medialibrary_manager_uri.h"
 #include "system_ability_definition.h"
 #include "userfilemgr_uri.h"
@@ -302,6 +303,10 @@ int32_t MtpMedialibraryManager::GetHandles(const shared_ptr<MtpOperationContext>
     shared_ptr<DataShare::DataShareResultSet> resultSet;
     if (context->parent == PARENT_ID) {
         resultSet = GetAlbumInfo(context, true);
+        auto albumHandles = PtpAlbumHandles::GetInstance();
+        if (albumHandles != nullptr) {
+            albumHandles->AddAlbumHandles(resultSet);
+        }
     } else {
         resultSet = GetPhotosInfo(context, true);
     }
@@ -435,14 +440,12 @@ int32_t MtpMedialibraryManager::GetFd(const shared_ptr<MtpOperationContext> &con
         shared_ptr<DataShare::DataShareResultSet> resultSet = GetPhotosInfo(context, false);
         CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
             MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "fail to get handles");
-        CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
-            MtpErrorUtils::SolveGetFdError(E_SUCCESS), "fail to get fd");
         std::string sourcePath;
-        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        do {
             string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
             int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
             sourcePath = MtpDataUtils::GetMovingOrEnditSourcePath(data, subtype, context);
-        }
+        } while (!resultSet->GoToNextRow());
         std::string realPath;
         PathToRealPath(sourcePath, realPath);
         MEDIA_INFO_LOG("mtp GetFd realPath %{public}s", realPath.c_str());
@@ -621,10 +624,6 @@ int32_t MtpMedialibraryManager::GetAssetById(const int32_t id, shared_ptr<FileAs
         field_id = id - COMMON_PHOTOS_OFFSET;
     }
     vector<string> whereArgs = {to_string(field_id)};
-    predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, POSITION);
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
     predicates.SetWhereClause(whereClause);
     predicates.SetWhereArgs(whereArgs);
     Uri uri(PAH_QUERY_PHOTO);

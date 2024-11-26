@@ -78,6 +78,7 @@ if (defined(medialibrary_mtp_enable)) {
       "src/payload_data/set_object_prop_value_data.cpp",
       "src/payload_data/set_object_references_data.cpp",
       "src/property.cpp",
+      "src/ptp_album_handles.cpp",
       "src/ptp_media_sync_observer.cpp",
       "src/storage.cpp",
     ]
