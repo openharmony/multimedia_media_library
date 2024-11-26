@@ -805,7 +805,6 @@ static int32_t GetAllRefreshAlbumIds(const shared_ptr<MediaLibraryRdbStore> rdbS
         }
         albumIds.push_back(to_string(refreshAlbumId));
     }
-    resultSet->Close();
     DeleteAllAlbumId(rdbStore);
     return E_SUCCESS;
 }
@@ -1342,7 +1341,6 @@ static bool CopyAssetIfNeed(int32_t fileId, int32_t albumId,
     int64_t newAssetId = -1;
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
         auto albumIdQuery = GetIntValFromColumn(resultSet, PhotoColumn::PHOTO_OWNER_ALBUM_ID);
-        resultSet->Close();
         if (albumIdQuery == albumId) {
             needCopy = false;
             updateIds.push_back(fileId);
@@ -1467,9 +1465,6 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         const std::string QUERY_FILE_ASSET_INFO = "SELECT * FROM Photos WHERE owner_album_id = " + albumId +
             " AND clean_flag =0 AND hidden =0";
         shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
-        if (resultSet) {
-            continue;
-        }
         vector<string> fileAssetsIds, fileAssetsUri;
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             int isHiddenAsset = 0;
@@ -1485,7 +1480,6 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
             string uri = MediaLibraryFormMapOperations::GetUriByFileId(fileId, assetData);
             fileAssetsUri.push_back(uri);
         }
-        resultSet->Close();
         MediaLibraryPhotoOperations::UpdateSourcePath(fileAssetsIds);
         RdbPredicates predicatesPhotos(PhotoColumn::PHOTOS_TABLE);
         predicatesPhotos.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
@@ -1521,16 +1515,13 @@ int32_t MediaLibraryRdbUtils::UpdateRemoveAsset(const shared_ptr<MediaLibraryRdb
     for (auto assetId: whereIdArgs) {
         const std::string QUERY_FILE_ASSET_INFO = "SELECT * FROM Photos WHERE file_id = " + assetId;
         shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
-        if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        if (resultSet->GoToFirstRow() == NativeRdb::E_OK && resultSet != nullptr) {
             string assetData;
             GetStringFromResultSet(resultSet, MediaColumn::MEDIA_FILE_PATH, assetData);
             if (MediaLibraryDataManagerUtils::IsNumber(assetId)) {
                 string uri = MediaLibraryFormMapOperations::GetUriByFileId(stoi(assetId), assetData);
                 fileAssetsUri.push_back(uri);
             }
-        }
-        if (resultSet != nullptr) {
-            resultSet->Close();
         }
     }
     RdbPredicates predicatesPhotos(PhotoColumn::PHOTOS_TABLE);
@@ -1797,7 +1788,6 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<MediaLibra
     while (mapResult->GoToNextRow() == E_OK) {
         albumIds.push_back(to_string(GetIntValFromColumn(mapResult, PhotoMap::ALBUM_ID)));
     }
-    mapResult->Close();
     int err = E_HAS_DB_ERROR;
     int32_t deletedRows = 0;
     err = rdbStore->Delete(deletedRows, predicates);
