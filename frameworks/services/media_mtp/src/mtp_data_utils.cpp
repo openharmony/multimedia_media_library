@@ -60,7 +60,7 @@ static const map<uint16_t, string> FormatMap = {
     { MTP_FORMAT_HTML_CODE, MTP_FORMAT_HTML },
     { MTP_FORMAT_MP3_CODE, MTP_FORMAT_MP3 },
     { MTP_FORMAT_AVI_CODE, MTP_FORMAT_AVI },
-    { MTP_FORMAT_MPEG_CODE, MTP_FORMAT_ASF },
+    { MTP_FORMAT_MPEG_CODE, MTP_FORMAT_MPEG },
     // image files...
     { MTP_FORMAT_DEFINED_CODE, MTP_FORMAT_DEFINED },
     { MTP_FORMAT_EXIF_JPEG_CODE, MTP_FORMAT_EXIF_JPEG },
@@ -122,6 +122,58 @@ static const map<uint16_t, string> FormatMap = {
     { MTP_FORMAT_ABSTRACT_CONTACT_CODE, MTP_FORMAT_ABSTRACT_CONTACT },
     { MTP_FORMAT_MICROSOFT_POWERPOINT_PRESENTATION_CODE, MTP_FORMAT_MICROSOFT_POWERPOINT_PRESENTATION },
     { MTP_FORMAT_VCARD_2_CODE, MTP_FORMAT_VCARD_2 }
+};
+
+static const set<std::string> UndefinedImageFormatSet = {
+    MTP_FORMAT_HEIC,
+    MTP_FORMAT_HEICS,
+    MTP_FORMAT_HEIFS,
+    MTP_FORMAT_BM,
+    MTP_FORMAT_HEIF,
+    MTP_FORMAT_HIF,
+    MTP_FORMAT_AVIF,
+    MTP_FORMAT_CUR,
+    MTP_FORMAT_WEBP,
+    MTP_FORMAT_DNG,
+    MTP_FORMAT_RAF,
+    MTP_FORMAT_ICO,
+    MTP_FORMAT_NRW,
+    MTP_FORMAT_RW2,
+    MTP_FORMAT_PEF,
+    MTP_FORMAT_SRW,
+    MTP_FORMAT_ARW,
+    MTP_FORMAT_SVG,
+    MTP_FORMAT_RAW
+};
+
+static const set<std::string> UndefinedVideoFormatSet = {
+    MTP_FORMAT_3GPP2,
+    MTP_FORMAT_3GP2,
+    MTP_FORMAT_3G2,
+    MTP_FORMAT_3GPP,
+    MTP_FORMAT_M4V,
+    MTP_FORMAT_F4V,
+    MTP_FORMAT_MP4V,
+    MTP_FORMAT_MPEG4,
+    MTP_FORMAT_M2TS,
+    MTP_FORMAT_MTS,
+    MTP_FORMAT_TS,
+    MTP_FORMAT_YT,
+    MTP_FORMAT_WRF,
+    MTP_FORMAT_MPEG2,
+    MTP_FORMAT_MPV2,
+    MTP_FORMAT_MP2V,
+    MTP_FORMAT_M2V,
+    MTP_FORMAT_M2T,
+    MTP_FORMAT_MPEG1,
+    MTP_FORMAT_MPV1,
+    MTP_FORMAT_MP1V,
+    MTP_FORMAT_M1V,
+    MTP_FORMAT_MPG,
+    MTP_FORMAT_MOV,
+    MTP_FORMAT_MKV,
+    MTP_FORMAT_WEBM,
+    MTP_FORMAT_H264
 };
 
 static const map<std::string, MediaType> FormatAllMap = {
@@ -573,10 +625,11 @@ void MtpDataUtils::SetOneDefaultlPropList(uint32_t handle, uint16_t property, sh
 
 int32_t MtpDataUtils::GetMediaTypeByName(std::string &displayName, MediaType &outMediaType)
 {
-    size_t displayNameIndex = displayName.find(".");
+    size_t displayNameIndex = displayName.find_last_of('.');
     std::string extension;
     if (displayNameIndex != std::string::npos) {
         extension = displayName.substr(displayNameIndex);
+        transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
     } else {
         MEDIA_ERR_LOG("is dir displayName");
         outMediaType = MEDIA_TYPE_ALBUM;
@@ -591,7 +644,14 @@ int32_t MtpDataUtils::GetMediaTypeByName(std::string &displayName, MediaType &ou
             format = MTP_FORMAT_UNDEFINED_CODE;
         }
     }
+    if (UndefinedImageFormatSet.find(extension) != UndefinedImageFormatSet.end()) {
+        format = MTP_FORMAT_DEFINED_CODE;
+    }
+    if (UndefinedVideoFormatSet.find(extension) != UndefinedVideoFormatSet.end()) {
+        format = MTP_FORMAT_UNDEFINED_VIDEO_CODE;
+    }
     GetMediaTypeByformat(format, outMediaType);
+    MEDIA_DEBUG_LOG("GetMediaTypeByName format:%{public}x, outMediaType:%{public}d", format, outMediaType);
     return E_SUCCESS;
 }
 
