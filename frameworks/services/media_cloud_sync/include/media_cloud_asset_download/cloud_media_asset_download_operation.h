@@ -98,8 +98,8 @@ public:
     EXPORT int32_t InitDownloadTaskInfo();
 
 private:
-    void ClearData(DownloadFileData &datas);
-    bool IsDataEmpty(const DownloadFileData &datas);
+    void ClearData(DownloadFileData &data);
+    bool IsDataEmpty(const DownloadFileData &data);
     int32_t DoRelativedRegister();
     int32_t SetDeathRecipient();
     bool IsProperFgTemperature();
@@ -110,7 +110,9 @@ private:
     std::shared_ptr<NativeRdb::ResultSet> QueryDownloadFilesNeeded(const bool &isQueryInfo);
     DownloadFileData ReadyDataForBatchDownload();
     EXPORT int32_t DoForceTaskExecute();
-    EXPORT int32_t SubmitBatchDownload(DownloadFileData &datas, const bool &isCache);
+    EXPORT int32_t SubmitBatchDownload(DownloadFileData &data, const bool &isCache);
+    void StartFileCacheFailed(const int64_t batchNum, const int64_t batchSize);
+    void StartBatchDownload(const int64_t batchNum, const int64_t batchSize);
     int32_t DoRecoverExecute();
     int32_t PassiveStatusRecover();
     
