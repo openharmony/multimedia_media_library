@@ -59,7 +59,7 @@ private:
     void RestoreAlbum(void);
     void RestoreAudio(void) override;
     void NotifyAlbum() override;
-    void InsertPhoto(std::vector<FileInfo> &fileInfos);
+    int InsertPhoto(std::vector<FileInfo> &fileInfos);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
@@ -210,6 +210,7 @@ private:
     std::shared_ptr<MediaLibraryKvStore> oldYearKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> newMonthKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
+    std::vector<int> photosFailedOffsets;
 };
 
 template<typename T>
