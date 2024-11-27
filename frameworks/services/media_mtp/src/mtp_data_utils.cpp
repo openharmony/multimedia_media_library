@@ -356,6 +356,7 @@ int32_t MtpDataUtils::GetPropList(const std::shared_ptr<MtpOperationContext> &co
 {
     int count = 0;
     resultSet->GetRowCount(count);
+    CHECK_AND_RETURN_RET_LOG(count > 0, MTP_ERROR_INVALID_OBJECTHANDLE, "have no row");
     if (properties->size() == 0) {
         return MTP_INVALID_OBJECTPROPCODE_CODE;
     }

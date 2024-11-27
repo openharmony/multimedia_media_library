@@ -217,9 +217,13 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetPhotosInfo(
         predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
         if (!burstKeys.empty()) {
             predicates.BeginWrap()
+                ->BeginWrap()
                 ->NotIn(PhotoColumn::PHOTO_BURST_KEY, burstKeys)
                 ->Or()
                 ->IsNull(PhotoColumn::PHOTO_BURST_KEY)
+                ->EndWrap()
+                ->Or()
+                ->EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL)
                 ->EndWrap();
         }
     } else {
@@ -262,7 +266,9 @@ int32_t MtpMedialibraryManager::HaveMovingPhotesHandle(const shared_ptr<DataShar
         MEDIA_ERR_LOG("resultSet is nullptr");
         return E_HAS_DB_ERROR;
     }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, E_SUCCESS, "have no handles");
+    do {
         int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         outHandles->push_back(id);
         if (id < COMMON_PHOTOS_OFFSET) {
@@ -284,7 +290,7 @@ int32_t MtpMedialibraryManager::HaveMovingPhotesHandle(const shared_ptr<DataShar
             uint32_t editVideoId = id - COMMON_PHOTOS_OFFSET + EDITED_MOVING_OFFSET;
             outHandles->push_back(editVideoId);
         }
-    }
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
     return E_SUCCESS;
 }
 
@@ -866,8 +872,6 @@ int32_t MtpMedialibraryManager::GetObjectPropList(const std::shared_ptr<MtpOpera
     }
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
         MTP_ERROR_INVALID_OBJECTHANDLE, "fail to getSet");
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
-        MTP_ERROR_INVALID_OBJECTHANDLE, "have no row");
     return MtpDataUtils::GetPropListBySet(context, resultSet, outProps);
 }
 
