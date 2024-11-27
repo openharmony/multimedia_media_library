@@ -56,20 +56,16 @@ public:
         std::map<std::string, int64_t> fileDownloadMap;
         std::vector<std::string> batchFileIdNeedDownload;
         int64_t batchSizeNeedDownload = 0;
+        int64_t batchCountNeedDownload = 0;
     };
 
     enum class Status : int32_t {
         FORCE_DOWNLOADING,
         GENTLE_DOWNLOADING,
         PAUSE_FOR_TEMPERATURE_LIMIT,
-        PAUSE_FOR_ROM_LIMIT,
         PAUSE_FOR_NETWORK_FLOW_LIMIT,
-        PAUSE_FOR_WIFI_UNAVAILABLE,
-        PAUSE_FOR_POWER_LIMIT,
         PAUSE_FOR_BACKGROUND_TASK_UNAVAILABLE,
-        PAUSE_FOR_FREQUENT_USER_REQUESTS,
         PAUSE_FOR_CLOUD_ERROR,
-        PAUSE_FOR_USER_PAUSE,
         RECOVER_FOR_MANAUL_ACTIVE,
         RECOVER_FOR_PASSIVE_STATUS,
         IDLE,
