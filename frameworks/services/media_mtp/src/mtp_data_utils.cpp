@@ -42,6 +42,7 @@ static constexpr int32_t INTTYPE16 = 16;
 static constexpr int32_t INTTYPE128 = 128;
 static constexpr int32_t STRINGTYPE = -1;
 static const string MEDIA_DATA_DB_FORMAT = "format";
+static const string MEDIA_DATA_DB_COMPOSER = "composer";
 static constexpr int32_t EDITED_PHOTO_TYPE = 2;
 static constexpr int32_t MOVING_PHOTO_TYPE = 3;
 static constexpr int32_t EDITED_MOVING_TYPE = 4;
@@ -250,6 +251,8 @@ static const map<std::string, ResultSetDataType> ColumnTypeMap = {
     { MEDIA_DATA_DB_ARTIST, TYPE_STRING },
     { MEDIA_DATA_DB_AUDIO_ALBUM, TYPE_STRING },
     { MEDIA_DATA_DB_FORMAT, TYPE_INT32 },
+    { MEDIA_DATA_DB_ALBUM_NAME, TYPE_STRING },
+    { MEDIA_DATA_DB_COMPOSER, TYPE_STRING },
 };
 
 static const map<uint16_t, std::string> PropColumnMap = {
@@ -263,6 +266,7 @@ static const map<uint16_t, std::string> PropColumnMap = {
     { MTP_PROPERTY_DATE_ADDED_CODE, MEDIA_DATA_DB_DATE_ADDED },
     { MTP_PROPERTY_ARTIST_CODE, MEDIA_DATA_DB_ARTIST },
     { MTP_PROPERTY_DURATION_CODE, MEDIA_DATA_DB_DURATION },
+    { MTP_PROPERTY_DESCRIPTION_CODE, MEDIA_DATA_DB_DESCRIPTION},
 };
 
 static const map<uint16_t, int32_t> PropDefaultMap = {
@@ -274,6 +278,12 @@ static const map<uint16_t, int32_t> PropDefaultMap = {
     { MTP_PROPERTY_TRACK_CODE, INTTYPE16 },
     { MTP_PROPERTY_ORIGINAL_RELEASE_DATE_CODE, STRINGTYPE },
     { MTP_PROPERTY_GENRE_CODE, STRINGTYPE },
+    { MTP_PROPERTY_COMPOSER_CODE, STRINGTYPE },
+    { MTP_PROPERTY_AUDIO_WAVE_CODEC_CODE, INTTYPE16 },
+    { MTP_PROPERTY_BITRATE_TYPE_CODE, INTTYPE16 },
+    { MTP_PROPERTY_AUDIO_BITRATE_CODE, INTTYPE16 },
+    { MTP_PROPERTY_NUMBER_OF_CHANNELS_CODE, INTTYPE16 },
+    { MTP_PROPERTY_SAMPLE_RATE_CODE, INTTYPE16 },
 };
 
 int32_t MtpDataUtils::SolveHandlesFormatData(const uint16_t format, std::string &outExtension, MediaType &outMediaType)
@@ -659,22 +669,26 @@ int32_t MtpDataUtils::GetMtpPropList(const std::shared_ptr<std::unordered_map<ui
     const std::shared_ptr<MtpOperationContext> &context, shared_ptr<vector<Property>> &outProps)
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "context is nullptr");
-    shared_ptr<UInt16List> properties = make_shared<UInt16List>();
-    if (context->property == MTP_PROPERTY_ALL_CODE) {
-        shared_ptr<MtpOperationContext> mtpContext = make_shared<MtpOperationContext>();
-        mtpContext->format = context->format;
-        shared_ptr<GetObjectPropsSupportedData> payLoadData = make_shared<GetObjectPropsSupportedData>(mtpContext);
-        payLoadData->GetObjectProps(*properties);
-    } else {
-        properties->push_back(context->property);
-    }
-    if (properties->size() == 0) {
-        MEDIA_ERR_LOG("MtpDataUtils::GetMtpPropList properties is empty");
-        return MTP_INVALID_OBJECTPROPCODE_CODE;
-    }
-
     CHECK_AND_RETURN_RET_LOG(handles != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "handles is nullptr");
     for (auto it = handles->begin(); it != handles->end(); it++) {
+        shared_ptr<UInt16List> properties = make_shared<UInt16List>();
+        if (context->property == MTP_PROPERTY_ALL_CODE) {
+            shared_ptr<MtpOperationContext> mtpContext = make_shared<MtpOperationContext>();
+            if (context->format == 0) {
+                GetMtpFormatByPath(it->second, mtpContext->format);
+            } else {
+                mtpContext->format = context->format;
+            }
+            shared_ptr<GetObjectPropsSupportedData> payLoadData = make_shared<GetObjectPropsSupportedData>(mtpContext);
+            payLoadData->GetObjectProps(*properties);
+        } else {
+            properties->push_back(context->property);
+        }
+        if (properties->size() == 0) {
+            MEDIA_ERR_LOG("MtpDataUtils::GetMtpPropList properties is empty");
+            return MTP_INVALID_OBJECTPROPCODE_CODE;
+        }
+
         uint32_t parentId = DEFAULT_STORAGE_ID;
         auto iterator = pathHandles.find(std::filesystem::path(it->second).parent_path().string());
         if (iterator != pathHandles.end()) {
@@ -705,13 +719,15 @@ void MtpDataUtils::GetMtpOneRowProp(const std::shared_ptr<UInt16List> &propertie
                 GetMtpFormatByPath(it->second, format);
                 prop.currentValue->bin_.ui16 = format;
             } else if (column.compare(MEDIA_DATA_DB_PARENT_ID) == 0) {
-                prop.currentValue->bin_.i32 = parentId;
+                prop.currentValue->bin_.ui32 = parentId;
             } else {
                 SetMtpProperty(column, it->second, type, prop);
             }
             outProps->push_back(prop);
         } else if (PropDefaultMap.find(property) != PropDefaultMap.end()) {
             SetOneDefaultlPropList(it->first, property, outProps);
+        } else {
+            MEDIA_DEBUG_LOG("other property:0x%{public}x", property);
         }
     }
 }
@@ -762,7 +778,6 @@ void MtpDataUtils::SetMtpProperty(const std::string &column, const std::string &
         prop.currentValue->str_ = make_shared<std::string>(std::filesystem::path(path).filename().c_str());
         return;
     }
-
     struct stat statInfo;
     if (stat(path.c_str(), &statInfo) != 0) {
         MEDIA_ERR_LOG("SetMtpProperty stat failed");
@@ -778,6 +793,26 @@ void MtpDataUtils::SetMtpProperty(const std::string &column, const std::string &
     }
     if (column.compare(MEDIA_DATA_DB_DATE_ADDED) == 0) {
         prop.currentValue->bin_.i64 = statInfo.st_ctime;
+        return;
+    }
+    if (column.compare(MEDIA_DATA_DB_DESCRIPTION) == 0) {
+        prop.currentValue->str_ = make_shared<std::string>("");
+        return;
+    }
+    if (column.compare(MEDIA_DATA_DB_DURATION) == 0) {
+        prop.currentValue->bin_.ui32 = 0;
+        return;
+    }
+    if (column.compare(MEDIA_DATA_DB_ARTIST) == 0) {
+        prop.currentValue->str_ = make_shared<std::string>("");
+        return;
+    }
+    if (column.compare(MEDIA_DATA_DB_ALBUM_NAME) == 0) {
+        prop.currentValue->str_ = make_shared<std::string>("");
+        return;
+    }
+    if (column.compare(MEDIA_DATA_DB_COMPOSER) == 0) {
+        prop.currentValue->str_ = make_shared<std::string>("");
         return;
     }
 }
