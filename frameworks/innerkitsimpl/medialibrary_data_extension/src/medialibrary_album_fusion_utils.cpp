@@ -895,7 +895,7 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
     int64_t newAssetId = -1;
     int32_t err = CopyLocalSingleFileSync(rdbStore, ownerAlbumId, resultSet, newAssetId, displayName);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("Clone local asset failed, ret = %{public}d, assetId = %{public}", err, assetId);
+        MEDIA_ERR_LOG("Clone local asset failed, ret = %{public}d, assetId = %{public}" PRId64, err, assetId);
         return err;
     }
 
