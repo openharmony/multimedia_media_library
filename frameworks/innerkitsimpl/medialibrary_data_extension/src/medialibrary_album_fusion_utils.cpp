@@ -542,7 +542,6 @@ static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStor
     values.PutString(MediaColumn::MEDIA_FILE_PATH, targetPath);
     std::string uniqueDisplayName = PhotoDisplayNameOperation().FindDisplayName(rdbStore, resultSet, ownerAlbumId,
         displayName);
-    std::string uniqueDisplayName = PhotoDisplayNameOperation().FindDisplayName(rdbStore, resultSet, ownerAlbumId);
     if (!uniqueDisplayName.empty()) {
         values.PutString(MediaColumn::MEDIA_NAME, uniqueDisplayName);
         values.PutString(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(uniqueDisplayName));
@@ -784,8 +783,8 @@ static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStor
 
     err = UpdateRelationship(upgradeStore, assetId, newAssetId, ownerAlbumId, true);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("UpdateRelationship fail, assetId: %{public}d, newAssetId: %{public}lld,"
-            "ownerAlbumId: %{public}d, ret = %{public}d", assetId, (long long)newAssetId, ownerAlbumId, err);
+        MEDIA_ERR_LOG("UpdateRelationship fail, assetId: %{public}d, newAssetId: %{public}," PRId64
+            "ownerAlbumId: %{public}d, ret = %{public}d", assetId, newAssetId, ownerAlbumId, err);
         return E_OK;
     }
     GenerateThumbnail(newAssetId, targetPath, resultSet, true);
@@ -896,7 +895,7 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
     int64_t newAssetId = -1;
     int32_t err = CopyLocalSingleFileSync(rdbStore, ownerAlbumId, resultSet, newAssetId, displayName);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("Clone local asset failed, ret = %{public}d, assetId = %{public}lld", err, (long long)assetId);
+        MEDIA_ERR_LOG("Clone local asset failed, ret = %{public}d, assetId = %{public}", err, assetId);
         return err;
     }
 
@@ -914,7 +913,7 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
     string newFileAssetUri = MediaFileUtils::GetFileAssetUri(GetStringVal(MediaColumn::MEDIA_FILE_PATH, newResultSet),
         displayName, newAssetId);
     SendNewAssetNotify(newFileAssetUri, rdbStore);
-    MEDIA_INFO_LOG("End clone asset, newAssetId = %{public}lld", (long long)newAssetId);
+    MEDIA_INFO_LOG("End clone asset, newAssetId = %{public}" PRId64, newAssetId);
     return newAssetId;
 }
 
