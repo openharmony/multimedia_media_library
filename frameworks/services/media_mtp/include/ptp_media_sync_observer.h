@@ -48,7 +48,9 @@ private:
     void SendPhotoEvent(ChangeType changeType, std::string suffixString);
     std::vector<int32_t> GetHandlesFromPhotosInfoBurstKeys(int32_t handle);
     void SendEventToPTP(int32_t suff_int, ChangeType changeType);
+    std::vector<int32_t> GetAllDeleteHandles();
     std::shared_ptr<DataShare::DataShareResultSet> GetAlbumInfo();
+    void SendPhotoRemoveEvent(std::string suffixString);
 };
 
 class MediaSyncNotifyData : public AsyncTaskData {
