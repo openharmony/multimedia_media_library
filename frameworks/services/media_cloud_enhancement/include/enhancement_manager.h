@@ -78,6 +78,8 @@ private:
     ~EnhancementManager();
     EnhancementManager(const EnhancementManager &manager) = delete;
     const EnhancementManager &operator=(const EnhancementManager &manager) = delete;
+    
+    static std::mutex mutex_;
 };
 } // namespace Media
 } // namespace OHOS
