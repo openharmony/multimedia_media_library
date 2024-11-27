@@ -13,9 +13,12 @@
  * limitations under the License.
  */
 
+#include "ptp_media_sync_observer.h"
+
+#include <chrono>
+
 #include "media_log.h"
 #include "ptp_album_handles.h"
-#include "ptp_media_sync_observer.h"
 #include "photo_album_column.h"
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
@@ -27,6 +30,7 @@ namespace OHOS {
 namespace Media {
 constexpr int32_t RESERVE_ALBUM = 10;
 constexpr int32_t PARENT_ID = 0;
+constexpr int32_t DELETE_LIMIT_TIME = 5000;
 const string BURST_COVER_LEVEL = "1";
 const string BURST_NOT_COVER_LEVEL = "2";
 const string IS_LOCAL = "2";
@@ -57,6 +61,7 @@ void MediaSyncObserver::SendEventPackets(uint32_t objectHandle, uint16_t eventCo
     CHECK_AND_RETURN_LOG(context_ != nullptr, "Mtp Ptp context is nullptr");
     MtpPacketTool::PutUInt32(outBuffer, context_->transactionID);
     MtpPacketTool::PutUInt32(outBuffer, objectHandle);
+    MEDIA_DEBUG_LOG("MtpMediaLibrary album [%{public}d]", objectHandle);
 
     event.data = outBuffer;
     CHECK_AND_RETURN_LOG(context_->mtpDriver != nullptr, "Mtp Ptp mtpDriver is nullptr");
@@ -125,16 +130,71 @@ vector<int32_t> MediaSyncObserver::GetHandlesFromPhotosInfoBurstKeys(int32_t han
     return handlesResult;
 }
 
-void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixString)
+vector<int32_t> MediaSyncObserver::GetAllDeleteHandles()
 {
-    if (stoi(suffixString) <= 0) {
-        return;
+    vector<int32_t> handlesResult;
+    if (dataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("MtpMedialibraryManager::GetAllDeleteHandles fail to get datasharehelper");
+        return handlesResult;
     }
     Uri uri(PAH_QUERY_PHOTO);
     vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_ID);
     DataShare::DataSharePredicates predicates;
-    shared_ptr<DataShare::DataShareResultSet> resultSet;
+    auto now = std::chrono::system_clock::now();
+    auto now_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+    auto new_timestamp = now_milliseconds - DELETE_LIMIT_TIME;
+    predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(new_timestamp));
+    shared_ptr<DataShare::DataShareResultSet> resultSet = dataShareHelper_->Query(uri, predicates, columns);
+
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
+        handlesResult, "MtpMedialibraryManager fail to get PHOTO_ALL_DELETE_KEY");
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        handlesResult, "MtpMedialibraryManager have no PHOTO_ALL_DELETE_KEY");
+    do {
+        string file_id = GetStringVal(PhotoColumn::MEDIA_ID, resultSet);
+        handlesResult.push_back(stoi(file_id));
+    } while (resultSet->GoToNextRow()==NativeRdb::E_OK);
+    return handlesResult;
+}
+
+void MediaSyncObserver::SendPhotoRemoveEvent(std::string suffixString)
+{
+    vector<int32_t> allDeletedHandles;
     vector<int32_t> handles;
+    if (suffixString.empty()) {
+        allDeletedHandles = GetAllDeleteHandles();
+        for (const auto deletehandle: allDeletedHandles) {
+            SendEventPackets(deletehandle + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+            SendEventPackets(deletehandle + EDITED_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+            SendEventPackets(deletehandle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+            SendEventPackets(deletehandle + EDITED_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+            handles = GetHandlesFromPhotosInfoBurstKeys(deletehandle);
+            for (const auto handle : handles) {
+                SendEventPackets(handle + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+            }
+        }
+    } else {
+        SendEventPackets(stoi(suffixString) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+        SendEventPackets(stoi(suffixString) + EDITED_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+        SendEventPackets(stoi(suffixString) + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+        SendEventPackets(stoi(suffixString) + EDITED_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+        handles = GetHandlesFromPhotosInfoBurstKeys(stoi(suffixString));
+        for (const auto handle : handles) {
+            SendEventPackets(handle+COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+        }
+    }
+}
+
+void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixString)
+{
+    if (!suffixString.empty() && !std::isdigit(suffixString[0])) {
+        return;
+    }
+    if (!suffixString.empty() && stoi(suffixString) <= 0) {
+        return;
+    }
+
     switch (changeType) {
         case static_cast<int32_t>(NotifyType::NOTIFY_ADD):
             MEDIA_DEBUG_LOG("MtpMediaLibrary PHOTO ADD");
@@ -146,14 +206,7 @@ void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixStrin
             break;
         case static_cast<int32_t>(NotifyType::NOTIFY_REMOVE):
             MEDIA_DEBUG_LOG("MtpMediaLibrary PHOTO REMOVE");
-            SendEventPackets(stoi(suffixString) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-            SendEventPackets(stoi(suffixString) + EDITED_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-            SendEventPackets(stoi(suffixString) + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-            SendEventPackets(stoi(suffixString) + EDITED_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-            handles = GetHandlesFromPhotosInfoBurstKeys(stoi(suffixString));
-            for (const auto handle: handles) {
-                SendEventPackets(handle+COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-            }
+            SendPhotoRemoveEvent(suffixString);
             break;
         default:
             break;
@@ -230,7 +283,7 @@ void MediaSyncObserver::OnChangeEx(const ChangeInfo &changeInfo)
         MEDIA_DEBUG_LOG("MtpMediaLibrary uris [%{public}s]", uri.c_str());
         if (startsWith(uri, PhotoPrefix)) {
             std::string suffixString = uri.substr(PhotoPrefix.size());
-            if (suffixString.empty()) {
+            if (suffixString.empty() && changeInfo.changeType_ != static_cast<int32_t>(NotifyType::NOTIFY_REMOVE)) {
                 MEDIA_ERR_LOG("MtpMediaLibrary suffixString is empty");
                 continue;
             }
