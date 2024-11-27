@@ -21,7 +21,7 @@ bool MtpGlobal::isBlock_ = true;
 
 bool MtpGlobal::IsBlocked()
 {
-    return false;
+    return isBlock_;
 }
 
 void MtpGlobal::ReleaseBlock()
