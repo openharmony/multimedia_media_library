@@ -367,8 +367,8 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
     Size targetSize = ConvertDecodeSize(data_, imageInfo.size, desiredSize_);
     Size sourceSize = imageInfo.size;
 
-    // When encode picture, if mainPixel width or height is odd, hard encode would fail.
-    // For the safety of encode process, only those of even desiredSize is allowed to generate througth picture.
+    // When encode picture, if mainPixel width or height is odd, hardware encode would fail.
+    // For the safety of encode process, only those of even desiredSize are allowed to generate througth picture.
     bool shouldGeneratePicture = data_.loaderOpts.isHdr && imageSource->IsHdrImage() &&
         data_.lcdDesiredSize.width % 2 == 0 && data_.lcdDesiredSize.height % 2 == 0;
     bool isGenerateSucceed = shouldGeneratePicture ?
@@ -376,11 +376,15 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
     if (!isGenerateSucceed && shouldGeneratePicture) {
         MEDIA_ERR_LOG("SourceLoader generate picture source failed, generate pixelmap instead, path:%{public}s",
             DfxUtils::GetSafePath(data_.path).c_str());
-        isGenerateSucceed = GeneratePixelMapSource(imageSource, sourceSize, targetSize);
+        std::unique_ptr<ImageSource> retryImageSource = LoadImageSource(sourcePath, err);
+        if (err != E_OK || retryImageSource == nullptr) {
+            MEDIA_ERR_LOG("LoadImageSource retryImageSource error:%{public}d, errorno:%{public}d", err, errno);
+            return false;
+        }
+        isGenerateSucceed = GeneratePixelMapSource(retryImageSource, sourceSize, targetSize);
     }
     if (!isGenerateSucceed) {
-        MEDIA_ERR_LOG("SourceLoader CreateImagePixelMap generate source failed, path:%{public}s",
-            DfxUtils::GetSafePath(data_.path).c_str());
+        MEDIA_ERR_LOG("ImagePixelMap generate failed, path:%{public}s", DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
     tracer.Finish();
