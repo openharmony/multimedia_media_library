@@ -180,7 +180,7 @@ protected:
     static void UpdateVirtualPath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t UpdateFileInDb(MediaLibraryCommand &cmd);
     EXPORT static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
-        MediaLibraryApi api, bool isMovingPhotoVideo = false);
+        MediaLibraryApi api, bool isMovingPhotoVideo = false, int32_t type = -1);
     static int32_t OpenHighlightCover(MediaLibraryCommand &cmd, const std::string &mode);
     static int32_t OpenHighlightVideo(MediaLibraryCommand &cmd, const std::string &mode);
     EXPORT static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync = false);
@@ -201,7 +201,7 @@ protected:
     static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         std::string &value);
     EXPORT static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode,
-        const std::string &fileId);
+        const std::string &fileId, int32_t type = -1);
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0);
     static void ScanFileWithoutAlbumUpdate(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,

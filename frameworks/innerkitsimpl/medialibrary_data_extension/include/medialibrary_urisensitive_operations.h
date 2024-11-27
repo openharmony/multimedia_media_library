@@ -41,9 +41,11 @@ public:
     EXPORT static int32_t GrantUriSensitive(MediaLibraryCommand &cmd,
         const std::vector<DataShareValuesBucket> &values);
     EXPORT static void DeleteAllSensitiveAsync();
-    EXPORT static int32_t QuerySensitiveType(const std::string &appId,
+    EXPORT static int32_t QuerySensitiveType(const uint32_t &tokenId,
         const std::string &fileId);
     EXPORT static std::string QueryAppId(const std::string &fileId);
+    EXPORT static bool QueryForceSensitive(const uint32_t &tokenId,
+        const std::string &fileId);
 };
 } // Media
 } // OHOS
