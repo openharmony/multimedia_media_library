@@ -66,7 +66,7 @@ std::shared_ptr<MtpMedialibraryManager> MtpMedialibraryManager::instance_ = null
 std::mutex MtpMedialibraryManager::mutex_;
 shared_ptr<DataShare::DataShareHelper> MtpMedialibraryManager::dataShareHelper_ = nullptr;
 std::shared_ptr<MediaSyncObserver> mediaPhotoObserver_ = nullptr;
-std::shared_ptr<MediaSyncObserver> mediaPhotoAlbumObserver_ = nullptr;
+std::shared_ptr<MediaSyncObserver> mediaAlbumObserver_ = nullptr;
 MtpMedialibraryManager::MtpMedialibraryManager(void)
 {
 }
@@ -94,15 +94,24 @@ void MtpMedialibraryManager::Init(const sptr<IRemoteObject> &token)
     if (mediaPhotoObserver_ == nullptr) {
         mediaPhotoObserver_ = std::make_shared<MediaSyncObserver>();
     }
-    if (mediaPhotoAlbumObserver_ == nullptr) {
-        mediaPhotoAlbumObserver_ = std::make_shared<MediaSyncObserver>();
+    if (mediaAlbumObserver_ == nullptr) {
+        mediaAlbumObserver_ = std::make_shared<MediaSyncObserver>();
     }
     mediaPhotoObserver_->context_ = context_;
     mediaPhotoObserver_->dataShareHelper_ = dataShareHelper_;
-    mediaPhotoAlbumObserver_->context_ = context_;
-    mediaPhotoAlbumObserver_->dataShareHelper_ = dataShareHelper_;
+    mediaAlbumObserver_->context_ = context_;
+    mediaAlbumObserver_->dataShareHelper_ = dataShareHelper_;
     dataShareHelper_->RegisterObserverExt(Uri(PhotoColumn::PHOTO_URI_PREFIX), mediaPhotoObserver_, true);
-    dataShareHelper_->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX), mediaPhotoAlbumObserver_, true);
+    dataShareHelper_->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX), mediaAlbumObserver_, true);
+}
+
+void MtpMedialibraryManager::Clear()
+{
+    MEDIA_INFO_LOG("MtpMediaLibrary::Ptp Clear is called");
+    if (dataShareHelper_ != nullptr) {
+        dataShareHelper_->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_URI_PREFIX), mediaPhotoObserver_);
+        dataShareHelper_->UnregisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX), mediaAlbumObserver_);
+    }
 }
 
 void MtpMedialibraryManager::SetContext(const shared_ptr<MtpOperationContext> &context)
