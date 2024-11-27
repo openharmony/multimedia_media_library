@@ -26,6 +26,8 @@ const std::string AppUriPermissionColumn::FILE_ID = "file_id";
 const std::string AppUriPermissionColumn::URI_TYPE = "uri_type";
 const std::string AppUriPermissionColumn::PERMISSION_TYPE = "permission_type";
 const std::string AppUriPermissionColumn::DATE_MODIFIED = "date_modified";
+const std::string AppUriPermissionColumn::SOURCE_TOKENID = "src_tokenid";
+const std::string AppUriPermissionColumn::TARGET_TOKENID = "target_tokenid";
 
 const int AppUriPermissionColumn::URI_PHOTO = 1;
 const int AppUriPermissionColumn::URI_AUDIO = 2;
@@ -61,7 +63,8 @@ const std::string AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE =
     AppUriPermissionColumn::ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     AppUriPermissionColumn::APP_ID + " TEXT, " + AppUriPermissionColumn::FILE_ID + " INTEGER, " +
     AppUriPermissionColumn::URI_TYPE + " INTEGER, " + AppUriPermissionColumn::PERMISSION_TYPE + " INTEGER, " +
-    AppUriPermissionColumn::DATE_MODIFIED + " BIGINT)";
+    AppUriPermissionColumn::DATE_MODIFIED + " BIGINT, " + AppUriPermissionColumn::SOURCE_TOKENID + " BIGINT, " +
+        AppUriPermissionColumn::TARGET_TOKENID + " BIGINT)";
 
 const std::string AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX = BaseColumn::CreateIndex() +
     AppUriPermissionColumn::URI_URITYPE_APPID_INDEX + " ON " +
@@ -70,10 +73,18 @@ const std::string AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX = BaseC
     AppUriPermissionColumn::URI_TYPE + "," +
     AppUriPermissionColumn::APP_ID + " DESC)";
 
+const std::string AppUriPermissionColumn::CREATE_URI_URITYPE_TOKENID_INDEX = BaseColumn::CreateIndex() +
+    AppUriPermissionColumn::URI_URITYPE_APPID_INDEX + " ON " +
+    AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + " (" +
+    AppUriPermissionColumn::FILE_ID + " DESC," +
+    AppUriPermissionColumn::URI_TYPE + "," +
+    AppUriPermissionColumn::TARGET_TOKENID + " DESC)";
+
 const std::set<std::string> AppUriPermissionColumn::ALL_COLUMNS = {
     AppUriPermissionColumn::ID, AppUriPermissionColumn::APP_ID, AppUriPermissionColumn::FILE_ID,
     AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::PERMISSION_TYPE,
-    AppUriPermissionColumn::DATE_MODIFIED
+    AppUriPermissionColumn::DATE_MODIFIED, AppUriPermissionColumn::SOURCE_TOKENID,
+    AppUriPermissionColumn::TARGET_TOKENID
 };
 } // namespace Media
 } // namespace OHOS

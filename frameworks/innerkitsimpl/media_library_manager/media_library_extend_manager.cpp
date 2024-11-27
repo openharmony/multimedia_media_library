@@ -166,9 +166,9 @@ static void CheckAccessTokenPermission(uint32_t tokenId, uint32_t checkFlag,
 }
 
 static void MakePredicatesForCheckPhotoUriPermission(int32_t &checkFlag, DataSharePredicates &predicates,
-    const string &appid, TableType mediaType, vector<string> &fileIds)
+    uint32_t targetTokenId, TableType mediaType, vector<string> &fileIds)
 {
-    predicates.EqualTo(AppUriPermissionColumn::APP_ID, appid);
+    predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)targetTokenId);
     predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, to_string(static_cast<int32_t>(mediaType)));
     predicates.And()->In(AppUriPermissionColumn::FILE_ID, fileIds);
     vector<string> permissionTypes;
@@ -277,7 +277,7 @@ static int32_t CheckInputParameters(const vector<string> &urisSource, uint32_t f
     return E_SUCCESS;
 }
 
-int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId, const string &appid,
+int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId,
     const vector<string> &urisSource, vector<bool> &results, uint32_t flag)
 {
     MediaLibraryTracer tracer;
@@ -309,7 +309,7 @@ int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId, con
     if (queryPhotoFlag != -1) {
         DataSharePredicates predicates;
         MakePredicatesForCheckPhotoUriPermission(queryPhotoFlag, predicates,
-            appid, TableType::TYPE_PHOTOS, photoFileIds);
+            tokenId, TableType::TYPE_PHOTOS, photoFileIds);
         auto ret = CheckPhotoUriPermissionQueryOperation(predicates, photoResultMap);
         if (ret != E_SUCCESS) {
             return E_ERR;
@@ -318,7 +318,7 @@ int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId, con
     if (queryAudioFlag != -1) {
         DataSharePredicates predicates;
         MakePredicatesForCheckPhotoUriPermission(queryAudioFlag, predicates,
-            appid, TableType::TYPE_AUDIOS, audioFileIds);
+            tokenId, TableType::TYPE_AUDIOS, audioFileIds);
         auto ret = CheckPhotoUriPermissionQueryOperation(predicates, audioResultMap);
         if (ret != E_SUCCESS) {
             return E_ERR;
@@ -329,8 +329,8 @@ int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId, con
     return E_SUCCESS;
 }
 
-int32_t MediaLibraryExtendManager::GrantPhotoUriPermission(const string &appid, const vector<string> &uris,
-    PhotoPermissionType photoPermissionType, HideSensitiveType hideSensitiveTpye)
+int32_t MediaLibraryExtendManager::GrantPhotoUriPermission(uint32_t srcTokenId, uint32_t targetTokenId,
+    const std::vector<string> &uris, PhotoPermissionType photoPermissionType, HideSensitiveType hideSensitiveTpye)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryExtendManager::GrantPhotoUriPermission");
@@ -367,7 +367,8 @@ int32_t MediaLibraryExtendManager::GrantPhotoUriPermission(const string &appid, 
         }
         string fileId = MediaFileUtils::GetIdFromUri(uri);
         DataShareValuesBucket valuesBucket;
-        valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
+        valuesBucket.Put(AppUriPermissionColumn::SOURCE_TOKENID, (int64_t)srcTokenId);
+        valuesBucket.Put(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)targetTokenId);
         valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
         valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, tableType);
         valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, static_cast<int32_t>(photoPermissionType));
@@ -379,10 +380,12 @@ int32_t MediaLibraryExtendManager::GrantPhotoUriPermission(const string &appid, 
     return ret;
 }
 
-int32_t MediaLibraryExtendManager::CancelPhotoUriPermission(const string &appid, const vector<string> &uris)
+int32_t MediaLibraryExtendManager::CancelPhotoUriPermission(uint32_t srcTokenId, uint32_t targetTokenId,
+    const std::vector<string> &uris)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryExtendManager::CancelPhotoUriPermission");
+    MEDIA_DEBUG_LOG("CancelPermission begin, srcToken:%{private}d, targetToken:%{private}d", srcTokenId, targetTokenId);
     if (dataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("dataShareHelper is nullptr");
         return E_ERR;
@@ -409,11 +412,11 @@ int32_t MediaLibraryExtendManager::CancelPhotoUriPermission(const string &appid,
         if (i > 0) {
             predicates.Or();
         }
-        MEDIA_DEBUG_LOG("CancelPhotoUriPermission appid:%{private}s, fileId:%{private}s, tableType:%{private}d",
-            appid.c_str(), fileId.c_str(), tableType);
+        MEDIA_DEBUG_LOG("CancelPermission fileId:%{private}s, tableType:%{private}d", fileId.c_str(), tableType);
         predicates.BeginWrap();
-        predicates.EqualTo(AppUriPermissionColumn::APP_ID, appid);
+        predicates.EqualTo(AppUriPermissionColumn::SOURCE_TOKENID, (int64_t)srcTokenId);
         predicates.EqualTo(AppUriPermissionColumn::FILE_ID, fileId);
+        predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)targetTokenId);
         predicates.EqualTo(AppUriPermissionColumn::URI_TYPE, tableType);
         predicates.NotEqualTo(AppUriPermissionColumn::PERMISSION_TYPE,
             static_cast<int>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO));

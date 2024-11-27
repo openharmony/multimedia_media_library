@@ -31,6 +31,8 @@ public:
     static const std::string URI_TYPE EXPORT;
     static const std::string PERMISSION_TYPE EXPORT;
     static const std::string DATE_MODIFIED EXPORT;
+    static const std::string SOURCE_TOKENID EXPORT;
+    static const std::string TARGET_TOKENID EXPORT;
 
     // uriTypes
     static const int URI_PHOTO EXPORT;
@@ -60,6 +62,7 @@ public:
     // create sql
     static const std::string CREATE_APP_URI_PERMISSION_TABLE EXPORT;
     static const std::string CREATE_URI_URITYPE_APPID_INDEX EXPORT;
+    static const std::string CREATE_URI_URITYPE_TOKENID_INDEX EXPORT;
 
     // all columns
     static const std::set<std::string> ALL_COLUMNS EXPORT;

@@ -92,6 +92,8 @@ constexpr int32_t ORIENTATION_0 = 1;
 constexpr int32_t ORIENTATION_90 = 6;
 constexpr int32_t ORIENTATION_180 = 3;
 constexpr int32_t ORIENTATION_270 = 8;
+constexpr int32_t OFFSET = 5;
+constexpr int32_t ZERO_ASCII = '0';
 
 enum ImageFileType : int32_t {
     JPEG = 1,
@@ -431,6 +433,14 @@ static void UpdateLastVisitTime(MediaLibraryCommand &cmd, const string &id)
     }).detach();
 }
 
+static void GetType(string &uri, int32_t &type)
+{
+    int pos = uri.find("type=");
+    if (pos != uri.npos) {
+        type = uri[pos + OFFSET] - ZERO_ASCII;
+    }
+}
+
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
@@ -464,10 +474,15 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         return errCode;
     }
     UpdateLastVisitTime(cmd, id);
+    string uri = cmd.GetUri().ToString();
+    int32_t type = -1;
+    GetType(uri, type);
+    MEDIA_DEBUG_LOG("After spliting, uri is %{public}s", uri.c_str());
+    MEDIA_DEBUG_LOG("After spliting, type is %{public}d", type);
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
-        return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10, isMovingPhotoVideo);
+        return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10, isMovingPhotoVideo, type);
     }
-    return OpenAsset(fileAsset, mode, cmd.GetApi());
+    return OpenAsset(fileAsset, mode, cmd.GetApi(), type);
 }
 
 int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
