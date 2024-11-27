@@ -388,7 +388,7 @@ int32_t MtpMedialibraryManager::SetObjectInfo(const unique_ptr<FileAsset> &fileA
 {
     CHECK_AND_RETURN_RET_LOG(outObjectInfo != nullptr,
         MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR), "outObjectInfo is nullptr");
-    outObjectInfo->handle = fileAsset->GetId();
+    outObjectInfo->handle = static_cast<uint32_t>(fileAsset->GetId());
     outObjectInfo->name = fileAsset->GetDisplayName();
     outObjectInfo->size = static_cast<uint32_t>(fileAsset->GetSize()); // need support larger than 4GB file
     outObjectInfo->parent = static_cast<uint32_t>(fileAsset->GetParent());
@@ -470,6 +470,10 @@ bool MtpMedialibraryManager::CompressImage(std::unique_ptr<PixelMap> &pixelMap,
         .alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL
     };
     unique_ptr<PixelMap> compressImage = PixelMap::Create(*pixelMap, opts);
+    if (compressImage == nullptr) {
+        MEDIA_ERR_LOG("Failed to Create and compressImage is nullptr");
+        return false;
+    }
 
     PackOption option = {
         .format = THUMBNAIL_FORMAT,
