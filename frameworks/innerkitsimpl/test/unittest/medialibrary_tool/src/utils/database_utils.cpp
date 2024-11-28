@@ -22,7 +22,7 @@
 #include "media_file_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "utils/constant_utils.h"
 #include "utils/db_const.h"
 

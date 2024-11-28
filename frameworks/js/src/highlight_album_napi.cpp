@@ -27,7 +27,7 @@
 #include "photo_album.h"
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "userfile_client.h"
 #include "vision_column.h"
 #include "story_album_column.h"

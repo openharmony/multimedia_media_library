@@ -62,7 +62,7 @@
 #include "picture_manager_thread.h"
 
 #include "rdb_predicates.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "thumbnail_const.h"
 #include "thumbnail_service.h"
 #include "uri.h"

@@ -31,7 +31,7 @@
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "rdb_predicates.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "string_ex.h"
 #include "thumbnail_const.h"
 #include "uri.h"

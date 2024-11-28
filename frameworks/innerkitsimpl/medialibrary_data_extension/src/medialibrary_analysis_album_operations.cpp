@@ -31,7 +31,7 @@
 #include "medialibrary_rdb_transaction.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "values_bucket.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"

@@ -48,7 +48,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "rdb_store.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "wifi_device.h"
 #include "thermal_mgr_client.h"
 #include "userfile_manager_types.h"

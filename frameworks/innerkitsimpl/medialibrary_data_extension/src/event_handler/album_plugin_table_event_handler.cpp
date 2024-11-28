@@ -22,7 +22,7 @@
 #include "dfx_transaction.h"
 #include "rdb_store.h"
 #include "rdb_errno.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "media_log.h"
 #include "medialibrary_rdb_transaction.h"
 

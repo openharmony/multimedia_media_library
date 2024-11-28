@@ -47,7 +47,7 @@
 #include "moving_photo_file_utils.h"
 #include "post_proc.h"
 #include "permission_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "string_ex.h"
 #include "system_ability_definition.h"
 #include "thumbnail_const.h"

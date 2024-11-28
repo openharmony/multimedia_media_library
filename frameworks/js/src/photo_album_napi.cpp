@@ -24,7 +24,7 @@
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
 #include "photo_map_column.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "userfile_client.h"
 
 using namespace std;
