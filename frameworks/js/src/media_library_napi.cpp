@@ -354,6 +354,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("createAssetsForAppWithMode", PhotoAccessHelperAgentCreateAssetsWithMode),
             DECLARE_NAPI_FUNCTION("getDataAnalysisProgress", PhotoAccessHelperGetDataAnalysisProgress),
             DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", PhotoAccessGetSharedPhotoAssets),
+            DECLARE_NAPI_FUNCTION("setForceHideSensitiveType", PhotoAccessHelperSetForceHideSensitiveType),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -4955,6 +4956,79 @@ static bool ParseUriTypes(std::string &appid, int &permissionType, int &sensitiv
     return true;
 }
 
+static bool ParseUriTypes(uint32_t &srcTokenId, uint32_t &targetTokenId, int &sensitiveType,
+    std::vector<std::string> &uris, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    // used for deduplication
+    std::set<int32_t> fileIdSet;
+    for (const auto &uri : uris) {
+        OHOS::DataShare::DataShareValuesBucket valuesBucket;
+        int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromPhotoUri(uri);
+        if (fileId < 0) {
+            return false;
+        }
+        if (fileIdSet.find(fileId) != fileIdSet.end()) {
+            continue;
+        }
+        fileIdSet.insert(fileId);
+        valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
+        valuesBucket.Put(AppUriSensitiveColumn::SOURCE_TOKENID, (int64_t)srcTokenId);
+        valuesBucket.Put(AppUriSensitiveColumn::TARGET_TOKENID, (int64_t)targetTokenId);
+        valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, sensitiveType);
+        valuesBucket.Put(AppUriSensitiveColumn::IS_FORCE_SENSITIVE, 1);
+        // parsing fileId ensured uri is photo.
+        valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
+        context->valuesBucketArray.push_back(move(valuesBucket));
+    }
+    return true;
+}
+
+static napi_value ParseArgsGrantPhotoUrisForForceSensitive(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, "Failed to get object info");
+    
+    context->isCreateByComponent = false;
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    // tokenId
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+ 
+    // parse uris
+    vector<string> uris;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, context->argv[ARGS_ZERO], uris),
+        JS_ERR_PARAMETER_INVALID);
+    constexpr size_t urisMaxSize = 1000;
+    if (uris.empty() || uris.size() > urisMaxSize) {
+        NAPI_ERR_LOG("the size of uriList is invalid");
+        return nullptr;
+    }
+ 
+    // parse hideSensitiveType
+    int32_t hideSensitiveType;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_ONE], hideSensitiveType) ==
+        napi_ok, "Failed to get hideSensitiveType");
+    if (AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.find((int)hideSensitiveType) ==
+        AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.end()) {
+        NAPI_ERR_LOG("invalid picker hideSensitiveType, hideSensitiveType=%{public}d", hideSensitiveType);
+        return nullptr;
+    }
+
+    if (!ParseUriTypes(tokenId, tokenId, hideSensitiveType, uris, context)) {
+        return nullptr;
+    }
+ 
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    return result;
+}
+
 static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -8698,6 +8772,22 @@ napi_value MediaLibraryNapi::StartPhotoPicker(napi_env env, napi_callback_info i
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "StrartPhotoPicker",
         StartPhotoPickerExecute, StartPhotoPickerAsyncCallbackComplete);
+}
+
+napi_value MediaLibraryNapi::PhotoAccessHelperSetForceHideSensitiveType(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperSetForceHideSensitiveType");
+ 
+    NAPI_INFO_LOG("enter");
+ 
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->assetType = TYPE_PHOTO;
+    NAPI_ASSERT(env, ParseArgsGrantPhotoUrisForForceSensitive(env, info, asyncContext), "Failed to parse js args");
+ 
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessGrantPhotoUrisPermission",
+        PhotoAccessGrantPhotoUrisPermissionExecute, JSPhotoUriPermissionCallback);
 }
 
 napi_value MediaLibraryNapi::PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info)

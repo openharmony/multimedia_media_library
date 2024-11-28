@@ -367,7 +367,8 @@ HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_te
     std::vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int i = 0; i < 2; ++i) {
         OHOS::DataShare::DataShareValuesBucket dataShareValue;
-        dataShareValue.Put(AppUriSensitiveColumn::APP_ID, "appidBatch01");
+        dataShareValue.Put(AppUriSensitiveColumn::SOURCE_TOKENID, 4);
+        dataShareValue.Put(AppUriSensitiveColumn::TARGET_TOKENID, 40);
         dataShareValue.Put(AppUriSensitiveColumn::FILE_ID, to_string(photoIds[i]));
         dataShareValue.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE,
             AppUriSensitiveColumn::SENSITIVE_ALL_DESENSITIZE);
@@ -383,7 +384,8 @@ HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_te
     std::vector<DataShare::DataShareValuesBucket> dataShareValues02;
     for (int i = 0; i < 2; ++i) {
         OHOS::DataShare::DataShareValuesBucket dataShareValue;
-        dataShareValue.Put(AppUriSensitiveColumn::APP_ID, "appidBatch01");
+        dataShareValue.Put(AppUriSensitiveColumn::SOURCE_TOKENID, 4);
+        dataShareValue.Put(AppUriSensitiveColumn::TARGET_TOKENID, 40);
         dataShareValue.Put(AppUriSensitiveColumn::FILE_ID, to_string(photoIds[i]));
         dataShareValue.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE,
             AppUriSensitiveColumn::SENSITIVE_NO_DESENSITIZE);
@@ -416,7 +418,8 @@ HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_te
     std::vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int i = 0; i < 2; ++i) {
         OHOS::DataShare::DataShareValuesBucket dataShareValue;
-        dataShareValue.Put(AppUriSensitiveColumn::APP_ID, "appidBatch01");
+        dataShareValue.Put(AppUriSensitiveColumn::SOURCE_TOKENID, 4);
+        dataShareValue.Put(AppUriSensitiveColumn::TARGET_TOKENID, 40);
         dataShareValue.Put(AppUriSensitiveColumn::FILE_ID, to_string(photoIds[i]));
         dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE,
             AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
@@ -427,6 +430,120 @@ HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_te
     EXPECT_EQ(ret, E_ERR);
 
     MEDIA_INFO_LOG("end tdd app_uri_sensitive_oprn_api12_test_005");
+}
+
+static void QueryUriSensitive(int64_t srcTokenId, int64_t targetTokenId, vector<string> inColumn, int mediaType,
+    std::shared_ptr<OHOS::NativeRdb::ResultSet> &resultSet)
+{
+    vector<string> columns;
+    DataSharePredicates predicates;
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("UriSensitive query operation, rdbStore is null.");
+        return;
+    }
+    predicates.In(AppUriSensitiveColumn::FILE_ID, inColumn);
+    predicates.And()->EqualTo(AppUriSensitiveColumn::TARGET_TOKENID, (int64_t)targetTokenId);
+    predicates.And()->EqualTo(AppUriSensitiveColumn::SOURCE_TOKENID, (int64_t)srcTokenId);
+    predicates.And()->EqualTo(AppUriSensitiveColumn::URI_TYPE, mediaType);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates,
+        AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
+    resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
+    return;
+}
+
+static void GetDataShareValues(std::vector<DataShare::DataShareValuesBucket> dataShareValues, int64_t tokenId,
+    std::vector<int32_t> photoIds, int hideSensitiveType)
+{
+    for (int i = 0; i < photoIds.size(); ++i) {
+        OHOS::DataShare::DataShareValuesBucket dataShareValue;
+        dataShareValue.Put(AppUriSensitiveColumn::SOURCE_TOKENID, tokenId);
+        dataShareValue.Put(AppUriSensitiveColumn::TARGET_TOKENID, tokenId);
+        dataShareValue.Put(AppUriSensitiveColumn::FILE_ID, to_string(photoIds[i]));
+        dataShareValue.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, hideSensitiveType);
+        dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
+        dataShareValue.Put(AppUriSensitiveColumn::URI_TYPE, AppUriSensitiveColumn::URI_PHOTO);
+        dataShareValues.push_back(dataShareValue);
+    }
+}
+
+/**
+ * batch insert two, and update for tokenId
+ */
+HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_tokenId_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd app_uri_sensitive_tokenId_test_001");
+    vector<string> inColumn;
+    int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    int32_t photoId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (photoId1 < E_OK || photoId2 < E_OK) {
+        MEDIA_ERR_LOG("create photos failed,photoId1=%{public}d,photoId2=%{public}d", photoId1, photoId2);
+        return;
+    }
+    inColumn.push_back(to_string(photoId1));
+    inColumn.push_back(to_string(photoId2));
+    std::vector<int32_t> photoIds = { photoId1, photoId2 };
+    int64_t tokenId = 1688;
+    std::vector<DataShare::DataShareValuesBucket> dataShareValues;
+    GetDataShareValues(dataShareValues, tokenId, photoIds, AppUriSensitiveColumn::SENSITIVE_ALL_DESENSITIZE);
+    int ret = TestBatchInsert(dataShareValues);
+    EXPECT_EQ(ret, 0);
+    std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet;
+    QueryUriSensitive(tokenId, tokenId, inColumn, AppUriSensitiveColumn::URI_PHOTO, resultSet);
+    ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
+    int count = 0;
+    do {
+        int32_t sensitiveType = GetInt32Val(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, resultSet);
+        EXPECT_EQ(sensitiveType, static_cast<int32_t>(AppUriSensitiveColumn::SENSITIVE_ALL_DESENSITIZE));
+        count ++;
+    } while (!resultSet->GoToNextRow());
+    ASSERT_EQ(count, 2);
+    
+    std::vector<DataShare::DataShareValuesBucket> dataShareValues02;
+    GetDataShareValues(dataShareValues02, tokenId, photoIds, AppUriSensitiveColumn::SENSITIVE_NO_DESENSITIZE);
+    ret = TestBatchInsert(dataShareValues02);
+    EXPECT_EQ(ret, 0);
+    QueryUriSensitive(tokenId, tokenId, inColumn, AppUriSensitiveColumn::URI_PHOTO, resultSet);
+    ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
+    count = 0;
+    do {
+        int32_t sensitiveType = GetInt32Val(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, resultSet);
+        EXPECT_EQ(sensitiveType, static_cast<int32_t>(AppUriSensitiveColumn::SENSITIVE_NO_DESENSITIZE));
+        count ++;
+    } while (!resultSet->GoToNextRow());
+    ASSERT_EQ(count, 2);
+    MEDIA_INFO_LOG("end tdd app_uri_sensitive_tokenId_test_001");
+}
+
+/**
+ * batch insert two no sensitiveType.
+ */
+HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_tokenId_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd app_uri_sensitive_tokenId_test_002");
+    int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    int32_t photoId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (photoId1 < E_OK || photoId2 < E_OK) {
+        MEDIA_ERR_LOG("create photos failed,photoId1=%{public}d,photoId2=%{public}d", photoId1, photoId2);
+        return;
+    }
+    std::vector<int32_t> photoIds = { photoId1, photoId2 };
+    int64_t tokenId = 176;
+    std::vector<DataShare::DataShareValuesBucket> dataShareValues;
+    for (int i = 0; i < 2; ++i) {
+        OHOS::DataShare::DataShareValuesBucket dataShareValue;
+        dataShareValue.Put(AppUriSensitiveColumn::SOURCE_TOKENID, tokenId);
+        dataShareValue.Put(AppUriSensitiveColumn::TARGET_TOKENID, tokenId);
+        dataShareValue.Put(AppUriSensitiveColumn::FILE_ID, to_string(photoIds[i]));
+        dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE,
+            AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
+        dataShareValue.Put(AppUriSensitiveColumn::URI_TYPE, AppUriSensitiveColumn::URI_PHOTO);
+        dataShareValues.push_back(dataShareValue);
+    }
+    int ret = TestBatchInsert(dataShareValues);
+    EXPECT_EQ(ret, E_ERR);
+
+    MEDIA_INFO_LOG("end tdd app_uri_sensitive_tokenId_test_002");
 }
 } // namespace Media
 } // namespace OHOS
