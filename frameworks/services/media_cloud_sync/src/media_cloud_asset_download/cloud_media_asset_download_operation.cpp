@@ -558,7 +558,7 @@ int32_t CloudMediaAssetDownloadOperation::PauseDownloadTask(const CloudMediaTask
         taskStatus_ = CloudMediaAssetTaskStatus::PAUSED;
         if (downloadId_ != DOWNLOAD_ID_DEFAULT) {
             downloadIdCache_ = downloadId_;
-            fileNumCache_ = dataForDownload_.fileDownloadMap.size();
+            fileNumCache_ = static_cast<int32_t>(dataForDownload_.fileDownloadMap.size());
             cloudSyncManager_.get().StopFileCache(downloadId_, !NEED_CLEAN);
             MEDIA_INFO_LOG("success StopFileCache.");
         }

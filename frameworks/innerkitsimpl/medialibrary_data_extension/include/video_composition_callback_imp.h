@@ -61,8 +61,8 @@ private:
     static std::queue<Task> waitQueue_;
     static int32_t curWorkerNum_;
     static std::mutex mutex_;
-    int32_t inputFileFd_;
-    int32_t outputFileFd_;
+    int32_t inputFileFd_ = 0;
+    int32_t outputFileFd_ = 0;
     string videoPath_;
 };
 

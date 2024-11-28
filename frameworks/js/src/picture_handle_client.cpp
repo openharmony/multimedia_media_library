@@ -219,7 +219,7 @@ bool PictureHandlerClient::ReadAuxiliaryPictureInfo(MessageParcel &data, Auxilia
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo rowStride: %{public}d",
         auxiliaryPictureInfo.rowStride);
 
-    auxiliaryPictureInfo.size.height = data.ReadInt32();
+    auxiliaryPictureInfo.size.height = static_cast<uint32_t>(data.ReadInt32());
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo height: %{public}d",
         auxiliaryPictureInfo.size.height);
 
