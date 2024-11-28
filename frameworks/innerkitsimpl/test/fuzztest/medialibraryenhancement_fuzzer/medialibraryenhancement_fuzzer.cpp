@@ -331,7 +331,11 @@ static void EnhancementServiceCallbackTest(const uint8_t *data, size_t size)
     bundle = FuzzMediaEnhanceBundle(data, size, photoId);
     Media::EnhancementServiceCallback::OnFailed(photoId.c_str(), bundle);
 
-    uint8_t* buffer = Media::BUFFER;
+    uint32_t size = static_cast<uint32_t>(sizeof(Media::BUFFER));
+    uint8_t* buffer = new uint8_t[size];
+    for (uint32_t i = 0; i < size; i++) {
+        buffer[i] = BUFFER[i];
+    }
     string displayName = FuzzString(data, size) + ".jpg";
     int32_t hidden = FuzzBool(data, size) ? YES : NO;
     shared_ptr<Media::CloudEnhancementFileInfo> fileInfo = make_shared<Media::CloudEnhancementFileInfo>(
