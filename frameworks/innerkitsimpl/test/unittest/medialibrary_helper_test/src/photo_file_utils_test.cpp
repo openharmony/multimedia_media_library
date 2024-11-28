@@ -124,5 +124,26 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataSourcePath_003, T
     EXPECT_EQ(PhotoFileUtils::GetEditDataSourcePath(photoPath, 100), "");
     EXPECT_EQ(PhotoFileUtils::GetEditDataSourcePath(photoPath, 101), "");
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_HasEditData_001, TestSize.Level0)
+{
+    EXPECT_EQ(PhotoFileUtils::HasEditData(0), false);
+    EXPECT_EQ(PhotoFileUtils::HasEditData(-1), false);
+    EXPECT_EQ(PhotoFileUtils::HasEditData(1732767140000), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_HasSource_001, TestSize.Level0)
+{
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 0), false);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 10), false);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 1), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 5), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(true, 0, 0), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(true, 0, 10), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(true, 0, 2), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 1732767140111, 0), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(true, 1732767140222, 0), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 1732767140333, 2), true);
+}
 } // namespace Media
 } // namespace OHOS
