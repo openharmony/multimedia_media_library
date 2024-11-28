@@ -59,7 +59,11 @@ const int32_t ALBUM_FUSION_BATCH_COUNT = 200;
 const string SQL_GET_DUPLICATE_PHOTO = "SELECT p.file_id FROM Photos p "
             "LEFT JOIN PhotoAlbum a ON p.owner_album_id = a.album_id "
             "WHERE p.dirty = 7 AND a.album_id IS NULL LIMIT 500";
-
+const std::string OTHER_ALBUM_NAME = "其它";
+const std::string SCREENSHOT_ALBUM_NAME = "截图";
+const std::string SCREENRECORD_ALBUM_NAME = "屏幕录制";
+const std::string WECHAT_ALBUM_NAME = "微信";
+const std::string ALBUM_NAME_CAMERA = "相机";
 
 static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {MediaColumn::MEDIA_SIZE, ResultSetDataType::TYPE_INT64},
@@ -1547,6 +1551,111 @@ int32_t MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus()
     }
 }
 
+static bool CheckIfNeedTransOtherAlbumData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+    int32_t otherAlbumId)
+{
+    const std::string QUERY_OTHER_ALBUM_NEED_TRANS =
+        "SELECT * FROM Photos WHERE owner_album_id = " + std::to_string(otherAlbumId) +
+        " AND (title LIKE 'IMG_%' OR title LIKE 'VID_%' OR title LIKE 'SVID_%' OR title LIKE 'screenshot_%' "
+        "OR title LIKE 'mmexport%')";
+    shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_OTHER_ALBUM_NEED_TRANS);
+    int rowCount = 0;
+    if (resultSet == nullptr || resultSet->GetRowCount(rowCount) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Query other album info fails");
+        return false;
+    }
+    if (rowCount > 0) {
+        MEDIA_INFO_LOG("Need to trans other album data, count is: %{public}d", rowCount);
+        return true;
+    }
+    return false;
+}
+
+static int32_t DealWithOtherAlbumTrans(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+    std::pair<int32_t, std::string> transInfo, int32_t otherAlbumId)
+{
+    std::string sourcePathName = "";
+    std::string sqlWherePrefix = "";
+    std::string transAlbumName = transInfo.second;
+    if (transAlbumName == SCREENSHOT_ALBUM_NAME) {
+        sourcePathName = "Pictures/Screenshots";
+        sqlWherePrefix = "title LIKE 'screenshots_%'";
+    } else if (transAlbumName == SCREENRECORD_ALBUM_NAME) {
+        sourcePathName = "Pictures/Screenshots";
+        sqlWherePrefix = "title LIKE 'SVID_%'";
+    } else if (transAlbumName == WECHAT_ALBUM_NAME) {
+        sourcePathName = "Pictures/WeiXin";
+        sqlWherePrefix = "title LIKE 'mmexport%'";
+    } else if (transAlbumName == ALBUM_NAME_CAMERA) {
+        sourcePathName = "DCIM/相机";
+        sqlWherePrefix = "(title LIKE 'IMG_%' OR title LIKE 'VID_%')";
+    } else {
+        MEDIA_ERR_LOG("Invalid trans album name %{public}s", transInfo.second.c_str());
+    }
+
+    const std::string UPDATE_OTHER_ALBUM_TRANS =
+        "UPDATE Photos SET owner_album_id = " + std::to_string(transInfo.first) +
+        ", source_path = REPLACE(source_path, '/storage/emulated/0/Pictures/其它/', '/storage/emulated/0/" +
+        sourcePathName + "/') WHERE owner_album_id = " + std::to_string(otherAlbumId) + " AND " + sqlWherePrefix;
+    int err = upgradeStore->ExecuteSql(UPDATE_OTHER_ALBUM_TRANS);
+    MEDIA_INFO_LOG("Trans other sql is: %{public}s", UPDATE_OTHER_ALBUM_TRANS.c_str());
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", UPDATE_OTHER_ALBUM_TRANS.c_str());
+        return err;
+    }
+    MEDIA_INFO_LOG("Trans other album success");
+    return E_OK;
+}
+
+int32_t MediaLibraryAlbumFusionUtils::TransOtherAlbumData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
+{
+    MEDIA_INFO_LOG("Start trans other Album to origin album");
+    if (upgradeStore == nullptr) {
+        MEDIA_ERR_LOG("fail to get rdbstore");
+        return E_DB_FAIL;
+    }
+
+    std::vector<std::pair<int32_t, std::string>> transAlbum;
+    int32_t otherAlbumId = -1;
+    const std::string QUERY_TRANS_ALBUM_INFO =
+        "SELECT * FROM PhotoAlbum WHERE lpath IN "
+        "('/Pictures/Screenshots', '/Pictures/Screenrecords', '/DCIM/相机', '/Pictures/WeiXin', '/Pictures/其它')";
+    shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_TRANS_ALBUM_INFO);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query not matched data fails");
+        return E_HAS_DB_ERROR;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t albumId = -1;
+        std::string albumName = "";
+        GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, albumId);
+        GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_NAME, albumName);
+        if (albumName == OTHER_ALBUM_NAME) {
+            otherAlbumId = albumId;
+        } else {
+            transAlbum.emplace_back(make_pair(albumId, albumName));
+        }
+        MEDIA_INFO_LOG("Trans album name is %{public}s, albumId is %{public}d", albumName.c_str(), albumId);
+    }
+    if (otherAlbumId == -1) {
+        MEDIA_INFO_LOG("No other album found");
+        return E_DB_FAIL;
+    }
+
+    if (!CheckIfNeedTransOtherAlbumData(upgradeStore, otherAlbumId)) {
+        MEDIA_INFO_LOG("No other album data need to trans");
+        return E_DB_FAIL;
+    }
+    SetRefreshAlbum(true);
+    int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
+    for (auto transInfo: transAlbum) {
+        DealWithOtherAlbumTrans(upgradeStore, transInfo, otherAlbumId);
+    }
+    MEDIA_INFO_LOG("Trans album name cost %{public}ld",
+        (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
+    return E_OK;
+}
+
 int32_t MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(int32_t upgradeStatus)
 {
     if (upgradeStatus != ALBUM_FUSION_UPGRADE_SUCCESS && upgradeStatus != ALBUM_FUSION_UPGRADE_FAIL) {
@@ -1821,6 +1930,7 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     // Clean duplicative album and rebuild expired album
     RebuildAlbumAndFillCloudValue(rdbStore);
     SetParameterToStartSync();
+    TransOtherAlbumData(rdbStore);
     if (isNeedRefreshAlbum.load() == true) {
         RefreshAllAlbums();
         isNeedRefreshAlbum = false;
