@@ -63,7 +63,7 @@ void MtpOperation::Execute()
     ReceiveRequestPacket(errorCode);
     if (errorCode != MTP_SUCCESS) {
         SendMakeResponsePacket(errorCode);
-        MEDIA_ERR_LOG("MtpOperation::Execute Out ReceiveRequestPacket fail err: %{public}d", errorCode);
+        MEDIA_DEBUG_LOG("MtpOperation::Execute Out ReceiveRequestPacket fail err: %{public}d", errorCode);
         return;
     }
 
@@ -95,7 +95,7 @@ void MtpOperation::ReceiveRequestPacket(int &errorCode)
     requestPacketPtr_->Init(headerData);
     errorCode = requestPacketPtr_->Read();
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("requestPacket Read fail err: %{public}d", errorCode);
+        MEDIA_DEBUG_LOG("requestPacket Read fail err: %{public}d", errorCode);
         return;
     }
     errorCode = requestPacketPtr_->Parser();
@@ -109,8 +109,10 @@ void MtpOperation::SendMakeResponsePacket(int &errorCode)
 {
     responsePacketPtr_->Reset();
     GetPayloadData(mtpContextPtr_, dataPayloadData_, RESPONSE_CONTAINER_TYPE, errorCode);
-    MEDIA_INFO_LOG("operation = [0x%{public}x : %{public}s ]", mtpContextPtr_->operationCode,
-        MtpPacketTool::GetOperationName(mtpContextPtr_->operationCode).c_str());
+    if (mtpContextPtr_->operationCode != 0) {
+        MEDIA_INFO_LOG("operation = [0x%{public}x : %{public}s ]", mtpContextPtr_->operationCode,
+            MtpPacketTool::GetOperationName(mtpContextPtr_->operationCode).c_str());
+    }
     shared_ptr<HeaderData> responseHeaderData = make_shared<HeaderData>(
         RESPONSE_CONTAINER_TYPE, responseCode_, mtpContextPtr_->transactionID);
 
