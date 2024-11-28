@@ -1579,7 +1579,7 @@ static int32_t DealWithOtherAlbumTrans(const std::shared_ptr<MediaLibraryRdbStor
     std::string transAlbumName = transInfo.second;
     if (transAlbumName == SCREENSHOT_ALBUM_NAME) {
         sourcePathName = "Pictures/Screenshots";
-        sqlWherePrefix = "title LIKE 'screenshots_%'";
+        sqlWherePrefix = "title LIKE 'screenshot_%'";
     } else if (transAlbumName == SCREENRECORD_ALBUM_NAME) {
         sourcePathName = "Pictures/Screenshots";
         sqlWherePrefix = "title LIKE 'SVID_%'";
@@ -1598,7 +1598,7 @@ static int32_t DealWithOtherAlbumTrans(const std::shared_ptr<MediaLibraryRdbStor
         "UPDATE Photos SET owner_album_id = " + std::to_string(transInfo.first) +
         ", source_path = REPLACE(source_path, '/storage/emulated/0/Pictures/其它/', '/storage/emulated/0/" +
         sourcePathName + "/') WHERE owner_album_id = " + std::to_string(otherAlbumId) + " AND " + sqlWherePrefix;
-    int err = upgradeStore->ExecuteSql(UPDATE_OTHER_ALBUM_TRANS);
+    int32_t err = upgradeStore->ExecuteSql(UPDATE_OTHER_ALBUM_TRANS);
     MEDIA_INFO_LOG("Trans other sql is: %{public}s", UPDATE_OTHER_ALBUM_TRANS.c_str());
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", UPDATE_OTHER_ALBUM_TRANS.c_str());
