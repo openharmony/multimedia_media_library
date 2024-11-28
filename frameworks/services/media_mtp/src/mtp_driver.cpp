@@ -56,10 +56,10 @@ MtpDriver::~MtpDriver()
 
 int MtpDriver::OpenDriver()
 {
-    MEDIA_DEBUG_LOG("MtpDriver::OpenDriver start");
+    MEDIA_INFO_LOG("MtpDriver::OpenDriver start");
     usbfnMtpInterface = IUsbfnMtpInterface::Get();
     if (usbfnMtpInterface == nullptr) {
-        MEDIA_DEBUG_LOG("IUsbfnMtpInterface::Get() failed.");
+        MEDIA_ERR_LOG("IUsbfnMtpInterface::Get() failed.");
         return E_ERR;
     }
 
@@ -105,7 +105,7 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
     if (ret != 0) {
         outBuffer.resize(0);
         outReadSize = 0;
-        MEDIA_DEBUG_LOG("MtpDriver::Read Out Error: %{public}d", ret);
+        MEDIA_ERR_LOG("MtpDriver::Read Out Error: %{public}d", ret);
         return E_ERR;
     }
     outReadSize = outBuffer.size();
@@ -114,10 +114,7 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
 
 void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t &bufferSize)
 {
-    if (usbfnMtpInterface == nullptr) {
-        MEDIA_DEBUG_LOG("Write: usbfnMtpInterface is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(usbfnMtpInterface != nullptr, "Write: usbfnMtpInterface is nullptr");
     MEDIA_DEBUG_LOG("MtpDriver::Write start, buffer.size:%{public}zu", buffer.size());
     auto ret = usbfnMtpInterface->Write(buffer);
     bufferSize = static_cast<uint32_t>(ret);
