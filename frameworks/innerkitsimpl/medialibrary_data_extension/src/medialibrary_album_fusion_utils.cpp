@@ -1591,6 +1591,7 @@ static int32_t DealWithOtherAlbumTrans(const std::shared_ptr<MediaLibraryRdbStor
         sqlWherePrefix = "(title LIKE 'IMG_%' OR title LIKE 'VID_%')";
     } else {
         MEDIA_ERR_LOG("Invalid trans album name %{public}s", transInfo.second.c_str());
+        return E_DB_FAIL;
     }
 
     const std::string UPDATE_OTHER_ALBUM_TRANS =
