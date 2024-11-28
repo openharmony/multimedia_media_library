@@ -126,7 +126,7 @@ public:
 private:
     std::reference_wrapper<CloudSyncManager> cloudSyncManager_ = CloudSyncManager::GetInstance();
     CloudMediaAssetTaskStatus taskStatus_ = CloudMediaAssetTaskStatus::IDLE;
-    CloudMediaDownloadType downloadType_;
+    CloudMediaDownloadType downloadType_ = CloudMediaDownloadType::DOWNLOAD_GENTLE;
     CloudMediaTaskPauseCause pauseCause_ = CloudMediaTaskPauseCause::NO_PAUSE;
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper_;
     std::shared_ptr<CloudMediaAssetObserver> cloudMediaAssetObserver_;
@@ -144,7 +144,7 @@ private:
     DownloadFileData cacheForDownload_;
 
     // data downloading
-    bool isCache_;
+    bool isCache_ = false;
     int64_t downloadId_ = -1;
     int64_t downloadNum_ = 0;
     DownloadFileData dataForDownload_;
