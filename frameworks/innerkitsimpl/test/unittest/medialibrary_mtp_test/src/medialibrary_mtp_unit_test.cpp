@@ -22,6 +22,7 @@
 #include "mtp_service.h"
 #include "mtp_test.h"
 #include "mtp_manager.h"
+#include "mtp_global.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -32,8 +33,15 @@ namespace Media {
 static std::vector<uint8_t> testData_open = {  0x10, 0x00, 0x00, 0x00, 0x01, 0x00,
     0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
 
-void MediaLibraryMTPUnitTest::SetUpTestCase(void) {}
-void MediaLibraryMTPUnitTest::TearDownTestCase(void) {}
+void MediaLibraryMTPUnitTest::SetUpTestCase(void)
+{
+    OHOS::Media::MtpGlobal::ReleaseBlock();
+}
+
+void MediaLibraryMTPUnitTest::TearDownTestCase(void)
+{
+    OHOS::Media::MtpGlobal::ResetBlockStatus();
+}
 // SetUp:Execute before each test case
 void MediaLibraryMTPUnitTest::SetUp() {}
 void MediaLibraryMTPUnitTest::TearDown(void) {}
