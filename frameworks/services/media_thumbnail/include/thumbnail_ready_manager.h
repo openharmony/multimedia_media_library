@@ -50,6 +50,7 @@ public:
     std::shared_ptr<ReadyTaskData> readyTaskData_;
     bool isDownloadTaskWaiting_ = false;
     std::mutex downloadThumbLock_;
+    std::mutex readyTaskLock_;
     std::condition_variable downloadThumbTimeoutWatcherCv_;
     std::thread DownloadThumbTimeoutWatcherThread_;
 };

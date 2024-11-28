@@ -15,19 +15,14 @@
 #ifndef FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_MTP_MEDIALIBRARY_MANAGER_H_
 #define FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_MTP_MEDIALIBRARY_MANAGER_H_
 
+#include <filesystem>
+#include <sys/stat.h>
 #include "avmetadatahelper.h"
 #include "datashare_helper.h"
-#include "datashare_result_set.h"
 #include "file_asset.h"
-#include "medialibrary_errno.h"
 #include "mtp_operation_context.h"
 #include "object_info.h"
-#include "ptp_media_sync_observer.h"
 #include "property.h"
-#include "pixel_map.h"
-#include <filesystem>
-#include "avmetadatahelper.h"
-#include <sys/stat.h>
 
 namespace OHOS {
 namespace Media {
@@ -54,6 +49,7 @@ public:
     int32_t DeleteObject(const std::shared_ptr<MtpOperationContext> &context);
     int32_t SetObjectPropValue(const std::shared_ptr<MtpOperationContext> &context);
     int32_t CloseFd(const std::shared_ptr<MtpOperationContext> &context, int32_t fd);
+    int32_t CloseFdForGet(const std::shared_ptr<MtpOperationContext> &context, int32_t fd);
     int32_t GetObjectPropList(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<std::vector<Property>> &outProps);
     int32_t GetObjectPropValue(const std::shared_ptr<MtpOperationContext> &context,
@@ -63,6 +59,7 @@ public:
         std::shared_ptr<UInt8List> &outThumb);
     int32_t GetVideoThumb(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<UInt8List> &outThumb);
+    void DeleteCanceledObject(uint32_t id);
 private:
     int32_t SetObjectInfo(const std::unique_ptr<FileAsset> &fileAsset, std::shared_ptr<ObjectInfo> &outObjectInfo);
     int32_t SetObject(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
@@ -72,13 +69,14 @@ private:
     int32_t GetAssetByPath(const std::string &path, std::shared_ptr<FileAsset> &outFileAsset);
     int32_t GetAssetByPredicates(const DataShare::DataSharePredicates &predicates,
         std::shared_ptr<FileAsset> &outFileAsset);
-    std::shared_ptr<DataShare::DataShareResultSet> getAlbumInfo(const std::shared_ptr<MtpOperationContext> &context,
+    std::shared_ptr<DataShare::DataShareResultSet> GetAlbumInfo(const std::shared_ptr<MtpOperationContext> &context,
         bool isHandle);
-    std::shared_ptr<DataShare::DataShareResultSet> getPhotosInfo(const std::shared_ptr<MtpOperationContext> &context,
+    std::shared_ptr<DataShare::DataShareResultSet> GetPhotosInfo(const std::shared_ptr<MtpOperationContext> &context,
         bool isHandle);
-    void HaveMovingPhotesHandle(const std::shared_ptr<DataShare::DataShareResultSet> resultSet,
+    int32_t HaveMovingPhotesHandle(const std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         std::shared_ptr<UInt32List> &outHandles, const uint32_t parent);
     uint32_t GetSizeFromOfft(const off_t &size);
+    std::vector<std::string> GetBurstKeyFromPhotosInfo();
 private:
     static std::mutex mutex_;
     static std::shared_ptr<MtpMedialibraryManager> instance_;

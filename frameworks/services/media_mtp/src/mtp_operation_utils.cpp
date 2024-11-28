@@ -79,9 +79,12 @@ static constexpr int EMPTY_BATTERY = 0;
 static constexpr int STORAGE_MANAGER_UID = 5003;
 static constexpr int RECEVIE_OBJECT_CANCELLED = -20;
 static constexpr int RECEVIE_OBJECT_FAILED = -17;
+const std::string PUBLIC_DOC = "/storage/media/local/files/Docs";
 
 static constexpr uint32_t HEADER_LEN = 12;
 static constexpr uint32_t READ_LEN = 1024;
+static constexpr uint32_t SEND_OBJECT_FILE_MAX_SIZE = 0xFFFFFFFF;
+
 MtpOperationUtils::MtpOperationUtils(const shared_ptr<MtpOperationContext> &context) : context_(context)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
@@ -417,7 +420,7 @@ uint16_t MtpOperationUtils::GetObjectDataDeal()
         return MTP_ERROR_INCOMPLETE_TRANSFER;
     }
     int32_t ret = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->CloseFd(context_, fd) :
-        mtpMedialibraryManager_->CloseFd(context_, fd);
+        mtpMedialibraryManager_->CloseFdForGet(context_, fd);
     if (ret != MTP_SUCCESS) {
         MEDIA_ERR_LOG("DealFd CloseFd fail!");
         return E_ERR;
@@ -457,7 +460,12 @@ int32_t MtpOperationUtils::DoRecevieSendObject()
     MtpFileRange object;
     object.fd = fd;
     object.offset = initialData;
-    object.length = static_cast<int64_t>(context_->sendObjectFileSize) - static_cast<int64_t>(initialData);
+    if (context_->sendObjectFileSize == SEND_OBJECT_FILE_MAX_SIZE) {
+        // when file size is over 0xFFFFFFFF, driver will read until it receives a short packet
+        object.length = SEND_OBJECT_FILE_MAX_SIZE;
+    } else {
+        object.length = static_cast<int64_t>(context_->sendObjectFileSize) - static_cast<int64_t>(initialData);
+    }
     errorCode = RecevieSendObject(object, fd);
     if (errorCode == MTP_ERROR_TRANSFER_CANCELLED) {
         MEDIA_DEBUG_LOG("DoRecevieSendObject ReceiveObj Cancelled = %{public}d", MTP_ERROR_TRANSFER_CANCELLED);
@@ -502,15 +510,17 @@ int32_t MtpOperationUtils::RecevieSendObject(MtpFileRange &object, int fd)
 
     PreDealFd(errorCode != MTP_SUCCESS, fd);
     string filePath;
-    MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetPathById(context_->handle, filePath):
-        mtpMedialibraryManager_->GetPathById(context_->handle, filePath);
-    if (filePath.empty()) {
-        MEDIA_ERR_LOG("File path is invalid!");
-        return MTP_ERROR_TRANSFER_CANCELLED;
-    }
-    unlink(filePath.c_str());
     if (MtpManager::GetInstance().IsMtpMode()) {
+        mtpMediaLibrary_->GetPathById(context_->handle, filePath);
+        if (filePath.empty()) {
+            MEDIA_ERR_LOG("File path is invalid!");
+            return MTP_ERROR_TRANSFER_CANCELLED;
+        }
+        int ret = unlink(filePath.c_str());
+        CHECK_AND_RETURN_RET_LOG(ret == 0, MTP_ERROR_TRANSFER_CANCELLED, "unlink file fail");
         mtpMediaLibrary_->DeleteHandlePathMap(filePath, context_->handle);
+    } else {
+        mtpMedialibraryManager_->DeleteCanceledObject(context_->handle);
     }
     return MTP_ERROR_TRANSFER_CANCELLED;
 }
@@ -523,7 +533,7 @@ void MtpOperationUtils::PreDealFd(const bool deal, const int fd)
     CHECK_AND_RETURN_LOG(mtpMediaLibrary_ != nullptr, "mtpMediaLibrary_ is null");
     CHECK_AND_RETURN_LOG(mtpMedialibraryManager_ != nullptr, "mtpMedialibraryManager_ is null");
     int32_t ret = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->CloseFd(context_, fd) :
-        mtpMedialibraryManager_->CloseFd(context_, fd);
+        mtpMedialibraryManager_->CloseFdForGet(context_, fd);
     if (ret != MTP_SUCCESS) {
         MEDIA_ERR_LOG("DealFd CloseFd fail!");
     }
@@ -703,14 +713,17 @@ uint16_t MtpOperationUtils::GetStorageIDs(shared_ptr<PayloadData> &data, uint16_
         mtpMediaLibrary_->GetStorageIds();
     } else {
         auto storage = make_shared<Storage>();
+        CHECK_AND_RETURN_RET_LOG(storage != nullptr, E_ERR, "storage is nullptr");
+        auto manager = MtpStorageManager::GetInstance();
+        CHECK_AND_RETURN_RET_LOG(manager != nullptr, E_ERR, "MtpStorageManager instance is nullptr");
         storage->SetStorageID(DEFAULT_STORAGE_ID);
         storage->SetStorageType(MTP_STORAGE_FIXEDRAM);
         storage->SetFilesystemType(MTP_FILESYSTEM_GENERICHIERARCHICAL);
         storage->SetAccessCapability(MTP_ACCESS_READ_WRITE);
-        storage->SetMaxCapacity(MtpStorageManager::GetInstance()->GetTotalSize());
-        storage->SetFreeSpaceInBytes(MtpStorageManager::GetInstance()->GetFreeSize());
+        storage->SetMaxCapacity(manager->GetTotalSize(PUBLIC_DOC));
+        storage->SetFreeSpaceInBytes(manager->GetFreeSize(PUBLIC_DOC));
         storage->SetFreeSpaceInObjects(0);
-        storage->SetStorageDescription("Inner Storage");
+        storage->SetStorageDescription(manager->GetStorageDescription(MTP_STORAGE_FIXEDRAM));
         MtpStorageManager::GetInstance()->AddStorage(storage);
     }
 

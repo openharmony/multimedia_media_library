@@ -24,7 +24,7 @@
 namespace OHOS::Media {
 class JsonUtils {
 public:
-    nlohmann::json IsValid(const nlohmann::json &jsonObj)
+    bool IsValid(const nlohmann::json &jsonObj)
     {
         return !(jsonObj.is_discarded() || jsonObj.is_null() || jsonObj.empty());
     }
@@ -40,6 +40,11 @@ public:
             return nlohmann::json();
         }
         return jsonObj;
+    }
+
+    bool IsExists(const nlohmann::json &jsonObj, const std::string &key)
+    {
+        return jsonObj.find(key) != jsonObj.end();
     }
 
     int32_t GetInt(const nlohmann::json &jsonObj, const std::string &key, int32_t defaultValue = 0)

@@ -127,12 +127,14 @@ static int32_t CountTemporaryPermission(const std::shared_ptr<MediaLibraryRdbSto
     auto resultSet = rdbStore->Query(predicatesUnSubscribe, columns);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Can not query URIPERMISSION");
+        return E_ERR;
     }
 
     int32_t count = 0;
     auto ret = resultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("GetRowCount failed ret:%{public}d", ret);
+        return E_ERR;
     }
 
     return count;
@@ -145,12 +147,14 @@ static int32_t CountHideSensitive(const std::shared_ptr<MediaLibraryRdbStore> rd
     auto resultSet = rdbStore->Query(predicatesUnSubscribe, columns);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Can not query URIPERMISSION");
+        return E_ERR;
     }
 
     int32_t count = 0;
     auto ret = resultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("GetRowCount failed ret:%{public}d", ret);
+        return E_ERR;
     }
 
     return count;
@@ -160,6 +164,9 @@ static void TryUnSubscribeAppState(const std::shared_ptr<MediaLibraryRdbStore> r
 {
     int32_t countPermission = CountTemporaryPermission(rdbStore);
     int32_t countSensitive = CountHideSensitive(rdbStore);
+    if (countPermission < 0 || countSensitive < 0) {
+        MEDIA_ERR_LOG("TryUnSubscribeAppState System exception");
+    }
     if (countPermission == 0 && countSensitive == 0) {
         MedialibraryAppStateObserverManager::GetInstance().UnSubscribeAppState();
         MEDIA_INFO_LOG("No temporary permission record remains ,UnSubscribeAppState");

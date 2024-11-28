@@ -102,6 +102,7 @@ private:
     bool isScreenSizeInit_ = false;
     bool currentStatusForTask_ = false;
     bool isTemperatureHighForReady_ = false;
+    std::mutex createAstcBatchLock_;
 };
 } // namespace Media
 } // namespace OHOS

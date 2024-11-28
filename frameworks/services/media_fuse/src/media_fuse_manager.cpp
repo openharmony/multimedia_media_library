@@ -106,7 +106,9 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
     }
 
     std::string target = ROOT_MEDIA_DIR + path;
-    return lstat(target.c_str(), stbuf);
+    int32_t ret = lstat(target.c_str(), stbuf);
+    stbuf->st_mode = stbuf->st_mode | 0x6;
+    return ret;
 }
 
 static int32_t GetFileIdFromPath(const string &filePath, string &fileId)

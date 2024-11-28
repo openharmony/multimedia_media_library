@@ -43,7 +43,6 @@ public:
     int albumId_;
     bool hiddenOnly_ = false;
 };
-constexpr size_t MAX_NOTIFY_LIST_SIZE = 32;
 constexpr size_t MNOTIFY_TIME_INTERVAL = 100;
 class MediaLibraryNotify {
 public:
@@ -55,8 +54,8 @@ public:
     EXPORT int32_t GetAlbumIdBySubType(const PhotoAlbumSubType subType);
     static void GetNotifyUris(const NativeRdb::AbsRdbPredicates &predicates, std::vector<std::string> &notifyUris);
 
-    Utils::Timer timer_;
-    static uint32_t timerId_;
+    static std::atomic<uint16_t> counts_;
+    static int32_t threadId_;
     static std::mutex mutex_;
     static std::unordered_map<std::string, std::unordered_map<NotifyType, std::list<Uri>>> nfListMap_;
 private:

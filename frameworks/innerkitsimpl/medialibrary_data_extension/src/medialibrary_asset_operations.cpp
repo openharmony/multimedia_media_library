@@ -199,6 +199,7 @@ int32_t MediaLibraryAssetOperations::UpdateOperation(MediaLibraryCommand &cmd)
         case OperationObject::PAH_PHOTO:
         case OperationObject::PAH_VIDEO:
         case OperationObject::FILESYSTEM_PHOTO:
+        case OperationObject::PTP_OPERATION:
             return MediaLibraryPhotoOperations::Update(cmd);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Update(cmd);
@@ -282,7 +283,6 @@ static int32_t DropAllTables(const shared_ptr<MediaLibraryRdbStore> rdbStore)
             dropSqlsVec.push_back(sql);
         }
     }
-    dropSqlsResultSet->Close();
 
     for (const auto &dropSql : dropSqlsVec) {
         rdbStore->ExecuteSql(dropSql);

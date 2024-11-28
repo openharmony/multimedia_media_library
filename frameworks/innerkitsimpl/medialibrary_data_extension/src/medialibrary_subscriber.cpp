@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define MLOG_TAG "Subscribe"
+#define MLOG_TAG "MedialibrarySubscribe"
 
 #include "medialibrary_subscriber.h"
 
@@ -27,6 +27,7 @@
 #include "cloud_media_asset_manager.h"
 #include "cloud_media_asset_types.h"
 #include "cloud_sync_utils.h"
+#include "cloud_upload_checker.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
 #include "common_event_utils.h"
@@ -83,18 +84,13 @@ const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_HOT = 3;
 
 // WIFI should be available in this state
 const int32_t WIFI_STATE_CONNECTED = 4;
-const int32_t SUBSCRIBER_STATUS_TIME = 30 * 60 * 1000;
 const int32_t DELAY_TASK_TIME = 30000;
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
 const int32_t MegaByte = 1024*1024;
 const int32_t MAX_FILE_SIZE_MB = 200;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
-constexpr ssize_t DB_WAL_SIZE_LIMIT_MAX = 50 * 1024 * 1024; /* default wal file maximum size : 50MB */
-std::mutex MedialibrarySubscriber::walCheckPointMutex_;
-std::mutex MedialibrarySubscriber::timeMutex_;
-uint32_t MedialibrarySubscriber::timerId_ = 0;
-Utils::Timer MedialibrarySubscriber::timer_("medialibrary_subscriber");
+
 // The network should be available in this state
 const int32_t NET_CONN_STATE_CONNECTED = 3;
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
@@ -221,73 +217,6 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 #endif
 }
 
-void MedialibrarySubscriber::UpdateSubcriberStatus()
-{
-#ifdef HAS_POWER_MANAGER_PART
-    auto& powerMgrClient = PowerMgr::PowerMgrClient::GetInstance();
-    isScreenOff_ = !powerMgrClient.IsScreenOn();
-#endif
-#ifdef HAS_BATTERY_MANAGER_PART
-    auto& batteryClient = PowerMgr::BatterySrvClient::GetInstance();
-    auto chargeState = batteryClient.GetChargingStatus();
-    isCharging_ = (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_ENABLE) ||
-        (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_FULL);
-    isPowerSufficient_ = batteryClient.GetCapacity() >= PROPER_DEVICE_BATTERY_CAPACITY;
-#endif
-#ifdef HAS_THERMAL_MANAGER_PART
-    auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
-    newTemperatureLevel_ = static_cast<int32_t>(thermalMgrClient.GetThermalLevel());
-    isDeviceTemperatureProper_ = newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL;
-#endif
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (deviceTemperatureLevel_ != newTemperatureLevel_) {
-        deviceTemperatureLevel_ = newTemperatureLevel_;
-        ThumbnailService::GetInstance()->NotifyTempStatusForReady(deviceTemperatureLevel_);
-    }
-    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
-
-    if (currentStatus_ == newStatus) {
-        return;
-    }
-    currentStatus_ = newStatus;
-    ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(newStatus);
-    EndBackgroundOperationThread();
-    if (currentStatus_) {
-        isTaskWaiting_ = true;
-        backgroundOperationThread_ = std::thread([this] { this->DoBackgroundOperation(); });
-    } else {
-        StopBackgroundOperation();
-    }
-}
-
-void MedialibrarySubscriber::StartTimer()
-{
-    std::unique_lock<std::mutex> lock(timeMutex_);
-    if (timerId_ != 0) {
-        return;
-    }
-    uint32_t ret = timer_.Setup();
-    if (ret != Utils::TIMER_ERR_OK) {
-        MEDIA_ERR_LOG("Failed to start subscriber timer, err: %{public}d", ret);
-    }
-    Utils::Timer::TimerCallback timerCallback = [this]() {
-        UpdateSubcriberStatus();
-    };
-    timerId_ = timer_.Register(timerCallback, SUBSCRIBER_STATUS_TIME, false);
-}
-
-void MedialibrarySubscriber::ShutDownTimer()
-{
-    std::unique_lock<std::mutex> lock(timeMutex_);
-    if (timerId_ == 0) {
-        return;
-    }
-    MEDIA_INFO_LOG("MedialibrarySubscriber ShutDownTimer id %{public}d", timerId_);
-    timer_.Unregister(timerId_);
-    timerId_ = 0;
-    timer_.Shutdown();
-}
-
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -309,45 +238,9 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
     EndBackgroundOperationThread();
     if (currentStatus_) {
         isTaskWaiting_ = true;
-        StartTimer();
         backgroundOperationThread_ = std::thread([this] { this->DoBackgroundOperation(); });
     } else {
         StopBackgroundOperation();
-        ShutDownTimer();
-    }
-}
-
-void MedialibrarySubscriber::WalCheckPoint()
-{
-    std::unique_lock<std::mutex> lock(walCheckPointMutex_, std::defer_lock);
-    if (!lock.try_lock()) {
-        MEDIA_WARN_LOG("wal_checkpoint in progress, skip this operation");
-        return;
-    }
-    struct stat fileStat;
-    const std::string walFile = MEDIA_DB_DIR + "/rdb/media_library.db-wal";
-    if (stat(walFile.c_str(), &fileStat) < 0) {
-        if (errno != ENOENT) {
-            MEDIA_ERR_LOG("wal_checkpoint stat failed, errno: %{public}d", errno);
-        }
-        return;
-    }
-    ssize_t size = fileStat.st_size;
-    if (size < 0) {
-        MEDIA_ERR_LOG("Invalid size for wal_checkpoint, size: %{public}zd", size);
-        return;
-    }
-    if (size <= DB_WAL_SIZE_LIMIT_MAX) {
-        return;
-    }
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("wal_checkpoint rdbStore is nullptr!");
-        return;
-    }
-    auto errCode = rdbStore->ExecuteSql("PRAGMA wal_checkpoint(TRUNCATE)");
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("wal_checkpoint ExecuteSql failed, errCode: %{public}d", errCode);
     }
 }
 
@@ -356,7 +249,7 @@ void MedialibrarySubscriber::WalCheckPointAsync()
     if (!isScreenOff_ || !isCharging_) {
         return;
     }
-    std::thread(WalCheckPoint).detach();
+    std::thread(MediaLibraryRdbStore::WalCheckPoint).detach();
 }
 
 void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
@@ -659,6 +552,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DoUpdateBurstFromGallery faild");
     }
+    CloudUploadChecker::HandleNoOriginPhoto();
 
     // migration highlight info to new path
     if (MediaFileUtils::IsFileExists(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD)) {

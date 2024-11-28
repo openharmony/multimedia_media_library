@@ -16,6 +16,8 @@
 #ifndef FRAMEWORKS_SERVICES_CLOUD_SYNC_NOTIFY_HANDLE_INCLUDE_ANALYSYS_HANDLER_H
 #define FRAMEWORKS_SERVICES_CLOUD_SYNC_NOTIFY_HANDLE_INCLUDE_ANALYSYS_HANDLER_H
 
+#include <mutex>
+#include <queue>
 #include <functional>
 #include "base_handler.h"
 #include "medialibrary_album_refresh.h"
@@ -28,9 +30,17 @@ public:
     AnalysisHandler(std::function<void(bool)> refreshAlbums = nullptr)
         : refreshAlbumsFunc_(refreshAlbums ? refreshAlbums : [](bool) { RefreshAlbums(true); })
     {}
+    virtual ~AnalysisHandler();
     void Handle(const CloudSyncHandleData &handleData) override;
+    void init() override;
 
+    static std::queue<CloudSyncHandleData> taskQueue_;
+    static std::mutex mtx_;
+    static int32_t threadId_;
+    static std::atomic<uint16_t> counts_;
 private:
+    void MergeTask(const CloudSyncHandleData &handleData);
+
     std::function<void(bool)> refreshAlbumsFunc_;
 };
 } //namespace Media
