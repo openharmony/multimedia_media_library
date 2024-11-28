@@ -217,9 +217,13 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetPhotosInfo(
         predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
         if (!burstKeys.empty()) {
             predicates.BeginWrap()
+                ->BeginWrap()
                 ->NotIn(PhotoColumn::PHOTO_BURST_KEY, burstKeys)
                 ->Or()
                 ->IsNull(PhotoColumn::PHOTO_BURST_KEY)
+                ->EndWrap()
+                ->Or()
+                ->EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL)
                 ->EndWrap();
         }
     } else {
@@ -262,7 +266,9 @@ int32_t MtpMedialibraryManager::HaveMovingPhotesHandle(const shared_ptr<DataShar
         MEDIA_ERR_LOG("resultSet is nullptr");
         return E_HAS_DB_ERROR;
     }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, E_SUCCESS, "have no handles");
+    do {
         int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         outHandles->push_back(id);
         if (id < COMMON_PHOTOS_OFFSET) {
@@ -284,7 +290,7 @@ int32_t MtpMedialibraryManager::HaveMovingPhotesHandle(const shared_ptr<DataShar
             uint32_t editVideoId = id - COMMON_PHOTOS_OFFSET + EDITED_MOVING_OFFSET;
             outHandles->push_back(editVideoId);
         }
-    }
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
     return E_SUCCESS;
 }
 
@@ -388,7 +394,7 @@ int32_t MtpMedialibraryManager::SetObjectInfo(const unique_ptr<FileAsset> &fileA
 {
     CHECK_AND_RETURN_RET_LOG(outObjectInfo != nullptr,
         MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR), "outObjectInfo is nullptr");
-    outObjectInfo->handle = fileAsset->GetId();
+    outObjectInfo->handle = static_cast<uint32_t>(fileAsset->GetId());
     outObjectInfo->name = fileAsset->GetDisplayName();
     outObjectInfo->size = static_cast<uint32_t>(fileAsset->GetSize()); // need support larger than 4GB file
     outObjectInfo->parent = static_cast<uint32_t>(fileAsset->GetParent());
@@ -470,6 +476,10 @@ bool MtpMedialibraryManager::CompressImage(std::unique_ptr<PixelMap> &pixelMap,
         .alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL
     };
     unique_ptr<PixelMap> compressImage = PixelMap::Create(*pixelMap, opts);
+    if (compressImage == nullptr) {
+        MEDIA_ERR_LOG("Failed to Create and compressImage is nullptr");
+        return false;
+    }
 
     PackOption option = {
         .format = THUMBNAIL_FORMAT,
@@ -862,8 +872,6 @@ int32_t MtpMedialibraryManager::GetObjectPropList(const std::shared_ptr<MtpOpera
     }
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
         MTP_ERROR_INVALID_OBJECTHANDLE, "fail to getSet");
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
-        MTP_ERROR_INVALID_OBJECTHANDLE, "have no row");
     return MtpDataUtils::GetPropListBySet(context, resultSet, outProps);
 }
 

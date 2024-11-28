@@ -86,14 +86,9 @@ static const std::map<Status, std::vector<int32_t>> STATUS_MAP = {
     { Status::FORCE_DOWNLOADING, {0, 0, 0} },
     { Status::GENTLE_DOWNLOADING, {1, 0, 0} },
     { Status::PAUSE_FOR_TEMPERATURE_LIMIT, {-1, 1, 1} },
-    { Status::PAUSE_FOR_ROM_LIMIT, {-1, 1, 2} },
     { Status::PAUSE_FOR_NETWORK_FLOW_LIMIT, {-1, 1, 3} },
-    { Status::PAUSE_FOR_WIFI_UNAVAILABLE, {-1, 1, 4} },
-    { Status::PAUSE_FOR_POWER_LIMIT, {-1, 1, 5} },
     { Status::PAUSE_FOR_BACKGROUND_TASK_UNAVAILABLE, {1, 1, 6} },
-    { Status::PAUSE_FOR_FREQUENT_USER_REQUESTS, {-1, 1, 7} },
     { Status::PAUSE_FOR_CLOUD_ERROR, {-1, 1, 8} },
-    { Status::PAUSE_FOR_USER_PAUSE, {-1, 1, 9} },
     { Status::RECOVER_FOR_MANAUL_ACTIVE, {0, 0, 0} },
     { Status::RECOVER_FOR_PASSIVE_STATUS, {-1, 0, 0} },
     { Status::IDLE, {-1, 2, 0} },
@@ -158,6 +153,7 @@ void CloudMediaAssetDownloadOperation::ClearData(CloudMediaAssetDownloadOperatio
     data.fileDownloadMap.clear();
     data.batchFileIdNeedDownload.clear();
     data.batchSizeNeedDownload = 0;
+    data.batchCountNeedDownload = 0;
 }
 
 bool CloudMediaAssetDownloadOperation::IsDataEmpty(const CloudMediaAssetDownloadOperation::DownloadFileData &data)
@@ -189,6 +185,8 @@ std::shared_ptr<NativeRdb::ResultSet> CloudMediaAssetDownloadOperation::QueryDow
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(static_cast<int32_t>(MEDIA_TYPE_VIDEO)));
     predicates.EndWrap();
     if (isQueryInfo) {
+        predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+            to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
         const std::vector<std::string> columns = {
             TOTAL_COUNT,
             TOTAL_SIZE
@@ -200,7 +198,8 @@ std::shared_ptr<NativeRdb::ResultSet> CloudMediaAssetDownloadOperation::QueryDow
     const std::vector<std::string> columns = {
         MediaColumn::MEDIA_ID,
         MediaColumn::MEDIA_FILE_PATH,
-        MediaColumn::MEDIA_SIZE
+        MediaColumn::MEDIA_SIZE,
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL
     };
     return rdbStore->Query(predicates, columns);
 }
@@ -256,9 +255,15 @@ CloudMediaAssetDownloadOperation::DownloadFileData CloudMediaAssetDownloadOperat
         int64_t fileSize = GetInt64Val(PhotoColumn::MEDIA_SIZE, resultSetForDownload);
 
         data.pathVec.push_back(path);
-        data.fileDownloadMap[path] = fileSize;
+        int32_t burstCoverLevel = GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSetForDownload);
+        if (burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
+            data.fileDownloadMap[path] = fileSize;
+            data.batchSizeNeedDownload += fileSize;
+            data.batchCountNeedDownload++;
+        } else {
+            data.fileDownloadMap[path] = 0;
+        }
         data.batchFileIdNeedDownload.push_back(fileId);
-        data.batchSizeNeedDownload += fileSize;
     }
     resultSetForDownload->Close();
     MEDIA_INFO_LOG("end ReadyDataForBatchDownload");
@@ -349,11 +354,11 @@ int32_t CloudMediaAssetDownloadOperation::SubmitBatchDownload(
     downloadNum_ = static_cast<int64_t>(data.pathVec.size());
     dataForDownload_ = data;
     if (!isCache_) {
-        batchDownloadTotalNum_ += downloadNum_;
+        batchDownloadTotalNum_ += data.batchCountNeedDownload;
         batchDownloadTotalSize_ += data.batchSizeNeedDownload;
     }
 
-    StartBatchDownload(downloadNum_, data.batchSizeNeedDownload);
+    StartBatchDownload(data.batchCountNeedDownload, data.batchSizeNeedDownload);
     return E_OK;
 }
 
@@ -616,10 +621,12 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
     }
 
     int64_t size = dataForDownload_.fileDownloadMap[progress.path];
-    remainCount_--;
-    remainSize_ -= size;
-    hasDownloadNum_++;
-    hasDownloadSize_ += size;
+    if (size != 0) {
+        remainCount_--;
+        remainSize_ -= size;
+        hasDownloadNum_++;
+        hasDownloadSize_ += size;
+    }
     dataForDownload_.fileDownloadMap.erase(progress.path);
     downloadNum_--;
 
@@ -687,15 +694,17 @@ void CloudMediaAssetDownloadOperation::MoveDownloadFileToNotFound(const Download
         return;
     }
     notFoundForDownload_.fileDownloadMap[progress.path] = dataForDownload_.fileDownloadMap.at(progress.path);
-    downloadNum_--;
-    totalCount_--;
-    batchDownloadTotalNum_--;
-    remainCount_--;
     int64_t size = dataForDownload_.fileDownloadMap.at(progress.path);
-    totalSize_ -= size;
-    batchDownloadTotalSize_ -= size;
-    remainSize_  -= size;
+    if (size != 0) {
+        totalCount_--;
+        batchDownloadTotalNum_--;
+        remainCount_--;
+        totalSize_ -= size;
+        batchDownloadTotalSize_ -= size;
+        remainSize_ -= size;
+    }
     dataForDownload_.fileDownloadMap.erase(progress.path);
+    downloadNum_--;
     MEDIA_INFO_LOG("success, path: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
 }
 
@@ -711,17 +720,17 @@ void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgre
         MediaFileUtils::DesensitizePath(progress.path).c_str());
     switch (progress.downloadErrorType) {
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::UNKNOWN_ERROR): {
-            SetTaskStatus(Status::PAUSE_FOR_CLOUD_ERROR);
+            PauseDownloadTask(CloudMediaTaskPauseCause::CLOUD_ERROR);
             MoveDownloadFileToCache(progress);
             break;
         }
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::NETWORK_UNAVAILABLE): {
-            SetTaskStatus(Status::PAUSE_FOR_WIFI_UNAVAILABLE);
+            PauseDownloadTask(CloudMediaTaskPauseCause::WIFI_UNAVAILABLE);
             MoveDownloadFileToCache(progress);
             break;
         }
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::LOCAL_STORAGE_FULL): {
-            SetTaskStatus(Status::PAUSE_FOR_ROM_LIMIT);
+            PauseDownloadTask(CloudMediaTaskPauseCause::ROM_LIMIT);
             MoveDownloadFileToCache(progress);
             break;
         }
@@ -730,7 +739,7 @@ void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgre
             break;
         }
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::FREQUENT_USER_REQUESTS): {
-            SetTaskStatus(Status::PAUSE_FOR_FREQUENT_USER_REQUESTS);
+            PauseDownloadTask(CloudMediaTaskPauseCause::FREQUENT_USER_REQUESTS);
             MoveDownloadFileToCache(progress);
             break;
         }
