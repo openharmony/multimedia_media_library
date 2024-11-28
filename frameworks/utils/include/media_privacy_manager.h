@@ -34,7 +34,7 @@ public:
     EXPORT MediaPrivacyManager(const std::string &path, const std::string &mode, const std::string &fileId,
         const std::string &appId, const std::string &clientBundle, const int32_t &uid);
     EXPORT virtual ~MediaPrivacyManager();
-
+    int32_t GetPrivacyRanges();
     EXPORT int32_t Open();
 
 private:

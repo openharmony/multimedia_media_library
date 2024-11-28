@@ -15,6 +15,7 @@
 #define MLOG_TAG "FileNotify"
 #include "medialibrary_notify.h"
 #include "medialibrary_async_worker.h"
+#include "medialibrary_period_worker.h"
 #include "data_ability_helper_impl.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -39,7 +40,9 @@ static const int32_t WAIT_TIME = 2;
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::instance_;
 mutex MediaLibraryNotify::mutex_;
 unordered_map<string, NotifyDataMap> MediaLibraryNotify::nfListMap_ = {};
-uint32_t MediaLibraryNotify::timerId_ = 0;
+int32_t MediaLibraryNotify::threadId_{-1};
+atomic<uint16_t> MediaLibraryNotify::counts_(0);
+static const uint16_t IDLING_TIME = 50;
 
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
 {
@@ -57,12 +60,15 @@ shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
     }
     return instance_;
 }
-MediaLibraryNotify::MediaLibraryNotify() : timer_("on_notify") {};
+MediaLibraryNotify::MediaLibraryNotify() {};
 
 MediaLibraryNotify::~MediaLibraryNotify()
 {
-    timer_.Shutdown();
-    timer_.Unregister(timerId_);
+    auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
+    if (periodWorker == nullptr) {
+        MEDIA_ERR_LOG("failed to get period worker instance");
+    }
+    periodWorker->CloseThreadById(MediaLibraryNotify::threadId_);
 };
 
 static bool SolveUris(const list<Uri> &uris, Parcel &parcel)
@@ -149,7 +155,18 @@ static void PushNotification()
     {
         lock_guard<mutex> lock(MediaLibraryNotify::mutex_);
         if (MediaLibraryNotify::nfListMap_.empty()) {
+            ++MediaLibraryNotify::counts_;
+            if (MediaLibraryNotify::counts_.load() > IDLING_TIME) {
+                auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
+                if (periodWorker == nullptr) {
+                    MEDIA_ERR_LOG("failed to get period worker instance");
+                    return;
+                }
+                periodWorker->CloseThreadById(MediaLibraryNotify::threadId_);
+            }
             return;
+        } else {
+            MediaLibraryNotify::counts_.store(0);
         }
         MediaLibraryNotify::nfListMap_.swap(tmpNfListMap);
         MediaLibraryNotify::nfListMap_.clear();
@@ -264,19 +281,35 @@ static void AddNfListMap(AsyncTaskData *data)
 
 int32_t MediaLibraryNotify::Init()
 {
-    MediaLibraryNotify::timerId_ = MediaLibraryNotify::timer_.Register(PushNotification, MNOTIFY_TIME_INTERVAL);
-    MediaLibraryNotify::timer_.Setup();
+    auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
+    if (periodWorker == nullptr) {
+        MEDIA_ERR_LOG("failed to get period worker instance");
+        return E_ERR;
+    }
+    auto periodTask = make_shared<MedialibraryPeriodTask>(PushNotification, MNOTIFY_TIME_INTERVAL);
+    MediaLibraryNotify::threadId_ = periodWorker->AddTask(periodTask);
+    if (MediaLibraryNotify::threadId_ == E_ERR) {
+        MEDIA_ERR_LOG("failed to add task");
+        return E_ERR;
+    }
     return E_OK;
 }
 
 int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyType, const int albumId,
     const bool hiddenOnly)
 {
-    if (MediaLibraryNotify::nfListMap_.size() > MAX_NOTIFY_LIST_SIZE) {
-        MediaLibraryNotify::timer_.Shutdown();
-        PushNotification();
-        MediaLibraryNotify::timer_.Register(PushNotification, MNOTIFY_TIME_INTERVAL);
-        MediaLibraryNotify::timer_.Setup();
+    if (counts_.load() > IDLING_TIME) {
+        MediaLibraryNotify::counts_.store(0);
+        auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
+        if (periodWorker != nullptr) {
+            auto periodTask = make_shared<MedialibraryPeriodTask>(PushNotification, MNOTIFY_TIME_INTERVAL);
+            MediaLibraryNotify::threadId_ = periodWorker->AddTask(periodTask);
+            if (MediaLibraryNotify::threadId_ == E_ERR) {
+                MEDIA_ERR_LOG("failed to add task");
+            }
+        } else {
+            MEDIA_ERR_LOG("failed to get period worker instance");
+        }
     }
     unique_ptr<NotifyTaskWorker> &asyncWorker = NotifyTaskWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ASYNC_WORKER_IS_NULL, "AsyncWorker is null");

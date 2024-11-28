@@ -105,6 +105,11 @@ const std::string MediaAssetRdbStore::IsCallerSelfFunc(const std::vector<std::st
     return "false";
 }
 
+const std::string MediaAssetRdbStore::PhotoAlbumNotifyFunc(const std::vector<std::string> &args)
+{
+    return "";
+}
+
 MediaAssetRdbStore::MediaAssetRdbStore()
 {
     MEDIA_INFO_LOG("init visitor rdb");
@@ -149,6 +154,7 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
     config.SetRoleType(RoleType::VISITOR);
     config.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     config.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
+    config.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
 
     MediaLibraryDataCallBack rdbDataCallBack;
     rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);

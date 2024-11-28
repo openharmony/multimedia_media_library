@@ -172,7 +172,7 @@ static void AppPermissionTest(const uint8_t *data, size_t size)
     Media::MediaLibraryAppUriPermissionOperations::QueryOperation(sharedPred, columns);
 }
 
-static void AppStateTest(const uint8_t *data, size_t size)
+static void AppStateTest()
 {
     Media::MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
     Media::MedialibraryAppStateObserverManager::GetInstance().UnSubscribeAppState();
@@ -194,7 +194,7 @@ static void MultistageTest(const uint8_t *data, size_t size)
     Media::MultiStagesCaptureDfxFirstVisit::GetInstance().Report(FuzzString(data, size));
 }
 
-static void RefreshAlbumTest(const uint8_t *data, size_t size)
+static void RefreshAlbumTest()
 {
     Media::RefreshAlbums(true);
 }
@@ -230,10 +230,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::UriPermissionTest(data, size);
     OHOS::AnalysisTest(data, size);
     OHOS::AppPermissionTest(data, size);
-    OHOS::AppStateTest(data, size);
+    OHOS::AppStateTest();
     OHOS::MediaLibraryManagerTest(data, size);
     OHOS::MultistageTest(data, size);
-    OHOS::RefreshAlbumTest(data, size);
+    OHOS::RefreshAlbumTest();
     OHOS::ActiveAnalysisTest();
     OHOS::CloudDownloadTest();
     return 0;

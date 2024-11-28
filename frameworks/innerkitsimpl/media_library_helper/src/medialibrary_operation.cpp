@@ -26,6 +26,7 @@
 #include "medialibrary_db_const.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
+#include "ptp_medialibrary_manager_uri.h"
 #include "search_column.h"
 #include "story_album_column.h"
 #include "story_cover_info_column.h"
@@ -318,6 +319,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE, OperationType::CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE },
         { CLOUD_MEDIA_ASSET_TASK_RETAIN_GENTLE, OperationType::CLOUD_MEDIA_ASSET_TASK_RETAIN_GENTLE },
         { CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY, OperationType::CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY },
+        { OPRN_UPDATE_OWNER_ALBUM_ID, OperationType::SET_OWNER_ALBUM_ID },
     };
     return oprnTypeMap;
 }

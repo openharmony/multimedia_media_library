@@ -602,6 +602,7 @@ void ThumbnailService::DeleteAstcWithFileIdAndDateTaken(const std::string &fileI
 
 int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId)
 {
+    std::unique_lock<std::mutex> lock(createAstcBatchLock_);
     if (requestId <= 0) {
         MEDIA_ERR_LOG("create astc batch failed, invalid request id:%{public}d", requestId);
         return E_INVALID_VALUES;

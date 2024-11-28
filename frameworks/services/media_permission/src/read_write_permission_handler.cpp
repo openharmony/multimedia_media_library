@@ -260,7 +260,7 @@ static int32_t HandleSpecialObjectPermission(MediaLibraryCommand &cmd, bool isWr
         return HandleBundlePermCheck();
     }
 
-    if (MediaFileUtils::CallingTokenIdIsSelf() == E_OK) {
+    if (MediaFileUtils::IsCalledBySelf() == E_OK) {
         return E_SUCCESS;
     }
 
@@ -334,7 +334,7 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, PermParam &perm
 {
     MEDIA_DEBUG_LOG("uri: %{private}s mode: %{private}s",
         cmd.GetUri().ToString().c_str(), permParam.openFileNode.c_str());
-    if (MediaFileUtils::CallingTokenIdIsSelf() == E_OK) {
+    if (MediaFileUtils::IsCalledBySelf() == E_OK) {
         return E_SUCCESS;
     }
     MediaType mediaType = MediaFileUri::GetMediaTypeFromUri(cmd.GetUri().ToString());

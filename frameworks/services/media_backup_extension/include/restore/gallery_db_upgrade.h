@@ -22,11 +22,15 @@ namespace OHOS::Media {
 namespace DataTransfer {
 class GalleryDbUpgrade {
 public:
-    int32_t OnUpgrade(NativeRdb::RdbStore &store);
+    int32_t OnUpgrade(std::shared_ptr<NativeRdb::RdbStore> galleryRdbPtr);
 
 private:
+    int32_t OnUpgrade(NativeRdb::RdbStore &store);
     int32_t AddPhotoQualityOfGalleryMedia(NativeRdb::RdbStore &store);
     int32_t AddRelativeBucketIdOfGalleryAlbum(NativeRdb::RdbStore &store);
+    int32_t GarbageAlbumUpgrade(NativeRdb::RdbStore &store);
+    int32_t GarbageAlbumCheckOrAddRelativeBucketId(NativeRdb::RdbStore &store);
+    int32_t GarbageAlbumCheckOrAddType(NativeRdb::RdbStore &store);
 
 private:
     // Note: The column photo_quality's default value is 0.
@@ -35,6 +39,10 @@ private:
         ALTER TABLE gallery_media ADD COLUMN photo_quality INTEGER DEFAULT 1;";
     const std::string SQL_GALLERY_ALBUM_TABLE_ADD_RELATIVE_BUCKET_ID = "\
         ALTER TABLE gallery_album ADD COLUMN relativeBucketId TEXT;";
+    const std::string SQL_GARBAGE_ALBUM_TABLE_ADD_RELATIVE_BUCKET_ID = "\
+        ALTER TABLE garbage_album ADD COLUMN relative_bucket_id TEXT;";
+    const std::string SQL_GARBAGE_ALBUM_TABLE_ADD_TYPE = "\
+        ALTER TABLE garbage_album ADD COLUMN type INTEGER DEFAULT 0;";
 
 private:
     DbUpgradeUtils dbUpgradeUtils_;

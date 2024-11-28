@@ -128,6 +128,7 @@ public:
     {
         return MediaLibraryRdbStore::GetRaw()->ExecuteSql(sql, args);
     }
+    static void WalCheckPoint();
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
@@ -136,7 +137,9 @@ private:
     friend class TransactionOperations;
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     EXPORT static const std::string BeginGenerateHighlightThumbnail(const std::vector<std::string>& args);
+    EXPORT static const std::string PhotoAlbumNotifyFunc(const std::vector<std::string>& args);
     static std::mutex reconstructLock_;
+    static std::mutex walCheckPointMutex_;
 #ifdef DISTRIBUTED
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
 #endif

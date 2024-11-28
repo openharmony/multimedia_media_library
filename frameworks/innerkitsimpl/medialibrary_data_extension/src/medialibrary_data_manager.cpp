@@ -1120,7 +1120,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::PAH_PHOTO:
         case OperationObject::PAH_VIDEO:
         case OperationObject::FILESYSTEM_PHOTO:
-        case OperationObject::FILESYSTEM_AUDIO: {
+        case OperationObject::FILESYSTEM_AUDIO:
+        case OperationObject::PTP_OPERATION: {
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
         }
         case OperationObject::ANALYSIS_PHOTO_ALBUM: {
@@ -1337,31 +1338,9 @@ static string generateUpdateSql(const bool isCover, const string title, const in
     return updateSql;
 }
 
-static shared_ptr<NativeRdb::ResultSet> QueryBurst(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const string globNameRule1, const string globNameRule2)
-{
-    string querySql = "SELECT " + MediaColumn::MEDIA_TITLE + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
-        " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_TYPE + " = " +
-        to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
-        to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_BURST_KEY +
-        " IS NULL AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule1 + "') OR LOWER(" +
-        MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule2 + "'))";
-    
-    auto resultSet = rdbStore->QueryByStep(querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("failed to acquire result from visitor query.");
-    }
-    return resultSet;
-}
-
 static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const string globNameRule1, const string globNameRule2)
+    shared_ptr<NativeRdb::ResultSet> resultSet)
 {
-    auto resultSet = QueryBurst(rdbStore, globNameRule1, globNameRule2);
-    if (resultSet == nullptr) {
-        return E_ERR;
-    }
-
     int32_t count;
     int32_t retCount = resultSet->GetRowCount(count);
     if (count == 0) {
@@ -1377,7 +1356,6 @@ static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibrar
     }
 
     int32_t ret = E_ERR;
-    std::vector<std::pair<string, int32_t>> infos;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int columnIndex = 0;
         string title;
@@ -1388,11 +1366,7 @@ static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibrar
         if (resultSet->GetColumnIndex(PhotoColumn::PHOTO_OWNER_ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
             resultSet->GetInt(columnIndex, ownerAlbumId);
         }
-        infos.emplace_back(title, ownerAlbumId);
-    }
-    resultSet->Close();
 
-    for (auto [title, ownerAlbumId] : infos) {
         string updateSql = generateUpdateSql(isCover, title, ownerAlbumId);
         ret = rdbStore->ExecuteSql(updateSql);
         if (ret != NativeRdb::E_OK) {
@@ -1401,6 +1375,23 @@ static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibrar
         }
     }
     return ret;
+}
+
+static shared_ptr<NativeRdb::ResultSet> QueryBurst(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const string globNameRule1, const string globNameRule2)
+{
+    string querySql = "SELECT " + MediaColumn::MEDIA_TITLE + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
+        " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_TYPE + " = " +
+        to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
+        to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_BURST_KEY +
+        " IS NULL AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule1 + "') OR LOWER(" +
+        MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule2 + "'))";
+    
+    auto resultSet = rdbStore->QueryByStep(querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("failed to acquire result from visitor query.");
+    }
+    return resultSet;
 }
 
 int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
@@ -1426,14 +1417,16 @@ int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
     // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx_COVER, 'x' represents a number
     string globCoverStr1 = globMemberStr1 + "_COVER";
     string globCoverStr2 = globMemberStr2 + "_COVER";
-
-    int32_t ret = UpdateBurstPhoto(true, rdbStore_, globCoverStr1, globCoverStr2);
+    
+    auto resultSet = QueryBurst(rdbStore_, globCoverStr1, globCoverStr2);
+    int32_t ret = UpdateBurstPhoto(true, rdbStore_, resultSet);
     if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("failed to UpdateBurstPhotoByCovers.");
         return E_FAIL;
     }
 
-    ret = UpdateBurstPhoto(false, rdbStore_, globMemberStr1, globMemberStr2);
+    resultSet = QueryBurst(rdbStore_, globMemberStr1, globMemberStr2);
+    ret = UpdateBurstPhoto(false, rdbStore_, resultSet);
     if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("failed to UpdateBurstPhotoByMembers.");
         return E_FAIL;
@@ -1589,7 +1582,7 @@ int32_t MediaLibraryDataManager::SyncPullThumbnailKeys(const Uri &uri)
         thumbnailKeys.push_back(lcdKey);
         count++;
     }
-    resultset->Close();
+
     if (thumbnailKeys.empty()) {
         return E_NO_SUCH_FILE;
     }
