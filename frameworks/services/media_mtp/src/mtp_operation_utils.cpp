@@ -79,6 +79,7 @@ static constexpr int EMPTY_BATTERY = 0;
 static constexpr int STORAGE_MANAGER_UID = 5003;
 static constexpr int RECEVIE_OBJECT_CANCELLED = -20;
 static constexpr int RECEVIE_OBJECT_FAILED = -17;
+const std::string PUBLIC_DOC = "/storage/media/local/files/Docs";
 
 static constexpr uint32_t HEADER_LEN = 12;
 static constexpr uint32_t READ_LEN = 1024;
@@ -712,14 +713,17 @@ uint16_t MtpOperationUtils::GetStorageIDs(shared_ptr<PayloadData> &data, uint16_
         mtpMediaLibrary_->GetStorageIds();
     } else {
         auto storage = make_shared<Storage>();
+        CHECK_AND_RETURN_RET_LOG(storage != nullptr, E_ERR, "storage is nullptr");
+        auto manager = MtpStorageManager::GetInstance();
+        CHECK_AND_RETURN_RET_LOG(manager != nullptr, E_ERR, "MtpStorageManager instance is nullptr");
         storage->SetStorageID(DEFAULT_STORAGE_ID);
         storage->SetStorageType(MTP_STORAGE_FIXEDRAM);
         storage->SetFilesystemType(MTP_FILESYSTEM_GENERICHIERARCHICAL);
         storage->SetAccessCapability(MTP_ACCESS_READ_WRITE);
-        storage->SetMaxCapacity(MtpStorageManager::GetInstance()->GetTotalSize());
-        storage->SetFreeSpaceInBytes(MtpStorageManager::GetInstance()->GetFreeSize());
+        storage->SetMaxCapacity(manager->GetTotalSize(PUBLIC_DOC));
+        storage->SetFreeSpaceInBytes(manager->GetFreeSize(PUBLIC_DOC));
         storage->SetFreeSpaceInObjects(0);
-        storage->SetStorageDescription("Inner Storage");
+        storage->SetStorageDescription(manager->GetStorageDescription(MTP_STORAGE_FIXEDRAM));
         MtpStorageManager::GetInstance()->AddStorage(storage);
     }
 

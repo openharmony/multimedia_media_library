@@ -307,4 +307,26 @@ std::string PhotosRestore::FindSourcePath(const FileInfo &fileInfo)
     }
     return this->SOURCE_PATH_PREFIX + lPath + "/" + fileInfo.displayName;
 }
+
+/**
+ * @brief Find enhancement photo quality for the target device by FileInfo.
+ */
+int32_t PhotosRestore::FindStrongAssociation(const FileInfo &fileInfo)
+{
+    if (fileInfo.photoQuality == DUAL_ENHANCEMENT_PHOTO_QUALITY) {
+        return CLOUD_ENHANCEMENT_ALBUM;
+    }
+    return 0;
+}
+
+/**
+ * @brief Find cloud enhancement available for the target device by FileInfo.
+ */
+int32_t PhotosRestore::FindCeAvailable(const FileInfo &fileInfo)
+{
+    if (fileInfo.photoQuality == DUAL_ENHANCEMENT_PHOTO_QUALITY) {
+        return SINGLE_CLOUD_ENHANCEMENT_PHOTO;
+    }
+    return 0;
+}
 }  // namespace OHOS::Media
