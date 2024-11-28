@@ -26,6 +26,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
+#include "medialibrary_photo_operations.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
@@ -279,30 +280,56 @@ int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
 
 int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
 {
-    vector<string> whereArgs = predicates.GetWhereArgs();
-    MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
+    vector<string> uriWhereArgs = predicates.GetWhereArgs();
     int32_t deleteRow = 0;
-    vector<string> whereIdArgs = predicates.GetWhereArgs();
-    if (whereIdArgs.empty()) {
-        return deleteRow;
-    }
-    whereIdArgs.erase(whereIdArgs.begin());
-    deleteRow = MediaLibraryRdbUtils::UpdateRemoveAsset(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), whereIdArgs);
-
-    string strAlbumId = predicates.GetWhereArgs()[0];
-    if (strAlbumId.empty()) {
-        MEDIA_ERR_LOG("Failed to get albumId");
-        return deleteRow;
-    }
+    CHECK_AND_RETURN_RET_LOG(!uriWhereArgs.empty(), deleteRow, "Remove photo assets failed: args is empty");
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
+    vector<string> idWhereArgs = predicates.GetWhereArgs();
+    string strAlbumId = idWhereArgs[0];
     int32_t albumId = atoi(strAlbumId.c_str());
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { strAlbumId });
-    auto watch = MediaLibraryNotify::GetInstance();
-    for (size_t i = 1; i < whereArgs.size(); i++) {
-        watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, albumId);
+    CHECK_AND_WARN_LOG(albumId > 0, "Invalid album Id: %{public}s", strAlbumId.c_str());
+    idWhereArgs.erase(idWhereArgs.begin());
+    if (idWhereArgs.empty()) {
+        MEDIA_WARN_LOG("No photo assets to remove");
+        return deleteRow;
     }
-    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_REMOVE_PHOTOS, deleteRow, whereArgs);
+
+    MEDIA_INFO_LOG("Remove %{public}zu photo assets from album %{public}d", idWhereArgs.size(), albumId);
+
+    shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
+
+    MediaLibraryPhotoOperations::UpdateSourcePath(idWhereArgs);
+    // Assets that don't belong to any albums should be moved to trash
+    deleteRow = MediaLibraryRdbUtils::UpdateRemovedAssetToTrash(rdbStore, idWhereArgs);
+    CHECK_AND_RETURN_RET_LOG(deleteRow > 0, deleteRow,
+        "Update Removed Asset to Trash failed, ret: %{public}d", deleteRow);
+
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { strAlbumId });
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
+        to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
+        to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::TRASH),
+        to_string(PhotoAlbumSubType::HIDDEN)
+    });
+
+    uriWhereArgs.erase(uriWhereArgs.begin());
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch != nullptr) {
+        int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
+        if (trashAlbumId <= 0) {
+            MEDIA_ERR_LOG("Trash album id error: %{public}d, trash album notification unavailable", trashAlbumId);
+        }
+        for (size_t i = 0; i < uriWhereArgs.size(); i++) {
+            watch->Notify(MediaFileUtils::Encode(uriWhereArgs[i]), NotifyType::NOTIFY_REMOVE);
+            watch->Notify(MediaFileUtils::Encode(uriWhereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, albumId);
+            watch->Notify(MediaFileUtils::Encode(uriWhereArgs[i]), NotifyType::NOTIFY_ALBUM_ADD_ASSET, trashAlbumId);
+        }
+    } else {
+        MEDIA_ERR_LOG("Failed to get notify instance, notification unavailable");
+    }
+
+    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_REMOVE_PHOTOS, deleteRow, uriWhereArgs);
     return deleteRow;
 }
 
