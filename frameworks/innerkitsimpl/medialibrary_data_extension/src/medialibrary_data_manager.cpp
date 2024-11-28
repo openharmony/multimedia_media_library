@@ -828,6 +828,10 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
         if (ret != MediaLibraryAppUriSensitiveOperations::SUCCEED) {
             return ret;
         }
+        if (MediaLibraryAppUriSensitiveOperations::BeForceSensitive(cmd, values)) {
+            return ret;
+        }
+        
         return MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
