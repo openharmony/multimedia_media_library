@@ -97,7 +97,7 @@
 #include "resource_type.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "system_ability_definition.h"
 #include "timer.h"
 #include "trash_async_worker.h"

@@ -36,7 +36,7 @@
 #include "value_object.h"
 #include "vision_column.h"
 #include "rdb_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "vision_album_column.h"
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"

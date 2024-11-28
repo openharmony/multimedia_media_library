@@ -27,7 +27,7 @@
 #include "medialibrary_tracer.h"
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "userfile_client.h"
 #include "vision_column.h"
 #include "vision_face_tag_column.h"

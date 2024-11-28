@@ -27,7 +27,7 @@
 #include "media_library_napi.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "cloud_media_asset_types.h"
 #include "cloud_media_asset_status_napi.h"
 

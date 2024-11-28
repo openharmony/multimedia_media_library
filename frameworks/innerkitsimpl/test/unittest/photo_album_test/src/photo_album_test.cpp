@@ -29,7 +29,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "rdb_predicates.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "medialibrary_unistore_manager.h"
 
 namespace OHOS::Media {

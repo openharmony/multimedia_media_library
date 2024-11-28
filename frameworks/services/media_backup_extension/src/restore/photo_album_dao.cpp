@@ -19,7 +19,7 @@
 
 #include "rdb_store.h"
 #include "media_log.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "album_plugin_config.h"
 #include "userfile_manager_types.h"
 #include "medialibrary_errno.h"

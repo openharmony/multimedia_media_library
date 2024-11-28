@@ -17,6 +17,7 @@
 
 #include "medialibrary_common_log.h"
 #include "fetch_result.h"
+#include "values_bucket.h"
 
 namespace OHOS {
 namespace Media {
@@ -159,6 +160,28 @@ static inline bool TryToGoToFirstRow(const std::shared_ptr<NativeRdb::ResultSet>
     }
 
     return true;
+}
+
+static inline void BuildValuesBucketString(const std::map<std::string, NativeRdb::ValueObject>& valueMap,
+    std::string& result)
+{
+    result += "{";
+    for (auto it = valueMap.begin(); it != valueMap.end(); ++it) {
+        result += it->first + ": " + std::string(it->second);
+        if (std::next(it) != valueMap.end()) {
+            result += ", ";
+        }
+    }
+    result += "}";
+}
+
+static inline std::string ValuesBucketToString(const NativeRdb::ValuesBucket& values)
+{
+    std::map<std::string, NativeRdb::ValueObject> valueMap {};
+    values.GetAll(valueMap);
+    std::string result {};
+    BuildValuesBucketString(valueMap, result);
+    return result;
 }
 } // namespace Media
 } // namespace  OHOS
