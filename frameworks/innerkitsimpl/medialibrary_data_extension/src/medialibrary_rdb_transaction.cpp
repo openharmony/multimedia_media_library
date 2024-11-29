@@ -27,8 +27,12 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 constexpr int32_t E_HAS_DB_ERROR = -222;
 constexpr int32_t E_OK = 0;
+constexpr int32_t RETRY_TRANS_MAX_TIMES = 2;
+constexpr int32_t RETRY_TRANS_MAX_TIMES_FOR_BACKUP = 10;
 
-TransactionOperations::TransactionOperations() {}
+TransactionOperations::TransactionOperations(std::string funcName)
+    : funcName_(funcName), reporter_(funcName)
+{}
 
 TransactionOperations::~TransactionOperations()
 {
@@ -43,9 +47,8 @@ void TransactionOperations::SetBackupRdbStore(std::shared_ptr<OHOS::NativeRdb::R
     backupRdbStore_ = rdbStore;
 }
 
-int32_t TransactionOperations::Start(std::string funcName, bool isBackup)
+int32_t TransactionOperations::Start(bool isBackup)
 {
-    funcName_ = funcName;
     MEDIA_INFO_LOG("Start transaction_, funName is :%{public}s", funcName_.c_str());
     if (isBackup) {
         rdbStore_ = backupRdbStore_;
@@ -53,7 +56,8 @@ int32_t TransactionOperations::Start(std::string funcName, bool isBackup)
         rdbStore_ = MediaLibraryRdbStore::GetRaw();
     }
     if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore_ is null");
+        reporter_.ReportError(DfxTransaction::AbnormalType::NULLPTR_ERROR, E_HAS_DB_ERROR);
+        MEDIA_ERR_LOG("rdbStore_ is null, isBackup = %{public}d", isBackup);
         return E_HAS_DB_ERROR;
     }
 
@@ -75,6 +79,7 @@ int32_t TransactionOperations::Start(std::string funcName, bool isBackup)
         }
     }
     if (errCode != NativeRdb::E_OK) {
+        reporter_.ReportError(DfxTransaction::AbnormalType::CREATE_ERROR, errCode);
         errCode = E_HAS_DB_ERROR;
     }
     return errCode;
@@ -83,6 +88,7 @@ int32_t TransactionOperations::Start(std::string funcName, bool isBackup)
 int32_t TransactionOperations::Finish()
 {
     if (transaction_ == nullptr) {
+        reporter_.ReportError(DfxTransaction::AbnormalType::NULLPTR_ERROR, E_HAS_DB_ERROR);
         MEDIA_ERR_LOG("transaction is null");
         return E_HAS_DB_ERROR;
     }
@@ -90,8 +96,10 @@ int32_t TransactionOperations::Finish()
     auto ret = transaction_->Commit();
     transaction_ = nullptr;
     if (ret != NativeRdb::E_OK) {
+        reporter_.ReportError(DfxTransaction::AbnormalType::COMMIT_ERROR, ret);
         MEDIA_ERR_LOG("transaction commit fail!, ret:%{public}d", ret);
-        return ret;
+    } else {
+        reporter_.ReportIfTimeout();
     }
 #ifdef CLOUD_SYNC_MANAGER
     if (isSkipCloudSync_) {
@@ -103,10 +111,10 @@ int32_t TransactionOperations::Finish()
     return ret;
 }
 
-int32_t TransactionOperations::TryTrans(std::function<int(void)> &func, std::string funcName, bool isBackup)
+int32_t TransactionOperations::TryTrans(std::function<int(void)> &func, bool isBackup)
 {
     int32_t err = NativeRdb::E_OK;
-    err = Start(funcName, isBackup);
+    err = Start(isBackup);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
         return err;
@@ -114,6 +122,8 @@ int32_t TransactionOperations::TryTrans(std::function<int(void)> &func, std::str
     err = func();
     if (err != E_OK) {
         MEDIA_ERR_LOG("TryTrans: trans function fail!, ret:%{public}d", err);
+        Rollback();
+        return err;
     }
     err = Finish();
     if (err != E_OK) {
@@ -122,23 +132,29 @@ int32_t TransactionOperations::TryTrans(std::function<int(void)> &func, std::str
     return err;
 }
 
-int32_t TransactionOperations::RetryTrans(std::function<int(void)> &func, std::string funcName, bool isBackup)
+int32_t TransactionOperations::RetryTrans(std::function<int(void)> &func, bool isBackup)
 {
-    int32_t err = TryTrans(func, funcName, isBackup);
-    if (err == E_OK) {
-        return err;
-    }
-    if (err == NativeRdb::E_SQLITE_BUSY && !isSkipCloudSync_) {
-        MEDIA_ERR_LOG("TryTrans busy, err:%{public}d", err);
+    int32_t currentTime = 0;
+    int maxTryTimes = isBackup ? RETRY_TRANS_MAX_TIMES_FOR_BACKUP : RETRY_TRANS_MAX_TIMES;
+    int32_t err = NativeRdb::E_OK;
+    while (currentTime < maxTryTimes) {
+        err = TryTrans(func, isBackup);
+        if (err == E_OK) {
+            return err;
+        }
+        if (err == NativeRdb::E_SQLITE_BUSY && !isSkipCloudSync_) {
+            MEDIA_ERR_LOG("TryTrans busy, err:%{public}d", err);
 #ifdef CLOUD_SYNC_MANAGER
-        MEDIA_INFO_LOG("Stop cloud sync");
-        FileManagement::CloudSync::CloudSyncManager::GetInstance()
-            .StopSync("com.ohos.medialibrary.medialibrarydata");
-        isSkipCloudSync_ = true;
+            MEDIA_INFO_LOG("Stop cloud sync");
+            FileManagement::CloudSync::CloudSyncManager::GetInstance()
+                .StopSync("com.ohos.medialibrary.medialibrarydata");
+            isSkipCloudSync_ = true;
 #endif
+        }
+        currentTime++;
+        reporter_.Restart();
     }
-    err = TryTrans(func, funcName, isBackup);
-    MEDIA_INFO_LOG("RetryTrans twice result is :%{public}d", err);
+    MEDIA_INFO_LOG("RetryTrans result is :%{public}d", err);
     return err;
 }
 
@@ -151,8 +167,8 @@ int32_t TransactionOperations::Rollback()
     auto ret = transaction_->Rollback();
     transaction_ = nullptr;
     if (ret != NativeRdb::E_OK) {
+        reporter_.ReportError(DfxTransaction::AbnormalType::ROLLBACK_ERROR, ret);
         MEDIA_ERR_LOG("Rollback fail:%{public}d", ret);
-        return ret;
     }
 #ifdef CLOUD_SYNC_MANAGER
     if (isSkipCloudSync_) {
@@ -218,6 +234,7 @@ int32_t TransactionOperations::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
         MEDIA_ERR_LOG("transaction is null");
         return E_HAS_DB_ERROR;
     }
+
     auto [ret, rows] = transaction_->Insert(cmd.GetTableName(), cmd.GetValueBucket());
     rowId = rows;
     if (ret != NativeRdb::E_OK) {
@@ -236,7 +253,7 @@ int32_t TransactionOperations::Update(NativeRdb::ValuesBucket &values, const Nat
         MEDIA_ERR_LOG("transaction is null");
         return E_HAS_DB_ERROR;
     }
-        if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+    if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
         values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     }
@@ -256,7 +273,7 @@ int32_t TransactionOperations::Update(int32_t &changedRows, NativeRdb::ValuesBuc
         MEDIA_ERR_LOG("transaction is null");
         return E_HAS_DB_ERROR;
     }
-        auto [err, rows] = transaction_->Update(values, predicates);
+    auto [err, rows] = transaction_->Update(values, predicates);
     changedRows = rows;
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to execute update, err: %{public}d", err);
@@ -272,6 +289,7 @@ int32_t TransactionOperations::Update(MediaLibraryCommand &cmd, int32_t &changed
         MEDIA_ERR_LOG("transaction_ is null");
         return E_HAS_DB_ERROR;
     }
+
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED,
             MediaFileUtils::UTCTimeMilliSeconds());
@@ -300,6 +318,7 @@ int32_t TransactionOperations::BatchInsert(int64_t &outRowId, const std::string 
         MEDIA_ERR_LOG("transaction_ is null");
         return E_HAS_DB_ERROR;
     }
+
     auto [ret, rows] = transaction_->BatchInsert(table, values);
     outRowId = rows;
     if (ret != NativeRdb::E_OK) {

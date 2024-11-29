@@ -437,7 +437,7 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
     bool needToInsert = false;
     bool isValid = false;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t errCode = E_OK;
     std::function<int(void)> func = [&]()->int {
         if (photoNeedToUpdate) {
@@ -451,7 +451,7 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
         }
         return errCode;
     };
-    errCode = trans->RetryTrans(func, __func__);
+    errCode = trans->RetryTrans(func);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("GrantUriPermission: trans retry fail!, ret:%{public}d", errCode);
     }
