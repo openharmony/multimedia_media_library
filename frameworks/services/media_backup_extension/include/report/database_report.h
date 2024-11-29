@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef OHOS_MEDIA_BACKUP_GALLERY_REPORT_H
-#define OHOS_MEDIA_BACKUP_GALLERY_REPORT_H
+#ifndef OHOS_MEDIA_BACKUP_DATABASE_REPORT_H
+#define OHOS_MEDIA_BACKUP_DATABASE_REPORT_H
 
 #include <string>
 #include <vector>
@@ -56,4 +56,4 @@ private:
     bool shouldIncludeSd_;
 };
 }  // namespace OHOS::Media
-#endif  // OHOS_MEDIA_BACKUP_GALLERY_REPORT_H
+#endif  // OHOS_MEDIA_BACKUP_DATABASE_REPORT_H

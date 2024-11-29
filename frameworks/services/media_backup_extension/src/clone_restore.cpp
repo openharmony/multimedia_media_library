@@ -1310,6 +1310,13 @@ void CloneRestore::RestoreGallery()
     // Upgrade original MediaLibrary Database
     DataTransfer::MediaLibraryDbUpgrade medialibraryDbUpgrade;
     medialibraryDbUpgrade.OnUpgrade(*this->mediaRdb_);
+    // Report the old db info.
+    DatabaseReport()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .ReportMedia(this->mediaRdb_, DatabaseReport::PERIOD_OLD)
+        .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_BEFORE);
+    // Restore the backup db info.
     RestoreAlbum();
     RestorePhoto();
     MEDIA_INFO_LOG("migrate database photo number: %{public}lld, file number: %{public}lld (%{public}lld + "
