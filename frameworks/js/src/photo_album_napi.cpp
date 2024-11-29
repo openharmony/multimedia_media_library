@@ -840,6 +840,7 @@ static void JSPhotoAlbumRemoveAssetsExecute(napi_env env, void *data)
 
     auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
     if (context->predicates.GetOperationList().empty()) {
+        NAPI_ERR_LOG("Invalid input: operation list is empty");
         return;
     }
 
@@ -848,6 +849,7 @@ static void JSPhotoAlbumRemoveAssetsExecute(napi_env env, void *data)
     Uri uri(removeAssetsUri);
     auto deletedRows = UserFileClient::Delete(uri, context->predicates);
     if (deletedRows < 0) {
+        NAPI_ERR_LOG("Remove assets failed: %{public}d", deletedRows);
         context->SaveError(deletedRows);
         return;
     }
