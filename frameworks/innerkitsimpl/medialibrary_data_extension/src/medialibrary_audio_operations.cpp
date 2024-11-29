@@ -180,7 +180,7 @@ int32_t MediaLibraryAudioOperations::CreateV9(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check Dir and Extention, "
         "displayName=%{private}s, mediaType=%{public}d", displayName.c_str(), mediaType);
 
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t outRow = -1;
     std::function<int(void)> func = [&]()->int {
         errCode = SetAssetPathInCreate(fileAsset, trans);
@@ -196,7 +196,7 @@ int32_t MediaLibraryAudioOperations::CreateV9(MediaLibraryCommand& cmd)
         }
         return errCode;
     };
-    errCode = trans->RetryTrans(func, __func__);
+    errCode = trans->RetryTrans(func);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("CreateV9: trans retry fail!, ret:%{public}d", errCode);
     }
@@ -236,7 +236,7 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
     // Check rootdir and extention
     int32_t errCode = CheckWithType(isContains, displayName, extention, MediaType::MEDIA_TYPE_AUDIO);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t outRow = -1;
     std::function<int(void)> func = [&]()->int {
         CHECK_AND_RETURN_RET((errCode == E_OK), errCode);
@@ -251,7 +251,7 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
         CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
         return errCode;
     };
-    errCode = trans->RetryTrans(func, __func__);
+    errCode = trans->RetryTrans(func);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("CreateV10: trans retry fail!, ret:%{public}d", errCode);
     }

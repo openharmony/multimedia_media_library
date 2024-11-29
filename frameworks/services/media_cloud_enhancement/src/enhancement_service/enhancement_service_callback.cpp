@@ -165,7 +165,7 @@ int32_t EnhancementServiceCallback::CreateCloudEnhancementPhoto(int32_t sourceFi
     // Check rootdir
     int32_t errCode = CheckDisplayNameWithType(info->displayName, static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE));
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t outRow = -1;
     std::function<int(void)> func = [&]()->int {
         errCode = SetAssetPathInCreate(fileAsset, trans);
@@ -177,7 +177,7 @@ int32_t EnhancementServiceCallback::CreateCloudEnhancementPhoto(int32_t sourceFi
         fileAsset.SetId(outRow);
         return errCode;
     };
-    errCode = trans->RetryTrans(func, __func__);
+    errCode = trans->RetryTrans(func);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("CreateCloudEnhancementPhoto: tans finish fail!, ret:%{public}d", errCode);
     }
