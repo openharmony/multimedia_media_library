@@ -26,6 +26,11 @@ public:
     CloudSyncSwitchObserver() {}
     ~CloudSyncSwitchObserver() {}
     void OnChange() override;
+    void HandleIndex();
+
+    /* delayed trigger */
+    bool isPending_ = false;
+    std::mutex syncMutex_;
 };
 
 class CloudSyncSwitchManager {
