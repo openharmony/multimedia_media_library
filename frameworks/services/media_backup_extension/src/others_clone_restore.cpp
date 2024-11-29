@@ -58,6 +58,7 @@ const std::string PHOTO_SD_MEDIA_INFO_DB_NAME = "photo_sd_MediaInfo.db";
 const std::string VIDEO_DB_NAME = "video_MediaInfo.db";
 const std::string VIDEO_SD_MEDIA_INFO_DB_NAME = "video_sd_MediaInfo.db";
 const std::string OTHER_CLONE_FILE_ROOT_PATH = "/storage/media/local/files/.backup/restore";
+const std::string LITE_CLONE_SD_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/";
 const std::string OTHER_CLONE_DB_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/0/";
 const std::string OTHER_CLONE_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/";
 const std::string OTHER_CLONE_DISPLAYNAME = "primaryStr";
@@ -602,10 +603,20 @@ static std::string ParseSourcePathToLPath(int32_t sceneCode, const std::string &
     } else {
         MEDIA_WARN_LOG("find other clone path error path: %{public}s",
             BackupFileUtils::GarbleFilePath(filePath, sceneCode).c_str());
-        source = OTHER_CLONE_FILE_ROOT_PATH;
+        source = LITE_CLONE_SD_FILE_PATH;
         findPos = lPath.find(source);
         if (findPos != std::string::npos) {
             lPath.replace(lPath.find(source), source.length(), "");
+            std::size_t startPos = lPath.find_first_of(FILE_SEPARATOR);
+            if (startPos != std::string::npos) {
+                lPath = lPath.substr(startPos);
+            }
+        } else {
+            source = OTHER_CLONE_FILE_ROOT_PATH;
+            findPos = lPath.find(source);
+            if (findPos != std::string::npos) {
+                lPath.replace(lPath.find(source), source.length(), "");
+            }
         }
     }
     std::size_t startPos = lPath.find_first_of(FILE_SEPARATOR);
