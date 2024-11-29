@@ -299,11 +299,11 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_001, TestSize.Level0)
         exit(1);
     }
     rdbStorePtr->Init();
-    TransactionOperations trans1;
-    int32_t ret = trans1.Start(__func__);
+    TransactionOperations trans1{ __func__ };
+    int32_t ret = trans1.Start();
     EXPECT_EQ(ret, E_OK);
-    TransactionOperations trans2;
-    int32_t ret1 = trans2.Start(__func__);
+    TransactionOperations trans2{ __func__ };
+    int32_t ret1 = trans2.Start();
     EXPECT_NE(ret1, E_OK);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE);
     ValuesBucket valuesBucket;
@@ -326,8 +326,8 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_002, TestSize.Level0)
         exit(1);
     }
     rdbStorePtr->Stop();
-    TransactionOperations trans;
-    int32_t ret = trans.Start(__func__);
+    TransactionOperations trans{ __func__ };
+    int32_t ret = trans.Start();
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
@@ -414,12 +414,12 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_001, TestSize.
 {
     MEDIA_INFO_LOG("medialib_TransactionOperations_test_001 begin");
     rdbStorePtr->Init();
-    TransactionOperations trans1;
+    TransactionOperations trans1{ __func__ };
     trans1.Finish();
-    int32_t ret = trans1.Start(__func__);
+    int32_t ret = trans1.Start();
     EXPECT_EQ(ret, E_OK);
-    TransactionOperations trans2;
-    auto res = trans2.Start(__func__);
+    TransactionOperations trans2{ __func__ };
+    auto res = trans2.Start();
     ret = res;
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     trans1.Finish();
@@ -432,8 +432,8 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_001, TestSize.
 void TransactionTestFunc(shared_ptr<MediaLibraryRdbStore> rdbStorePtr, int *startSignal, int *endSignal,
     int32_t sleepTimeMs)
 {
-    TransactionOperations trans;
-    int32_t ret = trans.Start(__func__);
+    TransactionOperations trans{ __func__ };
+    int32_t ret = trans.Start();
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Start failed, ret=%{public}d", ret);
         return;

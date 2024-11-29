@@ -333,7 +333,7 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
     bool needToInsert = false;
     bool isValid = false;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>();
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t err = E_OK;
     std::function<int(void)> func = [&]()->int {
         if (ValueBucketCheck(values) != E_OK) {
@@ -369,7 +369,7 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
         }
         return err;
     };
-    err = trans->RetryTrans(func, __func__);
+    err = trans->RetryTrans(func);
     if (err != E_OK) {
         MEDIA_ERR_LOG("GrantUriSensitive: tans finish fail!, ret:%{public}d", err);
     }

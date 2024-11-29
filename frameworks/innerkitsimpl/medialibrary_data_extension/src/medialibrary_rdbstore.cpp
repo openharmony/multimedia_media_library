@@ -376,7 +376,6 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT = "\
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
 
 std::mutex MediaLibraryRdbStore::reconstructLock_;
-std::mutex MediaLibraryRdbStore::rdbStoreMutex_;
 
 int32_t oldVersion_ = -1;
 struct UniqueMemberValuesBucket {
@@ -564,7 +563,6 @@ void MediaLibraryRdbStore::UpdateDateTakenIndex(const shared_ptr<MediaLibraryRdb
 
 int32_t MediaLibraryRdbStore::Init()
 {
-    std::lock_guard<std::mutex> lock(rdbStoreMutex_);
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
     if (rdbStore_ != nullptr) {
         return E_OK;
@@ -586,7 +584,6 @@ int32_t MediaLibraryRdbStore::Init()
 
 int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
 {
-    std::lock_guard<std::mutex> lock(rdbStoreMutex_);
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", version);
     if (rdbStore_ != nullptr) {
         return E_OK;
@@ -608,19 +605,16 @@ MediaLibraryRdbStore::~MediaLibraryRdbStore() = default;
 
 void MediaLibraryRdbStore::Stop()
 {
-    std::lock_guard<std::mutex> lock(rdbStoreMutex_);
     rdbStore_ = nullptr;
 }
 
 bool MediaLibraryRdbStore::CheckRdbStore()
 {
-    std::lock_guard<std::mutex> lock(rdbStoreMutex_);
     return rdbStore_ != nullptr;
 }
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw()
 {
-    std::lock_guard<std::mutex> lock(rdbStoreMutex_);
     return rdbStore_;
 }
 
@@ -1211,7 +1205,9 @@ int32_t PrepareSystemAlbums(RdbStore &store)
     int32_t err = E_FAIL;
     MEDIA_INFO_LOG("PrepareSystemAlbums start");
     auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
+    DfxTransaction reporter{ __func__ };
     if (errCode != NativeRdb::E_OK || transaction == nullptr) {
+        reporter.ReportError(DfxTransaction::AbnormalType::CREATE_ERROR, errCode);
         MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
         return errCode;
     }
@@ -1230,12 +1226,20 @@ int32_t PrepareSystemAlbums(RdbStore &store)
         auto res = transaction->Execute(sql, bindArgs);
         err = res.first;
         if (err != E_OK) {
+            reporter.ReportError(DfxTransaction::AbnormalType::EXECUTE_ERROR, err);
             transaction->Rollback();
+            MEDIA_ERR_LOG("Execute sql failed, err: %{public}d", err);
             return err;
         }
         values.Clear();
     }
-    transaction->Commit();
+    err = transaction->Commit();
+    if (err != NativeRdb::E_OK) {
+        reporter.ReportError(DfxTransaction::AbnormalType::COMMIT_ERROR, err);
+        MEDIA_ERR_LOG("transaction Commit failed, err: %{public}d", err);
+    } else {
+        reporter.ReportIfTimeout();
+    }
     return E_OK;
 }
 
