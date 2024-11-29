@@ -28,6 +28,10 @@
 #include "mimetype_utils.h"
 
 namespace OHOS::Media {
+static const int32_t CLOUD_ENHANCEMENT_ALBUM = 1;
+static const int32_t DUAL_ENHANCEMENT_PHOTO_QUALITY = 120;
+static const int32_t SINGLE_CLOUD_ENHANCEMENT_PHOTO = 120;
+
 /**
  * @brief Get the gallery_media to restore to Photos.
  */
