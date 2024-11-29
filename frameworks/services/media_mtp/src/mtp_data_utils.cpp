@@ -904,7 +904,7 @@ int32_t MtpDataUtils::GetMtpPropValue(const std::string &path,
         return MTP_ERROR_INVALID_OBJECTPROP_VALUE;
     }
     if (column.compare(MEDIA_DATA_DB_SIZE) == 0) {
-        outPropValue.outIntVal = statInfo.st_size;
+        outPropValue.outIntVal = static_cast<uint64_t>(statInfo.st_size);
         return MTP_SUCCESS;
     }
     if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
@@ -912,7 +912,7 @@ int32_t MtpDataUtils::GetMtpPropValue(const std::string &path,
         return MTP_SUCCESS;
     }
     if (column.compare(MEDIA_DATA_DB_DATE_ADDED) == 0) {
-        outPropValue.outIntVal = statInfo.st_ctime;
+        outPropValue.outIntVal = static_cast<uint64_t>(statInfo.st_ctime);
     }
 
     return MTP_SUCCESS;
