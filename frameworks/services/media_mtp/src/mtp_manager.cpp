@@ -59,15 +59,16 @@ void MtpManager::Init()
         int ret = OHOS::USB::UsbSrvClient::GetInstance().GetCurrentFunctions(funcs);
         MEDIA_INFO_LOG("MtpManager Init GetCurrentFunctions = %{public}d ret = %{public}d", funcs, ret);
         CHECK_AND_RETURN_LOG(ret == 0, "GetCurrentFunctions failed");
-        if (funcs & USB::UsbSrvSupport::Function::FUNCTION_MTP) {
+        uint32_t unsignedfuncs = static_cast<uint32_t>(funcs);
+        if (unsignedfuncs & USB::UsbSrvSupport::Function::FUNCTION_MTP) {
             MtpManager::GetInstance().StartMtpService(MtpMode::MTP_MODE);
             return;
         }
-        if (funcs & USB::UsbSrvSupport::Function::FUNCTION_PTP) {
+        if (unsignedfuncs & USB::UsbSrvSupport::Function::FUNCTION_PTP) {
             MtpManager::GetInstance().StartMtpService(MtpMode::PTP_MODE);
             return;
         }
-        if (funcs & USB::UsbSrvSupport::Function::FUNCTION_HDC) {
+        if (unsignedfuncs & USB::UsbSrvSupport::Function::FUNCTION_HDC) {
             MtpManager::GetInstance().StopMtpService();
         }
         MEDIA_INFO_LOG("MtpManager Init success end");
