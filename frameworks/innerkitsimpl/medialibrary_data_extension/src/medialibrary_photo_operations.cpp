@@ -3556,7 +3556,7 @@ int32_t MediaLibraryPhotoOperations::UpdateOwnerAlbumId(MediaLibraryCommand &cmd
         MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
         return rowId;
     }
-    auto watch = MediaLibraryNotify::GetInstance();
+
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
         { to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO) });
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
@@ -3567,10 +3567,14 @@ int32_t MediaLibraryPhotoOperations::UpdateOwnerAlbumId(MediaLibraryCommand &cmd
         MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) });
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) });
-    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-        NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, originalAlbumId);
-    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-        NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch != nullptr) {
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
+            NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, originalAlbumId);
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
+            NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
+    }
     return rowId;
 }
 } // namespace Media
