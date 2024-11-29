@@ -28,6 +28,7 @@ const DUAL_FRAME_CLONE_RESTORE : number = 1;
 const CLONE_RESTORE : number = 2;
 const I_PHONE_CLONE_RESTORE : number = 3;
 const OTHERS_PHONE_CLONE_RESTORE : number = 4;
+const LITE_PHONE_CLONE_RESTORE : number = 5;
 
 const UPGRADE_NAME = '0.0.0.0';
 const I_PHONE_FRAME_CLONE_NAME = '99.99.99.997';
@@ -62,6 +63,7 @@ const STAT_TYPES = [STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO];
 const RESULT_INFO_NUM = 2;
 const JS_TYPE_STRING = 'string';
 const JS_TYPE_BOOLEAN = 'boolean';
+const GALLERY_DB_PATH = '/storage/media/local/files/.backup/restore/gallery.db';
 const DEFAULT_RESTORE_EX_INFO = {
   'resultInfo':
   [
@@ -389,11 +391,28 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       this.checkType(typeof subProcessInfo[STAT_KEY_IS_PERCENTAGE], JS_TYPE_BOOLEAN);
   }
 
+  private checkDBExist(dbPath: string): boolean {
+    try {
+      let res = fs.accessSync(dbPath);
+      if (!res) {
+        console.log(TAG, `LITE_PHONE_CLONE_RESTORE: gallery.db is not exist`);
+        return false;
+      }
+    } catch (err) {
+      console.error(TAG, `LITE_PHONE_CLONE_RESTORE: accessSync failed with error message: ` + err.message +
+                    `, error code: ` + err.code);
+    }
+    return true;
+  }
+
   private getSceneCode(bundleVersion: BundleVersion): number {
     if (bundleVersion.name.startsWith(UPGRADE_NAME)) {
       return UPGRADE_RESTORE;
     }
     if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
+      if (!this.checkDBExist(GALLERY_DB_PATH)) {
+        return LITE_PHONE_CLONE_RESTORE;
+      }
       return DUAL_FRAME_CLONE_RESTORE;
     }
     if (bundleVersion.name === OTHERS_PHONE_FRAME_CLONE_NAME && bundleVersion.code === 0) {
