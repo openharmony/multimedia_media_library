@@ -95,6 +95,18 @@ public:
     EXPORT int32_t OpenAsset(string &uri, const string openMode);
 
     /**
+     * @brief open photo or video
+     *
+     * @param uri uri of the asset
+     * @param openMode openMode "rw", "w", "r"
+     * @param type force sensitive type
+     * @return fileDescriptor for success and <-1> for fail
+     * @since 1.0
+     * @version 1.0
+     */
+    EXPORT int32_t OpenAsset(string &uri, const string openMode, HideSensitiveType type);
+
+    /**
      * @brief Obtain a mediaVolume object from MediaAssets can be obtained
      *
      * @param MediaVolume MediaVolume for outValue
@@ -195,6 +207,15 @@ public:
      * @return read fd for success and <-1> for fail
      */
     EXPORT int32_t ReadPrivateMovingPhoto(const string &uri);
+
+    /**
+     * @brief Open private moving photo to read
+     *
+     * @param uri asset uri of the moving photo
+     * @param type force type
+     * @return read fd for success and <-1> for fail
+     */
+    EXPORT int32_t ReadPrivateMovingPhoto(const string &uri, const HideSensitiveType type);
 
     /**
      * @brief Get image uri of moving photo

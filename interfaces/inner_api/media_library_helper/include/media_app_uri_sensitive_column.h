@@ -31,6 +31,9 @@ public:
     static const std::string URI_TYPE EXPORT;
     static const std::string HIDE_SENSITIVE_TYPE EXPORT;
     static const std::string DATE_MODIFIED EXPORT;
+    static const std::string IS_FORCE_SENSITIVE EXPORT;
+    static const std::string SOURCE_TOKENID EXPORT;
+    static const std::string TARGET_TOKENID EXPORT;
 
     // uriTypes
     static const int URI_PHOTO EXPORT;
@@ -60,6 +63,7 @@ public:
 
     // drop sensitive column sql
     static const std::string DELETE_APP_URI_SENSITIVE_TABLE EXPORT;
+    static const std::string DORP_APP_URI_SENSITIVE_TABLE EXPORT;
 
     // all columns
     static const std::set<std::string> ALL_COLUMNS EXPORT;

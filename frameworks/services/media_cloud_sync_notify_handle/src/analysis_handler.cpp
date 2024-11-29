@@ -38,14 +38,7 @@ int32_t AnalysisHandler::threadId_{-1};
 std::atomic<uint16_t> AnalysisHandler::counts_(0);
 static constexpr uint16_t HANDLE_IDLING_TIME = 5;
 
-AnalysisHandler::~AnalysisHandler()
-{
-    auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
-    if (periodWorker == nullptr) {
-        MEDIA_ERR_LOG("failed to get period worker instance");
-    }
-    periodWorker->CloseThreadById(AnalysisHandler::threadId_);
-}
+AnalysisHandler::~AnalysisHandler() {}
 
 static vector<string> GetFileIds(const CloudSyncHandleData &handleData)
 {
@@ -120,6 +113,7 @@ static int32_t GetHandleData(CloudSyncHandleData &handleData)
                 return E_ERR;
             }
             periodWorker->CloseThreadById(AnalysisHandler::threadId_);
+            AnalysisHandler::threadId_ = -1;
         }
         return E_ERR;
     } else {
@@ -208,36 +202,18 @@ void AnalysisHandler::MergeTask(const CloudSyncHandleData &handleData)
     CloudSyncHandleData &tempHandleData = AnalysisHandler::taskQueue_.front();
     if (tempHandleData.orgInfo.type == ChangeType::OTHER) {
         return;
+    } else if (handleData.orgInfo.type == ChangeType::OTHER) {
+        AnalysisHandler::taskQueue_.pop();
+        AnalysisHandler::taskQueue_.push(handleData);
     } else {
-        for (auto info : handleData.notifyInfo) {
-            auto it = tempHandleData.notifyInfo.find(info.first);
-            if (it != tempHandleData.notifyInfo.end()) {
-                tempHandleData.notifyInfo[info.first].splice(
-                    tempHandleData.notifyInfo[info.first].end(), info.second);
-            } else {
-                tempHandleData.notifyInfo[info.first] = info.second;
-            }
-        }
+        tempHandleData.orgInfo.uris.insert(
+            tempHandleData.orgInfo.uris.end(), handleData.orgInfo.uris.begin(), handleData.orgInfo.uris.end());
     }
 }
 
 void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
 {
     MergeTask(handleData);
-    auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
-    if (periodWorker == nullptr) {
-        MEDIA_ERR_LOG("failed to get period worker instance");
-        return;
-    }
-    if (!periodWorker->IsThreadRunning(AnalysisHandler::threadId_)) {
-        auto periodTask = make_shared<MedialibraryPeriodTask>(ProcessHandleData,
-            PowerEfficiencyManager::GetAlbumUpdateInterval());
-        AnalysisHandler::threadId_ = periodWorker->AddTask(periodTask, nextHandler_, refreshAlbumsFunc_);
-        if (AnalysisHandler::threadId_ == E_ERR) {
-            MEDIA_ERR_LOG("failed to add task");
-            return;
-        }
-    }
 }
 } //namespace Media
 } //namespace OHOS

@@ -75,6 +75,18 @@ string PhotoFileUtils::GetEditDataSourcePath(const string& photoPath, int32_t us
     return parentPath + "/source." + MediaFileUtils::GetExtensionFromPath(photoPath);
 }
 
+bool PhotoFileUtils::HasEditData(int64_t editTime)
+{
+    return editTime > 0;
+}
+
+bool PhotoFileUtils::HasSource(bool hasEditDataCamera, int64_t editTime, int32_t effectMode)
+{
+    return hasEditDataCamera || editTime > 0 ||
+           (effectMode > static_cast<int32_t>(MovingPhotoEffectMode::DEFAULT) &&
+               effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
+}
+
 int32_t PhotoFileUtils::GetMetaPathFromOrignalPath(const std::string &srcPath, std::string &metaPath)
 {
     if (srcPath.empty()) {
