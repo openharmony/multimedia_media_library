@@ -189,6 +189,7 @@ enum class EXPORT OperationType : uint32_t {
     CLOUD_MEDIA_ASSET_TASK_RETAIN_GENTLE,
     CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY,
     SET_OWNER_ALBUM_ID,
+    UPDATE_SEARCH_INDEX,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()
