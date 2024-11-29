@@ -781,15 +781,10 @@ void SendableMediaLibraryNapiUtils::UriAppendKeyValue(string &uri, const string 
     }
 }
 
-napi_value SendableMediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<string> &fetchColumn,
-    function<bool(const string &columnName)> isValidColumn, NapiAssetType assetType,
+napi_value SendableMediaLibraryNapiUtils::AddAssetColumns(napi_env env, vector<string> &fetchColumn,
+    function<bool(const string &columnName)> isValidColumn, std::set<std::string>& validFetchColumns,
     const PhotoAlbumSubType subType)
 {
-    auto validFetchColumns = MediaColumn::DEFAULT_FETCH_COLUMNS;
-    if (assetType == TYPE_PHOTO) {
-        validFetchColumns.insert(
-            PhotoColumn::DEFAULT_FETCH_COLUMNS.begin(), PhotoColumn::DEFAULT_FETCH_COLUMNS.end());
-    }
     switch (subType) {
         case PhotoAlbumSubType::FAVORITE:
             validFetchColumns.insert(MediaColumn::MEDIA_IS_FAV);
@@ -829,6 +824,18 @@ napi_value SendableMediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, v
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
+}
+
+napi_value SendableMediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<string> &fetchColumn,
+    function<bool(const string &columnName)> isValidColumn, NapiAssetType assetType,
+    const PhotoAlbumSubType subType)
+{
+    auto validFetchColumns = MediaColumn::DEFAULT_FETCH_COLUMNS;
+    if (assetType == TYPE_PHOTO) {
+        validFetchColumns.insert(
+            PhotoColumn::DEFAULT_FETCH_COLUMNS.begin(), PhotoColumn::DEFAULT_FETCH_COLUMNS.end());
+    }
+    return AddAssetColumns(env, fetchColumn, isValidColumn, validFetchColumns, subType);
 }
 
 inline void SetDefaultPredicatesCondition(DataSharePredicates &predicates, const int32_t dateTrashed,
@@ -1172,6 +1179,13 @@ napi_value SendableMediaLibraryNapiUtils::GetNextRowObject(napi_env env,
         handleThumbnailReady(env, name, result, index, resultSet);
     }
 
+    if (fileAsset->GetDisplayName().empty() && fileAsset->GetPath().empty()) {
+        napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH, &value);
+        napi_set_named_property(env, result, MEDIA_DATA_DB_URI.c_str(), value);
+        napi_create_int32(env, 0, &value);
+        napi_set_named_property(env, result, "subtype", value);
+        return result;
+    }
     string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath(), false);
     MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()), "", MEDIA_API_VERSION_V10, extrUri);
     fileAsset->SetUri(move(fileUri.ToString()));
