@@ -42,6 +42,7 @@
 #include "medialibrary_notify.h"
 #include "upgrade_restore_task_report.h"
 #include "medialibrary_rdb_transaction.h"
+#include "database_report.h"
 
 namespace OHOS {
 namespace Media {
@@ -749,6 +750,10 @@ void BaseRestore::StartRestoreEx(const std::string &backupRetoreDir, const std::
     std::string &restoreExInfo)
 {
     StartRestore(backupRetoreDir, upgradePath);
+    DatabaseReport()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_AFTER);
     restoreExInfo = GetRestoreExInfo();
     UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).Report(restoreExInfo);
 }
