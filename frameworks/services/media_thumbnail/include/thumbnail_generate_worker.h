@@ -43,6 +43,22 @@ enum class ThumbnailTaskPriority {
     LOW,
 };
 
+enum CpuAffinityType : int32_t {
+    CPU_IDX_DEFAULT = -1,
+    CPU_IDX_0 = 0,
+    CPU_IDX_1,
+    CPU_IDX_2,
+    CPU_IDX_3,
+    CPU_IDX_4,
+    CPU_IDX_5,
+    CPU_IDX_6,
+    CPU_IDX_7,
+    CPU_IDX_8,
+    CPU_IDX_9,
+    CPU_IDX_10,
+    CPU_IDX_11,
+};
+
 class ThumbnailTaskData {
 public:
     ThumbnailTaskData(int32_t requestId) : requestId_(requestId) {}
@@ -76,6 +92,7 @@ public:
     int threadId_;
     bool isThreadWaiting_ = false;
     int32_t taskNum_ = 0;
+    CpuAffinityType cpuAffinityType = CpuAffinityType::CPU_IDX_DEFAULT;
 };
 
 class ThumbnailGenerateWorker {

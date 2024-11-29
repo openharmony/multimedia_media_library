@@ -37,7 +37,9 @@ EXPORT const std::unordered_map<std::string, int> APP_URI_PERMISSION_MEMBER_MAP 
     {AppUriPermissionColumn::FILE_ID, MEMBER_TYPE_INT32},
     {AppUriPermissionColumn::URI_TYPE, MEMBER_TYPE_INT32},
     {AppUriPermissionColumn::PERMISSION_TYPE, MEMBER_TYPE_INT32},
-    {AppUriPermissionColumn::DATE_MODIFIED, MEMBER_TYPE_INT64}};
+    {AppUriPermissionColumn::DATE_MODIFIED, MEMBER_TYPE_INT64},
+    {AppUriPermissionColumn::SOURCE_TOKENID, MEMBER_TYPE_INT64},
+    {AppUriPermissionColumn::TARGET_TOKENID, MEMBER_TYPE_INT64}};
 
 class MediaLibraryAppUriPermissionOperations {
 public:

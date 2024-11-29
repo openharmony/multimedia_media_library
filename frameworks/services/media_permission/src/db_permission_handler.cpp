@@ -124,20 +124,21 @@ int32_t DbPermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, Pe
     MEDIA_DEBUG_LOG("DbPermissionHandler enter");
     bool isWrite = permParam.isWrite;
     string appId = GetClientAppId();
+    uint32_t tokenId = PermissionUtils::GetTokenId();
     string fileId = "";
     int32_t uriType = 0;
     if (!ParseInfoFromCmd(cmd, fileId, uriType)) {
         return E_INVALID_URI;
     }
-    MEDIA_DEBUG_LOG("isWrite=%{public}d,appId=%{public}s,fileId=%{public}s,uriType=%{public}d",
-        isWrite, appId.c_str(), fileId.c_str(), uriType);
-    if (appId.empty() || fileId.empty()) {
+    MEDIA_DEBUG_LOG("isWrite=%{public}d,appId=%{public}s,tokenId=%{public}u,fileId=%{public}s,uriType=%{public}d",
+        isWrite, appId.c_str(), tokenId, fileId.c_str(), uriType);
+    if ((appId.empty() && !tokenId) || fileId.empty()) {
         MEDIA_ERR_LOG("invalid input");
         return E_INVALID_FILEID;
     }
     DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause("file_id = ? and appid = ? and uri_type = ?");
-    predicates.SetWhereArgs({fileId, appId, to_string(uriType)});
+    predicates.SetWhereClause("file_id = ? and (appid = ? or target_tokenId = ?) and uri_type = ?");
+    predicates.SetWhereArgs({fileId, appId, to_string(tokenId), to_string(uriType)});
     vector<string> columns;
     auto queryResultSet =
         MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, TABLE_PERMISSION), columns);
