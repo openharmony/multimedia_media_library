@@ -176,6 +176,9 @@ private:
     bool CreateSourcePixelMap();
     bool CreateImagePixelMap(const std::string &sourcePath);
     bool CreateVideoFramePixelMap();
+    bool GeneratePictureSource(std::unique_ptr<ImageSource> &imageSource, const Size &targetSize);
+    bool GeneratePixelMapSource(std::unique_ptr<ImageSource> &imageSource, const Size &sourceSize,
+        const Size &targetSize);
 
     bool IsFinal();
 
