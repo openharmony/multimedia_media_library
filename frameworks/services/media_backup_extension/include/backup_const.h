@@ -39,6 +39,7 @@ constexpr int32_t DUAL_FRAME_CLONE_RESTORE_ID = 1;
 constexpr int32_t CLONE_RESTORE_ID = 2;
 constexpr int32_t I_PHONE_CLONE_RESTORE = 3;
 constexpr int32_t OTHERS_PHONE_CLONE_RESTORE = 4;
+constexpr int32_t LITE_PHONE_CLONE_RESTORE = 5;
 constexpr int32_t DEFAULT_RESTORE_ID = -1;
 constexpr int32_t RETRY_TIME = 5;
 constexpr int32_t SLEEP_INTERVAL = 1;
