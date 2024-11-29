@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_RESULT_SET_UTILS_H_
-#define INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_RESULT_SET_UTILS_H_
+#ifndef INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_RDB_CLASS_UTILS_H_
+#define INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_RDB_CLASS_UTILS_H_
 
 #include "medialibrary_common_log.h"
 #include "fetch_result.h"
@@ -185,4 +185,4 @@ static inline std::string ValuesBucketToString(const NativeRdb::ValuesBucket& va
 }
 } // namespace Media
 } // namespace  OHOS
-#endif // INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_RESULT_SET_UTILS_H_
+#endif // INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_RDB_CLASS_UTILS_H_

@@ -766,6 +766,7 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUr
 void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereArgs)
 {
     if (whereArgs.empty()) {
+        MEDIA_WARN_LOG("whereArgs is empty");
         return;
     }
 

@@ -1148,7 +1148,7 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     CHECK_AND_PRINT_LOG(changedRows >= 0, "Update photo album failed: %{public}d", changedRows);
 
     auto watch = MediaLibraryNotify::GetInstance();
-    if (changedRows > 0) {
+    if (changedRows > 0 && !needRename) { // No need to notify if album is to be renamed. Rename process will notify
         const vector<string> &notifyIds = rdbPredicates.GetWhereArgs();
         constexpr int32_t notIdArgs = 3;
         size_t count = notifyIds.size() - notIdArgs;
