@@ -53,7 +53,7 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/burst_key_generator.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/external_files_count_statistic.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/gallery_media_count_statistic.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/gallery_report.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/database_report.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/upgrade_restore_gallery_media_task.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/upgrade_restore_task_report.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/db_upgrade_utils.cpp",

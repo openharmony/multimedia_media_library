@@ -40,6 +40,10 @@ public:
 
     bool HasSameAlbum(const std::string &lPath)
     {
+        // Do not allow albums with empty lPath to be created.
+        if (lPath.empty()) {
+            return true;
+        }
         PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->photoAlbumDao_.GetPhotoAlbum(lPath);
         return !albumInfo.lPath.empty();
     }

@@ -22,42 +22,35 @@
 #include "media_backup_report_data_type.h"
 
 namespace OHOS::Media {
-class GalleryReport {
+class DatabaseReport {
 public:
-    GalleryReport &SetGalleryRdb(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-    {
-        this->galleryRdb_ = galleryRdb;
-        return *this;
-    }
-    GalleryReport &SetExternalRdb(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
-    {
-        this->externalRdb_ = externalRdb;
-        return *this;
-    }
-    GalleryReport &SetSceneCode(int32_t sceneCode)
+    DatabaseReport &SetSceneCode(int32_t sceneCode)
     {
         this->sceneCode_ = sceneCode;
         return *this;
     }
-    GalleryReport &SetTaskId(const std::string &taskId)
+    DatabaseReport &SetTaskId(const std::string &taskId)
     {
         this->taskId_ = taskId;
         return *this;
     }
-    GalleryReport &SetShouldIncludeSd(bool shouldIncludeSd)
-    {
-        this->shouldIncludeSd_ = shouldIncludeSd;
-        return *this;
-    }
-    int32_t Report();
+    DatabaseReport &ReportGallery(std::shared_ptr<NativeRdb::RdbStore> galleryRdb, bool shouldIncludeSd);
+    DatabaseReport &ReportExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
+    DatabaseReport &ReportMedia(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, int32_t period);
+
+public:
+    enum { PERIOD_OLD = -1, PERIOD_BEFORE = 0, PERIOD_AFTER = 1 };
 
 private:
-    std::vector<AlbumMediaStatisticInfo> Load();
+    std::vector<AlbumMediaStatisticInfo> LoadGallery(
+        std::shared_ptr<NativeRdb::RdbStore> galleryRdb, bool shouldIncludeSd);
+    std::vector<AlbumMediaStatisticInfo> LoadExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
+    std::vector<AlbumMediaStatisticInfo> LoadMedia(
+        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, int32_t period);
     std::string ToString(const AlbumMediaStatisticInfo &info);
+    int32_t Report(std::vector<AlbumMediaStatisticInfo> statisticInfos);
 
 private:
-    std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
-    std::shared_ptr<NativeRdb::RdbStore> externalRdb_;
     int32_t sceneCode_;
     std::string taskId_;
     bool shouldIncludeSd_;
