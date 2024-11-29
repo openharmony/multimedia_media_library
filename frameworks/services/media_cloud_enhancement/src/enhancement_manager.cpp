@@ -77,7 +77,10 @@ bool EnhancementManager::LoadService()
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     if (enhancementService_ == nullptr) {
-        enhancementService_ = make_shared<EnhancementServiceAdapter>();
+        unique_lock<mutex> lock(mutex_);
+        if (enhancementService_ == nullptr) {
+            enhancementService_ = make_shared<EnhancementServiceAdapter>();
+        }
     }
     if (enhancementService_ == nullptr) {
         return false;
