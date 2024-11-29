@@ -61,6 +61,8 @@ public:
         std::unique_ptr<PixelMap> &pixelMap);
     EXPORT static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
         bool isHigh = false, bool isAstc = false, bool forceSdr = true);
+    EXPORT static bool CompressPicture(ThumbnailData &data, bool isSourceEx);
+    EXPORT static bool CopyPictureSource(std::shared_ptr<Picture> &picture, std::shared_ptr<Picture> &copySource);
     EXPORT static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
 
     // RDB Store Query
