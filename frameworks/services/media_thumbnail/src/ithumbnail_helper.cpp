@@ -40,6 +40,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_source_loading.h"
+#include "image_format_convert.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -837,6 +838,13 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
     }
     auto pixelMap = data.source.GetPixelMap();
     if (pixelMap != nullptr && pixelMap->IsHdr()) {
+        if (pixelMap->GetPixelFormat() == PixelFormat::YCBCR_P010) {
+            uint32_t ret = ImageFormatConvert::ConvertImageFormat(pixelMap, PixelFormat::RGBA_1010102);
+            if (ret != E_OK) {
+                MEDIA_ERR_LOG("PixelMapYuv10ToRGBA_1010102: source ConvertImageFormat fail");
+                return false;
+            }
+        }
         uint32_t ret = pixelMap->ToSdr();
         if (ret != E_OK) {
             MEDIA_ERR_LOG("DoCreateThumbnail failed to transform to sdr, id: %{public}s.", data.id.c_str());
@@ -975,6 +983,13 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
     }
     auto pixelMap = data.source.GetPixelMap();
     if (pixelMap != nullptr && pixelMap->IsHdr()) {
+        if (pixelMap->GetPixelFormat() == PixelFormat::YCBCR_P010) {
+            uint32_t ret = ImageFormatConvert::ConvertImageFormat(pixelMap, PixelFormat::RGBA_1010102);
+            if (ret != E_OK) {
+                MEDIA_ERR_LOG("PixelMapYuv10ToRGBA_1010102: source ConvertImageFormat fail");
+                return false;
+            }
+        }
         uint32_t ret = pixelMap->ToSdr();
         if (ret != E_OK) {
             MEDIA_ERR_LOG("DoCreateAstc failed to transform to sdr, id: %{public}s.", data.id.c_str());
