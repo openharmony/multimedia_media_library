@@ -47,6 +47,7 @@ static constexpr int32_t EDITED_PHOTO_TYPE = 2;
 static constexpr int32_t MOVING_PHOTO_TYPE = 3;
 static constexpr int32_t EDITED_MOVING_TYPE = 4;
 static constexpr int64_t MILLI_TO_SECOND = 1000;
+static const string PARENT = "parent";
 
 static const map<uint16_t, string> FormatMap = {
     { 0, MTP_FORMAT_ALL},
@@ -379,11 +380,15 @@ int32_t MtpDataUtils::GetPropList(const std::shared_ptr<MtpOperationContext> &co
             string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
             int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
             string path = GetMovingOrEnditSourcePath(data, subtype, context);
+            int32_t parent = GetInt32Val(PARENT, resultSet);
             if (path.empty()) {
                 MEDIA_ERR_LOG(" MtpDataUtils::GetPropList get sourcePath failed");
                 return E_FAIL;
             }
-            GetMovingOrEnditOneRowPropList(properties, path, context, outProps, displayName);
+            MovingType movingType;
+            movingType.displayName = displayName;
+            movingType.parent = parent;
+            GetMovingOrEnditOneRowPropList(properties, path, context, outProps, movingType);
         } else {
             handle = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, resultSet, idType));
             MEDIA_INFO_LOG("GetPropList %{public}d",
@@ -396,7 +401,7 @@ int32_t MtpDataUtils::GetPropList(const std::shared_ptr<MtpOperationContext> &co
 
 void MtpDataUtils::GetMovingOrEnditOneRowPropList(const shared_ptr<UInt16List> &properties, const std::string &path,
     const std::shared_ptr<MtpOperationContext> &context, shared_ptr<vector<Property>> &outProps,
-    const std::string &displayName)
+    const MovingType &movingType)
 {
     CHECK_AND_RETURN_LOG(outProps != nullptr, "outProps is nullptr");
     std::string column;
@@ -411,7 +416,7 @@ void MtpDataUtils::GetMovingOrEnditOneRowPropList(const shared_ptr<UInt16List> &
                 GetMtpFormatByPath(path, format);
                 prop.currentValue->bin_.ui16 = format;
             } else {
-                SetPtpProperty(column, path, displayName, prop);
+                SetPtpProperty(column, path, movingType, prop);
             }
             outProps->push_back(prop);
         } else if (PropDefaultMap.find(property) != PropDefaultMap.end()) {
@@ -818,9 +823,10 @@ void MtpDataUtils::SetMtpProperty(const std::string &column, const std::string &
     }
 }
 
-void MtpDataUtils::SetPtpProperty(const std::string &column, const std::string &path, const std::string &displayName,
+void MtpDataUtils::SetPtpProperty(const std::string &column, const std::string &path, const MovingType &movingType,
     Property &prop)
 {
+    std::string displayName = movingType.displayName;
     if (column.compare(MEDIA_DATA_DB_NAME) == 0) {
         std::string filename = std::filesystem::path(path).filename();
         size_t filename_pos = filename.find_last_of('.');
@@ -855,6 +861,9 @@ void MtpDataUtils::SetPtpProperty(const std::string &column, const std::string &
     }
     if (column.compare(MEDIA_DATA_DB_DATE_ADDED) == 0) {
         prop.currentValue->bin_.i64 = statInfo.st_ctime;
+    }
+    if (column.compare(MEDIA_DATA_DB_PARENT_ID) == 0) {
+        prop.currentValue->bin_.i64 = movingType.parent;
     }
 }
 
