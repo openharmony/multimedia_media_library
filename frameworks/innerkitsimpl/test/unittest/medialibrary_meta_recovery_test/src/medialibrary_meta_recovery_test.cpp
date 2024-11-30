@@ -31,7 +31,7 @@
 #include "uri.h"
 #include "photo_album_column.h"
 #include "medialibrary_unistore_manager.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "photo_map_column.h"
 #include "scanner_utils.h"
 #include "medialibrary_photo_operations.h"

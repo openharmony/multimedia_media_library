@@ -32,7 +32,7 @@
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
 #include "rdb_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

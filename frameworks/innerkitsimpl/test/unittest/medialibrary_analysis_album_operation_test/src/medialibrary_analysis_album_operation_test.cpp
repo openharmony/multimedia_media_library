@@ -27,7 +27,7 @@
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "uri.h"
 #include "vision_db_sqls_more.h"
 

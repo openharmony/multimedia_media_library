@@ -15,7 +15,7 @@
 
 #include "media_album_change_request_impl.h"
 
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "userfile_client.h"
 
 namespace OHOS {

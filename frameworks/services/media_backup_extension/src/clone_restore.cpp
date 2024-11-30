@@ -30,7 +30,7 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "userfile_manager_types.h"
 #include "backup_dfx_utils.h"
 #include "media_library_db_upgrade.h"

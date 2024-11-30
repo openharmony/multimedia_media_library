@@ -35,7 +35,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "values_bucket.h"
 #define private public
 #define protected public
