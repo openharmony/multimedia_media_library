@@ -20,7 +20,7 @@
 #include "media_column.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 
 namespace OHOS {
 namespace Media {

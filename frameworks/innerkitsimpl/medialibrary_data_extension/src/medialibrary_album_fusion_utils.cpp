@@ -34,7 +34,7 @@
 #include "parameters.h"
 #include "photo_file_operation.h"
 #include "photo_asset_copy_operation.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "thumbnail_service.h"
 #include "userfile_manager_types.h"
 #include "photo_source_path_operation.h"

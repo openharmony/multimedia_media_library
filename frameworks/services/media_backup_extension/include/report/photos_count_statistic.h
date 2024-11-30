@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "rdb_store.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "media_backup_report_data_type.h"
 
 namespace OHOS::Media {

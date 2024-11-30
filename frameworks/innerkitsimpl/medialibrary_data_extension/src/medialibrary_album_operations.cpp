@@ -43,7 +43,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "story_album_column.h"
 #include "values_bucket.h"
 #include "medialibrary_formmap_operations.h"
@@ -960,26 +960,10 @@ static bool BuildNewNameValuesBucket(const shared_ptr<MediaLibraryRdbStore>& rdb
         " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::USER);
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_OLD_ALBUM_INFO);
     CHECK_AND_RETURN_RET_LOG(TryToGoToFirstRow(resultSet), false,
-        "SetUserAlbumName failed. Query old album info failed");
+        "Rename user album failed. Query old album info failed");
     MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(rdbStore, newNameValues, resultSet, newAlbumName);
     const string albumCloudId = GetStringVal(PhotoAlbumColumns::ALBUM_CLOUD_ID, resultSet);
     isCloudAlbum = !albumCloudId.empty();
-    return true;
-}
-
-static bool GetArgsSetUserAlbumName(const ValuesBucket& values,
-    const DataSharePredicates& predicates, int32_t& oldAlbumId, string& newAlbumName)
-{
-    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
-    CHECK_AND_RETURN_RET_LOG(!rdbPredicates.GetWhereArgs().empty(), false,
-        "SetUserAlbumName failed. Args is empty");
-    oldAlbumId = atoi(rdbPredicates.GetWhereArgs()[0].c_str());
-    CHECK_AND_RETURN_RET_LOG(oldAlbumId > 0, false, "SetUserAlbumName failed. Invalid album id: %{public}s",
-        rdbPredicates.GetWhereArgs()[0].c_str());
-    CHECK_AND_RETURN_RET_LOG(GetStringObject(values, PhotoAlbumColumns::ALBUM_NAME, newAlbumName) == E_OK, false,
-        "SetUserAlbumName failed. Get new album name failed");
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckAlbumName(newAlbumName) == E_OK, false,
-        "Check album name failed");
     return true;
 }
 
@@ -1036,14 +1020,14 @@ static vector<string> GetAssetIdsFromOldAlbum(const shared_ptr<MediaLibraryRdbSt
 }
 
 // Set album name: delete old and build a new one
-int32_t SetUserAlbumName(const ValuesBucket &values, const DataSharePredicates &predicates)
+static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "SetUserAlbumName failed. RdbStore is null");
-    int32_t oldAlbumId {};
-    string newAlbumName {};
-    CHECK_AND_RETURN_RET_LOG(GetArgsSetUserAlbumName(values, predicates, oldAlbumId, newAlbumName), E_INVALID_ARGS,
-        "Get args failed");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Rename user album failed. RdbStore is null");
+    CHECK_AND_RETURN_RET_LOG(oldAlbumId > 0, E_INVALID_ARGS, "Rename user album failed. Invalid album id: %{public}d",
+        oldAlbumId);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckAlbumName(newAlbumName) == E_OK, E_INVALID_ARGS,
+        "Check album name failed");
     MEDIA_INFO_LOG("Start to set user album name of id %{public}d", oldAlbumId);
 
     vector<string> fileIdsToUpdateIndex = GetAssetIdsFromOldAlbum(rdbStore, oldAlbumId);
@@ -1104,41 +1088,56 @@ int32_t PrepareUpdateValues(const ValuesBucket &values, ValuesBucket &updateValu
     return E_OK;
 }
 
-void GetOldAlbumName(const DataSharePredicates &predicates, string &oldAlbumName)
+static bool GetOldAlbumName(int32_t albumId, string &oldAlbumName)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
-    if (rdbStore == nullptr || rdbPredicates.GetWhereArgs().empty()) {
-        return;
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Get old album name failed. RdbStore is null");
+        return false;
     }
-    int32_t oriAlbumId = atoi(rdbPredicates.GetWhereArgs()[0].c_str());
     const std::string QUERY_ALBUM_INFO =
-        "SELECT * FROM PhotoAlbum WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(oriAlbumId);
+        "SELECT * FROM PhotoAlbum WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId);
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_ALBUM_INFO);
     if (resultSet == nullptr) {
-        return;
+        MEDIA_ERR_LOG("Get old album name failed. Query album info failed");
+        return false;
     }
-    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_NAME, oldAlbumName);
-    } else {
-        MEDIA_ERR_LOG("Get old album name fail");
+    if (resultSet->GoToNextRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Get old album name failed. Go to next row failed");
+        return false;
     }
+    GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_NAME, oldAlbumName);
+    return true;
 }
 
 int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &predicates)
 {
-    string albumName;
-    if (GetStringObject(values, PhotoAlbumColumns::ALBUM_NAME, albumName) == E_OK) {
-        return SetUserAlbumName(values, predicates);
-    }
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
+    CHECK_AND_RETURN_RET_LOG(!rdbPredicates.GetWhereArgs().empty(), E_INVALID_ARGS,
+        "Update photo album failed. Predicates empty");
+    int32_t albumId = atoi(rdbPredicates.GetWhereArgs()[0].c_str());
+    CHECK_AND_RETURN_RET_LOG(albumId > 0, E_INVALID_ARGS,
+        "Invalid album id: %{public}s", rdbPredicates.GetWhereArgs()[0].c_str());
+
+    MEDIA_INFO_LOG("Start to update album %{public}d, values: %{private}s", albumId,
+        ValuesBucketToString(values).c_str());
+
+    string newAlbumName {};
+    string oldAlbumName {};
+    bool needRename = false;
+    if (GetStringObject(values, PhotoAlbumColumns::ALBUM_NAME, newAlbumName) == E_OK &&
+        GetOldAlbumName(albumId, oldAlbumName) && oldAlbumName != newAlbumName) {
+        // if album name is changed, start user album renaming process
+        // Rename process changes the album id, so put the rename process at the end
+        needRename = true;
+    };
 
     ValuesBucket rdbValues;
     int32_t err = PrepareUpdateValues(values, rdbValues);
-    if (err < 0) {
+    if (err < 0 && !needRename) {
+        MEDIA_ERR_LOG("No values to update");
         return err;
     }
-
-    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
     // Only user generic albums can be updated
     rdbPredicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
     rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
@@ -1146,8 +1145,10 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     rdbPredicates.EndWrap();
 
     int32_t changedRows = MediaLibraryRdbStore::UpdateWithDateTime(rdbValues, rdbPredicates);
+    CHECK_AND_PRINT_LOG(changedRows >= 0, "Update photo album failed: %{public}d", changedRows);
+
     auto watch = MediaLibraryNotify::GetInstance();
-    if (changedRows > 0) {
+    if (changedRows > 0 && !needRename) { // No need to notify if album is to be renamed. Rename process will notify
         const vector<string> &notifyIds = rdbPredicates.GetWhereArgs();
         constexpr int32_t notIdArgs = 3;
         size_t count = notifyIds.size() - notIdArgs;
@@ -1156,6 +1157,12 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
                 notifyIds[i]), NotifyType::NOTIFY_UPDATE);
         }
     }
+
+    if (needRename) {
+        int32_t ret = RenameUserAlbum(albumId, newAlbumName);
+        CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "Rename user album failed");
+    }
+
     return changedRows;
 }
 
@@ -2478,6 +2485,31 @@ int32_t SetCoverUri(const ValuesBucket &values, const DataSharePredicates &predi
     return err;
 }
 
+static bool GetArgsSetUserAlbumName(const ValuesBucket& values,
+    const DataSharePredicates& predicates, int32_t& oldAlbumId, string& newAlbumName)
+{
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
+    CHECK_AND_RETURN_RET_LOG(!rdbPredicates.GetWhereArgs().empty(), false,
+        "Rename user album failed. Args is empty");
+    oldAlbumId = atoi(rdbPredicates.GetWhereArgs()[0].c_str());
+    CHECK_AND_RETURN_RET_LOG(oldAlbumId > 0, false, "Rename user album failed. Invalid album id: %{public}s",
+        rdbPredicates.GetWhereArgs()[0].c_str());
+    CHECK_AND_RETURN_RET_LOG(GetStringObject(values, PhotoAlbumColumns::ALBUM_NAME, newAlbumName) == E_OK, false,
+        "Rename user album failed. Get new album name failed");
+    return true;
+}
+
+static int32_t HandleSetAlbumNameRequest(const ValuesBucket &values, const DataSharePredicates &predicates)
+{
+    int32_t oldAlbumId {};
+    string newAlbumName {};
+    if (!GetArgsSetUserAlbumName(values, predicates, oldAlbumId, newAlbumName)) {
+        MEDIA_ERR_LOG("Set album name args invalid");
+        return E_INVALID_ARGS;
+    };
+    return RenameUserAlbum(oldAlbumId, newAlbumName);
+}
+
 int32_t MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(const OperationType &opType,
     const NativeRdb::ValuesBucket &values, const DataShare::DataSharePredicates &predicates,
     std::shared_ptr<int> countPtr)
@@ -2520,7 +2552,7 @@ int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opTyp
         case OperationType::ALBUM_ORDER:
             return OrderSingleAlbum(values);
         case OperationType::ALBUM_SET_NAME:
-            return SetUserAlbumName(values, predicates);
+            return HandleSetAlbumNameRequest(values, predicates);
         default:
             MEDIA_ERR_LOG("Unknown operation type: %{public}d", opType);
             return E_ERR;

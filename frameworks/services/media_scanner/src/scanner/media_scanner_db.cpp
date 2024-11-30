@@ -35,7 +35,7 @@
 #include "rdb_errno.h"
 #include "rdb_utils.h"
 #include "result_set.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "userfile_manager_types.h"
 #include "userfilemgr_uri.h"
 #include "values_bucket.h"

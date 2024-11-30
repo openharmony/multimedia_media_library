@@ -20,7 +20,7 @@
 
 #include "media_log.h"
 #include "medialibrary_rdbstore.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 
 using namespace std;
 

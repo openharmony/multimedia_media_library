@@ -24,7 +24,7 @@
 #include "media_log.h"
 #include "media_old_photos_column.h"
 #include "medialibrary_errno.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "datashare_helper.h"
 
 using namespace std;

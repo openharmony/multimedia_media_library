@@ -25,7 +25,7 @@
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
 #include "photo_map_column.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "sendable_photo_access_helper_napi.h"
 #include "sendable_medialibrary_napi_utils.h"
 #include "sendable_fetch_file_result_napi.h"

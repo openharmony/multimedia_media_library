@@ -32,7 +32,7 @@
 #include "media_log.h"
 #include "media_volume.h"
 #include "photo_proxy_test.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "scanner_utils.h"
 #include "system_ability_definition.h"
 #include "thumbnail_const.h"

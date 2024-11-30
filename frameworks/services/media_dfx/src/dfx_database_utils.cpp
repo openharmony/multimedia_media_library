@@ -22,7 +22,7 @@
 #include "media_log.h"
 #include "media_column.h"
 #include "medialibrary_errno.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "photo_album_column.h"
 #include "userfile_manager_types.h"
 
