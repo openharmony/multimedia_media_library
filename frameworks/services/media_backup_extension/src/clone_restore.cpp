@@ -36,6 +36,7 @@
 #include "media_library_db_upgrade.h"
 #include "photos_dao.h"
 #include "rdb_store.h"
+#include "database_report.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
