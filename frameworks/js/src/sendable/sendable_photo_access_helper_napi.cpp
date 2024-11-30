@@ -48,7 +48,7 @@
 #include "napi_base_context.h"
 #include "photo_album_column.h"
 #include "photo_album_napi.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "safe_map.h"
 #include "search_column.h"
 #include "sendable_medialibrary_napi_utils.h"

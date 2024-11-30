@@ -129,7 +129,7 @@ static bool IsHiddenDirectory(const std::string &dir)
     return true;
 }
 
-uint32_t MtpMediaLibrary::ScanDirNoDepth(const std::string &root, std::shared_ptr<UInt32List> &out)
+int32_t MtpMediaLibrary::ScanDirNoDepth(const std::string &root, std::shared_ptr<UInt32List> &out)
 {
     CHECK_AND_RETURN_RET_LOG(out != nullptr, E_ERR, "out is nullptr");
     CHECK_AND_RETURN_RET_LOG(access(root.c_str(), R_OK) == 0, E_ERR, "access failed root[%{public}s]", root.c_str());
@@ -420,6 +420,11 @@ int32_t MtpMediaLibrary::GetFd(const std::shared_ptr<MtpOperationContext> &conte
     }
 
     std::error_code ec;
+    realPath = sf::canonical(realPath, ec);
+    if (ec.value() != MTP_SUCCESS) {
+        MEDIA_ERR_LOG("MtpMediaLibrary::GetFd normalized realPath failed");
+        return MtpErrorUtils::SolveGetFdError(E_HAS_FS_ERROR);
+    }
     int mode = sf::exists(realPath, ec) ? O_RDWR : O_RDWR | O_CREAT;
     outFd = open(realPath.c_str(), mode);
     MEDIA_INFO_LOG("MTP:file %{public}s fd %{public}d", realPath.c_str(), outFd);
@@ -500,7 +505,7 @@ int32_t MtpMediaLibrary::GetPictureThumb(const std::shared_ptr<MtpOperationConte
 
     int32_t fd;
     uint32_t errorCode = MTP_SUCCESS;
-    errorCode = GetFd(context, fd);
+    errorCode = static_cast<uint32_t>(GetFd(context, fd));
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_NO_THUMBNAIL_PRESENT, "GetFd failed");
 
     SourceOptions opts;
@@ -576,6 +581,12 @@ int32_t MtpMediaLibrary::SendObjectInfo(const std::shared_ptr<MtpOperationContex
             return MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR);
         }
     } else {
+        std::error_code ec;
+        path = sf::canonical(path, ec);
+        if (ec.value() != MTP_SUCCESS) {
+            MEDIA_ERR_LOG("MtpMediaLibrary::SendObjectInfo normalized path failed");
+            return MtpErrorUtils::SolveSendObjectInfoError(E_HAS_FS_ERROR);
+        }
         std::ofstream ofs(path.c_str());
         if (ofs.is_open()) {
             ofs.close();

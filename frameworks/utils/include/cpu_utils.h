@@ -23,7 +23,8 @@
 
 namespace OHOS {
 namespace Media {
-enum {
+enum CpuAffinityType : int32_t {
+    CPU_IDX_DEFAULT = -1,
     CPU_IDX_0 = 0,
     CPU_IDX_1,
     CPU_IDX_2,
@@ -32,10 +33,23 @@ enum {
     CPU_IDX_5,
     CPU_IDX_6,
     CPU_IDX_7,
+    CPU_IDX_8,
+    CPU_IDX_9,
+    CPU_IDX_10,
+    CPU_IDX_11,
 };
 
-void SlowDown();
-void ResetCpu();
+class CpuUtils {
+public:
+    CpuUtils() = delete;
+    ~CpuUtils() = delete;
+
+    static void SlowDown();
+    static void ResetCpu();
+
+    static void SetSelfThreadAffinity(CpuAffinityType cpuAffinityType);
+    static void ResetSelfThreadAffinity();
+};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIALIBRARY_CPU_UTILS_H

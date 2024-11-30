@@ -56,7 +56,7 @@
 #include "post_event_utils.h"
 #include "preferences.h"
 #include "preferences_helper.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #ifdef HAS_THERMAL_MANAGER_PART
 #include "thermal_mgr_client.h"
 #endif

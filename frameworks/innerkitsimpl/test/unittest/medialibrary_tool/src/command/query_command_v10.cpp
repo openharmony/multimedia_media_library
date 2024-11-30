@@ -24,7 +24,7 @@
 #include "datashare_predicates.h"
 #include "userfile_client.h"
 #include "constant.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "parameter.h"
 #include "parameters.h"
 

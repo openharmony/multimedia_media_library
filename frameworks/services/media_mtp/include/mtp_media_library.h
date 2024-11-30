@@ -80,7 +80,7 @@ private:
         uint32_t &repeatHandle);
     uint32_t GetId();
     uint32_t GetParentId(const std::string &path);
-    uint32_t ScanDirNoDepth(const std::string &root, std::shared_ptr<UInt32List> &out);
+    int32_t ScanDirNoDepth(const std::string &root, std::shared_ptr<UInt32List> &out);
     uint32_t ScanDirWithType(const std::string &root, std::shared_ptr<std::unordered_map<uint32_t, std::string>> &out);
     uint32_t ScanDirTraverseWithType(const std::string &root,
         std::shared_ptr<std::unordered_map<uint32_t, std::string>> &out);

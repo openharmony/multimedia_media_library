@@ -38,7 +38,7 @@
 #include "multistages_capture_dfx_trigger_ratio.h"
 #include "multistages_capture_request_task_manager.h"
 #include "request_policy.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "userfilemgr_uri.h"
 
 using namespace std;

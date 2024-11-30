@@ -21,7 +21,7 @@
 #include "userfile_manager_types.h"
 #include "media_file_utils.h"
 #include "media_column.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 
 namespace OHOS::Media {
 void PhotoSourcePathOperation::ResetPhotoSourcePath(std::shared_ptr<MediaLibraryRdbStore> mediaRdbStorePtr)

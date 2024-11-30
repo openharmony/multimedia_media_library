@@ -28,7 +28,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "uri.h"
 
 using namespace std;
@@ -62,14 +62,7 @@ shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
 }
 MediaLibraryNotify::MediaLibraryNotify() {};
 
-MediaLibraryNotify::~MediaLibraryNotify()
-{
-    auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
-    if (periodWorker == nullptr) {
-        MEDIA_ERR_LOG("failed to get period worker instance");
-    }
-    periodWorker->CloseThreadById(MediaLibraryNotify::threadId_);
-};
+MediaLibraryNotify::~MediaLibraryNotify() {}
 
 static bool SolveUris(const list<Uri> &uris, Parcel &parcel)
 {

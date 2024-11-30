@@ -33,7 +33,7 @@
 #include "medialibrary_rdb_transaction.h"
 #include "media_library_manager.h"
 #include "permission_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "rdb_utils.h"
 #include "userfilemgr_uri.h"
 
@@ -53,7 +53,8 @@ constexpr int32_t AUDIOSTYPE = 2;
 constexpr int32_t FILE_ID_INDEX = 0;
 constexpr int32_t URI_TYPE_INDEX = 1;
 constexpr int32_t PERMISSION_TYPE_INDEX = 2;
-constexpr int32_t APP_ID_INDEX = 3;
+constexpr int32_t SRC_TOKEN_ID_INDEX = 3;
+constexpr int32_t TARGET_TOKEN_ID_INDEX = 4;
 
 const string DB_OPERATION = "uriPermission_operation";
 
@@ -199,7 +200,7 @@ static void QueryUriPermission(MediaLibraryCommand &cmd, const std::vector<DataS
     vector<string> predicateInColumns;
     DataSharePredicates predicates;
     bool isValid;
-    string appid = values.at(0).Get(AppUriPermissionColumn::APP_ID, isValid);
+    int64_t targetTokenId = values.at(0).Get(AppUriPermissionColumn::TARGET_TOKENID, isValid);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("UriPermission query operation, rdbStore is null.");
@@ -210,7 +211,7 @@ static void QueryUriPermission(MediaLibraryCommand &cmd, const std::vector<DataS
         predicateInColumns.push_back(static_cast<string>(val.Get(AppUriPermissionColumn::FILE_ID, isValid)));
     }
     predicates.In(AppUriPermissionColumn::FILE_ID, predicateInColumns);
-    predicates.And()->EqualTo(AppUriPermissionColumn::APP_ID, appid);
+    predicates.And()->EqualTo(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)targetTokenId);
     cmd.SetDataSharePred(predicates);
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
@@ -369,8 +370,10 @@ static void BatchUpdate(MediaLibraryCommand &cmd, std::vector<string> inColumn, 
     }
 
     DataSharePredicates predicates;
-    string appid = values.at(0).Get(AppUriPermissionColumn::APP_ID, isValid);
-    predicates.EqualTo(AppUriPermissionColumn::APP_ID, appid);
+    int64_t targetTokenId = values.at(0).Get(AppUriPermissionColumn::TARGET_TOKENID, isValid);
+    int64_t srcTokenId = values.at(0).Get(AppUriPermissionColumn::SOURCE_TOKENID, isValid);
+    predicates.EqualTo(AppUriPermissionColumn::SOURCE_TOKENID, (int64_t)srcTokenId);
+    predicates.And()->EqualTo(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)targetTokenId);
     predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, to_string(tableType));
     predicates.In(AppUriPermissionColumn::FILE_ID, inColumn);
     cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
@@ -393,7 +396,7 @@ static void AppstateOberserverBuild(int32_t permissionType)
 
 static int32_t ValueBucketCheck(const std::vector<DataShareValuesBucket> &values)
 {
-    bool isValidArr[] = {false, false, false, false};
+    bool isValidArr[] = {false, false, false, false, false};
     if (values.empty()) {
         return E_ERR;
     }
@@ -401,7 +404,8 @@ static int32_t ValueBucketCheck(const std::vector<DataShareValuesBucket> &values
         val.Get(AppUriPermissionColumn::FILE_ID, isValidArr[FILE_ID_INDEX]);
         val.Get(AppUriPermissionColumn::URI_TYPE, isValidArr[URI_TYPE_INDEX]);
         val.Get(AppUriPermissionColumn::PERMISSION_TYPE, isValidArr[PERMISSION_TYPE_INDEX]);
-        val.Get(AppUriPermissionColumn::APP_ID, isValidArr[APP_ID_INDEX]);
+        val.Get(AppUriPermissionColumn::SOURCE_TOKENID, isValidArr[SRC_TOKEN_ID_INDEX]);
+        val.Get(AppUriPermissionColumn::TARGET_TOKENID, isValidArr[TARGET_TOKEN_ID_INDEX]);
         for (size_t i = 0; i < sizeof(isValidArr); i++) {
             if ((isValidArr[i]) == false) {
                 return E_ERR;
@@ -416,11 +420,13 @@ static void InsertValueBucketPrepare(const std::vector<DataShareValuesBucket> &v
 {
     bool isValid;
     ValuesBucket insertValues;
-    string appid = values.at(0).Get(AppUriPermissionColumn::APP_ID, isValid);
+    int64_t srcTokenId = values.at(0).Get(AppUriPermissionColumn::SOURCE_TOKENID, isValid);
+    int64_t targetTokenId = values.at(0).Get(AppUriPermissionColumn::TARGET_TOKENID, isValid);
     int32_t permissionType = values.at(0).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
     insertValues.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
     insertValues.Put(AppUriPermissionColumn::FILE_ID, fileId);
-    insertValues.Put(AppUriPermissionColumn::APP_ID, appid);
+    insertValues.Put(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)targetTokenId);
+    insertValues.Put(AppUriPermissionColumn::SOURCE_TOKENID, (int64_t)srcTokenId);
     insertValues.Put(AppUriPermissionColumn::URI_TYPE, uriType);
     insertValues.Put(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     batchInsertBucket.push_back(insertValues);

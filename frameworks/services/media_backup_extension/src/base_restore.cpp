@@ -38,12 +38,13 @@
 #include "moving_photo_file_utils.h"
 #include "parameters.h"
 #include "photo_album_column.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "resource_type.h"
 #include "userfilemgr_uri.h"
 #include "medialibrary_notify.h"
 #include "upgrade_restore_task_report.h"
 #include "medialibrary_rdb_transaction.h"
+#include "database_report.h"
 
 namespace OHOS {
 namespace Media {
@@ -244,7 +245,8 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
         SetValueFromMetaData(fileInfos[i], value);
         if ((sceneCode == DUAL_FRAME_CLONE_RESTORE_ID || sceneCode == OTHERS_PHONE_CLONE_RESTORE ||
-            sceneCode == I_PHONE_CLONE_RESTORE) && this->HasSameFileForDualClone(fileInfos[i])) {
+            sceneCode == LITE_PHONE_CLONE_RESTORE || sceneCode == I_PHONE_CLONE_RESTORE) &&
+            this->HasSameFileForDualClone(fileInfos[i])) {
             fileInfos[i].needMove = false;
             RemoveDuplicateDualCloneFiles(fileInfos[i]);
             MEDIA_WARN_LOG("File %{public}s already exists.",
@@ -290,7 +292,8 @@ static void InsertOrientation(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
         value.Delete(PhotoColumn::PHOTO_ORIENTATION);
     }
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata->GetOrientation()); // video use orientation in metadata
-    if (sceneCode == OTHERS_PHONE_CLONE_RESTORE || sceneCode == I_PHONE_CLONE_RESTORE) {
+    if (sceneCode == OTHERS_PHONE_CLONE_RESTORE || sceneCode == I_PHONE_CLONE_RESTORE ||
+        sceneCode == LITE_PHONE_CLONE_RESTORE) {
         fileInfo.orientation = metadata->GetOrientation();
     }
 }
@@ -751,6 +754,10 @@ void BaseRestore::StartRestoreEx(const std::string &backupRetoreDir, const std::
     std::string &restoreExInfo)
 {
     StartRestore(backupRetoreDir, upgradePath);
+    DatabaseReport()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_AFTER);
     restoreExInfo = GetRestoreExInfo();
     UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).Report(restoreExInfo);
 }

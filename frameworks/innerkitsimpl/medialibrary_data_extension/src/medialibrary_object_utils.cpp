@@ -52,7 +52,7 @@
 #include "parameter.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "sandbox_helper.h"
 #include "string_ex.h"
 #include "thumbnail_service.h"
@@ -69,6 +69,8 @@ namespace OHOS {
 namespace Media {
 static const string ASSET_RECYCLE_SUFFIX = "-copy";
 static const string NO_MEDIA_TAG = ".nomedia";
+constexpr int32_t OFFSET = 5;
+constexpr int32_t ZERO_ASCII = '0';
 int32_t MediaLibraryObjectUtils::CreateDirWithPath(const string &dirPath)
 {
     if (dirPath.empty()) {
@@ -733,7 +735,7 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd,
     return E_SUCCESS;
 }
 
-static int32_t OpenAsset(const string &filePath, const string &mode, const string &fileId)
+static int32_t OpenAsset(const string &filePath, const string &mode, const string &fileId, int32_t type = -1)
 {
     MediaLibraryTracer tracer;
     tracer.Start("OpenAsset");
@@ -744,8 +746,9 @@ static int32_t OpenAsset(const string &filePath, const string &mode, const strin
         return E_ERR;
     }
     MEDIA_DEBUG_LOG("File absFilePath is %{private}s", absFilePath.c_str());
+    MEDIA_DEBUG_LOG("object util type:%{public}d", type);
 
-    return MediaPrivacyManager(absFilePath, mode, fileId).Open();
+    return MediaPrivacyManager(absFilePath, mode, fileId, type).Open();
 }
 
 static bool CheckIsOwner(const string &bundleName)
@@ -777,13 +780,21 @@ static bool IsDocumentUri(const std::string &uriString)
     return uri.GetAuthority() == DOCUMENT_URI_AUTHORITY;
 }
 
+static void GetType(string &uri, int32_t &type)
+{
+    int pos = uri.find("type=");
+    if (pos != uri.npos) {
+        type = uri[pos + OFFSET] - ZERO_ASCII;
+    }
+}
+
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryObjectUtils::OpenFile");
-
     string uriString = cmd.GetUri().ToString();
-    MEDIA_DEBUG_LOG("MediaLibraryObjectUtils OpenFile uriString:%{public}s", uriString.c_str());
+    int32_t type = -1;
+    GetType(uriString, type);
     if (cmd.GetOprnObject() == OperationObject::THUMBNAIL) {
         return ThumbnailService::GetInstance()->GetThumbnailFd(uriString);
     } else if (cmd.GetOprnObject() == OperationObject::THUMBNAIL_ASTC) {
@@ -801,28 +812,22 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     } else if (IsDocumentUri(uriString)) {
         return OpenDocument(uriString, mode);
     }
-
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromUri(uriString);
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain path from Database");
         return E_INVALID_URI;
     }
-
-    if (fileAsset->GetTimePending() != 0) {
-        if (!CheckIsOwner(fileAsset->GetOwnerPackage().c_str())) {
-            MEDIA_ERR_LOG("Failed to open fileId:%{public}d, it is not owner", fileAsset->GetId());
-            return E_IS_PENDING_ERROR;
-        }
+    if (fileAsset->GetTimePending() != 0 && !CheckIsOwner(fileAsset->GetOwnerPackage().c_str())) {
+        MEDIA_ERR_LOG("Failed to open fileId:%{public}d, it is not owner", fileAsset->GetId());
+        return E_IS_PENDING_ERROR;
     }
-
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
-    int32_t fd = OpenAsset(path, mode, fileId);
+    int32_t fd = OpenAsset(path, mode, fileId, type);
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
         return E_HAS_FS_ERROR;
     }
-
     if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos) {
         auto watch = MediaLibraryInotify::GetInstance();
         if (watch != nullptr) {

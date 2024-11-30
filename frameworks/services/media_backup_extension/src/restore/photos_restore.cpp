@@ -20,7 +20,7 @@
 #include "backup_file_utils.h"
 #include "userfile_manager_types.h"
 #include "rdb_store.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "media_log.h"
 #include "photo_album_dao.h"
 #include "album_plugin_config.h"
@@ -28,6 +28,10 @@
 #include "mimetype_utils.h"
 
 namespace OHOS::Media {
+static const int32_t CLOUD_ENHANCEMENT_ALBUM = 1;
+static const int32_t DUAL_ENHANCEMENT_PHOTO_QUALITY = 120;
+static const int32_t SINGLE_CLOUD_ENHANCEMENT_PHOTO = 120;
+
 /**
  * @brief Get the gallery_media to restore to Photos.
  */
@@ -306,5 +310,27 @@ std::string PhotosRestore::FindSourcePath(const FileInfo &fileInfo)
         MEDIA_ERR_LOG("Media_Restore: fileInfo.lPath is empty. Use default lPath: %{public}s", lPath.c_str());
     }
     return this->SOURCE_PATH_PREFIX + lPath + "/" + fileInfo.displayName;
+}
+
+/**
+ * @brief Find enhancement photo quality for the target device by FileInfo.
+ */
+int32_t PhotosRestore::FindStrongAssociation(const FileInfo &fileInfo)
+{
+    if (fileInfo.photoQuality == DUAL_ENHANCEMENT_PHOTO_QUALITY) {
+        return CLOUD_ENHANCEMENT_ALBUM;
+    }
+    return 0;
+}
+
+/**
+ * @brief Find cloud enhancement available for the target device by FileInfo.
+ */
+int32_t PhotosRestore::FindCeAvailable(const FileInfo &fileInfo)
+{
+    if (fileInfo.photoQuality == DUAL_ENHANCEMENT_PHOTO_QUALITY) {
+        return SINGLE_CLOUD_ENHANCEMENT_PHOTO;
+    }
+    return 0;
 }
 }  // namespace OHOS::Media

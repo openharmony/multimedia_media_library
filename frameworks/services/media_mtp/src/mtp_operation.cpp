@@ -107,10 +107,14 @@ void MtpOperation::ReceiveRequestPacket(int &errorCode)
 
 void MtpOperation::SendMakeResponsePacket(int &errorCode)
 {
+    CHECK_AND_RETURN_LOG(responsePacketPtr_ != nullptr, "responsePacketPtr_ is null");
     responsePacketPtr_->Reset();
+    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "mtpContextPtr_ is null");
     GetPayloadData(mtpContextPtr_, dataPayloadData_, RESPONSE_CONTAINER_TYPE, errorCode);
-    MEDIA_INFO_LOG("operation = [0x%{public}x : %{public}s ]", mtpContextPtr_->operationCode,
-        MtpPacketTool::GetOperationName(mtpContextPtr_->operationCode).c_str());
+    if (mtpContextPtr_->operationCode != 0) {
+        MEDIA_INFO_LOG("operation = [0x%{public}x : %{public}s ]", mtpContextPtr_->operationCode,
+            MtpPacketTool::GetOperationName(mtpContextPtr_->operationCode).c_str());
+    }
     shared_ptr<HeaderData> responseHeaderData = make_shared<HeaderData>(
         RESPONSE_CONTAINER_TYPE, responseCode_, mtpContextPtr_->transactionID);
 

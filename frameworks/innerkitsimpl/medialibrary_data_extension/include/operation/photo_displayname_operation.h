@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "userfile_manager_types.h"
 #include "media_column.h"
 #include "media_log.h"

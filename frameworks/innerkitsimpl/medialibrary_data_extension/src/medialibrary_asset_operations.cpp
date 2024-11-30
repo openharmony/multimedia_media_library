@@ -64,7 +64,7 @@
 #include "rdb_predicates.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "thumbnail_service.h"
 #include "uri_permission_manager_client.h"
 #include "userfile_manager_types.h"
@@ -920,7 +920,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 }
 
 static void GetUriPermissionValuesBucket(string &tableName, ValuesBucket &valuesBucket,
-    string appId, int64_t fileId)
+    uint32_t tokenId, int64_t fileId)
 {
     TableType mediaType;
     if (tableName == PhotoColumn::PHOTOS_TABLE) {
@@ -932,7 +932,8 @@ static void GetUriPermissionValuesBucket(string &tableName, ValuesBucket &values
     valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, static_cast<int32_t>(mediaType));
     valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE,
         AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE);
-    valuesBucket.Put(AppUriPermissionColumn::APP_ID, appId);
+    valuesBucket.Put(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)tokenId);
+    valuesBucket.Put(AppUriPermissionColumn::SOURCE_TOKENID, (int64_t)tokenId);
     valuesBucket.Put(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
 }
 
@@ -961,18 +962,13 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<Transaction
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
-    string appId;
-    if (PermissionUtils::IsNativeSAApp()) {
-        appId = PermissionUtils::GetAppIdByBundleName(fileAsset.GetOwnerPackage(), callingUid);
-    } else {
-        appId = PermissionUtils::GetAppIdByBundleName(cmd.GetBundleName());
-    }
+    uint32_t tokenId = PermissionUtils::GetTokenId();
     auto fileId = outRowId;
     string tableName = cmd.GetTableName();
     ValuesBucket valuesBucket;
-    if (!appId.empty()) {
+    if (tokenId) {
         int64_t tmpOutRowId = -1;
-        GetUriPermissionValuesBucket(tableName, valuesBucket, appId, fileId);
+        GetUriPermissionValuesBucket(tableName, valuesBucket, tokenId, fileId);
         MediaLibraryCommand cmd(Uri(MEDIALIBRARY_GRANT_URIPERM_URI), valuesBucket);
         errCode = trans->Insert(cmd, tmpOutRowId);
         if (errCode != NativeRdb::E_OK) {
@@ -1312,15 +1308,15 @@ int32_t MediaLibraryAssetOperations::UpdateFileInDb(MediaLibraryCommand &cmd)
 }
 
 int32_t MediaLibraryAssetOperations::OpenFileWithPrivacy(const string &filePath, const string &mode,
-    const string &fileId)
+    const string &fileId, int32_t type)
 {
     std::string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
         MEDIA_ERR_LOG("Failed to get real path: %{private}s", filePath.c_str());
         return E_ERR;
     }
-
-    return MediaPrivacyManager(absFilePath, mode, fileId).Open();
+    MEDIA_DEBUG_LOG("Open with privacy type:%{public}d", type);
+    return MediaPrivacyManager(absFilePath, mode, fileId, type).Open();
 }
 
 static int32_t SetPendingTime(const shared_ptr<FileAsset> &fileAsset, int64_t pendingTime)
@@ -1416,7 +1412,7 @@ static int32_t SolveMovingPhotoVideoCreation(const string &imagePath, const stri
 }
 
 int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &fileAsset, const string &mode,
-    MediaLibraryApi api, bool isMovingPhotoVideo)
+    MediaLibraryApi api, bool isMovingPhotoVideo, int32_t type)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryAssetOperations::OpenAsset");
@@ -1452,7 +1448,8 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     }
 
     string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
-    int32_t fd = OpenFileWithPrivacy(path, lowerMode, fileId);
+    MEDIA_DEBUG_LOG("Asset Operation:OpenAsset, type is %{public}d", type);
+    int32_t fd = OpenFileWithPrivacy(path, lowerMode, fileId, type);
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{public}d, errno %{public}d", fd, errno);
         return E_HAS_FS_ERROR;

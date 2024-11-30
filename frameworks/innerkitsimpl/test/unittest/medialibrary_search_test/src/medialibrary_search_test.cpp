@@ -21,7 +21,7 @@
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_unittest_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "search_column.h"
 #include "uri.h"
 

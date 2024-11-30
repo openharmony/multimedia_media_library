@@ -61,6 +61,7 @@ void MediaLibraryPeriodWorker::Init()
 
 int32_t MediaLibraryPeriodWorker::AddTask(const shared_ptr<MedialibraryPeriodTask> &task)
 {
+    lock_guard<mutex> lockGuard(mtx_);
     int32_t threadId = GetValidId();
     if (threadId == -1) {
         MEDIA_ERR_LOG("task is over size");
@@ -76,6 +77,7 @@ int32_t MediaLibraryPeriodWorker::AddTask(const shared_ptr<MedialibraryPeriodTas
 int32_t MediaLibraryPeriodWorker::AddTask(const shared_ptr<MedialibraryPeriodTask> &task,
     shared_ptr<BaseHandler> &handle, function<void(bool)> &refreshAlbumsFunc)
 {
+    lock_guard<mutex> lockGuard(mtx_);
     int32_t threadId = GetValidId();
     if (threadId == -1) {
         MEDIA_ERR_LOG("task is over size");
@@ -92,7 +94,6 @@ int32_t MediaLibraryPeriodWorker::AddTask(const shared_ptr<MedialibraryPeriodTas
 
 int32_t MediaLibraryPeriodWorker::GetValidId()
 {
-    lock_guard<mutex> lockGuard(mtx_);
     int32_t index = -1;
     for (int32_t i = 0; i < THREAD_NUM; i++) {
         if (!validIds_[i]) {
@@ -137,10 +138,8 @@ void MediaLibraryPeriodWorker::CloseThreadById(int32_t threadId)
     validIds_[threadId] = false;
     cv_.notify_all();
     if (task->second->thread_.joinable()) {
-        task->second->thread_.join();
-        task->second = nullptr;
+        task->second->thread_.detach();
     }
-    tasks_.erase(threadId);
 }
 
 bool MediaLibraryPeriodWorker::IsThreadRunning(int32_t threadId)
@@ -175,6 +174,8 @@ void MediaLibraryPeriodWorker::Worker(int32_t threadId)
         task->second->executor_();
         this_thread::sleep_for(chrono::milliseconds(task->second->period_));
     }
+    lock_guard<mutex> lockGuard(mtx_);
+    tasks_.erase(threadId);
 }
 
 void MediaLibraryPeriodWorker::Worker(int32_t threadId,
@@ -197,6 +198,8 @@ void MediaLibraryPeriodWorker::Worker(int32_t threadId,
         }
         this_thread::sleep_for(chrono::milliseconds(task->second->period_));
     }
+    lock_guard<mutex> lockGuard(mtx_);
+    tasks_.erase(threadId);
 }
 } // namespace Media
 } // namespace OHOS

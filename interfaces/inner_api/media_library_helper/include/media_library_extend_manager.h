@@ -72,35 +72,37 @@ public:
      * @brief Check PhotoUri Permission
      *
      * @param tokenId a parameter for input, indicating the expected app's tokenId to check
-     * @param appid a parameter for input, indicating the expected appid to check
      * @param urisSource a parameter for input, indicating the source of URIs expected to check
      * @param result a parameter for output, indicating the check result (permission granted or not)
      * @param flag a parameter for input, indicating the expected type of permission check
      * @return If the check is successful, return 0; otherwise, return -1 for failure.
      */
-    EXPORT int32_t CheckPhotoUriPermission(uint32_t tokenId, const string &appid,
+    EXPORT int32_t CheckPhotoUriPermission(uint32_t tokenId,
         const std::vector<string> &urisSource, std::vector<bool> &result, uint32_t flag);
 
     /**
      * @brief Grant PhotoUri Permission
      *
-     * @param appid a parameter for input, indicating the calling appid
+     * @param strTokenId a parameter for input, indicating the calling sourceTokenId
+     * @param targetTokenId a parameter for input, indicating the calling targetTokenId
      * @param uris a parameter for input, indicating the uris expected to grant permission
      * @param photoPermissionType a parameter for input, indicating the expected grant permission type for photos
      * @param hideSensitiveType a parameter for input, indicating the expected grant hideSensitiveType
      * @return If the grant is successful, return 0; otherwise, return -1 for failure.
      */
-    EXPORT int32_t GrantPhotoUriPermission(const string &appid, const std::vector<string> &uris,
+    EXPORT int32_t GrantPhotoUriPermission(uint32_t srcTokenId, uint32_t targetTokenId, const std::vector<string> &uris,
         PhotoPermissionType photoPermissionType, HideSensitiveType hideSensitiveTpye);
 
     /**
      * @brief Cancel PhotoUri Permission
      *
-     * @param appid a parameter for input, indicating the calling appid
+     * @param strTokenId a parameter for input, indicating the calling sourceTokenId
+     * @param targetTokenId a parameter for input, indicating the calling targetTokenId
      * @param uris a parameter for input, indicating the uris expected to grant permission
      * @return If the cancel is successful, return 0; otherwise, return -1 for failure.
      */
-    EXPORT int32_t CancelPhotoUriPermission(const string &appid, const std::vector<string> &uris);
+    EXPORT int32_t CancelPhotoUriPermission(uint32_t srcTokenId, uint32_t targetTokenId,
+        const std::vector<string> &uris);
 private:
 
     shared_ptr<DataShare::DataShareHelper> dataShareHelper_;

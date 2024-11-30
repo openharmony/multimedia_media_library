@@ -1375,7 +1375,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_065, TestSi
 
     std::string root = FILE_PATH;
     std::shared_ptr<UInt32List> out = std::make_shared<UInt32List>();
-    uint32_t errcode = 0;
+    int32_t errcode = 0;
     errcode = mtpMediaLib_->ScanDirNoDepth(root, out);
     EXPECT_EQ(errcode, E_ERR);
 }
@@ -1395,7 +1395,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_066, TestSi
 
     std::string root = FILE_PATH;
     std::shared_ptr<UInt32List> out = nullptr;
-    uint32_t errcode = 0;
+    int32_t errcode = 0;
     errcode = mtpMediaLib_->ScanDirNoDepth(root, out);
     EXPECT_EQ(errcode, E_ERR);
 }
@@ -2093,7 +2093,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_096, TestSi
 
     std::string root = REAL_FILE_PATH;
     std::shared_ptr<UInt32List> out = std::make_shared<UInt32List>();
-    uint32_t errcode = mtpMediaLib_->ScanDirNoDepth(root, out);
+    int32_t errcode = mtpMediaLib_->ScanDirNoDepth(root, out);
     EXPECT_EQ(errcode, MTP_SUCCESS);
 }
 

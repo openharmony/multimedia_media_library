@@ -97,7 +97,7 @@
 #include "resource_type.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "system_ability_definition.h"
 #include "timer.h"
 #include "trash_async_worker.h"
@@ -828,6 +828,10 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
         if (ret != MediaLibraryAppUriSensitiveOperations::SUCCEED) {
             return ret;
         }
+        if (MediaLibraryAppUriSensitiveOperations::BeForceSensitive(cmd, values)) {
+            return ret;
+        }
+        
         return MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {

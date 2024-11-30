@@ -62,7 +62,7 @@
 #include "photo_map_column.h"
 #include "post_event_utils.h"
 #include "rdb_sql_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "source_album.h"
 #include "tab_old_photos_table_event_handler.h"
 #include "vision_column.h"
@@ -3102,6 +3102,19 @@ void AddIsLocalAlbum(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddSourceAndTargetTokenForUriPermission(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + " ADD COLUMN " +
+            AppUriPermissionColumn::SOURCE_TOKENID + " BIGINT",
+        "ALTER TABLE " + AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + " ADD COLUMN " +
+            AppUriPermissionColumn::TARGET_TOKENID + " BIGINT",
+        AppUriPermissionColumn::CREATE_URI_URITYPE_TOKENID_INDEX,
+    };
+    MEDIA_INFO_LOG("start add islocal column");
+    ExecSqls(sqls, store);
+}
+
 void UpdateAOI(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4004,6 +4017,13 @@ static void UpgradeAlbumTable(RdbStore &store, int32_t oldVersion)
     // !! Do not add upgrade code here !!
 }
 
+static void UpgradeUriPermissionTable(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_UPDATE_URIPERMISSION_SOURCE_TOKEN_AND_TARGET_TOKEN) {
+        AddSourceAndTargetTokenForUriPermission(store);
+    }
+}
+
 static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_MISSING_UPDATES) {
@@ -4623,6 +4643,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeAlbumTable(store, oldVersion);
     UpgradeHistory(store, oldVersion);
     UpgradeExtension(store, oldVersion);
+    UpgradeUriPermissionTable(store, oldVersion);
 
     AlwaysCheck(store);
     if (!g_upgradeErr) {
