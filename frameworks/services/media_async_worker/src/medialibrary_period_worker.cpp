@@ -140,7 +140,6 @@ void MediaLibraryPeriodWorker::CloseThreadById(int32_t threadId)
     if (task->second->thread_.joinable()) {
         task->second->thread_.detach();
     }
-    tasks_.erase(threadId);
 }
 
 bool MediaLibraryPeriodWorker::IsThreadRunning(int32_t threadId)
@@ -175,6 +174,8 @@ void MediaLibraryPeriodWorker::Worker(int32_t threadId)
         task->second->executor_();
         this_thread::sleep_for(chrono::milliseconds(task->second->period_));
     }
+    lock_guard<mutex> lockGuard(mtx_);
+    tasks_.erase(threadId);
 }
 
 void MediaLibraryPeriodWorker::Worker(int32_t threadId,
@@ -197,6 +198,8 @@ void MediaLibraryPeriodWorker::Worker(int32_t threadId,
         }
         this_thread::sleep_for(chrono::milliseconds(task->second->period_));
     }
+    lock_guard<mutex> lockGuard(mtx_);
+    tasks_.erase(threadId);
 }
 } // namespace Media
 } // namespace OHOS

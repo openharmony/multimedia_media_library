@@ -62,14 +62,7 @@ shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
 }
 MediaLibraryNotify::MediaLibraryNotify() {};
 
-MediaLibraryNotify::~MediaLibraryNotify()
-{
-    auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
-    if (periodWorker == nullptr) {
-        MEDIA_ERR_LOG("failed to get period worker instance");
-    }
-    periodWorker->CloseThreadById(MediaLibraryNotify::threadId_);
-};
+MediaLibraryNotify::~MediaLibraryNotify() {}
 
 static bool SolveUris(const list<Uri> &uris, Parcel &parcel)
 {
