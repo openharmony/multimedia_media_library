@@ -42,7 +42,6 @@ public:
     EXPORT int32_t GentleRetainDownloadCloudMedia();
     EXPORT std::string GetCloudMediaAssetTaskStatus();
     EXPORT bool SetIsThumbnailUpdate();
-    EXPORT bool SetNetworkConnected(const bool &flag);
     EXPORT int32_t GetTaskStatus();
     EXPORT int32_t GetDownloadType();
     EXPORT bool SetBgDownloadPermission(const bool &flag);

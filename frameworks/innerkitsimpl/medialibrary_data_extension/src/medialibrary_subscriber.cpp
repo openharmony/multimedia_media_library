@@ -93,6 +93,10 @@ const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
 
 // The network should be available in this state
 const int32_t NET_CONN_STATE_CONNECTED = 3;
+// The net bearer type is in net_all_capabilities.h
+const int32_t BEARER_CELLULAR = 0;
+bool MedialibrarySubscriber::isCellularNetConnected_ = false;
+
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
     EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING,
@@ -314,25 +318,21 @@ void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadStatus(const AAFwk::Wa
     }
 }
 
-void MedialibrarySubscriber::UpdateCloudAssetNetStatus()
+bool MedialibrarySubscriber::GetIsCellularNetConnected()
 {
-    if (!CloudMediaAssetManager::GetInstance().SetNetworkConnected(isNetworkConnected_)) {
-        return;
-    }
-    int32_t taskStatus = CloudMediaAssetManager::GetInstance().GetTaskStatus();
-    if (!isNetworkConnected_) {
-        CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::WIFI_UNAVAILABLE);
-        return;
-    }
+    return isCellularNetConnected_;
+}
 
-    if (CommonEventUtils::IsWifiConnected()) {
-        CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(CloudMediaTaskRecoverCause::NETWORK_NORMAL);
+void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadTask()
+{
+    if (!isCellularNetConnected_) {
+        MEDIA_INFO_LOG("CellularNet not connected.");
         return;
     }
-    if (taskStatus == static_cast<int32_t>(CloudMediaAssetTaskStatus::PAUSED) &&
-        CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
-        CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(
-            CloudMediaTaskRecoverCause::NETWORK_FLOW_UNLIMIT);
+    if (CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
+        CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(CloudMediaTaskRecoverCause::NETWORK_NORMAL);
+    } else if (!isWifiConnected_) {
+        CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::WIFI_UNAVAILABLE);
     }
 }
 
@@ -346,9 +346,14 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
         isWifiConnected_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
         UpdateBackgroundTimer();
+        if (isWifiConnected_) {
+            CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(CloudMediaTaskRecoverCause::NETWORK_NORMAL);
+        }
     } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE) {
-        isNetworkConnected_ = eventData.GetCode() == NET_CONN_STATE_CONNECTED;
-        UpdateCloudAssetNetStatus();
+        int netType = want.GetIntParam("NetType", -1);
+        bool cellularNetConnected = eventData.GetCode() == NET_CONN_STATE_CONNECTED;
+        isCellularNetConnected_ = netType == BEARER_CELLULAR ? cellularNetConnected : isCellularNetConnected_;
+        UpdateCloudMediaAssetDownloadTask();
     } else if (BACKGROUND_OPERATION_STATUS_MAP.count(action) != 0) {
         UpdateBackgroundOperationStatus(want, BACKGROUND_OPERATION_STATUS_MAP.at(action));
         UpdateCloudMediaAssetDownloadStatus(want, BACKGROUND_OPERATION_STATUS_MAP.at(action));
