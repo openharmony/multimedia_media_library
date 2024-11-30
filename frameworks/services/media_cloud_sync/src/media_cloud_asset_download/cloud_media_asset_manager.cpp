@@ -312,16 +312,6 @@ bool CloudMediaAssetManager::SetIsThumbnailUpdate()
     return true;
 }
 
-bool CloudMediaAssetManager::SetNetworkConnected(const bool &flag)
-{
-    if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
-        return false;
-    }
-    MEDIA_INFO_LOG("Success set NetworkConnected, flag: %{public}d.", static_cast<int32_t>(flag));
-    operation_->isNetworkConnected_ = flag;
-    return true;
-}
-
 int32_t CloudMediaAssetManager::GetTaskStatus()
 {
     if (operation_ == nullptr) {

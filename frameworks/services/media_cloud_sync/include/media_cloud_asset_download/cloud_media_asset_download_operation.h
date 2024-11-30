@@ -63,9 +63,14 @@ public:
         FORCE_DOWNLOADING,
         GENTLE_DOWNLOADING,
         PAUSE_FOR_TEMPERATURE_LIMIT,
+        PAUSE_FOR_ROM_LIMIT,
         PAUSE_FOR_NETWORK_FLOW_LIMIT,
+        PAUSE_FOR_WIFI_UNAVAILABLE,
+        PAUSE_FOR_POWER_LIMIT,
         PAUSE_FOR_BACKGROUND_TASK_UNAVAILABLE,
+        PAUSE_FOR_FREQUENT_USER_REQUESTS,
         PAUSE_FOR_CLOUD_ERROR,
+        PAUSE_FOR_USER_PAUSE,
         RECOVER_FOR_MANAUL_ACTIVE,
         RECOVER_FOR_PASSIVE_STATUS,
         IDLE,
@@ -120,7 +125,6 @@ public:
 
     // Confirmation of the notification
     bool isThumbnailUpdate_ = true;
-    bool isNetworkConnected_ = false;
     bool isBgDownloadPermission_ = false;
 
 private:
