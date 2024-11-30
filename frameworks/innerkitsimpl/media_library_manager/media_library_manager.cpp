@@ -47,7 +47,7 @@
 #include "moving_photo_file_utils.h"
 #include "post_proc.h"
 #include "permission_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "string_ex.h"
 #include "system_ability_definition.h"
 #include "thumbnail_const.h"
@@ -227,6 +227,33 @@ int32_t MediaLibraryManager::OpenAsset(string &uri, const string openMode)
         return E_ERR;
     }
     Uri openUri(uri);
+    return sDataShareHelper_->OpenFile(openUri, openMode);
+}
+
+int32_t MediaLibraryManager::OpenAsset(string &uri, const string openMode, HideSensitiveType type)
+{
+    if (openMode.empty()) {
+        return E_ERR;
+    }
+    if (!CheckUri(uri)) {
+        MEDIA_ERR_LOG("invalid uri");
+        return E_ERR;
+    }
+    string originOpenMode = openMode;
+    std::transform(originOpenMode.begin(), originOpenMode.end(),
+        originOpenMode.begin(), [](unsigned char c) {return std::tolower(c);});
+    if (!MEDIA_OPEN_MODES.count(originOpenMode)) {
+        return E_ERR;
+    }
+
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("Failed to open Asset, datashareHelper is nullptr");
+        return E_ERR;
+    }
+    string assetUri = uri;
+    MediaFileUtils::UriAppendKeyValue(assetUri, "type", to_string(static_cast<int32_t>(type)));
+    MEDIA_DEBUG_LOG("merged uri = %{public}s", assetUri.c_str());
+    Uri openUri(assetUri);
     return sDataShareHelper_->OpenFile(openUri, openMode);
 }
 
@@ -968,6 +995,25 @@ int32_t MediaLibraryManager::ReadPrivateMovingPhoto(const string &uri)
     }
 
     string movingPhotoUri = uri;
+    MediaFileUtils::UriAppendKeyValue(movingPhotoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_PRIVATE_LIVE_PHOTO);
+    Uri openMovingPhotoUri(movingPhotoUri);
+    return sDataShareHelper_->OpenFile(openMovingPhotoUri, MEDIA_FILEMODE_READONLY);
+}
+
+int32_t MediaLibraryManager::ReadPrivateMovingPhoto(const string &uri, const HideSensitiveType type)
+{
+    if (!CheckPhotoUri(uri)) {
+        MEDIA_ERR_LOG("invalid uri: %{public}s", uri.c_str());
+        return E_ERR;
+    }
+
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("Failed to read video of moving photo, datashareHelper is nullptr");
+        return E_ERR;
+    }
+
+    string movingPhotoUri = uri;
+    MediaFileUtils::UriAppendKeyValue(movingPhotoUri, "type", to_string(static_cast<int32_t>(type)));
     MediaFileUtils::UriAppendKeyValue(movingPhotoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_PRIVATE_LIVE_PHOTO);
     Uri openMovingPhotoUri(movingPhotoUri);
     return sDataShareHelper_->OpenFile(openMovingPhotoUri, MEDIA_FILEMODE_READONLY);

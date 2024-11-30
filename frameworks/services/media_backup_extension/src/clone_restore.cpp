@@ -30,12 +30,13 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "userfile_manager_types.h"
 #include "backup_dfx_utils.h"
 #include "media_library_db_upgrade.h"
 #include "photos_dao.h"
 #include "rdb_store.h"
+#include "database_report.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -1310,6 +1311,13 @@ void CloneRestore::RestoreGallery()
     // Upgrade original MediaLibrary Database
     DataTransfer::MediaLibraryDbUpgrade medialibraryDbUpgrade;
     medialibraryDbUpgrade.OnUpgrade(*this->mediaRdb_);
+    // Report the old db info.
+    DatabaseReport()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .ReportMedia(this->mediaRdb_, DatabaseReport::PERIOD_OLD)
+        .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_BEFORE);
+    // Restore the backup db info.
     RestoreAlbum();
     RestorePhoto();
     MEDIA_INFO_LOG("migrate database photo number: %{public}lld, file number: %{public}lld (%{public}lld + "

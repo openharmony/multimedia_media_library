@@ -25,7 +25,7 @@
 #include "medialibrary_tracer.h"
 #include "media_log.h"
 #include "request_policy.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "medialibrary_unistore_manager.h"
@@ -77,7 +77,10 @@ bool EnhancementManager::LoadService()
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     if (enhancementService_ == nullptr) {
-        enhancementService_ = make_shared<EnhancementServiceAdapter>();
+        unique_lock<mutex> lock(mutex_);
+        if (enhancementService_ == nullptr) {
+            enhancementService_ = make_shared<EnhancementServiceAdapter>();
+        }
     }
     if (enhancementService_ == nullptr) {
         return false;

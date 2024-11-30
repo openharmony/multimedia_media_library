@@ -42,7 +42,7 @@
 #include "media_file_ext_ability.h"
 #include "media_file_extention_utils.h"
 #include "photo_album_column.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "source_album.h"
 #include "uri.h"
 #include "userfile_manager_types.h"

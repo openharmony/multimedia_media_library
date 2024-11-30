@@ -34,7 +34,7 @@
 #include "parameters.h"
 #include "photo_file_operation.h"
 #include "photo_asset_copy_operation.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "thumbnail_service.h"
 #include "userfile_manager_types.h"
 #include "photo_source_path_operation.h"
@@ -323,11 +323,15 @@ static bool isLocalAsset(shared_ptr<NativeRdb::ResultSet> &resultSet)
 
 static inline void buildTargetFilePath(std::string &targetPath, std::string displayName, int32_t mediaType)
 {
-    int32_t uniqueId = MediaLibraryAssetOperations::CreateAssetUniqueId(mediaType);
-    int32_t errCode = MediaLibraryAssetOperations::CreateAssetPathById(uniqueId, mediaType,
-        MediaFileUtils::GetExtensionFromPath(displayName), targetPath);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Create targetPath failed, errCode=%{public}d", errCode);
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    std::function<int(void)> tryReuseDeleted = [&]()->int {
+        int32_t uniqueId = MediaLibraryAssetOperations::CreateAssetUniqueId(mediaType, trans);
+        return MediaLibraryAssetOperations::CreateAssetPathById(uniqueId, mediaType,
+            MediaFileUtils::GetExtensionFromPath(displayName), targetPath);
+    };
+    int ret = trans->RetryTrans(tryReuseDeleted);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Create targetPath failed, ret=%{public}d", ret);
     }
 }
 

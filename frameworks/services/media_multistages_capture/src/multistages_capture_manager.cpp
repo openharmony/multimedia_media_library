@@ -20,7 +20,7 @@
 
 #include "media_log.h"
 #include "medialibrary_rdbstore.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 
 using namespace std;
 
@@ -48,7 +48,7 @@ void MultiStagesCaptureManager::RemovePhotos(const NativeRdb::AbsRdbPredicates &
     predicatesNew.SetWhereArgs(predicates.GetWhereArgs());
     vector<string> columns { MediaColumn::MEDIA_ID, MEDIA_DATA_DB_PHOTO_ID, MEDIA_DATA_DB_PHOTO_QUALITY,
         MEDIA_DATA_DB_MEDIA_TYPE };
-    auto resultSet = MediaLibraryRdbStore::Query(predicatesNew, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicatesNew, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_INFO_LOG("Result set is empty");
         return;

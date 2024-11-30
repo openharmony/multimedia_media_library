@@ -47,6 +47,7 @@ namespace OHOS {
 namespace Media {
 constexpr uint32_t E_NO_EXIF = 1;
 constexpr uint32_t E_NO_PRIVACY_EXIF_TAG = 2;
+constexpr int32_t DEFAULT_TYPE = -1;
 const std::vector<std::string> ALL_SENSITIVE_EXIF = {
     PHOTO_DATA_IMAGE_GPS_LATITUDE,
     PHOTO_DATA_IMAGE_GPS_LONGITUDE,
@@ -106,8 +107,9 @@ const std::vector<std::string> SHOOTING_PARAM_EXIF = {
     PHOTO_DATA_IMAGE_FOCAL_LENGTH_IN_35_MM_FILM
 };
 
-MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode, const string &fileId)
-    : path_(path), mode_(mode), fileId_(fileId), fuseFlag_(false)
+MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode, const string &fileId,
+    const int32_t type)
+    : path_(path), mode_(mode), fileId_(fileId), type_(type), fuseFlag_(false)
 {}
 
 MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode, const string &fileId,
@@ -370,11 +372,9 @@ int32_t MediaPrivacyManager::GetPrivacyRanges()
     if (!IsTargetExtension(path_)) {
         return E_SUCCESS;
     }
-
     if (fileId_.empty()) {
         return E_SUCCESS;
     }
-
     if (mode_.find('w') != string::npos) {
         return E_SUCCESS;
     }
@@ -383,9 +383,6 @@ int32_t MediaPrivacyManager::GetPrivacyRanges()
         appId_ = PermissionUtils::GetAppIdByBundleName(bundleName);
     }
     string appIdFile = UriSensitiveOperations::QueryAppId(fileId_);
-    if (appId_ == appIdFile) {
-        return E_SUCCESS;
-    }
     bool result;
     for (auto &item : PRIVACY_PERMISSION_MAP) {
         const string &perm = item.second;
@@ -398,17 +395,24 @@ int32_t MediaPrivacyManager::GetPrivacyRanges()
             MEDIA_ERR_LOG("Write is not allowed if have no location permission");
             return E_PERMISSION_DENIED;
         }
-        if (result) {
-            continue;
+        int32_t err = -1;
+        if (type_ != DEFAULT_TYPE) {
+            MEDIA_DEBUG_LOG("force type");
+            err = CollectRanges(path_, (HideSensitiveType)type_, ranges_);
+        } else {
+            //collect ranges by hideSensitiveType
+            uint32_t tokenId = PermissionUtils::GetTokenId();
+            bool isForceSensitive = UriSensitiveOperations::QueryForceSensitive(tokenId, fileId_);
+            if (!isForceSensitive && (result || appId_ == appIdFile)) {
+                continue;
+            }
+            HideSensitiveType sensitiveType =
+            static_cast<HideSensitiveType>(UriSensitiveOperations::QuerySensitiveType(tokenId, fileId_));
+            err = CollectRanges(path_, sensitiveType, ranges_);
         }
-        //collect ranges by hideSensitiveType
-        HideSensitiveType sensitiveType =
-            static_cast<HideSensitiveType>(UriSensitiveOperations::QuerySensitiveType(appId_, fileId_));
-        int32_t err = CollectRanges(path_, sensitiveType, ranges_);
         if (err < 0) {
             return err;
         }
-        MEDIA_INFO_LOG("get privacy type = %{public}d", sensitiveType);
     }
     return SortRangesAndCheck(ranges_);
 }

@@ -24,6 +24,7 @@
 #include <thread>
 #include <timer.h>
 
+#include "cpu_utils.h"
 #include "thumbnail_utils.h"
 
 namespace OHOS {
@@ -76,6 +77,7 @@ public:
     int threadId_;
     bool isThreadWaiting_ = false;
     int32_t taskNum_ = 0;
+    CpuAffinityType cpuAffinityType = CpuAffinityType::CPU_IDX_DEFAULT;
 };
 
 class ThumbnailGenerateWorker {

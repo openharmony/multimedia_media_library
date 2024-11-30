@@ -28,7 +28,7 @@
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "userfile_manager_types.h"
 #include "photo_album_restore.h"
 #include "photos_restore.h"
@@ -39,7 +39,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
-#include "gallery_report.h"
+#include "database_report.h"
 #include "medialibrary_rdb_transaction.h"
 
 #ifdef CLOUD_SYNC_MANAGER
@@ -365,13 +365,12 @@ void UpgradeRestore::AnalyzeGalleryDuplicateData()
 
 void UpgradeRestore::AnalyzeGallerySource()
 {
-    GalleryReport()
-        .SetGalleryRdb(this->galleryRdb_)
-        .SetExternalRdb(this->externalRdb_)
+    DatabaseReport()
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
-        .SetShouldIncludeSd(this->shouldIncludeSd_)
-        .Report();
+        .ReportGallery(this->galleryRdb_, this->shouldIncludeSd_)
+        .ReportExternal(this->externalRdb_)
+        .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_BEFORE);
 }
 
 void UpgradeRestore::InitGarbageAlbum()
@@ -725,6 +724,7 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
     }
     info.showDateToken = GetInt64Val(EXTERNAL_DATE_TAKEN, resultSet);
     info.dateTaken = GetInt64Val(EXTERNAL_DATE_TAKEN, resultSet);
+    info.sourcePath = GetStringVal(EXTERNAL_FILE_DATA, resultSet);
     return isSuccess;
 }
 
@@ -774,6 +774,8 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, this->photosRestore_.FindAlbumId(fileInfo));
     // fill the source_path at last.
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, this->photosRestore_.FindSourcePath(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, this->photosRestore_.FindStrongAssociation(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, this->photosRestore_.FindCeAvailable(fileInfo));
     return values;
 }
 

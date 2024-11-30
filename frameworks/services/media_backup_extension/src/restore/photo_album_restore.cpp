@@ -20,7 +20,7 @@
 #include "media_log.h"
 #include "rdb_store.h"
 #include "rdb_errno.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "userfile_manager_types.h"
 #include "backup_const.h"
 #include "photo_album_dao.h"

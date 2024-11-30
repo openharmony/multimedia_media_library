@@ -22,7 +22,7 @@
 #include "photo_album_column.h"
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 
 using namespace std;
 
@@ -35,6 +35,7 @@ const string BURST_COVER_LEVEL = "1";
 const string BURST_NOT_COVER_LEVEL = "2";
 const string IS_LOCAL = "2";
 const std::string HIDDEN_ALBUM = ".hiddenAlbum";
+
 bool startsWith(const std::string& str, const std::string& prefix)
 {
     if (prefix.size() > str.size() || prefix.empty() || str.empty()) {
@@ -188,9 +189,6 @@ void MediaSyncObserver::SendPhotoRemoveEvent(std::string suffixString)
 
 void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixString)
 {
-    if (!suffixString.empty() && !std::isdigit(suffixString[0])) {
-        return;
-    }
     if (!suffixString.empty() && stoi(suffixString) <= 0) {
         return;
     }

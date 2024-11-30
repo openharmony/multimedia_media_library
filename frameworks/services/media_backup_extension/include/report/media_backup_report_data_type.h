@@ -32,6 +32,8 @@ struct AlbumMediaStatisticInfo {
     int32_t favoriteCount;
     int32_t burstCoverCount;
     int32_t burstTotalCount;
+    // non-event data members
+    std::string lPath;
 };
 
 class MediaRestoreResultInfo {
@@ -122,6 +124,178 @@ public:
         std::stringstream ss;
         ss << "ResultData[ " << this->resultInfo.ToString() << ", " << this->ToString(this->infos) << " ]";
         return ss.str();
+    }
+};
+
+class AlbumNameInfo {
+private:
+    std::string albumName_;
+    std::string lPath_;
+    int64_t costTime_;
+    int32_t period_;
+    int32_t dbType_;
+
+public:
+    AlbumNameInfo &SetAlbumName(const std::string &albumName)
+    {
+        this->albumName_ = albumName;
+        return *this;
+    }
+    AlbumNameInfo &SetLPath(const std::string &lPath)
+    {
+        this->lPath_ = lPath;
+        return *this;
+    }
+    AlbumNameInfo &SetCostTime(int64_t costTime)
+    {
+        this->costTime_ = costTime;
+        return *this;
+    }
+    /**
+     * @brief Set period. 0 - BEFORE, 1 - AFTER
+     */
+    AlbumNameInfo &SetPeriod(int32_t period)
+    {
+        this->period_ = period;
+        return *this;
+    }
+    /**
+     * @brief Set db type. 0 - GALLERY, 1 - MEDIA
+     */
+    AlbumNameInfo &SetDbType(int32_t dbType)
+    {
+        this->dbType_ = dbType;
+        return *this;
+    }
+    /**
+     * @brief Convert AlbumNameInfo to string. Format : albumName_lPath_dbTypeName_periodName_costTime
+     */
+    std::string ToString() const
+    {
+        std::string dbTypeName = this->dbType_ == 0 ? "GALLERY" : "MEDIA";
+        std::string periodName = this->period_ == 0 ? "BEFORE" : (this->period_ == 1 ? "AFTER" : "OLD");
+        std::stringstream ss;
+        ss << this->albumName_ << "_" << this->lPath_ << "_" << dbTypeName << "_" << periodName << "_"
+           << this->costTime_;
+        return ss.str();
+    }
+};
+
+struct AlbumStatisticInfo {
+    std::string lPath;
+    int32_t count;
+    std::string albumName;
+};
+
+enum {
+    DUAL_MEDIA_TYPE_ALL = 0,
+    DUAL_MEDIA_TYPE_IMAGE = 1,
+    DUAL_MEDIA_TYPE_VIDEO = 3,
+    DUAL_SEARCH_TYPE_ALL = 0,
+    DUAL_SEARCH_TYPE_CLOUD = 1,
+    DUAL_HIDDEN_TYPE_SKIP = -1,
+    DUAL_HIDDEN_TYPE_NOT_HIDDEN = 0,
+    DUAL_HIDDEN_TYPE_HIDDEN = 1,
+    DUAL_TRASHED_TYPE_SKIP = -1,
+    DUAL_TRASHED_TYPE_NOT_TRASHED = 0,
+    DUAL_TRASHED_TYPE_TRASHED = 1,
+    DUAL_CLOUD_TYPE_SKIP = -1,
+    DUAL_CLOUD_TYPE_NOT_CLOUD = 0,
+    DUAL_CLOUD_TYPE_CLOUD = 1,
+    DUAL_FAVORITE_TYPE_SKIP = -1,
+    DUAL_FAVORITE_TYPE_ALL = 0,
+    DUAL_FAVORITE_TYPE_FAVORITE = 1,
+    DUAL_BURST_TYPE_SKIP = -1,
+    DUAL_BURST_TYPE_ALL = 0,
+    DUAL_BURST_TYPE_COVER = 1,
+};
+
+enum {
+    SINGLE_MEDIA_TYPE_ALL = 0,
+    SINGLE_MEDIA_TYPE_IMAGE = 1,
+    SINGLE_MEDIA_TYPE_VIDEO = 2,
+    SINGLE_SEARCH_TYPE_ALL = 0,
+    SINGLE_SEARCH_TYPE_CLOUD = 2,
+    SINGLE_HIDDEN_TYPE_SKIP = -1,
+    SINGLE_HIDDEN_TYPE_NOT_HIDDEN = 0,
+    SINGLE_HIDDEN_TYPE_HIDDEN = 1,
+    SINGLE_TRASHED_TYPE_SKIP = -1,
+    SINGLE_TRASHED_TYPE_NOT_TRASHED = 0,
+    SINGLE_TRASHED_TYPE_TRASHED = 1,
+    SINGLE_CLOUD_TYPE_SKIP = -1,
+    SINGLE_CLOUD_TYPE_NOT_CLOUD = 0,
+    SINGLE_CLOUD_TYPE_CLOUD = 1,
+    SINGLE_FAVORITE_TYPE_SKIP = -1,
+    SINGLE_FAVORITE_TYPE_ALL = 0,
+    SINGLE_FAVORITE_TYPE_FAVORITE = 1,
+    SINGLE_BURST_TYPE_SKIP = -1,
+    SINGLE_BURST_TYPE_ALL = 0,
+    SINGLE_BURST_TYPE_COVER = 1,
+};
+
+class SearchCondition {
+private:
+    int32_t mediaType_ = DUAL_MEDIA_TYPE_ALL;
+    int32_t hiddenType_ = DUAL_HIDDEN_TYPE_SKIP;
+    int32_t trashedType_ = DUAL_TRASHED_TYPE_SKIP;
+    int32_t cloudType_ = DUAL_CLOUD_TYPE_SKIP;
+    int32_t favoriteType_ = DUAL_FAVORITE_TYPE_SKIP;
+    int32_t burstType_ = DUAL_BURST_TYPE_SKIP;
+
+public:
+    int32_t GetMediaType()
+    {
+        return this->mediaType_;
+    }
+    SearchCondition &SetMediaType(int32_t mediaType)
+    {
+        this->mediaType_ = mediaType;
+        return *this;
+    }
+    int32_t GetHiddenType()
+    {
+        return this->hiddenType_;
+    }
+    SearchCondition &SetHiddenType(int32_t hiddenType)
+    {
+        this->hiddenType_ = hiddenType;
+        return *this;
+    }
+    int32_t GetTrashedType()
+    {
+        return this->trashedType_;
+    }
+    SearchCondition &SetTrashedType(int32_t trashedType)
+    {
+        this->trashedType_ = trashedType;
+        return *this;
+    }
+    int32_t GetCloudType()
+    {
+        return this->cloudType_;
+    }
+    SearchCondition &SetCloudType(int32_t cloudType)
+    {
+        this->cloudType_ = cloudType;
+        return *this;
+    }
+    int32_t GetFavoriteType()
+    {
+        return this->favoriteType_;
+    }
+    SearchCondition &SetFavoriteType(int32_t favoriteType)
+    {
+        this->favoriteType_ = favoriteType;
+        return *this;
+    }
+    int32_t GetBurstType()
+    {
+        return this->burstType_;
+    }
+    SearchCondition &SetBurstType(int32_t burstType)
+    {
+        this->burstType_ = burstType;
+        return *this;
     }
 };
 }  // namespace OHOS::Media

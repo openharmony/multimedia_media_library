@@ -90,6 +90,7 @@ int32_t MediaLibraryAppUriPermissionOperations::HandleInsertOperation(MediaLibra
         MediaFileUtils::UTCTimeMilliSeconds());
     
     cmd.GetValueBucket().Delete(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
+    cmd.GetValueBucket().Delete(AppUriSensitiveColumn::IS_FORCE_SENSITIVE);
     cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
 
     int32_t errCode = rdbStore->Insert(cmd, outRowId);
@@ -143,6 +144,7 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsertInner(
         }
 
         value.Delete(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
+        value.Delete(AppUriSensitiveColumn::IS_FORCE_SENSITIVE);
 
         if (queryFlag == 0) {
             // delete the temporary permission when the app dies
@@ -230,7 +232,7 @@ std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriPermissionOperatio
     permissionPredicates.And()->EqualTo(AppUriPermissionColumn::FILE_ID, fileId);
     permissionPredicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, uriType);
     permissionPredicates.And()->EqualTo(AppUriPermissionColumn::APP_ID, appId);
-
+    
     vector<string> fetchColumns;
     fetchColumns.push_back(AppUriPermissionColumn::ID);
     fetchColumns.push_back(AppUriPermissionColumn::PERMISSION_TYPE);

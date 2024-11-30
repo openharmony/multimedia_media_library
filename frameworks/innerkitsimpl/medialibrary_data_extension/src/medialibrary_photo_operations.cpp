@@ -62,7 +62,7 @@
 #include "picture_manager_thread.h"
 
 #include "rdb_predicates.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "thumbnail_const.h"
 #include "thumbnail_service.h"
 #include "uri.h"
@@ -92,6 +92,8 @@ constexpr int32_t ORIENTATION_0 = 1;
 constexpr int32_t ORIENTATION_90 = 6;
 constexpr int32_t ORIENTATION_180 = 3;
 constexpr int32_t ORIENTATION_270 = 8;
+constexpr int32_t OFFSET = 5;
+constexpr int32_t ZERO_ASCII = '0';
 
 enum ImageFileType : int32_t {
     JPEG = 1,
@@ -431,6 +433,14 @@ static void UpdateLastVisitTime(MediaLibraryCommand &cmd, const string &id)
     }).detach();
 }
 
+static void GetType(string &uri, int32_t &type)
+{
+    int pos = uri.find("type=");
+    if (pos != uri.npos) {
+        type = uri[pos + OFFSET] - ZERO_ASCII;
+    }
+}
+
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
@@ -464,10 +474,15 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         return errCode;
     }
     UpdateLastVisitTime(cmd, id);
+    string uri = cmd.GetUri().ToString();
+    int32_t type = -1;
+    GetType(uri, type);
+    MEDIA_DEBUG_LOG("After spliting, uri is %{public}s", uri.c_str());
+    MEDIA_DEBUG_LOG("After spliting, type is %{public}d", type);
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
-        return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10, isMovingPhotoVideo);
+        return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10, isMovingPhotoVideo, type);
     }
-    return OpenAsset(fileAsset, mode, cmd.GetApi());
+    return OpenAsset(fileAsset, mode, cmd.GetApi(), type);
 }
 
 int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
@@ -751,6 +766,7 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUr
 void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereArgs)
 {
     if (whereArgs.empty()) {
+        MEDIA_WARN_LOG("whereArgs is empty");
         return;
     }
 
@@ -3541,7 +3557,7 @@ int32_t MediaLibraryPhotoOperations::UpdateOwnerAlbumId(MediaLibraryCommand &cmd
         MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
         return rowId;
     }
-    auto watch = MediaLibraryNotify::GetInstance();
+
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
         { to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO) });
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
@@ -3552,10 +3568,14 @@ int32_t MediaLibraryPhotoOperations::UpdateOwnerAlbumId(MediaLibraryCommand &cmd
         MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) });
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) });
-    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-        NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, originalAlbumId);
-    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-        NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch != nullptr) {
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
+            NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, originalAlbumId);
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
+            NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
+    }
     return rowId;
 }
 } // namespace Media

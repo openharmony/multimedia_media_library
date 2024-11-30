@@ -33,7 +33,7 @@
 #include "medialibrary_type_const.h"
 #include "media_file_utils.h"
 #include "mimetype_utils.h"
-#include "result_set_utils.h"
+#include "rdb_class_utils.h"
 #include "scanner_utils.h"
 #include "thumbnail_utils.h"
 #include "n_error.h"

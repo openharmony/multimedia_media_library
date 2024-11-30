@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gallery_report.h"
+#include "database_report.h"
 
 #include <sstream>
 
@@ -22,27 +22,42 @@
 #include "backup_const.h"
 #include "gallery_media_count_statistic.h"
 #include "external_files_count_statistic.h"
+#include "photos_count_statistic.h"
 
 namespace OHOS::Media {
 static constexpr char MEDIA_LIBRARY[] = "MEDIALIBRARY";
-std::vector<AlbumMediaStatisticInfo> GalleryReport::Load()
+std::vector<AlbumMediaStatisticInfo> DatabaseReport::LoadGallery(
+    std::shared_ptr<NativeRdb::RdbStore> galleryRdb, bool shouldIncludeSd)
 {
-    std::vector<AlbumMediaStatisticInfo> galleryStatInfos = GalleryMediaCountStatistic()
-                                                                .SetGalleryRdb(this->galleryRdb_)
-                                                                .SetSceneCode(this->sceneCode_)
-                                                                .SetTaskId(this->taskId_)
-                                                                .SetShouldIncludeSd(this->shouldIncludeSd_)
-                                                                .Load();
-    std::vector<AlbumMediaStatisticInfo> externalStatInfos = ExternalFilesCountStatistic()
-                                                                 .SetExternalRdb(this->externalRdb_)
-                                                                 .SetSceneCode(this->sceneCode_)
-                                                                 .SetTaskId(this->taskId_)
-                                                                 .Load();
-    galleryStatInfos.insert(galleryStatInfos.end(), externalStatInfos.begin(), externalStatInfos.end());
-    return galleryStatInfos;
+    return GalleryMediaCountStatistic()
+        .SetGalleryRdb(galleryRdb)
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .SetShouldIncludeSd(shouldIncludeSd)
+        .Load();
 }
 
-std::string GalleryReport::ToString(const AlbumMediaStatisticInfo &info)
+std::vector<AlbumMediaStatisticInfo> DatabaseReport::LoadExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
+{
+    return ExternalFilesCountStatistic()
+        .SetExternalRdb(externalRdb)
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .Load();
+}
+
+std::vector<AlbumMediaStatisticInfo> DatabaseReport::LoadMedia(
+    std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, int32_t period)
+{
+    return PhotosCountStatistic()
+        .SetMediaLibraryRdb(mediaLibraryRdb)
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .SetPeriod(period)
+        .Load();
+}
+
+std::string DatabaseReport::ToString(const AlbumMediaStatisticInfo &info)
 {
     std::stringstream ss;
     ss << "{"
@@ -61,10 +76,9 @@ std::string GalleryReport::ToString(const AlbumMediaStatisticInfo &info)
     return ss.str();
 }
 
-int32_t GalleryReport::Report()
+int32_t DatabaseReport::Report(std::vector<AlbumMediaStatisticInfo> statisticInfos)
 {
-    std::vector<AlbumMediaStatisticInfo> albumMediaStatisticInfos = this->Load();
-    for (const auto &info : albumMediaStatisticInfos) {
+    for (const auto &info : statisticInfos) {
         MEDIA_INFO_LOG("gallery analyze result: %{public}s", this->ToString(info).c_str());
         int32_t ret = HiSysEventWrite(MEDIA_LIBRARY,
             "MEDIALIB_BACKUP_MEDIA_STAT",
@@ -98,5 +112,26 @@ int32_t GalleryReport::Report()
         }
     }
     return 0;
+}
+
+DatabaseReport &DatabaseReport::ReportGallery(std::shared_ptr<NativeRdb::RdbStore> galleryRdb, bool shouldIncludeSd)
+{
+    std::vector<AlbumMediaStatisticInfo> albumMediaStatisticInfos = this->LoadGallery(galleryRdb, shouldIncludeSd);
+    this->Report(albumMediaStatisticInfos);
+    return *this;
+}
+
+DatabaseReport &DatabaseReport::ReportExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
+{
+    std::vector<AlbumMediaStatisticInfo> albumMediaStatisticInfos = this->LoadExternal(externalRdb);
+    this->Report(albumMediaStatisticInfos);
+    return *this;
+}
+
+DatabaseReport &DatabaseReport::ReportMedia(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, int32_t period)
+{
+    std::vector<AlbumMediaStatisticInfo> albumMediaStatisticInfos = this->LoadMedia(mediaLibraryRdb, period);
+    this->Report(albumMediaStatisticInfos);
+    return *this;
 }
 }  // namespace OHOS::Media

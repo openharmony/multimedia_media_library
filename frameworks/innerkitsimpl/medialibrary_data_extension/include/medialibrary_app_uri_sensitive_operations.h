@@ -35,7 +35,10 @@ EXPORT const std::unordered_map<std::string, int> APP_URI_SENSITIVE_MEMBER_MAP =
     {AppUriSensitiveColumn::FILE_ID, MEMBER_TYPE_INT32},
     {AppUriSensitiveColumn::URI_TYPE, MEMBER_TYPE_INT32},
     {AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, MEMBER_TYPE_INT32},
-    {AppUriSensitiveColumn::DATE_MODIFIED, MEMBER_TYPE_INT64}};
+    {AppUriSensitiveColumn::IS_FORCE_SENSITIVE, MEMBER_TYPE_INT32},
+    {AppUriSensitiveColumn::DATE_MODIFIED, MEMBER_TYPE_INT64},
+    {AppUriSensitiveColumn::SOURCE_TOKENID, MEMBER_TYPE_INT64},
+    {AppUriSensitiveColumn::TARGET_TOKENID, MEMBER_TYPE_INT64}};
 
 class MediaLibraryAppUriSensitiveOperations {
 public:
@@ -50,6 +53,8 @@ public:
     EXPORT static int32_t DeleteOperation(NativeRdb::RdbPredicates &predicates);
     EXPORT static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryOperation(
         DataShare::DataSharePredicates &predicates, std::vector<std::string> &fetchColumns);
+    EXPORT static bool BeForceSensitive(MediaLibraryCommand &cmd,
+        const std::vector<DataShare::DataShareValuesBucket> &values);
 private:
     /**
      * query newData before insert, use this method.
@@ -83,6 +88,9 @@ private:
      */
     static int UpdateSensitiveType(std::shared_ptr<OHOS::NativeRdb::ResultSet> &resultSetDB,
         int &sensitiveTypeParam);
+    
+    static int UpdateSensitiveTypeAndForceHideSensitive(std::shared_ptr<OHOS::NativeRdb::ResultSet> &resultSetDB,
+        int &sensitiveTypeParam, OHOS::NativeRdb::ValuesBucket &valueBucket);
     static bool IsValidSensitiveType(int &sensitiveType);
 };
 } // namespace Media
