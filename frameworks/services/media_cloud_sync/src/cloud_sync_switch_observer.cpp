@@ -26,10 +26,25 @@ namespace OHOS {
 namespace Media {
 const std::string QUERY_URI = "datashareproxy://";
 DataShare::CreateOptions options;
+constexpr int32_t SYNC_INTERVAL = 20000;
 
 void CloudSyncSwitchObserver::OnChange()
 {
     MEDIA_INFO_LOG("Cloud Sync Switch Status change");
+    lock_guard<mutex> lock(syncMutex_);
+        if (!isPending_) {
+            MEDIA_INFO_LOG("CloudSyncSwitchObserver set timer handle index");
+            std::thread([this]() {
+                this->HandleIndex();
+            }).detach();
+            isPending_ = true;
+        }
+}
+
+void CloudSyncSwitchObserver::HandleIndex()
+{
+    std::this_thread::sleep_for(std::chrono::milliseconds(SYNC_INTERVAL));
+    lock_guard<mutex> lock(syncMutex_);
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
@@ -68,6 +83,7 @@ void CloudSyncSwitchObserver::OnChange()
         MediaAnalysisHelper::AsyncStartMediaAnalysisService(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), idToUpdateIndex);
     }
+    isPending_ = false;
 }
 
 void CloudSyncSwitchManager::RegisterObserver()
