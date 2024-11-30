@@ -46,10 +46,13 @@ private:
     void SendEventPackets(uint32_t objectHandle, uint16_t eventCode);
     void SendEventPacketAlbum(uint32_t objectHandle, uint16_t eventCode);
     void SendPhotoEvent(ChangeType changeType, std::string suffixString);
-    std::vector<int32_t> GetHandlesFromPhotosInfoBurstKeys(int32_t handle);
+    std::vector<int32_t> GetHandlesFromPhotosInfoBurstKeys(std::vector<std::string> handle);
     void SendEventToPTP(int32_t suff_int, ChangeType changeType);
-    std::vector<int32_t> GetAllDeleteHandles();
+    std::vector<std::string> GetAllDeleteHandles();
     std::shared_ptr<DataShare::DataShareResultSet> GetAlbumInfo();
+    std::vector<int32_t> GetAddEditPhotoHandles(int32_t handle);
+    int32_t GetAddEditAlbumHandle(int32_t handle);
+    void AddMovingPhotoHandle(int32_t handle);
     void SendPhotoRemoveEvent(std::string suffixString);
 };
 
