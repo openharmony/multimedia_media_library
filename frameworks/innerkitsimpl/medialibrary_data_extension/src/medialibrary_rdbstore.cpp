@@ -1177,7 +1177,8 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
     return deletedRows;
 }
 
-int32_t MediaLibraryRdbStore::ComletelyDeleteDBData(int32_t &deletedRows, const NativeRdb::AbsRdbPredicates &predicates)
+int32_t MediaLibraryRdbStore::CompletelyDeleteDBData(int32_t &deletedRows,
+    const NativeRdb::AbsRdbPredicates &predicates)
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");

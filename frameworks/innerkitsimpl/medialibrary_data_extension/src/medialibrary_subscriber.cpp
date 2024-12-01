@@ -323,7 +323,7 @@ bool MedialibrarySubscriber::GetIsCellularNetConnected()
     return isCellularNetConnected_;
 }
 
-void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadTask()
+void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadTaskStatus()
 {
     if (!isCellularNetConnected_) {
         MEDIA_INFO_LOG("CellularNet not connected.");
@@ -353,7 +353,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         int netType = want.GetIntParam("NetType", -1);
         bool cellularNetConnected = eventData.GetCode() == NET_CONN_STATE_CONNECTED;
         isCellularNetConnected_ = netType == BEARER_CELLULAR ? cellularNetConnected : isCellularNetConnected_;
-        UpdateCloudMediaAssetDownloadTask();
+        UpdateCloudMediaAssetDownloadTaskStatus();
     } else if (BACKGROUND_OPERATION_STATUS_MAP.count(action) != 0) {
         UpdateBackgroundOperationStatus(want, BACKGROUND_OPERATION_STATUS_MAP.at(action));
         UpdateCloudMediaAssetDownloadStatus(want, BACKGROUND_OPERATION_STATUS_MAP.at(action));
