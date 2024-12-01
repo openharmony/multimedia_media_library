@@ -52,7 +52,12 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-const std::string FUSE_ROOT_MEDIA_DIR = "/storage/cloud/files";
+const std::string FUSE_ROOT_MEDIA_DIR = "/storage/cloud/files/Photo";
+const int32_t URI_SLASH_NUM_API9 = 2;
+const int32_t URI_SLASH_NUM_API10 = 4;
+const int32_t FUSE_VIRTUAL_ID_DIVIDER = 5;
+const int32_t FUSE_PHOTO_VIRTUAL_IDENTIFIER = 4;
+
 static set<int> readPermSet{0, 1, 3, 4};
 static set<int> writePermSet{2, 3, 4};
 static const map<int32_t, string> MEDIA_OPEN_MODE_MAP = {
@@ -98,27 +103,61 @@ void MediaFuseManager::Stop()
     MEDIA_INFO_LOG("Stop finished successfully");
 }
 
-int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
+static int32_t countSubString(const string &uri, const string &substr)
 {
-    if (path == nullptr || strlen(path) == 0) {
-        MEDIA_ERR_LOG("Invalid path, %{private}s", path == nullptr ? "null" : path);
-        return -ENOENT;
+    int32_t count = 0;
+    size_t start = 0;
+    while ((start = uri.find(substr, start)) != string::npos) {
+        count++;
+        start += substr.length();
     }
-
-    std::string target = ROOT_MEDIA_DIR + path;
-    int32_t ret = lstat(target.c_str(), stbuf);
-    stbuf->st_mode = stbuf->st_mode | 0x6;
-    return ret;
+    return count;
 }
 
-static int32_t GetFileIdFromPath(const string &filePath, string &fileId)
+static bool IsFullUri(const string &uri)
+{
+    if ((uri.find("/Photo") == 0) && (countSubString(uri, "/") == URI_SLASH_NUM_API10)) {
+        return true;
+    }
+    if ((uri.find("/image") == 0) && (countSubString(uri, "/") == URI_SLASH_NUM_API9)) {
+        return true;
+    }
+    MEDIA_ERR_LOG("uri err");
+    return false;
+}
+
+static int32_t GetFileIdFromUri(string &fileId, const string &uri)
+{
+    string tmpPath;
+    int32_t pos;
+    int32_t virtualId;
+    if (uri.find("/Photo") == 0) {
+        tmpPath = uri.substr(strlen("/Photo/"));
+        pos = tmpPath.find("/");
+        fileId = tmpPath.substr(0, pos);
+    } else if (uri.find("/image") == 0) {
+        tmpPath = uri.substr(strlen("/image/"));
+        virtualId = atoi(tmpPath.c_str());
+        if ((virtualId + FUSE_PHOTO_VIRTUAL_IDENTIFIER) % FUSE_VIRTUAL_ID_DIVIDER == 0) {
+            fileId = to_string((virtualId + FUSE_PHOTO_VIRTUAL_IDENTIFIER) / FUSE_VIRTUAL_ID_DIVIDER);
+        } else {
+            MEDIA_ERR_LOG("virtual id err");
+            return E_ERR;
+        }
+    } else {
+        MEDIA_ERR_LOG("uri err");
+        return E_ERR;
+    }
+    return E_SUCCESS;
+}
+
+static int32_t GetPathFromFileId(string &filePath, const string &fileId)
 {
     NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_FILE_PATH, filePath);
+    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_ID, fileId);
 
     vector<string> columns;
-    columns.push_back(MediaColumn::MEDIA_ID);
-    columns.push_back(MediaColumn::MEDIA_OWNER_APPID);
+    columns.push_back(MediaColumn::MEDIA_FILE_PATH);
     auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
     int32_t numRows = 0;
     if (resultSet == nullptr) {
@@ -127,14 +166,40 @@ static int32_t GetFileIdFromPath(const string &filePath, string &fileId)
     } else {
         resultSet->GetRowCount(numRows);
         if (numRows == 0) {
-            MEDIA_ERR_LOG("Failed to get fileid: %{public}d", numRows);
+            MEDIA_ERR_LOG("Failed to get filePath");
             return E_ERR;
         } else {
             resultSet->GoToFirstRow();
-            fileId = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_ID);
+            filePath = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
             return E_SUCCESS;
         }
     }
+}
+
+int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
+{
+    string fileId;
+    string target = path;
+    if (path == nullptr || strlen(path) == 0) {
+        MEDIA_ERR_LOG("Invalid path, %{private}s", path == nullptr ? "null" : path);
+        return -ENOENT;
+    }
+    int32_t ret;
+    if (IsFullUri(target) == false) {
+        ret = lstat(FUSE_ROOT_MEDIA_DIR.c_str(), stbuf);
+    } else {
+        ret = GetFileIdFromUri(fileId, path);
+        if (ret != E_SUCCESS) {
+            return E_ERR;
+        }
+        ret = GetPathFromFileId(target, fileId);
+        if (ret != E_SUCCESS) {
+            return E_ERR;
+        }
+        ret = lstat(target.c_str(), stbuf);
+    }
+    stbuf->st_mode = stbuf->st_mode | 0x6;
+    return ret;
 }
 
 static int32_t WrCheckPermission(const string &filePath, const string &mode, const uid_t &uid)
@@ -219,10 +284,8 @@ static int32_t CheckPermission(const string &filePath, const string &mode, const
     return rslt;
 }
 
-static int32_t OpenFile(const string &filePath, const string &mode)
+static int32_t OpenFile(const string &filePath, const string &fileId, const string &mode)
 {
-    string fileId;
-    GetFileIdFromPath(filePath, fileId);
     fuse_context *ctx = fuse_get_context();
     uid_t uid = ctx->uid;
     string bundleName;
@@ -238,8 +301,11 @@ static int32_t OpenFile(const string &filePath, const string &mode)
 int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
 {
     int realFlag = flags & (O_RDONLY | O_WRONLY | O_RDWR | O_TRUNC | O_APPEND);
-    std::string target = FUSE_ROOT_MEDIA_DIR + path;
-    fd = OpenFile(target.c_str(), MEDIA_OPEN_MODE_MAP.at(realFlag));
+    string fileId;
+    string target;
+    GetFileIdFromUri(fileId, path);
+    GetPathFromFileId(target, fileId);
+    fd = OpenFile(target, fileId, MEDIA_OPEN_MODE_MAP.at(realFlag));
     if (fd < 0) {
         MEDIA_ERR_LOG("Open failed, path = %{private}s, errno = %{public}d", target.c_str(), errno);
         return E_ERR;
@@ -250,9 +316,10 @@ int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
 int32_t MediaFuseManager::DoRelease(const char *path, const int &fd)
 {
     string fileId;
-    string filePath = FUSE_ROOT_MEDIA_DIR + path;
-    GetFileIdFromPath(filePath, fileId);
-    if (fd > 0) {
+    string filePath;
+    GetFileIdFromUri(fileId, path);
+    GetPathFromFileId(filePath, fileId);
+    if (fd >= 0) {
         close(fd);
         MediaLibraryObjectUtils::ScanFileAsync(filePath, fileId, MediaLibraryApi::API_10);
         return E_OK;
