@@ -23,7 +23,7 @@
 #include "enhancement_service_adapter.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "file_utils.h"
 #include "medialibrary_object_utils.h"
 #include "media_file_utils.h"

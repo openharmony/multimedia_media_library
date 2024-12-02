@@ -39,7 +39,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "rdb_predicates.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "system_ability_definition.h"
 #include "analysis_handler.h"
 #include "cloud_sync_notify_handler.h"

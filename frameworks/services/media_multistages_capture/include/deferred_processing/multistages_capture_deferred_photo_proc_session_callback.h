@@ -21,7 +21,7 @@
 #include <string>
 
 #include "deferred_photo_proc_session.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "medialibrary_command.h"
 
 namespace OHOS {

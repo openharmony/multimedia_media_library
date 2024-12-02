@@ -28,7 +28,7 @@
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "userfile_manager_types.h"
 #include "photo_album_restore.h"
 #include "photos_restore.h"

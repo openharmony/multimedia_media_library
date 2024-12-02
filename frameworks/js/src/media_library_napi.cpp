@@ -57,7 +57,7 @@
 #include "napi_common_want.h"
 #include "photo_album_column.h"
 #include "photo_album_napi.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "safe_map.h"
 #include "search_column.h"
 #include "short_term_callback.h"

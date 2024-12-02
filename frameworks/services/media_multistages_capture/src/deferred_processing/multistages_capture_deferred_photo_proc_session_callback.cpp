@@ -32,7 +32,7 @@
 #include "multistages_capture_dfx_result.h"
 #include "multistages_capture_dfx_total_time.h"
 #include "multistages_capture_request_task_manager.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "media_change_effect.h"
 
 using namespace std;

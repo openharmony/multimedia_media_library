@@ -18,7 +18,7 @@
 
 #include "gtest/gtest.h"
 #include "rdb_helper.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "backup_const.h"
 
 namespace OHOS {

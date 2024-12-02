@@ -43,7 +43,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "story_album_column.h"
 #include "values_bucket.h"
 #include "medialibrary_formmap_operations.h"
@@ -1119,8 +1119,7 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     CHECK_AND_RETURN_RET_LOG(albumId > 0, E_INVALID_ARGS,
         "Invalid album id: %{public}s", rdbPredicates.GetWhereArgs()[0].c_str());
 
-    MEDIA_INFO_LOG("Start to update album %{public}d, values: %{private}s", albumId,
-        ValuesBucketToString(values).c_str());
+    MEDIA_INFO_LOG("Start to update album %{public}d", albumId);
 
     string newAlbumName {};
     string oldAlbumName {};

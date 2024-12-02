@@ -25,7 +25,7 @@
 #include "medialibrary_tracer.h"
 #include "media_log.h"
 #include "request_policy.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "medialibrary_unistore_manager.h"

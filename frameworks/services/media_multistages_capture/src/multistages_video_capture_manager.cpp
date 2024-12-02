@@ -26,7 +26,7 @@
 #include "medialibrary_command.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_type_const.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 
 using namespace std;
 #ifdef ABILITY_CAMERA_SUPPORT

@@ -51,7 +51,7 @@
 #include "parameter.h"
 #include "post_proc.h"
 #include "rdb_errno.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "thumbnail_const.h"
 #include "thumbnail_source_loading.h"
 #include "thumbnail_ready_manager.h"

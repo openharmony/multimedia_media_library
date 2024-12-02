@@ -62,7 +62,7 @@
 #include "photo_map_column.h"
 #include "post_event_utils.h"
 #include "rdb_sql_utils.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "source_album.h"
 #include "tab_old_photos_table_event_handler.h"
 #include "vision_column.h"

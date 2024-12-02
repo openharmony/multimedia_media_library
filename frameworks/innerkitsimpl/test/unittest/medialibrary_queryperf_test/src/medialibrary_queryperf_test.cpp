@@ -26,7 +26,7 @@
 #include "media_log.h"
 #include "mimetype_utils.h"
 #include "rdb_utils.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "scanner_utils.h"
 #include "medialibrary_data_manager.h"
 #include "userfilemgr_uri.h"

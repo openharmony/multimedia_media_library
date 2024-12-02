@@ -19,7 +19,7 @@
 
 #include "rdb_store.h"
 #include "media_log.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 
 namespace OHOS::Media {
 namespace DataTransfer {
