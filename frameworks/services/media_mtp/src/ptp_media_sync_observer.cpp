@@ -89,20 +89,21 @@ void MediaSyncObserver::SendEventPacketAlbum(uint32_t objectHandle, uint16_t eve
     context_->mtpDriver->WriteEvent(event);
 }
 
-vector<int32_t> MediaSyncObserver::GetHandlesFromPhotosInfoBurstKeys(vector<std::string> handle)
+vector<int32_t> MediaSyncObserver::GetHandlesFromPhotosInfoBurstKeys(vector<std::string> &handles)
 {
     vector<int32_t> handlesResult;
     if (dataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("Mtp GetHandlesFromPhotosInfoBurstKeys fail to get datasharehelper");
         return handlesResult;
     }
+    CHECK_AND_RETURN_RET_LOG(!handles.empty(), handlesResult, "Mtp handles have no elements!");
     Uri uri(PAH_QUERY_PHOTO);
     vector<string> columns;
     columns.push_back(PhotoColumn::PHOTO_BURST_KEY);
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
     predicates.IsNotNull(PhotoColumn::PHOTO_BURST_KEY);
-    predicates.In(PhotoColumn::MEDIA_ID, handle);
+    predicates.In(PhotoColumn::MEDIA_ID, handles);
     shared_ptr<DataShare::DataShareResultSet> resultSet = dataShareHelper_->Query(uri, predicates, columns);
 
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
@@ -178,7 +179,6 @@ void MediaSyncObserver::AddMovingPhotoHandle(int32_t handle)
     columns.push_back(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
     predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(handle));
     predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
-    CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "Mtp AddMovingPhotoHandle dataShareHelper_ is nullptr");
     resultSet = dataShareHelper_->Query(uri, predicates, columns);
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "Mtp AddMovingPhotoHandle fail to get handles");
     CHECK_AND_RETURN_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
@@ -240,7 +240,7 @@ int32_t MediaSyncObserver::GetAddEditAlbumHandle(int32_t handle)
     return album_id;
 }
 
-void MediaSyncObserver::SendPhotoRemoveEvent(std::string suffixString)
+void MediaSyncObserver::SendPhotoRemoveEvent(std::string &suffixString)
 {
     vector<string> allDeletedHandles;
     vector<int32_t> handles;
