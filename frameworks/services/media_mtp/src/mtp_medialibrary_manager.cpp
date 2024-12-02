@@ -269,7 +269,7 @@ int32_t MtpMedialibraryManager::HaveMovingPhotesHandle(const shared_ptr<DataShar
 
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, E_SUCCESS, "have no handles");
     do {
-        int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+        uint32_t id = static_cast<uint32_t>(GetInt32Val(MediaColumn::MEDIA_ID, resultSet));
         outHandles->push_back(id);
         if (id < COMMON_PHOTOS_OFFSET) {
             continue;

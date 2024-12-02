@@ -215,7 +215,7 @@ bool PictureHandlerClient::ReadAuxiliaryPictureInfo(MessageParcel &data, Auxilia
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo pixelFormat: %{public}d",
         auxiliaryPictureInfo.pixelFormat);
 
-    auxiliaryPictureInfo.rowStride = data.ReadInt32();
+    auxiliaryPictureInfo.rowStride = static_cast<uint32_t>(data.ReadInt32());
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo rowStride: %{public}d",
         auxiliaryPictureInfo.rowStride);
 
