@@ -33,6 +33,7 @@ public:
     ~MtpMedialibraryManager();
     static std::shared_ptr<MtpMedialibraryManager> GetInstance();
     void Init(const sptr<IRemoteObject> &token);
+    void Clear();
     void SetContext(const std::shared_ptr<MtpOperationContext> &context);
     int32_t GetHandles(int32_t parentId, std::vector<int> &outHandles, MediaType mediaType = MEDIA_TYPE_DEFAULT);
     int32_t GetHandles(const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<UInt32List> &outHandles);
