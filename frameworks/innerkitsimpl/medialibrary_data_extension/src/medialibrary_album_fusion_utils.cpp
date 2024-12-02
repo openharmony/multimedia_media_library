@@ -1551,32 +1551,102 @@ int32_t MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus()
     }
 }
 
-static bool CheckIfNeedTransOtherAlbumData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
-    int32_t otherAlbumId)
+static void BuildOtherAlbumInsertValuesIfNeed(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+    const string &albumName, const string &lpath, const string &bundleName,
+    std::vector<std::pair<int64_t, std::string>> &transAlbum)
 {
-    const std::string QUERY_OTHER_ALBUM_NEED_TRANS =
+    MEDIA_INFO_LOG("Begin build insert values meta data on other album trans");
+    if (upgradeStore == nullptr) {
+        MEDIA_ERR_LOG("fail to get rdbstore");
+        return;
+    }
+    bool isAlbumExist = false;
+    for (const auto &transPair: transAlbum) {
+        if (transPair.second == albumName) {
+            isAlbumExist = true;
+            break;
+        }
+    }
+    if (isAlbumExist) {
+        MEDIA_INFO_LOG("Other album need trans is already exist!");
+        return;
+    }
+    MEDIA_INFO_LOG("Start build album on other album trans, name is: %{public}s", albumName.c_str());
+    NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SOURCE);
+    values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::SOURCE_GENERIC);
+    values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, 1);
+    values.PutInt(PhotoAlbumColumns::ALBUM_IS_LOCAL, 1);
+    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
+    values.PutString(PhotoAlbumColumns::ALBUM_LPATH, lpath);
+    values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, 1);
+    int64_t newAlbumId = 0;
+    int32_t ret = upgradeStore->Insert(newAlbumId, PhotoAlbumColumns::TABLE, values);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Insert db fail, ret = %{public}d", ret);
+        return;
+    }
+    transAlbum.emplace_back(make_pair(newAlbumId, albumName));
+}
+
+static bool CheckIfNeedTransOtherAlbumData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+    int64_t otherAlbumId, std::vector<std::pair<int64_t, std::string>> &transAlbum)
+{
+    bool isNeedTrans = false;
+    const std::string QUERY_OTHER_ALBUM_CAMERA_TRANS =
         "SELECT * FROM Photos WHERE owner_album_id = " + std::to_string(otherAlbumId) +
-        " AND (title LIKE 'IMG_%' OR title LIKE 'VID_%' OR title LIKE 'SVID_%' OR title LIKE 'screenshot_%' "
-        "OR title LIKE 'mmexport%')";
-    shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_OTHER_ALBUM_NEED_TRANS);
+        " AND (title LIKE 'IMG_%' OR title LIKE 'VID_%')";
+    shared_ptr<NativeRdb::ResultSet> resultSetCamera = upgradeStore->QuerySql(QUERY_OTHER_ALBUM_CAMERA_TRANS);
     int rowCount = 0;
-    if (resultSet == nullptr || resultSet->GetRowCount(rowCount) != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Query other album info fails");
-        return false;
-    }
+    resultSetCamera->GetRowCount(rowCount);
     if (rowCount > 0) {
-        MEDIA_INFO_LOG("Need to trans other album data, count is: %{public}d", rowCount);
-        return true;
+        MEDIA_INFO_LOG("Need to trans other camera album data, count is: %{public}d", rowCount);
+        BuildOtherAlbumInsertValuesIfNeed(upgradeStore, "相机", "/DCIM/Camera", "com.huawei.hmos.camera", transAlbum);
+        isNeedTrans = true;
     }
-    return false;
+
+    const std::string QUERY_OTHER_ALBUM_SCREENSHOT_TRANS =
+        "SELECT * FROM Photos WHERE owner_album_id = " + std::to_string(otherAlbumId) + " AND title LIKE 'screenshot_%'";
+    shared_ptr<NativeRdb::ResultSet> resultSetScreenshot = upgradeStore->QuerySql(QUERY_OTHER_ALBUM_SCREENSHOT_TRANS);
+    resultSetScreenshot->GetRowCount(rowCount);
+    if (rowCount > 0) {
+        MEDIA_INFO_LOG("Need to trans other screenshot album data, count is: %{public}d", rowCount);
+        BuildOtherAlbumInsertValuesIfNeed(upgradeStore, "截图", "/Pictures/Screenshots",
+            "com.huawei.hmos.screenshot", transAlbum);
+        isNeedTrans = true;
+    }
+
+    const std::string QUERY_OTHER_ALBUM_RECORD_TRANS =
+        "SELECT * FROM Photos WHERE owner_album_id = " + std::to_string(otherAlbumId) + " AND title LIKE 'SVID_%'";
+    shared_ptr<NativeRdb::ResultSet> resultSetRecord = upgradeStore->QuerySql(QUERY_OTHER_ALBUM_RECORD_TRANS);
+    resultSetRecord->GetRowCount(rowCount);
+    if (rowCount > 0) {
+        MEDIA_INFO_LOG("Need to trans other screenrecord album data, count is: %{public}d", rowCount);
+        BuildOtherAlbumInsertValuesIfNeed(upgradeStore, "屏幕录制", "/Pictures/Screenrecords",
+            "com.huawei.hmos.screenrecorder", transAlbum);
+        isNeedTrans = true;
+    }
+
+    const std::string QUERY_OTHER_ALBUM_WECHAT_TRANS =
+        "SELECT * FROM Photos WHERE owner_album_id = " + std::to_string(otherAlbumId) + " AND title LIKE 'mmexport%'";
+    shared_ptr<NativeRdb::ResultSet> resultWechat = upgradeStore->QuerySql(QUERY_OTHER_ALBUM_WECHAT_TRANS);
+    resultWechat->GetRowCount(rowCount);
+    if (rowCount > 0) {
+        MEDIA_INFO_LOG("Need to trans other WeChat album data, count is: %{public}d", rowCount);
+        BuildOtherAlbumInsertValuesIfNeed(upgradeStore, "微信", "/Pictures/WeiXin", "", transAlbum);
+        isNeedTrans = true;
+    }
+    return isNeedTrans;
 }
 
 static int32_t DealWithOtherAlbumTrans(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
-    std::pair<int32_t, std::string> transInfo, int32_t otherAlbumId)
+    std::pair<int64_t, std::string> transInfo, int64_t otherAlbumId)
 {
     std::string sourcePathName = "";
     std::string sqlWherePrefix = "";
     std::string transAlbumName = transInfo.second;
+    int64_t transAlbumId = transInfo.first;
     if (transAlbumName == SCREENSHOT_ALBUM_NAME) {
         sourcePathName = "Pictures/Screenshots";
         sqlWherePrefix = "title LIKE 'screenshot_%'";
@@ -1587,7 +1657,7 @@ static int32_t DealWithOtherAlbumTrans(const std::shared_ptr<MediaLibraryRdbStor
         sourcePathName = "Pictures/WeiXin";
         sqlWherePrefix = "title LIKE 'mmexport%'";
     } else if (transAlbumName == ALBUM_NAME_CAMERA) {
-        sourcePathName = "DCIM/相机";
+        sourcePathName = "DCIM/camera";
         sqlWherePrefix = "(title LIKE 'IMG_%' OR title LIKE 'VID_%')";
     } else {
         MEDIA_ERR_LOG("Invalid trans album name %{public}s", transInfo.second.c_str());
@@ -1595,7 +1665,7 @@ static int32_t DealWithOtherAlbumTrans(const std::shared_ptr<MediaLibraryRdbStor
     }
 
     const std::string UPDATE_OTHER_ALBUM_TRANS =
-        "UPDATE Photos SET owner_album_id = " + std::to_string(transInfo.first) +
+        "UPDATE Photos SET owner_album_id = " + std::to_string(transAlbumId) +
         ", source_path = REPLACE(source_path, '/storage/emulated/0/Pictures/其它/', '/storage/emulated/0/" +
         sourcePathName + "/') WHERE owner_album_id = " + std::to_string(otherAlbumId) + " AND " + sqlWherePrefix;
     int32_t err = upgradeStore->ExecuteSql(UPDATE_OTHER_ALBUM_TRANS);
