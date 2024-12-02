@@ -1737,7 +1737,7 @@ int32_t MediaLibraryAlbumFusionUtils::TransOtherAlbumData(const std::shared_ptr<
         return E_DB_FAIL;
     }
 
-    if (!CheckIfNeedTransOtherAlbumData(upgradeStore, otherAlbumId)) {
+    if (!CheckIfNeedTransOtherAlbumData(upgradeStore, otherAlbumId, transAlbum)) {
         MEDIA_INFO_LOG("No other album data need to trans");
         return E_DB_FAIL;
     }
