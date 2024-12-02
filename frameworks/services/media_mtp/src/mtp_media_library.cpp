@@ -420,7 +420,7 @@ int32_t MtpMediaLibrary::GetFd(const std::shared_ptr<MtpOperationContext> &conte
     }
 
     std::error_code ec;
-    realPath = sf::canonical(realPath, ec);
+    realPath = sf::weakly_canonical(realPath, ec);
     if (ec.value() != MTP_SUCCESS) {
         MEDIA_ERR_LOG("MtpMediaLibrary::GetFd normalized realPath failed");
         return MtpErrorUtils::SolveGetFdError(E_HAS_FS_ERROR);
@@ -582,7 +582,7 @@ int32_t MtpMediaLibrary::SendObjectInfo(const std::shared_ptr<MtpOperationContex
         }
     } else {
         std::error_code ec;
-        path = sf::canonical(path, ec);
+        path = sf::weakly_canonical(path, ec);
         if (ec.value() != MTP_SUCCESS) {
             MEDIA_ERR_LOG("MtpMediaLibrary::SendObjectInfo normalized path failed");
             return MtpErrorUtils::SolveSendObjectInfoError(E_HAS_FS_ERROR);
