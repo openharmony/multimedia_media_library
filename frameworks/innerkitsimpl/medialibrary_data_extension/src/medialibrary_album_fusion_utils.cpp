@@ -1608,7 +1608,8 @@ static bool CheckIfNeedTransOtherAlbumData(const std::shared_ptr<MediaLibraryRdb
     }
 
     const std::string QUERY_OTHER_ALBUM_SCREENSHOT_TRANS =
-        "SELECT * FROM Photos WHERE owner_album_id = " + std::to_string(otherAlbumId) + " AND title LIKE 'screenshot_%'";
+        "SELECT * FROM Photos WHERE owner_album_id = " + std::to_string(otherAlbumId) +
+        " AND title LIKE 'screenshot_%'";
     shared_ptr<NativeRdb::ResultSet> resultSetScreenshot = upgradeStore->QuerySql(QUERY_OTHER_ALBUM_SCREENSHOT_TRANS);
     resultSetScreenshot->GetRowCount(rowCount);
     if (rowCount > 0) {
