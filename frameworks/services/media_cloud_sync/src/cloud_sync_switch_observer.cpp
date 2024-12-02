@@ -20,7 +20,7 @@
 #include "media_analysis_helper.h"
 #include "medialibrary_unistore_manager.h"
 #include "parameters.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {

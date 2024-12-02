@@ -24,7 +24,7 @@
 #include "medialibrary_async_worker.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {

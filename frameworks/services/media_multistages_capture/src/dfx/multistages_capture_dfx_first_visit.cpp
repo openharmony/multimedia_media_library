@@ -25,7 +25,7 @@
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
 #include "post_event_utils.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "values_bucket.h"
 
 using namespace std;

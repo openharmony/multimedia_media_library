@@ -26,7 +26,7 @@
 #include "mtp_operation_context.h"
 #include "property.h"
 #include "userfile_manager_types.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {

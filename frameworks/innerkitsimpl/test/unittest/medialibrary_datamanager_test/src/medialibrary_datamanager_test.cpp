@@ -33,7 +33,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "vision_total_column.h"
 #include "vision_image_face_column.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "photo_map_column.h"
 #define private public
 #include "medialibrary_data_manager.h"

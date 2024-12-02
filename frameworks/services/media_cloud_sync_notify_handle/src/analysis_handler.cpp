@@ -22,7 +22,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "power_efficiency_manager.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "vision_column.h"
 
 using namespace std;

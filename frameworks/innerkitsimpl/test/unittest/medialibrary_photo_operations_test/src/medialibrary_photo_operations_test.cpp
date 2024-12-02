@@ -45,7 +45,7 @@
 #include "medialibrary_unittest_utils.h"
 #include "media_file_ext_ability.h"
 #include "media_file_extention_utils.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "thumbnail_const.h"
 #include "uri.h"
 #include "userfile_manager_types.h"

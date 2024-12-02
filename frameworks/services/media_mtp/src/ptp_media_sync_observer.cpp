@@ -23,7 +23,7 @@
 #include "photo_album_column.h"
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 
 using namespace std;
 
