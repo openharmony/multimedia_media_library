@@ -38,7 +38,7 @@
 #include "moving_photo_file_utils.h"
 #include "parameters.h"
 #include "photo_album_column.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "resource_type.h"
 #include "userfilemgr_uri.h"
 #include "medialibrary_notify.h"

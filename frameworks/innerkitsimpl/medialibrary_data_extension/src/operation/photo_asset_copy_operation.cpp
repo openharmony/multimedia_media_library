@@ -20,7 +20,7 @@
 #include "photo_burst_operation.h"
 #include "media_log.h"
 #include "media_column.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "media_file_utils.h"
 #include "photo_asset_info.h"
 

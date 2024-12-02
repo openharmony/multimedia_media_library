@@ -23,7 +23,7 @@
 #include "multistages_capture_dfx_total_time.h"
 #include "multistages_capture_manager.h"
 #include "medialibrary_object_utils.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 
 using namespace std;
 using namespace OHOS::CameraStandard;

@@ -22,7 +22,7 @@
 #include "media_log.h"
 #include "media_file_utils.h"
 #include "database_adapter.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "media_column.h"
 #include "image_packer.h"
 #include "medialibrary_errno.h"

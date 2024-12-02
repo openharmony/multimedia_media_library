@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "rdb_helper.h"
 
 namespace OHOS {

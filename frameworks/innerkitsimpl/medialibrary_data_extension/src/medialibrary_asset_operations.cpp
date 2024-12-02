@@ -64,7 +64,7 @@
 #include "rdb_predicates.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "thumbnail_service.h"
 #include "uri_permission_manager_client.h"
 #include "userfile_manager_types.h"

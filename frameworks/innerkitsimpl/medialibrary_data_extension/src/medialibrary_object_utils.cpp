@@ -52,7 +52,7 @@
 #include "parameter.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "sandbox_helper.h"
 #include "string_ex.h"
 #include "thumbnail_service.h"

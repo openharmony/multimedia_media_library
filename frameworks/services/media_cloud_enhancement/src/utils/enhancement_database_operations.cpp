@@ -24,7 +24,7 @@
 #include "media_log.h"
 #include "scanner_utils.h"
 #include "mimetype_utils.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "rdb_utils.h"
 #include "photo_album_column.h"
 

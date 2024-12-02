@@ -33,7 +33,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "post_event_utils.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "rdb_predicates.h"
 #include "rdb_helper.h"
 #include "single_kvstore.h"

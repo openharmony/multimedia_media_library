@@ -21,7 +21,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "media_column.h"
 
 using namespace std;

@@ -26,7 +26,7 @@
 #include "result_set.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_utils.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
