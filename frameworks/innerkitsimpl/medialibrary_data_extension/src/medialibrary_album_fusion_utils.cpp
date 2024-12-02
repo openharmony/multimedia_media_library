@@ -1678,6 +1678,25 @@ static int32_t DealWithOtherAlbumTrans(const std::shared_ptr<MediaLibraryRdbStor
     return E_OK;
 }
 
+static bool IsOtherAlbumEmpty(const int64_t &otherAlbumId, const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
+{
+    const std::string QUERY_OTHER_ALBUM_COUNT =
+        "SELECT * FROM PhotoAlbum WHERE album_id = " + std::to_string(otherAlbumId);
+    shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_OTHER_ALBUM_COUNT);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Query other album count fail");
+        return true;
+    }
+    int32_t albumDataCount = -1;
+    GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_COUNT, albumDataCount);
+    if (albumDataCount <= 0) {
+        MEDIA_INFO_LOG("Other album empty");
+        return true;
+    }
+    MEDIA_INFO_LOG("Other album not empty");
+    return false;
+}
+
 int32_t MediaLibraryAlbumFusionUtils::TransOtherAlbumData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
 {
     MEDIA_INFO_LOG("Start trans other Album to origin album");
@@ -1690,26 +1709,29 @@ int32_t MediaLibraryAlbumFusionUtils::TransOtherAlbumData(const std::shared_ptr<
     int32_t otherAlbumId = -1;
     const std::string QUERY_TRANS_ALBUM_INFO =
         "SELECT * FROM PhotoAlbum WHERE lpath IN "
-        "('/Pictures/Screenshots', '/Pictures/Screenrecords', '/DCIM/相机', '/Pictures/WeiXin', '/Pictures/其它')";
+        "('/Pictures/Screenshots', '/Pictures/Screenrecords', '/DCIM/Camera', '/Pictures/WeiXin', '/Pictures/其它')";
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_TRANS_ALBUM_INFO);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query not matched data fails");
         return E_HAS_DB_ERROR;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t albumId = -1;
+        int64_t albumId = -1;
         std::string albumName = "";
-        GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, albumId);
+        GetLongValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, albumId);
         GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_NAME, albumName);
         if (albumName == OTHER_ALBUM_NAME) {
             otherAlbumId = albumId;
         } else {
             transAlbum.emplace_back(make_pair(albumId, albumName));
         }
-        MEDIA_INFO_LOG("Trans album name is %{public}s, albumId is %{public}d", albumName.c_str(), albumId);
+        MEDIA_INFO_LOG("Trans album name is %{public}s, albumId is %{public}ld", albumName.c_str(), albumId);
     }
     if (otherAlbumId == -1) {
-        MEDIA_INFO_LOG("No other album found");
+        MEDIA_INFO_LOG("No other album data need trans");
+        return E_DB_FAIL;
+    }
+    if (IsOtherAlbumEmpty(otherAlbumId, upgradeStore)) {
         return E_DB_FAIL;
     }
 
