@@ -163,16 +163,16 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
     int32_t err = NativeRdb::E_OK;
     std::function<int(void)> func = [&]()->int {
         for (const auto &value : values) {
-            err =  InsertAnalysisAsset(value, trans);
-            if (err == E_HAS_DB_ERROR) {
+            int ret =  InsertAnalysisAsset(value, trans);
+            if (ret == E_HAS_DB_ERROR) {
                 MEDIA_WARN_LOG("InsertAnalysisAsset for db error, changedRows now: %{public}d", changedRows);
-                return err;
+                return ret;
             }
-            if (err > 0) {
+            if (ret > 0) {
                 changedRows++;
             }
         }
-        return err;
+        return NativeRdb::E_OK;
     };
     err = trans->RetryTrans(func);
     if (err != E_OK) {
