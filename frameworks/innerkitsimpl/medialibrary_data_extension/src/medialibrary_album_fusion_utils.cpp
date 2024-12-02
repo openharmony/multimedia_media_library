@@ -1576,6 +1576,7 @@ static void BuildOtherAlbumInsertValuesIfNeed(const std::shared_ptr<MediaLibrary
     values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SOURCE);
     values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::SOURCE_GENERIC);
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundleName);
     values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, 1);
     values.PutInt(PhotoAlbumColumns::ALBUM_IS_LOCAL, 1);
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
@@ -1630,8 +1631,8 @@ static bool CheckIfNeedTransOtherAlbumData(const std::shared_ptr<MediaLibraryRdb
 
     const std::string QUERY_OTHER_ALBUM_WECHAT_TRANS =
         "SELECT * FROM Photos WHERE owner_album_id = " + std::to_string(otherAlbumId) + " AND title LIKE 'mmexport%'";
-    shared_ptr<NativeRdb::ResultSet> resultWechat = upgradeStore->QuerySql(QUERY_OTHER_ALBUM_WECHAT_TRANS);
-    resultWechat->GetRowCount(rowCount);
+    shared_ptr<NativeRdb::ResultSet> resultSetWechat = upgradeStore->QuerySql(QUERY_OTHER_ALBUM_WECHAT_TRANS);
+    resultSetWechat->GetRowCount(rowCount);
     if (rowCount > 0) {
         MEDIA_INFO_LOG("Need to trans other WeChat album data, count is: %{public}d", rowCount);
         BuildOtherAlbumInsertValuesIfNeed(upgradeStore, "微信", "/Pictures/WeiXin", "", transAlbum);
@@ -1705,8 +1706,8 @@ int32_t MediaLibraryAlbumFusionUtils::TransOtherAlbumData(const std::shared_ptr<
         return E_DB_FAIL;
     }
 
-    std::vector<std::pair<int32_t, std::string>> transAlbum;
-    int32_t otherAlbumId = -1;
+    std::vector<std::pair<int64_t, std::string>> transAlbum;
+    int64_t otherAlbumId = -1;
     const std::string QUERY_TRANS_ALBUM_INFO =
         "SELECT * FROM PhotoAlbum WHERE lpath IN "
         "('/Pictures/Screenshots', '/Pictures/Screenrecords', '/DCIM/Camera', '/Pictures/WeiXin', '/Pictures/其它')";
