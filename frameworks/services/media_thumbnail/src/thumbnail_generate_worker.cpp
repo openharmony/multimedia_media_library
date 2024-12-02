@@ -46,16 +46,19 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
         return E_OK;
     }
 
-    MEDIA_INFO_LOG("threads empty, need to init, taskType:%{public}d", taskType_);
+    MEDIA_INFO_LOG("threads empty, need to init, taskType:%{public}d", taskType);
     int32_t threadNum;
     std::string threadName;
     taskType_ = taskType;
+    CpuAffinityType cpuAffinityType;
     if (taskType == ThumbnailTaskType::FOREGROUND) {
         threadNum = THREAD_NUM_FOREGROUND;
         threadName = THREAD_NAME_FOREGROUND;
+        cpuAffinityType = CpuAffinityType::CPU_IDX_9;
     } else if (taskType == ThumbnailTaskType::BACKGROUND) {
         threadNum = THREAD_NUM_BACKGROUND;
         threadName = THREAD_NAME_BACKGROUND;
+        cpuAffinityType = CpuAffinityType::CPU_IDX_9;
     } else {
         MEDIA_ERR_LOG("invalid task type");
         return E_ERR;
@@ -65,6 +68,7 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
     for (auto i = 0; i < threadNum; i++) {
         std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus =
             std::make_shared<ThumbnailGenerateThreadStatus>(i);
+        threadStatus->cpuAffinityType = cpuAffinityType;
         std::thread thread([this, threadStatus] { this->StartWorker(threadStatus); });
         pthread_setname_np(thread.native_handle(), threadName.c_str());
         threads_.emplace_back(std::move(thread));
@@ -147,12 +151,13 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
 {
     std::string name("ThumbnailGenerateWorker");
     pthread_setname_np(pthread_self(), name.c_str());
-    MEDIA_INFO_LOG("ThumbnailGenerateWorker thread start, taskType:%{public}d, id:%{public}d",
-        taskType_, threadStatus->threadId_);
+    MEDIA_INFO_LOG("ThumbnailGenerateWorker thread start, taskType:%{public}d, id:%{public}d, "
+        "cpuAffinityType:%{public}d", taskType_, threadStatus->threadId_, threadStatus->cpuAffinityType);
     while (isThreadRunning_) {
         if (!WaitForTask(threadStatus)) {
             continue;
         }
+        CpuUtils::SetSelfThreadAffinity(threadStatus->cpuAffinityType);
         std::shared_ptr<ThumbnailGenerateTask> task;
         if (!highPriorityTaskQueue_.Empty() && highPriorityTaskQueue_.Pop(task) && task != nullptr) {
             if (NeedIgnoreTask(task->data_->requestId_)) {
