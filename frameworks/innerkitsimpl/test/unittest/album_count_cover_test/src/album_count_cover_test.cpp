@@ -35,7 +35,7 @@
 #include "photo_map_column.h"
 #include "rdb_predicates.h"
 #include "rdb_utils.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "userfile_manager_types.h"
 #define private public
 #include "medialibrary_rdbstore.h"

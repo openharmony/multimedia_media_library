@@ -25,7 +25,7 @@
 #include "media_column.h"
 #include "preferences.h"
 #include "preferences_helper.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "thumbnail_const.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_photo_operations.h"

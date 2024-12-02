@@ -29,7 +29,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_log.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "thumbnail_aging_helper.h"
 #include "thumbnail_const.h"
 #include "thumbnail_generate_helper.h"

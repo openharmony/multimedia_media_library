@@ -31,7 +31,7 @@
 #include "media_app_uri_sensitive_column.h"
 #include "moving_photo_file_utils.h"
 #include "permission_utils.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "string_ex.h"
 #include "system_ability_definition.h"
 #include "unique_fd.h"

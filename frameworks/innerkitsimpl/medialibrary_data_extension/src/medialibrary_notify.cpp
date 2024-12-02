@@ -28,7 +28,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
-#include "rdb_class_utils.h"
+#include "result_set_utils.h"
 #include "uri.h"
 
 using namespace std;
