@@ -1811,7 +1811,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoExtColumn::CREATE_PHOTO_EXT_TABLE,
     PhotoColumn::CREATE_PHOTO_DISPLAYNAME_INDEX,
     AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
-    AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX,
+    AppUriPermissionColumn::CREATE_URI_URITYPE_TOKENID_INDEX,
     TriggerDeletePhotoClearAppUriPermission(),
     TriggerDeleteAudioClearAppUriPermission(),
     PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX,

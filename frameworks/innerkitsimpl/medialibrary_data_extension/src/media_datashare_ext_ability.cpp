@@ -1000,7 +1000,15 @@ string MediaDataShareExtAbility::GetType(const Uri &uri)
 int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const vector<DataShareValuesBucket> &values)
 {
     MediaLibraryCommand cmd(uri);
-    int32_t err = CheckPermFromUri(cmd, true);
+    PermParam permParam = {
+        .isWrite = true,
+    };
+    CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
+    int err = permissionHandler_->CheckPermission(cmd, permParam);
+    MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
+    if (err != E_SUCCESS) {
+        err = CheckPermFromUri(cmd, true);
+    }
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err != E_SUCCESS) {
