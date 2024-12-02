@@ -86,7 +86,7 @@ static void DeleteAllSensitiveOperation(AsyncTaskData *data)
         MEDIA_ERR_LOG("UriSensitive update operation, rdbStore is null.");
     }
     
-    int32_t ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::DORP_APP_URI_SENSITIVE_TABLE);
+    int32_t ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::DROP_APP_URI_SENSITIVE_TABLE);
     if (ret < 0) {
         MEDIA_ERR_LOG("UriSensitive table delete all temporary Sensitive failed");
         return;

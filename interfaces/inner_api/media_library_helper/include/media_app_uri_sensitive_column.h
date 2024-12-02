@@ -63,7 +63,7 @@ public:
 
     // drop sensitive column sql
     static const std::string DELETE_APP_URI_SENSITIVE_TABLE EXPORT;
-    static const std::string DORP_APP_URI_SENSITIVE_TABLE EXPORT;
+    static const std::string DROP_APP_URI_SENSITIVE_TABLE EXPORT;
 
     // all columns
     static const std::set<std::string> ALL_COLUMNS EXPORT;
