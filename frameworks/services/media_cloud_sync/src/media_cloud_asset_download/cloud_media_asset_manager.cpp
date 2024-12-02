@@ -151,7 +151,7 @@ int32_t CloudMediaAssetManager::DeleteBatchCloudFile(const std::vector<string> &
     deletePredicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD));
     deletePredicates.In(MediaColumn::MEDIA_FILE_PATH, pathVec);
     int32_t deletedRows = E_HAS_DB_ERROR;
-    int32_t ret = rdbStore->ComletelyDeleteDBData(deletedRows, deletePredicates);
+    int32_t ret = rdbStore->CompletelyDeleteDBData(deletedRows, deletePredicates);
     if (ret != NativeRdb::E_OK || deletedRows <= 0) {
         MEDIA_ERR_LOG("Delete operation failed. ret %{public}d. Deleted %{public}d", ret, deletedRows);
     }
