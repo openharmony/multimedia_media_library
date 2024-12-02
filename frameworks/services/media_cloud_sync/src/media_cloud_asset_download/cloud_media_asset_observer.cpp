@@ -45,24 +45,26 @@ void CloudMediaAssetObserver::OnChange(const ChangeInfo &changeInfo)
     }
     std::list<Uri> uris = changeInfo.uris_;
     for (auto &uri : uris) {
-        if (uri.ToString() == CLOUD_URI && changeInfo.changeType_ == DataShareObserver::ChangeType::OTHER) {
-            if (operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::DOWNLOADING &&
-                !CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
-                CloudMediaTaskPauseCause pauseCause = MedialibrarySubscriber::GetIsCellularNetConnected() ?
-                    CloudMediaTaskPauseCause::WIFI_UNAVAILABLE : CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT;
-                operation_->PauseDownloadTask(pauseCause);
-                MEDIA_INFO_LOG("Cloud media asset download paused, pauseCause: %{public}d.",
-                    static_cast<int32_t>(pauseCause));
-                return;
-            }
+        if (uri.ToString() != CLOUD_URI || changeInfo.changeType_ != DataShareObserver::ChangeType::OTHER) {
+            MEDIA_INFO_LOG("Current uri is not suitable for task.");
+            return;
+        }
+        if (operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::DOWNLOADING &&
+            !CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
+            CloudMediaTaskPauseCause pauseCause = MedialibrarySubscriber::GetIsCellularNetConnected() ?
+                CloudMediaTaskPauseCause::WIFI_UNAVAILABLE : CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT;
+            operation_->PauseDownloadTask(pauseCause);
+            MEDIA_INFO_LOG("Cloud media asset download paused, pauseCause: %{public}d.",
+                static_cast<int32_t>(pauseCause));
+            return;
+        }
 
-            if (operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::PAUSED &&
-                MedialibrarySubscriber::GetIsCellularNetConnected() && CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
-                operation_->PassiveStatusRecoverTask(CloudMediaTaskRecoverCause::NETWORK_NORMAL);
-                MEDIA_INFO_LOG("Cloud media asset download recovered, recoverCause: %{public}d.",
-                    static_cast<int32_t>(CloudMediaTaskRecoverCause::NETWORK_NORMAL));
-                return;
-            }
+        if (operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::PAUSED &&
+            MedialibrarySubscriber::GetIsCellularNetConnected() && CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
+            operation_->PassiveStatusRecoverTask(CloudMediaTaskRecoverCause::NETWORK_NORMAL);
+            MEDIA_INFO_LOG("Cloud media asset download recovered, recoverCause: %{public}d.",
+                static_cast<int32_t>(CloudMediaTaskRecoverCause::NETWORK_NORMAL));
+            return;
         }
     }
 }

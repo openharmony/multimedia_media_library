@@ -85,7 +85,7 @@ private:
     void DoThumbnailOperation();
     bool IsDelayTaskTimeOut();
     void EndBackgroundOperationThread();
-    void UpdateCloudMediaAssetDownloadTask();
+    void UpdateCloudMediaAssetDownloadTaskStatus();
 };
 }  // namespace Media
 }  // namespace OHOS
