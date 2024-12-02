@@ -51,7 +51,7 @@ const std::string AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE = "UriSensitive
 
 const std::set<std::string> AppUriSensitiveColumn::DEFAULT_FETCH_COLUMNS = {AppUriSensitiveColumn::ID};
 
-const std::string AppUriSensitiveColumn::DORP_APP_URI_SENSITIVE_TABLE = "DROP TABLE IF EXISTS " +
+const std::string AppUriSensitiveColumn::DROP_APP_URI_SENSITIVE_TABLE = "DROP TABLE IF EXISTS " +
     AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE;
 
 const std::string AppUriSensitiveColumn::CREATE_APP_URI_SENSITIVE_TABLE =

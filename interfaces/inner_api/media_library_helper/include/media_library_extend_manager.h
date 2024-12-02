@@ -103,6 +103,25 @@ public:
      */
     EXPORT int32_t CancelPhotoUriPermission(uint32_t srcTokenId, uint32_t targetTokenId,
         const std::vector<string> &uris);
+    /**
+     * @brief open photo or video
+     *
+     * @param uri uri of the asset
+     * @param openMode openMode "rw", "w", "r"
+     * @param type force sensitive type
+     * @return fileDescriptor for success and <-1> for fail
+     * @since 1.0
+     * @version 1.0
+     */
+    EXPORT int32_t OpenAsset(string &uri, const string openMode, HideSensitiveType type);
+    /**
+     * @brief Open private moving photo to read
+     *
+     * @param uri asset uri of the moving photo
+     * @param type force type
+     * @return read fd for success and <-1> for fail
+     */
+    EXPORT int32_t ReadPrivateMovingPhoto(string &uri, const HideSensitiveType type);
 private:
 
     shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
