@@ -146,7 +146,6 @@ int32_t MtpMedialibraryManager::GetHandles(int32_t parentId, vector<int> &outHan
         columns.push_back(MediaColumn::MEDIA_DURATION);
         columns.push_back(MediaColumn::MEDIA_TYPE);
         columns.push_back(PhotoColumn::PHOTO_SUBTYPE);
-        columns.push_back(PhotoColumn::PHOTO_EDIT_TIME);
         DataShare::DataSharePredicates predicates;
         predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(parentId));
         predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, POSITION);
@@ -214,7 +213,6 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetPhotosInfo(
     columns.push_back(MediaColumn::MEDIA_TYPE);
     columns.push_back(MediaColumn::MEDIA_FILE_PATH);
     columns.push_back(PhotoColumn::PHOTO_SUBTYPE);
-    columns.push_back(PhotoColumn::PHOTO_EDIT_TIME);
     columns.push_back(PhotoColumn::MEDIA_DATE_MODIFIED);
     DataShare::DataSharePredicates predicates;
     if (isHandle) {
@@ -284,20 +282,9 @@ int32_t MtpMedialibraryManager::HaveMovingPhotesHandle(const shared_ptr<DataShar
             continue;
         }
         int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-        int32_t editTime = GetInt32Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet);
-        MEDIA_INFO_LOG("MtpMedialibraryManager::HaveMovingPhotesHandle subtype:%{public}d, editTime:%{public}d",
-            subtype, editTime);
         if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
             uint32_t videoId = id - COMMON_PHOTOS_OFFSET + COMMON_MOVING_OFFSET;
             outHandles->push_back(videoId);
-        }
-        if (editTime > 0) {
-            uint32_t editPhotoId = id - COMMON_PHOTOS_OFFSET + EDITED_PHOTOS_OFFSET;
-            outHandles->push_back(editPhotoId);
-        }
-        if (editTime > 0 && subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-            uint32_t editVideoId = id - COMMON_PHOTOS_OFFSET + EDITED_MOVING_OFFSET;
-            outHandles->push_back(editVideoId);
         }
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
     return E_SUCCESS;
@@ -568,6 +555,8 @@ int32_t MtpMedialibraryManager::GetPictureThumb(const std::shared_ptr<MtpOperati
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
+    CondCloseFd(imageSource == nullptr, fd);
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, MTP_ERROR_NO_THUMBNAIL_PRESENT, "imageSource is nullptr");
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize = {
         .width = NORMAL_WIDTH,
@@ -736,6 +725,8 @@ int32_t MtpMedialibraryManager::MoveObject(const std::shared_ptr<MtpOperationCon
 int32_t CopyNewAssert(const int32_t &fileId, const int32_t &albumId, const string &title,
     uint32_t &outObjectHandle, std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
 {
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr,
+        MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
     valuesBucket.Put(MediaColumn::MEDIA_TITLE, title);
