@@ -104,6 +104,38 @@ void MtpEvent::SendDevicePropertyChanged()
     SendEvent(MTP_EVENT_DEVICE_PROP_CHANGED_CODE);
 }
 
+void MtpEvent::SendStoreAdded(const std::string &fsUuid)
+{
+    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "SendStoreAdded mtpContextPtr_ is nullptr");
+    handleptr_ = make_shared<MtpOperationUtils>(mtpContextPtr_);
+    CHECK_AND_RETURN_LOG(handleptr_ != nullptr, "SendStoreAdded handleptr_ is nullptr");
+
+    uint32_t storageId{0};
+    if (!handleptr_->TryAddExternalStorage(fsUuid, storageId)) {
+        MEDIA_ERR_LOG("TryAddExternalStorage fail");
+        return;
+    }
+    MEDIA_INFO_LOG("SendStoreAdded storageId[%{public}d]", storageId);
+    mtpContextPtr_->storageInfoID = storageId;
+    SendEvent(MTP_EVENT_STORE_ADDED_CODE);
+}
+
+void MtpEvent::SendStoreRemoved(const std::string &fsUuid)
+{
+    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "SendStoreRemoved mtpContextPtr_ is nullptr");
+    handleptr_ = make_shared<MtpOperationUtils>(mtpContextPtr_);
+    CHECK_AND_RETURN_LOG(handleptr_ != nullptr, "SendStoreRemoved handleptr_ is nullptr");
+
+    uint32_t storageId{0};
+    if (!handleptr_->TryRemoveExternalStorage(fsUuid, storageId)) {
+        MEDIA_ERR_LOG("TryRemoveExternalStorage fail");
+        return;
+    }
+    MEDIA_INFO_LOG("SendStoreRemoved storageId[%{public}d]", storageId);
+    mtpContextPtr_->storageInfoID = storageId;
+    SendEvent(MTP_EVENT_STORE_REMOVED_CODE);
+}
+
 void MtpEvent::SendEvent(const int32_t &code)
 {
     CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "SendEvent failed, mtpContextPtr_ is nullptr");
@@ -147,6 +179,10 @@ uint16_t MtpEvent::EventPayloadData(const uint16_t code, shared_ptr<PayloadData>
             break;
         case MTP_EVENT_DEVICE_PROP_CHANGED_CODE:
             responseCode = handleptr_->ObjectEvent(data, mtpContextPtr_->eventProperty);
+            break;
+        case MTP_EVENT_STORE_ADDED_CODE:
+        case MTP_EVENT_STORE_REMOVED_CODE:
+            responseCode = handleptr_->ObjectEvent(data, mtpContextPtr_->storageInfoID);
             break;
         default:
             break;

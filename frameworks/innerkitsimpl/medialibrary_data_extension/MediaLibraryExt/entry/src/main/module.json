@@ -215,6 +215,28 @@
           ],
           "when": "always"
         }
+      },
+      {
+        "name": "ohos.permission.FILE_ACCESS_MANAGER",
+        "reason": "$string:permission_file_access_manager",
+        "usedScene":{
+          "abilities":[
+            "MainAbility",
+            "DataShareExtAbility"
+          ],
+          "when": "always"
+        }
+      },
+      {
+        "name": "ohos.permission.STORAGE_MANAGER",
+        "reason": "$string:permission_storage_manager",
+        "usedScene":{
+          "abilities":[
+            "MainAbility",
+            "DataShareExtAbility"
+          ],
+          "when": "always"
+        }
       }
     ],
     "proxyDatas": [

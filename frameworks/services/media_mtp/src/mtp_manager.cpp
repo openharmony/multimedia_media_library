@@ -18,6 +18,7 @@
 #include "media_log.h"
 #include "mtp_file_observer.h"
 #include "mtp_service.h"
+#include "mtp_store_observer.h"
 #include "mtp_subscriber.h"
 #include "os_account_manager.h"
 #include "usb_srv_client.h"
@@ -100,6 +101,7 @@ void MtpManager::StartMtpService(const MtpMode mode)
         mtpMode_ = mode;
         if (mode == MtpMode::MTP_MODE) {
             MtpFileObserver::GetInstance().StartFileInotify();
+            MtpStoreObserver::StartObserver();
         }
         service->StartService();
         isMtpServiceRunning = true;
@@ -119,6 +121,7 @@ void MtpManager::StopMtpService()
         CHECK_AND_RETURN_LOG(service != nullptr, "MtpManager mtpServicePtr is nullptr");
         if (mtpMode_ == MtpMode::MTP_MODE) {
             MtpFileObserver::GetInstance().StopFileInotify();
+            MtpStoreObserver::StopObserver();
         } else if (mtpMode_ == MtpMode::PTP_MODE) {
             MtpMedialibraryManager::GetInstance()->Clear();
         }

@@ -59,6 +59,8 @@ public:
     uint16_t ObjectEvent(std::shared_ptr<PayloadData> &data, const int32_t payload);
     uint16_t GetPathByHandle(const uint32_t &handle, std::string &path, std::string &realPath);
     int32_t GetHandleByPaths(std::string path, uint32_t &handle);
+    bool TryAddExternalStorage(const std::string &fsUuid, uint32_t &storageId);
+    bool TryRemoveExternalStorage(const std::string &fsUuid, uint32_t &storageId);
     static int32_t GetBatteryLevel();
     static std::string GetPropertyInner(const std::string &property, const std::string &defValue);
     static bool SetPropertyInner(const std::string &property, const std::string &value);

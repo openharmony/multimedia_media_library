@@ -36,6 +36,7 @@
 #include "mtp_packet_tools.h"
 #include "mtp_operation_context.h"
 #include "mtp_storage_manager.h"
+#include "mtp_store_observer.h"
 #include "payload_data.h"
 #include "payload_data/resp_common_data.h"
 #include "payload_data/close_session_data.h"
@@ -684,8 +685,6 @@ uint16_t MtpOperationUtils::CopyObject(shared_ptr<PayloadData> &data, int &error
         errorCode = mtpMedialibraryManager_->CopyObject(context_, objectHandle);
     }
 
-    SendEventPacket(objectHandle, MTP_EVENT_OBJECT_ADDED_CODE);
-    MEDIA_INFO_LOG("MTP:Send Event MTP_EVENT_OBJECT_ADDED_CODE,objectHandle[%{public}d]", objectHandle);
     shared_ptr<CopyObjectData> copyObject = make_shared<CopyObjectData>();
     copyObject->SetObjectHandle(objectHandle);
     data = copyObject;
@@ -710,6 +709,7 @@ uint16_t MtpOperationUtils::GetStorageIDs(shared_ptr<PayloadData> &data, uint16_
         return CheckErrorCode(errorCode);
     }
     if (MtpManager::GetInstance().IsMtpMode()) {
+        MtpStoreObserver::AttachContext(context_);
         mtpMediaLibrary_->GetStorageIds();
     } else {
         auto storage = make_shared<Storage>();
@@ -974,6 +974,24 @@ int32_t MtpOperationUtils::GetHandleByPaths(string path, uint32_t &handle)
         return mtpMediaLibrary_->GetIdByPath(path, handle);
     }
     return mtpMedialibraryManager_->GetIdByPath(path, handle);
+}
+
+bool MtpOperationUtils::TryAddExternalStorage(const std::string &fsUuid, uint32_t &storageId)
+{
+    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, false, "mtpMediaLibrary_ is null");
+    if (MtpManager::GetInstance().IsMtpMode()) {
+        return mtpMediaLibrary_->TryAddExternalStorage(fsUuid, storageId);
+    }
+    return false;
+}
+
+bool MtpOperationUtils::TryRemoveExternalStorage(const std::string &fsUuid, uint32_t &storageId)
+{
+    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, false, "mtpMediaLibrary_ is null");
+    if (MtpManager::GetInstance().IsMtpMode()) {
+        return mtpMediaLibrary_->TryRemoveExternalStorage(fsUuid, storageId);
+    }
+    return false;
 }
 
 int32_t MtpOperationUtils::GetBatteryLevel()
