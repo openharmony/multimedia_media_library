@@ -26,12 +26,12 @@ constexpr unsigned GETCALLER_CMD = 0x05;
 
 static const unsigned int MAX_BUNDLE_NAME_LEN = 64;
 
-struct hmdfs_caller_info {
+struct HmdfsCallerInfo {
     uint32_t tokenId;
-    char bundle_name[MAX_BUNDLE_NAME_LEN];
+    char bundleName[MAX_BUNDLE_NAME_LEN];
 };
 
-#define HMDFS_IOC_GET_CALLER_INFO _IOW(HMDFS_IOC, GETCALLER_CMD, struct hmdfs_caller_info)
+#define HMDFS_IOC_GET_CALLER_INFO _IOW(HMDFS_IOC, GETCALLER_CMD, struct HmdfsCallerInfo)
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_FILEMANAGEMENT_HMDFS_H

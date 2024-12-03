@@ -159,6 +159,7 @@ char *Acl::Serialize(size_t &bufSize)
         errno = ENOMEM;
         return nullptr;
     }
+    static_assert(std::is_trivially_copyable_v<AclXattrHeader> == true);
     auto err = memcpy_s(buf, bufSize, &header, sizeof(AclXattrHeader));
     if (err != EOK) {
         errno = err;
@@ -170,6 +171,7 @@ char *Acl::Serialize(size_t &bufSize)
     size_t restSize = bufSize - sizeof(AclXattrHeader);
     AclXattrEntry *ptr = reinterpret_cast<AclXattrEntry*>(buf + sizeof(AclXattrHeader));
     for (const auto &e : entries) {
+        static_assert(std::is_trivially_copyable_v<AclXattrEntry> == true);
         auto err = memcpy_s(ptr++, restSize, &e, sizeof(AclXattrEntry));
         if (err != EOK) {
             errno = err;
@@ -290,7 +292,7 @@ int32_t Acl::RecursiveEnableAcl(const std::string& path, const char* aclAttrName
         std::string dir = dirPathList.back();
         dirPathList.pop_back();
         if ((fileDir = opendir(dir.c_str())) == nullptr) {
-            MEDIA_ERR_LOG("dir not exist: %{private}s, error: %s", dir.c_str(), strerror(errno));
+            MEDIA_ERR_LOG("dir not exist: %{private}s, error: %{public}s", dir.c_str(), strerror(errno));
             result = E_ERR;
             continue;
         }
@@ -300,7 +302,8 @@ int32_t Acl::RecursiveEnableAcl(const std::string& path, const char* aclAttrName
             }
             std::string fileName = dir + "/" + dirEntry->d_name;
             if (stat(fileName.c_str(), &st) != 0) {
-                MEDIA_ERR_LOG("getting file: %{private}s stat fail, error: %s", fileName.c_str(), strerror(errno));
+                MEDIA_ERR_LOG("getting file: %{private}s stat fail, error: %{public}s",
+                    fileName.c_str(), strerror(errno));
                 result = E_ERR;
                 continue;
             }
@@ -356,7 +359,7 @@ bool IsDirExist(const std::string &path)
     }
     if (closedir(dir) < 0) {
         MEDIA_ERR_LOG("Failed to closedir: %{private}s, errno: %{public}d.", path.c_str(), errno);
-        return false;
+        return true;
     }
     return true;
 }

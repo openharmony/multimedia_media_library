@@ -102,13 +102,13 @@ FetchResult<T>::FetchResult(const shared_ptr<DataShare::DataShareResultSet> &res
     resultset_ = resultset;
     networkId_ = "";
     resultNapiType_ = ResultNapiType::TYPE_NAPI_MAX;
-    if (std::is_same<T, FileAsset>::value) {
+    if constexpr (std::is_same<T, FileAsset>::value) {
         fetchResType_ = FetchResType::TYPE_FILE;
-    } else if (std::is_same<T, AlbumAsset>::value) {
+    } else if constexpr (std::is_same<T, AlbumAsset>::value) {
         fetchResType_ = FetchResType::TYPE_ALBUM;
-    } else if (std::is_same<T, PhotoAlbum>::value) {
+    } else if constexpr (std::is_same<T, PhotoAlbum>::value) {
         fetchResType_ = FetchResType::TYPE_PHOTOALBUM;
-    } else if (std::is_same<T, SmartAlbumAsset>::value) {
+    } else if constexpr (std::is_same<T, SmartAlbumAsset>::value) {
         fetchResType_ = FetchResType::TYPE_SMARTALBUM;
     } else {
         MEDIA_ERR_LOG("unsupported FetchResType");
@@ -149,7 +149,7 @@ int32_t FetchResult<T>::GetCount()
 }
 
 template <class T>
-void FetchResult<T>::SetInfo(unique_ptr<FetchResult<T>> &fetch)
+void FetchResult<T>::SetInfo(const unique_ptr<FetchResult<T>> &fetch)
 {
     networkId_ = fetch->networkId_;
     resultNapiType_ = fetch->resultNapiType_;
@@ -188,7 +188,7 @@ void FetchResult<T>::SetLocationOnly(const bool locationOnly)
 }
 
 template<class T>
-string FetchResult<T>::GetNetworkId()
+const string& FetchResult<T>::GetNetworkId() const
 {
     return networkId_;
 }
@@ -212,13 +212,13 @@ FetchResType FetchResult<T>::GetFetchResType()
 }
 
 template<class T>
-bool FetchResult<T>::GetHiddenOnly()
+bool FetchResult<T>::GetHiddenOnly() const
 {
     return hiddenOnly_;
 }
 
 template<class T>
-bool FetchResult<T>::GetLocationOnly()
+bool FetchResult<T>::GetLocationOnly() const
 {
     return locationOnly_;
 }
@@ -334,38 +334,37 @@ variant<int32_t, int64_t, string, double> FetchResult<T>::GetValByIndex(int32_t 
     int integerVal = 0;
     string stringVal = "";
     int64_t longVal = 0;
-    int status;
     double doubleVal = 0.0;
     switch (dataType) {
         case TYPE_STRING:
             if (resultSet) {
-                status = resultSet->GetString(index, stringVal);
+                resultSet->GetString(index, stringVal);
             } else {
-                status = resultset_->GetString(index, stringVal);
+                resultset_->GetString(index, stringVal);
             }
             cellValue = move(stringVal);
             break;
         case TYPE_INT32:
             if (resultSet) {
-                status = resultSet->GetInt(index, integerVal);
+                resultSet->GetInt(index, integerVal);
             } else {
-                status = resultset_->GetInt(index, integerVal);
+                resultset_->GetInt(index, integerVal);
             }
             cellValue = integerVal;
             break;
         case TYPE_INT64:
             if (resultSet) {
-                status = resultSet->GetLong(index, longVal);
+                resultSet->GetLong(index, longVal);
             } else {
-                status = resultset_->GetLong(index, longVal);
+                resultset_->GetLong(index, longVal);
             }
             cellValue = longVal;
             break;
         case TYPE_DOUBLE:
             if (resultSet) {
-                status = resultSet->GetDouble(index, doubleVal);
+                resultSet->GetDouble(index, doubleVal);
             } else {
-                status = resultset_->GetDouble(index, doubleVal);
+                resultset_->GetDouble(index, doubleVal);
             }
             cellValue = doubleVal;
             break;

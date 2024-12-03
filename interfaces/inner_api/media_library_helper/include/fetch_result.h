@@ -47,19 +47,19 @@ public:
     EXPORT void Close();
     EXPORT int32_t GetCount();
     EXPORT bool IsAtLastRow();
-    EXPORT void SetInfo(unique_ptr<FetchResult<T>> &fetch);
+    EXPORT void SetInfo(const unique_ptr<FetchResult<T>> &fetch);
     EXPORT void SetNetworkId(const string &networkId);
     EXPORT void SetResultNapiType(const ResultNapiType napiType);
     EXPORT void SetFetchResType(const FetchResType resType);
     EXPORT void SetHiddenOnly(const bool hiddenOnly);
     EXPORT void SetLocationOnly(const bool locationOnly);
 
-    EXPORT std::string GetNetworkId();
+    EXPORT const std::string& GetNetworkId() const;
     EXPORT ResultNapiType GetResultNapiType();
     EXPORT std::shared_ptr<DataShare::DataShareResultSet> &GetDataShareResultSet();
     EXPORT FetchResType GetFetchResType();
-    EXPORT bool GetHiddenOnly();
-    EXPORT bool GetLocationOnly();
+    EXPORT bool GetHiddenOnly() const;
+    EXPORT bool GetLocationOnly() const;
 
     EXPORT std::unique_ptr<T> GetObjectAtPosition(int32_t index);
     EXPORT std::unique_ptr<T> GetFirstObject();
