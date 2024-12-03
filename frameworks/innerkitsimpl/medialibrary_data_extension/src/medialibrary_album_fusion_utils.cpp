@@ -1727,7 +1727,7 @@ int32_t MediaLibraryAlbumFusionUtils::TransOtherAlbumData(const std::shared_ptr<
         } else {
             transAlbum.emplace_back(make_pair(albumId, albumName));
         }
-        MEDIA_INFO_LOG("Trans album name is %{public}s, albumId is %{public}lld", albumName.c_str(), albumId);
+        MEDIA_INFO_LOG("Trans album name %{public}s, id is %{public}s", albumName.c_str(), to_string(albumId).c_str());
     }
     if (otherAlbumId == -1) {
         MEDIA_INFO_LOG("No other album data need trans");
