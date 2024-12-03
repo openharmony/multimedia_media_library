@@ -397,7 +397,46 @@ void MediaSyncObserver::OnChangeEx(const ChangeInfo &changeInfo)
 
 void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
 {
-    std::thread([this, changeInfo] { this->OnChangeEx(changeInfo); }).detach();
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        changeInfoQueue_.push(changeInfo);
+    }
+    cv_.notify_one();
+}
+
+void MediaSyncObserver::StartNotifyThread()
+{
+    MEDIA_INFO_LOG("start notify thread");
+    isRunning_.store(true);
+    notifythread_ = std::thread([this] {this->ChangeNotifyThread();});
+}
+
+void MediaSyncObserver::StopNotifyThread()
+{
+    MEDIA_INFO_LOG("stop notify thread");
+    isRunning_.store(false);
+    cv_.notify_all();
+    if (notifythread_.joinable()) {
+        notifythread_.join();
+    }
+}
+
+void MediaSyncObserver::ChangeNotifyThread()
+{
+    while (isRunning_.load()) {
+        ChangeInfo changeInfo;
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            cv_.wait(lock, [this] { return !changeInfoQueue_.empty() || !isRunning_.load(); });
+            if (!isRunning_.load()) {
+                MEDIA_INFO_LOG("notify thread is stopped");
+                break;
+            }
+            changeInfo = changeInfoQueue_.front();
+            changeInfoQueue_.pop();
+        }
+        OnChangeEx(changeInfo);
+    }
 }
 } // namespace Media
 } // namespace OHOS
