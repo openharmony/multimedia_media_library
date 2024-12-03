@@ -154,11 +154,8 @@ void BackupHiAudit::CleanOldAuditFile()
     }
     uint32_t zipFileSize = 0;
     std::string oldestAuditFile;
-    while (true) {
-        struct dirent* ptr = readdir(dir);
-        if (ptr == nullptr) {
-            break;
-        }
+    struct dirent *ptr = nullptr;
+    while ((ptr = readdir(dir)) != nullptr) {
         if (std::string(ptr->d_name).find(HIAUDIT_CONFIG.logName) != std::string::npos &&
             std::string(ptr->d_name).find("zip") != std::string::npos) {
             zipFileSize = zipFileSize + 1;
