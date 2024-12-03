@@ -38,9 +38,9 @@ public:
     EXPORT void SetDirectory(const std::string directory);
     EXPORT void SetExtensions(const std::string extensions);
     EXPORT int32_t GetDirType() const;
-    EXPORT std::string GetMediaTypes() const;
-    EXPORT std::string GetDirectory() const;
-    EXPORT std::string GetExtensions() const;
+    EXPORT const std::string& GetMediaTypes() const;
+    EXPORT const std::string& GetDirectory() const;
+    EXPORT const std::string& GetExtensions() const;
 
 private:
     int32_t dirType_;

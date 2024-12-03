@@ -46,12 +46,12 @@ void AlbumAsset::SetAlbumId(const int32_t albumId)
     albumId_ = albumId;
 }
 
-void AlbumAsset::SetAlbumName(const string albumName)
+void AlbumAsset::SetAlbumName(const string& albumName)
 {
     albumName_ = albumName;
 }
 
-void AlbumAsset::SetAlbumUri(const string albumUri)
+void AlbumAsset::SetAlbumUri(const string& albumUri)
 {
     albumUri_ = albumUri;
 }
@@ -66,16 +66,17 @@ void AlbumAsset::SetCount(const int32_t count)
     count_ = count;
 }
 
-void AlbumAsset::SetAlbumRelativePath(const string albumRelativePath)
+void AlbumAsset::SetAlbumRelativePath(const string& albumRelativePath)
 {
     albumRelativePath_ = albumRelativePath;
 }
-void AlbumAsset::SetCoverUri(const string &coverUri)
+
+void AlbumAsset::SetCoverUri(const string& coverUri)
 {
     coverUri_ = coverUri;
 }
 
-void AlbumAsset::SetAlbumPath(const string albumPath)
+void AlbumAsset::SetAlbumPath(const string& albumPath)
 {
     albumPath_ = albumPath;
 }
@@ -90,12 +91,12 @@ int32_t AlbumAsset::GetAlbumId() const
     return albumId_;
 }
 
-string AlbumAsset::GetAlbumName() const
+const string& AlbumAsset::GetAlbumName() const
 {
     return albumName_;
 }
 
-string AlbumAsset::GetAlbumUri() const
+const string& AlbumAsset::GetAlbumUri() const
 {
     return albumUri_;
 }
@@ -110,17 +111,17 @@ int32_t AlbumAsset::GetCount() const
     return count_;
 }
 
-string AlbumAsset::GetAlbumRelativePath() const
+const string& AlbumAsset::GetAlbumRelativePath() const
 {
     return albumRelativePath_;
 }
 
-string AlbumAsset::GetCoverUri() const
+const string& AlbumAsset::GetCoverUri() const
 {
     return coverUri_;
 }
 
-string AlbumAsset::GetAlbumPath() const
+const string& AlbumAsset::GetAlbumPath() const
 {
     return albumPath_;
 }

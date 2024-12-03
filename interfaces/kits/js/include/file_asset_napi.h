@@ -65,7 +65,7 @@ public:
     int32_t GetFileId() const;
     int32_t GetOrientation() const;
     MediaType GetMediaType() const;
-    std::string GetNetworkId() const;
+    const std::string GetNetworkId() const;
     bool IsFavorite() const;
     void SetFavorite(bool isFavorite);
     bool IsTrash() const;

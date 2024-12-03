@@ -53,7 +53,7 @@ public:
                           MediaFileUriConstruct(mediaType, fileId, networkId, apiVersion, extrUri)) {}
     EXPORT ~MediaFileUri() = default;
 
-    EXPORT std::string GetNetworkId();
+    EXPORT const std::string& GetNetworkId();
     EXPORT std::string GetFileId();
     EXPORT std::string GetFilePath();
     EXPORT std::unordered_map<std::string, std::string> &GetQueryKeys();
