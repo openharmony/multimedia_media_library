@@ -62,7 +62,7 @@ protected:
     virtual void InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
         int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum);
     virtual void NotifyAlbum();
-    virtual void CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode);
+    virtual std::string CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
     int32_t CopyFile(const std::string &srcFile, const std::string &dstFile) const;
@@ -120,6 +120,8 @@ protected:
     void GetUpdateAllAlbumsCount();
     void GetUpdateUniqueNumberCount();
     void RestoreThumbnail();
+    std::string GetRestoreTotalInfo();
+    virtual int32_t GetNoNeedMigrateCount();
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};

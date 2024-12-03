@@ -228,7 +228,7 @@ private:
     const std::string SQL_QUERY_TEMP_COUNT = "\
         SELECT COUNT(1) AS count \
         FROM gallery_media \
-        WHERE relative_bucket_id NOT IN \
+        WHERE relative_bucket_id IN \
             ( \
                 SELECT DISTINCT relative_bucket_id \
                 FROM garbage_album \
