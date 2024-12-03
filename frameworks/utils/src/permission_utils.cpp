@@ -421,13 +421,13 @@ void PermissionUtils::CollectPermissionInfo(const string &permission,
     CollectPermissionRecord(tokenCaller, permission, permGranted, type);
 }
 
-bool PermissionUtils::CheckPhotoCallerPermission(const vector<string> &perms, const int &uid)
+bool PermissionUtils::CheckPhotoCallerPermission(const vector<string> &perms, const int &uid,
+    AccessTokenID &tokenCaller)
 {
+    bool err = GetTokenCallerForUid(uid, tokenCaller);
     if (perms.empty()) {
         return false;
     }
-    AccessTokenID tokenCaller;
-    bool err = GetTokenCallerForUid(uid, tokenCaller);
     if (err == false) {
         return false;
     }
@@ -464,7 +464,6 @@ bool PermissionUtils::CheckCallerPermission(const string &permission, const int 
         MEDIA_ERR_LOG("get tokenid fail");
         return false;
     }
-    MEDIA_INFO_LOG("tokenid = %{public}d", tokenCaller);
     int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
     if (res != PermissionState::PERMISSION_GRANTED) {
         MEDIA_ERR_LOG("Have no media permission: %{public}s", permission.c_str());

@@ -41,6 +41,21 @@ private:
 private:
     std::shared_ptr<MediaFuseDaemon> fuseDaemon_;
 };
+
+class MediafusePermCheckInfo {
+public:
+    MediafusePermCheckInfo(const std::string &filePath, const std::string &mode, const std::string &fileId,
+        const std::string &appId, const int32_t &uid, const uint32_t &tokenCaller);
+    ~MediafusePermCheckInfo() = default;
+    int32_t CheckPermission();
+private:
+    std::string filePath_;
+    std::string mode_;
+    std::string fileId_;
+    std::string appId_;
+    int32_t uid_;
+    uint32_t tokenCaller_;
+};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIA_FUSE_MANAGER_H

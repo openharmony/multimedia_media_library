@@ -113,8 +113,9 @@ MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode,
 {}
 
 MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode, const string &fileId,
-    const string &appId, const string &clientBundle, const int32_t &uid)
-    : path_(path), mode_(mode), fileId_(fileId), appId_(appId), clientBundle_(clientBundle), uid_(uid), fuseFlag_(true)
+    const string &appId, const string &clientBundle, const int32_t &uid, const uint32_t &tokenId)
+    : path_(path), mode_(mode), fileId_(fileId), type_(DEFAULT_TYPE),
+    appId_(appId), clientBundle_(clientBundle), uid_(uid), tokenId_(tokenId), fuseFlag_(true)
 {}
 
 MediaPrivacyManager::~MediaPrivacyManager()
@@ -381,6 +382,7 @@ int32_t MediaPrivacyManager::GetPrivacyRanges()
     if (fuseFlag_ == false) {
         string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
         appId_ = PermissionUtils::GetAppIdByBundleName(bundleName);
+        tokenId_ = PermissionUtils::GetTokenId();
     }
     string appIdFile = UriSensitiveOperations::QueryAppId(fileId_);
     bool result;
@@ -392,7 +394,6 @@ int32_t MediaPrivacyManager::GetPrivacyRanges()
             result = PermissionUtils::CheckCallerPermission(perm, uid_);
         }
         if ((result == false) && (perm == PERMISSION_NAME_MEDIA_LOCATION) && IsWriteMode(mode_)) {
-            MEDIA_ERR_LOG("Write is not allowed if have no location permission");
             return E_PERMISSION_DENIED;
         }
         int32_t err = -1;
@@ -401,13 +402,12 @@ int32_t MediaPrivacyManager::GetPrivacyRanges()
             err = CollectRanges(path_, (HideSensitiveType)type_, ranges_);
         } else {
             //collect ranges by hideSensitiveType
-            uint32_t tokenId = PermissionUtils::GetTokenId();
-            bool isForceSensitive = UriSensitiveOperations::QueryForceSensitive(tokenId, fileId_);
+            bool isForceSensitive = UriSensitiveOperations::QueryForceSensitive(tokenId_, fileId_);
             if (!isForceSensitive && (result || appId_ == appIdFile)) {
                 continue;
             }
             HideSensitiveType sensitiveType =
-            static_cast<HideSensitiveType>(UriSensitiveOperations::QuerySensitiveType(tokenId, fileId_));
+            static_cast<HideSensitiveType>(UriSensitiveOperations::QuerySensitiveType(tokenId_, fileId_));
             err = CollectRanges(path_, sensitiveType, ranges_);
         }
         if (err < 0) {
