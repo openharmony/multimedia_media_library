@@ -108,7 +108,10 @@ private:
     void UpdateFaceAnalysisStatus();
     void UpdateDualCloneFaceAnalysisStatus();
     bool HasLowQualityImage();
-    void CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode) override;
+    std::string CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode) override;
+	int32_t GetNoNeedMigrateCount() override;
+	bool IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
+        const std::string &dbName);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

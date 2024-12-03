@@ -70,6 +70,7 @@ public:
     std::string FindBundleName(const FileInfo &info);
     int32_t FindPhotoQuality(const FileInfo &fileInfo);
     std::string FindSourcePath(const FileInfo &fileInfo);
+    int32_t GetNoNeedMigrateCount();
 
 private:
     enum { UUID_STR_LENGTH = 37 };
@@ -174,6 +175,14 @@ private:
         WHERE owner_album_id = ? AND \
             burst_key = ?;";
     const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
+    const std::string SQL_PHOTOS_TABLE_COUNT_NO_NEED_MIGRATE = "\
+        SELECT COUNT(1) AS count \
+        FROM Photos \
+        WHERE position NOT IN (1, 3) AND \
+            sync_status = 0 AND \
+            clean_flag = 0 AND \
+            time_pending = 0 AND \
+            is_temp = 0;";
 };
 }  // namespace OHOS::Media
 #endif
