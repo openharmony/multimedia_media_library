@@ -44,6 +44,9 @@ std::string BackupLogUtils::FileInfoToString(int32_t sceneCode, const FileInfo &
     infoStream << ";" << BackupFileUtils::GarbleFileName(info.packageName);
     infoStream << ";" << BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID);
     for (const auto &extend : extendList) {
+        if (extend.empty()) {
+            continue;
+        }
         infoStream << ";" << extend;
     }
     infoStream << "]";
