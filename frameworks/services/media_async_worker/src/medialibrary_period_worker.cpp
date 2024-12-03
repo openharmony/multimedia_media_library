@@ -67,10 +67,10 @@ int32_t MediaLibraryPeriodWorker::AddTask(const shared_ptr<MedialibraryPeriodTas
         MEDIA_ERR_LOG("task is over size");
         return threadId;
     }
+    tasks_[threadId] = task;
     task->isThreadRunning_.store(true);
     task->isTaskRunning_.store(true);
     task->thread_ = thread([this, threadId]() { this->Worker(threadId); });
-    tasks_[threadId] = task;
     return threadId;
 }
 
@@ -83,12 +83,12 @@ int32_t MediaLibraryPeriodWorker::AddTask(const shared_ptr<MedialibraryPeriodTas
         MEDIA_ERR_LOG("task is over size");
         return threadId;
     }
+    tasks_[threadId] = task;
     task->isThreadRunning_.store(true);
     task->isTaskRunning_.store(true);
     task->thread_ = thread([this, threadId, &handle, &refreshAlbumsFunc]() {
         this->Worker(threadId, handle, refreshAlbumsFunc);
     });
-    tasks_[threadId] = task;
     return threadId;
 }
 
