@@ -87,8 +87,12 @@ void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateThumbnail failed, data is null");
         return;
     }
-    bool isSuccess = DoCreateThumbnail(data->opts_, data->thumbnailData_);
-    UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    WaitStatus status;
+    bool isSuccess = DoCreateThumbnail(data->opts_, data->thumbnailData_, status);
+    if (status == WaitStatus::INSERT) {
+        UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    }
+    
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -109,8 +113,11 @@ void IThumbnailHelper::CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateAstcEx failed, data is null");
         return;
     }
-    bool isSuccess = DoCreateAstcEx(data->opts_, data->thumbnailData_);
-    UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    WaitStatus status;
+    bool isSuccess = DoCreateAstcEx(data->opts_, data->thumbnailData_, status);
+    if (status == WaitStatus::INSERT || status == WaitStatus::WAIT_CONTINUE) {
+        UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    }
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -809,10 +816,10 @@ int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const Thum
     return E_OK;
 }
 
-bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
     ThumbnailWait thumbnailWait(true);
-    auto ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB);
+    ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB);
     if (ret != WaitStatus::INSERT) {
         return ret == WaitStatus::WAIT_SUCCESS;
     }
@@ -949,7 +956,8 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
             DfxUtils::GetSafePath(data.path).c_str());
     }
 
-    if (!DoCreateThumbnail(opts, data)) {
+    WaitStatus status;
+    if (!DoCreateThumbnail(opts, data, status)) {
         MEDIA_ERR_LOG("Fail to create thumbnail, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -1059,10 +1067,10 @@ unique_ptr<PixelMap> DecodeThumbnailFromFd(int32_t fd)
     return pixelMap;
 }
 
-bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
     ThumbnailWait thumbnailWait(true);
-    auto ret = thumbnailWait.CloudInsertAndWait(data.id, CloudLoadType::CLOUD_DOWNLOAD);
+    ret = thumbnailWait.CloudInsertAndWait(data.id, CloudLoadType::CLOUD_DOWNLOAD);
     if (ret != WaitStatus::INSERT && ret != WaitStatus::WAIT_CONTINUE) {
         return ret == WaitStatus::WAIT_SUCCESS;
     }
@@ -1090,8 +1098,8 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
-
-    if (!DoCreateThumbnail(opts, data)) {
+    WaitStatus status;
+    if (!DoCreateThumbnail(opts, data, status)) {
         MEDIA_ERR_LOG("Fail to create thumbnail, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }

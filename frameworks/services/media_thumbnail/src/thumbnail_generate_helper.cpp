@@ -449,8 +449,11 @@ bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailTyp
         return false;
     }
     if (thumbType != ThumbnailType::LCD) {
-        bool isSuccess = IThumbnailHelper::DoCreateThumbnail(opts, data);
-        IThumbnailHelper::UpdateThumbnailState(opts, data, isSuccess);
+        WaitStatus status;
+        bool isSuccess = IThumbnailHelper::DoCreateThumbnail(opts, data, status);
+        if (status == WaitStatus::INSERT) {
+            IThumbnailHelper::UpdateThumbnailState(opts, data, isSuccess);
+        }
         if (!isSuccess) {
             MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s",
                 DfxUtils::GetSafePath(data.path).c_str());
@@ -469,7 +472,8 @@ bool GenerateKeyFrameLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int3
         return false;
     }
     if (thumbType != KEY_FRAME_LCD) {
-        bool isSuccess = IThumbnailHelper::DoCreateThumbnail(opts, data);
+        WaitStatus status;
+        bool isSuccess = IThumbnailHelper::DoCreateThumbnail(opts, data, status);
         if (!isSuccess) {
             MEDIA_ERR_LOG("Get default key frame thumbnail pixelmap, doCreateThumbnail failed: %{public}s",
                 DfxUtils::GetSafePath(data.path).c_str());
