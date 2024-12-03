@@ -32,12 +32,12 @@ namespace Media {
 constexpr int32_t RESERVE_ALBUM = 10;
 constexpr int32_t PARENT_ID = 0;
 constexpr int32_t DELETE_LIMIT_TIME = 5000;
-constexpr int32_t NO_EDIT_TIME = 0;
 constexpr int32_t ERR_NUM = -1;
 const string BURST_COVER_LEVEL = "1";
 const string BURST_NOT_COVER_LEVEL = "2";
 const string IS_LOCAL = "2";
 const std::string HIDDEN_ALBUM = ".hiddenAlbum";
+const string POSITION = "2";
 bool startsWith(const std::string& str, const std::string& prefix)
 {
     if (prefix.size() > str.size() || prefix.empty() || str.empty()) {
@@ -89,6 +89,20 @@ void MediaSyncObserver::SendEventPacketAlbum(uint32_t objectHandle, uint16_t eve
     context_->mtpDriver->WriteEvent(event);
 }
 
+static bool IsNumber(const string& str)
+{
+    if (str.empty()) {
+        MEDIA_ERR_LOG("IsNumber input is empty");
+        return false;
+    }
+    for (char const& c : str) {
+        if (isdigit(c) == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 vector<int32_t> MediaSyncObserver::GetHandlesFromPhotosInfoBurstKeys(vector<std::string> &handles)
 {
     vector<int32_t> handlesResult;
@@ -113,7 +127,7 @@ vector<int32_t> MediaSyncObserver::GetHandlesFromPhotosInfoBurstKeys(vector<std:
     vector<string> burstKey;
     do {
         burstKey.push_back(GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet));
-    } while (resultSet->GoToNextRow()==NativeRdb::E_OK);
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
     
     if (burstKey.empty()) {
         MEDIA_ERR_LOG("Mtp GetHandlesFromPhotosInfoBurstKeys burstKey is empty");
@@ -133,8 +147,12 @@ vector<int32_t> MediaSyncObserver::GetHandlesFromPhotosInfoBurstKeys(vector<std:
         handlesResult, "Mtp GetHandlesFromPhotosInfoBurstKeys have no handles");
     do {
         string file_id = GetStringVal(PhotoColumn::MEDIA_ID, resultSet);
+        if (!IsNumber(file_id)) {
+            MEDIA_ERR_LOG("Mtp GetHandlesFromPhotosInfoBurstKeys id is incorrect ");
+            continue;
+        }
         handlesResult.push_back(stoi(file_id));
-    } while (resultSet->GoToNextRow()==NativeRdb::E_OK);
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
     return handlesResult;
 }
 
@@ -162,14 +180,14 @@ vector<string> MediaSyncObserver::GetAllDeleteHandles()
     do {
         string file_id = GetStringVal(PhotoColumn::MEDIA_ID, resultSet);
         handlesResult.push_back(file_id);
-    } while (resultSet->GoToNextRow()==NativeRdb::E_OK);
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
     return handlesResult;
 }
 
-void MediaSyncObserver::AddMovingPhotoHandle(int32_t handle)
+void MediaSyncObserver::AddPhotoHandle(int32_t handle)
 {
     if (dataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("Mtp AddMovingPhotoHandle fail to get datasharehelper");
+        MEDIA_ERR_LOG("Mtp AddPhotoHandle fail to get datasharehelper");
         return;
     }
     Uri uri(PAH_QUERY_PHOTO);
@@ -177,15 +195,21 @@ void MediaSyncObserver::AddMovingPhotoHandle(int32_t handle)
     DataShare::DataSharePredicates predicates;
     shared_ptr<DataShare::DataShareResultSet> resultSet;
     columns.push_back(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
+    columns.push_back(PhotoColumn::PHOTO_SUBTYPE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(handle));
-    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+    predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, POSITION);
+    CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "Mtp AddPhotoHandle dataShareHelper_ is nullptr");
     resultSet = dataShareHelper_->Query(uri, predicates, columns);
-    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Mtp AddMovingPhotoHandle fail to get handles");
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Mtp AddPhotoHandle fail to get handles");
     CHECK_AND_RETURN_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
-        "Mtp AddMovingPhotoHandle failed to get resultSet");
+        "Mtp AddPhotoHandle failed to get resultSet");
+    SendEventPackets(handle + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
     int32_t ownerAlbumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
-    SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
-    SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+    int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
+        SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+    }
 }
 
 vector<int32_t> MediaSyncObserver::GetAddEditPhotoHandles(int32_t handle)
@@ -199,7 +223,6 @@ vector<int32_t> MediaSyncObserver::GetAddEditPhotoHandles(int32_t handle)
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
     columns.push_back(PhotoColumn::PHOTO_SUBTYPE);
-    columns.push_back(PhotoColumn::PHOTO_EDIT_TIME);
     predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(handle));
     shared_ptr<DataShare::DataShareResultSet> resultSet = dataShareHelper_->Query(uri, predicates, columns);
 
@@ -209,20 +232,10 @@ vector<int32_t> MediaSyncObserver::GetAddEditPhotoHandles(int32_t handle)
         handlesResult, "Mtp GetAddEditPhotoHandles have no PHOTO_ALL_DELETE_KEY");
     do {
         int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-        int32_t editTime = GetInt32Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet);
-        if (editTime == NO_EDIT_TIME) {
-            if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-                SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-            }
-            continue;
-        }
         if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-            handlesResult.push_back(handle + EDITED_PHOTOS_OFFSET);
-            handlesResult.push_back(handle + EDITED_MOVING_OFFSET);
-        } else {
-            handlesResult.push_back(handle + EDITED_PHOTOS_OFFSET);
+            SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
         }
-    } while (resultSet->GoToNextRow()==NativeRdb::E_OK);
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
     return handlesResult;
 }
 
@@ -236,6 +249,10 @@ int32_t MediaSyncObserver::GetAddEditAlbumHandle(int32_t handle)
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
         ERR_NUM, "Mtp GetAddEditAlbumHandle dataShareHelper_ is nullptr");
     shared_ptr<DataShare::DataShareResultSet> resultSet = dataShareHelper_->Query(uri, predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
+        ERR_NUM, "Mtp GetAllDeleteHandles fail to get album id");
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        ERR_NUM, "Mtp GetAllDeleteHandles have no row");
     int32_t album_id = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
     return album_id;
 }
@@ -246,17 +263,21 @@ void MediaSyncObserver::SendPhotoRemoveEvent(std::string &suffixString)
     vector<int32_t> handles;
     if (suffixString.empty()) {
         allDeletedHandles = GetAllDeleteHandles();
-        for (auto deletehandle: allDeletedHandles) {
-            SendEventPackets(stoi(deletehandle) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-            SendEventPackets(stoi(deletehandle) + EDITED_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-            SendEventPackets(stoi(deletehandle) + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-            SendEventPackets(stoi(deletehandle) + EDITED_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+        for (auto deleteHandle: allDeletedHandles) {
+            if (!IsNumber(deleteHandle)) {
+                MEDIA_ERR_LOG("Mtp SendPhotoRemoveEvent deleteHandle is incorrect ");
+                continue;
+            }
+            SendEventPackets(stoi(deleteHandle) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+            SendEventPackets(stoi(deleteHandle) + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
         }
     } else {
+        if (!IsNumber(suffixString)) {
+            MEDIA_ERR_LOG("Mtp SendPhotoRemoveEvent deleteHandle is incorrect ");
+            return;
+        }
         SendEventPackets(stoi(suffixString) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-        SendEventPackets(stoi(suffixString) + EDITED_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
         SendEventPackets(stoi(suffixString) + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-        SendEventPackets(stoi(suffixString) + EDITED_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
         vector<std::string> allDeleted;
         allDeletedHandles.push_back(suffixString);
     }
@@ -279,8 +300,7 @@ void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixStrin
     switch (changeType) {
         case static_cast<int32_t>(NotifyType::NOTIFY_ADD):
             MEDIA_DEBUG_LOG("MtpMediaLibrary PHOTO ADD");
-            SendEventPackets(stoi(suffixString) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
-            AddMovingPhotoHandle(stoi(suffixString));
+            AddPhotoHandle(stoi(suffixString));
             break;
         case static_cast<int32_t>(NotifyType::NOTIFY_UPDATE):
             MEDIA_DEBUG_LOG("MtpMediaLibrary PHOTO UPDATE");
@@ -383,7 +403,7 @@ void MediaSyncObserver::OnChangeEx(const ChangeInfo &changeInfo)
         } else if (startsWith(uri, PhotoAlbumPrefix)) {
             std::string suffixString = uri.substr(PhotoAlbumPrefix.size());
             MEDIA_ERR_LOG("MtpMediaLibrary suffixString [%{public}s]", suffixString.c_str());
-            if (suffixString.empty()) {
+            if (!IsNumber(suffixString)) {
                 continue;
             }
             int32_t suff_int = stoi(suffixString);
