@@ -21,26 +21,28 @@
 #include "backup_const_map.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
+#include "backup_log_utils.h"
+#include "database_report.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
+#include "gallery_db_upgrade.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
-#include "result_set_utils.h"
-#include "userfile_manager_types.h"
+#include "medialibrary_rdb_transaction.h"
 #include "photo_album_restore.h"
-#include "photos_restore.h"
 #include "photos_dao.h"
-#include "gallery_db_upgrade.h"
+#include "photos_restore.h"
+#include "result_set_utils.h"
+#include "upgrade_restore_task_report.h"
+#include "userfile_manager_types.h"
 #include "vision_album_column.h"
 #include "vision_column.h"
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
-#include "database_report.h"
-#include "medialibrary_rdb_transaction.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -629,32 +631,7 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     string dbName)
 {
     // only parse image and video
-    info.oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
-    if (this->photosRestore_.IsDuplicateData(info.oldPath)) {
-        MEDIA_ERR_LOG("Data duplicate and already used, path: %{public}s",
-            BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str());
-        return false;
-    }
-    info.displayName = GetStringVal(GALLERY_DISPLAY_NAME, resultSet);
-    info.fileType = GetInt32Val(GALLERY_MEDIA_TYPE, resultSet);
-    info.fileType = this->photosRestore_.FindMediaType(info);
-    if (info.fileType != MediaType::MEDIA_TYPE_IMAGE && info.fileType != MediaType::MEDIA_TYPE_VIDEO) {
-        MEDIA_ERR_LOG("Invalid media type: %{public}d, path: %{public}s",
-            info.fileType,
-            BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str());
-        return false;
-    }
-    info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet);
-    if (info.fileSize < fileMinSize_ && dbName == EXTERNAL_DB_NAME) {
-        MEDIA_WARN_LOG("maybe garbage path = %{public}s, minSize:%{public}d.",
-            BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str(), fileMinSize_);
-        return false;
-    }
-    if (sceneCode_ == UPGRADE_RESTORE_ID ?
-        !BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath) :
-        !ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath, info)) {
-        MEDIA_ERR_LOG("Invalid path: %{public}s.",
-            BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str());
+    if (!IsBasicInfoValid(resultSet, info, dbName)) {
         return false;
     }
     info.title = GetStringVal(GALLERY_TITLE, resultSet);
@@ -663,8 +640,9 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
     info.specialFileType = GetInt32Val(GALLERY_SPECIAL_FILE_TYPE, resultSet);
     if (BackupFileUtils::IsLivePhoto(info) && !BackupFileUtils::ConvertToMovingPhoto(info)) {
-        MEDIA_ERR_LOG("Failed to convert live photo to moving photo, filePath = %{public}s",
-            BackupFileUtils::GarbleFilePath(info.filePath, UPGRADE_RESTORE_ID).c_str());
+        ErrorInfo errorInfo(RestoreError::MOVING_PHOTO_CONVERT_FAILED, 1, "",
+            BackupLogUtils::FileInfoToString(sceneCode_, info));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
         return false;
     }
     info.height = GetInt64Val(GALLERY_HEIGHT, resultSet);
@@ -1271,16 +1249,61 @@ void UpgradeRestore::UpdateDualCloneFaceAnalysisStatus()
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
 }
 
-void UpgradeRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode)
+std::string UpgradeRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode)
 {
     if (errCode != E_NO_SUCH_FILE) {
-        return;
+        return "";
     }
     int32_t dbType = BackupDatabaseHelper::DbType::DEFAULT;
     int32_t dbStatus = E_OK;
     int32_t fileStatus = E_OK;
     backupDatabaseHelper_.IsFileExist(sceneCode_, fileInfo, dbType, dbStatus, fileStatus);
     MEDIA_INFO_LOG("Check status type: %{public}d, db: %{public}d, file: %{public}d", dbType, dbStatus, fileStatus);
+    return BackupLogUtils::FileDbCheckInfoToString(FileDbCheckInfo(dbType, dbStatus, fileStatus));
+}
+
+int32_t UpgradeRestore::GetNoNeedMigrateCount()
+{
+    return GalleryMediaDao(this->galleryRdb_).GetNoNeedMigrateCount(this->shouldIncludeSd_);
+}
+
+bool UpgradeRestore::IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
+    const std::string &dbName)
+{
+    info.displayName = GetStringVal(GALLERY_DISPLAY_NAME, resultSet);
+    info.oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
+    info.fileType = GetInt32Val(GALLERY_MEDIA_TYPE, resultSet);
+    info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet); // read basic info from db first
+    if (this->photosRestore_.IsDuplicateData(info.oldPath)) {
+        ErrorInfo errorInfo(RestoreError::DUPLICATE_DATA, 1, "",
+            BackupLogUtils::FileInfoToString(sceneCode_, info));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        return false;
+    }
+    if (sceneCode_ == UPGRADE_RESTORE_ID ?
+        !BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath) :
+        !ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath, info)) {
+        ErrorInfo errorInfo(RestoreError::PATH_INVALID, 1, "",
+            BackupLogUtils::FileInfoToString(sceneCode_, info));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        return false;
+    }
+    info.fileType = this->photosRestore_.FindMediaType(info);
+    if (info.fileType != MediaType::MEDIA_TYPE_IMAGE && info.fileType != MediaType::MEDIA_TYPE_VIDEO) {
+        ErrorInfo errorInfo(RestoreError::MEDIA_TYPE_INVALID, 1, std::to_string(info.fileType),
+            BackupLogUtils::FileInfoToString(sceneCode_, info));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        return false;
+    }
+    if (info.fileSize < fileMinSize_ && dbName == EXTERNAL_DB_NAME) {
+        MEDIA_WARN_LOG("maybe garbage path = %{public}s, minSize:%{public}d.",
+            BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str(), fileMinSize_);
+        ErrorInfo errorInfo(RestoreError::SIZE_INVALID, 1, "Db size < " + std::to_string(fileMinSize_),
+            BackupLogUtils::FileInfoToString(sceneCode_, info));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        return false;
+    }
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

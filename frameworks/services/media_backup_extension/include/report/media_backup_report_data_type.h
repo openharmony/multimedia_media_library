@@ -20,41 +20,59 @@
 
 namespace OHOS::Media {
 struct AlbumMediaStatisticInfo {
-    int32_t sceneCode;
+    int32_t sceneCode{-1};
     std::string taskId;
     std::string albumName;
-    int32_t totalCount;
-    int32_t imageCount;
-    int32_t videoCount;
-    int32_t hiddenCount;
-    int32_t trashedCount;
-    int32_t cloudCount;
-    int32_t favoriteCount;
-    int32_t burstCoverCount;
-    int32_t burstTotalCount;
+    int32_t totalCount{0};
+    int32_t imageCount{0};
+    int32_t videoCount{0};
+    int32_t hiddenCount{0};
+    int32_t trashedCount{0};
+    int32_t cloudCount{0};
+    int32_t favoriteCount{0};
+    int32_t burstCoverCount{0};
+    int32_t burstTotalCount{0};
     // non-event data members
     std::string lPath;
+    std::string ToString() const
+    {
+        std::stringstream ss;
+        ss << "AlbumMediaStatisticInfo["
+            << "sceneCode: " << sceneCode << ", "
+            << "taskId: " << taskId << ", "
+            << "albumName: " << albumName << ", "
+            << "totalCount: " << totalCount << ", "
+            << "imageCount: " << imageCount << ", "
+            << "videoCount: " << videoCount << ", "
+            << "hiddenCount: " << hiddenCount << ", "
+            << "trashedCount: " << trashedCount << ", "
+            << "cloudCount: " << cloudCount << ", "
+            << "favoriteCount: " << favoriteCount << ", "
+            << "burstTotalCount: " << burstTotalCount << ", "
+            << "burstCoverCount: " << burstCoverCount << "]";
+        return ss.str();
+    }
 };
 
 class MediaRestoreResultInfo {
 public:
-    int32_t sceneCode;
+    int32_t sceneCode{-1};
     std::string taskId;
     std::string errorCode;
     std::string errorInfo;
     std::string type;
     std::string backupInfo;
-    int duplicateCount;
-    int failedCount;
-    int successCount;
+    int duplicateCount{0};
+    int failedCount{0};
+    int successCount{0};
 
 public:
     std::string ToString() const
     {
         std::stringstream ss;
         ss << "MediaRestoreResultInfo["
-           << ", sceneCode: " << this->sceneCode << ", taskId: " << this->taskId << ", errorCode: " << this->errorCode
-           << ", errorInfo: " << this->errorInfo << "type: " << this->type << ", backupInfo: " << this->backupInfo
+           << "sceneCode: " << this->sceneCode << ", taskId: " << this->taskId << ", errorCode: " << this->errorCode
+           << ", errorInfo: " << this->errorInfo << ", type: " << this->type << ", backupInfo: " << this->backupInfo
            << ", duplicateCount: " << this->duplicateCount << ", failedCount: " << this->failedCount
            << ", successCount: " << this->successCount << "]";
         return ss.str();
@@ -297,6 +315,25 @@ public:
         this->burstType_ = burstType;
         return *this;
     }
+};
+
+struct ErrorInfo {
+    int32_t error{-1};
+    int32_t count{0};
+    std::string status;
+    std::string extend;
+    ErrorInfo(int32_t error, int32_t count, int32_t errorCode)
+        : error(error), count(count), status(std::to_string(errorCode)) {}
+    ErrorInfo(int32_t error, int32_t count, const std::string &status, const std::string &extend)
+        : error(error), count(count), status(status), extend(extend) {}
+};
+
+struct FileDbCheckInfo {
+    int32_t dbType{-1};
+    int32_t dbStatus{-1};
+    int32_t fileStatus{-1};
+    FileDbCheckInfo(int32_t dbType, int32_t dbStatus, int32_t fileStatus)
+        : dbType(dbType), dbStatus(dbStatus), fileStatus(fileStatus) {}
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_BACKUP_REPORT_DATA_TYPE_H

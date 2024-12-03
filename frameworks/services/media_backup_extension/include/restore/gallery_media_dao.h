@@ -30,6 +30,7 @@ public:
     std::shared_ptr<NativeRdb::ResultSet> GetGalleryMedia(
         int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage);
     int32_t GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQualityImage);
+    int32_t GetNoNeedMigrateCount(bool shouldIncludeSd);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
@@ -106,6 +107,12 @@ private:
             (1 = ? OR storage_id IN (0, 65537) ) \
         ORDER BY _id ASC \
         LIMIT ?, ?;";
+    const std::string SQL_GALLERY_MEDIA_QUERY_NO_NEED_MIGRATE_COUNT = "\
+        SELECT COUNT(1) AS count \
+        FROM gallery_media \
+        WHERE (local_media_id = -1) OR \
+            _data LIKE '/storage/emulated/0/Pictures/cloud/Imports%' OR \
+            (0 = ? AND storage_id NOT IN (0, 65537));";
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTO_ALBUM_DAO_H
