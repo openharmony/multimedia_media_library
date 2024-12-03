@@ -156,6 +156,8 @@ static void PushNotification()
                     return;
                 }
                 periodWorker->CloseThreadById(MediaLibraryNotify::threadId_);
+                MediaLibraryNotify::threadId_ = -1;
+                MEDIA_INFO_LOG("notify task close");
             }
             return;
         } else {
@@ -285,23 +287,22 @@ int32_t MediaLibraryNotify::Init()
         MEDIA_ERR_LOG("failed to add task");
         return E_ERR;
     }
+    MEDIA_INFO_LOG("add notify task");
     return E_OK;
 }
 
 int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyType, const int albumId,
     const bool hiddenOnly)
 {
-    if (counts_.load() > IDLING_TIME) {
+    auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
+    if (periodWorker != nullptr && !periodWorker->IsThreadRunning(MediaLibraryNotify::threadId_)) {
         MediaLibraryNotify::counts_.store(0);
-        auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
-        if (periodWorker != nullptr) {
-            auto periodTask = make_shared<MedialibraryPeriodTask>(PushNotification, MNOTIFY_TIME_INTERVAL);
-            MediaLibraryNotify::threadId_ = periodWorker->AddTask(periodTask);
-            if (MediaLibraryNotify::threadId_ == E_ERR) {
-                MEDIA_ERR_LOG("failed to add task");
-            }
+        auto periodTask = make_shared<MedialibraryPeriodTask>(PushNotification, MNOTIFY_TIME_INTERVAL);
+        MediaLibraryNotify::threadId_ = periodWorker->AddTask(periodTask);
+        if (MediaLibraryNotify::threadId_ == E_ERR) {
+            MEDIA_ERR_LOG("failed to add task");
         } else {
-            MEDIA_ERR_LOG("failed to get period worker instance");
+            MEDIA_INFO_LOG("add notify task");
         }
     }
     unique_ptr<NotifyTaskWorker> &asyncWorker = NotifyTaskWorker::GetInstance();
