@@ -298,4 +298,21 @@ std::string PhotosClone::FindSourcePath(const FileInfo &fileInfo)
     }
     return this->SOURCE_PATH_PREFIX + fileInfo.lPath + "/" + fileInfo.displayName;
 }
+
+/**
+ * @brief Get Row Count of Photos No Need Migrate.
+ */
+int32_t PhotosClone::GetNoNeedMigrateCount()
+{
+    std::string querySql = this->SQL_PHOTOS_TABLE_COUNT_NO_NEED_MIGRATE;
+    if (this->mediaLibraryOriginalRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: mediaLibraryOriginalRdb_ is null.");
+        return 0;
+    }
+    auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return 0;
+    }
+    return GetInt32Val("count", resultSet);
+}
 }  // namespace OHOS::Media
