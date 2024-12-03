@@ -17,7 +17,6 @@
 
 #include "backup_hi_audit.h"
 #include "backup_log_utils.h"
-#include "media_log.h"
 
 namespace OHOS::Media {
 void BackupHiAuditHelper::WriteErrorAuditLog(const ErrorInfo &info)

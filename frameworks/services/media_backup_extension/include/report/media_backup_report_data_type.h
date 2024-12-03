@@ -38,18 +38,18 @@ struct AlbumMediaStatisticInfo {
     {
         std::stringstream ss;
         ss << "AlbumMediaStatisticInfo["
-            << "\"sceneCode\":\"" << sceneCode << "\", "
-            << "\"taskId\":\"" << taskId << "\", "
-            << "\"albumName\":\"" << albumName << "\", "
-            << "\"totalCount\":" << totalCount << ", "
-            << "\"imageCount\":" << imageCount << ", "
-            << "\"videoCount\":" << videoCount << ", "
-            << "\"hiddenCount\":" << hiddenCount << ", "
-            << "\"trashedCount\":" << trashedCount << ", "
-            << "\"cloudCount\":" << cloudCount << ", "
-            << "\"favoriteCount\":" << favoriteCount << ", "
-            << "\"burstTotalCount\":" << burstTotalCount << ", "
-            << "\"burstCoverCount\":" << burstCoverCount << "]";
+            << "sceneCode: " << sceneCode << ", "
+            << "taskId: " << taskId << ", "
+            << "albumName: " << albumName << ", "
+            << "totalCount: " << totalCount << ", "
+            << "imageCount: " << imageCount << ", "
+            << "videoCount: " << videoCount << ", "
+            << "hiddenCount: " << hiddenCount << ", "
+            << "trashedCount: " << trashedCount << ", "
+            << "cloudCount: " << cloudCount << ", "
+            << "favoriteCount: " << favoriteCount << ", "
+            << "burstTotalCount: " << burstTotalCount << ", "
+            << "burstCoverCount: " << burstCoverCount << "]";
         return ss.str();
     }
 };

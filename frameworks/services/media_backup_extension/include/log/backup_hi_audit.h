@@ -71,6 +71,6 @@ private:
     std::mutex mutex_;
     int writeFd_;
     std::atomic<uint32_t> writeLogSize_ = 0;
-}; 
+};
 } // namespace OHOS::Media
 #endif // BACKUP_HI_AUDIT_H

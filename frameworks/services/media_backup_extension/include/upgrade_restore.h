@@ -109,8 +109,8 @@ private:
     void UpdateDualCloneFaceAnalysisStatus();
     bool HasLowQualityImage();
     std::string CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode) override;
-	int32_t GetNoNeedMigrateCount() override;
-	bool IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
+    int32_t GetNoNeedMigrateCount() override;
+    bool IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         const std::string &dbName);
 
 private:

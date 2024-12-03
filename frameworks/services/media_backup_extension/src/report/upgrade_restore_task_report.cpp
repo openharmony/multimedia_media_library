@@ -31,7 +31,7 @@ namespace OHOS::Media {
 static constexpr char MEDIA_LIBRARY[] = "MEDIALIBRARY";
 UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportTask(const std::string &taskInfo)
 {
-    std::vector<MediaRestoreResultInfo> resultInfos = 
+    std::vector<MediaRestoreResultInfo> resultInfos =
         UpgradeRestoreGalleryMediaTask().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).LoadTask(taskInfo);
     for (const auto &info : resultInfos) {
         MEDIA_INFO_LOG("[STAT] GET restoreExInfo: %{public}s", info.ToString().c_str());
@@ -62,7 +62,7 @@ UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportError(const ErrorInfo 
                                             .SetSceneCode(this->sceneCode_)
                                             .SetTaskId(this->taskId_)
                                             .Load("ErrorInfo", errorCode, errorInfo);
-    MEDIA_INFO_LOG("[Error] %{public}s: %{public}s", errorCode.c_str(), errorInfo.c_str());
+    MEDIA_ERR_LOG("[Error] %{public}s: %{public}s", errorCode.c_str(), errorInfo.c_str());
     PostInfoDfx(resultInfo);
     PostErrorInfoAuditLog(info);
     return *this;
@@ -114,7 +114,7 @@ UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportTimeCost()
     if (timeCost < 0) {
         MEDIA_ERR_LOG("Get timeCost < 0, startTime: %{public}lld, %{public}lld", (long long)startTime,
             (long long)endTime);
-        return;
+        return *this;
     }
     return Report("TimeCost", std::to_string(timeCost), "");
 }
