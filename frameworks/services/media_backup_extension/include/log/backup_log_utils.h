@@ -33,4 +33,4 @@ public:
 };
 } // namespace OHOS::Media
 
-#endif  // BACKUP_LOG_UTILS_H
+#endif // BACKUP_LOG_UTILS_H

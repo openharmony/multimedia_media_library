@@ -631,7 +631,7 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     string dbName)
 {
     // only parse image and video
-    if (IsBasicInfoValid(resultSet, info, dbName)) {
+    if (!IsBasicInfoValid(resultSet, info, dbName)) {
         return false;
     }
     info.title = GetStringVal(GALLERY_TITLE, resultSet);
@@ -1259,7 +1259,7 @@ std::string UpgradeRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t e
     int32_t fileStatus = E_OK;
     backupDatabaseHelper_.IsFileExist(sceneCode_, fileInfo, dbType, dbStatus, fileStatus);
     MEDIA_INFO_LOG("Check status type: %{public}d, db: %{public}d, file: %{public}d", dbType, dbStatus, fileStatus);
-    return BackupLogUtils::FileDbCheckInfoToString(FileDbCheckInfo(dbType, dbStatus, fileStatus)); 
+    return BackupLogUtils::FileDbCheckInfoToString(FileDbCheckInfo(dbType, dbStatus, fileStatus));
 }
 
 int32_t UpgradeRestore::GetNoNeedMigrateCount()

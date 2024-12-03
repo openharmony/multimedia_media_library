@@ -1077,7 +1077,13 @@ std::string BaseRestore::GetProgressInfo()
         SubProcessInfo subProcessInfo = GetSubProcessInfo(type);
         progressInfoJson[STAT_KEY_PROGRESS_INFO].push_back(GetSubProcessInfoJson(type, subProcessInfo));
     }
-    return progressInfoJson.dump();
+    std::string progressInfo = progressInfoJson.dump();
+    UpgradeRestoreTaskReport()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .ReportProgress("onProcess", progressInfo, ongoingTotalNumber_.load())
+        .ReportTimeout(ongoingTotalNumber_.load());
+    return progressInfo;
 }
 
 SubProcessInfo BaseRestore::GetSubProcessInfo(const std::string &type)
