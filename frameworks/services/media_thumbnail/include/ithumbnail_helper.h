@@ -90,7 +90,7 @@ public:
     IThumbnailHelper() = default;
     virtual ~IThumbnailHelper() = default;
     EXPORT static void CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
-    EXPORT static bool DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
     EXPORT static void CreateLcd(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static void CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static void CreateAstc(std::shared_ptr<ThumbnailTaskData> &data);
