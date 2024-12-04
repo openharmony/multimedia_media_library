@@ -383,7 +383,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_009, T
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    IThumbnailHelper::DoCreateLcd(opts, data);
+    WaitStatus status;
+    IThumbnailHelper::DoCreateLcd(opts, data, status);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_010, TestSize.Level0)
