@@ -309,7 +309,7 @@ export class PhotoPickerComponent extends ViewPU {
         console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + o.uri);
     }
 
-    handleVideoPlayStateChanged(e){
+    handleVideoPlayStateChanged(e) {
         if (this.onVideoPlayStateChanged) {
             this.onVideoPlayStateChanged(e.state);
             console.info('PhotoPickerComponent onReceive: onVideoPlayStateChanged = ' + JSON.stringify(e));
@@ -481,4 +481,5 @@ export var VideoPlayerState;
 }(VideoPlayerState || (VideoPlayerState = {}));
 
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
-    MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement, VideoPlayerState };
+    MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement, 
+    VideoPlayerState };
