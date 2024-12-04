@@ -48,6 +48,7 @@ if (defined(medialibrary_mtp_enable)) {
       "src/mtp_payload_data_test.cpp",
       "src/mtp_set_object_prop_test.cpp",
       "src/mtp_test.cpp",
+      "src/ptp_media_sync_observer_unit_test.cpp",
     ]
 
     deps = [
