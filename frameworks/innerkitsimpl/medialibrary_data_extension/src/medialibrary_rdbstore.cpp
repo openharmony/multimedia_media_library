@@ -124,6 +124,7 @@ const std::string RDB_CONFIG = "/data/storage/el2/base/preferences/rdb_config.xm
 
 const std::string RDB_OLD_VERSION = "rdb_old_version";
 
+constexpr ssize_t RDB_WAL_LIMIT_SIZE = 1024 * 1024 * 1024; /* default wal file maximum size : 1GB */
 constexpr ssize_t RDB_CHECK_WAL_SIZE = 50 * 1024 * 1024;   /* check wal file size : 50MB */
 std::mutex MediaLibraryRdbStore::walCheckPointMutex_;
 
@@ -475,6 +476,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetSecurityLevel(SecurityLevel::S3);
     config_.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     config_.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
+    config_.SetWalLimitSize(RDB_WAL_LIMIT_SIZE);
     config_.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
 }
 
