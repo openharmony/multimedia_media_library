@@ -164,17 +164,20 @@ static int32_t GetFileIdFromUri(string &fileId, const string &uri)
 static int32_t GetPathFromFileId(string &filePath, const string &fileId)
 {
     NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_ID, fileId);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
 
     vector<string> columns;
     columns.push_back(MediaColumn::MEDIA_FILE_PATH);
+    columns.push_back(MediaColumn::MEDIA_DATE_TRASHED);
+    columns.push_back(MediaColumn::MEDIA_HIDDEN);
     auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
     int32_t numRows = 0;
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to get rslt");
         return E_ERR;
     }
-
     resultSet->GetRowCount(numRows);
     if (numRows == 0) {
         MEDIA_ERR_LOG("Failed to get filePath");
@@ -200,15 +203,18 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
     } else {
         ret = GetFileIdFromUri(fileId, path);
         if (ret != E_SUCCESS) {
+            MEDIA_ERR_LOG("get attr fileid fail");
             return E_ERR;
         }
         ret = GetPathFromFileId(target, fileId);
         if (ret != E_SUCCESS) {
+            MEDIA_ERR_LOG("get attr path fail");
             return E_ERR;
         }
         ret = lstat(target.c_str(), stbuf);
     }
     stbuf->st_mode = stbuf->st_mode | 0x6;
+    MEDIA_DEBUG_LOG("get attr succ");
     return ret;
 }
 
@@ -298,6 +304,7 @@ int32_t MediafusePermCheckInfo::CheckPermission()
 
 static int32_t OpenFile(const string &filePath, const string &fileId, const string &mode)
 {
+    MEDIA_DEBUG_LOG("fuse open file");
     fuse_context *ctx = fuse_get_context();
     uid_t uid = ctx->uid;
     string bundleName;
@@ -336,8 +343,10 @@ int32_t MediaFuseManager::DoRelease(const char *path, const int &fd)
     if (fd >= 0) {
         close(fd);
         MediaLibraryObjectUtils::ScanFileAsync(filePath, fileId, MediaLibraryApi::API_10);
+        MEDIA_DEBUG_LOG("fuse close file succ");
         return E_OK;
     } else {
+        MEDIA_ERR_LOG("fuse close file fail");
         return E_ERR;
     }
 }
