@@ -40,8 +40,8 @@ public:
     MedialibraryPeriodTask(AnalysisHandlerPeriodExecute executor, int32_t period)
         : analysisHandlerExecutor_(executor), period_(period) {}
     virtual ~MedialibraryPeriodTask() {}
-    MediaLibraryPeriodExecute executor_;
-    AnalysisHandlerPeriodExecute analysisHandlerExecutor_;
+    MediaLibraryPeriodExecute executor_{nullptr};
+    AnalysisHandlerPeriodExecute analysisHandlerExecutor_{nullptr};
     std::thread thread_;
     std::atomic<bool> isThreadRunning_{false};
     std::atomic<bool> isTaskRunning_{false};
@@ -53,7 +53,7 @@ class MediaLibraryPeriodWorker {
 public:
     virtual ~MediaLibraryPeriodWorker();
     EXPORT static std::shared_ptr<MediaLibraryPeriodWorker> GetInstance();
-    EXPORT void StartThreadById(int32_t threadId, size_t period);
+    EXPORT void StartThreadById(int32_t threadId, int32_t period);
     EXPORT void StopThreadById(int32_t threadId);
     EXPORT void CloseThreadById(int32_t threadId);
     EXPORT bool IsThreadRunning(int32_t threadId);
