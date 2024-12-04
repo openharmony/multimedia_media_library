@@ -52,6 +52,7 @@ constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
 constexpr uint32_t THUMBNAIL_NUM = 500;
 constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
+constexpr int32_t MAX_THREAD_NUM = 4;
 
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";

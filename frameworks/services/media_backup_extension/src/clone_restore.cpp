@@ -19,21 +19,21 @@
 #include "backup_const_column.h"
 
 #include "application_context.h"
+#include "backup_dfx_utils.h"
 #include "backup_file_utils.h"
-#include "ffrt.h"
 #include "media_column.h"
 #include "media_file_utils.h"
+#include "media_library_db_upgrade.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_type_const.h"
-#include "result_set_utils.h"
-#include "userfile_manager_types.h"
-#include "backup_dfx_utils.h"
-#include "media_library_db_upgrade.h"
 #include "photos_dao.h"
 #include "rdb_store.h"
+#include "result_set_utils.h"
+#include "upgrade_restore_task_report.h"
+#include "userfile_manager_types.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -181,6 +181,17 @@ Value GetValueFromMap(const unordered_map<Key, Value> &map, const Key &key, cons
     return it->second;
 }
 
+CloneRestore::CloneRestore()
+{
+    queue_ = std::make_unique<ffrt::queue>(ffrt::queue_concurrent, "ConcurrencyQueue",
+        ffrt::queue_attr().qos(ffrt::qos_utility).max_concurrency(MAX_THREAD_NUM));
+}
+
+CloneRestore::~CloneRestore()
+{
+    queue_ = nullptr;
+}
+
 void CloneRestore::StartRestore(const string &backupRestoreDir, const string &upgradePath)
 {
     MEDIA_INFO_LOG("Start clone restore");
@@ -237,8 +248,8 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
 void CloneRestore::RestorePhoto()
 {
     MEDIA_INFO_LOG("Start clone restore: photos");
-    if (!IsReadyForRestore(PhotoColumn::PHOTOS_TABLE)) {
-        MEDIA_ERR_LOG("Column status is not ready for restore photo, quit");
+    if (!IsReadyForRestore(PhotoColumn::PHOTOS_TABLE) || queue_ == nullptr) {
+        MEDIA_ERR_LOG("Column status not ready or queue_ is null, queue_ status: %{public}d", queue_ != nullptr);
         return;
     }
     unordered_map<string, string> srcColumnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaRdb_,
@@ -256,21 +267,20 @@ void CloneRestore::RestorePhoto()
     MEDIA_INFO_LOG("GetPhotosRowCountInPhotoMap, totalNumber = %{public}d", totalNumberInPhotoMap);
     totalNumber_ += static_cast<uint64_t>(totalNumberInPhotoMap);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
+    ffrt::task_handle handle;
     for (int32_t offset = 0; offset < totalNumberInPhotoMap; offset += CLONE_QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestorePhotoBatch(offset, 1); }, {&offset}, {},
-            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
+        handle = queue_->submit_h([this, offset]() { RestorePhotoBatch(offset, 1); });
     }
-    ffrt::wait();
+    queue_->wait(handle);
     // Scenario 2, clone photos from Photos only.
     int32_t totalNumber = this->photosClone_.GetPhotosRowCountNotInPhotoMap();
     MEDIA_INFO_LOG("QueryTotalNumberNot, totalNumber = %{public}d", totalNumber);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestorePhotoBatch(offset); }, { &offset }, {},
-            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
+        handle = queue_->submit_h([this, offset]() { RestorePhotoBatch(offset); });
     }
-    ffrt::wait();
+    queue_->wait(handle);
     this->photosClone_.OnStop(otherTotalNumber_, otherProcessStatus_);
 
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
@@ -1191,11 +1201,15 @@ void CloneRestore::RestoreAudio(void)
     MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
     audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
-    for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset }, {},
-            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
+    if (queue_ == nullptr) {
+        MEDIA_ERR_LOG("queue_ is null");
+        return;
     }
-    ffrt::wait();
+    ffrt::task_handle handle;
+    for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
+        handle = queue_->submit_h([this, offset]() { RestoreAudioBatch(offset); });
+    }
+    queue_->wait(handle);
 }
 
 vector<FileInfo> CloneRestore::QueryFileInfos(const string &tableName, int32_t offset)

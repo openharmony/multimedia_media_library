@@ -22,6 +22,8 @@
 #include "backup_database_helper.h"
 #include "base_restore.h"
 #include "burst_key_generator.h"
+#include "ffrt.h"
+#include "ffrt_inner.h"
 #include "photos_restore.h"
 
 namespace OHOS {
@@ -31,7 +33,7 @@ public:
     UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode);
     UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode,
         const std::string &dualDirName);
-    virtual ~UpgradeRestore() = default;
+    virtual ~UpgradeRestore();
     int32_t Init(const std::string &backupRestorePath, const std::string &upgradePath, bool isUpgrade) override;
     std::vector<FileInfo> QueryFileInfos(int32_t offset);
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
@@ -130,6 +132,7 @@ private:
     PhotoAlbumRestore photoAlbumRestore_;
     PhotosRestore photosRestore_;
     BackupDatabaseHelper backupDatabaseHelper_;
+    std::unique_ptr<ffrt::queue> queue_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS
