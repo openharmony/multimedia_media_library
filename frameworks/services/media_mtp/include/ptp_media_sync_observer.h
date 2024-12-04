@@ -52,7 +52,7 @@ private:
     std::shared_ptr<DataShare::DataShareResultSet> GetAlbumInfo();
     std::vector<int32_t> GetAddEditPhotoHandles(int32_t handle);
     int32_t GetAddEditAlbumHandle(int32_t handle);
-    void AddMovingPhotoHandle(int32_t handle);
+    void AddPhotoHandle(int32_t handle);
     void SendPhotoRemoveEvent(std::string &suffixString);
 };
 
