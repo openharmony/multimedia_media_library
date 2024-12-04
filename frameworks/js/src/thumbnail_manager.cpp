@@ -22,6 +22,7 @@
 #include <uuid/uuid.h>
 
 #include "ashmem.h"
+#include "directory_ex.h"
 #include "image_source.h"
 #include "image_type.h"
 #include "js_native_api.h"
@@ -290,8 +291,9 @@ static int OpenThumbnail(const string &path, ThumbnailType type)
     if (!path.empty()) {
         string sandboxPath = GetSandboxPath(path, type);
         int fd = -1;
-        if (!sandboxPath.empty()) {
-            fd = open(sandboxPath.c_str(), O_RDONLY);
+        string absFilePath;
+        if (!sandboxPath.empty() && PathToRealPath(sandboxPath, absFilePath)) {
+            fd = open(absFilePath.c_str(), O_RDONLY);
         }
         if (fd > 0) {
             return fd;
