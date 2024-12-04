@@ -78,6 +78,7 @@ private:
         std::shared_ptr<UInt32List> &outHandles, const uint32_t parent);
     uint32_t GetSizeFromOfft(const off_t &size);
     std::vector<std::string> GetBurstKeyFromPhotosInfo();
+    std::shared_ptr<DataShare::DataShareResultSet> GetOwnerAlbumIdList();
 private:
     static std::mutex mutex_;
     static std::shared_ptr<MtpMedialibraryManager> instance_;
