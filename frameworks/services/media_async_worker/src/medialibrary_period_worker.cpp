@@ -105,7 +105,7 @@ int32_t MediaLibraryPeriodWorker::GetValidId()
     return index;
 }
 
-void MediaLibraryPeriodWorker::StartThreadById(int32_t threadId, size_t period)
+void MediaLibraryPeriodWorker::StartThreadById(int32_t threadId, int32_t period)
 {
     lock_guard<mutex> lockGuard(mtx_);
     auto task = tasks_.find(threadId);
