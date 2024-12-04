@@ -1941,6 +1941,26 @@ static void GetModityExtensionPath(std::string &path, std::string &modifyFilePat
     size_t pos = path.find_last_of('.');
     modifyFilePath = path.substr(0, pos) + extension;
 }
+
+static int32_t Move(const string& srcPath, const string& destPath)
+{
+    if (!MediaFileUtils::IsFileExists(srcPath)) {
+        MEDIA_ERR_LOG("srcPath: %{private}s does not exist!", srcPath.c_str());
+        return E_NO_SUCH_FILE;
+    }
+
+    if (destPath.empty()) {
+        MEDIA_ERR_LOG("Failed to check empty destPath");
+        return E_INVALID_VALUES;
+    }
+
+    int32_t ret = rename(srcPath.c_str(), destPath.c_str());
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Failed to rename, src: %{public}s, dest: %{public}s, ret: %{public}d, errno: %{public}d",
+            srcPath.c_str(), destPath.c_str(), ret, errno);
+    }
+    return ret;
+}
  
 int32_t MediaLibraryPhotoOperations::UpdateExtension(const int32_t &fileId, std::string &mimeType,
     const int32_t &fileType, std::string &oldFilePath)
@@ -2250,8 +2270,8 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
         if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
             string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
             string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourcePath);
-            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(sourceVideoPath, videoPath) == E_OK, E_HAS_FS_ERROR,
-                "Can not modify %{private}s to %{private}s", sourceVideoPath.c_str(), videoPath.c_str());
+            CHECK_AND_RETURN_RET_LOG(Move(sourceVideoPath, videoPath) == E_OK, E_HAS_FS_ERROR,
+                "Can not move %{private}s to %{private}s", sourceVideoPath.c_str(), videoPath.c_str());
         }
     } else {
         string editData;
@@ -2289,26 +2309,6 @@ void MediaLibraryPhotoOperations::DeleteRevertMessage(const string &path)
         return;
     }
     return;
-}
-
-static int32_t Move(const string& srcPath, const string& destPath)
-{
-    if (!MediaFileUtils::IsFileExists(srcPath)) {
-        MEDIA_ERR_LOG("srcPath: %{private}s does not exist!", srcPath.c_str());
-        return E_NO_SUCH_FILE;
-    }
-
-    if (destPath.empty()) {
-        MEDIA_ERR_LOG("Failed to check empty destPath");
-        return E_INVALID_VALUES;
-    }
-
-    int32_t ret = rename(srcPath.c_str(), destPath.c_str());
-    if (ret < 0) {
-        MEDIA_ERR_LOG("Failed to rename, src: %{public}s, dest: %{public}s, ret: %{public}d, errno: %{public}d",
-            srcPath.c_str(), destPath.c_str(), ret, errno);
-    }
-    return ret;
 }
 
 bool MediaLibraryPhotoOperations::IsNeedRevertEffectMode(MediaLibraryCommand& cmd,
