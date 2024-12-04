@@ -110,12 +110,13 @@ public:
         const std::vector<OHOS::Media::ValueObject> &bindArgs));
     MOCK_METHOD2(QueryByStep,
         std::shared_ptr<ResultSet>(const std::string &sql, const std::vector<std::string> &selectionArgs));
-    MOCK_METHOD2(QueryByStep,
-        std::shared_ptr<ResultSet>(const std::string &sql, const std::vector<OHOS::Media::ValueObject> &bindArgs));
+    MOCK_METHOD3(QueryByStep,
+        std::shared_ptr<ResultSet>(const std::string &sql, const std::vector<OHOS::Media::ValueObject> &bindArgs,
+        bool preCount));
 
-    MOCK_METHOD2(QueryByStep,
+    MOCK_METHOD3(QueryByStep,
         std::shared_ptr<ResultSet>(const AbsRdbPredicates &predicates,
-        const std::vector<std::string> &columns));
+        const std::vector<std::string> &columns, bool preCount));
 
     MOCK_METHOD4(RemoteQuery,
         std::shared_ptr<ResultSet>(const std::string &device,
