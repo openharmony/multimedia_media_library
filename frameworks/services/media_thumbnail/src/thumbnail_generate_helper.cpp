@@ -91,8 +91,12 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bo
     }
 
     if (isSync) {
-        bool isSuccess = IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
-        IThumbnailHelper::UpdateThumbnailState(opts, thumbnailData, isSuccess);
+        WaitStatus status;
+        bool isSuccess = IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData, status);
+        if (status == WaitStatus::INSERT) {
+            IThumbnailHelper::UpdateThumbnailState(opts, thumbnailData, isSuccess);
+        }
+        
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
     } else {
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
@@ -443,13 +447,13 @@ int32_t ThumbnailGenerateHelper::GetNewThumbnailCount(ThumbRdbOpt &opts, const i
 bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType)
 {
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
-    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
+    WaitStatus status;
+    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data, status)) {
         MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, doCreateLcd failed: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
     if (thumbType != ThumbnailType::LCD) {
-        WaitStatus status;
         bool isSuccess = IThumbnailHelper::DoCreateThumbnail(opts, data, status);
         if (status == WaitStatus::INSERT) {
             IThumbnailHelper::UpdateThumbnailState(opts, data, isSuccess);
@@ -466,13 +470,13 @@ bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailTyp
 bool GenerateKeyFrameLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int32_t thumbType)
 {
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
-    if (thumbType == KEY_FRAME_LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
+    WaitStatus status;
+    if (thumbType == KEY_FRAME_LCD && !IThumbnailHelper::DoCreateLcd(opts, data, status)) {
         MEDIA_ERR_LOG("Get key frame lcd thumbnail pixelmap, doCreateLcd failed: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
     if (thumbType != KEY_FRAME_LCD) {
-        WaitStatus status;
         bool isSuccess = IThumbnailHelper::DoCreateThumbnail(opts, data, status);
         if (!isSuccess) {
             MEDIA_ERR_LOG("Get default key frame thumbnail pixelmap, doCreateThumbnail failed: %{public}s",

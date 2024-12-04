@@ -64,11 +64,15 @@ void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> 
         MEDIA_ERR_LOG("CreateLcdAndThumbnail failed, data is null");
         return;
     }
-    bool isSuccess = DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_);
-    if (isSuccess && !data->thumbnailData_.tracks.empty() && (data->thumbnailData_.trigger == "0")) {
+    WaitStatus status;
+    bool isSuccess = DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_, status);
+    if (status == WaitStatus::INSERT) {
+        if (isSuccess && !data->thumbnailData_.tracks.empty() && (data->thumbnailData_.trigger == "0")) {
         UpdateHighlightDbState(data->opts_, data->thumbnailData_);
     }
-    UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+        UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    }
+    
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -78,7 +82,8 @@ void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateLcd failed, data is null");
         return;
     }
-    DoCreateLcd(data->opts_, data->thumbnailData_);
+    WaitStatus status;
+    DoCreateLcd(data->opts_, data->thumbnailData_, status);
 }
 
 void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
@@ -447,10 +452,10 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
-bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
     ThumbnailWait thumbnailWait(true);
-    auto ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::LCD);
+    ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::LCD);
     if (ret != WaitStatus::INSERT) {
         return ret == WaitStatus::WAIT_SUCCESS;
     }
@@ -922,12 +927,12 @@ bool IThumbnailHelper::DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
-bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
     MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
         data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
     data.isNeedStoreSize = false;
-    if (!DoCreateLcd(opts, data)) {
+    if (!DoCreateLcd(opts, data, ret)) {
         MEDIA_ERR_LOG("Fail to create lcd, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -956,8 +961,7 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
             DfxUtils::GetSafePath(data.path).c_str());
     }
 
-    WaitStatus status;
-    if (!DoCreateThumbnail(opts, data, status)) {
+    if (!DoCreateThumbnail(opts, data, ret)) {
         MEDIA_ERR_LOG("Fail to create thumbnail, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -1026,7 +1030,8 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
 
 bool GenerateRotatedThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType)
 {
-    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
+    WaitStatus status;
+    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data, status)) {
         MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, rotate lcd failed: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
         return false;
@@ -1083,7 +1088,7 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, Wa
         return false;
     }
 
-    if (!DoCreateLcd(opts, data)) {
+    if (!DoCreateLcd(opts, data, ret)) {
         MEDIA_ERR_LOG("Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
@@ -1098,8 +1103,7 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, Wa
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
-    WaitStatus status;
-    if (!DoCreateThumbnail(opts, data, status)) {
+    if (!DoCreateThumbnail(opts, data, ret)) {
         MEDIA_ERR_LOG("Fail to create thumbnail, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
