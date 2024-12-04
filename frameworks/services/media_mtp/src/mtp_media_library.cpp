@@ -595,13 +595,19 @@ int32_t MtpMediaLibrary::SendObjectInfo(const std::shared_ptr<MtpOperationContex
             return MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR);
         }
     }
-
-    uint32_t index = GetId();
+    uint32_t outObjectHandle;
+    auto ret = GetIdByPath(path, outObjectHandle);
     {
         WriteLock lock(g_mutex);
-        AddToHandlePathMap(path, index);
+        if (ret != E_SUCCESS) {
+            uint32_t index = GetId();
+            AddToHandlePathMap(path, index);
+            outObjectHandle = index;
+        }
+        MEDIA_DEBUG_LOG("SendObjectInfo path[%{public}s], handle[%{public}d]", path.c_str(), outObjectHandle);
     }
-    outHandle = index;
+
+    outHandle = outObjectHandle;
     outStorageID = context->storageID;
     outParent = context->parent;
     return MtpErrorUtils::SolveSendObjectInfoError(E_SUCCESS);
@@ -755,10 +761,12 @@ int32_t MtpMediaLibrary::CopyObject(const std::shared_ptr<MtpOperationContext> &
     auto ret = GetIdByPath(toPath.string(), outObjectHandle);
     {
         WriteLock lock(g_mutex);
-        uint32_t index = GetId();
-        (ret != E_SUCCESS) ? AddToHandlePathMap(toPath.string(), index) : ModifyPathHandleMap(toPath.string(), index);
-        outObjectHandle = index;
-        MEDIA_INFO_LOG("CopyObject successful to[%{public}s], handle[%{public}d]", toPath.c_str(), index);
+        if (ret != E_SUCCESS) {
+            uint32_t index = GetId();
+            AddToHandlePathMap(toPath.string(), index);
+            outObjectHandle = index;
+        }
+        MEDIA_INFO_LOG("CopyObject successful to[%{public}s], handle[%{public}d]", toPath.c_str(), outObjectHandle);
     }
     return MTP_SUCCESS;
 }
