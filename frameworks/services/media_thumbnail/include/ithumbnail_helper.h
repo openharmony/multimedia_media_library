@@ -101,7 +101,7 @@ public:
         ThumbRdbOpt &opts, ThumbnailData &thumbData, int32_t requestId = 0);
     EXPORT static void AddThumbnailCancelTask(ThumbnailGenerateExecute executor, int32_t requestId = 0);
     EXPORT static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
-    EXPORT static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
     EXPORT static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
     EXPORT static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
