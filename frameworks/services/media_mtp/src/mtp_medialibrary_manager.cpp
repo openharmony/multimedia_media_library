@@ -110,6 +110,8 @@ void MtpMedialibraryManager::Clear()
         dataShareHelper_->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_URI_PREFIX), mediaPhotoObserver_);
         dataShareHelper_->UnregisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX), mediaPhotoObserver_);
     }
+    mediaPhotoObserver_ = nullptr;
+    dataShareHelper_ = nullptr;
 }
 
 void MtpMedialibraryManager::SetContext(const shared_ptr<MtpOperationContext> &context)
