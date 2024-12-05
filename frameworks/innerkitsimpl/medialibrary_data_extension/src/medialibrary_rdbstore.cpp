@@ -2760,7 +2760,8 @@ static void UpdateGeoTables(RdbStore &store)
         "ALTER TABLE tab_geo_dictionary RENAME TO " +  GEO_DICTIONARY_TABLE,
         "ALTER TABLE tab_geo_knowledge RENAME TO " +  GEO_KNOWLEDGE_TABLE,
         CREATE_DICTIONARY_INDEX,
-        CREATE_KNOWLEDGE_INDEX,
+        DROP_KNOWLEDGE_INDEX,
+        CREATE_NEW_KNOWLEDGE_INDEX,
         CREATE_CITY_NAME_INDEX,
         CREATE_LOCATION_KEY_INDEX,
     };
