@@ -503,8 +503,13 @@ void IThumbnailHelper::UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &
 bool SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceEx)
 {
     shared_ptr<Picture> lcdSource = isSourceEx ? data.source.GetPictureEx() : data.source.GetPicture();
-    if (lcdSource == nullptr || lcdSource->GetMainPixel() == nullptr) {
+    if (lcdSource == nullptr) {
         MEDIA_ERR_LOG("SaveLcdPictureSource failed, lcdSource is null");
+        return false;
+    }
+    if (lcdSource->GetMainPixel() == nullptr || lcdSource->GetGainmapPixelMap() == nullptr) {
+        MEDIA_ERR_LOG("SaveLcdPictureSource failed, mainpixel exist: %{public}d, gainMap exist: %{public}d",
+            lcdSource->GetMainPixel() == nullptr, lcdSource->GetGainmapPixelMap() == nullptr);
         return false;
     }
     int lcdDesiredWidth;
