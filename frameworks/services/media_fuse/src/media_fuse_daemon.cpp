@@ -22,8 +22,11 @@
 #include <thread>
 #include <unistd.h>
 
+#include "dfx_const.h"
+#include "dfx_timer.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_operation.h"
 #include "media_fuse_manager.h"
 
 namespace OHOS {
@@ -40,6 +43,12 @@ static int GetAttr(const char *path, struct stat *stbuf, struct fuse_file_info *
 static int Open(const char *path, struct fuse_file_info *fi)
 {
     int fd = -1;
+    fuse_context *ctx = fuse_get_context();
+
+    DfxTimer dfxTimer(
+        DfxType::FUSE_OPEN, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), OPEN_FILE_TIME_OUT, true);
+    dfxTimer.SetCallerUid(ctx->uid);
+
     int32_t err = MediaFuseManager::GetInstance().DoOpen(path, fi->flags, fd);
     if (err) {
         MEDIA_ERR_LOG("Open file failed, path = %{private}s", path);
@@ -52,6 +61,12 @@ static int Open(const char *path, struct fuse_file_info *fi)
 
 static int Read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
+    fuse_context *ctx = fuse_get_context();
+
+    DfxTimer dfxTimer(
+        DfxType::FUSE_READ, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
+    dfxTimer.SetCallerUid(ctx->uid);
+
     int res = pread(fi->fh, buf, size, offset);
     if (res == -1) {
         MEDIA_ERR_LOG("Read file failed, errno = %{public}d", errno);
@@ -63,6 +78,12 @@ static int Read(const char *path, char *buf, size_t size, off_t offset, struct f
 
 static int Write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
+    fuse_context *ctx = fuse_get_context();
+
+    DfxTimer dfxTimer(
+        DfxType::FUSE_WRITE, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
+    dfxTimer.SetCallerUid(ctx->uid);
+
     int res = pwrite(fi->fh, buf, size, offset);
     if (res == -1) {
         MEDIA_ERR_LOG("Write file failed, errno = %{public}d", errno);
@@ -74,6 +95,12 @@ static int Write(const char *path, const char *buf, size_t size, off_t offset, s
 
 static int Release(const char *path, struct fuse_file_info *fi)
 {
+    fuse_context *ctx = fuse_get_context();
+
+    DfxTimer dfxTimer(
+        DfxType::FUSE_RELEASE, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
+    dfxTimer.SetCallerUid(ctx->uid);
+
     int32_t err = MediaFuseManager::GetInstance().DoRelease(path, fi->fh);
     return err;
 }

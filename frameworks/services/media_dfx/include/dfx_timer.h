@@ -25,6 +25,7 @@ public:
     DfxTimer(int32_t type, int32_t object, int64_t timeOut, bool isReport);
     ~DfxTimer();
     void End();
+    void SetCallerUid(int32_t uid);
 
 private:
     int32_t type_;
@@ -34,6 +35,7 @@ private:
     int64_t timeOut_;
     bool isReport_;
     bool isEnd_;
+    int32_t uid_;
 };
 } // namespace Media
 } // namespace OHOS
