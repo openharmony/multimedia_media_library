@@ -270,6 +270,13 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
         DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
         return false;
     }
+    if (pixelMap->GetPixelFormat() == PixelFormat::YCBCR_P010) {
+        uint32_t ret = ImageFormatConvert::ConvertImageFormat(pixelMap, PixelFormat::RGBA_1010102);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("PixelMapYuv10ToRGBA_1010102: source ConvertImageFormat fail");
+            return false;
+        }
+    }
 
     data.source.SetPixelMap(pixelMap);
     data.orientation = 0;
@@ -2413,13 +2420,6 @@ bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, bool isSource
         return false;
     }
     if (dataSource != nullptr && dataSource->IsHdr()) {
-        if (dataSource->GetPixelFormat() == PixelFormat::YCBCR_P010) {
-            uint32_t ret = ImageFormatConvert::ConvertImageFormat(dataSource, PixelFormat::RGBA_1010102);
-            if (ret != E_OK) {
-                MEDIA_ERR_LOG("PixelMapYuv10ToRGBA_1010102: source ConvertImageFormat fail");
-                return false;
-            }
-        }
         uint32_t ret = dataSource->ToSdr();
         if (ret != E_OK) {
             MEDIA_ERR_LOG("Fail to transform to sdr, isSourceEx: %{public}d.", isSourceEx);
