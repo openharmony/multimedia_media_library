@@ -19,7 +19,6 @@
 #include "mtp_file_observer.h"
 #include "mtp_service.h"
 #include "mtp_subscriber.h"
-#include "mtp_medialibrary_manager.h"
 #include "os_account_manager.h"
 #include "usb_srv_client.h"
 #include "usb_srv_support.h"
