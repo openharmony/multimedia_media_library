@@ -19,9 +19,11 @@
 #include "mtp_file_observer.h"
 #include "mtp_service.h"
 #include "mtp_subscriber.h"
+#include "mtp_medialibrary_manager.h"
 #include "os_account_manager.h"
 #include "usb_srv_client.h"
 #include "usb_srv_support.h"
+#include "mtp_medialibrary_manager.h"
 
 #include <thread>
 
@@ -59,15 +61,16 @@ void MtpManager::Init()
         int ret = OHOS::USB::UsbSrvClient::GetInstance().GetCurrentFunctions(funcs);
         MEDIA_INFO_LOG("MtpManager Init GetCurrentFunctions = %{public}d ret = %{public}d", funcs, ret);
         CHECK_AND_RETURN_LOG(ret == 0, "GetCurrentFunctions failed");
-        if (funcs & USB::UsbSrvSupport::Function::FUNCTION_MTP) {
+        uint32_t unsignedfuncs = static_cast<uint32_t>(funcs);
+        if (unsignedfuncs & USB::UsbSrvSupport::Function::FUNCTION_MTP) {
             MtpManager::GetInstance().StartMtpService(MtpMode::MTP_MODE);
             return;
         }
-        if (funcs & USB::UsbSrvSupport::Function::FUNCTION_PTP) {
+        if (unsignedfuncs & USB::UsbSrvSupport::Function::FUNCTION_PTP) {
             MtpManager::GetInstance().StartMtpService(MtpMode::PTP_MODE);
             return;
         }
-        if (funcs & USB::UsbSrvSupport::Function::FUNCTION_HDC) {
+        if (unsignedfuncs & USB::UsbSrvSupport::Function::FUNCTION_HDC) {
             MtpManager::GetInstance().StopMtpService();
         }
         MEDIA_INFO_LOG("MtpManager Init success end");
@@ -117,6 +120,8 @@ void MtpManager::StopMtpService()
         CHECK_AND_RETURN_LOG(service != nullptr, "MtpManager mtpServicePtr is nullptr");
         if (mtpMode_ == MtpMode::MTP_MODE) {
             MtpFileObserver::GetInstance().StopFileInotify();
+        } else if (mtpMode_ == MtpMode::PTP_MODE) {
+            MtpMedialibraryManager::GetInstance()->Clear();
         }
         mtpMode_ = MtpMode::NONE_MODE;
         service->StopService();

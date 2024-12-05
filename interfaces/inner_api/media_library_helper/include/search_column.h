@@ -29,6 +29,7 @@ const std::string SEARCH_TOTAL_TABLE = "tab_analysis_search_index";
 
 // uri
 const std::string URI_SEARCH_INDEX = MEDIALIBRARY_DATA_URI + "/" + SEARCH_TOTAL_TABLE;
+const std::string UPDATE_INDEX = "update_index";
 
 // create search table
 const std::string TBL_SEARCH_ID = "id";

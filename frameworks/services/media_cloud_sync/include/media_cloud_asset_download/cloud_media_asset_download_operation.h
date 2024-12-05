@@ -63,9 +63,14 @@ public:
         FORCE_DOWNLOADING,
         GENTLE_DOWNLOADING,
         PAUSE_FOR_TEMPERATURE_LIMIT,
+        PAUSE_FOR_ROM_LIMIT,
         PAUSE_FOR_NETWORK_FLOW_LIMIT,
+        PAUSE_FOR_WIFI_UNAVAILABLE,
+        PAUSE_FOR_POWER_LIMIT,
         PAUSE_FOR_BACKGROUND_TASK_UNAVAILABLE,
+        PAUSE_FOR_FREQUENT_USER_REQUESTS,
         PAUSE_FOR_CLOUD_ERROR,
+        PAUSE_FOR_USER_PAUSE,
         RECOVER_FOR_MANAUL_ACTIVE,
         RECOVER_FOR_PASSIVE_STATUS,
         IDLE,
@@ -120,13 +125,12 @@ public:
 
     // Confirmation of the notification
     bool isThumbnailUpdate_ = true;
-    bool isNetworkConnected_ = false;
     bool isBgDownloadPermission_ = false;
 
 private:
     std::reference_wrapper<CloudSyncManager> cloudSyncManager_ = CloudSyncManager::GetInstance();
     CloudMediaAssetTaskStatus taskStatus_ = CloudMediaAssetTaskStatus::IDLE;
-    CloudMediaDownloadType downloadType_;
+    CloudMediaDownloadType downloadType_ = CloudMediaDownloadType::DOWNLOAD_GENTLE;
     CloudMediaTaskPauseCause pauseCause_ = CloudMediaTaskPauseCause::NO_PAUSE;
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper_;
     std::shared_ptr<CloudMediaAssetObserver> cloudMediaAssetObserver_;
@@ -144,7 +148,7 @@ private:
     DownloadFileData cacheForDownload_;
 
     // data downloading
-    bool isCache_;
+    bool isCache_ = false;
     int64_t downloadId_ = -1;
     int64_t downloadNum_ = 0;
     DownloadFileData dataForDownload_;

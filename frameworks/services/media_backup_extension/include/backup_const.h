@@ -39,6 +39,7 @@ constexpr int32_t DUAL_FRAME_CLONE_RESTORE_ID = 1;
 constexpr int32_t CLONE_RESTORE_ID = 2;
 constexpr int32_t I_PHONE_CLONE_RESTORE = 3;
 constexpr int32_t OTHERS_PHONE_CLONE_RESTORE = 4;
+constexpr int32_t LITE_PHONE_CLONE_RESTORE = 5;
 constexpr int32_t DEFAULT_RESTORE_ID = -1;
 constexpr int32_t RETRY_TIME = 5;
 constexpr int32_t SLEEP_INTERVAL = 1;
@@ -228,6 +229,12 @@ enum RestoreError {
     GET_PATH_FAILED,
     INSERT_FAILED,
     MOVE_FAILED,
+    MEDIA_TYPE_INVALID,
+    DUPLICATE_DATA,
+    SIZE_INVALID,
+    MOVING_PHOTO_CONVERT_FAILED,
+    CREATE_PATH_FAILED,
+    PREPARE_PATH_FAILED,
 };
 
 enum class PhotoRelatedType {
@@ -241,12 +248,18 @@ enum ProcessStatus {
 };
 
 const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
-    { RestoreError::INIT_FAILED, "Init failed" },
-    { RestoreError::FILE_INVALID, "File is invalid" },
-    { RestoreError::PATH_INVALID, "File path is invalid" },
-    { RestoreError::GET_PATH_FAILED, "Get path failed" },
-    { RestoreError::INSERT_FAILED, "Insert failed" },
-    { RestoreError::MOVE_FAILED, "Move failed" },
+    { RestoreError::INIT_FAILED, "RESTORE_INIT_FAILED" },
+    { RestoreError::FILE_INVALID, "DEVICE_FILE_INVALID" },
+    { RestoreError::PATH_INVALID, "DEVICE_PATH_INVALID" },
+    { RestoreError::GET_PATH_FAILED, "RESTORE_GET_PATH_FAILED" },
+    { RestoreError::INSERT_FAILED, "RESTORE_INSERT_FAILED" },
+    { RestoreError::MOVE_FAILED, "RESTORE_MOVE_FAILED" },
+    { RestoreError::MEDIA_TYPE_INVALID, "DEVICE_MEDIA_TYPE_INVALID" },
+    { RestoreError::DUPLICATE_DATA, "DEVICE_DUPLICATE_DATA" },
+    { RestoreError::SIZE_INVALID, "DEVICE_SIZE_INVALID" },
+    { RestoreError::MOVING_PHOTO_CONVERT_FAILED, "DEVICE_MOVING_PHOTO_CONVERT_FAILED" },
+    { RestoreError::CREATE_PATH_FAILED, "RESTORE_CREATE_PATH_FAILED" },
+    { RestoreError::PREPARE_PATH_FAILED, "RESTORE_PREPARE_PATH_FAILED" },
 };
 
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {

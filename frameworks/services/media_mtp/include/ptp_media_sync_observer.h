@@ -16,6 +16,11 @@
 #ifndef FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_PTP_MEDIA_SYNC_OBSERVER_H_
 #define FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_PTP_MEDIA_SYNC_OBSERVER_H_
 
+#include <condition_variable>
+#include <ios>
+#include <mutex>
+#include <vector>
+
 #include "datashare_helper.h"
 #include "mtp_constants.h"
 #include "media_column.h"
@@ -23,6 +28,7 @@
 #include "mtp_operation_context.h"
 #include "media_mtp_utils.h"
 #include "medialibrary_async_worker.h"
+#include "property.h"
 #include "userfilemgr_uri.h"
 
 namespace OHOS {
@@ -42,13 +48,27 @@ public:
     std::shared_ptr<MtpOperationContext> context_ = nullptr;
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_ = nullptr;
     void OnChangeEx(const ChangeInfo &changeInfo);
+    void StartNotifyThread();
+    void StopNotifyThread();
+    void ChangeNotifyThread();
 private:
     void SendEventPackets(uint32_t objectHandle, uint16_t eventCode);
     void SendEventPacketAlbum(uint32_t objectHandle, uint16_t eventCode);
     void SendPhotoEvent(ChangeType changeType, std::string suffixString);
-    std::vector<int32_t> GetHandlesFromPhotosInfoBurstKeys(int32_t handle);
+    std::vector<int32_t> GetHandlesFromPhotosInfoBurstKeys(std::vector<std::string> &handle);
     void SendEventToPTP(int32_t suff_int, ChangeType changeType);
+    std::vector<std::string> GetAllDeleteHandles();
     std::shared_ptr<DataShare::DataShareResultSet> GetAlbumInfo();
+    std::vector<int32_t> GetAddEditPhotoHandles(int32_t handle);
+    int32_t GetAddEditAlbumHandle(int32_t handle);
+    void AddPhotoHandle(int32_t handle);
+    void SendPhotoRemoveEvent(std::string &suffixString);
+private:
+    std::thread notifythread_;
+    std::queue<ChangeInfo> changeInfoQueue_;
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    std::atomic<bool> isRunning_ {false};
 };
 
 class MediaSyncNotifyData : public AsyncTaskData {

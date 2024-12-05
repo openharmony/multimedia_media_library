@@ -1180,10 +1180,6 @@ napi_value SendableMediaLibraryNapiUtils::GetNextRowObject(napi_env env,
     }
 
     if (fileAsset->GetDisplayName().empty() && fileAsset->GetPath().empty()) {
-        napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH, &value);
-        napi_set_named_property(env, result, MEDIA_DATA_DB_URI.c_str(), value);
-        napi_create_int32(env, 0, &value);
-        napi_set_named_property(env, result, "subtype", value);
         return result;
     }
     string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath(), false);
