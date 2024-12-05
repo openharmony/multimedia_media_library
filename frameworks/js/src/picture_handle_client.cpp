@@ -76,12 +76,22 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture fd: %{public}d", fd);
     // 获取消息总长度
     void *msgLenAddr = mmap(nullptr, UINT32_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (msgLenAddr == MAP_FAILED || msgLenAddr == nullptr) {
+        MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture mmap msgLenAddr failed!");
+        close(fd);
+        return E_ERR;
+    }
     uint32_t msgLen = *((uint32_t*)msgLenAddr);
     munmap(msgLenAddr, UINT32_LEN);
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture msgLen: %{public}d", msgLen);
 
     // 获取消息
     uint8_t *addr = (uint8_t*)mmap(nullptr, msgLen, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (addr == MAP_FAILED || addr == nullptr) {
+        MEDIA_ERR_LOG("PictureHandlerClient::ReadPicture mmap addr failed!");
+        close(fd);
+        return E_ERR;
+    }
     uint32_t readoffset = UINT32_LEN;
 
     // 读取dataSize
