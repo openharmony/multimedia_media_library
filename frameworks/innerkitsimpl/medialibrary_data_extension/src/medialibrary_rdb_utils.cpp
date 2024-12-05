@@ -1502,41 +1502,20 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
     return newWhereIdArgs.size();
 }
 
-int32_t MediaLibraryRdbUtils::UpdateRemoveAsset(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+int32_t MediaLibraryRdbUtils::UpdateRemovedAssetToTrash(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const vector<string> &whereIdArgs)
 {
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
     int32_t updateRows = 0;
-    vector<string> fileAssetsUri;
-    MediaLibraryPhotoOperations::UpdateSourcePath(whereIdArgs);
-    for (auto assetId: whereIdArgs) {
-        const std::string QUERY_FILE_ASSET_INFO = "SELECT * FROM Photos WHERE file_id = " + assetId;
-        shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
-        if (resultSet->GoToFirstRow() == NativeRdb::E_OK && resultSet != nullptr) {
-            string assetData;
-            GetStringFromResultSet(resultSet, MediaColumn::MEDIA_FILE_PATH, assetData);
-            if (MediaLibraryDataManagerUtils::IsNumber(assetId)) {
-                string uri = MediaLibraryFormMapOperations::GetUriByFileId(stoi(assetId), assetData);
-                fileAssetsUri.push_back(uri);
-            }
-        }
-    }
     RdbPredicates predicatesPhotos(PhotoColumn::PHOTOS_TABLE);
     predicatesPhotos.In(MediaColumn::MEDIA_ID, whereIdArgs);
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     rdbStore->Update(updateRows, values, predicatesPhotos);
-    if (updateRows < 0) {
-        MEDIA_ERR_LOG("Failed to remove assets");
+    if (updateRows <= 0) {
+        MEDIA_ERR_LOG("Failed to remove assets, updateRows: %{public}d", updateRows);
         return E_HAS_DB_ERROR;
     }
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
-        to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
-        to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::TRASH),
-        to_string(PhotoAlbumSubType::HIDDEN)
-    });
-    MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
-        static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), fileAssetsUri);
-    MediaLibraryPhotoOperations::TrashPhotosSendNotify(fileAssetsUri);
     return updateRows;
 }
 

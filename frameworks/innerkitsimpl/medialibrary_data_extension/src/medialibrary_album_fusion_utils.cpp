@@ -521,7 +521,7 @@ static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& 
     int32_t photoQuality = 0;
     GetIntValueFromResultSet(resultSet, PhotoColumn::PHOTO_QUALITY, photoQuality);
     if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) {
-        photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL);
+        photoQuality = static_cast<int32_t>(MultiStagesPhotoQuality::FULL);
         dirty = static_cast<int32_t>(DirtyType::TYPE_NEW);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
     }
@@ -1106,13 +1106,9 @@ static void QuerySourceAlbumLPath(const std::shared_ptr<MediaLibraryRdbStore> up
 }
 
 void MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(
-    const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, NativeRdb::ValuesBucket &values,
+    const std::shared_ptr<MediaLibraryRdbStore>& upgradeStore, NativeRdb::ValuesBucket &values,
     shared_ptr<NativeRdb::ResultSet> &resultSet, const string &newAlbumName)
 {
-    MEDIA_INFO_LOG("Begin build inset values Meta Data on set user album name!");
-    if (newAlbumName == "") {
-        return;
-    }
     for (auto it = albumColumnTypeMap.begin(); it != albumColumnTypeMap.end(); ++it) {
         string columnName = it->first;
         ResultSetDataType columnType = it->second;
@@ -1122,6 +1118,7 @@ void MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(
     std::string lPath = "/Pictures/Users/" + newAlbumName;
     values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, 1);
     values.PutString(PhotoAlbumColumns::ALBUM_LPATH, lPath);
+    values.Delete(PhotoAlbumColumns::ALBUM_NAME);
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, newAlbumName);
     int64_t albumDataAdded = 0;
     GetLongValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_DATE_ADDED, albumDataAdded);
@@ -1220,7 +1217,7 @@ static int32_t CopyAlbumMetaData(const std::shared_ptr<MediaLibraryRdbStore> upg
     return ret;
 }
 
-int32_t MediaLibraryAlbumFusionUtils::DeleteALbumAndUpdateRelationship(
+int32_t MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(
     const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, const int32_t &oldAlbumId, const int64_t &newAlbumId,
     bool isCloudAblum)
 {
@@ -1289,7 +1286,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleExpiredAlbumData(const std::shared_p
         int64_t newAlbumId = -1;
         GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, oldAlbumId);
         CopyAlbumMetaData(upgradeStore, resultSet, oldAlbumId, newAlbumId);
-        DeleteALbumAndUpdateRelationship(upgradeStore, oldAlbumId, newAlbumId, IsCloudAlbum(resultSet));
+        DeleteAlbumAndUpdateRelationship(upgradeStore, oldAlbumId, newAlbumId, IsCloudAlbum(resultSet));
         MEDIA_ERR_LOG("Finish handle old album %{public}d, new inserted album id is %{public}" PRId64,
             oldAlbumId, newAlbumId);
     }
@@ -1361,7 +1358,7 @@ int32_t MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(const std::shared_pt
     }
     MEDIA_INFO_LOG("MergeClashSourceAlbum %{public}d, target album is %{public}" PRId64,
         sourceAlbumId, targetAlbumId);
-    DeleteALbumAndUpdateRelationship(upgradeStore, sourceAlbumId, targetAlbumId, IsCloudAlbum(resultSet));
+    DeleteAlbumAndUpdateRelationship(upgradeStore, sourceAlbumId, targetAlbumId, IsCloudAlbum(resultSet));
     return E_OK;
 }
 
@@ -1593,7 +1590,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(const std::shared_ptr
             MEDIA_INFO_LOG("Clean duplicated album, sourceAlbumId is %{public}d ,source album name is %{public}s",
                 sourceAlbumId, sourceAlbumName.c_str());
             if (ToLower(targetAlbumName) == ToLower(sourceAlbumName)) {
-                DeleteALbumAndUpdateRelationship(upgradeStore, sourceAlbumId, targetAlbumId, IsCloudAlbum(resultSet));
+                DeleteAlbumAndUpdateRelationship(upgradeStore, sourceAlbumId, targetAlbumId, IsCloudAlbum(resultSet));
                 indexRight++;
             } else {
                 indexLeft = indexRight;
