@@ -529,7 +529,7 @@ void MediaFileUtils::RecoverMediaTempDir()
     if (!IsDirEmpty(recoverPath)) {
         DIR *dir = opendir((recoverPath).c_str());
         if (dir == nullptr) {
-            MEDIA_ERR_LOG("Error opening temp directory");
+            MEDIA_ERR_LOG("Error opening temp directory, errno: %{public}d", errno);
             return;
         }
         
@@ -586,7 +586,7 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
 
     int32_t source = open(absFilePath.c_str(), O_RDONLY);
     if (source == -1) {
-        MEDIA_ERR_LOG("Open failed for source file");
+        MEDIA_ERR_LOG("Open failed for source file, errno: %{public}d", errno);
         return errCode;
     }
 
@@ -810,6 +810,26 @@ static inline int32_t CheckTitle(const string &title)
         return -EINVAL;
     }
     return E_OK;
+}
+
+int32_t MediaFileUtils::CheckTitleName(const string &title)
+    {
+        return CheckTitle(title);
+    }
+
+std::string MediaFileUtils::GetFileAssetUri(const std::string &fileAssetData, const std::string &displayName,
+    const int32_t &fileId)
+{
+    std::string filePath = fileAssetData;
+    std::string baseUri = "file://media";
+    size_t lastSlashInData = filePath.rfind('/');
+    std::string fileNameInData =
+        (lastSlashInData != std::string::npos) ? filePath.substr(lastSlashInData + 1) : filePath;
+    size_t dotPos = fileNameInData.rfind('.');
+    if (dotPos != std::string::npos) {
+        fileNameInData = fileNameInData.substr(0, dotPos);
+    }
+    return baseUri + "/Photo/" + std::to_string(fileId) + "/" + fileNameInData + "/" + displayName;
 }
 
 int32_t MediaFileUtils::CheckDisplayName(const string &displayName)
