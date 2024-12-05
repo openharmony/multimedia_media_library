@@ -90,7 +90,7 @@ public:
         NativeRdb::RdbPredicates &predicates);
     EXPORT static int32_t UpdateOwnerAlbumId(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<DataShare::DataShareValuesBucket> &values, std::vector<int32_t> &updateIds);
-    EXPORT static int32_t UpdateRemoveAsset(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+    EXPORT static int32_t UpdateRemovedAssetToTrash(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &whereIdArgs);
 
 private:

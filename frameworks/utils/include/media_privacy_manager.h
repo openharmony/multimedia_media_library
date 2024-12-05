@@ -33,7 +33,7 @@ public:
     EXPORT MediaPrivacyManager(const std::string &path, const std::string &mode, const std::string &fileId,
         const int32_t type = -1);
     EXPORT MediaPrivacyManager(const std::string &path, const std::string &mode, const std::string &fileId,
-        const std::string &appId, const std::string &clientBundle, const int32_t &uid);
+        const std::string &appId, const std::string &clientBundle, const int32_t &uid, const uint32_t &tokenId);
     EXPORT virtual ~MediaPrivacyManager();
     int32_t GetPrivacyRanges();
     EXPORT int32_t Open();
@@ -48,6 +48,7 @@ private:
     std::string appId_;
     std::string clientBundle_;
     int32_t uid_;
+    uint32_t tokenId_;
     bool fuseFlag_;
 };
 } // namespace Media

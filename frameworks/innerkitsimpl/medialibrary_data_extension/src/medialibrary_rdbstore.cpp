@@ -1177,7 +1177,8 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
     return deletedRows;
 }
 
-int32_t MediaLibraryRdbStore::ComletelyDeleteDBData(int32_t &deletedRows, const NativeRdb::AbsRdbPredicates &predicates)
+int32_t MediaLibraryRdbStore::CompletelyDeleteDBData(int32_t &deletedRows,
+    const NativeRdb::AbsRdbPredicates &predicates)
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
@@ -1810,7 +1811,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoExtColumn::CREATE_PHOTO_EXT_TABLE,
     PhotoColumn::CREATE_PHOTO_DISPLAYNAME_INDEX,
     AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
-    AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX,
+    AppUriPermissionColumn::CREATE_URI_URITYPE_TOKENID_INDEX,
     TriggerDeletePhotoClearAppUriPermission(),
     TriggerDeleteAudioClearAppUriPermission(),
     PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX,

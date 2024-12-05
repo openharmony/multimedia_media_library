@@ -35,6 +35,10 @@ struct PropertyValue {
     uint128_t outLongVal = {0};
     std::string outStrVal;
 };
+struct MovingType {
+    uint64_t parent;
+    std::string displayName;
+};
 const std::string MTP_FORMAT_ALL = ".all"; // Undefined
 const std::string MTP_FORMAT_UNDEFINED = ".undefined"; // Undefined
 const std::string MTP_FORMAT_ASSOCIATION = ".floader"; // associations (folders and directories)
@@ -201,11 +205,11 @@ private:
         std::unordered_map<uint32_t, std::string>::iterator it, shared_ptr<vector<Property>> &outProps);
     static void SetMtpProperty(const std::string &column, const std::string &path,
         ResultSetDataType &type, Property &prop);
-    static void SetPtpProperty(const std::string &column, const std::string &path, const std::string &displayName,
+    static void SetPtpProperty(const std::string &column, const std::string &path, const MovingType &movingType,
         Property &prop);
     static void GetMovingOrEnditOneRowPropList(const shared_ptr<UInt16List> &properties, const std::string &path,
         const std::shared_ptr<MtpOperationContext> &context, shared_ptr<vector<Property>> &outProps,
-        const std::string &displayName);
+        const MovingType &movingType);
 };
 } // namespace Media
 } // namespace OHOS

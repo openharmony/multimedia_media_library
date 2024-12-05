@@ -63,7 +63,7 @@ void MtpOperation::Execute()
     ReceiveRequestPacket(errorCode);
     if (errorCode != MTP_SUCCESS) {
         SendMakeResponsePacket(errorCode);
-        MEDIA_DEBUG_LOG("MtpOperation::Execute Out ReceiveRequestPacket fail err: %{public}d", errorCode);
+        MEDIA_ERR_LOG("MtpOperation::Execute Out ReceiveRequestPacket fail err: %{public}d", errorCode);
         return;
     }
 
@@ -95,7 +95,7 @@ void MtpOperation::ReceiveRequestPacket(int &errorCode)
     requestPacketPtr_->Init(headerData);
     errorCode = requestPacketPtr_->Read();
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_DEBUG_LOG("requestPacket Read fail err: %{public}d", errorCode);
+        MEDIA_ERR_LOG("requestPacket Read fail err: %{public}d", errorCode);
         return;
     }
     errorCode = requestPacketPtr_->Parser();
@@ -107,7 +107,9 @@ void MtpOperation::ReceiveRequestPacket(int &errorCode)
 
 void MtpOperation::SendMakeResponsePacket(int &errorCode)
 {
+    CHECK_AND_RETURN_LOG(responsePacketPtr_ != nullptr, "responsePacketPtr_ is null");
     responsePacketPtr_->Reset();
+    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "mtpContextPtr_ is null");
     GetPayloadData(mtpContextPtr_, dataPayloadData_, RESPONSE_CONTAINER_TYPE, errorCode);
     if (mtpContextPtr_->operationCode != 0) {
         MEDIA_INFO_LOG("operation = [0x%{public}x : %{public}s ]", mtpContextPtr_->operationCode,

@@ -67,10 +67,10 @@ int32_t MediaLibraryPeriodWorker::AddTask(const shared_ptr<MedialibraryPeriodTas
         MEDIA_ERR_LOG("task is over size");
         return threadId;
     }
+    tasks_[threadId] = task;
     task->isThreadRunning_.store(true);
     task->isTaskRunning_.store(true);
     task->thread_ = thread([this, threadId]() { this->Worker(threadId); });
-    tasks_[threadId] = task;
     return threadId;
 }
 
@@ -83,12 +83,12 @@ int32_t MediaLibraryPeriodWorker::AddTask(const shared_ptr<MedialibraryPeriodTas
         MEDIA_ERR_LOG("task is over size");
         return threadId;
     }
+    tasks_[threadId] = task;
     task->isThreadRunning_.store(true);
     task->isTaskRunning_.store(true);
     task->thread_ = thread([this, threadId, &handle, &refreshAlbumsFunc]() {
         this->Worker(threadId, handle, refreshAlbumsFunc);
     });
-    tasks_[threadId] = task;
     return threadId;
 }
 
@@ -105,7 +105,7 @@ int32_t MediaLibraryPeriodWorker::GetValidId()
     return index;
 }
 
-void MediaLibraryPeriodWorker::StartThreadById(int32_t threadId, size_t period)
+void MediaLibraryPeriodWorker::StartThreadById(int32_t threadId, int32_t period)
 {
     lock_guard<mutex> lockGuard(mtx_);
     auto task = tasks_.find(threadId);
@@ -140,7 +140,6 @@ void MediaLibraryPeriodWorker::CloseThreadById(int32_t threadId)
     if (task->second->thread_.joinable()) {
         task->second->thread_.detach();
     }
-    tasks_.erase(threadId);
 }
 
 bool MediaLibraryPeriodWorker::IsThreadRunning(int32_t threadId)
@@ -175,6 +174,8 @@ void MediaLibraryPeriodWorker::Worker(int32_t threadId)
         task->second->executor_();
         this_thread::sleep_for(chrono::milliseconds(task->second->period_));
     }
+    lock_guard<mutex> lockGuard(mtx_);
+    tasks_.erase(threadId);
 }
 
 void MediaLibraryPeriodWorker::Worker(int32_t threadId,
@@ -197,6 +198,8 @@ void MediaLibraryPeriodWorker::Worker(int32_t threadId,
         }
         this_thread::sleep_for(chrono::milliseconds(task->second->period_));
     }
+    lock_guard<mutex> lockGuard(mtx_);
+    tasks_.erase(threadId);
 }
 } // namespace Media
 } // namespace OHOS

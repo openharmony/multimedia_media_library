@@ -83,7 +83,8 @@ public:
     static bool CheckPhotoCallerPermission(const std::string &permission);
     static bool CheckPhotoCallerPermission(const std::string &permission,
         const Security::AccessToken::AccessTokenID &tokenCaller);
-    static bool CheckPhotoCallerPermission(const std::vector<std::string> &perms, const int &uid);
+    static bool CheckPhotoCallerPermission(const std::vector<std::string> &perms, const int &uid,
+        Security::AccessToken::AccessTokenID &tokenCaller);
     static void CollectPermissionInfo(const std::string &permission, const bool permGranted,
         const Security::AccessToken::PermissionUsedType type);
     static void CollectPermissionInfo(const std::string &permission, const bool permGranted,

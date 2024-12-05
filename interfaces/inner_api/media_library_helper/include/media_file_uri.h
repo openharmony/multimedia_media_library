@@ -73,6 +73,7 @@ public:
         std::vector<std::string> &timeIdBatch, int32_t &start, int32_t &count);
     EXPORT static int32_t CreateAssetBucket(int32_t fileId, int32_t &bucketNum);
     EXPORT static std::string GetPathFromUri(const std::string &uri, bool isPhoto);
+    EXPORT static void GetValidPath(Uri &uri, std::string &path);
 };
 } // namespace Media
 } // namespace OHOS

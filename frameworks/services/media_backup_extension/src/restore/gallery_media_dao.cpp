@@ -61,4 +61,22 @@ int32_t GalleryMediaDao::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQ
     }
     return GetInt32Val("count", resultSet);
 }
+
+/**
+ * @brief Get the row count of gallery_media no need migrate count.
+ */
+int32_t GalleryMediaDao::GetNoNeedMigrateCount(bool shouldIncludeSd)
+{
+    int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
+    std::vector<NativeRdb::ValueObject> params = {shouldIncludeSdFlag};
+    if (this->galleryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
+        return 0;
+    }
+    auto resultSet = this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_NO_NEED_MIGRATE_COUNT, params);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return 0;
+    }
+    return GetInt32Val("count", resultSet);
+}
 }  // namespace OHOS::Media

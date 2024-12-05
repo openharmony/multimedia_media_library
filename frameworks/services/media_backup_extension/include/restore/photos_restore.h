@@ -128,9 +128,6 @@ private:
         HAVING count(1) > 1 \
         LIMIT ?, ?;";
     const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
-    const int32_t CLOUD_ENHANCEMENT_ALBUM = 1;
-    const int32_t DUAL_ENHANCEMENT_PHOTO_QUALITY = 120;
-    const int32_t SINGLE_CLOUD_ENHANCEMENT_PHOTO = 120;
 };
 }  // namespace OHOS::Media
 

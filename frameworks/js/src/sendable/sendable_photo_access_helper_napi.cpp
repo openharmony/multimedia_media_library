@@ -750,7 +750,7 @@ napi_value GetJSArgsForCreateSmartAlbum(napi_env env, size_t argc, const napi_va
 }
 
 static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
-    unique_ptr<SendablePhotoAccessHelperAsyncContext> &context, bool isAddDefaultColumn = true)
+    unique_ptr<SendablePhotoAccessHelperAsyncContext> &context)
 {
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
@@ -768,6 +768,9 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
             break;
         }
         case TYPE_PHOTO: {
+            bool isAddDefaultColumn =
+                std::find(context->fetchColumn.begin(), context->fetchColumn.end(), MEDIA_DATA_DB_URI) !=
+                context->fetchColumn.end();
             if (isAddDefaultColumn) {
                 CHECK_NULLPTR_RET(SendableMediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
                     PhotoColumn::IsPhotoColumn, TYPE_PHOTO));
@@ -1746,7 +1749,7 @@ napi_value SendablePhotoAccessHelper::PhotoAccessGetSharedPhotoAssets(napi_env e
     unique_ptr<SendablePhotoAccessHelperAsyncContext> asyncContext =
         make_unique<SendablePhotoAccessHelperAsyncContext>();
     asyncContext->assetType = TYPE_PHOTO;
-    CHECK_NULLPTR_RET(ParseArgsGetAssets(env, info, asyncContext, false));
+    CHECK_NULLPTR_RET(ParseArgsGetAssets(env, info, asyncContext));
 
     SendablePhotoAccessHelperAsyncContext* context =
         static_cast<SendablePhotoAccessHelperAsyncContext*>((asyncContext.get()));

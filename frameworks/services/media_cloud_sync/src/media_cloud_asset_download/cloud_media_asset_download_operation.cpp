@@ -44,6 +44,7 @@
 #include "medialibrary_operation.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_subscriber.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
@@ -86,9 +87,14 @@ static const std::map<Status, std::vector<int32_t>> STATUS_MAP = {
     { Status::FORCE_DOWNLOADING, {0, 0, 0} },
     { Status::GENTLE_DOWNLOADING, {1, 0, 0} },
     { Status::PAUSE_FOR_TEMPERATURE_LIMIT, {-1, 1, 1} },
+    { Status::PAUSE_FOR_ROM_LIMIT, {-1, 1, 2} },
     { Status::PAUSE_FOR_NETWORK_FLOW_LIMIT, {-1, 1, 3} },
+    { Status::PAUSE_FOR_WIFI_UNAVAILABLE, {-1, 1, 4} },
+    { Status::PAUSE_FOR_POWER_LIMIT, {-1, 1, 5} },
     { Status::PAUSE_FOR_BACKGROUND_TASK_UNAVAILABLE, {1, 1, 6} },
+    { Status::PAUSE_FOR_FREQUENT_USER_REQUESTS, {-1, 1, 7} },
     { Status::PAUSE_FOR_CLOUD_ERROR, {-1, 1, 8} },
+    { Status::PAUSE_FOR_USER_PAUSE, {-1, 1, 9} },
     { Status::RECOVER_FOR_MANAUL_ACTIVE, {0, 0, 0} },
     { Status::RECOVER_FOR_PASSIVE_STATUS, {-1, 0, 0} },
     { Status::IDLE, {-1, 2, 0} },
@@ -370,7 +376,9 @@ void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &i
         return;
     }
     if (!CommonEventUtils::IsWifiConnected() && !CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
-        SetTaskStatus(Status::PAUSE_FOR_NETWORK_FLOW_LIMIT);
+        Status status = MedialibrarySubscriber::GetIsCellularNetConnected() ?
+            Status::PAUSE_FOR_WIFI_UNAVAILABLE : Status::PAUSE_FOR_NETWORK_FLOW_LIMIT;
+        SetTaskStatus(status);
         MEDIA_ERR_LOG("No wifi and no cellular data.");
         return;
     }
@@ -558,7 +566,7 @@ int32_t CloudMediaAssetDownloadOperation::PauseDownloadTask(const CloudMediaTask
         taskStatus_ = CloudMediaAssetTaskStatus::PAUSED;
         if (downloadId_ != DOWNLOAD_ID_DEFAULT) {
             downloadIdCache_ = downloadId_;
-            fileNumCache_ = dataForDownload_.fileDownloadMap.size();
+            fileNumCache_ = static_cast<int32_t>(dataForDownload_.fileDownloadMap.size());
             cloudSyncManager_.get().StopFileCache(downloadId_, !NEED_CLEAN);
             MEDIA_INFO_LOG("success StopFileCache.");
         }
@@ -577,6 +585,7 @@ void CloudMediaAssetDownloadOperation::ResetParameter()
     ClearData(dataForDownload_);
 
     isThumbnailUpdate_ = true;
+    isBgDownloadPermission_ = false;
 
     batchDownloadTotalNum_ = 0;
     batchDownloadTotalSize_ = 0;
@@ -725,7 +734,7 @@ void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgre
             break;
         }
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::NETWORK_UNAVAILABLE): {
-            PauseDownloadTask(CloudMediaTaskPauseCause::WIFI_UNAVAILABLE);
+            PauseDownloadTask(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT);
             MoveDownloadFileToCache(progress);
             break;
         }
