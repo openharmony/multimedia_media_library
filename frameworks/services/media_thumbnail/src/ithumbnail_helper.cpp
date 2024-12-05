@@ -40,7 +40,6 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_source_loading.h"
-#include "image_format_convert.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -64,11 +63,17 @@ void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> 
         MEDIA_ERR_LOG("CreateLcdAndThumbnail failed, data is null");
         return;
     }
-    bool isSuccess = DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_);
-    if (isSuccess && !data->thumbnailData_.tracks.empty() && (data->thumbnailData_.trigger == "0")) {
-        UpdateHighlightDbState(data->opts_, data->thumbnailData_);
+    WaitStatus status;
+    bool isSuccess = DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_, status);
+    if (status == WaitStatus::INSERT) {
+        if (isSuccess && !data->thumbnailData_.tracks.empty() && (data->thumbnailData_.trigger == "0")) {
+            UpdateHighlightDbState(data->opts_, data->thumbnailData_);
+        }
+        if (data->thumbnailData_.tracks.empty()) {
+            UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+        }
     }
-    UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -78,7 +83,8 @@ void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateLcd failed, data is null");
         return;
     }
-    DoCreateLcd(data->opts_, data->thumbnailData_);
+    WaitStatus status;
+    DoCreateLcd(data->opts_, data->thumbnailData_, status);
 }
 
 void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
@@ -87,8 +93,12 @@ void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateThumbnail failed, data is null");
         return;
     }
-    bool isSuccess = DoCreateThumbnail(data->opts_, data->thumbnailData_);
-    UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    WaitStatus status;
+    bool isSuccess = DoCreateThumbnail(data->opts_, data->thumbnailData_, status);
+    if (status == WaitStatus::INSERT) {
+        UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    }
+    
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -109,8 +119,11 @@ void IThumbnailHelper::CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateAstcEx failed, data is null");
         return;
     }
-    bool isSuccess = DoCreateAstcEx(data->opts_, data->thumbnailData_);
-    UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    WaitStatus status;
+    bool isSuccess = DoCreateAstcEx(data->opts_, data->thumbnailData_, status);
+    if (status == WaitStatus::INSERT || status == WaitStatus::WAIT_CONTINUE) {
+        UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    }
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -440,10 +453,10 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
-bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
     ThumbnailWait thumbnailWait(true);
-    auto ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::LCD);
+    ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::LCD);
     if (ret != WaitStatus::INSERT) {
         return ret == WaitStatus::WAIT_SUCCESS;
     }
@@ -489,8 +502,13 @@ void IThumbnailHelper::UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &
 bool SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceEx)
 {
     shared_ptr<Picture> lcdSource = isSourceEx ? data.source.GetPictureEx() : data.source.GetPicture();
-    if (lcdSource == nullptr || lcdSource->GetMainPixel() == nullptr) {
+    if (lcdSource == nullptr) {
         MEDIA_ERR_LOG("SaveLcdPictureSource failed, lcdSource is null");
+        return false;
+    }
+    if (lcdSource->GetMainPixel() == nullptr || lcdSource->GetGainmapPixelMap() == nullptr) {
+        MEDIA_ERR_LOG("SaveLcdPictureSource failed, mainpixel exist: %{public}d, gainMap exist: %{public}d",
+            lcdSource->GetMainPixel() == nullptr, lcdSource->GetGainmapPixelMap() == nullptr);
         return false;
     }
     int lcdDesiredWidth;
@@ -809,10 +827,10 @@ int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const Thum
     return E_OK;
 }
 
-bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
     ThumbnailWait thumbnailWait(true);
-    auto ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB);
+    ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB);
     if (ret != WaitStatus::INSERT) {
         return ret == WaitStatus::WAIT_SUCCESS;
     }
@@ -838,13 +856,6 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
     }
     auto pixelMap = data.source.GetPixelMap();
     if (pixelMap != nullptr && pixelMap->IsHdr()) {
-        if (pixelMap->GetPixelFormat() == PixelFormat::YCBCR_P010) {
-            uint32_t ret = ImageFormatConvert::ConvertImageFormat(pixelMap, PixelFormat::RGBA_1010102);
-            if (ret != E_OK) {
-                MEDIA_ERR_LOG("PixelMapYuv10ToRGBA_1010102: source ConvertImageFormat fail");
-                return false;
-            }
-        }
         uint32_t ret = pixelMap->ToSdr();
         if (ret != E_OK) {
             MEDIA_ERR_LOG("DoCreateThumbnail failed to transform to sdr, id: %{public}s.", data.id.c_str());
@@ -915,12 +926,12 @@ bool IThumbnailHelper::DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
-bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
     MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
         data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
     data.isNeedStoreSize = false;
-    if (!DoCreateLcd(opts, data)) {
+    if (!DoCreateLcd(opts, data, ret)) {
         MEDIA_ERR_LOG("Fail to create lcd, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -949,7 +960,7 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
             DfxUtils::GetSafePath(data.path).c_str());
     }
 
-    if (!DoCreateThumbnail(opts, data)) {
+    if (!DoCreateThumbnail(opts, data, ret)) {
         MEDIA_ERR_LOG("Fail to create thumbnail, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -983,13 +994,6 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
     }
     auto pixelMap = data.source.GetPixelMap();
     if (pixelMap != nullptr && pixelMap->IsHdr()) {
-        if (pixelMap->GetPixelFormat() == PixelFormat::YCBCR_P010) {
-            uint32_t ret = ImageFormatConvert::ConvertImageFormat(pixelMap, PixelFormat::RGBA_1010102);
-            if (ret != E_OK) {
-                MEDIA_ERR_LOG("PixelMapYuv10ToRGBA_1010102: source ConvertImageFormat fail");
-                return false;
-            }
-        }
         uint32_t ret = pixelMap->ToSdr();
         if (ret != E_OK) {
             MEDIA_ERR_LOG("DoCreateAstc failed to transform to sdr, id: %{public}s.", data.id.c_str());
@@ -1018,7 +1022,8 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
 
 bool GenerateRotatedThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType)
 {
-    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
+    WaitStatus status;
+    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data, status)) {
         MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, rotate lcd failed: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
         return false;
@@ -1059,10 +1064,10 @@ unique_ptr<PixelMap> DecodeThumbnailFromFd(int32_t fd)
     return pixelMap;
 }
 
-bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
     ThumbnailWait thumbnailWait(true);
-    auto ret = thumbnailWait.CloudInsertAndWait(data.id, CloudLoadType::CLOUD_DOWNLOAD);
+    ret = thumbnailWait.CloudInsertAndWait(data.id, CloudLoadType::CLOUD_DOWNLOAD);
     if (ret != WaitStatus::INSERT && ret != WaitStatus::WAIT_CONTINUE) {
         return ret == WaitStatus::WAIT_SUCCESS;
     }
@@ -1075,7 +1080,7 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
-    if (!DoCreateLcd(opts, data)) {
+    if (!DoCreateLcd(opts, data, ret)) {
         MEDIA_ERR_LOG("Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
@@ -1090,8 +1095,7 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
-
-    if (!DoCreateThumbnail(opts, data)) {
+    if (!DoCreateThumbnail(opts, data, ret)) {
         MEDIA_ERR_LOG("Fail to create thumbnail, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
