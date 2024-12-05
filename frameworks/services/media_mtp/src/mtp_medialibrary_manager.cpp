@@ -193,11 +193,10 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetAlbumInfo(
     vector<string> ownerAlbumIds;
     shared_ptr<DataShare::DataShareResultSet> resultSet = GetOwnerAlbumIdList();
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "fail to GetPhotosInfo");
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, nullptr, "have no handles");
-    do {
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         string ownerAlbumId = GetStringVal(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
         ownerAlbumIds.push_back(ownerAlbumId);
-    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    }
     predicates.BeginWrap();
     predicates.IsNotNull(MEDIA_DATA_DB_ALBUM_NAME);
     predicates.NotEqualTo(MEDIA_DATA_DB_ALBUM_NAME, HIDDEN_ALBUM);
