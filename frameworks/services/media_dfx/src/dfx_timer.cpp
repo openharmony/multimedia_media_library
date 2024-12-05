@@ -31,6 +31,7 @@ DfxTimer::DfxTimer(int32_t type, int32_t object, int64_t timeOut, bool isReport)
     timeOut_ = timeOut;
     isReport_ = isReport;
     isEnd_ = false;
+    uid_ = -1;
 }
 
 DfxTimer::~DfxTimer()
@@ -38,24 +39,31 @@ DfxTimer::~DfxTimer()
     if (isEnd_) {
         return;
     }
+
     timeCost_ = MediaFileUtils::UTCTimeMilliSeconds() - start_;
+    if (!isReport_) {
+        if (timeCost_ > timeOut_)
+            MEDIA_WARN_LOG("timeout! type: %{public}d, object: %{public}d, cost %{public}lld ms",
+                type_, object_, (long long) (timeCost_));
+        return;
+    }
+
+    std::string bundleName;
+    if (uid_ > 0) {
+        MediaLibraryBundleManager::GetInstance()->GetBundleNameByUID(uid_, bundleName);
+    } else {
+        bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    }
+
     if (timeCost_ > timeOut_) {
-        if (isReport_) {
-            std::string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-            MEDIA_WARN_LOG("timeout! bundleName: %{public}s, type: %{public}d, object: %{public}d, cost %{public}d",
-                bundleName.c_str(), type_, object_, (int) (timeCost_));
-            if (timeCost_ > TO_MILLION) {
-                DfxManager::GetInstance()->HandleTimeOutOperation(bundleName, type_, object_, (int) (timeCost_));
-            }
-        } else {
-            MEDIA_WARN_LOG("timeout! type: %{public}d, object: %{public}d, cost %{public}lld ms", type_,
-                object_, (long long) (timeCost_));
-        }
+        MEDIA_WARN_LOG("timeout! bundleName: %{public}s, type: %{public}d, object: %{public}d, cost %{public}d",
+            bundleName.c_str(), type_, object_, (int) (timeCost_));
+
+        if (timeCost_ > TO_MILLION)
+            DfxManager::GetInstance()->HandleTimeOutOperation(bundleName, type_, object_, (int) (timeCost_));
     }
-    if (isReport_) {
-        DfxManager::GetInstance()->HandleCommonBehavior(MediaLibraryBundleManager::GetInstance()->GetClientBundleName(),
-            type_);
-    }
+
+    DfxManager::GetInstance()->HandleCommonBehavior(bundleName, type_);
 }
 
 void DfxTimer::End()
@@ -66,6 +74,11 @@ void DfxTimer::End()
             (int) (timeCost_));
     }
     isEnd_ = true;
+}
+
+void DfxTimer::SetCallerUid(int32_t uid)
+{
+    uid_ = uid;
 }
 
 } // namespace Media

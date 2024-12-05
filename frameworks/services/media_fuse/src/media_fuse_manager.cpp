@@ -19,6 +19,8 @@
 #include <fcntl.h>
 #define FUSE_USE_VERSION 34
 #include <fuse.h>
+#include "dfx_const.h"
+#include "dfx_reporter.h"
 #include "iservice_registry.h"
 #include "media_fuse_daemon.h"
 #include "media_log.h"
@@ -83,21 +85,27 @@ MediaFuseManager &MediaFuseManager::GetInstance()
 
 void MediaFuseManager::Start()
 {
+    int32_t ret = E_OK;
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+
     if (fuseDaemon_ != nullptr) {
         MEDIA_INFO_LOG("Fuse daemon already started");
         return;
     }
 
     std::string mountpoint;
-    if (E_OK != MountFuse(mountpoint)) {
+    ret = MountFuse(mountpoint);
+    if (ret != E_OK) {
+        DfxReporter::ReportStartResult(DfxType::START_MOUNT_FUSE_FAIL, ret, startTime);
         MEDIA_ERR_LOG("MountFuse failed");
         return;
     }
 
     MEDIA_INFO_LOG("Mount fuse successfully, mountpoint = %{public}s", mountpoint.c_str());
     fuseDaemon_ = std::make_shared<MediaFuseDaemon>(mountpoint);
-
-    if (E_OK != fuseDaemon_->StartFuse()) {
+    ret = fuseDaemon_->StartFuse();
+    if (ret != E_OK) {
+        DfxReporter::ReportStartResult(DfxType::START_FUSE_DAEMON_FAIL, ret, startTime);
         MEDIA_INFO_LOG("Start fuse daemon failed");
         UMountFuse();
     }
@@ -357,15 +365,25 @@ int32_t MediaFuseManager::MountFuse(std::string &mountpoint)
     int32_t userId = 0;
 
     // get user id
-    ErrCode ret = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(userId);
-    if (ret != ERR_OK) {
-        MEDIA_ERR_LOG("Get account fail, ret code %{public}d, result is not credible", ret);
-        return E_FAIL;
+    ErrCode errCode = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(userId);
+    if (errCode != ERR_OK) {
+        MEDIA_ERR_LOG("Get account fail, ret code %{public}d, result is not credible", errCode);
+        return errCode;
     }
 
     // mount fuse
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (samgr == nullptr) {
+        MEDIA_ERR_LOG("Get system ability mgr failed.");
+        return E_FAIL;
+    }
+
     auto remote = samgr->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
+    if (remote == nullptr) {
+        MEDIA_ERR_LOG("GetSystemAbility Service Failed.");
+        return E_FAIL;
+    }
+
     sptr<StorageManager::IStorageManager> proxy_ = iface_cast<StorageManager::IStorageManager>(remote);
     int32_t err = proxy_->MountMediaFuse(userId, devFd);
     if (err != E_OK) {
@@ -382,10 +400,10 @@ int32_t MediaFuseManager::UMountFuse()
     int32_t userId = 0;
 
     // get user id
-    ErrCode ret = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(userId);
-    if (ret != ERR_OK) {
-        MEDIA_ERR_LOG("Get account fail, ret code %{public}d, result is not credible", ret);
-        return E_FAIL;
+    ErrCode errCode = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(userId);
+    if (errCode != ERR_OK) {
+        MEDIA_ERR_LOG("Get account fail, ret code %{public}d, result is not credible", errCode);
+        return errCode;
     }
 
     // umount fuse
