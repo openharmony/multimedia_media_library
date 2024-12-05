@@ -875,11 +875,11 @@ bool ThumbnailUtils::GetHighlightTracks(ThumbRdbOpt &opts, vector<int> &trackInf
     }
     
     ThumbnailData data;
-    string timeStamp;
+    std::string timeStamp;
     do {
         ParseHighlightQueryResult(resultSet, data, err);
         timeStamp = GetHighlightValue(data.tracks, "beginTimeStamp");
-        trackInfos.push_back(stoi(timeStamp));
+        trackInfos.push_back(std::atoi(timeStamp.c_str()));
     } while (resultSet->GoToNextRow() == E_OK);
     return true;
 }
