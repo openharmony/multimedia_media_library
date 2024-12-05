@@ -30,6 +30,8 @@ public:
     void SendObjectRemoved(const std::string &path);
     void SendObjectInfoChanged(const std::string &path);
     void SendDevicePropertyChanged();
+    void SendStoreAdded(const std::string &fsUuid);
+    void SendStoreRemoved(const std::string &fsUuid);
 
 private:
     std::shared_ptr<MtpOperationContext> mtpContextPtr_;

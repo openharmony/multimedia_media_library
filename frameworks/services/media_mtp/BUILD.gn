@@ -45,6 +45,7 @@ if (defined(medialibrary_mtp_enable)) {
       "src/mtp_packet_tools.cpp",
       "src/mtp_service.cpp",
       "src/mtp_storage_manager.cpp",
+      "src/mtp_store_observer.cpp",
       "src/mtp_subscriber.cpp",
       "src/object_info.cpp",
       "src/packet_payload_factory.cpp",

@@ -79,6 +79,14 @@
     {
       "name": "permission_manage_usb_config",
       "value": "Allow app manage usb config"
+    },
+    {
+      "name": "permission_file_access_manager",
+      "value": "Allow app read write sd card"
+    },
+    {
+      "name": "permission_storage_manager",
+      "value": "Allow app use sdcard mount/umount broadcast"
     }
   ]
 }

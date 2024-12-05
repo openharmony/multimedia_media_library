@@ -702,13 +702,13 @@ int32_t MtpDataUtils::GetMtpPropList(const std::shared_ptr<std::unordered_map<ui
         } else {
             parentId = 0;
         }
-        GetMtpOneRowProp(properties, parentId, it, outProps);
+        GetMtpOneRowProp(properties, parentId, it, outProps, context->storageID);
     }
     return MTP_SUCCESS;
 }
 
-void MtpDataUtils::GetMtpOneRowProp(const std::shared_ptr<UInt16List> &properties, const uint32_t &parentId,
-    std::unordered_map<uint32_t, std::string>::iterator it, shared_ptr<vector<Property>> &outProps)
+void MtpDataUtils::GetMtpOneRowProp(const std::shared_ptr<UInt16List> &properties, const uint32_t parentId,
+    std::unordered_map<uint32_t, std::string>::iterator it, shared_ptr<vector<Property>> &outProps, int32_t storageId)
 {
     CHECK_AND_RETURN_LOG(outProps != nullptr, "outProps is nullptr");
     std::string column;
@@ -731,7 +731,7 @@ void MtpDataUtils::GetMtpOneRowProp(const std::shared_ptr<UInt16List> &propertie
             }
             outProps->push_back(prop);
         } else if (PropDefaultMap.find(property) != PropDefaultMap.end()) {
-            SetOneDefaultlPropList(it->first, property, outProps);
+            SetMtpOneDefaultlPropList(it->first, property, outProps, storageId);
         } else {
             MEDIA_DEBUG_LOG("other property:0x%{public}x", property);
         }
@@ -781,7 +781,7 @@ void MtpDataUtils::SetMtpProperty(const std::string &column, const std::string &
     ResultSetDataType &type, Property &prop)
 {
     if (column.compare(MEDIA_DATA_DB_NAME) == 0) {
-        prop.currentValue->str_ = make_shared<std::string>(std::filesystem::path(path).filename().c_str());
+        prop.currentValue->str_ = make_shared<std::string>(std::filesystem::path(path).filename().string());
         return;
     }
     struct stat statInfo;
@@ -903,7 +903,7 @@ int32_t MtpDataUtils::GetMtpPropValue(const std::string &path,
 
     std::string column = PropColumnMap.at(property);
     if (column.compare(MEDIA_DATA_DB_NAME) == 0) {
-        outPropValue.outStrVal = std::filesystem::path(path).filename().c_str();
+        outPropValue.outStrVal = std::filesystem::path(path).filename().string();
         return MTP_SUCCESS;
     }
 
@@ -925,6 +925,35 @@ int32_t MtpDataUtils::GetMtpPropValue(const std::string &path,
     }
 
     return MTP_SUCCESS;
+}
+
+void MtpDataUtils::SetMtpOneDefaultlPropList(uint32_t handle,
+    uint16_t property, std::shared_ptr<std::vector<Property>> &outProps, int32_t storageId)
+{
+    CHECK_AND_RETURN_LOG(outProps != nullptr, "outProps is nullptr");
+    auto propType = PropDefaultMap.at(property);
+    auto properType = MtpPacketTool::GetObjectPropTypeByPropCode(property);
+    Property prop(property, properType);
+    CHECK_AND_RETURN_LOG(prop.currentValue != nullptr, "prop.currentValue is nullptr");
+    prop.handle_ = handle;
+    switch (propType) {
+        case INTTYPE16:
+            prop.currentValue->bin_.i16 = 0;
+            break;
+        case INTTYPE128:
+            prop.currentValue->bin_.i128[OFFSET_0] = static_cast<int32_t>(handle);
+            prop.currentValue->bin_.i128[OFFSET_1] = 0;
+            prop.currentValue->bin_.i128[OFFSET_2] = 0;
+            prop.currentValue->bin_.i128[OFFSET_3] = 0;
+            break;
+        case STRINGTYPE:
+            prop.currentValue->str_ = make_shared<string>("");
+            break;
+        default:
+            prop.currentValue->bin_.i32 = storageId;
+            break;
+    }
+    outProps->push_back(prop);
 }
 
 } // namespace Media
