@@ -68,7 +68,9 @@
 #include "search_column.h"
 #include "form_map.h"
 #include "shooting_mode_column.h"
+#include "story_cover_info_column.h"
 #include "story_db_sqls.h"
+#include "story_play_info_column.h"
 #include "dfx_const.h"
 #include "dfx_timer.h"
 #include "vision_multi_crop_column.h"
@@ -1677,7 +1679,8 @@ static const vector<string> onCreateSqlStrs = {
     INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
     CREATE_SOURCE_ALBUM_INDEX,
     CREATE_DICTIONARY_INDEX,
-    CREATE_KNOWLEDGE_INDEX,
+    DROP_KNOWLEDGE_INDEX,
+    CREATE_NEW_KNOWLEDGE_INDEX,
     CREATE_CITY_NAME_INDEX,
     CREATE_LOCATION_KEY_INDEX,
     CREATE_IDX_FILEID_FOR_ANALYSIS_TOTAL,
@@ -2954,6 +2957,31 @@ void AddIsLocalAlbum(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void UpdateAOI(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + AOI + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + POI + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FIRST_AOI + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FIRST_POI + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + LOCATION_VERSION + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FIRST_AOI_CATEGORY + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FIRST_POI_CATEGORY + " TEXT ",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + FILE_ID + " INT ",
+        DROP_KNOWLEDGE_INDEX,
+        CREATE_NEW_KNOWLEDGE_INDEX,
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " DROP COLUMN " + GEO,
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + GEO + " INT DEFAULT 0",
+        "ALTER TABLE " + HIGHLIGHT_COVER_INFO_TABLE +
+            " ADD COLUMN " + COVER_SERVICE_VERSION + " INT DEFAULT 0",
+        "ALTER TABLE " + HIGHLIGHT_PLAY_INFO_TABLE +
+            " ADD COLUMN " + PLAY_SERVICE_VERSION + " INT DEFAULT 0",
+        
+    };
+    MEDIA_INFO_LOG("start init aoi info of geo db");
+    ExecSqls(sqls, store);
+}
+
 void AddStoryTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
@@ -3965,6 +3993,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_THUMBNAIL_READY_FIX) {
         AddThumbnailReadyColumnsFix(store);
+    }
+
+     if (oldVersion < VERSION_UPDATE_AOI) {
+        UpdateAOI(store);
     }
 }
 
