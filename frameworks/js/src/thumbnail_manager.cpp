@@ -291,9 +291,8 @@ static int OpenThumbnail(const string &path, ThumbnailType type)
     if (!path.empty()) {
         string sandboxPath = GetSandboxPath(path, type);
         int fd = -1;
-        string absFilePath;
-        if (!sandboxPath.empty() && PathToRealPath(sandboxPath, absFilePath)) {
-            fd = open(absFilePath.c_str(), O_RDONLY);
+        if (!sandboxPath.empty()) {
+            fd = open(sandboxPath.c_str(), O_RDONLY);
         }
         if (fd > 0) {
             return fd;
@@ -307,8 +306,9 @@ static int OpenKeyFrameThumbnail(const string &path, const int32_t &beginStamp, 
     if (!path.empty()) {
         string sandboxPath = GetKeyFrameSandboxPath(path, beginStamp, type);
         int fd = -1;
-        if (!sandboxPath.empty()) {
-            fd = open(sandboxPath.c_str(), O_RDONLY);
+        string absFilePath;
+        if (!sandboxPath.empty() && PathToRealPath(sandboxPath, absFilePath)) {
+            fd = open(absFilePath.c_str(), O_RDONLY);
         }
         if (fd > 0) {
             return fd;
