@@ -70,7 +70,9 @@ void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> 
         if (isSuccess && !data->thumbnailData_.tracks.empty() && (data->thumbnailData_.trigger == "0")) {
             UpdateHighlightDbState(data->opts_, data->thumbnailData_);
         }
-        UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+        if (data->thumbnailData_.tracks.empty()) {
+            UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+        }
     }
     
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
