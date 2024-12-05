@@ -3995,7 +3995,7 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
         AddThumbnailReadyColumnsFix(store);
     }
 
-     if (oldVersion < VERSION_UPDATE_AOI) {
+    if (oldVersion < VERSION_UPDATE_AOI) {
         UpdateAOI(store);
     }
 }
