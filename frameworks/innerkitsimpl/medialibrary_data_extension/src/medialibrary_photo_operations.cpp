@@ -732,6 +732,11 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUr
 void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereArgs)
 {
     const std::string sourcePathPrefix = "/storage/emulated/0";
+    if (whereArgs.empty()) {
+        MEDIA_WARN_LOG("whereArgs is empty");
+        return;
+    }
+
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     for (auto assetId: whereArgs) {
         const std::string QUERY_FILE_ASSET_INFO = "SELECT * FROM Photos WHERE file_id = " + assetId;
