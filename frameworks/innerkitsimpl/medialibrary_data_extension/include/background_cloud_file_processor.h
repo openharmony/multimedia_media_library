@@ -19,6 +19,7 @@
 #include "abs_shared_result_set.h"
 #include "medialibrary_async_worker.h"
 #include "metadata.h"
+#include "rdb_predicates.h"
 #include "timer.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
@@ -28,6 +29,11 @@ namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 constexpr int32_t PROCESS_INTERVAL = 5 * 60 * 1000;  // 5 minute
 constexpr int32_t DOWNLOAD_DURATION = 10 * 1000; // 10 seconds
+
+typedef struct {
+    bool isCloud;
+    bool isVideo;
+} QueryOption;
 
 class BackgroundCloudFileProcessor {
 public:
