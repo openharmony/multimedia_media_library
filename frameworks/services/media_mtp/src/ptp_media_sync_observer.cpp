@@ -128,7 +128,7 @@ vector<int32_t> MediaSyncObserver::GetHandlesFromPhotosInfoBurstKeys(vector<std:
     do {
         burstKey.push_back(GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet));
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
-    
+
     if (burstKey.empty()) {
         MEDIA_ERR_LOG("Mtp GetHandlesFromPhotosInfoBurstKeys burstKey is empty");
         return handlesResult;
@@ -151,7 +151,7 @@ vector<int32_t> MediaSyncObserver::GetHandlesFromPhotosInfoBurstKeys(vector<std:
             MEDIA_ERR_LOG("Mtp GetHandlesFromPhotosInfoBurstKeys id is incorrect ");
             continue;
         }
-        handlesResult.push_back(stoi(file_id));
+        handlesResult.push_back(atoi(file_id.c_str()));
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
     return handlesResult;
 }
@@ -263,21 +263,21 @@ void MediaSyncObserver::SendPhotoRemoveEvent(std::string &suffixString)
     vector<int32_t> handles;
     if (suffixString.empty()) {
         allDeletedHandles = GetAllDeleteHandles();
-        for (auto deleteHandle: allDeletedHandles) {
+        for (auto deleteHandle : allDeletedHandles) {
             if (!IsNumber(deleteHandle)) {
                 MEDIA_ERR_LOG("Mtp SendPhotoRemoveEvent deleteHandle is incorrect ");
                 continue;
             }
-            SendEventPackets(stoi(deleteHandle) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-            SendEventPackets(stoi(deleteHandle) + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+            SendEventPackets(atoi(deleteHandle.c_str()) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+            SendEventPackets(atoi(deleteHandle.c_str()) + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
         }
     } else {
         if (!IsNumber(suffixString)) {
             MEDIA_ERR_LOG("Mtp SendPhotoRemoveEvent deleteHandle is incorrect ");
             return;
         }
-        SendEventPackets(stoi(suffixString) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-        SendEventPackets(stoi(suffixString) + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+        SendEventPackets(atoi(suffixString.c_str()) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+        SendEventPackets(atoi(suffixString.c_str()) + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
         vector<std::string> allDeleted;
         allDeletedHandles.push_back(suffixString);
     }
@@ -292,7 +292,7 @@ void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixStrin
     if (!suffixString.empty() && !std::isdigit(suffixString[0])) {
         return;
     }
-    if (!suffixString.empty() && stoi(suffixString) <= 0) {
+    if (!suffixString.empty() && atoi(suffixString.c_str()) <= 0) {
         return;
     }
     vector<int32_t> editHandles;
@@ -300,13 +300,13 @@ void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixStrin
     switch (changeType) {
         case static_cast<int32_t>(NotifyType::NOTIFY_ADD):
             MEDIA_DEBUG_LOG("MtpMediaLibrary PHOTO ADD");
-            AddPhotoHandle(stoi(suffixString));
+            AddPhotoHandle(atoi(suffixString.c_str()));
             break;
         case static_cast<int32_t>(NotifyType::NOTIFY_UPDATE):
             MEDIA_DEBUG_LOG("MtpMediaLibrary PHOTO UPDATE");
-            SendEventPackets(stoi(suffixString) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-            editHandles = GetAddEditPhotoHandles(stoi(suffixString));
-            album_id = GetAddEditAlbumHandle(stoi(suffixString));
+            SendEventPackets(atoi(suffixString.c_str()) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+            editHandles = GetAddEditPhotoHandles(atoi(suffixString.c_str()));
+            album_id = GetAddEditAlbumHandle(atoi(suffixString.c_str()));
             if (album_id >= 0) {
                 MEDIA_DEBUG_LOG("MtpMediaLibrary album_id [%{public}d]", album_id);
                 for (const auto editHandle : editHandles) {
@@ -406,7 +406,7 @@ void MediaSyncObserver::OnChangeEx(const ChangeInfo &changeInfo)
             if (!IsNumber(suffixString)) {
                 continue;
             }
-            int32_t suff_int = stoi(suffixString);
+            int32_t suff_int = atoi(suffixString.c_str());
             if (suff_int <= RESERVE_ALBUM) {
                 continue;
             }
