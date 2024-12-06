@@ -185,7 +185,6 @@ void Init(GallerySource &gallerySource, ExternalSource &externalSource)
     restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
     restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
     restoreService->InitGarbageAlbum();
-    restoreService->HandleClone();
 }
 
 void RestoreFromGallery()
