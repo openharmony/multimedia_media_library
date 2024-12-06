@@ -37,13 +37,13 @@ const std::string CREATE_GEO_KNOWLEDGE_TABLE =
     FEATURE_NAME + " TEXT, " +
     CITY_NAME + " TEXT, " +
     ADDRESS_DESCRIPTION + " TEXT, " +
-    AOI + " Text, " +
-    POI + " Text, " +
-    FIRST_AOI + " Text, " +
-    FIRST_POI + " Text, " +
-    LOCATION_VERSION + " Text, " +
-    FIRST_AOI_CATEGORY + " Text, " +
-    FIRST_POI_CATEGORY + " Text, " +
+    AOI + " TEXT, " +
+    POI + " TEXT, " +
+    FIRST_AOI + " TEXT, " +
+    FIRST_POI + " TEXT, " +
+    LOCATION_VERSION + " TEXT, " +
+    FIRST_AOI_CATEGORY + " TEXT, " +
+    FIRST_POI_CATEGORY + " TEXT, " +
     FILE_ID + " INTEGER, " +
     LOCATION_TYPE + " TEXT) ";
 
