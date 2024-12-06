@@ -308,7 +308,7 @@ void UpgradeRestore::RestorePhoto()
 {
     AnalyzeSource();
     InitGarbageAlbum();
-    HandleClone();
+
     // upgrade gallery.db
     if (this->galleryRdb_ != nullptr) {
         DataTransfer::GalleryDbUpgrade galleryDbUpgrade;
@@ -383,68 +383,6 @@ void UpgradeRestore::AnalyzeGallerySource()
 void UpgradeRestore::InitGarbageAlbum()
 {
     BackupDatabaseUtils::InitGarbageAlbum(galleryRdb_, cacheSet_, nickMap_);
-}
-
-void UpgradeRestore::HandleClone()
-{
-    int32_t cloneCount = BackupDatabaseUtils::QueryGalleryCloneCount(galleryRdb_);
-    MEDIA_INFO_LOG("clone number: %{public}d", cloneCount);
-    if (cloneCount == 0) {
-        return;
-    }
-    int32_t maxId = BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_MAX_ID, CUSTOM_MAX_ID);
-    std::string queryMayClonePhotoNumber = "SELECT count(1) AS count FROM files WHERE (is_pending = 0) AND\
-        (storage_id IN (0, 65537)) AND " + COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC;
-    int32_t totalNumber = BackupDatabaseUtils::QueryInt(externalRdb_, queryMayClonePhotoNumber, CUSTOM_COUNT);
-    MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
-    for (int32_t offset = 0; offset < totalNumber; offset += PRE_CLONE_PHOTO_BATCH_COUNT) {
-        ffrt::submit([this, offset, maxId]() {
-                HandleCloneBatch(offset, maxId);
-            }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
-    }
-    ffrt::wait();
-}
-
-void UpgradeRestore::HandleCloneBatch(int32_t offset, int32_t maxId)
-{
-    MEDIA_INFO_LOG("start handle clone batch, offset: %{public}d", offset);
-    if (externalRdb_ == nullptr || galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("rdb is nullptr, Maybe init failed.");
-        return;
-    }
-    std::string queryExternalMayClonePhoto = "SELECT _id, _data FROM files WHERE (is_pending = 0) AND\
-        (storage_id IN (0, 65537)) AND " + COMPARE_ID + std::to_string(maxId) + " AND " +
-        QUERY_NOT_SYNC + "limit " + std::to_string(offset) + ", " + std::to_string(PRE_CLONE_PHOTO_BATCH_COUNT);
-    auto resultSet = externalRdb_->QuerySql(queryExternalMayClonePhoto);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return;
-    }
-    int32_t number = 0;
-    UpdateCloneWithRetry(resultSet, number);
-    MEDIA_INFO_LOG("%{public}d rows change clone flag", number);
-}
-
-void UpgradeRestore::UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int32_t &number)
-{
-    int32_t errCode = E_ERR;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t id = GetInt32Val(GALLERY_ID, resultSet);
-        std::string data = GetStringVal(GALLERY_FILE_DATA, resultSet);
-        int32_t changeRows = 0;
-        NativeRdb::ValuesBucket valuesBucket;
-        valuesBucket.Put(GALLERY_LOCAL_MEDIA_ID, id);
-        std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
-            make_unique<NativeRdb::AbsRdbPredicates>("gallery_media");
-        predicates->SetWhereClause("local_media_id = -3 AND _data = ?"); // -3 means clone data
-        predicates->SetWhereArgs({data});
-        errCode = BackupDatabaseUtils::Update(galleryRdb_, changeRows, valuesBucket, predicates);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("Failed to execute update, err: %{public}d", errCode);
-            continue;
-        }
-        number += changeRows;
-    }
 }
 
 void UpgradeRestore::RestoreFromGallery()
