@@ -23,6 +23,7 @@
 
 #define private public
 #define protected public
+#include "backup_const_column.h"
 #include "backup_const_map.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
@@ -1770,7 +1771,9 @@ void ClearData(shared_ptr<RdbStore> rdbStore)
 {
     MEDIA_INFO_LOG("Start clear data");
     ExecuteSqls(rdbStore, CLEAR_SQLS);
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
+    MediaLibraryUnitTestUtils::InitUnistore();
+    auto mediaLibraryRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdbStore);
     MEDIA_INFO_LOG("End clear data");
 }
 
@@ -1917,6 +1920,76 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_media_type_beyong_1_3, Tes
     fileInfo.displayName = "abc.jpg";
     EXPECT_EQ(photosRestore.FindMediaType(fileInfo), MediaType::MEDIA_TYPE_VIDEO);
     MEDIA_INFO_LOG("medialib_backup_test_media_type end");
+}
+
+void TestAppTwinData(const string &path, const string &expectedExtraPrefix, int32_t sceneCode = UPGRADE_RESTORE_ID)
+{
+    string extraPrefix = BackupFileUtils::GetExtraPrefixForRealPath(sceneCode, path);
+    MEDIA_INFO_LOG("path: %{public}s, extraPrefix: %{public}s", path.c_str(), extraPrefix.c_str());
+    EXPECT_EQ(extraPrefix, expectedExtraPrefix);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_001 start");
+    TestAppTwinData("", "", CLONE_RESTORE_ID); // not upgrade
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_001 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_002 start");
+    TestAppTwinData("", ""); // not app twin data: empty
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_002 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_003 start");
+    TestAppTwinData("/storage/ABCE-EFGH/0/", ""); // not app twin data: external
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_003 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_004 start");
+    TestAppTwinData("/storage/emulated/0/", ""); // not app twin data: main user
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_004 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_005 start");
+    TestAppTwinData("/storage/emulated", ""); // not app twin data: first / not found
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_005 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_006 start");
+    TestAppTwinData("/storage/emulated/", ""); // not app twin data: second / not found
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_006 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_007 start");
+    TestAppTwinData("/storage/emulated/abc/", ""); // not app twin data: not number
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_007 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_008 start");
+    TestAppTwinData("/storage/emulated/1234/", ""); // not app twin data: not in [128, 147]
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_008 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_009 start");
+    TestAppTwinData("/storage/emulated/128/", APP_TWIN_DATA_PREFIX); // app twin data
+    MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_009 end");
 }
 } // namespace Media
 } // namespace OHOS

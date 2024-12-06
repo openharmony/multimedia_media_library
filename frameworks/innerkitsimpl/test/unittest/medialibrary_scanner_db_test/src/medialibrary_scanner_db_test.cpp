@@ -39,12 +39,12 @@ public:
 const string ConfigTestOpenCall::CREATE_TABLE_TEST = string("CREATE TABLE IF NOT EXISTS test ") +
     "(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, age INTEGER, salary REAL, blobType BLOB)";
 
-int ConfigTestOpenCall::OnCreate(RdbStore &store)
+int ConfigTestOpenCall::OnCreate(NativeRdb::RdbStore &store)
 {
     return store.ExecuteSql(CREATE_TABLE_TEST);
 }
 
-int ConfigTestOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersion)
+int ConfigTestOpenCall::OnUpgrade(NativeRdb::RdbStore &store, int oldVersion, int newVersion)
 {
     return 0;
 }

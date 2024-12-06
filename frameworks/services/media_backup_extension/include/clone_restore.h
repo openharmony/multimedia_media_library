@@ -56,6 +56,7 @@ private:
     void AnalyzeSource() override;
     void RestoreAlbum(void);
     void RestoreAudio(void) override;
+    void NotifyAlbum() override;
     void InsertPhoto(std::vector<FileInfo> &fileInfos);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
@@ -97,7 +98,6 @@ private:
     void GetAlbumExtraQueryWhereClause(const std::string &tableName);
     bool IsReadyForRestore(const std::string &tableName);
     void UpdateAlbumToNotifySet(const std::string &tableName, const std::unordered_set<int32_t> &albumSet);
-    void NotifyAlbum();
     void PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,
         const std::unordered_map<std::string, std::string> &commonColumnInfoMap) const;
     void RestoreGallery();
@@ -146,6 +146,10 @@ private:
         const std::vector<FileIdPair>& fileIdPairs);
     std::vector<ImageFaceTbl> QueryImageFaceTbl(int32_t offset, std::string &fileIdClause,
         const std::vector<std::string>& commonColumns);
+    std::vector<PortraitAlbumDfx> QueryAllPortraitAlbum(int32_t& offset, int32_t& rowCount);
+    void RecordOldPortraitAlbumDfx();
+    std::unordered_set<std::string> QueryAllPortraitAlbum();
+    void LogPortraitCloneDfx();
     void RestoreImageFaceInfo(std::vector<FileInfo> &fileInfos);
     NativeRdb::ValuesBucket CreateValuesBucketFromFaceTagTbl(const FaceTagTbl& faceTagTbl);
     void BatchInsertFaceTags(const std::vector<FaceTagTbl>& faceTagTbls);
@@ -186,6 +190,7 @@ private:
     std::unordered_set<std::string> albumToNotifySet_;
     std::string garbagePath_;
     std::vector<CoverUriInfo> coverUriInfo_;
+    std::vector<PortraitAlbumDfx> portraitAlbumDfx_;
     PhotoAlbumClone photoAlbumClone_;
     PhotosClone photosClone_;
     static constexpr int32_t INVALID_COVER_SATISFIED_STATUS = -1;

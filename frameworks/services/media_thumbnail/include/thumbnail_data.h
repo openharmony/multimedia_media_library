@@ -16,6 +16,7 @@
 #ifndef FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_THUMBNAIL_DATA_H
 #define FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_THUMBNAIL_DATA_H
 
+#include <picture.h>
 #include <pixel_map.h>
 
 #include "thumbnail_const.h"
@@ -33,6 +34,78 @@ enum class SourceState : int32_t {
     CLOUD_ORIGIN,
     ERROR,
     FINISH,
+};
+
+class ThumbnailSource {
+public:
+    void SetPixelMap(std::shared_ptr<PixelMap> &pixelMap)
+    {
+        pixelMapSource_  = pixelMap;
+    }
+
+    std::shared_ptr<PixelMap> GetPixelMap()
+    {
+        return pixelMapSource_;
+    }
+
+    void SetPixelMapEx(std::shared_ptr<PixelMap> &pixelMapEx)
+    {
+        pixelMapSourceEx_  = pixelMapEx;
+    }
+
+    std::shared_ptr<PixelMap> GetPixelMapEx()
+    {
+        return pixelMapSourceEx_;
+    }
+
+    void SetPicture(std::shared_ptr<Picture> &picture)
+    {
+        pictureSource_  = picture;
+        if (picture != nullptr) {
+            hasPictureSource_ = true;
+        }
+    }
+
+    std::shared_ptr<Picture> GetPicture()
+    {
+        return pictureSource_;
+    }
+
+    void SetPictureEx(std::shared_ptr<Picture> &pictureEx)
+    {
+        pictureSourceEx_  = pictureEx;
+    }
+
+    std::shared_ptr<Picture> GetPictureEx()
+    {
+        return pictureSourceEx_;
+    }
+
+    void ClearAllSource()
+    {
+        pixelMapSource_ = nullptr;
+        pixelMapSourceEx_ = nullptr;
+        pictureSource_ = nullptr;
+        pictureSourceEx_ = nullptr;
+        hasPictureSource_ = false;
+    }
+    
+    bool IsEmptySource()
+    {
+        return pixelMapSource_ == nullptr && pictureSource_ == nullptr;
+    }
+
+    bool HasPictureSource()
+    {
+        return hasPictureSource_;
+    }
+
+private:
+    bool hasPictureSource_ {false};
+    std::shared_ptr<PixelMap> pixelMapSource_;
+    std::shared_ptr<PixelMap> pixelMapSourceEx_;
+    std::shared_ptr<Picture> pictureSource_;
+    std::shared_ptr<Picture> pictureSourceEx_;
 };
 
 class ThumbnailData {
@@ -66,7 +139,7 @@ public:
 
     EXPORT virtual ~ThumbnailData()
     {
-        source = nullptr;
+        source.ClearAllSource();
         thumbnail.clear();
         lcd.clear();
         monthAstc.clear();
@@ -83,8 +156,7 @@ public:
     EXPORT bool needResizeLcd {false};
     EXPORT bool isLocalFile {true};
     EXPORT bool isOpeningCloudFile {false};
-    EXPORT std::shared_ptr<PixelMap> source;
-    EXPORT std::shared_ptr<PixelMap> sourceEx;
+    EXPORT ThumbnailSource source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;
     EXPORT std::vector<uint8_t> monthAstc;

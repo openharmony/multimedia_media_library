@@ -17,10 +17,12 @@
 #include <string>
 #include <vector>
 
+#include "dfx_transaction.h"
 #include "rdb_store.h"
 #include "media_log.h"
 #include "album_plugin_table_event_handler.h"
 #include "db_upgrade_utils.h"
+#include "medialibrary_rdb_transaction.h"
 
 namespace OHOS::Media {
 namespace DataTransfer {
@@ -59,12 +61,37 @@ int32_t MediaLibraryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     return NativeRdb::E_OK;
 }
 
+int32_t MediaLibraryDbUpgrade::ExecSqlsInternal(NativeRdb::RdbStore &store, const std::string &sql,
+    const std::vector<NativeRdb::ValueObject> &args)
+{
+    int currentTime = 0;
+    int32_t busyRetryTime = 0;
+    int32_t err = NativeRdb::E_OK;
+    while (busyRetryTime < MAX_BUSY_TRY_TIMES && currentTime <= MAX_TRY_TIMES) {
+        err = store.ExecuteSql(sql, args);
+        if (err == NativeRdb::E_OK) {
+            break;
+        } else if (err == NativeRdb::E_SQLITE_LOCKED) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
+            currentTime++;
+            MEDIA_ERR_LOG("ExecuteSqlInternal busy, ret:%{public}d, time:%{public}d", err, currentTime);
+        } else if (err == NativeRdb::E_SQLITE_BUSY || err == NativeRdb::E_DATABASE_BUSY) {
+            busyRetryTime++;
+            MEDIA_ERR_LOG("ExecuteSqlInternal busy, ret:%{public}d, busyRetryTime:%{public}d", err, busyRetryTime);
+        } else {
+            MEDIA_ERR_LOG("ExecuteSqlInternal faile, ret = %{public}d", err);
+            break;
+        }
+    }
+    return err;
+}
+
 int32_t MediaLibraryDbUpgrade::MergeAlbumFromOldBundleNameToNewBundleName(NativeRdb::RdbStore &store)
 {
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::MergeAlbumFromOldBundleNameToNewBundleName start");
     int32_t ret = NativeRdb::E_OK;
     for (const auto &executeSql : this->SQL_MERGE_ALBUM_FROM_OLD_BUNDLE_NAME_TO_NEW_BUNDLE_NAME) {
-        ret = store.ExecuteSql(executeSql);
+        ret = ExecSqlsInternal(store, executeSql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Media_Restore: executeSql failed, sql: %{public}s", executeSql.c_str());
             return ret;
@@ -79,7 +106,7 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotosBelongsToAlbum(NativeRdb::RdbStore &
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::UpgradePhotosBelongsToAlbum start");
     int32_t ret = NativeRdb::E_OK;
     for (const auto &executeSql : this->SQL_PHOTOS_NEED_TO_BELONGS_TO_ALBUM) {
-        ret = store.ExecuteSql(executeSql);
+        ret = ExecSqlsInternal(store, executeSql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Media_Restore: executeSql failed, sql: %{public}s", executeSql.c_str());
             return ret;
@@ -125,17 +152,26 @@ int32_t MediaLibraryDbUpgrade::DropPhotoAlbumTrigger(NativeRdb::RdbStore &store)
 {
     std::vector<std::string> executeSqls = this->SQL_PHOTO_ALBUM_TABLE_DROP_TRIGGER;
     int ret = NativeRdb::E_OK;
-    store.BeginTransaction();
+    MEDIA_INFO_LOG("DropPhotoAlbumTrigger begin");
+    auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
+    if (errCode != NativeRdb::E_OK || transaction == nullptr) {
+        MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
+        return errCode;
+    }
     for (const std::string &executeSql : executeSqls) {
-        ret = store.ExecuteSql(executeSql);
+        auto res = transaction->Execute(executeSql);
+        ret = res.first;
         if (ret != NativeRdb::E_OK) {
-            store.RollBack();
+            transaction->Rollback();
             MEDIA_ERR_LOG(
                 "Media_Restore: DropPhotoAlbumTrigger failed, ret=%{public}d, sql=%{public}s", ret, executeSql.c_str());
             return ret;
         }
     }
-    store.Commit();
+    errCode = transaction->Commit();
+    if (errCode != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("DropPhotoAlbumTrigger commit fail");
+    }
     return NativeRdb::E_OK;
 }
 
@@ -145,7 +181,7 @@ int32_t MediaLibraryDbUpgrade::DropPhotoAlbumTrigger(NativeRdb::RdbStore &store)
 int32_t MediaLibraryDbUpgrade::UpdatelPathColumn(NativeRdb::RdbStore &store)
 {
     std::string executeSql = this->SQL_PHOTO_ALBUM_TABLE_UPDATE_LPATH_COLUMN;
-    int32_t ret = store.ExecuteSql(executeSql);
+    int32_t ret = ExecSqlsInternal(store, executeSql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Media_Restore: MediaLibraryDbUpgrade::UpdatelPathColumn failed, ret=%{public}d, sql=%{public}s",
             ret,
@@ -165,7 +201,7 @@ int32_t MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store)
         return NativeRdb::E_OK;
     }
     std::string sql = this->SQL_PHOTOS_TABLE_ADD_OWNER_ALBUM_ID;
-    int32_t ret = store.ExecuteSql(sql);
+    int32_t ret = ExecSqlsInternal(store, sql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG(
             "Media_Restore: MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn failed, ret=%{public}d, sql=%{public}s",
@@ -185,7 +221,7 @@ int32_t MediaLibraryDbUpgrade::AddlPathColumn(NativeRdb::RdbStore &store)
         return NativeRdb::E_OK;
     }
     std::string sql = this->SQL_PHOTO_ALBUM_TABLE_ADD_LPATH_COLUMN;
-    return store.ExecuteSql(sql);
+    return ExecSqlsInternal(store, sql);
 }
 
 /**
@@ -207,18 +243,34 @@ int32_t MediaLibraryDbUpgrade::MoveSingleRelationshipToPhotos(NativeRdb::RdbStor
     executeSqls.push_back(this->SQL_PHOTO_MAP_TABLE_DELETE_SINGLE_RELATIONSHIP);
     executeSqls.push_back(this->SQL_TEMP_PHOTO_MAP_TABLE_DROP);
     int ret = NativeRdb::E_OK;
-    store.BeginTransaction();
+    MEDIA_INFO_LOG("MoveSingleRelationshipToPhotos begin");
+    auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
+    DfxTransaction reporter{ __func__ };
+    if (errCode != NativeRdb::E_OK || transaction == nullptr) {
+        reporter.ReportError(DfxTransaction::AbnormalType::CREATE_ERROR, errCode);
+        MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
+        return errCode;
+    }
     for (const std::string &executeSql : executeSqls) {
-        ret = store.ExecuteSql(executeSql);
+        auto res = transaction->Execute(executeSql);
+        ret = res.first;
         if (ret != NativeRdb::E_OK) {
+            reporter.ReportError(DfxTransaction::AbnormalType::EXECUTE_ERROR, ret);
             MEDIA_ERR_LOG("Media_Restore: MoveSingleRelationshipToPhotos failed, ret=%{public}d, sql=%{public}s",
                 ret,
                 executeSql.c_str());
-            store.RollBack();
+            transaction->Rollback();
             return ret;
         }
     }
-    store.Commit();
+    ret = transaction->Commit();
+    if (ret != NativeRdb::E_OK) {
+        reporter.ReportError(DfxTransaction::AbnormalType::COMMIT_ERROR, ret);
+        MEDIA_ERR_LOG("MoveSingleRelationshipToPhotos: tans finish fail!, ret:%{public}d", ret);
+        transaction->Rollback();
+    } else {
+        reporter.ReportIfTimeout();
+    }
     return NativeRdb::E_OK;
 }
 

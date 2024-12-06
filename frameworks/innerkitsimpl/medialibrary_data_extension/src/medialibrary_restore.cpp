@@ -48,7 +48,7 @@ MediaLibraryRestore &MediaLibraryRestore::GetInstance()
     return instance;
 }
 
-void MediaLibraryRestore::SaveHAModeSwitchStatusToPara(const uint32_t &status)
+void MediaLibraryRestore::SaveHAModeSwitchStatusToPara(const int64_t &status)
 {
     int ret = SetParameter(SWITCH_STATUS_KEY.c_str(), std::to_string(status).c_str());
     CHECK_AND_RETURN_LOG((ret == PARAMETER_E_OK), "MediaLibraryRestore SetParameter switch error");
@@ -138,7 +138,8 @@ void MediaLibraryRestore::DoRdbBackup()
 {
     isBackuping_ = true;
     CHECK_AND_RETURN_LOG((!isWaiting_.load()), "waiting stop cloudsync");
-    SaveHAModeSwitchStatusToPara(HA_SWITCHING);
+    auto currentTime = MediaFileUtils::UTCTimeSeconds();
+    MediaLibraryRestore::GetInstance().SaveHAModeSwitchStatusToPara(currentTime);
     std::thread([&] {
         MEDIA_INFO_LOG("DoRdbBackup: Backup [start]");
 #ifdef CLOUD_SYNC_MANAGER

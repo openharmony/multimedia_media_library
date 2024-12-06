@@ -32,7 +32,8 @@ std::vector<AlbumMediaStatisticInfo> GalleryMediaCountStatistic::Load()
         this->GetScreenStatInfo(),
         this->GetImportsStatInfo(),
         this->GetAllRestoreStatInfo(),
-        this->GetDuplicateStatInfo()};
+        this->GetDuplicateStatInfo(),
+        this->GetAppTwinStatInfo()};
 }
 
 int32_t GalleryMediaCountStatistic::QueryGalleryAllCount()
@@ -144,6 +145,13 @@ int32_t GalleryMediaCountStatistic::GetGalleryMediaCount()
     return GalleryMediaDao(this->galleryRdb_).GetGalleryMediaCount(this->shouldIncludeSd_, hasLowQualityImage);
 }
 
+int32_t GalleryMediaCountStatistic::QueryGalleryAppTwinDataCount()
+{
+    std::string sql = "SELECT count(1) AS count FROM gallery_media WHERE _data LIKE '/storage/emulated/%' AND "
+        "CAST (substr(_data, length('/storage/emulated/') + 1, 3) AS INTEGER) BETWEEN 128 AND 147 AND _size > 0";
+    return BackupDatabaseUtils::QueryInt(galleryRdb_, sql, CUSTOM_COUNT);
+}
+
 AlbumMediaStatisticInfo GalleryMediaCountStatistic::GetAllStatInfo()
 {
     AlbumMediaStatisticInfo info;
@@ -211,6 +219,16 @@ AlbumMediaStatisticInfo GalleryMediaCountStatistic::GetDuplicateStatInfo()
     info.taskId = this->taskId_;
     info.albumName = "DUPLICATE";
     info.totalCount = duplicateDataTotal;
+    return info;
+}
+
+AlbumMediaStatisticInfo GalleryMediaCountStatistic::GetAppTwinStatInfo()
+{
+    AlbumMediaStatisticInfo info;
+    info.sceneCode = this->sceneCode_;
+    info.taskId = this->taskId_;
+    info.albumName = "APP_TWIN";
+    info.totalCount = this->QueryGalleryAppTwinDataCount();
     return info;
 }
 }  // namespace OHOS::Media

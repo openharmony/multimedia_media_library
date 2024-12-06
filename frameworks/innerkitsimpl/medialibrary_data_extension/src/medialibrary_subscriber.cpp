@@ -120,8 +120,8 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
 #endif
 #ifdef HAS_THERMAL_MANAGER_PART
     auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
-    isDeviceTemperatureProper_ = static_cast<int32_t>(
-        thermalMgrClient.GetThermalLevel()) <= PROPER_DEVICE_TEMPERATURE_LEVEL;
+    newTemperatureLevel_ = static_cast<int32_t>(thermalMgrClient.GetThermalLevel());
+    isDeviceTemperatureProper_ = newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL;
 #endif
 #ifdef HAS_WIFI_MANAGER_PART
     auto wifiDevicePtr = Wifi::WifiDevice::GetInstance(WIFI_DEVICE_ABILITY_ID);
@@ -218,6 +218,10 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    if (deviceTemperatureLevel_ != newTemperatureLevel_) {
+        deviceTemperatureLevel_ = newTemperatureLevel_;
+        ThumbnailService::GetInstance()->NotifyTempStatusForReady(deviceTemperatureLevel_);
+    }
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
     if (currentStatus_ == newStatus) {
         return;
@@ -225,6 +229,7 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
 
     MEDIA_INFO_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
         currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
+    PowerEfficiencyManager::SetSubscriberStatus(isCharging_, isScreenOff_);
 
     currentStatus_ = newStatus;
     ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(newStatus);
@@ -237,6 +242,14 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
     }
 }
 
+void MedialibrarySubscriber::WalCheckPointAsync()
+{
+    if (!isScreenOff_ || !isCharging_) {
+        return;
+    }
+    std::thread(MediaLibraryRdbStore::WalCheckPoint).detach();
+}
+
 void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
     const AAFwk::Want &want, const StatusEventType statusEventType)
 {
@@ -244,6 +257,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
         case StatusEventType::SCREEN_OFF:
             isScreenOff_ = true;
             CheckHalfDayMissions();
+            WalCheckPointAsync();
             break;
         case StatusEventType::SCREEN_ON:
             isScreenOff_ = false;
@@ -252,6 +266,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
         case StatusEventType::CHARGING:
             isCharging_ = true;
             CheckHalfDayMissions();
+            WalCheckPointAsync();
             break;
         case StatusEventType::DISCHARGING:
             isCharging_ = false;
@@ -262,8 +277,9 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
                 COMMON_EVENT_KEY_GET_DEFAULT_PARAM) >= PROPER_DEVICE_BATTERY_CAPACITY;
             break;
         case StatusEventType::THERMAL_LEVEL_CHANGED: {
-            isDeviceTemperatureProper_ = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
-                COMMON_EVENT_KEY_GET_DEFAULT_PARAM) <= PROPER_DEVICE_TEMPERATURE_LEVEL;
+            newTemperatureLevel_ = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
+                COMMON_EVENT_KEY_GET_DEFAULT_PARAM);
+            isDeviceTemperatureProper_ = newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL;
             PowerEfficiencyManager::UpdateAlbumUpdateInterval(isDeviceTemperatureProper_);
             break;
         }

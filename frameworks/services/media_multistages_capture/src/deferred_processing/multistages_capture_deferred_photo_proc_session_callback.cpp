@@ -58,6 +58,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(shared
     string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    resultSet->Close();
 
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch != nullptr) {
@@ -123,6 +124,7 @@ int32_t QuerySubType(const string &photoId)
         return static_cast<int32_t>(PhotoSubType::CAMERA);
     }
     int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    resultSet->Close();
     return subType == 0 ? static_cast<int32_t>(PhotoSubType::CAMERA) : subType;
 }
 
@@ -271,6 +273,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityIma
     string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
+    resultSet->Close();
     MultiStagesPhotoCaptureManager::GetInstance().DealLowQualityPicture(photoId, std::move(picture), isEdited);
     MEDIA_INFO_LOG("save low quality image end");
 }

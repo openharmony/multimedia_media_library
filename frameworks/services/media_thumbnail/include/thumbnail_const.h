@@ -107,6 +107,7 @@ constexpr int32_t DECODE_SCALE_BASE = 2;
 constexpr int32_t FLAT_ANGLE = 180;
 constexpr int32_t THUMBNAIL_GENERATE_BATCH_COUNT = 200;
 constexpr int32_t ASTC_GENERATE_COUNT_AFTER_RESTORE = 500;
+constexpr int32_t READY_TEMPERATURE_LEVEL = 4;
 const std::string KVSTORE_FIELD_ID_TEMPLATE = "0000000000";
 const std::string KVSTORE_DATE_ADDED_TEMPLATE = "0000000000000";
 const std::string DEFAULT_EXIF_ORIENTATION = "1";
@@ -135,6 +136,8 @@ constexpr int64_t AV_FRAME_TIME = 0;
 constexpr uint8_t NUMBER_HINT_1 = 1;
 
 constexpr int32_t DEFAULT_ORIGINAL = -1;
+
+const std::string DYNAMIC_RANGE = "decodeDynamicRange";
 
 const std::string THUMBNAIL_OPERN_KEYWORD = "operation";
 const std::string THUMBNAIL_OPER = "oper";

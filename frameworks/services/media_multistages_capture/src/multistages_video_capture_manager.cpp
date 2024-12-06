@@ -63,7 +63,7 @@ void MultiStagesVideoCaptureManager::AddVideoInternal(const std::string &videoId
     const mode_t fileMode = 0644;
     int srcFd = open(absSrcFilePath.c_str(), O_RDONLY);
     if (srcFd < 0) {
-        MEDIA_ERR_LOG("open file fail, srcFd = %{public}d", srcFd);
+        MEDIA_ERR_LOG("open file fail, srcFd = %{public}d, errno:%{public}d", srcFd, errno);
         return;
     }
 
@@ -80,7 +80,7 @@ void MultiStagesVideoCaptureManager::AddVideoInternal(const std::string &videoId
     MEDIA_INFO_LOG("AddVideoInternal tempPath = %{public}s", tempPath.c_str());
     int dstFd = open(tempPath.c_str(), O_CREAT|O_WRONLY|O_TRUNC, fileMode);
     if (dstFd < 0) {
-        MEDIA_ERR_LOG("open file fail, dstFd = %{public}d", dstFd);
+        MEDIA_ERR_LOG("open file fail, dstFd = %{public}d, errno:%{public}d", dstFd, errno);
         close(srcFd);
         return;
     }
@@ -110,7 +110,7 @@ void MultiStagesVideoCaptureManager::AddVideo(const std::string &videoId,
     vector<string> whereArgs { fileId };
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     values.PutString(MEDIA_DATA_DB_PHOTO_ID, videoId);
     values.PutInt(MEDIA_DATA_DB_PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
     cmd.SetValueBucket(values);
@@ -206,14 +206,14 @@ void MultiStagesVideoCaptureManager::RemoveVideo(const std::string &videoId, con
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_FILE_PATH };
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_INFO_LOG("result set is empty");
         return;
     }
 
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     int ret = MediaLibraryPhotoOperations::RemoveTempVideo(data);
-    if (ret != E_OK) {
+    if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete temp video file failed. ret: %{public}d, errno: %{public}d", ret, errno);
     }
 }

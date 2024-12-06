@@ -393,10 +393,12 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
 {
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        if (!BackupFileUtils::IsFileValid(fileInfos[i].filePath, CLONE_RESTORE_ID)) {
-            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, filePath: %{public}s",
-                sceneCode,
-                sourceType,
+        int32_t errCode = BackupFileUtils::IsFileValid(fileInfos[i].filePath, CLONE_RESTORE_ID);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, size: %{public}lld, "
+                "name: %{public}s, filePath: %{public}s",
+                sceneCode, sourceType, (long long)fileInfos[i].fileSize,
+                BackupFileUtils::GarbleFileName(fileInfos[i].displayName).c_str(),
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
             continue;
         }
@@ -1269,10 +1271,10 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
     }
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t fileMoveCount = 0;
-    unordered_set<int32_t> excludedFileIdSet;
     for (auto& fileInfo : fileInfos) {
-        if (!BackupFileUtils::IsFileValid(fileInfo.filePath, CLONE_RESTORE_ID)) {
-            MEDIA_ERR_LOG("File is invalid: filePath: %{public}s",
+        if (BackupFileUtils::IsFileValid(fileInfo.filePath, CLONE_RESTORE_ID) != E_OK) {
+            MEDIA_ERR_LOG("File is invalid: size: %{public}lld, name: %{public}s, filePath: %{public}s",
+                (long long)fileInfo.fileSize, BackupFileUtils::GarbleFileName(fileInfo.displayName).c_str(),
                 BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
             continue;
         }
@@ -1292,7 +1294,6 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
                 BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(), moveErrCode,
                 errno);
             UpdateFailedFiles(fileInfo.fileType, fileInfo, RestoreError::MOVE_FAILED);
-            excludedFileIdSet.insert(fileInfo.fileIdOld);
             continue;
         }
         BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
@@ -1514,14 +1515,15 @@ bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInf
 void CloneRestore::RestoreFromGalleryPortraitAlbum()
 {
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-    int32_t totalNumber {0};
+    RecordOldPortraitAlbumDfx();
+
     std::string querySql =   "SELECT count(1) AS count FROM " + ANALYSIS_ALBUM_TABLE + " WHERE ";
     std::string whereClause = "(" + SMARTALBUM_DB_ALBUM_TYPE + " = " + std::to_string(SMART) + " AND " +
         "album_subtype" + " = " + std::to_string(PORTRAIT) + ")";
     AppendExtraWhereClause(whereClause, ANALYSIS_ALBUM_TABLE);
     querySql += whereClause;
 
-    totalNumber = BackupDatabaseUtils::QueryInt(mediaRdb_, querySql, CUSTOM_COUNT);
+    int32_t totalNumber = BackupDatabaseUtils::QueryInt(mediaRdb_, querySql, CUSTOM_COUNT);
     MEDIA_INFO_LOG("QueryPortraitAlbum totalNumber = %{public}d", totalNumber);
 
     std::vector<std::string> commonColumn = BackupDatabaseUtils::GetCommonColumnInfos(mediaRdb_, mediaLibraryRdb_,
@@ -1530,7 +1532,7 @@ void CloneRestore::RestoreFromGalleryPortraitAlbum()
         EXCLUDED_PORTRAIT_COLUMNS);
 
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        vector<AnalysisAlbumTbl> analysisAlbumTbl = QueryPortraitAlbumTbl(offset, commonColumns);
+        std::vector<AnalysisAlbumTbl> analysisAlbumTbl = QueryPortraitAlbumTbl(offset, commonColumns);
         for (const auto& album : analysisAlbumTbl) {
             if (album.tagId.has_value() && album.coverUri.has_value()) {
                 coverUriInfo_.emplace_back(album.tagId.value(),
@@ -1541,6 +1543,8 @@ void CloneRestore::RestoreFromGalleryPortraitAlbum()
 
         InsertPortraitAlbum(analysisAlbumTbl);
     }
+
+    LogPortraitCloneDfx();
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migratePortraitTotalTimeCost_ += end - start;
 }
@@ -1705,6 +1709,145 @@ NativeRdb::ValuesBucket CloneRestore::CreateValuesBucketFromFaceTagTbl(const Fac
     PutIfPresent(values, FACE_TAG_COL_ANALYSIS_VERSION, faceTagTbl.analysisVersion);
 
     return values;
+}
+
+std::vector<PortraitAlbumDfx> CloneRestore::QueryAllPortraitAlbum(int32_t& offset, int32_t& rowCount)
+{
+    std::vector<PortraitAlbumDfx> result;
+    result.reserve(QUERY_COUNT);
+
+    const std::string querySql = "SELECT album_name, cover_uri, tag_id, count "
+        "FROM AnalysisAlbum "
+        "WHERE album_type = ? "
+        "AND album_subtype = ? "
+        "LIMIT ?, ?";
+
+    std::vector<NativeRdb::ValueObject> bindArgs = { SMART, PORTRAIT, offset, QUERY_COUNT };
+    if (this->mediaRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: mediaRdb_ is null.");
+        return result;
+    }
+    auto resultSet = mediaRdb_->QuerySql(querySql, bindArgs);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query resultSql is null.");
+        return result;
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        PortraitAlbumDfx dfxInfo;
+        dfxInfo.albumName = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_ALBUM_NAME);
+        dfxInfo.coverUri = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_COVER_URI);
+        dfxInfo.tagId = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_TAG_ID);
+        dfxInfo.count = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_COUNT);
+
+        result.push_back(dfxInfo);
+    }
+    resultSet->GetRowCount(rowCount);
+    return result;
+}
+
+void CloneRestore::RecordOldPortraitAlbumDfx()
+{
+    int32_t offset {0};
+    int32_t rowCount {0};
+    std::vector<PortraitAlbumDfx> albums;
+
+    do {
+        auto batchResults =  QueryAllPortraitAlbum(offset, rowCount);
+        if (!batchResults.empty()) {
+            albums.insert(albums.end(), batchResults.begin(), batchResults.end());
+        }
+
+        offset += QUERY_COUNT;
+    } while (rowCount > 0);
+
+    for (const auto& album : albums) {
+        PortraitAlbumDfx dfxInfo;
+        if (album.albumName.has_value()) {
+            dfxInfo.albumName = album.albumName.value();
+        }
+        if (album.coverUri.has_value()) {
+            auto uriParts = BackupDatabaseUtils::SplitString(album.coverUri.value(), '/');
+            if (uriParts.size() >= COVER_URI_NUM) {
+                std::string fileName = uriParts[uriParts.size() - 1];
+                dfxInfo.coverUri = BackupFileUtils::GarbleFileName(fileName);
+            }
+        }
+        if (album.tagId.has_value()) {
+            dfxInfo.tagId = album.tagId.value();
+        }
+        if (album.count.has_value()) {
+            dfxInfo.count = album.count.value();
+        }
+
+        portraitAlbumDfx_.push_back(dfxInfo);
+    }
+}
+
+std::unordered_set<std::string> CloneRestore::QueryAllPortraitAlbum()
+{
+    std::unordered_set<std::string> result;
+    std::vector<std::string> tagIds;
+    for (const auto& oldAlbum : portraitAlbumDfx_) {
+        if (oldAlbum.tagId.has_value()) {
+            tagIds.push_back(oldAlbum.tagId.value());
+        }
+    }
+
+    if (tagIds.empty()) {
+        MEDIA_INFO_LOG("No valid tag_ids found in old albums");
+        return result;
+    }
+
+    std::string querySql = "SELECT tag_id FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE tag_id IN (" + BackupDatabaseUtils::JoinSQLValues<string>(tagIds, ", ") + ")";
+
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query resultSql is null.");
+        return result;
+    }
+
+    std::string dfxInfo;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        dfxInfo =
+            BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_TAG_ID).value_or("");
+        result.insert(dfxInfo);
+    }
+
+    return result;
+}
+
+void CloneRestore::LogPortraitCloneDfx()
+{
+    std::vector<std::string> failedAlbums;
+    std::unordered_set<std::string> existingTagIds = QueryAllPortraitAlbum();
+
+    for (const auto& oldAlbum : portraitAlbumDfx_) {
+        if (!oldAlbum.tagId.has_value()) {
+            continue;
+        }
+
+        if (existingTagIds.find(oldAlbum.tagId.value()) == existingTagIds.end()) {
+            std::string albumInfo = "Album: " + oldAlbum.albumName.value_or("Unknown") +
+                ", TagId: " + oldAlbum.tagId.value() +
+                ", Cover: " + oldAlbum.coverUri.value_or("Unknown") +
+                ", Count: " + std::to_string(oldAlbum.count.value_or(0));
+            failedAlbums.push_back(albumInfo);
+        }
+    }
+
+    if (!failedAlbums.empty()) {
+        MEDIA_ERR_LOG("Following portrait albums failed to clone completely:");
+        for (const auto& failedAlbum : failedAlbums) {
+            MEDIA_ERR_LOG("%{public}s", failedAlbum.c_str());
+        }
+    } else {
+        MEDIA_INFO_LOG("All portrait albums cloned successfully");
+    }
+
+    MEDIA_INFO_LOG("Stat: Total albums: %{public}zu, Failed albums count: %{public}zu",
+        portraitAlbumDfx_.size(), failedAlbums.size());
 }
 
 void CloneRestore::RestorePortraitClusteringInfo()

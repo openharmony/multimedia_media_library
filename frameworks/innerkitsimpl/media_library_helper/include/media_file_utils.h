@@ -104,6 +104,9 @@ public:
     EXPORT static bool CreateDirectory(const std::string &dirPath, std::shared_ptr<int> errCodePtr = nullptr);
     EXPORT static int32_t CheckAlbumName(const std::string &albumName);
     EXPORT static int32_t CheckDentryName(const std::string &dentryName);
+    EXPORT static int32_t CheckTitleName(const std::string &title);
+    EXPORT static std::string GetFileAssetUri(const std::string &fileAssetData, const std::string &displayName,
+        const int32_t &fileId);
     EXPORT static int32_t CheckDisplayName(const std::string &displayName);
     EXPORT static int32_t CheckFileDisplayName(const std::string &displayName);
     EXPORT static int32_t CheckRelativePath(const std::string &relativePath);
@@ -135,6 +138,7 @@ public:
     EXPORT static std::string GetVirtualUriFromRealUri(const std::string &uri, const std::string &extrUri = "");
     EXPORT static std::string GetRealUriFromVirtualUri(const std::string &uri);
     EXPORT static bool StartsWith(const std::string &str, const std::string &prefix);
+    EXPORT static void ReplaceAll(std::string &str, const std::string &from, const std::string &to);
     EXPORT static void UriAppendKeyValue(std::string &uri, const std::string &key, std::string value = "10");
     EXPORT static std::string GetExtraUri(const std::string &displayName, const std::string &path,
         const bool isNeedEncode = true);

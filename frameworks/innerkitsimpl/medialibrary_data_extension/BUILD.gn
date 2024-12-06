@@ -199,6 +199,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_reporter.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_timer.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_transaction.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_worker.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_database_utils.cpp",
@@ -232,7 +233,10 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/dfx/cloud_enhancement_dfx_get_count.cpp",
   ]
 
-  media_power_efficiency_source = [ "${MEDIALIB_SERVICES_PATH}/media_power_efficiency/src/power_efficiency_manager.cpp" ]
+  media_power_efficiency_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_power_efficiency/src/power_efficiency_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_power_efficiency/src/medialibrary_standby_service_subscriber.cpp",
+  ]
 
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
@@ -434,6 +438,11 @@ ohos_shared_library("medialibrary_data_extension") {
       defined(global_parts_info.communication_wifi)) {
     external_deps += [ "wifi:wifi_sdk" ]
     cflags_cc += [ "-DHAS_WIFI_MANAGER_PART" ]
+  }
+
+  if (resourceschedule_device_standby) {
+    external_deps += [ "device_standby:standby_innerkits" ]
+    defines += [ "DEVICE_STANDBY_ENABLE" ]
   }
 
   subsystem_name = "multimedia"

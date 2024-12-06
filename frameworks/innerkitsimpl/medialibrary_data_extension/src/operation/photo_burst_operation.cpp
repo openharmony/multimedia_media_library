@@ -34,7 +34,7 @@ namespace OHOS::Media {
  * @brief Find burstKey from the given albumId, only for BURST photo.
  * @return burstKey, if found; empty string, otherwise.
  */
-std::string PhotoBurstOperation::FindBurstKey(NativeRdb::RdbStore &rdbStore,
+std::string PhotoBurstOperation::FindBurstKey(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t targetAlbumId,
     const std::string &uniqueDisplayName)
 {
@@ -57,7 +57,7 @@ std::string PhotoBurstOperation::FindBurstKey(NativeRdb::RdbStore &rdbStore,
  * @return burstKey, if found; empty string, otherwise.
  */
 std::string PhotoBurstOperation::FindBurstKey(
-    NativeRdb::RdbStore &rdbStore, const PhotoBurstOperation::PhotoAssetInfo &photoAssetInfo)
+    const std::shared_ptr<MediaLibraryRdbStore> rdbStore, const PhotoBurstOperation::PhotoAssetInfo &photoAssetInfo)
 {
     if (photoAssetInfo.ownerAlbumId <= 0 || photoAssetInfo.burstGroupName.empty() ||
         photoAssetInfo.subtype != static_cast<int32_t>(PhotoSubType::BURST)) {
@@ -123,7 +123,7 @@ std::string PhotoBurstOperation::FindBurstGroupName(const std::string &displayNa
 }
 
 std::string PhotoBurstOperation::QueryBurstKeyFromDB(
-    NativeRdb::RdbStore &rdbStore, const PhotoBurstOperation::PhotoAssetInfo &photoAssetInfo)
+    const std::shared_ptr<MediaLibraryRdbStore> rdbStore, const PhotoBurstOperation::PhotoAssetInfo &photoAssetInfo)
 {
     int32_t ownerAlbumId = photoAssetInfo.ownerAlbumId;
     std::string burstGroupName = photoAssetInfo.burstGroupName;
@@ -134,7 +134,7 @@ std::string PhotoBurstOperation::QueryBurstKeyFromDB(
     std::string querySql = this->SQL_PHOTOS_TABLE_QUERY_BURST_KEY;
     std::string burstGroupNameCondition = burstGroupName + "%";
     const std::vector<NativeRdb::ValueObject> bindArgs = {ownerAlbumId, burstGroupNameCondition};
-    auto resultSet = rdbStore.QuerySql(querySql, bindArgs);
+    auto resultSet = rdbStore->QuerySql(querySql, bindArgs);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_WARN_LOG("Media_Operation: resultSet is null or no data found! "
                        "querySql: %{public}s, bindArgs: %{public}s",

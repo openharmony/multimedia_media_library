@@ -26,7 +26,6 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdbstore.h"
-#include "medialibrary_rdb_transaction.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
@@ -39,8 +38,6 @@ using namespace testing::ext;
 
 static shared_ptr<MediaLibraryRdbStore> rdbStore;
 static std::atomic<int> num{ 0 };
-
-bool BackgroundCloudFileProcessorTest::isBackgroundDownload_ = false;
 
 int32_t ExecSqls(const vector<string> &sqls)
 {
@@ -86,8 +83,6 @@ string GetTitle(int64_t &timestamp)
 string InsertPhoto(const MediaType &mediaType, int32_t position)
 {
     EXPECT_NE((rdbStore == nullptr), true);
-    TransactionOperations transactionOprn(rdbStore->GetRaw());
-    transactionOprn.Start();
     int64_t fileId = -1;
     int64_t timestamp = GetTimestamp();
     string title = GetTitle(timestamp);
@@ -120,9 +115,8 @@ string InsertPhoto(const MediaType &mediaType, int32_t position)
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_TIME_PENDING, 0);
-    int32_t ret = rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    int32_t ret = rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
     MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
     return path;
 }
@@ -140,8 +134,6 @@ vector<string> PreparePhotos(const int count, const MediaType &mediaType, int32_
 int32_t PrepareAbnormalPhotos(const string &column)
 {
     EXPECT_NE((rdbStore == nullptr), true);
-    TransactionOperations transactionOprn(rdbStore->GetRaw());
-    transactionOprn.Start();
     string updateSql;
     if (column == MediaColumn::MEDIA_MIME_TYPE) {
         updateSql = "update " + PhotoColumn::PHOTOS_TABLE + " set " + column + " = '' ";
@@ -151,7 +143,6 @@ int32_t PrepareAbnormalPhotos(const string &column)
     vector<string> executeSqls = {updateSql};
     int32_t ret = ExecSqls(executeSqls);
     EXPECT_EQ(ret, E_OK);
-    transactionOprn.Finish();
     return ret;
 }
 
@@ -171,34 +162,43 @@ int32_t QueryPhotosCount()
     return count;
 }
 
+std::vector<std::string> QueryCurDownloadFiles()
+{
+    std::vector<std::string> curDownloadFiles;
+    auto resultSet = BackgroundCloudFileProcessor::QueryCloudFiles();
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to query cloud files!");
+        return curDownloadFiles;
+    }
+
+    BackgroundCloudFileProcessor::DownloadFiles downloadFiles;
+    BackgroundCloudFileProcessor::ParseDownloadFiles(resultSet, downloadFiles);
+    if (downloadFiles.paths.empty()) {
+        MEDIA_INFO_LOG("No cloud files need to be downloaded");
+        return curDownloadFiles;
+    }
+    return downloadFiles.paths;
+}
+
 void BackgroundCloudFileProcessorTest::SetUpTestCase()
 {
     MEDIA_INFO_LOG("BackgroundCloudFileProcessorTest SetUpTestCase");
 
     MediaLibraryUnitTestUtils::Init();
-    rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(rdbStore, nullptr);
-
-    BackgroundCloudFileProcessor::processInterval_ = 50;  // 50 milliseconds
-    BackgroundCloudFileProcessor::downloadDuration_ = 40; // 40 milliseconds
-    isBackgroundDownload_ = BackgroundCloudFileProcessor::isDownload_;
-    BackgroundCloudFileProcessor::isDownload_ = true;
 }
 
 void BackgroundCloudFileProcessorTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("BackgroundCloudFileProcessorTest TearDownTestCase");
     ClearTables();
-    BackgroundCloudFileProcessor::processInterval_ = PROCESS_INTERVAL;
-    BackgroundCloudFileProcessor::downloadDuration_ = DOWNLOAD_DURATION;
-    BackgroundCloudFileProcessor::isDownload_ = isBackgroundDownload_;
 }
 
 void BackgroundCloudFileProcessorTest::SetUp()
 {
     MEDIA_INFO_LOG("BackgroundCloudFileProcessorTest SetUp");
     ClearTables();
-    std::this_thread::sleep_for(std::chrono::milliseconds(20)); // 20 milliseconds
 }
 
 void BackgroundCloudFileProcessorTest::TearDown()

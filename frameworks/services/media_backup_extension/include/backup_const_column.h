@@ -141,6 +141,10 @@ const std::string GALLERY_FACE_TABLE_JOIN_TAG = GALLERY_TABLE_MERGE_FACE + " INN
 const std::string GALLERY_FACE_TABLE_FULL = GALLERY_TABLE_MERGE_FACE + " INNER JOIN " + GALLERY_TABLE_FACE + " ON " +
     GALLERY_MERGE_FACE_HASH + " = " + GALLERY_FACE_HASH + " AND " + GALLERY_MERGE_FACE_FACE_ID + " = " +
     GALLERY_FACE_FACE_ID + " WHERE " + GALLERY_LANDMARKS + " != 0 ";
+
+// Path related
+const std::string INTERNAL_PREFIX = "/storage/emulated";
+const std::string APP_TWIN_DATA_PREFIX = "/AppTwinData";
 } // namespace Media
 } // namespace OHOS
 

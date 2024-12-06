@@ -102,7 +102,7 @@ bool MediaLibrarySyncOperation::SyncPullAllTableByNetworkId(MediaLibrarySyncOpts
     return true;
 }
 
-static string GetDeviceUdidByNetworkId(const shared_ptr<RdbStore> &rdbStore, const string &networkId)
+static string GetDeviceUdidByNetworkId(const shared_ptr<MediaLibraryRdbStore> rdbStore, const string &networkId)
 {
     vector<string> columns;
     AbsRdbPredicates absPredDevice(DEVICE_TABLE);
@@ -126,7 +126,8 @@ static string GetDeviceUdidByNetworkId(const shared_ptr<RdbStore> &rdbStore, con
     return get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_UDID, queryResultSet, TYPE_STRING));
 }
 
-static int32_t UpdateDeviceSyncStatus(const shared_ptr<RdbStore> &rdbStore, const string &networkId, int32_t syncStatus)
+static int32_t UpdateDeviceSyncStatus(const shared_ptr<MediaLibraryRdbStore> rdbStore, const string &networkId,
+    int32_t syncStatus)
 {
     string deviceUdid = GetDeviceUdidByNetworkId(rdbStore, networkId);
     if (deviceUdid.empty()) {
@@ -159,7 +160,7 @@ static int32_t UpdateDeviceSyncStatus(const shared_ptr<RdbStore> &rdbStore, cons
     return (updatedRows > 0) ? E_OK : E_FAIL;
 }
 
-static string GetDistributedTableName(const shared_ptr<RdbStore> &rdbStore, const string &networkId)
+static string GetDistributedTableName(const shared_ptr<MediaLibraryRdbStore> rdbStore, const string &networkId)
 {
     string distributedTableName;
     int errCode = E_ERR;

@@ -55,6 +55,8 @@ private:
     bool timerStatus_{false};
     std::mutex mutex_;
     int32_t agingCount_ {0};
+    int32_t deviceTemperatureLevel_ {0};
+    int32_t newTemperatureLevel_ {0};
     int64_t lockTime_ {0};
 
     std::mutex delayTaskLock_;
@@ -65,6 +67,7 @@ private:
     EXPORT void DoBackgroundOperation();
     EXPORT void StopBackgroundOperation();
     EXPORT void StartAnalysisService();
+    void WalCheckPointAsync();
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();

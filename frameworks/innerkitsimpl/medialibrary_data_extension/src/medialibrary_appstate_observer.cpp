@@ -112,7 +112,7 @@ MedialibraryAppStateObserverManager &MedialibraryAppStateObserverManager::GetIns
     return instance;
 }
 
-static int32_t CountTemporaryPermission(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+static int32_t CountTemporaryPermission(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
     NativeRdb::AbsRdbPredicates predicatesUnSubscribe(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     vector<string> permissionTypes;
@@ -138,7 +138,7 @@ static int32_t CountTemporaryPermission(const std::shared_ptr<NativeRdb::RdbStor
     return count;
 }
 
-static int32_t CountHideSensitive(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+static int32_t CountHideSensitive(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
     NativeRdb::AbsRdbPredicates predicatesUnSubscribe(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     vector<string> columns = { AppUriPermissionColumn::ID };
@@ -156,7 +156,7 @@ static int32_t CountHideSensitive(const std::shared_ptr<NativeRdb::RdbStore> &rd
     return count;
 }
 
-static void TryUnSubscribeAppState(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+static void TryUnSubscribeAppState(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
     int32_t countPermission = CountTemporaryPermission(rdbStore);
     int32_t countSensitive = CountHideSensitive(rdbStore);
@@ -166,7 +166,7 @@ static void TryUnSubscribeAppState(const std::shared_ptr<NativeRdb::RdbStore> &r
     }
 }
 
-static int32_t DeleteTemporaryPermission(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const string &appId)
+static int32_t DeleteTemporaryPermission(const std::shared_ptr<MediaLibraryRdbStore> rdbStore, const string &appId)
 {
     NativeRdb::AbsRdbPredicates predicates(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     predicates.EqualTo(AppUriPermissionColumn::APP_ID, appId);
@@ -188,7 +188,7 @@ static int32_t DeleteTemporaryPermission(const std::shared_ptr<NativeRdb::RdbSto
     return deletedRows;
 }
 
-static int32_t DeleteHideSensitive(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const string &appId)
+static int32_t DeleteHideSensitive(const std::shared_ptr<MediaLibraryRdbStore> rdbStore, const string &appId)
 {
     NativeRdb::AbsRdbPredicates predicates(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     predicates.EqualTo(AppUriPermissionColumn::APP_ID, appId);
