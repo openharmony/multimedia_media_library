@@ -208,6 +208,9 @@ public:
     static napi_value AddDefaultAssetColumns(napi_env env, std::vector<std::string> &fetchColumn,
         std::function<bool(const std::string &columnName)> isValidColumn, NapiAssetType assetType,
         const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
+    static napi_value AddAssetColumns(napi_env env, std::vector<std::string> &fetchColumn,
+        std::function<bool(const std::string &columnName)> isValidColumn, std::set<std::string>& validFetchColumns,
+        const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
 
     static int32_t GetSystemAlbumPredicates(const PhotoAlbumSubType subType,
         DataShare::DataSharePredicates &predicates, const bool hiddenOnly);
