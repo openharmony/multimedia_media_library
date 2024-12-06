@@ -35,6 +35,7 @@
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
+#include "userfile_manager_types.h"
 #include "values_bucket.h"
 
 namespace OHOS {
@@ -42,7 +43,9 @@ namespace Media {
 using namespace FileManagement::CloudSync;
 
 static constexpr int32_t DOWNLOAD_BATCH_SIZE = 2;
-static constexpr int32_t UPDATE_BATCH_SIZE = 1;
+static constexpr int32_t UPDATE_BATCH_CLOUD_SIZE = 2;
+static constexpr int32_t UPDATE_BATCH_LOCAL_VIDEO_SIZE = 50;
+static constexpr int32_t UPDATE_BATCH_LOCAL_IMAGE_SIZE = 200;
 static constexpr int32_t MAX_RETRY_COUNT = 2;
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
@@ -56,8 +59,10 @@ uint32_t BackgroundCloudFileProcessor::startTimerId_ = 0;
 uint32_t BackgroundCloudFileProcessor::stopTimerId_ = 0;
 std::vector<std::string> BackgroundCloudFileProcessor::curDownloadPaths_;
 bool BackgroundCloudFileProcessor::isUpdating_ = true;
-int32_t BackgroundCloudFileProcessor::currentUpdateOffset_ = 0;
-int32_t BackgroundCloudFileProcessor::currentRetryCount_ = 0;
+int32_t BackgroundCloudFileProcessor::cloudUpdateOffset_ = 0;
+int32_t BackgroundCloudFileProcessor::localImageUpdateOffset_ = 0;
+int32_t BackgroundCloudFileProcessor::localVideoUpdateOffset_ = 0;
+int32_t BackgroundCloudFileProcessor::cloudRetryCount_ = 0;
 bool BackgroundCloudFileProcessor::isDownload_ = false;
 
 void BackgroundCloudFileProcessor::DownloadCloudFiles()
@@ -94,19 +99,28 @@ void BackgroundCloudFileProcessor::DownloadCloudFiles()
 void BackgroundCloudFileProcessor::UpdateCloudData()
 {
     MEDIA_DEBUG_LOG("Start update cloud data task");
-    auto resultSet = QueryUpdateData();
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query update data!");
-        return;
-    }
-
+    std::vector<QueryOption> queryList = {{false, true}, {false, false}, {true, true}};
+    std::shared_ptr<NativeRdb::ResultSet> resultSet;
+    int32_t count = 0;
     UpdateData updateData;
-    ParseUpdateData(resultSet, updateData);
-    if (updateData.abnormalData.empty()) {
-        MEDIA_DEBUG_LOG("No cloud data need to update");
-        return;
+    for (auto option : queryList) {
+        resultSet = QueryUpdateData(option.isCloud, option.isVideo);
+        if (resultSet == nullptr || resultSet->GetRowCount(count) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to query data, %{public}d, %{public}d", option.isCloud, option.isVideo);
+            continue;
+        }
+        if (count == 0) {
+            MEDIA_DEBUG_LOG("no need to update, %{public}d, %{public}d", option.isCloud, option.isVideo);
+            continue;
+        }
+        ParseUpdateData(resultSet, updateData, option.isCloud, option.isVideo);
+        break;
     }
 
+    if (updateData.abnormalData.empty()) {
+        MEDIA_DEBUG_LOG("No data need to update");
+        return;
+    }
     int32_t ret = AddUpdateDataTask(updateData);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to add update task! err: %{public}d", ret);
@@ -239,7 +253,34 @@ void BackgroundCloudFileProcessor::StopDownloadFiles()
     curDownloadPaths_.clear();
 }
 
-std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateData()
+void BackgroundCloudFileProcessor::SetPredicates(NativeRdb::RdbPredicates &predicates, bool isCloud, bool isVideo)
+{
+    if (isCloud) {
+        predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD))
+            ->OrderByAsc(MediaColumn::MEDIA_ID)
+            ->Limit(cloudUpdateOffset_, UPDATE_BATCH_CLOUD_SIZE);
+    } else {
+        if (isVideo) {
+            predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD))->And()
+                ->BeginWrap()
+                ->EqualTo(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(MEDIA_TYPE_VIDEO))->And()
+                ->BeginWrap()
+                ->EqualTo(MediaColumn::MEDIA_DURATION, 0)->Or()
+                ->IsNull(MediaColumn::MEDIA_DURATION)
+                ->EndWrap()
+                ->EndWrap()
+                ->OrderByAsc(MediaColumn::MEDIA_ID)
+                ->Limit(localVideoUpdateOffset_, UPDATE_BATCH_LOCAL_VIDEO_SIZE);
+        } else {
+            predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD))->And()
+                ->NotEqualTo(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(MEDIA_TYPE_VIDEO))
+                ->OrderByAsc(MediaColumn::MEDIA_ID)
+                ->Limit(localImageUpdateOffset_, UPDATE_BATCH_LOCAL_IMAGE_SIZE);
+        }
+    }
+}
+
+std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateData(bool isCloud, bool isVideo)
 {
     const std::vector<std::string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
         MediaColumn::MEDIA_TYPE, MediaColumn::MEDIA_SIZE,
@@ -280,14 +321,13 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateD
         ->EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE))
         ->And()
         ->EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN))
-        ->OrderByAsc(MediaColumn::MEDIA_ID)
-        ->Limit(currentUpdateOffset_, UPDATE_BATCH_SIZE);
-
+        ->And();
+    SetPredicates(predicates, isCloud, isVideo);
     return MediaLibraryRdbStore::Query(predicates, columns);
 }
 
 void BackgroundCloudFileProcessor::ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    UpdateData &updateData)
+    UpdateData &updateData, bool isCloud, bool isVideo)
 {
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId =
@@ -319,16 +359,18 @@ void BackgroundCloudFileProcessor::ParseUpdateData(std::shared_ptr<NativeRdb::Re
         abnormalData.height = height;
         abnormalData.duration = duration;
         abnormalData.mimeType = mimeType;
+        abnormalData.isCloud = isCloud;
+        abnormalData.isVideo = isVideo;
 
-        if (mediaType == static_cast<int32_t>(MEDIA_TYPE_VIDEO)) {
+        if (isCloud && mediaType == static_cast<int32_t>(MEDIA_TYPE_VIDEO)) {
             updateData.abnormalData.clear();
+            abnormalData.mediaType = MEDIA_TYPE_VIDEO;
             updateData.abnormalData.push_back(abnormalData);
-            updateData.mediaType = MEDIA_TYPE_VIDEO;
             return;
         }
+        abnormalData.mediaType = static_cast<MediaType>(mediaType);
         updateData.abnormalData.push_back(abnormalData);
     }
-    updateData.mediaType = MEDIA_TYPE_IMAGE;
 }
 
 int32_t BackgroundCloudFileProcessor::AddUpdateDataTask(const UpdateData &updateData)
@@ -350,16 +392,26 @@ int32_t BackgroundCloudFileProcessor::AddUpdateDataTask(const UpdateData &update
     return E_OK;
 }
 
-void BackgroundCloudFileProcessor::UpdateCurrentOffset()
+void BackgroundCloudFileProcessor::UpdateCurrentOffset(bool isCloud, bool isVideo)
 {
-    if (currentRetryCount_ >= MAX_RETRY_COUNT) {
-        currentUpdateOffset_ += 1;
-        currentRetryCount_ = 0;
-    } else {
-        currentRetryCount_ += 1;
+    if (isCloud) {
+        if (cloudRetryCount_ >= MAX_RETRY_COUNT) {
+            cloudUpdateOffset_ += 1;
+            cloudRetryCount_ = 0;
+        } else {
+            cloudRetryCount_ += 1;
+        }
+        MEDIA_INFO_LOG("cloudUpdateOffset_ is %{public}d, cloudRetryCount_ is %{public}d",
+            cloudUpdateOffset_, cloudRetryCount_);
+        return;
     }
-    MEDIA_INFO_LOG("currentUpdateOffset_ is %{public}d, currentRetryCount_ is %{public}d",
-        currentUpdateOffset_, currentRetryCount_);
+    if (isVideo) {
+        localVideoUpdateOffset_++;
+        MEDIA_INFO_LOG("localVideoUpdateOffset_ is %{public}d", localVideoUpdateOffset_);
+    } else {
+        localImageUpdateOffset_++;
+        MEDIA_INFO_LOG("localImageUpdateOffset_ is %{public}d", localImageUpdateOffset_);
+    }
 }
 
 void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
@@ -375,7 +427,7 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
         }
         std::unique_ptr<Metadata> metadata = make_unique<Metadata>();
         metadata->SetFilePath(abnormalData.path);
-        metadata->SetFileMediaType(updateData.mediaType);
+        metadata->SetFileMediaType(abnormalData.mediaType);
         metadata->SetFileId(abnormalData.fileId);
         metadata->SetFileDuration(abnormalData.duration);
         metadata->SetFileHeight(abnormalData.height);
@@ -390,10 +442,10 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
             metadata->SetFileMimeType(mimeType.empty() ? DEFAULT_IMAGE_MIME_TYPE : mimeType);
         }
         if (abnormalData.width == 0 || abnormalData.height == 0
-            || (abnormalData.duration == 0 && updateData.mediaType == MEDIA_TYPE_VIDEO)) {
+            || (abnormalData.duration == 0 && abnormalData.mediaType == MEDIA_TYPE_VIDEO)) {
             int32_t ret = GetExtractMetadata(metadata);
             if (ret != E_OK && MediaFileUtils::IsFileExists(abnormalData.path)) {
-                UpdateCurrentOffset();
+                UpdateCurrentOffset(abnormalData.isCloud, abnormalData.isVideo);
                 MEDIA_ERR_LOG("failed to get extract metadata! err: %{public}d.", ret);
                 continue;
             }
@@ -402,10 +454,12 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
             int32_t duration = metadata->GetFileDuration();
             metadata->SetFileWidth(width == 0 ? -1: width);
             metadata->SetFileHeight(height == 0 ? -1: height);
-            metadata->SetFileDuration((duration == 0 && updateData.mediaType == MEDIA_TYPE_VIDEO) ? -1: duration);
+            metadata->SetFileDuration((duration == 0 && abnormalData.mediaType == MEDIA_TYPE_VIDEO) ? -1: duration);
         }
         UpdateAbnormaldata(metadata, PhotoColumn::PHOTOS_TABLE);
-        currentRetryCount_ = 0;
+        if (abnormalData.isCloud) {
+            cloudRetryCount_ = 0;
+        }
     }
 }
 
