@@ -56,7 +56,7 @@ AlbumInfo DfxDatabaseUtils::QueryAlbumInfoBySubtype(int32_t albumSubtype)
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, albumSubtype);
     std::vector<std::string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_IMAGE_COUNT,
         PhotoAlbumColumns::ALBUM_VIDEO_COUNT, PhotoAlbumColumns::ALBUM_CLOUD_ID };
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("query album fail");
         return albumInfo;
@@ -77,7 +77,7 @@ std::vector<PhotoInfo> DfxDatabaseUtils::QueryDirtyCloudPhoto()
     predicates.Limit(DIRTY_PHOTO_COUNT);
     std::vector<std::string> columns = { MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_DIRTY,
         PhotoColumn::PHOTO_CLOUD_ID };
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
         return photoInfoList;
@@ -197,7 +197,7 @@ int32_t DfxDatabaseUtils::QueryDbVersion()
 int32_t DfxDatabaseUtils::QueryInt(const NativeRdb::AbsRdbPredicates &predicates,
     const std::vector<std::string> &columns, const std::string &queryColumn, int32_t &value)
 {
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return E_DB_FAIL;
     }
@@ -208,7 +208,7 @@ int32_t DfxDatabaseUtils::QueryInt(const NativeRdb::AbsRdbPredicates &predicates
 int32_t DfxDatabaseUtils::QueryDouble(const NativeRdb::AbsRdbPredicates &predicates,
     const std::vector<std::string> &columns, const std::string &queryColumn, double &value)
 {
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return E_DB_FAIL;
     }

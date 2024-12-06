@@ -77,6 +77,7 @@ const std::string OPRN_ADD_FILTERS = "add_filters";
 const std::string OPRN_DISCARD_CAMERA_PHOTO = "discard_camera_photo";
 const std::string OPRN_SAVE_CAMERA_PHOTO = "save_camera_photo";
 const std::string OPRN_SAVE_PICTURE = "save_picture";
+const std::string OPRN_CLONE_ASSET = "clone_asset";
 const std::string OPRN_REMOVE_MSC_TASK = "remove_msc_task"; // remove multistages capture task
 const std::string OPRN_GROUP_DISMISS = "dismiss";
 const std::string OPRN_GROUP_ALBUM_NAME = "group_album_name";
@@ -92,6 +93,10 @@ const std::string OPRN_ENHANCEMENT_QUERY = "query_enhancement";
 const std::string OPRN_ENHANCEMENT_GET_PAIR = "get_pair_enhancement";
 const std::string OPRN_SET_VIDEO_ENHANCEMENT_ATTR = "set_video_enhancement_attr";
 
+const std::string OPRN_ALL_DUPLICATE_ASSETS = "all_duplicate_assets";
+const std::string URI_ALL_DUPLICATE_ASSETS = "/" + OPRN_ALL_DUPLICATE_ASSETS;
+const std::string OPRN_CAN_DEL_DUPLICATE_ASSETS = "can_del_duplicate_assets";
+const std::string URI_CAN_DEL_DUPLICATE_ASSETS = "/" + OPRN_CAN_DEL_DUPLICATE_ASSETS;
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
 const std::string MEDIA_PHOTOOPRN = "photo_operation";
@@ -276,6 +281,9 @@ const std::string PAH_SAVE_CAMERA_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOT
 const std::string PAH_SCAN_WITHOUT_ALBUM_UPDATE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" +
     OPRN_SCAN_WITHOUT_ALBUM_UPDATE;
 const std::string PATH_SAVE_PICTURE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SAVE_PICTURE;
+const std::string PAH_CLONE_ASSET = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CLONE_ASSET;
+const std::string PAH_ALL_DUPLICATE_ASSETS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + URI_ALL_DUPLICATE_ASSETS;
+const std::string PAH_CAN_DEL_DUPLICATE_ASSETS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + URI_CAN_DEL_DUPLICATE_ASSETS;
 
 // Video
 const std::string PAH_VIDEO = "video_operation";

@@ -716,6 +716,9 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideo_Test_0
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideoDuration_Test_001, TestSize.Level0)
 {
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-11000), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-10000), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-5000), false);
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-4000), false);
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-3000), false);
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-2500), false);
@@ -726,6 +729,8 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideoDuratio
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(2000), true);
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(2500), true);
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(3000), true);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(5000), true);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(10000), true);
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(11000), false);
 }
 

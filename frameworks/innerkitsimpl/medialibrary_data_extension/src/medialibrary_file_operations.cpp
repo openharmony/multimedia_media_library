@@ -491,7 +491,7 @@ static void BuildQueryFileSql(MediaLibraryCommand &cmd, vector<string> &selectio
 }
 
 static void CampatQueryDebug(const string &sql, const vector<string> &selectionArgs,
-    const shared_ptr<MediaLibraryUnistore> &store)
+    const shared_ptr<MediaLibraryRdbStore> store)
 {
     constexpr int32_t printMax = 512;
     for (size_t pos = 0; pos < sql.size(); pos += printMax) {

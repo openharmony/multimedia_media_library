@@ -36,6 +36,9 @@
 #include "rdb_utils.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
+#define private public
+#include "medialibrary_rdbstore.h"
+#undef private
 
 namespace OHOS::Media {
 using namespace std;
@@ -45,7 +48,7 @@ using namespace OHOS::DataShare;
 using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
 
-static shared_ptr<RdbStore> g_rdbStore;
+static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 constexpr int32_t SLEEP_INTERVAL = 1;   // in seconds
 
 const vector<bool> HIDDEN_STATE = {
@@ -143,7 +146,7 @@ string GetFilePath(int fileId)
         MEDIA_ERR_LOG("can not get rdbstore");
         return "";
     }
-    auto resultSet = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->Query(cmd, columns);
+    auto resultSet = MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Can not get file Path");
         return "";
@@ -180,7 +183,7 @@ int32_t MakePhotoUnpending(int fileId, bool isRefresh)
     cmd.SetValueBucket(values);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t changedRows = -1;
-    errCode = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->Update(cmd, changedRows);
+    errCode = MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->Update(cmd, changedRows);
     if (errCode != E_OK || changedRows <= 0) {
         MEDIA_ERR_LOG("Update pending failed, errCode = %{public}d, changeRows = %{public}d",
             errCode, changedRows);
@@ -189,9 +192,9 @@ int32_t MakePhotoUnpending(int fileId, bool isRefresh)
 
     if (isRefresh) {
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
         MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
     }
     return E_OK;
 }
@@ -213,16 +216,16 @@ int32_t SetDefaultPhotoApi10(int mediaType, const std::string &displayName, bool
 void UpdateRefreshFlag()
 {
     MediaLibraryRdbUtils::UpdateSystemAlbumCountInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
     MediaLibraryRdbUtils::UpdateUserAlbumCountInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
 }
 
 void CheckIfNeedRefresh(bool isNeedRefresh)
 {
     bool signal = false;
     int32_t ret = MediaLibraryRdbUtils::IsNeedRefreshByCheckTable(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), signal);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), signal);
     EXPECT_EQ(ret, 0);
     if (ret != 0) {
         MEDIA_ERR_LOG("IsNeedRefreshByCheckTable false");
@@ -236,7 +239,7 @@ void CheckIfNeedRefresh(bool isNeedRefresh)
 void RefreshTable()
 {
     int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
         [] (PhotoAlbumType type, PhotoAlbumSubType a, int b) {}, [] () {});
     EXPECT_EQ(ret, 0);
 }
@@ -518,7 +521,7 @@ int32_t InitPhotoTrigger()
 void AlbumCountCoverTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Failed to get rdb store!");
         return;
@@ -714,6 +717,237 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level0)
     TrashFileAsset(fileAsset, false);
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
     MEDIA_INFO_LOG("album_count_cover_003 end");
+}
+
+/**
+ * @tc.name: album_count_cover_004
+ * @tc.desc: Images album count and cover test.
+ *   1. Query album info, count should be 0, cover should be empty.
+ *   2. Create a photo.
+ *   3. Create another photo.
+ *   4. Hide a photo.
+ *   5. Un-hide a photo.
+ *   6. Trash a photo.
+ *   7. Un-trash a photo.
+ * @tc.type: FUNC
+ * @tc.require: issueI89E9N
+ */
+HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("album_count_cover_004 begin");
+    // Clear all tables.
+    MEDIA_INFO_LOG("Step: Clear all tables.");
+    ClearEnv();
+
+    // 1. Query album info, count should be 0, cover should be empty
+    MEDIA_INFO_LOG("Step: Check initialized info of system albums");
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
+
+    // 2. Create a photo.
+    MEDIA_INFO_LOG("Step: Create a photo.");
+    auto fileAsset = CreateImageAsset("Test_Images_001.jpg");
+    EXPECT_NE(fileAsset, nullptr);
+    if (fileAsset == nullptr) {
+        return;
+    }
+    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
+
+    // 3. Create another photo.
+    sleep(SLEEP_INTERVAL);
+    MEDIA_INFO_LOG("Step: Create another photo.");
+    auto fileAsset2 = CreateImageAsset("Test_Images_002.jpg");
+    EXPECT_NE(fileAsset2, nullptr);
+    if (fileAsset2 == nullptr) {
+        return;
+    }
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
+
+    // 4. Hide a photo.
+    MEDIA_INFO_LOG("Step: Hide a photo");
+    HideFileAsset(fileAsset2, true);
+    AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
+    AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+
+    // 5. Un-hide a photo.
+    MEDIA_INFO_LOG("Step: Un-hide a photo");
+    HideFileAsset(fileAsset2, false);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+
+    // 6. Trash a photo.
+    MEDIA_INFO_LOG("Step: Trash a photo");
+    TrashFileAsset(fileAsset2, true);
+    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
+    AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
+
+    // 7. Un-trash a photo.
+    MEDIA_INFO_LOG("Step: Un-trash a photo");
+    TrashFileAsset(fileAsset2, false);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
+    MEDIA_INFO_LOG("album_count_cover_004 end");
+}
+
+/**
+ * @tc.name: album_count_cover_005
+ * @tc.desc: Favorite album count and cover test.
+ *  1. Query album info, count should be 0, cover should be empty.
+ *  2. Create a photo.
+ *  3. Create another photo.
+ *  4. Hide a photo.
+ *  5. Un-hide a photo.
+ *  6. Trash a photo.
+ *  7. Un-trash a photo.
+ *  8. Un-favorite a photo.
+ *  9. Un-favorite all photos.
+ *  10. Batch favorite all photos.
+ *  11. Batch un-favorite all photos.
+ * @tc.type: FUNC
+ * @tc.require: issueI89E9N
+ */
+HWTEST_F(AlbumCountCoverTest, album_count_cover_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("album_count_cover_005 begin");
+    // Clear all tables.
+    MEDIA_INFO_LOG("Step: Clear all tables.");
+    ClearEnv();
+
+    // 1. Query album info, count should be 0, cover should be empty
+    MEDIA_INFO_LOG("Step: Check initialized info of system albums");
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
+
+    // 2. Create a photo.
+    MEDIA_INFO_LOG("Step: Create a photo, and then favorite it.");
+    auto fileAsset = CreateImageAsset("Test_Favorites_001.jpg");
+    ASSERT_NE(fileAsset, nullptr);
+    FavoriteFileAsset(fileAsset->GetId(), true);
+    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
+
+    // 3. Create another photo.
+    sleep(SLEEP_INTERVAL);
+    MEDIA_INFO_LOG("Step: Create another photo, and then favorite it.");
+    auto fileAsset2 = CreateImageAsset("Test_Favorites_002.jpg");
+    ASSERT_NE(fileAsset2, nullptr);
+    FavoriteFileAsset(fileAsset2->GetId(), true);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
+
+    // 4. Hide a photo.
+    MEDIA_INFO_LOG("Step: Hide a photo");
+    HideFileAsset(fileAsset2, true);
+    AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
+    AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+
+    // 5. Un-hide a photo.
+    MEDIA_INFO_LOG("Step: Un-hide a photo");
+    HideFileAsset(fileAsset2, false);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+
+    // 6. Trash a photo.
+    MEDIA_INFO_LOG("Step: Trash a photo");
+    TrashFileAsset(fileAsset2, true);
+    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
+    AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
+
+    // 7. Un-trash a photo.
+    MEDIA_INFO_LOG("Step: Un-trash a photo");
+    TrashFileAsset(fileAsset2, false);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
+
+    // 8. Un-favorite a photo.
+    FavoriteFileAsset(fileAsset2->GetId(), false);
+    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
+
+    // 9. Un-favorite all photos.
+    FavoriteFileAsset(fileAsset->GetId(), false);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
+
+    // 10. Batch favorite all photos.
+    vector<string> fileAssetUriArray = { fileAsset->GetUri(), fileAsset2->GetUri() };
+    BatchFavoriteFileAsset(fileAssetUriArray, true);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
+
+    // 11. Batch un-favorite all photos.
+    BatchFavoriteFileAsset(fileAssetUriArray, false);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
+
+    MEDIA_INFO_LOG("album_count_cover_005 end");
+}
+
+/**
+ * @tc.name: album_count_cover_007
+ * @tc.desc: Video album count and cover test
+ *  1. Query album info, count should be 0, cover should be empty
+ *  2. Create a photo.
+ *  3. Create another photo.
+ *  4. Hide a photo.
+ *  5. Un-hide a photo.
+ *  6. Trash a photo.
+ *  7. Un-trash a photo.
+ * @tc.type: FUNC
+ * @tc.require: issueI89E9N
+ */
+HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("album_count_cover_007 begin");
+    // Clear all tables.
+    MEDIA_INFO_LOG("Step: Clear all tables.");
+    ClearEnv();
+
+    // 1. Query album info, count should be 0, cover should be empty
+    MEDIA_INFO_LOG("Step: Check initialized info of system albums");
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
+
+    // 2. Create a photo.
+    MEDIA_INFO_LOG("Step: Create a video.");
+    auto fileAsset = CreateVideoAsset("Test_Videos_001.mp4");
+    EXPECT_NE(fileAsset, nullptr);
+    if (fileAsset == nullptr) {
+        return;
+    }
+    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
+
+    // 3. Create another photo.
+    sleep(SLEEP_INTERVAL);
+    MEDIA_INFO_LOG("Step: Create another photo.");
+    auto fileAsset2 = CreateVideoAsset("Test_Videos_002.mp4");
+    EXPECT_NE(fileAsset2, nullptr);
+    if (fileAsset2 == nullptr) {
+        return;
+    }
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
+
+    // 4. Hide a photo.
+    MEDIA_INFO_LOG("Step: Hide a photo");
+    HideFileAsset(fileAsset2, true);
+    AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
+    AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+
+    // 5. Un-hide a photo.
+    MEDIA_INFO_LOG("Step: Un-hide a photo");
+    HideFileAsset(fileAsset2, false);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+
+    // 6. Trash a photo.
+    MEDIA_INFO_LOG("Step: Trash a photo");
+    TrashFileAsset(fileAsset2, true);
+    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
+    AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
+
+    // 7. Un-trash a photo.
+    MEDIA_INFO_LOG("Step: Un-trash a photo");
+    TrashFileAsset(fileAsset2, false);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
+    MEDIA_INFO_LOG("album_count_cover_007 end");
 }
 
 /**

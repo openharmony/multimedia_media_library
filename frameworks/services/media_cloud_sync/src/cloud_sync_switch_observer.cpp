@@ -30,7 +30,7 @@ DataShare::CreateOptions options;
 void CloudSyncSwitchObserver::OnChange()
 {
     MEDIA_INFO_LOG("Cloud Sync Switch Status change");
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
         return;

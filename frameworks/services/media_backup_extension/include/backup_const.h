@@ -51,6 +51,7 @@ constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
 constexpr uint32_t THUMBNAIL_NUM = 500;
 constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
+constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
@@ -153,8 +154,8 @@ const std::vector<std::string> STAT_PROGRESS_TYPES = { STAT_TYPE_PHOTO_VIDEO, ST
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
 const std::string AUDIO_DB_NAME = "audio_MediaInfo.db";
-const std::string PHOTO_SD_DB_NAME = "photo_sd_MediaInfo.db";
-const std::string VIDEO_SD_DB_NAME = "video_sd_MediaInfo.db";
+const std::string PHOTO_SD_DB_NAME = "photo_sd_Cache.db";
+const std::string VIDEO_SD_DB_NAME = "video_sd_Cache.db";
 
 const std::string GALLERY_ALBUM = "gallery_album";
 const std::string GALLERY_ALBUM_NAME = "albumName";
@@ -319,6 +320,8 @@ struct FileInfo {
      */
     int32_t isRelatedToPhotoMap = 0;
     int32_t photoQuality;
+    bool isInternal {true};
+    int32_t userId {-1};
 };
 
 struct AlbumInfo {
@@ -433,6 +436,13 @@ struct AnalysisAlbumTbl {
     std::optional<int32_t> renameOperation;
     std::optional<int32_t> isLocal;
     std::optional<int32_t> isCoverSatisfied;
+};
+
+struct PortraitAlbumDfx {
+    std::optional<std::string> albumName;
+    std::optional<std::string> coverUri;
+    std::optional<std::string> tagId;
+    std::optional<int32_t> count;
 };
 
 struct FaceTagTbl {

@@ -31,6 +31,7 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
@@ -172,7 +173,7 @@ static int32_t GetAlbumTypeSubTypeById(const string &albumId, PhotoAlbumType &ty
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
     vector<string> columns = { PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE };
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("album id %{private}s is not exist", albumId.c_str());
         return E_INVALID_ARGUMENTS;
@@ -181,6 +182,7 @@ static int32_t GetAlbumTypeSubTypeById(const string &albumId, PhotoAlbumType &ty
         "album id is not exist");
     type = static_cast<PhotoAlbumType>(GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet));
     subType = static_cast<PhotoAlbumSubType>(GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet));
+    resultSet->Close();
     return E_SUCCESS;
 }
 
@@ -330,8 +332,16 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
         }
         return HandleIndexOfUri(cmd, predicates, photoId, albumId);
     }
+    int limit = predicates.GetLimit();
+    int offset = predicates.GetOffset();
+    if (cmd.GetOprnType() == OperationType::ALL_DUPLICATE_ASSETS) {
+        return MediaLibraryRdbStore::GetAllDuplicateAssets(columns, offset, limit);
+    }
+    if (cmd.GetOprnType() == OperationType::CAN_DEL_DUPLICATE_ASSETS) {
+        return MediaLibraryRdbStore::GetCanDelDuplicateAssets(columns, offset, limit);
+    }
     MediaLibraryRdbUtils::AddQueryIndex(predicates, columns);
-    return MediaLibraryRdbStore::Query(predicates, columns);
+    return MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
 }
 
 int32_t MediaLibraryPhotoOperations::Update(MediaLibraryCommand &cmd)
@@ -556,25 +566,26 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
     errCode = CheckDisplayNameWithType(displayName, mediaType);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check Dir and Extention, "
         "displayName=%{private}s, mediaType=%{public}d", displayName.c_str(), mediaType);
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    int32_t outRow = -1;
+    std::function<int(void)> func = [&]()->int {
+        errCode = SetAssetPathInCreate(fileAsset, trans);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
+            return errCode;
+        }
 
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
+        outRow = InsertAssetInDb(trans, cmd, fileAsset);
+        if (outRow <= 0) {
+            MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
+            return E_HAS_DB_ERROR;
+        }
         return errCode;
-    }
-
-    errCode = SetAssetPathInCreate(fileAsset);
+    };
+    errCode = trans->RetryTrans(func);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
-        return errCode;
+        MEDIA_ERR_LOG("CreateV9: tans finish fail!, ret:%{public}d", errCode);
     }
-
-    int32_t outRow = InsertAssetInDb(cmd, fileAsset);
-    if (outRow <= 0) {
-        MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
-        return E_HAS_DB_ERROR;
-    }
-    transactionOprn.Finish();
     return outRow;
 }
 
@@ -632,18 +643,24 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     // Check rootdir and extention
     int32_t errCode = CheckWithType(isContains, displayName, extention, mediaType);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    errCode = transactionOprn.Start();
-    CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
-    errCode = isContains ? SetAssetPathInCreate(fileAsset) : SetAssetPath(fileAsset, extention);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Set Path, Name=%{private}s", displayName.c_str());
-    int32_t outRow = InsertAssetInDb(cmd, fileAsset);
-    AuditLog auditLog = { true, "USER BEHAVIOR", "ADD", "io", 1, "running", "ok" };
-    HiAudit::GetInstance().Write(auditLog);
-    CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
-    fileAsset.SetId(outRow);
-    SolvePhotoAlbumInCreate(cmd, fileAsset);
-    transactionOprn.Finish();
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    int32_t outRow = -1;
+    std::function<int(void)> func = [&]()->int {
+        errCode = isContains ? SetAssetPathInCreate(fileAsset, trans) :
+            SetAssetPath(fileAsset, extention, trans);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Set Path, Name=%{private}s", displayName.c_str());
+        outRow = InsertAssetInDb(trans, cmd, fileAsset);
+        AuditLog auditLog = { true, "USER BEHAVIOR", "ADD", "io", 1, "running", "ok" };
+        HiAudit::GetInstance().Write(auditLog);
+        CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
+        fileAsset.SetId(outRow);
+        SolvePhotoAlbumInCreate(cmd, fileAsset);
+        return errCode;
+    };
+    errCode = trans->RetryTrans(func);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("CreateV10: trans retry fail!, ret:%{public}d", errCode);
+    }
     string fileUri = CreateExtUriForV10Asset(fileAsset);
     if (isNeedGrant) {
         bool isMovingPhoto = fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
@@ -665,12 +682,6 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     int32_t fileId = fileAsset->GetId();
     InvalidateThumbnail(to_string(fileId), fileAsset->GetMediaType());
 
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    int32_t errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        return errCode;
-    }
-
     string displayName = fileAsset->GetDisplayName();
     // delete file in db
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::DELETE);
@@ -681,7 +692,6 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
         return E_HAS_DB_ERROR;
     }
 
-    transactionOprn.Finish();
     auto watch = MediaLibraryNotify::GetInstance();
     string notifyDeleteUri =
         MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(deleteRows),
@@ -722,7 +732,12 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUr
 void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereArgs)
 {
     const std::string sourcePathPrefix = "/storage/emulated/0";
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (whereArgs.empty()) {
+        MEDIA_WARN_LOG("whereArgs is empty");
+        return;
+    }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     for (auto assetId: whereArgs) {
         const std::string QUERY_FILE_ASSET_INFO = "SELECT * FROM Photos WHERE file_id = " + assetId;
         shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
@@ -742,6 +757,7 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
         if (resultSet->GetInt(ownerAlbumIdIndex, ownerAlbumId) != NativeRdb::E_OK) {
             continue;
         }
+        resultSet->Close();
 
         const std::string QUERY_LPATH_INFO = "SELECT * FROM PhotoAlbum WHERE album_id = " + to_string(ownerAlbumId);
         shared_ptr<NativeRdb::ResultSet> resultSetAlbum = rdbStore->QuerySql(QUERY_LPATH_INFO);
@@ -755,6 +771,7 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
         if (resultSetAlbum->GetString(lpathIndex, lpath) != NativeRdb::E_OK) {
             continue;
         }
+        resultSetAlbum->Close();
 
         string newSourcePath = sourcePathPrefix + lpath + "/" + displayName;
         ValuesBucket values;
@@ -768,7 +785,7 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
 
 int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
@@ -784,7 +801,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     cmd.SetValueBucket(values);
-    int32_t updatedRows = rdbStore->Update(values, rdbPredicate);
+    int32_t updatedRows = rdbStore->UpdateWithDateTime(values, rdbPredicate);
     if (updatedRows < 0) {
         MEDIA_ERR_LOG("Trash photo failed. Result %{public}d.", updatedRows);
         return E_HAS_DB_ERROR;
@@ -798,7 +815,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     }
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore->GetRaw(), notifyUris);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris);
     if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
         MEDIA_WARN_LOG("Try to notify %{public}zu items, but only %{public}d items updated.",
             notifyUris.size(), updatedRows);
@@ -844,13 +861,13 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
         predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
         predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::BURST)));
         values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-        updateDirtyRows = MediaLibraryRdbStore::Update(values, predicates);
+        updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
         if (updateDirtyRows < 0) {
             MEDIA_INFO_LOG("burst photo update temp and dirty flag fail.");
             return E_ERR;
         }
     } else {
-        int32_t updateIsTempRows = MediaLibraryRdbStore::Update(values, predicates);
+        int32_t updateIsTempRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
         if (updateIsTempRows < 0) {
             MEDIA_ERR_LOG("update temp flag fail.");
             return E_ERR;
@@ -862,7 +879,7 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
                 to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
             ValuesBucket valuesBucketDirty;
             valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-            updateDirtyRows = MediaLibraryRdbStore::Update(valuesBucketDirty, predicates);
+            updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(valuesBucketDirty, predicates);
             if (updateDirtyRows < 0) {
                 MEDIA_INFO_LOG("update dirty flag fail.");
                 return E_ERR;
@@ -996,14 +1013,14 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
         values.PutLong(PhotoColumn::PHOTO_HIDDEN_TIME,
             hiddenState ? MediaFileUtils::UTCTimeMilliSeconds() : 0);
     }
-    int32_t changedRows = MediaLibraryRdbStore::Update(values, predicates);
+    int32_t changedRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
     if (changedRows < 0) {
         return changedRows;
     }
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
-    MediaLibraryRdbUtils::UpdateAllAlbums(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris);
     SendHideNotify(notifyUris, hiddenState);
     return changedRows;
 }
@@ -1028,7 +1045,7 @@ static int32_t BatchSetFavorite(MediaLibraryCommand& cmd)
 {
     int32_t favoriteState = GetFavoriteState(cmd.GetValueBucket());
     CHECK_AND_RETURN_RET_LOG(favoriteState >= 0, favoriteState, "Failed to get favoriteState");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore");
 
     RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
@@ -1036,13 +1053,11 @@ static int32_t BatchSetFavorite(MediaLibraryCommand& cmd)
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
     ValuesBucket values;
     values.Put(PhotoColumn::MEDIA_IS_FAV, favoriteState);
-    int32_t updatedRows = rdbStore->Update(values, predicates);
+    int32_t updatedRows = rdbStore->UpdateWithDateTime(values, predicates);
     CHECK_AND_RETURN_RET_LOG(updatedRows >= 0, E_HAS_DB_ERROR, "Failed to set favorite, err: %{public}d", updatedRows);
 
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore->GetRaw(), { to_string(PhotoAlbumSubType::FAVORITE) });
-    MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
-        { to_string(PhotoAlbumSubType::FAVORITE) });
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, { to_string(PhotoAlbumSubType::FAVORITE) });
+    MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore, { to_string(PhotoAlbumSubType::FAVORITE) });
 
     auto watch = MediaLibraryNotify::GetInstance();
     int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
@@ -1082,16 +1097,11 @@ int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cm
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to set user comment, errCode=%{private}d", errCode);
     }
 
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    errCode = transactionOprn.Start();
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
-        "Failed to start TransactionOperations, errCode=%{private}d", errCode);
     int32_t updateRows = UpdateFileInDb(cmd);
     if (updateRows < 0) {
         MEDIA_ERR_LOG("Update Photo in database failed, updateRows=%{public}d", updateRows);
         return updateRows;
     }
-    transactionOprn.Finish();
 
     auto watch = MediaLibraryNotify::GetInstance();
     for (const auto& fileAsset : fileAssetVector) {
@@ -1129,10 +1139,10 @@ int32_t MediaLibraryPhotoOperations::UpdateExif(MediaLibraryCommand &cmd,
 void UpdateAlbumOnSystemMoveAssets(const int32_t &oriAlbumId, const int32_t &targetAlbumId)
 {
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
         { to_string(oriAlbumId), to_string(targetAlbumId) });
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
         { to_string(oriAlbumId), to_string(targetAlbumId) });
 }
 
@@ -1168,19 +1178,17 @@ void GetSystemMoveAssets(AbsRdbPredicates &predicates)
     predicates.SetWhereArgs(whereIdArgs);
 }
 
-int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
+int32_t PrepareUpdateArgs(MediaLibraryCommand &cmd, std::map<int32_t, std::vector<int32_t>> &ownerAlbumIds,
+    vector<string> &assetString, RdbPredicates &predicates)
 {
-    std::map<int32_t, std::vector<int32_t>> ownerAlbumIds;
-    vector<string> assetString;
     auto assetVector = cmd.GetAbsRdbPredicates()->GetWhereArgs();
     for (const auto &fileAsset : assetVector) {
         assetString.push_back(fileAsset);
     }
 
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.And()->In(PhotoColumn::MEDIA_ID, assetString);
     vector<string> columns = { PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::MEDIA_ID };
-    auto resultSetQuery = MediaLibraryRdbStore::Query(predicates, columns);
+    auto resultSetQuery = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSetQuery == nullptr) {
         MEDIA_ERR_LOG("album id is not exist");
         return E_INVALID_ARGUMENTS;
@@ -1189,6 +1197,18 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
         int32_t albumId = 0;
         albumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSetQuery);
         ownerAlbumIds[albumId].push_back(GetInt32Val(MediaColumn::MEDIA_ID, resultSetQuery));
+    }
+    resultSetQuery->Close();
+    return E_OK;
+}
+
+int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
+{
+    std::map<int32_t, std::vector<int32_t>> ownerAlbumIds;
+    vector<string> assetString;
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    if (PrepareUpdateArgs(cmd, ownerAlbumIds, assetString, predicates) != E_OK) {
+        return E_INVALID_ARGUMENTS;
     }
 
     ValueObject value;
@@ -1200,7 +1220,7 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
     value.GetInt(targetAlbumId);
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(targetAlbumId));
-    int32_t changedRows = MediaLibraryRdbStore::Update(values, predicates);
+    int32_t changedRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
     if (changedRows < 0) {
         MEDIA_ERR_LOG("Update owner album id fail when move from system album");
         return changedRows;
@@ -1239,16 +1259,11 @@ int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &c
         OperationObject::FILESYSTEM_PHOTO, fileAssetVector, columns);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
         "Failed to query file asset vector from db, errCode=%{private}d", errCode);
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    errCode = transactionOprn.Start();
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
-        "Failed to start TransactionOperations, errCode=%{private}d", errCode);
     int32_t updateRows = UpdateFileInDb(cmd);
     if (updateRows < 0) {
         MEDIA_ERR_LOG("Update Photo in database failed, updateRows=%{public}d", updateRows);
         return updateRows;
     }
-    transactionOprn.Finish();
     int32_t targetAlbumId = 0;
     int32_t oriAlbumId = 0;
     UpdateOwnerAlbumIdOnMove(cmd, targetAlbumId, oriAlbumId);
@@ -1289,18 +1304,11 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Photo Name failed, fileName=%{private}s",
         fileAsset->GetDisplayName().c_str());
 
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        return errCode;
-    }
-
     int32_t rowId = UpdateFileInDb(cmd);
     if (rowId < 0) {
         MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
         return rowId;
     }
-    transactionOprn.Finish();
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
     errCode = SendTrashNotify(cmd, fileAsset->GetId(), extraUri);
     if (errCode == E_OK) {
@@ -1378,18 +1386,11 @@ int32_t MediaLibraryPhotoOperations::UpdateV9(MediaLibraryCommand &cmd)
         UpdateVirtualPath(cmd, fileAsset);
     }
 
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        return errCode;
-    }
-
     int32_t rowId = UpdateFileInDb(cmd);
     if (rowId < 0) {
         MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
         return rowId;
     }
-    transactionOprn.Finish();
 
     errCode = SendTrashNotify(cmd, fileAsset->GetId());
     if (errCode == E_OK) {
@@ -1626,7 +1627,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditOpenExecute(const shared_ptr<File
 
 static int32_t UpdateEditTime(int32_t fileId, int64_t time)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
@@ -1647,7 +1648,7 @@ static int32_t UpdateEditTime(int32_t fileId, int64_t time)
 
 static int32_t RevertMetadata(int32_t fileId, int64_t time, int32_t effectMode, int32_t photoSubType)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
@@ -1805,7 +1806,7 @@ void MediaLibraryPhotoOperations::DeleteAbnormalFile(std::string &assetPath, con
     vector<string> args = {oldFilePath};
     predicates.SetWhereClause(whereClause);
     predicates.SetWhereArgs(args);
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MediaFileUtils::DeleteFile(oldFilePath);
         DeleteRevertMessage(oldFilePath);
@@ -1813,6 +1814,7 @@ void MediaLibraryPhotoOperations::DeleteAbnormalFile(std::string &assetPath, con
     }
     int32_t fileIdTemp = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     string filePathTemp = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    resultSet->Close();
     MEDIA_INFO_LOG("DeleteAbnormalFile fileId:%{public}d, filePathTemp = %{public}s", fileIdTemp, filePathTemp.c_str());
     auto oldFileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileIdTemp),
                                            OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
@@ -1894,7 +1896,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
         "Failed to write editdata path:%{private}s", editDataPath.c_str());
 
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), {
         to_string(PhotoAlbumSubType::IMAGE),
         to_string(PhotoAlbumSubType::VIDEO),
         to_string(PhotoAlbumSubType::SCREENSHOT),
@@ -1934,14 +1936,9 @@ int32_t MediaLibraryPhotoOperations::RevertToOrigin(MediaLibraryCommand &cmd)
 
 void ResetOcrInfo(const int32_t &fileId)
 {
-    auto mediaLibraryRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (mediaLibraryRdbStore == nullptr) {
-        MEDIA_ERR_LOG("MediaLibrary rdbStore is nullptr!");
-        return;
-    }
-    auto rdbStore = mediaLibraryRdbStore->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr!");
+        MEDIA_ERR_LOG("MediaLibrary rdbStore is nullptr!");
         return;
     }
     string sqlDeleteOcr = "DELETE FROM " + VISION_OCR_TABLE + " WHERE file_id = " + to_string(fileId) + ";" +
@@ -2409,13 +2406,14 @@ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shar
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileId));
     vector<string> columns = { PhotoColumn::PHOTO_ID };
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("result set is empty");
         return E_FILE_EXIST;
     }
 
     photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+    resultSet->Close();
     if (photoId.empty()) {
         MEDIA_ERR_LOG("photoId is emply fileId is: %{public}d", fileId);
         return E_FILE_EXIST;
@@ -2442,13 +2440,14 @@ int32_t MediaLibraryPhotoOperations::FinishRequestPicture(MediaLibraryCommand &c
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileId));
     vector<string> columns = { PhotoColumn::PHOTO_ID };
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("result set is empty");
         return E_FILE_EXIST;
     }
 
     string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+    resultSet->Close();
     if (photoId.empty()) {
         MEDIA_ERR_LOG("photoId is emply fileId is: %{public}d", fileId);
         return E_FILE_EXIST;
@@ -2460,6 +2459,22 @@ int32_t MediaLibraryPhotoOperations::FinishRequestPicture(MediaLibraryCommand &c
         pictureManagerThread->FinishAccessingPicture(photoId);
     }
     return E_OK;
+}
+
+int64_t MediaLibraryPhotoOperations::CloneSingleAsset(MediaLibraryCommand &cmd)
+{
+    const ValuesBucket& values = cmd.GetValueBucket();
+    int fileId = -1;
+    ValueObject valueObject;
+    if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
+        valueObject.GetInt(fileId);
+    } else {
+        MEDIA_ERR_LOG("Failed to get media id from values bucket.");
+        return fileId;
+    }
+    string title;
+    GetStringFromValuesBucket(values, MediaColumn::MEDIA_NAME, title);
+    return MediaLibraryAlbumFusionUtils::CloneSingleAsset(static_cast<int64_t>(fileId), title);
 }
 
 int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
@@ -2478,23 +2493,18 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     int fileId = std::atoi(cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID).c_str());
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileId));
-    vector<string> columns = { PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::MEDIA_FILE_PATH };
+    vector<string> columns = { PhotoColumn::PHOTO_IS_TEMP };
     auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet ==nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("result set is empty");
         return E_ERR;
     }
-    size_t size = -1;
-    std::string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    if (path.empty()) {
-        MEDIA_ERR_LOG("path is empty");
-        return E_ERR;
-    }
-    MediaFileUtils::GetFileSize(path, size);
-    if (GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet) == 0 || size > 0) {
+    if (GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet) == 0) {
         return E_OK;
     }
+    string uri = cmd.GetQuerySetParam("uri");
     SavePicture(fileType, fileId);
+    string path = MediaFileUri::GetPathFromUri(uri, true);
     MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId);
     return E_OK;
 }
@@ -2533,7 +2543,7 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
         ValuesBucket values;
         values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
         values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-        int32_t updatedRows = MediaLibraryRdbStore::Update(values, predicates);
+        int32_t updatedRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
         if (updatedRows < 0) {
             MEDIA_ERR_LOG("update photo quality fail.");
         }
@@ -3107,14 +3117,9 @@ bool PhotoEditingRecord::IsInEditOperation(int32_t fileId)
 
 void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, const string& photoPath)
 {
-    auto mediaLibraryRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (mediaLibraryRdbStore == nullptr) {
-        MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
-        return;
-    }
-    auto rdbStore = mediaLibraryRdbStore->GetRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("RdbStore is nullptr!");
+        MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
         return;
     }
 
@@ -3132,12 +3137,6 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
     }
     size_t photoThumbnailSize = LCDThumbnailSize + THMThumbnailSize + THMASTCThumbnailSize;
 
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    int32_t errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Error starting transaction: %{public}d, photoId: %{public}s", errCode, photoId.c_str());
-        return;
-    }
     string sql = "INSERT OR REPLACE INTO " + PhotoExtColumn::PHOTOS_EXT_TABLE + " (" +
         PhotoExtColumn::PHOTO_ID + ", " + PhotoExtColumn::THUMBNAIL_SIZE +
         ") VALUES (" + photoId + ", " + to_string(photoThumbnailSize) + ")";
@@ -3147,28 +3146,16 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
         MEDIA_ERR_LOG("Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
         return;
     }
-    transactionOprn.Finish();
 }
 
 void MediaLibraryPhotoOperations::DropThumbnailSize(const string& photoId)
 {
-    auto mediaLibraryRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (mediaLibraryRdbStore == nullptr) {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
         return;
     }
-    auto rdbStore = mediaLibraryRdbStore->GetRaw();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("RdbStore is nullptr!");
-        return;
-    }
 
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    int32_t errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Error starting transaction: %{public}d, photoId: %{public}s", errCode, photoId.c_str());
-        return;
-    }
     string sql = "DELETE FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE +
         " WHERE " + PhotoExtColumn::PHOTO_ID + " = " + photoId + ";";
     int32_t ret = rdbStore->ExecuteSql(sql);
@@ -3176,7 +3163,6 @@ void MediaLibraryPhotoOperations::DropThumbnailSize(const string& photoId)
         MEDIA_ERR_LOG("Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
         return;
     }
-    transactionOprn.Finish();
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::ScanMovingPhoto(MediaLibraryCommand &cmd,
@@ -3224,7 +3210,7 @@ static void UpdateDirty(int32_t fileId)
     predicates.EqualTo(PhotoColumn::PHOTO_DIRTY, -1);
     ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
-    int32_t updateDirtyRows = MediaLibraryRdbStore::Update(values, predicates);
+    int32_t updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
     MEDIA_INFO_LOG("update dirty to 1, file_id:%{public}d, changedRows:%{public}d", fileId, updateDirtyRows);
 }
 
@@ -3261,13 +3247,13 @@ int32_t MediaLibraryPhotoOperations::DegenerateMovingPhoto(MediaLibraryCommand &
         (void)MediaFileUtils::DeleteFile(videoPath);
     }
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore");
     RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
-    int32_t updatedRows = rdbStore->Update(values, predicates);
+    int32_t updatedRows = rdbStore->UpdateWithDateTime(values, predicates);
     if (updatedRows <= 0) {
         MEDIA_WARN_LOG("Failed to update subtype, updatedRows=%{public}d", updatedRows);
         return updatedRows;

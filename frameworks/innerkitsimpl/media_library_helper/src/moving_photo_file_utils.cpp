@@ -191,7 +191,7 @@ static int32_t ReadExtraFile(const std::string& extraPath, map<string, string>& 
     }
     UniqueFd fd(open(absExtraPath.c_str(), O_RDONLY));
     if (fd.Get() == E_ERR) {
-        MEDIA_ERR_LOG("failed to open extra file");
+        MEDIA_ERR_LOG("failed to open extra file, errno: %{public}d", errno);
         return E_ERR;
     }
     uint32_t version{0};
@@ -326,7 +326,8 @@ uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
         MEDIA_ERR_LOG("AV metadata helper is null");
         return index;
     }
-    if (avMetadataHelper->SetSource(fd, 0, static_cast<int64_t>(GetFileSize(fd)), AV_META_USAGE_META_ONLY) != E_OK) {
+    if (avMetadataHelper->SetSource(fd, 0, static_cast<int64_t>(GetFileSize(fd)),
+        AV_META_USAGE_FRAME_INDEX_CONVERT) != E_OK) {
         MEDIA_ERR_LOG("failed to set source");
         return index;
     }
@@ -356,7 +357,7 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", imagePath.c_str(), errno);
     UniqueFd imageFd(open(absImagePath.c_str(), O_RDONLY));
     if (imageFd.Get() == E_ERR) {
-        MEDIA_ERR_LOG("failed to open image file");
+        MEDIA_ERR_LOG("failed to open image file, errno: %{public}d", errno);
         return E_ERR;
     }
     string absVideoPath;
@@ -364,7 +365,7 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", videoPath.c_str(), errno);
     UniqueFd videoFd(open(absVideoPath.c_str(), O_RDONLY));
     if (videoFd.Get() == E_ERR) {
-        MEDIA_ERR_LOG("failed to open video file");
+        MEDIA_ERR_LOG("failed to open video file, errno: %{public}d", errno);
         return E_ERR;
     }
     if (MediaFileUtils::CreateAsset(cachePath) != E_OK) {
@@ -376,7 +377,7 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", cachePath.c_str(), errno);
     UniqueFd livePhotoFd(open(absCachePath.c_str(), O_WRONLY | O_TRUNC));
     if (livePhotoFd.Get() == E_ERR) {
-        MEDIA_ERR_LOG("failed to open live photo file");
+        MEDIA_ERR_LOG("failed to open live photo file, errno: %{public}d", errno);
         return E_ERR;
     }
     if (MergeFile(imageFd, videoFd, livePhotoFd, extraPath, GetFrameIndex(coverPosition, videoFd.Get())) == E_ERR) {
@@ -517,7 +518,7 @@ static bool IsValidHexInteger(const string &hexStr)
     return true;
 }
 
-static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataSize)
+static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataSize, int64_t maxFileSize)
 {
     struct stat64 st;
     CHECK_AND_RETURN_RET_LOG(fstat64(livePhotoFd.Get(), &st) == 0, E_HAS_FS_ERROR,
@@ -564,6 +565,10 @@ static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataS
         return E_OK;
     }
     extraDataSize = MIN_STANDARD_SIZE + std::stoi(cinemagraphSizeStream.str(), 0, HEX_BASE);
+    if (extraDataSize >= maxFileSize) {
+        extraDataSize = MIN_STANDARD_SIZE;
+        MEDIA_WARN_LOG("extra data size over total file size %{public}" PRId64, extraDataSize);
+    }
     return E_OK;
 }
 
@@ -594,12 +599,12 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
         "Failed to read live tag, errno:%{public}d", errno);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::StartsWith(liveTag, LIVE_TAG), E_INVALID_VALUES, "Invalid live photo");
 
-    int64_t extraDataSize = 0;
-    int32_t err = GetExtraDataSize(livePhotoFd, extraDataSize);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_INVALID_LIVE_PHOTO,
-        "Failed to get size of extra data, err:%{public}" PRId64, extraDataSize);
     int64_t liveSize = atoi(liveTag + LIVE_TAG.length());
     int64_t imageSize = totalSize - liveSize - LIVE_TAG_LEN - PLAY_INFO_LEN;
+    int64_t extraDataSize = 0;
+    int32_t err = GetExtraDataSize(livePhotoFd, extraDataSize, totalSize - imageSize);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_INVALID_LIVE_PHOTO,
+        "Failed to get size of extra data, err:%{public}" PRId64, extraDataSize);
     int64_t videoSize = totalSize - imageSize - extraDataSize;
     CHECK_AND_RETURN_RET_LOG(imageSize > 0 && videoSize > 0, E_INVALID_LIVE_PHOTO,
         "Failed to check live photo, image size:%{public}" PRId64 "video size:%{public}" PRId64, imageSize, videoSize);
@@ -636,7 +641,7 @@ static int32_t GetMovingPhotoCoverPosition(const UniqueFd &uniqueFd, const int64
     if (scene == Scene::AV_META_SCENE_CLONE) {
         helper->SetScene(static_cast<Scene>(scene));
     }
-    int32_t err = helper->SetSource(uniqueFd.Get(), 0, size, AV_META_USAGE_META_ONLY);
+    int32_t err = helper->SetSource(uniqueFd.Get(), 0, size, AV_META_USAGE_FRAME_INDEX_CONVERT);
     tracer.Finish();
     if (err != 0) {
         MEDIA_ERR_LOG("SetSource failed for the given fd, err = %{public}d", err);

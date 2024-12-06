@@ -48,6 +48,21 @@ public:
         return rdbStorePtr_->Init();
     }
 
+    EXPORT int32_t Init(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context,
+        const NativeRdb::RdbStoreConfig &config, int version, NativeRdb::RdbOpenCallback &openCallback)
+    {
+        if (rdbStorePtr_) {
+            return E_OK;
+        }
+
+        rdbStorePtr_ = std::make_shared<MediaLibraryRdbStore>(context);
+        if (!rdbStorePtr_) {
+            MEDIA_ERR_LOG("create rdbStore failed");
+            return E_ERR;
+        }
+        return rdbStorePtr_->Init(config, version, openCallback);
+    }
+
     EXPORT void Stop()
     {
         if (rdbStorePtr_) {
@@ -56,15 +71,13 @@ public:
         rdbStorePtr_ = nullptr;
     }
 
-    EXPORT std::shared_ptr<MediaLibraryUnistore> GetRdbStore() const
+    EXPORT std::shared_ptr<MediaLibraryRdbStore> GetRdbStore() const
     {
-        return rdbStorePtr_;
-    }
-
-    // avoid using the raw rdbstore
-    EXPORT std::shared_ptr<MediaLibraryRdbStore> GetRdbStoreRaw() const
-    {
-        return rdbStorePtr_;
+        if (rdbStorePtr_ != nullptr && rdbStorePtr_->CheckRdbStore()) {
+            return rdbStorePtr_;
+        }
+        MEDIA_ERR_LOG("MediaLibraryRdbStore or rdbStore is nullptr");
+        return nullptr;
     }
 
 private:

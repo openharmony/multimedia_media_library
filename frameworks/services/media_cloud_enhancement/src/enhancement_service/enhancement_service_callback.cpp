@@ -76,14 +76,14 @@ static int32_t CheckDisplayNameWithType(const string &displayName, int32_t media
     return E_OK;
 }
 
-static int32_t SetAssetPathInCreate(FileAsset &fileAsset)
+static int32_t SetAssetPathInCreate(FileAsset &fileAsset, std::shared_ptr<TransactionOperations> trans)
 {
     if (!fileAsset.GetPath().empty()) {
         return E_OK;
     }
     string extension = MediaFileUtils::GetExtensionFromPath(fileAsset.GetDisplayName());
     string filePath;
-    int32_t uniqueId = MediaLibraryAssetOperations::CreateAssetUniqueId(fileAsset.GetMediaType());
+    int32_t uniqueId = MediaLibraryAssetOperations::CreateAssetUniqueId(fileAsset.GetMediaType(), trans);
     int32_t errCode = MediaLibraryAssetOperations::CreateAssetPathById(uniqueId, fileAsset.GetMediaType(),
         extension, filePath);
     if (errCode != E_OK) {
@@ -165,18 +165,22 @@ int32_t EnhancementServiceCallback::CreateCloudEnhancementPhoto(int32_t sourceFi
     // Check rootdir
     int32_t errCode = CheckDisplayNameWithType(info->displayName, static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE));
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
-    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    errCode = transactionOprn.Start();
-    CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
-    errCode = SetAssetPathInCreate(fileAsset);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
-        "Failed to Solve FileAsset Path and Name, displayName=%{private}s", info->displayName.c_str());
-    
-    int32_t outRow = EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(cmd, fileAsset,
-        sourceFileId, info);
-    CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
-    fileAsset.SetId(outRow);
-    transactionOprn.Finish();
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    int32_t outRow = -1;
+    std::function<int(void)> func = [&]()->int {
+        errCode = SetAssetPathInCreate(fileAsset, trans);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+            "Failed to Solve FileAsset Path and Name, displayName=%{private}s", info->displayName.c_str());
+        outRow = EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(cmd, fileAsset,
+            sourceFileId, info, trans);
+        CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
+        fileAsset.SetId(outRow);
+        return errCode;
+    };
+    errCode = trans->RetryTrans(func);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("CreateCloudEnhancementPhoto: tans finish fail!, ret:%{public}d", errCode);
+    }
     info->filePath = fileAsset.GetPath();
     return outRow;
 }
@@ -223,12 +227,12 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
     // query 100 per
     string where = PhotoColumn::PHOTO_ID + " = ? ";
     vector<string> whereArgs { taskId };
-    RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
+    NativeRdb::RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     servicePredicates.SetWhereClause(where);
     servicePredicates.SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_NAME,
         MediaColumn::MEDIA_HIDDEN, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_CE_AVAILABLE};
-    auto resultSet = MediaLibraryRdbStore::Query(servicePredicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
     CHECK_AND_RETURN_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == E_OK,
         "enhancement callback error: query result set is empty");
     int32_t sourceFileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
@@ -244,7 +248,7 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
         sourceFilePath, sourceDisplayName, sourceSubtype, hidden);
     int32_t newFileId = SaveCloudEnhancementPhoto(info, task);
     CHECK_AND_RETURN_LOG(newFileId > 0, "invalid file id");
-    ValuesBucket rdbValues;
+    NativeRdb::ValuesBucket rdbValues;
     rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
     rdbValues.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
         static_cast<int32_t>(StrongAssociationType::NORMAL));
@@ -266,11 +270,11 @@ void EnhancementServiceCallback::DealWithFailedTask(CloudEnhancementThreadTask& 
     string taskId = task.taskId;
     MEDIA_INFO_LOG("DealWithFailedTask start, photo_id: %{public}s", taskId.c_str());
     int32_t statusCode = task.statusCode;
-    RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
+    NativeRdb::RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     servicePredicates.EqualTo(PhotoColumn::PHOTO_ID, taskId);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
         MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_CE_AVAILABLE};
-    auto resultSet = MediaLibraryRdbStore::Query(servicePredicates, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         MEDIA_ERR_LOG("enhancement callback error: query result set is empty");
         return;
@@ -281,7 +285,7 @@ void EnhancementServiceCallback::DealWithFailedTask(CloudEnhancementThreadTask& 
     int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
     CHECK_AND_PRINT_LOG(ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING),
         "enhancement callback error: db CE_AVAILABLE status not processing, file_id: %{public}d", fileId);
-    ValuesBucket valueBucket;
+    NativeRdb::ValuesBucket valueBucket;
     if (statusCode == static_cast<int32_t>(CEErrorCodeType::EXECUTE_FAILED) ||
         statusCode == static_cast<int32_t>(CEErrorCodeType::NON_RECOVERABLE)) {
         valueBucket.Put(PhotoColumn::PHOTO_CE_AVAILABLE,
@@ -308,7 +312,7 @@ void EnhancementServiceCallback::UpdateAlbumsForCloudEnhancement()
 {
     MEDIA_INFO_LOG("UpdateAlbumsForCloudEnhancement start");
     if (!needUpdateUris.empty()) {
-        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, needUpdateUris);
         needUpdateUris.clear();
     } else {

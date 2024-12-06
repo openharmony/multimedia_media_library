@@ -71,6 +71,10 @@ PhotoAssetProxy::PhotoAssetProxy(shared_ptr<DataShare::DataShareHelper> dataShar
 PhotoAssetProxy::~PhotoAssetProxy()
 {
     if (cameraShotType_ == CameraShotType::MOVING_PHOTO && !isMovingPhotoVideoSaved_) {
+        if (dataShareHelper_ == nullptr) {
+            MEDIA_WARN_LOG("datashareHelper is nullptr");
+            return;
+        }
         string uri = PAH_DEGENERATE_MOVING_PHOTO;
         MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
         Uri updateUri(uri);

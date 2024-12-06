@@ -17,25 +17,25 @@
 
 #include "medialibrary_backup_clone_test.h"
 
+#define private public
+#define protected public
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
 #include "clone_source.h"
-#include "medialibrary_rdbstore.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_unistore_manager.h"
-#include "medialibrary_unittest_utils.h"
 #include "media_column.h"
 #include "media_log.h"
 #include "media_file_utils.h"
-#define private public
-#define protected public
 #include "backup_restore_service.h"
 #include "base_restore.h"
 #include "clone_restore.h"
-#undef private
-#undef protected
+#include "medialibrary_rdb_utils.h"
+#include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
 #include "burst_key_generator.h"
 #include "backup_const.h"
+#undef private
+#undef protected
 
 using namespace std;
 using namespace OHOS;
@@ -119,7 +119,7 @@ void ClearData()
 {
     MEDIA_INFO_LOG("Start clear data");
     ExecuteSqls(g_rdbStore->GetRaw(), CLEAR_SQLS);
-    MediaLibraryRdbUtils::UpdateAllAlbums(g_rdbStore->GetRaw());
+    MediaLibraryRdbUtils::UpdateAllAlbums(g_rdbStore);
     MEDIA_INFO_LOG("End clear data");
 }
 
@@ -159,7 +159,7 @@ void MediaLibraryBackupCloneTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("Start Init");
     MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
     MEDIA_INFO_LOG("Start init restoreService");
     restoreService = make_unique<CloneRestore>();
@@ -392,9 +392,9 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_is_file_valid_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_is_file_valid_test_001 start");
-    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_DB_PATH, CLONE_RESTORE_ID), true);
-    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_BACKUP_PATH, CLONE_RESTORE_ID), false); // directory
-    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_FAKE_FILE_DIR, CLONE_RESTORE_ID), false); // not exist
+    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_DB_PATH, CLONE_RESTORE_ID), E_OK);
+    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_BACKUP_PATH, CLONE_RESTORE_ID), E_FAIL); // directory
+    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_FAKE_FILE_DIR, CLONE_RESTORE_ID), E_NO_SUCH_FILE); // not exist
 }
 
 void ClearRestoreExInfo()

@@ -21,6 +21,7 @@
 #include "datashare_values_bucket.h"
 #include "medialibrary_command.h"
 #include "values_bucket.h"
+#include "medialibrary_rdb_transaction.h"
 
 namespace OHOS {
 namespace Media {
@@ -38,10 +39,12 @@ public:
     EXPORT static int32_t DeleteBundlePermission(const std::string &fileId, const std::string &bundleName,
         const std::string &tableName);
     
-    EXPORT static int32_t UpdateOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t UpdateOperation(MediaLibraryCommand &cmd,
+        std::shared_ptr<TransactionOperations> trans = nullptr);
     EXPORT static int32_t InsertOperation(MediaLibraryCommand &cmd);
     EXPORT static int32_t BatchInsertOperation(MediaLibraryCommand &cmd,
-        const std::vector<NativeRdb::ValuesBucket> &values);
+        const std::vector<NativeRdb::ValuesBucket> &values,
+        std::shared_ptr<TransactionOperations> trans = nullptr);
     EXPORT static int32_t DeleteOperation(MediaLibraryCommand &cmd);
     EXPORT static int32_t GrantUriPermission(MediaLibraryCommand &cmd,
         const std::vector<DataShareValuesBucket> &values);

@@ -1853,6 +1853,7 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
+    NAPI_INFO_LOG("Enter create asset.");
     delete context;
 }
 
@@ -3316,7 +3317,7 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
     if (status != napi_ok) {
         napi_get_undefined(env, &result);
     } else {
-        napi_queue_async_work(env, asyncContext->work);
+        napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
         asyncContext.release();
     }
 
@@ -3964,7 +3965,7 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     }
@@ -4075,7 +4076,7 @@ napi_value MediaLibraryNapi::JSDeleteSmartAlbum(napi_env env, napi_callback_info
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     }
@@ -4284,7 +4285,7 @@ napi_value MediaLibraryNapi::JSGetActivePeers(napi_env env, napi_callback_info i
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     }
@@ -4325,7 +4326,7 @@ napi_value MediaLibraryNapi::JSGetAllPeers(napi_env env, napi_callback_info info
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     }
@@ -4558,7 +4559,7 @@ napi_value MediaLibraryNapi::JSStoreMediaAsset(napi_env env, napi_callback_info 
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     }
@@ -4713,7 +4714,7 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
-            napi_queue_async_work(env, asyncContext->work);
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
             asyncContext.release();
         }
     }
@@ -6126,7 +6127,13 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
     string queryUri;
     switch (context->assetType) {
         case TYPE_PHOTO: {
-            queryUri = PAH_QUERY_PHOTO;
+            if (context->uri == URI_ALL_DUPLICATE_ASSETS) {
+                queryUri = PAH_ALL_DUPLICATE_ASSETS;
+            } else if (context->uri == URI_CAN_DEL_DUPLICATE_ASSETS) {
+                queryUri = PAH_CAN_DEL_DUPLICATE_ASSETS;
+            } else {
+                queryUri = PAH_QUERY_PHOTO;
+            }
             MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
             break;
         }
