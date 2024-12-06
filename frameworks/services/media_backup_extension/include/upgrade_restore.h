@@ -70,7 +70,6 @@ private:
     void AnalyzeGalleryErrorSource();
     void AnalyzeGalleryDuplicateData();
     void AnalyzeGallerySource();
-    void UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int32_t &number);
     int32_t ParseXml(std::string path);
     int StringToInt(const std::string& str);
     int32_t InitDbAndXml(std::string xmlPath, bool isUpgrade);
