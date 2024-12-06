@@ -26,6 +26,8 @@
 
 #include "base_restore.h"
 #include "backup_const.h"
+#include "ffrt.h"
+#include "ffrt_inner.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
@@ -37,8 +39,8 @@ namespace OHOS {
 namespace Media {
 class CloneRestore : public BaseRestore {
 public:
-    CloneRestore() = default;
-    virtual ~CloneRestore() = default;
+    CloneRestore();
+    virtual ~CloneRestore();
     // upgradePath is useless now
     void StartRestore(const std::string &backupRestorePath, const std::string &upgradePath) override;
     int32_t Init(const std::string &backupRestoreDir, const std::string &upgradeFilePath, bool isUpgrade) override;
@@ -212,6 +214,7 @@ private:
     std::shared_ptr<MediaLibraryKvStore> newMonthKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
     std::vector<int> photosFailedOffsets;
+    std::unique_ptr<ffrt::queue> queue_ = nullptr;
 };
 
 template<typename T>
