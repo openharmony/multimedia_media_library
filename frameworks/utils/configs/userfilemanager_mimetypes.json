@@ -86,7 +86,8 @@
         "video/quicktime" : [ "mov" ],
         "video/x-matroska" : [ "mkv" ],
         "video/webm" : [ "webm" ],
-        "video/H264" : [ "h264" ]
+        "video/H264" : [ "h264" ],
+        "video/x-flv" : [ "flv" ]
     },
     "text" : {
         "text/comma-separated-values" : [ "csv" ],
