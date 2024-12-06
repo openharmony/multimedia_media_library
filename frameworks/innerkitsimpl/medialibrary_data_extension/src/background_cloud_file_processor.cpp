@@ -253,7 +253,7 @@ void BackgroundCloudFileProcessor::StopDownloadFiles()
     curDownloadPaths_.clear();
 }
 
-void BackgroundCloudFileProcessor::SetPredicates(RdbPredicates &predicates, bool isCloud, bool isVideo)
+void BackgroundCloudFileProcessor::SetPredicates(NativeRdb::RdbPredicates &predicates, bool isCloud, bool isVideo)
 {
     if (isCloud) {
         predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD))
