@@ -77,6 +77,10 @@ napi_value CloudMediaAssetManagerNapi::Constructor(napi_env env, napi_callback_i
     napi_value thisVar = nullptr;
     CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_INNER_FAIL);
     CHECK_COND_WITH_MESSAGE(env, argc == ARGS_ONE, "Number of args is invalid");
+    if (!InitUserFileClient(env, info)) {
+        NAPI_ERR_LOG("Failed to init UserFileClient");
+        return nullptr;
+    }
 
     unique_ptr<CloudMediaAssetManagerNapi> obj = make_unique<CloudMediaAssetManagerNapi>();
     CHECK_COND(env, obj != nullptr, JS_INNER_FAIL);
