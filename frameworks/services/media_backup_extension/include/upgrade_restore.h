@@ -40,7 +40,6 @@ public:
     std::vector<FileInfo> QueryAudioFileInfosFromAudio(int32_t offset);
     int32_t QueryNotSyncTotalNumber(int32_t offset, bool isCamera);
     void InitGarbageAlbum();
-    void HandleClone();
 
 private:
     void RestorePhoto(void) override;
@@ -69,8 +68,6 @@ private:
     void AnalyzeGalleryErrorSource();
     void AnalyzeGalleryDuplicateData();
     void AnalyzeGallerySource();
-    void HandleCloneBatch(int32_t offset, int32_t maxId);
-    void UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int32_t &number);
     int32_t InitDbAndXml(std::string xmlPath, bool isUpgrade);
     int32_t ParseXml(const std::string &path);
     int StringToInt(const std::string& str);
