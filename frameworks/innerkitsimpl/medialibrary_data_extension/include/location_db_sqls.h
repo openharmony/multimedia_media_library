@@ -37,6 +37,7 @@ const std::string CREATE_GEO_KNOWLEDGE_TABLE =
     FEATURE_NAME + " TEXT, " +
     CITY_NAME + " TEXT, " +
     ADDRESS_DESCRIPTION + " TEXT, " +
+    LOCATION_TYPE + " TEXT, " +
     AOI + " TEXT, " +
     POI + " TEXT, " +
     FIRST_AOI + " TEXT, " +
@@ -44,8 +45,8 @@ const std::string CREATE_GEO_KNOWLEDGE_TABLE =
     LOCATION_VERSION + " TEXT, " +
     FIRST_AOI_CATEGORY + " TEXT, " +
     FIRST_POI_CATEGORY + " TEXT, " +
-    FILE_ID + " INTEGER, " +
-    LOCATION_TYPE + " TEXT) ";
+    FILE_ID + " INTEGER) ";
+    
 
 const std::string CREATE_GEO_DICTIONARY_TABLE =
     "CREATE TABLE IF NOT EXISTS " + GEO_DICTIONARY_TABLE + " ( " +
