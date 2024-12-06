@@ -388,11 +388,15 @@ bool PictureHandlerService::WriteAuxiliaryMetadata(MessageParcel &data,
     data.WriteInt32(metadataSize);
     if (hasExif) {
         data.WriteInt32(static_cast<int32_t>(MetadataType::EXIF));
-        auxiliaryPicture->GetMetadata(MetadataType::EXIF)->Marshalling(data);
+        if (auxiliaryPicture->GetMetadata(MetadataType::EXIF) != nullptr) {
+            auxiliaryPicture->GetMetadata(MetadataType::EXIF)->Marshalling(data);
+        }
     }
     if (hasFragment) {
         data.WriteInt32(static_cast<int32_t>(MetadataType::FRAGMENT));
-        auxiliaryPicture->GetMetadata(MetadataType::FRAGMENT)->Marshalling(data);
+        if (auxiliaryPicture->GetMetadata(MetadataType::FRAGMENT) != nullptr) {
+            auxiliaryPicture->GetMetadata(MetadataType::FRAGMENT)->Marshalling(data);
+        }
     }
     return true;
 }
