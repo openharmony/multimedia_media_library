@@ -53,13 +53,27 @@ private:
 
 public:
     PhotoAlbumLPathOperation &SetRdbStore(const std::shared_ptr<MediaLibraryRdbStore> &rdbStorePtr);
-    int32_t CleanInvalidPhotoAlbums();
+    PhotoAlbumLPathOperation &CleanInvalidPhotoAlbums();
+    PhotoAlbumLPathOperation &CleanDuplicatePhotoAlbums();
+    PhotoAlbumLPathOperation &CleanEmptylPathPhotoAlbums();
+    int32_t GetAlbumAffectedCount() const;
 
 private:
+    std::string ToString(const std::vector<NativeRdb::ValueObject> &values);
     std::vector<PhotoAlbumInfo> GetInvalidPhotoAlbums();
+    std::vector<PhotoAlbumInfo> GetDuplicatelPathAlbumInfoMain();
+    std::vector<PhotoAlbumInfo> GetDuplicatelPathAlbumInfoSub(const PhotoAlbumInfo &albumInfo);
+    int32_t MergePhotoAlbum(const PhotoAlbumInfo &mainAlbumInfo, const PhotoAlbumInfo &subAlbumInfo);
+    std::vector<PhotoAlbumInfo> GetEmptylPathAlbumInfo();
+    int32_t CleanDuplicatePhotoAlbum(const PhotoAlbumInfo &mainAlbumInfo);
+    int32_t CleanEmptylPathPhotoAlbum(const PhotoAlbumInfo &subAlbumInfo);
+    PhotoAlbumInfo GetAlbumInfoBylPath(const std::string &lPath);
+    int32_t UpdateAlbumByAlbumPlugin(const PhotoAlbumInfo &albumInfo);
+    int32_t UpdateAlbumLPathByAlbumId(const PhotoAlbumInfo &albumInfo);
 
 private:
     std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr_;
+    int32_t albumAffectedCount_;
 
 private:
     const std::string SQL_PHOTO_ALBUM_EMPTY_QUERY = "\
@@ -103,6 +117,177 @@ private:
                     INNER JOIN Photos \
                     ON PhotoMap.map_asset = Photos.file_id \
             ) ;";
+    const std::string SQL_PHOTO_ALBUM_DUPLICATE_LPATH_MAIN_QUERY = "\
+        SELECT \
+            album_id, \
+            album_name, \
+            album_type, \
+            album_subtype, \
+            lpath, \
+            bundle_name, \
+            dirty, \
+            count, \
+            cloud_id, \
+            priority \
+        FROM PhotoAlbum \
+        WHERE album_id IN \
+        ( \
+            SELECT \
+                MAX(album_id) AS album_id \
+            FROM PhotoAlbum \
+            WHERE album_type IN (0, 2048) AND \
+                COALESCE(lpath, '') <> '' \
+            GROUP BY lpath \
+            HAVING COUNT(1) > 1 \
+        ) \
+        ORDER BY album_id;";
+    const std::string SQL_PHOTO_ALBUM_DUPLICATE_LPATH_SUB_QUERY = "\
+        SELECT \
+            PhotoAlbum.album_id, \
+            album_name, \
+            album_type, \
+            album_subtype, \
+            PhotoAlbum.lpath, \
+            bundle_name, \
+            dirty, \
+            count, \
+            cloud_id, \
+            priority \
+        FROM PhotoAlbum \
+            LEFT JOIN \
+            ( \
+                SELECT \
+                    ? AS album_id, \
+                    ? AS lpath \
+            ) AS INPUT \
+            ON 1 = 1 \
+        WHERE album_type IN (0, 2048) AND \
+            LOWER(COALESCE(PhotoAlbum.lpath, '')) = LOWER(INPUT.lpath) AND \
+            PhotoAlbum.album_id <> INPUT.album_id \
+        ORDER BY PhotoAlbum.album_id;";
+    const std::string SQL_PHOTO_ALBUM_FIX_LPATH_QUERY = "\
+        SELECT \
+            album_id, \
+            album_name, \
+            album_type, \
+            album_subtype, \
+            lpath, \
+            dirty, \
+            count, \
+            cloud_id, \
+            priority \
+        FROM \
+        ( \
+            SELECT \
+                album_id, \
+                EMPTY.album_name, \
+                album_type, \
+                album_subtype, \
+                CASE WHEN COALESCE(BUNDLE.bundle_name, '') <> '' THEN BUNDLE.lpath \
+                    WHEN COALESCE(cloud_id, '') <> '' THEN '' \
+                    WHEN COALESCE(NAME.album_name, '') <> '' THEN NAME.lpath \
+                    ELSE '/Pictures/'||EMPTY.album_name \
+                END AS lpath, \
+                dirty, \
+                count, \
+                cloud_id, \
+                priority \
+            FROM \
+            ( \
+                SELECT \
+                    album_id, \
+                    album_name, \
+                    album_type, \
+                    album_subtype, \
+                    lpath, \
+                    bundle_name, \
+                    dirty, \
+                    count, \
+                    cloud_id, \
+                    priority \
+                FROM PhotoAlbum \
+                WHERE COALESCE(lPath, '') = '' AND \
+                    album_type = 2048 \
+            ) AS EMPTY \
+            LEFT JOIN \
+            ( \
+                SELECT DISTINCT \
+                    bundle_name, \
+                    lpath \
+                FROM album_plugin \
+                WHERE COALESCE(bundle_name, '') <> '' AND \
+                    COALESCE(priority, 1) = 1 \
+            ) AS BUNDLE \
+            ON COALESCE(EMPTY.bundle_name, '') = COALESCE(BUNDLE.bundle_name, '') \
+            LEFT JOIN \
+            ( \
+                SELECT DISTINCT album_name, \
+                    album_name_en, \
+                    lpath \
+                FROM album_plugin \
+                WHERE COALESCE(album_name, '') <> '' AND \
+                    COALESCE(priority, 1) = 1 \
+            ) AS NAME \
+            ON COALESCE(EMPTY.album_name, '') = COALESCE(NAME.album_name, '') OR \
+                COALESCE(EMPTY.album_name, '') = COALESCE(NAME.album_name_en, '') \
+        ) \
+        WHERE COALESCE(lpath, '') <> '' \
+        ORDER BY album_id; ";
+    const std::string SQL_PHOTO_ALBUM_SYNC_BUNDLE_NAME_UPDATE = "\
+        UPDATE PhotoAlbum \
+        SET \
+            album_name = COALESCE( \
+                                ( \
+                                    SELECT album_name \
+                                    FROM album_plugin \
+                                    WHERE LOWER(lpath) = LOWER(?) \
+                                    LIMIT 1 \
+                                ), album_name), \
+            bundle_name = COALESCE( \
+                                ( \
+                                    SELECT bundle_name \
+                                    FROM album_plugin \
+                                    WHERE LOWER(lpath) = LOWER(?) \
+                                    LIMIT 1 \
+                                ), bundle_name), \
+            priority = COALESCE( \
+                                ( \
+                                    SELECT priority \
+                                    FROM album_plugin \
+                                    WHERE LOWER(lpath) = LOWER(?) \
+                                    LIMIT 1 \
+                                ), priority) \
+        WHERE LOWER(lpath) = LOWER(?) AND \
+            LOWER(lpath) IN ( \
+                SELECT DISTINCT LOWER(lpath) \
+                FROM album_plugin \
+                WHERE COALESCE(lpath,'') <> '' \
+            );";
+    const std::string SQL_PHOTO_ALBUM_QUERY_BY_LPATH = "\
+        SELECT \
+            album_id, \
+            album_name, \
+            album_type, \
+            album_subtype, \
+            lpath, \
+            dirty, \
+            count, \
+            cloud_id, \
+            priority \
+        FROM PhotoAlbum \
+        WHERE LOWER(COALESCE(lpath, '')) = LOWER(?) \
+        LIMIT 1;";
+    const std::string SQL_PHOTO_ALBUM_UPDATE_LPATH_BY_ALBUM_ID = "\
+        UPDATE PhotoAlbum \
+        SET lpath = ? \
+        WHERE album_id = ? AND \
+            album_type = 2048 AND \
+            COALESCE(lpath, '') = '' AND \
+            LOWER(?) NOT IN ( \
+                SELECT DISTINCT LOWER(PA.lpath) \
+                FROM PhotoAlbum AS PA \
+                WHERE COALESCE(PA.lpath, '') <> '' \
+            );";
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTO_ALBUM_LPATH_OPERATION_H
