@@ -322,7 +322,7 @@ void UpgradeRestore::RestorePhoto()
     DataTransfer::GalleryDbUpgrade().OnUpgrade(this->galleryRdb_);
     AnalyzeSource();
     InitGarbageAlbum();
-    HandleClone();
+
     // restore PhotoAlbum
     this->photoAlbumRestore_.Restore();
     RestoreFromGalleryPortraitAlbum();
