@@ -16,7 +16,6 @@ import("//foundation/multimedia/media_library/media_library.gni")
 
 group("unittest") {
   testonly = true
-
   deps = [ ":medialibrary_data_extension_test" ]
 }
 
@@ -47,8 +46,6 @@ ohos_unittest("medialibrary_data_extension_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
   ]
 
-  public_external_deps = []
-
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
@@ -75,8 +72,6 @@ ohos_unittest("medialibrary_data_extension_test") {
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
   ]
-
-  defines = []
 
   sanitize = {
     cfi = true
