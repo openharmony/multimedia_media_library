@@ -267,7 +267,7 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetPhotosInfo(
                 ->EndWrap();
         }
     } else {
-        int32_t file_id = context->handle % COMMON_PHOTOS_OFFSET;
+        int32_t file_id = static_cast<int32_t>(context->handle % COMMON_PHOTOS_OFFSET);
         predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(file_id));
     }
     return dataShareHelper_->Query(uri, predicates, columns);
@@ -316,7 +316,7 @@ int32_t MtpMedialibraryManager::HaveMovingPhotesHandle(const shared_ptr<DataShar
         }
         int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
         if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-            uint32_t videoId = id - COMMON_PHOTOS_OFFSET + COMMON_MOVING_OFFSET;
+            uint32_t videoId = id + (COMMON_MOVING_OFFSET - COMMON_PHOTOS_OFFSET);
             outHandles->push_back(videoId);
         }
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
@@ -776,7 +776,7 @@ int32_t CopyNewAssert(const int32_t &fileId, const int32_t &albumId, const strin
     int32_t insertId = dataShareHelper->Insert(cloneAssetUri, valuesBucket);
     CHECK_AND_RETURN_RET_LOG(insertId >= 0,
         MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR), "fail to clone photo");
-    outObjectHandle = insertId + COMMON_PHOTOS_OFFSET;
+    outObjectHandle = static_cast<uint32_t>(insertId) + COMMON_PHOTOS_OFFSET;
     string updateOwnerAlbumIdUriStr = URI_MTP_OPERATION + "/" + OPRN_UPDATE_OWNER_ALBUM_ID;
     MediaFileUtils::UriAppendKeyValue(updateOwnerAlbumIdUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateOwnerAlbumIdUri(updateOwnerAlbumIdUriStr);
@@ -800,7 +800,7 @@ int32_t MtpMedialibraryManager::CopyObject(const std::shared_ptr<MtpOperationCon
     int errCode = MtpDataUtils::SolveSendObjectFormatData(context->format, mediaType);
     CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, errCode, "fail to SolveSendObjectFormatData");
 
-    int32_t fileId = context->handle - COMMON_PHOTOS_OFFSET;
+    int32_t fileId = static_cast<int32_t>(context->handle - COMMON_PHOTOS_OFFSET);
     string queryUriStr = PAH_QUERY_PHOTO;
     MediaFileUtils::UriAppendKeyValue(queryUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri queryUri(queryUriStr);

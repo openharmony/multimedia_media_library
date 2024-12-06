@@ -514,7 +514,7 @@ int32_t MtpMediaLibrary::GetPictureThumb(const std::shared_ptr<MtpOperationConte
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_CONTEXT_IS_NULL, "context is nullptr");
 
-    int32_t fd;
+    int32_t fd = 0;
     uint32_t errorCode = MTP_SUCCESS;
     errorCode = static_cast<uint32_t>(GetFd(context, fd));
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_NO_THUMBNAIL_PRESENT, "GetFd failed");
@@ -821,7 +821,7 @@ int32_t MtpMediaLibrary::SetObjectPropValue(const std::shared_ptr<MtpOperationCo
 {
     MEDIA_INFO_LOG("MtpMediaLibrary::SetObjectPropValue");
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "context is nullptr");
-    std::string colName;
+    std::string colName("");
     variant<int64_t, std::string> colValue;
     int32_t errCode = MtpDataUtils::SolveSetObjectPropValueData(context, colName, colValue);
     CHECK_AND_RETURN_RET_LOG(errCode == 0, errCode, "fail to SolveSetObjectPropValueData");
