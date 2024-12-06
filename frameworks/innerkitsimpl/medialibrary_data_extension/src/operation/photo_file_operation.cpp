@@ -110,10 +110,6 @@ int32_t PhotoFileOperation::CopyThumbnail(
     return HandleThumbnailAstcData(dateTaken, oldAssetId, to_string(newAssetId));
 }
 
-
-/**
- * @brief Copy Photo File, include photo file, video file and edit data folder.
- */
 int32_t PhotoFileOperation::HandleThumbnailAstcData(const std::string &dateTaken, const std::string &oldAssetId,
     const std::string &newAssetId)
 {
@@ -451,8 +447,8 @@ int32_t PhotoFileOperation::CopyPhotoRelatedExtraData(const PhotoFileOperation::
 }
 
 /**
- * @brief Copy the Edit Data.
- * @return E_OK if success or not edited photo.
+ * @brief Copy the thumbnail Data.
+ * @return E_OK if success or not thumbnail folder.
  *         E_NO_SUCH_FILE if the source Edit Data Folder not exits.
  *         E_FAIL if the copy operation failed.
  */
