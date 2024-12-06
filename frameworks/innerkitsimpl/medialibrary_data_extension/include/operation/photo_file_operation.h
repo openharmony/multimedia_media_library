@@ -30,24 +30,36 @@ private:
         int32_t subtype{0};
         std::string videoFilePath;
         std::string editDataFolder;
+        std::string thumbnailFolder;
     };
 
 public:
     int32_t CopyPhoto(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath);
+    int32_t CopyThumbnail(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath,
+        int64_t &newAssetId);
 
 private:
     std::string GetVideoFilePath(const PhotoAssetInfo &photoInfo);
     std::string FindVideoFilePath(const PhotoAssetInfo &photoInfo);
     std::string FindRelativePath(const std::string &filePath);
     std::string FindPrefixOfEditDataFolder(const std::string &filePath);
+    std::string FindPrefixOfThumbnailFolder(const std::string &filePath);
+    std::string FindPrefixDataFolder(const std::string &filePath, const std::string &dataName);
     std::string BuildEditDataFolder(const PhotoFileOperation::PhotoAssetInfo &photoInfo);
+    std::string BuildThumbnailFolder(const PhotoFileOperation::PhotoAssetInfo &photoInfo);
     std::string FindEditDataFolder(const PhotoAssetInfo &photoInfo);
+    std::string FindThumbnailFolder(const PhotoAssetInfo &photoInfo);
     int32_t CopyPhotoFile(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo);
     int32_t CopyPhotoRelatedVideoFile(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo);
     int32_t CopyPhotoRelatedExtraData(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo);
+    int32_t CopyPhotoRelatedThumbnail(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo);
+    int32_t CopyPhotoRelatedData(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo,
+        const std::string &srcFolder, const std::string &targetFolder);
     int32_t CopyPhoto(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo);
     int32_t CopyFile(const std::string &srcPath, std::string &targetPath);
     std::string ToString(const PhotoAssetInfo &photoInfo);
+    int32_t HandleThumbnailAstcData(const std::string &dateTaken, const std::string &oldAssetId,
+        const std::string &newAssetId);
 };
 }  // namespace OHOS::Media
 #endif  // FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_PHOTO_FILE_H_
