@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include "medialibrary_errno.h"
 #include "photo_file_utils.h"
+#include "directory_ex.h"
 
 using std::string;
 
@@ -33,6 +34,19 @@ std::unordered_map<uint32_t, std::shared_ptr<VideoEditor>> VideoCompositionCallb
 std::queue<VideoCompositionCallbackImpl::Task> VideoCompositionCallbackImpl::waitQueue_;
 int32_t VideoCompositionCallbackImpl::curWorkerNum_ = 0;
 std::mutex VideoCompositionCallbackImpl::mutex_;
+
+static int32_t CheckDirPathReal(const std::string &filePath)
+{
+    string dirPath;
+    auto index = filePath.rfind('/');
+    CHECK_AND_RETURN_RET_LOG(index != std::string::npos, E_HAS_FS_ERROR,
+        "find split for last string failed, %{private}s, errno: %{public}d", filePath.c_str(), errno);
+    dirPath = filePath.substr(0, index);
+    string absDirPath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(dirPath, absDirPath),
+        E_HAS_FS_ERROR, "file is not real path: %{private}s, errno: %{public}d", dirPath.c_str(), errno);
+    return E_OK;
+}
 
 VideoCompositionCallbackImpl::VideoCompositionCallbackImpl() {}
 
@@ -79,12 +93,14 @@ int32_t VideoCompositionCallbackImpl::CallStartComposite(const std::string& sour
     const std::string& videoPath, const std::string& effectDescription)
 {
     MEDIA_INFO_LOG("Call StartComposite begin, sourceVideoPath:%{public}s", sourceVideoPath.c_str());
-    int32_t inputFileFd = open(sourceVideoPath.c_str(), O_RDONLY);
-    if (inputFileFd == -1) {
-        MEDIA_ERR_LOG("Open failed for inputFileFd file, errno: %{public}d", errno);
-        return E_ERR;
-    }
+    string absSourceVideoPath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(sourceVideoPath, absSourceVideoPath), E_HAS_FS_ERROR,
+        "file is not real path, file path: %{private}s, errno: %{public}d", sourceVideoPath.c_str(), errno);
+    int32_t inputFileFd = open(absSourceVideoPath.c_str(), O_RDONLY);
+    CHECK_AND_RETURN_RET_LOG(inputFileFd != -1, E_ERR, "Open failed for inputFileFd file, errno: %{public}d", errno);
 
+    CHECK_AND_RETURN_RET_LOG(CheckDirPathReal(videoPath) == E_OK, E_HAS_FS_ERROR,
+        "dirFile is not real path, file path: %{private}s, errno: %{public}d", videoPath.c_str(), errno);
     int32_t outputFileFd = open(videoPath.c_str(), O_WRONLY|O_CREAT, CHOWN_RW_USR_GRP);
     if (outputFileFd == -1) {
         close(inputFileFd);
