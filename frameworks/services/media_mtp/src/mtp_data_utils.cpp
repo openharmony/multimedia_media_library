@@ -387,7 +387,7 @@ int32_t MtpDataUtils::GetPropList(const std::shared_ptr<MtpOperationContext> &co
             }
             MovingType movingType;
             movingType.displayName = displayName;
-            movingType.parent = parent;
+            movingType.parent = static_cast<uint64_t>(parent);
             GetMovingOrEnditOneRowPropList(properties, path, context, outProps, movingType);
         } else {
             handle = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, resultSet, idType));
