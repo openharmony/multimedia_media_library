@@ -29,7 +29,7 @@ public:
     EXPORT MediaLibraryKvStoreUtils() = default;
     EXPORT ~MediaLibraryKvStoreUtils();
 
-    EXPORT static int32_t SaveAstcDataToKvStoreByType(const KvStoreValueType &type, const std::string &oldKey,
+    EXPORT static int32_t CopyAstcDataToKvStoreByType(const KvStoreValueType &type, const std::string &oldKey,
         const std::string &newKey);
 };
 } // namespace Media
