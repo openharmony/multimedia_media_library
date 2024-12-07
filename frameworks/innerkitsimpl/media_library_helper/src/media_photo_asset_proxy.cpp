@@ -126,6 +126,36 @@ string PhotoAssetProxy::GetPhotoAssetUri()
     return uri_;
 }
 
+DataShare::DataShareValuesBucket PhotoAssetProxy::HandleAssetValues(const sptr<PhotoProxy> &photoProxy,
+    const string &displayName, const MediaType &mediaType)
+{
+    DataShare::DataShareValuesBucket values;
+    values.Put(MediaColumn::MEDIA_NAME, displayName);
+    values.Put(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(mediaType));
+    if (cameraShotType_ == CameraShotType::MOVING_PHOTO) {
+        values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    }
+    if (cameraShotType_ == CameraShotType::BURST) {
+        values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
+        values.Put(PhotoColumn::PHOTO_BURST_KEY, photoProxy->GetBurstKey());
+        values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+            photoProxy->IsCoverPhoto() ? static_cast<int32_t>(BurstCoverLevelType::COVER)
+                                       : static_cast<int32_t>(BurstCoverLevelType::MEMBER));
+        values.Put(PhotoColumn::PHOTO_DIRTY, -1);
+    }
+    values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
+    values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
+
+    if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW ||
+        (photoProxy->GetFormat() == PhotoFormat::YUV && subType_ != PhotoSubType::BURST)) {
+        values.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, static_cast<int32_t>(photoProxy->GetDeferredProcType()));
+        values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(cameraShotType_));
+        values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(photoProxy->GetPhotoQuality()));
+        SetPhotoIdForAsset(photoProxy, values);
+    }
+    return values;
+}
+
 void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
 {
     if (dataShareHelper_ == nullptr) {
@@ -146,22 +176,8 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
         MEDIA_ERR_LOG("Failed to create Asset, invalid file type %{public}d", static_cast<int32_t>(mediaType));
         return;
     }
-    DataShare::DataShareValuesBucket values;
-    values.Put(MediaColumn::MEDIA_NAME, displayName);
-    values.Put(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(mediaType));
-    if (cameraShotType_ == CameraShotType::MOVING_PHOTO) {
-        values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
-    }
-    if (cameraShotType_ == CameraShotType::BURST) {
-        values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
-        values.Put(PhotoColumn::PHOTO_BURST_KEY, photoProxy->GetBurstKey());
-        values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
-            photoProxy->IsCoverPhoto() ? static_cast<int32_t>(BurstCoverLevelType::COVER)
-                                       : static_cast<int32_t>(BurstCoverLevelType::MEMBER));
-        values.Put(PhotoColumn::PHOTO_DIRTY, -1);
-    }
-    values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
-    values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
+
+    DataShare::DataShareValuesBucket values = HandleAssetValues(photoProxy, displayName, mediaType);
     string uri = PAH_CREATE_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri createUri(uri);
@@ -171,7 +187,7 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
         return;
     }
     MEDIA_INFO_LOG(
-        "CreatePhotoAsset Success, photoId: %{public}s, fileId: %{public}d, uri: %{public}s, burstKey: %{public}s",
+        "MultistagesCapture Success, photoId: %{public}s, fileId: %{public}d, uri: %{public}s, burstKey: %{public}s",
         photoProxy->GetPhotoId().c_str(), fileId_, uri_.c_str(), photoProxy->GetBurstKey().c_str());
 }
 
@@ -373,7 +389,7 @@ std::string PhotoAssetProxy::LocationValueToString(double value)
     return result;
 }
 
-int32_t PhotoAssetProxy::UpdatePhotoQuality(shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
+int32_t PhotoAssetProxy::AddProcessImage(shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
     const sptr<PhotoProxy> &photoProxy, int32_t fileId, int32_t subType)
 {
     string uri = PAH_ADD_IMAGE;
@@ -397,7 +413,7 @@ int32_t PhotoAssetProxy::UpdatePhotoQuality(shared_ptr<DataShare::DataShareHelpe
     if (changeRows < 0) {
         MEDIA_ERR_LOG("update fail, error: %{public}d", changeRows);
     }
-    MEDIA_INFO_LOG("UpdatePhotoQuality photoId: %{public}s, fileId: %{public}d",
+    MEDIA_INFO_LOG("MultistagesCapture photoId: %{public}s, fileId: %{public}d",
         photoProxy->GetPhotoId().c_str(), fileId);
     return changeRows;
 }
@@ -459,18 +475,20 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
 
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAssetProxy::AddPhotoProxy " + photoProxy->GetPhotoId());
-    MEDIA_INFO_LOG("AddPhotoProxy, photoId: %{public}s", photoProxy->GetPhotoId().c_str());
+    MEDIA_INFO_LOG("MultistagesCapture, photoId: %{public}s", photoProxy->GetPhotoId().c_str());
     tracer.Start("PhotoAssetProxy CreatePhotoAsset");
     CreatePhotoAsset(photoProxy);
     if (cameraShotType_ == CameraShotType::VIDEO) {
+        MEDIA_INFO_LOG("MultistagesCapture exit for VIDEO");
         return;
     }
     if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW ||
         (photoProxy->GetFormat() == PhotoFormat::YUV && subType_ != PhotoSubType::BURST)) {
-        UpdatePhotoQuality(dataShareHelper_, photoProxy, fileId_, static_cast<int32_t>(cameraShotType_));
+        AddProcessImage(dataShareHelper_, photoProxy, fileId_, static_cast<int32_t>(cameraShotType_));
     }
     if (photoProxy->GetFormat() == PhotoFormat::YUV) {
         photoProxy->Release();
+        MEDIA_INFO_LOG("MultistagesCapture exit for YUV");
         tracer.Finish();
         return;
     }
@@ -483,7 +501,7 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
         return;
     }
     DealWithLowQualityPhoto(dataShareHelper_, fd, uri_, photoProxy);
-    MEDIA_INFO_LOG("exit");
+    MEDIA_INFO_LOG("MultistagesCapture exit");
 }
 
 int32_t PhotoAssetProxy::GetVideoFd()

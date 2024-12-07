@@ -63,7 +63,8 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(shared
         string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
         auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
             static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
-        MEDIA_DEBUG_LOG("notify %{public}s", MediaFileUtils::GetUriWithoutDisplayname(notifyUri).c_str());
+        MEDIA_DEBUG_LOG("MultistagesCapture notify %{public}s",
+            MediaFileUtils::GetUriWithoutDisplayname(notifyUri).c_str());
         watch->Notify(MediaFileUtils::GetUriWithoutDisplayname(notifyUri), NOTIFY_UPDATE);
     }
 }
@@ -168,12 +169,12 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
     tracer.Start("OnProcessImageDone " + imageId);
     if (picture == nullptr || picture->GetMainPixel() == nullptr) {
         tracer.Finish();
-        MEDIA_ERR_LOG("OnProcessImageDone picture is null");
+        MEDIA_ERR_LOG("MultistagesCapture picture is null");
         return;
     }
     // 1. 分段式拍照已经处理完成，保存全质量图
-    MEDIA_INFO_LOG("yuv photoid: %{public}s, isCloudEnhancementAvailable: %{public}s enter", imageId.c_str(),
-        isCloudEnhancementAvailable?"true":"false");
+    MEDIA_INFO_LOG("MultistagesCapture yuv photoid: %{public}s, isCloudEnhancementAvailable: %{public}s enter",
+        imageId.c_str(), isCloudEnhancementAvailable?"true":"false");
     tracer.Start("Query");
     auto resultSet = QueryPhotoData(imageId);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
@@ -217,7 +218,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
 
     // delete raw file
     MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
-    MEDIA_INFO_LOG("yuv success photoid: %{public}s", imageId.c_str());
+    MEDIA_INFO_LOG("MultistagesCapture yuv success photoid: %{public}s", imageId.c_str());
 }
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::GetCommandByImageId(const std::string &imageId,
@@ -250,11 +251,11 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateHighQualityPictur
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityImage(const std::string &imageId,
     std::shared_ptr<Media::Picture> picture)
 {
-    MEDIA_INFO_LOG("photoid: %{public}s", imageId.c_str());
+    MEDIA_INFO_LOG("MultistagesCapture photoid: %{public}s", imageId.c_str());
     if (picture != nullptr && picture->GetMainPixel() != nullptr) {
-        MEDIA_INFO_LOG("OnDeliveryLowQualityImage picture is not null");
+        MEDIA_INFO_LOG("MultistagesCapture picture is not null");
     } else {
-        MEDIA_INFO_LOG("OnDeliveryLowQualityImage picture is null");
+        MEDIA_INFO_LOG("MultistagesCapture picture is null");
         return;
     }
     MediaLibraryTracer tracer;
@@ -267,7 +268,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityIma
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         tracer.Finish();
-        MEDIA_INFO_LOG("result set is empty");
+        MEDIA_INFO_LOG("MultistagesCapture result set is empty");
         return;
     }
     tracer.Finish();
@@ -276,7 +277,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityIma
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     resultSet->Close();
     MultiStagesPhotoCaptureManager::GetInstance().DealLowQualityPicture(photoId, std::move(picture), isEdited);
-    MEDIA_INFO_LOG("save low quality image end");
+    MEDIA_INFO_LOG("MultistagesCapture save low quality image end");
 }
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(const string &imageId, const uint8_t *addr,

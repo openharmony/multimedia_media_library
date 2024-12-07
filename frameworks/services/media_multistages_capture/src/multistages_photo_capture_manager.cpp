@@ -162,7 +162,7 @@ void MultiStagesPhotoCaptureManager::DealLowQualityPicture(const std::string &im
     sptr<PicturePair> picturePair = new PicturePair(std::move(picture), imageIdInPair, expireTime, true, false);
     // 存低质量裸picture
     pictureManagerThread->InsertPictureData(imageId, picturePair, LOW_QUALITY_PICTURE);
-    MEDIA_INFO_LOG("photoid: %{public}s", imageId.c_str());
+    MEDIA_INFO_LOG("MultistagesCapture photoid: %{public}s", imageId.c_str());
 }
 
 bool MultiStagesPhotoCaptureManager::IsHighQualityPhotoExist(const std::string &uri)
@@ -314,7 +314,10 @@ void MultiStagesPhotoCaptureManager::AddImage(int32_t fileId, const string &phot
 void MultiStagesPhotoCaptureManager::AddImage(MediaLibraryCommand &cmd)
 {
     MEDIA_DEBUG_LOG("calling addImage");
-    UpdateDbInfo(cmd);
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread == nullptr) {
+        return;
+    }
     auto values = cmd.GetValueBucket();
     ValueObject valueObject;
     int32_t photoQuality = static_cast<int32_t>(MultiStagesPhotoQuality::LOW);
@@ -325,10 +328,6 @@ void MultiStagesPhotoCaptureManager::AddImage(MediaLibraryCommand &cmd)
     string photoId = "";
     if (values.GetObject(PhotoColumn::PHOTO_ID, valueObject)) {
         valueObject.GetString(photoId);
-    }
-    auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread == nullptr) {
-        return;
     }
     if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
         pictureManagerThread->SavePictureWithImageId(photoId);

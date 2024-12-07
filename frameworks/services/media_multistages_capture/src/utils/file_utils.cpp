@@ -148,6 +148,8 @@ int32_t FileUtils::SavePicture(const string &path, std::shared_ptr<Media::Pictur
 int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &path,
     std::shared_ptr<Media::Picture> &picture)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("FileUtils::DealPicture");
     MEDIA_DEBUG_LOG("DealPicture %{public}s", path.c_str());
     if (picture == nullptr) {
         return -1;
