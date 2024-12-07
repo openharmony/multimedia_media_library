@@ -28,6 +28,7 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_inotify.h"
 
 using namespace std;
 namespace OHOS {
@@ -390,6 +391,16 @@ int32_t DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloa
     return ret;
 }
 
+static string GetWatchListInfo()
+{
+    auto watch = MediaLibraryInotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("MediaLibraryInotify GetInstance fail");
+        return "";
+    }
+    return watch->BuildDfxInfo();
+}
+
 void DfxReporter::ReportPhotoRecordInfo()
 {
     PhotoRecordInfo photoRecordInfo;
@@ -412,6 +423,7 @@ void DfxReporter::ReportPhotoRecordInfo()
         "MEDIALIB_DATABASE_INFO",
         HiviewDFX::HiSysEvent::EventType::STATISTIC,
         "DB_FILE_SIZE", dbFileSize,
+        "SLAVE_DB_FILE_SIZE", photoRecordInfo.slaveDbFileSize,
         "IMAGE_COUNT", imageCount,
         "VIDEO_COUNT", videoCount,
         "ABNORMAL_SIZE_COUNT", abnormalSizeCount,
@@ -419,7 +431,8 @@ void DfxReporter::ReportPhotoRecordInfo()
         "ABNORMAL_VIDEO_DURATION_COUNT", abnormalVideoDurationCount,
         "ABNORMAL_COUNT_TO_UPDATE", toBeUpdatedRecordCount,
         "DUPLICATE_LPATH_COUNT", duplicateLpathCount,
-        "ABNORMAL_LPATH_COUNT", abnormalLpathCount);
+        "ABNORMAL_LPATH_COUNT", abnormalLpathCount,
+        "WATCH_LIST_INFO", GetWatchListInfo());
     if (ret != 0) {
         MEDIA_ERR_LOG("ReportPhotoRecordInfo error:%{public}d", ret);
     }
