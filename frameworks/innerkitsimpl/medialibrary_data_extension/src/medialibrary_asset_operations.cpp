@@ -863,7 +863,7 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, 
     outValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
 }
 
-static void HandleIsTemp(MediaLibraryCommand &cmd, ValuesBucket &outValues)
+static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, const FileAsset &fileAsset)
 {
     if (!PermissionUtils::IsNativeSAApp()) {
         MEDIA_DEBUG_LOG("do not have permission to set is_temp");
@@ -876,7 +876,37 @@ static void HandleIsTemp(MediaLibraryCommand &cmd, ValuesBucket &outValues)
         value.GetBool(isTemp);
     }
     outValues.PutBool(PhotoColumn::PHOTO_IS_TEMP, isTemp);
-    return;
+
+    int32_t deferredProcType = -1;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, value)) {
+        value.GetInt(deferredProcType);
+    }
+    if (deferredProcType != -1) {
+        outValues.PutInt(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, deferredProcType);
+    }
+
+    if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
+        return;
+    }
+
+    int32_t photoQuality = -1;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_QUALITY, value)) {
+        value.GetInt(photoQuality);
+    }
+    if (photoQuality != -1) {
+        outValues.PutInt(PhotoColumn::PHOTO_QUALITY, photoQuality);
+    }
+    if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) {
+        outValues.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading low-quality photo
+    }
+
+    std::string photoId;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_ID, value)) {
+        value.GetString(photoId);
+    }
+    if (!photoId.empty()) {
+        outValues.PutString(PhotoColumn::PHOTO_ID, photoId);
+    }
 }
 
 static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
@@ -891,20 +921,18 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         MimeTypeUtils::GetMimeTypeFromExtension(extension));
     assetInfo.PutString(MediaColumn::MEDIA_FILE_PATH, fileAsset.GetPath());
     if (cmd.GetApi() == MediaLibraryApi::API_OLD) {
-        assetInfo.PutString(MediaColumn::MEDIA_RELATIVE_PATH,
-            fileAsset.GetRelativePath());
+        assetInfo.PutString(MediaColumn::MEDIA_RELATIVE_PATH, fileAsset.GetRelativePath());
         assetInfo.PutString(MediaColumn::MEDIA_VIRTURL_PATH,
             GetVirtualPath(fileAsset.GetRelativePath(), fileAsset.GetDisplayName()));
     } else {
         assetInfo.PutLong(MediaColumn::MEDIA_TIME_PENDING, fileAsset.GetTimePending());
     }
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
-    assetInfo.PutString(MediaColumn::MEDIA_TITLE,
-        MediaFileUtils::GetTitleFromDisplayName(displayName));
+    assetInfo.PutString(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
-        HandleIsTemp(cmd, assetInfo);
+        HandlePhotoInfo(cmd, assetInfo, fileAsset);
         if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
             HandleBurstPhoto(cmd, assetInfo, displayName);
         }

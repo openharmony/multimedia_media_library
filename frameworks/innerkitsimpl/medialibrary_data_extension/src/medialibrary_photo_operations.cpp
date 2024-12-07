@@ -936,29 +936,33 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     tracer.Start("MediaLibraryPhotoOperations::SaveCameraPhoto");
     string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
     if (fileId.empty()) {
-        MEDIA_ERR_LOG("SaveCameraPhoto, get fileId fail");
+        MEDIA_ERR_LOG("MultistagesCapture, get fileId fail");
         return 0;
     }
-    MEDIA_INFO_LOG("start SaveCameraPhoto, fileId: %{public}s", fileId.c_str());
+    MEDIA_INFO_LOG("MultistagesCapture, start fileId: %{public}s", fileId.c_str());
+    tracer.Start("MediaLibraryPhotoOperations::UpdateIsTempAndDirty");
     int32_t ret = UpdateIsTempAndDirty(cmd, fileId);
+    tracer.Finish();
     if (ret < 0) {
         return 0;
     }
-
     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
+    tracer.Start("MediaLibraryPhotoOperations::SavePicture");
     if (!fileType.empty()) {
         SavePicture(stoi(fileType), stoi(fileId));
     }
+    tracer.Finish();
 
     string needScanStr = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId,
                                                          OperationObject::FILESYSTEM_PHOTO, PHOTO_COLUMN_VECTOR);
     if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("SaveCameraPhoto, get fileAsset fail");
+        MEDIA_ERR_LOG("MultistagesCapture, get fileAsset fail");
         return 0;
     }
     string path = fileAsset->GetPath();
     int32_t burstCoverLevel = fileAsset->GetBurstCoverLevel();
+    tracer.Start("MediaLibraryPhotoOperations::Scan");
     if (!path.empty()) {
         if (burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
             ScanFile(path, false, true, true, stoi(fileId));
@@ -966,7 +970,8 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
             MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, true, true, stoi(fileId));
         }
     }
-    MEDIA_INFO_LOG("SaveCameraPhoto Success, ret: %{public}d, needScanStr: %{public}s", ret, needScanStr.c_str());
+    tracer.Finish();
+    MEDIA_INFO_LOG("MultistagesCapture Success, ret: %{public}d, needScanStr: %{public}s", ret, needScanStr.c_str());
     return ret;
 }
 
@@ -3253,7 +3258,9 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
     const std::string &outputPath, const std::string &editdata, const std::string &photoStatus)
 {
-    MEDIA_INFO_LOG("AddFiltersToPhoto inputPath: %{public}s, outputPath: %{public}s, editdata: %{public}s",
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryPhotoOperations::AddFiltersToPhoto");
+    MEDIA_INFO_LOG("MultistagesCapture inputPath: %{public}s, outputPath: %{public}s, editdata: %{public}s",
         inputPath.c_str(), outputPath.c_str(), editdata.c_str());
     std::string info = editdata;
     size_t lastSlash = outputPath.rfind('/');
@@ -3264,9 +3271,11 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
     int32_t ret = MediaFileUtils::CreateAsset(tempOutputPath);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS || ret == E_FILE_EXIST, E_HAS_FS_ERROR,
         "Failed to create temp filters file %{private}s", tempOutputPath.c_str());
+    tracer.Start("MediaChangeEffect::TakeEffect");
     ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info);
+    tracer.Finish();
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("MediaLibraryPhotoOperations: AddFiltersToPhoto: TakeEffect error. ret = %d", ret);
+        MEDIA_ERR_LOG("MultistagesCapture, TakeEffect error. ret = %d", ret);
         return E_ERR;
     }
 
@@ -3285,7 +3294,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
             "Failed to delete temp filters file, errno: %{public}d", errno);
         return ret;
     }
-    MEDIA_INFO_LOG("AddFiltersToPhoto finish");
+    MEDIA_INFO_LOG("MultistagesCapture finish");
     return E_OK;
 }
 
