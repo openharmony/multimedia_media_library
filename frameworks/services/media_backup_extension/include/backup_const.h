@@ -578,10 +578,6 @@ const std::string ALL_PHOTOS_ORDER_BY = " ORDER BY _id ASC ";
 
 const std::string EXCLUDE_SD = " (storage_id IN (0, 65537)) ";
 
-const std::string QUERY_MAX_ID = "SELECT max(local_media_id) AS max_id FROM gallery_media \
-    WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
-    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
-
 const std::string DUAL_CLONE_AUDIO_FULL_TABLE = "mediainfo INNER JOIN mediafile ON mediainfo." + AUDIO_DATA +
     " = '/storage/emulated/0'||mediafile.filepath";
 
