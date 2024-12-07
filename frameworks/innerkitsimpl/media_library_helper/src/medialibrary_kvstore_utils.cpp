@@ -21,7 +21,7 @@
 #include "media_log.h"
 
 namespace OHOS::Media {
-int32_t MediaLibraryKvStoreUtils::SaveAstcDataToKvStoreByType(const KvStoreValueType &type, const std::string &oldKey,
+int32_t MediaLibraryKvStoreUtils::CopyAstcDataToKvStoreByType(const KvStoreValueType &type, const std::string &oldKey,
     const std::string &newKey)
 {
     std::shared_ptr<MediaLibraryKvStore> kvStore;
@@ -56,7 +56,8 @@ int32_t MediaLibraryKvStoreUtils::SaveAstcDataToKvStoreByType(const KvStoreValue
         MEDIA_ERR_LOG("Insert failed,type:%{public}d, field_id:%{public}s, ret:%{public}d", type, newKey.c_str(), ret);
         return E_ERR;
     }
-    MEDIA_INFO_LOG("Success to save astc data, type:%{public}d, field_id:%{public}s", type, newKey.c_str());
+    MEDIA_INFO_LOG("Success to save astc data, type:%{public}d, oldKey:%{public}s, oldKey:%{public}s", type,
+        oldKey.c_str(), newKey.c_str());
     return ret;
 }
 } // namespace OHOS::Media
