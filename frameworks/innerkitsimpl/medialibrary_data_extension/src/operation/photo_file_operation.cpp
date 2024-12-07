@@ -20,6 +20,7 @@
 
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_kvstore_utils.h"
 #include "userfile_manager_types.h"
 #include "media_file_utils.h"
 #include "media_column.h"
@@ -31,7 +32,8 @@ std::string PhotoFileOperation::ToString(const PhotoAssetInfo &photoInfo)
     std::stringstream ss;
     ss << "PhotoAssetInfo[displayName: " << photoInfo.displayName << ", filePath: " << photoInfo.filePath
        << ", dateModified: " << photoInfo.dateModified << ", subtype: " << photoInfo.subtype
-       << ", videoFilePath: " << photoInfo.videoFilePath << ", editDataFolder: " << photoInfo.editDataFolder << "]";
+       << ", videoFilePath: " << photoInfo.videoFilePath << ", editDataFolder: " << photoInfo.editDataFolder
+       << ", thumbnailFolder: " << photoInfo.thumbnailFolder << "]";
     return ss.str();
 }
 
@@ -71,6 +73,72 @@ int32_t PhotoFileOperation::CopyPhoto(
         this->ToString(sourcePhotoInfo).c_str(),
         this->ToString(targetPhotoInfo).c_str());
     return this->CopyPhoto(sourcePhotoInfo, targetPhotoInfo);
+}
+
+/**
+ * @brief Copy thumbnail, include folder and astc data.
+ */
+int32_t PhotoFileOperation::CopyThumbnail(
+    const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath, int64_t &newAssetId)
+{
+    if (resultSet == nullptr || targetPath.empty()) {
+        MEDIA_ERR_LOG("Media_Operation: CopyPhoto failed, resultSet is null or targetPath is empty");
+        return E_FAIL;
+    }
+
+    // Build the Original Photo Asset Info
+    PhotoFileOperation::PhotoAssetInfo sourcePhotoInfo;
+    sourcePhotoInfo.filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    sourcePhotoInfo.thumbnailFolder = this->FindThumbnailFolder(sourcePhotoInfo);
+    if (sourcePhotoInfo.thumbnailFolder.empty()) {
+        MEDIA_INFO_LOG("Source thumbnail is empty, skip copy. thumbnailFolder:%{public}s",
+            sourcePhotoInfo.thumbnailFolder.c_str());
+        return E_FAIL;
+    }
+
+    // copy folder
+    PhotoFileOperation::PhotoAssetInfo targetPhotoInfo;
+    targetPhotoInfo.filePath = targetPath;
+    targetPhotoInfo.thumbnailFolder = this->BuildThumbnailFolder(targetPhotoInfo);
+    int32_t opRet = this->CopyPhotoRelatedThumbnail(sourcePhotoInfo, targetPhotoInfo);
+    if (opRet != E_OK) {
+        return opRet;
+    }
+
+    std::string dateTaken = to_string(GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet));
+    std::string oldAssetId = to_string(GetInt64Val(MediaColumn::MEDIA_ID, resultSet));
+    return HandleThumbnailAstcData(dateTaken, oldAssetId, to_string(newAssetId));
+}
+
+int32_t PhotoFileOperation::HandleThumbnailAstcData(const std::string &dateTaken, const std::string &oldAssetId,
+    const std::string &newAssetId)
+{
+    // 取旧key拿value，然后在put新key和value（和旧的value一样）到kvstore中
+    string oldKey;
+    if (!MediaFileUtils::GenerateKvStoreKey(oldAssetId, dateTaken, oldKey)) {
+        MEDIA_ERR_LOG("GenerateKvStoreKey failed");
+        return E_ERR;
+    }
+
+    string newKey;
+    if (!MediaFileUtils::GenerateKvStoreKey(newAssetId, dateTaken, newKey)) {
+        MEDIA_ERR_LOG("GenerateKvStoreKey failed");
+        return E_ERR;
+    }
+
+    int32_t err = MediaLibraryKvStoreUtils::CopyAstcDataToKvStoreByType(KvStoreValueType::MONTH_ASTC, oldKey, newKey);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("CopyAstcDataToKvStoreByType failed, err: %{public}d", err);
+        return err;
+    }
+
+    err = MediaLibraryKvStoreUtils::CopyAstcDataToKvStoreByType(KvStoreValueType::YEAR_ASTC, oldKey, newKey);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("CopyAstcDataToKvStoreByType failed, err: %{public}d", err);
+        return err;
+    }
+    MEDIA_INFO_LOG("Success to copy thumbnail. oldKey:%{public}s, newKey:%{public}s", oldKey.c_str(), newKey.c_str());
+    return E_OK;
 }
 
 /**
@@ -150,6 +218,30 @@ std::string PhotoFileOperation::FindRelativePath(const std::string &filePath)
 }
 
 /**
+ * @brief Find the prefix of photo Data Folder.
+ * @return Return the prefix of photo Data Folder.
+ *         There are two prefixes, one is local, the other is cloud.
+ *         If the prefix of filePath is cloud, return "/storage/cloud/files/" + dataName.
+ *         If the prefix of filePath is local, return "/storage/media/local/files/" + dataName;
+ *         If the prefix of filePath is not found, return "".
+ */
+std::string PhotoFileOperation::FindPrefixDataFolder(const std::string &filePath, const std::string &dataName)
+{
+    std::string prefix = "/storage/cloud/files";
+    size_t pos = filePath.find(prefix);
+    if (pos != std::string::npos) {
+        return "/storage/cloud/files/" + dataName;
+    }
+    prefix = "/storage/media/local/files";
+    pos = filePath.find(prefix);
+    if (pos != std::string::npos) {
+        return "/storage/media/local/files/" + dataName;
+    }
+    MEDIA_WARN_LOG("Media_Operation: Get Prefix failed, filePath: %{public}s", filePath.c_str());
+    return "";
+}
+
+/**
  * @brief Find the prefix of Edit Data Folder.
  * @return Return the prefix of Edit Data Folder.
  *         There are two prefixes, one is local, the other is cloud.
@@ -159,18 +251,20 @@ std::string PhotoFileOperation::FindRelativePath(const std::string &filePath)
  */
 std::string PhotoFileOperation::FindPrefixOfEditDataFolder(const std::string &filePath)
 {
-    std::string prefix = "/storage/cloud/files";
-    size_t pos = filePath.find(prefix);
-    if (pos != std::string::npos) {
-        return "/storage/cloud/files/.editData";
-    }
-    prefix = "/storage/media/local/files";
-    pos = filePath.find(prefix);
-    if (pos != std::string::npos) {
-        return "/storage/media/local/files/.editData";
-    }
-    MEDIA_WARN_LOG("Media_Operation: Get Prefix failed, filePath: %{public}s", filePath.c_str());
-    return "";
+    return FindPrefixDataFolder(filePath, ".editData");
+}
+
+/**
+ * @brief Find the prefix of thumbs Data Folder.
+ * @return Return the prefix of thumbs Data Folder.
+ *         There are two prefixes, one is local, the other is cloud.
+ *         If the prefix of filePath is cloud, return "/storage/cloud/files/.thumbs".
+ *         If the prefix of filePath is local, return "/storage/media/local/files/.thumbs";
+ *         If the prefix of filePath is not found, return "".
+ */
+std::string PhotoFileOperation::FindPrefixOfThumbnailFolder(const std::string &filePath)
+{
+    return FindPrefixDataFolder(filePath, ".thumbs");
 }
 
 /**
@@ -188,6 +282,42 @@ std::string PhotoFileOperation::BuildEditDataFolder(const PhotoFileOperation::Ph
         return "";
     }
     return prefix + relativePath;
+}
+
+/**
+ * @brief Build the thumbs Data Folder for the Photo file, without any check.
+ * @return Return the thumbs Data Folder for the Photo file.
+ *         If the filePath is cloud, return "/storage/cloud/files/.thumbs/" + the relativePath of Photo file.
+ *         If the filePath is local, return "/storage/media/local/files/.thumbs/" + the relativePath of Photo file.
+ *         If the filePath is not identified, return "".
+ */
+std::string PhotoFileOperation::BuildThumbnailFolder(const PhotoFileOperation::PhotoAssetInfo &photoInfo)
+{
+    std::string prefix = this->FindPrefixOfThumbnailFolder(photoInfo.filePath);
+    std::string relativePath = this->FindRelativePath(photoInfo.filePath);
+    if (prefix.empty() || relativePath.empty()) {
+        return "";
+    }
+    return prefix + relativePath;
+}
+
+/**
+ * @brief Find the thumbs Data Folder for the Photo file.
+ * @return Return the thumbs Data Folder path. If the thumbs Data Folder is invalid, return empty string.
+ *         If the thumbs Data Folder is not exist, has 3 scenario:
+ *         1. The photo file is not thumbs. Normal scenario.
+ *         2. The photo file is not MOVING_PHOTO. Noraml scenario.
+ *         3. The photo file is thumbs or MOVING_PHOTO, but the thumbs Data Folder is not exist. Exceptional scenario.
+ */
+std::string PhotoFileOperation::FindThumbnailFolder(const PhotoFileOperation::PhotoAssetInfo &photoInfo)
+{
+    std::string thumbnailFolderPath = this->BuildThumbnailFolder(photoInfo);
+    if (!thumbnailFolderPath.empty() && !MediaFileUtils::IsFileExists(thumbnailFolderPath)) {
+        MEDIA_INFO_LOG("Media_Operation: thumbnailFolder not exists, Object: %{public}s.",
+            this->ToString(photoInfo).c_str());
+        return "";
+    }
+    return thumbnailFolderPath;
 }
 
 /**
@@ -278,6 +408,29 @@ int32_t PhotoFileOperation::CopyPhotoRelatedVideoFile(const PhotoFileOperation::
     return E_OK;
 }
 
+int32_t PhotoFileOperation::CopyPhotoRelatedData(const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo,
+    const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo,
+    const std::string& srcFolder, const std::string& targetFolder)
+{
+    if (srcFolder.empty() || targetFolder.empty()) {
+        return E_OK;
+    }
+    if (!MediaFileUtils::IsFileExists(srcFolder)) {
+        MEDIA_ERR_LOG("Media_Operation: %{public}s doesn't exist. %{pubilc}s",
+            srcFolder.c_str(), this->ToString(sourcePhotoInfo).c_str());
+        return E_NO_SUCH_FILE;
+    }
+    int32_t opRet = MediaFileUtils::CopyDirectory(srcFolder, targetFolder);
+    if (opRet != E_OK) {
+        MEDIA_ERR_LOG("Media_Operation: CopyPhoto extraData failed, sourceInfo: %{public}s, targetInfo: %{public}s",
+            this->ToString(sourcePhotoInfo).c_str(), this->ToString(targetPhotoInfo).c_str());
+        return opRet;
+    }
+    MEDIA_INFO_LOG("Media_Operation: CopyPhotoRelatedExtraData success, sourceInfo:%{public}s, targetInfo:%{public}s",
+        this->ToString(sourcePhotoInfo).c_str(), this->ToString(targetPhotoInfo).c_str());
+    return E_OK;
+}
+
 /**
  * @brief Copy the Edit Data.
  * @return E_OK if success or not edited photo.
@@ -289,26 +442,27 @@ int32_t PhotoFileOperation::CopyPhotoRelatedExtraData(const PhotoFileOperation::
 {
     std::string srcEditDataFolder = sourcePhotoInfo.editDataFolder;
     std::string targetEditDataFolder = targetPhotoInfo.editDataFolder;
-    // If Edit Data Folder is empty, return E_OK. Trace log will be printed in FindEditDataFolder.
-    if (srcEditDataFolder.empty() || targetEditDataFolder.empty()) {
-        return E_OK;
-    }
-    if (!MediaFileUtils::IsFileExists(srcEditDataFolder)) {
-        MEDIA_ERR_LOG("Media_Operation: %{public}s doesn't exist. %{pubilc}s",
-            srcEditDataFolder.c_str(),
-            this->ToString(sourcePhotoInfo).c_str());
-        return E_NO_SUCH_FILE;
-    }
-    int32_t opRet = MediaFileUtils::CreateDirectoryAndCopyFiles(srcEditDataFolder, targetEditDataFolder);
+    return CopyPhotoRelatedData(sourcePhotoInfo, targetPhotoInfo, srcEditDataFolder, targetEditDataFolder);
+}
+
+/**
+ * @brief Copy the thumbnail Data.
+ * @return E_OK if success or not thumbnail folder.
+ *         E_NO_SUCH_FILE if the source Edit Data Folder not exits.
+ *         E_FAIL if the copy operation failed.
+ */
+int32_t PhotoFileOperation::CopyPhotoRelatedThumbnail(const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo,
+    const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo)
+{
+    std::string srcThumbnailFolder = sourcePhotoInfo.thumbnailFolder;
+    std::string targetThumbnailFolder = targetPhotoInfo.thumbnailFolder;
+    int32_t opRet = CopyPhotoRelatedData(sourcePhotoInfo, targetPhotoInfo, srcThumbnailFolder, targetThumbnailFolder);
     if (opRet != E_OK) {
-        MEDIA_ERR_LOG("Media_Operation: CopyPhoto extraData failed, srcPath: %{public}s, targetPath: %{public}s",
-            srcEditDataFolder.c_str(),
-            targetEditDataFolder.c_str());
+        MEDIA_ERR_LOG("Media_Operation: CopyPhoto thumbnail failed, srcPath: %{public}s, targetPath: %{public}s",
+            srcThumbnailFolder.c_str(), targetThumbnailFolder.c_str());
         return opRet;
     }
-    MEDIA_INFO_LOG("Media_Operation: CopyPhotoRelatedExtraData success, srcPath: %{public}s, targetPath: %{public}s",
-        srcEditDataFolder.c_str(),
-        targetEditDataFolder.c_str());
+
     return E_OK;
 }
 
