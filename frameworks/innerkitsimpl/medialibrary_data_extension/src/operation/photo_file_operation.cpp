@@ -127,15 +127,15 @@ int32_t PhotoFileOperation::HandleThumbnailAstcData(const std::string &dateTaken
     }
     MEDIA_ERR_LOG("oldKey = %{public}s, newKey = %{public}s", oldKey.c_str(), newKey.c_str());
 
-    int32_t err = MediaLibraryKvStoreUtils::SaveAstcDataToKvStoreByType(KvStoreValueType::MONTH_ASTC, oldKey, newKey);
+    int32_t err = MediaLibraryKvStoreUtils::CopyAstcDataToKvStoreByType(KvStoreValueType::MONTH_ASTC, oldKey, newKey);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("SaveAstcDataToKvStoreByType failed, err: %{public}d", err);
+        MEDIA_ERR_LOG("CopyAstcDataToKvStoreByType failed, err: %{public}d", err);
         return err;
     }
 
-    err = MediaLibraryKvStoreUtils::SaveAstcDataToKvStoreByType(KvStoreValueType::YEAR_ASTC, oldKey, newKey);
+    err = MediaLibraryKvStoreUtils::CopyAstcDataToKvStoreByType(KvStoreValueType::YEAR_ASTC, oldKey, newKey);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("SaveAstcDataToKvStoreByType failed, err: %{public}d", err);
+        MEDIA_ERR_LOG("CopyAstcDataToKvStoreByType failed, err: %{public}d", err);
         return err;
     }
     MEDIA_ERR_LOG("success to copy thumbnail.");
@@ -421,7 +421,7 @@ int32_t PhotoFileOperation::CopyPhotoRelatedData(const PhotoFileOperation::Photo
             srcFolder.c_str(), this->ToString(sourcePhotoInfo).c_str());
         return E_NO_SUCH_FILE;
     }
-    int32_t opRet = MediaFileUtils::CreateDirectoryAndCopyFiles(srcFolder, targetFolder);
+    int32_t opRet = MediaFileUtils::CopyDirectory(srcFolder, targetFolder);
     if (opRet != E_OK) {
         MEDIA_ERR_LOG("Media_Operation: CopyPhoto extraData failed, sourceInfo: %{public}s, targetInfo: %{public}s",
             this->ToString(sourcePhotoInfo).c_str(), this->ToString(targetPhotoInfo).c_str());
