@@ -125,7 +125,6 @@ int32_t PhotoFileOperation::HandleThumbnailAstcData(const std::string &dateTaken
         MEDIA_ERR_LOG("GenerateKvStoreKey failed");
         return E_ERR;
     }
-    MEDIA_ERR_LOG("oldKey = %{public}s, newKey = %{public}s", oldKey.c_str(), newKey.c_str());
 
     int32_t err = MediaLibraryKvStoreUtils::CopyAstcDataToKvStoreByType(KvStoreValueType::MONTH_ASTC, oldKey, newKey);
     if (err != E_OK) {
@@ -138,7 +137,7 @@ int32_t PhotoFileOperation::HandleThumbnailAstcData(const std::string &dateTaken
         MEDIA_ERR_LOG("CopyAstcDataToKvStoreByType failed, err: %{public}d", err);
         return err;
     }
-    MEDIA_ERR_LOG("success to copy thumbnail.");
+    MEDIA_INFO_LOG("Success to copy thumbnail. oldKey:%{public}s, newKey:%{public}s", oldKey.c_str(), newKey.c_str());
     return E_OK;
 }
 
