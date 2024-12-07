@@ -57,7 +57,7 @@ int32_t MediaLibraryKvStoreUtils::CopyAstcDataToKvStoreByType(const KvStoreValue
         MEDIA_ERR_LOG("Insert failed,type:%{public}d, field_id:%{public}s, ret:%{public}d", type, newKey.c_str(), ret);
         return E_ERR;
     }
-    MEDIA_INFO_LOG("Success to save astc data, type:%{public}d, oldKey:%{public}s, oldKey:%{public}s", type,
+    MEDIA_INFO_LOG("Success to save astc data, type:%{public}d, oldKey:%{public}s, newKey:%{public}s", type,
         oldKey.c_str(), newKey.c_str());
     return ret;
 }
