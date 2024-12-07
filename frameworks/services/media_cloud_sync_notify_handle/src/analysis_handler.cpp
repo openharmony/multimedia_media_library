@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "AnalysisHandler"
+
 #include "analysis_handler.h"
 
 #include "medialibrary_errno.h"
@@ -34,7 +36,6 @@ using ChangeType = DataShare::DataShareObserver::ChangeType;
 
 std::mutex AnalysisHandler::mtx_;
 queue<CloudSyncHandleData> AnalysisHandler::taskQueue_;
-int32_t AnalysisHandler::threadId_{-1};
 std::atomic<uint16_t> AnalysisHandler::counts_(0);
 static constexpr uint16_t HANDLE_IDLING_TIME = 5;
 
@@ -55,29 +56,10 @@ static vector<string> GetFileIds(const CloudSyncHandleData &handleData)
     return fileIds;
 }
 
-static shared_ptr<NativeRdb::ResultSet> GetUpdateAnalysisAlbumsInfo(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<string> &fileIds)
-{
-    vector<string> columns = {
-        "DISTINCT (map_album)"
-    };
-    NativeRdb::RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
-    predicates.In(PhotoMap::ASSET_ID, fileIds);
-
-    return rdbStore->Query(predicates, columns);
-}
-
 static list<Uri> UpdateAnalysisAlbumsForCloudSync(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const shared_ptr<NativeRdb::ResultSet> &resultSet, const vector<string> &fileIds)
+    vector<string> albumIds, const vector<string> &fileIds)
 {
-    vector<string> albumIds;
-
-    while (resultSet->GoToNextRow() == E_OK) {
-        albumIds.push_back(get<string>(ResultSetUtils::GetValFromColumn(
-            ANALYSIS_PHOTO_MAP_TABLE + "." + PhotoMap::ALBUM_ID, resultSet, TYPE_STRING)));
-    }
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIds, fileIds);
-
     list<Uri> sendUris;
     for (auto albumId : albumIds) {
         sendUris.push_back(Uri(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX + albumId));
@@ -112,8 +94,7 @@ static int32_t GetHandleData(CloudSyncHandleData &handleData)
                 MEDIA_ERR_LOG("failed to get period worker instance");
                 return E_ERR;
             }
-            periodWorker->CloseThreadById(AnalysisHandler::threadId_);
-            AnalysisHandler::threadId_ = -1;
+            periodWorker->StopThread(PeriodTaskType::CLOUD_ANALYSIS_ALBUM);
         }
         return E_ERR;
     } else {
@@ -124,8 +105,34 @@ static int32_t GetHandleData(CloudSyncHandleData &handleData)
     return E_OK;
 }
 
-static void ProcessHandleData(shared_ptr<BaseHandler> &handle, function<void(bool)> &refreshAlbumsFunc)
+static vector<string> GetAlbumIds(const shared_ptr<MediaLibraryRdbStore> rdbStore, const vector<string> &fileIds)
 {
+    vector<string> albumIds;
+    vector<string> columns = {
+        "DISTINCT (map_album)"
+    };
+    NativeRdb::RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
+    predicates.In(PhotoMap::ASSET_ID, fileIds);
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed query AnalysisAlbum");
+        return albumIds;
+    };
+    while (resultSet->GoToNextRow() == E_OK) {
+        albumIds.push_back(get<string>(ResultSetUtils::GetValFromColumn(
+            ANALYSIS_PHOTO_MAP_TABLE + "." + PhotoMap::ALBUM_ID, resultSet, TYPE_STRING)));
+    }
+    return albumIds;
+}
+
+static void ProcessHandleData(PeriodTaskData *data)
+{
+    if (data == nullptr) {
+        return;
+    }
+    auto analysisPeriodTaskData = static_cast<AnalysisPeriodTaskData*>(data);
+    shared_ptr<BaseHandler> handle = analysisPeriodTaskData->nextHandler_;
+    function<void(bool)> refreshAlbumsFunc = analysisPeriodTaskData->refreshALbumsFunc_;
     CloudSyncHandleData handleData;
     if (GetHandleData(handleData) != E_OK) {
         return;
@@ -145,20 +152,12 @@ static void ProcessHandleData(shared_ptr<BaseHandler> &handle, function<void(boo
 
     CloudSyncHandleData newHandleData = handleData;
     if (!fileIds.empty()) {
-        shared_ptr<NativeRdb::ResultSet> resultSet = GetUpdateAnalysisAlbumsInfo(rdbStore, fileIds);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Failed query AnalysisAlbum");
-            return;
-        };
-        int32_t count = -1;
-        int32_t err = resultSet->GetRowCount(count);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("Failed to get count, err: %{public}d", err);
-            return;
-        }
-        if (count > 0) {
-            MEDIA_INFO_LOG("%{public}d analysis album need update", count);
-            list<Uri> sendUris = UpdateAnalysisAlbumsForCloudSync(rdbStore, resultSet, fileIds);
+        vector<string> albumIds = GetAlbumIds(rdbStore, fileIds);
+        int32_t albumSize = static_cast<int32_t>(albumIds.size());
+        if (albumSize > 0) {
+            int32_t fileSize = static_cast<int32_t>(fileIds.size());
+            MEDIA_INFO_LOG("%{public}d files update %{public}d analysis album", fileSize, albumSize);
+            list<Uri> sendUris = UpdateAnalysisAlbumsForCloudSync(rdbStore, albumIds, fileIds);
             AddNewNotify(newHandleData, sendUris);
         }
     } else {
@@ -174,22 +173,22 @@ static void ProcessHandleData(shared_ptr<BaseHandler> &handle, function<void(boo
 
 void AnalysisHandler::init()
 {
-    if (AnalysisHandler::threadId_ != E_ERR) {
-        return;
-    }
     auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
     if (periodWorker == nullptr) {
         MEDIA_ERR_LOG("failed to get period worker instance");
         return;
     }
-    auto periodTask = make_shared<MedialibraryPeriodTask>(ProcessHandleData,
-        PowerEfficiencyManager::GetAlbumUpdateInterval());
-    AnalysisHandler::threadId_ = periodWorker->AddTask(periodTask, nextHandler_, refreshAlbumsFunc_);
-    if (AnalysisHandler::threadId_ == E_ERR) {
-        MEDIA_ERR_LOG("failed to add task");
+    if (periodWorker->IsThreadRunning(PeriodTaskType::CLOUD_ANALYSIS_ALBUM)) {
+        MEDIA_DEBUG_LOG("cloud analysis album is running");
         return;
     }
-    return;
+    AnalysisHandler::counts_.store(0);
+    AnalysisPeriodTaskData *data = new (std::nothrow) AnalysisPeriodTaskData(nextHandler_, refreshAlbumsFunc_);
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskdata");
+        return;
+    }
+    periodWorker->StartTask(PeriodTaskType::CLOUD_ANALYSIS_ALBUM, ProcessHandleData, data);
 }
 
 void AnalysisHandler::MergeTask(const CloudSyncHandleData &handleData)
