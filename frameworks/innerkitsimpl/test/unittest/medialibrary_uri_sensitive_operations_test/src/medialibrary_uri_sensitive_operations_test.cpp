@@ -452,7 +452,7 @@ static void QueryUriSensitive(int64_t srcTokenId, int64_t targetTokenId, vector<
     return;
 }
 
-static void GetDataShareValues(std::vector<DataShare::DataShareValuesBucket> dataShareValues, int64_t tokenId,
+static void GetDataShareValues(std::vector<DataShare::DataShareValuesBucket> &dataShareValues, int64_t tokenId,
     std::vector<int32_t> photoIds, int hideSensitiveType)
 {
     for (int i = 0; i < photoIds.size(); ++i) {
