@@ -24,6 +24,7 @@ ohos_unittest("medialibrary_data_extension_test") {
   include_dirs = [
     "./include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/operation",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/photo_album_operation",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
   ]
 
