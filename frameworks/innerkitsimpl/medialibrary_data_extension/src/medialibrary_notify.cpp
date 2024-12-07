@@ -14,6 +14,7 @@
  */
 #define MLOG_TAG "FileNotify"
 #include "medialibrary_notify.h"
+
 #include "medialibrary_async_worker.h"
 #include "medialibrary_period_worker.h"
 #include "data_ability_helper_impl.h"
@@ -40,7 +41,6 @@ static const int32_t WAIT_TIME = 2;
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::instance_;
 mutex MediaLibraryNotify::mutex_;
 unordered_map<string, NotifyDataMap> MediaLibraryNotify::nfListMap_ = {};
-int32_t MediaLibraryNotify::threadId_{-1};
 atomic<uint16_t> MediaLibraryNotify::counts_(0);
 static const uint16_t IDLING_TIME = 50;
 
@@ -142,8 +142,11 @@ static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
     return;
 }
 
-static void PushNotification()
+static void PushNotification(PeriodTaskData *data)
 {
+    if (data == nullptr) {
+        return;
+    }
     unordered_map<string, NotifyDataMap> tmpNfListMap;
     {
         lock_guard<mutex> lock(MediaLibraryNotify::mutex_);
@@ -155,8 +158,7 @@ static void PushNotification()
                     MEDIA_ERR_LOG("failed to get period worker instance");
                     return;
                 }
-                periodWorker->CloseThreadById(MediaLibraryNotify::threadId_);
-                MediaLibraryNotify::threadId_ = -1;
+                periodWorker->StopThread(PeriodTaskType::COMMON_NOTIFY);
                 MEDIA_INFO_LOG("notify task close");
             }
             return;
@@ -281,12 +283,12 @@ int32_t MediaLibraryNotify::Init()
         MEDIA_ERR_LOG("failed to get period worker instance");
         return E_ERR;
     }
-    auto periodTask = make_shared<MedialibraryPeriodTask>(PushNotification, MNOTIFY_TIME_INTERVAL);
-    MediaLibraryNotify::threadId_ = periodWorker->AddTask(periodTask);
-    if (MediaLibraryNotify::threadId_ == E_ERR) {
-        MEDIA_ERR_LOG("failed to add task");
+    PeriodTaskData *data = new (std::nothrow) PeriodTaskData();
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskdata");
         return E_ERR;
     }
+    periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, data);
     MEDIA_INFO_LOG("add notify task");
     return E_OK;
 }
@@ -295,15 +297,14 @@ int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyTyp
     const bool hiddenOnly)
 {
     auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
-    if (periodWorker != nullptr && !periodWorker->IsThreadRunning(MediaLibraryNotify::threadId_)) {
+    if (periodWorker != nullptr && !periodWorker->IsThreadRunning(PeriodTaskType::COMMON_NOTIFY)) {
         MediaLibraryNotify::counts_.store(0);
-        auto periodTask = make_shared<MedialibraryPeriodTask>(PushNotification, MNOTIFY_TIME_INTERVAL);
-        MediaLibraryNotify::threadId_ = periodWorker->AddTask(periodTask);
-        if (MediaLibraryNotify::threadId_ == E_ERR) {
-            MEDIA_ERR_LOG("failed to add task");
-        } else {
-            MEDIA_INFO_LOG("add notify task");
+        PeriodTaskData *data = new (std::nothrow) PeriodTaskData();
+        if (data == nullptr) {
+            MEDIA_ERR_LOG("Failed to new taskdata");
+            return E_ERR;
         }
+        periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, data);
     }
     unique_ptr<NotifyTaskWorker> &asyncWorker = NotifyTaskWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ASYNC_WORKER_IS_NULL, "AsyncWorker is null");

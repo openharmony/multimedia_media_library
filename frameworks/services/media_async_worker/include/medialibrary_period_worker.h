@@ -22,7 +22,6 @@
 #include <map>
 #include <mutex>
 #include <thread>
-#include "base_handler.h"
 
 namespace OHOS {
 namespace Media {
@@ -30,22 +29,30 @@ namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 #define COMPILE_HIDDEN __attribute__ ((visibility ("hidden")))
 
-using MediaLibraryPeriodExecute = void (*)();
-using AnalysisHandlerPeriodExecute = void (*)(std::shared_ptr<BaseHandler> &, std::function<void(bool)> &);
+class PeriodTaskData {
+public:
+    PeriodTaskData() {};
+    virtual ~PeriodTaskData() {};
+};
 
+enum PeriodTaskType {
+    COMMON_NOTIFY,
+    CLOUD_ANALYSIS_ALBUM
+};
+
+using PeriodExecute = void (*)(PeriodTaskData *data);
 class MedialibraryPeriodTask {
 public:
-    MedialibraryPeriodTask(MediaLibraryPeriodExecute executor, int32_t period)
-        : executor_(executor), period_(period) {}
-    MedialibraryPeriodTask(AnalysisHandlerPeriodExecute executor, int32_t period)
-        : analysisHandlerExecutor_(executor), period_(period) {}
+    MedialibraryPeriodTask(PeriodTaskType periodTaskType, int32_t period, std::string threadName)
+        : periodTaskType_(periodTaskType), period_(period), threadName_(threadName) {}
     virtual ~MedialibraryPeriodTask() {}
-    MediaLibraryPeriodExecute executor_{nullptr};
-    AnalysisHandlerPeriodExecute analysisHandlerExecutor_{nullptr};
-    std::thread thread_;
+    PeriodExecute executor_{nullptr};
+    PeriodTaskData *data_{nullptr};
+    PeriodTaskType periodTaskType_;
     std::atomic<bool> isThreadRunning_{false};
-    std::atomic<bool> isTaskRunning_{false};
+    std::atomic<bool> isStop_{true};
     int32_t period_{0};
+    std::string threadName_;
 };
 
 
@@ -53,29 +60,19 @@ class MediaLibraryPeriodWorker {
 public:
     virtual ~MediaLibraryPeriodWorker();
     EXPORT static std::shared_ptr<MediaLibraryPeriodWorker> GetInstance();
-    EXPORT void StartThreadById(int32_t threadId, int32_t period);
-    EXPORT void StopThreadById(int32_t threadId);
-    EXPORT void CloseThreadById(int32_t threadId);
-    EXPORT bool IsThreadRunning(int32_t threadId);
-    EXPORT int32_t AddTask(const std::shared_ptr<MedialibraryPeriodTask> &task);
-    EXPORT int32_t AddTask(const std::shared_ptr<MedialibraryPeriodTask> &task,
-        std::shared_ptr<BaseHandler> &handle, std::function<void(bool)> &refreshAlbumsFunc);
+    EXPORT void StopThread(PeriodTaskType periodTaskType);
+    EXPORT bool IsThreadRunning(PeriodTaskType periodTaskType);
+    EXPORT bool StartTask(PeriodTaskType periodTaskType, PeriodExecute executor, PeriodTaskData *data);
 
 private:
     COMPILE_HIDDEN MediaLibraryPeriodWorker();
     COMPILE_HIDDEN void Init();
-    COMPILE_HIDDEN int32_t GetValidId();
-    COMPILE_HIDDEN void WaitForTask(const std::shared_ptr<MedialibraryPeriodTask> &task);
-    COMPILE_HIDDEN void Worker(int32_t threadId);
-    COMPILE_HIDDEN void Worker(int32_t threadId,
-        std::shared_ptr<BaseHandler> &handle, std::function<void(bool)> &refreshAlbumsFunc);
+    COMPILE_HIDDEN void HandleTask(PeriodTaskType periodTaskType);
 
     COMPILE_HIDDEN static std::shared_ptr<MediaLibraryPeriodWorker> periodWorkerInstance_;
     COMPILE_HIDDEN static std::mutex instanceMtx_;
     COMPILE_HIDDEN std::map<int32_t, std::shared_ptr<MedialibraryPeriodTask>> tasks_;
-    COMPILE_HIDDEN std::vector<bool> validIds_;
     COMPILE_HIDDEN std::mutex mtx_;
-    COMPILE_HIDDEN std::condition_variable cv_;
 };
 
 } // namespace Media
