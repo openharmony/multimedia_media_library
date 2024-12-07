@@ -390,7 +390,7 @@ static int32_t CopyOriginThumbnail(const std::string &srcPath, std::string &targ
     std::string originalThumbnailDirPath = getThumbnailPathFromOrignalPath(srcPath);
     std::string targetThumbnailDirPath = getThumbnailPathFromOrignalPath(targetPath);
     if (!targetThumbnailDirPath.empty()) {
-        int32_t err = CopyDirectory(originalThumbnailDirPath, targetThumbnailDirPath);
+        int32_t err = MediaFileUtils::CopyDirectory(originalThumbnailDirPath, targetThumbnailDirPath);
         if (err != E_OK) {
             MEDIA_ERR_LOG("copy thumbnail dir fail because of %{public}d, dir:%{public}s",
                 err, originalThumbnailDirPath.c_str());
