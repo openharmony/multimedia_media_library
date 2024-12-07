@@ -390,7 +390,7 @@ static int32_t CopyOriginThumbnail(const std::string &srcPath, std::string &targ
     std::string originalThumbnailDirPath = getThumbnailPathFromOrignalPath(srcPath);
     std::string targetThumbnailDirPath = getThumbnailPathFromOrignalPath(targetPath);
     if (!targetThumbnailDirPath.empty()) {
-        int32_t err = CopyDirectory(originalThumbnailDirPath, targetThumbnailDirPath);
+        int32_t err = MediaFileUtils::CopyDirectory(originalThumbnailDirPath, targetThumbnailDirPath);
         if (err != E_OK) {
             MEDIA_ERR_LOG("copy thumbnail dir fail because of %{public}d, dir:%{public}s",
                 err, originalThumbnailDirPath.c_str());
@@ -756,7 +756,14 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<
             "ownerAlbumId: %{public}d, ret = %{public}d", assetId, (long long)newAssetId, ownerAlbumId, err);
         return E_OK;
     }
-    GenerateThumbnail(newAssetId, targetPath, resultSet, false);
+
+    err = PhotoFileOperation().CopyThumbnail(resultSet, targetPath, newAssetId);
+    if (err != E_OK) {
+        MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(upgradeStore, newAssetId);
+        MEDIA_ERR_LOG("Copy thumbnail failed, targetPath = %{public}s, ret = %{public}d, newAssetId = %{public}" PRId64,
+            targetPath.c_str(), err, newAssetId);
+        return err;
+    }
     UpdateCoverInfoForAlbum(upgradeStore, assetId, ownerAlbumId, newAssetId, targetPath);
     return E_OK;
 }
@@ -791,7 +798,14 @@ static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStor
             "ownerAlbumId: %{public}d, ret = %{public}d", assetId, (long long)newAssetId, ownerAlbumId, err);
         return E_OK;
     }
-    GenerateThumbnail(newAssetId, targetPath, resultSet, true);
+    
+    err = PhotoFileOperation().CopyThumbnail(resultSet, targetPath, newAssetId);
+    if (err != E_OK) {
+        MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(upgradeStore, newAssetId);
+        MEDIA_ERR_LOG("Copy thumbnail failed, targetPath = %{public}s, ret = %{public}d, newAssetId = %{public}" PRId64,
+            targetPath.c_str(), err, newAssetId);
+        return err;
+    }
     UpdateCoverInfoForAlbum(upgradeStore, assetId, ownerAlbumId, newAssetId, targetPath);
     return E_OK;
 }
