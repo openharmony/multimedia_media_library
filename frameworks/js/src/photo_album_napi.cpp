@@ -1348,6 +1348,7 @@ napi_value PhotoAlbumNapi::PrivateAlbumDeletePhotos(napi_env env, napi_callback_
 
 napi_value PhotoAlbumNapi::PhotoAccessHelperDeletePhotos(napi_env env, napi_callback_info info)
 {
+    NAPI_INFO_LOG("enter");
     auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
     CHECK_NULLPTR_RET(TrashAlbumParseArgs(env, info, asyncContext));
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;

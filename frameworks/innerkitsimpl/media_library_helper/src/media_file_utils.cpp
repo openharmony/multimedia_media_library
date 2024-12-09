@@ -1845,9 +1845,9 @@ std::string MediaFileUtils::GetTableNameByDisplayName(const std::string &display
 
 bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
 {
-    // duration of moving photo video must be 0~3 s
+    // duration of moving photo video must be 0~10 s
     constexpr int32_t MIN_DURATION_MS = 0;
-    constexpr int32_t MAX_DURATION_MS = 3000;
+    constexpr int32_t MAX_DURATION_MS = 10000;
     return duration > MIN_DURATION_MS && duration <= MAX_DURATION_MS;
 }
 
