@@ -53,6 +53,7 @@
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
 #include "enhancement_manager.h"
+#include "parameters.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -381,6 +382,8 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
     PhotoColumn::PHOTO_BURST_COVER_LEVEL,
     PhotoColumn::PHOTO_POSITION,
+    MediaColumn::MEDIA_HIDDEN,
+    MediaColumn::MEDIA_DATE_TRASHED,
 };
 
 bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
@@ -444,6 +447,44 @@ static void GetType(string &uri, int32_t &type)
     }
 }
 
+static bool CheckPermissionToOpenFileAsset(const shared_ptr<FileAsset>& fileAsset)
+{
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, false, "File asset is nullptr");
+
+    if (PermissionUtils::IsRootShell()) {
+        return true;
+    }
+
+    if (fileAsset->GetDateTrashed() > 0) {
+        if (!(PermissionUtils::IsSystemApp() || PermissionUtils::IsNativeSAApp() ||
+            (PermissionUtils::IsHdcShell() &&
+            OHOS::system::GetBoolParameter("const.security.developermode.state", true)))) {
+            MEDIA_ERR_LOG("Non-system app is not allowed to open trashed photo, %{public}d, %{public}d, %{public}d, "
+                "%{public}d", PermissionUtils::IsSystemApp(), PermissionUtils::IsNativeSAApp(),
+                PermissionUtils::IsHdcShell(),
+                OHOS::system::GetBoolParameter("const.security.developermode.state", true));
+            return false;
+        }
+    }
+
+    if (fileAsset->IsHidden() && fileAsset->GetDateTrashed() == 0) {
+        CHECK_AND_RETURN_RET_LOG(PermissionUtils::CheckCallerPermission(PERM_MANAGE_PRIVATE_PHOTOS),
+            false, "MANAGE_PRIVATE_PHOTOS permission is required to open hidden photo");
+
+        if (!(PermissionUtils::IsSystemApp() || PermissionUtils::IsNativeSAApp() ||
+            (PermissionUtils::IsHdcShell() &&
+            OHOS::system::GetBoolParameter("const.security.developermode.state", true)))) {
+            MEDIA_ERR_LOG("Non-system app is not allowed to open hidden photo, %{public}d, %{public}d, %{public}d, "
+                "%{public}d", PermissionUtils::IsSystemApp(), PermissionUtils::IsNativeSAApp(),
+                PermissionUtils::IsHdcShell(),
+                OHOS::system::GetBoolParameter("const.security.developermode.state", true));
+            return false;
+        }
+    }
+
+    return true;
+}
+
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
@@ -469,6 +510,10 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("Get FileAsset From Uri Failed, uri:%{public}s", uriString.c_str());
         return E_INVALID_URI;
+    }
+    if (!CheckPermissionToOpenFileAsset(fileAsset)) {
+        MEDIA_ERR_LOG("Open not allowed");
+        return E_PERMISSION_DENIED;
     }
 
     bool isMovingPhotoVideo = false;
