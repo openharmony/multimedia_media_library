@@ -58,6 +58,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_001, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -90,6 +91,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_002, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -124,6 +126,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_003, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -163,6 +166,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_004, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -209,6 +213,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_005, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -245,7 +250,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_005, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 19, 32, 35, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 35, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -263,6 +268,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_006, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -303,6 +309,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_007, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -342,6 +349,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_008, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -382,6 +390,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_009, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -421,6 +430,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_010, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -479,6 +489,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_011, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -519,6 +530,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_012, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -540,7 +552,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_012, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 9, 32, 172, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 19, 32, 172, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -558,6 +570,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_013, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -578,7 +591,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_013, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 9, 32, 188, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 19, 32, 188, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -596,6 +609,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_014, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -636,7 +650,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_014, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 9, 32, 92, 1, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 19, 32, 92, 1, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -654,6 +668,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_015, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -712,6 +727,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_017, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -770,6 +786,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_018, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -808,6 +825,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_019, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -848,6 +866,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_020, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -906,6 +925,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_021, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -945,7 +965,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_021, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 9, 32, 139, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 19, 32, 139, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -963,6 +983,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_023, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -998,6 +1019,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_025, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -1051,6 +1073,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_026, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -1082,6 +1105,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_027, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -1112,6 +1136,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_028, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -1141,6 +1166,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_029, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -1171,6 +1197,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_030, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -1204,6 +1231,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_031, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -1237,6 +1265,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_032, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -1268,6 +1297,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_033, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -1397,6 +1427,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_037, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -1434,6 +1465,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_038, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -1557,6 +1589,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_041, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -1676,7 +1709,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_043, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 200, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 9, 32, 200, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -1962,7 +1995,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_050, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 9, 32, 188, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 19, 32, 188, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -2013,6 +2046,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_052, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -2046,6 +2080,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_053, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -2079,6 +2114,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_054, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -2112,6 +2148,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_055, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -2144,6 +2181,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_056, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -2296,7 +2334,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_059, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 16, 0, 0, 0, 3, 0, 9, 32, 183, 0, 0, 0, 0, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 16, 0, 0, 0, 3, 0, 19, 32, 183, 0, 0, 0, 0, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -2314,6 +2352,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_060, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -2348,6 +2387,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_061, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -2381,6 +2421,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_062, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -2529,6 +2570,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_066, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -2572,6 +2614,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_067, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -2614,6 +2657,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_068, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
@@ -2702,6 +2746,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_070, TestS
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
