@@ -272,6 +272,7 @@ int32_t UserFileClientEx::Query(const std::string &tableName, const std::string 
     if (!id.empty()) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_ID, id);
     }
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
     std::vector<std::string> columns;
     int errCode = 0;
     MEDIA_INFO_LOG("query. queryUri:%{public}s, tableName:%{public}s, uri:%{public}s, "
@@ -458,6 +459,7 @@ std::shared_ptr<DataShare::DataShareResultSet> UserFileClientEx::GetResultsetByD
 {
     DataShare::DataSharePredicates predicates;
     predicates.And()->EqualTo(MediaColumn::MEDIA_NAME, displayName);
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
     std::vector<std::string> columns;
     int queryErrCode = 0;
     std::string queryUriStr = GetQueryUri(tableName);
