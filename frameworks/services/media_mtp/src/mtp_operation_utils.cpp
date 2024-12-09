@@ -314,6 +314,8 @@ void MtpOperationUtils::DoSetObjectPropValue(int &errorCode)
 
 void MtpOperationUtils::SendEventPacket(uint32_t objectHandle, uint16_t eventCode)
 {
+    CHECK_AND_RETURN_LOG(context_ != nullptr, "SendEventPacket context_ is null");
+
     EventMtp event;
     event.length = MTP_CONTAINER_HEADER_SIZE + sizeof(objectHandle);
     vector<uint8_t> outBuffer;
@@ -324,6 +326,8 @@ void MtpOperationUtils::SendEventPacket(uint32_t objectHandle, uint16_t eventCod
     MtpPacketTool::PutUInt32(outBuffer, objectHandle);
 
     event.data = outBuffer;
+    CHECK_AND_RETURN_LOG(context_->mtpDriver != nullptr, "SendEventPacket mtpDriver is null");
+
     context_->mtpDriver->WriteEvent(event);
 }
 
