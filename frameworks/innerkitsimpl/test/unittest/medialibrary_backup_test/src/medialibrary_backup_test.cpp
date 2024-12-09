@@ -2071,10 +2071,21 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertLowQualityPath, Tes
     result = BackupFileUtils::ConvertLowQualityPath(sceneCode, filePath, relativePath);
     EXPECT_EQ(result, "GHY.txt");
 
-    // test cast no dot in path and empty relativePath
+    // test case 3 no dot in path and empty relativePath
     filePath = "/data/test/GYH/GYHmp3";
     result = BackupFileUtils::ConvertLowQualityPath(sceneCode, filePath, relativePath);
-    EXPECT_EQ(result, "/data/test/GYH/GYHmp3");
+    EXPECT_EQ(result, "/Documents/cameradata/GYHmp3");
+
+    // test case 4 normal path and empty relativePath
+    filePath = "/data/test/GYH/GYH.mp3";
+    result = BackupFileUtils::ConvertLowQualityPath(sceneCode, filePath, relativePath);
+    EXPECT_EQ(result, "/Documents/cameradata/GYH.camera");
+
+    // test case 5 normal relativePath
+    filePath = "/test/GYH/GYH.mp3";
+    relativePath = "/GYH";
+    result = BackupFileUtils::ConvertLowQualityPath(sceneCode, filePath, relativePath);
+    EXPECT_EQ(result, "/test/Documents/cameradata/GYH.camera");
     MEDIA_INFO_LOG("medialib_backup_test_ConvertLowQualityPath end");
 }
 } // namespace Media
