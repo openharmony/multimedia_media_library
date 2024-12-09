@@ -885,6 +885,7 @@ static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, c
         outValues.PutInt(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, deferredProcType);
     }
 
+    // quality、photoId、dirty for burst has been handled in HandleBurstPhoto
     if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
         return;
     }
