@@ -100,6 +100,7 @@ enum class EXPORT OperationObject : uint32_t {
     TAB_OLD_PHOTO,
     CLOUD_MEDIA_ASSET_OPERATE,
     PTP_OPERATION,
+    EDIT_DATA_EXISTS,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -190,6 +191,7 @@ enum class EXPORT OperationType : uint32_t {
     CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY,
     SET_OWNER_ALBUM_ID,
     UPDATE_SEARCH_INDEX,
+    EDIT_DATA_EXISTS,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

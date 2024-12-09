@@ -1754,6 +1754,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO:
         case OperationObject::PAH_MOVING_PHOTO:
+        case OperationObject::EDIT_DATA_EXISTS:
             return MediaLibraryAssetOperations::QueryOperation(cmd, columns);
         case OperationObject::VISION_START ... OperationObject::VISION_END:
             return MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, cmd.GetTableName()),
