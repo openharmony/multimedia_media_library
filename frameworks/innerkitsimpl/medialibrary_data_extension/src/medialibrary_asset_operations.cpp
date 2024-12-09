@@ -175,6 +175,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAssetOperations::QueryOperation(
     // query asset specify type
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_PHOTO:
+        case OperationObject::EDIT_DATA_EXISTS:
             return MediaLibraryPhotoOperations::Query(cmd, columns);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Query(cmd, columns);

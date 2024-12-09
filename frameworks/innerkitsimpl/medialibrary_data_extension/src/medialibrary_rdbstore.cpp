@@ -59,6 +59,7 @@
 #include "parameters.h"
 #include "parameter.h"
 #include "photo_album_column.h"
+#include "photo_file_utils.h"
 #include "photo_map_column.h"
 #include "post_event_utils.h"
 #include "rdb_sql_utils.h"
@@ -885,6 +886,28 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUri(const AbsRd
     auto resultSet = MediaLibraryRdbStore::GetRaw()->QuerySql(sql, args);
     MediaLibraryRestore::GetInstance().CheckResultSet(resultSet);
     return resultSet;
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryEditDataExists(
+    const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns)
+{
+    shared_ptr<NativeRdb::ResultSet> resultSet = Query(predicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_INFO_LOG("query edit data err");
+        return nullptr;
+    }
+    string hasEditDataSql = "select 1 as hasEditData";
+    string emptySql = "select 0 as hasEditData";
+    string photoPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return nullptr;
+    }
+    if (MediaFileUtils::IsFileExists(PhotoFileUtils::GetEditDataPath(photoPath)) ||
+        MediaFileUtils::IsFileExists(PhotoFileUtils::GetEditDataCameraPath(photoPath))) {
+        return MediaLibraryRdbStore::GetRaw()->QuerySql(hasEditDataSql);
+    }
+    return MediaLibraryRdbStore::GetRaw()->QuerySql(emptySql);
 }
 
 static string GetSelectColumns(const unordered_set<string> &columns)
