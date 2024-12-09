@@ -34,7 +34,8 @@ namespace OHOS {
 namespace Media {
 std::shared_ptr<MediaLibraryInotify> MediaLibraryInotify::instance_ = nullptr;
 std::mutex MediaLibraryInotify::mutex_;
-const int32_t MAX_WATCH_LIST = 300;
+const int32_t MAX_WATCH_LIST = 600;
+const int32_t SINGLE_BUNDLE_LIST = 100;
 const int32_t MAX_AGING_WATCH_LIST = 100;
 
 shared_ptr<MediaLibraryInotify> MediaLibraryInotify::GetInstance()
@@ -193,18 +194,60 @@ int32_t MediaLibraryInotify::Init()
     return E_SUCCESS;
 }
 
+int32_t MediaLibraryInotify::GetBundleCount(const std::string &bundleName)
+{
+    int count = 0;
+    for (auto &pair : watchList_) {
+        if (bundleName.compare(pair.second.bundleName_) == 0) {
+            count++;
+        }
+    }
+    MEDIA_DEBUG_LOG("MediaLibraryInotify GetBundleCount count:%{public}d", count);
+    return count;
+}
+
+const string MediaLibraryInotify::BuildDfxInfo()
+{
+    unordered_map<string, WatchBundleInfo> bundleInfoMap;
+    for (auto &pair : watchList_) {
+        string bundleName = pair.second.bundleName_;
+        if (bundleInfoMap.find(bundleName) != bundleInfoMap.end()) {
+            auto it = bundleInfoMap.find(bundleName);
+            int32_t count = ++it->second.count;
+            int64_t firstTime = pair.second.currentTime_ < it->second.firstEntryTime ?
+                pair.second.currentTime_ : it->second.firstEntryTime;
+            string firstUri = pair.second.currentTime_ < it->second.firstEntryTime ?
+                pair.second.uri_ : it->second.firstUri;
+            WatchBundleInfo watchBundleInfo(count, firstTime, firstUri, bundleName);
+            it->second = watchBundleInfo;
+        } else {
+            WatchBundleInfo watchBundleInfo(1, pair.second.currentTime_, pair.second.uri_, bundleName);
+            bundleInfoMap.emplace(bundleName, watchBundleInfo);
+        }
+    }
+    string dfxInfo;
+    for (const auto &pair : bundleInfoMap) {
+        dfxInfo.append(pair.second.Dump());
+        dfxInfo.append(";");
+    }
+    return dfxInfo;
+}
+
 int32_t MediaLibraryInotify::AddWatchList(const string &path, const string &uri, MediaLibraryApi api)
 {
     lock_guard<mutex> lock(mutex_);
-    if (watchList_.size() > MAX_WATCH_LIST) {
-        MEDIA_ERR_LOG("watch list full, add uri:%{public}s fail", uri.c_str());
+    string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    if (watchList_.size() >= MAX_WATCH_LIST || GetBundleCount(bundleName) >= SINGLE_BUNDLE_LIST) {
+        MEDIA_ERR_LOG("watch list full, add uri:%{public}s fail, bundleName:%{public}s, info:%{public}s",
+            uri.c_str(), bundleName.c_str(), BuildDfxInfo().c_str());
         return E_FAIL;
     }
     int32_t wd = inotify_add_watch(inotifyFd_, path.c_str(), IN_CLOSE | IN_MODIFY);
     if (wd > 0) {
-        string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-        struct WatchInfo item(path, uri, bundleName, api);
-        MEDIA_INFO_LOG("inotify emplace path:%{public}s", DfxUtils::GetSafePath(path).c_str());
+        int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+        struct WatchInfo item(path, uri, bundleName, api, currentTime);
+        MEDIA_INFO_LOG("inotify emplace path:%{public}s, bundleName:%{public}s, watchSize:%{public}d,",
+            DfxUtils::GetSafePath(path).c_str(), bundleName.c_str(), static_cast<int32_t>(watchList_.size()));
         watchList_.emplace(wd, item);
     }
     if (!isWatching_.load()) {

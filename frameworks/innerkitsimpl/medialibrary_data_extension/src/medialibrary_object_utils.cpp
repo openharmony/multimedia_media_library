@@ -61,6 +61,7 @@
 #include "picture_handle_service.h"
 #include "post_event_utils.h"
 #include "userfilemgr_uri.h"
+#include "dfx_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -831,7 +832,8 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos) {
         auto watch = MediaLibraryInotify::GetInstance();
         if (watch != nullptr) {
-            MEDIA_DEBUG_LOG("enter, path = %{private}s", path.c_str());
+            MEDIA_INFO_LOG("enter inotify, path = %{public}s, fileId = %{public}d",
+                DfxUtils::GetSafePath(path).c_str(), fileAsset->GetId());
             watch->AddWatchList(path, fileAsset->GetUri());
         }
     }

@@ -1458,7 +1458,8 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos && !isMovingPhotoVideo) {
         auto watch = MediaLibraryInotify::GetInstance();
         if (watch != nullptr) {
-            MEDIA_DEBUG_LOG("enter inotify, path = %{private}s", path.c_str());
+            MEDIA_INFO_LOG("enter inotify, path = %{public}s, fileId = %{public}d",
+                DfxUtils::GetSafePath(path).c_str(), fileAsset->GetId());
             watch->AddWatchList(path, fileAsset->GetUri(), MediaLibraryApi::API_10);
         }
     }
@@ -1954,15 +1955,6 @@ int32_t MediaLibraryAssetOperations::GrantUriPermission(const string &uri, const
         MEDIA_ERR_LOG("Failed to create video of moving photo, errno: %{public}d", errno);
         return E_HAS_FS_ERROR;
     }
-
-    MediaLibraryTracer tracer;
-    tracer.Start("AddWatchList");
-    auto watch = MediaLibraryInotify::GetInstance();
-    if (watch != nullptr) {
-        MEDIA_DEBUG_LOG("enter inotify, path = %{private}s", path.c_str());
-        watch->AddWatchList(ConvertMediaPathFromCloudPath(path), uri, MediaLibraryApi::API_10);
-    }
-    tracer.Finish();
 
     return E_OK;
 }
