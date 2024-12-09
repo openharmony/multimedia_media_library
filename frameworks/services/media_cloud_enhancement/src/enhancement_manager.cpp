@@ -58,6 +58,7 @@ static const unordered_map<string, string> CLOUD_ENHANCEMENT_MIME_TYPE_MAP = {
     { JPEG_STR, JPEG_TYPE },
     { HEIF_STR, HEIF_TYPE },
 };
+mutex EnhancementManager::mutex_;
 
 EnhancementManager::EnhancementManager()
 {

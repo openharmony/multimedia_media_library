@@ -37,23 +37,23 @@ public:
     EXPORT virtual ~AlbumAsset();
 
     EXPORT void SetAlbumId(const int32_t albumId);
-    EXPORT void SetAlbumName(const string albumName);
-    EXPORT void SetAlbumUri(const string albumUri);
+    EXPORT void SetAlbumName(const string& albumName);
+    EXPORT void SetAlbumUri(const string& albumUri);
     EXPORT void SetAlbumDateModified(const int64_t albumDateModified);
     EXPORT void SetCount(const int32_t count);
-    EXPORT void SetAlbumRelativePath(const string albumRelativePath);
-    EXPORT void SetCoverUri(const string &coverUri);
+    EXPORT void SetAlbumRelativePath(const string& albumRelativePath);
+    EXPORT void SetCoverUri(const string& coverUri);
 
-    EXPORT void SetAlbumPath(const string albumPath);
+    EXPORT void SetAlbumPath(const string& albumPath);
     EXPORT void SetAlbumVirtual(const bool albumVirtual);
     EXPORT int32_t GetAlbumId() const;
-    EXPORT string GetAlbumName() const;
-    EXPORT string GetAlbumUri() const;
+    EXPORT const string& GetAlbumName() const;
+    EXPORT const string& GetAlbumUri() const;
     EXPORT int64_t GetAlbumDateModified() const;
     EXPORT int32_t GetCount() const;
-    EXPORT string GetAlbumRelativePath() const;
-    EXPORT string GetCoverUri() const;
-    EXPORT string GetAlbumPath() const;
+    EXPORT const string& GetAlbumRelativePath() const;
+    EXPORT const string& GetCoverUri() const;
+    EXPORT const string& GetAlbumPath() const;
     EXPORT bool GetAlbumVirtual() const;
 
     EXPORT void SetResultNapiType(const ResultNapiType type);

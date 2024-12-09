@@ -1179,19 +1179,19 @@ string MediaFileUtils::GetExtensionFromPath(const string &path)
     return extention;
 }
 
-static void SendHmdfsCallerInfoToIoctl(const int32_t fd, const string &clientbundleName)
+static void SendHmdfsCallerInfoToIoctl(const int32_t fd, const string &clientBundleName)
 {
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
-    hmdfs_caller_info caller_info;
-    caller_info.tokenId = tokenId;
+    HmdfsCallerInfo callerInfo;
+    callerInfo.tokenId = tokenId;
 
-    if (strcpy_s(caller_info.bundle_name, sizeof(caller_info.bundle_name), clientbundleName.c_str()) != 0) {
-        MEDIA_ERR_LOG("Failed to copy clientbundleName: %{public}s", clientbundleName.c_str());
+    if (strcpy_s(callerInfo.bundleName, sizeof(callerInfo.bundleName), clientBundleName.c_str()) != 0) {
+        MEDIA_ERR_LOG("Failed to copy clientBundleName: %{public}s", clientBundleName.c_str());
     } else {
-        MEDIA_DEBUG_LOG("clientbundleName = %{public}s", clientbundleName.c_str());
-        int32_t ret = ioctl(fd, HMDFS_IOC_GET_CALLER_INFO, caller_info);
+        MEDIA_DEBUG_LOG("clientBundleName = %{public}s", clientBundleName.c_str());
+        int32_t ret = ioctl(fd, HMDFS_IOC_GET_CALLER_INFO, callerInfo);
         if (ret < 0) {
-            MEDIA_DEBUG_LOG("Failed to set caller_info to fd: %{public}d, error: %{public}d", fd, errno);
+            MEDIA_DEBUG_LOG("Failed to set callerInfo to fd: %{public}d, error: %{public}d", fd, errno);
         }
     }
 }

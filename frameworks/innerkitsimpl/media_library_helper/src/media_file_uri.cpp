@@ -167,7 +167,7 @@ static std::string CalNetworkId(MediaFileUri* uri, std::unordered_map<std::strin
     return "";
 }
 
-std::string MediaFileUri::GetNetworkId()
+const std::string& MediaFileUri::GetNetworkId()
 {
     if (this->networkId_ != MEDIA_FILE_URI_EMPTY) {
         return this->networkId_;
