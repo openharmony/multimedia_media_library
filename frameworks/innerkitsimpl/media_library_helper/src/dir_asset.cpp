@@ -55,17 +55,17 @@ int32_t DirAsset::GetDirType() const
     return dirType_;
 }
 
-string DirAsset::GetMediaTypes() const
+const string& DirAsset::GetMediaTypes() const
 {
     return mediaTypes_;
 }
 
-string DirAsset::GetDirectory() const
+const string& DirAsset::GetDirectory() const
 {
     return directory_;
 }
 
-string DirAsset::GetExtensions() const
+const string& DirAsset::GetExtensions() const
 {
     return extensions_;
 }

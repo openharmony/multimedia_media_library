@@ -67,6 +67,7 @@ enum EXPORT PortraitPages : int32_t {
     SECOND_PAGE,
     FAVORITE_PAGE
 };
+
 EXPORT const std::unordered_set<int32_t> PORTRAIT_PAGE_MODE = {
     PortraitPages::FIRST_PAGE,
     PortraitPages::SECOND_PAGE,

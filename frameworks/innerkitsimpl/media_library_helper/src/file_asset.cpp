@@ -671,6 +671,7 @@ void FileAsset::SetResultTypeMap(const string &colName, ResultSetDataType type)
     }
     resultTypeMap_.insert(make_pair(colName, type));
 }
+
 string FileAsset::GetAssetJson()
 {
     json jsonObject;

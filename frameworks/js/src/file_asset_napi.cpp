@@ -466,7 +466,7 @@ int32_t FileAssetNapi::GetOrientation() const
     return fileAssetPtr->GetOrientation();
 }
 
-std::string FileAssetNapi::GetNetworkId() const
+const std::string FileAssetNapi::GetNetworkId() const
 {
     return MediaFileUtils::GetNetworkIdFromUri(GetFileUri());
 }
