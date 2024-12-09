@@ -607,14 +607,9 @@ int32_t MtpMediaLibrary::SendObjectInfo(const std::shared_ptr<MtpOperationContex
         }
     }
     uint32_t outObjectHandle;
-    auto ret = GetIdByPath(path, outObjectHandle);
     {
         WriteLock lock(g_mutex);
-        if (ret != E_SUCCESS) {
-            uint32_t index = GetId();
-            AddToHandlePathMap(path, index);
-            outObjectHandle = index;
-        }
+        outObjectHandle = AddPathToMap(path);
         MEDIA_DEBUG_LOG("SendObjectInfo path[%{public}s], handle[%{public}d]", path.c_str(), outObjectHandle);
     }
 
@@ -769,14 +764,9 @@ int32_t MtpMediaLibrary::CopyObject(const std::shared_ptr<MtpOperationContext> &
         MEDIA_ERR_LOG("MtpMediaLibrary::CopyObject failed");
         return MtpErrorUtils::SolveCopyObjectError(E_FAIL);
     }
-    auto ret = GetIdByPath(toPath.string(), outObjectHandle);
     {
         WriteLock lock(g_mutex);
-        if (ret != E_SUCCESS) {
-            uint32_t index = GetId();
-            AddToHandlePathMap(toPath.string(), index);
-            outObjectHandle = index;
-        }
+        outObjectHandle = AddPathToMap(toPath);
         MEDIA_INFO_LOG("CopyObject successful to[%{public}s], handle[%{public}d]", toPath.c_str(), outObjectHandle);
     }
     return MTP_SUCCESS;
