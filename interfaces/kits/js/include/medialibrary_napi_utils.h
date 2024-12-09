@@ -762,6 +762,13 @@ public:
         napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
     static void FixSpecialDateType(std::string &selections);
     static std::string TransferUri(const std::string &oldUri);
+        static std::string GetFileIdFromUriString(const std::string& uri);
+    static std::string GetAlbumIdFromUriString(const std::string& uri);
+    static napi_value GetSharedPhotoAssets(const napi_env& env, std::vector<std::string>& albumIds,
+        bool isSingleResult = false);
+    static napi_value GetSharedAlbumAssets(const napi_env& env, std::vector<std::string>& fileIds);
+    static void HandleCoverSharedPhotoAsset(napi_env env, int32_t index, napi_value result,
+        const std::string& name, const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet);
     static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
         bool isShared = false);
     static napi_value GetNextRowAlbumObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
