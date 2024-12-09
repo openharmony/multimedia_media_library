@@ -591,7 +591,8 @@ int32_t MtpMedialibraryManager::GetPictureThumb(const std::shared_ptr<MtpOperati
     std::shared_ptr<UInt8List> &outThumb)
 {
     int fd = 0;
-    GetFd(context, fd);
+    int error = GetFd(context, fd);
+    CHECK_AND_RETURN_RET_LOG(error == MTP_SUCCESS, MTP_ERROR_NO_THUMBNAIL_PRESENT, "GetFd failed");
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
