@@ -32,9 +32,8 @@ public:
     MtpMedialibraryManager();
     ~MtpMedialibraryManager();
     static std::shared_ptr<MtpMedialibraryManager> GetInstance();
-    void Init(const sptr<IRemoteObject> &token);
+    void Init(const sptr<IRemoteObject> &token, const std::shared_ptr<MtpOperationContext> &context);
     void Clear();
-    void SetContext(const std::shared_ptr<MtpOperationContext> &context);
     int32_t GetHandles(int32_t parentId, std::vector<int> &outHandles, MediaType mediaType = MEDIA_TYPE_DEFAULT);
     int32_t GetHandles(const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<UInt32List> &outHandles);
     int32_t GetObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
@@ -83,7 +82,6 @@ private:
     static std::mutex mutex_;
     static std::shared_ptr<MtpMedialibraryManager> instance_;
     static std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
-    std::shared_ptr<MtpOperationContext> context_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS
