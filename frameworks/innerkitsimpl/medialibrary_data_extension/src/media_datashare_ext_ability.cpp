@@ -754,6 +754,7 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     transform(unifyMode.begin(), unifyMode.end(), unifyMode.begin(), ::tolower);
     int err = CheckPermissionForOpenFile(uri, command, unifyMode);
     if (err < 0) {
+        MEDIA_ERR_LOG("permission deny: %{public}d", err);
         return err;
     }
     int32_t object = static_cast<int32_t>(command.GetOprnObject());
