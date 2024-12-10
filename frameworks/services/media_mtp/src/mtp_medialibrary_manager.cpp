@@ -464,39 +464,56 @@ int32_t MtpMedialibraryManager::SetObjectInfo(const unique_ptr<FileAsset> &fileA
     return MtpErrorUtils::SolveGetObjectInfoError(E_SUCCESS);
 }
 
-int32_t MtpMedialibraryManager::GetFd(const shared_ptr<MtpOperationContext> &context, int32_t &outFd)
+int32_t MtpMedialibraryManager::GetFd(const shared_ptr<MtpOperationContext> &context, int32_t &outFd,
+    const std::string &mode)
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr,
         MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "context is nullptr");
-    MEDIA_INFO_LOG("GetFd  handle::%{public}u", context->handle);
+    MEDIA_DEBUG_LOG("GetFd  handle::%{public}u", context->handle);
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
         MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "fail to get datasharehelper");
-    if (context->handle < EDITED_PHOTOS_OFFSET) {
-        MEDIA_INFO_LOG("ptp photos");
-        uint32_t id = context->handle % COMMON_PHOTOS_OFFSET;
-        string uri = URI_MTP_OPERATION + "/" + to_string(id);
-        MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-        Uri openUri(uri);
-        outFd = dataShareHelper_->OpenFile(openUri, MEDIA_FILEMODE_READWRITE);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = GetPhotosInfo(context, false);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
+        MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "fail to get handles");
+    std::string sourcePath;
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "have no row");
+    string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    if (context->handle > COMMON_MOVING_OFFSET) {
+        sourcePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(data);
     } else {
-        shared_ptr<DataShare::DataShareResultSet> resultSet = GetPhotosInfo(context, false);
-        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
-            MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "fail to get handles");
-        std::string sourcePath;
-        do {
-            string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-            int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-            sourcePath = MtpDataUtils::GetMovingOrEnditSourcePath(data, subtype, context);
-        } while (!resultSet->GoToNextRow());
-        std::string realPath;
-        PathToRealPath(sourcePath, realPath);
-        MEDIA_INFO_LOG("mtp GetFd realPath %{public}s", realPath.c_str());
-        std::error_code ec;
-        int mode = sf::exists(realPath, ec) ? O_RDWR : O_RDWR | O_CREAT;
-        outFd = open(realPath.c_str(), mode);
+        sourcePath = data;
     }
+    std::string realPath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(sourcePath, realPath),
+        MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "fail to get realPath");
+    MEDIA_DEBUG_LOG("mtp Getfd realPath %{public}s", realPath.c_str());
+    std::error_code ec;
+    int openMode = (mode.compare(MEDIA_FILEMODE_READWRITE) == 0) ? O_RDWR : O_RDONLY;
+    outFd = open(realPath.c_str(), openMode);
     if (outFd > 0) {
-        MEDIA_INFO_LOG("mtp GetFd outFd %{public}d", outFd);
+        MEDIA_DEBUG_LOG("mtp GetFd outhd %{public}d", outFd);
+        return MtpErrorUtils::SolveGetFdError(E_SUCCESS);
+    } else {
+        return MtpErrorUtils::SolveGetFdError(E_HAS_FS_ERROR);
+    }
+}
+
+int32_t MtpMedialibraryManager::GetFdByOpenFile(const shared_ptr<MtpOperationContext> &context, int32_t &outFd)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr,
+        MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "context is nullptr");
+    MEDIA_DEBUG_LOG("GetFdByOpenFile  handle::%{public}u", context->handle);
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
+        MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "fail to get datasharehelper");
+    uint32_t id = context->handle % COMMON_PHOTOS_OFFSET;
+    string uri = URI_MTP_OPERATION + "/" + to_string(id);
+    MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openUri(uri);
+    outFd = dataShareHelper_->OpenFile(openUri, MEDIA_FILEMODE_READWRITE);
+
+    if (outFd > 0) {
+        MEDIA_DEBUG_LOG("mtp GetFdByOpenFile outFd %{public}d", outFd);
         return MtpErrorUtils::SolveGetFdError(E_SUCCESS);
     } else {
         return MtpErrorUtils::SolveGetFdError(E_HAS_FS_ERROR);
@@ -591,7 +608,7 @@ int32_t MtpMedialibraryManager::GetPictureThumb(const std::shared_ptr<MtpOperati
     std::shared_ptr<UInt8List> &outThumb)
 {
     int fd = 0;
-    int error = GetFd(context, fd);
+    int error = GetFd(context, fd, MEDIA_FILEMODE_READONLY);
     CHECK_AND_RETURN_RET_LOG(error == MTP_SUCCESS, MTP_ERROR_NO_THUMBNAIL_PRESENT, "GetFd failed");
     uint32_t errorCode = 0;
     SourceOptions opts;
@@ -604,8 +621,8 @@ int32_t MtpMedialibraryManager::GetPictureThumb(const std::shared_ptr<MtpOperati
         .height = NORMAL_HEIGHT
     };
     std::unique_ptr<PixelMap> cropPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    CondCloseFd(cropPixelMap == nullptr, fd);
     CHECK_AND_RETURN_RET_LOG(cropPixelMap != nullptr, MTP_ERROR_NO_THUMBNAIL_PRESENT, "PixelMap is nullptr");
-    close(fd);
     Size size = {
         .width = NORMAL_WIDTH,
         .height = NORMAL_HEIGHT
@@ -619,7 +636,7 @@ int32_t MtpMedialibraryManager::GetVideoThumb(const std::shared_ptr<MtpOperation
     std::shared_ptr<UInt8List> &outThumb)
 {
     int fd = 0;
-    int error = GetFd(context, fd);
+    int error = GetFd(context, fd, MEDIA_FILEMODE_READONLY);
     CHECK_AND_RETURN_RET_LOG(error == MTP_SUCCESS, MTP_ERROR_NO_THUMBNAIL_PRESENT, "GetFd failed");
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     CHECK_AND_RETURN_RET_LOG(avMetadataHelper != nullptr,
