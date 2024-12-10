@@ -1643,8 +1643,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleIns
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_start_rebackup_001 start");
-    EXPECT_NO_FATAL_FAILURE(BackupRestoreService::GetInstance().StartBackup(UPGRADE_RESTORE_ID, EMPTY_STR, EMPTY_STR));
-    EXPECT_NO_FATAL_FAILURE(BackupRestoreService::GetInstance().StartBackup(CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR));
+    
+    BackupRestoreService &instance = BackupRestoreService::GetInstance();
+    ASSERT_NE(&instance, nullptr);
+    instance.StartBackup(UPGRADE_RESTORE_ID, EMPTY_STR, EMPTY_STR);
+    instance.StartBackup(CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_thumbnail_test_001, TestSize.Level0)

@@ -46,6 +46,7 @@ constexpr int32_t ALBUM_TARGET_COUNT = 10;
 constexpr int32_t IS_ME_VALUE = 1;
 constexpr int32_t RANK_ONE = 1;
 constexpr int32_t RANK_TWO = 2;
+constexpr int32_t WAIT_TIME = 3;
 struct AlbumColumn {
     string coverUri;
     int count;
@@ -143,6 +144,7 @@ void MediaLibraryAlbumOperationTest::SetUpTestCase(void)
 void MediaLibraryAlbumOperationTest::TearDownTestCase(void)
 {
     MEDIA_INFO_LOG("Vision_Test::End");
+    std::this_thread::sleep_for(std::chrono::seconds(WAIT_TIME));
 }
 
 void MediaLibraryAlbumOperationTest::SetUp(void)
