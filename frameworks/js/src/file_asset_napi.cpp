@@ -4667,7 +4667,7 @@ static void QueryPhotoEditDataExists(int32_t fileId, int32_t &hasEditData)
 {
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
-    vector<string> columns = { MediaColumn::MEDIA_FILE_PATH };
+    vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN_QUERYEDITDATA + "/" + MEDIA_QUERYOPRN_QUERYEDITDATA);
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
