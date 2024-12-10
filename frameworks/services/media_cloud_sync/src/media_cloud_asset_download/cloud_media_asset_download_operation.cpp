@@ -65,7 +65,7 @@ std::mutex CloudMediaAssetDownloadOperation::mutex_;
 std::mutex CloudMediaAssetDownloadOperation::callbackMutex_;
 std::shared_ptr<CloudMediaAssetDownloadOperation> CloudMediaAssetDownloadOperation::instance_ = nullptr;
 static const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_HOT = 3;
-static const int32_t BATCH_DOWNLOAD_CLOUD_FILE = 50;
+static const int32_t BATCH_DOWNLOAD_CLOUD_FILE = 10;
 static constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 static constexpr int CLOUD_MANAGER_MANAGER_ID = 5204;
 static const std::string CLOUD_DATASHARE_URI = "datashareproxy://generic.cloudstorage/cloud_sp?Proxy=true";
@@ -111,8 +111,8 @@ static const std::map<CloudMediaTaskRecoverCause, CloudMediaTaskPauseCause> RECO
 void CloudDeathRecipient::OnRemoteDied(const wptr<IRemoteObject> &object)
 {
     MEDIA_INFO_LOG("enter.");
-    if (!operation_) {
-        MEDIA_ERR_LOG("operation is nullptr");
+    if (!operation_ || operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::DOWNLOADING) {
+        MEDIA_ERR_LOG("operation is nullptr or taskStatus is not DOWNLOADING");
         return;
     }
     if (object == nullptr) {
@@ -179,7 +179,6 @@ std::shared_ptr<NativeRdb::ResultSet> CloudMediaAssetDownloadOperation::QueryDow
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     predicates.EqualTo(PhotoColumn::PHOTO_POSITION, to_string(static_cast<int32_t>(PhotoPositionType::CLOUD)));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
     predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, "0");
     predicates.IsNotNull(MediaColumn::MEDIA_FILE_PATH);
     if (static_cast<int32_t>(dataForDownload_.batchFileIdNeedDownload.size()) > 0) {
