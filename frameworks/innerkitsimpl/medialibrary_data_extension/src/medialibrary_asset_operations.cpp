@@ -89,6 +89,7 @@ const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
 constexpr int32_t NO_DESENSITIZE = 3;
 const string PHOTO_ALBUM_URI_PREFIX = "file://media/PhotoAlbum/";
+constexpr int32_t UNKNOWN_VALUE = -1;
 
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
@@ -877,11 +878,11 @@ static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, c
     }
     outValues.PutBool(PhotoColumn::PHOTO_IS_TEMP, isTemp);
 
-    int32_t deferredProcType = -1;
+    int32_t deferredProcType = UNKNOWN_VALUE;
     if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, value)) {
         value.GetInt(deferredProcType);
     }
-    if (deferredProcType != -1) {
+    if (deferredProcType != UNKNOWN_VALUE) {
         outValues.PutInt(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, deferredProcType);
     }
 
@@ -890,11 +891,11 @@ static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, c
         return;
     }
 
-    int32_t photoQuality = -1;
+    int32_t photoQuality = UNKNOWN_VALUE;
     if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_QUALITY, value)) {
         value.GetInt(photoQuality);
     }
-    if (photoQuality != -1) {
+    if (photoQuality != UNKNOWN_VALUE) {
         outValues.PutInt(PhotoColumn::PHOTO_QUALITY, photoQuality);
     }
     if (photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) {
