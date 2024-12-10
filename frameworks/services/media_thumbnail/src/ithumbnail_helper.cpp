@@ -1005,7 +1005,7 @@ unique_ptr<PixelMap> DecodeThumbnailFromFd(int32_t fd)
 bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
     ThumbnailWait thumbnailWait(true);
-    auto ret = thumbnailWait.CloudInsertAndWait(data.id, CloudLoadType::CLOUD_DOWNLOAD);
+    ret = thumbnailWait.CloudInsertAndWait(data.id, CloudLoadType::CLOUD_DOWNLOAD);
     if (ret != WaitStatus::INSERT && ret != WaitStatus::WAIT_CONTINUE) {
         return ret == WaitStatus::WAIT_SUCCESS;
     }
@@ -1018,7 +1018,7 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, Wa
         return false;
     }
 
-    if (!DoCreateLcd(opts, data)) {
+    if (!DoCreateLcd(opts, data, ret)) {
         MEDIA_ERR_LOG("Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
@@ -1034,7 +1034,7 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, Wa
         return false;
     }
 
-    if (!DoCreateThumbnail(opts, data)) {
+    if (!DoCreateThumbnail(opts, data, ret)) {
         MEDIA_ERR_LOG("Fail to create thumbnail, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
