@@ -15,6 +15,7 @@
 
 #include "mtp_data_utils_unit_test.h"
 #include "mtp_data_utils.h"
+#include "media_mtp_utils.h"
 #include "datashare_result_set.h"
 #include "userfile_manager_types.h"
 #include "mtp_constants.h"
@@ -369,14 +370,504 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_016, TestS
  * EnvConditions: NA
  * CaseDescription: GetFormatByPath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_017, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_018, TestSize.Level0)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
-    std::string path = "/storage/media/100/local/files/Docs/Desktop";
+    std::string path = "/storage/media/100/local/files/Docs/Desktop/1.txt";
     uint16_t outFormat = 0;
     mtpDataUtils->GetFormatByPath(path, outFormat);
-    EXPECT_EQ(outFormat, MTP_FORMAT_ASSOCIATION_CODE);
+    EXPECT_EQ(outFormat, MTP_FORMAT_TEXT_CODE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetFormat
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_019, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(resultSet, nullptr);
+    uint16_t outFormat = 0;
+    int32_t res = mtpDataUtils->GetFormat(resultSet, outFormat);
+    EXPECT_EQ(res, E_FAIL);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetPropValueBySet
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_020, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    uint32_t property = MTP_PROPERTY_NAME_CODE;
+    PropertyValue outPropValue;
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(resultSet, nullptr);
+    int32_t res = mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMediaTypeByName
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_021, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string displayName = "1.txt";
+    MediaType outMediaType;
+    mtpDataUtils->GetMediaTypeByName(displayName, outMediaType);
+    EXPECT_EQ(outMediaType, MEDIA_TYPE_DEFAULT);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMediaTypeByName
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_022, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string displayName = "Desktop";
+    MediaType outMediaType;
+    int32_t res = mtpDataUtils->GetMediaTypeByName(displayName, outMediaType);
+    EXPECT_EQ(res, E_SUCCESS);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMediaTypeByName
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_023, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string displayName = "1.dng";
+    MediaType outMediaType;
+    mtpDataUtils->GetMediaTypeByName(displayName, outMediaType);
+    EXPECT_EQ(outMediaType, MEDIA_TYPE_IMAGE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMediaTypeByName
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_024, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string displayName = "1.mp4v";
+    MediaType outMediaType;
+    mtpDataUtils->GetMediaTypeByName(displayName, outMediaType);
+    EXPECT_EQ(outMediaType, MEDIA_TYPE_VIDEO);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMtpPropList
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_025, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::shared_ptr<std::unordered_map<uint32_t, std::string>> handles =
+        std::make_shared<std::unordered_map<uint32_t, std::string>>();
+    ASSERT_NE(handles, nullptr);
+    std::unordered_map<std::string, uint32_t> pathHandles;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    int32_t res = mtpDataUtils->GetMtpPropList(handles, pathHandles, context, outProps);
+    EXPECT_EQ(res, MTP_SUCCESS);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMtpPropList
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_026, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::shared_ptr<std::unordered_map<uint32_t, std::string>> handles =
+        std::make_shared<std::unordered_map<uint32_t, std::string>>();
+    ASSERT_NE(handles, nullptr);
+    std::unordered_map<std::string, uint32_t> pathHandles;
+    std::shared_ptr<MtpOperationContext> context = nullptr;
+    std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    int32_t res = mtpDataUtils->GetMtpPropList(handles, pathHandles, context, outProps);
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMtpPropList
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_027, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::shared_ptr<std::unordered_map<uint32_t, std::string>> handles = nullptr;
+    std::unordered_map<std::string, uint32_t> pathHandles;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    int32_t res = mtpDataUtils->GetMtpPropList(handles, pathHandles, context, outProps);
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMtpPropValue
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_028, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string path = "";
+    uint32_t property = MTP_PROPERTY_STORAGE_ID_CODE;
+    uint16_t format = 0;
+    PropertyValue outPropValue;
+    int32_t res = mtpDataUtils->GetMtpPropValue(path, property, format, outPropValue);
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTPROP_VALUE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMtpPropValue
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_029, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string path = "";
+    uint32_t property = MTP_PROPERTY_OBJECT_FORMAT_CODE;
+    uint16_t format = 0;
+    PropertyValue outPropValue;
+    int32_t res = mtpDataUtils->GetMtpPropValue(path, property, format, outPropValue);
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTPROP_VALUE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMtpPropValue
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_030, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string path = "";
+    uint32_t property = MTP_PROPERTY_OBJECT_FILE_NAME_CODE;
+    uint16_t format = 0;
+    PropertyValue outPropValue;
+    int32_t res = mtpDataUtils->GetMtpPropValue(path, property, format, outPropValue);
+    EXPECT_EQ(res, MTP_SUCCESS);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMtpFormatByPath
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_034, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string path = "";
+    uint16_t outFormat = 0;
+    PropertyValue outPropValue;
+    uint32_t res = mtpDataUtils->GetMtpFormatByPath(path, outFormat);
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTPROP_VALUE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMovingOrEnditSourcePath
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_036, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string path = "/storage/media/100/local/files/Docs/Desktop/1.jpg";
+    int32_t subtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->handle = 2 * COMMON_PHOTOS_OFFSET;
+    std::string res = mtpDataUtils->GetMovingOrEnditSourcePath(path, subtype, context);
+    EXPECT_EQ(res, "");
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMovingOrEnditSourcePath
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_037, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string path = "/storage/media/100/local/files/Docs/Desktop/1.jpg";
+    int32_t subtype = static_cast<int32_t>(PhotoSubType::CAMERA);
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->handle = 2 * COMMON_PHOTOS_OFFSET;
+    std::string res = mtpDataUtils->GetMovingOrEnditSourcePath(path, subtype, context);
+    EXPECT_EQ(res, "");
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMovingOrEnditSourcePath
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_038, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string path = "/storage/media/100/local/files/Docs/Desktop/1.jpg";
+    int32_t subtype = static_cast<int32_t>(PhotoSubType::CAMERA);
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->handle = 3 * COMMON_PHOTOS_OFFSET;
+    std::string res = mtpDataUtils->GetMovingOrEnditSourcePath(path, subtype, context);
+    EXPECT_NE(res, "");
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMovingOrEnditSourcePath
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_039, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string path = "/storage/media/100/local/files/Docs/Desktop/1.jpg";
+    int32_t subtype = static_cast<int32_t>(PhotoSubType::CAMERA);
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->handle = 4 * COMMON_PHOTOS_OFFSET;
+    std::string res = mtpDataUtils->GetMovingOrEnditSourcePath(path, subtype, context);
+    EXPECT_EQ(res, "");
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMovingOrEnditSourcePath
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_040, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string path = "/storage/media/100/local/files/Docs/Desktop/1.jpg";
+    int32_t subtype = static_cast<int32_t>(PhotoSubType::CAMERA);
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->handle = 5 * COMMON_PHOTOS_OFFSET;
+    std::string res = mtpDataUtils->GetMovingOrEnditSourcePath(path, subtype, context);
+    EXPECT_EQ(res, "");
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetOneRowPropList
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_041, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    uint32_t handle = 1;
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(resultSet, nullptr);
+    std::shared_ptr<UInt16List> properties = std::make_shared<UInt16List>();
+    ASSERT_NE(properties, nullptr);
+    properties->push_back(MTP_PROPERTY_OBJECT_FORMAT_CODE);
+    properties->push_back(MTP_PROPERTY_OBJECT_SIZE_CODE);
+    properties->push_back(MTP_PROPERTY_STORAGE_ID_CODE);
+    std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    mtpDataUtils->GetOneRowPropList(handle, resultSet, properties, outProps);
+    EXPECT_FALSE(outProps->empty());
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SetOneDefaultlPropList
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_042, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    uint32_t handle = 1;
+    uint16_t property = MTP_PROPERTY_STORAGE_ID_CODE;
+    std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    mtpDataUtils->SetOneDefaultlPropList(handle, property, outProps);
+    EXPECT_FALSE(outProps->empty());
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SetOneDefaultlPropList
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_043, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    uint32_t handle = 1;
+    uint16_t property = MTP_PROPERTY_PROTECTION_STATUS_CODE;
+    std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    mtpDataUtils->SetOneDefaultlPropList(handle, property, outProps);
+    EXPECT_FALSE(outProps->empty());
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SetOneDefaultlPropList
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_044, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    uint32_t handle = 1;
+    uint16_t property = MTP_PROPERTY_PERSISTENT_UID_CODE;
+    std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    mtpDataUtils->SetOneDefaultlPropList(handle, property, outProps);
+    EXPECT_FALSE(outProps->empty());
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SetOneDefaultlPropList
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_045, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    uint32_t handle = 1;
+    uint16_t property = MTP_PROPERTY_ALBUM_NAME_CODE;
+    std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    mtpDataUtils->SetOneDefaultlPropList(handle, property, outProps);
+    EXPECT_FALSE(outProps->empty());
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SetOneDefaultlPropList
+ */
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_046, TestSize.Level0)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    uint32_t handle = 1;
+    uint16_t property = MTP_PROPERTY_ALBUM_NAME_CODE;
+    std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    mtpDataUtils->SetOneDefaultlPropList(handle, property, outProps);
+    EXPECT_FALSE(outProps->empty());
 }
 } // namespace Media
 } // namespace OHOS

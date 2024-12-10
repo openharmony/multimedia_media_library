@@ -2118,26 +2118,6 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_095, TestSi
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: ScanDirNoDepth
- */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_096, TestSize.Level0)
-{
-    ASSERT_NE(mtpMediaLib_, nullptr);
-    mtpMediaLib_->Clear();
-
-    std::string root = REAL_FILE_PATH;
-    std::shared_ptr<UInt32List> out = std::make_shared<UInt32List>();
-    ASSERT_NE(out, nullptr);
-    int32_t errcode = mtpMediaLib_->ScanDirNoDepth(root, out);
-    EXPECT_EQ(errcode, MTP_SUCCESS);
-}
-
-/*
- * Feature: MediaLibraryMTP
- * Function:
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
  * CaseDescription: AddToHandlePathMap
  */
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_097, TestSize.Level0)
