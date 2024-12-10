@@ -1216,7 +1216,7 @@ static void TrashAlbumExecute(const TrashAlbumExecuteOpt &opt)
     int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
-        NAPI_ERR_LOG("Trash album executed, changeRows: %{pubic}d.", changedRows);
+        NAPI_ERR_LOG("Trash album executed, changeRows: %{public}d.", changedRows);
         return;
     }
     context->changedRows = changedRows;
