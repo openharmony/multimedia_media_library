@@ -528,14 +528,14 @@ bool MtpMedialibraryManager::CompressImage(std::unique_ptr<PixelMap> &pixelMap,
     }
     errorCode = imagePacker.AddImage(*compressImage);
     if (errorCode != E_SUCCESS) {
-        MEDIA_ERR_LOG("Failed to StartPacking %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed to AddImage %{private}d", errorCode);
         return false;
     }
 
     int64_t packedSize = 0;
     errorCode = imagePacker.FinalizePacking(packedSize);
     if (errorCode != E_SUCCESS) {
-        MEDIA_ERR_LOG("Failed to StartPacking %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed to FinalizePacking %{private}d", errorCode);
         return false;
     }
 
