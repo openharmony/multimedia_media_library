@@ -416,7 +416,7 @@ int32_t PhotoFileOperation::CopyPhotoRelatedData(const PhotoFileOperation::Photo
         return E_OK;
     }
     if (!MediaFileUtils::IsFileExists(srcFolder)) {
-        MEDIA_ERR_LOG("Media_Operation: %{public}s doesn't exist. %{pubilc}s",
+        MEDIA_ERR_LOG("Media_Operation: %{public}s doesn't exist. %{public}s",
             srcFolder.c_str(), this->ToString(sourcePhotoInfo).c_str());
         return E_NO_SUCH_FILE;
     }

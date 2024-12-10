@@ -109,7 +109,7 @@ int32_t ThumbnailAgingHelper::ClearLcdFromFileTable(ThumbRdbOpt &opts)
     }
     MEDIA_DEBUG_LOG("lcdCount %{public}d", lcdCount);
     if (lcdCount <= THUMBNAIL_LCD_AGING_THRESHOLD) {
-        MEDIA_INFO_LOG("Not need aging Lcd. lcdCount: %{lcdCount}d", lcdCount);
+        MEDIA_INFO_LOG("Not need aging Lcd. lcdCount: %{public}d", lcdCount);
         return E_OK;
     }
     vector<ThumbnailData> infos;
