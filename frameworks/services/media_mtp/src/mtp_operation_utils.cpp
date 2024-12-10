@@ -28,6 +28,7 @@
 #endif
 #include "directory_ex.h"
 #include "iservice_registry.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "media_mtp_utils.h"
 #include "mtp_file_observer.h"
@@ -401,7 +402,7 @@ uint16_t MtpOperationUtils::GetObjectDataDeal()
 
     int fd = 0;
     int errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetFd(context_, fd) :
-        mtpMedialibraryManager_->GetFd(context_, fd);
+        mtpMedialibraryManager_->GetFd(context_, fd, MEDIA_FILEMODE_READONLY);
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "GetObjectDataDeal GetFd fail!");
 
     MtpFileRange object;
@@ -451,7 +452,7 @@ int32_t MtpOperationUtils::DoRecevieSendObject()
 
     int fd = 0;
     errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetFd(context_, fd) :
-        mtpMedialibraryManager_->GetFd(context_, fd);
+        mtpMedialibraryManager_->GetFdByOpenFile(context_, fd);
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "DoRecevieSendObject GetFd fail!");
 
     uint32_t initialData = dataBuffer.size() < HEADER_LEN  ? 0 : dataBuffer.size() - HEADER_LEN;
