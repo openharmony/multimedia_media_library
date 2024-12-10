@@ -87,7 +87,7 @@ std::shared_ptr<MtpMedialibraryManager> MtpMedialibraryManager::GetInstance()
     return instance_;
 }
 
-void MtpMedialibraryManager::Init(const sptr<IRemoteObject> &token)
+void MtpMedialibraryManager::Init(const sptr<IRemoteObject> &token, const std::shared_ptr<MtpOperationContext> &context)
 {
     if (dataShareHelper_ == nullptr) {
         dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
@@ -95,7 +95,7 @@ void MtpMedialibraryManager::Init(const sptr<IRemoteObject> &token)
     if (mediaPhotoObserver_ == nullptr) {
         mediaPhotoObserver_ = std::make_shared<MediaSyncObserver>();
     }
-    mediaPhotoObserver_->context_ = context_;
+    mediaPhotoObserver_->context_ = context;
     mediaPhotoObserver_->dataShareHelper_ = dataShareHelper_;
     mediaPhotoObserver_->StartNotifyThread();
     dataShareHelper_->RegisterObserverExt(Uri(PhotoColumn::PHOTO_URI_PREFIX), mediaPhotoObserver_, true);
@@ -112,11 +112,6 @@ void MtpMedialibraryManager::Clear()
     }
     mediaPhotoObserver_ = nullptr;
     dataShareHelper_ = nullptr;
-}
-
-void MtpMedialibraryManager::SetContext(const shared_ptr<MtpOperationContext> &context)
-{
-    context_ = context;
 }
 
 int32_t MtpMedialibraryManager::GetHandles(int32_t parentId, vector<int> &outHandles, MediaType mediaType)
