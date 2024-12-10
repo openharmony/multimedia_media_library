@@ -44,6 +44,8 @@ static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 const std::string URI_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_CREATE;
 const std::string URI_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_UPDATE;
 const std::string URI_ORDER_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM;
+constexpr int32_t WAIT_TIME = 3;
+
 int32_t ClearTable(const string &table)
 {
     RdbPredicates predicates(table);
@@ -270,7 +272,10 @@ void PhotoAlbumTest::SetUpTestCase()
     ClearTable(PhotoMap::TABLE);
 }
 
-void PhotoAlbumTest::TearDownTestCase() {}
+void PhotoAlbumTest::TearDownTestCase()
+{
+    std::this_thread::sleep_for(std::chrono::seconds(WAIT_TIME));
+}
 
 // SetUp:Execute before each test case
 void PhotoAlbumTest::SetUp() {}

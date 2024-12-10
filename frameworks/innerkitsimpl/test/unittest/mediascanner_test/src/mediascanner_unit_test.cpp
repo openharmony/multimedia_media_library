@@ -31,6 +31,7 @@ namespace {
     shared_ptr<MediaScannerManager> mediaScannerManager = nullptr;
 } // namespace
 
+constexpr int32_t WAIT_TIME = 3;
 
 void MediaScannerUnitTest::SetUpTestCase(void)
 {
@@ -39,7 +40,10 @@ void MediaScannerUnitTest::SetUpTestCase(void)
     mediaScannerManager = MediaScannerManager::GetInstance();
 }
 
-void MediaScannerUnitTest::TearDownTestCase(void) {}
+void MediaScannerUnitTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(WAIT_TIME));
+}
 
 // SetUp:Execute before each test case
 void MediaScannerUnitTest::SetUp()
