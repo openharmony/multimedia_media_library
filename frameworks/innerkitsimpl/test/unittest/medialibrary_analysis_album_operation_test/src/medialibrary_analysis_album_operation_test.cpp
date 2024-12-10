@@ -43,6 +43,7 @@ using OHOS::DataShare::DataShareValuesBucket;
 constexpr int32_t TRUE_ALBUM_ID = 1;
 constexpr int32_t ALBUM_TARGET_COUNT = 10;
 constexpr int32_t IS_ME_VALUE = 1;
+constexpr int32_t WAIT_TIME = 3;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static std::atomic<int> number(0);
@@ -324,6 +325,7 @@ void MediaLibraryAnalysisAlbumOperationTest::SetUpTestCase(void)
 void MediaLibraryAnalysisAlbumOperationTest::TearDownTestCase(void)
 {
     MEDIA_INFO_LOG("Vision_Test::End");
+    std::this_thread::sleep_for(std::chrono::seconds(WAIT_TIME));
 }
 
 void MediaLibraryAnalysisAlbumOperationTest::SetUp(void)
