@@ -114,8 +114,8 @@ private:
     EXPORT int32_t SubmitBatchDownload(DownloadFileData &data, const bool &isCache);
     void StartFileCacheFailed(const int64_t batchNum, const int64_t batchSize);
     void StartBatchDownload(const int64_t batchNum, const int64_t batchSize);
-    int32_t DoRecoverExecute();
-    int32_t PassiveStatusRecover();
+    EXPORT int32_t DoRecoverExecute();
+    EXPORT int32_t PassiveStatusRecover();
     
     void MoveDownloadFileToCache(const DownloadProgressObj &progress);
     void MoveDownloadFileToNotFound(const DownloadProgressObj &progress);

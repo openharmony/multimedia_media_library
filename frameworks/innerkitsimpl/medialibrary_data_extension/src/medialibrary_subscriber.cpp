@@ -327,6 +327,10 @@ void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadTaskStatus()
 {
     if (!isCellularNetConnected_) {
         MEDIA_INFO_LOG("CellularNet not connected.");
+        int32_t taskStatus = CloudMediaAssetManager::GetInstance().GetTaskStatus();
+        if (taskStatus == static_cast<int32_t>(CloudMediaAssetTaskStatus::PAUSED)) {
+            CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT);
+        }
         return;
     }
     if (CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
