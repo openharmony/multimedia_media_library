@@ -176,6 +176,7 @@ public:
     EXPORT Size thumbDesiredSize;
     EXPORT GenerateStats stats;
     EXPORT SourceLoaderOptions loaderOpts;
+    EXPORT bool isThumbExisted {false};
 };
 } // namespace Media
 } // namespace OHOS

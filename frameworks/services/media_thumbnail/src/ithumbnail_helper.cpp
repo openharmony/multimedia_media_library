@@ -710,6 +710,11 @@ bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const Thumbna
         return false;
     }
     watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_ADD);
+    if (data.isThumbExisted) {
+        watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_UPDATE);
+    } else {
+        watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_ADD);
+    }
     return true;
 }
 
