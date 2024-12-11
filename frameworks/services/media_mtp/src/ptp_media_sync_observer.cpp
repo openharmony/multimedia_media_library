@@ -24,6 +24,7 @@
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "result_set_utils.h"
+#include "media_file_uri.h"
 
 using namespace std;
 
@@ -38,6 +39,7 @@ const string BURST_NOT_COVER_LEVEL = "2";
 const string IS_LOCAL = "2";
 const std::string HIDDEN_ALBUM = ".hiddenAlbum";
 const string POSITION = "2";
+const string INVALID_FILE_ID = "-1";
 bool startsWith(const std::string& str, const std::string& prefix)
 {
     if (prefix.size() > str.size() || prefix.empty() || str.empty()) {
@@ -210,14 +212,20 @@ void MediaSyncObserver::AddPhotoHandle(int32_t handle)
         SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
         SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
     }
+    auto albumHandles = PtpAlbumHandles::GetInstance();
+    if (!albumHandles->FindHandle(ownerAlbumId)) {
+        albumHandles->AddHandle(ownerAlbumId);
+        SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_ADDED_CODE);
+        SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+        SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+    }
 }
 
-vector<int32_t> MediaSyncObserver::GetAddEditPhotoHandles(int32_t handle)
+void MediaSyncObserver::GetAddEditPhotoHandles(int32_t handle)
 {
     vector<int32_t> handlesResult;
     if (dataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("Mtp GetAddEditPhotoHandles fail to get datasharehelper");
-        return handlesResult;
     }
     Uri uri(PAH_QUERY_PHOTO);
     vector<string> columns;
@@ -225,18 +233,22 @@ vector<int32_t> MediaSyncObserver::GetAddEditPhotoHandles(int32_t handle)
     columns.push_back(PhotoColumn::PHOTO_SUBTYPE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(handle));
     shared_ptr<DataShare::DataShareResultSet> resultSet = dataShareHelper_->Query(uri, predicates, columns);
-
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
-        handlesResult, "Mtp GetAddEditPhotoHandles fail to get PHOTO_ALL_DELETE_KEY");
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
-        handlesResult, "Mtp GetAddEditPhotoHandles have no PHOTO_ALL_DELETE_KEY");
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Mtp GetAddEditPhotoHandles fail to get PHOTO_ALL_DELETE_KEY");
+        return;
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Mtp GetAddEditPhotoHandles have no PHOTO_ALL_DELETE_KEY");
+        return;
+    }
     do {
         int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
         if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
             SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+        } else if (subType == static_cast<int32_t>(PhotoSubType::DEFAULT)) {
+            SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
         }
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
-    return handlesResult;
 }
 
 int32_t MediaSyncObserver::GetAddEditAlbumHandle(int32_t handle)
@@ -250,9 +262,9 @@ int32_t MediaSyncObserver::GetAddEditAlbumHandle(int32_t handle)
         ERR_NUM, "Mtp GetAddEditAlbumHandle dataShareHelper_ is nullptr");
     shared_ptr<DataShare::DataShareResultSet> resultSet = dataShareHelper_->Query(uri, predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
-        ERR_NUM, "Mtp GetAllDeleteHandles fail to get album id");
+        ERR_NUM, "Mtp GetAddEditAlbumHandle fail to get album id");
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
-        ERR_NUM, "Mtp GetAllDeleteHandles have no row");
+        ERR_NUM, "Mtp GetAddEditAlbumHandle have no row");
     int32_t album_id = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
     return album_id;
 }
@@ -295,8 +307,6 @@ void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixStrin
     if (!suffixString.empty() && atoi(suffixString.c_str()) <= 0) {
         return;
     }
-    vector<int32_t> editHandles;
-    int32_t album_id = 0;
     switch (changeType) {
         case static_cast<int32_t>(NotifyType::NOTIFY_ADD):
             MEDIA_DEBUG_LOG("MtpMediaLibrary PHOTO ADD");
@@ -305,15 +315,7 @@ void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixStrin
         case static_cast<int32_t>(NotifyType::NOTIFY_UPDATE):
             MEDIA_DEBUG_LOG("MtpMediaLibrary PHOTO UPDATE");
             SendEventPackets(atoi(suffixString.c_str()) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-            editHandles = GetAddEditPhotoHandles(atoi(suffixString.c_str()));
-            album_id = GetAddEditAlbumHandle(atoi(suffixString.c_str()));
-            if (album_id >= 0) {
-                MEDIA_DEBUG_LOG("MtpMediaLibrary album_id [%{public}d]", album_id);
-                for (const auto editHandle : editHandles) {
-                    SendEventPackets(editHandle, MTP_EVENT_OBJECT_ADDED_CODE);
-                    SendEventPacketAlbum(album_id, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-                }
-            }
+            GetAddEditPhotoHandles(atoi(suffixString.c_str()));
             break;
         case static_cast<int32_t>(NotifyType::NOTIFY_REMOVE):
             MEDIA_DEBUG_LOG("MtpMediaLibrary PHOTO REMOVE");
@@ -391,26 +393,30 @@ void MediaSyncObserver::OnChangeEx(const ChangeInfo &changeInfo)
     MEDIA_DEBUG_LOG("MtpMediaLibrary changeType [%{public}d]", changeInfo.changeType_);
     for (const auto& it : changeInfo.uris_) {
         std::string uri = it.ToString();
+        MediaFileUri fileUri(uri);
         MEDIA_DEBUG_LOG("MtpMediaLibrary uris [%{public}s]", uri.c_str());
         if (startsWith(uri, PhotoPrefix)) {
-            std::string suffixString = uri.substr(PhotoPrefix.size());
-            if (suffixString.empty() && changeInfo.changeType_ != static_cast<int32_t>(NotifyType::NOTIFY_REMOVE)) {
+            std::string fileId = fileUri.GetFileId();
+            if (fileId.compare(INVALID_FILE_ID) == 0) {
+                fileId = "";
+            }
+            if (fileId.empty() && changeInfo.changeType_ != static_cast<int32_t>(NotifyType::NOTIFY_REMOVE)) {
                 MEDIA_ERR_LOG("MtpMediaLibrary suffixString is empty");
                 continue;
             }
-            MEDIA_DEBUG_LOG("MtpMediaLibrary suffixString [%{public}s]", suffixString.c_str());
-            SendPhotoEvent(changeInfo.changeType_, suffixString);
+            MEDIA_DEBUG_LOG("MtpMediaLibrary suffixString [%{public}s]", fileId.c_str());
+            SendPhotoEvent(changeInfo.changeType_, fileId);
         } else if (startsWith(uri, PhotoAlbumPrefix)) {
-            std::string suffixString = uri.substr(PhotoAlbumPrefix.size());
-            MEDIA_ERR_LOG("MtpMediaLibrary suffixString [%{public}s]", suffixString.c_str());
-            if (!IsNumber(suffixString)) {
+            std::string albumId = fileUri.GetFileId();
+            MEDIA_DEBUG_LOG("MtpMediaLibrary suffixString [%{public}s]", albumId.c_str());
+            if (!IsNumber(albumId)) {
                 continue;
             }
-            int32_t suff_int = atoi(suffixString.c_str());
-            if (suff_int <= RESERVE_ALBUM) {
+            int32_t albumIdNum = atoi(albumId.c_str());
+            if (albumIdNum <= RESERVE_ALBUM) {
                 continue;
             }
-            SendEventToPTP(suff_int, changeInfo.changeType_);
+            SendEventToPTP(albumIdNum, changeInfo.changeType_);
         }
     }
 }
