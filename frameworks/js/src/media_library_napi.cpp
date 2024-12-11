@@ -6111,9 +6111,9 @@ napi_value MediaLibraryNapi::PhotoAccessStopCreateThumbnailTask(napi_env env, na
 
 static std::string GetCvProgress()
 {
-    unordered_map<int, string> idxToCount = {{0, "total_count"}, {1, "ocr_count"}, {2, "label_count"},
-        {3, "aesthetics_score_count"}, {4, "face_count"}, {5, "segmentation_count"}, {6, "head_count"},
-        {7, "saliency_count"}, {8, "total_face_count"}, {9, "clustered_face_count"}};
+    unordered_map<int, string> idxToCount = {{0, "totalCount"}, {1, "finishedCount"}, {2, "labelCount"},
+        {3, "faceFinishedCount"}, {4, "faceTotalCount"}, {5, "faceClusteredCount"}, {6, "geoCount"},
+        {7, "total_faceCount"}, {8, "clustered_face_count"}};
     string clause = VISION_TOTAL_TABLE + "." + PhotoColumn::PHOTOS_TABLE + " = " + PhotoColumn::PHOTOS_TABLE+ "." +
         PhotoColumn::PHOTOS_TABLE;
     DataShare::DataSharePredicates predicates;
@@ -6123,14 +6123,13 @@ static std::string GetCvProgress()
         ->EqualTo(PhotoColumn::PHOTO_HIDDEN_TIME, 0);
     Uri uri(URI_TOTAL);
     vector<string> columns = {
-        "COUNT(*) AS total_count",
-        "SUM(CASE WHEN ocr != 0 THEN 1 ELSE 0 END) AS ocr_count",
-        "SUM(CASE WHEN label != 0 THEN 1 ELSE 0 END) AS label_count",
-        "SUM(CASE WHEN aesthetics_score != 0 THEN 1 ELSE 0 END) AS aesthetics_score_count",
-        "SUM(CASE WHEN face < 0 OR face > 1 THEN 1 ELSE 0 END) AS face_count",
-        "SUM(CASE WHEN segmentation != 0 THEN 1 ELSE 0 END) AS segmentation_count",
-        "SUM(CASE WHEN head != 0 THEN 1 ELSE 0 END) AS head_count",
-        "SUM(CASE WHEN saliency != 0 THEN 1 ELSE 0 END) AS saliency_count"
+        "COUNT(*) AS totalCount",
+        "SUM(CASE WHEN status != 0 THEN 1 ELSE 0 END) AS finishedCount",
+        "SUM(CASE WHEN label != 0 THEN 1 ELSE 0 END) AS labelCount",
+        "SUM(CASE WHEN face != 0 THEN 1 ELSE 0 END) AS faceFinishedCount",
+        "SUM(CASE WHEN face > 0 THEN 1 ELSE 0 END) AS faceTotalCount",
+        "SUM(CASE WHEN face = 3 THEN 1 ELSE 0 END) AS faceClusteredCount",
+        "SUM(CASE WHEN geo != 0 THEN 1 ELSE 0 END) AS geoCount",
     };
     Uri uriFace(URI_IMAGE_FACE);
     vector<string> faceColumns = {
