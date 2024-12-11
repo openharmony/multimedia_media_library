@@ -18,39 +18,12 @@
 
 #include <string>
 #include <vector>
-#include <sstream>
 
 #include "medialibrary_rdbstore.h"
+#include "photo_album_info_po.h"
 
 namespace OHOS::Media {
 class PhotoAlbumLPathOperation {
-private:
-    class PhotoAlbumInfo {
-    public:
-        int32_t albumId;
-        std::string albumName;
-        std::string lPath;
-        int32_t albumType;
-        int32_t albumSubType;
-        std::string bundleName;
-        int32_t dirty;
-        int32_t count;
-        std::string cloudId;
-        int32_t priority;
-
-    public:
-        std::string ToString() const
-        {
-            std::stringstream ss;
-            ss << "PhotoAlbumInfo["
-               << ", albumId: " << this->albumId << ", albumName: " << this->albumName << ", lPath: " << this->lPath
-               << ", albumType: " << this->albumType << "albumSubType: " << this->albumSubType
-               << ", bundleName: " << this->bundleName << ", cloudId: " << this->cloudId << ", dirty: " << this->dirty
-               << ", count: " << this->count << ", priority: " << this->priority << "]";
-            return ss.str();
-        }
-    };
-
 public:
     PhotoAlbumLPathOperation &SetRdbStore(const std::shared_ptr<MediaLibraryRdbStore> &rdbStorePtr);
     PhotoAlbumLPathOperation &CleanInvalidPhotoAlbums();
@@ -60,16 +33,16 @@ public:
 
 private:
     std::string ToString(const std::vector<NativeRdb::ValueObject> &values);
-    std::vector<PhotoAlbumInfo> GetInvalidPhotoAlbums();
-    std::vector<PhotoAlbumInfo> GetDuplicatelPathAlbumInfoMain();
-    std::vector<PhotoAlbumInfo> GetDuplicatelPathAlbumInfoSub(const PhotoAlbumInfo &albumInfo);
-    int32_t MergePhotoAlbum(const PhotoAlbumInfo &mainAlbumInfo, const PhotoAlbumInfo &subAlbumInfo);
-    std::vector<PhotoAlbumInfo> GetEmptylPathAlbumInfo();
-    int32_t CleanDuplicatePhotoAlbum(const PhotoAlbumInfo &mainAlbumInfo);
-    int32_t CleanEmptylPathPhotoAlbum(const PhotoAlbumInfo &subAlbumInfo);
-    PhotoAlbumInfo GetAlbumInfoBylPath(const std::string &lPath);
-    int32_t UpdateAlbumByAlbumPlugin(const PhotoAlbumInfo &albumInfo);
-    int32_t UpdateAlbumLPathByAlbumId(const PhotoAlbumInfo &albumInfo);
+    std::vector<PhotoAlbumInfoPo> GetInvalidPhotoAlbums();
+    std::vector<PhotoAlbumInfoPo> GetDuplicatelPathAlbumInfoMain();
+    std::vector<PhotoAlbumInfoPo> GetDuplicatelPathAlbumInfoSub(const PhotoAlbumInfoPo &albumInfo);
+    int32_t MergePhotoAlbum(const PhotoAlbumInfoPo &mainAlbumInfo, const PhotoAlbumInfoPo &subAlbumInfo);
+    std::vector<PhotoAlbumInfoPo> GetEmptylPathAlbumInfo();
+    int32_t CleanDuplicatePhotoAlbum(const PhotoAlbumInfoPo &mainAlbumInfo);
+    int32_t CleanEmptylPathPhotoAlbum(const PhotoAlbumInfoPo &subAlbumInfo);
+    PhotoAlbumInfoPo GetLatestAlbumInfoBylPath(const std::string &lPath);
+    int32_t UpdateAlbumInfoFromAlbumPluginByAlbumId(const PhotoAlbumInfoPo &albumInfo);
+    int32_t UpdateAlbumLPathByAlbumId(const PhotoAlbumInfoPo &albumInfo);
 
 private:
     std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr_;
@@ -137,7 +110,7 @@ private:
             FROM PhotoAlbum \
             WHERE album_type IN (0, 2048) AND \
                 COALESCE(lpath, '') <> '' \
-            GROUP BY lpath \
+            GROUP BY LOWER(lpath) \
             HAVING COUNT(1) > 1 \
         ) \
         ORDER BY album_id;";
@@ -172,6 +145,7 @@ private:
             album_type, \
             album_subtype, \
             lpath, \
+            bundle_name, \
             dirty, \
             count, \
             cloud_id, \
@@ -188,6 +162,7 @@ private:
                     WHEN COALESCE(NAME.album_name, '') <> '' THEN NAME.lpath \
                     ELSE '/Pictures/'||EMPTY.album_name \
                 END AS lpath, \
+                EMPTY.bundle_name, \
                 dirty, \
                 count, \
                 cloud_id, \
@@ -257,7 +232,8 @@ private:
                                     WHERE LOWER(lpath) = LOWER(?) \
                                     LIMIT 1 \
                                 ), priority) \
-        WHERE LOWER(lpath) = LOWER(?) AND \
+        WHERE album_id = ? AND \
+            LOWER(lpath) = LOWER(?) AND \
             LOWER(lpath) IN ( \
                 SELECT DISTINCT LOWER(lpath) \
                 FROM album_plugin \
@@ -270,12 +246,14 @@ private:
             album_type, \
             album_subtype, \
             lpath, \
+            bundle_name, \
             dirty, \
             count, \
             cloud_id, \
             priority \
         FROM PhotoAlbum \
         WHERE LOWER(COALESCE(lpath, '')) = LOWER(?) \
+        ORDER BY album_id DESC \
         LIMIT 1;";
     const std::string SQL_PHOTO_ALBUM_UPDATE_LPATH_BY_ALBUM_ID = "\
         UPDATE PhotoAlbum \
