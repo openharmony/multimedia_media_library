@@ -136,6 +136,7 @@ private:
 
     EXPORT static napi_value PhotoAccessHelperOpen(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperClose(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperCloneAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperFavorite(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info);
@@ -178,6 +179,8 @@ struct FileAssetAsyncContext : public NapiError {
     int32_t changedRows;
     int32_t fd;
     int32_t analysisType = AnalysisType::ANALYSIS_INVALID;
+    int64_t assetId = 0;
+    std::string title;
     bool isFavorite = false;
     bool isTrash = false;
     bool isHidden = false;

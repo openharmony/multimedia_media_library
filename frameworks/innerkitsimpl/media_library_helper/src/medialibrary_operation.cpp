@@ -300,6 +300,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_SET_VIDEO_ENHANCEMENT_ATTR, OperationType::SET_VIDEO_ENHANCEMENT_ATTR },
         { "log_medialibrary_api", OperationType::LOG_MEDIALIBRARY_API},
         { OPRN_SAVE_PICTURE, OperationType::SAVE_PICTURE},
+        { OPRN_CLONE_ASSET, OperationType::CLONE_ASSET},
         { OPRN_DEGENERATE_MOVING_PHOTO, OperationType::DEGENERATE_MOVING_PHOTO },
         { OPRN_ALL_DUPLICATE_ASSETS, OperationType::ALL_DUPLICATE_ASSETS },
         { OPRN_CAN_DEL_DUPLICATE_ASSETS, OperationType::CAN_DEL_DUPLICATE_ASSETS },
