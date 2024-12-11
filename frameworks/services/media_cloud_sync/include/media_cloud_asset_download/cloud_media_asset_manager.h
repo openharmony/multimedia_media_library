@@ -52,9 +52,9 @@ private:
     CloudMediaAssetManager(const CloudMediaAssetManager &manager) = delete;
     const CloudMediaAssetManager &operator=(const CloudMediaAssetManager &manager) = delete;
 
-    int32_t CheckDownloadTypeOfTask(const CloudMediaDownloadType &type);
+    EXPORT int32_t CheckDownloadTypeOfTask(const CloudMediaDownloadType &type);
     EXPORT int32_t DeleteBatchCloudFile(const std::vector<std::string> &pathVec);
-    int32_t DataReadyForDelete(std::shared_ptr<NativeRdb::ResultSet> resultSet);
+    EXPORT int32_t DataReadyForDelete(std::shared_ptr<NativeRdb::ResultSet> resultSet);
 
 private:
     static std::shared_ptr<CloudMediaAssetDownloadOperation> operation_;
