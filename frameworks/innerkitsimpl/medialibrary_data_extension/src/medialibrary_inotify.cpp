@@ -34,8 +34,8 @@ namespace OHOS {
 namespace Media {
 std::shared_ptr<MediaLibraryInotify> MediaLibraryInotify::instance_ = nullptr;
 std::mutex MediaLibraryInotify::mutex_;
-const int32_t MAX_WATCH_LIST = 600;
-const int32_t SINGLE_BUNDLE_LIST = 100;
+const int32_t MAX_WATCH_LIST = 1000;
+const int32_t SINGLE_BUNDLE_LIST = 200;
 const int32_t MAX_AGING_WATCH_LIST = 100;
 
 shared_ptr<MediaLibraryInotify> MediaLibraryInotify::GetInstance()

@@ -314,7 +314,7 @@ int32_t Acl::RecursiveEnableAcl(const std::string& path, const char* aclAttrName
                 MEDIA_ERR_LOG("Failed to set the acl permission for the %{private}s", fileName.c_str());
                 result = E_ERR;
             } else {
-                MEDIA_INFO_LOG("acl set succeed %{public}s", fileName.c_str());
+                MEDIA_INFO_LOG("acl set succeed %{private}s", fileName.c_str());
             }
         }
         closedir(fileDir);
@@ -359,7 +359,6 @@ bool IsDirExist(const std::string &path)
     }
     if (closedir(dir) < 0) {
         MEDIA_ERR_LOG("Failed to closedir: %{private}s, errno: %{public}d.", path.c_str(), errno);
-        return true;
     }
     return true;
 }
