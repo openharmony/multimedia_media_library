@@ -53,7 +53,7 @@ private:
         SET map_album = ? \
         WHERE map_album = ? AND \
             ? IN ( \
-                SELECT DISTINCT album_id \
+                SELECT album_id \
                 FROM PhotoAlbum \
                 WHERE album_type IN (0, 2048) \
             );";
@@ -62,7 +62,7 @@ private:
         SET owner_album_id = ? \
         WHERE owner_album_id = ? AND \
             ? IN ( \
-                SELECT DISTINCT album_id \
+                SELECT album_id \
                 FROM PhotoAlbum \
                 WHERE album_type IN (0, 2048) \
             );";
