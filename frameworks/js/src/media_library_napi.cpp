@@ -6112,52 +6112,55 @@ napi_value MediaLibraryNapi::PhotoAccessStopCreateThumbnailTask(napi_env env, na
 
 static std::string GetCvProgress()
 {
+    unordered_map<int, string> idxToCount = {{0, "total_count"}, {1, "ocr_count"}, {2, "label_count"},
+        {3, "aesthetics_score_count"}, {4, "face_count"}, {5, "segmentation_count"}, {6, "head_count"},
+        {7, "saliency_count"}, {8, "total_face_count"}, {9, "clustered_face_count"}};
+    string clause = VISION_TOTAL_TABLE + "." + PhotoColumn::PHOTOS_TABLE + " = " + PhotoColumn::PHOTOS_TABLE+ "." +
+        PhotoColumn::PHOTOS_TABLE;
+    DataShare::DataSharePredicates predicates;
+    predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ clause })
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0)->And()
+        ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0)->And()
+        ->EqualTo(MediaColumn::PHOTO_HIDDEN_TIME, 0);
     Uri uri(URI_TOTAL);
     vector<string> columns = {
         "COUNT(*) AS total_count",
         "SUM(CASE WHEN ocr != 0 THEN 1 ELSE 0 END) AS ocr_count",
         "SUM(CASE WHEN label != 0 THEN 1 ELSE 0 END) AS label_count",
-        "SUM(CASE WHEN aesthetics_score != 0 THEN 1 ELSE 0 END) AS score_count",
+        "SUM(CASE WHEN aesthetics_score != 0 THEN 1 ELSE 0 END) AS aesthetics_score_count",
         "SUM(CASE WHEN face < 0 OR face > 1 THEN 1 ELSE 0 END) AS face_count",
-        "SUM(CASE WHEN segmentation != 0 THEN 1 ELSE 0 END) AS seg_count",
+        "SUM(CASE WHEN segmentation != 0 THEN 1 ELSE 0 END) AS segmentation_count",
         "SUM(CASE WHEN head != 0 THEN 1 ELSE 0 END) AS head_count",
         "SUM(CASE WHEN saliency != 0 THEN 1 ELSE 0 END) AS saliency_count"
     };
-    string cameraRestriction = " ( SELECT file_id FROM Photos WHERE owner_album_id IN "
-        " ( SELECT album_id FROM PhotoAlbum WHERE album_name IN ('相机', 'Camera'))) ";
-    string numOfAllMedia = MediaColumn::MEDIA_ID + " IN (SELECT " + MediaColumn::MEDIA_ID + " FROM " +
-        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " IN " + cameraRestriction + " AND " +
-        MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " + MediaColumn::MEDIA_DATE_TRASHED + " = 0)";
-
-    DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(numOfAllMedia);
+    Uri uriFace(URI_IMAGE_FACE);
+    vector<string> faceColumns = {
+        "COUNT(DISTINCT file_id) AS total_face_count",
+        "COUNT(DISTINCT file_id CASE WHEN tag_id LIKE \'ser_%\' THEN file_id ELSE NULL END) AS clustered_face_count"
+    };
     int errCode = 0;
     auto ret = UserFileClient::Query(uri, predicates, columns, errCode);
-    if (ret == nullptr) {
+    int faceErrCode = 0;
+    auto faceRet = UserFileClient::Query(uriFace, predicates, faceColumns, faceErrCode);
+    if (ret == nullptr || faceRet == nullptr) {
         NAPI_ERR_LOG("ret is nullptr");
-        return "-1";
+        return "";
     }
     errCode = ret->GoToFirstRow();
-    if (errCode != DataShare::E_OK) {
+    faceErrCode = faceRet->GoToFirstRow();
+    if (errCode != DataShare::E_OK || faceErrCode != DataShare::E_OK) {
         NAPI_ERR_LOG("In GetCvProgress, GotoFirstRow failed, errCode is %{public}d", errCode);
-        return "-1";
+        ret->Close();
+        faceRet->Close();
+        return "";
     }
-    int totalCount = -1;
-    ret->GetInt(0, totalCount);
-    NAPI_INFO_LOG("In GetCvProgress, total_count is %{public}d", totalCount);
-    for (size_t i = 1; i < columns.size(); ++i) {
-        int tmp = -1;
-        ret->GetInt(i, tmp);
-        NAPI_INFO_LOG("In GetCvProgress, cur index is %{public}zu, count is %{public}d", i, tmp);
-        if (tmp < totalCount * PERCENT_95) {
-            NAPI_INFO_LOG("In GetCvProgress, return value is 0");
-            ret->Close();
-            return "0";
-        }
+    nlohmann::json jsonObj;
+    for (size_t i = 0; i < columns.size() + faceColumns.size(); ++i) {
+        ret->GetInt(i, jsonObj[idxToCount[i]]);
     }
-    NAPI_INFO_LOG("In GetCvProgress, return value is 1");
     ret->Close();
-    return "1";
+    faceRet->Close();
+    return jsonObj.dump();
 }
 
 static void JSGetAnalysisProgressExecute(MediaLibraryAsyncContext* context)
