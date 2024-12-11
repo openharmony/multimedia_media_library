@@ -101,7 +101,6 @@ const int64_t MAX_INT64 = 9223372036854775807;
 const int32_t MAX_QUERY_LIMIT = 80;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
-const double PERCENT_95 = 0.95;
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
 mutex MediaLibraryNapi::sOnOffMutex_;
@@ -6118,10 +6117,10 @@ static std::string GetCvProgress()
     string clause = VISION_TOTAL_TABLE + "." + PhotoColumn::PHOTOS_TABLE + " = " + PhotoColumn::PHOTOS_TABLE+ "." +
         PhotoColumn::PHOTOS_TABLE;
     DataShare::DataSharePredicates predicates;
-    predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ clause })
+    predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ clause });
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0)->And()
         ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0)->And()
-        ->EqualTo(MediaColumn::PHOTO_HIDDEN_TIME, 0);
+        ->EqualTo(PhotoColumn::PHOTO_HIDDEN_TIME, 0);
     Uri uri(URI_TOTAL);
     vector<string> columns = {
         "COUNT(*) AS total_count",
@@ -6156,7 +6155,9 @@ static std::string GetCvProgress()
     }
     nlohmann::json jsonObj;
     for (size_t i = 0; i < columns.size() + faceColumns.size(); ++i) {
-        ret->GetInt(i, jsonObj[idxToCount[i]]);
+        int tmp = -1;
+        ret->GetInt(i, tmp);
+        jsonObj[idxToCount[i]] = tmp;
     }
     ret->Close();
     faceRet->Close();
