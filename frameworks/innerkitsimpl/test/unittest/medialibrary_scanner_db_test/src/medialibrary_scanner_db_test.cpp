@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include <cstdint>
+#include <thread>
 
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
@@ -29,6 +30,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 class ConfigTestOpenCall : public NativeRdb::RdbOpenCallback {
 public:
     int OnCreate(NativeRdb::RdbStore &rdbStore) override;
@@ -62,7 +64,10 @@ void MediaLibraryScannerDbTest::SetUpTestCase(void)
     MediaLibraryUnitTestUtils::Init();
 }
 
-void MediaLibraryScannerDbTest::TearDownTestCase(void) {}
+void MediaLibraryScannerDbTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 
 // SetUp:Execute before each test case
 void MediaLibraryScannerDbTest::SetUp()

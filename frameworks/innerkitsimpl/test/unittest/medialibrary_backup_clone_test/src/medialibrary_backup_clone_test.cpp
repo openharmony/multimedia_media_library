@@ -110,6 +110,8 @@ const int PHONE_FOURTH_NUMBER = 111;
 const int PHONE_FIFTH_NUMBER = 110;
 const int PHONE_SIXTH_NUMBER = 101;
 
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 unique_ptr<CloneRestore> restoreService = nullptr;
 
@@ -180,6 +182,7 @@ void MediaLibraryBackupCloneTest::TearDownTestCase(void)
     MEDIA_INFO_LOG("TearDownTestCase");
     ClearData();
     restoreService->mediaLibraryRdb_ = nullptr;
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryBackupCloneTest::SetUp() {}

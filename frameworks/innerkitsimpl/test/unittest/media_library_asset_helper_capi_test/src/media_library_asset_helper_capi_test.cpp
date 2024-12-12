@@ -51,6 +51,7 @@ using namespace OHOS::AppExecFwk;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 void ClearAllFile();
 void CreateDataHelper(int32_t systemAbilityId);
@@ -103,6 +104,7 @@ void MediaLibraryAssetHelperCapiTest::TearDownTestCase(void)
     sleep(CLEAN_TIME);
     ClearAllFile();
     MEDIA_INFO_LOG("TearDownTestCase end");
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryAssetHelperCapiTest::SetUp(void)

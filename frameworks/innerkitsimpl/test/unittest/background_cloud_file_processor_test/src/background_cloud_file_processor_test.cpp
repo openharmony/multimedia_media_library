@@ -38,6 +38,7 @@ using namespace testing::ext;
 
 static shared_ptr<MediaLibraryRdbStore> rdbStore;
 static std::atomic<int> num{ 0 };
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 int32_t ExecSqls(const vector<string> &sqls)
 {
@@ -194,6 +195,7 @@ void BackgroundCloudFileProcessorTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("BackgroundCloudFileProcessorTest TearDownTestCase");
     ClearTables();
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void BackgroundCloudFileProcessorTest::SetUp()

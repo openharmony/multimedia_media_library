@@ -74,6 +74,7 @@ using ExceptIntFunction = void (*) (int32_t);
 using ExceptLongFunction = void (*) (int64_t);
 using ExceptBoolFunction = void (*) (bool);
 using ExceptStringFunction = void (*) (const string&);
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 namespace {
 void CleanTestTables()
@@ -753,7 +754,7 @@ void MediaLibraryAudioOperationsTest::TearDownTestCase()
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    this_thread::sleep_for(chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("Clean is finish");
 }
 

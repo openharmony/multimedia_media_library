@@ -16,16 +16,19 @@
 #include "medialibrary_mimetype_test.h"
 
 #include <algorithm>
-
+#include <thread>
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "mimetype_utils.h"
 
 using std::string;
+using namespace std;
 using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 const std::map<string, string> g_testExt2MimeType = {
     { "wrf", "video/x-webex" },
     { "mov", "video/quicktime" },
@@ -261,7 +264,10 @@ const std::map<string, MediaType> g_testMimeType2MediaType = {
 
 void MimeTypeTest::SetUpTestCase() {}
 
-void MimeTypeTest::TearDownTestCase() {}
+void MimeTypeTest::TearDownTestCase()
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 void MimeTypeTest::SetUp() {}
 void MimeTypeTest::TearDown(void) {}
 

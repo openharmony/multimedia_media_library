@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 #define MLOG_TAG "FileExtUnitTest"
+
+#include <thread>
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_manager_utils_test.h"
 #include "context.h"
@@ -25,9 +27,13 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 void MediaLibraryManagerUtilsTest::SetUpTestCase(void) {}
 
-void MediaLibraryManagerUtilsTest::TearDownTestCase(void) {}
+void MediaLibraryManagerUtilsTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 
 // SetUp:Execute before each test case
 void MediaLibraryManagerUtilsTest::SetUp() {}

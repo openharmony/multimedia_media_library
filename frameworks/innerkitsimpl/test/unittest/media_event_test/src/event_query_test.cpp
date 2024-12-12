@@ -31,8 +31,12 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 shared_ptr <MediaLibraryRdbStore> rdbStorePtr = nullptr;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 void EventQueryTest::SetUpTestCase(void) {}
-void EventQueryTest::TearDownTestCase(void) {}
+void EventQueryTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 
 // SetUp:Execute before each test case
 void EventQueryTest::SetUp() {}

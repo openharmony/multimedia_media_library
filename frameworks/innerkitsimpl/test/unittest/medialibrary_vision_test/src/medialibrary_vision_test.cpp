@@ -14,6 +14,7 @@
  */
 #define MLOG_TAG "MediaLibraryVisionTest"
 
+#include <thread>
 #include "medialibrary_vision_test.h"
 #include "datashare_result_set.h"
 #include "photo_album_column.h"
@@ -74,6 +75,7 @@ constexpr int32_t FACE_UNCLUSTERED_STATE = 4;
 constexpr int32_t FACE_TEST_FACE_ID = 99;
 constexpr int32_t TAG_IS_ME_NUMBER = 500;
 constexpr int32_t WAIT_TIME = 3;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 void CleanVisionData()
 {
     DataShare::DataSharePredicates predicates;
@@ -193,6 +195,7 @@ void MediaLibraryVisionTest::TearDownTestCase(void)
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
     MEDIA_INFO_LOG("Vision_Test::End");
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryVisionTest::SetUp(void)

@@ -15,6 +15,7 @@
 
 #define MLOG_TAG "MovingPhotoTest"
 
+#include <thread>
 #include "file_asset.h"
 #include "moving_photo_test.h"
 #include "moving_photo_capi.h"
@@ -31,9 +32,14 @@ namespace Media {
 using namespace std;
 using namespace testing::ext;
 
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 void MovingPhotoTest::SetUpTestCase(void) {}
 
-void MovingPhotoTest::TearDownTestCase(void) {}
+void MovingPhotoTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 
 void MovingPhotoTest::SetUp(void) {}
 

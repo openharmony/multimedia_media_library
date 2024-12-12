@@ -15,6 +15,7 @@
 
 #include "medialibrary_queryperf_test.h"
 
+#include <thread>
 #include "datashare_helper.h"
 #include "get_self_permissions.h"
 #include "iservice_registry.h"
@@ -45,6 +46,7 @@ std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 const int DATA_COUNT = 1000;
 const int S2MS = 1000;
 const int MS2NS = 1000000;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void MakeTestData()
 {
@@ -127,6 +129,7 @@ void MediaLibraryQueryPerfUnitTest::TearDownTestCase(void)
         sDataShareHelper_->Release();
     }
     MEDIA_INFO_LOG("TearDownTestCase end");
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryQueryPerfUnitTest::SetUp(void) {}
@@ -139,7 +142,7 @@ int64_t UTCTimeSeconds()
     t.tv_sec = 0;
     t.tv_nsec = 0;
     clock_gettime(CLOCK_REALTIME, &t);
-    return (int64_t)((t.tv_sec * S2MS) + (t.tv_nsec / MS2NS));
+    return static_cast<int64_t>((t.tv_sec * S2MS) + (t.tv_nsec / MS2NS));
 }
 
 HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_001, TestSize.Level0)

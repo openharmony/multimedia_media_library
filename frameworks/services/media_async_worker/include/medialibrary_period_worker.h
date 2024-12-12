@@ -71,8 +71,8 @@ private:
 
     COMPILE_HIDDEN static std::shared_ptr<MediaLibraryPeriodWorker> periodWorkerInstance_;
     COMPILE_HIDDEN static std::mutex instanceMtx_;
-    COMPILE_HIDDEN std::map<int32_t, std::shared_ptr<MedialibraryPeriodTask>> tasks_;
-    COMPILE_HIDDEN std::mutex mtx_;
+    COMPILE_HIDDEN static std::map<int32_t, std::shared_ptr<MedialibraryPeriodTask>> tasks_;
+    COMPILE_HIDDEN static std::mutex mtx_;
 };
 
 } // namespace Media

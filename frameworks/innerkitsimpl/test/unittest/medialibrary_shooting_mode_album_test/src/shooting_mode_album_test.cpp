@@ -18,6 +18,7 @@
 
 #include "shooting_mode_album_test.h"
 
+#include <thread>
 #include "fetch_result.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -51,6 +52,7 @@ const std::string URI_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_A
 const std::string URI_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_UPDATE;
 const std::string URI_ORDER_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM;
 constexpr int32_t SHOOTING_MODE_ALBUM_MIN_NUM = 9;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 int32_t ClearTable(const string &table)
 {
     RdbPredicates predicates(table);
@@ -198,6 +200,7 @@ void ShootingModeAlbumTest::TearDownTestCase()
 {
     ClearAnalysisAlbums();
     ClearTable(ANALYSIS_PHOTO_MAP_TABLE);
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 // SetUp:Execute before each test case
