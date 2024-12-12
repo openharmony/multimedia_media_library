@@ -78,17 +78,17 @@ public:
         const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
 
 private:
-    static void SetRefreshAlbum(bool needRefresh);
-    static int32_t HandleRestData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, const int32_t &assetId,
-        const std::vector<int32_t> &restOwnerAlbumIds, int32_t &handledCount);
-    static int32_t HandleNoOwnerData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
-    static int32_t HandleExpiredAlbumData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
-    static int32_t QueryNoMatchedMap(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+    EXPORT static void SetRefreshAlbum(bool needRefresh);
+    EXPORT static int32_t HandleRestData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+        const int32_t &assetId, const std::vector<int32_t> &restOwnerAlbumIds, int32_t &handledCount);
+    EXPORT static int32_t HandleNoOwnerData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    EXPORT static int32_t HandleExpiredAlbumData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    EXPORT static int32_t QueryNoMatchedMap(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         std::multimap<int32_t, std::vector<int32_t>> &notMatchedMap, bool isUpgrade);
-    static int32_t HandleNewCloudDirtyData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+    EXPORT static int32_t HandleNewCloudDirtyData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         std::multimap<int32_t, std::vector<int32_t>> &notMatchedMap);
-    static int32_t HandleDuplicateAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
-    static int32_t HandleMisMatchScreenRecord(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    EXPORT static int32_t HandleDuplicateAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
+    EXPORT static int32_t HandleMisMatchScreenRecord(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
 
 private:
     static std::mutex cloudAlbumAndDataMutex_;
