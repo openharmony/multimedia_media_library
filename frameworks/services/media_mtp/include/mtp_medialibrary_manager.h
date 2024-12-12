@@ -38,7 +38,7 @@ public:
     int32_t GetHandles(const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<UInt32List> &outHandles);
     int32_t GetObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<ObjectInfo> &outObjectInfo);
-    int32_t GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd);
+    int32_t GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd, const std::string &mode);
     int32_t GetThumb(const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<UInt8List> &outThumb);
     int32_t SendObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         uint32_t &outStorageID, uint32_t &outParent, uint32_t &outHandle);
@@ -60,6 +60,7 @@ public:
     int32_t GetVideoThumb(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<UInt8List> &outThumb);
     void DeleteCanceledObject(uint32_t id);
+    int32_t GetFdByOpenFile(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd);
 private:
     int32_t SetObjectInfo(const std::unique_ptr<FileAsset> &fileAsset, std::shared_ptr<ObjectInfo> &outObjectInfo);
     int32_t SetObject(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
