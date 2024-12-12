@@ -153,7 +153,8 @@ private:
 
 public:
     std::string FindDisplayName(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-        const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t targetAlbumId)
+        const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t targetAlbumId,
+        const std::string displayName = "")
     {
         if (resultSet == nullptr || targetAlbumId <= 0) {
             MEDIA_ERR_LOG("Media_Operation: FindBurstKey: resultSet is null or targetAlbumId is invalid");
@@ -161,7 +162,8 @@ public:
         }
         // Build the photo asset info.
         PhotoDisplayNameOperation::PhotoAssetInfo photoAssetInfo;
-        photoAssetInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+        photoAssetInfo.displayName =
+            displayName == "" ? GetStringVal(MediaColumn::MEDIA_NAME, resultSet) : displayName;
         photoAssetInfo.subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
         photoAssetInfo.ownerAlbumId = targetAlbumId;
         return this->FindDislayName(rdbStore, photoAssetInfo);
