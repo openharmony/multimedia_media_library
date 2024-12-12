@@ -95,6 +95,7 @@ enum class EXPORT OperationObject : uint32_t {
     ANALYSIS_ASSET_SD_MAP,
     ANALYSIS_ALBUM_ASSET_MAP,
     TAB_OLD_PHOTO,
+    PTP_OPERATION,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -176,6 +177,7 @@ enum class EXPORT OperationType : uint32_t {
     DEGENERATE_MOVING_PHOTO,
     ALL_DUPLICATE_ASSETS,
     CAN_DEL_DUPLICATE_ASSETS,
+    SET_OWNER_ALBUM_ID,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

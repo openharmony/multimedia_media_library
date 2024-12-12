@@ -37,7 +37,7 @@ public:
     void SetFilesystemType(uint16_t fileSytemType);
     void SetAccessCapability(uint16_t accessCapability);
     void SetMaxCapacity(uint64_t maxCapacity);
-    void SetFreeSpaceInBytes(uint32_t freeSpaceInBytes);
+    void SetFreeSpaceInBytes(uint64_t freeSpaceInBytes);
     void SetFreeSpaceInObjects(uint32_t freeSpaceInObjects);
     void SetStorageDescription(std::string storageDescription);
     void SetVolumeIdentifier(std::string volumeIdentifier);

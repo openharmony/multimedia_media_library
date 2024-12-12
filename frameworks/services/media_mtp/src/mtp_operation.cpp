@@ -12,12 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "MtpOperation"
 #include "mtp_operation.h"
 #include <algorithm>
 #include "header_data.h"
 #include "media_log.h"
 #include "media_mtp_utils.h"
 #include "mtp_constants.h"
+#include "mtp_global.h"
 #include "mtp_packet.h"
 #include "mtp_packet_tools.h"
 #include "mtp_operation_context.h"
@@ -79,6 +81,10 @@ void MtpOperation::Execute()
             SendR2Idata(errorCode);
         }
     }
+    if (errorCode == MTP_ERROR_TRANSFER_CANCELLED) {
+        MEDIA_INFO_LOG("File transfer canceled");
+        return;
+    }
 
     SendMakeResponsePacket(errorCode);
 }
@@ -101,8 +107,14 @@ void MtpOperation::ReceiveRequestPacket(int &errorCode)
 
 void MtpOperation::SendMakeResponsePacket(int &errorCode)
 {
+    CHECK_AND_RETURN_LOG(responsePacketPtr_ != nullptr, "responsePacketPtr_ is null");
     responsePacketPtr_->Reset();
+    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "mtpContextPtr_ is null");
     GetPayloadData(mtpContextPtr_, dataPayloadData_, RESPONSE_CONTAINER_TYPE, errorCode);
+    if (mtpContextPtr_->operationCode != 0) {
+        MEDIA_INFO_LOG("operation = [0x%{public}x : %{public}s ]", mtpContextPtr_->operationCode,
+            MtpPacketTool::GetOperationName(mtpContextPtr_->operationCode).c_str());
+    }
     shared_ptr<HeaderData> responseHeaderData = make_shared<HeaderData>(
         RESPONSE_CONTAINER_TYPE, responseCode_, mtpContextPtr_->transactionID);
 
@@ -163,6 +175,8 @@ void MtpOperation::SendR2Idata(int &errorCode)
     }
 
     responseCode_ = GetPayloadData(mtpContextPtr_, dataPayloadData_, DATA_CONTAINER_TYPE, errorCode);
+    MEDIA_INFO_LOG("operation = [0x%{public}x : %{public}s ]", mtpContextPtr_->operationCode,
+        MtpPacketTool::GetOperationName(mtpContextPtr_->operationCode).c_str());
     if (errorCode != MTP_SUCCESS) {
         MEDIA_ERR_LOG("GetPayloadData fail err: %{public}d", errorCode);
         return;
@@ -210,6 +224,22 @@ uint16_t MtpOperation::GetPayloadData(shared_ptr<MtpOperationContext> &context, 
         case MTP_OPERATION_OPEN_SESSION_CODE:
             responseCode_ = operationUtils_->GetOpenSession(data, errorCode);
             break;
+        case MTP_OPERATION_SET_DEVICE_PROP_VALUE_CODE:
+            responseCode_ = operationUtils_->SetDevicePropValueResp(data);
+            break;
+        default:
+            responseCode_ = GetPayloadDataSub(context, data, containerType, errorCode);
+            break;
+    }
+    return responseCode_;
+}
+
+uint16_t MtpOperation::GetPayloadDataSub(shared_ptr<MtpOperationContext> &context, shared_ptr<PayloadData> &data,
+    uint16_t containerType, int &errorCode)
+{
+    responseCode_ = MTP_UNDEFINED_CODE;
+    CHECK_AND_RETURN_RET_LOG(!MtpGlobal::IsBlocked(), responseCode_, "Not support operation in blocked mode");
+    switch (context->operationCode) {
         case MTP_OPERATION_RESET_DEVICE_CODE:
         case MTP_OPERATION_CLOSE_SESSION_CODE:
             responseCode_ = operationUtils_->GetCloseSession(data);
@@ -277,9 +307,6 @@ uint16_t MtpOperation::GetPayloadDataMore(shared_ptr<MtpOperationContext> &conte
         case MTP_OPERATION_GET_DEVICE_PROP_VALUE_CODE:
             responseCode_ = operationUtils_->GetPropValue(data, containerType, errorCode);
             break;
-        case MTP_OPERATION_SET_DEVICE_PROP_VALUE_CODE:
-            responseCode_ = operationUtils_->SetDevicePropValueResp(data);
-            break;
         case MTP_OPERATION_RESET_DEVICE_PROP_VALUE_CODE:
             responseCode_ = operationUtils_->ResetDevicePropResp(data);
             break;
@@ -322,10 +349,10 @@ void MtpOperation::ResetOperation()
     if (mtpContextPtr_ != nullptr) {
         mtpContextPtr_->operationCode = 0;
         mtpContextPtr_->transactionID = 0;
+        mtpContextPtr_->indata = false;
     }
 
     responseCode_ = MTP_OK_CODE;
-    mtpContextPtr_->indata = false;
 }
 
 void MtpOperation::AddStorage(shared_ptr<Storage> &storage)

@@ -30,7 +30,12 @@ int32_t MtpErrorUtils::SolveGetHandlesError(const int32_t mediaError)
         { E_HAS_DB_ERROR, MTP_ERROR_STORE_NOT_AVAILABLE },
         { E_NO_SUCH_FILE, MTP_ERROR_INVALID_OBJECTHANDLE },
     };
-    return getHandlesError.at(mediaError);
+    map<int32_t, int32_t>::const_iterator iterator = getHandlesError.find(mediaError);
+    if (iterator != getHandlesError.end()) {
+        return getHandlesError.at(mediaError);
+    } else {
+        return MTP_ERROR_INVALID_OBJECTHANDLE;
+    }
 }
 
 int32_t MtpErrorUtils::SolveGetObjectInfoError(const int32_t mediaError)
@@ -40,7 +45,12 @@ int32_t MtpErrorUtils::SolveGetObjectInfoError(const int32_t mediaError)
         { E_HAS_DB_ERROR, MTP_ERROR_STORE_NOT_AVAILABLE },
         { E_NO_SUCH_FILE, MTP_ERROR_INVALID_OBJECTHANDLE },
     };
-    return getObjectInfoError.at(mediaError);
+    map<int32_t, int32_t>::const_iterator iterator = getObjectInfoError.find(mediaError);
+    if (iterator != getObjectInfoError.end()) {
+        return getObjectInfoError.at(mediaError);
+    } else {
+        return MTP_ERROR_INVALID_OBJECTHANDLE;
+    }
 }
 
 int32_t MtpErrorUtils::SolveGetFdError(const int32_t mediaError)
@@ -50,7 +60,12 @@ int32_t MtpErrorUtils::SolveGetFdError(const int32_t mediaError)
         { E_HAS_DB_ERROR, MTP_ERROR_STORE_NOT_AVAILABLE },
         { E_HAS_FS_ERROR, MTP_ERROR_INVALID_OBJECTHANDLE },
     };
-    return getFdInfoError.at(mediaError);
+    map<int32_t, int32_t>::const_iterator iterator = getFdInfoError.find(mediaError);
+    if (iterator != getFdInfoError.end()) {
+        return getFdInfoError.at(mediaError);
+    } else {
+        return MTP_ERROR_INVALID_OBJECTHANDLE;
+    }
 }
 
 int32_t MtpErrorUtils::SolveSendObjectInfoError(const int32_t mediaError)

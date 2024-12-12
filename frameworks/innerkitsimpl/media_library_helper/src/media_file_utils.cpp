@@ -43,6 +43,7 @@
 #include "medialibrary_type_const.h"
 #include "mimetype_utils.h"
 #include "medialibrary_tracer.h"
+#include "ptp_medialibrary_manager_uri.h"
 #include "string_ex.h"
 
 using namespace std;
@@ -1442,7 +1443,8 @@ string MediaFileUtils::GetVirtualUriFromRealUri(const string &uri, const string 
 {
     if ((uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) ||
         (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos) ||
-        (uri.find(PhotoColumn::HIGHTLIGHT_COVER_URI) != string::npos)) {
+        (uri.find(PhotoColumn::HIGHTLIGHT_COVER_URI) != string::npos) ||
+        (uri.find(URI_MTP_OPERATION) != string::npos)) {
         return uri;
     }
 
@@ -1517,7 +1519,8 @@ string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
 {
     if ((uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) ||
         (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos) ||
-        (uri.find(PhotoColumn::HIGHTLIGHT_COVER_URI) != string::npos)) {
+        (uri.find(PhotoColumn::HIGHTLIGHT_COVER_URI) != string::npos) ||
+        (uri.find(URI_MTP_OPERATION) != string::npos)) {
         return uri;
     }
 
@@ -1964,5 +1967,13 @@ void MediaFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
     if (ret != 0) {
         MEDIA_ERR_LOG("Modify file failed: %{public}d", ret);
     }
+}
+
+bool MediaFileUtils::IsCalledBySelf()
+{
+    if (IPCSkeleton::GetCallingFullTokenID() == IPCSkeleton::GetSelfTokenID()) {
+        return E_OK;
+    }
+    return E_FAIL;
 }
 } // namespace OHOS::Media
