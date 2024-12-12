@@ -66,11 +66,11 @@ int GetObjectInfoData::Maker(std::vector<uint8_t> &outBuffer)
     MtpPacketTool::PutUInt32(outBuffer, objectInfo->size);
     MtpPacketTool::PutUInt16(outBuffer, objectInfo->thumbFormat);
     MtpPacketTool::PutUInt32(outBuffer, objectInfo->thumbCompressedSize);
-    MtpPacketTool::PutUInt32(outBuffer, objectInfo->thumbPixWidth);
-    MtpPacketTool::PutUInt32(outBuffer, objectInfo->thumbPixHeight);
-    MtpPacketTool::PutUInt32(outBuffer, objectInfo->imagePixWidth);
-    MtpPacketTool::PutUInt32(outBuffer, objectInfo->imagePixHeight);
-    MtpPacketTool::PutUInt32(outBuffer, objectInfo->imagePixDepth);
+    MtpPacketTool::PutUInt32(outBuffer, objectInfo->thumbPixelWidth);
+    MtpPacketTool::PutUInt32(outBuffer, objectInfo->thumbPixelHeight);
+    MtpPacketTool::PutUInt32(outBuffer, objectInfo->imagePixelWidth);
+    MtpPacketTool::PutUInt32(outBuffer, objectInfo->imagePixelHeight);
+    MtpPacketTool::PutUInt32(outBuffer, objectInfo->imagePixelDepth);
     MtpPacketTool::PutUInt32(outBuffer, objectInfo->parent);
     MtpPacketTool::PutUInt16(outBuffer, objectInfo->associationType);
     MtpPacketTool::PutUInt32(outBuffer, objectInfo->associationDesc);

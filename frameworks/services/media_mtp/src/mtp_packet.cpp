@@ -21,6 +21,8 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 const int EVENT_LENGTH = 16;
+const uint32_t BATCH_SIZE = 200000;
+
 MtpPacket::MtpPacket(std::shared_ptr<MtpOperationContext> &context)
     : context_(context), readSize_(0), headerData_(nullptr), payloadData_(nullptr)
 {
@@ -37,6 +39,8 @@ MtpPacket::~MtpPacket()
 
 void MtpPacket::Init(std::shared_ptr<HeaderData> &headerData)
 {
+    CHECK_AND_RETURN_LOG(headerData != nullptr, "Init failed, headerData is nullptr");
+
     readSize_ = 0;
     headerData_ = headerData;
 
@@ -49,6 +53,9 @@ void MtpPacket::Init(std::shared_ptr<HeaderData> &headerData)
 
 void MtpPacket::Init(std::shared_ptr<HeaderData> &headerData, std::shared_ptr<PayloadData> &payloadData)
 {
+    CHECK_AND_RETURN_LOG(headerData != nullptr, "Init failed, headerData is nullptr");
+    CHECK_AND_RETURN_LOG(payloadData != nullptr, "Init failed, payloadData is nullptr");
+
     readSize_ = 0;
     headerData_ = headerData;
     payloadData_ = payloadData;
@@ -111,6 +118,9 @@ bool MtpPacket::IsI2R(uint16_t operationCode)
 
 int MtpPacket::Read()
 {
+    CHECK_AND_RETURN_RET_LOG(mtpDriver_ != nullptr,
+        MTP_ERROR_DRIVER_OPEN_FAILED, "Read failed, mtpDriver_ is nullptr");
+
     std::vector<uint8_t>().swap(readBuffer_);
     int errorCode = mtpDriver_->Read(readBuffer_, readSize_);
     return errorCode;
@@ -118,6 +128,10 @@ int MtpPacket::Read()
 
 int MtpPacket::Write()
 {
+    CHECK_AND_RETURN_RET_LOG(mtpDriver_ != nullptr,
+        MTP_ERROR_DRIVER_OPEN_FAILED, "Write failed, mtpDriver_ is nullptr");
+    CHECK_AND_RETURN_RET_LOG(headerData_ != nullptr, MTP_FAIL, "Write failed, headerData_ is nullptr");
+
     if (headerData_->GetContainerType() == EVENT_CONTAINER_TYPE) {
         EventMtp event;
         event.length = EVENT_LENGTH;
@@ -125,7 +139,19 @@ int MtpPacket::Write()
         mtpDriver_->WriteEvent(event);
         return MTP_SUCCESS;
     }
-    mtpDriver_->Write(writeBuffer_, writeSize_);
+    // Due to the USB module using IPC for communication, and the maximum length supported by IPC is 248000,
+    // when the write buffer is too large, it needs to be split into multiple calls.
+    if (writeBuffer_.size() > BATCH_SIZE) {
+        uint32_t total = writeBuffer_.size();
+        for (uint32_t i = 0; i < writeBuffer_.size(); i += BATCH_SIZE) {
+            uint32_t end = std::min(i + BATCH_SIZE, total);
+            std::vector<uint8_t> batch(writeBuffer_.begin() + i, writeBuffer_.begin() + end);
+            mtpDriver_->Write(batch, end);
+            std::vector<uint8_t>().swap(batch);
+        }
+    } else {
+        mtpDriver_->Write(writeBuffer_, writeSize_);
+    }
     return MTP_SUCCESS;
 }
 
@@ -147,6 +173,9 @@ int MtpPacket::Parser()
 
 int MtpPacket::Maker(bool isPayload)
 {
+    CHECK_AND_RETURN_RET_LOG(payloadData_ != nullptr, MTP_FAIL, "Maker failed, payloadData_ is nullptr");
+    CHECK_AND_RETURN_RET_LOG(headerData_ != nullptr, MTP_FAIL, "Maker failed, headerData_ is nullptr");
+
     writeSize_ = payloadData_->CalculateSize() + PACKET_HEADER_LENGETH;
     headerData_->SetContainerLength(writeSize_);
 
@@ -183,6 +212,9 @@ int MtpPacket::ParserHead()
 
 int MtpPacket::ParserPayload()
 {
+    CHECK_AND_RETURN_RET_LOG(headerData_ != nullptr, MTP_ERROR_PACKET_INCORRECT,
+        "ParserPayload failed, headerData_ is nullptr");
+
     if (readSize_ <= 0) {
         MEDIA_ERR_LOG("ParserPayload fail readSize_ <= 0");
         return MTP_ERROR_PACKET_INCORRECT;
@@ -243,11 +275,13 @@ int MtpPacket::MakerPayload()
 
 uint16_t MtpPacket::GetOperationCode()
 {
+    CHECK_AND_RETURN_RET_LOG(headerData_ != nullptr, MTP_FAIL, "GetOperationCode failed, headerData_ is nullptr");
     return headerData_->GetCode();
 }
 
 uint32_t MtpPacket::GetTransactionId()
 {
+    CHECK_AND_RETURN_RET_LOG(headerData_ != nullptr, MTP_FAIL, "GetTransactionId failed, headerData_ is nullptr");
     return headerData_->GetTransactionId();
 }
 

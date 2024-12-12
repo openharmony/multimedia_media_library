@@ -41,7 +41,7 @@ int HeaderData::Parser(vector<uint8_t> &buffer, uint32_t readSize)
         MEDIA_ERR_LOG("readSize incorrect : < PACKET_HEADER_LENGETH!");
         return MTP_ERROR_PACKET_INCORRECT;
     }
-    
+
     int offset = 0;
     containerLength_ = MtpPacketTool::GetUInt32(buffer[offset], buffer[offset + OFFSET_1],
         buffer[offset + OFFSET_2], buffer[offset + OFFSET_3]);
@@ -57,7 +57,7 @@ int HeaderData::Parser(vector<uint8_t> &buffer, uint32_t readSize)
     context_->operationCode = code_;
     context_->transactionID = transactionID_;
     HeaderData::sTransactionID_ = transactionID_;
-    MEDIA_INFO_LOG("operationCode %{public}x, transactionID %{public}d, containerType %{public}d",
+    MEDIA_DEBUG_LOG("Parser operationCode 0x%{public}x, transactionID %{public}d, containerType %{public}d",
         context_->operationCode, context_->transactionID, containerType_);
     if (containerType_ == CONTAINER_TYPE_2) {
         context_->indata = true;

@@ -26,6 +26,7 @@
 #include "medialibrary_db_const.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
+#include "ptp_medialibrary_manager_uri.h"
 #include "search_column.h"
 #include "story_album_column.h"
 #include "story_cover_info_column.h"
@@ -129,6 +130,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
 
         // others
         { MISC_OPERATION, OperationObject::MISCELLANEOUS },
+        { PTP_OPERATION, OperationObject::PTP_OPERATION },
     };
     return oprnObjMap;
 }
@@ -203,6 +205,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::USER_PHOTOGRAPHY, { { OperationType::UNKNOWN_TYPE, USER_PHOTOGRAPHY_INFO_TABLE } } },
         { OperationObject::APP_URI_PERMISSION_INNER,
             { { OperationType::UNKNOWN_TYPE, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE } } },
+        { OperationObject::PTP_OPERATION, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } }},
     };
     return tableNameMap;
 }
@@ -304,6 +307,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_DEGENERATE_MOVING_PHOTO, OperationType::DEGENERATE_MOVING_PHOTO },
         { OPRN_ALL_DUPLICATE_ASSETS, OperationType::ALL_DUPLICATE_ASSETS },
         { OPRN_CAN_DEL_DUPLICATE_ASSETS, OperationType::CAN_DEL_DUPLICATE_ASSETS },
+        { OPRN_UPDATE_OWNER_ALBUM_ID, OperationType::SET_OWNER_ALBUM_ID },
     };
     return oprnTypeMap;
 }
