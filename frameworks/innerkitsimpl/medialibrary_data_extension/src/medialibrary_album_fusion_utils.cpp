@@ -1095,6 +1095,44 @@ static int32_t CopyAlbumMetaData(const std::shared_ptr<MediaLibraryRdbStore> upg
     return ret;
 }
 
+static int32_t BatchDeleteAlbumAndUpdateRelation(const int32_t &oldAlbumId, const int64_t &newAlbumId,
+    bool isCloudAblum, std::shared_ptr<TransactionOperations> trans)
+{
+    if (trans == nullptr) {
+        MEDIA_ERR_LOG("transactionOprn is null");
+        return E_HAS_DB_ERROR;
+    }
+    std::string DELETE_EXPIRED_ALBUM = "";
+    if (isCloudAblum) {
+        DELETE_EXPIRED_ALBUM = "UPDATE PhotoAlbum SET dirty = '4' WHERE album_id = " + to_string(oldAlbumId);
+    } else {
+        DELETE_EXPIRED_ALBUM = "DELETE FROM PhotoAlbum WHERE album_id = " + to_string(oldAlbumId);
+    }
+    int32_t ret = trans->ExecuteSql(DELETE_EXPIRED_ALBUM);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("DELETE expired album failed, ret = %{public}d, albumId is %{public}d",
+            ret, oldAlbumId);
+        return E_HAS_DB_ERROR;
+    }
+    const std::string UPDATE_NEW_ALBUM_ID_IN_PHOTO_MAP = "UPDATE PhotoMap SET map_album = " +
+        to_string(newAlbumId) + " WHERE dirty != '4' AND map_album = " + to_string(oldAlbumId);
+    ret = trans->ExecuteSql(UPDATE_NEW_ALBUM_ID_IN_PHOTO_MAP);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Update relationship in photo map fails, ret = %{public}d, albumId is %{public}d",
+            ret, oldAlbumId);
+        return E_HAS_DB_ERROR;
+    }
+    const std::string UPDATE_NEW_ALBUM_ID_IN_PHOTOS = "UPDATE Photos SET owner_album_id = " +
+        to_string(newAlbumId) + " WHERE dirty != '4' AND owner_album_id = " + to_string(oldAlbumId);
+    ret = trans->ExecuteSql(UPDATE_NEW_ALBUM_ID_IN_PHOTOS);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Update relationship in photo map fails, ret = %{public}d, albumId is %{public}d",
+            ret, oldAlbumId);
+        return E_HAS_DB_ERROR;
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryAlbumFusionUtils::DeleteALbumAndUpdateRelationship(
     const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, const int32_t &oldAlbumId, const int64_t &newAlbumId,
     bool isCloudAblum)
@@ -1107,35 +1145,17 @@ int32_t MediaLibraryAlbumFusionUtils::DeleteALbumAndUpdateRelationship(
         MEDIA_ERR_LOG("Target album id error, origin albumId is %{public}d", oldAlbumId);
         return E_INVALID_ARGUMENTS;
     }
-    std::string DELETE_EXPIRED_ALBUM = "";
-    if (isCloudAblum) {
-        DELETE_EXPIRED_ALBUM = "UPDATE PhotoAlbum SET dirty = '4' WHERE album_id = " + to_string(oldAlbumId);
-    } else {
-        DELETE_EXPIRED_ALBUM = "DELETE FROM PhotoAlbum WHERE album_id = " + to_string(oldAlbumId);
+
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    int32_t errCode = E_OK;
+    std::function<int(void)> func = [&]()->int {
+        return BatchDeleteAlbumAndUpdateRelation(oldAlbumId, newAlbumId, isCloudAblum, trans);
+    };
+    errCode = trans->RetryTrans(func);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("DeleteAlbumAndUpdateRelationship trans retry fail!, ret = %{public}d", errCode);
     }
-    int32_t ret = upgradeStore->ExecuteSql(DELETE_EXPIRED_ALBUM);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("DELETE expired album failed, ret = %{public}d, albumId is %{public}d",
-            ret, oldAlbumId);
-        return E_HAS_DB_ERROR;
-    }
-    const std::string UPDATE_NEW_ALBUM_ID_IN_PHOTO_MAP = "UPDATE PhotoMap SET map_album = " +
-        to_string(newAlbumId) + " WHERE dirty != '4' AND map_album = " + to_string(oldAlbumId);
-    ret = upgradeStore->ExecuteSql(UPDATE_NEW_ALBUM_ID_IN_PHOTO_MAP);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Update relationship in photo map fails, ret = %{public}d, albumId is %{public}d",
-            ret, oldAlbumId);
-        return E_HAS_DB_ERROR;
-    }
-    const std::string UPDATE_NEW_ALBUM_ID_IN_PHOTOS = "UPDATE Photos SET owner_album_id = " +
-     to_string(newAlbumId) + " WHERE dirty != '4' AND owner_album_id = " + to_string(oldAlbumId);
-    ret = upgradeStore->ExecuteSql(UPDATE_NEW_ALBUM_ID_IN_PHOTOS);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Update relationship in photo map fails, ret = %{public}d, albumId is %{public}d",
-            ret, oldAlbumId);
-        return E_HAS_DB_ERROR;
-    }
-    return E_OK;
+    return errCode;
 }
 
 bool MediaLibraryAlbumFusionUtils::IsCloudAlbum(shared_ptr<NativeRdb::ResultSet> resultSet)
