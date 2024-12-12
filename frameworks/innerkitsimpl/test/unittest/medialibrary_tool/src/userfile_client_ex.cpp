@@ -47,6 +47,7 @@ const std::string URI_DELIMITER = std::string(1, SLASH_CHAR);
 const std::string URI_ARG_FIRST_DELIMITER = "?";
 const std::string URI_API_VERSION_STR = std::to_string(static_cast<uint32_t>(MediaLibraryApi::API_10));
 const std::string URI_API_VERSION = URI_PARAM_API_VERSION + "=" + URI_API_VERSION_STR;
+constexpr int32_t ROOT_UID = 0;
 
 enum class MediaToolOperation {
     INSERT,
@@ -184,6 +185,11 @@ static inline std::string GetDeleteUri(const std::string &tableName)
     return uri;
 }
 
+static inline bool IsRoot()
+{
+    return getuid() == ROOT_UID;
+}
+
 static bool InitToken(const sptr<IRemoteObject> &token)
 {
     UserFileClient::Init(token);
@@ -272,7 +278,9 @@ int32_t UserFileClientEx::Query(const std::string &tableName, const std::string 
     if (!id.empty()) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_ID, id);
     }
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
+    if (!IsRoot()) {
+        predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
+    }
     std::vector<std::string> columns;
     int errCode = 0;
     MEDIA_INFO_LOG("query. queryUri:%{public}s, tableName:%{public}s, uri:%{public}s, "
@@ -459,7 +467,9 @@ std::shared_ptr<DataShare::DataShareResultSet> UserFileClientEx::GetResultsetByD
 {
     DataShare::DataSharePredicates predicates;
     predicates.And()->EqualTo(MediaColumn::MEDIA_NAME, displayName);
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
+    if (!IsRoot()) {
+        predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
+    }
     std::vector<std::string> columns;
     int queryErrCode = 0;
     std::string queryUriStr = GetQueryUri(tableName);

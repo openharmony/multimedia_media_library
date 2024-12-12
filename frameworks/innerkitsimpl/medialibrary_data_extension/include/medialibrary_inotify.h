@@ -50,7 +50,7 @@ struct WatchBundleInfo {
     std::string Dump() const
     {
         return "count:" + std::to_string(count) + ", firstEntryTime:" + std::to_string(firstEntryTime) +
-            ", firstUri:" + firstUri.c_str() + ", bundleName:" + bundleName.c_str();
+            ", firstUri:" + firstUri + ", bundleName:" + bundleName;
     }
 };
 

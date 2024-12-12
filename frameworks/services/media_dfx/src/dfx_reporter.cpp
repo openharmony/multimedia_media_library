@@ -423,7 +423,7 @@ void DfxReporter::ReportPhotoRecordInfo()
         "MEDIALIB_DATABASE_INFO",
         HiviewDFX::HiSysEvent::EventType::STATISTIC,
         "DB_FILE_SIZE", dbFileSize,
-        "SLAVE_DB_FILE_SIZE", photoRecordInfo.slaveDbFileSize,
+        "REPLICA_DB_FILE_SIZE", photoRecordInfo.slaveDbFileSize,
         "IMAGE_COUNT", imageCount,
         "VIDEO_COUNT", videoCount,
         "ABNORMAL_SIZE_COUNT", abnormalSizeCount,
