@@ -110,8 +110,7 @@ constexpr int32_t FLAT_ANGLE = 180;
 constexpr int32_t THUMBNAIL_GENERATE_BATCH_COUNT = 200;
 constexpr int32_t ASTC_GENERATE_COUNT_AFTER_RESTORE = 500;
 constexpr int32_t READY_TEMPERATURE_LEVEL = 4;
-constexpr int32_t THUMB_BATCH_WAIT_TIME = 15 * 1000;
-constexpr int32_t RETRY_DOWNLOAD_THUMB_LIMIT = 3;
+constexpr int32_t EVEN_BASE_NUMBER = 2;
 const std::string DEFAULT_EXIF_ORIENTATION = "1";
 
 const std::string THUMBNAIL_LCD_SUFFIX = "LCD";     // The size fit to screen
