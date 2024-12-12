@@ -169,6 +169,9 @@ const std::string MEDIA_DIROPRN_FMS_DELETEDIR = "fms_delete_dir";
 const std::string MEDIA_DIROPRN_FMS_TRASHDIR = "fms_trash_dir";
 const std::string MEDIA_QUERYOPRN_QUERYVOLUME = "query_media_volume";
 
+// Query editData exists
+const std::string MEDIA_QUERYOPRN_QUERYEDITDATA = "query_edit_data";
+
 // File operations constants
 const std::string MEDIA_FILEOPRN_COPYASSET = "copy_asset";
 

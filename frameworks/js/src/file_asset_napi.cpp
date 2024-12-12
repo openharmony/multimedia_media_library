@@ -4663,12 +4663,70 @@ napi_value FileAssetNapi::PhotoAccessHelperIsEdited(napi_env env, napi_callback_
         PhotoAccessHelperIsEditedExecute, PhotoAccessHelperIsEditedComplete);
 }
 
+static void QueryPhotoEditDataExists(int32_t fileId, int32_t &hasEditData)
+{
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    vector<string> columns;
+    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN_QUERYEDITDATA + "/" + MEDIA_QUERYOPRN_QUERYEDITDATA);
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("Query failed");
+        return;
+    }
+    if (resultSet->GetInt(0, hasEditData) != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("Can not get hasEditData");
+        return;
+    }
+}
+
+static void ProcessEditData(FileAssetAsyncContext *context, const UniqueFd &uniqueFd)
+{
+    if (context == nullptr) {
+        NAPI_ERR_LOG("context nullptr");
+        return;
+    }
+    struct stat fileInfo;
+    if (fstat(uniqueFd.Get(), &fileInfo) == 0) {
+        off_t fileSize = fileInfo.st_size;
+        if (fileSize < 0) {
+            NAPI_ERR_LOG("fileBuffer error : %{public}ld", static_cast<long>(fileSize));
+            context->SaveError(E_FAIL);
+            return;
+        }
+        context->editDataBuffer = static_cast<char *>(malloc(fileSize + 1));
+        if (!context->editDataBuffer) {
+            NAPI_ERR_LOG("Photo request edit data failed, fd: %{public}d", uniqueFd.Get());
+            context->SaveError(E_FAIL);
+            return;
+        }
+        ssize_t bytes = read(uniqueFd.Get(), context->editDataBuffer, fileSize);
+        if (bytes < 0) {
+            NAPI_ERR_LOG("Read edit data failed, errno: %{public}d", errno);
+            context->SaveError(E_FAIL);
+            return;
+        }
+        context->editDataBuffer[bytes] = '\0';
+    } else {
+        NAPI_ERR_LOG("can not get stat errno:%{public}d", errno);
+        context->SaveError(E_FAIL);
+    }
+}
+
 static void PhotoAccessHelperRequestEditDataExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperRequestEditDataExecute");
     auto *context = static_cast<FileAssetAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    int32_t hasEditData = 0;
+    QueryPhotoEditDataExists(context->objectPtr->GetId(), hasEditData);
+    if (hasEditData == 0) {
+        context->editDataBuffer = static_cast<char*>(malloc(1));
+        context->editDataBuffer[0] = '\0';
+        return;
+    }
     bool isValid = false;
     string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
@@ -4686,31 +4744,7 @@ static void PhotoAccessHelperRequestEditDataExecute(napi_env env, void *data)
         }
         NAPI_ERR_LOG("Photo request edit data failed, ret: %{public}d", uniqueFd.Get());
     } else {
-        struct stat fileInfo;
-        if (fstat(uniqueFd.Get(), &fileInfo) == 0) {
-            off_t fileSize = fileInfo.st_size;
-            if (fileSize < 0) {
-                NAPI_ERR_LOG("fileBuffer error : %{public}ld", static_cast<long>(fileSize));
-                context->SaveError(E_FAIL);
-                return;
-            }
-            context->editDataBuffer = static_cast<char*>(malloc(fileSize + 1));
-            if (!context->editDataBuffer) {
-                NAPI_ERR_LOG("Photo request edit data failed, fd: %{public}d", uniqueFd.Get());
-                context->SaveError(E_FAIL);
-                return;
-            }
-            ssize_t bytes = read(uniqueFd.Get(), context->editDataBuffer, fileSize);
-            if (bytes < 0) {
-                NAPI_ERR_LOG("Read edit data failed, errno: %{public}d", errno);
-                context->SaveError(E_FAIL);
-                return;
-            }
-            context->editDataBuffer[bytes] = '\0';
-        } else {
-            NAPI_ERR_LOG("can not get stat errno:%{public}d", errno);
-            context->SaveError(E_FAIL);
-        }
+        ProcessEditData(context, uniqueFd);
     }
 }
 
