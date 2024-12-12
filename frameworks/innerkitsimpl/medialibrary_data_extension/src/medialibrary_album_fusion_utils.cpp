@@ -682,6 +682,52 @@ static int32_t UpdateCoverInfoForAlbum(const std::shared_ptr<MediaLibraryRdbStor
     return E_OK;
 }
 
+static int32_t CopyLocalFile(shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t &ownerAlbumId,
+    const std::string displayName, std::string &targetPath, const int32_t &assetId)
+{
+    MEDIA_INFO_LOG("begin copy local file, fileId:%{public}d, and target album:%{public}d", assetId, ownerAlbumId);
+    std::string srcPath = "";
+    GetSourceFilePath(srcPath, resultSet);
+
+    int32_t mediaType;
+    GetIntValueFromResultSet(resultSet, MediaColumn::MEDIA_TYPE, mediaType);
+    buildTargetFilePath(targetPath, displayName, mediaType);
+    if (targetPath.empty()) {
+        MEDIA_ERR_LOG("Build target path fail, origin file is %{public}s", srcPath.c_str());
+        return E_INVALID_PATH;
+    }
+    MEDIA_INFO_LOG("begin copy local file, scrPath is %{public}s, and target path is %{public}s",
+        srcPath.c_str(), targetPath.c_str());
+    // Copy photo files, supporting copy moving photo's video and extraData folder.
+    int32_t err = PhotoFileOperation().CopyPhoto(resultSet, targetPath);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("CopyPhoto failed, srcPath = %{public}s, targetPath = %{public}s, ret = %{public}d",
+            srcPath.c_str(), targetPath.c_str(), err);
+        return err;
+    }
+    return E_OK;
+}
+
+static int32_t CopyMateData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, shared_ptr<NativeRdb::ResultSet>
+    &resultSet, int64_t &newAssetId, std::string &targetPath, const MediaAssetCopyInfo &copyInfo)
+{
+    NativeRdb::ValuesBucket values;
+    int32_t err = BuildInsertValuesBucket(upgradeStore, values, resultSet, copyInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Insert meta data fail and delete migrated file %{public}s ", targetPath.c_str());
+        DeleteFile(targetPath);
+        return err;
+    }
+    err = copyMetaData(upgradeStore, newAssetId, values);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Insert meta data fail and delete migrated file err %{public}d ", err);
+        // If insert fails, delete the moved file to avoid wasted space
+        DeleteFile(targetPath);
+        return err;
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
     const int32_t &ownerAlbumId, shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId,
     std::string displayName)
@@ -710,18 +756,12 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<
 
     err = UpdateRelationship(upgradeStore, assetId, newAssetId, ownerAlbumId, true);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("UpdateRelationship fail, assetId: %{public}d, newAssetId: %{public}lld,"
-            "ownerAlbumId: %{public}d, ret = %{public}d", assetId, (long long)newAssetId, ownerAlbumId, err);
+        MEDIA_ERR_LOG("UpdateRelationship fail, assetId: %{public}d, newAssetId: %{public}" PRId64
+            "ownerAlbumId: %{public}d, ret = %{public}d", assetId, newAssetId, ownerAlbumId, err);
         return E_OK;
     }
 
-    err = PhotoFileOperation().CopyThumbnail(resultSet, targetPath, newAssetId);
-    if (err != E_OK) {
-        MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(upgradeStore, newAssetId);
-        MEDIA_ERR_LOG("Copy thumbnail failed, targetPath = %{public}s, ret = %{public}d, newAssetId = %{public}" PRId64,
-            targetPath.c_str(), err, newAssetId);
-        return err;
-    }
+    GenerateThumbnail(newAssetId, targetPath, resultSet, false);
     UpdateCoverInfoForAlbum(upgradeStore, assetId, ownerAlbumId, newAssetId, targetPath);
     return E_OK;
 }
@@ -752,18 +792,12 @@ static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStor
 
     err = UpdateRelationship(upgradeStore, assetId, newAssetId, ownerAlbumId, true);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("UpdateRelationship fail, assetId: %{public}d, newAssetId: %{public}lld,"
-            "ownerAlbumId: %{public}d, ret = %{public}d", assetId, (long long)newAssetId, ownerAlbumId, err);
+        MEDIA_ERR_LOG("UpdateRelationship fail, assetId: %{public}d, newAssetId: %{public}" PRId64
+            "ownerAlbumId: %{public}d, ret = %{public}d", assetId, newAssetId, ownerAlbumId, err);
         return E_OK;
     }
     
-    err = PhotoFileOperation().CopyThumbnail(resultSet, targetPath, newAssetId);
-    if (err != E_OK) {
-        MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(upgradeStore, newAssetId);
-        MEDIA_ERR_LOG("Copy thumbnail failed, targetPath = %{public}s, ret = %{public}d, newAssetId = %{public}" PRId64,
-            targetPath.c_str(), err, newAssetId);
-        return err;
-    }
+    GenerateThumbnail(newAssetId, targetPath, resultSet, true);
     UpdateCoverInfoForAlbum(upgradeStore, assetId, ownerAlbumId, newAssetId, targetPath);
     return E_OK;
 }
@@ -871,7 +905,7 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
     int64_t newAssetId = -1;
     int32_t err = CopyLocalSingleFileSync(rdbStore, ownerAlbumId, resultSet, newAssetId, displayName);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("Clone local asset failed, ret = %{public}d, assetId = %{public}lld", err, (long long)assetId);
+        MEDIA_ERR_LOG("Clone local asset failed, ret = %{public}d, assetId = %{public}" PRId64, err, assetId);
         return err;
     }
 
@@ -889,7 +923,7 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
     string newFileAssetUri = MediaFileUtils::GetFileAssetUri(GetStringVal(MediaColumn::MEDIA_FILE_PATH, newResultSet),
         displayName, newAssetId);
     SendNewAssetNotify(newFileAssetUri, rdbStore);
-    MEDIA_INFO_LOG("End clone asset, newAssetId = %{public}lld", (long long)newAssetId);
+    MEDIA_INFO_LOG("End clone asset, newAssetId = %{public}" PRId64, newAssetId);
     return newAssetId;
 }
 
