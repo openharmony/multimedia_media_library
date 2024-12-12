@@ -72,7 +72,7 @@ void BackupHiAudit::Init()
 
     std::lock_guard<std::mutex> lock(mutex_);
     writeFd_ = open(HIAUDIT_LOG_NAME.c_str(), O_CREAT | O_APPEND | O_RDWR,
-        S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+        S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (writeFd_ < 0) {
         MEDIA_ERR_LOG("writeFd_ open error errno: %{public}d", errno);
     }
@@ -137,7 +137,7 @@ void BackupHiAudit::GetWriteFilePath()
     CleanOldAuditFile();
     
     writeFd_ = open(HIAUDIT_LOG_NAME.c_str(), O_CREAT | O_TRUNC | O_RDWR,
-        S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+        S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (writeFd_ < 0) {
         MEDIA_ERR_LOG("fd open error errno: %{public}d", errno);
     }
