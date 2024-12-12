@@ -2173,6 +2173,13 @@ bool ThumbnailUtils::ResizeLcd(int &width, int &height)
             lastMinLen = static_cast<int>(lastMaxLen / ratio);
         }
     }
+
+    // When LCD size has changed after resize, check if width or height is odd number
+    // Add one to the odd side to make sure LCD would be compressed through hardware encode
+    if (max(width, height) != lastMaxLen) {
+        lastMaxLen += lastMaxLen % EVEN_BASE_NUMBER;
+        lastMinLen += lastMinLen % EVEN_BASE_NUMBER;
+    }
     if (height > width) {
         width = lastMinLen;
         height = lastMaxLen;
