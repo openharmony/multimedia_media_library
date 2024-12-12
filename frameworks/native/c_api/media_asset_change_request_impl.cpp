@@ -448,10 +448,15 @@ bool MediaAssetChangeRequestImpl::SaveCameraPhotoExecute()
 {
     bool containsAddResource = find(assetChangeOperations_.begin(), assetChangeOperations_.end(),
         AssetChangeOperation::ADD_RESOURCE) != assetChangeOperations_.end();
+    std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
     if (containsAddResource && !PermissionUtils::IsSystemApp()) {
         // remove high quality photo
         MEDIA_INFO_LOG("discard high quality photo because add resource by third app");
         DiscardHighQualityPhoto();
+
+        // set dirty flag when third-party hap calling addResource to save camera photo
+        MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_DIRTY,
+            to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)));
     }
 
     // The watermark will trigger the scan. If the watermark is turned on, there is no need to trigger the scan again.
@@ -461,7 +466,6 @@ bool MediaAssetChangeRequestImpl::SaveCameraPhotoExecute()
     auto fileAsset = mediaAsset_->GetFileAssetInstance();
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, false, "fileAsset is nullptr");
 
-    std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     MediaFileUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, to_string(needScan));
     MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_FILE_PATH, fileAsset->GetUri());
