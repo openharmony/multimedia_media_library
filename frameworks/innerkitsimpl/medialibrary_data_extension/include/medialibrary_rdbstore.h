@@ -130,6 +130,7 @@ private:
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     friend class TransactionOperations;
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    EXPORT static const std::string PhotoAlbumNotifyFunc(const std::vector<std::string>& args);
     static std::mutex reconstructLock_;
     static std::mutex walCheckPointMutex_;
 #ifdef DISTRIBUTED

@@ -30,7 +30,10 @@ const uint16_t EVENT_CONTAINER_TYPE = 4;
 const uint32_t PACKET_HEADER_LENGETH = 12;
 const uint32_t READ_DATA_BUFFER_MAX_SIZE = 16384;
 const uint32_t READ_BUFFER_MAX_SIZE = 512;
-
+constexpr uint32_t COMMON_PHOTOS_OFFSET = 100000000;
+constexpr uint32_t EDITED_PHOTOS_OFFSET = 200000000;
+constexpr uint32_t COMMON_MOVING_OFFSET = 300000000;
+constexpr uint32_t EDITED_MOVING_OFFSET = 400000000;
 const std::string DEFAULT_PRODUCT_NAME = "OpenHarmony Device";
 const std::string DEFAULT_PRODUCT_MODEL = "ohos";
 const std::string DEFAULT_PRODUCT_MANUFACTURER = "default";

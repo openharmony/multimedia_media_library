@@ -12,35 +12,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define MLOG_TAG "MtpStorageManager"
 #include "mtp_storage_manager.h"
+#include <filesystem>
 #include <mutex>
-#include <sys/statvfs.h>
-
-#include "ipc_skeleton.h"
-#include "iservice_registry.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
-#include "system_ability_definition.h"
+#include "parameter.h"
 
 using namespace std;
 
 namespace OHOS {
 namespace Media {
+namespace {
+enum SizeType {
+    TOTAL,
+    FREE,
+    USED
+};
+const std::string PUBLIC_PATH_DATA      = "/storage/media/local/files/Docs";
+const std::string CHINESE_ABBREVIATION  = "zh-Hans";
+const std::string ENGLISH_ABBREVIATION  = "en-Latn-US";
+const std::string INNER_STORAGE_DESC_ZH = "内部存储";
+const std::string INNER_STORAGE_DESC_EN = "Internal storage";
+const std::string EXTER_STORAGE_DESC_ZH = "存储卡";
+const std::string EXTER_STORAGE_DESC_EN = "Memory Card";
+const std::string UNSPECIFIED           = "Unspecified";
+const std::string LANGUAGE_KEY          = "persist.global.language";
+const std::string DEFAULT_LANGUAGE_KEY  = "const.global.language";
+constexpr int32_t SYSPARA_SIZE          = 64;
+} // namespace
 
 std::shared_ptr<MtpStorageManager> MtpStorageManager::instance_ = nullptr;
 std::mutex MtpStorageManager::mutex_;
-
-MtpStorageManager::MtpStorageManager(void)
-{
-    auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    auto remote = samgr->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
-    proxy_ = iface_cast<StorageManager::IStorageManager>(remote);
-}
-
-MtpStorageManager::~MtpStorageManager(void)
-{
-}
 
 std::shared_ptr<MtpStorageManager> MtpStorageManager::GetInstance()
 {
@@ -53,34 +57,41 @@ std::shared_ptr<MtpStorageManager> MtpStorageManager::GetInstance()
     return instance_;
 }
 
-int64_t MtpStorageManager::GetTotalSize()
+int64_t MtpStorageManager::GetTotalSize(const std::string &path)
 {
-    struct statvfs diskInfo;
-    int ret = statvfs("/data", &diskInfo);
-    if (ret != 0) {
+    std::string p = path.empty() ? PUBLIC_PATH_DATA : path;
+    std::error_code ec;
+    auto info = std::filesystem::space(p, ec);
+    if (ec.value() != E_OK) {
         MEDIA_ERR_LOG("GetTotalSize failed, errno: %{public}d", errno);
-        return MTP_FAIL;
+        return 0;
     }
-    int64_t totalSize =
-        static_cast<long long>(diskInfo.f_bsize) * static_cast<long long>(diskInfo.f_blocks);
-    return totalSize;
+
+    return info.capacity;
 }
 
-int64_t MtpStorageManager::GetFreeSize()
+int64_t MtpStorageManager::GetFreeSize(const std::string &path)
 {
-    struct statvfs diskInfo;
-    int ret = statvfs("/data", &diskInfo);
-    if (ret != 0) {
+    std::string p = path.empty() ? PUBLIC_PATH_DATA : path;
+    std::error_code ec;
+    auto info = std::filesystem::space(p, ec);
+    if (ec.value() != E_OK) {
         MEDIA_ERR_LOG("GetFreeSize failed, errno: %{public}d", errno);
-        return MTP_FAIL;
+        return 0;
     }
-    int64_t freeSize =
-        static_cast<long long>(diskInfo.f_bsize) * static_cast<long long>(diskInfo.f_bfree);
-    return freeSize;
+
+    return info.free;
 }
 
 void MtpStorageManager::AddStorage(shared_ptr<Storage> &storage)
 {
+    if (!storages.empty()) {
+        for (auto stor : storages) {
+            if (stor->GetStorageID() == storage->GetStorageID()) {
+                return;
+            }
+        }
+    }
     storages.push_back(storage);
 }
 
@@ -119,5 +130,43 @@ std::vector<std::shared_ptr<Storage>> MtpStorageManager::GetStorages()
 {
     return storages;
 }
+
+void MtpStorageManager::ClearStorages()
+{
+    std::vector<std::shared_ptr<Storage>>().swap(storages);
+}
+
+std::string MtpStorageManager::GetSystemLanguage()
+{
+    char param[SYSPARA_SIZE] = {0};
+    int status = GetParameter(LANGUAGE_KEY.c_str(), "", param, SYSPARA_SIZE);
+    if (status > 0) {
+        return param;
+    }
+    status = GetParameter(DEFAULT_LANGUAGE_KEY.c_str(), "", param, SYSPARA_SIZE);
+    if (status > 0) {
+        return param;
+    }
+    MEDIA_ERR_LOG("Failed to get system language");
+    return "";
+}
+
+std::string MtpStorageManager::GetStorageDescription(const uint16_t type)
+{
+    std::string language = GetSystemLanguage();
+    if (language.empty()) {
+        language = CHINESE_ABBREVIATION;
+    }
+    switch (type) {
+        case MTP_STORAGE_FIXEDRAM:
+            return language == CHINESE_ABBREVIATION ? INNER_STORAGE_DESC_ZH : INNER_STORAGE_DESC_EN;
+        case MTP_STORAGE_REMOVABLERAM:
+            return language == CHINESE_ABBREVIATION ? EXTER_STORAGE_DESC_ZH : EXTER_STORAGE_DESC_EN;
+        default:
+            break;
+    }
+    return UNSPECIFIED;
+}
+
 }  // namespace Media
 }  // namespace OHOS
