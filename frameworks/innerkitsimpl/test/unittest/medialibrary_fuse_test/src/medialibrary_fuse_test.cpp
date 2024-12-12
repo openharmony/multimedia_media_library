@@ -434,5 +434,69 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_002, TestSize.Level0
     int32_t err = MediaFuseManager::GetInstance().DoRelease(path.c_str(), fd);
     EXPECT_EQ(err, E_ERR);
 }
+
+// Test database operation failures
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_PrepareUniqueNumberTable_test_001, TestSize.Level0)
+{
+    // Test when g_rdbStore is nullptr
+    g_rdbStore = nullptr;
+    PrepareUniqueNumberTable();
+    // Should log error and return
+ 
+    // Restore rdbStore for other tests
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+}
+ 
+// Test different media types
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CreatePhoto_test_001, TestSize.Level0)
+{
+    // Test video creation
+    int32_t videoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "video.mp4");
+    EXPECT_GE(videoId, E_OK);
+ 
+    // Test audio creation
+    int32_t audioId = CreatePhotoApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
+    EXPECT_GE(audioId, E_OK);
+}
+ 
+// Test permission combinations
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_Permission_test_001, TestSize.Level0)
+{
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    EXPECT_GE(photoId, E_OK);
+ 
+    string fileId = to_string(photoId);
+    string path;
+    GetPathFromFileId(path, fileId);
+ 
+    // Test with both read and write permissions disabled
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = false;
+    fuseTestPermsMap[PERM_WRITE_IMAGEVIDEO] = false;
+ 
+    int fd = -1;
+    int32_t err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_RDONLY, fd);
+    EXPECT_EQ(err, E_ERR);
+ 
+    // Test with write permission but no read permission
+    fuseTestPermsMap[PERM_WRITE_IMAGEVIDEO] = true;
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = false;
+ 
+    err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_WRONLY, fd);
+    EXPECT_EQ(err, E_ERR);
+}
+ 
+// Test invalid paths
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_InvalidPath_test_001, TestSize.Level0)
+{
+    int fd = -1;
+ 
+    // Test with empty path
+    int32_t err = MediaFuseManager::GetInstance().DoOpen("", O_RDONLY, fd);
+    EXPECT_EQ(err, E_ERR);
+ 
+    // Test with invalid path format
+    err = MediaFuseManager::GetInstance().DoOpen("/invalid/path/format", O_RDONLY, fd);
+    EXPECT_EQ(err, E_ERR);
+}
 } // namespace Media
 } // namespace OHOS
