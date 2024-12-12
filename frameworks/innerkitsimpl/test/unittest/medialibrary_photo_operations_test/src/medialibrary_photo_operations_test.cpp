@@ -3366,5 +3366,44 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_illegal_mode, T
     EXPECT_EQ(ret, E_INVALID_VALUES);
     MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_illegal_mode");
 }
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd clone_single_asset_001");
+
+    // create asset
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    // open photo and video cache file
+    string fileName;
+    int32_t fd = OpenCacheFile(false, fileName);
+    EXPECT_GE(fd, 0);
+
+    // edit by cache
+    int ret = MovingPhotoEditByCache(fileId, fileName, fileName, true);
+    EXPECT_EQ(ret, fileId);
+
+    // clone asset
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLONE_ASSET, MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.Put(MediaColumn::MEDIA_ID, fileId);
+    values.Put(MediaColumn::MEDIA_TITLE, "IMG_20241212_165429");
+    cmd.SetValueBucket(values);
+    cmd.SetBundleName("values");
+    MediaLibraryPhotoOperations::CloneSingleAsset(cmd);
+
+    auto fileAssetPtrOrigin = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
+    auto fileAssetPtrNew = QueryPhotoAsset(MediaColumn::MEDIA_TITLE, "IMG_20241212_165429");
+    EXPECT_EQ(fileAssetPtrNew->GetDateTaken(), fileAssetPtrOrigin->GetDateTaken());
+    EXPECT_EQ(fileAssetPtrNew->GetOwnerAlbumId(), fileAssetPtrOrigin->GetOwnerAlbumId());
+    EXPECT_EQ(fileAssetPtrNew->GetDisplayName(), "IMG_20241212_165429.jpg");
+    EXPECT_GE(fileAssetPtrNew->GetPhotoEditTime(), 0);
+
+    MEDIA_INFO_LOG("end tdd clone_single_asset_001");
+}
 } // namespace Media
 } // namespace OHOS
