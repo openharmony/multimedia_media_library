@@ -95,7 +95,7 @@ void Storage::SetMaxCapacity(uint64_t maxCapacity)
     maxCapacity_ = maxCapacity;
 }
 
-void Storage::SetFreeSpaceInBytes(uint32_t freeSpaceInBytes)
+void Storage::SetFreeSpaceInBytes(uint64_t freeSpaceInBytes)
 {
     freeSpaceInBytes_ = freeSpaceInBytes;
 }

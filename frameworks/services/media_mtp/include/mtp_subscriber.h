@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,26 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_MTP_SERVICE_H_
-#define FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_MTP_SERVICE_H_
-#include <mutex>
-#include "mtp_monitor.h"
-#define MTP_API_EXPORT __attribute__ ((visibility ("default")))
+#ifndef OHOS_MTP_SUBSCRIBER_H
+#define OHOS_MTP_SUBSCRIBER_H
+
+#include "common_event_subscriber.h"
+
 namespace OHOS {
 namespace Media {
-class MtpService {
+#define EXPORT __attribute__ ((visibility ("default")))
+class MtpSubscriber : public EventFwk::CommonEventSubscriber {
 public:
-    MTP_API_EXPORT MtpService();
-    ~MtpService() = default;
-    MTP_API_EXPORT void StartService();
-    MTP_API_EXPORT void StopService();
-    MTP_API_EXPORT void Init();
+    EXPORT virtual ~MtpSubscriber() = default;
+    EXPORT explicit MtpSubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo);
 
-private:
-    std::mutex mutex_;
-    std::shared_ptr<MtpMonitor> monitorPtr_;
-    bool isMonitorRun_;
+    EXPORT static bool Subscribe(void);
+    EXPORT void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
 };
 } // namespace Media
 } // namespace OHOS
-#endif  // FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_MTP_SERVICE_H_
+#endif // OHOS_MTP_SUBSCRIBER_H
