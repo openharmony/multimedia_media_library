@@ -92,7 +92,7 @@ const string DATE_FUNCTION = "DATE(";
 const int32_t FORMID_MAX_LEN = 19;
 const int32_t SLEEP_TIME = 100;
 const int64_t MAX_INT64 = 9223372036854775807;
-const int32_t MAX_QUERY_LIMIT = 15;
+const int32_t MAX_QUERY_LIMIT = 100;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
@@ -1853,6 +1853,7 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
+    NAPI_INFO_LOG("End create asset.");
     delete context;
 }
 
@@ -2480,107 +2481,6 @@ static napi_status SetValueArray(const napi_env& env,
     return status;
 }
 
-static string GetFileIdFromUri(const string& uri)
-{
-    auto startIndex = uri.find(PhotoColumn::PHOTO_URI_PREFIX);
-    if (startIndex == std::string::npos) {
-        return "";
-    }
-    auto endIndex = uri.find("/", startIndex + PhotoColumn::PHOTO_URI_PREFIX.length());
-    if (endIndex == std::string::npos) {
-        return uri.substr(startIndex + PhotoColumn::PHOTO_URI_PREFIX.length());
-    }
-    return uri.substr(startIndex + PhotoColumn::PHOTO_URI_PREFIX.length(),
-        endIndex - startIndex - PhotoColumn::PHOTO_URI_PREFIX.length());
-}
-
-static string GetAlbumIdFromUri(const string& uri)
-{
-    string albumId = "";
-    auto startIndex = uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX);
-    if (startIndex != std::string::npos) {
-        albumId = uri.substr(startIndex + PhotoAlbumColumns::ALBUM_URI_PREFIX.length());
-    }
-    return albumId;
-}
-
-static napi_value GetSharedPhotoAssets(const napi_env& env, vector<string>& fileIds)
-{
-    string queryUri = PAH_QUERY_PHOTO;
-    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri photoUri(queryUri);
-    DataShare::DataSharePredicates predicates;
-    predicates.In(MediaColumn::MEDIA_ID, fileIds);
-    std::vector<std::string> columns = PHOTO_COLUMN;
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> result = UserFileClient::QueryRdb(photoUri, predicates, columns);
-    napi_value value = nullptr;
-    napi_status status = napi_create_array_with_length(env, fileIds.size(), &value);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Create array error!");
-        return value;
-    }
-    if (result == nullptr) {
-        return value;
-    }
-    int elementIndex = 0;
-    int err = result->GoToFirstRow();
-    if (err != napi_ok) {
-        NAPI_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return value;
-    }
-    do {
-        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
-        if (assetValue == nullptr) {
-            return nullptr;
-        }
-        status = napi_set_element(env, value, elementIndex++, assetValue);
-        if (status != napi_ok) {
-            NAPI_ERR_LOG("Set photo asset Value failed");
-            return nullptr;
-        }
-    } while (result->GoToNextRow() == E_OK);
-    result->Close();
-    return value;
-}
-
-static napi_value GetSharedAlbumAssets(const napi_env& env, vector<string>& albumIds)
-{
-    string queryUri = PAH_QUERY_PHOTO_ALBUM;
-    Uri albumUri(queryUri);
-    DataShare::DataSharePredicates predicates;
-    predicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
-    std::vector<std::string> columns = ALBUM_COLUMN;
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> result = UserFileClient::QueryRdb(albumUri, predicates, columns);
-    napi_value value = nullptr;
-    napi_status status = napi_create_array_with_length(env, albumIds.size(), &value);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Create array error!");
-        return value;
-    }
-    if (result == nullptr) {
-        return value;
-    }
-    int err = result->GoToFirstRow();
-    if (err != napi_ok) {
-        NAPI_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return value;
-    }
-    int elementIndex = 0;
-    do {
-        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowAlbumObject(env, result);
-        if (assetValue == nullptr) {
-            return nullptr;
-        }
-        status = napi_set_element(env, value, elementIndex++, assetValue);
-        if (status != napi_ok) {
-            NAPI_ERR_LOG("Set albumn asset Value failed");
-            return nullptr;
-        }
-    } while (result->GoToNextRow() == E_OK);
-    result->Close();
-    return value;
-}
-
 static napi_status SetSharedAssetArray(const napi_env& env, const char* fieldStr,
     const std::list<Uri>& listValue, napi_value& result, bool isPhoto)
 {
@@ -2590,7 +2490,8 @@ static napi_status SetSharedAssetArray(const napi_env& env, const char* fieldStr
         return status;
     }
     for (auto& uri : listValue) {
-        string assetId = isPhoto ? GetFileIdFromUri(uri.ToString()) : GetAlbumIdFromUri(uri.ToString());
+        string assetId = isPhoto ? MediaLibraryNapiUtils::GetFileIdFromUriString(uri.ToString()) :
+            MediaLibraryNapiUtils::GetAlbumIdFromUriString(uri.ToString());
         if (assetId == "") {
             NAPI_ERR_LOG("Failed to read assetId");
             status = napi_invalid_arg;
@@ -2598,8 +2499,8 @@ static napi_status SetSharedAssetArray(const napi_env& env, const char* fieldStr
         }
         assetIds.push_back(assetId);
     }
-    napi_value assetResults = isPhoto ? GetSharedPhotoAssets(env, assetIds) :
-        GetSharedAlbumAssets(env, assetIds);
+    napi_value assetResults = isPhoto ? MediaLibraryNapiUtils::GetSharedPhotoAssets(env, assetIds) :
+        MediaLibraryNapiUtils::GetSharedAlbumAssets(env, assetIds);
     if (assetResults == nullptr) {
         NAPI_ERR_LOG("Failed to get assets Result from rdb");
         status = napi_invalid_arg;
@@ -2620,10 +2521,6 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
         NAPI_ERR_LOG("Failed to read sub uri list length");
         return status;
     }
-    if (len > MAX_QUERY_LIMIT) {
-        NAPI_ERR_LOG("suburi length exceed the limit.");
-        return status;
-    }
     napi_value subUriArray = nullptr;
     napi_create_array_with_length(env, len, &subUriArray);
     int subElementIndex = 0;
@@ -2637,7 +2534,7 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
         napi_value subUriRet = nullptr;
         napi_create_string_utf8(env, subUri.c_str(), NAPI_AUTO_LENGTH, &subUriRet);
         napi_set_element(env, subUriArray, subElementIndex++, subUriRet);
-        string fileId = GetFileIdFromUri(subUri);
+        string fileId = MediaLibraryNapiUtils::GetFileIdFromUriString(subUri);
         if (fileId == "") {
             NAPI_ERR_LOG("Failed to read sub uri fileId");
             continue;
@@ -2648,7 +2545,11 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
     if (status != napi_ok) {
         NAPI_ERR_LOG("Set subUri named property error!");
     }
-    napi_value photoAssetArray = GetSharedPhotoAssets(env, fileIds);
+    if (len > MAX_QUERY_LIMIT) {
+        NAPI_ERR_LOG("suburi length exceed the limit.");
+        return napi_ok;
+    }
+    napi_value photoAssetArray = MediaLibraryNapiUtils::GetSharedPhotoAssets(env, fileIds);
     if (photoAssetArray == nullptr) {
         NAPI_ERR_LOG("Failed to get sharedPhotoAsset");
     }
