@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "MtpEvent"
 #include "mtp_event.h"
 #include <numeric>
 #include <unistd.h>
@@ -19,11 +20,15 @@
 #include "media_mtp_utils.h"
 #include "mtp_packet.h"
 #include "mtp_packet_tools.h"
+#include "mtp_media_library.h"
+
 using namespace std;
 namespace OHOS {
 namespace Media {
 MtpEvent::MtpEvent(const std::shared_ptr<MtpOperationContext> &context)
 {
+    CHECK_AND_RETURN_LOG(context != nullptr, "MtpEvent failed, context is nullptr");
+
     if (context != nullptr) {
         mtpContextPtr_ = context;
     }
@@ -35,6 +40,8 @@ MtpEvent::~MtpEvent()
 
 void MtpEvent::SendObjectAdded(const std::string &path)
 {
+    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "SendObjectAdded failed, mtpContextPtr_ is nullptr");
+
     handleptr_ = make_shared<MtpOperationUtils>(mtpContextPtr_);
     uint32_t handle{0};
     int i{0};
@@ -52,6 +59,8 @@ void MtpEvent::SendObjectAdded(const std::string &path)
 
 void MtpEvent::SendObjectRemoved(const std::string &path)
 {
+    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "SendObjectRemoved failed, mtpContextPtr_ is nullptr");
+
     handleptr_ = make_shared<MtpOperationUtils>(mtpContextPtr_);
     uint32_t handle{0};
     int i{0};
@@ -59,6 +68,7 @@ void MtpEvent::SendObjectRemoved(const std::string &path)
         if (handleptr_->GetHandleByPaths(path, handle) == E_SUCCESS) {
             mtpContextPtr_->eventHandle = handle;
             SendEvent(MTP_EVENT_OBJECT_REMOVED_CODE);
+            MtpMediaLibrary::GetInstance()->ObserverDeletePathToMap(path);
             return;
         }
         i++;
@@ -69,6 +79,8 @@ void MtpEvent::SendObjectRemoved(const std::string &path)
 
 void MtpEvent::SendObjectInfoChanged(const std::string &path)
 {
+    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "SendObjectInfoChanged failed, mtpContextPtr_ is nullptr");
+
     handleptr_ = make_shared<MtpOperationUtils>(mtpContextPtr_);
     uint32_t handle{0};
     int i{0};
@@ -86,12 +98,16 @@ void MtpEvent::SendObjectInfoChanged(const std::string &path)
 
 void MtpEvent::SendDevicePropertyChanged()
 {
+    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "SendDevicePropertyChanged failed, mtpContextPtr_ is nullptr");
+
     mtpContextPtr_->eventProperty = MTP_DEVICE_PROPERTY_BATTERY_LEVEL_CODE;
     SendEvent(MTP_EVENT_DEVICE_PROP_CHANGED_CODE);
 }
 
 void MtpEvent::SendEvent(const int32_t &code)
 {
+    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "SendEvent failed, mtpContextPtr_ is nullptr");
+
     shared_ptr<PayloadData> eventPayloadData;
 
     uint16_t responseCode = EventPayloadData(code, eventPayloadData);
@@ -117,6 +133,9 @@ void MtpEvent::SendEvent(const int32_t &code)
 uint16_t MtpEvent::EventPayloadData(const uint16_t code, shared_ptr<PayloadData> &data)
 {
     uint16_t responseCode = MTP_UNDEFINED_CODE;
+    CHECK_AND_RETURN_RET_LOG(mtpContextPtr_ != nullptr,
+        responseCode, "EventPayloadData failed, mtpContextPtr_ is nullptr");
+
     if (handleptr_ == nullptr) {
         handleptr_ = make_shared<MtpOperationUtils>(mtpContextPtr_);
     }

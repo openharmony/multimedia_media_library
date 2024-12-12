@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#define MLOG_TAG "MtpFileObserver"
 #include "mtp_file_observer.h"
 #include <memory>
 #include <securec.h>
@@ -19,6 +21,7 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 #include "media_log.h"
+#include "mtp_media_library.h"
 
 using namespace std;
 namespace OHOS {
@@ -28,23 +31,26 @@ int MtpFileObserver::inotifyFd_ = 0;
 std::map<int, std::string> MtpFileObserver::watchMap_;
 std::mutex MtpFileObserver::eventLock_;
 const int BUF_SIZE = 1024;
+const int32_t SIZE_ONE = 1;
 #ifdef HAS_BATTERY_MANAGER_PART
 const int LOW_BATTERY = 50;
 #endif
 void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &path, const ContextSptr &context)
 {
-    string fileName;
+    string fileName = path + "/" + event.name;
     std::shared_ptr<MtpEvent> eventPtr = std::make_shared<OHOS::Media::MtpEvent>(context);
+    CHECK_AND_RETURN_LOG(eventPtr != nullptr, "MtpFileObserver SendEvent eventPtr is null");
     if ((event.mask & IN_CREATE) || (event.mask & IN_MOVED_TO)) {
-        fileName = path + "/" + event.name;
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents create/MOVED_TO: path:%{private}s", fileName.c_str());
+        MtpMediaLibrary::GetInstance()->ObserverAddPathToMap(fileName);
         eventPtr->SendObjectAdded(fileName);
     } else if ((event.mask & IN_DELETE) || (event.mask & IN_MOVED_FROM)) {
-        fileName = path + "/" + event.name;
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents delete/MOVED_FROM: path:%{private}s", fileName.c_str());
-        eventPtr->SendObjectRemoved(fileName);
+        uint32_t id = 0;
+        if (MtpMediaLibrary::GetInstance()->GetIdByPath(fileName, id) == 0) {
+            eventPtr->SendObjectRemoved(fileName);
+        }
     } else if (event.mask & IN_CLOSE_WRITE) {
-        fileName = path + "/" + event.name;
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents IN_CLOSE_WRITE : path:%{private}s", fileName.c_str());
         eventPtr->SendObjectInfoChanged(fileName);
     }
@@ -54,15 +60,15 @@ bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, const ContextSptr &
 {
     char eventBuf[BUF_SIZE] = {0};
 
-    int ret = read(inotifyFd, eventBuf, sizeof(eventBuf));
-    if (ret < (int)sizeof(struct inotify_event)) {
+    int ret = read(inotifyFd, eventBuf, sizeof(eventBuf) - SIZE_ONE);
+    if (ret < static_cast<int>(sizeof(struct inotify_event))) {
         MEDIA_ERR_LOG("MtpFileObserver AddInotifyEvents no event");
         return false;
     }
 
     struct inotify_event *positionEvent = (struct inotify_event *)eventBuf;
     struct inotify_event *event;
-    while (ret >= (int)sizeof(struct inotify_event)) {
+    while (ret >= static_cast<int>(sizeof(struct inotify_event))) {
         event = positionEvent;
         if (event->len) {
             bool isFind;
@@ -78,7 +84,7 @@ bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, const ContextSptr &
             }
         }
         positionEvent++;
-        ret -= (int)sizeof(struct inotify_event);
+        ret -= static_cast<int>(sizeof(struct inotify_event));
     }
     return true;
 }
@@ -146,12 +152,12 @@ void MtpFileObserver::AddFileInotify(const std::string &path, const std::string 
     if (inotifySuccess_) {
         lock_guard<mutex> lock(eventLock_);
         if (!path.empty() && !realPath.empty()) {
-            int ret = inotify_add_watch(inotifyFd_, realPath.c_str(),
+            int ret = inotify_add_watch(inotifyFd_, path.c_str(),
                 IN_CLOSE_WRITE | IN_MOVED_FROM | IN_MOVED_TO | IN_CREATE | IN_DELETE);
             watchMap_.insert(make_pair(ret, path));
         }
         if (!startThread_) {
-            std::thread watchThread([context] { context->WatchPathThread(); });
+            std::thread watchThread([&context] { WatchPathThread(context); });
             watchThread.detach();
             startThread_ = true;
         }
