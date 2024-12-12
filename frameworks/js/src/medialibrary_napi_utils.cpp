@@ -1525,16 +1525,16 @@ napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env, vect
         return value;
     }
     int count = 0;
-    if (isSingleResult && result->GetRowCount(count), count == 1) {
-        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
-        result->Close();
-        return assetValue;
-    }
     int elementIndex = 0;
     int err = result->GoToFirstRow();
     if (err != napi_ok) {
         NAPI_ERR_LOG("Failed GoToFirstRow %{public}d", err);
         return value;
+    }
+    if (isSingleResult && result->GetRowCount(count), count == 1) {
+        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
+        result->Close();
+        return assetValue;
     }
     do {
         napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
