@@ -36,6 +36,8 @@ using namespace testing::ext;
 namespace OHOS::Media {
 const std::string DB_PATH_MEDIALIBRARY = "/data/test/backup/db/medialibrary/ce/databases/rdb/media_library.db";
 const std::string BASE_DIR_MEDIALIBRARY = "/data/test/backup/db/medialibrary/ce/databases";
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 void DbUpgradeUtilsTest::SetUpTestCase(void)
 {
     DatabaseMock().MediaLibraryDbMock(BASE_DIR_MEDIALIBRARY);
@@ -45,6 +47,7 @@ void DbUpgradeUtilsTest::SetUpTestCase(void)
 
 void DbUpgradeUtilsTest::TearDownTestCase(void)
 {
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("TearDownTestCase");
 }
 

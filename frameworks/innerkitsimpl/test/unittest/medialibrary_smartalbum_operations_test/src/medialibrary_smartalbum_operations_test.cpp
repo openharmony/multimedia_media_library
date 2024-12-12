@@ -14,6 +14,7 @@
  */
 #define MLOG_TAG "FileExtUnitTest"
 
+#include <thread>
 #include "ability_context_impl.h"
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
@@ -28,9 +29,14 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 void MediaLibrarySmartalbumOperationTest::SetUpTestCase(void) {}
 
-void MediaLibrarySmartalbumOperationTest::TearDownTestCase(void) {}
+void MediaLibrarySmartalbumOperationTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 
 // SetUp:Execute before each test case
 void MediaLibrarySmartalbumOperationTest::SetUp() {}

@@ -30,12 +30,16 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 shared_ptr<FileAsset> g_pictures = nullptr;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 void MediaLibraryScannerTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
 }
 
-void MediaLibraryScannerTest::TearDownTestCase(void) {}
+void MediaLibraryScannerTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 
 // SetUp:Execute before each test case
 void MediaLibraryScannerTest::SetUp()

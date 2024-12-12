@@ -83,6 +83,7 @@ const int64_t TEST_FALSE_MEDIAID = -1;
 const int64_t TEST_SIZE_2MB = 2 * 1024 * 1024;
 const int64_t TEST_SIZE_2MB_BELOW = TEST_SIZE_2MB - 1;
 const int64_t TEST_SIZE_2MB_ABOVE = TEST_SIZE_2MB + 1;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
     "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " != " +
@@ -228,6 +229,7 @@ void MediaLibraryBackupTest::SetUpTestCase(void)
 void MediaLibraryBackupTest::TearDownTestCase(void)
 {
     MEDIA_INFO_LOG("TearDownTestCase");
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 // SetUp:Execute before each test case

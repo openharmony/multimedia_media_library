@@ -34,6 +34,7 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 static std::atomic<int> num{ 0 };
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void ClearData()
 {
@@ -59,6 +60,7 @@ void MediaLibraryLocationTest::TearDownTestCase(void)
 {
     ClearData();
     MEDIA_INFO_LOG("Location_Test::End");
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryLocationTest::SetUp(void)

@@ -14,7 +14,7 @@
  */
 
 #include "medialibrary_thumbnail_kvstore_test.h"
-
+#include <thread>
 #include "medialibrary_kvstore.h"
 #include "medialibrary_errno.h"
 
@@ -30,6 +30,7 @@ const std::string FORTH_KEY = "000004";
 const std::string TEST_MONTH_STOREID = "test_month";
 
 std::shared_ptr<MediaLibraryKvStore> kvStorePtr_ = nullptr;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void RestoreTestKvStore()
 {
@@ -68,6 +69,7 @@ void MediaLibraryThumbnailKvStoreTest::TearDownTestCase(void)
         return;
     }
     kvStorePtr_->Close();
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryThumbnailKvStoreTest::SetUp(void) {}

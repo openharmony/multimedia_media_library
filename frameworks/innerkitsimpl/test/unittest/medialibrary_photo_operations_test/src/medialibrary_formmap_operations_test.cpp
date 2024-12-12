@@ -66,6 +66,7 @@ const string F0RMID_FOR_TEST = "123456789";
 const string F0RMID_FOR_TEST_TWO = "12345678910";
 const string F0RMID_NO_SAVE = "12345678911";
 const string FALSE_URI = "file://media/Photo/0/IMG_1698250306_000/IMG_20231026_001146.jpg";
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 int32_t CreatePhotoApi10(int mediaType, const string &displayName)
 {
@@ -160,7 +161,7 @@ void MediaLibraryFormOperationsTest::TearDownTestCase()
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    this_thread::sleep_for(chrono::seconds(1));
+    this_thread::sleep_for(chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("Clean is finish");
 }
 

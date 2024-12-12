@@ -41,6 +41,7 @@ unsigned char g_fileContentJpg[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24, 0x5d, 0x54, 0x45, 0x4e, 0x43, 0x20, 0x20, 0x20, 0x0b,
     0x20, 0x20, 0x20, 0x50
 };
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void CreateDeleteDirectory::SetUpTestCase()
 {
@@ -48,7 +49,12 @@ void CreateDeleteDirectory::SetUpTestCase()
     MediaLibraryUnitTestUtils::Init();
     MEDIA_INFO_LOG("CreateDeleteDirectory::SetUpTestCase:: Finish");
 }
-void CreateDeleteDirectory::TearDownTestCase() {}
+
+void CreateDeleteDirectory::TearDownTestCase()
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
+
 void CreateDeleteDirectory::SetUp() {}
 void CreateDeleteDirectory::TearDown(void) {}
 static constexpr int32_t g_mediaDeleteRootDirError = -2010;

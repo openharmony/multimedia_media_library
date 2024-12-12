@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <thread>
 #include "mtp_native_test.h"
 #include "mtp_medialibrary_manager.h"
 #include "mtp_event.h"
@@ -21,6 +23,7 @@ using namespace std;
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 void MtpNativeTest::SetUpTestCase()
 {
     vector<string> perms;
@@ -33,7 +36,11 @@ void MtpNativeTest::SetUpTestCase()
     EXPECT_TRUE(tokenId != 0);
 }
 
-void MtpNativeTest::TearDownTestCase() {}
+void MtpNativeTest::TearDownTestCase()
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
+
 void MtpNativeTest::SetUp() {}
 void MtpNativeTest::TearDown(void) {}
 static constexpr int TEST_UID = 5003;

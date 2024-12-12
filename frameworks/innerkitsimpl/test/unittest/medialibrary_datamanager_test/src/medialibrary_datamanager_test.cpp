@@ -45,6 +45,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 class ArkJsRuntime : public AbilityRuntime::JsRuntime {
 public:
     ArkJsRuntime() {};
@@ -91,6 +92,7 @@ void MediaLibraryDataManagerUnitTest::SetUpTestCase(void)
 void MediaLibraryDataManagerUnitTest::TearDownTestCase(void)
 {
     MediaLibraryUnitTestUtils::CleanTestFiles();
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryDataManagerUnitTest::SetUp(void)
