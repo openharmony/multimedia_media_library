@@ -3369,7 +3369,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_illegal_mode, T
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_001, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_006");
+    MEDIA_INFO_LOG("start tdd clone_single_asset_001");
 
     // create asset
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
