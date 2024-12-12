@@ -567,6 +567,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO:
+        case OperationObject::PTP_OPERATION:
             return MediaLibraryAssetOperations::HandleInsertOperation(cmd);
 
         case OperationObject::FILESYSTEM_ALBUM:
@@ -1082,6 +1083,7 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::PAH_VIDEO:
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO:
+        case OperationObject::PTP_OPERATION:
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
         case OperationObject::ANALYSIS_PHOTO_ALBUM: {
             if ((cmd.GetOprnType() >= OperationType::PORTRAIT_DISPLAY_LEVEL &&
@@ -1715,7 +1717,8 @@ int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string
     tracer.Start("MediaLibraryDataManager::OpenFile");
     auto oprnObject = cmd.GetOprnObject();
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO ||
-        oprnObject == OperationObject::HIGHLIGHT_COVER  || oprnObject == OperationObject::HIGHLIGHT_URI) {
+        oprnObject == OperationObject::HIGHLIGHT_COVER  || oprnObject == OperationObject::HIGHLIGHT_URI ||
+        oprnObject == OperationObject::PTP_OPERATION) {
         return MediaLibraryAssetOperations::OpenOperation(cmd, mode);
     }
 

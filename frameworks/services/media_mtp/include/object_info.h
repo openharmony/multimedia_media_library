@@ -29,11 +29,11 @@ public:
     uint32_t size {0};
     uint16_t thumbFormat {0};
     uint32_t thumbCompressedSize {0};
-    uint32_t thumbPixWidth {0};
-    uint32_t thumbPixHeight {0};
-    uint32_t imagePixWidth {0};
-    uint32_t imagePixHeight {0};
-    uint32_t imagePixDepth {0};
+    uint32_t thumbPixelWidth {0};
+    uint32_t thumbPixelHeight {0};
+    uint32_t imagePixelWidth {0};
+    uint32_t imagePixelHeight {0};
+    uint32_t imagePixelDepth {0};
     uint32_t parent {0};
     uint16_t associationType {0};
     uint32_t associationDesc {0};

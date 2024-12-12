@@ -18,6 +18,8 @@
 #include "mtp_constants.h"
 #include "mtp_operation_utils.h"
 #include "mtp_packet_tools.h"
+#include "mtp_manager.h"
+#include "playback_formats.h"
 
 using namespace std;
 
@@ -26,34 +28,6 @@ namespace Media {
 static const char *EXTENSION_DESC = "microsoft.com: 1.0; openharmony: 1.0;";
 
 static const uint16_t CaptureFormats[] = {};
-static const uint16_t PlaybackFormats[] = {
-    MTP_FORMAT_UNDEFINED_CODE,
-    MTP_FORMAT_ASSOCIATION_CODE,
-    MTP_FORMAT_TEXT_CODE,
-    MTP_FORMAT_HTML_CODE,
-    MTP_FORMAT_WAV_CODE,
-    MTP_FORMAT_MP3_CODE,
-    MTP_FORMAT_MPEG_CODE,
-    MTP_FORMAT_EXIF_JPEG_CODE,
-    MTP_FORMAT_TIFF_EP_CODE,
-    MTP_FORMAT_BMP_CODE,
-    MTP_FORMAT_GIF_CODE,
-    MTP_FORMAT_JFIF_CODE,
-    MTP_FORMAT_PNG_CODE,
-    MTP_FORMAT_TIFF_CODE,
-    MTP_FORMAT_WMA_CODE,
-    MTP_FORMAT_OGG_CODE,
-    MTP_FORMAT_AAC_CODE,
-    MTP_FORMAT_MP4_CONTAINER_CODE,
-    MTP_FORMAT_MP2_CODE,
-    MTP_FORMAT_3GP_CONTAINER_CODE,
-    MTP_FORMAT_ABSTRACT_AUDIO_VIDEO_PLAYLIST_CODE,
-    MTP_FORMAT_WPL_PLAYLIST_CODE,
-    MTP_FORMAT_M3U_PLAYLIST_CODE,
-    MTP_FORMAT_PLS_PLAYLIST_CODE,
-    MTP_FORMAT_XML_DOCUMENT_CODE,
-    MTP_FORMAT_FLAC_CODE,
-};
 
 static const uint16_t DeviceProperties[] = {
     MTP_DEVICE_PROPERTY_SYNCHRONIZATION_PARTNER_CODE,
@@ -93,6 +67,35 @@ static const uint16_t Operations[] = {
     MTP_OPERATION_SET_DEVICE_PROP_VALUE_CODE,
     MTP_OPERATION_RESET_DEVICE_PROP_VALUE_CODE,
     MTP_OPERATION_MOVE_OBJECT_CODE,
+    MTP_OPERATION_COPY_OBJECT_CODE,
+    MTP_OPERATION_GET_PARTIAL_OBJECT_CODE,
+    MTP_OPERATION_GET_OBJECT_PROPS_SUPPORTED_CODE,
+    MTP_OPERATION_GET_OBJECT_PROP_DESC_CODE,
+    MTP_OPERATION_GET_OBJECT_PROP_VALUE_CODE,
+    MTP_OPERATION_SET_OBJECT_PROP_VALUE_CODE,
+    MTP_OPERATION_GET_OBJECT_PROP_LIST_CODE,
+    MTP_OPERATION_GET_OBJECT_REFERENCES_CODE,
+    MTP_OPERATION_SET_OBJECT_REFERENCES_CODE,
+};
+
+static const uint16_t OperationsPtp[] = {
+    MTP_OPERATION_GET_DEVICE_INFO_CODE,
+    MTP_OPERATION_OPEN_SESSION_CODE,
+    MTP_OPERATION_CLOSE_SESSION_CODE,
+    MTP_OPERATION_GET_STORAGE_IDS_CODE,
+    MTP_OPERATION_GET_STORAGE_INFO_CODE,
+    MTP_OPERATION_GET_NUM_OBJECTS_CODE,
+    MTP_OPERATION_GET_OBJECT_HANDLES_CODE,
+    MTP_OPERATION_GET_OBJECT_INFO_CODE,
+    MTP_OPERATION_GET_OBJECT_CODE,
+    MTP_OPERATION_GET_THUMB_CODE,
+    MTP_OPERATION_SEND_OBJECT_INFO_CODE,
+    MTP_OPERATION_SEND_OBJECT_CODE,
+    MTP_OPERATION_RESET_DEVICE_CODE,
+    MTP_OPERATION_GET_DEVICE_PROP_DESC_CODE,
+    MTP_OPERATION_GET_DEVICE_PROP_VALUE_CODE,
+    MTP_OPERATION_SET_DEVICE_PROP_VALUE_CODE,
+    MTP_OPERATION_RESET_DEVICE_PROP_VALUE_CODE,
     MTP_OPERATION_COPY_OBJECT_CODE,
     MTP_OPERATION_GET_PARTIAL_OBJECT_CODE,
     MTP_OPERATION_GET_OBJECT_PROPS_SUPPORTED_CODE,
@@ -148,15 +151,21 @@ int GetDeviceInfoData::Maker(std::vector<uint8_t> &outBuffer)
     MtpPacketTool::PutUInt16(outBuffer, vendorExtensionVersion_);
     MtpPacketTool::PutString(outBuffer, vendorExtensionDesc_);
     MtpPacketTool::PutUInt16(outBuffer, functionalMode_);
-    MtpPacketTool::PutAUInt16(outBuffer, Operations, sizeof(Operations) / sizeof(uint16_t));
+    if (MtpManager::GetInstance().IsMtpMode()) {
+        MtpPacketTool::PutAUInt16(outBuffer, Operations, sizeof(Operations) / sizeof(uint16_t));
+    } else {
+        MtpPacketTool::PutAUInt16(outBuffer, OperationsPtp, sizeof(OperationsPtp) / sizeof(uint16_t));
+    }
     MtpPacketTool::PutAUInt16(outBuffer, Events, sizeof(Events) / sizeof(uint16_t));
     MtpPacketTool::PutAUInt16(outBuffer, DeviceProperties, sizeof(DeviceProperties) / sizeof(uint16_t));
     MtpPacketTool::PutAUInt16(outBuffer, CaptureFormats, sizeof(CaptureFormats) / sizeof(uint16_t));
-    MtpPacketTool::PutAUInt16(outBuffer, PlaybackFormats, sizeof(PlaybackFormats) / sizeof(uint16_t));
+    MtpPacketTool::PutAUInt16(outBuffer, PLAYBACK_FORMATS, sizeof(PLAYBACK_FORMATS) / sizeof(uint16_t));
     MtpPacketTool::PutString(outBuffer, manufacturer_);
     MtpPacketTool::PutString(outBuffer, model_);
     MtpPacketTool::PutString(outBuffer, version_);
     MtpPacketTool::PutString(outBuffer, serialNum_);
+
+    MtpPacketTool::Dump(outBuffer, 0);
     return MTP_SUCCESS;
 }
 
