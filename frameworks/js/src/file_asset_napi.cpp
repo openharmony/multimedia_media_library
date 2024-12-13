@@ -2051,9 +2051,8 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
     string fileId = to_string(context->objectInfo->GetFileId());
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
-        vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = " +
-            GEO_KNOWLEDGE_TABLE + "." + LATITUDE + " AND " + PhotoColumn::PHOTOS_TABLE + "." +
-            PhotoColumn::PHOTO_LONGITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LONGITUDE + " AND " +
+        vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
+            GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
             GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \'" + language + "\'" };
         predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(onClause);
         predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, fileId);

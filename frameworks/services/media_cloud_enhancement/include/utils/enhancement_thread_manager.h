@@ -48,6 +48,8 @@ private:
     std::atomic<bool> isThreadAlive;
     std::mutex queueMutex_;
     std::condition_variable condVar_;
+    std::mutex releaseMutex_;
+    std::condition_variable releaseVar_;
     std::queue<CloudEnhancementThreadTask> taskQueue_;
 
     void DealWithTasks();
