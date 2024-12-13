@@ -31,6 +31,9 @@
 using namespace testing::ext;
 
 namespace OHOS::Media {
+
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 void PhotosCloneTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("SetUpTestCase");
@@ -38,6 +41,7 @@ void PhotosCloneTest::SetUpTestCase(void)
 
 void PhotosCloneTest::TearDownTestCase(void)
 {
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("TearDownTestCase");
 }
 

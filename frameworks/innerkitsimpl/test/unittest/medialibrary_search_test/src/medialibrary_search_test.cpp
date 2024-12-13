@@ -16,6 +16,7 @@
 
 #include "medialibrary_search_test.h"
 
+#include <thread>
 #include "datashare_result_set.h"
 #include "get_self_permissions.h"
 #include "media_log.h"
@@ -30,6 +31,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 void CleanSearchData()
 {
     DataShare::DataSharePredicates predicates;
@@ -52,6 +54,7 @@ void MediaLibrarySearchTest::TearDownTestCase(void)
 {
     CleanSearchData();
     MEDIA_INFO_LOG("Search_Test::End");
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibrarySearchTest::SetUp(void)

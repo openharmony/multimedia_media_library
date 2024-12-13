@@ -65,6 +65,7 @@ static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
 const string COMMON_PREFIX = "datashare:///media/";
 const string ROOT_URI = "root";
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 using ExceptIntFunction = void (*) (int32_t);
 using ExceptLongFunction = void (*) (int64_t);
@@ -914,7 +915,7 @@ void MediaLibraryPhotoOperationsTest::TearDownTestCase()
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    this_thread::sleep_for(chrono::seconds(1));
+    this_thread::sleep_for(chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("Clean is finish");
 }
 

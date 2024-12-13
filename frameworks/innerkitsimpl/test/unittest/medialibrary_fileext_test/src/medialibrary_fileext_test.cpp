@@ -42,6 +42,7 @@ using namespace FileAccessFwk;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 namespace {
     shared_ptr<FileAsset> g_pictures = nullptr;
     shared_ptr<FileAsset> g_camera = nullptr;
@@ -146,6 +147,7 @@ void MediaLibraryFileExtUnitTest::TearDownTestCase(void)
         mediaFileExtAbility = nullptr;
     }
     MEDIA_INFO_LOG("TearDownTestCase end");
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryFileExtUnitTest::SetUp()

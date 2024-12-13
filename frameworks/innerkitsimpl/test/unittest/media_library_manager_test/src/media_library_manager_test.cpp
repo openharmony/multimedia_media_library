@@ -54,6 +54,7 @@ namespace Media {
 const string API_VERSION = "api_version";
 std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 std::unique_ptr<FileAsset> GetFile(int mediaTypeId);
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 void ClearFile();
 void ClearAllFile();
 void CreateDataHelper(int32_t systemAbilityId);
@@ -149,6 +150,7 @@ void MediaLibraryManagerTest::TearDownTestCase(void)
     sleep(CLEAN_TIME);
     ClearAllFile();
     MEDIA_INFO_LOG("TearDownTestCase end");
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 // SetUp:Execute before each test case
 void MediaLibraryManagerTest::SetUp(void)

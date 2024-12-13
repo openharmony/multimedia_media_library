@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <thread>
 #include "mtp_operation_utils_unit_test.h"
 #include "mtp_operation_utils.h"
 #include "medialibrary_errno.h"
@@ -28,8 +29,13 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 void MtpOperationUtilsUnitTest::SetUpTestCase(void) {}
-void MtpOperationUtilsUnitTest::TearDownTestCase(void) {}
+void MtpOperationUtilsUnitTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 void MtpOperationUtilsUnitTest::SetUp() {}
 void MtpOperationUtilsUnitTest::TearDown(void) {}
 

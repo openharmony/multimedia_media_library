@@ -14,7 +14,7 @@
  */
 
 #include "medialibrary_thumbnail_worker_test.h"
-
+#include <thread>
 #include "medialibrary_errno.h"
 #include "thumbnail_generate_worker.h"
 
@@ -24,6 +24,7 @@ namespace OHOS {
 namespace Media {
 std::shared_ptr<ThumbnailGenerateWorker> foregroundWorkerPtr_ = nullptr;
 std::shared_ptr<ThumbnailGenerateWorker> backgroundWorkerPtr_ = nullptr;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void MediaLibraryThumbnailWorkerTest::SetUpTestCase(void)
 {
@@ -51,6 +52,7 @@ void MediaLibraryThumbnailWorkerTest::TearDownTestCase(void)
         backgroundWorkerPtr_->ReleaseTaskQueue(ThumbnailTaskPriority::HIGH);
         backgroundWorkerPtr_->ReleaseTaskQueue(ThumbnailTaskPriority::LOW);
     }
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryThumbnailWorkerTest::SetUp() {}

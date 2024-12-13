@@ -30,6 +30,8 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 class MedialibraryMetaRecoveryJsonTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
@@ -53,6 +55,7 @@ void MedialibraryMetaRecoveryJsonTest::SetUpTestCase(void)
 void MedialibraryMetaRecoveryJsonTest::TearDownTestCase(void)
 {
     MediaLibraryUnitTestUtils::CleanTestFiles();
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MedialibraryMetaRecoveryJsonTest::SetUp() {}

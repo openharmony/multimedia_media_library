@@ -16,6 +16,7 @@
 
 #include "medialibrary_story_test.h"
 
+#include <thread>
 #include "datashare_result_set.h"
 #include "get_self_permissions.h"
 #include "media_log.h"
@@ -36,6 +37,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 void ClearStoryData()
 {
     DataShare::DataSharePredicates predicates;
@@ -63,6 +65,7 @@ void MediaLibraryStoryTest::TearDownTestCase(void)
 {
     ClearStoryData();
     MEDIA_INFO_LOG("Story_Test::End");
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryStoryTest::SetUp(void)

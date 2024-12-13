@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 #define MLOG_TAG "FileExtUnitTest"
+
+#include <thread>
 #include "medialibrary_uri_test.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
@@ -28,10 +30,14 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 const std::string TEST_STRING = "GetDateAddedFromUri&";
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void MediaLibraryUriTest::SetUpTestCase(void) {}
 
-void MediaLibraryUriTest::TearDownTestCase(void) {}
+void MediaLibraryUriTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 
 // SetUp:Execute before each test case
 void MediaLibraryUriTest::SetUp() {}

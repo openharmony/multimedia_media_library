@@ -25,6 +25,7 @@
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 namespace {
     constexpr int INSERT_ROWS             = 10;
     constexpr int INCREASE_FORMULA        = 17;
@@ -77,6 +78,7 @@ void MediaLibraryRestoreTest::SetUpTestCase(void)
 void MediaLibraryRestoreTest::TearDownTestCase(void)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::TearDownTestCase");
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 int CorruptDb(bool isSlave)
