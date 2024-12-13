@@ -130,6 +130,8 @@ private:
     PhotoAlbumRestore photoAlbumRestore_;
     PhotosRestore photosRestore_;
     BackupDatabaseHelper backupDatabaseHelper_;
+    std::vector<int> galleryFailedOffsets;
+    std::vector<int> externalFailedOffsets;
 };
 } // namespace Media
 } // namespace OHOS
