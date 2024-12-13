@@ -16,6 +16,7 @@
 
 #include "display_name_info.h"
 
+#include <algorithm>
 #include <vector>
 #include <regex>
 #include <iomanip>
@@ -25,6 +26,10 @@
 #include "media_log.h"
 
 namespace OHOS::Media {
+
+// 设置名称最大长度，处理重复displayName场景时，避免扩展的后缀长度超过255
+static const int32_t MAX_PREFIX_LENGTH = 240;
+
 DisplayNameInfo::DisplayNameInfo(const PhotoAssetInfo &photoAssetInfo)
 {
     ParseDisplayName(photoAssetInfo);
@@ -45,7 +50,8 @@ std::string DisplayNameInfo::ToString()
         yearMonthDayStr = this->yearMonthDay == 0 ? "" : "_" + std::to_string(this->yearMonthDay);
         hourMinuteSecondStr = this->hourMinuteSecond == 0 ? "" : "_" + std::to_string(this->hourMinuteSecond);
     }
-    return this->prefix + yearMonthDayStr + hourMinuteSecondStr + this->suffix;
+    return this->prefix.substr(0, std::min<int32_t>(this->prefix.size(), MAX_PREFIX_LENGTH)) + yearMonthDayStr
+        + hourMinuteSecondStr + this->suffix;
 }
 
 std::string DisplayNameInfo::Next()
