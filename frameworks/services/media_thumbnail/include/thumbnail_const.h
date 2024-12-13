@@ -105,6 +105,7 @@ constexpr int32_t FLAT_ANGLE = 180;
 constexpr int32_t THUMBNAIL_GENERATE_BATCH_COUNT = 200;
 constexpr int32_t ASTC_GENERATE_COUNT_AFTER_RESTORE = 500;
 constexpr int32_t READY_TEMPERATURE_LEVEL = 4;
+constexpr int32_t EVEN_BASE_NUMBER = 2;
 const std::string DEFAULT_EXIF_ORIENTATION = "1";
 
 const std::string THUMBNAIL_LCD_SUFFIX = "LCD";     // The size fit to screen
@@ -156,6 +157,12 @@ const int32_t CLOUD_THUMBNAIL_DOWNLOAD_FINISH_NUMBER = 1000;
 const std::string RDB_QUERY_COUNT = "count";
 
 const int32_t THUMBNAIL_READY_FAILED = 2;
+
+// LCD that is over 2MB would not be uploaded
+const size_t LCD_UPLOAD_LIMIT_SIZE = 2048000;
+
+// Only check the latest 3000 data to avoid opreation taking too long time
+const uint32_t MAXIMUM_LCD_CHECK_NUM = 3000;
 
 static inline std::string GetThumbnailPath(const std::string &path, const std::string &key)
 {
