@@ -48,7 +48,7 @@ std::string DisplayNameInfo::ToString()
         yearMonthDayStr = this->yearMonthDay == 0 ? "" : "_" + std::to_string(this->yearMonthDay);
         hourMinuteSecondStr = this->hourMinuteSecond == 0 ? "" : "_" + std::to_string(this->hourMinuteSecond);
     }
-    return this->prefix.substr(0, std::min(this->prefix.size(), MAX_PREFIX_LENGTH)) + yearMonthDayStr
+    return this->prefix.substr(0, std::min<int32_t>(this->prefix.size(), MAX_PREFIX_LENGTH)) + yearMonthDayStr
         + hourMinuteSecondStr + this->suffix;
 }
 
