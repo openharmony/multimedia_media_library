@@ -16,6 +16,7 @@
 
 #include "display_name_info.h"
 
+#include <algorithm>
 #include <vector>
 #include <regex>
 #include <iomanip>
