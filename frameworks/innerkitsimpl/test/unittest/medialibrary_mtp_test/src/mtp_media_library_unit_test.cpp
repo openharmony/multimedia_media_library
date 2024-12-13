@@ -14,6 +14,7 @@
  */
 
 #include <cstdlib>
+#include <thread>
 #include "mtp_media_library_unit_test.h"
 #include "mtp_media_library.h"
 #include "medialibrary_errno.h"
@@ -37,9 +38,15 @@ const std::string REAL_FILE_PATH = "/storage/media/100/local/files/Docs/Desktop"
 const std::string REAL_STORAGE_FILE = "/storage/media/100/local/files/Docs";
 // document real path
 const std::string REAL_DOCUMENT_FILE = "/storage/media/100/local/files/Docs/Document";
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 const std::shared_ptr<MtpMediaLibrary> mtpMediaLib_ = MtpMediaLibrary::GetInstance();
 void MtpMediaLibraryUnitTest::SetUpTestCase(void) {}
-void MtpMediaLibraryUnitTest::TearDownTestCase(void) {}
+
+void MtpMediaLibraryUnitTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
+
 // SetUp:Execute before each test case
 void MtpMediaLibraryUnitTest::SetUp() {}
 void MtpMediaLibraryUnitTest::TearDown(void) {}

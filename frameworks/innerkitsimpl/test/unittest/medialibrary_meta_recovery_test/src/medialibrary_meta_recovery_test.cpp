@@ -56,6 +56,7 @@ namespace {
 namespace OHOS {
 namespace Media {
 
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
 void MediaLibraryMetaRecoveryUnitTest::SetUpTestCase(void)
@@ -74,6 +75,7 @@ void MediaLibraryMetaRecoveryUnitTest::TearDownTestCase(void)
 {
     ClearPhotoApi10();
     MediaLibraryUnitTestUtils::CleanTestFiles();
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 // SetUp:Execute before each test case

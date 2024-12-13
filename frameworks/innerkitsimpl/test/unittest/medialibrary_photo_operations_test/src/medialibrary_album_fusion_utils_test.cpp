@@ -77,6 +77,7 @@ static const int32_t ALBUM_NUM = 7;
 static const int64_t NUM_ONE = 1;
 static const int64_t NUM_ZERO = 0;
 static const int64_t NUM_INVALID = -1;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 static int32_t CreatePhotoApi10(const int32_t mediaType, const string &displayName)
 {
@@ -175,7 +176,7 @@ void MediaLibraryAlbumFusionUtilsTest::TearDownTestCase()
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    this_thread::sleep_for(chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("Clean is finish");
 }
 
@@ -430,4 +431,4 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_014, TestSize.L
     ASSERT_NE(rdbStorePtr, nullptr);
 }
 }
-}
+}

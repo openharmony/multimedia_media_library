@@ -51,6 +51,7 @@ using OHOS::DataShare::DataSharePredicates;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 constexpr int32_t SLEEP_INTERVAL = 1;   // in seconds
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 const vector<bool> HIDDEN_STATE = {
     true,
@@ -534,6 +535,7 @@ void AlbumCountCoverTest::SetUpTestCase()
 void AlbumCountCoverTest::TearDownTestCase()
 {
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 // SetUp:Execute before each test case

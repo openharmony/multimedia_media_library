@@ -14,6 +14,8 @@
  */
 
 #include "medialibrary_mtp_unit_test.h"
+
+#include <thread>
 #include <iomanip>
 #include <unistd.h>
 #include "mtp_driver.h"
@@ -33,6 +35,8 @@ namespace Media {
 static std::vector<uint8_t> testData_open = {  0x10, 0x00, 0x00, 0x00, 0x01, 0x00,
     0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
 
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 void MediaLibraryMTPUnitTest::SetUpTestCase(void)
 {
     OHOS::Media::MtpGlobal::ReleaseBlock();
@@ -41,6 +45,7 @@ void MediaLibraryMTPUnitTest::SetUpTestCase(void)
 void MediaLibraryMTPUnitTest::TearDownTestCase(void)
 {
     OHOS::Media::MtpGlobal::ResetBlockStatus();
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 // SetUp:Execute before each test case
 void MediaLibraryMTPUnitTest::SetUp() {}

@@ -31,9 +31,13 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 void MediaLibraryObjectTest::SetUpTestCase(void) {}
 
-void MediaLibraryObjectTest::TearDownTestCase(void) {}
+void MediaLibraryObjectTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 
 // SetUp:Execute before each test case
 void MediaLibraryObjectTest::SetUp() {}

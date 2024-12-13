@@ -61,6 +61,7 @@ static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static std::atomic<int> number(0);
 const int ZERO = 0;
 const string RECORD_BUNDLE_NAME = "com.ohos.app";
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 struct InsertResult {
     int64_t fileId;
@@ -339,6 +340,7 @@ void MediaLibraryAlbumSourceTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("MediaLibraryAlbumSourceTest TearDownTestCase");
     ClearData();
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryAlbumSourceTest::SetUp()

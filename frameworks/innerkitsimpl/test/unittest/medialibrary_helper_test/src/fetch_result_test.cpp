@@ -41,6 +41,7 @@ static const int32_t TEST_IS_TRASH = 0;
 static const int64_t TEST_SIZE = 0;
 static const string TEST_PATH = "/data/test";
 static const string TEST_URI = MEDIALIBRARY_DATA_URI;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void MediaLibraryHelperUnitTest::SetUpTestCase(void)
 {
@@ -63,7 +64,11 @@ void MediaLibraryHelperUnitTest::SetUpTestCase(void)
     }
 }
 
-void MediaLibraryHelperUnitTest::TearDownTestCase(void) {}
+void MediaLibraryHelperUnitTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
+
 void MediaLibraryHelperUnitTest::SetUp(void) {}
 void MediaLibraryHelperUnitTest::TearDown(void) {}
 

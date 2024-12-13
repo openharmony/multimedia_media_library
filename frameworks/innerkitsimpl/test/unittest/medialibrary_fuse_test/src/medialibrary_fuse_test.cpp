@@ -73,6 +73,8 @@ using namespace OHOS::Security::AccessToken;
 namespace OHOS {
 namespace Media {
 
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 unordered_map<string, bool> fuseTestPermsMap = {
     { PERM_READ_IMAGEVIDEO, 1 },
@@ -206,7 +208,7 @@ void MediaLibraryFuseTest::TearDownTestCase()
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    this_thread::sleep_for(chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("Clean is finish");
 }
 
