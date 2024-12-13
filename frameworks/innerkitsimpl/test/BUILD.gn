@@ -19,6 +19,7 @@ group("test") {
     "unittest/background_cloud_file_processor_test:unittest",
     "unittest/media_analysis_extension_test:unittest",
     "unittest/media_asset_test:unittest",
+    "unittest/media_datashare_ext_ability_test:unittest",
     "unittest/media_event_test:unittest",
     "unittest/media_library_asset_helper_capi_test:unittest",
     "unittest/media_library_asset_manager_test:unittest",
