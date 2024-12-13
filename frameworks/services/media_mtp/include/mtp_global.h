@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,26 +12,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_MTP_SERVICE_H_
-#define FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_MTP_SERVICE_H_
-#include <mutex>
-#include "mtp_monitor.h"
-#define MTP_API_EXPORT __attribute__ ((visibility ("default")))
+#ifndef OHOS_MTP_GLOBAL_H
+#define OHOS_MTP_GLOBAL_H
+
+
 namespace OHOS {
 namespace Media {
-class MtpService {
-public:
-    MTP_API_EXPORT MtpService();
-    ~MtpService() = default;
-    MTP_API_EXPORT void StartService();
-    MTP_API_EXPORT void StopService();
-    MTP_API_EXPORT void Init();
 
+class MtpGlobal {
+public:
+    static bool IsBlocked();
+    static void ResetBlockStatus();
+    static void ReleaseBlock();
 private:
-    std::mutex mutex_;
-    std::shared_ptr<MtpMonitor> monitorPtr_;
-    bool isMonitorRun_;
+    MtpGlobal() = delete;
+    ~MtpGlobal() = delete;
+    static bool isBlock_;
 };
+
+
 } // namespace Media
 } // namespace OHOS
-#endif  // FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_MTP_SERVICE_H_
+#endif // OHOS_MTP_GLOBAL_H

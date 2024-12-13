@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 #include "mtp_operation_context.h"
+#include "mtp_media_library.h"
 #include "payload_data.h"
 namespace OHOS {
 namespace Media {
@@ -39,7 +40,7 @@ public:
     uint16_t SetObjectReferences(std::shared_ptr<PayloadData> &data);
     uint16_t GetObjectDataDeal();
     uint16_t GetObject(std::shared_ptr<PayloadData> &data, int errorCode);
-    uint16_t DoRecevieSendObject();
+    int32_t DoRecevieSendObject();
     uint16_t GetThumb(std::shared_ptr<PayloadData> &data, uint16_t containerType, int &errorCode);
     uint16_t SendObjectInfo(std::shared_ptr<PayloadData> &data, int &errorCode);
     uint16_t GetPartialObject(std::shared_ptr<PayloadData> &data);
@@ -64,11 +65,14 @@ public:
 
 private:
     uint16_t CheckErrorCode(int errorCode);
+    void PreDealFd(const bool deal, const int fd);
     void SendEventPacket(uint32_t objectHandle, uint16_t eventCode);
     uint16_t HasStorage(int &errorCode);
+    int32_t RecevieSendObject(MtpFileRange &object, int fd);
 
     std::shared_ptr<MtpOperationContext> context_;
     std::shared_ptr<MtpMedialibraryManager> mtpMedialibraryManager_;
+    std::shared_ptr<MtpMediaLibrary> mtpMediaLibrary_;
 };
 } // namespace Media
 } // namespace OHOS

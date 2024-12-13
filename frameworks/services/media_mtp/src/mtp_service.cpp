@@ -12,100 +12,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "MtpService"
 #include "mtp_service.h"
 #include "media_log.h"
-#include "mtp_file_observer.h"
-#include <thread>
+#include "mtp_global.h"
+#include "mtp_media_library.h"
 
-#include "accesstoken_kit.h"
-#include "media_log.h"
-#include "nativetoken_kit.h"
-#include "token_setproc.h"
 using namespace std;
 namespace OHOS {
 namespace Media {
-std::shared_ptr<MtpService> MtpService::mtpServiceInstance_{nullptr};
-std::mutex MtpService::instanceLock_;
-
-static void SetAccessTokenPermission(const std::string &processName,
-    const std::vector<std::string> &permission, uint64_t &tokenId)
-{
-    auto perms = std::make_unique<const char *[]>(permission.size());
-    for (size_t i = 0; i < permission.size(); i++) {
-        perms[i] = permission[i].c_str();
-    }
-
-    NativeTokenInfoParams infoInstance = {
-        .dcapsNum = 0,
-        .permsNum = permission.size(),
-        .aclsNum = 0,
-        .dcaps = nullptr,
-        .perms = perms.get(),
-        .acls = nullptr,
-        .processName = processName.c_str(),
-        .aplStr = "system_basic",
-    };
-    tokenId = GetAccessTokenId(&infoInstance);
-    if (tokenId == 0) {
-        MEDIA_ERR_LOG("Get Acess Token Id Failed");
-        return;
-    }
-    int ret = SetSelfTokenID(tokenId);
-    if (ret != 0) {
-        MEDIA_ERR_LOG("Set Acess Token Id Failed");
-        return;
-    }
-    ret = Security::AccessToken::AccessTokenKit::ReloadNativeTokenInfo();
-    if (ret < 0) {
-        MEDIA_ERR_LOG("Reload Native Token Info Failed");
-        return;
-    }
-}
-
 MtpService::MtpService(void) : monitorPtr_(nullptr), isMonitorRun_(false)
 {
 }
 
-std::shared_ptr<MtpService> MtpService::GetInstance()
-{
-    if (mtpServiceInstance_ == nullptr) {
-        std::lock_guard<std::mutex> lockGuard(instanceLock_);
-        mtpServiceInstance_ = std::shared_ptr<MtpService>(new MtpService());
-        if (mtpServiceInstance_ != nullptr) {
-            mtpServiceInstance_->Init();
-        }
-    }
-
-    return mtpServiceInstance_;
-}
-
 void MtpService::Init()
 {
-    monitorPtr_ = make_shared<MtpMonitor>();
-
-    vector<string> perms;
-    perms.push_back("ohos.permission.READ_MEDIA");
-    perms.push_back("ohos.permission.WRITE_MEDIA");
-    perms.push_back("ohos.permission.MEDIA_LOCATION");
-    perms.push_back("ohos.permission.FILE_ACCESS_MANAGER");
-    perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
-    uint64_t tokenId = 0;
-    SetAccessTokenPermission("MTPServerService", perms, tokenId);
+    if (monitorPtr_ == nullptr) {
+        monitorPtr_ = make_shared<MtpMonitor>();
+    }
 }
 
 void MtpService::StartService()
 {
-    if (!isMonitorRun_) {
+    MEDIA_INFO_LOG("MtpService::StartService");
+    {
+        std::unique_lock lock(mutex_);
+        Init();
+        CHECK_AND_RETURN_LOG(!isMonitorRun_, "MtpService::StartService -- monitor is already running, return");
+        CHECK_AND_RETURN_LOG(monitorPtr_ != nullptr, "MtpService::StartService monitorPtr_ is nullptr");
+        MtpGlobal::ResetBlockStatus();
         monitorPtr_->Start();
-        MtpFileObserver::GetInstance().StartFileInotify();
         isMonitorRun_ = true;
     }
 }
 
 void MtpService::StopService()
 {
-    monitorPtr_->Stop();
-    MtpFileObserver::GetInstance().StopFileInotify();
+    MEDIA_INFO_LOG("MtpService::StopService");
+    {
+        std::unique_lock lock(mutex_);
+        CHECK_AND_RETURN_LOG(isMonitorRun_, "MtpService::StopService -- monitor is not running, return");
+        CHECK_AND_RETURN_LOG(monitorPtr_ != nullptr, "MtpService::StopService monitorPtr_ is nullptr");
+        monitorPtr_->Stop();
+        isMonitorRun_ = false;
+        monitorPtr_.reset();
+        // after stop mtp service, clear the unordered_map memory of the MtpMediaLibrary
+        MtpMediaLibrary::GetInstance()->Clear();
+    }
 }
 } // namespace Media
 } // namespace OHOS
