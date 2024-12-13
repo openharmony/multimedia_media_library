@@ -448,7 +448,6 @@ void NotifyTaskWorker::StartThread()
     MEDIA_INFO_LOG("Start notify thread");
     isThreadRunning_ = true;
     thread_ = std::thread([this]() { this->StartWorker(); });
-    thread_.detach();
 }
 
 int32_t NotifyTaskWorker::AddTask(const shared_ptr<MediaLibraryAsyncTask> &task)
