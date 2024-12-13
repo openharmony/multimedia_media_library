@@ -1679,6 +1679,23 @@ int32_t MediaLibraryRdbUtils::GetAlbumSubtypeArgument(const RdbPredicates &predi
     return std::stoi(subtype);
 }
 
+static void GetUpdateAlbumDataInfo(shared_ptr<ResultSet> albumResult, std::vector<UpdateAlbumData> &datas)
+{
+    if (albumResult == nullptr) {
+        MEDIA_ERR_LOG("albumResult is nullptr");
+        return;
+    }
+    while (albumResult->GoToNextRow() == E_OK) {
+        UpdateAlbumData data;
+        data.albumId = GetAlbumId(albumResult);
+        data.albumSubtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
+        data.albumCoverUri = GetAlbumCover(albumResult, PhotoAlbumColumns::ALBUM_COVER_URI);
+        data.albumCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_COUNT);
+        data.isCoverSatisfied = GetIsCoverSatisfied(albumResult);
+        datas.push_back(data);
+    }
+}
+
 void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const vector<string> &anaAlbumAlbumIds, const vector<string> &fileIds)
 {
@@ -1694,18 +1711,11 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<MediaLib
     }
     auto albumResult = GetAnalysisAlbum(rdbStore, tempAlbumId, columns);
     if (albumResult == nullptr) {
+        MEDIA_ERR_LOG("Failed to get Analysis Album");
         return;
     }
     std::vector<UpdateAlbumData> datas;
-    while (albumResult->GoToNextRow() == E_OK) {
-        UpdateAlbumData data;
-        data.albumId = GetAlbumId(albumResult);
-        data.albumSubtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
-        data.albumCoverUri = GetAlbumCover(albumResult, PhotoAlbumColumns::ALBUM_COVER_URI);
-        data.albumCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_COUNT);
-        data.isCoverSatisfied = GetIsCoverSatisfied(albumResult);
-        datas.push_back(data);
-    }
+    GetUpdateAlbumDataInfo(albumResult, datas);
     albumResult->Close();
 
     // For each row
@@ -1717,6 +1727,8 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<MediaLib
             auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
             if (subtype == PhotoAlbumSubType::PORTRAIT) {
                 UpdatePortraitAlbumIfNeeded(rdbStore, data, fileIds, trans);
+            } else if (subtype == PhotoAlbumSubType::GROUP_PHOTO) {
+                MEDIA_INFO_LOG("No need to update group photo");
             } else {
                 UpdateAnalysisAlbumIfNeeded(rdbStore, data, false, trans);
             }
