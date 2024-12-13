@@ -26,6 +26,8 @@
 #include "media_log.h"
 
 namespace OHOS::Media {
+
+// 设置名称最大长度，处理重复displayName场景时，避免扩展的后缀长度超过255
 static const int32_t MAX_PREFIX_LENGTH = 240;
 
 DisplayNameInfo::DisplayNameInfo(const PhotoAssetInfo &photoAssetInfo)
