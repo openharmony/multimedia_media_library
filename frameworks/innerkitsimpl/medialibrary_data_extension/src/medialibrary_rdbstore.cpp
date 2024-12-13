@@ -635,6 +635,16 @@ void MediaLibraryRdbStore::UpdateIndexForCover(const shared_ptr<MediaLibraryRdbS
     MEDIA_INFO_LOG("update index for photo album cover end");
 }
 
+void MediaLibraryRdbStore::UpdateLcdStatusNotUploaded(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::UPDATE_LCD_STATUS_NOT_UPLOADED,
+    };
+    MEDIA_INFO_LOG("start update lcd status for photos have not been uploaded");
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("finish update lcd status for photos have not been uploaded");
+}
+
 void MediaLibraryRdbStore::AddReadyCountIndex(const shared_ptr<MediaLibraryRdbStore> store)
 {
     MEDIA_INFO_LOG("start add ready count index");
