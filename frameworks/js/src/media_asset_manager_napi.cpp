@@ -1417,14 +1417,18 @@ void MediaAssetManagerNapi::GetImageSourceNapiObject(const std::string &fileUri,
         NAPI_INFO_LOG("request source image's imageSource");
     }
     Uri uri(tmpUri);
-    std::string path;
-    MediaFileUri::GetValidPath(uri, path);
+    int fd = UserFileClient::OpenFile(uri, "r");
+    if (fd < 0) {
+        NAPI_ERR_LOG("get image fd failed, errno: %{public}d", errno);
+        return;
+    }
 
     SourceOptions opts;
     uint32_t errCode = 0;
-    auto nativeImageSourcePtr = ImageSource::CreateImageSource(path, opts, errCode);
+    auto nativeImageSourcePtr = ImageSource::CreateImageSource(fd, opts, errCode);
+    close(fd);
     if (nativeImageSourcePtr == nullptr) {
-        NAPI_ERR_LOG("get ImageSource::CreateImageSource failed nullptr");
+        NAPI_ERR_LOG("get ImageSource::CreateImageSource failed nullptr, errCode:%{public}d", errCode);
         return;
     }
     imageSourceNapi->SetNativeImageSource(std::move(nativeImageSourcePtr));
