@@ -3991,9 +3991,11 @@ napi_value FileAssetNapi::PhotoAccessHelperCloneAsset(napi_env env, napi_callbac
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
 
     string title;
-    int32_t maxTitleLength = 255;
-    MediaLibraryNapiUtils::GetParamStringWithLength(env, asyncContext->argv[ARGS_ZERO], maxTitleLength, title);
-    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckTitleName(title) == E_OK, "Input title is invalid.");
+    MediaLibraryNapiUtils::GetParamStringPathMax(env, asyncContext->argv[ARGS_ZERO], title);
+
+    string extension = MediaFileUtils::SplitByChar(fileAsset->GetDisplayName(), '.');
+    string displayName = title + "." + extension;
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(displayName) == E_OK, "Input title is invalid");
 
     asyncContext->title = title;
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "CloneAssetHandlerExecute",
