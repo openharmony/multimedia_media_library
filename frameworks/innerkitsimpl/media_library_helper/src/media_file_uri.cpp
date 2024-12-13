@@ -436,7 +436,7 @@ static inline void RemovePrecedSlash(std::string &path)
     }
 }
 
-void MediaFileUri::GetValidPath(Uri &uri, std::string &path)
+static void GetValidPath(Uri &uri, std::string &path)
 {
     if (UriValidCheck(uri) < 0) {
         path = "";
