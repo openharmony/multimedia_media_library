@@ -25,6 +25,8 @@
 #include "media_log.h"
 
 namespace OHOS::Media {
+static const int32_t MAX_PREFIX_LENGTH = 240;
+
 DisplayNameInfo::DisplayNameInfo(const PhotoAssetInfo &photoAssetInfo)
 {
     ParseDisplayName(photoAssetInfo);
@@ -45,7 +47,8 @@ std::string DisplayNameInfo::ToString()
         yearMonthDayStr = this->yearMonthDay == 0 ? "" : "_" + std::to_string(this->yearMonthDay);
         hourMinuteSecondStr = this->hourMinuteSecond == 0 ? "" : "_" + std::to_string(this->hourMinuteSecond);
     }
-    return this->prefix + yearMonthDayStr + hourMinuteSecondStr + this->suffix;
+    return this->prefix.substr(0, std::min(this->prefix.size(), MAX_PREFIX_LENGTH)) + yearMonthDayStr
+        + hourMinuteSecondStr + this->suffix;
 }
 
 std::string DisplayNameInfo::Next()
