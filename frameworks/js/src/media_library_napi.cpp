@@ -101,7 +101,6 @@ const int64_t MAX_INT64 = 9223372036854775807;
 const int32_t MAX_QUERY_LIMIT = 80;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
-const int SINGLE_QUERY_LIMIT = 1000;
 const int SMART_ALBUM_TYPE = 4096;
 const int GEOGRAPHY_CITY_SUBTYPE = 4100;
 
@@ -6112,7 +6111,7 @@ napi_value MediaLibraryNapi::PhotoAccessStopCreateThumbnailTask(napi_env env, na
     RETURN_NAPI_UNDEFINED(env);
 }
 
-static void GetMediaAnaServiceProgress(nlohmann::json& jsonObj, cosnt unordered_map<int, string>& idxToCount,
+static void GetMediaAnaServiceProgress(nlohmann::json& jsonObj, unordered_map<int, string>& idxToCount,
     vector<string> columns)
 {
     Uri uri(URI_TOTAL);
@@ -6134,7 +6133,6 @@ static void GetMediaAnaServiceProgress(nlohmann::json& jsonObj, cosnt unordered_
     if (errCode != DataShare::E_OK) {
         NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
         ret->Close();
-        faceRet->Close();
         return;
     }
     for (size_t i = 0; i < columns.size(); ++i) {
@@ -6155,7 +6153,9 @@ static std::string GetLabelAnaProgress()
         "SUM(CASE WHEN status != 0 THEN 1 ELSE 0 END) AS finishedCount",
         "SUM(CASE WHEN label != 0 THEN 1 ELSE 0 END) AS LabelCount"
     };
-    return GetMediaAnaServiceProgress(idxToCount, columns);
+    nlohmann::json jsonObj;
+    GetMediaAnaServiceProgress(jsonObj, idxToCount, columns);
+    return jsonObj.dump();
 }
 
 static std::string GetFaceAnaProgress()
@@ -6170,7 +6170,7 @@ static std::string GetFaceAnaProgress()
         "SUM(CASE WHEN face = 3 THEN 1 ELSE 0 END) AS PortraitCoverCount",
         "SUM(CASE WHEN face > 0 THEN 1 ELSE 0 END) AS PortraitCount"
     };
-    nlohmann::json jsonObj
+    nlohmann::json jsonObj;
     GetMediaAnaServiceProgress(jsonObj, idxToCount, columns);
     return jsonObj.dump();
 }
@@ -6184,17 +6184,17 @@ static std::string GetGeoAnaProgress()
         "COUNT(*) AS totalCount",
         "SUM(CASE WHEN status != 0 THEN 1 ELSE 0 END) AS finishedCount",
     };
-    nlohmann::json jsonObj
+    nlohmann::json jsonObj;
     GetMediaAnaServiceProgress(jsonObj, idxToCount, columns);
 
     Uri uri(URI_ANALYSIS_ALBUM);
-    vector<string> columns = {};
+    vector<string> albumColumns = {};
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, SMART_ALBUM_TYPE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, GEOGRAPHY_CITY_SUBTYPE);
     predicates.GreaterThan(PhotoAlbumColumns::ALBUM_COUNT, 0);
     int errCode = 0;
-    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, columns, errCode);
+    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, albumColumns, errCode);
     if (ret == nullptr) {
         NAPI_ERR_LOG("ret is nullptr");
         return jsonObj.dump();
@@ -6203,7 +6203,6 @@ static std::string GetGeoAnaProgress()
     if (errCode != DataShare::E_OK) {
         NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
         ret->Close();
-        faceRet->Close();
         return jsonObj.dump();
     }
 
@@ -6238,7 +6237,6 @@ static std::string GetHighlightAnaProgress()
     if (errCode != DataShare::E_OK) {
         NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
         ret->Close();
-        faceRet->Close();
         return "";
     }
     for (size_t i = 0; i < columns.size(); ++i) {
