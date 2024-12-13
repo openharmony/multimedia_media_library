@@ -6239,6 +6239,7 @@ static std::string GetHighlightAnaProgress()
         ret->Close();
         return "";
     }
+    nlohmann::json jsonObj;
     for (size_t i = 0; i < columns.size(); ++i) {
         int tmp = -1;
         ret->GetInt(i, tmp);
