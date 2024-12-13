@@ -25,7 +25,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t MEDIA_RDB_VERSION = 146;
+const int32_t MEDIA_RDB_VERSION = 147;
 
 enum {
     VERSION_ADD_CLOUD = 2,
@@ -153,6 +153,7 @@ enum {
     VERSION_ADD_SUPPORTED_WATERMARK_TYPE = 144,
     VERSION_FIX_DATE_ADDED_INDEX = 145,
     VERSION_REVERT_FIX_DATE_ADDED_INDEX = 146,
+    VERSION_FIX_PICTURE_LCD_SIZE = 147,
 };
 
 enum {

@@ -97,6 +97,7 @@ public:
     EXPORT static void UpdateDateTakenAndDetalTime(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void ClearAudios(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateIndexForCover(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void UpdateLcdStatusNotUploaded(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddReadyCountIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void RevertFixDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static int32_t ReconstructMediaLibraryStorageFormat(const std::shared_ptr<MediaLibraryRdbStore> store);
