@@ -1378,8 +1378,9 @@ int32_t MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(
     KeepHiddenAlbumAssetSynced(upgradeStore);
     RemediateErrorSourceAlbumSubType(upgradeStore);
     HandleMisMatchScreenRecord(upgradeStore);
-    int32_t albumAffectedCount = PhotoAlbumLPathOperation()
+    int32_t albumAffectedCount = PhotoAlbumLPathOperation::GetInstance()
                                      .SetRdbStore(upgradeStore)
+                                     .Start()
                                      .CleanInvalidPhotoAlbums()
                                      .CleanDuplicatePhotoAlbums()
                                      .CleanEmptylPathPhotoAlbums()
