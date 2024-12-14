@@ -1361,6 +1361,9 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         }
         std::map<std::string, AssetHandler *> assetHandlers = inProcessUriMap[uriString];
         for (auto handler : assetHandlers) {
+            DeleteInProcessMapRecord(handler.second->requestUri, handler.second->requestId);
+        }
+        for (auto handler : assetHandlers) {
             auto assetHandler = handler.second;
             assetHandler->photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
             MediaAssetManagerNapi::NotifyMediaDataPrepared(assetHandler);
