@@ -61,6 +61,7 @@
 #include "wifi_device.h"
 #endif
 #include "power_efficiency_manager.h"
+#include "photo_album_lpath_operation.h"
 
 using namespace OHOS::AAFwk;
 
@@ -501,6 +502,7 @@ void MedialibrarySubscriber::StopBackgroundOperation()
 {
     MovingPhotoProcessor::StopProcess();
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
+    PhotoAlbumLPathOperation::GetInstance().Stop();
 }
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
