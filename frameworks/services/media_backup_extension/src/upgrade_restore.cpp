@@ -21,8 +21,6 @@
 #include "backup_const_map.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
-#include "ffrt.h"
-#include "ffrt_inner.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -53,7 +51,6 @@ constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
-constexpr int32_t MAX_THREAD_NUM = 4;
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -61,6 +58,8 @@ UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::str
     mediaAppName_ = mediaAppName;
     sceneCode_ = sceneCode;
     audioAppName_ = "Audio";
+    queue_ = std::make_unique<ffrt::queue>(ffrt::queue_concurrent, "ConcurrencyQueue",
+        ffrt::queue_attr().qos(ffrt::qos_utility).max_concurrency(MAX_THREAD_NUM));
 }
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode,
@@ -70,6 +69,13 @@ UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::str
     mediaAppName_ = mediaAppName;
     sceneCode_ = sceneCode;
     dualDirName_ = dualDirName;
+    queue_ = std::make_unique<ffrt::queue>(ffrt::queue_concurrent, "ConcurrencyQueue",
+        ffrt::queue_attr().qos(ffrt::qos_utility).max_concurrency(MAX_THREAD_NUM));
+}
+
+UpgradeRestore::~UpgradeRestore()
+{
+    queue_ = nullptr;
 }
 
 int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::string &upgradeFilePath, bool isUpgrade)
@@ -247,11 +253,15 @@ void UpgradeRestore::RestoreAudioFromFile()
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset }, {},
-            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
+    if (queue_ == nullptr) {
+        MEDIA_ERR_LOG("queue_ is null");
+        return;
     }
-    ffrt::wait();
+    ffrt::task_handle handle;
+    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
+        handle = queue_->submit_h([this, offset]() { RestoreAudioBatch(offset); });
+    }
+    queue_->wait(handle);
 }
 
 void UpgradeRestore::RestoreAudioBatch(int32_t offset)
@@ -392,12 +402,15 @@ void UpgradeRestore::RestoreFromGallery()
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
-    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset }, {},
-            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
+    if (queue_ == nullptr) {
+        MEDIA_ERR_LOG("queue_ is null");
+        return;
     }
-    ffrt::wait();
+    ffrt::task_handle handle;
+    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
+        handle = queue_->submit_h([this, offset]() { RestoreBatch(offset); });
+    }
+    queue_->wait(handle);
 }
 
 void UpgradeRestore::RestoreBatch(int32_t offset)
@@ -419,13 +432,16 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
     MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
-    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        ffrt::submit([this, offset, maxId, isCamera, type]() {
-                RestoreExternalBatch(offset, maxId, isCamera, type);
-            }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
+    if (queue_ == nullptr) {
+        MEDIA_ERR_LOG("queue_ is null");
+        return;
     }
-    ffrt::wait();
+    ffrt::task_handle handle;
+    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
+        handle = queue_->submit_h(
+            [this, offset, maxId, isCamera, type]() { RestoreExternalBatch(offset, maxId, isCamera, type); });
+    }
+    queue_->wait(handle);
 }
 
 void UpgradeRestore::RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type)
