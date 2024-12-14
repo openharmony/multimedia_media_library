@@ -25,11 +25,14 @@
 namespace OHOS::Media {
 class PhotoAlbumLPathOperation {
 public:
+    static PhotoAlbumLPathOperation &GetInstance();
     PhotoAlbumLPathOperation &SetRdbStore(const std::shared_ptr<MediaLibraryRdbStore> &rdbStorePtr);
     PhotoAlbumLPathOperation &CleanInvalidPhotoAlbums();
     PhotoAlbumLPathOperation &CleanDuplicatePhotoAlbums();
     PhotoAlbumLPathOperation &CleanEmptylPathPhotoAlbums();
     int32_t GetAlbumAffectedCount() const;
+    PhotoAlbumLPathOperation &Start();
+    void Stop();
 
 private:
     std::string ToString(const std::vector<NativeRdb::ValueObject> &values);
@@ -47,6 +50,9 @@ private:
 private:
     std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr_;
     int32_t albumAffectedCount_;
+    std::atomic<bool> isContinue_{true};
+    static std::shared_ptr<PhotoAlbumLPathOperation> instance_;
+    static std::mutex objMutex_;
 
 private:
     const std::string SQL_PHOTO_ALBUM_EMPTY_QUERY = "\
