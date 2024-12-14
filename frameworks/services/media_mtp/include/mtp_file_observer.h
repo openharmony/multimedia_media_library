@@ -36,6 +36,9 @@ private:
     static bool WatchPathThread(const ContextSptr &context);
     static void SendBattery(const ContextSptr &context);
     static void SendEvent(const inotify_event &event, const std::string &path, const ContextSptr &context);
+    static void EraseFromWatchMap(const std::string &path);
+    static void UpdateWatchMap(const std::string &path);
+    static void DealWatchMap(const inotify_event &event, const std::string &path);
     static bool isRunning_;
     static std::map<int, std::string> watchMap_;
     static int inotifyFd_;
