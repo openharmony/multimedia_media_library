@@ -16,7 +16,6 @@
 #ifndef FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_THUMBNAIL_GENERATE_HELPER_H_
 #define FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_THUMBNAIL_GENERATE_HELPER_H_
 
-#include "cloud_sync_manager.h"
 #include "rdb_helper.h"
 #include "rdb_predicates.h"
 #include "single_kvstore.h"
@@ -24,19 +23,6 @@
 
 namespace OHOS {
 namespace Media {
-enum DownloadFileType {
-    TYPE_CONTENT = 1 << 0,
-    TYPE_THUMB = 1 << 1,
-    TYPE_LCD = 1 << 2,
-};
-
-using namespace OHOS::FileManagement::CloudSync;
-class ThumbnailCloudDownloadCallback : public CloudDownloadCallback {
-public:
-    virtual ~ThumbnailCloudDownloadCallback() override = default;
-    void OnDownloadProcess(const DownloadProgressObj &progress) override;
-};
-
 class ThumbnailGenerateHelper {
 public:
     ThumbnailGenerateHelper() = delete;
@@ -57,10 +43,6 @@ public:
     EXPORT static int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType);
     EXPORT static int32_t GetKeyFrameThumbnailPixelMap(ThumbRdbOpt &opts, int32_t &timeStamp,
         int32_t &type);
-    EXPORT static void CreateAstcAfterDownloadThumbOnDemand(const std::string &path);
-    EXPORT static void StopDownloadThumbBatchOnDemand(int32_t requestId);
-    EXPORT static void CreateAstcBatchOnDemandTaskFinish();
-    EXPORT static void HandleDownloadBatch();
 
 private:
     EXPORT static int32_t GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount);

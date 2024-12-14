@@ -34,7 +34,6 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_helper.h"
 #include "thumbnail_generate_worker_manager.h"
-#include "thumbnail_ready_manager.h"
 #include "thumbnail_uri_utils.h"
 #include "post_event_utils.h"
 #ifdef HAS_THERMAL_MANAGER_PART
@@ -602,7 +601,6 @@ void ThumbnailService::DeleteAstcWithFileIdAndDateTaken(const std::string &fileI
 
 int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId)
 {
-    std::unique_lock<std::mutex> lock(createAstcBatchLock_);
     if (requestId <= 0) {
         MEDIA_ERR_LOG("create astc batch failed, invalid request id:%{public}d", requestId);
         return E_INVALID_VALUES;
@@ -619,25 +617,11 @@ int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbP
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE
     };
-    auto readyTask = ReadyTaskManager::GetInstance();
-    if (readyTask == nullptr) {
-        MEDIA_ERR_LOG("thumbReadyTaskData is null");
-        return E_INVALID_VALUES;
-    }
-    readyTask->InitReadyTaskData();
-    readyTask->StartReadyTaskTimer(requestId);
     return ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, rdbPredicate, requestId);
 }
 
 void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
 {
-    auto readyTask = ReadyTaskManager::GetInstance();
-    if (readyTask == nullptr) {
-        MEDIA_ERR_LOG("readyTask is null");
-        return;
-    }
-    readyTask->EndDownloadThumbTimeoutWatcherThread();
-    ThumbnailGenerateHelper::StopDownloadThumbBatchOnDemand(requestId);
     if (requestId <= 0) {
         MEDIA_ERR_LOG("cancel astc batch failed, invalid request id:%{public}d", requestId);
         return;
