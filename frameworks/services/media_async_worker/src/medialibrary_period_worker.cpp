@@ -110,7 +110,7 @@ void MediaLibraryPeriodWorker::HandleTask(PeriodTaskType periodTaskType)
     string name = task->threadName_;
     pthread_setname_np(pthread_self(), name.c_str());
     MEDIA_INFO_LOG("start %{public}s", name.c_str());
-    while (!task && task->isThreadRunning_.load()) {
+    while (task && task->isThreadRunning_.load()) {
         task->executor_(task->data_);
         if (task->isStop_.load()) {
             task->isThreadRunning_.store(false);
