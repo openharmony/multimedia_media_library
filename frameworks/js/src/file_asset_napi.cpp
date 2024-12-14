@@ -3976,10 +3976,6 @@ static void CloneAssetHandlerExecute(napi_env env, void *data)
 napi_value FileAssetNapi::PhotoAccessHelperCloneAsset(napi_env env, napi_callback_info info)
 {
     NAPI_INFO_LOG("PhotoAccessHelperCloneAsset in");
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return nullptr;
-    }
 
     auto asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env,
