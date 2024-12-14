@@ -46,6 +46,15 @@ void DisplayNameInfoTest::TearDown(void)
     MEDIA_INFO_LOG("TearDown");
 }
 
+std::string DisplayNameInfoTest::GetTestTitle(int32_t length)
+{
+    string title = "";
+    for (int i = 0; i < length; i++) {
+        title += "1";
+    }
+    return title;
+}
+
 HWTEST_F(DisplayNameInfoTest, displayname_distinguish_non_burst_photo, TestSize.Level0)
 {
     PhotoAssetInfo photoAssetInfo;
@@ -103,6 +112,39 @@ HWTEST_F(DisplayNameInfoTest, displayname_distinguish_burst_photo_with_index, Te
         displayName = displayNameInfo.Next();
         EXPECT_EQ(displayName,
             prefix + std::to_string(yearMonthDay) + "_" + std::to_string(hourMinuteSecond + curr) + suffix);
+    }
+}
+
+HWTEST_F(DisplayNameInfoTest, displayname_max_length_limit_255, TestSize.Level0)
+{
+    PhotoAssetInfo photoAssetInfo;
+    // Pattern: IMG_3025.jpg
+    const std::string title = this->GetTestTitle(300);
+    const std::string extension = ".jpg";
+    photoAssetInfo.displayName = title + extension;
+    photoAssetInfo.subtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
+    DisplayNameInfo displayNameInfo(photoAssetInfo);
+    std::string displayName = displayNameInfo.ToString();
+    EXPECT_EQ(displayName.size(), 255);
+    std::string expectedDisplayName =
+        title.substr(0, std::min<int32_t>(photoAssetInfo.displayName.size(), 255) - extension.size()) + extension;
+    EXPECT_EQ(displayName, expectedDisplayName);
+}
+
+HWTEST_F(DisplayNameInfoTest, displayname_max_length_limit_255_with_index, TestSize.Level0)
+{
+    PhotoAssetInfo photoAssetInfo;
+    // Pattern: IMG_3025.jpg
+    const std::string title = this->GetTestTitle(300);
+    const std::string extension = ".jpg";
+    photoAssetInfo.displayName = title + extension;
+    photoAssetInfo.subtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
+    DisplayNameInfo displayNameInfo(photoAssetInfo);
+    std::string displayName = displayNameInfo.ToString();
+    EXPECT_EQ(displayName.size(), 255);
+    for (int32_t curr = 1; curr <= 10; curr++) {
+        displayName = displayNameInfo.Next();
+        EXPECT_EQ(displayName.size(), 255);
     }
 }
 }  // namespace OHOS::Media
