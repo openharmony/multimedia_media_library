@@ -257,31 +257,7 @@ static void QuerySqlDebug(const string &sql, const vector<string> &selectionArgs
 }
 #endif
 
-static size_t QueryCloudPhotoThumbnailVolumn(shared_ptr<MediaLibraryRdbStore> uniStore)
-{
-    constexpr size_t averageThumbnailSize = 289 * 1024;
-    const string sql = "SELECT COUNT(*) FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
-        PhotoColumn::PHOTO_POSITION + " = 2";
-    auto resultSet = uniStore->QuerySql(sql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is null!");
-        return 0;
-    }
-    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("go to first row failed");
-        return 0;
-    }
-    int32_t cloudPhotoCount = get<int32_t>(ResultSetUtils::GetValFromColumn("COUNT(*)",
-        resultSet, TYPE_INT32));
-    if (cloudPhotoCount < 0) {
-        MEDIA_ERR_LOG("Cloud photo count error, count is %{public}d", cloudPhotoCount);
-        return 0;
-    }
-    size_t size = static_cast<size_t>(cloudPhotoCount) * averageThumbnailSize;
-    return size;
-}
-
-static size_t QueryLocalPhotoThumbnailVolumn(shared_ptr<MediaLibraryRdbStore> uniStore)
+static size_t QueryPhotoThumbnailVolumn(shared_ptr<MediaLibraryRdbStore> uniStore)
 {
     const string sql = "SELECT SUM(" + PhotoExtColumn::THUMBNAIL_SIZE + ")" + " as " + MEDIA_DATA_DB_SIZE +
         " FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE;
@@ -314,14 +290,12 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
 
     RefreshAlbums(true);
     if (cmd.GetOprnObject() == OperationObject::MEDIA_VOLUME) {
-        size_t cloudPhotoThumbnailVolume = QueryCloudPhotoThumbnailVolumn(uniStore);
-        size_t localPhotoThumbnailVolumn = QueryLocalPhotoThumbnailVolumn(uniStore);
-        size_t thumbnailTotalSize = localPhotoThumbnailVolumn + cloudPhotoThumbnailVolume;
-        string queryThumbnailSql = "SELECT cast(" + to_string(thumbnailTotalSize) +
+        size_t photoThumbnailVolumn = QueryPhotoThumbnailVolumn(uniStore);
+        string queryThumbnailSql = "SELECT cast(" + to_string(photoThumbnailVolumn) +
             " as bigint) as " + MEDIA_DATA_DB_SIZE + ", -1 as " + MediaColumn::MEDIA_TYPE;
         string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " + AudioColumn::QUERY_MEDIA_VOLUME
             + " UNION " + queryThumbnailSql;
-        MEDIA_DEBUG_LOG("QUERY_MEDIA_VOLUME = %{private}s", mediaVolumeQuery.c_str());
+        MEDIA_INFO_LOG("Thumbnail size is %{public}zu", photoThumbnailVolumn);
         return uniStore->QuerySql(mediaVolumeQuery);
     }
 
