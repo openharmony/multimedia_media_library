@@ -27,6 +27,29 @@
 #include "photo_album_merge_operation.h"
 
 namespace OHOS::Media {
+std::shared_ptr<PhotoAlbumLPathOperation> PhotoAlbumLPathOperation::instance_ = nullptr;
+std::mutex PhotoAlbumLPathOperation::objMutex_;
+
+PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::GetInstance()
+{
+    std::lock_guard<std::mutex> lock(PhotoAlbumLPathOperation::objMutex_);
+    if (PhotoAlbumLPathOperation::instance_ == nullptr) {
+        PhotoAlbumLPathOperation::instance_ = std::make_shared<PhotoAlbumLPathOperation>();
+    }
+    return *PhotoAlbumLPathOperation::instance_;
+}
+
+PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::Start()
+{
+    this->isContinue_.store(true);
+    return *this;
+}
+
+void PhotoAlbumLPathOperation::Stop()
+{
+    this->isContinue_.store(false);
+}
+
 PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::SetRdbStore(
     const std::shared_ptr<MediaLibraryRdbStore> &rdbStorePtr)
 {
@@ -41,6 +64,10 @@ int32_t PhotoAlbumLPathOperation::GetAlbumAffectedCount() const
 
 PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::CleanInvalidPhotoAlbums()
 {
+    if (!this->isContinue_.load()) {
+        MEDIA_INFO_LOG("Media_Operation: clean invalid album operation is not allowed.");
+        return *this;
+    }
     std::vector<PhotoAlbumInfoPo> invalidAlbumList = this->GetInvalidPhotoAlbums();
     if (invalidAlbumList.empty()) {
         MEDIA_INFO_LOG("Media_Operation: no invalid album found.");
@@ -55,7 +82,7 @@ PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::CleanInvalidPhotoAlbums()
             total,
             albumInfo.ToString().c_str());
     }
-    this->albumAffectedCount_ += static_cast<int32_t>(invalidAlbumList.size());
+    this->albumAffectedCount_ += total;
     // Delete the invalid albums
     std::string sql = this->SQL_PHOTO_ALBUM_EMPTY_DELETE;
     int32_t ret = this->rdbStorePtr_->ExecuteSql(sql);
@@ -88,6 +115,10 @@ std::vector<PhotoAlbumInfoPo> PhotoAlbumLPathOperation::GetInvalidPhotoAlbums()
 
 PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::CleanDuplicatePhotoAlbums()
 {
+    if (!this->isContinue_.load()) {
+        MEDIA_INFO_LOG("Media_Operation: clean invalid album operation is not allowed.");
+        return *this;
+    }
     std::vector<PhotoAlbumInfoPo> mainAlbumInfoList = this->GetDuplicatelPathAlbumInfoMain();
     if (mainAlbumInfoList.empty()) {
         MEDIA_INFO_LOG("Media_Operation: no duplicate album found.");
@@ -99,13 +130,17 @@ PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::CleanDuplicatePhotoAlbums()
     for (const auto &albumInfo : mainAlbumInfoList) {
         int32_t ret = this->CleanDuplicatePhotoAlbum(albumInfo);
         MEDIA_INFO_LOG("Media_Operation: clean duplicate album (MAIN) completed! "
-                       "index: %{public}d / %{public}d, ret: %{public}d, Object: %{public}s",
+                       "isContinue: %{public}d, index: %{public}d / %{public}d, ret: %{public}d, Object: %{public}s",
+            this->isContinue_.load(),
             ++index,
             total,
             ret,
             albumInfo.ToString().c_str());
+        if (!this->isContinue_.load()) {
+            break;
+        }
     }
-    this->albumAffectedCount_ += total;
+    this->albumAffectedCount_ += index;
     return *this;
 }
 
@@ -139,6 +174,10 @@ int32_t PhotoAlbumLPathOperation::CleanDuplicatePhotoAlbum(const PhotoAlbumInfoP
 
 PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::CleanEmptylPathPhotoAlbums()
 {
+    if (!this->isContinue_.load()) {
+        MEDIA_INFO_LOG("Media_Operation: clean invalid album operation is not allowed.");
+        return *this;
+    }
     std::vector<PhotoAlbumInfoPo> subAlbumInfoList = this->GetEmptylPathAlbumInfo();
     if (subAlbumInfoList.empty()) {
         MEDIA_INFO_LOG("Media_Operation: no empty lPath album found.");
@@ -151,13 +190,17 @@ PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::CleanEmptylPathPhotoAlbums()
         index++;
         int32_t ret = this->CleanEmptylPathPhotoAlbum(subAlbumInfo);
         MEDIA_INFO_LOG("Media_Operation: clean empty lPath album completed! "
-                       "index: %{public}d / %{public}d, ret: %{public}d, subAlbum: %{public}s",
+                       "isContinue: %{public}d, index: %{public}d / %{public}d, ret: %{public}d, subAlbum: %{public}s",
+            this->isContinue_.load(),
             index,
             total,
             ret,
             subAlbumInfo.ToString().c_str());
+        if (!this->isContinue_.load()) {
+            break;
+        }
     }
-    this->albumAffectedCount_ += total;
+    this->albumAffectedCount_ += index;
     return *this;
 }
 

@@ -48,22 +48,31 @@ void PhotoAlbumLPathOperationTest::TearDown(void)
 
 HWTEST_F(PhotoAlbumLPathOperationTest, CleanInvalidPhotoAlbums_Test, TestSize.Level0)
 {
-    int32_t affectedCount =
-        PhotoAlbumLPathOperation().SetRdbStore(nullptr).CleanInvalidPhotoAlbums().GetAlbumAffectedCount();
+    int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
+                                .SetRdbStore(nullptr)
+                                .Start()
+                                .CleanInvalidPhotoAlbums()
+                                .GetAlbumAffectedCount();
     EXPECT_EQ(affectedCount, 0);
 }
 
 HWTEST_F(PhotoAlbumLPathOperationTest, CleanDuplicatePhotoAlbums_Test, TestSize.Level0)
 {
-    int32_t affectedCount =
-        PhotoAlbumLPathOperation().SetRdbStore(nullptr).CleanDuplicatePhotoAlbums().GetAlbumAffectedCount();
+    int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
+                                .SetRdbStore(nullptr)
+                                .Start()
+                                .CleanDuplicatePhotoAlbums()
+                                .GetAlbumAffectedCount();
     EXPECT_EQ(affectedCount, 0);
 }
 
 HWTEST_F(PhotoAlbumLPathOperationTest, CleanEmptylPathPhotoAlbums_Test, TestSize.Level0)
 {
-    int32_t affectedCount =
-        PhotoAlbumLPathOperation().SetRdbStore(nullptr).CleanEmptylPathPhotoAlbums().GetAlbumAffectedCount();
+    int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
+                                .SetRdbStore(nullptr)
+                                .Start()
+                                .CleanEmptylPathPhotoAlbums()
+                                .GetAlbumAffectedCount();
     EXPECT_EQ(affectedCount, 0);
 }
 }  // namespace OHOS::Media
