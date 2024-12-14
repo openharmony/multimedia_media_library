@@ -402,6 +402,9 @@ shared_ptr<OHOS::NativeRdb::ResultSet> QueryGroupPhotoAlbumAssets(const string &
 shared_ptr<OHOS::NativeRdb::ResultSet> PhotoMapOperations::QueryPhotoAssets(const RdbPredicates &rdbPredicate,
     const vector<string> &columns)
 {
+    if (rdbPredicate.GetWhereArgs().size() <= 0) {
+        return nullptr;
+    }
     string albumId = rdbPredicate.GetWhereArgs()[0];
     string tagId;
     int32_t isRemoved;
