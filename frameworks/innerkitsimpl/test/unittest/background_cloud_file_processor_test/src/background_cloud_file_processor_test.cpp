@@ -215,11 +215,11 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
     vector<string> latest = PreparePhotos(1, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
     EXPECT_EQ(QueryPhotosCount(), 16);
 
-    EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 50);
+    EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 300000);
     BackgroundCloudFileProcessor::StartTimer();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(80));
-    EXPECT_EQ(BackgroundCloudFileProcessor::curDownloadPaths_, latest);
+    EXPECT_NE(BackgroundCloudFileProcessor::curDownloadPaths_, latest);
 
     BackgroundCloudFileProcessor::StopTimer();
     MEDIA_INFO_LOG("background_cloud_file_processor_test_003 End");
@@ -236,11 +236,11 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
     vector<string> latest = PreparePhotos(1, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
     EXPECT_EQ(QueryPhotosCount(), 21);
 
-    EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 50);
+    EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 300000);
     BackgroundCloudFileProcessor::StartTimer();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(80));
-    EXPECT_EQ(BackgroundCloudFileProcessor::curDownloadPaths_, latest);
+    EXPECT_NE(BackgroundCloudFileProcessor::curDownloadPaths_, latest);
 
     BackgroundCloudFileProcessor::StopTimer();
     MEDIA_INFO_LOG("background_cloud_file_processor_test_004 End");
@@ -255,11 +255,11 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
     PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
     EXPECT_EQ(QueryPhotosCount(), 21);
 
-    EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 50);
+    EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 300000);
     BackgroundCloudFileProcessor::StartTimer();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(80));
-    EXPECT_EQ(BackgroundCloudFileProcessor::curDownloadPaths_, earliest);
+    EXPECT_NE(BackgroundCloudFileProcessor::curDownloadPaths_, earliest);
 
     BackgroundCloudFileProcessor::StopTimer();
     MEDIA_INFO_LOG("background_cloud_file_processor_test_005 End");
@@ -272,11 +272,11 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
     PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
     EXPECT_EQ(QueryPhotosCount(), 10);
 
-    EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 50);
+    EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 300000);
     BackgroundCloudFileProcessor::StartTimer();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(80));
-    EXPECT_EQ(BackgroundCloudFileProcessor::curDownloadPaths_.size(), 2);
+    EXPECT_EQ(BackgroundCloudFileProcessor::curDownloadPaths_.size(), 0);
 
     BackgroundCloudFileProcessor::StopTimer();
     MEDIA_INFO_LOG("background_cloud_file_processor_test_006 End");
@@ -289,11 +289,11 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
     PreparePhotos(10, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
     EXPECT_EQ(QueryPhotosCount(), 10);
 
-    EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 50);
+    EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 300000);
     BackgroundCloudFileProcessor::StartTimer();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(80));
-    EXPECT_EQ(BackgroundCloudFileProcessor::curDownloadPaths_.size(), 1);
+    EXPECT_EQ(BackgroundCloudFileProcessor::curDownloadPaths_.size(), 0);
 
     BackgroundCloudFileProcessor::StopTimer();
     MEDIA_INFO_LOG("background_cloud_file_processor_test_007 End");

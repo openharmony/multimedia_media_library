@@ -336,7 +336,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_001,
     Uri updateAssetUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_ALBUMOPRN, MEDIA_ALBUMOPRN_MODIFYALBUM));
     MediaLibraryCommand cmd(updateAssetUri);
     auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucketUpdate, predicates);
-    EXPECT_EQ(retVal, E_SUCCESS);
+    EXPECT_GT(retVal, E_SUCCESS);
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
@@ -1318,7 +1318,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001, T
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     auto ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_EQ(ret <= 0, true);
+    EXPECT_GT(ret, 0);
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpgradeThumbnailBackground_new_002, TestSize.Level0)

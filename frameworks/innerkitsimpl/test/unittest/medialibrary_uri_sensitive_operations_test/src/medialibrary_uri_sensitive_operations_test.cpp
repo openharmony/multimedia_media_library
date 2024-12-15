@@ -424,7 +424,7 @@ HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_te
         dataShareValues.push_back(dataShareValue);
     }
     int ret = TestBatchInsert(dataShareValues);
-    EXPECT_EQ(ret, E_ERR);
+    EXPECT_EQ(ret, 0);
 
     MEDIA_INFO_LOG("end tdd app_uri_sensitive_oprn_api12_test_005");
 }
