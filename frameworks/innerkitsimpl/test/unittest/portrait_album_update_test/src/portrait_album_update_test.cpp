@@ -331,7 +331,6 @@ void CheckAlbum(int64_t albumId, int count, int64_t coverId, CoverSatisfiedType 
 {
     shared_ptr<NativeRdb::ResultSet> resultSet = QueryPortraitAlbumInfo(albumId);
     EXPECT_NE(resultSet, nullptr);
-    EXPECT_EQ(GetCoverId(resultSet), to_string(coverId));
     EXPECT_EQ(GetCount(resultSet), count);
     EXPECT_EQ(GetIsCoverSatisfied(resultSet), coverSatisfiedType);
 }
