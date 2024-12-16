@@ -33,11 +33,11 @@
 #include "medialibrary_album_refresh.h"
 #include "parameters.h"
 #include "photo_file_operation.h"
-#include "photo_burst_operation.h"
-#include "photo_displayname_operation.h"
+#include "photo_asset_copy_operation.h"
 #include "result_set_utils.h"
 #include "thumbnail_service.h"
 #include "userfile_manager_types.h"
+#include "photo_source_path_operation.h"
 #include "medialibrary_rdb_transaction.h"
 
 namespace OHOS::Media {
@@ -543,29 +543,18 @@ static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& 
 static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     NativeRdb::ValuesBucket &values, shared_ptr<NativeRdb::ResultSet> &resultSet, const MediaAssetCopyInfo &copyInfo)
 {
-    std::string targetPath = copyInfo.targetPath;
-    bool isCopyThumbnail = copyInfo.isCopyThumbnail;
-    int32_t ownerAlbumId = copyInfo.ownerAlbumId;
-    std::string displayName = copyInfo.displayName;
-    values.PutString(MediaColumn::MEDIA_FILE_PATH, targetPath);
-    std::string uniqueDisplayName = PhotoDisplayNameOperation().FindDisplayName(rdbStore, resultSet, ownerAlbumId,
-        displayName);
-    if (!uniqueDisplayName.empty()) {
-        values.PutString(MediaColumn::MEDIA_NAME, uniqueDisplayName);
-        values.PutString(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(uniqueDisplayName));
-    } else {
-        MEDIA_ERR_LOG("Failed to get unique display name");
-    }
-    std::string burstKey = PhotoBurstOperation().FindBurstKey(rdbStore, resultSet, ownerAlbumId, uniqueDisplayName);
-    if (!burstKey.empty()) {
-        values.PutString(PhotoColumn::PHOTO_BURST_KEY, burstKey);
-    }
+    values.PutString(MediaColumn::MEDIA_FILE_PATH, copyInfo.targetPath);
+    PhotoAssetCopyOperation()
+        .SetTargetPhotoInfo(resultSet)
+        .SetTargetAlbumId(copyInfo.ownerAlbumId)
+        .SetDisplayName(copyInfo.displayName)
+        .CopyPhotoAsset(rdbStore, values);
     for (auto it = commonColumnTypeMap.begin(); it != commonColumnTypeMap.end(); ++it) {
         string columnName = it->first;
         ResultSetDataType columnType = it->second;
         ParsingAndFillValue(values, columnName, columnType, resultSet);
     }
-    if (isCopyThumbnail) {
+    if (copyInfo.isCopyThumbnail) {
         for (auto it = thumbnailColumnTypeMap.begin(); it != thumbnailColumnTypeMap.end(); ++it) {
             string columnName = it->first;
             ResultSetDataType columnType = it->second;
@@ -1891,6 +1880,7 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     RebuildAlbumAndFillCloudValue(rdbStore);
     SetParameterToStartSync();
     RefreshAllAlbums();
+    PhotoSourcePathOperation().ResetPhotoSourcePath(rdbStore);
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
     return E_OK;
