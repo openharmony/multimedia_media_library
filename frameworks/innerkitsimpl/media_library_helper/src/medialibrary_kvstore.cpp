@@ -26,6 +26,7 @@ namespace OHOS::Media {
 const OHOS::DistributedKv::AppId KVSTORE_APPID = {"com.ohos.medialibrary.medialibrarydata"};
 const OHOS::DistributedKv::StoreId KVSTORE_MONTH_STOREID = {"medialibrary_month_astc_data"};
 const OHOS::DistributedKv::StoreId KVSTORE_YEAR_STOREID = {"medialibrary_year_astc_data"};
+const size_t KVSTORE_MAX_NUMBER_BATCH_INSERT = 100;
 
 // Different storeId used to distinguish different database
 const OHOS::DistributedKv::StoreId KVSTORE_MONTH_STOREID_OLD_VERSION = {"medialibrary_month_astc"};
@@ -309,5 +310,100 @@ int32_t MediaLibraryKvStore::RebuildKvStore(const KvStoreValueType &valueType, c
     }
     MEDIA_INFO_LOG("RebuildKvStore finish, type %{public}d", valueType);
     return E_OK;
+}
+
+int32_t MediaLibraryKvStore::BatchInsert(const std::vector<DistributedKv::Entry> &entries)
+{
+    if (kvStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("KvStorePtr is nullptr");
+        return E_HAS_DB_ERROR;
+    }
+    if (entries.empty()) {
+        MEDIA_ERR_LOG("Entries is empty");
+        return E_ERR;
+    }
+
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryKvStore::BatchInsert");
+    Status status = kvStorePtr_->PutBatch(entries);
+    if (status != Status::SUCCESS) {
+        MEDIA_ERR_LOG("Batch insert failed, status %{public}d", status);
+        return static_cast<int32_t>(status);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryKvStore::InitSingleKvstore(const KvStoreRoleType &roleType,
+    const std::string &storeId, const std::string &baseDir)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryKvStore::InitKvStore");
+    Options options;
+    if (roleType == KvStoreRoleType::OWNER) {
+        options.createIfMissing = true;
+        options.role = RoleType::OWNER;
+    } else if (roleType == KvStoreRoleType::VISITOR) {
+        options.createIfMissing = false;
+        options.role = RoleType::VISITOR;
+    } else {
+        MEDIA_ERR_LOG("GetKvStoreOption invalid role");
+        return E_ERR;
+    }
+    options.group.groupDir = baseDir;
+    options.encrypt = false;
+    options.backup = false;
+    options.autoSync = false;
+    options.securityLevel = SecurityLevel::S3;
+    options.kvStoreType = KvStoreType::LOCAL_ONLY;
+
+    MEDIA_INFO_LOG("InitKvStore baseDir %{public}s", options.group.groupDir.c_str());
+    Status status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, {storeId}, kvStorePtr_);
+    if (status != Status::SUCCESS) {
+        MEDIA_ERR_LOG("Init kvstore failed, status:%{public}d", status);
+        return static_cast<int32_t>(status);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryKvStore::PutAllValueToNewKvStore(std::shared_ptr<MediaLibraryKvStore> &newKvstore)
+{
+    if (kvStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("KvStorePtr is nullptr");
+        return E_HAS_DB_ERROR;
+    }
+
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryKvStore::PutAllValueToNewKvStore");
+    MEDIA_INFO_LOG("Start PutAllValueToNewKvStore");
+    DataQuery dataQuery;
+    dataQuery.Between("", "Z");
+    std::shared_ptr<KvStoreResultSet> resultSet;
+    Status status = kvStorePtr_->GetResultSet(dataQuery, resultSet);
+    if (status != Status::SUCCESS || resultSet == nullptr) {
+        MEDIA_ERR_LOG("GetResultSet error occur, status: %{public}d", status);
+        return static_cast<int32_t>(status);
+    }
+
+    std::vector<Entry> entryList;
+    while (resultSet->MoveToNext()) {
+        Entry entry;
+        status = resultSet->GetEntry(entry);
+        if (status != Status::SUCCESS) {
+            MEDIA_ERR_LOG("GetEntry error occur, status: %{public}d", status);
+            return static_cast<int32_t>(status);
+        }
+        
+        entryList.emplace_back(std::move(entry));
+        if (entryList.size() >= KVSTORE_MAX_NUMBER_BATCH_INSERT) {
+            newKvstore->BatchInsert(entryList);
+            entryList.clear();
+        }
+    }
+    if (!entryList.empty()) {
+        newKvstore->BatchInsert(entryList);
+    }
+    status = kvStorePtr_->CloseResultSet(resultSet);
+    MEDIA_INFO_LOG("End PutAllValueToNewKvStore");
+    return static_cast<int32_t>(status);
 }
 } // namespace OHOS::Media
