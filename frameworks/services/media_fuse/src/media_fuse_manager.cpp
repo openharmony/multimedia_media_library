@@ -144,16 +144,30 @@ static int32_t GetFileIdFromUri(string &fileId, string &fileName, const string &
     int32_t pos;
     int32_t virtualId;
     fileName = "";
+    /* uri = "/Photo/fileid/filename/displayname.jpg" */
     if (uri.find("/Photo") == 0) {
+        /* tmppath = "fileid/filename/displayname.jpg" */
         tmpPath = uri.substr(strlen("/Photo/"));
+        /* get fileid end pos */
         pos = tmpPath.find("/");
+        /* get fileid */
         fileId = tmpPath.substr(0, pos);
+        /* tmppath = "filename/displayname.jpg" */
         tmpPath = tmpPath.substr(pos + 1);
+        /* get fileid name end pos */
         pos = tmpPath.find("/");
+        /* get file name */
         fileName = tmpPath.substr(0, pos);
+        if (fileName.empty()) {
+            return E_ERR;
+        }
+        /* get display name, displayname.jpg */
         string displayName = tmpPath.substr(pos + 1);
+         /* get ext name start pos*/
         pos = displayName.find(".");
+        /* get ext name, .jpg */
         string extName = displayName.substr(pos);
+        /* get real file name, filename.jpg */
         fileName = fileName + extName;
     } else if (uri.find("/image") == 0) {
         tmpPath = uri.substr(strlen("/image/"));
@@ -194,8 +208,8 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId, const s
         MEDIA_ERR_LOG("Failed to get rslt");
         return E_ERR;
     }
-    resultSet->GetRowCount(numRows);
-    if (numRows == 0) {
+    int32_t ret = resultSet->GetRowCount(numRows);
+    if ((ret != NativeRdb::E_OK) || (numRows <= 0)) {
         MEDIA_ERR_LOG("Failed to get filePath");
         return E_ERR;
     }
@@ -279,8 +293,8 @@ static int32_t DbCheckPermission(const string &filePath, const string &mode, con
         MEDIA_ERR_LOG("Failed to get permission type");
         return E_PERMISSION_DENIED;
     }
-    resultSet->GetRowCount(numRows);
-    if (numRows == 0) {
+    int32_t ret = resultSet->GetRowCount(numRows);
+    if ((ret != NativeRdb::E_OK) || (numRows <= 0)) {
         MEDIA_ERR_LOG("Failed to get permission type");
         return E_PERMISSION_DENIED;
     }
