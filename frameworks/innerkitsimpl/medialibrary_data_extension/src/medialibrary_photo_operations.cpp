@@ -21,6 +21,7 @@
 #include <nlohmann/json.hpp>
 
 #include "abs_shared_result_set.h"
+#include "directory_ex.h"
 #include "duplicate_photo_operation.h"
 #include "file_asset.h"
 #include "file_utils.h"
@@ -3440,6 +3441,19 @@ bool PhotoEditingRecord::IsInEditOperation(int32_t fileId)
     return false;
 }
 
+static bool ConvertPhotoPathToThumbnailDirPath(std::string& path)
+{
+    const std::string photoRelativePath = "/Photo/";
+    const std::string thumbRelativePath = "/.thumbs/Photo/";
+    size_t pos = path.find(photoRelativePath);
+    if (pos == string::npos) {
+        MEDIA_ERR_LOG("source file invalid! path is %{public}s", path.c_str());
+        return false;
+    }
+    path.replace(pos, photoRelativePath.length(), thumbRelativePath);
+    return true;
+}
+
 void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, const string& photoPath)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -3448,24 +3462,15 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
         return;
     }
 
-    size_t LCDThumbnailSize = 0;
-    size_t THMThumbnailSize = 0;
-    size_t THMASTCThumbnailSize = 0;
-    if (!MediaFileUtils::GetFileSize(GetThumbnailPath(photoPath, THUMBNAIL_LCD_SUFFIX), LCDThumbnailSize)) {
-        MEDIA_WARN_LOG("Failed to get LCD thumbnail size for photo id %{public}s", photoId.c_str());
-    }
-    if (!MediaFileUtils::GetFileSize(GetThumbnailPath(photoPath, THUMBNAIL_THUMB_SUFFIX), THMThumbnailSize)) {
-        MEDIA_WARN_LOG("Failed to get THM thumbnail size for photo id %{public}s", photoId.c_str());
-    }
-    if (!MediaFileUtils::GetFileSize(GetThumbnailPath(photoPath, THUMBNAIL_THUMBASTC_SUFFIX), THMASTCThumbnailSize)) {
-        MEDIA_WARN_LOG("Failed to get THM_ASTC thumbnail size for photo id %{public}s", photoId.c_str());
-    }
-    size_t photoThumbnailSize = LCDThumbnailSize + THMThumbnailSize + THMASTCThumbnailSize;
-
+    string thumbnailDir {photoPath};
+    if (!ConvertPhotoPathToThumbnailDirPath(thumbnailDir)) {
+        MEDIA_ERR_LOG("Failed to get thumbnail dir path from photo path! file id: %{public}s", photoId.c_str());
+        return;
+    };
+    uint64_t photoThumbnailSize = GetFolderSize(thumbnailDir);
     string sql = "INSERT OR REPLACE INTO " + PhotoExtColumn::PHOTOS_EXT_TABLE + " (" +
         PhotoExtColumn::PHOTO_ID + ", " + PhotoExtColumn::THUMBNAIL_SIZE +
         ") VALUES (" + photoId + ", " + to_string(photoThumbnailSize) + ")";
-
     int32_t ret = rdbStore->ExecuteSql(sql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
