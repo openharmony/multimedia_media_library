@@ -182,9 +182,9 @@ static void InsertInProcessMapRecord(const std::string &requestUri, const std::s
     }
 }
 
-static void DeleteInProcessMapRecord(const std::string &requestUri, const std::string &requestId)
+// Do not use directly
+static void DeleteRecordNoLock(const std::string &requestUri, const std::string &requestId)
 {
-    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(requestUri);
     if (inProcessUriMap.find(uriLocal) == inProcessUriMap.end()) {
         return;
@@ -208,6 +208,12 @@ static void DeleteInProcessMapRecord(const std::string &requestUri, const std::s
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(multiStagesObserverMap[uriLocal]));
     }
     multiStagesObserverMap.erase(uriLocal);
+}
+
+static void DeleteInProcessMapRecord(const std::string &requestUri, const std::string &requestId)
+{
+    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
+    DeleteRecordNoLock(requestUri, requestId);
 }
 
 static int32_t IsInProcessInMapRecord(const std::string &requestId, AssetHandler* &handler)
@@ -1361,7 +1367,7 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         }
         std::map<std::string, AssetHandler *> assetHandlers = inProcessUriMap[uriString];
         for (auto handler : assetHandlers) {
-            DeleteInProcessMapRecord(handler.second->requestUri, handler.second->requestId);
+            DeleteRecordNoLock(handler.second->requestUri, handler.second->requestId);
         }
         for (auto handler : assetHandlers) {
             auto assetHandler = handler.second;

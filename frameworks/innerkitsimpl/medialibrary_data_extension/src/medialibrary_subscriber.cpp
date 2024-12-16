@@ -87,7 +87,7 @@ const int32_t WIFI_STATE_CONNECTED = 4;
 const int32_t DELAY_TASK_TIME = 30000;
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
 const int32_t MegaByte = 1024*1024;
-const int32_t MAX_FILE_SIZE_MB = 200;
+const int32_t MAX_FILE_SIZE_MB = 10240;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
 
@@ -188,7 +188,8 @@ static void UploadDBFile()
     }
     totalFileSize /= MegaByte; // Convert bytes to MB
     if (totalFileSize > MAX_FILE_SIZE_MB) {
-        MEDIA_WARN_LOG("DB file over 200MB are not uploaded, totalFileSize is %{public}ld MB", (long)(totalFileSize));
+        MEDIA_WARN_LOG("DB file over 10GB are not uploaded, totalFileSize is %{public}ld MB",
+            static_cast<long>(totalFileSize));
         return ;
     }
     if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateDirectory(destPath)) {
@@ -200,7 +201,7 @@ static void UploadDBFile()
         MEDIA_ERR_LOG("dataManager is nullptr");
         return;
     }
-    dataManager->UploadDBFileInner();
+    dataManager->UploadDBFileInner(totalFileSize);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("Handle %{public}ld MB DBFile success, cost %{public}ld ms", (long)(totalFileSize),
         (long)(end - begin));
