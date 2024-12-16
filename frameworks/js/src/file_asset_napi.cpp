@@ -4721,6 +4721,11 @@ static void PhotoAccessHelperRequestEditDataExecute(napi_env env, void *data)
     QueryPhotoEditDataExists(context->objectPtr->GetId(), hasEditData);
     if (hasEditData == 0) {
         context->editDataBuffer = static_cast<char*>(malloc(1));
+        if (context->editDataBuffer == nullptr) {
+            NAPI_ERR_LOG("malloc edit data buffer failed");
+            context->SaveError(E_FAIL);
+            return;
+        }
         context->editDataBuffer[0] = '\0';
         return;
     }
