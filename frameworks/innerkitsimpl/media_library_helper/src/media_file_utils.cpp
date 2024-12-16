@@ -1900,6 +1900,17 @@ std::string MediaFileUtils::GetTableNameByDisplayName(const std::string &display
     return "";
 }
 
+bool MediaFileUtils::GetDateModified(const string &path, int64_t &dateModified)
+{
+    struct stat statInfo {};
+    if (stat(path.c_str(), &statInfo) != E_OK) {
+        MEDIA_ERR_LOG("stat error of %{private}s, errno: %{public}d", path.c_str(), errno);
+        return false;
+    }
+    dateModified = Timespec2Millisecond(statInfo.st_mtim);
+    return true;
+}
+
 bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
 {
     // duration of moving photo video must be 0~10 s
