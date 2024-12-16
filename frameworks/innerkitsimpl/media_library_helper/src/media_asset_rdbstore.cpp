@@ -36,8 +36,6 @@ namespace OHOS {
 namespace Media {
 
 const std::string MEDIA_LIBRARY_STARTUP_PARAM_PREFIX = "multimedia.medialibrary.startup.";
-const std::string RBDSTORE_DATE_ADDED_TIME_TEMPLATE = "0000000000000";
-const std::string RBDSTORE_FIELD_ID_TEMPLATE = "0000000000";
 constexpr uint32_t BASE_USER_RANGE = 200000;
 const std::unordered_set<OperationObject> OPERATION_OBJECT_SET = {
     OperationObject::UFM_PHOTO,
@@ -475,18 +473,22 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
         int columnIndex = 0;
         int64_t dateTakenTime = 0;
         int fileId = 0;
-
-        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_TAKEN, columnIndex) == NativeRdb::E_OK) {
-            resultSet->GetLong(columnIndex, dateTakenTime);
+        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_TAKEN, columnIndex) != NativeRdb::E_OK ||
+            resultSet->GetLong(columnIndex, dateTakenTime) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Fail to get dateTaken");
+            return NativeRdb::E_ERROR;
         }
-        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, columnIndex) == NativeRdb::E_OK) {
-            resultSet->GetInt(columnIndex, fileId);
+        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, columnIndex) != NativeRdb::E_OK ||
+            resultSet->GetInt(columnIndex, fileId) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Fail to get fileId");
+            return NativeRdb::E_ERROR;
         }
 
-        std::string timeId = RBDSTORE_DATE_ADDED_TIME_TEMPLATE.substr(std::to_string(dateTakenTime).length()) +
-                             std::to_string(dateTakenTime) +
-                             RBDSTORE_FIELD_ID_TEMPLATE.substr(std::to_string(fileId).length()) +
-                             std::to_string(fileId);
+        std::string timeId;
+        if (!MediaFileUtils::GenerateKvStoreKey(to_string(fileId), to_string(dateTakenTime), timeId)) {
+            MEDIA_ERR_LOG("Fail to generate kvStore key, fileId:%{public}d", fileId);
+            continue;
+        }
         batchKeys.emplace_back(std::move(timeId));
     }
     return NativeRdb::E_OK;

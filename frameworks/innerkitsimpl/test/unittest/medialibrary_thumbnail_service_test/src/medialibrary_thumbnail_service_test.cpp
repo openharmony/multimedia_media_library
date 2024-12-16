@@ -775,52 +775,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_014, Te
     EXPECT_EQ(res3, -1);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_015, TestSize.Level0)
-{
-    std::string fieldId = "a";
-    std::string dateAdded;
-    std::string key;
-    auto res = ThumbnailUtils::GenerateKvStoreKey(fieldId, dateAdded, key);
-    EXPECT_EQ(res, false);
-    std::string fieldId2 = "aaaaaaaaaa";
-    std::string dateAdded2 = "b";
-    auto res2 = ThumbnailUtils::GenerateKvStoreKey(fieldId2, dateAdded2, key);
-    EXPECT_EQ(res2, false);
-    std::string fieldId3 = "a";
-    std::string dateAdded3 = "bbbbbbbbbbbbbb";
-    auto res3 = ThumbnailUtils::GenerateKvStoreKey(fieldId3, dateAdded3, key);
-    EXPECT_EQ(res3, false);
-}
-
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_016, TestSize.Level0)
-{
-    std::string fieldId = "a";
-    std::string dateAdded;
-    std::string key;
-    auto res = ThumbnailUtils::GenerateOldKvStoreKey(fieldId, dateAdded, key);
-    EXPECT_EQ(res, false);
-    std::string fieldId2;
-    std::string dateAdded2 = "b";
-    auto res2 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId2, dateAdded2, key);
-    EXPECT_EQ(res2, false);
-    std::string fieldId3;
-    std::string dateAdded3;
-    auto res3 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId3, dateAdded3, key);
-    EXPECT_EQ(res3, false);
-    std::string fieldId4 = "aaaaaaaaaa";
-    std::string dateAdded4 = "b";
-    auto res4 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId4, dateAdded4, key);
-    EXPECT_EQ(res4, false);
-    std::string fieldId5 = "a";
-    std::string dateAdded5 = "bbbbbbbbbbbbbb";
-    auto res5 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId5, dateAdded5, key);
-    EXPECT_EQ(res5, false);
-    std::string fieldId6 = "a";
-    std::string dateAdded6 = "b";
-    auto res6 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId6, dateAdded6, key);
-    EXPECT_EQ(res6, true);
-}
-
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_017, TestSize.Level0)
 {
     ThumbRdbOpt opts;

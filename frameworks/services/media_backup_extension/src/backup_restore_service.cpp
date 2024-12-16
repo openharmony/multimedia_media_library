@@ -133,5 +133,21 @@ void BackupRestoreService::GetProgressInfo(std::string &progressInfo)
     }
     progressInfo = restoreService_->GetProgressInfo();
 }
+
+void BackupRestoreService::StartBackup(int32_t sceneCode, const std::string &galleryAppName,
+    const std::string &mediaAppName)
+{
+    MEDIA_INFO_LOG("Start backup service: %{public}d", sceneCode);
+    if (sceneCode != CLONE_RESTORE_ID) {
+        MEDIA_ERR_LOG("StartBackup current scene is not supported");
+        return;
+    }
+    Init({CLONE_RESTORE_ID, galleryAppName, mediaAppName, "", ""});
+    if (restoreService_ == nullptr) {
+        MEDIA_ERR_LOG("Create media backup service failed.");
+        return;
+    }
+    restoreService_->StartBackup();
+}
 } // namespace Media
 } // namespace OHOS

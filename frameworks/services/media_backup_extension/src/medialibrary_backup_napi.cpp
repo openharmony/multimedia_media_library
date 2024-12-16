@@ -43,6 +43,14 @@ using RestoreExBlock = struct {
     napi_deferred nativeDeferred;
 };
 
+using BackupBlock = struct {
+    napi_env env;
+    int32_t sceneCode;
+    std::string galleryAppName;
+    std::string mediaAppName;
+    napi_deferred nativeDeferred;
+};
+
 napi_value MediaLibraryBackupNapi::Init(napi_env env, napi_value exports)
 {
     NAPI_INFO_LOG("Init, MediaLibraryBackupNapi has been used.");
@@ -51,6 +59,7 @@ napi_value MediaLibraryBackupNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("startRestoreEx", JSStartRestoreEx),
         DECLARE_NAPI_FUNCTION("getBackupInfo", JSGetBackupInfo),
         DECLARE_NAPI_FUNCTION("getProgressInfo", JSGetProgressInfo),
+        DECLARE_NAPI_FUNCTION("startBackup", JSStartBackup),
     };
 
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(media_library_properties) /
@@ -314,6 +323,76 @@ napi_value MediaLibraryBackupNapi::JSGetProgressInfo(napi_env env, napi_callback
     std::string progressInfo;
     BackupRestoreService::GetInstance().GetProgressInfo(progressInfo);
     CHECK_ARGS(env, napi_create_string_utf8(env, progressInfo.c_str(), NAPI_AUTO_LENGTH, &result), JS_INNER_FAIL);
+    return result;
+}
+
+void MediaLibraryBackupNapi::UvBackupWork(uv_loop_s *loop, uv_work_t *work)
+{
+    uv_queue_work(loop, work, [](uv_work_t *work) {
+        BackupBlock *block = reinterpret_cast<BackupBlock *> (work->data);
+        BackupRestoreService::GetInstance().StartBackup(block->sceneCode, block->galleryAppName,
+            block->mediaAppName);
+    }, [](uv_work_t *work, int _status) {
+        BackupBlock *block = reinterpret_cast<BackupBlock *> (work->data);
+        if (block == nullptr) {
+            delete work;
+            return;
+        }
+        napi_handle_scope scope = nullptr;
+        napi_open_handle_scope(block->env, &scope);
+        if (scope == nullptr) {
+            delete work;
+            return;
+        }
+        napi_value resultCode = nullptr;
+        napi_create_int32(block->env, 1, &resultCode);
+        napi_resolve_deferred(block->env, block->nativeDeferred, resultCode);
+        napi_close_handle_scope(block->env, scope);
+        delete block;
+        delete work;
+    });
+}
+
+napi_value MediaLibraryBackupNapi::JSStartBackup(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    if (CheckPermission() != E_OK) {
+        return result;
+    }
+
+    size_t argc = ARGS_THREE;
+    napi_value argv[ARGS_THREE] = {0};
+    napi_value thisVar = nullptr;
+
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, (argc == ARGS_THREE), "requires 3 parameters");
+    napi_get_undefined(env, &result);
+    int32_t sceneCode = GetIntFromParams(env, argv, PARAM0);
+    std::string galleryAppName = GetStringFromParams(env, argv, PARAM1);
+    std::string mediaAppName = GetStringFromParams(env, argv, PARAM2);
+    NAPI_INFO_LOG("StartBackup, sceneCode = %{public}d", sceneCode);
+    if (sceneCode < 0) {
+        NAPI_INFO_LOG("Parameters error, sceneCode = %{public}d", sceneCode);
+        return result;
+    }
+    uv_loop_s *loop = nullptr;
+    napi_get_uv_event_loop(env, &loop);
+    uv_work_t *work = new (std::nothrow) uv_work_t;
+    if (work == nullptr) {
+        NAPI_ERR_LOG("Failed to new uv_work");
+        return result;
+    }
+    napi_deferred nativeDeferred = nullptr;
+    napi_create_promise(env, &nativeDeferred, &result);
+    BackupBlock *block = new (std::nothrow) BackupBlock {
+        env, sceneCode, galleryAppName, mediaAppName, nativeDeferred };
+    if (block == nullptr) {
+        NAPI_ERR_LOG("Failed to new block");
+        delete work;
+        return result;
+    }
+    work->data = reinterpret_cast<void *>(block);
+    UvBackupWork(loop, work);
     return result;
 }
 } // namespace Media
