@@ -25,6 +25,7 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 static constexpr int32_t WAIT_TIME = 30;
+static constexpr int32_t WAIT_RELEASE = 50;
 
 EnhancementThreadManager::EnhancementThreadManager()
 {
@@ -37,11 +38,12 @@ EnhancementThreadManager::EnhancementThreadManager()
 
 EnhancementThreadManager::~EnhancementThreadManager()
 {
-    {
-        lock_guard<mutex> lock(queueMutex_);
-        stop = true;
-    }
+    stop = true;
     condVar_.notify_all();
+    unique_lock<mutex> lock(releaseMutex_);
+    releaseVar_.wait_for(lock, chrono::milliseconds(WAIT_RELEASE), [this]() {
+        return isThreadAlive == false;
+    });
 }
 
 void EnhancementThreadManager::StartConsumerThread()

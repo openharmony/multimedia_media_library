@@ -23,13 +23,15 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 
-using  namespace std;
+using namespace std;
 using namespace OHOS;
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 class ConfigTestOpenCall : public NativeRdb::RdbOpenCallback {
 public:
     int OnCreate(NativeRdb::RdbStore &rdbStore) override;
@@ -66,6 +68,7 @@ void EventThumbnailTest::SetUpTestCase(void)
 void EventThumbnailTest::TearDownTestCase(void)
 {
     MediaLibraryUnitTestUtils::StopUnistore();
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 // SetUp:Execute before each test case

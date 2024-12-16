@@ -59,6 +59,7 @@
 #include "parameters.h"
 #include "parameter.h"
 #include "photo_album_column.h"
+#include "photo_file_utils.h"
 #include "photo_map_column.h"
 #include "post_event_utils.h"
 #include "rdb_sql_utils.h"
@@ -634,6 +635,18 @@ void MediaLibraryRdbStore::UpdateIndexForCover(const shared_ptr<MediaLibraryRdbS
     MEDIA_INFO_LOG("update index for photo album cover end");
 }
 
+void MediaLibraryRdbStore::AddReadyCountIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start add ready count index");
+    const vector<string> sqls = {
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
+        PhotoColumn::CREATE_SCHPT_YEAR_COUNT_READY_INDEX,
+        PhotoColumn::CREATE_SCHPT_MONTH_COUNT_READY_INDEX,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end add ready count index");
+}
+
 int32_t MediaLibraryRdbStore::Init()
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
@@ -885,6 +898,23 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUri(const AbsRd
     auto resultSet = MediaLibraryRdbStore::GetRaw()->QuerySql(sql, args);
     MediaLibraryRestore::GetInstance().CheckResultSet(resultSet);
     return resultSet;
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryEditDataExists(
+    const NativeRdb::AbsRdbPredicates &predicates)
+{
+    vector<string> columns = { MediaColumn::MEDIA_FILE_PATH };
+    shared_ptr<NativeRdb::ResultSet> resultSet = Query(predicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("query edit data err");
+        return nullptr;
+    }
+    string photoPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    if (MediaFileUtils::IsFileExists(PhotoFileUtils::GetEditDataPath(photoPath)) ||
+        MediaFileUtils::IsFileExists(PhotoFileUtils::GetEditDataCameraPath(photoPath))) {
+        return MediaLibraryRdbStore::GetRaw()->QuerySql("SELECT 1 AS hasEditData");
+    }
+    return MediaLibraryRdbStore::GetRaw()->QuerySql("SELECT 0 AS hasEditData");
 }
 
 static string GetSelectColumns(const unordered_set<string> &columns)
@@ -1700,6 +1730,9 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_DAY_INDEX,
     PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
     PhotoColumn::CREATE_SCHPT_DAY_INDEX,
+    PhotoColumn::CREATE_SCHPT_YEAR_COUNT_READY_INDEX,
+    PhotoColumn::CREATE_SCHPT_MONTH_COUNT_READY_INDEX,
+    PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
     PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
     PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
     PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,

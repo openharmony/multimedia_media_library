@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <thread>
 #include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
 #include "kvstore.h"
 #include "medialibrary_thumbnail_service_test.h"
@@ -31,6 +32,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 class ConfigTestOpenCall : public NativeRdb::RdbOpenCallback {
 public:
     int OnCreate(NativeRdb::RdbStore &rdbStore) override;
@@ -70,6 +72,7 @@ void MediaLibraryThumbnailServiceTest::SetUpTestCase(void)
 void MediaLibraryThumbnailServiceTest::TearDownTestCase(void)
 {
     MediaLibraryUnitTestUtils::StopUnistore();
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 // SetUp:Execute before each test case

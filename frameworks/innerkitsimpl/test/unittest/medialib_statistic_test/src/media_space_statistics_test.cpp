@@ -58,6 +58,7 @@ int64_t g_oneImageSize = 0;
 int64_t g_oneVideoSize = 0;
 int64_t g_oneAudioSize = 0;
 int64_t g_oneFileSize = 0;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 static const unsigned char FILE_CONTENT_TXT[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24
@@ -190,6 +191,7 @@ void MediaSpaceStatisticsTest::TearDownTestCase(void)
     }
     ClearAllFile();
     MEDIA_INFO_LOG("TearDownTestCase end");
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 // SetUp:Execute before each test case
 void MediaSpaceStatisticsTest::SetUp(void) {}
@@ -495,23 +497,6 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_004, TestSize.Level
     }
     CheckQuerySize("MediaSpaceStatistics_test_004", MEDIA_TYPE_FILE, 0);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004::End");
-}
-
-/**
- * @tc.number    : MediaSpaceStatistics_test_005
- * @tc.name      : test CloseAsset
- * @tc.desc      : pass invalid fd
- */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_005, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_005::Start");
-    if (sDataShareHelper_ == nullptr) {
-        return;
-    }
-    const string TEST_URI = "";
-    const int32_t TEST_FD = 10000;
-    mediaLibraryManager->CloseAsset(TEST_URI, TEST_FD);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_005::End");
 }
 
 /**

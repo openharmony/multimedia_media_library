@@ -15,6 +15,7 @@
 
 #define MLOG_TAG "MediaAssetTest"
 
+#include <thread>
 #include "file_asset.h"
 #include "media_asset_test.h"
 #include "media_asset_base_capi.h"
@@ -28,9 +29,14 @@ namespace Media {
 using namespace std;
 using namespace testing::ext;
 
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 void MediaAssetTest::SetUpTestCase(void) {}
 
-void MediaAssetTest::TearDownTestCase(void) {}
+void MediaAssetTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 
 void MediaAssetTest::SetUp(void) {}
 

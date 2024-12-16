@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Copyright (C) 2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,76 +16,67 @@ import("//foundation/multimedia/media_library/media_library.gni")
 
 group("unittest") {
   testonly = true
-
-  deps = [ ":medialibrary_thumbnail_service_test" ]
+  deps = [ ":media_datashare_ext_ability_test" ]
 }
 
-ohos_unittest("medialibrary_thumbnail_service_test") {
-  module_out_path = "media_library/medialibraryextention"
+ohos_unittest("media_datashare_ext_ability_test") {
+  module_out_path = "media_library/media_datashare_ext_ability_test"
+
   include_dirs = [
-    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "./include",
+    "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_SERVICES_PATH}/media_file_extension/include",
   ]
 
   sources = [
+    "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
-    "./src/medialibrary_thumbnail_kvstore_test.cpp",
-    "./src/medialibrary_thumbnail_service_test.cpp",
-    "./src/medialibrary_thumbnail_worker_test.cpp",
+    "./src/media_datashare_ext_ability_test.cpp",
   ]
+
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
   ]
 
   external_deps = [
-    "ability_base:want",
+    "ability_base:configuration",
     "ability_base:zuri",
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
-    "ability_runtime:app_manager",
-    "ability_runtime:dataobs_manager",
-    "ability_runtime:extensionkit_native",
     "ability_runtime:runtime",
-    "ability_runtime:uri_permission_mgr",
     "access_token:libaccesstoken_sdk",
-    "access_token:libprivacy_sdk",
-    "app_file_service:sandbox_helper_native",
-    "background_task_mgr:bgtaskmgr_innerkits",
-    "bundle_framework:appexecfwk_core",
+    "access_token:libnativetoken",
+    "access_token:libtoken_setproc",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
-    "data_share:datashare_consumer",
     "data_share:datashare_provider",
-    "eventhandler:libeventhandler",
-    "ffrt:libffrt",
-    "file_api:filemgmt_libn",
+    "dfs_service:cloudsync_kit_inner",
     "hilog:libhilog",
-    "hitrace:hitrace_meter",
     "image_framework:image_native",
-    "init:libbegetutil",
-    "ipc:ipc_core",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
-    "napi:ace_napi",
-    "player_framework:media_client",
-    "preferences:native_preferences",
     "relational_store:native_rdb",
-    "relational_store:rdb_data_share_adapter",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
-    "window_manager:libdm",
+    "user_file_service:file_access_extension_ability_kit",
   ]
 
   sanitize = {
     cfi = true
     cfi_cross_dso = true
     debug = false
+  }
+
+  if (is_standard_system) {
+    external_deps += [ "hilog:libhilog" ]
+  } else {
+    external_deps += [ "hilog:libhilog" ]
   }
 
   resource_config_file =

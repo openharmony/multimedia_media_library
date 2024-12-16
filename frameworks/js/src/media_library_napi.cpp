@@ -354,6 +354,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("createAssetsForAppWithMode", PhotoAccessHelperAgentCreateAssetsWithMode),
             DECLARE_NAPI_FUNCTION("getDataAnalysisProgress", PhotoAccessHelperGetDataAnalysisProgress),
             DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", PhotoAccessGetSharedPhotoAssets),
+            DECLARE_NAPI_FUNCTION("getSupportedPhotoFormats", PhotoAccessGetSupportedPhotoFormats),
             DECLARE_NAPI_FUNCTION("setForceHideSensitiveType", PhotoAccessHelperSetForceHideSensitiveType),
         }
     };
@@ -8760,6 +8761,61 @@ static napi_value ParseArgsStartPhotoPicker(napi_env env, napi_callback_info inf
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
+}
+
+static void PhotoAccessGetSupportedPhotoFormatsExec(MediaLibraryAsyncContext *context)
+{
+    CHECK_IF_EQUAL(context != nullptr, "context is nullptr");
+    if (context->photoType == MEDIA_TYPE_IMAGE || context->photoType == MEDIA_TYPE_VIDEO) {
+        context->mediaTypeNames = MediaFileUtils::GetAllTypes(context->photoType);
+    } else {
+        context->SaveError(E_FAIL);
+    }
+}
+
+static void GetSupportedPhotoFormatsAsyncCallbadkComplete(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_IF_EQUAL(context != nullptr, "context is nullptr");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    CHECK_IF_EQUAL(jsContext != nullptr, "jsContext is nullptr");
+    napi_value mediaValue;
+    napi_value resultTypes;
+    napi_create_array(env, &resultTypes);
+    int count = 0;
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_ERR_PARAMETER_INVALID);
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+    } else {
+        for (const auto &type_out : context->mediaTypeNames) {
+            CHECK_ARGS_RET_VOID(
+                env, napi_create_string_utf8(env, type_out.c_str(), NAPI_AUTO_LENGTH, &mediaValue),
+                JS_INNER_FAIL);
+            CHECK_ARGS_RET_VOID(
+                env, napi_set_element(env, resultTypes, count++, mediaValue), JS_INNER_FAIL);
+        }
+        jsContext->status = true;
+        jsContext->data = resultTypes;
+    }
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetSupportedPhotoFormats(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, asyncContext->photoType),
+        JS_ERR_PARAMETER_INVALID);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetSupportedPhotoFormats",
+        [](napi_env env, void *data) {
+            auto context = static_cast<MediaLibraryAsyncContext*>(data);
+            PhotoAccessGetSupportedPhotoFormatsExec(context);
+        },
+        reinterpret_cast<CompleteCallback>(GetSupportedPhotoFormatsAsyncCallbadkComplete));
 }
 
 napi_value MediaLibraryNapi::StartPhotoPicker(napi_env env, napi_callback_info info)

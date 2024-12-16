@@ -109,6 +109,7 @@ static const uint8_t BUFFER[] = {
 };
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void CleanTestTables()
 {
@@ -345,7 +346,7 @@ void MediaLibraryCloudEnhancementTest::TearDownTestCase(void)
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    this_thread::sleep_for(chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("Clean is finish");
 }
 

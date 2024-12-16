@@ -52,6 +52,7 @@ namespace {
 
 const string BASE_VIDEO_FILE_INNER = "I am base video file";
 const string TEMP_VIDEO_FILE_INNER = "I am temp video file";
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 string GetTempFilePath(const string &filePath)
 {
@@ -213,6 +214,7 @@ void MediaLibraryMultiStagesVideoCaptureTest::TearDownTestCase(void)
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MediaLibraryUnitTestUtils::Init();
     }
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 // SetUp:Execute before each test case

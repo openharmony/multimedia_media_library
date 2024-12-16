@@ -18,13 +18,15 @@
 #include "media_asset_rdbstore.h"
 #include "media_log.h"
 #include "uri.h"
-
+#include <thread>
 using namespace std;
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void MediaLibraryVisitorDbTest::SetUpTestCase(void)
 {
@@ -33,6 +35,7 @@ void MediaLibraryVisitorDbTest::SetUpTestCase(void)
 
 void MediaLibraryVisitorDbTest::TearDownTestCase(void)
 {
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("Visitor_Rdb_Test::End");
 }
 

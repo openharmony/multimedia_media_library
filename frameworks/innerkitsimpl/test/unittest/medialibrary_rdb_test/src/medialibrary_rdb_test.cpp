@@ -40,6 +40,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 const std::string QUERY_MEDIA_VOLUME = "SELECT sum(" + MEDIA_DATA_DB_SIZE + ") AS " +
     MEDIA_DATA_DB_SIZE + "," +
     MEDIA_DATA_DB_MEDIA_TYPE + " FROM " +
@@ -102,7 +103,10 @@ void MediaLibraryRdbTest::SetUpTestCase(void)
     MEDIA_INFO_LOG("MediaLibraryRdbTest rdbstore start ret = %{public}d", ret);
 }
 
-void MediaLibraryRdbTest::TearDownTestCase(void) {}
+void MediaLibraryRdbTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 
 // SetUp:Execute before each test case
 void MediaLibraryRdbTest::SetUp() {}

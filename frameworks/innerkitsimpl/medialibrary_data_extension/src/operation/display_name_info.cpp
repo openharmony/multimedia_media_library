@@ -16,6 +16,7 @@
 
 #include "display_name_info.h"
 
+#include <algorithm>
 #include <vector>
 #include <regex>
 #include <iomanip>
@@ -25,6 +26,14 @@
 #include "media_log.h"
 
 namespace OHOS::Media {
+
+// 处理重复displayName场景时，避免扩展的后缀长度超过255，截取超出的部分，保留最终总长为255
+int32_t DisplayNameInfo::GetPrefixStrLength(std::string yearMonthDayStr, std::string hourMinuteSecondStr)
+{
+    int32_t extendLength = yearMonthDayStr.size() + hourMinuteSecondStr.size() + this->suffix.size();
+    return std::min<int32_t>(this->prefix.size(), static_cast<int32_t>(MAX_DISPLAY_NAME_LENGTH) - extendLength);
+}
+
 DisplayNameInfo::DisplayNameInfo(const PhotoAssetInfo &photoAssetInfo)
 {
     ParseDisplayName(photoAssetInfo);
@@ -45,7 +54,8 @@ std::string DisplayNameInfo::ToString()
         yearMonthDayStr = this->yearMonthDay == 0 ? "" : "_" + std::to_string(this->yearMonthDay);
         hourMinuteSecondStr = this->hourMinuteSecond == 0 ? "" : "_" + std::to_string(this->hourMinuteSecond);
     }
-    return this->prefix + yearMonthDayStr + hourMinuteSecondStr + this->suffix;
+    return this->prefix.substr(0, GetPrefixStrLength(yearMonthDayStr, hourMinuteSecondStr))
+        + yearMonthDayStr + hourMinuteSecondStr + this->suffix;
 }
 
 std::string DisplayNameInfo::Next()

@@ -38,6 +38,8 @@ shared_ptr<PhotoAssetProxy> photoAssetProxy;
 
 std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 void CreateDataHelper(int32_t systemAbilityId);
 
 void MediaPhotoAssetProxyUnitTest::SetUpTestCase(void)
@@ -45,7 +47,10 @@ void MediaPhotoAssetProxyUnitTest::SetUpTestCase(void)
     CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
 }
 
-void MediaPhotoAssetProxyUnitTest::TearDownTestCase(void) {}
+void MediaPhotoAssetProxyUnitTest::TearDownTestCase(void)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 
 void MediaPhotoAssetProxyUnitTest::SetUp(void)
 {

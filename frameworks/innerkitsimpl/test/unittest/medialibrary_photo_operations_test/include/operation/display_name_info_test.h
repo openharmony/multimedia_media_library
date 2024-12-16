@@ -20,11 +20,14 @@
 
 namespace OHOS::Media {
 class DisplayNameInfoTest : public testing::Test {
-public:
+public: // functions of testing::Test
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
+
+public:
+    std::string GetTestTitle(int32_t length);
 };
 }  // namespace OHOS::Media
 #endif  // DISPLAY_NAME_INFO_TEST_H

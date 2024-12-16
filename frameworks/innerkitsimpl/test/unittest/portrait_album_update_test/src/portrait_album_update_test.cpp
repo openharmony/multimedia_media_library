@@ -18,6 +18,7 @@
 
 #include <chrono>
 #include <utility>
+#include <thread>
 
 #include "fetch_result.h"
 #include "media_column.h"
@@ -73,6 +74,7 @@ struct PortraitData {
 
 constexpr int32_t TEST_INDEX_ONE = 1;
 constexpr int32_t TEST_INDEX_TWO = 2;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 int GetNumber()
 {
@@ -256,6 +258,7 @@ void PortraitAlbumUpdateTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("PortraitAlbumUpdateTest TearDownTestCase");
     ClearTables();
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void PortraitAlbumUpdateTest::SetUp()
