@@ -122,6 +122,7 @@ static vector<string> GetAlbumIds(const shared_ptr<MediaLibraryRdbStore> rdbStor
         albumIds.push_back(get<string>(ResultSetUtils::GetValFromColumn(
             ANALYSIS_PHOTO_MAP_TABLE + "." + PhotoMap::ALBUM_ID, resultSet, TYPE_STRING)));
     }
+    resultSet->Close();
     return albumIds;
 }
 
