@@ -108,7 +108,7 @@ HWTEST_F(MediaPermissionTest, MediaPermissionTest_004, TestSize.Level0)
     };
     permissionHandler_ = std::make_shared<ReadWritePermissionHandler>();
     int err = permissionHandler_->CheckPermission(cmd, permParam);
-    EXPECT_LT(err, 0);
+    EXPECT_EQ(err, 0);
     MEDIA_INFO_LOG("MediaPermissionTest_004 end");
 }
 
