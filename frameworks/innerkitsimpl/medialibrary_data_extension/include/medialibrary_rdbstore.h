@@ -98,12 +98,8 @@ public:
     EXPORT static void UpdateLcdStatusNotUploaded(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddReadyCountIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static int32_t ReconstructMediaLibraryStorageFormat(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static std::shared_ptr<NativeRdb::ResultSet> GetAllDuplicateAssets(const std::vector<std::string> &columns,
-        const int offset, const int limit);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryEditDataExists(
         const NativeRdb::AbsRdbPredicates &predicates);
-    EXPORT static std::shared_ptr<NativeRdb::ResultSet> GetCanDelDuplicateAssets(
-        const std::vector<std::string> &columns, const int offset, const int limit);
     EXPORT static int32_t CompletelyDeleteDBData(int32_t &deletedRows, const NativeRdb::AbsRdbPredicates &predicates);
     EXPORT int Update(int &changedRows, const std::string &table, const NativeRdb::ValuesBucket &row,
         const std::string &whereClause, const std::vector<std::string> &args);
