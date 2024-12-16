@@ -6119,9 +6119,9 @@ static void GetMediaAnaServiceProgress(nlohmann::json& jsonObj, unordered_map<in
         MediaColumn::MEDIA_ID;
     DataShare::DataSharePredicates predicates;
     predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ clause });
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0)->And()
-        ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0)->And()
-        ->EqualTo(PhotoColumn::PHOTO_HIDDEN_TIME, 0);
+    predicates.EqualTo(PhotoColumn::PHOTO_HIDDEN_TIME, 0)->And()
+        ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0)->And()
+        ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
 
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, columns, errCode);
