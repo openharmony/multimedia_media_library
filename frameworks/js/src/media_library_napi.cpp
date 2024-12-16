@@ -6161,8 +6161,7 @@ static std::string GetLabelAnaProgress()
 static std::string GetFaceAnaProgress()
 {
     unordered_map<int, string> idxToCount = {
-        {0, "totalCount"}, {1, "finishedCount"}, {2, "faceFinishedCount"}, {3, "faceTotalCount"},
-        {4, "faceClusteredCount"},
+        {0, "totalCount"}, {1, "finishedCount"}, {2, "PortraitCoverCount"}, {3, "PortraitCount"},
     };
     vector<string> columns = {
         "COUNT(*) AS totalCount",
