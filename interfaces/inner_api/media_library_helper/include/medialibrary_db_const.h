@@ -308,6 +308,8 @@ const std::string MEDIA_DATA_DB_COUNT = "count";
 const std::string MEDIA_DATA_BUNDLENAME = "bundle_name";
 const std::string MEDIA_DATA_DB_IS_LOCAL = "is_local";
 const std::string MEDIA_DATA_DB_HIGHLIGHT = "highlight";
+const std::string MEDIA_DATA_DB_HIGHLIGHT_ID = "id";
+const std::string MEDIA_DATA_DB_HIGHLIGHT_STATUS = "highlight_status";
 
 // highlight
 const std::string MEDIA_DATA_DB_VIDEO_TRACKS = "tracks";
