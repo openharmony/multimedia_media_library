@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "dfx_transaction.h"
 #include "rdb_store.h"
 #include "media_log.h"
 #include "album_plugin_table_event_handler.h"
@@ -137,6 +138,10 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotoAlbum(NativeRdb::RdbStore &store)
     if (ret != NativeRdb::E_OK) {
         return ret;
     }
+    ret = this->dbUpgradeUtils_.DropAllUniqueIndex(store, "PhotoAlbum");
+    if (ret != NativeRdb::E_OK) {
+        return ret;
+    }
     ret = this->AddlPathColumn(store);
     if (ret != NativeRdb::E_OK) {
         return ret;
@@ -208,7 +213,9 @@ int32_t MediaLibraryDbUpgrade::MoveSingleRelationshipToPhotos(NativeRdb::RdbStor
     int ret = NativeRdb::E_OK;
     MEDIA_INFO_LOG("MoveSingleRelationshipToPhotos begin");
     auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
+    DfxTransaction reporter{__func__};
     if (errCode != NativeRdb::E_OK || transaction == nullptr) {
+        reporter.ReportError(DfxTransaction::AbnormalType::CREATE_ERROR, errCode);
         MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
         return errCode;
     }
@@ -216,6 +223,7 @@ int32_t MediaLibraryDbUpgrade::MoveSingleRelationshipToPhotos(NativeRdb::RdbStor
         auto res = transaction->Execute(executeSql);
         ret = res.first;
         if (ret != NativeRdb::E_OK) {
+            reporter.ReportError(DfxTransaction::AbnormalType::EXECUTE_ERROR, ret);
             MEDIA_ERR_LOG("Media_Restore: MoveSingleRelationshipToPhotos failed, ret=%{public}d, sql=%{public}s",
                 ret,
                 executeSql.c_str());
@@ -225,8 +233,11 @@ int32_t MediaLibraryDbUpgrade::MoveSingleRelationshipToPhotos(NativeRdb::RdbStor
     }
     ret = transaction->Commit();
     if (ret != NativeRdb::E_OK) {
+        reporter.ReportError(DfxTransaction::AbnormalType::COMMIT_ERROR, ret);
         MEDIA_ERR_LOG("MoveSingleRelationshipToPhotos: tans finish fail!, ret:%{public}d", ret);
         transaction->Rollback();
+    } else {
+        reporter.ReportIfTimeout();
     }
     return NativeRdb::E_OK;
 }

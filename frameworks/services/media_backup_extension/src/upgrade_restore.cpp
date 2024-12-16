@@ -39,7 +39,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
-#include "gallery_report.h"
+#include "database_report.h"
 #include "medialibrary_rdb_transaction.h"
 
 #ifdef CLOUD_SYNC_MANAGER
@@ -306,16 +306,10 @@ bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::
 
 void UpgradeRestore::RestorePhoto()
 {
+    // upgrade gallery.db
+    DataTransfer::GalleryDbUpgrade().OnUpgrade(this->galleryRdb_);
     AnalyzeSource();
     InitGarbageAlbum();
-
-    // upgrade gallery.db
-    if (this->galleryRdb_ != nullptr) {
-        DataTransfer::GalleryDbUpgrade galleryDbUpgrade;
-        galleryDbUpgrade.OnUpgrade(*this->galleryRdb_);
-    } else {
-        MEDIA_WARN_LOG("galleryRdb_ is nullptr, Maybe init failed, skip gallery db upgrade.");
-    }
     // restore PhotoAlbum
     this->photoAlbumRestore_.Restore();
     RestoreFromGalleryPortraitAlbum();
@@ -371,13 +365,12 @@ void UpgradeRestore::AnalyzeGalleryDuplicateData()
 
 void UpgradeRestore::AnalyzeGallerySource()
 {
-    GalleryReport()
-        .SetGalleryRdb(this->galleryRdb_)
-        .SetExternalRdb(this->externalRdb_)
+    DatabaseReport()
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
-        .SetShouldIncludeSd(this->shouldIncludeSd_)
-        .Report();
+        .ReportGallery(this->galleryRdb_, this->shouldIncludeSd_)
+        .ReportExternal(this->externalRdb_)
+        .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_BEFORE);
 }
 
 void UpgradeRestore::InitGarbageAlbum()

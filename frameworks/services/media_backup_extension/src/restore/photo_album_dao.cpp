@@ -148,7 +148,7 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
         return albumRowData;
     }
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, bindArgs);
-    if (resultSet == nullptr || resultSet->GoToNextRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_WARN_LOG("Media_Restore: can not find the PhotoAlbum info by lPath [%{public}s] in PhotoAlbum table.",
             lPath.c_str());
         return albumRowData;
@@ -175,11 +175,10 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
 PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const PhotoAlbumRowData &album)
 {
     // validate inputs
-    PhotoAlbumDao::PhotoAlbumRowData result;
     if (album.lPath.empty()) {
         MEDIA_ERR_LOG(
             "Media_Restore: Invalid album data, lPath is empty. Object: %{public}s", this->ToString(album).c_str());
-        return result;
+        return album;
     }
     std::unique_lock<std::mutex> lock(this->photoAlbumCreateLock_);
     // try to get from cache
@@ -192,7 +191,7 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const Phot
         album.albumType, album.albumSubType, uniqueAlbumName, album.bundleName, album.lPath, album.priority};
     if (this->mediaLibraryRdb_ == nullptr) {
         MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
-        return result;
+        return album;
     }
     auto err = BackupDatabaseUtils::ExecuteSQL(this->mediaLibraryRdb_, this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
     if (err != NativeRdb::E_OK) {
@@ -201,7 +200,7 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const Phot
             err,
             this->SQL_PHOTO_ALBUM_INSERT.c_str(),
             this->ToString(bindArgs).c_str());
-        return result;
+        return album;
     }
     MEDIA_INFO_LOG("Media_Restore: INSERT INTO PhotoAlbum success, Object: %{public}s", this->ToString(album).c_str());
     return this->GetPhotoAlbum(album.lPath);
@@ -232,7 +231,13 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
         MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
         return E_FAIL;
     }
+    int32_t count = 0;
     for (const PhotoAlbumDao::PhotoAlbumRowData &data : photoAlbums) {
+        if (data.lPath.empty() || data.albumName.empty()) {
+            MEDIA_ERR_LOG("Media_Restore: restore albums failed, lPath or albumName is empty. Object: %{public}s",
+                this->ToString(data).c_str());
+            continue;
+        }
         std::vector<NativeRdb::ValueObject> bindArgs = {
             data.albumType, data.albumSubType, data.albumName, data.bundleName, data.lPath, data.priority};
         err = BackupDatabaseUtils::ExecuteSQL(this->mediaLibraryRdb_, this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
@@ -242,10 +247,13 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
                 err,
                 this->SQL_PHOTO_ALBUM_INSERT.c_str(),
                 this->ToString(bindArgs).c_str());
+            continue;
         }
+        count++;
     }
-    MEDIA_INFO_LOG(
-        "Media_Restore: restore albums success, %{public}d albums", static_cast<int32_t>(photoAlbums.size()));
+    MEDIA_INFO_LOG("Media_Restore: restore albums success, total %{public}d, restored %{public}d",
+        static_cast<int32_t>(photoAlbums.size()),
+        count);
     return NativeRdb::E_OK;
 }
 
