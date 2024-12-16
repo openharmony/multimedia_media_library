@@ -52,6 +52,7 @@
 #include "parameter.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
+#include "photo_file_utils.h"
 #include "result_set_utils.h"
 #include "sandbox_helper.h"
 #include "string_ex.h"
@@ -852,7 +853,9 @@ void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id
         tableName = AudioColumn::AUDIOS_TABLE;
     }
 
-    InvalidateThumbnail(id, tableName);
+    if (!PhotoFileUtils::IsThumbnailLatest(path)) {
+        InvalidateThumbnail(id, tableName);
+    }
 
     shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
     if (scanFileCb == nullptr) {
@@ -876,7 +879,9 @@ void MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(const string &path,
         tableName = AudioColumn::AUDIOS_TABLE;
     }
 
-    InvalidateThumbnail(id, tableName);
+    if (!PhotoFileUtils::IsThumbnailLatest(path)) {
+        InvalidateThumbnail(id, tableName);
+    }
 
     shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
     if (scanFileCb == nullptr) {
@@ -914,7 +919,9 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
     if (watch != nullptr) {
         watch->RemoveByFileUri(fileAsset->GetUri());
     }
-    InvalidateThumbnail(strFileId);
+    if (!PhotoFileUtils::IsThumbnailLatest(srcPath)) {
+        InvalidateThumbnail(strFileId);
+    }
     ScanFile(srcPath);
     return E_SUCCESS;
 }

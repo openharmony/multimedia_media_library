@@ -116,4 +116,63 @@ string PhotoFileUtils::GetMetaDataRealPath(const string &photoPath, int32_t user
     }
     return AppendUserId(ROOT_MEDIA_DIR, userId) + metaPath.substr(ROOT_MEDIA_DIR.length());
 }
+
+string PhotoFileUtils::GetThumbDir(const string &photoPath, int32_t userId)
+{
+    if (!CheckPhotoPath(photoPath)) {
+        return "";
+    }
+    return AppendUserId(ROOT_MEDIA_DIR, userId) + ".thumbs/" + photoPath.substr(ROOT_MEDIA_DIR.length());
+}
+
+string PhotoFileUtils::GetLCDPath(const string &photoPath, int32_t userId)
+{
+    string thumbDir = GetThumbDir(photoPath, userId);
+    if (thumbDir.empty()) {
+        return "";
+    }
+    return thumbDir + "/LCD.jpg";
+}
+
+string PhotoFileUtils::GetTHMPath(const string &photoPath, int32_t userId)
+{
+    string thumbDir = GetThumbDir(photoPath, userId);
+    if (thumbDir.empty()) {
+        return "";
+    }
+    return thumbDir + "/THM.jpg";
+}
+
+static bool IsLaterThan(const string &currentPath, const string &targetPath)
+{
+    int64_t targetDateModified = 0;
+    if (!MediaFileUtils::GetDateModified(targetPath, targetDateModified)) {
+        return false;
+    }
+    int64_t currentDateModified = 0;
+    if (!MediaFileUtils::GetDateModified(currentPath, currentDateModified)) {
+        return false;
+    }
+    return currentDateModified > targetDateModified;
+}
+
+bool PhotoFileUtils::IsThumbnailLatest(const string &photoPath)
+{
+    if (photoPath.empty()) {
+        return false;
+    }
+
+    string lcdPath = GetLCDPath(photoPath);
+    if (!lcdPath.empty() && IsLaterThan(lcdPath, photoPath)) {
+        MEDIA_DEBUG_LOG("lcd %{private}s is latest", lcdPath.c_str());
+        return true;
+    }
+
+    string thmPath = GetTHMPath(photoPath);
+    if (!thmPath.empty() && IsLaterThan(thmPath, photoPath)) {
+        MEDIA_DEBUG_LOG("thm %{private}s is latest", thmPath.c_str());
+        return true;
+    }
+    return false;
+}
 } // namespace OHOS::Media

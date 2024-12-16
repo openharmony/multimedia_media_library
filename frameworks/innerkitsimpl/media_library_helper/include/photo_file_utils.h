@@ -32,9 +32,13 @@ public:
 
     EXPORT static int32_t GetMetaPathFromOrignalPath(const std::string &srcPath, std::string &metaPath);
     EXPORT static std::string GetMetaDataRealPath(const std::string &photoPath, int32_t userId = -1);
+    EXPORT static bool IsThumbnailLatest(const std::string &photoPath);
 
 protected:
     EXPORT static std::string AppendUserId(const std::string &path, int32_t userId = -1);
+    EXPORT static std::string GetThumbDir(const std::string &photoPath, int32_t userId = -1);
+    EXPORT static std::string GetLCDPath(const std::string &photoPath, int32_t userId = -1);
+    EXPORT static std::string GetTHMPath(const std::string &photoPath, int32_t userId = -1);
 };
 } // namespace OHOS::Media
 
