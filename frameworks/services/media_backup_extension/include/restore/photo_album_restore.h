@@ -26,6 +26,7 @@ namespace OHOS::Media {
 class PhotoAlbumRestore {
 public:
     struct GalleryAlbumRowData {
+        std::string albumId;
         std::string relativeBucketId;
         std::string albumName;
         std::string bundleName;
@@ -48,11 +49,13 @@ public:
         MEDIA_INFO_LOG(
             "Media_Restore: galleryAlbumInfos size : %{public}d", static_cast<int32_t>(galleryAlbumInfos.size()));
         for (auto &info : galleryAlbumInfos) {
-            MEDIA_INFO_LOG("Media_Restore: restore album info: relativeBucketId = %{public}s, \
+            MEDIA_INFO_LOG("Media_Restore: restore album info: albumId = %{public}s, \
+                relativeBucketId = %{public}s, \
                 albumName = %{public}s, \
                 bundleName = %{public}s, \
                 lPath = %{public}s, \
                 priority = %{public}d",
+                info.albumId.c_str(),
                 info.relativeBucketId.c_str(),
                 info.albumName.c_str(),
                 info.bundleName.c_str(),
@@ -111,6 +114,7 @@ private:
     PhotoAlbumDao photoAlbumDao_;
 
 private:
+    const std::string GALLERY_ALBUM_ID = "albumId";
     const std::string GALLERY_ALBUM_NAME = "albumName";
     const std::string GALLERY_ALBUM_BUCKET_ID = "relativeBucketId";
     const std::string GALLERY_ALBUM_lPATH = "lPath";

@@ -32,12 +32,18 @@ public:
     int32_t OnStart(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryTargetRdb,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryOriginalRdb)
     {
-        this->mediaLibraryTargetRdb_ = mediaLibraryTargetRdb;
-        this->mediaLibraryOriginalRdb_ = mediaLibraryOriginalRdb;
-        this->photosDao_.SetMediaLibraryRdb(mediaLibraryTargetRdb);
-        this->photosBasicInfo_ = this->photosDao_.GetBasicInfo();
-        this->photoAlbumDao_.SetMediaLibraryRdb(mediaLibraryTargetRdb);
+        this->SetMediaLibraryTargetRdb(mediaLibraryTargetRdb)
+            .SetMediaLibraryOriginalRdb(mediaLibraryOriginalRdb)
+            .LoadBasicInfo();
         return 0;
+    }
+
+    /**
+     * @brief Load the PhotoAlbum cache of target media_library.db for quick access.
+     */
+    void LoadPhotoAlbums()
+    {
+        this->photoAlbumDao_.LoadPhotoAlbums();
     }
 
     int32_t OnStop(std::atomic<uint64_t> &totalNumber, std::atomic<int32_t> &processStatus)
@@ -63,11 +69,28 @@ public:
     std::string FindPackageName(const FileInfo &info);
     std::string FindBundleName(const FileInfo &info);
     int32_t FindPhotoQuality(const FileInfo &fileInfo);
+    std::string FindSourcePath(const FileInfo &fileInfo);
 
 private:
     enum { UUID_STR_LENGTH = 37 };
 
 private:
+    PhotosClone &SetMediaLibraryTargetRdb(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryTargetRdb)
+    {
+        this->mediaLibraryTargetRdb_ = mediaLibraryTargetRdb;
+        this->photosDao_.SetMediaLibraryRdb(mediaLibraryTargetRdb);
+        this->photoAlbumDao_.SetMediaLibraryRdb(mediaLibraryTargetRdb);
+        return *this;
+    }
+    PhotosClone &SetMediaLibraryOriginalRdb(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryOriginalRdb)
+    {
+        this->mediaLibraryOriginalRdb_ = mediaLibraryOriginalRdb;
+        return *this;
+    }
+    void LoadBasicInfo()
+    {
+        this->photosBasicInfo_ = this->photosDao_.GetBasicInfo();
+    }
     PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(const FileInfo &fileInfo);
     int32_t FixDuplicateBurstKeyInDifferentAlbum(std::atomic<uint64_t> &totalNumber);
     std::vector<PhotosDao::PhotosRowData> FindDuplicateBurstKey();
@@ -84,7 +107,7 @@ private:
     PhotoAlbumDao photoAlbumDao_;
 
 private:
-    std::string SQL_PHOTOS_TABLE_COUNT_IN_PHOTO_MAP = "\
+    const std::string SQL_PHOTOS_TABLE_COUNT_IN_PHOTO_MAP = "\
         SELECT COUNT(1) AS count \
         FROM PhotoAlbum \
             INNER JOIN PhotoMap \
@@ -93,7 +116,7 @@ private:
             ON PhotoMap.map_asset=Photos.file_id \
         WHERE Photos.position IN (1, 3) AND \
             (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum');";
-    std::string SQL_PHOTOS_TABLE_QUERY_IN_PHOTO_MAP = "\
+    const std::string SQL_PHOTOS_TABLE_QUERY_IN_PHOTO_MAP = "\
         SELECT PhotoAlbum.lpath, \
             Photos.* \
         FROM PhotoAlbum \
@@ -105,14 +128,14 @@ private:
             (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum') \
         ORDER BY Photos.file_id \
         LIMIT ?, ? ;";
-    std::string SQL_PHOTOS_TABLE_COUNT_NOT_IN_PHOTO_MAP = "\
+    const std::string SQL_PHOTOS_TABLE_COUNT_NOT_IN_PHOTO_MAP = "\
         SELECT COUNT(1) AS count \
         FROM Photos \
             LEFT JOIN PhotoAlbum \
             ON Photos.owner_album_id = PhotoAlbum.album_id \
         WHERE position IN (1, 3) AND \
             (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum');";
-    std::string SQL_PHOTOS_TABLE_QUERY_NOT_IN_PHOTO_MAP = "\
+    const std::string SQL_PHOTOS_TABLE_QUERY_NOT_IN_PHOTO_MAP = "\
         SELECT \
             PhotoAlbum.lpath, \
             Photos.* \
@@ -123,7 +146,7 @@ private:
             (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum') \
         ORDER BY Photos.file_id \
         LIMIT ?, ? ;";
-    std::string SQL_PHOTOS_TABLE_BURST_KEY_DUPLICATE_QUERY = "\
+    const std::string SQL_PHOTOS_TABLE_BURST_KEY_DUPLICATE_QUERY = "\
         SELECT DISTINCT \
             Photos.owner_album_id, \
             Photos.burst_key \
@@ -135,7 +158,7 @@ private:
             ( \
                 SELECT owner_album_id, burst_key \
                 FROM Photos \
-                WHERE burst_key IS NOT NULL \
+                WHERE COALESCE(burst_key, '') <> '' \
                 GROUP BY owner_album_id, burst_key \
             ) \
             GROUP BY burst_key \
@@ -145,11 +168,12 @@ private:
         WHERE BURST.count > 1 \
         ORDER BY Photos.burst_key \
         LIMIT ?, ? ;";
-    std::string SQL_PHOTOS_TABLE_BURST_KEY_UPDATE = "\
+    const std::string SQL_PHOTOS_TABLE_BURST_KEY_UPDATE = "\
         UPDATE Photos \
         SET burst_key = ? \
         WHERE owner_album_id = ? AND \
             burst_key = ?;";
+    const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
 };
 }  // namespace OHOS::Media
 #endif
