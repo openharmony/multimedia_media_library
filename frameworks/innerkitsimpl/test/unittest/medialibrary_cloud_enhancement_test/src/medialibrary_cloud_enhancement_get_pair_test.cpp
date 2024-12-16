@@ -65,6 +65,7 @@ static const string SECOND_TESTING_PHOTO_ID = "20240826173";
 static const string FIRST_TESTING_DISPLAYNAME = "CloudEnhancementTest001.jpg";
 static const string SECOND_TESTING_DISPLAYNAME = "CloudEnhancementTest002.jpg";
 static const double TESTING_TIME = 1725282828560;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 static int32_t firstFileId;
 static int32_t secondFileId;
@@ -287,7 +288,7 @@ void MediaLibraryCloudEnhancementGetPairTest::TearDownTestCase(void)
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    this_thread::sleep_for(chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("Clean is finish");
 }
 

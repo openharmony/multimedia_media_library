@@ -35,6 +35,76 @@ const int32_t SIZE_ONE = 1;
 #ifdef HAS_BATTERY_MANAGER_PART
 const int LOW_BATTERY = 50;
 #endif
+const std::string PATH_SEPARATOR = "/";
+struct MoveInfo {
+    uint32_t cookie;
+    std::string path;
+} g_moveInfo;
+
+void MtpFileObserver::EraseFromWatchMap(const std::string &path)
+{
+    CHECK_AND_RETURN_LOG(!path.empty(), "EraseFromWatchMap path is empty");
+    {
+        lock_guard<mutex> lock(eventLock_);
+        std::vector<int> eraseList;
+        std::string separatorPath = g_moveInfo.path + PATH_SEPARATOR;
+        for (const auto &item : watchMap_) {
+            // remove the path in watchMap_ which is the subdirectory of the deleted path
+            if (separatorPath.compare(item.second.substr(0, separatorPath.size())) == 0) {
+                eraseList.push_back(item.first);
+            } else if (item.second.compare(path) == 0) {
+                // remove the path in watchMap_
+                eraseList.push_back(item.first);
+            }
+        }
+        for (const auto &i : eraseList) {
+            inotify_rm_watch(inotifyFd_, i);
+            watchMap_.erase(i);
+        }
+        std::vector<int>().swap(eraseList);
+    }
+}
+
+void MtpFileObserver::UpdateWatchMap(const std::string &path)
+{
+    CHECK_AND_RETURN_LOG(!path.empty(), "UpdateWatchMap path is empty");
+    CHECK_AND_RETURN_LOG(!g_moveInfo.path.empty(), "UpdateWatchMap removeInfo.path is empty");
+    {
+        lock_guard<mutex> lock(eventLock_);
+        std::string separatorPath = g_moveInfo.path + PATH_SEPARATOR;
+        for (auto &item : watchMap_) {
+            // update the path in watchMap_ which is the subdirectory of the moved path
+            if (separatorPath.compare(item.second.substr(0, separatorPath.size())) == 0) {
+                item.second = path + PATH_SEPARATOR + item.second.substr(separatorPath.size());
+            } else if (item.second.compare(g_moveInfo.path) == 0) {
+                // update the path in watchMap_
+                item.second = path;
+            }
+        }
+    }
+}
+
+void MtpFileObserver::DealWatchMap(const inotify_event &event, const std::string &path)
+{
+    CHECK_AND_RETURN_LOG(!path.empty(), "DealWatchMap path is empty");
+    CHECK_AND_RETURN_LOG((event.mask & IN_ISDIR), "DealWatchMap path is not dir");
+    if (event.mask & IN_DELETE) {
+        // if the path is deleted, remove it from watchMap_
+        EraseFromWatchMap(path);
+    } else if (event.mask & IN_MOVED_FROM) {
+        // if the path is moved from, record the cookie and path
+        g_moveInfo = {
+            .cookie = event.cookie,
+            .path = path
+        };
+    } else if (event.mask & IN_MOVED_TO) {
+        // if the path is moved to, update the path in watchMap_
+        if (g_moveInfo.cookie == event.cookie) {
+            UpdateWatchMap(path);
+        }
+    }
+}
+
 void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &path, const ContextSptr &context)
 {
     string fileName = path + "/" + event.name;
@@ -53,6 +123,10 @@ void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &p
     } else if (event.mask & IN_CLOSE_WRITE) {
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents IN_CLOSE_WRITE : path:%{private}s", fileName.c_str());
         eventPtr->SendObjectInfoChanged(fileName);
+    }
+    // if the path is a directory and it is moved or deleted, deal with the watchMap_
+    if ((event.mask & IN_ISDIR) && (event.mask & (IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO))) {
+        DealWatchMap(event, fileName);
     }
 }
 
@@ -106,7 +180,7 @@ bool MtpFileObserver::StopFileInotify()
     lock_guard<mutex> lock(eventLock_);
     for (auto ret : watchMap_) {
         if (inotify_rm_watch(inotifyFd_, ret.first) == -1) {
-            MEDIA_ERR_LOG("MtpFileObserver StopFileInotify inotify_rm_watch error");
+            MEDIA_ERR_LOG("MtpFileObserver StopFileInotify inotify_rm_watch error = [%{public}d]", errno);
             return false;
         }
     }
@@ -153,7 +227,7 @@ void MtpFileObserver::AddFileInotify(const std::string &path, const std::string 
         lock_guard<mutex> lock(eventLock_);
         if (!path.empty() && !realPath.empty()) {
             int ret = inotify_add_watch(inotifyFd_, path.c_str(),
-                IN_CLOSE_WRITE | IN_MOVED_FROM | IN_MOVED_TO | IN_CREATE | IN_DELETE);
+                IN_CLOSE_WRITE | IN_MOVED_FROM | IN_MOVED_TO | IN_CREATE | IN_DELETE | IN_ISDIR);
             watchMap_.insert(make_pair(ret, path));
         }
         if (!startThread_) {

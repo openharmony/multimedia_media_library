@@ -74,6 +74,7 @@ namespace OHOS {
 namespace Media {
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void CleanTestTables()
 {
@@ -205,7 +206,7 @@ void MediaLibraryUriSensitiveOperationsTest::TearDownTestCase()
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    this_thread::sleep_for(chrono::seconds(1));
+    this_thread::sleep_for(chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("Clean is finish");
 }
 

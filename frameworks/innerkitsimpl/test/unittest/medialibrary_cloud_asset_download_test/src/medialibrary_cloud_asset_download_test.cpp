@@ -58,6 +58,7 @@ namespace Media {
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static std::atomic<int> number(0);
 static const int32_t EXIT_TASK = 1;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void CleanTestTables()
 {
@@ -181,6 +182,7 @@ void MediaLibraryCloudAssetDownloadTest::TearDownTestCase(void)
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     this_thread::sleep_for(chrono::seconds(1));
     MEDIA_INFO_LOG("Clean is finish");
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 // SetUp:Execute before each test case

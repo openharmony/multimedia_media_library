@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <fcntl.h>
 #include <fstream>
+#include <thread>
 #include <sys/stat.h>
 #include <thread>
 #include <unistd.h>
@@ -62,6 +63,7 @@ using namespace OHOS::DataShare;
 using OHOS::DataShare::DataSharePredicates;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 static const uint8_t BUF[] = {
     255, 216, 255, 224, 0, 16, 74, 70, 73, 70, 0, 1, 1, 1, 0, 96, 0, 96, 0, 0, 255, 219, 0, 67, 0, 8, 6, 6, 7, 6, 5, 8,
@@ -379,6 +381,7 @@ void MediaLibraryPhotoEditTest::TearDownTestCase()
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     this_thread::sleep_for(chrono::seconds(1));
     MEDIA_INFO_LOG("Clean is finish");
+    this_thread::sleep_for(chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryPhotoEditTest::SetUp()

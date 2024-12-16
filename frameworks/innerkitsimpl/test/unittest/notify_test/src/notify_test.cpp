@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 #define MLOG_TAG "NotifyTest"
+
+#include <thread>
 #include <memory>
 #include <vector>
 #include <algorithm>
@@ -71,6 +73,7 @@ static constexpr int LIST_SIZE = 1;
 static constexpr int64_t DATE_ADD = 6666666;
 static constexpr int64_t DATE_MODIFY = 6666667;
 shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void CheckGetAlbumIdBySubType(PhotoAlbumSubType photoAlbumSubType, DefaultAlbumId defaultAlbumId)
 {
@@ -292,7 +295,10 @@ void NotifyTest::SetUpTestCase()
     ASSERT_TRUE(sDataShareHelper_ != nullptr);
 }
 
-void NotifyTest::TearDownTestCase() {}
+void NotifyTest::TearDownTestCase()
+{
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+}
 
 // SetUp:Execute before each test case
 void NotifyTest::SetUp() {}

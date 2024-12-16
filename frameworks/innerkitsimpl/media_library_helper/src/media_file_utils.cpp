@@ -226,6 +226,22 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_EXT
     { "video/x-matroska", { "mpv" } }
 };
 
+vector<string> MediaFileUtils::GetAllTypes(const int32_t extension)
+{
+    vector<std::string> allTypesVec;
+    if (extension != MEDIA_TYPE_IMAGE && extension != MEDIA_TYPE_VIDEO) {
+        return allTypesVec;
+    }
+    for (auto &item : MEDIA_MIME_TYPE_MAP) {
+        if (extension == MimeTypeUtils::GetMediaTypeFromMimeType(item.first)) {
+            for (auto &ext : item.second) {
+                allTypesVec.push_back(ext);
+            }
+        }
+    }
+    return allTypesVec;
+}
+
 int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, struct FTW *ftwbuf)
 {
     CHECK_AND_RETURN_RET_LOG(fpath != nullptr, E_FAIL, "fpath == nullptr");

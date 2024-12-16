@@ -336,6 +336,7 @@ private:
     EXPORT static napi_value JSGetPhotoIndex(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoIndex(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetIndexConstructProgress(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetSupportedPhotoFormats(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSApplyChanges(napi_env env, napi_callback_info info);
 
@@ -453,6 +454,8 @@ struct MediaLibraryAsyncContext : public NapiError {
     ResultNapiType resultNapiType;
     std::string tableName;
     std::vector<uint32_t> mediaTypes;
+    std::vector<string> mediaTypeNames;
+    int32_t photoType;
     OHOS::DataShare::DataSharePredicates predicates;
     std::vector<std::string> fetchColumn;
     std::vector<std::string> uris;

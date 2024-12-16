@@ -354,6 +354,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
     if (cmd.GetOprnType() == OperationType::UPDATE_SEARCH_INDEX) {
         return MediaLibraryRdbStore::Query(predicates, columns);
     }
+    if (cmd.GetOprnType() == OperationType::EDIT_DATA_EXISTS) {
+        return MediaLibraryRdbStore::QueryEditDataExists(predicates);
+    }
     MediaLibraryRdbUtils::AddQueryIndex(predicates, columns);
     return MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
 }
