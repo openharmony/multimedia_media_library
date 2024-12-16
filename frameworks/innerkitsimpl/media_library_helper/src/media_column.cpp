@@ -429,6 +429,11 @@ const std::string PhotoColumn::CREATE_PHOTOS_METADATA_DIRTY_TRIGGER =
 const std::string PhotoColumn::UPDATA_PHOTOS_DATA_UNIQUE = "CREATE UNIQUE INDEX IF NOT EXISTS photo_data_index ON " +
     PhotoColumn::PHOTOS_TABLE + " (" + MEDIA_FILE_PATH + ");";
 
+const std::string PhotoColumn::UPDATE_LCD_STATUS_NOT_UPLOADED =
+                        " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_LCD_VISIT_TIME +
+                        " = 0 " + " WHERE " + PhotoColumn::PHOTO_DIRTY + " = 1" +
+                        " AND " + PhotoColumn::PHOTO_POSITION + " = 1; END;";
+
 const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE,
     PhotoColumn::PHOTO_HEIGHT, PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_LCD_VISIT_TIME, PhotoColumn::PHOTO_POSITION,
