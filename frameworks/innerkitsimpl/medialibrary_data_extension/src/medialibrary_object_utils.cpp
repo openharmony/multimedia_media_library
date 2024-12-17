@@ -853,7 +853,7 @@ void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id
         tableName = AudioColumn::AUDIOS_TABLE;
     }
 
-    if (!PhotoFileUtils::IsThumbnailLatest(path)) {
+    if (PhotoFileUtils::IsThumbnailExists(path) && !PhotoFileUtils::IsThumbnailLatest(path)) {
         InvalidateThumbnail(id, tableName);
     }
 
@@ -879,7 +879,7 @@ void MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(const string &path,
         tableName = AudioColumn::AUDIOS_TABLE;
     }
 
-    if (!PhotoFileUtils::IsThumbnailLatest(path)) {
+    if (PhotoFileUtils::IsThumbnailExists(path) && !PhotoFileUtils::IsThumbnailLatest(path)) {
         InvalidateThumbnail(id, tableName);
     }
 
@@ -919,7 +919,7 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
     if (watch != nullptr) {
         watch->RemoveByFileUri(fileAsset->GetUri());
     }
-    if (!PhotoFileUtils::IsThumbnailLatest(srcPath)) {
+    if (PhotoFileUtils::IsThumbnailExists(srcPath) && !PhotoFileUtils::IsThumbnailLatest(srcPath)) {
         InvalidateThumbnail(strFileId);
     }
     ScanFile(srcPath);

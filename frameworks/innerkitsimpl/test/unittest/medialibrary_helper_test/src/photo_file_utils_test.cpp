@@ -147,6 +147,18 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_HasSource_001, TestSize.Leve
     EXPECT_EQ(PhotoFileUtils::HasSource(false, 1732767140333, 2), true);
 }
 
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailExists_001, TestSize.Level0)
+{
+    string photoPath = "/storage/cloud/files/Photo/1/IMG_123456123_001.jpg";
+    EXPECT_EQ(PhotoFileUtils::IsThumbnailExists(photoPath), false);
+
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/.thumbs/Photo/1/IMG_123456123_001.jpg"), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile("/storage/cloud/files/.thumbs/Photo/1/IMG_123456123_001.jpg/LCD.jpg"), true);
+    EXPECT_EQ(PhotoFileUtils::IsThumbnailExists(photoPath), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile("/storage/cloud/files/.thumbs/Photo/1/IMG_123456123_001.jpg/THM.jpg"), true);
+    EXPECT_EQ(PhotoFileUtils::IsThumbnailExists(photoPath), true);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailLatest_001, TestSize.Level0)
 {
     EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/Photo/1/"), true);
