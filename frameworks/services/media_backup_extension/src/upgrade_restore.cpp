@@ -1287,11 +1287,11 @@ std::string UpgradeRestore::CheckGalleryDbIntegrity()
     MEDIA_INFO_LOG("start handle gallery integrity check.");
     int64_t dbIntegrityCheckTime = MediaFileUtils::UTCTimeMilliSeconds();
     dbIntegrityCheck = BackupDatabaseUtils::CheckDbIntegrity(galleryRdb_, sceneCode_, "GALLERY_DB_CORRUPTION");
-    dbIntegrityCheckTime = MediaFileUtils::UTCTimeMilliSeconds() - dbItegriryCheckTime;
+    dbIntegrityCheckTime = MediaFileUtils::UTCTimeMilliSeconds() - dbIntegrityCheckTime;
     UpgradeRestoreTaskReport()
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
-        .ReportProgress("GalleryDbCheck", dbSize + ";" + std::to_string(dbItegriryCheckTime));
+        .ReportProgress("GalleryDbCheck", dbSize + ";" + std::to_string(dbIntegrityCheckTime));
     MEDIA_INFO_LOG("end handle gallery integrity check, cost %{public}lld, size %{public}s.", \
         (long long)(dbIntegrityCheckTime), dbSize.c_str());
     return dbIntegrityCheck;
