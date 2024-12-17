@@ -47,17 +47,22 @@ public:
     PhotoAlbumRowData GetOrCreatePhotoAlbum(const PhotoAlbumRowData &album);
     int32_t RestoreAlbums(std::vector<PhotoAlbumRowData> &photoAlbums);
     PhotoAlbumRowData BuildAlbumInfoOfRecorders();
+    std::string ParseSourcePathToLPath(const std::string &sourcePath);
+    PhotoAlbumRowData BuildAlbumInfoByLPath(const std::string &lPath);
     std::string ToString(const PhotoAlbumRowData &albumInfo)
     {
         return "albumId: " + std::to_string(albumInfo.albumId) + ", albumType: " + std::to_string(albumInfo.albumType) +
                ", albumSubType: " + std::to_string(albumInfo.albumSubType) + ", albumName: " + albumInfo.albumName +
                ", lPath: " + albumInfo.lPath + ", bundleName: " + albumInfo.bundleName;
     }
+    void LoadPhotoAlbums();
 
 private:
     std::string FindUniqueAlbumName(const PhotoAlbumRowData &photoAlbum);
     bool CheckAlbumNameUnique(const std::string &albumName, const std::string &lPath);
     std::string ToString(const std::vector<NativeRdb::ValueObject> &bindArgs);
+    PhotoAlbumRowData BuildAlbumInfoByLPath(
+        const std::string &lPath, const int32_t albumType, const int32_t albumSubType);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
@@ -99,7 +104,9 @@ private:
             relative_path, \
             priority \
         FROM PhotoAlbum \
-        WHERE LOWER(lpath) = LOWER(?) ;";
+        WHERE LOWER(lpath) = LOWER(?) \
+        ORDER BY album_id DESC \
+        LIMIT 1 ;";
     // The albumName of PhotoAlbum, which is not in album_plugin, should be unique.
     const std::string SQL_PHOTO_ALBUM_CHECK_ALBUM_NAME_UNIQUE = "\
         SELECT COUNT(1) AS count \

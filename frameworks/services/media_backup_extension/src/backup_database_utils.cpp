@@ -61,6 +61,7 @@ int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbSto
     if (isMediaLibrary) {
         config.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
         config.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
+        config.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
     }
     int32_t err;
     RdbCallback cb;
@@ -76,6 +77,11 @@ std::string BackupDatabaseUtils::CloudSyncTriggerFunc(const std::vector<std::str
 std::string BackupDatabaseUtils::IsCallerSelfFunc(const std::vector<std::string> &args)
 {
     return "false";
+}
+
+std::string BackupDatabaseUtils::PhotoAlbumNotifyFunc(const std::vector<std::string> &args)
+{
+    return "";
 }
 
 static int32_t ExecSqlWithRetry(std::function<int32_t()> execSql)

@@ -567,6 +567,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO:
+        case OperationObject::PTP_OPERATION:
             return MediaLibraryAssetOperations::HandleInsertOperation(cmd);
 
         case OperationObject::FILESYSTEM_ALBUM:
@@ -1082,6 +1083,7 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::PAH_VIDEO:
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO:
+        case OperationObject::PTP_OPERATION:
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
         case OperationObject::ANALYSIS_PHOTO_ALBUM: {
             if ((cmd.GetOprnType() >= OperationType::PORTRAIT_DISPLAY_LEVEL &&
@@ -1715,7 +1717,8 @@ int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string
     tracer.Start("MediaLibraryDataManager::OpenFile");
     auto oprnObject = cmd.GetOprnObject();
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO ||
-        oprnObject == OperationObject::HIGHLIGHT_COVER  || oprnObject == OperationObject::HIGHLIGHT_URI) {
+        oprnObject == OperationObject::HIGHLIGHT_COVER  || oprnObject == OperationObject::HIGHLIGHT_URI ||
+        oprnObject == OperationObject::PTP_OPERATION) {
         return MediaLibraryAssetOperations::OpenOperation(cmd, mode);
     }
 
@@ -1995,6 +1998,75 @@ void MediaLibraryDataManager::SubscriberPowerConsumptionDetection()
     subscriber->SetModuleName(MODULE_NAME);
     DevStandbyMgr::StandbyServiceClient::GetInstance().SubscribeStandbyCallback(subscriber);
 #endif
+}
+
+static int32_t SearchDateTakenWhenZero(const shared_ptr<MediaLibraryRdbStore> rdbStore, bool &needUpdate,
+    unordered_map<string, string> &updateData)
+{
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return E_FAIL;
+    }
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TAKEN, "0");
+    vector<string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_DATE_MODIFIED};
+    auto resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("failed to acquire result from visitor query.");
+        return E_HAS_DB_ERROR;
+    }
+    int32_t count;
+    int32_t retCount = resultSet->GetRowCount(count);
+    if (retCount != E_SUCCESS || count < 0) {
+        return E_HAS_DB_ERROR;
+    }
+    if (count == 0) {
+        MEDIA_INFO_LOG("No dateTaken need to update");
+        needUpdate = false;
+        return E_OK;
+    }
+    MEDIA_INFO_LOG("Have dateTaken need to update, count = %{public}d", count);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t fileId =
+            get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
+        int64_t newDateTaken =
+            get<int64_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_MODIFIED, resultSet, TYPE_INT64));
+        updateData.emplace(to_string(fileId), to_string(newDateTaken));
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryDataManager::UpdateDateTakenWhenZero()
+{
+    MEDIA_DEBUG_LOG("UpdateDateTakenWhenZero start");
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        return E_FAIL;
+    }
+    bool needUpdate = true;
+    unordered_map<string, string> updateData;
+    int32_t ret = SearchDateTakenWhenZero(rdbStore_, needUpdate, updateData);
+    if (ret) {
+        MEDIA_ERR_LOG("SerchDateTaken failed, ret = %{public}d", ret);
+        return ret;
+    }
+    if (!needUpdate) {
+        return E_OK;
+    }
+    string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + MediaColumn::MEDIA_DATE_TAKEN +
+        " = " + PhotoColumn::MEDIA_DATE_MODIFIED + "," + PhotoColumn::PHOTO_DETAIL_TIME +
+        " = strftime('%Y:%m:%d %H:%M:%S', date_modified/1000, 'unixepoch', 'localtime')" +
+        " WHERE " + MediaColumn::MEDIA_DATE_TAKEN + " = 0";
+    ret = rdbStore_->ExecuteSql(updateSql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore->ExecuteSql failed, ret = %{public}d", ret);
+        return E_HAS_DB_ERROR;
+    }
+    for (const auto& data : updateData) {
+        ThumbnailService::GetInstance()->UpdateAstcWithNewDateTaken(data.first, data.second, "0");
+    }
+    MEDIA_DEBUG_LOG("UpdateDateTakenWhenZero start");
+    return ret;
 }
 }  // namespace Media
 }  // namespace OHOS

@@ -30,7 +30,7 @@ public:
     static int32_t InsertExt(const std::string &tableName, const std::string &name,
         std::string &outString, bool isRestart = false);
     static int32_t Query(const std::string &tableName, const std::string &uri,
-        std::shared_ptr<DataShare::DataShareResultSet> &resultSet, bool isRestart = false);
+        std::shared_ptr<DataShare::DataShareResultSet> &resultSet, bool isList = false, bool isRestart = false);
     static int Open(const std::string &uri, const std::string &mode, bool isRestart = false);
     static int Close(const std::string &uri, const int fileFd, const std::string &mode,
         bool isCreateThumbSync = false, bool isRestart = false);

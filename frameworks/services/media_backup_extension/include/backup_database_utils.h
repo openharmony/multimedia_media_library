@@ -129,6 +129,7 @@ public:
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     static std::string IsCallerSelfFunc(const std::vector<std::string> &args);
+    static std::string PhotoAlbumNotifyFunc(const std::vector<std::string>& args);
 };
 
 class RdbCallback : public NativeRdb::RdbOpenCallback {

@@ -247,6 +247,7 @@ private:
     Runtime& runtime_;
     std::shared_ptr<Media::AbsPermissionHandler> permissionHandler_ = nullptr;
     int CheckPermissionForOpenFile(const Uri &uri, Media::MediaLibraryCommand &command, std::string &unifyMode);
+    void OnStartSub(const AAFwk::Want &want);
 };
 } // namespace AbilityRuntime
 } // namespace OHOS

@@ -107,6 +107,11 @@ const std::string MediaAssetRdbStore::IsCallerSelfFunc(const std::vector<std::st
     return "false";
 }
 
+const std::string MediaAssetRdbStore::PhotoAlbumNotifyFunc(const std::vector<std::string> &args)
+{
+    return "";
+}
+
 MediaAssetRdbStore::MediaAssetRdbStore()
 {
     MEDIA_INFO_LOG("init visitor rdb");
@@ -151,6 +156,7 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
     config.SetRoleType(RoleType::VISITOR);
     config.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     config.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
+    config.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
 
     MediaLibraryDataCallBack rdbDataCallBack;
     rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
@@ -348,21 +354,27 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::AddQueryDateT
     if (it == columns.end()) {
         return nullptr;
     }
-    auto itData = find(columns.begin(), columns.end(), MEDIA_DATA_DB_DATE_TAKEN_MS);
+    auto itData = find(columns.begin(), columns.end(), MEDIA_DATA_DB_DATE_TAKEN);
     if (itData == columns.end()) {
         return nullptr;
+    }
+    std::string extraWhereSql = "";
+    auto itForThumbnailVisible = find(columns.begin(), columns.end(), PhotoColumn::PHOTO_THUMBNAIL_VISIBLE);
+    if (itForThumbnailVisible != columns.end()) {
+        extraWhereSql = " AND thumbnail_visible = 1 ";
     }
     std::string sql = "\
         WITH DateGrouped AS ( \
             SELECT \
-                strftime('%Y%m%d', date_taken / 1000, 'unixepoch', 'localtime') AS date_day, \
+                strftime('%Y%m%d', date_taken / 1000, 'unixepoch', 'localtime') AS date_day_tmp, \
                 count(*) as count, date_taken, burst_key, display_name, file_id, media_type, subtype \
             FROM Photos \
             WHERE sync_status = 0 AND clean_flag = 0 AND date_trashed = 0 AND time_pending = 0 AND \
-                hidden = 0 AND is_temp = 0 AND burst_cover_level = 1 GROUP BY date_day \
+                hidden = 0 AND is_temp = 0 AND burst_cover_level = 1 " + extraWhereSql +
+            "GROUP BY date_day_tmp \
         ) \
         SELECT \
-            count, date_taken, date_day, burst_key, display_name, file_id, media_type, subtype \
+            count, date_taken, date_day_tmp as date_day, burst_key, display_name, file_id, media_type, subtype \
         FROM DateGrouped \
         ORDER BY date_day DESC;";
 

@@ -70,4 +70,46 @@ std::shared_ptr<NativeRdb::ResultSet> PhotoAlbumClone::GetPhotoAlbumInOriginalDb
     }
     return resultSet;
 }
+
+void PhotoAlbumClone::TRACE_LOG(std::vector<PhotoAlbumDao::PhotoAlbumRowData> &albumInfos)
+{
+    MEDIA_INFO_LOG("Media_Restore: albumInfos size : %{public}d", static_cast<int32_t>(albumInfos.size()));
+    for (auto &info : albumInfos) {
+        MEDIA_INFO_LOG("Media_Restore: restore album info: albumId = %{public}d, \
+            albumName = %{public}s, \
+            albumType = %{public}d, \
+            albumSubType = %{public}d, \
+            lPath = %{public}s, \
+            bundleName = %{public}s, \
+            priority = %{public}d",
+            info.albumId,
+            info.albumName.c_str(),
+            info.albumType,
+            info.albumSubType,
+            info.lPath.c_str(),
+            info.bundleName.c_str(),
+            info.priority);
+    }
+}
+
+void PhotoAlbumClone::TRACE_LOG(const std::string &tableName, vector<AlbumInfo> &albumInfos)
+{
+    for (auto &albumInfo : albumInfos) {
+        MEDIA_INFO_LOG("Media_Restore: tableName %{public}s, \
+        albumInfo.albumName = %{public}s, \
+        albumInfo.albumBundleName = %{public}s, \
+        albumInfo.albumType = %{public}d, \
+        albumInfo.albumSubType = %{public}d, \
+        albumInfo.lPath = %{public}s",
+            tableName.c_str(),
+            albumInfo.albumName.c_str(),
+            albumInfo.albumBundleName.c_str(),
+            static_cast<int32_t>(albumInfo.albumType),
+            static_cast<int32_t>(albumInfo.albumSubType),
+            albumInfo.lPath.c_str());
+    }
+    // fetch all albums from mediaLibraryRdb
+    std::vector<PhotoAlbumDao::PhotoAlbumRowData> targetAlbumInfos = this->photoAlbumDao_.GetPhotoAlbums();
+    this->TRACE_LOG(targetAlbumInfos);
+}
 }  // namespace OHOS::Media

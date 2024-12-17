@@ -34,6 +34,7 @@
 #include "media_library_db_upgrade.h"
 #include "photos_dao.h"
 #include "rdb_store.h"
+#include "database_report.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -251,6 +252,7 @@ void CloneRestore::RestorePhoto()
     }
     // The begining of the restore process
     // Start clone restore
+    this->photosClone_.LoadPhotoAlbums();
     // Scenario 1, clone photos from PhotoAlbum, PhotoMap and Photos.
     int totalNumberInPhotoMap = this->photosClone_.GetPhotosRowCountInPhotoMap();
     MEDIA_INFO_LOG("GetPhotosRowCountInPhotoMap, totalNumber = %{public}d", totalNumberInPhotoMap);
@@ -261,6 +263,12 @@ void CloneRestore::RestorePhoto()
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
+    size_t vectorLen = photosFailedOffsets.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestorePhotoBatch(offset, 1);
+    }
+    needReportFailed_ = false;
     // Scenario 2, clone photos from Photos only.
     int32_t totalNumber = this->photosClone_.GetPhotosRowCountNotInPhotoMap();
     MEDIA_INFO_LOG("QueryTotalNumberNot, totalNumber = %{public}d", totalNumber);
@@ -271,29 +279,16 @@ void CloneRestore::RestorePhoto()
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
+    vectorLen = photosFailedOffsets.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestorePhotoBatch(offset);
+    }
     this->photosClone_.OnStop(otherTotalNumber_, otherProcessStatus_);
 
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
     ReportPortraitCloneStat(sceneCode_);
-}
-
-void TRACE_LOG(const std::string &tableName, vector<AlbumInfo> &albumInfos)
-{
-    for (auto &albumInfo : albumInfos) {
-        MEDIA_INFO_LOG("Media_Restore: tableName %{public}s, \
-        albumInfo.albumName = %{public}s, \
-        albumInfo.albumBundleName = %{public}s, \
-        albumInfo.albumType = %{public}d, \
-        albumInfo.albumSubType = %{public}d, \
-        albumInfo.lPath = %{public}s",
-            tableName.c_str(),
-            albumInfo.albumName.c_str(),
-            albumInfo.albumBundleName.c_str(),
-            static_cast<int32_t>(albumInfo.albumType),
-            static_cast<int32_t>(albumInfo.albumSubType),
-            albumInfo.lPath.c_str());
-    }
 }
 
 void CloneRestore::RestoreAlbum()
@@ -318,7 +313,7 @@ void CloneRestore::RestoreAlbum()
             "QueryAlbumTotalNumber, tableName=%{public}s, totalNumber=%{public}d", tableName.c_str(), totalNumber);
         for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
             vector<AlbumInfo> albumInfos = QueryAlbumInfos(tableName, offset);
-            TRACE_LOG(tableName, albumInfos);
+            this->photoAlbumClone_.TRACE_LOG(tableName, albumInfos);
             InsertAlbum(albumInfos, tableName);
         }
     }
@@ -352,15 +347,15 @@ void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fi
     migrateVideoFileNumber_ += videoFileMoveCount;
 }
 
-void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
+int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
 {
     if (mediaLibraryRdb_ == nullptr) {
         MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
-        return;
+        return E_OK;
     }
     if (fileInfos.empty()) {
         MEDIA_ERR_LOG("fileInfos are empty");
-        return;
+        return E_OK;
     }
     int64_t startGenerate = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(CLONE_RESTORE_ID, fileInfos, SourceType::PHOTOS);
@@ -368,8 +363,10 @@ void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     int64_t photoRowNum = 0;
     int32_t errCode = BatchInsertWithRetry(PhotoColumn::PHOTOS_TABLE, values, photoRowNum);
     if (errCode != E_OK) {
-        UpdateFailedFiles(fileInfos, RestoreError::INSERT_FAILED);
-        return;
+        if (needReportFailed_) {
+            UpdateFailedFiles(fileInfos, RestoreError::INSERT_FAILED);
+        }
+        return errCode;
     }
     migrateDatabaseNumber_ += photoRowNum;
 
@@ -386,6 +383,7 @@ void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
         (long)(startInsertPhoto - startGenerate), (long)photoRowNum, (long)(startInsertRelated - startInsertPhoto),
         (long)(startMove - startInsertRelated), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
         (long)videoFileMoveCount, (long)(end - startMove));
+    return E_OK;
 }
 
 vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode, vector<FileInfo> &fileInfos,
@@ -502,6 +500,7 @@ bool CloneRestore::ParseAlbumResultSet(const string &tableName, const shared_ptr
     albumInfo.albumType = static_cast<PhotoAlbumType>(GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet));
     albumInfo.albumSubType = static_cast<PhotoAlbumSubType>(GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet));
     albumInfo.lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
+    albumInfo.albumBundleName = GetStringVal(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, resultSet);
 
     auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
     for (auto it = commonColumnInfoMap.begin(); it != commonColumnInfoMap.end(); ++it) {
@@ -639,6 +638,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
     values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
+    values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, fileInfo.sourcePath);
 
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_,
         PhotoColumn::PHOTOS_TABLE);
@@ -1108,6 +1108,13 @@ void CloneRestore::RestoreGallery()
     // Upgrade original MediaLibrary Database
     DataTransfer::MediaLibraryDbUpgrade medialibraryDbUpgrade;
     medialibraryDbUpgrade.OnUpgrade(*this->mediaRdb_);
+    // Report the old db info.
+    DatabaseReport()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .ReportMedia(this->mediaRdb_, DatabaseReport::PERIOD_OLD)
+        .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_BEFORE);
+    // Restore the backup db info.
     RestoreAlbum();
     RestorePhoto();
     MEDIA_INFO_LOG("migrate database photo number: %{public}lld, file number: %{public}lld (%{public}lld + "
@@ -1365,7 +1372,9 @@ void CloneRestore::RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap
     MEDIA_INFO_LOG(
         "start restore photo, offset: %{public}d, isRelatedToPhotoMap: %{public}d", offset, isRelatedToPhotoMap);
     vector<FileInfo> fileInfos = QueryFileInfos(offset, isRelatedToPhotoMap);
-    InsertPhoto(fileInfos);
+    if (InsertPhoto(fileInfos) != E_OK) {
+        photosFailedOffsets.push_back(offset);
+    }
     BatchNotifyPhoto(fileInfos);
     RestoreImageFaceInfo(fileInfos);
 
@@ -1486,17 +1495,19 @@ void CloneRestore::SetSpecialAttributes(const string &tableName, const shared_pt
         return;
     }
     fileInfo.lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
+    fileInfo.sourcePath = GetStringVal(PhotoColumn::PHOTO_SOURCE_PATH, resultSet);
     fileInfo.orientation = GetInt32Val(PhotoColumn::PHOTO_ORIENTATION, resultSet);
     fileInfo.subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
     fileInfo.photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
+    fileInfo.recycledTime = GetInt64Val(MediaColumn::MEDIA_DATE_TRASHED, resultSet);
+    fileInfo.hidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, resultSet);
     // find PhotoAlbum info in target database. PackageName and BundleName should be fixed after clone.
     fileInfo.lPath = this->photosClone_.FindlPath(fileInfo);
     fileInfo.ownerAlbumId = this->photosClone_.FindAlbumId(fileInfo);
     fileInfo.packageName = this->photosClone_.FindPackageName(fileInfo);
     fileInfo.bundleName = this->photosClone_.FindBundleName(fileInfo);
     fileInfo.photoQuality = this->photosClone_.FindPhotoQuality(fileInfo);
-    fileInfo.recycledTime = GetInt64Val(MediaColumn::MEDIA_DATE_TRASHED, resultSet);
-    fileInfo.hidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, resultSet);
+    fileInfo.sourcePath = this->photosClone_.FindSourcePath(fileInfo);
 }
 
 bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInfo)

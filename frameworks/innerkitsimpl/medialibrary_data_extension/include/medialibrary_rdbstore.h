@@ -123,6 +123,10 @@ public:
     static int32_t DoDeleteFromPredicates(const NativeRdb::AbsRdbPredicates &predicates, int32_t &deletedRows);
     int32_t DataCallBackOnCreate();
     static void WalCheckPoint();
+    EXPORT int32_t ExecuteSql(std::string &sql, const std::vector<NativeRdb::ValueObject> &args)
+    {
+        return MediaLibraryRdbStore::GetRaw()->ExecuteSql(sql, args);
+    }
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
@@ -130,6 +134,7 @@ private:
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     friend class TransactionOperations;
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    EXPORT static const std::string PhotoAlbumNotifyFunc(const std::vector<std::string>& args);
     static std::mutex reconstructLock_;
     static std::mutex walCheckPointMutex_;
 #ifdef DISTRIBUTED
