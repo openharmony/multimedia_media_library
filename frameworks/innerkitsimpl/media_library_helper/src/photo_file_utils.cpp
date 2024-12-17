@@ -156,6 +156,17 @@ static bool IsLaterThan(const string &currentPath, const string &targetPath)
     return currentDateModified > targetDateModified;
 }
 
+bool PhotoFileUtils::IsThumbnailExists(const string &photoPath)
+{
+    if (photoPath.empty()) {
+        return false;
+    }
+
+    string lcdPath = GetLCDPath(photoPath);
+    string thmPath = GetTHMPath(photoPath);
+    return MediaFileUtils::IsFileExists(lcdPath) || MediaFileUtils::IsFileExists(thmPath);
+}
+
 bool PhotoFileUtils::IsThumbnailLatest(const string &photoPath)
 {
     if (photoPath.empty()) {
