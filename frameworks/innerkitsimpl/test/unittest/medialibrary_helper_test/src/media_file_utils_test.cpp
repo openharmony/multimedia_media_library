@@ -817,10 +817,10 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Test_002, TestSize.Level0)
 {
     const string uri = "datashare:///media";
     auto res = MediaFileUtils::GetHighlightPath(uri);
-    EXPECT_EQ(res, "/storage/cloud/files/.thumbs");
+    EXPECT_EQ(res, "/storage/cloud/files");
     const string uri2 = "file://media";
     auto res2 = MediaFileUtils::GetHighlightPath(uri2);
-    EXPECT_EQ(res2, "/storage/cloud/files/.thumbs");
+    EXPECT_EQ(res2, "/storage/cloud/files");
     const string uri3 = "";
     auto res3 = MediaFileUtils::GetHighlightPath(uri3);
     EXPECT_EQ(res3, "");
