@@ -512,7 +512,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_006, TestSize.Level
     ClearFile();
     MediaVolume mediaVolume;
     mediaLibraryManager->QueryTotalSize(mediaVolume);
-    EXPECT_NE(mediaVolume.GetImagesSize(), 0);
+    EXPECT_EQ(mediaVolume.GetImagesSize(), 0);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_006::End");
 }
 
