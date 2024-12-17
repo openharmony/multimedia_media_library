@@ -69,6 +69,8 @@ const std::string CLOUD_FILE_PATH = "/storage/cloud/files";
 const std::vector<std::string> SET_LISTEN_DIR = {
     PHOTO_DIR, AUDIO_DIR, THUMBS_DIR, EDIT_DATA_DIR, THUMBS_PHOTO_DIR, EDIT_DATA_PHOTO_DIR
 };
+const std::string KVSTORE_FILE_ID_TEMPLATE = "0000000000";
+const std::string KVSTORE_DATE_KEY_TEMPLATE = "0000000000000";
 #define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)
 #define HMFS_IOCTL_HW_SET_FLAGS _IOR(0XF5, 71, unsigned int)
 
@@ -1970,11 +1972,75 @@ void MediaFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
     }
 }
 
+int32_t MediaFileUtils::CopyDirectory(const std::string &srcDir, const std::string &dstDir)
+{
+    if (srcDir.empty() || dstDir.empty()) {
+        MEDIA_ERR_LOG("Failed to copy directory, srcDir:%{public}s or newPath:%{public}s is empty!",
+            DesensitizePath(srcDir).c_str(), DesensitizePath(dstDir).c_str());
+        return E_MODIFY_DATA_FAIL;
+    }
+    if (!IsFileExists(srcDir)) {
+        MEDIA_ERR_LOG("SrcDir:%{public}s is not exist", DesensitizePath(srcDir).c_str());
+        return E_NO_SUCH_FILE;
+    }
+    if (!IsDirectory(srcDir)) {
+        MEDIA_ERR_LOG("SrcDir:%{public}s is not directory", DesensitizePath(srcDir).c_str());
+        return E_FAIL;
+    }
+    if (IsFileExists(dstDir)) {
+        MEDIA_ERR_LOG("DstDir:%{public}s exists", DesensitizePath(dstDir).c_str());
+        return E_FILE_EXIST;
+    }
+    if (!CreateDirectory(dstDir)) {
+        MEDIA_ERR_LOG("Create dstDir:%{public}s failed", DesensitizePath(dstDir).c_str());
+        return E_FAIL;
+    }
+ 
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(srcDir)) {
+        std::string srcFilePath = entry.path();
+        std::string tmpFilePath = srcFilePath;
+        std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
+        if (entry.is_directory()) {
+            if (!CreateDirectory(dstFilePath)) {
+                MEDIA_ERR_LOG("Create dir:%{public}s failed", DesensitizePath(dstFilePath).c_str());
+                return E_FAIL;
+            }
+        } else if (entry.is_regular_file()) {
+            if (!CopyFileUtil(srcFilePath, dstFilePath)) {
+                MEDIA_ERR_LOG("Copy file from %{public}s to %{public}s failed.",
+                    DesensitizePath(srcFilePath).c_str(), DesensitizePath(dstFilePath).c_str());
+                return E_FAIL;
+            }
+        } else {
+            MEDIA_ERR_LOG("Unhandled path type, path:%{public}s", DesensitizePath(srcFilePath).c_str());
+            return E_FAIL;
+        }
+    }
+    return E_OK;
+}
+
 bool MediaFileUtils::IsCalledBySelf()
 {
     if (IPCSkeleton::GetCallingFullTokenID() == IPCSkeleton::GetSelfTokenID()) {
         return E_OK;
     }
     return E_FAIL;
+}
+
+bool MediaFileUtils::GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key)
+{
+    if (fileId.empty() || dateKey.empty()) {
+        MEDIA_ERR_LOG("FileId:%{public}s or dateKey:%{public}s is empty", fileId.c_str(), dateKey.c_str());
+        return false;
+    }
+
+    if (fileId.length() > KVSTORE_FILE_ID_TEMPLATE.length() ||
+        dateKey.length() > KVSTORE_DATE_KEY_TEMPLATE.length()) {
+        MEDIA_ERR_LOG("FileId:%{public}s or dateKey:%{public}s is too long", fileId.c_str(), dateKey.c_str());
+        return false;
+    }
+    key = KVSTORE_DATE_KEY_TEMPLATE.substr(dateKey.length()) + dateKey +
+          KVSTORE_FILE_ID_TEMPLATE.substr(fileId.length()) + fileId;
+    return true;
 }
 } // namespace OHOS::Media

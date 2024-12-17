@@ -1177,6 +1177,9 @@ void BaseRestore::RestoreThumbnail()
     otherProcessStatus_ = ProcessStatus::STOP;
 }
 
+void BaseRestore::StartBackup()
+{}
+
 void BaseRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode)
 {
     return;
