@@ -857,6 +857,35 @@ void MediaLibraryRdbStore::BuildQuerySql(const AbsRdbPredicates &predicates, con
     }
 }
 
+shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::StepQueryWithoutCheck(const AbsRdbPredicates &predicates,
+    const vector<string> &columns)
+{
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        VariantMap map = { { KEY_ERR_FILE, __FILE__ },
+            { KEY_ERR_LINE, __LINE__ },
+            { KEY_ERR_CODE, E_HAS_DB_ERROR },
+            { KEY_OPT_TYPE, OptType::QUERY } };
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return nullptr;
+    }
+
+    MediaLibraryRdbUtils::AddQueryFilter(const_cast<AbsRdbPredicates &>(predicates));
+    DfxTimer dfxTimer(RDB_QUERY, INVALID_DFX, RDB_TIME_OUT, false);
+    MediaLibraryTracer tracer;
+    tracer.Start("StepQueryWithoutCheck");
+    MEDIA_DEBUG_LOG("Predicates Statement is %{public}s", predicates.GetStatement().c_str());
+    auto resultSet = MediaLibraryRdbStore::GetRaw()->QueryByStep(predicates, columns, false);
+    if (resultSet == nullptr) {
+        VariantMap map = { { KEY_ERR_FILE, __FILE__ },
+            { KEY_ERR_LINE, __LINE__ },
+            { KEY_ERR_CODE, E_HAS_DB_ERROR },
+            { KEY_OPT_TYPE, OptType::QUERY } };
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+    }
+    return resultSet;
+}
+
 /**
  * Returns last insert row id. If insert succeed but no new rows inserted, then return -1.
  * Return E_HAS_DB_ERROR on error cases.
