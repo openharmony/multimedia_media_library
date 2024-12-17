@@ -64,10 +64,10 @@ public:
     EXPORT static int32_t CopyCloudSingleFile(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         const int32_t &assetId, const int32_t &ownerAlbumId, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         int64_t &newAssetId);
-    EXPORT static int32_t DeleteALbumAndUpdateRelationship(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+    EXPORT static int32_t DeleteAlbumAndUpdateRelationship(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         const int32_t &oldAlbumId, const int64_t &newAlbumId, bool isCloudAblum);
     EXPORT static bool IsCloudAlbum(std::shared_ptr<NativeRdb::ResultSet> resultSet);
-    EXPORT static void BuildAlbumInsertValuesSetName(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+    EXPORT static void BuildAlbumInsertValuesSetName(const std::shared_ptr<MediaLibraryRdbStore>& upgradeStore,
         NativeRdb::ValuesBucket &values, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::string &newAlbumName);
     EXPORT static int32_t RefreshAllAlbums();

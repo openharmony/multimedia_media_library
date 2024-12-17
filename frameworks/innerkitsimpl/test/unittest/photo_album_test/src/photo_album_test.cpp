@@ -515,7 +515,9 @@ HWTEST_F(PhotoAlbumTest, photoalbum_update_album_001, TestSize.Level0)
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
     DataShareValuesBucket values;
     const string newName = "NewAlbumName1";
+    const string newCover = "file://media/asset/10";
     values.Put(PhotoAlbumColumns::ALBUM_NAME, newName);
+    values.Put(PhotoAlbumColumns::ALBUM_COVER_URI, newCover);
     constexpr int32_t changedRows = 1;
     EXPECT_EQ(UpdatePhotoAlbum(values, predicates), changedRows);
     CheckUpdatedAlbum(albumId, newName, "");

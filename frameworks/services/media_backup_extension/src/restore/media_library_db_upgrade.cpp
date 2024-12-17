@@ -61,8 +61,8 @@ int32_t MediaLibraryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     return NativeRdb::E_OK;
 }
 
-int32_t MediaLibraryDbUpgrade::ExecSqlsInternal(NativeRdb::RdbStore &store, const std::string &sql,
-    const std::vector<NativeRdb::ValueObject> &args)
+int32_t MediaLibraryDbUpgrade::ExecSqlsInternal(
+    NativeRdb::RdbStore &store, const std::string &sql, const std::vector<NativeRdb::ValueObject> &args)
 {
     int currentTime = 0;
     int32_t busyRetryTime = 0;
@@ -134,45 +134,19 @@ int32_t MediaLibraryDbUpgrade::UpgradeAlbumPlugin(NativeRdb::RdbStore &store)
 int32_t MediaLibraryDbUpgrade::UpgradePhotoAlbum(NativeRdb::RdbStore &store)
 {
     int32_t ret = NativeRdb::E_OK;
+    ret = this->dbUpgradeUtils_.DropAllTriggers(store, "PhotoAlbum");
+    if (ret != NativeRdb::E_OK) {
+        return ret;
+    }
+    ret = this->dbUpgradeUtils_.DropAllUniqueIndex(store, "PhotoAlbum");
+    if (ret != NativeRdb::E_OK) {
+        return ret;
+    }
     ret = this->AddlPathColumn(store);
     if (ret != NativeRdb::E_OK) {
         return ret;
     }
-    ret = this->DropPhotoAlbumTrigger(store);
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
     return this->UpdatelPathColumn(store);
-}
-
-/**
- * @brief Drop PhotoAlbum trigger.
- */
-int32_t MediaLibraryDbUpgrade::DropPhotoAlbumTrigger(NativeRdb::RdbStore &store)
-{
-    std::vector<std::string> executeSqls = this->SQL_PHOTO_ALBUM_TABLE_DROP_TRIGGER;
-    int ret = NativeRdb::E_OK;
-    MEDIA_INFO_LOG("DropPhotoAlbumTrigger begin");
-    auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
-    if (errCode != NativeRdb::E_OK || transaction == nullptr) {
-        MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
-        return errCode;
-    }
-    for (const std::string &executeSql : executeSqls) {
-        auto res = transaction->Execute(executeSql);
-        ret = res.first;
-        if (ret != NativeRdb::E_OK) {
-            transaction->Rollback();
-            MEDIA_ERR_LOG(
-                "Media_Restore: DropPhotoAlbumTrigger failed, ret=%{public}d, sql=%{public}s", ret, executeSql.c_str());
-            return ret;
-        }
-    }
-    errCode = transaction->Commit();
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("DropPhotoAlbumTrigger commit fail");
-    }
-    return NativeRdb::E_OK;
 }
 
 /**
@@ -233,19 +207,13 @@ int32_t MediaLibraryDbUpgrade::MoveSingleRelationshipToPhotos(NativeRdb::RdbStor
     executeSqls.insert(executeSqls.end(),
         this->SQL_TEMP_PHOTO_MAP_TABLE_CREATE_INDEX_ARRAY.begin(),
         this->SQL_TEMP_PHOTO_MAP_TABLE_CREATE_INDEX_ARRAY.end());
-    executeSqls.insert(executeSqls.end(),
-        this->SQL_PHOTOS_TABLE_DROP_TRIGGER_ARRAY.begin(),
-        this->SQL_PHOTOS_TABLE_DROP_TRIGGER_ARRAY.end());
     executeSqls.push_back(this->SQL_PHOTOS_TABLE_UPDATE_ALBUM_ID);
-    executeSqls.insert(executeSqls.end(),
-        this->SQL_PHOTO_MAP_TABLE_DROP_TRIGGER_ARRAY.begin(),
-        this->SQL_PHOTO_MAP_TABLE_DROP_TRIGGER_ARRAY.end());
     executeSqls.push_back(this->SQL_PHOTO_MAP_TABLE_DELETE_SINGLE_RELATIONSHIP);
     executeSqls.push_back(this->SQL_TEMP_PHOTO_MAP_TABLE_DROP);
     int ret = NativeRdb::E_OK;
     MEDIA_INFO_LOG("MoveSingleRelationshipToPhotos begin");
     auto [errCode, transaction] = store.CreateTransaction(OHOS::NativeRdb::Transaction::DEFERRED);
-    DfxTransaction reporter{ __func__ };
+    DfxTransaction reporter{__func__};
     if (errCode != NativeRdb::E_OK || transaction == nullptr) {
         reporter.ReportError(DfxTransaction::AbnormalType::CREATE_ERROR, errCode);
         MEDIA_ERR_LOG("transaction failed, err:%{public}d", errCode);
@@ -280,6 +248,10 @@ int32_t MediaLibraryDbUpgrade::MoveSingleRelationshipToPhotos(NativeRdb::RdbStor
 int32_t MediaLibraryDbUpgrade::UpgradePhotos(NativeRdb::RdbStore &store)
 {
     int32_t ret = NativeRdb::E_OK;
+    ret = this->dbUpgradeUtils_.DropAllTriggers(store, "Photos");
+    if (ret != NativeRdb::E_OK) {
+        return ret;
+    }
     ret = this->AddOwnerAlbumIdColumn(store);
     if (ret != NativeRdb::E_OK) {
         return ret;
@@ -293,6 +265,10 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotos(NativeRdb::RdbStore &store)
 int32_t MediaLibraryDbUpgrade::UpgradePhotoMap(NativeRdb::RdbStore &store)
 {
     int32_t ret = NativeRdb::E_OK;
+    ret = this->dbUpgradeUtils_.DropAllTriggers(store, "PhotoMap");
+    if (ret != NativeRdb::E_OK) {
+        return ret;
+    }
     ret = this->MoveSingleRelationshipToPhotos(store);
     if (ret != NativeRdb::E_OK) {
         return ret;

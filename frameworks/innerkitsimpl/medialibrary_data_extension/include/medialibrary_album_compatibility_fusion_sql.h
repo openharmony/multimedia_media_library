@@ -76,6 +76,11 @@ const std::string FILL_ALBUM_ID_FOR_PHOTOS =
     PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) +
     " AND dirty != 4 ORDER BY priority DESC LIMIT 1) WHERE file_id = new.file_id";
 
+const std::string PHOTO_ALBUM_NOTIFY_FUNC =
+    "SELECT photo_album_notify_func((SELECT " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
+    " FROM " + PhotoColumn::PHOTOS_TABLE +
+    " WHERE " + MediaColumn::MEDIA_ID + " = NEW." + MediaColumn::MEDIA_ID + "));";
+
 const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS insert_source_photo_create_source_album_trigger AFTER INSERT ON " +
     PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT + " = 0 " +
@@ -96,7 +101,7 @@ const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     "NEW.owner_package AND COALESCE(NEW.owner_package,'')!= '') OR album_name = NEW.package_name) "
     "and priority ='1'), '/Pictures/'||NEW.package_name), 1, "
     "strftime('%s000', 'now')" +
-    ");" + FILL_ALBUM_ID_FOR_PHOTOS + "; END;";
+    ");" + FILL_ALBUM_ID_FOR_PHOTOS + "; " + PHOTO_ALBUM_NOTIFY_FUNC + " END;";
 
 const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS insert_source_photo_update_album_id_trigger AFTER INSERT ON " +

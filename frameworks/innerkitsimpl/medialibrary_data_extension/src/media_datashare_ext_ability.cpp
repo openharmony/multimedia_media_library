@@ -62,6 +62,7 @@
 #include "grant_permission_handler.h"
 #include "read_write_permission_handler.h"
 #include "db_permission_handler.h"
+#include "mtp_manager.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -152,6 +153,14 @@ static bool CheckUnlockScene(int64_t startTime)
     return true;
 }
 
+void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
+{
+    MultiStagesPhotoCaptureManager::GetInstance().Init();
+    MultiStagesVideoCaptureManager::GetInstance().Init();
+    MtpManager::GetInstance().Init();
+    EnhancementManager::GetInstance().InitAsync();
+}
+
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 {
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
@@ -195,10 +204,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
         return;
     }
 
-    MultiStagesPhotoCaptureManager::GetInstance().Init();
-    MultiStagesVideoCaptureManager::GetInstance().Init();
-
-    EnhancementManager::GetInstance().InitAsync();
+    OnStartSub(want);
 
     Media::MedialibrarySubscriber::Subscribe();
     dataManager->SetStartupParameter();
@@ -305,7 +311,7 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     const bool containsWrite = ContainsFlag(mode, 'w');
 
     if (cmd.GetQuerySetParam(IS_TOOL_OPEN) == TOOL_OPEN_TRUE) {
-        return IsDeveloperMediaTool(cmd)? E_SUCCESS : E_PERMISSION_DENIED;
+        return IsDeveloperMediaTool(cmd, mode)? E_SUCCESS : E_PERMISSION_DENIED;
     }
     vector<string> perms;
     FillV10Perms(mediaType, containsRead, containsWrite, perms);

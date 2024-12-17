@@ -39,7 +39,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
-#include "gallery_report.h"
+#include "database_report.h"
 #include "medialibrary_rdb_transaction.h"
 
 #ifdef CLOUD_SYNC_MANAGER
@@ -306,16 +306,10 @@ bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::
 
 void UpgradeRestore::RestorePhoto()
 {
+    // upgrade gallery.db
+    DataTransfer::GalleryDbUpgrade().OnUpgrade(this->galleryRdb_);
     AnalyzeSource();
     InitGarbageAlbum();
-
-    // upgrade gallery.db
-    if (this->galleryRdb_ != nullptr) {
-        DataTransfer::GalleryDbUpgrade galleryDbUpgrade;
-        galleryDbUpgrade.OnUpgrade(*this->galleryRdb_);
-    } else {
-        MEDIA_WARN_LOG("galleryRdb_ is nullptr, Maybe init failed, skip gallery db upgrade.");
-    }
     // restore PhotoAlbum
     this->photoAlbumRestore_.Restore();
     RestoreFromGalleryPortraitAlbum();
@@ -371,13 +365,12 @@ void UpgradeRestore::AnalyzeGalleryDuplicateData()
 
 void UpgradeRestore::AnalyzeGallerySource()
 {
-    GalleryReport()
-        .SetGalleryRdb(this->galleryRdb_)
-        .SetExternalRdb(this->externalRdb_)
+    DatabaseReport()
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
-        .SetShouldIncludeSd(this->shouldIncludeSd_)
-        .Report();
+        .ReportGallery(this->galleryRdb_, this->shouldIncludeSd_)
+        .ReportExternal(this->externalRdb_)
+        .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_BEFORE);
 }
 
 void UpgradeRestore::InitGarbageAlbum()
@@ -387,24 +380,33 @@ void UpgradeRestore::InitGarbageAlbum()
 
 void UpgradeRestore::RestoreFromGallery()
 {
+    this->photosRestore_.LoadPhotoAlbums();
     HasLowQualityImage();
     int32_t totalNumber = this->photosRestore_.GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
+    needReportFailed_ = false;
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
+    size_t vectorLen = galleryFailedOffsets.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestoreBatch(galleryFailedOffsets[offset]);
+    }
 }
 
 void UpgradeRestore::RestoreBatch(int32_t offset)
 {
     MEDIA_INFO_LOG("start restore from gallery, offset: %{public}d", offset);
     std::vector<FileInfo> infos = QueryFileInfos(offset);
-    InsertPhoto(sceneCode_, infos, SourceType::GALLERY);
+    if (InsertPhoto(sceneCode_, infos, SourceType::GALLERY) != E_OK) {
+        galleryFailedOffsets.push_back(offset);
+    }
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
 }
@@ -420,19 +422,27 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
+    needReportFailed_ = false;
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset, maxId, isCamera, type]() {
                 RestoreExternalBatch(offset, maxId, isCamera, type);
             }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
+    size_t vectorLen = externalFailedOffsets.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestoreExternalBatch(externalFailedOffsets[offset], maxId, isCamera, type);
+    }
 }
 
 void UpgradeRestore::RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type)
 {
     MEDIA_INFO_LOG("start restore from external, offset: %{public}d", offset);
     std::vector<FileInfo> infos = QueryFileInfosFromExternal(offset, maxId, isCamera);
-    InsertPhoto(sceneCode_, infos, type);
+    if (InsertPhoto(sceneCode_, infos, type) != E_OK) {
+        externalFailedOffsets.push_back(offset);
+    }
 }
 
 int32_t UpgradeRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
@@ -628,7 +638,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.burstKey = burstKeyGenerator_.FindBurstKey(info);
     // Pre-Fetch: sourcePath, lPath
     info.sourcePath = GetStringVal(GALLERY_MEDIA_SOURCE_PATH, resultSet);
-    info.lPath = GetStringVal("lPath", resultSet);
+    info.lPath = GetStringVal(GALLERY_ALBUM_IPATH, resultSet);
     // Find lPath, bundleName, packageName by sourcePath, lPath
     info.lPath = this->photosRestore_.FindlPath(info);
     info.bundleName = this->photosRestore_.FindBundleName(info);
@@ -693,13 +703,15 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
+    values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, this->photosRestore_.FindSubtype(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestore_.FindBurstCoverLevel(fileInfo));
     values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestore_.FindBurstKey(fileInfo));
     // find album_id by lPath.
-    values.PutInt("owner_album_id", this->photosRestore_.FindAlbumId(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
+    values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, this->photosRestore_.FindAlbumId(fileInfo));
+    // fill the source_path at last.
+    values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, this->photosRestore_.FindSourcePath(fileInfo));
     return values;
 }
 
