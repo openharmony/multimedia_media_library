@@ -782,5 +782,17 @@ int32_t ThumbnailService::GetCurrentTemperatureLevel()
     return currentTemperatureLevel_;
 }
 
+void ThumbnailService::CheckLcdSizeAndUpdateStatus()
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE
+    };
+    int32_t err = ThumbnailGenerateHelper::CheckLcdSizeAndUpdateStatus(opts);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("CheckLcdSizeAndUpdateStatus failed: %{public}d", err);
+    }
+}
+
 } // namespace Media
 } // namespace OHOS

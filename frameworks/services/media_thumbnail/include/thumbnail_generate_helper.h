@@ -43,10 +43,12 @@ public:
     EXPORT static int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType);
     EXPORT static int32_t GetKeyFrameThumbnailPixelMap(ThumbRdbOpt &opts, int32_t &timeStamp,
         int32_t &type);
+    EXPORT static int32_t CheckLcdSizeAndUpdateStatus(ThumbRdbOpt &opts);
 
 private:
     EXPORT static int32_t GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount);
     EXPORT static int32_t GetNoLcdData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
+    EXPORT static int32_t GetLocalNoLcdData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
     EXPORT static int32_t GetNoThumbnailData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
     EXPORT static int32_t GetNoAstcData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
     EXPORT static int32_t GetAvailableFile(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType,
