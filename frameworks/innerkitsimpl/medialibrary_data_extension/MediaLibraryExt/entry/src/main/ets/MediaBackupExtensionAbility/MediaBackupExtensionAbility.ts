@@ -150,6 +150,9 @@ const DEFAULT_PROGRESS_INFO = {
 export default class MediaBackupExtAbility extends BackupExtensionAbility {
   async onBackup() : Promise<void> {
     console.log(TAG, 'onBackup ok.');
+    console.time(TAG + ' BACKUP');
+    await mediabackup.startBackup(CLONE_RESTORE, galleryAppName, mediaAppName);
+    console.timeEnd(TAG + ' BACKUP');
   }
 
   async onRestore(bundleVersion : BundleVersion) : Promise<void> {

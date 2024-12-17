@@ -182,6 +182,8 @@ public:
     EXPORT static std::string GetUriWithoutDisplayname(const std::string &uri);
     EXPORT static int32_t CreateDirectoryAndCopyFiles(const std::string &srcDir, const std::string &dstDir);
     EXPORT static void ModifyFile(const std::string path, int64_t modifiedTime);
+    EXPORT static int32_t CopyDirectory(const std::string &srcDir, const std::string &dstDir);
+    EXPORT static bool GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key);
     EXPORT static bool IsCalledBySelf();
 
 private:

@@ -28,6 +28,7 @@
 #include "backup_const.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_kvstore_manager.h"
 #include "backup_database_utils.h"
 #include "photo_album_clone.h"
 #include "photos_clone.h"
@@ -44,6 +45,7 @@ public:
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
         int32_t sourceType) override;
     std::string GetBackupInfo() override;
+    void StartBackup() override;
     using CoverUriInfo = std::pair<std::string, std::pair<std::string, int32_t>>;
 
 private:
@@ -166,6 +168,14 @@ private:
         const std::vector<FileInfo>& fileInfos, std::vector<std::string>& tagIds);
     std::string ProcessUriAndGenNew(const std::string& tagId, const std::string& oldCoverUri,
         const std::unordered_map<std::string, int32_t>& oldToNewFileId, const std::vector<FileInfo>& fileInfos);
+    int32_t MoveThumbnail(FileInfo &fileInfo);
+    int32_t MoveThumbnailDir(FileInfo &fileInfo);
+    int32_t MoveAstc(FileInfo &fileInfo);
+    void InitThumbnailStatus();
+    bool InitAllKvStore();
+    void CloseAllKvStore();
+    bool BackupKvStore();
+    void GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -194,6 +204,12 @@ private:
     PhotoAlbumClone photoAlbumClone_;
     PhotosClone photosClone_;
     static constexpr int32_t INVALID_COVER_SATISFIED_STATUS = -1;
+    bool hasCloneThumbnailDir_{false};
+    bool isInitKvstoreSuccess_{false};
+    std::shared_ptr<MediaLibraryKvStore> oldMonthKvStorePtr_ = nullptr;
+    std::shared_ptr<MediaLibraryKvStore> oldYearKvStorePtr_ = nullptr;
+    std::shared_ptr<MediaLibraryKvStore> newMonthKvStorePtr_ = nullptr;
+    std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
     std::vector<int> photosFailedOffsets;
 };
 

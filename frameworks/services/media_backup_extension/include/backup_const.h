@@ -53,6 +53,8 @@ constexpr uint32_t THUMBNAIL_NUM = 500;
 constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 
+const std::string RESTORE_FILES_CLOUD_DIR = "/storage/cloud/files/";
+const std::string RESTORE_FILES_LOCAL_DIR = "/storage/media/local/files/";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
@@ -162,6 +164,27 @@ const std::string GALLERY_ALBUM_NAME = "albumName";
 const std::string GALLERY_ALBUM_BUCKETID = "relativeBucketId";
 const std::string GALLERY_ALBUM_IPATH = "lPath";
 const std::string GALLERY_NICK_NAME = "nick_name";
+
+/**
+ * If the value of thumbnail_ready is greater than or equal to 3, the THM is generated successfully.
+ * If the value of thumbnail_ready is greater than 0, the value of thumbnail_visible is 1, indicating
+ * that the THM has been generated(not necessarily successfully generated).
+ * If lcd_visit_time is 2, the LCD is generated successfully.
+ * If lcd_visit_time is 0, the LCD is not generated or fails to be generated.
+*/
+const int RESTORE_THUMBNAIL_READY_SUCCESS = 3;
+const int RESTORE_THUMBNAIL_READY_NO_THUMBNAIL = 0;
+const int RESTORE_THUMBNAIL_VISIBLE_FALSE = 0;
+const int RESTORE_THUMBNAIL_VISIBLE_TRUE = 1;
+const int RESTORE_LCD_VISIT_TIME_SUCCESS = 2;
+const int RESTORE_LCD_VISIT_TIME_NO_LCD = 0;
+
+const std::string MEDIA_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data";
+const std::string MEDIA_KVSTORE_YEAR_STOREID = "medialibrary_year_astc_data";
+const std::string CLONE_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data_clone";
+const std::string CLONE_KVSTORE_YEAR_STOREID = "medialibrary_year_astc_data_clone";
+const std::string MEDIA_KVDB_DIR = "/data/storage/el2/database";
+const std::string CLONE_KVDB_BACKUP_DIR = "/storage/media/local/files/.backup/backup/media_temp_kvdb";
 
 const std::string FILE_SEPARATOR = "/";
 
@@ -281,6 +304,8 @@ struct FileInfo {
     bool isNew {true};
     int64_t dateTaken {0};
     int64_t firstUpdateTime {0};
+    int64_t thumbnailReady {0};
+    int32_t lcdVisitTime {0};
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
     std::unordered_map<std::string, std::unordered_set<int32_t>> tableAlbumSetMap;
     /**
@@ -320,6 +345,8 @@ struct FileInfo {
      */
     int32_t isRelatedToPhotoMap = 0;
     int32_t photoQuality;
+    std::string oldAstcDateKey;
+    std::string newAstcDateKey;
     bool isInternal {true};
     int32_t userId {-1};
 };

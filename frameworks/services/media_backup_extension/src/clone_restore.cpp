@@ -27,6 +27,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
+#include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
@@ -110,10 +111,9 @@ const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
         {
             PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_META_DATE_MODIFIED,
             PhotoColumn::PHOTO_SYNC_STATUS, PhotoColumn::PHOTO_CLOUD_VERSION, PhotoColumn::PHOTO_POSITION,
-            PhotoColumn::PHOTO_THUMB_STATUS, PhotoColumn::PHOTO_THUMB_SIZE,
-            PhotoColumn::PHOTO_LCD_VISIT_TIME, PhotoColumn::PHOTO_LCD_SIZE,
-            PhotoColumn::PHOTO_CLEAN_FLAG, // cloud related
-            PhotoColumn::PHOTO_THUMBNAIL_READY, // astc related
+            PhotoColumn::PHOTO_THUMB_STATUS, PhotoColumn::PHOTO_CLEAN_FLAG, // cloud related
+            PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, // thumbnail related
+            PhotoColumn::PHOTO_LCD_VISIT_TIME, // lcd related
             PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_CE_STATUS_CODE, // cloud enhancement
             PhotoColumn::PHOTO_THUMBNAIL_VISIBLE
         }},
@@ -203,7 +203,19 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
     }
     HandleRestData();
     StopParameterForClone(CLONE_RESTORE_ID);
+    CloseAllKvStore();
     MEDIA_INFO_LOG("End clone restore");
+}
+
+void CloneRestore::InitThumbnailStatus()
+{
+    std::string cloneThumbnailDir = backupRestoreDir_ + RESTORE_FILES_LOCAL_DIR + ".thumbs";
+    if (!MediaFileUtils::IsFileExists(cloneThumbnailDir)) {
+        MEDIA_WARN_LOG("Uncloned thumbnail dir, no need to clone thumbnail");
+        return;
+    }
+    hasCloneThumbnailDir_ = true;
+    isInitKvstoreSuccess_ = InitAllKvStore();
 }
 
 int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgradePath, bool isUpgrade)
@@ -229,6 +241,7 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
         return E_FAIL;
     }
     BackupDatabaseUtils::CheckDbIntegrity(mediaRdb_, sceneCode_, "OLD_MEDIA_LIBRARY");
+    InitThumbnailStatus();
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
     MEDIA_INFO_LOG("Init db succ.");
@@ -413,7 +426,6 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
 void CloneRestore::HandleRestData(void)
 {
     MEDIA_INFO_LOG("Start to handle rest data in native.");
-    RestoreThumbnail();
 }
 
 vector<FileInfo> CloneRestore::QueryFileInfos(int32_t offset, int32_t isRelatedToPhotoMap)
@@ -581,6 +593,164 @@ int32_t CloneRestore::MoveEditedData(FileInfo &fileInfo)
     return E_OK;
 }
 
+static void UpdateThumbnailStatusToFailed(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::string id,
+    bool isThumbnailStatusNeedUpdate, bool isLcdStatusNeedUpdate)
+{
+    if (rdbStore == nullptr || id.empty()) {
+        return;
+    }
+
+    NativeRdb::ValuesBucket values;
+    int changedRows;
+    if (isThumbnailStatusNeedUpdate) {
+        values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, RESTORE_THUMBNAIL_READY_NO_THUMBNAIL);
+        values.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, RESTORE_THUMBNAIL_VISIBLE_FALSE);
+    }
+    if (isLcdStatusNeedUpdate) {
+        values.PutInt(PhotoColumn::PHOTO_LCD_VISIT_TIME, RESTORE_LCD_VISIT_TIME_NO_LCD);
+    }
+    int32_t err = rdbStore->Update(changedRows, PhotoColumn::PHOTOS_TABLE,
+        values, MEDIA_DATA_DB_ID + " = ?", vector<string> { id });
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
+    }
+}
+
+static std::string GetThumbnailLocalPath(const string path)
+{
+    size_t cloudDirLength = RESTORE_FILES_CLOUD_DIR.length();
+    if (path.length() <= cloudDirLength || path.substr(0, cloudDirLength).compare(RESTORE_FILES_CLOUD_DIR) != 0) {
+        return "";
+    }
+
+    std::string suffixStr = path.substr(cloudDirLength);
+    return RESTORE_FILES_LOCAL_DIR + ".thumbs/" + suffixStr;
+}
+
+int32_t CloneRestore::MoveAstc(FileInfo &fileInfo)
+{
+    if (oldMonthKvStorePtr_ == nullptr || oldYearKvStorePtr_ == nullptr ||
+        newMonthKvStorePtr_ == nullptr || newYearKvStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("Kvstore is nullptr");
+        return E_FAIL;
+    }
+    if (fileInfo.fileIdOld <= 0 || fileInfo.fileIdNew <= 0) {
+        MEDIA_ERR_LOG("Old fileId:%{public}d or new fileId:%{public}d is invalid",
+            fileInfo.fileIdOld, fileInfo.fileIdNew);
+        return E_FAIL;
+    }
+    string oldKey;
+    string newKey;
+    if (!MediaFileUtils::GenerateKvStoreKey(to_string(fileInfo.fileIdOld), fileInfo.oldAstcDateKey, oldKey) ||
+        !MediaFileUtils::GenerateKvStoreKey(to_string(fileInfo.fileIdNew), fileInfo.newAstcDateKey, newKey)) {
+        return E_FAIL;
+    }
+
+    std::vector<uint8_t> monthValue;
+    std::vector<uint8_t> yearValue;
+    if (oldMonthKvStorePtr_->Query(oldKey, monthValue) != E_OK ||
+        newMonthKvStorePtr_->Insert(newKey, monthValue) != E_OK) {
+        MEDIA_ERR_LOG("MonthValue move failed, fileID %{public}s", newKey.c_str());
+        return E_FAIL;
+    }
+    if (oldYearKvStorePtr_->Query(oldKey, yearValue) != E_OK ||
+        newYearKvStorePtr_->Insert(newKey, yearValue) != E_OK) {
+        MEDIA_ERR_LOG("YearValue move failed, fileID %{public}s", newKey.c_str());
+        return E_FAIL;
+    }
+    if (fileInfo.isRelatedToPhotoMap != 1) {
+        oldMonthKvStorePtr_->Delete(oldKey);
+        oldYearKvStorePtr_->Delete(oldKey);
+    }
+    return E_OK;
+}
+
+int32_t CloneRestore::MoveThumbnailDir(FileInfo &fileInfo)
+{
+    string thumbnailOldDir = backupRestoreDir_ + RESTORE_FILES_LOCAL_DIR + ".thumbs" + fileInfo.relativePath;
+    string thumbnailNewDir = GetThumbnailLocalPath(fileInfo.cloudPath);
+    if (fileInfo.relativePath.empty() || thumbnailNewDir.empty()) {
+        MEDIA_ERR_LOG("Old path:%{public}s or new path:%{public}s is invalid",
+            fileInfo.relativePath.c_str(), MediaFileUtils::DesensitizePath(fileInfo.cloudPath).c_str());
+        return E_FAIL;
+    }
+    if (!MediaFileUtils::IsDirectory(thumbnailOldDir)) {
+        MEDIA_ERR_LOG("Old dir is not a direcrory or does not exist, errno:%{public}d, dir:%{public}s",
+            errno, MediaFileUtils::DesensitizePath(thumbnailOldDir).c_str());
+        return E_FAIL;
+    }
+    if (BackupFileUtils::PreparePath(thumbnailNewDir) != E_OK) {
+        MEDIA_ERR_LOG("Prepare thumbnail dir path failed");
+        return E_FAIL;
+    }
+    if (MediaFileUtils::IsFileExists(thumbnailNewDir) && !MediaFileUtils::DeleteDir(thumbnailNewDir)) {
+        MEDIA_ERR_LOG("Delete thumbnail new dir failed, errno:%{public}d", errno);
+        return E_FAIL;
+    }
+
+    int32_t opRet = E_FAIL;
+    if (fileInfo.isRelatedToPhotoMap != 1) {
+        opRet = MediaFileUtils::ModifyAsset(thumbnailOldDir, thumbnailNewDir);
+    } else {
+        opRet = MediaFileUtils::CopyDirectory(thumbnailOldDir, thumbnailNewDir);
+    }
+    if (opRet != E_OK) {
+        if (!MediaFileUtils::IsFileExists(thumbnailNewDir)) {
+            return opRet;
+        }
+        MEDIA_WARN_LOG("MoveThumbnailDir failed but thumbnailNewDir exists");
+        if (!MediaFileUtils::DeleteDir(thumbnailNewDir)) {
+            MEDIA_ERR_LOG("Delete existential thumbnailNewDir failed, errno:%{public}d", errno);
+        }
+        return opRet;
+    }
+    return E_OK;
+}
+
+/**
+ * The processing logic of the MoveThumbnail function must match the logic of the GetThumbnailInsertValue function.
+ * If the status indicates that the thumbnail does not exist, the thumbnail does not need to be cloned and
+ * the status of the thumbnail needs to be set to the initial status in the GetThumbnailInsertValue function.
+ * If the status indicates that the thumbnail exists but the thumbnail fails to be transferred,
+ * the thumbnail status needs to be set to the initial status.
+*/
+int32_t CloneRestore::MoveThumbnail(FileInfo &fileInfo)
+{
+    if (!hasCloneThumbnailDir_) {
+        return E_NO_SUCH_FILE;
+    }
+    if (fileInfo.thumbnailReady < RESTORE_THUMBNAIL_READY_SUCCESS &&
+        fileInfo.lcdVisitTime < RESTORE_LCD_VISIT_TIME_SUCCESS) {
+        MEDIA_INFO_LOG("Thumbnail dose not exist, id:%{public}d, path:%{public}s",
+            fileInfo.fileIdNew, MediaFileUtils::DesensitizePath(fileInfo.cloudPath).c_str());
+        return E_NO_SUCH_FILE;
+    }
+    if (MoveThumbnailDir(fileInfo) != E_OK) {
+        UpdateThumbnailStatusToFailed(mediaLibraryRdb_, to_string(fileInfo.fileIdNew), true, true);
+        MEDIA_ERR_LOG("Move thumbnail failed, id:%{public}d, path:%{public}s",
+            fileInfo.fileIdNew, MediaFileUtils::DesensitizePath(fileInfo.cloudPath).c_str());
+        return E_FAIL;
+    }
+
+    if (!isInitKvstoreSuccess_) {
+        return E_NO_SUCH_FILE;
+    }
+    if (fileInfo.thumbnailReady < RESTORE_THUMBNAIL_READY_SUCCESS) {
+        MEDIA_ERR_LOG("Astc does not exist, id:%{public}d, path:%{public}s",
+            fileInfo.fileIdNew, MediaFileUtils::DesensitizePath(fileInfo.cloudPath).c_str());
+        return E_NO_SUCH_FILE;
+    }
+    if (MoveAstc(fileInfo) != E_OK) {
+        UpdateThumbnailStatusToFailed(mediaLibraryRdb_, to_string(fileInfo.fileIdNew), true, false);
+        MEDIA_ERR_LOG("Move astc failed, id:%{public}d, path:%{public}s",
+            fileInfo.fileIdNew, MediaFileUtils::DesensitizePath(fileInfo.cloudPath).c_str());
+        return E_FAIL;
+    }
+
+    MediaLibraryPhotoOperations::StoreThumbnailSize(to_string(fileInfo.fileIdNew), fileInfo.cloudPath);
+    return E_OK;
+}
+
 int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
 {
     // Picture files.
@@ -598,6 +768,8 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
     if (optRet != E_OK) {
         return E_FAIL;
     }
+    // Thumbnail of photos.
+    this->MoveThumbnail(fileInfo);
     return E_OK;
 }
 
@@ -612,6 +784,29 @@ bool CloneRestore::IsFilePathExist(const string &filePath) const
         return false;
     }
     return true;
+}
+
+void CloneRestore::GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values)
+{
+    if (!hasCloneThumbnailDir_) {
+        // If there is no thumbnail directory, all statuses of thumbnail are set to the initial status.
+        values.PutInt(PhotoColumn::PHOTO_LCD_VISIT_TIME, RESTORE_LCD_VISIT_TIME_NO_LCD);
+        values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, RESTORE_THUMBNAIL_READY_NO_THUMBNAIL);
+        values.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, RESTORE_THUMBNAIL_VISIBLE_FALSE);
+        return;
+    }
+
+    // The LCD status is same as the origin status.
+    values.PutInt(PhotoColumn::PHOTO_LCD_VISIT_TIME, fileInfo.lcdVisitTime);
+    if (!isInitKvstoreSuccess_ || fileInfo.thumbnailReady < RESTORE_THUMBNAIL_READY_SUCCESS) {
+        // The kvdb does not exist or the THM status indicates that there is no THM.
+        // Therefore, the THM status needs to be set to the initial status.
+        values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, RESTORE_THUMBNAIL_READY_NO_THUMBNAIL);
+        values.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, RESTORE_THUMBNAIL_VISIBLE_FALSE);
+        return;
+    }
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, fileInfo.thumbnailReady);
+    values.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, RESTORE_THUMBNAIL_VISIBLE_TRUE);
 }
 
 NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, const string &newPath,
@@ -639,6 +834,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, fileInfo.sourcePath);
+    GetThumbnailInsertValue(fileInfo, values);
 
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_,
         PhotoColumn::PHOTOS_TABLE);
@@ -841,8 +1037,9 @@ void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
         BackupDatabaseUtils::UpdateSelection(selection, fileInfos[index].cloudPath, true);
         fileIndexMap[fileInfos[index].cloudPath] = index;
     }
-    string querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
-        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_FILE_PATH + " IN (" + selection + ")";
+    string querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
+        MediaColumn::MEDIA_DATE_TAKEN + " FROM " + PhotoColumn::PHOTOS_TABLE +
+        " WHERE " + MediaColumn::MEDIA_FILE_PATH + " IN (" + selection + ")";
     querySql += " LIMIT " + to_string(fileIndexMap.size());
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
     if (resultSet == nullptr) {
@@ -852,6 +1049,7 @@ void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+        string dateTaken = GetStringVal(MediaColumn::MEDIA_DATE_TAKEN, resultSet);
         if (fileId <= 0) {
             MEDIA_ERR_LOG("Get fileId invalid: %{public}d", fileId);
             continue;
@@ -859,7 +1057,9 @@ void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
         if (fileIndexMap.count(cloudPath) == 0) {
             continue;
         }
-        fileInfos[fileIndexMap.at(cloudPath)].fileIdNew = fileId;
+        size_t index = fileIndexMap.at(cloudPath);
+        fileInfos[index].fileIdNew = fileId;
+        fileInfos[index].newAstcDateKey = dateTaken;
     }
     BackupDatabaseUtils::UpdateAssociateFileId(mediaLibraryRdb_, fileInfos);
 }
@@ -1250,6 +1450,10 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
     fileInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     fileInfo.dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
     fileInfo.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
+    fileInfo.dateTaken = GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet);
+    fileInfo.thumbnailReady = GetInt64Val(PhotoColumn::PHOTO_THUMBNAIL_READY, resultSet);
+    fileInfo.lcdVisitTime = GetInt32Val(PhotoColumn::PHOTO_LCD_VISIT_TIME, resultSet);
+    fileInfo.oldAstcDateKey = to_string(fileInfo.dateTaken);
     SetSpecialAttributes(tableName, resultSet, fileInfo);
 
     auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
@@ -2247,6 +2451,71 @@ void CloneRestore::AppendExtraWhereClause(std::string& whereClause, const std::s
         whereClause += whereClause.empty() ? "" : " AND ";
         whereClause += it->second;
     }
+}
+
+bool CloneRestore::InitAllKvStore()
+{
+    std::string oldBaseDir = backupRestoreDir_ + CLONE_KVDB_BACKUP_DIR;
+    std::string newBaseDir = MEDIA_KVDB_DIR;
+    oldMonthKvStorePtr_ = MediaLibraryKvStoreManager::GetInstance()
+        .GetSingleKvStore(KvStoreRoleType::OWNER, CLONE_KVSTORE_MONTH_STOREID, oldBaseDir);
+    oldYearKvStorePtr_ = MediaLibraryKvStoreManager::GetInstance()
+        .GetSingleKvStore(KvStoreRoleType::OWNER, CLONE_KVSTORE_YEAR_STOREID, oldBaseDir);
+    newMonthKvStorePtr_ = MediaLibraryKvStoreManager::GetInstance()
+        .GetSingleKvStore(KvStoreRoleType::OWNER, MEDIA_KVSTORE_MONTH_STOREID, newBaseDir);
+    newYearKvStorePtr_ = MediaLibraryKvStoreManager::GetInstance()
+        .GetSingleKvStore(KvStoreRoleType::OWNER, MEDIA_KVSTORE_YEAR_STOREID, newBaseDir);
+    if (oldMonthKvStorePtr_ == nullptr || oldYearKvStorePtr_ == nullptr ||
+        newMonthKvStorePtr_ == nullptr || newYearKvStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("Init all kvstore failed");
+        return false;
+    }
+    return true;
+}
+
+void CloneRestore::CloseAllKvStore()
+{
+    oldMonthKvStorePtr_ != nullptr && oldMonthKvStorePtr_->Close();
+    oldYearKvStorePtr_ != nullptr && oldYearKvStorePtr_->Close();
+    newMonthKvStorePtr_ != nullptr && newMonthKvStorePtr_->Close();
+    newYearKvStorePtr_ != nullptr && newYearKvStorePtr_->Close();
+}
+
+void CloneRestore::StartBackup()
+{
+    MEDIA_INFO_LOG("Start clone backup");
+    if (!BackupKvStore() && !MediaFileUtils::DeleteDir(CLONE_KVDB_BACKUP_DIR)) {
+        MEDIA_ERR_LOG("BackupKvStore failed and delete old backup kvdb failed, errno:%{public}d", errno);
+    }
+    MEDIA_INFO_LOG("End clone backup");
+}
+
+bool CloneRestore::BackupKvStore()
+{
+    MEDIA_INFO_LOG("Start BackupKvstore");
+    if (MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR)) {
+        // Delete only redundant data and do not need to be returned.
+        MediaFileUtils::DeleteDir(CLONE_KVDB_BACKUP_DIR);
+    }
+
+    std::string backupKvdbPath = CLONE_KVDB_BACKUP_DIR + "/kvdb";
+    if (BackupFileUtils::PreparePath(backupKvdbPath) != E_OK) {
+        MEDIA_ERR_LOG("Prepare backup dir failed");
+        return false;
+    }
+
+    int32_t status = MediaLibraryKvStoreManager::GetInstance().CloneKvStore(
+        MEDIA_KVSTORE_MONTH_STOREID, MEDIA_KVDB_DIR, CLONE_KVSTORE_MONTH_STOREID, CLONE_KVDB_BACKUP_DIR);
+    if (status != E_OK) {
+        return false;
+    }
+    status = MediaLibraryKvStoreManager::GetInstance().CloneKvStore(
+        MEDIA_KVSTORE_YEAR_STOREID, MEDIA_KVDB_DIR, CLONE_KVSTORE_YEAR_STOREID, CLONE_KVDB_BACKUP_DIR);
+    if (status != E_OK) {
+        return false;
+    }
+    MEDIA_INFO_LOG("End BackupKvstore");
+    return true;
 }
 } // namespace Media
 } // namespace OHOS
