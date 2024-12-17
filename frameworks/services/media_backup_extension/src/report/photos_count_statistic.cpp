@@ -247,7 +247,7 @@ std::vector<AlbumStatisticInfo> PhotosCountStatistic::QueryAlbumCountByName(
  */
 int32_t PhotosCountStatistic::QueryLiveCount(int32_t searchType)
 {
-    std::vector<NativeRdb::ValueObject> params = {searchType, searchType};
+    std::vector<NativeRdb::ValueObject> params = {searchType};
     if (this->mediaLibraryRdb_ == nullptr) {
         MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
         return 0;
@@ -590,7 +590,7 @@ std::vector<AlbumMediaStatisticInfo> PhotosCountStatistic::GetAlbumInfoByName(co
                              .SetAlbumName(albumName)
                              .SetLPath(info.lPath)
                              .SetCostTime(costTime)
-                             .SetPeriod(0)  // 0 - BEFORE, 1 - AFTER
+                             .SetPeriod(this->period_)  // 0 - BEFORE, 1 - AFTER
                              .SetDbType(1)  // 0 - GALLERY, 1 - MEDIA
                              .ToString();
         albumInfoList.emplace_back(info);
