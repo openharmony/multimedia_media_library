@@ -235,6 +235,7 @@ enum RestoreError {
     MOVING_PHOTO_CONVERT_FAILED,
     CREATE_PATH_FAILED,
     PREPARE_PATH_FAILED,
+    GALLERY_DATABASE_CORRUPTION,
 };
 
 enum class PhotoRelatedType {
@@ -260,6 +261,7 @@ const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::MOVING_PHOTO_CONVERT_FAILED, "DEVICE_MOVING_PHOTO_CONVERT_FAILED" },
     { RestoreError::CREATE_PATH_FAILED, "RESTORE_CREATE_PATH_FAILED" },
     { RestoreError::PREPARE_PATH_FAILED, "RESTORE_PREPARE_PATH_FAILED" },
+    { RestoreError::GALLERY_DATABASE_CORRUPTION, "RESTORE_GALLERY_DATABASE_CORRUPTION" },
 };
 
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {
