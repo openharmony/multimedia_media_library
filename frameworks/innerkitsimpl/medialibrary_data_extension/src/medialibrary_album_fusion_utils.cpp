@@ -758,7 +758,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<
     }
 
     err = PhotoFileOperation().CopyThumbnail(resultSet, targetPath, newAssetId);
-    if (err != E_OK) {
+    if (err != E_OK && GenerateThumbnail(newAssetId, targetPath, resultSet, false) != E_SUCCESS) {
         MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(upgradeStore, newAssetId);
         MEDIA_ERR_LOG("Copy thumbnail failed, targetPath = %{public}s, ret = %{public}d, newAssetId = %{public}" PRId64,
             targetPath.c_str(), err, newAssetId);
@@ -800,7 +800,7 @@ static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStor
     }
     
     err = PhotoFileOperation().CopyThumbnail(resultSet, targetPath, newAssetId);
-    if (err != E_OK) {
+    if (err != E_OK && GenerateThumbnail(newAssetId, targetPath, resultSet, true) != E_SUCCESS) {
         MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(upgradeStore, newAssetId);
         MEDIA_ERR_LOG("Copy thumbnail failed, targetPath = %{public}s, ret = %{public}d, newAssetId = %{public}" PRId64,
             targetPath.c_str(), err, newAssetId);
