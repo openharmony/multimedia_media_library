@@ -447,6 +447,9 @@ void NotifyTaskWorker::StartThread()
 {
     MEDIA_INFO_LOG("Start notify thread");
     isThreadRunning_ = true;
+    if (thread_.joinable()) {
+        thread_.join();
+    }
     thread_ = std::thread([this]() { this->StartWorker(); });
 }
 
