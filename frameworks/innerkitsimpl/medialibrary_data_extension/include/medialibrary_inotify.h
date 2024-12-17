@@ -29,12 +29,29 @@ namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 struct WatchInfo {
     WatchInfo(const std::string &path, const std::string &uri, const std::string &bundleName,
-        MediaLibraryApi api): path_(path), uri_(uri), bundleName_(bundleName), api_(api), meetEvent_(0){};
+        MediaLibraryApi api, const int64_t &currentTime): path_(path), uri_(uri),
+        bundleName_(bundleName), api_(api), meetEvent_(0), currentTime_(currentTime){};
     std::string path_;
     std::string uri_;
     std::string bundleName_;
     MediaLibraryApi api_;
     uint32_t meetEvent_;
+    int64_t currentTime_;
+};
+
+struct WatchBundleInfo {
+    WatchBundleInfo(const int32_t count, const int64_t firstEntryTime,
+        const std::string &firstUri, const std::string &bundleName): count(count),
+        firstEntryTime(firstEntryTime), firstUri(firstUri), bundleName(bundleName){};
+    int32_t count;
+    int64_t firstEntryTime;
+    std::string firstUri;
+    std::string bundleName;
+    std::string Dump() const
+    {
+        return "count:" + std::to_string(count) + ", firstEntryTime:" + std::to_string(firstEntryTime) +
+            ", firstUri:" + firstUri + ", bundleName:" + bundleName;
+    }
 };
 
 class MediaLibraryInotify {
@@ -47,12 +64,14 @@ public:
     EXPORT int32_t RemoveByFileUri(const std::string &uri, MediaLibraryApi api = MediaLibraryApi::API_OLD);
     EXPORT void DoAging();
     void DoStop();
+    EXPORT const std::string BuildDfxInfo();
 
 private:
     int32_t Remove(int wd);
     void WatchCallBack();
     int32_t Init();
     void Restart();
+    int32_t GetBundleCount(const std::string &bundleName);
 
 private:
     static std::shared_ptr<MediaLibraryInotify> instance_;
