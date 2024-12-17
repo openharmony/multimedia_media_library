@@ -169,6 +169,9 @@ const int32_t THUMBNAIL_READY_FAILED = 2;
 // LCD that is over 2MB would not be uploaded
 const size_t LCD_UPLOAD_LIMIT_SIZE = 2048000;
 
+// Only check the latest 3000 data to avoid opreation taking too long time
+const uint32_t MAXIMUM_LCD_CHECK_NUM = 3000;
+
 static inline std::string GetThumbnailPath(const std::string &path, const std::string &key)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {

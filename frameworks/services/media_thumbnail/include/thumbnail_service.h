@@ -79,6 +79,7 @@ public:
     EXPORT bool GetCurrentStatusForTask();
     EXPORT void NotifyTempStatusForReady(const int32_t &currentTemperatureLevel);
     EXPORT int32_t GetCurrentTemperatureLevel();
+    EXPORT void CheckLcdSizeAndUpdateStatus();
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();
