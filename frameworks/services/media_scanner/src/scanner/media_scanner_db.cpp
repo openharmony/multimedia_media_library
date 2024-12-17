@@ -424,6 +424,7 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableNam
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
         return "";
     }
 

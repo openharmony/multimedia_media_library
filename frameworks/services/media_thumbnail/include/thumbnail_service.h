@@ -20,10 +20,10 @@
 
 #include "ability_context.h"
 #include "media_file_uri.h"
+#include "medialibrary_rdbstore.h"
 #include "pixel_map.h"
 #include "rdb_helper.h"
 #include "rdb_predicates.h"
-#include "medialibrary_rdbstore.h"
 #include "result_set_bridge.h"
 #include "single_kvstore.h"
 #include "userfile_manager_types.h"
