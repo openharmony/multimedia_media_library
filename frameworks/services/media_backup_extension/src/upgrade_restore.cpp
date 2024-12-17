@@ -323,7 +323,7 @@ void UpgradeRestore::RestorePhoto()
     AnalyzeSource();
 
     std::string dbIntegrityCheck = CheckGalleryDbIntegrity();
-    if(dbIntegrityCheck == DB_INTEGRITY_CHECK){
+    if (dbIntegrityCheck == DB_INTEGRITY_CHECK) {
         // upgrade gallery.db
         DataTransfer::GalleryDbUpgrade().OnUpgrade(this->galleryRdb_);
         AnalyzeGallerySource();
@@ -1281,7 +1281,7 @@ std::string UpgradeRestore::CheckGalleryDbIntegrity()
     std::string dbSize = "";
     struct stat statInfo {};
 
-    if(stat(galleryDbPath_.c_str(), &statInfo) == 0) {
+    if (stat(galleryDbPath_.c_str(), &statInfo) == 0) {
         dbSize = std::to_string(statInfo.st_size);
     }
     MEDIA_INFO_LOG("start handle gallery integrity check.");
