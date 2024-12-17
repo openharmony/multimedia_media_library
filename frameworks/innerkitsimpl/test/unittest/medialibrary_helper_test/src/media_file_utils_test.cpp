@@ -968,5 +968,15 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GenerateKvStoreKey_Test_001,
     res = MediaFileUtils::GenerateKvStoreKey(fileId, datekey, key);
     EXPECT_EQ(res, true);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetDateModified_Test_001, TestSize.Level0)
+{
+    string filePath = "/data/GetDateModified_Test_001.jpg";
+    int64_t dateModified = 0;
+    EXPECT_EQ(MediaFileUtils::GetDateModified(filePath, dateModified), false);
+    EXPECT_EQ(MediaFileUtils::CreateFile(filePath), true);
+    EXPECT_EQ(MediaFileUtils::GetDateModified(filePath, dateModified), true);
+    EXPECT_GT(dateModified, 0);
+}
 } // namespace Media
 } // namespace OHOS
