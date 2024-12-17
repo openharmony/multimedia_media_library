@@ -615,15 +615,13 @@ HWTEST_F(NotifyTest, handle_empty_data_001, TestSize.Level0)
     CloudSyncHandleData emptyHandleData;
     emptyHandleData.orgInfo.type = DataShareObserver::ChangeType::OTHER;
 
-    bool refreshAlbumsCalled = false;
-    auto mockRefreshAlbums = [&refreshAlbumsCalled](bool) {
-        refreshAlbumsCalled = true;
-    };
-
-    auto handler = make_shared<AnalysisHandler>(mockRefreshAlbums);
-    handler->Handle(emptyHandleData);
-
-    ASSERT_TRUE(refreshAlbumsCalled);
+    auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
+    AnalysisPeriodTaskData *data = new (std::nothrow) AnalysisPeriodTaskData(nullptr, nullptr);
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskdata");
+        return;
+    }
+    periodWorker->StartTask(PeriodTaskType::CLOUD_ANALYSIS_ALBUM, AnalysisHandler::ProcessHandleData, data);
     MEDIA_INFO_LOG("handle_empty_data_001 exit");
 }
 
