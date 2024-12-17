@@ -101,8 +101,6 @@ const int64_t MAX_INT64 = 9223372036854775807;
 const int32_t MAX_QUERY_LIMIT = 80;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
-const int SMART_ALBUM_TYPE = 4096;
-const int GEOGRAPHY_CITY_SUBTYPE = 4100;
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
 mutex MediaLibraryNapi::sOnOffMutex_;
@@ -6186,11 +6184,11 @@ static std::string GetGeoAnaProgress()
     nlohmann::json jsonObj;
     GetMediaAnaServiceProgress(jsonObj, idxToCount, columns);
 
-    Uri uri(URI_ANALYSIS_ALBUM);
+    Uri uri(PAH_QUERY_ANA_PHOTO_ALBUM);
     vector<string> albumColumns = {};
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, SMART_ALBUM_TYPE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, GEOGRAPHY_CITY_SUBTYPE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SMART);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::GEOGRAPHY_CITY);
     predicates.GreaterThan(PhotoAlbumColumns::ALBUM_COUNT, 0);
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, albumColumns, errCode);
@@ -6198,7 +6196,6 @@ static std::string GetGeoAnaProgress()
         NAPI_ERR_LOG("ret is nullptr");
         return jsonObj.dump();
     }
-    errCode = ret->GoToFirstRow();
     if (errCode != DataShare::E_OK) {
         NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
         ret->Close();
@@ -6206,7 +6203,11 @@ static std::string GetGeoAnaProgress()
     }
 
     int tmp = -1;
-    ret->GetInt(columns.size(), tmp);
+    int32_t retCode = ret->GetRowCount(columns.size(), tmp);
+    if (retCode != DataShare::E_OK) {
+        NAPI_ERR_LOG("Can not get row count from resultSet, errCode=%{public}d", retCode);
+        return jsonObj.dump();
+    }
     jsonObj[idxToCount[columns.size()]] = tmp;
     ret->Close();
     return jsonObj.dump();
