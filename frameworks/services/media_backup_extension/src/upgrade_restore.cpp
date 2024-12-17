@@ -54,7 +54,7 @@ constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int32_t DB_INTEGRITY_CHECK_FAIL = -1;
-const std::string DB_INTEGRITY_CHECK = "ok"
+const std::string DB_INTEGRITY_CHECK = "ok";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -397,7 +397,7 @@ void UpgradeRestore::AnalyzeGallerySource()
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
         .ReportGallery(this->galleryRdb_, this->shouldIncludeSd_);
-    MEDIA_INFO_LOG("start AnalyzeGallerySource.");
+    MEDIA_INFO_LOG("end AnalyzeGallerySource.");
 }
 
 void UpgradeRestore::InitGarbageAlbum()
@@ -1287,13 +1287,14 @@ std::string UpgradeRestore::CheckGalleryDbIntegrity()
     MEDIA_INFO_LOG("start handle gallery integrity check.");
     int64_t dbIntegrityCheckTime = MediaFileUtils::UTCTimeMilliSeconds();
     dbIntegrityCheck = BackupDatabaseUtils::CheckDbIntegrity(galleryRdb_, sceneCode_, "GALLERY_DB_CORRUPTION");
-    dbItegriryCheckTime = MediaFileUtils::UTCTimeMilliSeconds() - dbItegriryCheckTime;
+    dbIntegrityCheckTime = MediaFileUtils::UTCTimeMilliSeconds() - dbItegriryCheckTime;
     UpgradeRestoreTaskReport()
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
         .ReportProgress("GalleryDbCheck", dbSize + ";" + std::to_string(dbItegriryCheckTime));
     MEDIA_INFO_LOG("end handle gallery integrity check, cost %{public}lld, size %{public}s.", \
-        (long long)(dbItegriryCheckTime), dbSize.c_str());
+        (long long)(dbIntegrityCheckTime), dbSize.c_str());
+    return dbIntegrityCheck;
 }
 } // namespace Media
 } // namespace OHOS
