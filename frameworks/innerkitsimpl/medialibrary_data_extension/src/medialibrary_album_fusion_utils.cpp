@@ -131,6 +131,7 @@ static unordered_map<string, ResultSetDataType> albumColumnTypeMap = {
 };
 
 std::mutex MediaLibraryAlbumFusionUtils::cloudAlbumAndDataMutex_;
+std::atomic<bool> MediaLibraryAlbumFusionUtils::isNeedRefreshAlbum = false;
 
 int32_t MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(
     const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
@@ -792,6 +793,11 @@ static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStor
     return E_OK;
 }
 
+void MediaLibraryAlbumFusionUtils::SetRefreshAlbum(bool needRefresh)
+{
+    isNeedRefreshAlbum = needRefresh;
+}
+
 int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
     const int32_t &assetId, const int32_t &ownerAlbumId, shared_ptr<NativeRdb::ResultSet> &resultSet,
     int64_t &newAssetId)
@@ -917,7 +923,7 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
     return newAssetId;
 }
 
-static void GetNoOwnerDataCnt(const std::shared_ptr<MediaLibraryRdbStore> store)
+static int32_t GetNoOwnerDataCnt(const std::shared_ptr<MediaLibraryRdbStore> store)
 {
     NativeRdb::RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, 0);
@@ -928,6 +934,7 @@ static void GetNoOwnerDataCnt(const std::shared_ptr<MediaLibraryRdbStore> store)
         MEDIA_ERR_LOG("Query not matched data fails");
     }
     MEDIA_INFO_LOG("Begin handle no owner data: count %{public}d", rowCount);
+    return rowCount;
 }
 
 int32_t MediaLibraryAlbumFusionUtils::HandleNoOwnerData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
@@ -936,7 +943,8 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNoOwnerData(const std::shared_ptr<Me
         MEDIA_INFO_LOG("fail to get rdbstore");
         return E_DB_FAIL;
     }
-    GetNoOwnerDataCnt(upgradeStore);
+    auto rowCount = GetNoOwnerDataCnt(upgradeStore);
+    SetRefreshAlbum(rowCount > 0);
     const std::string UPDATE_NO_OWNER_ASSET_INTO_OTHER_ALBUM = "UPDATE PHOTOS SET owner_album_id = "
         "(SELECT album_id FROM PhotoAlbum where album_name = '其它') WHERE owner_album_id = 0";
     int32_t ret = upgradeStore->ExecuteSql(UPDATE_NO_OWNER_ASSET_INTO_OTHER_ALBUM);
@@ -1816,6 +1824,7 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     SetParameterToStopSync();
     int32_t totalNumber = QueryTotalNumberNeedToHandle(rdbStore, QUERY_NEW_NOT_MATCHED_COUNT_IN_PHOTOMAP);
     MEDIA_INFO_LOG("QueryTotalNumberNeedToHandle, totalNumber=%{public}d", totalNumber);
+    SetRefreshAlbum(totalNumber > 0);
     std::multimap<int32_t, vector<int32_t>> notMatchedMap;
     for (int32_t offset = 0; offset < totalNumber; offset += ALBUM_FUSION_BATCH_COUNT) {
         MEDIA_INFO_LOG("DATA_CLEAN: handle batch clean, offset: %{public}d", offset);
@@ -1837,7 +1846,10 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     // Clean duplicative album and rebuild expired album
     RebuildAlbumAndFillCloudValue(rdbStore);
     SetParameterToStartSync();
-    RefreshAllAlbums();
+    if (isNeedRefreshAlbum.load() == true) {
+        RefreshAllAlbums();
+        isNeedRefreshAlbum = false;
+    }
     PhotoSourcePathOperation().ResetPhotoSourcePath(rdbStore);
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));

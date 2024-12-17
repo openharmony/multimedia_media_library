@@ -75,7 +75,9 @@ public:
     EXPORT static int32_t SetAlbumFuseUpgradeStatus(int32_t upgradeStatus);
     EXPORT static void ReportAlbumFusionData(int64_t albumFusionTag, AlbumFusionState albumFusionState,
         const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
+
 private:
+    static void SetRefreshAlbum(bool needRefresh);
     static int32_t HandleRestData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, const int32_t &assetId,
         const std::vector<int32_t> &restOwnerAlbumIds, int32_t &handledCount);
     static int32_t HandleNoOwnerData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
@@ -89,6 +91,7 @@ private:
 
 private:
     static std::mutex cloudAlbumAndDataMutex_;
+    static std::atomic<bool> isNeedRefreshAlbum;
 };
 }
 }
