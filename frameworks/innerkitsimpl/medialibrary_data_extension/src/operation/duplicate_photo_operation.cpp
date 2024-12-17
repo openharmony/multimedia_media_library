@@ -25,9 +25,16 @@
 
 namespace OHOS {
 namespace Media {
+std::once_flag DuplicatePhotoOperation::onceFlag_;
+
 const std::string ASTERISK = "*";
 
 const std::string SELECT_COLUMNS = "SELECT_COLUMNS";
+
+const std::string IDX_DUPLICATE_ASSETS = "\
+    CREATE INDEX \
+    IF \
+      NOT EXISTS idx_duplicate_assets ON Photos (title, size, orientation)";
 
 const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
     SELECT\
@@ -376,6 +383,7 @@ std::shared_ptr<NativeRdb::ResultSet> DuplicatePhotoOperation::GetAllDuplicateAs
     MediaLibraryTracer tracer;
     if (find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT) != columns.end()) {
         tracer.Start("QueryAllDuplicateAssets_count");
+        std::call_once(onceFlag_, [&]() { rdbStore->ExecuteSql(IDX_DUPLICATE_ASSETS); });
         return rdbStore->QueryByStep(SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT);
     }
 
