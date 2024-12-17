@@ -1401,7 +1401,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetErrorCode, TestSize.Lev
     auto ret = upgrade->GetErrorInfoJson();
     string str = ret[STAT_KEY_ERROR_INFO].dump();
     str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
-    EXPECT_EQ(str, "Init failed");
+    EXPECT_EQ(str, "RESTORE_INIT_FAILED");
 
     // illegal errCode
     errCode = 999;
