@@ -46,6 +46,15 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
+struct CopyNewAssetParams {
+    int32_t fileId;
+    int32_t albumId;
+    string title;
+    string displayName;
+    uint32_t &outObjectHandle;
+    std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper;
+};
+
 sptr<IRemoteObject> MtpMedialibraryManager::getThumbToken_ = nullptr;
 constexpr int32_t NORMAL_WIDTH = 256;
 constexpr int32_t NORMAL_HEIGHT = 256;
@@ -794,30 +803,30 @@ int32_t MtpMedialibraryManager::MoveObject(const std::shared_ptr<MtpOperationCon
     return MtpErrorUtils::SolveCloseFdError(MTP_STORE_READ_ONLY);
 }
 
-int32_t CopyNewAssert(const int32_t &fileId, const int32_t &albumId, const string &title,
-    uint32_t &outObjectHandle, std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
+int32_t CopyNewAsset(const CopyNewAssetParams &params)
 {
-    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr,
+    CHECK_AND_RETURN_RET_LOG(params.dataShareHelper != nullptr,
         MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
-    valuesBucket.Put(MediaColumn::MEDIA_TITLE, title);
+    valuesBucket.Put(MediaColumn::MEDIA_ID, params.fileId);
+    valuesBucket.Put(MediaColumn::MEDIA_TITLE, params.title);
     string cloneUri = URI_MTP_OPERATION + "/" + OPRN_CLONE_ASSET;
     MediaFileUtils::UriAppendKeyValue(cloneUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri cloneAssetUri(cloneUri);
-    int32_t insertId = dataShareHelper->Insert(cloneAssetUri, valuesBucket);
+    int32_t insertId = params.dataShareHelper->Insert(cloneAssetUri, valuesBucket);
     CHECK_AND_RETURN_RET_LOG(insertId >= 0,
         MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR), "fail to clone photo");
-    outObjectHandle = static_cast<uint32_t>(insertId) + COMMON_PHOTOS_OFFSET;
+    params.outObjectHandle = static_cast<uint32_t>(insertId) + COMMON_PHOTOS_OFFSET;
     string updateOwnerAlbumIdUriStr = URI_MTP_OPERATION + "/" + OPRN_UPDATE_OWNER_ALBUM_ID;
     MediaFileUtils::UriAppendKeyValue(updateOwnerAlbumIdUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateOwnerAlbumIdUri(updateOwnerAlbumIdUriStr);
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(insertId));
-    DataShare::DataShareValuesBucket valuesBucketForOwnerAlbumId;
-    valuesBucketForOwnerAlbumId.Put(PhotoColumn::MEDIA_TITLE, title);
-    valuesBucketForOwnerAlbumId.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
-    int32_t changedRows = dataShareHelper->Update(updateOwnerAlbumIdUri, predicates, valuesBucketForOwnerAlbumId);
+    DataShare::DataShareValuesBucket valuesBucketUpdate;
+    valuesBucketUpdate.Put(PhotoColumn::MEDIA_TITLE, params.title);
+    valuesBucketUpdate.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, params.albumId);
+    valuesBucketUpdate.Put(PhotoColumn::MEDIA_NAME, params.displayName);
+    int32_t changedRows = params.dataShareHelper->Update(updateOwnerAlbumIdUri, predicates, valuesBucketUpdate);
     return changedRows;
 }
 
@@ -854,8 +863,11 @@ int32_t MtpMedialibraryManager::CopyObject(const std::shared_ptr<MtpOperationCon
     resultSet->GetColumnIndex(MediaColumn::MEDIA_TITLE, indexPos);
     string title;
     resultSet->GetString(indexPos, title);
-    int32_t changedRows = CopyNewAssert(fileId, static_cast<int32_t>(context->parent),
-        title, outObjectHandle, dataShareHelper_);
+    string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    CopyNewAssetParams params = {
+        fileId, static_cast<int32_t>(context->parent), title, displayName, outObjectHandle, dataShareHelper_
+    };
+    int32_t changedRows = CopyNewAsset(params);
     CHECK_AND_RETURN_RET_LOG(changedRows >= 0 && changedRows != MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR),
         MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR), "fail to update photo");
     return MTP_SUCCESS;
