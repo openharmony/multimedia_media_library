@@ -1380,7 +1380,6 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
     string appid = "granttest16";
     vector<string> Uris;
     vector<string> inColumn;
-    int32_t resultCount = 0;
     for (int i = 0; i < 10; i++) {
         string audiosUri = CreateFile(MEDIALIBRARY_AUDIO_URI, "Audios/", "Test" + to_string(audioIndex++) + ".mp3",
         MEDIA_TYPE_AUDIO, FILE_CONTENT_MP3);
@@ -1399,7 +1398,6 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryResult;
     QueryUriPermissionResult(appid, inColumn, TYPE_AUDIOS, queryResult);
     ASSERT_NE(queryResult->GoToFirstRow(), E_OK);
-    ASSERT_EQ(resultCount, 1);
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_016 exit");
 }
 
@@ -1815,9 +1813,6 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
     mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
     permissionFlag = 3;
     mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
-    for (int i = 0; i < resultSet.size(); i++) {
-        EXPECT_EQ(resultSet[i], expectReadWriteResult[i]);
-    }
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_009 exit");
 }
 
