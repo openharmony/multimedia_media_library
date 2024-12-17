@@ -53,7 +53,6 @@ constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
-constexpr int32_t DB_INTEGRITY_CHECK_FAIL = -1;
 const std::string DB_INTEGRITY_CHECK = "ok";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
@@ -335,7 +334,7 @@ void UpgradeRestore::RestorePhoto()
         RestoreFromGallery();
     } else {
         SetErrorCode(RestoreError::GALLERY_DATABASE_CORRUPTION);
-        ErrorInfo errorInfo(RestoreError::GALLERY_DATABASE_CORRUPTION, 0, DB_INTEGRITY_CHECK_FAIL);
+        ErrorInfo errorInfo(RestoreError::GALLERY_DATABASE_CORRUPTION, 0, dbIntegrityCheck, "");
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
     }
     StopParameterForClone(sceneCode_);
@@ -1277,14 +1276,13 @@ bool UpgradeRestore::IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet
 
 std::string UpgradeRestore::CheckGalleryDbIntegrity()
 {
+    MEDIA_INFO_LOG("start handle gallery integrity check.");
     std::string dbIntegrityCheck = DB_INTEGRITY_CHECK;
     std::string dbSize = "";
     struct stat statInfo {};
-
     if (stat(galleryDbPath_.c_str(), &statInfo) == 0) {
         dbSize = std::to_string(statInfo.st_size);
     }
-    MEDIA_INFO_LOG("start handle gallery integrity check.");
     int64_t dbIntegrityCheckTime = MediaFileUtils::UTCTimeMilliSeconds();
     dbIntegrityCheck = BackupDatabaseUtils::CheckDbIntegrity(galleryRdb_, sceneCode_, "GALLERY_DB_CORRUPTION");
     dbIntegrityCheckTime = MediaFileUtils::UTCTimeMilliSeconds() - dbIntegrityCheckTime;
