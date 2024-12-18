@@ -51,6 +51,9 @@
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
 #include "photo_album_column.h"
+#define private public
+#include "picture_data_operations.h"
+#undef private
 
 namespace OHOS {
 namespace Media {
@@ -62,10 +65,13 @@ using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+static shared_ptr<PictureDataOperations> s_pictureDataOperations = nullptr;
 
 const string COMMON_PREFIX = "datashare:///media/";
 const string ROOT_URI = "root";
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+static constexpr int32_t PICTURE_TIMEOUT_SEC = 1;
+static constexpr int32_t ILLEGAL_PHOTO_QUALITU = 3;
 
 using ExceptIntFunction = void (*) (int32_t);
 using ExceptLongFunction = void (*) (int64_t);
@@ -897,6 +903,7 @@ static bool QueryPhotoThumbnailVolumn(int32_t photoId, size_t& queryResult)
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
+    s_pictureDataOperations = make_shared<PictureDataOperations>();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
@@ -3448,6 +3455,47 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_002, TestSize.Level
     EXPECT_GE(fileAssetPtrNew->GetPhotoEditTime(), 0);
 
     MEDIA_INFO_LOG("end tdd clone_single_asset_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, picture_date_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd picture_date_test_001");
+    if (s_pictureDataOperations == nullptr) {
+        return;
+    }
+    EXPECT_NE(s_pictureDataOperations, nullptr);
+
+    s_pictureDataOperations->CleanDateForPeriodical();
+    EXPECT_EQ(s_pictureDataOperations->lowQualityPictureMap_.size(), 0);
+    EXPECT_EQ(s_pictureDataOperations->highQualityPictureMap_.size(), 0);
+
+    int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test.jpg", true);
+    if (fileId1 < 0) {
+        MEDIA_ERR_LOG("Create photo failed");
+        return;
+    }
+    time_t currentTime;
+    string fileId = to_string(fileId1);
+    if ((currentTime = time(NULL)) == -1) {
+        MEDIA_ERR_LOG("Get time failed");
+        currentTime = time(NULL);
+    }
+    std::shared_ptr<Media::Picture> picture;
+    time_t expireTime = currentTime + PICTURE_TIMEOUT_SEC;
+    sptr<PicturePair> picturePair = new PicturePair(std::move(picture), fileId, expireTime, true, false);
+
+    // insert low quality picture
+    s_pictureDataOperations->InsertPictureData(fileId, picturePair, PictureType::LOW_QUALITY_PICTURE);
+    EXPECT_EQ(s_pictureDataOperations->lowQualityPictureMap_.size(), 1);
+    // duplicate insert will erase the old one
+    s_pictureDataOperations->InsertPictureData(fileId, picturePair, PictureType::LOW_QUALITY_PICTURE);
+    EXPECT_EQ(s_pictureDataOperations->lowQualityPictureMap_.size(), 1);
+    // insert hilog quiality picture
+    s_pictureDataOperations->InsertPictureData(fileId, picturePair, PictureType::HIGH_QUALITY_PICTURE);
+    s_pictureDataOperations->InsertPictureData(fileId, picturePair, PictureType::HIGH_QUALITY_PICTURE);
+    // insert invalid quality icture
+    s_pictureDataOperations->InsertPictureData(fileId, picturePair, static_cast<PictureType>(ILLEGAL_PHOTO_QUALITU));
+    MEDIA_INFO_LOG("end tdd picture_date_test_001");
 }
 } // namespace Media
 } // namespace OHOS

@@ -29,6 +29,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 enum PictureType {
     LOW_QUALITY_PICTURE = 0,
     HIGH_QUALITY_PICTURE
@@ -89,11 +90,11 @@ public:
 };
 class PictureDataOperations : public RefBase {
 public:
-    explicit PictureDataOperations();
+    EXPORT explicit PictureDataOperations();
     ~PictureDataOperations();
-    void CleanDateForPeriodical();
+    EXPORT void CleanDateForPeriodical();
     void CleanPictureMapData(std::map<std::string, sptr<PicturePair>>& pictureMap, PictureType pictureType);
-    void InsertPictureData(const std::string& imageId, sptr<PicturePair>& picturePair, PictureType pictureType);
+    EXPORT void InsertPictureData(const std::string& imageId, sptr<PicturePair>& picturePair, PictureType pictureType);
     std::shared_ptr<Media::Picture> GetDataWithImageId(const std::string& imageId,
         bool &isHighQualityPicture, bool isCleanImmediately = true);
     std::shared_ptr<Media::Picture> GetDataWithImageIdAndPictureType(const std::string& imageId,

@@ -68,6 +68,7 @@ constexpr int32_t OWNER_PRIVIEDGE = 4;
 constexpr int32_t TYPE_PHOTOS = 1;
 constexpr int32_t TYPE_AUDIOS = 2;
 constexpr int32_t MAX_PERMISSION_INDEX = 2;
+constexpr int32_t URI_SIZE = 101;
 uint64_t tokenId = 0;
 int32_t txtIndex = 0;
 int32_t audioIndex = 0;
@@ -850,6 +851,40 @@ HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoImageUri_002, TestSize.Level0)
     std::string uri = "mediaLibraryUri";
     std::string result = manager.GetMovingPhotoImageUri(uri);
     EXPECT_EQ(result, uri);
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetUrisByOldUris_001, TestSize.Level0)
+{
+    std::vector<std::string> uris;
+    // test case 1 empty uris will return emty map
+    auto ret = manager.GetUrisByOldUris(uris);
+    EXPECT_EQ(ret.empty(), true);
+
+    // test case 2 normal uris
+    uris.emplace_back(UFM_CREATE_PHOTO);
+    uris.emplace_back(UFM_CREATE_AUDIO);
+    uris.emplace_back(UFM_CREATE_PHOTO_ALBUM);
+    ret = manager.GetUrisByOldUris(uris);
+    EXPECT_EQ(ret.empty(), true);
+
+    // test case 3 cover max uris will reutrn empty map
+    uris.clear();
+    for (int32_t i = 0; i < URI_SIZE; i++) {
+        uris.emplace_back("testuri");
+    }
+    ret = manager.GetUrisByOldUris(uris);
+    EXPECT_EQ(ret.empty(), true);
+
+    // invalid uris
+    uris.clear();
+    uris.emplace_back("you_look_only_once");
+    uris.emplace_back("//media/we_shall_never_surrender/");
+    uris.emplace_back("//media/we_shall_never/_surrender");
+    uris.emplace_back("/storage/emulated/love_and_peace/");
+    uris.emplace_back("12345");
+    uris.emplace_back("");
+    ret = manager.GetUrisByOldUris(uris);
+    EXPECT_EQ(ret.empty(), false);
 }
 
 HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_001, TestSize.Level0)
