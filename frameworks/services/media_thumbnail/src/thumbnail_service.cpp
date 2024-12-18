@@ -566,6 +566,34 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
     return E_OK;
 }
 
+int32_t ThumbnailService::LocalThumbnailGeneration()
+{
+    if (!CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_) {
+        MEDIA_INFO_LOG("active local thumb genetaion exists");
+        return E_OK;
+    }
+    CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = false;
+    #ifdef HAS_BATTERY_MANAGER_PART
+    auto& batteryClient = PowerMgr::BatterySrvClient::GetInstance();
+    if (batteryClient.GetCapacity() < LOCAL_GENERATION_BATTERY_CAPACITY) {
+        CloudSyncHelper::GetInstance()->StartSync();
+        CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = true;
+        return E_OK;
+    }
+    #endif
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+    };
+    int err = ThumbnailGenerateHelper::CreateLocalThumbnail(opts);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("LocalThumbnailGeneration failed : %{public}d", err);
+        CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = true;
+        return err;
+    }
+    return E_OK;
+}
+
 int32_t ThumbnailService::CreateAstcCloudDownload(const string &id, bool isCloudInsertTaskPriorityHigh)
 {
     if (!isCloudInsertTaskPriorityHigh && !currentStatusForTask_) {

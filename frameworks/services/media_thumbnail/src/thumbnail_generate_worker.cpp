@@ -58,7 +58,7 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
     } else if (taskType == ThumbnailTaskType::BACKGROUND) {
         threadNum = THREAD_NUM_BACKGROUND;
         threadName = THREAD_NAME_BACKGROUND;
-        cpuAffinityType = CpuAffinityType::CPU_IDX_9;
+        cpuAffinityType = CpuAffinityType::CPU_IDX_7;
     } else {
         MEDIA_ERR_LOG("invalid task type");
         return E_ERR;

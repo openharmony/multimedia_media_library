@@ -96,6 +96,9 @@ public:
     EXPORT static void CreateAstc(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static void CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static void AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts,
+    EXPORT static void CloudSyncOnGenerationComplete(std::shared_ptr<ThumbnailTaskData> &data);
+    EXPORT static void AddThumbnailGenerateTask(ThumbnailGenerateExecute executor,
+        const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority);
         ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority);
     EXPORT static void AddThumbnailGenBatchTask(ThumbnailGenerateExecute executor,
         ThumbRdbOpt &opts, ThumbnailData &thumbData, int32_t requestId = 0);
