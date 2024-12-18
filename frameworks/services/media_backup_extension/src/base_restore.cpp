@@ -17,10 +17,13 @@
 
 #include "base_restore.h"
 
+#include <sstream>
+
 #include "application_context.h"
 #include "backup_database_utils.h"
 #include "backup_dfx_utils.h"
 #include "backup_file_utils.h"
+#include "backup_log_utils.h"
 #include "directory_ex.h"
 #include "extension_context.h"
 #include "media_column.h"
@@ -47,7 +50,7 @@
 namespace OHOS {
 namespace Media {
 const std::string DATABASE_PATH = "/data/storage/el2/database/rdb/media_library.db";
-const std::string singleDirName = "A";
+const std::string SINGLE_DIR_NAME = "A";
 const std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
 
 void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::string &upgradePath)
@@ -70,6 +73,8 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
         if (errorCode != EXTERNAL_DB_NOT_EXIST) {
             SetErrorCode(RestoreError::INIT_FAILED);
         }
+        ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, errorCode);
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
     }
     HandleRestData();
 }
@@ -135,7 +140,7 @@ bool BaseRestore::ConvertPathToRealPath(const std::string &srcPath, const std::s
         if (posEnd != string::npos) {
             string temp = relativePath.substr(posStart + 1, posEnd - posStart -1);
             if (temp == dualDirName_) {
-                relativePath.replace(relativePath.find(dualDirName_), dualDirName_.length(), singleDirName);
+                relativePath.replace(relativePath.find(dualDirName_), dualDirName_.length(), SINGLE_DIR_NAME);
             }
         }
     }
@@ -221,12 +226,10 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         int32_t errCode = IsFileValid(fileInfos[i], sceneCode);
         if (errCode != E_OK) {
             fileInfos[i].needMove = false;
-            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, size: %{public}lld, "
-                "local_media_id: %{public}d, userId: %{public}d, isInternal: %{public}d, filePath: %{public}s",
-                sceneCode, sourceType, (long long)fileInfos[i].fileSize,
-                fileInfos[i].localMediaId, fileInfos[i].userId, static_cast<int32_t>(fileInfos[i].isInternal),
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
-            CheckInvalidFile(fileInfos[i], errCode);
+            std::string fileDbCheckInfo = CheckInvalidFile(fileInfos[i], errCode);
+            ErrorInfo errorInfo(RestoreError::FILE_INVALID, 1, std::to_string(errCode),
+                BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i], { fileDbCheckInfo }));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
             continue;
         }
         std::string cloudPath;
@@ -235,8 +238,9 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
             MediaFileUtils::GetExtensionFromPath(fileInfos[i].displayName), cloudPath);
         if (errCode != E_OK) {
             fileInfos[i].needMove = false;
-            MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d, path: %{public}s", errCode,
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+            ErrorInfo errorInfo(RestoreError::CREATE_PATH_FAILED, 1, std::to_string(errCode),
+                BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i]));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
             continue;
         }
         fileInfos[i].cloudPath = cloudPath;
@@ -505,6 +509,9 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
         }
         if (!MoveAndModifyFile(fileInfos[i], sceneCode)) {
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
+            ErrorInfo errorInfo(RestoreError::MOVE_FAILED, 1, "",
+                BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i]));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
             moveFailedData.push_back(fileInfos[i].cloudPath);
             continue;
         }
@@ -535,6 +542,8 @@ int BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos
     if (errCode != E_OK) {
         if (needReportFailed_) {
             UpdateFailedFiles(fileInfos, RestoreError::INSERT_FAILED);
+            ErrorInfo errorInfo(RestoreError::INSERT_FAILED, static_cast<int32_t>(fileInfos.size()), errCode);
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
         }
         return errCode;
     }
@@ -749,13 +758,23 @@ void BaseRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &tot
 void BaseRestore::StartRestoreEx(const std::string &backupRetoreDir, const std::string &upgradePath,
     std::string &restoreExInfo)
 {
+    UpgradeRestoreTaskReport()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .ReportProgress("start", std::to_string(MediaFileUtils::UTCTimeSeconds()));
     StartRestore(backupRetoreDir, upgradePath);
     DatabaseReport()
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
         .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_AFTER);
     restoreExInfo = GetRestoreExInfo();
-    UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).Report(restoreExInfo);
+    UpgradeRestoreTaskReport()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .ReportTask(restoreExInfo)
+        .ReportTotal(std::to_string(errorCode_), GetRestoreTotalInfo())
+        .ReportTimeCost()
+        .ReportProgress("end", std::to_string(MediaFileUtils::UTCTimeSeconds()));
 }
 
 std::string BaseRestore::GetRestoreExInfo()
@@ -828,10 +847,11 @@ nlohmann::json BaseRestore::GetSubCountInfoJson(const std::string &type, const S
     std::string detailsPath;
     std::vector<std::string> failedFilesList;
     if (sceneCode_ == UPGRADE_RESTORE_ID) {
-        detailsPath = BackupFileUtils::GetDetailsPath(sceneCode_, type, subCountInfo.failedFiles, currentLimit);
+        detailsPath = BackupFileUtils::GetDetailsPath(DEFAULT_RESTORE_ID, type, subCountInfo.failedFiles, currentLimit);
         subCountInfoJson[STAT_KEY_DETAILS] = detailsPath;
     } else {
-        failedFilesList = BackupFileUtils::GetFailedFilesList(sceneCode_, subCountInfo.failedFiles, currentLimit);
+        failedFilesList = BackupFileUtils::GetFailedFilesList(DEFAULT_RESTORE_ID, subCountInfo.failedFiles,
+            currentLimit);
         subCountInfoJson[STAT_KEY_DETAILS] = failedFilesList;
     }
     MEDIA_INFO_LOG("Get %{public}s details size: %{public}zu", type.c_str(), currentLimit);
@@ -847,12 +867,7 @@ std::string BaseRestore::GetBackupInfo()
 void BaseRestore::SetErrorCode(int32_t errorCode)
 {
     errorCode_ = errorCode;
-    auto iter = RESTORE_ERROR_MAP.find(errorCode_);
-    if (iter == RESTORE_ERROR_MAP.end()) {
-        errorInfo_ = "";
-        return;
-    }
-    errorInfo_ = iter->second;
+    errorInfo_ = BackupLogUtils::RestoreErrorToString(errorCode);
 }
 
 void BaseRestore::UpdateFailedFileByFileType(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode)
@@ -1060,7 +1075,13 @@ std::string BaseRestore::GetProgressInfo()
         SubProcessInfo subProcessInfo = GetSubProcessInfo(type);
         progressInfoJson[STAT_KEY_PROGRESS_INFO].push_back(GetSubProcessInfoJson(type, subProcessInfo));
     }
-    return progressInfoJson.dump();
+    std::string progressInfo = progressInfoJson.dump();
+    UpgradeRestoreTaskReport()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .ReportProgress("onProcess", progressInfo, ongoingTotalNumber_.load())
+        .ReportTimeout(ongoingTotalNumber_.load());
+    return progressInfo;
 }
 
 SubProcessInfo BaseRestore::GetSubProcessInfo(const std::string &type)
@@ -1180,9 +1201,28 @@ void BaseRestore::RestoreThumbnail()
 void BaseRestore::StartBackup()
 {}
 
-void BaseRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode)
+std::string BaseRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode)
 {
-    return;
+    return "";
+}
+
+std::string BaseRestore::GetRestoreTotalInfo()
+{
+    std::stringstream restoreTotalInfo;
+    uint64_t success = migrateFileNumber_;
+    uint64_t duplicate = migratePhotoDuplicateNumber_ + migrateVideoDuplicateNumber_;
+    uint64_t failed = static_cast<uint64_t>(GetFailedFiles(STAT_TYPE_PHOTO).size() +
+        GetFailedFiles(STAT_TYPE_VIDEO).size());
+    uint64_t error = totalNumber_ - success - duplicate - failed;
+    restoreTotalInfo << failed;
+    restoreTotalInfo << ";" << error;
+    restoreTotalInfo << ";" << GetNoNeedMigrateCount();
+    return restoreTotalInfo.str();
+}
+
+int32_t BaseRestore::GetNoNeedMigrateCount()
+{
+    return 0;
 }
 } // namespace Media
 } // namespace OHOS

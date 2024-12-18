@@ -178,6 +178,7 @@ private:
     void CloseAllKvStore();
     bool BackupKvStore();
     void GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
+    int32_t GetNoNeedMigrateCount() override;
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,

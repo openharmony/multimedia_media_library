@@ -21,6 +21,8 @@
 #include "application_context.h"
 #include "backup_dfx_utils.h"
 #include "backup_file_utils.h"
+#include "backup_log_utils.h"
+#include "database_report.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_library_db_upgrade.h"
@@ -32,7 +34,6 @@
 #include "medialibrary_type_const.h"
 #include "photos_dao.h"
 #include "rdb_store.h"
-#include "database_report.h"
 #include "result_set_utils.h"
 #include "upgrade_restore_task_report.h"
 #include "userfile_manager_types.h"
@@ -211,6 +212,8 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
         (void)NativeRdb::RdbHelper::DeleteRdbStore(dbPath_);
     } else {
         SetErrorCode(RestoreError::INIT_FAILED);
+        ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, errorCode);
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
     }
     HandleRestData();
     StopParameterForClone(CLONE_RESTORE_ID);
@@ -354,11 +357,15 @@ void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fi
             !fileInfos[i].isNew) {
             continue;
         }
-        if (MoveAsset(fileInfos[i]) != E_OK) {
+        int32_t errCode = MoveAsset(fileInfos[i]);
+        if (errCode != E_OK) {
             MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s, error:%{public}s",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
                 strerror(errno));
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
+            ErrorInfo errorInfo(RestoreError::MOVE_FAILED, 1, std::to_string(errCode),
+                BackupLogUtils::FileInfoToString(sceneCode_, fileInfos[i]));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
             moveFailedData.push_back(fileInfos[i].cloudPath);
             continue;
         }
@@ -388,6 +395,8 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     if (errCode != E_OK) {
         if (needReportFailed_) {
             UpdateFailedFiles(fileInfos, RestoreError::INSERT_FAILED);
+            ErrorInfo errorInfo(RestoreError::INSERT_FAILED, static_cast<int32_t>(fileInfos.size()), errCode);
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
         }
         return errCode;
     }
@@ -416,11 +425,9 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
     for (size_t i = 0; i < fileInfos.size(); i++) {
         int32_t errCode = BackupFileUtils::IsFileValid(fileInfos[i].filePath, CLONE_RESTORE_ID);
         if (errCode != E_OK) {
-            MEDIA_ERR_LOG("File is invalid: sceneCode: %{public}d, sourceType: %{public}d, size: %{public}lld, "
-                "name: %{public}s, filePath: %{public}s",
-                sceneCode, sourceType, (long long)fileInfos[i].fileSize,
-                BackupFileUtils::GarbleFileName(fileInfos[i].displayName).c_str(),
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
+            ErrorInfo errorInfo(RestoreError::FILE_INVALID, 1, std::to_string(errCode),
+                BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i]));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
             continue;
         }
         if (!PrepareCloudPath(PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
@@ -1359,17 +1366,22 @@ bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfo.fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfo.displayName), fileInfo.cloudPath);
         if (errCode != E_OK) {
-            MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d, path: %{public}s", errCode,
-                BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
+            ErrorInfo errorInfo(RestoreError::CREATE_PATH_FAILED, 1, std::to_string(errCode),
+                BackupLogUtils::FileInfoToString(sceneCode_, fileInfo));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
             fileInfo.cloudPath.clear();
             return false;
         }
     }
-    if (BackupFileUtils::PreparePath(BackupFileUtils::GetReplacedPathByPrefixType(
-        PrefixType::CLOUD, PrefixType::LOCAL, fileInfo.cloudPath)) != E_OK) {
+    int32_t errCode = BackupFileUtils::PreparePath(
+        BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL, fileInfo.cloudPath));
+    if (errCode != E_OK) {
         MEDIA_ERR_LOG("Prepare cloudPath failed, path: %{public}s, cloudPath: %{public}s",
             BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
             BackupFileUtils::GarbleFilePath(fileInfo.cloudPath, DEFAULT_RESTORE_ID, garbagePath_).c_str());
+        ErrorInfo errorInfo(RestoreError::PREPARE_PATH_FAILED, 1, std::to_string(errCode),
+            BackupLogUtils::FileInfoToString(sceneCode_, fileInfo));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
         fileInfo.cloudPath.clear();
         return false;
     }
@@ -1445,23 +1457,22 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
     FileInfo &fileInfo)
 {
     fileInfo.fileType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
+    fileInfo.fileIdOld = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    fileInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     fileInfo.oldPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     if (!ConvertPathToRealPath(fileInfo.oldPath, filePath_, fileInfo.filePath, fileInfo.relativePath)) {
-        MEDIA_ERR_LOG("Convert to real path failed, file path: %{public}s",
-            BackupFileUtils::GarbleFilePath(fileInfo.oldPath, DEFAULT_RESTORE_ID, garbagePath_).c_str());
+        ErrorInfo errorInfo(RestoreError::PATH_INVALID, 1, "", BackupLogUtils::FileInfoToString(sceneCode_, fileInfo));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
         return false;
     }
     fileInfo.fileSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
     if (fileInfo.fileSize <= 0) {
-        MEDIA_ERR_LOG("File is invalid: fileSize: %{public}lld, filePath: %{public}s, tableName : %{public}s",
-            (long long)fileInfo.fileSize,
-            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
-            tableName.c_str());
+        ErrorInfo errorInfo(RestoreError::SIZE_INVALID, 1, "Db size <= 0",
+            BackupLogUtils::FileInfoToString(sceneCode_, fileInfo));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
         return false;
     }
 
-    fileInfo.fileIdOld = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    fileInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     fileInfo.dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
     fileInfo.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
     fileInfo.dateTaken = GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet);
@@ -2530,6 +2541,11 @@ bool CloneRestore::BackupKvStore()
     }
     MEDIA_INFO_LOG("End BackupKvstore");
     return true;
+}
+
+int32_t CloneRestore::GetNoNeedMigrateCount()
+{
+    return this->photosClone_.GetNoNeedMigrateCount();
 }
 } // namespace Media
 } // namespace OHOS
