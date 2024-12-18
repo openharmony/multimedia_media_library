@@ -124,6 +124,9 @@ const std::string PhotoColumn::PHOTO_FAVORITE_INDEX = "idx_photo_is_favorite";
 const std::string PhotoColumn::PHOTO_DISPLAYNAME_INDEX = "idx_display_name";
 const std::string PhotoColumn::PHOTO_SCHPT_READY_INDEX = "idx_schpt_thumbnail_ready";
 const std::string PhotoColumn::PHOTO_BURSTKEY_INDEX = "idx_burstkey";
+const std::string PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX = "idx_schpt_media_type_ready";
+const std::string PhotoColumn::PHOTO_SCHPT_DATE_YEAR_COUNT_READY_INDEX = "idx_schpt_date_year_ready";
+const std::string PhotoColumn::PHOTO_SCHPT_DATE_MONTH_COUNT_READY_INDEX = "idx_schpt_date_month_ready";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -254,6 +257,33 @@ const std::string PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX = BaseColumn::Creat
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
     "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + MEDIA_TYPE + "," + PHOTO_BURST_COVER_LEVEL +
     "," + MEDIA_DATE_ADDED + " DESC);";
+
+const std::string PhotoColumn::CREATE_SCHPT_YEAR_COUNT_READY_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_SCHPT_DATE_YEAR_COUNT_READY_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + PHOTO_THUMBNAIL_VISIBLE + "," + MEDIA_DATE_TRASHED +
+    "," + MEDIA_TIME_PENDING + "," + MEDIA_HIDDEN + "," + PHOTO_IS_TEMP + "," +
+    PHOTO_BURST_COVER_LEVEL + "," + PHOTO_DATE_YEAR + " DESC);";
+
+const std::string PhotoColumn::CREATE_SCHPT_MONTH_COUNT_READY_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_SCHPT_DATE_MONTH_COUNT_READY_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + PHOTO_THUMBNAIL_VISIBLE + "," + MEDIA_DATE_TRASHED +
+    "," + MEDIA_TIME_PENDING + "," + MEDIA_HIDDEN + "," + PHOTO_IS_TEMP + "," +
+    PHOTO_BURST_COVER_LEVEL + "," + PHOTO_DATE_MONTH + " DESC);";
+
+const std::string PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + PHOTO_THUMBNAIL_VISIBLE + "," + MEDIA_DATE_TRASHED +
+    "," + MEDIA_TIME_PENDING + "," + MEDIA_HIDDEN + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
+    "," + MEDIA_TYPE + ");";
+
+const std::string PhotoColumn::DROP_SCHPT_YEAR_COUNT_READY_INDEX = "DROP INDEX IF EXISTS " +
+    PHOTO_SCHPT_DATE_YEAR_COUNT_READY_INDEX;
+
+const std::string PhotoColumn::DROP_SCHPT_MONTH_COUNT_READY_INDEX = "DROP INDEX IF EXISTS " +
+    PHOTO_SCHPT_DATE_MONTH_COUNT_READY_INDEX;
+
+const std::string PhotoColumn::DROP_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX = "DROP INDEX IF EXISTS " +
+    PHOTO_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX;
 
 const std::string PhotoColumn::CREATE_HIDDEN_TIME_INDEX = BaseColumn::CreateIndex() +
     PHOTO_HIDDEN_TIME_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_HIDDEN_TIME + " DESC)";
