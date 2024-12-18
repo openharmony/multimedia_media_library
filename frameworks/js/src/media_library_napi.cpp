@@ -6109,7 +6109,7 @@ napi_value MediaLibraryNapi::PhotoAccessStopCreateThumbnailTask(napi_env env, na
     RETURN_NAPI_UNDEFINED(env);
 }
 
-static void GetMediaAnaServiceProgress(nlohmann::json& jsonObj, unordered_map<int, string>& idxToCount,
+static void GetMediaAnalysisServiceProgress(nlohmann::json& jsonObj, unordered_map<int, string>& idxToCount,
     vector<string> columns)
 {
     Uri uri(URI_TOTAL);
@@ -6141,7 +6141,7 @@ static void GetMediaAnaServiceProgress(nlohmann::json& jsonObj, unordered_map<in
     ret->Close();
 }
 
-static std::string GetLabelAnaProgress()
+static std::string GetLabelAnalysisProgress()
 {
     unordered_map<int, string> idxToCount = {
         {0, "totalCount"}, {1, "finishedCount"}, {2, "LabelCount"}
@@ -6152,11 +6152,11 @@ static std::string GetLabelAnaProgress()
         "SUM(CASE WHEN label != 0 THEN 1 ELSE 0 END) AS LabelCount"
     };
     nlohmann::json jsonObj;
-    GetMediaAnaServiceProgress(jsonObj, idxToCount, columns);
+    GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
     return jsonObj.dump();
 }
 
-static std::string GetFaceAnaProgress()
+static std::string GetFaceAnalysisProgress()
 {
     unordered_map<int, string> idxToCount = {
         {0, "totalCount"}, {1, "finishedCount"}, {2, "PortraitCoverCount"}, {3, "PortraitCount"},
@@ -6168,11 +6168,11 @@ static std::string GetFaceAnaProgress()
         "SUM(CASE WHEN face > 0 THEN 1 ELSE 0 END) AS PortraitCount"
     };
     nlohmann::json jsonObj;
-    GetMediaAnaServiceProgress(jsonObj, idxToCount, columns);
+    GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
     return jsonObj.dump();
 }
 
-static std::string GetGeoAnaProgress()
+static std::string GetGeoAnalysisProgress()
 {
     unordered_map<int, string> idxToCount = {
         {0, "totalCount"}, {1, "finishedCount"}, {2, "cityAlbumCount"}
@@ -6182,7 +6182,7 @@ static std::string GetGeoAnaProgress()
         "SUM(CASE WHEN status != 0 THEN 1 ELSE 0 END) AS finishedCount",
     };
     nlohmann::json jsonObj;
-    GetMediaAnaServiceProgress(jsonObj, idxToCount, columns);
+    GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
 
     Uri uri(PAH_QUERY_ANA_PHOTO_ALBUM);
     vector<string> albumColumns = {};
@@ -6213,7 +6213,7 @@ static std::string GetGeoAnaProgress()
     return jsonObj.dump();
 }
 
-static std::string GetHighlightAnaProgress()
+static std::string GetHighlightAnalysisProgress()
 {
     unordered_map<int, string> idxToCount = {
         {0, "ClearCount"}, {1, "DeleteCount"}, {2, "NotProduceCount"}, {3, "ProduceCount"}, {4, "PushCount"}
