@@ -188,12 +188,13 @@ void AddQueryIndex(AbsPredicates& predicates, const vector<string>& columns)
         return;
     }
     const string &group = predicates.GetGroup();
+    const string &whereInfo = predicates.GetWhereClause();
     if (group.empty()) {
         predicates.GroupBy({ PhotoColumn::PHOTO_DATE_DAY });
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_DAY_INDEX);
         return;
     }
-    if (group == PhotoColumn::MEDIA_TYPE) {
+    if (group == PhotoColumn::MEDIA_TYPE && (whereInfo.find(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE) == string::npos)) {
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
         return;
     }
