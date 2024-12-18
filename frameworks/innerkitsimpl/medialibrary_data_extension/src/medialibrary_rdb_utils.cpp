@@ -1489,7 +1489,7 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         int32_t updateRow = -1;
         rdbStore->Update(updateRow, values, predicatesPhotos);
         if (updateRow < 0) {
-            MEDIA_INFO_LOG("Update failed on trashed, album id is: %{public}s", albumId.c_str());
+            MEDIA_ERR_LOG("Update failed on trashed, album id is: %{public}s", albumId.c_str());
             continue;
         }
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
