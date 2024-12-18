@@ -1487,8 +1487,8 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         ValuesBucket values;
         values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
         int32_t updateRow = -1;
-        rdbStore->Update(updateRow, values, predicatesPhotos);
-        if (updateRow < 0) {
+        int ret = rdbStore->Update(updateRow, values, predicatesPhotos);
+        if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Update failed on trashed, album id is: %{public}s", albumId.c_str());
             continue;
         }
