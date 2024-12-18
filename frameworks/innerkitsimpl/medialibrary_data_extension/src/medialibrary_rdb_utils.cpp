@@ -1458,26 +1458,26 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
 {
     vector<string> newWhereIdArgs;
     for (auto albumId: predicates.GetWhereArgs()) {
-        const std::string QUERY_FILE_ASSET_INFO = "SELECT * FROM Photos WHERE owner_album_id = " + albumId +
-            " AND clean_flag = 0 AND hidden =0 AND date_trashed = 0";
+        const std::string QUERY_FILE_ASSET_INFO = "SELECT file_id, data, display_name"
+            " FROM Photos WHERE owner_album_id = " + albumId +
+            " AND clean_flag = 0 AND hidden = 0 AND date_trashed = 0";
         shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
         vector<string> fileAssetsIds, fileAssetsUri;
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            int isHiddenAsset = 0;
-            GetIntFromResultSet(resultSet, MediaColumn::MEDIA_HIDDEN, isHiddenAsset);
-            if (isHiddenAsset == 1) {
-                continue;
-            }
             int32_t fileId = -1;
-            string assetData;
+            string assetData, displayName;
             GetIntFromResultSet(resultSet, MediaColumn::MEDIA_ID, fileId);
             GetStringFromResultSet(resultSet, MediaColumn::MEDIA_FILE_PATH, assetData);
+            GetStringFromResultSet(resultSet, MediaColumn::MEDIA_NAME, displayName);
             fileAssetsIds.push_back(to_string(fileId));
-            string uri = MediaLibraryFormMapOperations::GetUriByFileId(fileId, assetData);
+            string extraUri = MediaFileUtils::GetExtraUri(displayName, assetData);
+            string uri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
+                to_string(file_id), extraUri);
             fileAssetsUri.push_back(uri);
         }
+        newWhereIdArgs.push_back(albumId);
         if (fileAssetsUri.empty()) {
-            newWhereIdArgs.push_back(albumId);
+            MEDIA_INFO_LOG("Trashed album empty, album id is: %{public}s", albumId.c_str());
             continue;
         }
         MediaLibraryPhotoOperations::UpdateSourcePath(fileAssetsIds);
@@ -1489,6 +1489,7 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         int32_t updateRow = -1;
         rdbStore->Update(updateRow, values, predicatesPhotos);
         if (updateRow < 0) {
+            MEDIA_INFO_LOG("Update failed on trashed, album id is: %{public}s", albumId.c_str());
             continue;
         }
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
@@ -1497,7 +1498,6 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
             to_string(PhotoAlbumSubType::HIDDEN)
         });
         MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, fileAssetsUri);
-        newWhereIdArgs.push_back(albumId);
         MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), fileAssetsUri);
         MediaLibraryPhotoOperations::TrashPhotosSendNotify(fileAssetsUri);
