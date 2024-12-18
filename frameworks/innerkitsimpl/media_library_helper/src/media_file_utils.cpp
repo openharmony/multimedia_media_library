@@ -1791,6 +1791,17 @@ int64_t MediaFileUtils::Timespec2Millisecond(const struct timespec &time)
     return time.tv_sec * MSEC_TO_SEC + time.tv_nsec / MSEC_TO_NSEC;
 }
 
+string MediaFileUtils::GetTempMovingPhotoVideoPath(const string &imagePath)
+{
+    size_t splitIndex = imagePath.find_last_of('.');
+    size_t lastSlashIndex = imagePath.find_last_of('/');
+    if (splitIndex == string::npos || (lastSlashIndex != string::npos && lastSlashIndex > splitIndex)) {
+        return "";
+    }
+    return imagePath.substr(0, lastSlashIndex + 1) + "_temp" +
+        imagePath.substr(lastSlashIndex + 1, splitIndex - lastSlashIndex - 1) + ".mp4";
+}
+
 string MediaFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
 {
     size_t splitIndex = imagePath.find_last_of('.');
