@@ -1296,7 +1296,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
     ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
     do {
         int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
-        EXPECT_EQ(permissionType, OWNER_PRIVIEDGE);
+        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO));
     } while (!queryPhotoResult->GoToNextRow());
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_011 exit");
 }
@@ -1344,7 +1344,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
 
     do {
         int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPreviliegeResult);
-        EXPECT_EQ(permissionType, OWNER_PRIVIEDGE);
+        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO));
     } while (!queryPreviliegeResult->GoToNextRow());
 
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_012 exit");
@@ -1554,12 +1554,12 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
     permissionFlag = 2;
     mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
     for (const auto res : resultSet) {
-        EXPECT_EQ(res, false);
+        EXPECT_EQ(res, true);
     }
     permissionFlag = 3;
     mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
     for (const auto res : resultSet) {
-        EXPECT_EQ(res, false);
+        EXPECT_EQ(res, true);
     }
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_001 exit");
 }
@@ -1668,12 +1668,12 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
     permissionFlag = 2;
     mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
     for (const auto res : resultSet) {
-        EXPECT_EQ(res, false);
+        EXPECT_EQ(res, true);
     }
     permissionFlag = 3;
     mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
     for (const auto res : resultSet) {
-        EXPECT_EQ(res, false);
+        EXPECT_EQ(res, true);
     }
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_004 exit");
 }
@@ -1704,7 +1704,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
     uint32_t permissionFlag = 1;
     mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
     for (const auto res : resultSet) {
-        EXPECT_EQ(res, false);
+        EXPECT_EQ(res, true);
     }
     permissionFlag = 2;
     mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
@@ -1714,7 +1714,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
     permissionFlag = 3;
     mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
     for (const auto res : resultSet) {
-        EXPECT_EQ(res, false);
+        EXPECT_EQ(res, true);
     }
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_005 exit");
 }
