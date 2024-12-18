@@ -126,7 +126,7 @@ static vector<string> GetAlbumIds(const shared_ptr<MediaLibraryRdbStore> rdbStor
     return albumIds;
 }
 
-static void ProcessHandleData(PeriodTaskData *data)
+void AnalysisHandler::ProcessHandleData(PeriodTaskData *data)
 {
     if (data == nullptr) {
         return;
@@ -189,7 +189,7 @@ void AnalysisHandler::init()
         MEDIA_ERR_LOG("Failed to new taskdata");
         return;
     }
-    periodWorker->StartTask(PeriodTaskType::CLOUD_ANALYSIS_ALBUM, ProcessHandleData, data);
+    periodWorker->StartTask(PeriodTaskType::CLOUD_ANALYSIS_ALBUM, AnalysisHandler::ProcessHandleData, data);
 }
 
 void AnalysisHandler::MergeTask(const CloudSyncHandleData &handleData)

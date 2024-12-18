@@ -48,6 +48,7 @@ public:
     static std::queue<CloudSyncHandleData> taskQueue_;
     static std::mutex mtx_;
     static std::atomic<uint16_t> counts_;
+    static void ProcessHandleData(PeriodTaskData *data);
 private:
     void MergeTask(const CloudSyncHandleData &handleData);
 
