@@ -509,7 +509,7 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
         }
         if (!MoveAndModifyFile(fileInfos[i], sceneCode)) {
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
-            ErrorInfo errorInfo(RestoreError::MOVE_FAILED, 1, "",
+            ErrorInfo errorInfo(RestoreError::MOVE_FAILED, 1, strerror(errno),
                 BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i]));
             UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
             moveFailedData.push_back(fileInfos[i].cloudPath);
