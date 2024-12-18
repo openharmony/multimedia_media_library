@@ -47,8 +47,9 @@ private:
     std::vector<AlbumMediaStatisticInfo> LoadExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
     std::vector<AlbumMediaStatisticInfo> LoadMedia(
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, int32_t period);
-    std::string ToString(const AlbumMediaStatisticInfo &info);
     int32_t Report(std::vector<AlbumMediaStatisticInfo> statisticInfos);
+    int32_t PostInfoDfx(const AlbumMediaStatisticInfo &info);
+    int32_t PostInfoAuditLog(const AlbumMediaStatisticInfo &info);
 
 private:
     int32_t sceneCode_;
