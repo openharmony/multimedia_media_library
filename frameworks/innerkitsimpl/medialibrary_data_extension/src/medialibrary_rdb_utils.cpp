@@ -1459,7 +1459,7 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
     vector<string> newWhereIdArgs;
     for (auto albumId: predicates.GetWhereArgs()) {
         const std::string QUERY_FILE_ASSET_INFO = "SELECT * FROM Photos WHERE owner_album_id = " + albumId +
-            " AND clean_flag =0 AND hidden =0";
+            " AND clean_flag = 0 AND hidden =0 AND date_trashed = 0";
         shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
         vector<string> fileAssetsIds, fileAssetsUri;
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -1475,6 +1475,10 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
             fileAssetsIds.push_back(to_string(fileId));
             string uri = MediaLibraryFormMapOperations::GetUriByFileId(fileId, assetData);
             fileAssetsUri.push_back(uri);
+        }
+        if (fileAssetsUri.empty()) {
+            newWhereIdArgs.push_back(albumId);
+            continue;
         }
         MediaLibraryPhotoOperations::UpdateSourcePath(fileAssetsIds);
         RdbPredicates predicatesPhotos(PhotoColumn::PHOTOS_TABLE);
