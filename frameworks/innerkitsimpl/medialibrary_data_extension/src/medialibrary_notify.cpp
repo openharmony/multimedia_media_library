@@ -264,8 +264,8 @@ static void AddNfListMap(AsyncTaskData *data)
 
 int32_t MediaLibraryNotify::Init()
 {
-    MediaLibraryNotify::timerId_ = MediaLibraryNotify::timer_.Register(PushNotification, MNOTIFY_TIME_INTERVAL);
     MediaLibraryNotify::timer_.Setup();
+    MediaLibraryNotify::timerId_ = MediaLibraryNotify::timer_.Register(PushNotification, MNOTIFY_TIME_INTERVAL);
     return E_OK;
 }
 
