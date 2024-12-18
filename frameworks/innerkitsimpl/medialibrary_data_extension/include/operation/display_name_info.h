@@ -43,8 +43,8 @@ private:
         BURST_DISPLAY_NAME_MIN_SUBLINE_COUNT = 3
     };
     std::string prefix;
-    int32_t yearMonthDay;
-    int32_t hourMinuteSecond;
+    int32_t yearMonthDay = 0;
+    int32_t hourMinuteSecond = 0;
     std::string suffix;
 };
 }  // namespace OHOS::Media
