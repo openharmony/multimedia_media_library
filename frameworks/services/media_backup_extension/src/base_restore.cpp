@@ -756,7 +756,7 @@ void BaseRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &tot
 }
 
 void BaseRestore::StartRestoreEx(const std::string &backupRetoreDir, const std::string &upgradePath,
-    std::string &restoreExInfo)
+                                 std::string &restoreExInfo)
 {
     UpgradeRestoreTaskReport()
         .SetSceneCode(this->sceneCode_)

@@ -33,10 +33,8 @@ public:
         this->taskId_ = taskId;
         return *this;
     }
-    int32_t Report(const std::string &taskInfo);
     std::vector<MediaRestoreResultInfo> LoadTask(const std::string &taskInfo);
     MediaRestoreResultInfo Load(const std::string &type, const std::string &errorCode, const std::string &errorInfo);
-
 
 private:
     CallbackResultData ParseFromJsonStr(const std::string &jsonStr);
