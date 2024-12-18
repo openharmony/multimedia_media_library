@@ -33,7 +33,6 @@ public:
         this->taskId_ = taskId;
         return *this;
     }
-    int32_t Report(const std::string &taskInfo);
     UpgradeRestoreTaskReport &ReportTask(const std::string &taskInfo);
     UpgradeRestoreTaskReport &Report(const std::string &type, const std::string &errorCode,
         const std::string &errorInfo);

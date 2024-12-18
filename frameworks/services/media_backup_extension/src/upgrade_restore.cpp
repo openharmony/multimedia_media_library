@@ -44,7 +44,6 @@
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
 
-
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
 #endif
@@ -1214,7 +1213,7 @@ bool UpgradeRestore::IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet
     info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet); // read basic info from db first
     if (this->photosRestore_.IsDuplicateData(info.oldPath)) {
         ErrorInfo errorInfo(RestoreError::DUPLICATE_DATA, 1, "",
-            BackupLogUtils::FileInfoToString(sceneCode_, info));
+                            BackupLogUtils::FileInfoToString(sceneCode_, info));
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
         return false;
     }
@@ -1222,14 +1221,14 @@ bool UpgradeRestore::IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet
         !BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath) :
         !ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath, info)) {
         ErrorInfo errorInfo(RestoreError::PATH_INVALID, 1, "",
-            BackupLogUtils::FileInfoToString(sceneCode_, info));
+                            BackupLogUtils::FileInfoToString(sceneCode_, info));
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
         return false;
     }
     info.fileType = this->photosRestore_.FindMediaType(info);
     if (info.fileType != MediaType::MEDIA_TYPE_IMAGE && info.fileType != MediaType::MEDIA_TYPE_VIDEO) {
         ErrorInfo errorInfo(RestoreError::MEDIA_TYPE_INVALID, 1, std::to_string(info.fileType),
-            BackupLogUtils::FileInfoToString(sceneCode_, info));
+                            BackupLogUtils::FileInfoToString(sceneCode_, info));
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
         return false;
     }
@@ -1237,7 +1236,7 @@ bool UpgradeRestore::IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet
         MEDIA_WARN_LOG("maybe garbage path = %{public}s, minSize:%{public}d.",
             BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str(), fileMinSize_);
         ErrorInfo errorInfo(RestoreError::SIZE_INVALID, 1, "Db size < " + std::to_string(fileMinSize_),
-            BackupLogUtils::FileInfoToString(sceneCode_, info));
+                            BackupLogUtils::FileInfoToString(sceneCode_, info));
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
         return false;
     }

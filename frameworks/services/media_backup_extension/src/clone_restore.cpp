@@ -292,6 +292,7 @@ void CloneRestore::RestorePhoto()
     for (size_t offset = 0; offset < vectorLen; offset++) {
         RestorePhotoBatch(offset, 1);
     }
+    photosFailedOffsets.clear();
     needReportFailed_ = false;
     // Scenario 2, clone photos from Photos only.
     int32_t totalNumber = this->photosClone_.GetPhotosRowCountNotInPhotoMap();
