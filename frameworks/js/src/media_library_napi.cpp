@@ -6127,8 +6127,7 @@ static void GetMediaAnalysisServiceProgress(nlohmann::json& jsonObj, unordered_m
         NAPI_ERR_LOG("ret is nullptr");
         return;
     }
-    errCode = ret->GoToFirstRow();
-    if (errCode != DataShare::E_OK) {
+    if (ret->GoToFirstRow() != NativeRdb::E_OK) {
         NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
         ret->Close();
         return;
@@ -6233,8 +6232,7 @@ static std::string GetHighlightAnalysisProgress()
         NAPI_ERR_LOG("ret is nullptr");
         return "";
     }
-    errCode = ret->GoToFirstRow();
-    if (errCode != DataShare::E_OK) {
+    if (ret->GoToFirstRow() != NativeRdb::E_OK) {
         NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
         ret->Close();
         return "";
