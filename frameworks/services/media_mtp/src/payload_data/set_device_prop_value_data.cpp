@@ -52,7 +52,6 @@ int SetDevicePropValueData::Parser(const std::vector<uint8_t> &buffer, int32_t r
         return MTP_ERROR_PACKET_INCORRECT;
     }
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    MtpPacketTool::Dump(buffer, offset);
     if (!context_->indata) {
         context_->property = MtpPacketTool::GetUInt32(buffer, offset);
     } else {
