@@ -1550,15 +1550,15 @@ static bool CheckFileOpenStatus(FileAssetAsyncContext *context, int fd)
     auto fileAssetPtr = context->objectPtr;
     int ret = fileAssetPtr->GetOpenStatus(fd);
     if (ret < 0) {
+        NAPI_ERR_LOG("get fd openStatus is invalid");
         return false;
-    } else {
-        fileAssetPtr->RemoveOpenStatus(fd);
-        if (ret == OPEN_TYPE_READONLY) {
-            return false;
-        } else {
-            return true;
-        }
     }
+    fileAssetPtr->RemoveOpenStatus(fd);
+    if (ret == OPEN_TYPE_READONLY) {
+        close(fd);
+        return false;
+    }
+    return true;
 }
 
 static void JSCloseExecute(FileAssetAsyncContext *context)
@@ -1591,10 +1591,11 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
         return;
     }
 
-    int32_t uniFd = context->valuesBucket.Get(MEDIA_FILEDESCRIPTOR, isValid);
-    if (!CheckFileOpenStatus(context, uniFd)) {
+    int32_t mediaFd = context->valuesBucket.Get(MEDIA_FILEDESCRIPTOR, isValid);
+    if (!CheckFileOpenStatus(context, mediaFd)) {
         return;
     }
+    UniqueFd uniFd(mediaFd);
 
     string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
@@ -3300,10 +3301,11 @@ static void UserFileMgrCloseExecute(napi_env env, void *data)
     tracer.Start("UserFileMgrCloseExecute");
 
     auto *context = static_cast<FileAssetAsyncContext*>(data);
-    int32_t unifd = context->fd;
-    if (!CheckFileOpenStatus(context, unifd)) {
+    int32_t mediaFd = context->fd;
+    if (!CheckFileOpenStatus(context, mediaFd)) {
         return;
     }
+    UniqueFd uniFd(mediaFd);
     string closeUri;
     if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
         context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
@@ -3812,10 +3814,11 @@ static void PhotoAccessHelperCloseExecute(napi_env env, void *data)
     tracer.Start("PhotoAccessHelperCloseExecute");
 
     auto *context = static_cast<FileAssetAsyncContext*>(data);
-    int32_t unifd = context->fd;
-    if (!CheckFileOpenStatus(context, unifd)) {
+    int32_t mediaFd = context->fd;
+    if (!CheckFileOpenStatus(context, mediaFd)) {
         return;
     }
+    UniqueFd uniFd(mediaFd);
     string closeUri;
     if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
         context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
