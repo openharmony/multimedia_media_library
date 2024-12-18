@@ -327,6 +327,14 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     return E_OK;
 }
 
+void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_READY_COUNT_INDEX) {
+        MediaLibraryRdbStore::AddReadyCountIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_READY_COUNT_INDEX);
+    }
+}
+
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()
 {
     std::thread([&] {
@@ -369,6 +377,9 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync()
             ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
             rdbStore->SetOldVersion(VERSION_ADD_DETAIL_TIME);
         }
+
+        HandleUpgradeRdbAsyncExtension(rdbStore, oldVersion);
+        // !! Do not add upgrade code here !!
 
         rdbStore->SetOldVersion(MEDIA_RDB_VERSION);
     }).detach();
