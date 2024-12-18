@@ -182,6 +182,8 @@ public:
     EXPORT GenerateStats stats;
     EXPORT SourceLoaderOptions loaderOpts;
     EXPORT bool isThumbExisted {false};
+    EXPORT int64_t thumbnailReady { -1 };
+    EXPOET int64_t lcdVisitTime { -1 };
 };
 } // namespace Media
 } // namespace OHOS

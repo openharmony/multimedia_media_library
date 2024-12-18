@@ -46,6 +46,7 @@ enum class ThumbnailTaskPriority {
 
 class ThumbnailTaskData {
 public:
+    ThumbnailTaskData() = default;
     ThumbnailTaskData(ThumbRdbOpt &opts, ThumbnailData &data) : opts_(opts), thumbnailData_(data) {}
 
     ThumbnailTaskData(ThumbRdbOpt &opts, ThumbnailData &data,

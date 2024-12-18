@@ -19,6 +19,7 @@
 #include <fcntl.h>
 
 #include "acl.h"
+#include "cloud_sync_helper.h"
 #include "dfx_const.h"
 #include "dfx_manager.h"
 #include "dfx_timer.h"
@@ -183,6 +184,40 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts, bool
         return E_OK;
     }
     IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc, opts, data, taskType, priority);
+    return E_OK;
+}
+
+int32_t ThumbnailGenerateHelper::CreateLocalThumbnail(ThumbRdbOpt &opt)
+{
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is not init");
+        return E_ERR;
+    }
+    vector<ThumbnailData> infos;
+    int32_t err = 0;
+    if (!ThumbnailUtils::QueryLocalNoThumbnailInfos(opts, infos, err)) {
+        MEDIA_ERR_LOG("Failed to QueryNoThumbnailInfos %{private}d", err);
+        return err;
+    }
+    if (infos.empty()) {
+        CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = true;
+        return E_OK;
+    }
+    for (uint32_t i = 0; i < infos.size(); i++) {
+        opts.row = infos[i].id;
+        if (infos[i].thumbnailReady == 0 && infos[i].lcdVisitTime == 0) {
+            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateLcdAndThumbnail,
+                opts, info[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
+        } else if (infos[i].thumbnailReady == 0) {
+            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateThumbnail,
+                opts, info[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
+        } else if (infos[i].lcdVisitTime == 0) {
+            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateLcd,
+                opts, info[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
+        }
+    }
+    IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CloudSyncOnGenerationComplete,
+        ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
     return E_OK;
 }
 

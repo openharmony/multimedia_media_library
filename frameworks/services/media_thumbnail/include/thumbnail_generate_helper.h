@@ -39,6 +39,7 @@ public:
     EXPORT static int32_t RestoreAstcDualFrame(ThumbRdbOpt &opts);
     EXPORT static int32_t CreateAstcBatchOnDemand(ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate,
         int32_t requestId);
+    EXPORT static int32_t CreateLocalThumbnail(ThumbRdbOpt &opt);
     EXPORT static int32_t GetNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count);
     EXPORT static int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType);
     EXPORT static int32_t GetKeyFrameThumbnailPixelMap(ThumbRdbOpt &opts, int32_t &timeStamp,

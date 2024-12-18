@@ -188,6 +188,11 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
         return;
     }
 
+    if (uriString.find(PhotoColumn::PHOTO_CLOUD_TRIGGER_PREFIX) != string::npos) {
+        ThumbnailService::GetInstance()->LocalThumbnailGeneration();
+        return;
+    }
+
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos) {
         ThumbnailObserverOnChange(notifyInfo_.uris, notifyInfo_.type);
     }
