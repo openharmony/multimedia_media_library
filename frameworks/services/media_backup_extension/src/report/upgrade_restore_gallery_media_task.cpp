@@ -23,39 +23,23 @@
 #include "json_utils.h"
 
 namespace OHOS::Media {
-static constexpr char MEDIA_LIBRARY[] = "MEDIALIBRARY";
-int32_t UpgradeRestoreGalleryMediaTask::Report(const std::string &taskInfo)
+std::vector<MediaRestoreResultInfo> UpgradeRestoreGalleryMediaTask::LoadTask(const std::string &taskInfo)
 {
     CallbackResultData resultData = this->ParseFromJsonStr(taskInfo);
     MEDIA_INFO_LOG("GET restoreExInfo: %{public}s", resultData.ToString().c_str());
-    for (const auto &eventInfo : this->Parse(resultData)) {
-        MEDIA_INFO_LOG("GET restoreExInfo: %{public}s", eventInfo.ToString().c_str());
-        int32_t ret = HiSysEventWrite(MEDIA_LIBRARY,
-            "MEDIALIB_BACKUP_RESTORE_RESULT",
-            HiviewDFX::HiSysEvent::EventType::STATISTIC,
-            "SCENE_CODE",
-            eventInfo.sceneCode,
-            "TASK_ID",
-            eventInfo.taskId,
-            "ERROR_CODE",
-            eventInfo.errorCode,
-            "ERROR_INFO",
-            eventInfo.errorInfo,
-            "TYPE",
-            eventInfo.type,
-            "BACKUP_INFO",
-            eventInfo.backupInfo,
-            "DUPLICATE_COUNT",
-            eventInfo.duplicateCount,
-            "FAILED_COUNT",
-            eventInfo.failedCount,
-            "SUCCESS_COUNT",
-            eventInfo.successCount);
-        if (ret != 0) {
-            MEDIA_ERR_LOG("UpgradeRestoreGalleryMediaTask error:%{public}d", ret);
-        }
-    }
-    return 0;
+    return this->Parse(resultData);
+}
+
+MediaRestoreResultInfo UpgradeRestoreGalleryMediaTask::Load(const std::string &type, const std::string &errorCode,
+    const std::string &errorInfo)
+{
+    MediaRestoreResultInfo info;
+    info.sceneCode = this->sceneCode_;
+    info.taskId = this->taskId_;
+    info.errorCode = errorCode;
+    info.errorInfo = errorInfo;
+    info.type = type;
+    return info;
 }
 
 CallbackResultData UpgradeRestoreGalleryMediaTask::ParseFromJsonStr(const std::string &jsonStr)

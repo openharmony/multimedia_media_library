@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+#include "media_backup_report_data_type.h"
+
 namespace OHOS::Media {
 class UpgradeRestoreTaskReport {
 public:
@@ -32,6 +34,22 @@ public:
         return *this;
     }
     int32_t Report(const std::string &taskInfo);
+    UpgradeRestoreTaskReport &ReportTask(const std::string &taskInfo);
+    UpgradeRestoreTaskReport &Report(const std::string &type, const std::string &errorCode,
+        const std::string &errorInfo);
+    UpgradeRestoreTaskReport &ReportError(const ErrorInfo &info);
+    UpgradeRestoreTaskReport &ReportProgress(const std::string &status, const std::string &progressInfo);
+    UpgradeRestoreTaskReport &ReportProgress(const std::string &status, const std::string &progressInfo,
+        uint64_t ongoingTotalNumber);
+    UpgradeRestoreTaskReport &ReportTimeout(uint64_t ongoingTotalNumber);
+    UpgradeRestoreTaskReport &ReportTotal(const std::string &errorCode, const std::string &totalInfo);
+    UpgradeRestoreTaskReport &ReportTimeCost();
+
+private:
+    int32_t PostInfoDfx(const MediaRestoreResultInfo &info);
+    int32_t PostInfoAuditLog(const MediaRestoreResultInfo &info);
+    int32_t PostErrorInfoAuditLog(const ErrorInfo &info);
+    int32_t PostProgressInfoAuditLog(const std::string &status, const std::string &progressInfo);
 
 private:
     int32_t sceneCode_;
