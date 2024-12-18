@@ -1458,6 +1458,7 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
 {
     vector<string> newWhereIdArgs;
     for (auto albumId: predicates.GetWhereArgs()) {
+        MEDIA_INFO_LOG("Trashed album, album id is: %{public}s", albumId.c_str());
         const std::string QUERY_FILE_ASSET_INFO = "SELECT file_id, data, display_name FROM"
             " Photos WHERE owner_album_id = " + albumId +
             " AND clean_flag = 0 AND hidden = 0 AND date_trashed = 0";
@@ -1477,7 +1478,6 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         }
         newWhereIdArgs.push_back(albumId);
         if (fileAssetsUri.empty()) {
-            MEDIA_INFO_LOG("Trashed album empty, album id is: %{public}s", albumId.c_str());
             continue;
         }
         MediaLibraryPhotoOperations::UpdateSourcePath(fileAssetsIds);
