@@ -153,7 +153,7 @@ export class PhotoPickerComponent extends ViewPU {
             Column.width('100%');
         }), Column);
         this.observeComponentCreation2(((e, o) => {
-            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d,j;
+            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, j;
             SecurityUIExtensionComponent.create({
                 parameters: {
                     'ability.want.params.uiExtensionTargetType': 'photoPicker',
