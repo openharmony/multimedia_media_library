@@ -60,9 +60,9 @@ void PhotoOtherAlbumTransOperation::Stop()
     this->isContinue_.store(false);
 }
 
-void PhotoOtherAlbumTransOperation::BuildOtherAlbumInsertValuesIfNeed(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
-    const string &albumName, const string &lpath, const string &bundleName,
-    std::vector<std::pair<int64_t, std::string>> &transAlbum)
+void PhotoOtherAlbumTransOperation::BuildOtherAlbumInsertValuesIfNeed(
+    const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, const string &albumName, const string &lpath,
+    const string &bundleName, std::vector<std::pair<int64_t, std::string>> &transAlbum)
 {
     MEDIA_INFO_LOG("Begin build insert values meta data on other album trans");
     if (upgradeStore == nullptr) {
@@ -70,7 +70,7 @@ void PhotoOtherAlbumTransOperation::BuildOtherAlbumInsertValuesIfNeed(const std:
         return;
     }
     bool isAlbumExist = false;
-    for (const auto &transPair: transAlbum) {
+    for (const auto &transPair : transAlbum) {
         if (transPair.second == albumName) {
             isAlbumExist = true;
             break;
@@ -190,7 +190,8 @@ int32_t PhotoOtherAlbumTransOperation::DealWithOtherAlbumTrans(const std::shared
     return E_OK;
 }
 
-bool PhotoOtherAlbumTransOperation::IsOtherAlbumEmpty(const int64_t &otherAlbumId, const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
+bool PhotoOtherAlbumTransOperation::IsOtherAlbumEmpty(
+    const int64_t &otherAlbumId, const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
 {
     const std::string QUERY_OTHER_ALBUM_COUNT =
         "SELECT * FROM PhotoAlbum WHERE album_id = " + std::to_string(otherAlbumId);
@@ -199,8 +200,7 @@ bool PhotoOtherAlbumTransOperation::IsOtherAlbumEmpty(const int64_t &otherAlbumI
         MEDIA_ERR_LOG("Query other album count fail");
         return true;
     }
-    int32_t albumDataCount = -1;
-    GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_COUNT, albumDataCount);
+    int32_t albumDataCount = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
     if (albumDataCount <= 0) {
         MEDIA_INFO_LOG("Other album empty");
         return true;
@@ -210,7 +210,7 @@ bool PhotoOtherAlbumTransOperation::IsOtherAlbumEmpty(const int64_t &otherAlbumI
 }
 
 void PhotoOtherAlbumTransOperation::GetOtherAlbumIdInfo(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
-        int64_t &otherAlbumId, std::vector<std::pair<int64_t, std::string>> &transAlbum)
+    int64_t &otherAlbumId, std::vector<std::pair<int64_t, std::string>> &transAlbum)
 {
     const std::string QUERY_TRANS_ALBUM_INFO =
         "SELECT * FROM PhotoAlbum WHERE lpath IN "
@@ -218,7 +218,7 @@ void PhotoOtherAlbumTransOperation::GetOtherAlbumIdInfo(const std::shared_ptr<Me
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_TRANS_ALBUM_INFO);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query not matched data fails");
-        return E_HAS_DB_ERROR;
+        return;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int64_t albumId = GetInt64Val(PhotoAlbumColumns::ALBUM_ID, resultSet);

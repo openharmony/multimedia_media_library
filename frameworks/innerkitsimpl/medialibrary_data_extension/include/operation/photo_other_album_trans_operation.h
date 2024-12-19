@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "medialibrary_rdb_store.h"
+#include "medialibrary_rdbstore.h"
 
 namespace OHOS::Media {
 class PhotoOtherAlbumTransOperation {
@@ -30,10 +30,10 @@ public:
 
 private:
     void BuildOtherAlbumInsertValuesIfNeed(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
-        const string &albumName, const string &lpath, const string &bundleName,
+        const string &albumName, const std::string &lpath, const std::string &bundleName,
         std::vector<std::pair<int64_t, std::string>> &transAlbum);
-    bool CheckIfNeedTransOtherAlbumData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
-        int64_t otherAlbumId, std::vector<std::pair<int64_t, std::string>> &transAlbum);
+    bool CheckIfNeedTransOtherAlbumData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, int64_t otherAlbumId,
+        std::vector<std::pair<int64_t, std::string>> &transAlbum);
     int32_t DealWithOtherAlbumTrans(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         std::pair<int64_t, std::string> transInfo, int64_t otherAlbumId);
     bool IsOtherAlbumEmpty(const int64_t &otherAlbumId, const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
@@ -41,7 +41,6 @@ private:
         int64_t &otherAlbumId, std::vector<std::pair<int64_t, std::string>> &transAlbum);
 
 private:
-    private:
     std::atomic<bool> isContinue_{true};
     static std::shared_ptr<PhotoOtherAlbumTransOperation> instance_;
     static std::mutex objMutex_;
