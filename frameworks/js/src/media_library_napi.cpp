@@ -6202,7 +6202,7 @@ static std::string GetGeoAnalysisProgress()
     }
 
     int tmp = -1;
-    int32_t retCode = ret->GetRowCount(columns.size(), tmp);
+    int32_t retCode = ret->GetRowCount(tmp);
     if (retCode != DataShare::E_OK) {
         NAPI_ERR_LOG("Can not get row count from resultSet, errCode=%{public}d", retCode);
         return jsonObj.dump();
@@ -6255,19 +6255,19 @@ static void JSGetAnalysisProgressExecute(MediaLibraryAsyncContext* context)
     DataShare::DataSharePredicates predicates;
     switch (context->analysisType) {
         case ANALYSIS_LABEL: {
-            context->analysisProgress = GetLabelAnaProgress();
+            context->analysisProgress = GetLabelAnalysisProgress();
             break;
         }
         case ANALYSIS_FACE: {
-            context->analysisProgress = GetFaceAnaProgress();
+            context->analysisProgress = GetFaceAnalysisProgress();
             break;
         }
         case ANALYSIS_GEO: {
-            context->analysisProgress = GetGeoAnaProgress();
+            context->analysisProgress = GetGeoAnalysisProgress();
             break;
         }
         case ANALYSIS_HIGHLIGHT: {
-            context->analysisProgress = GetHighlightAnaProgress();
+            context->analysisProgress = GetHighlightAnalysisProgress();
             break;
         }
         default:
