@@ -30,7 +30,7 @@ public:
 
 private:
     void BuildOtherAlbumInsertValuesIfNeed(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
-        const string &albumName, const std::string &lpath, const std::string &bundleName,
+        const std::string &albumName, const std::string &lpath, const std::string &bundleName,
         std::vector<std::pair<int64_t, std::string>> &transAlbum);
     bool CheckIfNeedTransOtherAlbumData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, int64_t otherAlbumId,
         std::vector<std::pair<int64_t, std::string>> &transAlbum);
