@@ -189,7 +189,7 @@ export class PhotoPickerComponent extends ViewPU {
                 isOnItemClickedSet: !!this.onItemClicked,
                 isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported,
             };
-            parameters = addParameters(parameters);
+            parameters = this.addParameters(parameters);
             SecurityUIExtensionComponent.create({
                 parameters
             });
