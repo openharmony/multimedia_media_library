@@ -107,6 +107,7 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("deleteAssets", PhotoAccessHelperDeletePhotos),
             DECLARE_NAPI_FUNCTION("setCoverUri", PhotoAccessHelperSetCoverUri),
             DECLARE_NAPI_FUNCTION("getAssetsSync", JSPhotoAccessGetPhotoAssetsSync),
+            DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", JSPhotoAccessGetSharedPhotoAssets),
             DECLARE_NAPI_FUNCTION("getFaceId", PhotoAccessHelperGetFaceId),
         }
     };
@@ -1458,5 +1459,39 @@ napi_value PhotoAlbumNapi::PhotoAccessHelperGetFaceId(napi_env env, napi_callbac
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSAnalysisAlbumGetFaceId",
         PhotoAccessHelperGetFaceIdExec, GetFaceIdCompleteCallback);
+}
+
+napi_value PhotoAlbumNapi::JSPhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSPhotoAccessGetSharedPhotoAssets");
+    unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext =
+        make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsGetPhotoAssets(env, info, asyncContext));
+
+    PhotoAlbumNapiAsyncContext* context =
+        static_cast<PhotoAlbumNapiAsyncContext*>((asyncContext.get()));
+
+    Uri uri(PAH_QUERY_PHOTO_MAP);
+    ConvertColumnsForPortrait(context);
+    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
+        context->predicates, context->fetchColumn);
+    CHECK_NULLPTR_RET(resultSet);
+
+    napi_value jsFileArray = 0;
+    napi_create_array(env, &jsFileArray);
+
+    int count = 0;
+    int err = resultSet->GoToFirstRow();
+    if (err != napi_ok) {
+        NAPI_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        return jsFileArray;
+    }
+    do {
+        napi_value item = MediaLibraryNapiUtils::GetNextRowObject(env, resultSet, true);
+        napi_set_element(env, jsFileArray, count++, item);
+    } while (!resultSet->GoToNextRow());
+    resultSet->Close();
+    return jsFileArray;
 }
 } // namespace OHOS::Media
