@@ -238,10 +238,22 @@ void MultiStagesPhotoCaptureManager::UpdateLocation(const NativeRdb::ValuesBucke
         valueObject.GetDouble(latitude);
     }
 
-    string path = "";
-    if (values.GetObject(MediaColumn::MEDIA_FILE_PATH, valueObject)) {
-        valueObject.GetString(path);
+    int32_t fileId = 0;
+    if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
+        valueObject.GetInt(fileId);
     }
+
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+    string where = MediaColumn::MEDIA_ID + " = " + to_string(fileId);
+    queryCmd.GetAbsRdbPredicates()->SetWhereClause(where);
+    vector<string> columns { MediaColumn::MEDIA_FILE_PATH };
+
+    auto resultSet = DatabaseAdapter::Query(queryCmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
+        MEDIA_ERR_LOG("result set is empty");
+        return;
+    }
+    string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
 
     // update exif info
     auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
@@ -260,10 +272,6 @@ void MultiStagesPhotoCaptureManager::UpdateLocation(const NativeRdb::ValuesBucke
         }
     }
 
-    int32_t fileId = 0;
-    if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
-        valueObject.GetInt(fileId);
-    }
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
     ValuesBucket updateValues;

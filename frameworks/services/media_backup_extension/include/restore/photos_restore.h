@@ -70,6 +70,8 @@ public:
     int32_t FindPhotoQuality(const FileInfo &fileInfo);
     int32_t FindMediaType(const FileInfo &fileInfo);
     std::string FindSourcePath(const FileInfo &fileInfo);
+    int32_t FindStrongAssociation(const FileInfo &fileInfo);
+    int32_t FindCeAvailable(const FileInfo &fileInfo);
 
 private:
     PhotosRestore &SetMediaLibraryRdb(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
