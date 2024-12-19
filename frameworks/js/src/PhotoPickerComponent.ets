@@ -124,7 +124,8 @@ export struct PhotoPickerComponent {
             isOnItemClickedSet: this.onItemClicked? true : false,
             isPreviewForSingleSelectionSupported: this.pickerOptions?.isPreviewForSingleSelectionSupported as boolean,
             isSlidingSelectionSupported: this.pickerOptions?.isSlidingSelectionSupported as boolean,
-            photoBrowserCheckboxPosition: this.pickerOptions?.photoBrowserCheckboxPosition as [number, number]
+            photoBrowserCheckboxPosition: this.pickerOptions?.photoBrowserCheckboxPosition as [number, number],
+            gridMargin: this.pickerOptions?.gridMargin as Margin
           }
         }).height('100%').width('100%').onRemoteReady((proxy) => {
           this.proxy = proxy;
@@ -357,6 +358,7 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   maxVideoSelectNumber?: number;
   isSlidingSelectionSupported?: boolean;
   photoBrowserCheckboxPosition?: [number, number];
+  gridMargin?: gridMargin;
 }
 
 export class BaseItemInfo {
