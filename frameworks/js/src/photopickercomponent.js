@@ -183,7 +183,7 @@ export class PhotoPickerComponent extends ViewPU {
                     isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported,
                     isSlidingSelectionSupported: null === (b = this.pickerOptions) || void 0 === b ? void 0 : b.isSlidingSelectionSupported,
                     photoBrowserCheckboxPosition: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserCheckboxPosition,
-                    girdMargin: null === (j = this.pickerOptions) || void 0 === j ? void 0 : j.girdMargin
+                    girdMargin: this.pickerOptions?.girdMargin
                 }
             });
             SecurityUIExtensionComponent.height('100%');
