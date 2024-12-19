@@ -146,6 +146,9 @@ export class PhotoPickerComponent extends ViewPU {
     addParameters(parameters) {
         let d;
         parameters.gridMargin = null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.gridMargin;
+        parameters.isSlidingSelectionSupported = null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.isSlidingSelectionSupported;
+        parameters.photoBrowserCheckboxPosition = null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserCheckboxPosition;
+        return parameters
     }
 
     initialRender() {
@@ -185,8 +188,6 @@ export class PhotoPickerComponent extends ViewPU {
                 maxVideoSelectNumber: null === (P = this.pickerOptions) || void 0 === P ? void 0 : P.maxVideoSelectNumber,
                 isOnItemClickedSet: !!this.onItemClicked,
                 isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported,
-                isSlidingSelectionSupported: null === (b = this.pickerOptions) || void 0 === b ? void 0 : b.isSlidingSelectionSupported,
-                photoBrowserCheckboxPosition: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserCheckboxPosition,
             }
             parameters = addParameters(parameters)
             SecurityUIExtensionComponent.create({
