@@ -153,7 +153,7 @@ export class PhotoPickerComponent extends ViewPU {
             Column.width('100%');
         }), Column);
         this.observeComponentCreation2(((e, o) => {
-            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d;
+            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d,j;
             SecurityUIExtensionComponent.create({
                 parameters: {
                     'ability.want.params.uiExtensionTargetType': 'photoPicker',
@@ -182,7 +182,8 @@ export class PhotoPickerComponent extends ViewPU {
                     isOnItemClickedSet: !!this.onItemClicked,
                     isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported,
                     isSlidingSelectionSupported: null === (b = this.pickerOptions) || void 0 === b ? void 0 : b.isSlidingSelectionSupported,
-                    photoBrowserCheckboxPosition: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserCheckboxPosition
+                    photoBrowserCheckboxPosition: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserCheckboxPosition,
+                    girdMargin: null === (j = this.pickerOptions) || void 0 === j ? void 0 : j.girdMargin
                 }
             });
             SecurityUIExtensionComponent.height('100%');
