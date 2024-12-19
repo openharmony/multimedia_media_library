@@ -143,14 +143,6 @@ export class PhotoPickerComponent extends ViewPU {
         console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY');
     }
 
-    addParameters(parameters) {
-        let d;
-        parameters.gridMargin = null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.gridMargin;
-        parameters.isSlidingSelectionSupported = null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.isSlidingSelectionSupported;
-        parameters.photoBrowserCheckboxPosition = null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserCheckboxPosition;
-        return parameters;
-    }
-
     initialRender() {
         this.observeComponentCreation2(((e, o) => {
             Row.create();
