@@ -155,36 +155,7 @@ export class PhotoPickerComponent extends ViewPU {
         this.observeComponentCreation2(((e, o) => {
             var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, j;
             SecurityUIExtensionComponent.create({
-                parameters: {
-                    'ability.want.params.uiExtensionTargetType': 'photoPicker',
-                    uri: 'multipleselect',
-                    targetPage: 'photoPage',
-                    filterMediaType: this.convertMIMETypeToFilterType(null === (t = this.pickerOptions) || void 0 === t ? void 0 : t.MIMEType),
-                    maxSelectNumber: null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.maxSelectNumber,
-                    isPhotoTakingSupported: null === (n = this.pickerOptions) || void 0 === n ? void 0 : n.isPhotoTakingSupported,
-                    isEditSupported: !1,
-                    recommendationOptions: null === (r = this.pickerOptions) || void 0 === r ? void 0 : r.recommendationOptions,
-                    preselectedUri: null === (l = this.pickerOptions) || void 0 === l ? void 0 : l.preselectedUris,
-                    isFromPickerView: !0,
-                    isNeedActionBar: !1,
-                    isNeedSelectBar: !1,
-                    isSearchSupported: null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isSearchSupported,
-                    checkBoxColor: null === (c = this.pickerOptions) || void 0 === c ? void 0 : c.checkBoxColor,
-                    backgroundColor: null === (p = this.pickerOptions) || void 0 === p ? void 0 : p.backgroundColor,
-                    checkboxTextColor: null === (a = this.pickerOptions) || void 0 === a ? void 0 : a.checkboxTextColor,
-                    photoBrowserBackgroundColorMode: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserBackgroundColorMode,
-                    isRepeatSelectSupported: null === (h = this.pickerOptions) || void 0 === h ? void 0 : h.isRepeatSelectSupported,
-                    maxSelectedReminderMode: null === (E = this.pickerOptions) || void 0 === E ? void 0 : E.maxSelectedReminderMode,
-                    orientation: null === (C = this.pickerOptions) || void 0 === C ? void 0 : C.orientation,
-                    selectMode: null === (T = this.pickerOptions) || void 0 === T ? void 0 : T.selectMode,
-                    maxPhotoSelectNumber: null === (m = this.pickerOptions) || void 0 === m ? void 0 : m.maxPhotoSelectNumber,
-                    maxVideoSelectNumber: null === (P = this.pickerOptions) || void 0 === P ? void 0 : P.maxVideoSelectNumber,
-                    isOnItemClickedSet: !!this.onItemClicked,
-                    isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported,
-                    isSlidingSelectionSupported: null === (b = this.pickerOptions) || void 0 === b ? void 0 : b.isSlidingSelectionSupported,
-                    photoBrowserCheckboxPosition: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserCheckboxPosition,
-                    girdMargin: null === (j = this.pickerOptions) || void 0 === j ? void 0 : j.girdMargin
-                }
+                parameters: this.initParameters()
             });
             SecurityUIExtensionComponent.height('100%');
             SecurityUIExtensionComponent.width('100%');
@@ -202,6 +173,40 @@ export class PhotoPickerComponent extends ViewPU {
         }), SecurityUIExtensionComponent);
         Column.pop();
         Row.pop();
+    }
+
+    initParameters() {
+        let t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, x, j;
+        return {
+            'ability.want.params.uiExtensionTargetType': 'photoPicker',
+            uri: 'multipleselect',
+            targetPage: 'photoPage',
+            filterMediaType: this.convertMIMETypeToFilterType(null === (t = this.pickerOptions) || void 0 === t ? void 0 : t.MIMEType),
+            maxSelectNumber: null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.maxSelectNumber,
+            isPhotoTakingSupported: null === (n = this.pickerOptions) || void 0 === n ? void 0 : n.isPhotoTakingSupported,
+            isEditSupported: !1,
+            recommendationOptions: null === (r = this.pickerOptions) || void 0 === r ? void 0 : r.recommendationOptions,
+            preselectedUri: null === (l = this.pickerOptions) || void 0 === l ? void 0 : l.preselectedUris,
+            isFromPickerView: !0,
+            isNeedActionBar: !1,
+            isNeedSelectBar: !1,
+            isSearchSupported: null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isSearchSupported,
+            checkBoxColor: null === (c = this.pickerOptions) || void 0 === c ? void 0 : c.checkBoxColor,
+            backgroundColor: null === (p = this.pickerOptions) || void 0 === p ? void 0 : p.backgroundColor,
+            checkboxTextColor: null === (a = this.pickerOptions) || void 0 === a ? void 0 : a.checkboxTextColor,
+            photoBrowserBackgroundColorMode: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserBackgroundColorMode,
+            isRepeatSelectSupported: null === (h = this.pickerOptions) || void 0 === h ? void 0 : h.isRepeatSelectSupported,
+            maxSelectedReminderMode: null === (E = this.pickerOptions) || void 0 === E ? void 0 : E.maxSelectedReminderMode,
+            orientation: null === (C = this.pickerOptions) || void 0 === C ? void 0 : C.orientation,
+            selectMode: null === (T = this.pickerOptions) || void 0 === T ? void 0 : T.selectMode,
+            maxPhotoSelectNumber: null === (m = this.pickerOptions) || void 0 === m ? void 0 : m.maxPhotoSelectNumber,
+            maxVideoSelectNumber: null === (P = this.pickerOptions) || void 0 === P ? void 0 : P.maxVideoSelectNumber,
+            isOnItemClickedSet: !!this.onItemClicked,
+            isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported,
+            isSlidingSelectionSupported: null === (b = this.pickerOptions) || void 0 === b ? void 0 : b.isSlidingSelectionSupported,
+            photoBrowserCheckboxPosition: null === (x = this.pickerOptions) || void 0 === x ? void 0 : x.photoBrowserCheckboxPosition,
+            girdMargin: null === (j = this.pickerOptions) || void 0 === j ? void 0 : j.girdMargin
+        }
     }
 
     handleOnReceive(e) {
