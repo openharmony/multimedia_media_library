@@ -117,6 +117,28 @@ static bool ParseResultSet(const string &querySql, int32_t mediaTypePara, int32_
     return true;
 }
 
+static void BuildDbInfo(PhotoRecordInfo &photoRecordInfo)
+{
+    string databaseDir = MEDIA_DB_DIR + "/rdb";
+    if (access(databaseDir.c_str(), E_OK) != 0) {
+        MEDIA_WARN_LOG("can not get rdb through sandbox");
+        return;
+    }
+    string dbPath = databaseDir.append("/").append(MEDIA_DATA_ABILITY_DB_NAME);
+
+    struct stat statInfo {};
+    if (stat(dbPath.c_str(), &statInfo) != 0) {
+        MEDIA_ERR_LOG("stat syscall err");
+        return;
+    }
+    photoRecordInfo.dbFileSize = statInfo.st_size;
+
+    struct stat slaveStatInfo {};
+    if (stat(MEDIA_DB_FILE_SLAVE.c_str(), &slaveStatInfo) == 0) {
+        photoRecordInfo.slaveDbFileSize = slaveStatInfo.st_size;
+    }
+}
+
 int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
 {
     const string filterCondition = MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " +
@@ -156,20 +178,7 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
     ret = ParseResultSet(abnormalVideoDurationQuerySql, 0, photoRecordInfo.abnormalVideoDurationCount) && ret;
     ret = ParseResultSet(totalAbnormalRecordSql, 0, photoRecordInfo.toBeUpdatedRecordCount) && ret;
 
-    string databaseDir = MEDIA_DB_DIR + "/rdb";
-    if (access(databaseDir.c_str(), E_OK) != 0) {
-        MEDIA_WARN_LOG("can not get rdb through sandbox");
-        return E_FAIL;
-    }
-    string dbPath = databaseDir.append("/").append(MEDIA_DATA_ABILITY_DB_NAME);
-
-    struct stat statInfo {};
-    if (stat(dbPath.c_str(), &statInfo) != 0) {
-        MEDIA_ERR_LOG("stat syscall err");
-        return E_FAIL;
-    }
-    photoRecordInfo.dbFileSize = statInfo.st_size;
-
+    BuildDbInfo(photoRecordInfo);
     return ret ? E_OK : E_FAIL;
 }
 
