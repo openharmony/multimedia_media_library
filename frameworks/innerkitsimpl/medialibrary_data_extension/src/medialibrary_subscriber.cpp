@@ -618,7 +618,7 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
     PauseBackgroundDownloadCloudMedia();
     PhotoAlbumLPathOperation::GetInstance().Stop();
-    PhotoOtherAlbumTransOperation::GetInstance.Stop();
+    PhotoOtherAlbumTransOperation::GetInstance().Stop();
 }
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
