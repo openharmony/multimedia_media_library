@@ -188,7 +188,7 @@ export class PhotoPickerComponent extends ViewPU {
                 maxVideoSelectNumber: null === (P = this.pickerOptions) || void 0 === P ? void 0 : P.maxVideoSelectNumber,
                 isOnItemClickedSet: !!this.onItemClicked,
                 isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported,
-            }
+            };
             parameters = addParameters(parameters);
             SecurityUIExtensionComponent.create({
                 parameters
