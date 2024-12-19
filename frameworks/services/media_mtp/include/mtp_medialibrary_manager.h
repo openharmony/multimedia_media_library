@@ -32,13 +32,13 @@ public:
     MtpMedialibraryManager();
     ~MtpMedialibraryManager();
     static std::shared_ptr<MtpMedialibraryManager> GetInstance();
-    void Init(const sptr<IRemoteObject> &token);
-    void SetContext(const std::shared_ptr<MtpOperationContext> &context);
+    void Init(const sptr<IRemoteObject> &token, const std::shared_ptr<MtpOperationContext> &context);
+    void Clear();
     int32_t GetHandles(int32_t parentId, std::vector<int> &outHandles, MediaType mediaType = MEDIA_TYPE_DEFAULT);
     int32_t GetHandles(const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<UInt32List> &outHandles);
     int32_t GetObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<ObjectInfo> &outObjectInfo);
-    int32_t GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd);
+    int32_t GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd, const std::string &mode);
     int32_t GetThumb(const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<UInt8List> &outThumb);
     int32_t SendObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         uint32_t &outStorageID, uint32_t &outParent, uint32_t &outHandle);
@@ -60,11 +60,12 @@ public:
     int32_t GetVideoThumb(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<UInt8List> &outThumb);
     void DeleteCanceledObject(uint32_t id);
+    int32_t GetFdByOpenFile(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd);
 private:
     int32_t SetObjectInfo(const std::unique_ptr<FileAsset> &fileAsset, std::shared_ptr<ObjectInfo> &outObjectInfo);
     int32_t SetObject(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
         const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<ObjectInfo> &outObjectInfo);
-    bool CompressImage(std::unique_ptr<PixelMap> &pixelMap, Size &size, std::vector<uint8_t> &data);
+    bool CompressImage(std::unique_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data);
     int32_t GetAssetById(const int32_t id, std::shared_ptr<FileAsset> &outFileAsset);
     int32_t GetAssetByPath(const std::string &path, std::shared_ptr<FileAsset> &outFileAsset);
     int32_t GetAssetByPredicates(const DataShare::DataSharePredicates &predicates,
@@ -78,11 +79,12 @@ private:
     uint32_t GetSizeFromOfft(const off_t &size);
     std::vector<std::string> GetBurstKeyFromPhotosInfo();
     std::shared_ptr<DataShare::DataShareResultSet> GetOwnerAlbumIdList();
+    std::string GetThumbUri(const int32_t &id, const std::string &thumbSizeValue, const std::string &dataPath);
 private:
     static std::mutex mutex_;
     static std::shared_ptr<MtpMedialibraryManager> instance_;
     static std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
-    std::shared_ptr<MtpOperationContext> context_ = nullptr;
+    static sptr<IRemoteObject> getThumbToken_;
 };
 } // namespace Media
 } // namespace OHOS
