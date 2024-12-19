@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define MLOG_TAG "Subscribe"
+#define MLOG_TAG "MedialibrarySubscribe"
 
 #include "medialibrary_subscriber.h"
 
@@ -24,6 +24,7 @@
 #include "battery_srv_client.h"
 #endif
 #include "bundle_info.h"
+#include "cloud_upload_checker.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
 #include "dfx_cloud_manager.h"
@@ -482,6 +483,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DoUpdateBurstFromGallery faild");
     }
+    CloudUploadChecker::HandleNoOriginPhoto();
     ret = DoUpdateDateTakenWhenZero();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DoUpdateDateTakenWhenZero faild");
