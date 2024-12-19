@@ -334,7 +334,7 @@ void UpgradeRestore::RestorePhoto()
         RestoreFromGallery();
     } else {
         SetErrorCode(RestoreError::GALLERY_DATABASE_CORRUPTION);
-        ErrorInfo errorInfo(RestoreError::GALLERY_DATABASE_CORRUPTION, 0, dbIntegrityCheck, "");
+        ErrorInfo errorInfo(RestoreError::GALLERY_DATABASE_CORRUPTION, 0, "", dbIntegrityCheck);
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
     }
     StopParameterForClone(sceneCode_);
