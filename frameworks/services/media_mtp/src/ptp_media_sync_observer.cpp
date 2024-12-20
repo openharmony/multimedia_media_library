@@ -226,6 +226,7 @@ void MediaSyncObserver::GetAddEditPhotoHandles(int32_t handle)
     vector<int32_t> handlesResult;
     if (dataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("Mtp GetAddEditPhotoHandles fail to get datasharehelper");
+        return;
     }
     Uri uri(PAH_QUERY_PHOTO);
     vector<string> columns;
