@@ -207,8 +207,8 @@ public:
 
     EXPORT const std::string &GetDetailTime() const;
     EXPORT void SetDetailTime(const std::string &detailTime);
+    EXPORT const std::string &GetStrMember(const std::string &name) const;
 private:
-    const std::string &GetStrMember(const std::string &name) const;
     int32_t GetInt32Member(const std::string &name) const;
     int64_t GetInt64Member(const std::string &name) const;
     double GetDoubleMember(const std::string &name) const;

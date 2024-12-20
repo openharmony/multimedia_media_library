@@ -64,6 +64,8 @@ public:
     EXPORT int32_t GetObjectPropValue(const std::shared_ptr<MtpOperationContext> &context,
         uint64_t &outIntVal, uint128_t &outLongVal, std::string &outStrVal);
     EXPORT int32_t GetRealPath(const std::string &path, std::string &outPath);
+    EXPORT bool TryAddExternalStorage(const std::string &fsUuid, uint32_t &storageId);
+    EXPORT bool TryRemoveExternalStorage(const std::string &fsUuid, uint32_t &storageId);
     EXPORT int GetStorageIds();
     EXPORT void DeleteHandlePathMap(const std::string &path, const uint32_t id);
     EXPORT int ObserverAddPathToMap(const std::string &path);
@@ -89,9 +91,12 @@ private:
     std::shared_ptr<std::unordered_map<uint32_t, std::string>> GetHandlesMap(
         const std::shared_ptr<MtpOperationContext> &context);
     void GetExternalStorages();
+    bool AddExternalStorage(const std::string &fsUuid, uint32_t &storageId);
+    const std::string GetExternalPathByUuid(const std::string &fsUuid);
     void GetHandles(const uint32_t handle, const std::string &root,
         std::shared_ptr<std::unordered_map<uint32_t, std::string>> &out);
     void ErasePathInfo(const uint32_t handle, const std::string &path);
+    void ErasePathInfoSub(const std::string &path);
     bool CompressImage(PixelMap &pixelMap, std::vector<uint8_t> &data);
     int32_t GetVideoThumb(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<UInt8List> &outThumb);

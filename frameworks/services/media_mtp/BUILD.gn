@@ -45,6 +45,7 @@ if (defined(medialibrary_mtp_enable)) {
       "src/mtp_packet_tools.cpp",
       "src/mtp_service.cpp",
       "src/mtp_storage_manager.cpp",
+      "src/mtp_store_observer.cpp",
       "src/mtp_subscriber.cpp",
       "src/object_info.cpp",
       "src/packet_payload_factory.cpp",
@@ -105,7 +106,10 @@ if (defined(medialibrary_mtp_enable)) {
       "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     ]
 
-    deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
+    deps = [
+      "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+      "${MEDIALIB_INNERKITS_PATH}/media_library_manager:media_library_manager",
+    ]
 
     external_deps = [
       "ability_base:base",
