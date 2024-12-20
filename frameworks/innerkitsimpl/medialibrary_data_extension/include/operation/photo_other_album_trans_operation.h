@@ -29,7 +29,7 @@ public:
     void Stop();
 
 private:
-    void BuildOtherAlbumInsertValuesIfNeed(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+    void BuildOtherAlbumInsertValues(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         const std::string &albumName, const std::string &lpath, const std::string &bundleName,
         std::vector<std::pair<int64_t, std::string>> &transAlbum);
     bool CheckIfNeedTransOtherAlbumData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, int64_t otherAlbumId,
