@@ -99,8 +99,12 @@ int32_t VideoCompositionCallbackImpl::CallStartComposite(const std::string& sour
     int32_t inputFileFd = open(absSourceVideoPath.c_str(), O_RDONLY);
     CHECK_AND_RETURN_RET_LOG(inputFileFd != -1, E_ERR, "Open failed for inputFileFd file, errno: %{public}d", errno);
 
-    CHECK_AND_RETURN_RET_LOG(CheckDirPathReal(videoPath) == E_OK, E_HAS_FS_ERROR,
-        "dirFile is not real path, file path: %{private}s, errno: %{public}d", videoPath.c_str(), errno);
+    if (CheckDirPathReal(videoPath) != E_OK) {
+        MEDIA_ERR_LOG("dirFile is not real path, file path: %{private}s, errno: %{public}d",
+            videoPath.c_str(), errno);
+        close(inputFileFd);
+        return E_HAS_FS_ERROR;
+    }
     int32_t outputFileFd = open(videoPath.c_str(), O_WRONLY|O_CREAT, CHOWN_RW_USR_GRP);
     if (outputFileFd == -1) {
         close(inputFileFd);
