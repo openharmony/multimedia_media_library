@@ -34,6 +34,7 @@
 #include "medialibrary_napi_enum_comm.h"
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
+#include "medialibrary_type_const.h"
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
 #include "smart_album_napi.h"
@@ -1038,6 +1039,17 @@ static int32_t GetAllImagesPredicates(DataSharePredicates &predicates, const boo
     return E_SUCCESS;
 }
 
+static int32_t GetCloudEnhancementPredicates(DataSharePredicates &predicates, const bool hiddenOnly)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
+    predicates.EqualTo(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
+        to_string(static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT)));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
+    predicates.EndWrap();
+    return E_SUCCESS;
+}
+
 int32_t SendableMediaLibraryNapiUtils::GetSourceAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates,
     const bool hiddenOnly)
 {
@@ -1071,6 +1083,9 @@ int32_t SendableMediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbum
         }
         case PhotoAlbumSubType::IMAGE: {
             return GetAllImagesPredicates(predicates, hiddenOnly);
+        }
+        case PhotoAlbumSubType::CLOUD_ENHANCEMENT: {
+            return GetCloudEnhancementPredicates(predicates, hiddenOnly);
         }
         default: {
             NAPI_ERR_LOG("Unsupported photo album subtype: %{public}d", subType);
