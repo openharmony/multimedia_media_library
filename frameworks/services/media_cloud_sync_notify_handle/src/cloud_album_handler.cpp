@@ -12,17 +12,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #define MLOG_TAG "CloudAlbum"
 
 #include "cloud_album_handler.h"
 
-#include "medialibrary_unistore_manager.h"
+#include "rdb_predicates.h"
+#include "media_file_utils.h"
 #include "medialibrary_album_operations.h"
+#include "result_set_utils.h"
+#include "medialibrary_notify.h"
+#include "medialibrary_unistore_manager.h"
+
 #include "photo_album_column.h"
+#include "medialibrary_rdb_utils.h"
+#include "medialibrary_photo_operations.h"
+#include "result_set_utils.h"
+#include "medialibrary_notify.h"
+#include "rdb_predicates.h"
+#include "media_file_utils.h"
+
 
 using namespace std;
-
 namespace OHOS {
 namespace Media {
 
@@ -54,6 +64,7 @@ static void UpdateCloudAlbum(const string &id, int32_t count)
     NativeRdb::ValuesBucket valuesNew;
     valuesNew.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
     valuesNew.PutInt(PhotoAlbumColumns::ALBUM_COUNT, count);
+
     NativeRdb::RdbPredicates rdbPredicates(PhotoAlbumColumns::TABLE);
     rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, id);
     rdbStore->Update(changeRows, valuesNew, rdbPredicates);
@@ -61,9 +72,10 @@ static void UpdateCloudAlbum(const string &id, int32_t count)
         MEDIA_ERR_LOG("Failed to update cloudAlbum , ret = %{public}d", changeRows);
     }
 }
+
 static int32_t GetCloudAlbumCount(const string &id)
 {
-    const std::vector<std::string> columnInfo;
+    const std::vector<std::string> columnInfo = {"count(*) AS count"};
 
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, id);
@@ -73,18 +85,59 @@ static int32_t GetCloudAlbumCount(const string &id)
         to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
 
     auto resultSet = MediaLibraryRdbStore::Query(predicates, columnInfo);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("MediaLibraryRdbStore::Query error\n");
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+        MEDIA_ERR_LOG("GetCloudAlbumCount error: %{public}d", errno);
         return E_HAS_DB_ERROR;
     }
+    return GetInt32Val("count", resultSet);
+}
 
-    int32_t rowCount;
-    auto ret = resultSet->GetRowCount(rowCount);
-    if (ret != 0) {
-        MEDIA_ERR_LOG("result set get row count err %{public}d", ret);
+static void UpdateSourcePath(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    NativeRdb::RdbPredicates &predicates)
+{
+    for (auto albumId: predicates.GetWhereArgs()) {
+        const std::string QUERY_FILE_ASSET_INFO = "SELECT file_id FROM Photos WHERE owner_album_id = " + albumId +
+            " AND clean_flag =0 AND hidden =0";
+        shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
+        if (resultSet == nullptr) {
+            MEDIA_ERR_LOG("UpdateSourcePath fail error: %{public}d", errno);
+            return;
+        }
+        vector<string> fileAssetsIds, fileAssetsUri;
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+            fileAssetsIds.push_back(to_string(fileId));
+        }
+        MediaLibraryPhotoOperations::UpdateSourcePath(fileAssetsIds);
+    }
+}
+
+static int32_t DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates)
+{
+    constexpr int32_t AFTER_AGR_SIZE = 2;
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("DeletePhotoAlbum failed. rdbStore is null");
         return E_HAS_DB_ERROR;
     }
-    return rowCount;
+    UpdateSourcePath(rdbStore, predicates);
+    predicates.And()->BeginWrap();
+    predicates.BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
+    predicates.EndWrap();
+    predicates.Or()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
+    predicates.EndWrap();
+    int deleteRow = MediaLibraryRdbStore::Delete(predicates);
+    auto watch = MediaLibraryNotify::GetInstance();
+    const vector<string> &notifyUris = predicates.GetWhereArgs();
+    size_t count = notifyUris.size() - AFTER_AGR_SIZE;
+    for (size_t i = 0; i < count; i++) {
+        if (deleteRow > 0) {
+            watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
+                notifyUris[i]), NotifyType::NOTIFY_REMOVE);
+        }
+    }
+    return deleteRow;
 }
 
 void DeleteOrUpdateCloudAlbums(const vector<string> &ids)
@@ -95,12 +148,12 @@ void DeleteOrUpdateCloudAlbums(const vector<string> &ids)
             NativeRdb::RdbPredicates rdbPredicate(PhotoAlbumColumns::TABLE);
             rdbPredicate.EqualTo(PhotoAlbumColumns::ALBUM_ID, id);
             if (MediaLibraryAlbumOperations::DeletePhotoAlbum(rdbPredicate) > 0) {
-                MEDIA_DEBUG_LOG("delete Album {%{public}s} succ", id.c_str());
+                MEDIA_INFO_LOG("delete Album {%{public}s} succ", id.c_str());
             } else {
-                MEDIA_DEBUG_LOG("delete Album {%{public}s} fail", id.c_str());
+                MEDIA_INFO_LOG("delete Album {%{public}s} fail", id.c_str());
             }
         } else {
-            MEDIA_DEBUG_LOG("Album {%{public}s} not empty, count %{public}d", id.c_str(), count);
+            MEDIA_INFO_LOG("Album {%{public}s} not empty, count %{public}d", id.c_str(), count);
             UpdateCloudAlbum(id, count);
         }
     }
