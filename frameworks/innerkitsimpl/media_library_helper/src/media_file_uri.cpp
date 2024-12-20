@@ -23,6 +23,7 @@
 #include "photo_album_column.h"
 #include "string_ex.h"
 #include "userfilemgr_uri.h"
+#include "medialibrary_common_utils.h"
 
 using namespace std;
 namespace OHOS {
@@ -524,7 +525,7 @@ void MediaFileUri::GetTimeIdFromUri(const std::vector<std::string> &uriBatch, st
             timeIdBatch.emplace_back(uri.substr(indexStart + ML_URI_TIME_ID.length(), timeIdLen));
         }
         if (indexEnd + ML_URI_OFFSET.length() <= uri.size()) {
-            offset.emplace_back(stoi(uri.substr(indexEnd + ML_URI_OFFSET.length())));
+            offset.emplace_back(MediaLibraryCommonUtils::SafeStoi(uri.substr(indexEnd + ML_URI_OFFSET.length())));
         }
     }
     if (offset.size() != BATCH_SIZE_START_AND_END) {

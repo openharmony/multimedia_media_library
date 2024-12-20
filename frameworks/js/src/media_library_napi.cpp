@@ -82,6 +82,7 @@
 #include "window.h"
 #include "permission_utils.h"
 #include "userfilemgr_uri.h"
+#include "medialibrary_common_utils.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -6046,7 +6047,7 @@ void ThumbnailBatchGenerateObserver::OnChange(const ChangeInfo &changeInfo)
         if (pos == std::string::npos) {
             continue;
         }
-        requestIdCallback_ = std::stoi(uriString.substr(pos + 1));
+        requestIdCallback_ = MediaLibraryCommonUtils::SafeStoi(uriString.substr(pos + 1));
         std::shared_ptr<ThumbnailGenerateHandler> dataHandler;
         if (!thumbnailGenerateHandlerMap.Find(requestIdCallback_, dataHandler)) {
             continue;

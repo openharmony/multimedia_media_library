@@ -76,6 +76,7 @@
 #include "dfx_const.h"
 #include "moving_photo_file_utils.h"
 #include "userfilemgr_uri.h"
+#include "medialibrary_common_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -723,7 +724,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetByUri(const strin
         } else {
             fileAsset->SetPath(path);
             fileAsset->SetMediaType(MediaFileUtils::GetMediaType(path));
-            int32_t timePending = stoi(pendingStatus);
+            int32_t timePending = MediaLibraryCommonUtils::SafeStoi(pendingStatus);
             fileAsset->SetTimePending((timePending > 0) ? MediaFileUtils::UTCTimeSeconds() : timePending);
         }
     }
@@ -734,7 +735,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetByUri(const strin
     if (!isPhoto) {
         fileAsset->SetMediaType(MediaType::MEDIA_TYPE_AUDIO);
     }
-    fileAsset->SetId(stoi(id));
+    fileAsset->SetId(MediaLibraryCommonUtils::SafeStoi(id));
     fileAsset->SetUri(uri);
     return fileAsset;
 }
