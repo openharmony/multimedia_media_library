@@ -201,10 +201,13 @@ private:
     static void SetProperty(const std::string &column,
         const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, ResultSetDataType &type, Property &prop);
     // MTP
-    static void GetMtpOneRowProp(const std::shared_ptr<UInt16List> &properties, const uint32_t &parentId,
-        std::unordered_map<uint32_t, std::string>::iterator it, shared_ptr<vector<Property>> &outProps);
+    static void GetMtpOneRowProp(const std::shared_ptr<UInt16List> &properties, const uint32_t parentId,
+        std::unordered_map<uint32_t, std::string>::iterator it, shared_ptr<vector<Property>> &outProps,
+        int32_t storageId);
     static void SetMtpProperty(const std::string &column, const std::string &path,
         ResultSetDataType &type, Property &prop);
+    static void SetMtpOneDefaultlPropList(uint32_t handle,
+        uint16_t property, std::shared_ptr<std::vector<Property>> &outProps, int32_t storageId);
     static void SetPtpProperty(const std::string &column, const std::string &path, const MovingType &movingType,
         Property &prop);
     static void GetMovingOrEnditOneRowPropList(const shared_ptr<UInt16List> &properties, const std::string &path,
