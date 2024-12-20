@@ -49,7 +49,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
       FROM\
         Photos \
       WHERE\
-        date_trashed = 0 \
+        sync_status = 0 \
+        AND clean_flag = 0 \
+        AND date_trashed = 0 \
         AND hidden = 0 \
         AND time_pending = 0 \
         AND is_temp = 0 \
@@ -65,7 +67,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
       AND Photos.size = IMG.size \
       AND Photos.orientation = IMG.orientation \
     WHERE\
-      date_trashed = 0 \
+      sync_status = 0 \
+      AND clean_flag = 0 \
+      AND date_trashed = 0 \
       AND hidden = 0 \
       AND time_pending = 0 \
       AND is_temp = 0 \
@@ -81,7 +85,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
       FROM\
         Photos \
       WHERE\
-        date_trashed = 0 \
+        sync_status = 0 \
+        AND clean_flag = 0 \
+        AND date_trashed = 0 \
         AND hidden = 0 \
         AND time_pending = 0 \
         AND is_temp = 0 \
@@ -95,7 +101,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
       ) AS VID ON Photos.title = VID.title \
       AND Photos.size = VID.size \
     WHERE\
-      date_trashed = 0 \
+      sync_status = 0 \
+      AND clean_flag = 0 \
+      AND date_trashed = 0 \
       AND hidden = 0 \
       AND time_pending = 0 \
       AND is_temp = 0 \
@@ -123,7 +131,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT = "\
         FROM\
           Photos \
         WHERE\
-          date_trashed = 0 \
+          sync_status = 0 \
+          AND clean_flag = 0 \
+          AND date_trashed = 0 \
           AND hidden = 0 \
           AND time_pending = 0 \
           AND is_temp = 0 \
@@ -139,7 +149,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT = "\
         AND Photos.size = IMG.size \
         AND Photos.orientation = IMG.orientation \
       WHERE\
-        date_trashed = 0 \
+        sync_status = 0 \
+        AND clean_flag = 0 \
+        AND date_trashed = 0 \
         AND hidden = 0 \
         AND time_pending = 0 \
         AND is_temp = 0 \
@@ -155,7 +167,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT = "\
         FROM\
           Photos \
         WHERE\
-          date_trashed = 0 \
+          sync_status = 0 \
+          AND clean_flag = 0 \
+          AND date_trashed = 0 \
           AND hidden = 0 \
           AND time_pending = 0 \
           AND is_temp = 0 \
@@ -169,7 +183,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT = "\
         ) AS VID ON Photos.title = VID.title \
         AND Photos.size = VID.size \
       WHERE\
-        date_trashed = 0 \
+        sync_status = 0 \
+        AND clean_flag = 0 \
+        AND date_trashed = 0 \
         AND hidden = 0 \
         AND time_pending = 0 \
         AND is_temp = 0 \
@@ -209,7 +225,9 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS = "\
         Photos\
         LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
       WHERE\
-        date_trashed = 0 \
+        sync_status = 0 \
+        AND clean_flag = 0 \
+        AND date_trashed = 0 \
         AND hidden = 0 \
         AND time_pending = 0 \
         AND is_temp = 0 \
@@ -249,7 +267,9 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS = "\
         Photos\
         LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
       WHERE\
-        date_trashed = 0 \
+        sync_status = 0 \
+        AND clean_flag = 0 \
+        AND date_trashed = 0 \
         AND hidden = 0 \
         AND time_pending = 0 \
         AND is_temp = 0 \
@@ -301,7 +321,9 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT = "\
           Photos\
           LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
         WHERE\
-          date_trashed = 0 \
+          sync_status = 0 \
+          AND clean_flag = 0 \
+          AND date_trashed = 0 \
           AND hidden = 0 \
           AND time_pending = 0 \
           AND is_temp = 0 \
@@ -341,7 +363,9 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT = "\
           Photos\
           LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
         WHERE\
-          date_trashed = 0 \
+          sync_status = 0 \
+          AND clean_flag = 0 \
+          AND date_trashed = 0 \
           AND hidden = 0 \
           AND time_pending = 0 \
           AND is_temp = 0 \
