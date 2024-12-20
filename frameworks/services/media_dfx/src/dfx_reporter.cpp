@@ -236,7 +236,6 @@ void DfxReporter::ReportPhotoInfo(const PhotoStatistics& stats)
         "CLOUD_VIDEO_COUNT", stats.cloudVideoCount,
         "SHARED_IMAGE_COUNT", stats.sharedImageCount,
         "SHARED_VIDEO_COUNT", stats.sharedVideoCount);
-
     if (ret != 0) {
         MEDIA_ERR_LOG("ReportPhotoInfo error:%{public}d", ret);
     }
