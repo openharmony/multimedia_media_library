@@ -71,6 +71,7 @@
 #endif
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
+#include "photo_other_album_trans_operation.h"
 
 using namespace OHOS::AAFwk;
 
@@ -617,6 +618,7 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
     PauseBackgroundDownloadCloudMedia();
     PhotoAlbumLPathOperation::GetInstance().Stop();
+    PhotoOtherAlbumTransOperation::GetInstance().Stop();
 }
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
