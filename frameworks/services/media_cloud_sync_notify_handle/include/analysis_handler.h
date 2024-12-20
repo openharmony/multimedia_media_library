@@ -25,17 +25,6 @@
 
 namespace OHOS {
 namespace Media {
-
-class AnalysisPeriodTaskData : public PeriodTaskData {
-public:
-    AnalysisPeriodTaskData(std::shared_ptr<BaseHandler> nextHandler, std::function<void(bool)> refreshAlbumsFunc)
-        : nextHandler_(nextHandler), refreshALbumsFunc_(refreshAlbumsFunc) {}
-    virtual ~AnalysisPeriodTaskData() override = default;
-
-    std::shared_ptr<BaseHandler> nextHandler_;
-    std::function<void(bool)> refreshALbumsFunc_;
-};
-
 class AnalysisHandler : public BaseHandler {
 public:
     AnalysisHandler(std::function<void(bool)> refreshAlbums = nullptr)
