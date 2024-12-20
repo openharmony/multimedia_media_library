@@ -53,6 +53,7 @@
 #include "thumbnail_const.h"
 #include "unique_fd.h"
 #include "userfilemgr_uri.h"
+#include "medialibrary_common_utils.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -567,17 +568,18 @@ static void GetUriParamsFromQueryKey(UriParams& uriParams,
         uriParams.path = queryKey[THUMBNAIL_PATH];
     }
     if (queryKey.count(THUMBNAIL_WIDTH) != 0) {
-        uriParams.size.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+        uriParams.size.width = MediaLibraryCommonUtils::SafeStoi(queryKey[THUMBNAIL_WIDTH]);
     }
     if (queryKey.count(THUMBNAIL_HEIGHT) != 0) {
-        uriParams.size.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+        uriParams.size.height = MediaLibraryCommonUtils::SafeStoi(queryKey[THUMBNAIL_HEIGHT]);
     }
     if (queryKey.count(THUMBNAIL_OPER) != 0) {
         uriParams.isAstc = queryKey[THUMBNAIL_OPER] == MEDIA_DATA_DB_THUMB_ASTC;
     }
     uriParams.dynamicRange = DecodeDynamicRange::AUTO;
     if (queryKey.count(DYNAMIC_RANGE) != 0) {
-        uriParams.dynamicRange = static_cast<DecodeDynamicRange>(stoi(queryKey[DYNAMIC_RANGE]));
+        uriParams.dynamicRange = static_cast<DecodeDynamicRange>(
+            MediaLibraryCommonUtils::SafeStoi(queryKey[DYNAMIC_RANGE]));
     }
 }
 
