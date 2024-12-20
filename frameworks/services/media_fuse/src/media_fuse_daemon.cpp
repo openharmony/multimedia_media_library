@@ -135,7 +135,7 @@ void MediaFuseDaemon::DaemonThread()
     struct fuse_args args = FUSE_ARGS_INIT(0, nullptr);
     struct fuse *fuse_default = nullptr;
     struct fuse_loop_config *loop_config = nullptr;
-    string name("media_fuse_daemon");
+    string name("mediaFuseDaemon");
     pthread_setname_np(pthread_self(), name.c_str());
     do {
         if (fuse_opt_add_arg(&args, "-odebug")) {
