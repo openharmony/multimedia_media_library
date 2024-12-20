@@ -103,6 +103,7 @@ private:
     int32_t GetPictureThumb(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<UInt8List> &outThumb);
     void CondCloseFd(const bool condition, const int fd);
+    void CorrectStorageId(const std::shared_ptr<MtpOperationContext> &context);
 
     static std::shared_ptr<MtpMediaLibrary> instance_;
     static std::atomic<uint32_t> id_;
