@@ -984,6 +984,7 @@ void MtpMedialibraryManager::DeleteCanceledObject(uint32_t id)
 {
     if (dataShareHelper_ == nullptr) {
         MEDIA_INFO_LOG("MtpMedialibraryManager::DeleteCanceledObject fail to get datasharehelpe");
+        return;
     }
 
     string trashUri = PAH_TRASH_PHOTO;
