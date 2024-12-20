@@ -60,7 +60,7 @@ void PhotoOtherAlbumTransOperation::Stop()
     this->isContinue_.store(false);
 }
 
-void PhotoOtherAlbumTransOperation::BuildOtherAlbumInsertValuesIfNeed(
+void PhotoOtherAlbumTransOperation::BuildOtherAlbumInsertValues(
     const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, const string &albumName, const string &lpath,
     const string &bundleName, std::vector<std::pair<int64_t, std::string>> &transAlbum)
 {
@@ -113,7 +113,7 @@ bool PhotoOtherAlbumTransOperation::CheckIfNeedTransOtherAlbumData(
     resultSetCamera->GetRowCount(rowCount);
     if (rowCount > 0) {
         MEDIA_INFO_LOG("Need to trans other camera album data, count is: %{public}d", rowCount);
-        BuildOtherAlbumInsertValuesIfNeed(upgradeStore, "相机", "/DCIM/Camera", "com.huawei.hmos.camera", transAlbum);
+        BuildOtherAlbumInsertValues(upgradeStore, "相机", "/DCIM/Camera", "com.huawei.hmos.camera", transAlbum);
         isNeedTrans = true;
     }
 
@@ -124,7 +124,7 @@ bool PhotoOtherAlbumTransOperation::CheckIfNeedTransOtherAlbumData(
     resultSetScreenshot->GetRowCount(rowCount);
     if (rowCount > 0) {
         MEDIA_INFO_LOG("Need to trans other screenshot album data, count is: %{public}d", rowCount);
-        BuildOtherAlbumInsertValuesIfNeed(upgradeStore, "截图", "/Pictures/Screenshots",
+        BuildOtherAlbumInsertValues(upgradeStore, "截图", "/Pictures/Screenshots",
             "com.huawei.hmos.screenshot", transAlbum);
         isNeedTrans = true;
     }
@@ -135,7 +135,7 @@ bool PhotoOtherAlbumTransOperation::CheckIfNeedTransOtherAlbumData(
     resultSetRecord->GetRowCount(rowCount);
     if (rowCount > 0) {
         MEDIA_INFO_LOG("Need to trans other screenrecord album data, count is: %{public}d", rowCount);
-        BuildOtherAlbumInsertValuesIfNeed(upgradeStore, "屏幕录制", "/Pictures/Screenrecords",
+        BuildOtherAlbumInsertValues(upgradeStore, "屏幕录制", "/Pictures/Screenrecords",
             "com.huawei.hmos.screenrecorder", transAlbum);
         isNeedTrans = true;
     }
@@ -146,7 +146,7 @@ bool PhotoOtherAlbumTransOperation::CheckIfNeedTransOtherAlbumData(
     resultSetWechat->GetRowCount(rowCount);
     if (rowCount > 0) {
         MEDIA_INFO_LOG("Need to trans other WeChat album data, count is: %{public}d", rowCount);
-        BuildOtherAlbumInsertValuesIfNeed(upgradeStore, "微信", "/Pictures/WeiXin", "", transAlbum);
+        BuildOtherAlbumInsertValues(upgradeStore, "微信", "/Pictures/WeiXin", "", transAlbum);
         isNeedTrans = true;
     }
     return isNeedTrans;
