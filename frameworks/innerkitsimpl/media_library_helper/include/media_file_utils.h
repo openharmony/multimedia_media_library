@@ -151,6 +151,7 @@ public:
     EXPORT static std::string GetHighlightPath(const std::string &uri);
     EXPORT static std::string GetHighlightVideoPath(const std::string &uri);
     EXPORT static std::string GetTableNameByDisplayName(const std::string &displayName);
+    EXPORT static bool GetDateModified(const std::string &path, int64_t &dateModified);
 #ifdef MEDIALIBRARY_COMPATIBILITY
     EXPORT static std::string GetTableFromVirtualUri(const std::string &uri);
 #endif
@@ -162,6 +163,7 @@ public:
     EXPORT static std::string AddDocsToRelativePath(const std::string &relativePath);
     EXPORT static std::string RemoveDocsFromRelativePath(const std::string &relativePath);
     EXPORT static int64_t Timespec2Millisecond(const struct timespec &time);
+    EXPORT static std::string GetTempMovingPhotoVideoPath(const std::string &imagePath);
     EXPORT static std::string GetMovingPhotoVideoPath(const std::string &imagePath);
     EXPORT static bool CheckMovingPhotoExtension(const std::string &extension);
     EXPORT static bool IsMovingPhotoMimeType(const std::string &mimeType);

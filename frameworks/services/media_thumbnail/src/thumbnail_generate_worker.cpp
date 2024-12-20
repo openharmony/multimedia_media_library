@@ -17,9 +17,15 @@
 
 #include <pthread.h>
 
+#ifdef HAS_BATTERY_MANAGER_PART
+#include "battery_srv_client.h"
+#endif
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "media_log.h"
+#include HAS_THERMAL_MANAGER_PART
+#include "thermal_mgr_client.h"
+#endif
 
 namespace OHOS {
 namespace Media {
@@ -27,6 +33,40 @@ static constexpr int32_t THREAD_NUM_FOREGROUND = 4;
 static constexpr int32_t THREAD_NUM_BACKGROUND = 2;
 constexpr size_t TASK_INSERT_COUNT = 15;
 constexpr size_t CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL = 270000;
+
+void ThumbnailGeneratorWrapper::BeforeExecute()
+{
+    if (executeParam == nullptr) {
+        return;
+    }
+    if (executeParam->affinity_ != CpuAffinityType::CPU_IDX_DEFAULT) {
+        CpuUtils::SetSelfTheadAffinity(executeParam->affinity_);
+    }
+}
+
+bool ThumbnailGeneratorWrapper::IsPreconditionFullfilled()
+{
+    if (executeParam == nullptr) {
+        return;
+    }
+    if (executeParam->tempLimit != -1) {
+        #ifdef HAS_THERMAL_MANAGER_PART
+        auto& thermalMgrClient = PowerMgr::TherMgrClient::GetInstance();
+        if (executeParam->tempLimit < static_cast<int32_t>(thermalMgrClient.GetThermalLevel())) {
+            return false;
+        }
+        #endif
+    }
+    if (executeParam->batteryLimit != -1) {
+        #ifdef HAS_BATTERY_MANAGER_PART
+        auto& batteryClient = PowerMgr::BatterySrvClient::GetInstance();
+        if (batteryClient.GetCapacity() < executeParam->batteryLimit) {
+            return false;
+        }
+        #endif
+    }
+    return true;
+}
 
 ThumbnailGenerateWorker::~ThumbnailGenerateWorker()
 {

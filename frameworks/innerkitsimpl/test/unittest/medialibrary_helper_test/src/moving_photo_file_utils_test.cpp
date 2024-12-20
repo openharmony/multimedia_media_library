@@ -22,6 +22,7 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "moving_photo_file_utils.h"
+#include "medialibrary_unittest_utils.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -290,7 +291,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetLivePhotoCachePath_
 
 HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_001, TestSize.Level0)
 {
-    string dirPath = "/data/test/GetExtraDataLen_001";
+    string dirPath = "/storage/cloud/files/Photo/1";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
     string imagePath = dirPath + "/" + "livePhotoSamePath.jpg";
     EXPECT_EQ(WriteFileContent(imagePath, FILE_TEST_JPG, sizeof(FILE_TEST_JPG)), true);
@@ -303,7 +304,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_001, T
 
 HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_002, TestSize.Level0)
 {
-    string dirPath = "/data/test/GetExtraDataLen_002";
+    string dirPath = "/storage/cloud/files/Photo/1";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
     string imagePath = dirPath + "/" + "livePhotoSamePath.jpg";
     EXPECT_EQ(WriteFileContent(imagePath, FILE_TEST_JPG, sizeof(FILE_TEST_JPG)), true);
@@ -323,7 +324,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_002, T
 
 HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_001, TestSize.Level0)
 {
-    string dirPath = "/data/test/GetFrameIndex_001";
+    string dirPath = "/storage/cloud/files/Photo/1";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
     string videoPath = dirPath + "/" + "video.mp4";
     EXPECT_EQ(WriteFileContent(videoPath, FILE_TEST_MP4, sizeof(FILE_TEST_MP4)), true);
@@ -335,7 +336,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_001, Tes
 
 HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsLivePhoto_001, TestSize.Level0)
 {
-    string dirPath = "/data/test/IsLivePhoto_001/iamge.jpg";
+    string dirPath = "/storage/cloud/files/Photo/15";
     string livePhotDir = MovingPhotoFileUtils::GetLivePhotoCacheDir(dirPath);
     EXPECT_EQ(MediaFileUtils::CreateDirectory(livePhotDir), true);
     string livePhotoPath = livePhotDir + "/" + "livePhoto.jpg";
@@ -346,7 +347,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsLivePhoto_001, TestS
 
 HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePhoto_001, TestSize.Level0)
 {
-    string movingPhotoImagepath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
+    string movingPhotoImagepath = "/storage/cloud/files/Photo/10/IMG_123435213_987.jpg";
     string sourceLivePhotoPath;
     EXPECT_LT(MovingPhotoFileUtils::ConvertToSourceLivePhoto(movingPhotoImagepath, sourceLivePhotoPath), E_OK);
     EXPECT_EQ(sourceLivePhotoPath, "");
@@ -354,10 +355,10 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePho
 
 HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePhoto_002, TestSize.Level0)
 {
-    string movingPhotoImagepath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
+    string movingPhotoImagepath = "/storage/cloud/files/Photo/50/IMG_123435213_1023.jpg";
     string sourceLivePhotoPath;
-    string result = "/storage/cloud/files/.cache/Photo/1/IMG_123435213_231.jpg/sourceLivePhoto.jpg";
-    EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/.cache/Photo/1/IMG_123435213_231.jpg"), true);
+    string result = "/storage/cloud/files/.cache/Photo/50/IMG_123435213_1023.jpg/sourceLivePhoto.jpg";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/.cache/Photo/50/IMG_123435213_1023.jpg"), true);
     EXPECT_EQ(MediaFileUtils::CreateAsset(result), E_SUCCESS);
     EXPECT_EQ(MovingPhotoFileUtils::ConvertToSourceLivePhoto(movingPhotoImagepath, sourceLivePhotoPath), E_OK);
     EXPECT_EQ(sourceLivePhotoPath, result);

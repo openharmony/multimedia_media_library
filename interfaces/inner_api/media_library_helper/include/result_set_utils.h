@@ -146,7 +146,8 @@ static inline double GetDoubleVal(const std::string &field, const ResultSet &res
     return get<double>(ResultSetUtils::GetValFromColumn(field, result, TYPE_DOUBLE));
 }
 
-static inline bool TryToGoToFirstRow(const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
+template <typename ResultSet>
+static inline bool TryToGoToFirstRow(const ResultSet &resultSet)
 {
     if (resultSet == nullptr) {
         COMMON_ERR_LOG("resultSet is nullptr");

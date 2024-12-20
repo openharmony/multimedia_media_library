@@ -2331,7 +2331,8 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
 
     string fileId = MediaFileUtils::GetIdFromUri(uri);
     int32_t type = MediaFileUtils::GetMediaType(path);
-    if (this->isInvalidateThumb) {
+    if (this->isInvalidateThumb && PhotoFileUtils::IsThumbnailExists(path) &&
+        !PhotoFileUtils::IsThumbnailLatest(path)) {
         InvalidateThumbnail(fileId, type);
     }
     CreateThumbnailFileScaned(uri, path, this->isCreateThumbSync);

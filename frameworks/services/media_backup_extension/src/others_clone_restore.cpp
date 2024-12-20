@@ -25,6 +25,8 @@
 #include "backup_file_utils.h"
 #include "datashare_abs_result_set.h"
 #include "directory_ex.h"
+#include "ffrt.h"
+#include "ffrt_inner.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "media_file_utils.h"
@@ -96,13 +98,14 @@ OthersCloneRestore::OthersCloneRestore(int32_t sceneCode, const std::string &med
             clonePhoneName_ = GetPhoneName();
         }
     }
-    queue_ = std::make_unique<ffrt::queue>(ffrt::queue_concurrent, "ConcurrencyQueue",
-        ffrt::queue_attr().qos(ffrt::qos_utility).max_concurrency(MAX_CLONE_THREAD_NUM));
+    ffrt::set_escape_enable(false);
+    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = false");
 }
 
 OthersCloneRestore::~OthersCloneRestore()
 {
-    queue_ = nullptr;
+    ffrt::set_escape_enable(true);
+    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = true");
 }
 
 void OthersCloneRestore::CloneInfoPushBack(std::vector<CloneDbInfo> &pushInfos, std::vector<CloneDbInfo> &popInfos)
@@ -178,16 +181,13 @@ void OthersCloneRestore::GetCloneDbInfos(const std::string &dbName, std::vector<
     std::string selectTotalCloneMediaNumber = "SELECT count(1) AS count FROM mediainfo";
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(mediaRdb, selectTotalCloneMediaNumber, CUSTOM_COUNT);
     MEDIA_INFO_LOG("dbName = %{public}s, totalNumber = %{public}d", dbName.c_str(), totalNumber);
-    if (queue_ == nullptr) {
-        MEDIA_ERR_LOG("queue_ is null");
-        return;
-    }
-    ffrt::task_handle handle;
+    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_CLONE_THREAD_NUM);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_NUMBER) {
-        handle = queue_->submit_h(
-            [this, mediaRdb, offset, &mediaDbInfo]() { HandleSelectBatch(mediaRdb, offset, sceneCode_, mediaDbInfo); });
+        ffrt::submit([this, mediaRdb, offset, &mediaDbInfo]() {
+            HandleSelectBatch(mediaRdb, offset, sceneCode_, mediaDbInfo);
+            }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
-    queue_->wait(handle);
+    ffrt::wait();
 }
 
 int32_t OthersCloneRestore::Init(const std::string &backupRetoreDir, const std::string &upgradeFilePath, bool isUpgrade)
@@ -415,15 +415,13 @@ void OthersCloneRestore::RestorePhoto()
     unsigned long pageSize = 200;
     vector<FileInfo> insertInfos;
     int32_t totalNumber = static_cast<int32_t>(photoInfos_.size());
-    if (queue_ == nullptr) {
-        MEDIA_ERR_LOG("queue_ is null");
-        return;
-    }
-    ffrt::task_handle handle;
+    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_CLONE_THREAD_NUM);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_NUMBER) {
-        handle = queue_->submit_h([this, offset]() { HandleInsertBatch(offset); });
+        ffrt::submit([this, offset]() {
+            HandleInsertBatch(offset);
+            }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
-    queue_->wait(handle);
+    ffrt::wait();
 }
 
 void OthersCloneRestore::InsertPhoto(std::vector<FileInfo> &fileInfos)

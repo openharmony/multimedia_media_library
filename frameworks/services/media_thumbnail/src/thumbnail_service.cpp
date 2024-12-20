@@ -573,14 +573,6 @@ int32_t ThumbnailService::LocalThumbnailGeneration()
         return E_OK;
     }
     CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = false;
-    #ifdef HAS_BATTERY_MANAGER_PART
-    auto& batteryClient = PowerMgr::BatterySrvClient::GetInstance();
-    if (batteryClient.GetCapacity() < LOCAL_GENERATION_BATTERY_CAPACITY) {
-        CloudSyncHelper::GetInstance()->StartSync();
-        CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = true;
-        return E_OK;
-    }
-    #endif
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE,
@@ -588,7 +580,6 @@ int32_t ThumbnailService::LocalThumbnailGeneration()
     int err = ThumbnailGenerateHelper::CreateLocalThumbnail(opts);
     if (err != E_OK) {
         MEDIA_ERR_LOG("LocalThumbnailGeneration failed : %{public}d", err);
-        CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = true;
         return err;
     }
     return E_OK;

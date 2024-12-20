@@ -27,6 +27,7 @@ static const std::string FIELD_PERMISSION_TYPE = "permission_type";
 static const std::string TABLE_PERMISSION = "UriPermission"; // 权限表
 
 static const int32_t GRANT_PERMISSION_CALLING_UID = 5523; // foundation调用方
+static const int32_t ROOT_UID = 0;
 
 /**
  * 鉴权参数

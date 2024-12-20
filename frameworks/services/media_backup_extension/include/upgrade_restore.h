@@ -22,8 +22,6 @@
 #include "backup_database_helper.h"
 #include "base_restore.h"
 #include "burst_key_generator.h"
-#include "ffrt.h"
-#include "ffrt_inner.h"
 #include "photos_restore.h"
 
 namespace OHOS {
@@ -111,6 +109,7 @@ private:
     int32_t GetNoNeedMigrateCount() override;
     bool IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         const std::string &dbName);
+    std::string CheckGalleryDbIntegrity();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
@@ -137,7 +136,6 @@ private:
     BackupDatabaseHelper backupDatabaseHelper_;
     std::vector<int> galleryFailedOffsets;
     std::vector<int> externalFailedOffsets;
-    std::unique_ptr<ffrt::queue> queue_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

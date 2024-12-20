@@ -25,17 +25,6 @@
 
 namespace OHOS {
 namespace Media {
-
-class AnalysisPeriodTaskData : public PeriodTaskData {
-public:
-    AnalysisPeriodTaskData(std::shared_ptr<BaseHandler> nextHandler, std::function<void(bool)> refreshAlbumsFunc)
-        : nextHandler_(nextHandler), refreshALbumsFunc_(refreshAlbumsFunc) {}
-    virtual ~AnalysisPeriodTaskData() override = default;
-
-    std::shared_ptr<BaseHandler> nextHandler_;
-    std::function<void(bool)> refreshALbumsFunc_;
-};
-
 class AnalysisHandler : public BaseHandler {
 public:
     AnalysisHandler(std::function<void(bool)> refreshAlbums = nullptr)
@@ -48,6 +37,7 @@ public:
     static std::queue<CloudSyncHandleData> taskQueue_;
     static std::mutex mtx_;
     static std::atomic<uint16_t> counts_;
+    static void ProcessHandleData(PeriodTaskData *data);
 private:
     void MergeTask(const CloudSyncHandleData &handleData);
 

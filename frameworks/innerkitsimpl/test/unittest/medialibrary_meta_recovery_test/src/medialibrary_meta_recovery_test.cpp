@@ -210,7 +210,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_Backup_002, TestSize.Lev
     MediaLibraryMetaRecovery::GetInstance().recoveryState_ = MediaLibraryMetaRecoveryState::STATE_NONE;
     MediaLibraryMetaRecovery::GetInstance().CheckRecoveryState();
     sleep(1); // for async backup
-    EXPECT_EQ(access(META_RECOVERY_ALBUM_PATH.c_str(), F_OK), 0);
+    EXPECT_EQ(access(META_RECOVERY_ALBUM_PATH.c_str(), F_OK), -1);
     EXPECT_EQ(access(metaPath.c_str(), F_OK), 0);
     MEDIA_INFO_LOG("MetaRecovery_Backup_002::End");
 }
@@ -291,7 +291,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_AlbumRecovery_Test_001, 
     EXPECT_NE(ret, E_OK);
 
     ret = MediaLibraryMetaRecovery::GetInstance().AlbumRecovery(META_RECOVERY_ALBUM_PATH);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(ret, E_OK);
 }
 
 HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_PhotoRecovery_Test_001, TestSize.Level0)

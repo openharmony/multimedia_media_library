@@ -73,6 +73,7 @@ const std::string OPRN_DEGENERATE_MOVING_PHOTO = "degenerate_moving_photo";
 const std::string OPRN_START_GENERATE_THUMBNAILS = "start_generate_thumbnails";
 const std::string OPRN_STOP_GENERATE_THUMBNAILS = "stop_generate_thumbnails";
 const std::string OPRN_GENERATE_THUMBNAILS_RESTORE = "generate_thumbnails_restore";
+const std::string OPRN_LOCAL_THUMBNAIL_GENERATION = "local_thumbnail_generation";
 const std::string OPRN_ADD_FILTERS = "add_filters";
 const std::string OPRN_DISCARD_CAMERA_PHOTO = "discard_camera_photo";
 const std::string OPRN_SAVE_CAMERA_PHOTO = "save_camera_photo";
@@ -315,6 +316,10 @@ const std::string PAH_ADD_LOWQUALITY_IMAGE = MEDIALIBRARY_DATA_URI + "/" +
 // Generate thumbnails after clone or upgrade restore operation uri
 const std::string PAH_GENERATE_THUMBNAILS_RESTORE =
     MEDIALIBRARY_DATA_URI + "/" + PAH_BATCH_THUMBNAIL_OPERATE + "/" + OPRN_GENERATE_THUMBNAILS_RESTORE;
+
+// Generate local thumbnail from cloud trigger
+const std::string PAH_GENERATE_LOCAL_THUMBNAIL =
+    MEDIALIBRARY_DATA_URI + "/" + PAH_BATCH_THUMBNAIL_OPERATE + "/" + OPRN_LOCAL_THUMBNAIL_GENERATION;
 
 // PhotoAccessHelper album operation constants
 const std::string PAH_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_CREATE;

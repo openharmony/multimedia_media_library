@@ -616,7 +616,10 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
         MEDIA_ERR_LOG("DeletePhotoAlbum failed. rdbStore is null");
         return E_HAS_DB_ERROR;
     }
-    MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(rdbStore, predicates);
+    if (MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(rdbStore, predicates) <= 0) {
+        MEDIA_ERR_LOG("Update trashed asset failed");
+        return E_HAS_DB_ERROR;
+    }
     predicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
     predicates.EndWrap();

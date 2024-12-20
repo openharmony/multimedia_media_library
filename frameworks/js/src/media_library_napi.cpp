@@ -101,7 +101,6 @@ const int64_t MAX_INT64 = 9223372036854775807;
 const int32_t MAX_QUERY_LIMIT = 80;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
-const double PERCENT_95 = 0.95;
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
 mutex MediaLibraryNapi::sOnOffMutex_;
@@ -6111,54 +6110,142 @@ napi_value MediaLibraryNapi::PhotoAccessStopCreateThumbnailTask(napi_env env, na
     RETURN_NAPI_UNDEFINED(env);
 }
 
-static std::string GetCvProgress()
+static void GetMediaAnalysisServiceProgress(nlohmann::json& jsonObj, unordered_map<int, string>& idxToCount,
+    vector<string> columns)
 {
     Uri uri(URI_TOTAL);
-    vector<string> columns = {
-        "COUNT(*) AS total_count",
-        "SUM(CASE WHEN ocr != 0 THEN 1 ELSE 0 END) AS ocr_count",
-        "SUM(CASE WHEN label != 0 THEN 1 ELSE 0 END) AS label_count",
-        "SUM(CASE WHEN aesthetics_score != 0 THEN 1 ELSE 0 END) AS score_count",
-        "SUM(CASE WHEN face < 0 OR face > 1 THEN 1 ELSE 0 END) AS face_count",
-        "SUM(CASE WHEN segmentation != 0 THEN 1 ELSE 0 END) AS seg_count",
-        "SUM(CASE WHEN head != 0 THEN 1 ELSE 0 END) AS head_count",
-        "SUM(CASE WHEN saliency != 0 THEN 1 ELSE 0 END) AS saliency_count"
-    };
-    string cameraRestriction = " ( SELECT file_id FROM Photos WHERE owner_album_id IN "
-        " ( SELECT album_id FROM PhotoAlbum WHERE album_name IN ('相机', 'Camera'))) ";
-    string numOfAllMedia = MediaColumn::MEDIA_ID + " IN (SELECT " + MediaColumn::MEDIA_ID + " FROM " +
-        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " IN " + cameraRestriction + " AND " +
-        MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " + MediaColumn::MEDIA_DATE_TRASHED + " = 0)";
-
+    string clause = VISION_TOTAL_TABLE + "." + MediaColumn::MEDIA_ID + " = " + PhotoColumn::PHOTOS_TABLE+ "." +
+        MediaColumn::MEDIA_ID;
     DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(numOfAllMedia);
+    predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ clause });
+    predicates.EqualTo(PhotoColumn::PHOTO_HIDDEN_TIME, 0)->And()
+        ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0)->And()
+        ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
+
     int errCode = 0;
-    auto ret = UserFileClient::Query(uri, predicates, columns, errCode);
+    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, columns, errCode);
     if (ret == nullptr) {
         NAPI_ERR_LOG("ret is nullptr");
-        return "-1";
+        return;
     }
-    errCode = ret->GoToFirstRow();
-    if (errCode != DataShare::E_OK) {
-        NAPI_ERR_LOG("In GetCvProgress, GotoFirstRow failed, errCode is %{public}d", errCode);
-        return "-1";
+    if (ret->GoToFirstRow() != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
+        ret->Close();
+        return;
     }
-    int totalCount = -1;
-    ret->GetInt(0, totalCount);
-    NAPI_INFO_LOG("In GetCvProgress, total_count is %{public}d", totalCount);
-    for (size_t i = 1; i < columns.size(); ++i) {
+    for (size_t i = 0; i < columns.size(); ++i) {
         int tmp = -1;
         ret->GetInt(i, tmp);
-        NAPI_INFO_LOG("In GetCvProgress, cur index is %{public}zu, count is %{public}d", i, tmp);
-        if (tmp < totalCount * PERCENT_95) {
-            NAPI_INFO_LOG("In GetCvProgress, return value is 0");
-            ret->Close();
-            return "0";
-        }
+        jsonObj[idxToCount[i]] = tmp;
     }
-    NAPI_INFO_LOG("In GetCvProgress, return value is 1");
     ret->Close();
-    return "1";
+}
+
+static std::string GetLabelAnalysisProgress()
+{
+    unordered_map<int, string> idxToCount = {
+        {0, "totalCount"}, {1, "finishedCount"}, {2, "LabelCount"}
+    };
+    vector<string> columns = {
+        "COUNT(*) AS totalCount",
+        "SUM(CASE WHEN status != 0 THEN 1 ELSE 0 END) AS finishedCount",
+        "SUM(CASE WHEN label != 0 THEN 1 ELSE 0 END) AS LabelCount"
+    };
+    nlohmann::json jsonObj;
+    GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
+    return jsonObj.dump();
+}
+
+static std::string GetFaceAnalysisProgress()
+{
+    unordered_map<int, string> idxToCount = {
+        {0, "totalCount"}, {1, "finishedCount"}, {2, "PortraitCoverCount"}, {3, "PortraitCount"},
+    };
+    vector<string> columns = {
+        "COUNT(*) AS totalCount",
+        "SUM(CASE WHEN status != 0 THEN 1 ELSE 0 END) AS finishedCount",
+        "SUM(CASE WHEN face = 3 THEN 1 ELSE 0 END) AS PortraitCoverCount",
+        "SUM(CASE WHEN face > 0 THEN 1 ELSE 0 END) AS PortraitCount"
+    };
+    nlohmann::json jsonObj;
+    GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
+    return jsonObj.dump();
+}
+
+static std::string GetGeoAnalysisProgress()
+{
+    unordered_map<int, string> idxToCount = {
+        {0, "totalCount"}, {1, "finishedCount"}, {2, "cityAlbumCount"}
+    };
+    vector<string> columns = {
+        "COUNT(*) AS totalCount",
+        "SUM(CASE WHEN status != 0 THEN 1 ELSE 0 END) AS finishedCount",
+    };
+    nlohmann::json jsonObj;
+    GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
+
+    Uri uri(PAH_QUERY_ANA_PHOTO_ALBUM);
+    vector<string> albumColumns = {};
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SMART);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::GEOGRAPHY_CITY);
+    predicates.GreaterThan(PhotoAlbumColumns::ALBUM_COUNT, 0);
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, albumColumns, errCode);
+    if (ret == nullptr) {
+        NAPI_ERR_LOG("ret is nullptr");
+        return jsonObj.dump();
+    }
+    if (errCode != DataShare::E_OK) {
+        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
+        ret->Close();
+        return jsonObj.dump();
+    }
+
+    int tmp = -1;
+    int32_t retCode = ret->GetRowCount(tmp);
+    if (retCode != DataShare::E_OK) {
+        NAPI_ERR_LOG("Can not get row count from resultSet, errCode=%{public}d", retCode);
+        return jsonObj.dump();
+    }
+    jsonObj[idxToCount[columns.size()]] = tmp;
+    ret->Close();
+    return jsonObj.dump();
+}
+
+static std::string GetHighlightAnalysisProgress()
+{
+    unordered_map<int, string> idxToCount = {
+        {0, "ClearCount"}, {1, "DeleteCount"}, {2, "NotProduceCount"}, {3, "ProduceCount"}, {4, "PushCount"}
+    };
+    Uri uri(URI_HIGHLIGHT_ALBUM);
+    vector<string> columns = {
+        "SUM(CASE WHEN highlight_status = -3 THEN 1 ELSE 0 END) AS ClearCount",
+        "SUM(CASE WHEN highlight_status = -2 THEN 1 ELSE 0 END) AS DeleteCount",
+        "SUM(CASE WHEN highlight_status = -1 THEN 1 ELSE 0 END) AS NotProduceCount",
+        "SUM(CASE WHEN highlight_status > 0 THEN 1 ELSE 0 END) AS ProduceCount",
+        "SUM(CASE WHEN highlight_status = 1 THEN 1 ELSE 0 END) AS PushCount",
+    };
+    DataShare::DataSharePredicates predicates;
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, columns, errCode);
+    if (ret == nullptr) {
+        NAPI_ERR_LOG("ret is nullptr");
+        return "";
+    }
+    if (ret->GoToFirstRow() != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
+        ret->Close();
+        return "";
+    }
+    nlohmann::json jsonObj;
+    for (size_t i = 0; i < columns.size(); ++i) {
+        int tmp = -1;
+        ret->GetInt(i, tmp);
+        jsonObj[idxToCount[i]] = tmp;
+    }
+    ret->Close();
+    return jsonObj.dump();
 }
 
 static void JSGetAnalysisProgressExecute(MediaLibraryAsyncContext* context)
@@ -6168,8 +6255,20 @@ static void JSGetAnalysisProgressExecute(MediaLibraryAsyncContext* context)
     std::vector<std::string> fetchColumn;
     DataShare::DataSharePredicates predicates;
     switch (context->analysisType) {
+        case ANALYSIS_LABEL: {
+            context->analysisProgress = GetLabelAnalysisProgress();
+            break;
+        }
+        case ANALYSIS_FACE: {
+            context->analysisProgress = GetFaceAnalysisProgress();
+            break;
+        }
+        case ANALYSIS_GEO: {
+            context->analysisProgress = GetGeoAnalysisProgress();
+            break;
+        }
         case ANALYSIS_HIGHLIGHT: {
-            context->analysisProgress = GetCvProgress();
+            context->analysisProgress = GetHighlightAnalysisProgress();
             break;
         }
         default:
@@ -6704,6 +6803,7 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
         { "ANALYSIS_BONE_POSE", AnalysisType::ANALYSIS_BONE_POSE },
         { "ANALYSIS_MULTI_CROP", AnalysisType::ANALYSIS_MULTI_CROP },
         { "ANALYSIS_HIGHLIGHT", AnalysisType::ANALYSIS_HIGHLIGHT },
+        { "ANALYSIS_GEO", AnalysisType::ANALYSIS_GEO },
     };
 
     napi_value result = nullptr;
@@ -7250,7 +7350,6 @@ static void RestrictAlbumSubtypeOptions(unique_ptr<MediaLibraryAsyncContext> &co
             to_string(PhotoAlbumSubType::FAVORITE),
             to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::IMAGE),
-            to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
         }));
     } else {
         context->predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));

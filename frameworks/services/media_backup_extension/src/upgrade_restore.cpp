@@ -23,6 +23,8 @@
 #include "backup_file_utils.h"
 #include "backup_log_utils.h"
 #include "database_report.h"
+#include "ffrt.h"
+#include "ffrt_inner.h"
 #include "gallery_db_upgrade.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -53,6 +55,7 @@ constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
+const std::string DB_INTEGRITY_CHECK = "ok";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -60,8 +63,8 @@ UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::str
     mediaAppName_ = mediaAppName;
     sceneCode_ = sceneCode;
     audioAppName_ = "Audio";
-    queue_ = std::make_unique<ffrt::queue>(ffrt::queue_concurrent, "ConcurrencyQueue",
-        ffrt::queue_attr().qos(ffrt::qos_utility).max_concurrency(MAX_THREAD_NUM));
+    ffrt::set_escape_enable(false);
+    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = false");
 }
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode,
@@ -71,13 +74,14 @@ UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::str
     mediaAppName_ = mediaAppName;
     sceneCode_ = sceneCode;
     dualDirName_ = dualDirName;
-    queue_ = std::make_unique<ffrt::queue>(ffrt::queue_concurrent, "ConcurrencyQueue",
-        ffrt::queue_attr().qos(ffrt::qos_utility).max_concurrency(MAX_THREAD_NUM));
+    ffrt::set_escape_enable(false);
+    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = false");
 }
 
 UpgradeRestore::~UpgradeRestore()
 {
-    queue_ = nullptr;
+    ffrt::set_escape_enable(true);
+    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = true");
 }
 
 int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::string &upgradeFilePath, bool isUpgrade)
@@ -255,15 +259,11 @@ void UpgradeRestore::RestoreAudioFromFile()
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
-    if (queue_ == nullptr) {
-        MEDIA_ERR_LOG("queue_ is null");
-        return;
-    }
-    ffrt::task_handle handle;
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        handle = queue_->submit_h([this, offset]() { RestoreAudioBatch(offset); });
+        ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset }, {},
+            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
-    queue_->wait(handle);
+    ffrt::wait();
 }
 
 void UpgradeRestore::RestoreAudioBatch(int32_t offset)
@@ -318,16 +318,24 @@ bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::
 
 void UpgradeRestore::RestorePhoto()
 {
-    // upgrade gallery.db
-    DataTransfer::GalleryDbUpgrade().OnUpgrade(this->galleryRdb_);
     AnalyzeSource();
-    InitGarbageAlbum();
 
-    // restore PhotoAlbum
-    this->photoAlbumRestore_.Restore();
-    RestoreFromGalleryPortraitAlbum();
-    // restore Photos
-    RestoreFromGallery();
+    std::string dbIntegrityCheck = CheckGalleryDbIntegrity();
+    if (dbIntegrityCheck == DB_INTEGRITY_CHECK) {
+        // upgrade gallery.db
+        DataTransfer::GalleryDbUpgrade().OnUpgrade(this->galleryRdb_);
+        AnalyzeGallerySource();
+        InitGarbageAlbum();
+        // restore PhotoAlbum
+        this->photoAlbumRestore_.Restore();
+        RestoreFromGalleryPortraitAlbum();
+        // restore Photos
+        RestoreFromGallery();
+    } else {
+        SetErrorCode(RestoreError::GALLERY_DATABASE_CORRUPTION);
+        ErrorInfo errorInfo(RestoreError::GALLERY_DATABASE_CORRUPTION, 0, "", dbIntegrityCheck);
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+    }
     StopParameterForClone(sceneCode_);
     MEDIA_INFO_LOG("migrate from gallery number: %{public}lld, file number: %{public}lld",
         (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
@@ -353,8 +361,11 @@ void UpgradeRestore::RestorePhoto()
 void UpgradeRestore::AnalyzeSource()
 {
     MEDIA_INFO_LOG("start AnalyzeSource.");
-    AnalyzeGalleryErrorSource();
-    AnalyzeGallerySource();
+    DatabaseReport()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .ReportExternal(this->externalRdb_)
+        .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_BEFORE);
     MEDIA_INFO_LOG("end AnalyzeSource.");
 }
 
@@ -378,12 +389,13 @@ void UpgradeRestore::AnalyzeGalleryDuplicateData()
 
 void UpgradeRestore::AnalyzeGallerySource()
 {
+    MEDIA_INFO_LOG("start AnalyzeGallerySource.");
+    AnalyzeGalleryErrorSource();
     DatabaseReport()
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
-        .ReportGallery(this->galleryRdb_, this->shouldIncludeSd_)
-        .ReportExternal(this->externalRdb_)
-        .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_BEFORE);
+        .ReportGallery(this->galleryRdb_, this->shouldIncludeSd_);
+    MEDIA_INFO_LOG("end AnalyzeGallerySource.");
 }
 
 void UpgradeRestore::InitGarbageAlbum()
@@ -399,16 +411,13 @@ void UpgradeRestore::RestoreFromGallery()
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
-    if (queue_ == nullptr) {
-        MEDIA_ERR_LOG("queue_ is null");
-        return;
-    }
-    ffrt::task_handle handle;
+    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
     needReportFailed_ = false;
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        handle = queue_->submit_h([this, offset]() { RestoreBatch(offset); });
+        ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset }, {},
+            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
-    queue_->wait(handle);
+    ffrt::wait();
     size_t vectorLen = galleryFailedOffsets.size();
     needReportFailed_ = true;
     for (size_t offset = 0; offset < vectorLen; offset++) {
@@ -437,17 +446,14 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
     MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
-    if (queue_ == nullptr) {
-        MEDIA_ERR_LOG("queue_ is null");
-        return;
-    }
-    ffrt::task_handle handle;
+    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
     needReportFailed_ = false;
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        handle = queue_->submit_h(
-            [this, offset, maxId, isCamera, type]() { RestoreExternalBatch(offset, maxId, isCamera, type); });
+        ffrt::submit([this, offset, maxId, isCamera, type]() {
+                RestoreExternalBatch(offset, maxId, isCamera, type);
+            }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
-    queue_->wait(handle);
+    ffrt::wait();
     size_t vectorLen = externalFailedOffsets.size();
     needReportFailed_ = true;
     for (size_t offset = 0; offset < vectorLen; offset++) {
@@ -1259,6 +1265,27 @@ bool UpgradeRestore::IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet
         return false;
     }
     return true;
+}
+
+std::string UpgradeRestore::CheckGalleryDbIntegrity()
+{
+    MEDIA_INFO_LOG("start handle gallery integrity check.");
+    std::string dbIntegrityCheck = DB_INTEGRITY_CHECK;
+    std::string dbSize = "";
+    struct stat statInfo {};
+    if (stat(galleryDbPath_.c_str(), &statInfo) == 0) {
+        dbSize = std::to_string(statInfo.st_size);
+    }
+    int64_t dbIntegrityCheckTime = MediaFileUtils::UTCTimeMilliSeconds();
+    dbIntegrityCheck = BackupDatabaseUtils::CheckDbIntegrity(galleryRdb_, sceneCode_, "GALLERY_DB_CORRUPTION");
+    dbIntegrityCheckTime = MediaFileUtils::UTCTimeMilliSeconds() - dbIntegrityCheckTime;
+    UpgradeRestoreTaskReport()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .ReportProgress("GalleryDbCheck", dbSize + ";" + std::to_string(dbIntegrityCheckTime));
+    MEDIA_INFO_LOG("end handle gallery integrity check, cost %{public}lld, size %{public}s.", \
+        (long long)(dbIntegrityCheckTime), dbSize.c_str());
+    return dbIntegrityCheck;
 }
 } // namespace Media
 } // namespace OHOS

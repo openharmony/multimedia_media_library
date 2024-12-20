@@ -18,6 +18,7 @@
 #include <string>
 
 #include "cloud_media_asset_download_operation.h"
+#include "cloud_media_asset_types.h"
 #include "media_log.h"
 
 using namespace std;
@@ -26,8 +27,8 @@ namespace OHOS {
 namespace Media {
 void MediaCloudDownloadCallback::OnDownloadProcess(const DownloadProgressObj& progress)
 {
-    if (!operation_) {
-        MEDIA_ERR_LOG("operation is nullptr");
+    if (!operation_ || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
+        MEDIA_ERR_LOG("operation is nullptr or taskStatus is IDLE");
         return;
     }
     switch (progress.state) {

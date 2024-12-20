@@ -2101,6 +2101,8 @@ int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryComm
         return E_OK;
     } else if (cmd.GetOprnType() == OperationType::GENERATE_THUMBNAILS_RESTORE) {
         return thumbnailService_->RestoreThumbnailDualFrame();
+    } else if (cmd.GetOprnType() == OperationType::LOCAL_THUMBNAIL_GENERATION) {
+        return thumbnailService_->LocalThumbnailGeneration();
     } else {
         MEDIA_ERR_LOG("invalid mediaLibrary command");
         return E_INVALID_ARGUMENTS;
