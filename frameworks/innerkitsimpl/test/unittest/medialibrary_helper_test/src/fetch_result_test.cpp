@@ -29,6 +29,9 @@
 #include "result_set_utils.h"
 #undef private
 #include "userfilemgr_uri.h"
+#include "media_file_utils.h"
+#include "medialibrary_db_const_sqls.h"
+#include "medialibrary_data_manager.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -42,6 +45,57 @@ static const int64_t TEST_SIZE = 0;
 static const string TEST_PATH = "/data/test";
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 static const string TYPE_ONE = "1";
+
+void CleanTestTables()
+{
+    vector<string> dropTableList = {
+        PhotoColumn::PHOTOS_TABLE,
+        MEDIALIBRARY_TABLE
+    };
+    for (auto &dropTable : dropTableList) {
+        string dropSql = "DROP TABLE " + dropTable + ";";
+        int32_t ret = g_rdbStore->ExecuteSql(dropSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Drop %{public}s table failed", dropTable.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Drop %{public}s table success", dropTable.c_str());
+    }
+}
+
+void SetTables()
+{
+    vector<string> createTableSqlList = {
+        PhotoColumn::CREATE_PHOTO_TABLE,
+        CREATE_MEDIA_TABLE,
+    };
+    for (auto &createTableSql : createTableSqlList) {
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
+
+void ClearAndRestart()
+{
+    if (!MediaLibraryUnitTestUtils::IsValid()) {
+        MediaLibraryUnitTestUtils::Init();
+    }
+
+    system("rm -rf /storage/cloud/files/*");
+    system("rm -rf /storage/cloud/files/.thumbs");
+    system("rm -rf /storage/cloud/files/.editData");
+    for (const auto &dir : TEST_ROOT_DIRS) {
+        string ROOT_PATH = "/storage/cloud/100/files/";
+        bool ret = MediaFileUtils::CreateDirectory(ROOT_PATH + dir + "/");
+        CHECK_AND_PRINT_LOG(ret, "make %{public}s dir failed, ret=%{public}d", dir.c_str(), ret);
+    }
+    CleanTestTables();
+    SetTables();
+}
 
 void MediaLibraryHelperUnitTest::SetUpTestCase(void)
 {
@@ -64,7 +118,17 @@ void MediaLibraryHelperUnitTest::SetUpTestCase(void)
 
 void MediaLibraryHelperUnitTest::TearDownTestCase(void)
 {
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+    if (!MediaLibraryUnitTestUtils::IsValid()) {
+        MediaLibraryUnitTestUtils::Init();
+    }
+
+    system("rm -rf /storage/cloud/files/*");
+    ClearAndRestart();
+    g_rdbStore = nullptr;
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    this_thread::sleep_for(chrono::seconds(SLEEP_FIVE_SECONDS));
+    MEDIA_INFO_LOG("Clean is finish");
+    MEDIA_ERR_LOG("TearDownTestCase finish");
 }
 
 void MediaLibraryHelperUnitTest::SetUp(void) {}

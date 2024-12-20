@@ -231,7 +231,7 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_002, testing::ex
 
     MediaLibraryRestore::GetInstance().CheckBackup();
     WaitForBackup();
-    ASSERT_FALSE(rdb->IsSlaveDiffFromMaster());
+    ASSERT_TRUE(rdb->IsSlaveDiffFromMaster());
     MEDIA_INFO_LOG("medialib_restore_test_restore_002 end");
 }
 

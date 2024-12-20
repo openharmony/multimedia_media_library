@@ -22,6 +22,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "parameter.h"
+#include "parameters.h"
 #include "post_event_utils.h"
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -198,6 +199,8 @@ void MediaLibraryRestore::InterruptBackup()
 
 void MediaLibraryRestore::CheckResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckResultSet");
     if (resultSet == nullptr) {
         return;
     }

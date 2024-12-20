@@ -197,23 +197,30 @@ int32_t ThumbnailGenerateHelper::CreateLocalThumbnail(ThumbRdbOpt &opt)
     int32_t err = 0;
     if (!ThumbnailUtils::QueryLocalNoThumbnailInfos(opts, infos, err)) {
         MEDIA_ERR_LOG("Failed to QueryNoThumbnailInfos %{private}d", err);
+        IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CloudSyncOnGenerationComplete,
+        ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
         return err;
     }
     if (infos.empty()) {
-        CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = true;
+        IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CloudSyncOnGenerationComplete,
+        ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
         return E_OK;
     }
+    std::shared_ptr<ExecutorParamBuilder> param = std::make_shared_<ExecutorParamBuilder>();
+    param->batteryLimit_ = LOCAL_GENERATION_BATTERY_CAPACITY;
+    param->tempLimit_ = READY_TEMPERATURE_LEVEL;
+    param->affinity_ = CpuAffinityType::CPU_IDX_6;
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
         if (infos[i].thumbnailReady == 0 && infos[i].lcdVisitTime == 0) {
             IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateLcdAndThumbnail,
-                opts, info[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
+                opts, info[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID, param);
         } else if (infos[i].thumbnailReady == 0) {
             IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateThumbnail,
-                opts, info[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
+                opts, info[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID, param);
         } else if (infos[i].lcdVisitTime == 0) {
             IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateLcd,
-                opts, info[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
+                opts, info[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID, param);
         }
     }
     IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CloudSyncOnGenerationComplete,

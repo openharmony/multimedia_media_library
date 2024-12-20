@@ -133,7 +133,7 @@ constexpr uint8_t THUMBNAIL_HIGH = 100;
 constexpr uint8_t ASTC_LOW_QUALITY = 20;
 
 constexpr uint32_t THUMBNAIL_QUERY_MAX = 2000;
-constexpr uint32_t THUMBNAIL_QUERY_MIN = 10;
+constexpr uint32_t THUMBNAIL_QUERY_MIN = 200;
 constexpr int64_t AV_FRAME_TIME = 0;
 constexpr int64_t MS_TRANSFER_US = 1000;
 

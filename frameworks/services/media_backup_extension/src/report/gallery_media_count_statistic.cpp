@@ -775,7 +775,7 @@ AlbumMediaStatisticInfo GalleryMediaCountStatistic::GetImageAlbumInfo()
     // build the album name.
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
-    std::string albumName = "所有图片";
+    std::string albumName = "所有照片";
     std::string lPath = "";
     int32_t period = 0;  // 0 - BEFORE, 1 - AFTER
     int32_t dbType = 0;  // 0 - GALLERY, 1 - MEDIA

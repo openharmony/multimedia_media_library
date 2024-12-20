@@ -305,7 +305,8 @@ void CloudMediaAssetDownloadOperation::StartBatchDownload(const int64_t batchNum
 {
     std::thread([this, batchNum, batchSize]() {
         this_thread::sleep_for(chrono::milliseconds(SLEEP_FOR_LOCK));
-        int32_t ret = cloudSyncManager_.get().StartFileCache(dataForDownload_.pathVec, downloadId_);
+        int32_t ret = cloudSyncManager_.get().StartFileCache(dataForDownload_.pathVec, downloadId_,
+            FieldKey::FIELDKEY_CONTENT, downloadCallback_);
         if (ret == E_RDB || ret == E_PATH_NOT_FOUND) {
             MEDIA_INFO_LOG("failed to StartFileCache, ret: %{public}d, downloadId_: %{public}s.",
                 ret, to_string(downloadId_).c_str());
@@ -422,12 +423,7 @@ int32_t CloudMediaAssetDownloadOperation::DoRelativedRegister()
 
     // observer download callback
     downloadCallback_ = std::make_shared<MediaCloudDownloadCallback>(instance_);
-    int32_t ret = cloudSyncManager_.get().RegisterDownloadFileCallback(downloadCallback_);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("failed to register downloadCallback, ret: %{public}d.", ret);
-        return ret;
-    }
-    ret = SetDeathRecipient();
+    int32_t ret = SetDeathRecipient();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("failed to register death recipient, ret: %{public}d.", ret);
         return ret;
@@ -598,7 +594,6 @@ int32_t CloudMediaAssetDownloadOperation::CancelDownloadTask()
         MEDIA_ERR_LOG("CancelDownloadTask permission denied");
         return E_ERR;
     }
-    int32_t ret = cloudSyncManager_.get().UnregisterDownloadFileCallback();
     SetTaskStatus(Status::IDLE);
     if (downloadId_ != DOWNLOAD_ID_DEFAULT) {
         cloudSyncManager_.get().StopFileCache(downloadId_, NEED_CLEAN);
@@ -607,12 +602,12 @@ int32_t CloudMediaAssetDownloadOperation::CancelDownloadTask()
     downloadCallback_ = nullptr;
     cloudRemoteObject_ = nullptr;
     if (cloudHelper_ == nullptr) {
-        return ret;
+        return E_OK;
     }
     cloudHelper_->UnregisterObserverExt(Uri(CLOUD_URI), cloudMediaAssetObserver_);
     cloudHelper_ = nullptr;
     cloudMediaAssetObserver_ = nullptr;
-    return ret;
+    return E_OK;
 }
 
 void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgressObj& progress)
