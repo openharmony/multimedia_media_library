@@ -616,7 +616,7 @@ HWTEST_F(NotifyTest, handle_empty_data_001, TestSize.Level0)
     emptyHandleData.orgInfo.type = DataShareObserver::ChangeType::OTHER;
 
     auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
-    AnalysisPeriodTaskData *data = new (std::nothrow) AnalysisPeriodTaskData(nullptr, nullptr);
+    PeriodTaskData *data = new (std::nothrow) PeriodTaskData();
     if (data == nullptr) {
         MEDIA_ERR_LOG("Failed to new taskdata");
         return;
