@@ -913,6 +913,22 @@ std::shared_ptr<std::unordered_map<uint32_t, std::string>> MtpMediaLibrary::GetH
     return handlesMap;
 }
 
+void MtpMediaLibrary::CorrectStorageId(const std::shared_ptr<MtpOperationContext> &context)
+{
+    CHECK_AND_RETURN_LOG(context != nullptr, "context is nullptr");
+    CHECK_AND_RETURN_LOG(context->handle > 0, "no need correct");
+
+    auto it = handleToPathMap.find(context->handle);
+    CHECK_AND_RETURN_LOG(it != handleToPathMap.end(), "no need correct");
+
+    for (auto storage = storageIdToPathMap.begin(); storage != storageIdToPathMap.end(); ++storage) {
+        if (it->second.compare(0, storage->second.size(), storage->second) == 0) {
+            context->storageID = storage->first;
+            return;
+        }
+    }
+}
+
 int32_t MtpMediaLibrary::GetObjectPropList(const std::shared_ptr<MtpOperationContext> &context,
     std::shared_ptr<std::vector<Property>> &outProps)
 {
@@ -941,6 +957,7 @@ int32_t MtpMediaLibrary::GetObjectPropList(const std::shared_ptr<MtpOperationCon
     int32_t errCode = MTP_ERROR_INVALID_OBJECTHANDLE;
     {
         WriteLock lock(g_mutex);
+        CorrectStorageId(context);
         auto handlesMap = GetHandlesMap(context);
         if (handlesMap == nullptr || handlesMap->empty()) {
             MEDIA_ERR_LOG("MtpMediaLibrary::GetObjectPropList out is empty");
