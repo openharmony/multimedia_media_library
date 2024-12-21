@@ -147,7 +147,7 @@ const std::vector<std::string> cloudMediaDownloadTypeEnum {
 };
 
 const std::vector<std::string> cloudMediaRetainTypeEnum {
-    "RETAIN_FORCE", "RETAIN_GENTLE"
+    "RETAIN_FORCE"
 };
 
 const std::vector<std::string> cloudMediaAssetTaskStatusEnum {

@@ -21,6 +21,7 @@
 #include <mutex>
 #include <sstream>
 
+#include "cloud_media_asset_manager.h"
 #include "dfx_utils.h"
 #include "directory_ex.h"
 #include "file_asset.h"
@@ -1593,7 +1594,7 @@ void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int3
             return;
         }
     }
-    ThumbnailService::GetInstance()->InvalidateThumbnail(fileId, tableName);
+    ThumbnailService::GetInstance()->HasInvalidateThumbnail(fileId, tableName);
 }
 
 void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThumbSync, bool isInvalidateThumb,
@@ -2391,7 +2392,7 @@ static void DeleteFiles(AsyncTaskData *data)
         }
     }
     for (size_t i = 0; i < taskData->ids_.size(); i++) {
-        ThumbnailService::GetInstance()->InvalidateThumbnail(
+        ThumbnailService::GetInstance()->HasInvalidateThumbnail(
             taskData->ids_[i], taskData->table_, taskData->paths_[i], taskData->dateTakens_[i]);
     }
     if (taskData->table_ == PhotoColumn::PHOTOS_TABLE) {
@@ -2515,25 +2516,18 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     MEDIA_INFO_LOG("Delete files in db, deletedRows: %{public}d", deletedRows);
 
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Can not get asyncWorker");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ERR, "Can not get asyncWorker");
 
     const vector<string> &notifyUris = isAging ? agingNotifyUris : whereArgs;
     string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateTakens, subTypes,
         predicates.GetTableName(), deletedRows, bundleName);
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to alloc async data for Delete From Disk!");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_ERR, "Failed to alloc async data for Delete From Disk!");
     auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
-    if (deleteFilesTask == nullptr) {
-        MEDIA_ERR_LOG("Failed to create async task for deleting files.");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(deleteFilesTask != nullptr, E_ERR, "Failed to create async task for deleting files.");
     asyncWorker->AddTask(deleteFilesTask, true);
+    
+    CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
     return deletedRows;
 }
 } // namespace Media

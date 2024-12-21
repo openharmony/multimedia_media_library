@@ -49,7 +49,7 @@ public:
     EXPORT static int32_t ProcessMultistagesPhoto(bool isEdited, const std::string &path,
         const uint8_t *addr, const long bytes, int32_t fileId);
     EXPORT static void StoreThumbnailSize(const std::string& photoId, const std::string& photoPath);
-    EXPORT static void DropThumbnailSize(const std::string& photoId);
+    EXPORT static bool HasDroppedThumbnailSize(const std::string& photoId);
     EXPORT static int32_t ScanFileWithoutAlbumUpdate(MediaLibraryCommand &cmd);
     EXPORT static int32_t ProcessMultistagesPhotoForPicture(bool isEdited, const std::string &path,
         std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type);
