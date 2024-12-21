@@ -3499,12 +3499,12 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
     }
 }
 
-void MediaLibraryPhotoOperations::DropThumbnailSize(const string& photoId)
+bool MediaLibraryPhotoOperations::HasDroppedThumbnailSize(const string& photoId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
-        return;
+        return false;
     }
 
     string sql = "DELETE FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE +
@@ -3512,8 +3512,9 @@ void MediaLibraryPhotoOperations::DropThumbnailSize(const string& photoId)
     int32_t ret = rdbStore->ExecuteSql(sql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
-        return;
+        return false;
     }
+    return true;
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::ScanMovingPhoto(MediaLibraryCommand &cmd,

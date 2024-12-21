@@ -922,22 +922,6 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
     return deletedRows;
 }
 
-int32_t MediaLibraryRdbStore::CompletelyDeleteDBData(int32_t &deletedRows,
-    const NativeRdb::AbsRdbPredicates &predicates)
-{
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return E_HAS_DB_ERROR;
-    }
-    int32_t ret = rdbStore_->Delete(deletedRows, predicates);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to execute delete, ret: %{public}d", ret);
-        MediaLibraryRestore::GetInstance().CheckRestore(ret);
-        return E_HAS_DB_ERROR;
-    }
-    return ret;
-}
-
 /**
  * Return changed rows on success, or negative values on error cases.
  */

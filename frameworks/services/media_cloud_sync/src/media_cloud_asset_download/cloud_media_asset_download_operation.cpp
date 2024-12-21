@@ -75,8 +75,9 @@ static const std::string TOTAL_COUNT = "COUNT(1)";
 static const std::string TOTAL_SIZE = "SUM(size)";
 static const bool NEED_CLEAN = true;
 static const int32_t EXIT_TASK = 1;
-// E_PATH_NOT_FOUND corresponds to the E_PATH of dfs_error.h
-static const int32_t E_PATH_NOT_FOUND = 28;
+// CLOUD_E_PATH_NOT_FOUND and CLOUD_E_RDB corresponds to the E_PATH and E_RDB of dfs_error.h
+static const int32_t CLOUD_E_PATH_NOT_FOUND = 28;
+static const int32_t CLOUD_E_RDB = 22;
 static const int32_t SLEEP_FOR_LOCK = 100;
 static const int32_t STATUS_CHANGE_ARG_SIZE = 3;
 static const int32_t INDEX_ZERO = 0;
@@ -167,6 +168,12 @@ bool CloudMediaAssetDownloadOperation::IsDataEmpty(const CloudMediaAssetDownload
     return data.fileDownloadMap.empty();
 }
 
+bool CloudMediaAssetDownloadOperation::IsNetworkUnavailable()
+{
+    return (MedialibrarySubscriber::IsWifiConnected() ||
+        (MedialibrarySubscriber::IsCellularNetConnected() && isUnlimitedTrafficStatusOn_));
+}
+
 std::shared_ptr<NativeRdb::ResultSet> CloudMediaAssetDownloadOperation::QueryDownloadFilesNeeded(
     const bool &isQueryInfo)
 {
@@ -176,14 +183,12 @@ std::shared_ptr<NativeRdb::ResultSet> CloudMediaAssetDownloadOperation::QueryDow
         return nullptr;
     }
     AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
-    predicates.EqualTo(PhotoColumn::PHOTO_POSITION, to_string(static_cast<int32_t>(PhotoPositionType::CLOUD)));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
     predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, "0");
     predicates.IsNotNull(MediaColumn::MEDIA_FILE_PATH);
-    if (static_cast<int32_t>(dataForDownload_.batchFileIdNeedDownload.size()) > 0) {
-        predicates.NotIn(PhotoColumn::MEDIA_ID, dataForDownload_.batchFileIdNeedDownload);
-    }
+    predicates.EqualTo(PhotoColumn::PHOTO_POSITION, to_string(static_cast<int32_t>(PhotoPositionType::CLOUD)));
     predicates.BeginWrap();
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)));
     predicates.Or();
@@ -197,6 +202,9 @@ std::shared_ptr<NativeRdb::ResultSet> CloudMediaAssetDownloadOperation::QueryDow
             TOTAL_SIZE
         };
         return rdbStore->Query(predicates, columns);
+    }
+    if (static_cast<int32_t>(dataForDownload_.batchFileIdNeedDownload.size()) > 0) {
+        predicates.NotIn(PhotoColumn::MEDIA_ID, dataForDownload_.batchFileIdNeedDownload);
     }
     predicates.OrderByDesc(MediaColumn::MEDIA_DATE_MODIFIED);
     predicates.Limit(BATCH_DOWNLOAD_CLOUD_FILE);
@@ -226,14 +234,16 @@ int32_t CloudMediaAssetDownloadOperation::InitDownloadTaskInfo()
         return E_ERR;
     }
     int64_t size = GetInt64Val(TOTAL_SIZE, resultSetForInfo);
-    totalCount_ = count + batchDownloadTotalNum_;
-    totalSize_ = size + batchDownloadTotalSize_;
-    remainCount_ = totalCount_ - hasDownloadNum_;
-    remainSize_ = totalSize_ - hasDownloadSize_;
 
+    int64_t hasDownloadNum_ = totalCount_ - remainCount_;
+    int64_t hasDownloadSize_ = totalSize_ - remainSize_;
+    remainCount_ = count;
+    remainSize_ = size;
+    totalCount_ = remainCount_ + hasDownloadNum_;
+    totalSize_ = remainSize_ + hasDownloadSize_;
     isThumbnailUpdate_ = false;
     resultSetForInfo->Close();
-    MEDIA_INFO_LOG("success InitDownloadTaskInfo.");
+    MEDIA_INFO_LOG("GetTaskInfo: %{public}s", GetTaskInfo().c_str());
     return E_OK;
 }
 
@@ -278,18 +288,12 @@ CloudMediaAssetDownloadOperation::DownloadFileData CloudMediaAssetDownloadOperat
 void CloudMediaAssetDownloadOperation::StartFileCacheFailed(const int64_t batchNum, const int64_t batchSize)
 {
     downloadId_ = DOWNLOAD_ID_DEFAULT;
-    downloadNum_ = 0;
     if (isCache_) {
         ClearData(cacheForDownload_);
     }
     ClearData(readyForDownload_);
     ClearData(dataForDownload_);
-    batchDownloadTotalNum_ -= batchNum;
-    batchDownloadTotalSize_ -= batchSize;
-    if (!isThumbnailUpdate_) {
-        isThumbnailUpdate_ = true;
-    }
-    InitDownloadTaskInfo();
+    isThumbnailUpdate_ = true;
     // prepare for data consumption time, don't move this line
     CloudMediaAssetDownloadOperation::DownloadFileData data = ReadyDataForBatchDownload();
     if  (IsDataEmpty(data)) {
@@ -307,7 +311,7 @@ void CloudMediaAssetDownloadOperation::StartBatchDownload(const int64_t batchNum
         this_thread::sleep_for(chrono::milliseconds(SLEEP_FOR_LOCK));
         int32_t ret = cloudSyncManager_.get().StartFileCache(dataForDownload_.pathVec, downloadId_,
             FieldKey::FIELDKEY_CONTENT, downloadCallback_);
-        if (ret == E_RDB || ret == E_PATH_NOT_FOUND) {
+        if (ret == CLOUD_E_RDB || ret == CLOUD_E_PATH_NOT_FOUND) {
             MEDIA_INFO_LOG("failed to StartFileCache, ret: %{public}d, downloadId_: %{public}s.",
                 ret, to_string(downloadId_).c_str());
             StartFileCacheFailed(batchNum, batchSize);
@@ -317,13 +321,13 @@ void CloudMediaAssetDownloadOperation::StartBatchDownload(const int64_t batchNum
             MEDIA_ERR_LOG("failed to StartFileCache, ret: %{public}d, downloadId_: %{public}s.",
                 ret, to_string(downloadId_).c_str());
             downloadId_ = DOWNLOAD_ID_DEFAULT;
-            downloadNum_ = 0;
             cacheForDownload_ = dataForDownload_;
             SetTaskStatus(Status::PAUSE_FOR_CLOUD_ERROR);
             return;
         }
         MEDIA_INFO_LOG("Success, downloadId: %{public}d, downloadNum: %{public}d, isCache: %{public}d.",
-            static_cast<int32_t>(downloadId_), static_cast<int32_t>(downloadNum_), static_cast<int32_t>(isCache_));
+            static_cast<int32_t>(downloadId_), static_cast<int32_t>(dataForDownload_.fileDownloadMap.size()),
+            static_cast<int32_t>(isCache_));
         if (isCache_) {
             ClearData(cacheForDownload_);
             return;
@@ -356,13 +360,7 @@ int32_t CloudMediaAssetDownloadOperation::SubmitBatchDownload(
         }
         return E_OK;
     }
-
-    downloadNum_ = static_cast<int64_t>(data.pathVec.size());
     dataForDownload_ = data;
-    if (!isCache_) {
-        batchDownloadTotalNum_ += data.batchCountNeedDownload;
-        batchDownloadTotalSize_ += data.batchSizeNeedDownload;
-    }
 
     StartBatchDownload(data.batchCountNeedDownload, data.batchSizeNeedDownload);
     return E_OK;
@@ -370,13 +368,15 @@ int32_t CloudMediaAssetDownloadOperation::SubmitBatchDownload(
 
 void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &isForeground)
 {
+    isUnlimitedTrafficStatusOn_ = CloudSyncUtils::IsUnlimitedTrafficStatusOn();
+    MEDIA_INFO_LOG("isUnlimitedTrafficStatusOn_ is %{public}d", static_cast<int32_t>(isUnlimitedTrafficStatusOn_));
     if (isForeground && !IsProperFgTemperature()) {
         SetTaskStatus(Status::PAUSE_FOR_TEMPERATURE_LIMIT);
         MEDIA_ERR_LOG("Temperature is not suitable for foreground downloads.");
         return;
     }
-    if (!CommonEventUtils::IsWifiConnected() && !CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
-        Status status = MedialibrarySubscriber::GetIsCellularNetConnected() ?
+    if (!CommonEventUtils::IsWifiConnected() && !isUnlimitedTrafficStatusOn_) {
+        Status status = MedialibrarySubscriber::IsCellularNetConnected() ?
             Status::PAUSE_FOR_WIFI_UNAVAILABLE : Status::PAUSE_FOR_NETWORK_FLOW_LIMIT;
         SetTaskStatus(status);
         MEDIA_ERR_LOG("No wifi and no cellular data.");
@@ -480,8 +480,8 @@ int32_t CloudMediaAssetDownloadOperation::StartDownloadTask(int32_t cloudMediaDo
 
 int32_t CloudMediaAssetDownloadOperation::DoRecoverExecute()
 {
-    if (fileNumCache_ > 0) {
-        MEDIA_ERR_LOG("callback is still alive, fileNumCache: %{public}d.", fileNumCache_);
+    if (!IsDataEmpty(dataForDownload_)) {
+        MEDIA_ERR_LOG("callback for cache is still alive.");
         return E_ERR;
     }
     if (IsDataEmpty(cacheForDownload_)) {
@@ -560,8 +560,6 @@ int32_t CloudMediaAssetDownloadOperation::PauseDownloadTask(const CloudMediaTask
     if (taskStatus_ == CloudMediaAssetTaskStatus::DOWNLOADING) {
         taskStatus_ = CloudMediaAssetTaskStatus::PAUSED;
         if (downloadId_ != DOWNLOAD_ID_DEFAULT) {
-            downloadIdCache_ = downloadId_;
-            fileNumCache_ = static_cast<int32_t>(dataForDownload_.fileDownloadMap.size());
             cloudSyncManager_.get().StopFileCache(downloadId_, !NEED_CLEAN);
             MEDIA_INFO_LOG("success StopFileCache.");
         }
@@ -573,8 +571,6 @@ void CloudMediaAssetDownloadOperation::ResetParameter()
 {
     ClearData(readyForDownload_);
     ClearData(notFoundForDownload_);
-    downloadIdCache_ = DOWNLOAD_ID_DEFAULT;
-    fileNumCache_ = 0;
     ClearData(cacheForDownload_);
     downloadId_ = DOWNLOAD_ID_DEFAULT;
     ClearData(dataForDownload_);
@@ -582,10 +578,10 @@ void CloudMediaAssetDownloadOperation::ResetParameter()
     isThumbnailUpdate_ = true;
     isBgDownloadPermission_ = false;
 
-    batchDownloadTotalNum_ = 0;
-    batchDownloadTotalSize_ = 0;
-    hasDownloadNum_ = 0;
-    hasDownloadSize_ = 0;
+    totalCount_ = 0;
+    totalSize_ = 0;
+    remainCount_ = 0;
+    remainSize_ = 0;
 }
 
 int32_t CloudMediaAssetDownloadOperation::CancelDownloadTask()
@@ -594,6 +590,8 @@ int32_t CloudMediaAssetDownloadOperation::CancelDownloadTask()
         MEDIA_ERR_LOG("CancelDownloadTask permission denied");
         return E_ERR;
     }
+    MEDIA_INFO_LOG("the number of not found assets: %{public}d",
+        static_cast<int32_t>(notFoundForDownload_.fileDownloadMap.size()));
     SetTaskStatus(Status::IDLE);
     if (downloadId_ != DOWNLOAD_ID_DEFAULT) {
         cloudSyncManager_.get().StopFileCache(downloadId_, NEED_CLEAN);
@@ -608,6 +606,19 @@ int32_t CloudMediaAssetDownloadOperation::CancelDownloadTask()
     cloudHelper_ = nullptr;
     cloudMediaAssetObserver_ = nullptr;
     return E_OK;
+}
+
+int32_t CloudMediaAssetDownloadOperation::SubmitBatchDownloadAgain()
+{
+    if (!IsDataEmpty(dataForDownload_)) {
+        return E_ERR;
+    }
+    MEDIA_INFO_LOG("Submit batchDownload again.");
+    downloadId_ = DOWNLOAD_ID_DEFAULT;
+    if (IsDataEmpty(cacheForDownload_)) {
+        return SubmitBatchDownload(readyForDownload_, false);
+    }
+    return SubmitBatchDownload(cacheForDownload_, true);
 }
 
 void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgressObj& progress)
@@ -627,32 +638,14 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
     if (size != 0) {
         remainCount_--;
         remainSize_ -= size;
-        hasDownloadNum_++;
-        hasDownloadSize_ += size;
     }
     dataForDownload_.fileDownloadMap.erase(progress.path);
-    downloadNum_--;
 
     MEDIA_INFO_LOG("success, path: %{public}s, size: %{public}s, batchSuccNum: %{public}s.",
         MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(size).c_str(),
         to_string(progress.batchSuccNum).c_str());
 
-    if (taskStatus_ == CloudMediaAssetTaskStatus::PAUSED && progress.downloadId == downloadId_ &&
-        cacheForDownload_.fileDownloadMap.find(progress.path) == cacheForDownload_.fileDownloadMap.end()) {
-        fileNumCache_--;
-        MEDIA_INFO_LOG("wait for callback, fileNumCache: %{public}d.", fileNumCache_);
-        if (fileNumCache_ == 0) {
-            downloadId_ = DOWNLOAD_ID_DEFAULT;
-            SubmitBatchDownload(cacheForDownload_, true);
-            return;
-        }
-    }
-
-    if (downloadNum_ == 0) {
-        MEDIA_INFO_LOG("success download %{public}s files.", to_string(progress.batchSuccNum).c_str());
-        downloadId_ = DOWNLOAD_ID_DEFAULT;
-        SubmitBatchDownload(readyForDownload_, false);
-    }
+    SubmitBatchDownloadAgain();
 }
 
 void CloudMediaAssetDownloadOperation::MoveDownloadFileToCache(const DownloadProgressObj& progress)
@@ -673,20 +666,16 @@ void CloudMediaAssetDownloadOperation::MoveDownloadFileToCache(const DownloadPro
     cacheForDownload_.pathVec.push_back(progress.path);
     cacheForDownload_.fileDownloadMap[progress.path] = dataForDownload_.fileDownloadMap.at(progress.path);
     dataForDownload_.fileDownloadMap.erase(progress.path);
-    fileNumCache_--;
-    if (fileNumCache_ == 0) {
-        downloadId_ = DOWNLOAD_ID_DEFAULT;
-        SubmitBatchDownload(cacheForDownload_, true);
-    }
     MEDIA_INFO_LOG("success, path: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
+    SubmitBatchDownloadAgain();
 }
 
 void CloudMediaAssetDownloadOperation::MoveDownloadFileToNotFound(const DownloadProgressObj& progress)
 {
     std::lock_guard<std::mutex> lock(callbackMutex_);
     if (progress.downloadId != downloadId_ ||
-        dataForDownload_.fileDownloadMap.find(progress.path) != dataForDownload_.fileDownloadMap.end()) {
-        MEDIA_ERR_LOG("This file is known, path: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
+        dataForDownload_.fileDownloadMap.find(progress.path) == dataForDownload_.fileDownloadMap.end()) {
+        MEDIA_ERR_LOG("This file is unknown, path: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
             MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
             to_string(downloadId_).c_str());
         return;
@@ -697,18 +686,9 @@ void CloudMediaAssetDownloadOperation::MoveDownloadFileToNotFound(const Download
         return;
     }
     notFoundForDownload_.fileDownloadMap[progress.path] = dataForDownload_.fileDownloadMap.at(progress.path);
-    int64_t size = dataForDownload_.fileDownloadMap.at(progress.path);
-    if (size != 0) {
-        totalCount_--;
-        batchDownloadTotalNum_--;
-        remainCount_--;
-        totalSize_ -= size;
-        batchDownloadTotalSize_ -= size;
-        remainSize_ -= size;
-    }
     dataForDownload_.fileDownloadMap.erase(progress.path);
-    downloadNum_--;
     MEDIA_INFO_LOG("success, path: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
+    SubmitBatchDownloadAgain();
 }
 
 void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgressObj& progress)
@@ -728,7 +708,9 @@ void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgre
             break;
         }
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::NETWORK_UNAVAILABLE): {
-            PauseDownloadTask(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT);
+            if (!IsNetworkUnavailable()) {
+                PauseDownloadTask(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT);
+            }
             MoveDownloadFileToCache(progress);
             break;
         }
