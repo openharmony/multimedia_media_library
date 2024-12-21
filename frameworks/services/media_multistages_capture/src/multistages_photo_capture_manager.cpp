@@ -244,8 +244,7 @@ void MultiStagesPhotoCaptureManager::UpdateLocation(const NativeRdb::ValuesBucke
     }
 
     MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = MediaColumn::MEDIA_ID + " = " + to_string(fileId);
-    queryCmd.GetAbsRdbPredicates()->SetWhereClause(where);
+    queryCmd.GetAbsRdbPredicates()->SetWhereClause(MediaColumn::MEDIA_ID + " = " + to_string(fileId));
     vector<string> columns { MediaColumn::MEDIA_FILE_PATH };
 
     auto resultSet = DatabaseAdapter::Query(queryCmd, columns);
@@ -254,6 +253,7 @@ void MultiStagesPhotoCaptureManager::UpdateLocation(const NativeRdb::ValuesBucke
         return;
     }
     string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    resultSet->Close();
 
     // update exif info
     auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
@@ -353,7 +353,7 @@ void MultiStagesPhotoCaptureManager::AddImage(MediaLibraryCommand &cmd)
 int32_t MultiStagesPhotoCaptureManager::UpdatePictureQuality(const std::string &photoId)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("UpdatePhotoQuality " + photoId);
+    tracer.Start("UpdatePictureQuality " + photoId);
     MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     NativeRdb::ValuesBucket updateValues;
     updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
