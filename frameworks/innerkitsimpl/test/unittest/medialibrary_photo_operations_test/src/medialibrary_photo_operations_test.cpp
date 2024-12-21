@@ -3549,9 +3549,9 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_00
     ASSERT_EQ(isSuccess, true);
     ASSERT_EQ(thumbnailSizequeryResult, 0);
 
-    // Test DropThumbnailSize function
+    // Test HasDroppedThumbnailSize function
 
-    MediaLibraryPhotoOperations::DropThumbnailSize(to_string(testPhotoId));
+    MediaLibraryPhotoOperations::HasDroppedThumbnailSize(to_string(testPhotoId));
 
     isSuccess = QueryPhotoThumbnailVolumn(testPhotoId, thumbnailSizequeryResult);
     EXPECT_EQ(isSuccess, false);
