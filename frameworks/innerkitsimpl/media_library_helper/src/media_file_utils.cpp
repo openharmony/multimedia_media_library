@@ -807,6 +807,11 @@ static inline bool RegexCheck(const string &str, const string &regexStr)
 
 static inline int32_t CheckTitle(const string &title)
 {
+    if (title.empty()) {
+        MEDIA_ERR_LOG("Title is empty.");
+        return -EINVAL;
+    }
+    
     static const string TITLE_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
     if (RegexCheck(title, TITLE_REGEX_CHECK)) {
         MEDIA_ERR_LOG("Failed to check title regex: %{private}s", title.c_str());
