@@ -14,6 +14,10 @@
  */
 
 import photoAccessHelper from '@ohos.file.photoAccessHelper';
+import { fileIo as fs, fileUri } from '@kit.CoreFileKit';
+import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
+import { bundleManager } from '@kit.AbilityKit';
+
 const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
 const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
@@ -41,30 +45,45 @@ export struct PhotoPickerComponent {
     }
     let data = this.pickerController?.data;
     if (data?.has('SET_SELECTED_URIS')) {
-      this.proxy.send({'selectUris': data?.get('SET_SELECTED_URIS') as Array<string>});
+      this.proxy.send({ 'selectUris': data?.get('SET_SELECTED_URIS') as Array<string> });
       console.info('PhotoPickerComponent onChanged: SET_SELECTED_URIS');
     } else if (data?.has('SET_ALBUM_URI')) {
-      this.proxy.send({'albumUri': data?.get('SET_ALBUM_URI') as string});
+      this.proxy.send({ 'albumUri': data?.get('SET_ALBUM_URI') as string });
       console.info('PhotoPickerComponent onChanged: SET_ALBUM_URI');
     } else if (data?.has('SET_MAX_SELECT_COUNT')) {
       this.onSetMaxSelectCount(data);
     } else if (data?.has('SET_PHOTO_BROWSER_ITEM')) {
       this.onSetPhotoBrowserItem(data);
-    } else if (data?.has('EXIT_PHOTO_BROWSER')) {
+    } else {
+      this.otherOnChange(data);
+    }
+  }
+
+  private otherOnChange(data?: Map<string, Object>) {
+    if (data?.has('EXIT_PHOTO_BROWSER')) {
       this.handleExitPhotoBrowser();
     } else if (data?.has('SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY')) {
       this.onSetPhotoBrowserUIElementVisibility(data);
+    } else if (data?.has('CREATE_URI')) {
+      this.onCreateUri(data);
+      console.info('PhotoPickerComponent onChanged: CREATE_URI');
+    } else if (data?.has('REPLACE_URI')) {
+      this.onReplaceUri(data);
+      console.info('PhotoPickerComponent onChanged: REPLACE_URI');
+    } else if (data?.has('SAVE_TRUSTED_PHOTO_ASSETS')) {
+      this.onSaveTrustedPhotoAssets(data);
+      console.info('PhotoPickerComponent onChanged: SAVE_REPLACE_PHOTO_ASSETS');
     } else {
       console.info('PhotoPickerComponent onChanged: other case');
     }
   }
 
-  private onSetMaxSelectCount(data?: Map<string, Object>): void{
+  private onSetMaxSelectCount(data?: Map<string, Object>): void {
     let maxSelected: MaxSelected = data?.get('SET_MAX_SELECT_COUNT') as MaxSelected;
     let map: Map<MaxCountType, number> | undefined = maxSelected?.data;
     this.proxy.send({
-      'totalCount': map?.get(MaxCountType.TOTAL_MAX_COUNT), 
-      'photoCount': map?.get(MaxCountType.PHOTO_MAX_COUNT), 
+      'totalCount': map?.get(MaxCountType.TOTAL_MAX_COUNT),
+      'photoCount': map?.get(MaxCountType.PHOTO_MAX_COUNT),
       'videoCount': map?.get(MaxCountType.VIDEO_MAX_COUNT)
     });
     console.info('PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT');
@@ -73,25 +92,57 @@ export struct PhotoPickerComponent {
   private onSetPhotoBrowserItem(data?: Map<string, Object>): void {
     let photoBrowserRangeInfo: PhotoBrowserRangeInfo = data?.get('SET_PHOTO_BROWSER_ITEM') as PhotoBrowserRangeInfo;
     this.proxy?.send({
-      'itemUri': photoBrowserRangeInfo?.uri, 
+      'itemUri': photoBrowserRangeInfo?.uri,
       'photoBrowserRange': photoBrowserRangeInfo?.photoBrowserRange
     });
     console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_ITEM');
   }
 
-  private handleExitPhotoBrowser(): void{
-    this.proxy.send({'exitPhotoBrowser': true});
+  private handleExitPhotoBrowser(): void {
+    this.proxy.send({ 'exitPhotoBrowser': true });
     console.info('PhotoPickerComponent onChanged: EXIT_PHOTO_BROWSER');
   }
 
-  private onSetPhotoBrowserUIElementVisibility(data?: Map<string, Object>): void{
+  private onSetPhotoBrowserUIElementVisibility(data?: Map<string, Object>): void {
     let photoBrowserUIElementVisibility: PhotoBrowserUIElementVisibility =
       data?.get('SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY') as PhotoBrowserUIElementVisibility;
     this.proxy?.send({
-      'elements': photoBrowserUIElementVisibility?.elements, 
+      'elements': photoBrowserUIElementVisibility?.elements,
       'isVisible': photoBrowserUIElementVisibility?.isVisible
     });
     console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY');
+  }
+
+  private onCreateUri(data?: Map<string, Object>): void {
+    let array = data?.get('CREATE_URI') as Array<Object>;
+    this.proxy?.send({
+      selectedMediaUri: array[0],
+      createUri: array[1],
+      date: array[2]
+    });
+    console.info('PhotoPickerComponent onChanged CREATE_URI');
+  }
+
+  private onReplaceUri(data?: Map<string, Object>): void {
+    let array = data?.get('REPLACE_URI') as Array<Object>;
+    this.proxy?.send({
+      oriUri: array[0],
+      replaceUri: array[1],
+      date: array[2]
+    });
+    console.info('PhotoPickerComponent onChanged REPLACE_URI');
+  }
+
+  private onSaveTrustedPhotoAssets(data?: Map<string, Object>): void {
+    let array: Array<object> = data?.get('SAVE_TRUSTED_PHOTO_ASSETS') as Array<object>;
+    this.proxy?.send({
+      replaceUris: array[0],
+      config: array[1],
+      saveMode: array[2],
+      appName: array[3],
+      date: array[4]
+    });
+    console.info('PhotoPickerComponent onChanged SAVE_REPLACE_PHOTO_ASSETS');
   }
 
   build() {
@@ -99,7 +150,7 @@ export struct PhotoPickerComponent {
       Column() {
         SecurityUIExtensionComponent({
           parameters: {
-            "ability.want.params.uiExtensionTargetType":"photoPicker",
+            "ability.want.params.uiExtensionTargetType": "photoPicker",
             uri: "multipleselect",
             targetPage: "photoPage",
             filterMediaType: this.convertMIMETypeToFilterType(this.pickerOptions?.MIMEType),
@@ -122,22 +173,27 @@ export struct PhotoPickerComponent {
             selectMode: this.pickerOptions?.selectMode as SelectMode,
             maxPhotoSelectNumber: this.pickerOptions?.maxPhotoSelectNumber as number,
             maxVideoSelectNumber: this.pickerOptions?.maxVideoSelectNumber as number,
-            isOnItemClickedSet: this.onItemClicked? true : false,
+            isOnItemClickedSet: this.onItemClicked ? true : false,
             isPreviewForSingleSelectionSupported: this.pickerOptions?.isPreviewForSingleSelectionSupported as boolean,
             isSlidingSelectionSupported: this.pickerOptions?.isSlidingSelectionSupported as boolean,
             photoBrowserCheckboxPosition: this.pickerOptions?.photoBrowserCheckboxPosition as [number, number],
             gridMargin: this.pickerOptions?.gridMargin as Margin,
             photoBrowserMargin: this.pickerOptions?.photoBrowserMargin as Margin
           }
-        }).height('100%').width('100%').onRemoteReady((proxy) => {
-          this.proxy = proxy;
-          console.info('PhotoPickerComponent onRemoteReady');
-        }).onReceive((data) => {
-          let wantParam: Record<string, Object> = data as Record<string, Object>;
-          this.handleOnReceive(wantParam);
-        }).onError(() => {
-          console.info('PhotoPickerComponent onError');
-        });
+        })
+          .height('100%')
+          .width('100%')
+          .onRemoteReady((proxy) => {
+            this.proxy = proxy;
+            console.info('PhotoPickerComponent onRemoteReady');
+          })
+          .onReceive((data) => {
+            let wantParam: Record<string, Object> = data as Record<string, Object>;
+            this.handleOnReceive(wantParam);
+          })
+          .onError(() => {
+            console.info('PhotoPickerComponent onError');
+          });
       }
       .width('100%')
     }
@@ -162,6 +218,12 @@ export struct PhotoPickerComponent {
       this.handlePhotoBrowserChange(wantParam);
     } else if (dataType === 'onVideoPlayStateChanged') {
       this.handleVideoPlayStateChange(wantParam)
+    } else if (dataType === 'replaceCallback') {
+      this.handleReplaceCallback(wantParam);
+    } else if (dataType === 'createCallback') {
+      this.handleCreateCallback(wantParam);
+    } else if (dataType === 'saveCallback') {
+      this.handleSaveCallback(wantParam);
     } else {
       this.handleOtherOnReceive(wantParam);
       console.info('PhotoPickerComponent onReceive: other case');
@@ -169,7 +231,7 @@ export struct PhotoPickerComponent {
     console.info('PhotoPickerComponent onReceive' + JSON.stringify(wantParam));
   }
 
-  private handleOtherOnReceive(wantParam: Record<string, Object>): void{
+  private handleOtherOnReceive(wantParam: Record<string, Object>): void {
     let dataType = wantParam.dataType as string;
     if (dataType === 'exceedMaxSelected') {
       if (this.onExceedMaxSelected) {
@@ -233,11 +295,12 @@ export struct PhotoPickerComponent {
       console.info('PhotoPickerComponent onReceive: onItemClicked = ' + clickType);
       if (this.proxy) {
         if (itemType === 'thumbnail' && clickType === ClickType.SELECTED) {
-          this.proxy.send({'clickConfirm': itemInfo.uri, 'isConfirm': result});
-          console.info('PhotoPickerComponent onReceive: click confirm: uri = ' + itemInfo.uri + 'isConfirm = ' + result);
+          this.proxy.send({ 'clickConfirm': itemInfo.uri, 'isConfirm': result });
+          console.info('PhotoPickerComponent onReceive: click confirm: uri = ' + itemInfo.uri + 'isConfirm = ' +
+            result);
         }
         if (itemType === 'camera') {
-          this.proxy.send({'enterCamera': result});
+          this.proxy.send({ 'enterCamera': result });
           console.info('PhotoPickerComponent onReceive: enter camera ' + result);
         }
       }
@@ -272,10 +335,29 @@ export struct PhotoPickerComponent {
   }
 
   private handleVideoPlayStateChange(wantParam: Record<string, Object>): void {
-    if(this.onVideoPlayStateChanged) {
+    if (this.onVideoPlayStateChanged) {
       this.onVideoPlayStateChanged(wantParam.state as VideoPlayerState)
     }
     console.info('PhotoPickerComponent onReceive: onVideoPlayStateChanged = ' + JSON.stringify(wantParam));
+  }
+
+  private handleCreateCallback(wantParam: Record<string, Object>): void {
+    this.pickerController.actionCreateCallback(wantParam['grantUri'] as string, wantParam['date'] as number,
+      wantParam['code'] as number, wantParam['message'] as string);
+    console.info('PhotoPickerComponent onReceive: handleCreateCallback');
+  }
+
+  private handleReplaceCallback(wantParam: Record<string, Object>): void {
+    this.pickerController.actionReplaceCallback(wantParam['date'] as number,
+      { 'name': '', 'code': wantParam['code'] as number, 'message': wantParam['message'] as string });
+    console.info('PhotoPickerComponent onReceive: handleReplaceCallback');
+  }
+
+  private handleSaveCallback(wantParam: Record<string, Object>): void {
+    this.pickerController.actionSaveCallback(wantParam['date'] as number,
+      { 'name': '', 'code': wantParam['code'] as number, 'message': wantParam['error'] as string },
+      wantParam['data'] as Array<string>);
+    console.info('PhotoPickerComponent onReceive: handleSaveCallback');
   }
 
   private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string {
@@ -303,6 +385,9 @@ export type VideoPlayStateChanged = (state: VideoPlayerState) => {} void;
 @Observed
 export class PickerController {
   data?: Map<string, Object>;
+  replaceCallbackMap: Map<number, Object> = new Map<number, Object>();
+  saveCallbackMap: Map<number, Object> = new Map<number, Object>();
+  createCallbackMap: Map<number, Object> = new Map<number, Object>();
 
   setData(type: DataType, data: Object) {
     if (data === undefined) {
@@ -337,24 +422,112 @@ export class PickerController {
   setPhotoBrowserItem(uri: string, photoBrowserRange?: PhotoBrowserRange) {
     let photoBrowserRangeInfo: PhotoBrowserRangeInfo = new PhotoBrowserRangeInfo();
     photoBrowserRangeInfo.uri = uri;
-    let newPhotoBrowserRange = photoBrowserRange? photoBrowserRange : PhotoBrowserRange.ALL;
+    let newPhotoBrowserRange = photoBrowserRange ? photoBrowserRange : PhotoBrowserRange.ALL;
     photoBrowserRangeInfo.photoBrowserRange = newPhotoBrowserRange;
     this.data = new Map([['SET_PHOTO_BROWSER_ITEM', photoBrowserRangeInfo]]);
     console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM' + JSON.stringify(photoBrowserRangeInfo));
   }
 
-  exitPhotoBrowser(){
+  exitPhotoBrowser() {
     this.data = new Map([['EXIT_PHOTO_BROWSER', true]]);
     console.info('PhotoPickerComponent EXIT_PHOTO_BROWSER');
   }
 
-  setPhotoBrowserUIElementVisibility(elements: Array<PhotoBrowserUIElement>, isVisible?: boolean){
+  setPhotoBrowserUIElementVisibility(elements: Array<PhotoBrowserUIElement>, isVisible?: boolean) {
     let photoBrowserUIElementVisibility: PhotoBrowserUIElementVisibility = new PhotoBrowserUIElementVisibility();
     photoBrowserUIElementVisibility.elements = elements;
     photoBrowserUIElementVisibility.isVisible = isVisible;
     this.data = new Map([['SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY', photoBrowserUIElementVisibility]]);
     console.info('PhotoPickerComponent SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY ' +
-      JSON.stringify(photoBrowserUIElementVisibility));
+    JSON.stringify(photoBrowserUIElementVisibility));
+  }
+
+  private async getAppName(): Promise<string> {
+    let flags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_ABILITY | // for appName
+    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_HAP_MODULE | // for appName
+    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_SIGNATURE_INFO | // for appId
+    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION; // for appInfo
+    let bundleInfo = bundleManager.getBundleInfoForSelfSync(flags);
+    let labelId = bundleInfo.appInfo.labelId;
+    let appName = '';
+    let moduleName = '';
+    for (let hapInfo of bundleInfo.hapModulesInfo) {
+      if (labelId === hapInfo.labelId) {
+        moduleName = hapInfo.name;
+      }
+    }
+    appName = await getContext(this).createModuleContext(moduleName).resourceManager.getStringValue(labelId);
+    return appName;
+  }
+
+  replacePhotoPickerPreview(selectedMediaUri: string, replaceUri: string, callback: AsyncCallback<void>) {
+    if (!fs.accessSync(replaceUri)) {
+      callback({ 'code': 13900002, 'message': 'No such file', name: '' });
+      return;
+    }
+    replaceUri = fileUri.getUriFromPath(replaceUri);
+    let date = Math.random();
+    this.data = new Map([['CREATE_URI', [selectedMediaUri, replaceUri, date]]]);
+    this.createCallbackMap.set(date, (grantUri: string, code: number, message: string) => {
+      if (code !== 0) {
+        callback({ 'name': '', 'code': code, 'message': message });
+        return;
+      }
+      let createFd = 0;
+      let replaceFd = 0;
+      try {
+        createFd = fs.openSync(grantUri, fs.OpenMode.READ_WRITE).fd;
+        replaceFd = fs.openSync(replaceUri, fs.OpenMode.READ_ONLY).fd;
+        fs.copyFileSync(replaceFd, createFd);
+        this.data = new Map([['REPLACE_URI', [selectedMediaUri, grantUri, date]]]);
+        this.replaceCallbackMap.set(date, callback);
+      } catch (err) {
+        callback({ 'code': 14000011, 'message': 'System inner fail', name: '' });
+      } finally {
+        fs.close(createFd);
+        fs.close(replaceFd);
+      }
+    })
+  }
+
+  saveTrustedPhotoAssets(selectedMediaUris: Array<string>, callback: AsyncCallback<Array<string>>,
+    config?: photoAccessHelper.PhotoCreationConfig, saveMode?: SaveMode) {
+    this.getAppName().then((appName: string)=>{
+      let date = Math.random();
+      this.data = new Map([['SAVE_TRUSTED_PHOTO_ASSETS', [selectedMediaUris, config, saveMode, appName, date]]]);
+      this.saveCallbackMap.set(date, callback);
+    })
+    console.info('PhotoPickerComponent SAVE_TRUSTED_PHOTO_ASSETS ');
+  }
+
+  actionCreateCallback(grantUri: string, date: number, code: number, message: string) {
+    if (this.createCallbackMap.has(date)) {
+      let callback = this.createCallbackMap.get(date) as Function;
+      if (callback) {
+        callback(grantUri, code, message);
+        this.createCallbackMap.delete(date);
+      }
+    }
+  }
+
+  actionReplaceCallback(date: number, err: BusinessError) {
+    if (this.replaceCallbackMap.has(date)) {
+      let callback = this.replaceCallbackMap.get(date) as Function;
+      if (callback) {
+        callback(err);
+        this.replaceCallbackMap.delete(date);
+      }
+    }
+  }
+
+  actionSaveCallback(date: number, err: BusinessError, data: Array<string>) {
+    if (this.saveCallbackMap.has(date)) {
+      let callback = this.saveCallbackMap.get(date) as Function;
+      if (callback) {
+        callback(err, data);
+        this.saveCallbackMap.delete(date);
+      }
+    }
   }
 }
 
@@ -470,4 +643,9 @@ export enum VideoPlayerState {
   STOPPED = 3,
   SEEK_START = 4,
   SEEK_FINISH = 5
+}
+
+export enum SaveMode {
+  SAVE_AS_NEW = 0,
+  SAVE_AS_REPLACE = 1
 }
