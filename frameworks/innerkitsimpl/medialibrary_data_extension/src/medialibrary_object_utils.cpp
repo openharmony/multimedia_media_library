@@ -535,7 +535,7 @@ int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
 
 void MediaLibraryObjectUtils::InvalidateThumbnail(const string &id, const string &tableName, const string &path)
 {
-    ThumbnailService::GetInstance()->InvalidateThumbnail(id, tableName, path);
+    ThumbnailService::GetInstance()->HasInvalidateThumbnail(id, tableName, path);
 }
 
 int32_t MediaLibraryObjectUtils::DeleteMisc(const int32_t fileId, const string &filePath, const int32_t parentId)
