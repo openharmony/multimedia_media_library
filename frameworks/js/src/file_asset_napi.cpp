@@ -1995,7 +1995,7 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
 static void GetPredicatesByCondition(DataShare::DataSharePredicates &predicates,
     int32_t analysisType, int fileId)
 {
-    if(analysisType == ANALYSIS_DETAIL_ADDRESS) {
+    if (analysisType == ANALYSIS_DETAIL_ADDRESS) {
         predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + '.' +MediaColumn::MEDIA_ID, to_string(fileId));
     } else {
         predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
