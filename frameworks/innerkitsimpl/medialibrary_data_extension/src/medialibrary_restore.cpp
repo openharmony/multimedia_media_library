@@ -212,6 +212,8 @@ void MediaLibraryRestore::InterruptBackup()
 
 void MediaLibraryRestore::CheckResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckResultSet");
     if (resultSet == nullptr) {
         return;
     }
