@@ -181,35 +181,20 @@ uint16_t Property::GetDataType() const
 
 bool Property::Read(const std::vector<uint8_t> &buffer, size_t &offset)
 {
-    if (!MtpPacketTool::GetUInt16(buffer, offset, code_)) {
-        MEDIA_ERR_LOG("Property::read code error");
-        return false;
-    }
-    if (!MtpPacketTool::GetUInt16(buffer, offset, type_)) {
-        MEDIA_ERR_LOG("Property::read type error");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt16(buffer, offset, code_), false,
+        "Property::read code error");
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt16(buffer, offset, type_), false,
+        "Property::read type error");
     uint8_t tmpVar = 0;
-    if (!MtpPacketTool::GetUInt8(buffer, offset, tmpVar)) {
-        MEDIA_ERR_LOG("Property::read tmpVar error");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt8(buffer, offset, tmpVar), false,
+        "Property::read tmpVar error");
     writeable_ = (tmpVar == 1);
-    if (!ReadValueData(buffer, offset)) {
-        MEDIA_ERR_LOG("Property::read valuedata error");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ReadValueData(buffer, offset), false,
+        "Property::read valuedata error");
     bool deviceProp = IsDeviceProperty();
-    if (!deviceProp) {
-        if (!MtpPacketTool::GetUInt32(buffer, offset, groupCode_)) {
-            MEDIA_ERR_LOG("Property::read group error");
-            return false;
-        }
-    }
-    if (!ReadFormData(buffer, offset)) {
-        MEDIA_ERR_LOG("Property::read formdata error");
-        return false;
-    }
+    bool cond = (!deviceProp && !MtpPacketTool::GetUInt32(buffer, offset, groupCode_));
+    CHECK_AND_RETURN_RET_LOG(!cond, false, "Property::read group error");
+    CHECK_AND_RETURN_RET_LOG(ReadFormData(buffer, offset), false, "Property::read formdata error");
     return true;
 }
 
@@ -365,28 +350,20 @@ bool Property::ReadValueData(const std::vector<uint8_t> &buffer, size_t &offset)
         case MTP_TYPE_AUINT64_CODE:
         case MTP_TYPE_AINT128_CODE:
         case MTP_TYPE_AUINT128_CODE: {
-            if (!ReadArrayValues(buffer, offset, defaultValues)) {
-                MEDIA_ERR_LOG("Property::readValueData defaultValues error");
-                return false;
-            }
+            CHECK_AND_RETURN_RET_LOG(ReadArrayValues(buffer, offset, defaultValues), false,
+                "Property::readValueData defaultValues error");
             if (deviceProp) {
-                if (!ReadArrayValues(buffer, offset, currentValues)) {
-                    MEDIA_ERR_LOG("Property::readValueData currentValues error");
-                    return false;
-                }
+                CHECK_AND_RETURN_RET_LOG(ReadArrayValues(buffer, offset, currentValues), false,
+                    "Property::readValueData currentValues error");
             }
             break;
         }
         default: {
-            if (!ReadValue(buffer, offset, *defaultValue)) {
-                MEDIA_ERR_LOG("Property::readValueData defaultValue error");
-                return false;
-            }
+            CHECK_AND_RETURN_RET_LOG(ReadValue(buffer, offset, *defaultValue), false,
+                "Property::readValueData defaultValue error");
             if (deviceProp) {
-                if (!ReadValue(buffer, offset, *currentValue)) {
-                    MEDIA_ERR_LOG("Property::readValueData currentValues error");
-                    return false;
-                }
+                CHECK_AND_RETURN_RET_LOG(ReadValue(buffer, offset, *currentValue), false,
+                    "Property::readValueData currentValues error");
             }
         }
     }
@@ -395,37 +372,22 @@ bool Property::ReadValueData(const std::vector<uint8_t> &buffer, size_t &offset)
 
 bool Property::ReadFormData(const std::vector<uint8_t> &buffer, size_t &offset)
 {
-    if (!MtpPacketTool::GetUInt8(buffer, offset, formFlag_)) {
-        MEDIA_ERR_LOG("Property::readFormData flag error");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt8(buffer, offset, formFlag_), false,
+        "Property::readFormData flag error");
 
     if (formFlag_ == Form::Range) {
-        if (!ReadValue(buffer, offset, *minValue)) {
-            MEDIA_ERR_LOG("Property::readFormData minValue error");
-            return false;
-        }
-        if (!ReadValue(buffer, offset, *maxValue)) {
-            MEDIA_ERR_LOG("Property::readFormData maxValue error");
-            return false;
-        }
-        if (!ReadValue(buffer, offset, *stepSize)) {
-            MEDIA_ERR_LOG("Property::readFormData stepSize error");
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(ReadValue(buffer, offset, *minValue), false, "Property::readFormData minValue error");
+        CHECK_AND_RETURN_RET_LOG(ReadValue(buffer, offset, *maxValue), false, "Property::readFormData maxValue error");
+        CHECK_AND_RETURN_RET_LOG(ReadValue(buffer, offset, *stepSize), false, "Property::readFormData stepSize error");
     } else if (formFlag_ == Form::Enum) {
         uint16_t len = 0;
-        if (!MtpPacketTool::GetUInt16(buffer, offset, len)) {
-            MEDIA_ERR_LOG("Property::readFormData len error");
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(MtpPacketTool::GetUInt16(buffer, offset, len), false,
+            "Property::readFormData len error");
         enumValues = std::make_shared<std::vector<Value>>();
         Value value;
         for (int i = 0; i < len; i++) {
-            if (!ReadValue(buffer, offset, value)) {
-                MEDIA_ERR_LOG("Property::readFormData i=%{private}u", i);
-                return false;
-            }
+            CHECK_AND_RETURN_RET_LOG(ReadValue(buffer, offset, value), false,
+                "Property::readFormData i=%{private}u", i);
             enumValues->push_back(value);
         }
     }

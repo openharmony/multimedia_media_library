@@ -246,10 +246,7 @@ int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, str
 {
     CHECK_AND_RETURN_RET_LOG(fpath != nullptr, E_FAIL, "fpath == nullptr");
     int32_t errRet = remove(fpath);
-    if (errRet) {
-        MEDIA_ERR_LOG("Failed to remove errno: %{public}d, path: %{private}s", errno, fpath);
-    }
-
+    CHECK_AND_PRINT_LOG(!errRet, "Failed to remove errno: %{public}d, path: %{private}s", errno, fpath);
     return errRet;
 }
 
@@ -261,9 +258,7 @@ int32_t MediaFileUtils::RemoveDirectory(const string &path)
 std::string MediaFileUtils::DesensitizePath(const std::string &path)
 {
     string result = path;
-    if (result.length() <= CLOUD_FILE_PATH.length()) {
-        return result;
-    }
+    CHECK_AND_RETURN_RET(result.length() > CLOUD_FILE_PATH.length(), result);
     return result.replace(0, CLOUD_FILE_PATH.length(), "*");
 }
 
@@ -315,9 +310,7 @@ bool MediaFileUtils::CreateDirectory(const string &dirPath, shared_ptr<int> errC
 
         subStr.append(SLASH_CHAR + segment);
         if (!IsDirectory(subStr, errCodePtr)) {
-            if (!Mkdir(subStr, errCodePtr)) {
-                return false;
-            }
+            CHECK_AND_RETURN_RET(Mkdir(subStr, errCodePtr), false);
         }
     }
 
@@ -337,15 +330,10 @@ bool MediaFileUtils::IsFileValid(const string &fileName)
     if (!fileName.empty()) {
         if (stat(fileName.c_str(), &statInfo) == E_SUCCESS) {
             // if the given path is a directory path, return
-            if (statInfo.st_mode & S_IFDIR) {
-                MEDIA_ERR_LOG("file is a directory");
-                return false;
-            }
+            CHECK_AND_RETURN_RET_LOG(!(statInfo.st_mode & S_IFDIR), false, "file is a directory");
 
             // if the file is empty
-            if (statInfo.st_size == 0) {
-                MEDIA_WARN_LOG("file is empty");
-            }
+            CHECK_AND_WARN_LOG(statInfo.st_size != 0, "file is empty");
             return true;
         }
     }
@@ -456,18 +444,13 @@ bool MediaFileUtils::CopyFileAndDelSrc(const std::string &srcFile, const std::st
 {
     if (IsFileExists(destFile)) {
         MEDIA_INFO_LOG("destFile:%{private}s already exists", destFile.c_str());
-        if (!DeleteFile(destFile)) {
-            MEDIA_ERR_LOG("delete destFile:%{private}s error", destFile.c_str());
-        }
+        CHECK_AND_PRINT_LOG(DeleteFile(destFile), "delete destFile:%{private}s error", destFile.c_str());
     }
-    if (!CreateFile(destFile)) {
-        MEDIA_ERR_LOG("create destFile:%{private}s failed", destFile.c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(CreateFile(destFile), false,
+        "create destFile:%{private}s failed", destFile.c_str());
+    
     if (CopyFileUtil(srcFile, destFile)) {
-        if (!DeleteFile(srcFile)) {
-            MEDIA_ERR_LOG("delete srcFile:%{private}s failed", srcFile.c_str());
-        }
+        CHECK_AND_PRINT_LOG(DeleteFile(srcFile), "delete srcFile:%{private}s failed", srcFile.c_str());
         return true;
     } else {
         bool delDestFileRet = DeleteFile(destFile);
@@ -488,17 +471,14 @@ bool MediaFileUtils::CopyFileAndDelSrc(const std::string &srcFile, const std::st
 bool MediaFileUtils::CopyDirAndDelSrc(const std::string &srcPath, const std::string &destPath,
     unsigned short curRecursionDepth)
 {
-    if (curRecursionDepth > MAX_RECURSION_DEPTH) {
-        MEDIA_ERR_LOG("curRecursionDepth:%{public}d>MAX_RECURSION_DEPTH", curRecursionDepth);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(curRecursionDepth <= MAX_RECURSION_DEPTH, false,
+        "curRecursionDepth:%{public}d>MAX_RECURSION_DEPTH", curRecursionDepth);
     ++curRecursionDepth;
     bool ret = true;
     DIR* srcDir = opendir(srcPath.c_str());
-    if (srcDir == nullptr) {
-        MEDIA_ERR_LOG("open srcDir:%{private}s failed,errno:%{public}d", srcPath.c_str(), errno);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(srcDir != nullptr, false,
+        "open srcDir:%{private}s failed,errno:%{public}d", srcPath.c_str(), errno);
+
     if (!IsFileExists(destPath)) {
         if (!CreateDirectory(destPath)) {
             MEDIA_ERR_LOG("create destPath:%{private}s failed", srcPath.c_str());
@@ -1154,9 +1134,7 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
     }
 
     string endStr = path.substr(pos + MEDIA_DATA_DEVICE_PATH.length());
-    if (endStr.empty()) {
-        return retStr;
-    }
+    CHECK_AND_RETURN_RET(!endStr.empty(), retStr);
 
     retStr = beginStr + networkId + endStr;
     MEDIA_DEBUG_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());

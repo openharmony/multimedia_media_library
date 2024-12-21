@@ -57,10 +57,7 @@ static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
 
 static void UpdateCloudAssetDownloadTask(const bool verifyFlag)
 {
-    if (!verifyFlag) {
-        MEDIA_INFO_LOG("Current status is not suitable for task.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(verifyFlag, "Current status is not suitable for task.");
     if (!CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate() && CloudSyncUtils::IsCloudSyncSwitchOn() &&
         CloudSyncUtils::IsCloudDataAgingPolicyOn()) {
         CloudMediaAssetManager::GetInstance().StartDownloadCloudAsset(CloudMediaDownloadType::DOWNLOAD_GENTLE);

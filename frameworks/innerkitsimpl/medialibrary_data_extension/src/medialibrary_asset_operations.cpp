@@ -267,10 +267,8 @@ static int32_t DropAllTables(const shared_ptr<MediaLibraryRdbStore> rdbStore)
         " FROM sqlite_master" +
         " WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%';";
     auto dropSqlsResultSet = rdbStore->QuerySql(queryDropSql);
-    if (dropSqlsResultSet == nullptr) {
-        MEDIA_ERR_LOG("query Drop Sql failed");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(dropSqlsResultSet != nullptr, E_HAS_DB_ERROR, "query Drop Sql failed");
+
     vector<string> dropSqlsVec;
     while (dropSqlsResultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t columnIndex = 0;
@@ -298,21 +296,12 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
 {
     auto valuesBucket = cmd.GetValueBucket();
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Can not get rdb store");
-        return E_HAS_DB_ERROR;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Can not get rdb store");
     int32_t errCode = DropAllTables(rdbStore);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Drop table failed, errCode=%{public}d", errCode);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Drop table failed, errCode=%{public}d", errCode);
     errCode = rdbStore->DataCallBackOnCreate();
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("DataCallBackOnCreate failed, errCode=%{public}d", errCode);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "DataCallBackOnCreate failed, errCode=%{public}d", errCode);
+
     MediaLibraryRdbStore::ResetAnalysisTables();
     MediaLibraryRdbStore::ResetSearchTables();
     const static vector<string> DELETE_DIR_LIST = {
@@ -337,10 +326,8 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
     }
 
     string photoThumbsPath = ROOT_MEDIA_DIR + ".thumbs/Photo";
-    if (!MediaFileUtils::CreateDirectory(photoThumbsPath)) {
-        MEDIA_ERR_LOG("Create dir %{public}s failed", photoThumbsPath.c_str());
-    };
-
+    CHECK_AND_PRINT_LOG(MediaFileUtils::CreateDirectory(photoThumbsPath),
+        "Create dir %{public}s failed", photoThumbsPath.c_str());
     return E_OK;
 }
 
@@ -828,10 +815,8 @@ static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &file
 
 static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, const std::string displayName)
 {
-    if (!PermissionUtils::IsNativeSAApp()) {
-        MEDIA_DEBUG_LOG("do not have permission to set burst_key or burst_cover_level");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(PermissionUtils::IsNativeSAApp(),
+        "do not have permission to set burst_key or burst_cover_level");
 
     string burstKey;
     ValueObject value;
@@ -1253,15 +1238,9 @@ int32_t MediaLibraryAssetOperations::SetUserComment(MediaLibraryCommand &cmd,
 
     string userComment;
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_USER_COMMENT, userComment);
-    if (err != 0) {
-        MEDIA_ERR_LOG("Image does not exist user comment in exif, no need to modify");
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == 0, E_OK, "Image does not exist user comment in exif, no need to modify");
     err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_USER_COMMENT, newUserComment, filePath);
-    if (err != 0) {
-        MEDIA_ERR_LOG("Modify image property user comment failed");
-    }
-
+    CHECK_AND_PRINT_LOG(err == 0, "Modify image property user comment failed");
     return E_OK;
 }
 
@@ -1437,10 +1416,8 @@ static int32_t SolveMovingPhotoVideoCreation(const string &imagePath, const stri
         return E_OK;
     }
     int32_t errCode = MediaFileUtils::CreateAsset(videoPath);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Create moving photo asset failed, path=%{private}s", videoPath.c_str());
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Create moving photo asset failed, path=%{private}s", videoPath.c_str());
     return E_OK;
 }
 
@@ -1546,16 +1523,12 @@ int32_t MediaLibraryAssetOperations::OpenHighlightCover(MediaLibraryCommand &cmd
     tracer.Start("MediaLibraryAssetOperations::OpenHighlightCover");
     string uriStr = cmd.GetUriStringWithoutSegment();
     string path = MediaFileUtils::GetHighlightPath(uriStr);
-    if (path.length() == 0) {
-        MEDIA_ERR_LOG("Open highlight cover invalid uri : %{public}s", uriStr.c_str());
-        return E_INVALID_URI;
-    }
+    CHECK_AND_RETURN_RET_LOG(path.length() != 0, E_INVALID_URI,
+        "Open highlight cover invalid uri : %{public}s", uriStr.c_str());
     
     shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
-    
     fileAsset->SetPath(path);
     fileAsset->SetUri(uriStr);
-    
     return OpenAsset(fileAsset, mode, cmd.GetApi(), false);
 }
 
@@ -1638,9 +1611,7 @@ void MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(const string &path,
 
     int ret = MediaScannerManager::GetInstance()->ScanFileSyncWithoutAlbumUpdate(path, scanAssetCallback,
         MediaLibraryApi::API_10, isForceScan, fileId);
-    if (ret != 0) {
-        MEDIA_ERR_LOG("Scan file failed with error: %{public}d", ret);
-    }
+    CHECK_AND_PRINT_LOG(ret == 0, "Scan file failed with error: %{public}d", ret);
 }
 
 string MediaLibraryAssetOperations::GetEditDataDirPath(const string &path)
@@ -1821,10 +1792,7 @@ int32_t MediaLibraryAssetOperations::SendModifyUserCommentNotify(MediaLibraryCom
 int32_t MediaLibraryAssetOperations::GetAlbumIdByPredicates(const string &whereClause, const vector<string> &whereArgs)
 {
     size_t pos = whereClause.find(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
-    if (pos == string::npos) {
-        MEDIA_ERR_LOG("Predicates whereClause is invalid");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(pos != string::npos, E_ERR, "Predicates whereClause is invalid");
     size_t argsIndex = 0;
     for (size_t i = 0; i < pos; ++i) {
         if (whereClause[i] == '?') {
@@ -1836,9 +1804,7 @@ int32_t MediaLibraryAssetOperations::GetAlbumIdByPredicates(const string &whereC
         return E_ERR;
     }
     auto albumId = whereArgs[argsIndex];
-    if (MediaLibraryDataManagerUtils::IsNumber(albumId)) {
-        return std::atoi(albumId.c_str());
-    }
+    CHECK_AND_RETURN_RET(!MediaLibraryDataManagerUtils::IsNumber(albumId), std::atoi(albumId.c_str()));
     return E_ERR;
 }
 
@@ -2261,25 +2227,19 @@ bool AssetInputParamVerification::IsBool(ValueObject &value, MediaLibraryCommand
 
 bool AssetInputParamVerification::IsString(ValueObject &value, MediaLibraryCommand &cmd)
 {
-    if (value.GetType() == ValueObjectType::TYPE_STRING) {
-        return true;
-    }
+    CHECK_AND_RETURN_RET(value.GetType() != ValueObjectType::TYPE_STRING, true);
     return false;
 }
 
 bool AssetInputParamVerification::IsDouble(ValueObject &value, MediaLibraryCommand &cmd)
 {
-    if (value.GetType() == ValueObjectType::TYPE_DOUBLE) {
-        return true;
-    }
+    CHECK_AND_RETURN_RET(value.GetType() != ValueObjectType::TYPE_DOUBLE, true);
     return false;
 }
 
 bool AssetInputParamVerification::IsBelowApi9(ValueObject &value, MediaLibraryCommand &cmd)
 {
-    if (cmd.GetApi() == MediaLibraryApi::API_OLD) {
-        return true;
-    }
+    CHECK_AND_RETURN_RET(cmd.GetApi() != MediaLibraryApi::API_OLD, true);
     return false;
 }
 
