@@ -32,6 +32,7 @@ private:
     void ParseBurstDisplayName(const PhotoAssetInfo &photoAssetInfo);
     int32_t ToNumber(const std::string &str);
     void ParseNormalDisplayName(const PhotoAssetInfo &photoAssetInfo);
+    int32_t GetPrefixStrLength(std::string yearMonthDayStr, std::string hourMinuteSecondStr);
 
 private:
     enum {
@@ -40,7 +41,8 @@ private:
         BURST_DISPLAY_NAME_MIN_LENGTH = 20,
         BURST_DISPLAY_NAME_YEAR_INDEX = 1,
         BURST_DISPLAY_NAME_HOUR_INDEX = 2,
-        BURST_DISPLAY_NAME_MIN_SUBLINE_COUNT = 3
+        BURST_DISPLAY_NAME_MIN_SUBLINE_COUNT = 3,
+        MAX_DISPLAY_NAME_LENGTH = 255,
     };
     std::string prefix;
     int32_t yearMonthDay = 0;
