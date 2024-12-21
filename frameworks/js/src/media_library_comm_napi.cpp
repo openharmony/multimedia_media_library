@@ -20,6 +20,7 @@
 #include "file_asset_napi.h"
 #include "media_file_utils.h"
 #include "media_photo_asset_proxy.h"
+#include "medialibrary_common_utils.h"
 
 using namespace std;
 
@@ -41,7 +42,7 @@ napi_value MediaLibraryCommNapi::CreatePhotoAssetNapi(
     fileAsset->SetUri(uri);
     string fileId = MediaFileUtils::GetIdFromUri(uri);
     if (!fileId.empty()) {
-        fileAsset->SetId(stoi(fileId));
+        fileAsset->SetId(MediaLibraryCommonUtils::SafeStoi(fileId));
     }
 
     fileAsset->SetDisplayName(MediaFileUtils::GetFileName(uri));

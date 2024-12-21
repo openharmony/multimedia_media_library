@@ -27,6 +27,7 @@
 #include "medialibrary_errno.h"
 #include "thumbnail_const.h"
 #include "userfile_manager_types.h"
+#include "medialibrary_common_utils.h"
 
 using namespace std;
 
@@ -60,11 +61,11 @@ bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString, string &outF
     }
 
     if (queryKey.count(THUMBNAIL_WIDTH) != 0) {
-        outSize.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+        outSize.width = MediaLibraryCommonUtils::SafeStoi(queryKey[THUMBNAIL_WIDTH]);
     }
 
     if (queryKey.count(THUMBNAIL_HEIGHT) != 0) {
-        outSize.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+        outSize.height = MediaLibraryCommonUtils::SafeStoi(queryKey[THUMBNAIL_HEIGHT]);
     }
 
     if (queryKey.count(THUMBNAIL_PATH) != 0) {
@@ -96,11 +97,11 @@ bool ThumbnailUriUtils::ParseKeyFrameThumbnailInfo(const string &uriString, stri
     }
 
     if (queryKey.count(THUMBNAIL_BEGIN_STAMP) != 0) {
-        outBeginStamp = stoi(queryKey[THUMBNAIL_BEGIN_STAMP]);
+        outBeginStamp = MediaLibraryCommonUtils::SafeStoi(queryKey[THUMBNAIL_BEGIN_STAMP]);
     }
 
     if (queryKey.count(THUMBNAIL_TYPE) != 0) {
-        outType = stoi(queryKey[THUMBNAIL_TYPE]);
+        outType = MediaLibraryCommonUtils::SafeStoi(queryKey[THUMBNAIL_TYPE]);
     }
 
     if (queryKey.count(THUMBNAIL_PATH) != 0) {
