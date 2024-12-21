@@ -24,6 +24,7 @@
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "photo_album_column.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
