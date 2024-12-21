@@ -139,6 +139,23 @@ static void BuildDbInfo(PhotoRecordInfo &photoRecordInfo)
     }
 }
 
+static string GetDuplicateLpathCountQuerrySql()
+{
+    return "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
+        PhotoAlbumColumns::TABLE + " WHERE COALESCE(lpath, '') IN (SELECT lpath FROM " +
+        PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " IN (0, 2048) AND " +
+        "COALESCE(lpath, '') <> '' AND " + PhotoAlbumColumns::ALBUM_DIRTY +
+        " <> 4 GROUP BY lpath HAVING COUNT(1) > 1) AND COALESCE(PhotoAlbum.dirty, 1) <> 4";
+}
+
+static string GetAbnormalLpathCountQuerySql()
+{
+    return "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
+        PhotoAlbumColumns::TABLE + " WHERE COALESCE(lpath, '') = '' AND " +
+        PhotoAlbumColumns::ALBUM_TYPE + " != " + std::to_string(PhotoAlbumType::SYSTEM) + " AND " +
+        PhotoAlbumColumns::ALBUM_DIRTY + " != 4";
+}
+
 int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
 {
     const string filterCondition = MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " +
@@ -171,12 +188,17 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
         MediaColumn::MEDIA_DURATION + " = 0 ) AND " + MediaColumn::MEDIA_TYPE + " = " +
         std::to_string(MEDIA_TYPE_VIDEO) + " )) AND " + filterCondition;
 
+    const string duplicateLpathCountQuerySql = GetDuplicateLpathCountQuerrySql();
+    const string abnormalLpathCountQuerySql = GetAbnormalLpathCountQuerySql();
+
     bool ret = ParseResultSet(imageAndVideoCountQuerySql, MEDIA_TYPE_VIDEO, photoRecordInfo.videoCount);
     ret = ParseResultSet(imageAndVideoCountQuerySql, MEDIA_TYPE_IMAGE, photoRecordInfo.imageCount) && ret;
     ret = ParseResultSet(abnormalSizeCountQuerySql, 0, photoRecordInfo.abnormalSizeCount) && ret;
     ret = ParseResultSet(abnormalWidthHeightQuerySql, 0, photoRecordInfo.abnormalWidthOrHeightCount) && ret;
     ret = ParseResultSet(abnormalVideoDurationQuerySql, 0, photoRecordInfo.abnormalVideoDurationCount) && ret;
     ret = ParseResultSet(totalAbnormalRecordSql, 0, photoRecordInfo.toBeUpdatedRecordCount) && ret;
+    ret = ParseResultSet(duplicateLpathCountQuerySql, 0, photoRecordInfo.duplicateLpathCount) && ret;
+    ret = ParseResultSet(abnormalLpathCountQuerySql, 0, photoRecordInfo.abnormalLpathCount) && ret;
 
     BuildDbInfo(photoRecordInfo);
     return ret ? E_OK : E_FAIL;
