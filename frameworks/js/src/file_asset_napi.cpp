@@ -1992,6 +1992,16 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
     { ANALYSIS_MULTI_CROP, { RECOMMENDATION, PAH_QUERY_ANA_RECOMMENDATION, { MOVEMENT_CROP, MOVEMENT_VERSION } } },
 };
 
+static void GetPredicatesByCondition(DataShare::DataSharePredicates &predicates,
+    int32_t analysisType, int fileId)
+{
+    if(analysisType == ANALYSIS_DETAIL_ADDRESS) {
+        predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + '.' +MediaColumn::MEDIA_ID, to_string(fileId));
+    } else {
+        predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    }
+}
+
 static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
 {
     MediaLibraryTracer tracer;
@@ -2024,7 +2034,7 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
     }
     int fileId = context->objectInfo->GetFileId();
     Uri uri (uriStr);
-    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    GetPredicatesByCondition(predicates, context->analysisType, fileId);
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
     context->analysisData = context->analysisType == ANALYSIS_FACE ?
