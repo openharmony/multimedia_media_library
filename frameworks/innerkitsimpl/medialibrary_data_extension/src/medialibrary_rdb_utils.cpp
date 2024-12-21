@@ -2614,4 +2614,28 @@ bool MediaLibraryRdbUtils::HasDataToAnalysis(const std::shared_ptr<MediaLibraryR
     bool highlight = HasHighLightData(rdbStore);
     return (loc || cv || search || highlight);
 }
+
+int32_t MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const int64_t fileId)
+{
+    int32_t err = -1;
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("RdbStore is null!");
+        return err;
+    }
+ 
+    ValuesBucket values;
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, 0);
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 0);
+    values.PutLong(PhotoColumn::PHOTO_LCD_VISIT_TIME, 0);
+ 
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t changedRows = 0;
+    err = rdbStore->Update(changedRows, values, predicates);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("RdbStore Update failed! err: %{public}d", err);
+    }
+    return err;
+}
 } // namespace OHOS::Media
