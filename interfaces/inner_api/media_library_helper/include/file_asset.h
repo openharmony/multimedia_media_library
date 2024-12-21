@@ -208,6 +208,9 @@ public:
     EXPORT const std::string &GetDetailTime() const;
     EXPORT void SetDetailTime(const std::string &detailTime);
     EXPORT const std::string &GetStrMember(const std::string &name) const;
+
+    EXPORT int32_t GetSupportedWatermarkType() const;
+    EXPORT void SetSupportedWatermarkType(int32_t watermarkType);
 private:
     int32_t GetInt32Member(const std::string &name) const;
     int64_t GetInt64Member(const std::string &name) const;
