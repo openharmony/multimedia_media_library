@@ -139,7 +139,7 @@ void MediaLibraryRestore::DoRdbBackup()
     isBackuping_ = true;
     CHECK_AND_RETURN_LOG((!isWaiting_.load()), "waiting stop cloudsync");
     auto currentTime = MediaFileUtils::UTCTimeSeconds();
-    MediaLibraryRestore::GetInstance().SaveHAModeSwitchStatusToPara(currentTime);
+    SaveHAModeSwitchStatusToPara(currentTime);
     std::thread([&] {
         MEDIA_INFO_LOG("DoRdbBackup: Backup [start]");
 #ifdef CLOUD_SYNC_MANAGER

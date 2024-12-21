@@ -110,6 +110,8 @@ public:
         const std::vector<std::string>& tagIds);
     static void UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
         const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap);
+    static int32_t BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
+        std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum);
     static void CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
         const std::string &dbTag = "");
 
@@ -123,8 +125,6 @@ public:
     template <typename T>
     static std::optional<T> GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::string &columnName);
-    static int32_t BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
-        std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
