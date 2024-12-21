@@ -65,6 +65,7 @@ static list<Uri> UpdateAnalysisAlbumsForCloudSync(const shared_ptr<MediaLibraryR
         albumIds.push_back(get<string>(ResultSetUtils::GetValFromColumn(
             ANALYSIS_PHOTO_MAP_TABLE + "." + PhotoMap::ALBUM_ID, resultSet, TYPE_STRING)));
     }
+    resultSet->Close();
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIds, fileIds);
 
     list<Uri> sendUris;
