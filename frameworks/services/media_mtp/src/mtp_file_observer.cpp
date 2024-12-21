@@ -118,7 +118,8 @@ void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &p
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents delete/MOVED_FROM: path:%{private}s", fileName.c_str());
         uint32_t id = 0;
         if (MtpMediaLibrary::GetInstance()->GetIdByPath(fileName, id) == 0) {
-            eventPtr->SendObjectRemoved(fileName);
+            MtpMediaLibrary::GetInstance()->ObserverDeletePathToMap(fileName);
+            eventPtr->SendObjectRemovedByHandle(id);
         }
     } else if (event.mask & IN_CLOSE_WRITE) {
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents IN_CLOSE_WRITE : path:%{private}s", fileName.c_str());
