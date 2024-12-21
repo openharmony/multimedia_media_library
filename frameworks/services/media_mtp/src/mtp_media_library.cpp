@@ -707,16 +707,14 @@ int32_t MtpMediaLibrary::MoveObject(const std::shared_ptr<MtpOperationContext> &
         MEDIA_ERR_LOG("MtpMediaLibrary::MoveObject from or to not found");
         return MtpErrorUtils::SolveMoveObjectError(E_HAS_DB_ERROR);
     }
-
     std::error_code ec;
     if (!sf::exists(from, ec) || !sf::exists(to, ec)) {
         MEDIA_ERR_LOG("MtpMediaLibrary::MoveObject from or to path not found");
         return MtpErrorUtils::SolveMoveObjectError(E_HAS_DB_ERROR);
     }
-    if (!sf::is_directory(to, ec)) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::MoveObject parent path is not dir");
-        return MtpErrorUtils::SolveMoveObjectError(E_HAS_DB_ERROR);
-    }
+
+    CHECK_AND_RETURN_RET_LOG(sf::is_directory(to, ec), MtpErrorUtils::SolveMoveObjectError(E_HAS_DB_ERROR),
+        "MtpMediaLibrary::MoveObject parent path is not dir");
     auto fromPath = sf::path(from);
     auto toPath = sf::path(to) / sf::path(from).filename();
     bool isDir = sf::is_directory(fromPath, ec);
@@ -730,11 +728,10 @@ int32_t MtpMediaLibrary::MoveObject(const std::shared_ptr<MtpOperationContext> &
         // move between different storage
         sf::copy(fromPath, toPath, sf::copy_options::recursive | sf::copy_options::overwrite_existing, ec);
     }
+
     MEDIA_INFO_LOG("MTP:MoveObject:from[%{public}s],to[%{public}s]", fromPath.c_str(), toPath.c_str());
-    if (ec.value() != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::MoveObject failed");
-        return MtpErrorUtils::SolveMoveObjectError(E_FAIL);
-    }
+    CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveMoveObjectError(E_FAIL),
+        "MtpMediaLibrary::MoveObject failed");
     {
         WriteLock lock(g_mutex);
         MoveObjectSub(fromPath, toPath, isDir, repeatHandle);
@@ -760,22 +757,16 @@ int32_t MtpMediaLibrary::CopyObject(const std::shared_ptr<MtpOperationContext> &
         MEDIA_ERR_LOG("MtpMediaLibrary::CopyObject handle or parent path not found");
         return MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR);
     }
-    if (!sf::is_directory(to)) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::CopyObject parent path is not dir");
-        return MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR);
-    }
+    CHECK_AND_RETURN_RET_LOG(sf::is_directory(to), MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR),
+        "MtpMediaLibrary::CopyObject parent path is not dir");
     std::error_code ec;
     auto fromPath = sf::path(from);
     auto toPath = sf::path(to) / sf::path(from).filename();
-    if (sf::exists(toPath, ec)) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::CopyObject toPath exists");
-        return MtpErrorUtils::SolveCopyObjectError(E_FILE_EXIST);
-    }
+    CHECK_AND_RETURN_RET_LOG(!sf::exists(toPath, ec), MtpErrorUtils::SolveCopyObjectError(E_FILE_EXIST),
+        "MtpMediaLibrary::CopyObject toPath exists");
     sf::copy(fromPath, toPath, sf::copy_options::recursive | sf::copy_options::overwrite_existing, ec);
-    if (ec.value() != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::CopyObject failed");
-        return MtpErrorUtils::SolveCopyObjectError(E_FAIL);
-    }
+    CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveCopyObjectError(E_FAIL),
+        "MtpMediaLibrary::CopyObject failed");
     {
         WriteLock lock(g_mutex);
         outObjectHandle = AddPathToMap(toPath);
@@ -800,20 +791,16 @@ int32_t MtpMediaLibrary::DeleteObject(const std::shared_ptr<MtpOperationContext>
     MEDIA_DEBUG_LOG("MtpMediaLibrary::DeleteObject path[%{public}s]", path.c_str());
     if (sf::is_directory(path, ec)) {
         sf::remove_all(path, ec);
-        if (ec.value() != MTP_SUCCESS) {
-            MEDIA_ERR_LOG("MtpMediaLibrary::DeleteObject remove_all failed");
-            return MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR);
-        }
+        CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR),
+            "MtpMediaLibrary::DeleteObject remove_all failed");
         {
             WriteLock lock(g_mutex);
             ErasePathInfo(context->handle, path);
         }
     } else {
         sf::remove(path, ec);
-        if (ec.value() != MTP_SUCCESS) {
-            MEDIA_ERR_LOG("MtpMediaLibrary::DeleteObject remove failed");
-            return MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR);
-        }
+        CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR),
+            "MtpMediaLibrary::DeleteObject remove failed");
         DeleteHandlePathMap(path, context->handle);
     }
     return MTP_SUCCESS;
@@ -831,10 +818,9 @@ int32_t MtpMediaLibrary::SetObjectPropValue(const std::shared_ptr<MtpOperationCo
         return MTP_SUCCESS;
     }
     std::string path("");
-    if (GetPathById(context->handle, path) != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::SetObjectPropValue handle not found");
-        return MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR);
-    }
+    CHECK_AND_RETURN_RET_LOG(GetPathById(context->handle, path) == MTP_SUCCESS,
+        MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR),
+        "MtpMediaLibrary::SetObjectPropValue handle not found");
 
     std::error_code ec;
     string to = sf::path(path).parent_path().string() + "/" + get<std::string>(colValue);
@@ -844,10 +830,8 @@ int32_t MtpMediaLibrary::SetObjectPropValue(const std::shared_ptr<MtpOperationCo
     }
 
     sf::rename(path, to, ec);
-    if (ec.value() != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::SetObjectPropValue rename failed");
-        return MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR);
-    }
+    CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR),
+        "MtpMediaLibrary::SetObjectPropValue rename failed");
     {
         WriteLock lock(g_mutex);
         ModifyHandlePathMap(path, to);

@@ -34,29 +34,23 @@ int32_t MediaLibraryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     int32_t ret = NativeRdb::E_OK;
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::OnUpgrade start");
     ret = this->UpgradeAlbumPlugin(store);
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+
     ret = this->UpgradePhotoAlbum(store);
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+
     ret = this->UpgradePhotos(store);
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+
     ret = this->UpgradePhotoMap(store);
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+
     ret = this->MergeAlbumFromOldBundleNameToNewBundleName(store);
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+
     ret = this->UpgradePhotosBelongsToAlbum(store);
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::OnUpgrade end");
     return NativeRdb::E_OK;
 }
@@ -93,10 +87,8 @@ int32_t MediaLibraryDbUpgrade::MergeAlbumFromOldBundleNameToNewBundleName(Native
     std::vector<NativeRdb::ValueObject> args;
     for (auto &executeSql : SQL_MERGE_ALBUM_FROM_OLD_BUNDLE_NAME_TO_NEW_BUNDLE_NAME) {
         ret = ExecSqlsInternal(store, executeSql, args);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Media_Restore: executeSql failed, sql: %{public}s", executeSql.c_str());
-            return ret;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+            "Media_Restore: executeSql failed, sql: %{public}s", executeSql.c_str());
     }
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::MergeAlbumFromOldBundleNameToNewBundleName end");
     return NativeRdb::E_OK;
@@ -109,10 +101,8 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotosBelongsToAlbum(NativeRdb::RdbStore &
     std::vector<NativeRdb::ValueObject> args;
     for (const auto &executeSql : this->SQL_PHOTOS_NEED_TO_BELONGS_TO_ALBUM) {
         ret = ExecSqlsInternal(store, executeSql, args);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Media_Restore: executeSql failed, sql: %{public}s", executeSql.c_str());
-            return ret;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+            "Media_Restore: executeSql failed, sql: %{public}s", executeSql.c_str());
     }
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::UpgradePhotosBelongsToAlbum end");
     return NativeRdb::E_OK;
@@ -123,9 +113,7 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotosBelongsToAlbum(NativeRdb::RdbStore &
  */
 int32_t MediaLibraryDbUpgrade::UpgradeAlbumPlugin(NativeRdb::RdbStore &store)
 {
-    if (this->dbUpgradeUtils_.IsTableExists(store, "album_plugin")) {
-        return NativeRdb::E_OK;
-    }
+    CHECK_AND_RETURN_RET(!(this->dbUpgradeUtils_.IsTableExists(store, "album_plugin")), NativeRdb::E_OK);
     AlbumPluginTableEventHandler handler;
     return handler.OnUpgrade(store, 0, 0);
 }
@@ -137,17 +125,13 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotoAlbum(NativeRdb::RdbStore &store)
 {
     int32_t ret = NativeRdb::E_OK;
     ret = this->dbUpgradeUtils_.DropAllTriggers(store, "PhotoAlbum");
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+
     ret = this->dbUpgradeUtils_.DropAllUniqueIndex(store, "PhotoAlbum");
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+
     ret = this->AddlPathColumn(store);
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
     return this->UpdatelPathColumn(store);
 }
 
@@ -181,12 +165,9 @@ int32_t MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store)
     std::vector<NativeRdb::ValueObject> args;
     std::string sql = this->SQL_PHOTOS_TABLE_ADD_OWNER_ALBUM_ID;
     int32_t ret = ExecSqlsInternal(store, sql, args);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG(
-            "Media_Restore: MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn failed, ret=%{public}d, sql=%{public}s",
-            ret,
-            sql.c_str());
-    }
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+        "Media_Restore: MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn failed, ret=%{public}d, sql=%{public}s",
+        ret, sql.c_str());
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn success");
     return ret;
 }
@@ -196,9 +177,7 @@ int32_t MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store)
  */
 int32_t MediaLibraryDbUpgrade::AddlPathColumn(NativeRdb::RdbStore &store)
 {
-    if (this->dbUpgradeUtils_.IsColumnExists(store, "PhotoAlbum", "lpath")) {
-        return NativeRdb::E_OK;
-    }
+    CHECK_AND_RETURN_RET(!(this->dbUpgradeUtils_.IsColumnExists(store, "PhotoAlbum", "lpath")), NativeRdb::E_OK);
     std::vector<NativeRdb::ValueObject> args;
     std::string sql = this->SQL_PHOTO_ALBUM_TABLE_ADD_LPATH_COLUMN;
     return ExecSqlsInternal(store, sql, args);
@@ -255,13 +234,10 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotos(NativeRdb::RdbStore &store)
 {
     int32_t ret = NativeRdb::E_OK;
     ret = this->dbUpgradeUtils_.DropAllTriggers(store, "Photos");
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+
     ret = this->AddOwnerAlbumIdColumn(store);
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
     return NativeRdb::E_OK;
 }
 
@@ -272,13 +248,10 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotoMap(NativeRdb::RdbStore &store)
 {
     int32_t ret = NativeRdb::E_OK;
     ret = this->dbUpgradeUtils_.DropAllTriggers(store, "PhotoMap");
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+
     ret = this->MoveSingleRelationshipToPhotos(store);
-    if (ret != NativeRdb::E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
     return NativeRdb::E_OK;
 }
 }  // namespace DataTransfer
