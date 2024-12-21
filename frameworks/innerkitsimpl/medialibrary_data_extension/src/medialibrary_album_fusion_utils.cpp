@@ -1386,7 +1386,14 @@ int32_t MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(
     KeepHiddenAlbumAssetSynced(upgradeStore);
     RemediateErrorSourceAlbumSubType(upgradeStore);
     HandleMisMatchScreenRecord(upgradeStore);
-    PhotoAlbumLPathOperation().SetRdbStore(upgradeStore).CleanInvalidPhotoAlbums();
+    int32_t albumAffectedCount = PhotoAlbumLPathOperation::GetInstance()
+                                     .SetRdbStore(upgradeStore)
+                                     .Start()
+                                     .CleanInvalidPhotoAlbums()
+                                     .CleanDuplicatePhotoAlbums()
+                                     .CleanEmptylPathPhotoAlbums()
+                                     .GetAlbumAffectedCount();
+    MediaLibraryAlbumFusionUtils::SetRefreshAlbum(albumAffectedCount > 0);
     MEDIA_INFO_LOG("End rebuild album table and compensate loss value");
     return E_OK;
 }
@@ -1535,7 +1542,7 @@ int32_t MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(
         int32_t err = upgradeStore->ExecuteSql(UPDATE_COMPENSATE_ALBUM_DATA);
         if (err != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", UPDATE_COMPENSATE_ALBUM_DATA.c_str());
-            return err;
+            continue;
         }
     }
     MEDIA_INFO_LOG("End compensate Lpath for local album");
