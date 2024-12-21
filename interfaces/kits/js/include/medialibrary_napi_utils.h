@@ -354,6 +354,10 @@ const std::vector<std::string> videoEnhancementTypeEnum {
     "QUALITY_ENHANCEMENT_LOCAL", "QUALITY_ENHANCEMENT_CLOUD", "QUALITY_ENHANCEMENT_LOCAL_AND_CLOUD"
 };
 
+const std::vector<std::string> watermarkTypeEnum {
+    "DEFAULT", "BRAND_COMMON", "COMMON", "BRAND"
+};
+
 const std::vector<std::string> fileKeyEnumValues {
     MEDIA_DATA_DB_ID,
     MEDIA_DATA_DB_RELATIVE_PATH,
@@ -464,6 +468,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("CE_AVAILABLE",              PhotoColumn::PHOTO_CE_AVAILABLE),
     std::make_pair("OWNER_ALBUM_ID",            PhotoColumn::PHOTO_OWNER_ALBUM_ID),
     std::make_pair("THUMBNAIL_VISIBLE",         PhotoColumn::PHOTO_THUMBNAIL_VISIBLE),
+    std::make_pair("SUPPORTED_WATERMARK_TYPE",  PhotoColumn::SUPPORTED_WATERMARK_TYPE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

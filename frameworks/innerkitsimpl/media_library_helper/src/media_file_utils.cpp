@@ -2043,4 +2043,10 @@ bool MediaFileUtils::GenerateKvStoreKey(const std::string &fileId, const std::st
           KVSTORE_FILE_ID_TEMPLATE.substr(fileId.length()) + fileId;
     return true;
 }
+
+bool MediaFileUtils::CheckSupportedWatermarkType(int32_t watermarkType)
+{
+    return watermarkType >= static_cast<int32_t>(WatermarkType::BRAND_COMMON) &&
+        watermarkType <= static_cast<int32_t>(WatermarkType::BRAND);
+}
 } // namespace OHOS::Media

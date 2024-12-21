@@ -120,6 +120,13 @@ static void SetOwnerAlbumId(ValuesBucket &assetInfo, shared_ptr<NativeRdb::Resul
     assetInfo.PutString(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
 }
 
+static void SetSupportedWatermarkType(int32_t sourceFileId, ValuesBucket &assetInfo,
+    shared_ptr<NativeRdb::ResultSet> resultSet)
+{
+    int32_t supportedWatermarkType = GetInt32Val(PhotoColumn::SUPPORTED_WATERMARK_TYPE, resultSet);
+    assetInfo.PutInt(PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWatermarkType);
+}
+
 int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibraryCommand &cmd,
     const FileAsset &fileAsset, int32_t sourceFileId, shared_ptr<CloudEnhancementFileInfo> info,
     shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<TransactionOperations> trans)
@@ -156,6 +163,7 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
         static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT));
     assetInfo.PutInt(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, sourceFileId);
     SetOwnerAlbumId(assetInfo, resultSet);
+    SetSupportedWatermarkType(sourceFileId, assetInfo, resultSet);
     cmd.SetValueBucket(assetInfo);
     cmd.SetTableName(PhotoColumn::PHOTOS_TABLE);
     int64_t outRowId = -1;

@@ -126,6 +126,7 @@ public:
     static const std::string PHOTO_OWNER_ALBUM_ID EXPORT;
     static const std::string PHOTO_ORIGINAL_ASSET_CLOUD_ID EXPORT;
     static const std::string PHOTO_SOURCE_PATH EXPORT;
+    static const std::string SUPPORTED_WATERMARK_TYPE EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;

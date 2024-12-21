@@ -148,6 +148,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("saveCameraPhoto", JSSaveCameraPhoto),
             DECLARE_NAPI_FUNCTION("discardCameraPhoto", JSDiscardCameraPhoto),
             DECLARE_NAPI_FUNCTION("setVideoEnhancementAttr", JSSetVideoEnhancementAttr),
+            DECLARE_NAPI_FUNCTION("setSupportedWatermarkType", JSSetSupportedWatermarkType),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -1282,6 +1283,29 @@ napi_value MediaAssetChangeRequestNapi::JSDiscardCameraPhoto(napi_env env, napi_
     RETURN_NAPI_UNDEFINED(env);
 }
 
+napi_value MediaAssetChangeRequestNapi::JSSetSupportedWatermarkType(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    int32_t watermarkType;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, watermarkType) == napi_ok,
+        "Failed to parse watermark type");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckSupportedWatermarkType(watermarkType),
+        "Failed to check watermark type");
+
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_INNER_FAIL);
+    changeRequest->GetFileAssetInstance()->SetSupportedWatermarkType(watermarkType);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_SUPPORTED_WATERMARK_TYPE);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& context, bool isMovingPhotoVideo = false)
 {
     auto changeRequest = context.objectInfo;
@@ -2298,6 +2322,19 @@ static bool DiscardCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& conte
     return true;
 }
 
+static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetSupportedWatermarkTypeExecute");
+
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    valuesBucket.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, fileAsset->GetSupportedWatermarkType());
+    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+}
+
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAsyncContext&)> EXECUTE_MAP = {
     { AssetChangeOperation::CREATE_FROM_URI, CreateFromFileUriExecute },
     { AssetChangeOperation::GET_WRITE_CACHE_HANDLER, SubmitCacheExecute },
@@ -2314,6 +2351,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::ADD_FILTERS, AddFiltersExecute },
     { AssetChangeOperation::DISCARD_CAMERA_PHOTO, DiscardCameraPhotoExecute },
     { AssetChangeOperation::SET_VIDEO_ENHANCEMENT_ATTR, SetVideoEnhancementAttr },
+    { AssetChangeOperation::SET_SUPPORTED_WATERMARK_TYPE, SetSupportedWatermarkTypeExecute },
 };
 
 static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
