@@ -52,7 +52,6 @@ public:
     EXPORT static int32_t RebuildAlbumAndFillCloudValue(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
     EXPORT static int32_t HandleChangeNameAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
     EXPORT static int32_t CompensateLpathForLocalAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
-    EXPORT static int32_t TransOtherAlbumData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
     EXPORT static int32_t MergeClashSourceAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t &sourceAlbumId, const int64_t &targetAlbumId);
     EXPORT static void SetParameterToStopSync();

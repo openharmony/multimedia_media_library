@@ -23,7 +23,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "media_log.h"
-#include HAS_THERMAL_MANAGER_PART
+#ifdef HAS_THERMAL_MANAGER_PART
 #include "thermal_mgr_client.h"
 #endif
 
@@ -36,36 +36,47 @@ constexpr size_t CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL = 270000;
 
 void ThumbnailGeneratorWrapper::BeforeExecute()
 {
-    if (executeParam == nullptr) {
+    if (executeParam_ == nullptr) {
         return;
     }
-    if (executeParam->affinity_ != CpuAffinityType::CPU_IDX_DEFAULT) {
-        CpuUtils::SetSelfTheadAffinity(executeParam->affinity_);
+    if (executeParam_->affinity_ != CpuAffinityType::CPU_IDX_DEFAULT) {
+        CpuUtils::SetSelfThreadAffinity(executeParam_->affinity_);
     }
 }
 
 bool ThumbnailGeneratorWrapper::IsPreconditionFullfilled()
 {
-    if (executeParam == nullptr) {
-        return;
+    if (executeParam_ == nullptr) {
+        return true;
     }
-    if (executeParam->tempLimit != -1) {
+    if (executeParam_->tempLimit_ != -1) {
         #ifdef HAS_THERMAL_MANAGER_PART
-        auto& thermalMgrClient = PowerMgr::TherMgrClient::GetInstance();
-        if (executeParam->tempLimit < static_cast<int32_t>(thermalMgrClient.GetThermalLevel())) {
+        auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
+        if (executeParam_->tempLimit_ < static_cast<int32_t>(thermalMgrClient.GetThermalLevel())) {
+            MEDIA_INFO_LOG("task stop because of temp limit %{public}d", executeParam_->tempLimit_);
             return false;
         }
         #endif
     }
-    if (executeParam->batteryLimit != -1) {
+    if (executeParam_->batteryLimit_ != -1) {
         #ifdef HAS_BATTERY_MANAGER_PART
         auto& batteryClient = PowerMgr::BatterySrvClient::GetInstance();
-        if (batteryClient.GetCapacity() < executeParam->batteryLimit) {
+        if (batteryClient.GetCapacity() < executeParam_->batteryLimit_) {
+            MEDIA_INFO_LOG("task stop because of battery limit %{public}d", executeParam_->batteryLimit_);
             return false;
         }
         #endif
     }
     return true;
+}
+
+void ThumbnailGeneratorWrapper::operator() (std::shared_ptr<ThumbnailTaskData> &data)
+{
+    if (!IsPreconditionFullfilled()) {
+        return;
+    }
+    BeforeExecute();
+    executor_(data);
 }
 
 ThumbnailGenerateWorker::~ThumbnailGenerateWorker()
@@ -98,7 +109,7 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
     } else if (taskType == ThumbnailTaskType::BACKGROUND) {
         threadNum = THREAD_NUM_BACKGROUND;
         threadName = THREAD_NAME_BACKGROUND;
-        cpuAffinityType = CpuAffinityType::CPU_IDX_7;
+        cpuAffinityType = CpuAffinityType::CPU_IDX_9;
     } else {
         MEDIA_ERR_LOG("invalid task type");
         return E_ERR;

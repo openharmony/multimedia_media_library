@@ -71,6 +71,7 @@
 #endif
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
+#include "photo_other_album_trans_operation.h"
 
 using namespace OHOS::AAFwk;
 
@@ -97,6 +98,7 @@ const int32_t NET_CONN_STATE_CONNECTED = 3;
 // The net bearer type is in net_all_capabilities.h
 const int32_t BEARER_CELLULAR = 0;
 bool MedialibrarySubscriber::isCellularNetConnected_ = false;
+bool MedialibrarySubscriber::isWifiConnected_ = false;
 
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
@@ -320,9 +322,14 @@ void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadStatus(const AAFwk::Wa
     }
 }
 
-bool MedialibrarySubscriber::GetIsCellularNetConnected()
+bool MedialibrarySubscriber::IsCellularNetConnected()
 {
     return isCellularNetConnected_;
+}
+
+bool MedialibrarySubscriber::IsWifiConnected()
+{
+    return isWifiConnected_;
 }
 
 void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadTaskStatus()
@@ -581,9 +588,8 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DoUpdateDateTakenWhenZero faild");
     }
-
     RecoverBackgroundDownloadCloudMediaAsset();
-
+    CloudMediaAssetManager::GetInstance().StartDeleteCloudMediaAssets();
     // compat old-version moving photo
     MovingPhotoProcessor::StartProcess();
 
@@ -617,6 +623,8 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
     PauseBackgroundDownloadCloudMedia();
     PhotoAlbumLPathOperation::GetInstance().Stop();
+    PhotoOtherAlbumTransOperation::GetInstance().Stop();
+    CloudMediaAssetManager::GetInstance().StopDeleteCloudMediaAssets();
 }
 
 #ifdef MEDIALIBRARY_MTP_ENABLE

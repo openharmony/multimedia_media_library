@@ -59,6 +59,7 @@
 #include "post_event_utils.h"
 #include "dfx_manager.h"
 #include "image_format_convert.h"
+#include "medialibrary_common_utils.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -923,20 +924,27 @@ bool ThumbnailUtils::QueryLocalNoThumbnailInfos(ThumbRdbOpt &opt, vector<Thumbna
         MEDIA_DATA_DB_THUMBNAIL_READY,
         PhotoColumn::PHOTO_LCD_VISIT_TIME,
     };
-    RdbPredicates rdbPredicates(opts.table);
+    RdbPredicates rdbPredicates(opt.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_POSITION, "1");
     rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_LCD_VISIT_TIME, "0")->Or()->
         EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY,
-        std::_to_string(static_cast<int32_t>(ThumbnailReady::GENERATE_THUMB_LATER)))
+        std::to_string(static_cast<int32_t>(ThumbnailReady::GENERATE_THUMB_LATER)))
         ->EndWrap();
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
+    rdbPredicates.Limit(THUMBNAIL_QUERY_MIN);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
     if (opt.store == nullptr) {
         MEDIA_ERR_LOG("opt.store is nullptr");
         return false;
     }
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates.column);
+    shared_ptr<ResultSet> resultSet = opt.store->QueryByStep(rdbPredicates, column);
+    if (!CheckResultSetCount(resultSet, err)) {
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
     err = resultSet->GoToFirstRow();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
@@ -1466,7 +1474,7 @@ bool ThumbnailUtils::UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData 
 bool ThumbnailUtils::InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
 {
     ValuesBucket values;
-    values.PutInt(REMOTE_THUMBNAIL_DB_FILE_ID, stoi(data.id));
+    values.PutInt(REMOTE_THUMBNAIL_DB_FILE_ID, MediaLibraryCommonUtils::SafeStoi(data.id));
     values.PutString(REMOTE_THUMBNAIL_DB_UDID, data.udid);
     if (!data.thumbnailKey.empty()) {
         values.PutString(MEDIA_DATA_DB_THUMBNAIL, data.thumbnailKey);
@@ -2067,7 +2075,7 @@ bool ThumbnailUtils::CheckResultSetCount(const shared_ptr<ResultSet> &resultSet,
         MEDIA_ERR_LOG("Failed to get row count %{public}d", err);
         return false;
     } else if (rowCount == 0) {
-        MEDIA_ERR_LOG("CheckCount No match!");
+        MEDIA_INFO_LOG("CheckCount No match!");
         err = E_EMPTY_VALUES_BUCKET;
         return false;
     }

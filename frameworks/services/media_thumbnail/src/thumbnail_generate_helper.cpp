@@ -187,7 +187,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts, bool
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::CreateLocalThumbnail(ThumbRdbOpt &opt)
+int32_t ThumbnailGenerateHelper::CreateLocalThumbnail(ThumbRdbOpt &opts)
 {
     if (opts.store == nullptr) {
         MEDIA_ERR_LOG("rdbStore is not init");
@@ -197,33 +197,35 @@ int32_t ThumbnailGenerateHelper::CreateLocalThumbnail(ThumbRdbOpt &opt)
     int32_t err = 0;
     if (!ThumbnailUtils::QueryLocalNoThumbnailInfos(opts, infos, err)) {
         MEDIA_ERR_LOG("Failed to QueryNoThumbnailInfos %{private}d", err);
-        IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CloudSyncOnGenerationComplete,
-        ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CloudSyncOnGenerationComplete,
+            ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
         return err;
     }
     if (infos.empty()) {
-        IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CloudSyncOnGenerationComplete,
-        ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CloudSyncOnGenerationComplete,
+            ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
         return E_OK;
     }
-    std::shared_ptr<ExecutorParamBuilder> param = std::make_shared_<ExecutorParamBuilder>();
+    std::shared_ptr<ExecuteParamBuilder> param = std::make_shared<ExecuteParamBuilder>();
     param->batteryLimit_ = LOCAL_GENERATION_BATTERY_CAPACITY;
     param->tempLimit_ = READY_TEMPERATURE_LEVEL;
     param->affinity_ = CpuAffinityType::CPU_IDX_6;
+    MEDIA_INFO_LOG("CreateLocalThumbnail: %{public}d", static_cast<int>(infos.size()));
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
+        infos[i].loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
         if (infos[i].thumbnailReady == 0 && infos[i].lcdVisitTime == 0) {
-            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateLcdAndThumbnail,
-                opts, info[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID, param);
+            IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
+                opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID, param);
         } else if (infos[i].thumbnailReady == 0) {
-            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateThumbnail,
-                opts, info[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID, param);
+            IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateThumbnail,
+                opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID, param);
         } else if (infos[i].lcdVisitTime == 0) {
-            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateLcd,
-                opts, info[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID, param);
+            IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcd,
+                opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID, param);
         }
     }
-    IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CloudSyncOnGenerationComplete,
+    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CloudSyncOnGenerationComplete,
         ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::MID);
     return E_OK;
 }
