@@ -58,11 +58,11 @@ void StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data)
     }
 }
 
-void IThumbnailHelper::CloudSyncGenetationComplete(std::shared_ptr<ThumbnailTaskData> &data)
+void IThumbnailHelper::CloudSyncOnGenerationComplete(std::shared_ptr<ThumbnailTaskData> &data)
 {
     CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = true;
     CloudSyncHelper::GetInstance()->StartSync();
-    MEDIA_INFO_LOG("CloudSyncGenetationComplete complete");
+    MEDIA_INFO_LOG("CloudSyncOnGenerationComplete complete");
 }
 
 void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
@@ -176,7 +176,7 @@ void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executo
 
 void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts,
     ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority,
-    std::shared_ptr<ExecutorParamBuilder> param)
+    std::shared_ptr<ExecuteParamBuilder> param)
 {
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(taskType);
@@ -919,7 +919,7 @@ bool IThumbnailHelper::DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
-static bool ScaleToThumbnail(ThumbnailData &data)
+static bool ScaleLcdToThumbnail(ThumbnailData &data)
 {
     if (data.source.IsEmptySource()) {
         MEDIA_ERR_LOG("data source is empty when scaling from lcd to thumb");
@@ -954,11 +954,9 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
     MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
         data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
     data.isNeedStoreSize = false;
-    bool isSuccess = true;
-    isSuccess &= DoCreateLcd(opts, data, ret);
+    DoCreateLcd(opts, data, ret);
     ScaleLcdToThumbnail(data);
-    isSuccess &= DoCreateThumbnail(opts, data, ret);
-    return isSuccess;
+    return DoCreateThumbnail(opts, data, ret);
 }
 
 std::string GetAvailableThumbnailSuffix(ThumbnailData &data)

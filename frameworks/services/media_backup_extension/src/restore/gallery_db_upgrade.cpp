@@ -45,6 +45,8 @@ int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     this->AddPhotoQualityOfGalleryMedia(store);
     this->AddRelativeBucketIdOfGalleryAlbum(store);
     this->GarbageAlbumUpgrade(store);
+    this->AddIndexOfGalleryAlbum(store);
+    this->AddIndexOfAlbumPlugin(store);
     return NativeRdb::E_OK;
 }
 
@@ -123,6 +125,32 @@ int32_t GalleryDbUpgrade::GarbageAlbumCheckOrAddType(NativeRdb::RdbStore &store)
             "Media_Restore: GarbageAlbumCheckOrAddType failed, ret=%{public}d, sql=%{public}s", ret, sql.c_str());
     }
     MEDIA_INFO_LOG("Media_Restore: GarbageAlbumCheckOrAddType success");
+    return ret;
+}
+
+int32_t GalleryDbUpgrade::AddIndexOfGalleryAlbum(NativeRdb::RdbStore &store)
+{
+    std::string sql = this->SQL_GALLERY_ALBUM_INDEX_RELATIVE_BUCKET_ID;
+    int32_t ret = store.ExecuteSql(sql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Media_Restore: GalleryDbUpgrade::AddIndexOfGalleryAlbum failed, ret=%{public}d, sql=%{public}s",
+            ret,
+            sql.c_str());
+    }
+    MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddIndexOfGalleryAlbum success");
+    return ret;
+}
+
+int32_t GalleryDbUpgrade::AddIndexOfAlbumPlugin(NativeRdb::RdbStore &store)
+{
+    std::string sql = this->SQL_ALBUM_PLUGIN_INDEX_ALBUM_NAME;
+    int32_t ret = store.ExecuteSql(sql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Media_Restore: GalleryDbUpgrade::AddIndexOfAlbumPlugin failed, ret=%{public}d, sql=%{public}s",
+            ret,
+            sql.c_str());
+    }
+    MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddIndexOfAlbumPlugin success");
     return ret;
 }
 }  // namespace DataTransfer

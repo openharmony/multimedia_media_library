@@ -65,32 +65,32 @@ class ExecuteParamBuilder {
 public:
     ExecuteParamBuilder() = default;
     ~ExecuteParamBuilder() = default;
-    int32_t tempLimit { -1 };
-    int32_t batteryLimit { -1 };
-    CpuAffinity affinity_ { CpuAffinityType::CPU_IDX_DEFAULT };
-}
+    int32_t tempLimit_ { -1 };
+    int32_t batteryLimit_ { -1 };
+    CpuAffinityType affinity_ { CpuAffinityType::CPU_IDX_DEFAULT };
+};
 
 class ThumbnailGeneratorWrapper {
 public:
     ThumbnailGeneratorWrapper() = default;
     ~ThumbnailGeneratorWrapper() = default;
     ThumbnailGeneratorWrapper(ThumbnailGenerateExecute execute,
-        std::shared_ptr<ExecutorParamBuilder> param) : executor_(execute), executeParam_(param) {};
+        std::shared_ptr<ExecuteParamBuilder> param) : executor_(execute), executeParam_(param) {};
     void operator()(std::shared_ptr<ThumbnailTaskData> &data);
 private:
-    bool IsPreconditionFullfiled();
+    bool IsPreconditionFullfilled();
     void BeforeExecute();
     ThumbnailGenerateExecute executor_ { nullptr };
     std::shared_ptr<ExecuteParamBuilder> executeParam_ { nullptr };
-}
+};
 
 class ThumbnailGenerateTask {
 public:
     ThumbnailGenerateTask(ThumbnailGenerateExecute executor,
         std::shared_ptr<ThumbnailTaskData> &data,
-        std::shared_ptr<ExecutorParamBuilder> param = nullptr) : executor_(executor, param), data_(data) {}
+        std::shared_ptr<ExecuteParamBuilder> param = nullptr) : executor_(executor, param), data_(data) {}
     ~ThumbnailGenerateTask() = default;
-    ThumbnailGenerateExecute executor_;
+    ThumbnailGeneratorWrapper executor_;
     std::shared_ptr<ThumbnailTaskData> data_;
 };
 

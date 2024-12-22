@@ -469,7 +469,6 @@ const std::string CLOUD_MEDIA_ASSET_TASK_START_GENTLE = "cloud_media_asset_task_
 const std::string CLOUD_MEDIA_ASSET_TASK_PAUSE = "cloud_media_asset_task_pause";
 const std::string CLOUD_MEDIA_ASSET_TASK_CANCEL = "cloud_media_asset_task_cancel";
 const std::string CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE = "cloud_media_asset_task_retain_force";
-const std::string CLOUD_MEDIA_ASSET_TASK_RETAIN_GENTLE = "cloud_media_asset_task_retain_gentle";
 const std::string CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY = "cloud_media_asset_task_status_query";
 
 const std::string CMAM_CLOUD_MEDIA_ASSET_TASK_START_FORCE = MEDIALIBRARY_DATA_URI + "/" + CLOUD_MEDIA_ASSET_OPERATE +
@@ -482,8 +481,6 @@ const std::string CMAM_CLOUD_MEDIA_ASSET_TASK_CANCEL = MEDIALIBRARY_DATA_URI + "
     CLOUD_MEDIA_ASSET_TASK_CANCEL;
 const std::string CMAM_CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE = MEDIALIBRARY_DATA_URI + "/" + CLOUD_MEDIA_ASSET_OPERATE +
     "/" + CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE;
-const std::string CMAM_CLOUD_MEDIA_ASSET_TASK_RETAIN_GENTLE = MEDIALIBRARY_DATA_URI + "/" + CLOUD_MEDIA_ASSET_OPERATE +
-    "/" + CLOUD_MEDIA_ASSET_TASK_RETAIN_GENTLE;
 const std::string CMAM_CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY = MEDIALIBRARY_DATA_URI + "/" + CLOUD_MEDIA_ASSET_OPERATE +
     "/" + CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY;
 } // namespace Media

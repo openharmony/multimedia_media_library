@@ -39,6 +39,7 @@
 #include "n_error.h"
 #include "unique_fd.h"
 #include "userfile_manager_types.h"
+#include "medialibrary_common_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -225,7 +226,7 @@ int MediaFileExtentionUtils::Delete(const Uri &sourceFileUri)
 #endif
     int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
     result->Close();
-    int fileId = stoi(MediaFileUtils::GetIdFromUri(sourceUri));
+    int fileId = MediaLibraryCommonUtils::SafeStoi(MediaFileUtils::GetIdFromUri(sourceUri));
     DataShareValuesBucket valuesBucket;
     if (mediaType == MEDIA_TYPE_ALBUM) {
 #ifdef MEDIALIBRARY_COMPATIBILITY
@@ -1315,8 +1316,8 @@ int32_t UpdateMovedAlbumInfo(const shared_ptr<FileAsset> &fileAsset, const strin
     absPredicates.EqualTo(MEDIA_DATA_DB_ID, to_string(fileAsset->GetId()));
     ValuesBucket valuesBucket;
     valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, date_modified);
-    valuesBucket.PutInt(MEDIA_DATA_DB_PARENT_ID, stoi(bucketId));
-    valuesBucket.PutInt(MEDIA_DATA_DB_BUCKET_ID, stoi(bucketId));
+    valuesBucket.PutInt(MEDIA_DATA_DB_PARENT_ID, MediaLibraryCommonUtils::SafeStoi(bucketId));
+    valuesBucket.PutInt(MEDIA_DATA_DB_BUCKET_ID, MediaLibraryCommonUtils::SafeStoi(bucketId));
     valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, newAlbumPath);
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, destRelativePath);
     int32_t count = 0;
