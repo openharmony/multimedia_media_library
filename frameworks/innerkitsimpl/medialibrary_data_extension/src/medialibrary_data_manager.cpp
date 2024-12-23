@@ -116,6 +116,7 @@
 #ifdef HAS_THERMAL_MANAGER_PART
 #include "thermal_mgr_client.h"
 #endif
+#include "zip_util.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -137,6 +138,7 @@ unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
 static const int32_t UUID_STR_LENGTH = 37;
 const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 2;
+const int32_t LARGE_FILE_SIZE_MB = 200;
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -349,6 +351,11 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
     if (oldVersion < VERSION_ADD_READY_COUNT_INDEX) {
         MediaLibraryRdbStore::AddReadyCountIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_READY_COUNT_INDEX);
+    }
+
+    if (oldVersion < VERSION_FIX_PICTURE_LCD_SIZE) {
+        MediaLibraryRdbStore::UpdateLcdStatusNotUploaded(rdbStore);
+        rdbStore->SetOldVersion(VERSION_FIX_PICTURE_LCD_SIZE);
     }
 }
 
@@ -2108,7 +2115,7 @@ int32_t MediaLibraryDataManager::CheckCloudThumbnailDownloadFinish()
     return thumbnailService_->CheckCloudThumbnailDownloadFinish();
 }
 
-void MediaLibraryDataManager::UploadDBFileInner()
+void MediaLibraryDataManager::UploadDBFileInner(int64_t totalFileSize)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -2116,14 +2123,41 @@ void MediaLibraryDataManager::UploadDBFileInner()
         return;
     }
 
-    std::string destPath = "/data/storage/el2/log/logpack/media_library.db";
     std::string tmpPath = MEDIA_DB_DIR + "/rdb/media_library_tmp.db";
     int32_t errCode = rdbStore->Backup(tmpPath);
     if (errCode != 0) {
         MEDIA_ERR_LOG("rdb backup fail: %{public}d", errCode);
         return;
     }
-    MediaFileUtils::CopyFileUtil(tmpPath, destPath);
+
+    std::string destDbPath = "/data/storage/el2/log/logpack/media_library.db";
+    if (totalFileSize < LARGE_FILE_SIZE_MB) {
+        MediaFileUtils::CopyFileUtil(tmpPath, destDbPath);
+        return;
+    }
+    std::string destPath = "/data/storage/el2/log/logpack/media_library.db.zip";
+    int64_t begin = MediaFileUtils::UTCTimeMilliSeconds();
+    std::string zipFileName = tmpPath;
+    if (MediaFileUtils::IsFileExists(destPath)) {
+        CHECK_AND_RETURN_LOG(MediaFileUtils::DeleteFile(destPath),
+            "Failed to delete destDb file, path:%{private}s", destPath.c_str());
+    }
+    if (MediaFileUtils::IsFileExists(destDbPath)) {
+        CHECK_AND_RETURN_LOG(MediaFileUtils::DeleteFile(destDbPath),
+            "Failed to delete destDb file, path:%{private}s", destDbPath.c_str());
+    }
+    zipFile compressZip = Media::ZipUtil::CreateZipFile(destPath);
+    if (compressZip == nullptr) {
+        MEDIA_ERR_LOG("open zip file failed.");
+        return;
+    }
+    auto errcode = Media::ZipUtil::AddFileInZip(compressZip, zipFileName, Media::KEEP_NONE_PARENT_PATH);
+    if (errcode != 0) {
+        MEDIA_ERR_LOG("AddFileInZip failed, errCode = %{public}d", errcode);
+    }
+    Media::ZipUtil::CloseZipFile(compressZip);
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("Zip db file success, cost %{public}ld ms", (long)(end - begin));
 }
 
 void MediaLibraryDataManager::SubscriberPowerConsumptionDetection()

@@ -21,6 +21,8 @@
 #include <nlohmann/json.hpp>
 
 #include "abs_shared_result_set.h"
+#include "directory_ex.h"
+#include "duplicate_photo_operation.h"
 #include "file_asset.h"
 #include "file_utils.h"
 #include "image_source.h"
@@ -346,10 +348,10 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
     int limit = predicates.GetLimit();
     int offset = predicates.GetOffset();
     if (cmd.GetOprnType() == OperationType::ALL_DUPLICATE_ASSETS) {
-        return MediaLibraryRdbStore::GetAllDuplicateAssets(columns, offset, limit);
+        return DuplicatePhotoOperation::GetAllDuplicateAssets(columns, offset, limit);
     }
     if (cmd.GetOprnType() == OperationType::CAN_DEL_DUPLICATE_ASSETS) {
-        return MediaLibraryRdbStore::GetCanDelDuplicateAssets(columns, offset, limit);
+        return DuplicatePhotoOperation::GetCanDelDuplicateAssets(columns, offset, limit);
     }
     if (cmd.GetOprnType() == OperationType::UPDATE_SEARCH_INDEX) {
         return MediaLibraryRdbStore::Query(predicates, columns);
@@ -401,14 +403,18 @@ static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<Fi
 {
     string movingPhotoOprnKey = cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD);
     if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO ||
+        movingPhotoOprnKey == CREATE_MOVING_PHOTO_VIDEO ||
         movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO_CLOUD) {
+        bool isTemp = movingPhotoOprnKey == CREATE_MOVING_PHOTO_VIDEO;
         CHECK_AND_RETURN_RET_LOG(CheckOpenMovingPhoto(fileAsset->GetPhotoSubType(),
             fileAsset->GetMovingPhotoEffectMode(), cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD)),
             E_INVALID_VALUES,
             "Non-moving photo is requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
             id.c_str(), fileAsset->GetPhotoSubType());
         string imagePath = fileAsset->GetPath();
-        fileAsset->SetPath(MediaFileUtils::GetMovingPhotoVideoPath(imagePath));
+        string inputPath = isTemp ? MediaFileUtils::GetTempMovingPhotoVideoPath(imagePath)
+            : MediaFileUtils::GetMovingPhotoVideoPath(imagePath);
+        fileAsset->SetPath(inputPath);
         isMovingPhotoVideo = true;
         if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO_CLOUD && fileAsset->GetPosition() == POSITION_CLOUD) {
             fileAsset->SetPath(imagePath);
@@ -2892,6 +2898,20 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     return ret;
 }
 
+int32_t SaveTempMovingPhotoVideo(const string &assetPath)
+{
+    string assetTempPath = MediaFileUtils::GetTempMovingPhotoVideoPath(assetPath);
+    string assetSavePath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
+    if (!MediaFileUtils::IsFileExists(assetSavePath)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(assetTempPath, assetSavePath) == E_SUCCESS,
+            E_HAS_FS_ERROR, "Move video file failed, srcPath:%{private}s, newPath:%{private}s",
+            assetTempPath.c_str(), assetSavePath.c_str());
+        return E_OK;
+    }
+    MEDIA_ERR_LOG("File exists, assetSavePath: %{public}s.", assetSavePath.c_str());
+    return E_ERR;
+}
+
 int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<FileAsset>& fileAsset)
 {
     string assetPath = fileAsset->GetFilePath();
@@ -2916,13 +2936,15 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<F
         }
         if (editData[index + START_DISTANCE] == FILTERS_END) {
             MEDIA_INFO_LOG("MovingPhoto video only supports filter now.");
-            return E_OK;
+            return SaveTempMovingPhotoVideo(assetPath);
         }
-        CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(fileAsset, assetPath) == E_OK, E_HAS_FS_ERROR,
+        CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(fileAsset, assetPath, true) == E_OK, E_HAS_FS_ERROR,
             "Failed to save source video, path = %{public}s", assetPath.c_str());
         VideoCompositionCallbackImpl::AddCompositionTask(assetPath, editData);
+        return E_OK;
+    } else {
+        return SaveTempMovingPhotoVideo(assetPath);
     }
-    return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(int32_t fileId,
@@ -3035,13 +3057,14 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
 }
 
 int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(const shared_ptr<FileAsset>& fileAsset,
-    const string& assetPath)
+    const string& assetPath, const bool& isTemp)
 {
     MEDIA_INFO_LOG("Moving photo SaveSourceVideoFile begin, fileId:%{public}d", fileAsset->GetId());
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
     string sourceImagePath = GetEditDataSourcePath(assetPath);
     CHECK_AND_RETURN_RET_LOG(!sourceImagePath.empty(), E_INVALID_PATH, "Can not get source image path");
-    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
+    string videoPath = isTemp ? MediaFileUtils::GetTempMovingPhotoVideoPath(assetPath)
+        : MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
     CHECK_AND_RETURN_RET_LOG(!videoPath.empty(), E_INVALID_PATH, "Can not get video path");
     string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourceImagePath);
     CHECK_AND_RETURN_RET_LOG(!sourceVideoPath.empty(), E_INVALID_PATH, "Can not get source video path");
@@ -3062,7 +3085,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditMovingPhotoExecute(MediaLibraryCo
     int32_t errCode = E_OK;
     if (fileAsset->GetPhotoEditTime() == 0) { // the asset has not been edited before
         // Save video file in the photo direvtory to the .editdata directory
-        errCode = SaveSourceVideoFile(fileAsset, assetPath);
+        errCode = SaveSourceVideoFile(fileAsset, assetPath, false);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
             "Failed to save %{private}s to sourcePath, errCode: %{public}d", assetPath.c_str(), errCode);
     }
@@ -3439,6 +3462,19 @@ bool PhotoEditingRecord::IsInEditOperation(int32_t fileId)
     return false;
 }
 
+static bool ConvertPhotoPathToThumbnailDirPath(std::string& path)
+{
+    const std::string photoRelativePath = "/Photo/";
+    const std::string thumbRelativePath = "/.thumbs/Photo/";
+    size_t pos = path.find(photoRelativePath);
+    if (pos == string::npos) {
+        MEDIA_ERR_LOG("source file invalid! path is %{public}s", path.c_str());
+        return false;
+    }
+    path.replace(pos, photoRelativePath.length(), thumbRelativePath);
+    return true;
+}
+
 void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, const string& photoPath)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -3447,24 +3483,15 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
         return;
     }
 
-    size_t LCDThumbnailSize = 0;
-    size_t THMThumbnailSize = 0;
-    size_t THMASTCThumbnailSize = 0;
-    if (!MediaFileUtils::GetFileSize(GetThumbnailPath(photoPath, THUMBNAIL_LCD_SUFFIX), LCDThumbnailSize)) {
-        MEDIA_WARN_LOG("Failed to get LCD thumbnail size for photo id %{public}s", photoId.c_str());
-    }
-    if (!MediaFileUtils::GetFileSize(GetThumbnailPath(photoPath, THUMBNAIL_THUMB_SUFFIX), THMThumbnailSize)) {
-        MEDIA_WARN_LOG("Failed to get THM thumbnail size for photo id %{public}s", photoId.c_str());
-    }
-    if (!MediaFileUtils::GetFileSize(GetThumbnailPath(photoPath, THUMBNAIL_THUMBASTC_SUFFIX), THMASTCThumbnailSize)) {
-        MEDIA_WARN_LOG("Failed to get THM_ASTC thumbnail size for photo id %{public}s", photoId.c_str());
-    }
-    size_t photoThumbnailSize = LCDThumbnailSize + THMThumbnailSize + THMASTCThumbnailSize;
-
+    string thumbnailDir {photoPath};
+    if (!ConvertPhotoPathToThumbnailDirPath(thumbnailDir)) {
+        MEDIA_ERR_LOG("Failed to get thumbnail dir path from photo path! file id: %{public}s", photoId.c_str());
+        return;
+    };
+    uint64_t photoThumbnailSize = GetFolderSize(thumbnailDir);
     string sql = "INSERT OR REPLACE INTO " + PhotoExtColumn::PHOTOS_EXT_TABLE + " (" +
         PhotoExtColumn::PHOTO_ID + ", " + PhotoExtColumn::THUMBNAIL_SIZE +
         ") VALUES (" + photoId + ", " + to_string(photoThumbnailSize) + ")";
-
     int32_t ret = rdbStore->ExecuteSql(sql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
@@ -3472,12 +3499,12 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
     }
 }
 
-void MediaLibraryPhotoOperations::DropThumbnailSize(const string& photoId)
+bool MediaLibraryPhotoOperations::HasDroppedThumbnailSize(const string& photoId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
-        return;
+        return false;
     }
 
     string sql = "DELETE FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE +
@@ -3485,8 +3512,9 @@ void MediaLibraryPhotoOperations::DropThumbnailSize(const string& photoId)
     int32_t ret = rdbStore->ExecuteSql(sql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
-        return;
+        return false;
     }
+    return true;
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::ScanMovingPhoto(MediaLibraryCommand &cmd,
@@ -3548,18 +3576,15 @@ int32_t MediaLibraryPhotoOperations::DegenerateMovingPhoto(MediaLibraryCommand &
         MEDIA_ERR_LOG("failed to query fileAsset");
         return E_INVALID_VALUES;
     }
-
     if (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
         MEDIA_INFO_LOG("fileAsset is not moving photo");
         return E_OK;
     }
-
     if (fileAsset->GetPhotoEditTime() > 0) {
         MEDIA_INFO_LOG("moving photo is edited");
         return E_OK;
     }
-
-    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(fileAsset->GetFilePath());
+    string videoPath = MediaFileUtils::GetTempMovingPhotoVideoPath(fileAsset->GetFilePath());
     size_t videoSize = 0;
     if (MediaFileUtils::GetFileSize(videoPath, videoSize) && videoSize > 0) {
         MEDIA_INFO_LOG("no need to degenerate, video size:%{public}d", static_cast<int32_t>(videoSize));

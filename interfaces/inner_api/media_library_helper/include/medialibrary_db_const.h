@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 139;
+const int32_t MEDIA_RDB_VERSION = 140;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -164,7 +164,8 @@ enum {
     VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER = 136,
     VERSION_UPDATE_URIPERMISSION_SOURCE_TOKEN_AND_TARGET_TOKEN = 137,
     VERSION_ADD_READY_COUNT_INDEX = 138,
-    VERSION_UPDATE_NEW_SOURCE_PHOTO_ALBUM_TRIGGER = 139,
+    VERSION_FIX_PICTURE_LCD_SIZE = 139,
+    VERSION_UPDATE_NEW_SOURCE_PHOTO_ALBUM_TRIGGER = 140,    
 };
 
 enum {
@@ -308,6 +309,8 @@ const std::string MEDIA_DATA_DB_COUNT = "count";
 const std::string MEDIA_DATA_BUNDLENAME = "bundle_name";
 const std::string MEDIA_DATA_DB_IS_LOCAL = "is_local";
 const std::string MEDIA_DATA_DB_HIGHLIGHT = "highlight";
+const std::string MEDIA_DATA_DB_HIGHLIGHT_ID = "id";
+const std::string MEDIA_DATA_DB_HIGHLIGHT_STATUS = "highlight_status";
 
 // highlight
 const std::string MEDIA_DATA_DB_VIDEO_TRACKS = "tracks";
@@ -402,6 +405,7 @@ const std::string CACHE_FILE_NAME = "cache_file_name";
 const std::string CACHE_MOVING_PHOTO_VIDEO_NAME = "cache_moving_photo_video_name";
 
 // moving photo param
+const std::string CREATE_MOVING_PHOTO_VIDEO = "create_video";
 const std::string OPEN_MOVING_PHOTO_VIDEO = "open_video"; // MEDIA_MOVING_PHOTO_OPRN_KEYWORD=OPEN_MOVING_PHOTO_VIDEO
 const std::string OPEN_PRIVATE_LIVE_PHOTO = "open_private_live_photo";
 const std::string OPEN_MOVING_PHOTO_VIDEO_CLOUD = "open_moving_photo_video_cloud";

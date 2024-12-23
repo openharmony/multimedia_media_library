@@ -824,6 +824,11 @@ static inline bool RegexCheck(const string &str, const string &regexStr)
 
 static inline int32_t CheckTitle(const string &title)
 {
+    if (title.empty()) {
+        MEDIA_ERR_LOG("Title is empty.");
+        return -EINVAL;
+    }
+    
     static const string TITLE_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
     if (RegexCheck(title, TITLE_REGEX_CHECK)) {
         MEDIA_ERR_LOG("Failed to check title regex: %{private}s", title.c_str());
@@ -1786,6 +1791,17 @@ int64_t MediaFileUtils::Timespec2Millisecond(const struct timespec &time)
     return time.tv_sec * MSEC_TO_SEC + time.tv_nsec / MSEC_TO_NSEC;
 }
 
+string MediaFileUtils::GetTempMovingPhotoVideoPath(const string &imagePath)
+{
+    size_t splitIndex = imagePath.find_last_of('.');
+    size_t lastSlashIndex = imagePath.find_last_of('/');
+    if (splitIndex == string::npos || (lastSlashIndex != string::npos && lastSlashIndex > splitIndex)) {
+        return "";
+    }
+    return imagePath.substr(0, lastSlashIndex + 1) + "_temp" +
+        imagePath.substr(lastSlashIndex + 1, splitIndex - lastSlashIndex - 1) + ".mp4";
+}
+
 string MediaFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
 {
     size_t splitIndex = imagePath.find_last_of('.');
@@ -1898,6 +1914,17 @@ std::string MediaFileUtils::GetTableNameByDisplayName(const std::string &display
         return PhotoColumn::PHOTOS_TABLE;
     }
     return "";
+}
+
+bool MediaFileUtils::GetDateModified(const string &path, int64_t &dateModified)
+{
+    struct stat statInfo {};
+    if (stat(path.c_str(), &statInfo) != E_OK) {
+        MEDIA_ERR_LOG("stat error of %{private}s, errno: %{public}d", path.c_str(), errno);
+        return false;
+    }
+    dateModified = Timespec2Millisecond(statInfo.st_mtim);
+    return true;
 }
 
 bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)

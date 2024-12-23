@@ -132,254 +132,6 @@ constexpr ssize_t RDB_WAL_LIMIT_SIZE = 1024 * 1024 * 1024; /* default wal file m
 constexpr ssize_t RDB_CHECK_WAL_SIZE = 50 * 1024 * 1024;   /* check wal file size : 50MB */
 std::mutex MediaLibraryRdbStore::walCheckPointMutex_;
 
-const std::string SELECT_COLUMNS = "SELECT_COLUMNS";
-
-const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
-    SELECT\
-      SELECT_COLUMNS \
-    FROM\
-      Photos\
-      INNER JOIN (\
-      SELECT\
-        display_name,\
-        size,\
-        orientation \
-      FROM\
-        Photos \
-      WHERE\
-        date_trashed = 0 \
-        AND hidden = 0 \
-        AND time_pending = 0 \
-        AND is_temp = 0 \
-        AND burst_cover_level = 1 \
-        AND media_type = 1 \
-      GROUP BY\
-        display_name,\
-        size,\
-        orientation \
-      HAVING\
-        count(*) > 1 \
-      ) AS IMG ON Photos.display_name = IMG.display_name \
-      AND Photos.size = IMG.size \
-      AND Photos.orientation = IMG.orientation \
-    WHERE\
-      date_trashed = 0 \
-      AND hidden = 0 \
-      AND time_pending = 0 \
-      AND is_temp = 0 \
-      AND burst_cover_level = 1 UNION\
-    SELECT\
-      SELECT_COLUMNS \
-    FROM\
-      Photos\
-      INNER JOIN (\
-      SELECT\
-        display_name,\
-        size \
-      FROM\
-        Photos \
-      WHERE\
-        date_trashed = 0 \
-        AND hidden = 0 \
-        AND time_pending = 0 \
-        AND is_temp = 0 \
-        AND burst_cover_level = 1 \
-        AND media_type = 2 \
-      GROUP BY\
-        display_name,\
-        size \
-      HAVING\
-        count(*) > 1 \
-      ) AS VID ON Photos.display_name = VID.display_name \
-      AND Photos.size = VID.size \
-    WHERE\
-      date_trashed = 0 \
-      AND hidden = 0 \
-      AND time_pending = 0 \
-      AND is_temp = 0 \
-      AND burst_cover_level = 1 \
-    ORDER BY\
-      Photos.display_name,\
-      Photos.size,\
-      Photos.orientation \
-      LIMIT ? OFFSET ? ";
-
-const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT = "\
-    SELECT\
-      count(*) \
-    FROM\
-      (\
-      SELECT\
-        file_id \
-      FROM\
-        Photos\
-        INNER JOIN (\
-        SELECT\
-          display_name,\
-          size,\
-          orientation \
-        FROM\
-          Photos \
-        WHERE\
-          date_trashed = 0 \
-          AND hidden = 0 \
-          AND time_pending = 0 \
-          AND is_temp = 0 \
-          AND burst_cover_level = 1 \
-          AND media_type = 1 \
-        GROUP BY\
-          display_name,\
-          size,\
-          orientation \
-        HAVING\
-          count(*) > 1 \
-        ) AS IMG ON Photos.display_name = IMG.display_name \
-        AND Photos.size = IMG.size \
-        AND Photos.orientation = IMG.orientation \
-      WHERE\
-        date_trashed = 0 \
-        AND hidden = 0 \
-        AND time_pending = 0 \
-        AND is_temp = 0 \
-        AND burst_cover_level = 1 UNION\
-      SELECT\
-        file_id \
-      FROM\
-        Photos\
-        INNER JOIN (\
-        SELECT\
-          display_name,\
-          size \
-        FROM\
-          Photos \
-        WHERE\
-          date_trashed = 0 \
-          AND hidden = 0 \
-          AND time_pending = 0 \
-          AND is_temp = 0 \
-          AND burst_cover_level = 1 \
-          AND media_type = 2 \
-        GROUP BY\
-          display_name,\
-          size \
-        HAVING\
-          count(*) > 1 \
-        ) AS VID ON Photos.display_name = VID.display_name \
-        AND Photos.size = VID.size \
-      WHERE\
-        date_trashed = 0 \
-        AND hidden = 0 \
-        AND time_pending = 0 \
-        AND is_temp = 0 \
-        AND burst_cover_level = 1 \
-      ) ";
-
-const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS = "\
-    SELECT\
-      SELECT_COLUMNS \
-    FROM\
-      (\
-      SELECT\
-        SELECT_COLUMNS ,\
-        ROW_NUMBER( ) OVER ( \
-          PARTITION BY display_name, size, orientation \
-          ORDER BY album_id DESC, owner_album_id ASC \
-        ) AS img_row_num \
-      FROM\
-        Photos\
-        LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
-      WHERE\
-        date_trashed = 0 \
-        AND hidden = 0 \
-        AND time_pending = 0 \
-        AND is_temp = 0 \
-        AND burst_cover_level = 1 \
-        AND media_type = 1 \
-      ) \
-    WHERE\
-      img_row_num > 1 UNION\
-    SELECT\
-      SELECT_COLUMNS \
-    FROM\
-      (\
-      SELECT\
-        SELECT_COLUMNS ,\
-        ROW_NUMBER( ) OVER ( \
-          PARTITION BY display_name, size \
-          ORDER BY album_id DESC, owner_album_id ASC \
-        ) AS vid_row_num \
-      FROM\
-        Photos\
-        LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
-      WHERE\
-        date_trashed = 0 \
-        AND hidden = 0 \
-        AND time_pending = 0 \
-        AND is_temp = 0 \
-        AND burst_cover_level = 1 \
-        AND media_type = 2 \
-      ) \
-    WHERE\
-      vid_row_num > 1 \
-    ORDER BY\
-      display_name,\
-      size,\
-      orientation \
-      LIMIT ? OFFSET ? ";
-
-const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT = "\
-    SELECT\
-      count(*) \
-    FROM\
-      (\
-      SELECT\
-        file_id \
-      FROM\
-        (\
-        SELECT\
-          file_id,\
-          ROW_NUMBER( ) OVER ( \
-            PARTITION BY display_name, size, orientation \
-            ORDER BY album_id DESC, owner_album_id ASC \
-          ) AS img_row_num \
-        FROM\
-          Photos\
-          LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
-        WHERE\
-          date_trashed = 0 \
-          AND hidden = 0 \
-          AND time_pending = 0 \
-          AND is_temp = 0 \
-          AND burst_cover_level = 1 \
-          AND media_type = 1 \
-        ) \
-      WHERE\
-        img_row_num > 1 UNION\
-      SELECT\
-        file_id \
-      FROM\
-        (\
-        SELECT\
-          file_id,\
-          ROW_NUMBER( ) OVER ( \
-            PARTITION BY display_name, size \
-            ORDER BY album_id DESC, owner_album_id ASC \
-          ) AS vid_row_num \
-        FROM\
-          Photos\
-          LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
-        WHERE\
-          date_trashed = 0 \
-          AND hidden = 0 \
-          AND time_pending = 0 \
-          AND is_temp = 0 \
-          AND burst_cover_level = 1 \
-          AND media_type = 2 \
-        ) \
-      WHERE\
-      vid_row_num > 1 \
-      ) ";
-
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
 
 std::mutex MediaLibraryRdbStore::reconstructLock_;
@@ -633,6 +385,16 @@ void MediaLibraryRdbStore::UpdateIndexForCover(const shared_ptr<MediaLibraryRdbS
     MEDIA_INFO_LOG("update index for photo album cover start");
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("update index for photo album cover end");
+}
+
+void MediaLibraryRdbStore::UpdateLcdStatusNotUploaded(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::UPDATE_LCD_STATUS_NOT_UPLOADED,
+    };
+    MEDIA_INFO_LOG("start update lcd status for photos have not been uploaded");
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("finish update lcd status for photos have not been uploaded");
 }
 
 void MediaLibraryRdbStore::AddReadyCountIndex(const shared_ptr<MediaLibraryRdbStore> store)
@@ -917,82 +679,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryEditDataExists(
     return MediaLibraryRdbStore::GetRaw()->QuerySql("SELECT 0 AS hasEditData");
 }
 
-static string GetSelectColumns(const unordered_set<string> &columns)
-{
-    if (columns.empty()) {
-        return GARBLE;
-    }
-
-    std::string selectColumns;
-    bool first = true;
-    for (const std::string &column : columns) {
-        if (!first) {
-            selectColumns += ", ";
-        } else {
-            first = false;
-        }
-        selectColumns += column;
-    }
-
-    return selectColumns;
-}
-
-shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetAllDuplicateAssets(const vector<string> &columns,
-    const int offset, const int limit)
-{
-    if (!MediaLibraryRdbStore::CheckRdbStore()) {
-        MEDIA_ERR_LOG("GetAllDuplicateAssets failed, rdbStore_ is nullptr");
-        return nullptr;
-    }
-    MediaLibraryTracer tracer;
-    if (find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT) != columns.end()) {
-        tracer.Start("QueryAllDuplicateAssets_count");
-        return MediaLibraryRdbStore::GetRaw()->QueryByStep(SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT);
-    }
-
-    tracer.Start("QueryAllDuplicateAssets_records");
-    unordered_set<string> columnSet{ "Photos.file_id", "Photos.display_name", "Photos.size", "Photos.orientation" };
-    for (const auto &column : columns) {
-        if (MediaFileUtils::StartsWith(column, "Photos.")) {
-            columnSet.insert(column);
-        } else {
-            columnSet.insert("Photos." + column);
-        }
-    }
-
-    string selectColumns = GetSelectColumns(columnSet);
-    string sql = SQL_QUERY_ALL_DUPLICATE_ASSETS;
-    MediaFileUtils::ReplaceAll(sql, SELECT_COLUMNS, selectColumns);
-
-    const std::vector<ValueObject> bindArgs{ ValueObject(limit), ValueObject(offset) };
-    return MediaLibraryRdbStore::GetRaw()->QueryByStep(sql, bindArgs);
-}
-
-shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetCanDelDuplicateAssets(const vector<string> &columns,
-    const int offset, const int limit)
-{
-    if (!MediaLibraryRdbStore::CheckRdbStore()) {
-        MEDIA_ERR_LOG("GetCanDelDuplicateAssets failed, rdbStore_ is nullptr");
-        return nullptr;
-    }
-    MediaLibraryTracer tracer;
-    if (find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT) != columns.end()) {
-        tracer.Start("QueryCanDelDuplicateAssets_count");
-        return MediaLibraryRdbStore::GetRaw()->QueryByStep(SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT);
-    }
-
-    tracer.Start("QueryCanDelDuplicateAssets_records");
-    unordered_set<string> columnSet{ "file_id", "display_name", "size", "orientation" };
-    columnSet.insert(columns.begin(), columns.end());
-
-    string selectColumns = GetSelectColumns(columnSet);
-    string sql = SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS;
-    MediaFileUtils::ReplaceAll(sql, SELECT_COLUMNS, selectColumns);
-
-    const std::vector<ValueObject> bindArgs{ ValueObject(limit), ValueObject(offset) };
-    return MediaLibraryRdbStore::GetRaw()->QueryByStep(sql, bindArgs);
-}
-
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUriForPhotos(const AbsRdbPredicates &predicates,
     const vector<string> &columns, const string &id)
 {
@@ -1171,6 +857,35 @@ void MediaLibraryRdbStore::BuildQuerySql(const AbsRdbPredicates &predicates, con
     }
 }
 
+shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::StepQueryWithoutCheck(const AbsRdbPredicates &predicates,
+    const vector<string> &columns)
+{
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        VariantMap map = { { KEY_ERR_FILE, __FILE__ },
+            { KEY_ERR_LINE, __LINE__ },
+            { KEY_ERR_CODE, E_HAS_DB_ERROR },
+            { KEY_OPT_TYPE, OptType::QUERY } };
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return nullptr;
+    }
+
+    MediaLibraryRdbUtils::AddQueryFilter(const_cast<AbsRdbPredicates &>(predicates));
+    DfxTimer dfxTimer(RDB_QUERY, INVALID_DFX, RDB_TIME_OUT, false);
+    MediaLibraryTracer tracer;
+    tracer.Start("StepQueryWithoutCheck");
+    MEDIA_DEBUG_LOG("Predicates Statement is %{public}s", predicates.GetStatement().c_str());
+    auto resultSet = MediaLibraryRdbStore::GetRaw()->QueryByStep(predicates, columns, false);
+    if (resultSet == nullptr) {
+        VariantMap map = { { KEY_ERR_FILE, __FILE__ },
+            { KEY_ERR_LINE, __LINE__ },
+            { KEY_ERR_CODE, E_HAS_DB_ERROR },
+            { KEY_OPT_TYPE, OptType::QUERY } };
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+    }
+    return resultSet;
+}
+
 /**
  * Returns last insert row id. If insert succeed but no new rows inserted, then return -1.
  * Return E_HAS_DB_ERROR on error cases.
@@ -1205,22 +920,6 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
     }
     CloudSyncHelper::GetInstance()->StartSync();
     return deletedRows;
-}
-
-int32_t MediaLibraryRdbStore::CompletelyDeleteDBData(int32_t &deletedRows,
-    const NativeRdb::AbsRdbPredicates &predicates)
-{
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return E_HAS_DB_ERROR;
-    }
-    int32_t ret = rdbStore_->Delete(deletedRows, predicates);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to execute delete, ret: %{public}d", ret);
-        MediaLibraryRestore::GetInstance().CheckRestore(ret);
-        return E_HAS_DB_ERROR;
-    }
-    return ret;
 }
 
 /**

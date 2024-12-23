@@ -1069,10 +1069,6 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, Wa
         return false;
     }
 
-    if (!ThumbnailUtils::DeleteThumbExDir(data)) {
-        MEDIA_ERR_LOG("Fail to delete THM_EX directory, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
-    }
-
     thumbnailWait.UpdateCloudLoadThumbnailMap(CloudLoadType::CLOUD_DOWNLOAD, true);
     CloudSyncDfxManager::GetInstance().RunDfx();
     return true;

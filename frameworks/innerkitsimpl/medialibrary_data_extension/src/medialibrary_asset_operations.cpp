@@ -21,6 +21,7 @@
 #include <mutex>
 #include <sstream>
 
+#include "cloud_media_asset_manager.h"
 #include "dfx_utils.h"
 #include "directory_ex.h"
 #include "file_asset.h"
@@ -76,6 +77,7 @@
 #include "dfx_const.h"
 #include "moving_photo_file_utils.h"
 #include "userfilemgr_uri.h"
+#include "medialibrary_common_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -723,7 +725,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetByUri(const strin
         } else {
             fileAsset->SetPath(path);
             fileAsset->SetMediaType(MediaFileUtils::GetMediaType(path));
-            int32_t timePending = stoi(pendingStatus);
+            int32_t timePending = MediaLibraryCommonUtils::SafeStoi(pendingStatus);
             fileAsset->SetTimePending((timePending > 0) ? MediaFileUtils::UTCTimeSeconds() : timePending);
         }
     }
@@ -734,7 +736,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetByUri(const strin
     if (!isPhoto) {
         fileAsset->SetMediaType(MediaType::MEDIA_TYPE_AUDIO);
     }
-    fileAsset->SetId(stoi(id));
+    fileAsset->SetId(MediaLibraryCommonUtils::SafeStoi(id));
     fileAsset->SetUri(uri);
     return fileAsset;
 }
@@ -1592,7 +1594,7 @@ void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int3
             return;
         }
     }
-    ThumbnailService::GetInstance()->InvalidateThumbnail(fileId, tableName);
+    ThumbnailService::GetInstance()->HasInvalidateThumbnail(fileId, tableName);
 }
 
 void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThumbSync, bool isInvalidateThumb,
@@ -2331,7 +2333,8 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
 
     string fileId = MediaFileUtils::GetIdFromUri(uri);
     int32_t type = MediaFileUtils::GetMediaType(path);
-    if (this->isInvalidateThumb) {
+    if (this->isInvalidateThumb && PhotoFileUtils::IsThumbnailExists(path) &&
+        !PhotoFileUtils::IsThumbnailLatest(path)) {
         InvalidateThumbnail(fileId, type);
     }
     CreateThumbnailFileScaned(uri, path, this->isCreateThumbSync);
@@ -2389,7 +2392,7 @@ static void DeleteFiles(AsyncTaskData *data)
         }
     }
     for (size_t i = 0; i < taskData->ids_.size(); i++) {
-        ThumbnailService::GetInstance()->InvalidateThumbnail(
+        ThumbnailService::GetInstance()->HasInvalidateThumbnail(
             taskData->ids_[i], taskData->table_, taskData->paths_[i], taskData->dateTakens_[i]);
     }
     if (taskData->table_ == PhotoColumn::PHOTOS_TABLE) {
@@ -2513,25 +2516,18 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     MEDIA_INFO_LOG("Delete files in db, deletedRows: %{public}d", deletedRows);
 
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Can not get asyncWorker");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ERR, "Can not get asyncWorker");
 
     const vector<string> &notifyUris = isAging ? agingNotifyUris : whereArgs;
     string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateTakens, subTypes,
         predicates.GetTableName(), deletedRows, bundleName);
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to alloc async data for Delete From Disk!");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_ERR, "Failed to alloc async data for Delete From Disk!");
     auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
-    if (deleteFilesTask == nullptr) {
-        MEDIA_ERR_LOG("Failed to create async task for deleting files.");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(deleteFilesTask != nullptr, E_ERR, "Failed to create async task for deleting files.");
     asyncWorker->AddTask(deleteFilesTask, true);
+    
+    CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
     return deletedRows;
 }
 } // namespace Media

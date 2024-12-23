@@ -59,6 +59,7 @@
 #include "post_event_utils.h"
 #include "dfx_manager.h"
 #include "image_format_convert.h"
+#include "medialibrary_common_utils.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -1427,7 +1428,7 @@ bool ThumbnailUtils::UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData 
 bool ThumbnailUtils::InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
 {
     ValuesBucket values;
-    values.PutInt(REMOTE_THUMBNAIL_DB_FILE_ID, stoi(data.id));
+    values.PutInt(REMOTE_THUMBNAIL_DB_FILE_ID, MediaLibraryCommonUtils::SafeStoi(data.id));
     values.PutString(REMOTE_THUMBNAIL_DB_UDID, data.udid);
     if (!data.thumbnailKey.empty()) {
         values.PutString(MEDIA_DATA_DB_THUMBNAIL, data.thumbnailKey);
@@ -2170,6 +2171,13 @@ bool ThumbnailUtils::ResizeLcd(int &width, int &height)
             lastMaxLen = MAXIMUM_LCD_LONG_SIDE;
             lastMinLen = static_cast<int>(lastMaxLen / ratio);
         }
+    }
+
+    // When LCD size has changed after resize, check if width or height is odd number
+    // Add one to the odd side to make sure LCD would be compressed through hardware encode
+    if (max(width, height) != lastMaxLen) {
+        lastMaxLen += lastMaxLen % EVEN_BASE_NUMBER;
+        lastMinLen += lastMinLen % EVEN_BASE_NUMBER;
     }
     if (height > width) {
         width = lastMinLen;

@@ -363,8 +363,6 @@ static void RetainCloudMediaAssetExecute(napi_env env, void* data)
     string uriStr;
     if (retainType == static_cast<int32_t>(CloudMediaRetainType::RETAIN_FORCE)) {
         uriStr = CMAM_CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE;
-    } else if (retainType == static_cast<int32_t>(CloudMediaRetainType::RETAIN_GENTLE)) {
-        uriStr = CMAM_CLOUD_MEDIA_ASSET_TASK_RETAIN_GENTLE;
     } else {
         NAPI_ERR_LOG("cloudMediaRetainType error, err type: %{public}d", retainType);
         return;

@@ -19,8 +19,6 @@
 #include <sys/stat.h>
 
 #include "base_restore.h"
-#include "ffrt.h"
-#include "ffrt_inner.h"
 #include "photos_restore.h"
 
 namespace OHOS {
@@ -78,7 +76,6 @@ private:
     PhotoAlbumDao photoAlbumDao_;
     PhotoAlbumRestore photoAlbumRestore_;
     PhotosRestore photosRestore_;
-    std::unique_ptr<ffrt::queue> queue_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS
