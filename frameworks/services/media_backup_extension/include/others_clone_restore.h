@@ -34,7 +34,7 @@ struct CloneDbInfo {
 class OthersCloneRestore : public BaseRestore {
 public:
     OthersCloneRestore(int32_t sceneCode, const std::string &mediaAppName, const std::string &bundleInfo = "");
-    virtual ~OthersCloneRestore();
+    virtual ~OthersCloneRestore() = default;
 
     int32_t Init(const std::string &backupRetorePath, const std::string &upgradePath, bool isUpgrade);
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,

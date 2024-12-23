@@ -102,12 +102,6 @@ OthersCloneRestore::OthersCloneRestore(int32_t sceneCode, const std::string &med
     MEDIA_INFO_LOG("Set ffrt::set_escape_enable = false");
 }
 
-OthersCloneRestore::~OthersCloneRestore()
-{
-    ffrt::set_escape_enable(true);
-    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = true");
-}
-
 void OthersCloneRestore::CloneInfoPushBack(std::vector<CloneDbInfo> &pushInfos, std::vector<CloneDbInfo> &popInfos)
 {
     std::lock_guard<std::mutex> guard(cloneMutex_);
