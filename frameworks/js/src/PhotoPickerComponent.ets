@@ -461,11 +461,13 @@ export class PickerController {
   }
 
   replacePhotoPickerPreview(selectedMediaUri: string, replaceUri: string, callback: AsyncCallback<void>) {
-    if (!fs.accessSync(replaceUri)) {
-      callback({ 'code': 13900002, 'message': 'No such file', name: '' });
+    try {
+      let fd = fs.openSync(replaceUri).fd;
+      fs.close(fd);
+    } catch (err) {
+      callback({'code': 13900002, 'message': 'No such file', name: ''});
       return;
     }
-    replaceUri = fileUri.getUriFromPath(replaceUri);
     let date = Math.random();
     this.data = new Map([['CREATE_URI', [selectedMediaUri, replaceUri, date]]]);
     this.createCallbackMap.set(date, (grantUri: string, code: number, message: string) => {
@@ -491,7 +493,7 @@ export class PickerController {
   }
 
   saveTrustedPhotoAssets(selectedMediaUris: Array<string>, callback: AsyncCallback<Array<string>>,
-    config?: photoAccessHelper.PhotoCreationConfig, saveMode?: SaveMode) {
+    config?: Array<photoAccessHelper.PhotoCreationConfig>, saveMode?: SaveMode) {
     this.getAppName().then((appName: string)=>{
       let date = Math.random();
       this.data = new Map([['SAVE_TRUSTED_PHOTO_ASSETS', [selectedMediaUris, config, saveMode, appName, date]]]);
