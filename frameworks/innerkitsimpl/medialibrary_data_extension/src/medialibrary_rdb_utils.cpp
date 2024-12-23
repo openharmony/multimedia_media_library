@@ -630,14 +630,14 @@ static int32_t SetAlbumCoverUri(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         PhotoColumn::MEDIA_NAME
     };
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    GetAlbumPredicates(subtype, albumId, predicates, false);
     if (subtype == PhotoAlbumSubType::HIDDEN) {
-        GetAlbumPredicates(subtype, albumId, predicates, true);
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
-    } else if (subtype == PhotoAlbumSubType::USER_GENERIC) {
-        GetAlbumPredicates(static_cast<PhotoAlbumSubType>(0), albumId, predicates, false);
-        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
+    } else if (subtype == PhotoAlbumSubType::VIDEO || subtype == PhotoAlbumSubType::IMAGE) {
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
+    } else if (subtype == PhotoAlbumSubType::FAVORITE) {
+        predicates.IndexedBy(PhotoColumn::PHOTO_FAVORITE_INDEX);
     } else {
-        GetAlbumPredicates(subtype, albumId, predicates, false);
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
     }
     predicates.Limit(1);
