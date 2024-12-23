@@ -179,12 +179,54 @@ int32_t MtpMedialibraryManager::GetHandles(int32_t parentId, vector<int> &outHan
     return MtpErrorUtils::SolveGetHandlesError(E_SUCCESS);
 }
 
+int32_t MtpMedialibraryManager::GetAlbumCloud()
+{
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
+        MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "fail to get datasharehelper");
+    DataShare::DataSharePredicates predicatesCloud;
+    Uri uri(PAH_QUERY_PHOTO_ALBUM);
+    vector<string> columnsCloud;
+    columnsCloud.push_back(PhotoAlbumColumns::ALBUM_ID + " as " + MEDIA_DATA_DB_ID);
+    predicatesCloud.EqualTo(MEDIA_DATA_DB_IS_LOCAL, IS_LOCAL);
+    shared_ptr<DataShare::DataShareResultSet> resultSetcloud = dataShareHelper_->Query(uri, predicatesCloud,
+        columnsCloud);
+    CHECK_AND_RETURN_RET_LOG(resultSetcloud != nullptr,
+        MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to GetAlbumCloud");
+    int cloudCount = 0;
+    resultSetcloud->GetRowCount(cloudCount);
+    MEDIA_INFO_LOG("MtpMedialibraryManager::GetAlbumCloud cloudCount:%{public}d", cloudCount);
+    resultSetcloud->Close();
+    return MTP_SUCCESS;
+}
+
+int32_t MtpMedialibraryManager::GetAlbumCloudDisplay(vector<string> &ownerAlbumIds)
+{
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
+        MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "fail to get datasharehelper");
+    DataShare::DataSharePredicates predicatesCloudDisplay;
+    vector<string> columnsCloudDisplay;
+    Uri uri(PAH_QUERY_PHOTO_ALBUM);
+    columnsCloudDisplay.push_back(PhotoAlbumColumns::ALBUM_ID + " as " + MEDIA_DATA_DB_ID);
+    predicatesCloudDisplay.IsNotNull(MEDIA_DATA_DB_ALBUM_NAME);
+    predicatesCloudDisplay.NotEqualTo(MEDIA_DATA_DB_ALBUM_NAME, HIDDEN_ALBUM);
+    predicatesCloudDisplay.EqualTo(MEDIA_DATA_DB_IS_LOCAL, IS_LOCAL);
+    predicatesCloudDisplay.In(PhotoAlbumColumns::ALBUM_ID, ownerAlbumIds);
+    shared_ptr<DataShare::DataShareResultSet> resultSetcloudDisplay = dataShareHelper_->Query(uri,
+        predicatesCloudDisplay, columnsCloudDisplay);
+    CHECK_AND_RETURN_RET_LOG(resultSetcloudDisplay != nullptr,
+        MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to GetAlbumCloudDisplay");
+    int cloudCountDisplay = 0;
+    resultSetcloudDisplay->GetRowCount(cloudCountDisplay);
+    MEDIA_INFO_LOG("MtpMedialibraryManager::GetAlbumCloudDisplay cloudCountDisplay:%{public}d", cloudCountDisplay);
+    resultSetcloudDisplay->Close();
+    return MTP_SUCCESS;
+}
+
 shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetAlbumInfo(
     const shared_ptr<MtpOperationContext> &context, bool isHandle)
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, nullptr, "context is nullptr");
-    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, nullptr,
-        "MtpMedialibraryManager::GetAlbumInfo fail to get datasharehelper");
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, nullptr, "GetAlbumInfo fail to get datasharehelper");
     DataShare::DataSharePredicates predicates;
     Uri uri(PAH_QUERY_PHOTO_ALBUM);
     vector<string> columns;
@@ -206,6 +248,10 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetAlbumInfo(
         string ownerAlbumId = GetStringVal(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
         ownerAlbumIds.push_back(ownerAlbumId);
     }
+    int32_t errCode = GetAlbumCloud();
+    CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, nullptr, "fail to GetAlbumCloud");
+    errCode = GetAlbumCloudDisplay(ownerAlbumIds);
+    CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, nullptr, "fail to GetAlbumCloudDisplay");
     predicates.BeginWrap();
     predicates.IsNotNull(MEDIA_DATA_DB_ALBUM_NAME);
     predicates.NotEqualTo(MEDIA_DATA_DB_ALBUM_NAME, HIDDEN_ALBUM);
@@ -217,7 +263,12 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetAlbumInfo(
     predicates.EndWrap();
     predicates.Or();
     predicates.In(PhotoAlbumColumns::ALBUM_ID, ownerAlbumIds);
-    return dataShareHelper_->Query(uri, predicates, columns);
+    shared_ptr<DataShare::DataShareResultSet> resultSetAll = dataShareHelper_->Query(uri, predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSetAll != nullptr, nullptr, "fail to GetAlbumInfo");
+    int count = 0;
+    resultSetAll->GetRowCount(count);
+    MEDIA_INFO_LOG("MtpMedialibraryManager::GetAlbumInfo count:%{public}d", count);
+    return resultSetAll;
 }
 
 std::shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetOwnerAlbumIdList()
