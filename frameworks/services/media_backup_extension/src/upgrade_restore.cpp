@@ -78,12 +78,6 @@ UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::str
     MEDIA_INFO_LOG("Set ffrt::set_escape_enable = false");
 }
 
-UpgradeRestore::~UpgradeRestore()
-{
-    ffrt::set_escape_enable(true);
-    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = true");
-}
-
 int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::string &upgradeFilePath, bool isUpgrade)
 {
     appDataPath_ = backupRetoreDir;
