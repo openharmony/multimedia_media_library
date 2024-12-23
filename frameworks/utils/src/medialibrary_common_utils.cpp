@@ -59,9 +59,6 @@ const vector<string> CHAR2HEX_TABLE = {
     "F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "FA", "FB", "FC", "FD", "FE", "FF"
 };
 
-const int32_t INTEGER_MAX_LENGTH = 10;
-const std::string MAX_INTEGER = "2147483648";
-
 void MediaLibraryCommonUtils::Char2Hex(const unsigned char *data, const size_t len, std::string &hexStr)
 {
     constexpr int CHAR_WIDTH = 8;
@@ -333,41 +330,6 @@ void MediaLibraryCommonUtils::AppendSelections(std::string &selections)
         return;
     }
     selections = "(" + selections + ")";
-}
-
-int MediaLibraryCommonUtils::SafeStoi(const std::string &value)
-{
-    if (!IsValidInteger(value)) {
-        MEDIA_ERR_LOG("invalid number!");
-        return -1;
-    }
-    return stoi(value);
-}
-
-bool MediaLibraryCommonUtils::IsValidInteger(const std::string &value)
-{
-    if (value.empty()) {
-        MEDIA_ERR_LOG("KeyWord is empty!");
-        return false;
-    }
-    std::string unsignedStr = value.c_str();
-    if (value[0] == '-') {
-        unsignedStr = value.substr(1);
-    }
-
-    for (int32_t i = 0; i < unsignedStr.size(); i++) {
-        if (!std::isdigit(unsignedStr[i])) {
-            MEDIA_ERR_LOG("invalid char of:%{public}c", unsignedStr[i]);
-            return false;
-        }
-    }
-    if (unsignedStr.size() > INTEGER_MAX_LENGTH) {
-        MEDIA_ERR_LOG("KeyWord is out length!");
-        return false;
-    } else if (unsignedStr.size() == INTEGER_MAX_LENGTH) {
-        return unsignedStr < MAX_INTEGER;
-    }
-    return true;
 }
 } // namespace Media
 } // namespace OHOS
