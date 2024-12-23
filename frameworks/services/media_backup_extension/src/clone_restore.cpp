@@ -193,12 +193,6 @@ CloneRestore::CloneRestore()
     MEDIA_INFO_LOG("Set ffrt::set_escape_enable = false");
 }
 
-CloneRestore::~CloneRestore()
-{
-    ffrt::set_escape_enable(true);
-    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = true");
-}
-
 void CloneRestore::StartRestore(const string &backupRestoreDir, const string &upgradePath)
 {
     MEDIA_INFO_LOG("Start clone restore");

@@ -38,7 +38,7 @@ namespace Media {
 class CloneRestore : public BaseRestore {
 public:
     CloneRestore();
-    virtual ~CloneRestore();
+    virtual ~CloneRestore() = default;
     // upgradePath is useless now
     void StartRestore(const std::string &backupRestorePath, const std::string &upgradePath) override;
     int32_t Init(const std::string &backupRestoreDir, const std::string &upgradeFilePath, bool isUpgrade) override;
