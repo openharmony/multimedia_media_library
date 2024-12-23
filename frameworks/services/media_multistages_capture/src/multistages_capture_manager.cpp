@@ -92,7 +92,7 @@ void MultiStagesCaptureManager::RestorePhotos(const NativeRdb::AbsRdbPredicates 
     predicatesNew.SetWhereArgs(predicates.GetWhereArgs());
     vector<string> columns { MediaColumn::MEDIA_ID, MEDIA_DATA_DB_PHOTO_ID, MEDIA_DATA_DB_PHOTO_QUALITY,
         MEDIA_DATA_DB_MEDIA_TYPE };
-    auto resultSet = MediaLibraryRdbStore::Query(predicatesNew, columns);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicatesNew, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_INFO_LOG("Result set is empty");
         return;

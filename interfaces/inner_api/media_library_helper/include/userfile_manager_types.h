@@ -224,6 +224,13 @@ enum class CoverSatisfiedType : uint8_t {
     BEAUTY_SETTING = 4,
     BEAUTY_SETTING_EDITE = 5
 };
+
+enum class WatermarkType : int32_t {
+    DEFAULT = 0,
+    BRAND_COMMON,
+    COMMON,
+    BRAND
+};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_FILEMANAGEMENT_USERFILEMGR_TYPES_H

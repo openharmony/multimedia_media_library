@@ -36,7 +36,7 @@ public:
     EXPORT static int32_t Update(NativeRdb::ValuesBucket &rdbValues, NativeRdb::AbsRdbPredicates &predicates);
     EXPORT static int32_t InsertCloudEnhancementImageInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset,
         int32_t sourceFileId, std::shared_ptr<CloudEnhancementFileInfo> info,
-        std::shared_ptr<TransactionOperations> trans = nullptr);
+        std::shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<TransactionOperations> trans = nullptr);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> GetPair(MediaLibraryCommand &cmd);
 };
 } // namespace Media

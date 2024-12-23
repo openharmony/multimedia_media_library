@@ -244,8 +244,7 @@ void MultiStagesPhotoCaptureManager::UpdateLocation(const NativeRdb::ValuesBucke
     }
 
     MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = MediaColumn::MEDIA_ID + " = " + to_string(fileId);
-    queryCmd.GetAbsRdbPredicates()->SetWhereClause(where);
+    queryCmd.GetAbsRdbPredicates()->SetWhereClause(MediaColumn::MEDIA_ID + " = " + to_string(fileId));
     vector<string> columns { MediaColumn::MEDIA_FILE_PATH };
 
     auto resultSet = DatabaseAdapter::Query(queryCmd, columns);
@@ -254,6 +253,7 @@ void MultiStagesPhotoCaptureManager::UpdateLocation(const NativeRdb::ValuesBucke
         return;
     }
     string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    resultSet->Close();
 
     // update exif info
     auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
@@ -353,24 +353,24 @@ void MultiStagesPhotoCaptureManager::AddImage(MediaLibraryCommand &cmd)
 int32_t MultiStagesPhotoCaptureManager::UpdatePictureQuality(const std::string &photoId)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("UpdatePhotoQuality " + photoId);
+    tracer.Start("UpdatePictureQuality " + photoId);
     MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     NativeRdb::ValuesBucket updateValues;
     updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
     updateCmd.SetValueBucket(updateValues);
     updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
-    int32_t updatePhotoIdResult = DatabaseAdapter::Update(updateCmd);
+    int32_t updatePhotoQualityResult = DatabaseAdapter::Update(updateCmd);
     updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, false);
     updateCmd.GetAbsRdbPredicates()->NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
         to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
     NativeRdb::ValuesBucket updateValuesDirty;
     updateValuesDirty.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
     updateCmd.SetValueBucket(updateValuesDirty);
-    auto isTempResult = DatabaseAdapter::Update(updateCmd);
-    if (isTempResult < 0) {
-        MEDIA_WARN_LOG("update temp flag fail, photoId: %{public}s", photoId.c_str());
+    auto isDirtyResult = DatabaseAdapter::Update(updateCmd);
+    if (isDirtyResult < 0) {
+        MEDIA_WARN_LOG("update dirty flag fail, photoId: %{public}s", photoId.c_str());
     }
-    return updatePhotoIdResult;
+    return updatePhotoQualityResult;
 }
 
 void MultiStagesPhotoCaptureManager::SyncWithDeferredProcSessionInternal()
