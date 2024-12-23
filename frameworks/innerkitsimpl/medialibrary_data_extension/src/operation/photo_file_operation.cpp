@@ -115,28 +115,18 @@ int32_t PhotoFileOperation::HandleThumbnailAstcData(const std::string &dateTaken
 {
     // 取旧key拿value，然后在put新key和value（和旧的value一样）到kvstore中
     string oldKey;
-    if (!MediaFileUtils::GenerateKvStoreKey(oldAssetId, dateTaken, oldKey)) {
-        MEDIA_ERR_LOG("GenerateKvStoreKey failed");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::GenerateKvStoreKey(oldAssetId, dateTaken, oldKey), E_ERR,
+        "GenerateKvStoreKey failed");
 
     string newKey;
-    if (!MediaFileUtils::GenerateKvStoreKey(newAssetId, dateTaken, newKey)) {
-        MEDIA_ERR_LOG("GenerateKvStoreKey failed");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::GenerateKvStoreKey(newAssetId, dateTaken, newKey), E_ERR,
+        "GenerateKvStoreKey failed");
 
     int32_t err = MediaLibraryKvStoreUtils::CopyAstcDataToKvStoreByType(KvStoreValueType::MONTH_ASTC, oldKey, newKey);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("CopyAstcDataToKvStoreByType failed, err: %{public}d", err);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "CopyAstcDataToKvStoreByType failed, err: %{public}d", err);
 
     err = MediaLibraryKvStoreUtils::CopyAstcDataToKvStoreByType(KvStoreValueType::YEAR_ASTC, oldKey, newKey);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("CopyAstcDataToKvStoreByType failed, err: %{public}d", err);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "CopyAstcDataToKvStoreByType failed, err: %{public}d", err);
     MEDIA_INFO_LOG("Success to copy thumbnail. oldKey:%{public}s, newKey:%{public}s", oldKey.c_str(), newKey.c_str());
     return E_OK;
 }
@@ -395,12 +385,9 @@ int32_t PhotoFileOperation::CopyPhotoRelatedVideoFile(const PhotoFileOperation::
         return E_OK;
     }
     int32_t opRet = this->CopyFile(srcVideoPath, targetVideoPath);
-    if (opRet != E_OK) {
-        MEDIA_ERR_LOG("Media_Operation: CopyPhoto Video failed, srcPath: %{public}s, targetPath: %{public}s",
-            srcVideoPath.c_str(),
-            targetVideoPath.c_str());
-        return opRet;
-    }
+    CHECK_AND_RETURN_RET_LOG(opRet == E_OK, opRet,
+        "Media_Operation: CopyPhoto Video failed, srcPath: %{public}s, targetPath: %{public}s", srcVideoPath.c_str(),
+        targetVideoPath.c_str());
     MediaFileUtils::ModifyFile(targetVideoPath, dateModified / MSEC_TO_SEC);
     MEDIA_INFO_LOG("Media_Operation: CopyPhotoRelatedVideoFile success, srcPath: %{public}s, targetPath: %{public}s",
         srcVideoPath.c_str(),
@@ -457,11 +444,9 @@ int32_t PhotoFileOperation::CopyPhotoRelatedThumbnail(const PhotoFileOperation::
     std::string srcThumbnailFolder = sourcePhotoInfo.thumbnailFolder;
     std::string targetThumbnailFolder = targetPhotoInfo.thumbnailFolder;
     int32_t opRet = CopyPhotoRelatedData(sourcePhotoInfo, targetPhotoInfo, srcThumbnailFolder, targetThumbnailFolder);
-    if (opRet != E_OK) {
-        MEDIA_ERR_LOG("Media_Operation: CopyPhoto thumbnail failed, srcPath: %{public}s, targetPath: %{public}s",
-            srcThumbnailFolder.c_str(), targetThumbnailFolder.c_str());
-        return opRet;
-    }
+    CHECK_AND_RETURN_RET_LOG(opRet == E_OK, opRet,
+        "Media_Operation: CopyPhoto thumbnail failed, srcPath: %{public}s, targetPath: %{public}s",
+        srcThumbnailFolder.c_str(), targetThumbnailFolder.c_str());
 
     return E_OK;
 }

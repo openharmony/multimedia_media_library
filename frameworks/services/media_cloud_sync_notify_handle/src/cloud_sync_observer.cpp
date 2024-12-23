@@ -55,10 +55,7 @@ void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
     }
 
     auto *taskData = new (nothrow) CloudSyncNotifyData(notifyInfo);
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to new taskData");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to new taskData");
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
         MEDIA_ERR_LOG("Can not get asyncWorker");
@@ -82,20 +79,15 @@ void CloudSyncObserver::HandleIndex()
 
     //update index
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr!");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(uniStore != nullptr, "uniStore is nullptr!");
     const std::string queryIdToUpdateIndex = "SELECT file_id FROM tab_analysis_search_index WHERE photo_status = 2";
     auto resultSetUpdateIndex = uniStore->QuerySql(queryIdToUpdateIndex);
-    if (resultSetUpdateIndex == nullptr) {
-        MEDIA_ERR_LOG("resultSetUpdateIndex is nullptr!");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSetUpdateIndex != nullptr, "resultSetUpdateIndex is nullptr!");
     std::vector<std::string> idToUpdateIndex;
     while (resultSetUpdateIndex->GoToNextRow() == NativeRdb::E_OK) {
         idToUpdateIndex.push_back(to_string(GetInt32Val("file_id", resultSetUpdateIndex)));
     }
+
     MEDIA_INFO_LOG("HandleIndex idToUpdateIndex size: %{public}zu", idToUpdateIndex.size());
     if (!idToUpdateIndex.empty()) {
         MediaAnalysisHelper::AsyncStartMediaAnalysisService(

@@ -137,17 +137,11 @@ static int32_t GetIntValueFromResultSet(shared_ptr<NativeRdb::ResultSet> resultS
 static int32_t GetStringValueFromResultSet(shared_ptr<NativeRdb::ResultSet> resultSet, const string &column,
     string &value)
 {
-    if (resultSet == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, E_HAS_DB_ERROR);
     int index = E_INDEX;
     resultSet->GetColumnIndex(column, index);
-    if (index == E_INDEX) {
-        return E_HAS_DB_ERROR;
-    }
-    if (resultSet->GetString(index, value) != NativeRdb::E_OK) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(index != E_INDEX, E_HAS_DB_ERROR);
+    CHECK_AND_RETURN_RET(resultSet->GetString(index, value) == NativeRdb::E_OK, E_HAS_DB_ERROR);
     return E_OK;
 }
 
@@ -429,15 +423,9 @@ static bool UpdateGroupPhotoAlbum(vector<GroupPhotoAlbumInfo> &updateAlbums, vec
     auto lastResultMap = GetAnalysisAlbumInfo();
     const string querySql = GetGroupPhotoAlbumSql();
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Update group photo album failed, rdbStore is null.");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Update group photo album failed, rdbStore is null.");
     auto resultSet = rdbStore->QuerySql(querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Update group photo album failed, query resultSet is null.");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Update group photo album failed, query resultSet is null.");
 
     bool hasUpdated = false;
     while (resultSet->GoToNextRow() == E_OK) {
@@ -568,23 +556,21 @@ static int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const Merg
         MEDIA_ERR_LOG("Failed to query merge album cover uri");
         return E_HAS_DB_ERROR;
     }
+
     int mergeFileId;
-    if (GetIntValueFromResultSet(resultSet, MediaColumn::MEDIA_ID, mergeFileId) != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to get file id of merge album cover uri.");
-        return E_HAS_DB_ERROR;
-    }
-
     string mergeTitle;
-    if (GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_TITLE, mergeTitle) != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to get title of merge album cover uri.");
-        return E_HAS_DB_ERROR;
-    }
-
     string mergeDisplayName;
-    if (GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_NAME, mergeDisplayName) != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to get display name of merge album cover uri.");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(GetIntValueFromResultSet(resultSet,
+        MediaColumn::MEDIA_ID, mergeFileId) == NativeRdb::E_OK,
+        E_HAS_DB_ERROR, "Failed to get file id of merge album cover uri.");
+   
+    CHECK_AND_RETURN_RET_LOG(GetStringValueFromResultSet(resultSet,
+        MediaColumn::MEDIA_TITLE, mergeTitle) == NativeRdb::E_OK,
+        E_HAS_DB_ERROR, "Failed to get title of merge album cover uri.");
+    
+    CHECK_AND_RETURN_RET_LOG(GetStringValueFromResultSet(resultSet,
+        MediaColumn::MEDIA_NAME, mergeDisplayName) == NativeRdb::E_OK,
+        E_HAS_DB_ERROR, "Failed to get display name of merge album cover uri.");
     updateAlbumInfo.coverUri = "file://media/Photo/" + to_string(mergeFileId) + "/" + mergeTitle + "/" +
         mergeDisplayName;
     return E_OK;
@@ -627,9 +613,8 @@ static string ReorderTagId(string target, const vector<MergeAlbumInfo> &mergeAlb
             splitResult.push_back(groupTag);
         }
     }
-    if (splitResult.empty()) {
-        return reordererTagId;
-    }
+
+    CHECK_AND_RETURN_RET(!splitResult.empty(), reordererTagId);
     string newTagId = mergeAlbumInfo[0].groupTag + "|" + mergeAlbumInfo[1].groupTag;
     splitResult.push_back(newTagId);
     std::sort(splitResult.begin(), splitResult.end());
@@ -817,15 +802,11 @@ void MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(int32_t albu
 {
     const string &querySql = GetGroupPhotoAlbumSql();
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Update group photo album by id: %{public}d failed, rdbStore is null.", albumId);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr,
+        "Update group photo album by id: %{public}d failed, rdbStore is null.", albumId);
     auto resultSet = rdbStore->QuerySql(querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Update group photo album by id: %{public}d failed, query resultSet is null.", albumId);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr,
+        "Update group photo album by id: %{public}d failed, query resultSet is null.", albumId);
 
     vector<GroupPhotoAlbumInfo> updateAlbums;
     while (resultSet->GoToNextRow() == E_OK) {
