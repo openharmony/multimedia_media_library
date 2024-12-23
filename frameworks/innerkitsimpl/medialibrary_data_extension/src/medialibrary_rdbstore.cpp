@@ -4036,6 +4036,16 @@ static void AddVideoFaceTable(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddSupportedWatermarkType(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::SUPPORTED_WATERMARK_TYPE + " INT "
+    };
+    MEDIA_INFO_LOG("start add supported_watermark_type column");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_HIGHLIGHT_MAP_TABLES) {
@@ -4066,6 +4076,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER) {
         UpdateSourcePhotoAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_SUPPORTED_WATERMARK_TYPE) {
+        AddSupportedWatermarkType(store);
     }
 }
 

@@ -577,6 +577,16 @@ void FileAsset::SetDetailTime(const string &detailTime)
     member_[PhotoColumn::PHOTO_DETAIL_TIME] = detailTime;
 }
 
+int32_t FileAsset::GetSupportedWatermarkType() const
+{
+    return GetInt32Member(PhotoColumn::SUPPORTED_WATERMARK_TYPE);
+}
+
+void FileAsset::SetSupportedWatermarkType(int32_t watermarkType)
+{
+    member_[PhotoColumn::SUPPORTED_WATERMARK_TYPE] = watermarkType;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);

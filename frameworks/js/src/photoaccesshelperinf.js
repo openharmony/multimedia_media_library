@@ -801,4 +801,5 @@ export default {
   CloudEnhancementState: photoAccessHelper.CloudEnhancementState,
   CloudEnhancementTaskState: photoAccessHelper.CloudEnhancementTaskState,
   VideoEnhancementType: photoAccessHelper.VideoEnhancementType,
+  WatermarkType: photoAccessHelper.WatermarkType,
 };

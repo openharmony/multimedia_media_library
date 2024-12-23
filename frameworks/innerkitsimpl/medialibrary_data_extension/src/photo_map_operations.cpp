@@ -178,6 +178,7 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
     err = trans->RetryTrans(func);
     if (err != E_OK) {
         MEDIA_ERR_LOG("AddAnaLysisPhotoAssets: trans retry fail!, ret:%{public}d", err);
+        return err;
     }
     bool isValid = false;
     std::vector<string> albumIdList;
@@ -382,11 +383,7 @@ shared_ptr<OHOS::NativeRdb::ResultSet> QueryGroupPhotoAlbumAssets(const string &
         MediaColumn::MEDIA_TIME_PENDING + " = 0 GROUP BY P." + MediaColumn::MEDIA_ID +
         " HAVING COUNT(" + GROUP_TAG + ") = " + TOTAL_FACES + " AND " +
         " COUNT(DISTINCT " + GROUP_TAG +") = " + to_string(albumTagCount) + ";";
-    auto resultSet = MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->QuerySql(sql);
-    if (resultSet != nullptr) {
-        return resultSet;
-    }
-    return nullptr;
+    return MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->QuerySql(sql);
 }
 
 shared_ptr<OHOS::NativeRdb::ResultSet> PhotoMapOperations::QueryPhotoAssets(const RdbPredicates &rdbPredicate,

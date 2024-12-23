@@ -19,8 +19,8 @@
 #include "rdb_predicates.h"
 #include "media_file_utils.h"
 #include "medialibrary_album_operations.h"
-#include "result_set_utils.h"
 #include "medialibrary_notify.h"
+#include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
 
 #include "photo_album_column.h"

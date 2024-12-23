@@ -205,7 +205,7 @@ static bool CanConvertToInt32(const std::string &str)
     iss >> num;
     return iss.eof() && !iss.fail();
 }
-
+ 
 static int32_t GetFileId(const DataShareValuesBucket &values, bool &isValid)
 {
     int32_t ret = E_ERR;
@@ -372,6 +372,7 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
     err = trans->RetryTrans(func);
     if (err != E_OK) {
         MEDIA_ERR_LOG("GrantUriSensitive: tans finish fail!, ret:%{public}d", err);
+        return err;
     }
     return E_OK;
 }
