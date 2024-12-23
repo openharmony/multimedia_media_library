@@ -59,6 +59,7 @@ const std::string PATH_PARA = "path=";
 constexpr unsigned short MAX_RECURSION_DEPTH = 4;
 constexpr size_t DEFAULT_TIME_SIZE = 32;
 const int32_t HMFS_MONITOR_FL = 2;
+const int32_t INTEGER_MAX_LENGTH = 10;
 const std::string LISTENING_BASE_PATH = "/storage/media/local/files/";
 const std::string PHOTO_DIR = "Photo";
 const std::string AUDIO_DIR = "Audio";
@@ -72,6 +73,7 @@ const std::vector<std::string> SET_LISTEN_DIR = {
 };
 const std::string KVSTORE_FILE_ID_TEMPLATE = "0000000000";
 const std::string KVSTORE_DATE_KEY_TEMPLATE = "0000000000000";
+const std::string MAX_INTEGER = "2147483648";
 #define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)
 #define HMFS_IOCTL_HW_SET_FLAGS _IOR(0XF5, 71, unsigned int)
 
@@ -2084,5 +2086,32 @@ bool MediaFileUtils::GenerateKvStoreKey(const std::string &fileId, const std::st
     key = KVSTORE_DATE_KEY_TEMPLATE.substr(dateKey.length()) + dateKey +
           KVSTORE_FILE_ID_TEMPLATE.substr(fileId.length()) + fileId;
     return true;
+}
+
+bool MediaFileUtils::IsValidInteger(const std::string &value)
+{
+    MEDIA_DEBUG_LOG("KeyWord is:%{public}s", value.c_str());
+    std::string unsignedStr = value;
+    while (unsignedStr.size() > 0 && unsignedStr[0] == '-') {
+        unsignedStr = unsignedStr.substr(1);
+    }
+    for (int32_t i = 0; i < unsignedStr.size(); i++) {
+        if (!std::isdigit(unsignedStr[i])) {
+            MEDIA_INFO_LOG("KeyWord invalid char of:%{public}c", unsignedStr[i]);
+            unsignedStr = unsignedStr.substr(0, i);
+            break;
+        }
+    }
+    if (unsignedStr.size() == 0) {
+        MEDIA_ERR_LOG("KeyWord Invalid argument");
+        return false;
+    } else if (unsignedStr.size() < INTEGER_MAX_LENGTH) {
+        return true;
+    } else if (unsignedStr.size() == INTEGER_MAX_LENGTH) {
+        return unsignedStr < MAX_INTEGER;
+    } else {
+        MEDIA_ERR_LOG("KeyWord is out length!");
+        return false;
+    }
 }
 } // namespace OHOS::Media
