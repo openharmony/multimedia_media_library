@@ -151,6 +151,8 @@ struct PhotoRecordInfo {
     int32_t toBeUpdatedRecordCount;
     int64_t dbFileSize;
     int64_t slaveDbFileSize;
+    int32_t duplicateLpathCount;
+    int32_t abnormalLpathCount;
 };
 
 struct AdaptationToMovingPhotoInfo {
