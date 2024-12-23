@@ -22,6 +22,7 @@
 
 #include "abs_shared_result_set.h"
 #include "directory_ex.h"
+#include "duplicate_photo_operation.h"
 #include "file_asset.h"
 #include "file_utils.h"
 #include "media_analysis_helper.h"
@@ -337,10 +338,10 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
     int limit = predicates.GetLimit();
     int offset = predicates.GetOffset();
     if (cmd.GetOprnType() == OperationType::ALL_DUPLICATE_ASSETS) {
-        return MediaLibraryRdbStore::GetAllDuplicateAssets(columns, offset, limit);
+        return DuplicatePhotoOperation::GetAllDuplicateAssets(columns, offset, limit);
     }
     if (cmd.GetOprnType() == OperationType::CAN_DEL_DUPLICATE_ASSETS) {
-        return MediaLibraryRdbStore::GetCanDelDuplicateAssets(columns, offset, limit);
+        return DuplicatePhotoOperation::GetCanDelDuplicateAssets(columns, offset, limit);
     }
     MediaLibraryRdbUtils::AddQueryIndex(predicates, columns);
     return MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
