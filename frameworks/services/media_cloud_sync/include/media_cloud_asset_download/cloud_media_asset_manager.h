@@ -19,6 +19,7 @@
 #include <iostream>
 #include <memory>
 #include <chrono>
+#include <mutex>
 
 #include "cloud_media_asset_download_operation.h"
 #include "cloud_media_asset_types.h"
@@ -39,12 +40,14 @@ public:
     EXPORT int32_t PauseDownloadCloudAsset(const CloudMediaTaskPauseCause &pauseCause);
     EXPORT int32_t CancelDownloadCloudAsset();
     EXPORT int32_t ForceRetainDownloadCloudMedia();
-    EXPORT int32_t GentleRetainDownloadCloudMedia();
     EXPORT std::string GetCloudMediaAssetTaskStatus();
     EXPORT bool SetIsThumbnailUpdate();
     EXPORT int32_t GetTaskStatus();
     EXPORT int32_t GetDownloadType();
     EXPORT bool SetBgDownloadPermission(const bool &flag);
+    static void DeleteAllCloudMediaAssetsAsync();
+    static void StartDeleteCloudMediaAssets();
+    static void StopDeleteCloudMediaAssets();
 
 private:
     CloudMediaAssetManager() {}
@@ -53,11 +56,18 @@ private:
     const CloudMediaAssetManager &operator=(const CloudMediaAssetManager &manager) = delete;
 
     EXPORT int32_t CheckDownloadTypeOfTask(const CloudMediaDownloadType &type);
-    EXPORT int32_t DeleteBatchCloudFile(const std::vector<std::string> &pathVec);
-    EXPORT int32_t DataReadyForDelete(std::shared_ptr<NativeRdb::ResultSet> resultSet);
+    EXPORT static int32_t DeleteBatchCloudFile(const std::vector<std::string> &fileIds);
+    EXPORT static int32_t ReadyDataForDelete(std::vector<std::string> &fileIds, std::vector<std::string> &paths,
+        std::vector<std::string> &dateTakens);
+    static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
+    static void ResetDeleteParameter();
+    int32_t UpdateCloudMeidaAssets();
 
 private:
     static std::shared_ptr<CloudMediaAssetDownloadOperation> operation_;
+    static std::mutex mutex_;
+    static bool isDeleteAssets_;
+    static bool isBgDeletePermission_;
 };
 } // namespace Media
 } // namespace OHOS

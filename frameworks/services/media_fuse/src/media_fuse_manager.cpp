@@ -138,15 +138,37 @@ static bool IsFullUri(const string &uri)
     return false;
 }
 
-static int32_t GetFileIdFromUri(string &fileId, const string &uri)
+static int32_t GetFileIdFromUri(string &fileId, string &fileName, const string &uri)
 {
     string tmpPath;
     int32_t pos;
     int32_t virtualId;
+    fileName = "";
+    /* uri = "/Photo/fileid/filename/displayname.jpg" */
     if (uri.find("/Photo") == 0) {
+        /* tmppath = "fileid/filename/displayname.jpg" */
         tmpPath = uri.substr(strlen("/Photo/"));
+        /* get fileid end pos */
         pos = tmpPath.find("/");
+        /* get fileid */
         fileId = tmpPath.substr(0, pos);
+        /* tmppath = "filename/displayname.jpg" */
+        tmpPath = tmpPath.substr(pos + 1);
+        /* get fileid name end pos */
+        pos = tmpPath.find("/");
+        /* get file name */
+        fileName = tmpPath.substr(0, pos);
+        if (fileName.empty()) {
+            return E_ERR;
+        }
+        /* get display name, displayname.jpg */
+        string displayName = tmpPath.substr(pos + 1);
+         /* get ext name start pos*/
+        pos = displayName.find(".");
+        /* get ext name, .jpg */
+        string extName = displayName.substr(pos);
+        /* get real file name, filename.jpg */
+        fileName = fileName + extName;
     } else if (uri.find("/image") == 0) {
         tmpPath = uri.substr(strlen("/image/"));
         if (tmpPath.empty()) {
@@ -169,7 +191,7 @@ static int32_t GetFileIdFromUri(string &fileId, const string &uri)
     return E_SUCCESS;
 }
 
-static int32_t GetPathFromFileId(string &filePath, const string &fileId)
+static int32_t GetPathFromFileId(string &filePath, const string &fileId, const string &fileName)
 {
     NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
     rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
@@ -186,13 +208,21 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId)
         MEDIA_ERR_LOG("Failed to get rslt");
         return E_ERR;
     }
-    resultSet->GetRowCount(numRows);
-    if (numRows == 0) {
+    int32_t ret = resultSet->GetRowCount(numRows);
+    if ((ret != NativeRdb::E_OK) || (numRows <= 0)) {
         MEDIA_ERR_LOG("Failed to get filePath");
         return E_ERR;
     }
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
         filePath = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
+        if (!fileName.empty()) {
+            int32_t pos = filePath.rfind("/");
+            string name = filePath.substr(pos + 1);
+            if (name != fileName) {
+                MEDIA_ERR_LOG("fileName check fail, %{private}s %{private}s", name.c_str(), fileName.c_str());
+                return E_ERR;
+            }
+        }
     }
     return E_SUCCESS;
 }
@@ -200,21 +230,22 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId)
 int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
 {
     string fileId;
+    string fileName;
     string target = path;
-    if (path == nullptr || strlen(path) == 0) {
+    if (path == nullptr || strlen(path) == 0 || ((target.find("/Photo") != 0) && (target.find("/image") != 0))) {
         MEDIA_ERR_LOG("Invalid path, %{private}s", path == nullptr ? "null" : path);
-        return -ENOENT;
+        return E_ERR;
     }
     int32_t ret;
     if (IsFullUri(target) == false) {
         ret = lstat(FUSE_ROOT_MEDIA_DIR.c_str(), stbuf);
     } else {
-        ret = GetFileIdFromUri(fileId, path);
+        ret = GetFileIdFromUri(fileId, fileName, path);
         if (ret != E_SUCCESS) {
             MEDIA_ERR_LOG("get attr fileid fail");
             return E_ERR;
         }
-        ret = GetPathFromFileId(target, fileId);
+        ret = GetPathFromFileId(target, fileId, fileName);
         if (ret != E_SUCCESS) {
             MEDIA_ERR_LOG("get attr path fail");
             return E_ERR;
@@ -262,8 +293,8 @@ static int32_t DbCheckPermission(const string &filePath, const string &mode, con
         MEDIA_ERR_LOG("Failed to get permission type");
         return E_PERMISSION_DENIED;
     }
-    resultSet->GetRowCount(numRows);
-    if (numRows == 0) {
+    int32_t ret = resultSet->GetRowCount(numRows);
+    if ((ret != NativeRdb::E_OK) || (numRows <= 0)) {
         MEDIA_ERR_LOG("Failed to get permission type");
         return E_PERMISSION_DENIED;
     }
@@ -331,9 +362,10 @@ int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
 {
     int realFlag = flags & (O_RDONLY | O_WRONLY | O_RDWR | O_TRUNC | O_APPEND);
     string fileId;
+    string fileName;
     string target;
-    GetFileIdFromUri(fileId, path);
-    GetPathFromFileId(target, fileId);
+    GetFileIdFromUri(fileId, fileName, path);
+    GetPathFromFileId(target, fileId, fileName);
     fd = OpenFile(target, fileId, MEDIA_OPEN_MODE_MAP.at(realFlag));
     if (fd < 0) {
         MEDIA_ERR_LOG("Open failed, path = %{private}s, errno = %{public}d", target.c_str(), errno);
@@ -346,8 +378,9 @@ int32_t MediaFuseManager::DoRelease(const char *path, const int &fd)
 {
     string fileId;
     string filePath;
-    GetFileIdFromUri(fileId, path);
-    GetPathFromFileId(filePath, fileId);
+    string fileName;
+    GetFileIdFromUri(fileId, fileName, path);
+    GetPathFromFileId(filePath, fileId, fileName);
     if (fd >= 0) {
         close(fd);
         MediaLibraryObjectUtils::ScanFileAsync(filePath, fileId, MediaLibraryApi::API_10);

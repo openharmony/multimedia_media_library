@@ -86,7 +86,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailBackground(ThumbRdbOpt &opts)
     vector<ThumbnailData> infos;
     int32_t err = GetNoThumbnailData(opts, infos);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to GetNoLcdData %{private}d", err);
+        MEDIA_ERR_LOG("Failed to GetNoLThumbnailData %{private}d", err);
         return err;
     }
 
@@ -222,6 +222,21 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
     return E_OK;
 }
 
+bool NeedGenerateLcd(ThumbnailData &data)
+{
+    std::string lcdPath = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
+    if (access(lcdPath.c_str(), F_OK) != 0) {
+        return true;
+    }
+    size_t lcdSize = -1;
+    if (!MediaFileUtils::GetFileSize(lcdPath, lcdSize) || lcdSize >= LCD_UPLOAD_LIMIT_SIZE) {
+        MEDIA_INFO_LOG("Lcd size is larger than uploaded limit size: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+        return true;
+    }
+    return false;
+}
+
 int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
 {
     if (opts.store == nullptr) {
@@ -242,14 +257,15 @@ int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
     MEDIA_INFO_LOG("No lcd data size: %{public}d", static_cast<int>(infos.size()));
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
-        // Check whether LCD exists, if it does, just update the database
-        if (access(GetThumbnailPath(infos[i].path, THUMBNAIL_LCD_SUFFIX).c_str(), F_OK) == 0 ||
-            access(GetThumbnailPath(infos[i].path, THUMBNAIL_LCD_EX_SUFFIX).c_str(), F_OK) == 0) {
+
+        // Check whether LCD exists or is over upload limit, if it does, just update the database
+        if (!NeedGenerateLcd(infos[i])) {
+            MEDIA_INFO_LOG("Skip CreateLcdBackground, lcd exists: %{public}s",
+                DfxUtils::GetSafePath(infos[i].path).c_str());
             ThumbnailUtils::UpdateLcdReadyStatus(opts, infos[i], err, LcdReady::GENERATE_LCD_COMPLETED);
             continue;
         }
-        infos[i].loaderOpts.loadingStates = infos[i].isLocalFile ? SourceLoader::LOCAL_LCD_SOURCE_LOADING_STATES :
-            SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
+        infos[i].loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcd,
             opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     }

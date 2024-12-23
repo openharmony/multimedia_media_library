@@ -817,10 +817,10 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Test_002, TestSize.Level0)
 {
     const string uri = "datashare:///media";
     auto res = MediaFileUtils::GetHighlightPath(uri);
-    EXPECT_EQ(res, "/storage/cloud/files/.thumbs");
+    EXPECT_EQ(res, "/storage/cloud/files");
     const string uri2 = "file://media";
     auto res2 = MediaFileUtils::GetHighlightPath(uri2);
-    EXPECT_EQ(res2, "/storage/cloud/files/.thumbs");
+    EXPECT_EQ(res2, "/storage/cloud/files");
     const string uri3 = "";
     auto res3 = MediaFileUtils::GetHighlightPath(uri3);
     EXPECT_EQ(res3, "");
@@ -967,6 +967,16 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GenerateKvStoreKey_Test_001,
     datekey = "0000000000000";
     res = MediaFileUtils::GenerateKvStoreKey(fileId, datekey, key);
     EXPECT_EQ(res, true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetDateModified_Test_001, TestSize.Level0)
+{
+    string filePath = "/data/GetDateModified_Test_001.jpg";
+    int64_t dateModified = 0;
+    EXPECT_EQ(MediaFileUtils::GetDateModified(filePath, dateModified), false);
+    EXPECT_EQ(MediaFileUtils::CreateFile(filePath), true);
+    EXPECT_EQ(MediaFileUtils::GetDateModified(filePath, dateModified), true);
+    EXPECT_GT(dateModified, 0);
 }
 } // namespace Media
 } // namespace OHOS

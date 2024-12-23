@@ -71,6 +71,7 @@ enum AnalysisType : int32_t {
     ANALYSIS_VIDEO_LABEL,
     ANALYSIS_MULTI_CROP,
     ANALYSIS_HIGHLIGHT,
+    ANALYSIS_GEO
 };
 
 enum HighlightAlbumInfoType : int32_t {

@@ -132,6 +132,7 @@ constexpr int32_t E_NO_RESULT = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 8);
 constexpr int32_t E_STOP = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 9);
 constexpr int32_t E_IS_PENDING = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 10);
 constexpr int32_t E_MOVING_PHOTO = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 11);
+constexpr int32_t E_NO_THUMB = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 12);
 
 // media file extension module error code { 3000, 3099 }
 constexpr int32_t E_MEDIA_FILE_OFFSET = 3000;

@@ -38,6 +38,7 @@ std::mutex AnalysisHandler::mtx_;
 queue<CloudSyncHandleData> AnalysisHandler::taskQueue_;
 std::atomic<uint16_t> AnalysisHandler::counts_(0);
 static constexpr uint16_t HANDLE_IDLING_TIME = 5;
+static const string INSERT_REFRESH_ALBUM = "INSERT OR REPLACE INTO RefreshAlbum (refresh_album_id) VALUES ";
 
 AnalysisHandler::~AnalysisHandler() {}
 
@@ -54,33 +55,6 @@ static vector<string> GetFileIds(const CloudSyncHandleData &handleData)
         fileIds.push_back(fileIdStr);
     }
     return fileIds;
-}
-
-static list<Uri> UpdateAnalysisAlbumsForCloudSync(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    vector<string> albumIds, const vector<string> &fileIds)
-{
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIds, fileIds);
-    list<Uri> sendUris;
-    for (auto albumId : albumIds) {
-        sendUris.push_back(Uri(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX + albumId));
-    }
-
-    return sendUris;
-}
-
-static void AddNewNotify(CloudSyncHandleData &handleData, const list<Uri> &sendUris)
-{
-    if (sendUris.size() <= 0) {
-        return;
-    }
-    ChangeType changeType = static_cast<ChangeType>(NotifyType::NOTIFY_UPDATE);
-    if (handleData.notifyInfo.find(changeType) == handleData.notifyInfo.end()) {
-        handleData.notifyInfo[changeType] = sendUris;
-    } else {
-        handleData.notifyInfo[changeType].insert(
-            handleData.notifyInfo[changeType].end(), sendUris.begin(), sendUris.end());
-    }
-    return;
 }
 
 static int32_t GetHandleData(CloudSyncHandleData &handleData)
@@ -119,20 +93,19 @@ static vector<string> GetAlbumIds(const shared_ptr<MediaLibraryRdbStore> rdbStor
         return albumIds;
     };
     while (resultSet->GoToNextRow() == E_OK) {
-        albumIds.push_back(get<string>(ResultSetUtils::GetValFromColumn(
-            ANALYSIS_PHOTO_MAP_TABLE + "." + PhotoMap::ALBUM_ID, resultSet, TYPE_STRING)));
+        int32_t albumId = ANALYSIS_ALBUM_OFFSET + get<int32_t>(ResultSetUtils::GetValFromColumn(
+            ANALYSIS_PHOTO_MAP_TABLE + "." + PhotoMap::ALBUM_ID, resultSet, TYPE_INT32));
+        albumIds.push_back(to_string(albumId));
     }
+    resultSet->Close();
     return albumIds;
 }
 
-static void ProcessHandleData(PeriodTaskData *data)
+void AnalysisHandler::ProcessHandleData(PeriodTaskData *data)
 {
     if (data == nullptr) {
         return;
     }
-    auto analysisPeriodTaskData = static_cast<AnalysisPeriodTaskData*>(data);
-    shared_ptr<BaseHandler> handle = analysisPeriodTaskData->nextHandler_;
-    function<void(bool)> refreshAlbumsFunc = analysisPeriodTaskData->refreshALbumsFunc_;
     CloudSyncHandleData handleData;
     if (GetHandleData(handleData) != E_OK) {
         return;
@@ -143,31 +116,35 @@ static void ProcessHandleData(PeriodTaskData *data)
         return;
     }
     vector<string> fileIds;
+    std::string insertRefreshAlbum;
     if (handleData.orgInfo.type == ChangeType::OTHER) {
         MEDIA_INFO_LOG("Update the AnalysisAlbum for ChangeType being OTHER");
-        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
+        // -1 means that we need update all analysisAlbum
+        insertRefreshAlbum = INSERT_REFRESH_ALBUM + "(-1)";
     } else {
         fileIds = GetFileIds(handleData);
-    }
-
-    CloudSyncHandleData newHandleData = handleData;
-    if (!fileIds.empty()) {
-        vector<string> albumIds = GetAlbumIds(rdbStore, fileIds);
-        int32_t albumSize = static_cast<int32_t>(albumIds.size());
-        if (albumSize > 0) {
-            int32_t fileSize = static_cast<int32_t>(fileIds.size());
-            MEDIA_INFO_LOG("%{public}d files update %{public}d analysis album", fileSize, albumSize);
-            list<Uri> sendUris = UpdateAnalysisAlbumsForCloudSync(rdbStore, albumIds, fileIds);
-            AddNewNotify(newHandleData, sendUris);
+        if (fileIds.empty()) {
+            return;
         }
-    } else {
-        string uriString = newHandleData.orgInfo.uris.front().ToString();
-        MEDIA_INFO_LOG("refresh: %{public}s, type: %{public}d", uriString.c_str(),
-            static_cast<int32_t>(newHandleData.orgInfo.type));
-        refreshAlbumsFunc(true);
+        vector<string> albumIds = GetAlbumIds(rdbStore, fileIds);
+        if (albumIds.empty()) {
+            return;
+        }
+        insertRefreshAlbum = INSERT_REFRESH_ALBUM;
+        int32_t albumSize = static_cast<int32_t>(albumIds.size());
+        for (string albumId: albumIds) {
+            insertRefreshAlbum.append("(" + albumId + "),");
+        }
+        if (insertRefreshAlbum.back() == ',') {
+            insertRefreshAlbum.pop_back();
+        }
+        MEDIA_INFO_LOG("%{public}d files update %{public}d analysis album", static_cast<int32_t>(fileIds.size()),
+            albumSize);
     }
-    if (handle != nullptr) {
-        handle->Handle(newHandleData);
+    MEDIA_DEBUG_LOG("sql: %{public}s", insertRefreshAlbum.c_str());
+    int32_t ret = rdbStore->ExecuteSql(insertRefreshAlbum);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("insert analysisAlbum fail!");
     }
 }
 
@@ -183,12 +160,12 @@ void AnalysisHandler::init()
         return;
     }
     AnalysisHandler::counts_.store(0);
-    AnalysisPeriodTaskData *data = new (std::nothrow) AnalysisPeriodTaskData(nextHandler_, refreshAlbumsFunc_);
+    PeriodTaskData *data = new (std::nothrow) PeriodTaskData();
     if (data == nullptr) {
         MEDIA_ERR_LOG("Failed to new taskdata");
         return;
     }
-    periodWorker->StartTask(PeriodTaskType::CLOUD_ANALYSIS_ALBUM, ProcessHandleData, data);
+    periodWorker->StartTask(PeriodTaskType::CLOUD_ANALYSIS_ALBUM, AnalysisHandler::ProcessHandleData, data);
 }
 
 void AnalysisHandler::MergeTask(const CloudSyncHandleData &handleData)
