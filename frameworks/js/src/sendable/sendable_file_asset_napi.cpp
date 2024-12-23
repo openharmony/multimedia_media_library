@@ -976,7 +976,7 @@ static bool GetDateTakenFromResultSet(const shared_ptr<DataShare::DataShareResul
 }
 
 static void UpdateDetailTimeByDateTaken(napi_env env, const shared_ptr<FileAsset> &fileAssetPtr,
-    const string &detailTime)
+    const string &detailTime, int64_t &dateTaken)
 {
     string uri = PAH_UPDATE_PHOTO;
     SendableMediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
@@ -987,9 +987,12 @@ static void UpdateDetailTimeByDateTaken(napi_env env, const shared_ptr<FileAsset
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ MediaFileUtils::GetIdFromUri(fileAssetPtr->GetUri()) });
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
-    if (changedRows < 0) {
+    if (changedRows <= 0) {
         NAPI_ERR_LOG("Failed to modify detail time, err: %{public}d", changedRows);
         NapiError::ThrowError(env, JS_INNER_FAIL);
+    } else {
+        NAPI_INFO_LOG("success to modify detial time, detailTime: %{public}s, dateTaken: %{public}lld",
+            detailTime.c_str(), dateTaken);
     }
 }
 
@@ -1017,7 +1020,7 @@ static napi_value HandleGettingDetailTimeKey(napi_env env, const shared_ptr<File
             }
             string detailTime = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
             napi_create_string_utf8(env, detailTime.c_str(), NAPI_AUTO_LENGTH, &jsResult);
-            UpdateDetailTimeByDateTaken(env, fileAssetPtr, detailTime);
+            UpdateDetailTimeByDateTaken(env, fileAssetPtr, detailTime, dateTaken);
         } else {
             NapiError::ThrowError(env, JS_INNER_FAIL);
         }
