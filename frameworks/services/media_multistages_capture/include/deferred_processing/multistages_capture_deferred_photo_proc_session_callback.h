@@ -46,6 +46,8 @@ private:
     void GetCommandByImageId(const std::string &imageId, MediaLibraryCommand &cmd);
     void UpdateHighQualityPictureInfo(const std::string &imageId, bool isCloudEnhancementAvailable);
     void NotifyIfTempFile(std::shared_ptr<NativeRdb::ResultSet> resultSet);
+    void ProcessAndSaveHighQualityImage(const std::string& imageId, std::shared_ptr<Media::Picture> picture,
+        std::shared_ptr<NativeRdb::ResultSet> resultSet, bool isCloudEnhancementAvailable);
 };
 } // namespace Media
 } // namespace OHOS

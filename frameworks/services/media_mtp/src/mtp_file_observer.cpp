@@ -118,7 +118,8 @@ void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &p
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents delete/MOVED_FROM: path:%{private}s", fileName.c_str());
         uint32_t id = 0;
         if (MtpMediaLibrary::GetInstance()->GetIdByPath(fileName, id) == 0) {
-            eventPtr->SendObjectRemoved(fileName);
+            MtpMediaLibrary::GetInstance()->ObserverDeletePathToMap(fileName);
+            eventPtr->SendObjectRemovedByHandle(id);
         }
     } else if (event.mask & IN_CLOSE_WRITE) {
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents IN_CLOSE_WRITE : path:%{private}s", fileName.c_str());
@@ -135,10 +136,8 @@ bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, const ContextSptr &
     char eventBuf[BUF_SIZE] = {0};
 
     int ret = read(inotifyFd, eventBuf, sizeof(eventBuf) - SIZE_ONE);
-    if (ret < static_cast<int>(sizeof(struct inotify_event))) {
-        MEDIA_ERR_LOG("MtpFileObserver AddInotifyEvents no event");
-        return false;
-    }
+    bool cond = (ret < static_cast<int>(sizeof(struct inotify_event)));
+    CHECK_AND_RETURN_RET_LOG(!cond, false, "MtpFileObserver AddInotifyEvents no event");
 
     struct inotify_event *positionEvent = (struct inotify_event *)eventBuf;
     struct inotify_event *event;
@@ -179,10 +178,8 @@ bool MtpFileObserver::StopFileInotify()
     isRunning_ = false;
     lock_guard<mutex> lock(eventLock_);
     for (auto ret : watchMap_) {
-        if (inotify_rm_watch(inotifyFd_, ret.first) == -1) {
-            MEDIA_ERR_LOG("MtpFileObserver StopFileInotify inotify_rm_watch error = [%{public}d]", errno);
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(inotify_rm_watch(inotifyFd_, ret.first) != -1, false,
+            "MtpFileObserver StopFileInotify inotify_rm_watch error = [%{public}d]", errno);
     }
     close(inotifyFd_);
     watchMap_.clear();
@@ -196,13 +193,9 @@ bool MtpFileObserver::StartFileInotify()
 {
     isRunning_ = true;
     inotifyFd_ = inotify_init();
-    if (inotifyFd_ == -1) {
-        MEDIA_ERR_LOG("MtpFileObserver inotify_init false");
-        return false;
-    } else {
-        inotifySuccess_ = true;
-        return true;
-    }
+    CHECK_AND_RETURN_RET_LOG(inotifyFd_ != -1, false, "MtpFileObserver inotify_init false");
+    inotifySuccess_ = true;
+    return true;
 }
 
 bool MtpFileObserver::WatchPathThread(const ContextSptr &context)

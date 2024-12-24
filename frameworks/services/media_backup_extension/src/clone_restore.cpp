@@ -193,12 +193,6 @@ CloneRestore::CloneRestore()
     MEDIA_INFO_LOG("Set ffrt::set_escape_enable = false");
 }
 
-CloneRestore::~CloneRestore()
-{
-    ffrt::set_escape_enable(true);
-    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = true");
-}
-
 void CloneRestore::StartRestore(const string &backupRestoreDir, const string &upgradePath)
 {
     MEDIA_INFO_LOG("Start clone restore");
@@ -536,6 +530,7 @@ bool CloneRestore::ParseAlbumResultSet(const string &tableName, const shared_ptr
     albumInfo.albumSubType = static_cast<PhotoAlbumSubType>(GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet));
     albumInfo.lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
     albumInfo.albumBundleName = GetStringVal(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, resultSet);
+    albumInfo.dateModified = GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, resultSet);
 
     auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
     for (auto it = commonColumnInfoMap.begin(); it != commonColumnInfoMap.end(); ++it) {
@@ -1039,6 +1034,11 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const AlbumInfo &albumInfo,
     values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, static_cast<int32_t>(albumInfo.albumType));
     values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, static_cast<int32_t>(albumInfo.albumSubType));
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumInfo.albumName);
+
+    if (tableName == PhotoAlbumColumns::TABLE) {
+        values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED,
+            (albumInfo.dateModified ? albumInfo.dateModified : MediaFileUtils::UTCTimeMilliSeconds()));
+    }
 
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
     for (auto it = albumInfo.valMap.begin(); it != albumInfo.valMap.end(); ++it) {

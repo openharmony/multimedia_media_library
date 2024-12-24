@@ -59,6 +59,7 @@ const std::string PATH_PARA = "path=";
 constexpr unsigned short MAX_RECURSION_DEPTH = 4;
 constexpr size_t DEFAULT_TIME_SIZE = 32;
 const int32_t HMFS_MONITOR_FL = 2;
+const int32_t INTEGER_MAX_LENGTH = 10;
 const std::string LISTENING_BASE_PATH = "/storage/media/local/files/";
 const std::string PHOTO_DIR = "Photo";
 const std::string AUDIO_DIR = "Audio";
@@ -72,6 +73,7 @@ const std::vector<std::string> SET_LISTEN_DIR = {
 };
 const std::string KVSTORE_FILE_ID_TEMPLATE = "0000000000";
 const std::string KVSTORE_DATE_KEY_TEMPLATE = "0000000000000";
+const std::string MAX_INTEGER = "2147483648";
 #define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)
 #define HMFS_IOCTL_HW_SET_FLAGS _IOR(0XF5, 71, unsigned int)
 
@@ -246,10 +248,7 @@ int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, str
 {
     CHECK_AND_RETURN_RET_LOG(fpath != nullptr, E_FAIL, "fpath == nullptr");
     int32_t errRet = remove(fpath);
-    if (errRet) {
-        MEDIA_ERR_LOG("Failed to remove errno: %{public}d, path: %{private}s", errno, fpath);
-    }
-
+    CHECK_AND_PRINT_LOG(!errRet, "Failed to remove errno: %{public}d, path: %{private}s", errno, fpath);
     return errRet;
 }
 
@@ -261,9 +260,7 @@ int32_t MediaFileUtils::RemoveDirectory(const string &path)
 std::string MediaFileUtils::DesensitizePath(const std::string &path)
 {
     string result = path;
-    if (result.length() <= CLOUD_FILE_PATH.length()) {
-        return result;
-    }
+    CHECK_AND_RETURN_RET(result.length() > CLOUD_FILE_PATH.length(), result);
     return result.replace(0, CLOUD_FILE_PATH.length(), "*");
 }
 
@@ -315,9 +312,7 @@ bool MediaFileUtils::CreateDirectory(const string &dirPath, shared_ptr<int> errC
 
         subStr.append(SLASH_CHAR + segment);
         if (!IsDirectory(subStr, errCodePtr)) {
-            if (!Mkdir(subStr, errCodePtr)) {
-                return false;
-            }
+            CHECK_AND_RETURN_RET(Mkdir(subStr, errCodePtr), false);
         }
     }
 
@@ -337,15 +332,10 @@ bool MediaFileUtils::IsFileValid(const string &fileName)
     if (!fileName.empty()) {
         if (stat(fileName.c_str(), &statInfo) == E_SUCCESS) {
             // if the given path is a directory path, return
-            if (statInfo.st_mode & S_IFDIR) {
-                MEDIA_ERR_LOG("file is a directory");
-                return false;
-            }
+            CHECK_AND_RETURN_RET_LOG(!(statInfo.st_mode & S_IFDIR), false, "file is a directory");
 
             // if the file is empty
-            if (statInfo.st_size == 0) {
-                MEDIA_WARN_LOG("file is empty");
-            }
+            CHECK_AND_WARN_LOG(statInfo.st_size != 0, "file is empty");
             return true;
         }
     }
@@ -456,18 +446,13 @@ bool MediaFileUtils::CopyFileAndDelSrc(const std::string &srcFile, const std::st
 {
     if (IsFileExists(destFile)) {
         MEDIA_INFO_LOG("destFile:%{private}s already exists", destFile.c_str());
-        if (!DeleteFile(destFile)) {
-            MEDIA_ERR_LOG("delete destFile:%{private}s error", destFile.c_str());
-        }
+        CHECK_AND_PRINT_LOG(DeleteFile(destFile), "delete destFile:%{private}s error", destFile.c_str());
     }
-    if (!CreateFile(destFile)) {
-        MEDIA_ERR_LOG("create destFile:%{private}s failed", destFile.c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(CreateFile(destFile), false,
+        "create destFile:%{private}s failed", destFile.c_str());
+    
     if (CopyFileUtil(srcFile, destFile)) {
-        if (!DeleteFile(srcFile)) {
-            MEDIA_ERR_LOG("delete srcFile:%{private}s failed", srcFile.c_str());
-        }
+        CHECK_AND_PRINT_LOG(DeleteFile(srcFile), "delete srcFile:%{private}s failed", srcFile.c_str());
         return true;
     } else {
         bool delDestFileRet = DeleteFile(destFile);
@@ -488,17 +473,14 @@ bool MediaFileUtils::CopyFileAndDelSrc(const std::string &srcFile, const std::st
 bool MediaFileUtils::CopyDirAndDelSrc(const std::string &srcPath, const std::string &destPath,
     unsigned short curRecursionDepth)
 {
-    if (curRecursionDepth > MAX_RECURSION_DEPTH) {
-        MEDIA_ERR_LOG("curRecursionDepth:%{public}d>MAX_RECURSION_DEPTH", curRecursionDepth);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(curRecursionDepth <= MAX_RECURSION_DEPTH, false,
+        "curRecursionDepth:%{public}d>MAX_RECURSION_DEPTH", curRecursionDepth);
     ++curRecursionDepth;
     bool ret = true;
     DIR* srcDir = opendir(srcPath.c_str());
-    if (srcDir == nullptr) {
-        MEDIA_ERR_LOG("open srcDir:%{private}s failed,errno:%{public}d", srcPath.c_str(), errno);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(srcDir != nullptr, false,
+        "open srcDir:%{private}s failed,errno:%{public}d", srcPath.c_str(), errno);
+
     if (!IsFileExists(destPath)) {
         if (!CreateDirectory(destPath)) {
             MEDIA_ERR_LOG("create destPath:%{private}s failed", srcPath.c_str());
@@ -1154,9 +1136,7 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
     }
 
     string endStr = path.substr(pos + MEDIA_DATA_DEVICE_PATH.length());
-    if (endStr.empty()) {
-        return retStr;
-    }
+    CHECK_AND_RETURN_RET(!endStr.empty(), retStr);
 
     retStr = beginStr + networkId + endStr;
     MEDIA_DEBUG_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());
@@ -2106,5 +2086,32 @@ bool MediaFileUtils::GenerateKvStoreKey(const std::string &fileId, const std::st
     key = KVSTORE_DATE_KEY_TEMPLATE.substr(dateKey.length()) + dateKey +
           KVSTORE_FILE_ID_TEMPLATE.substr(fileId.length()) + fileId;
     return true;
+}
+
+bool MediaFileUtils::IsValidInteger(const std::string &value)
+{
+    MEDIA_DEBUG_LOG("KeyWord is:%{public}s", value.c_str());
+    std::string unsignedStr = value;
+    while (unsignedStr.size() > 0 && unsignedStr[0] == '-') {
+        unsignedStr = unsignedStr.substr(1);
+    }
+    for (int32_t i = 0; i < unsignedStr.size(); i++) {
+        if (!std::isdigit(unsignedStr[i])) {
+            MEDIA_INFO_LOG("KeyWord invalid char of:%{public}c", unsignedStr[i]);
+            unsignedStr = unsignedStr.substr(0, i);
+            break;
+        }
+    }
+    if (unsignedStr.size() == 0) {
+        MEDIA_ERR_LOG("KeyWord Invalid argument");
+        return false;
+    } else if (unsignedStr.size() < INTEGER_MAX_LENGTH) {
+        return true;
+    } else if (unsignedStr.size() == INTEGER_MAX_LENGTH) {
+        return unsignedStr < MAX_INTEGER;
+    } else {
+        MEDIA_ERR_LOG("KeyWord is out length!");
+        return false;
+    }
 }
 } // namespace OHOS::Media

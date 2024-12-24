@@ -471,11 +471,13 @@ let PickerController = class {
     }
 
     replacePhotoPickerPreview(e, o, callback) {
-        if (!fs.accessSync(o)) {
+        try {
+            let fd = fs.openSync(o).fd;
+            fs.close(fd);
+        } catch (err) {
             callback({'code': 13900002, 'message': 'No such file', name: ''});
             return;
         }
-        o = fileUri.getUriFromPath(o);
         let date = Math.random();
         this.data = new Map([['CREATE_URI', [e, o, date]]]);
         this.createCallbackMap.set(date, (grantUri, code, message)=>{
