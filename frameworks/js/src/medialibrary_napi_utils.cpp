@@ -51,7 +51,6 @@
 #include "vision_pose_column.h"
 #include "vision_image_face_column.h"
 #include "userfilemgr_uri.h"
-#include "medialibrary_common_utils.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -275,7 +274,7 @@ int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
         return ERROR;
     }
     if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)) {
-        return MediaLibraryCommonUtils::SafeStoi(fileIdStr);
+        return std::stoi(fileIdStr);
     }
 
     NAPI_ERR_LOG("asset fileId is invalid");
