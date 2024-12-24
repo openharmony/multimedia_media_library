@@ -649,8 +649,8 @@ export var VideoPlayerState;
 
 export var SaveMode;
 !function(e) {
-    e[e.SAVE_AS_NEW = 0] = 'SAVE_AS_NEW';
-    e[e.SAVE_AS_REPLACE = 1] = 'SAVE_AS_REPLACE';
+    e[e.SAVE_AS = 0] = 'SAVE_AS';
+    e[e.OVERWRITE = 1] = 'OVERWRITE';
 }(SaveMode || (SaveMode = {}));
 
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
