@@ -2836,7 +2836,7 @@ static void UpdateDetailTimeByDateTaken(napi_env env, const shared_ptr<FileAsset
         NAPI_ERR_LOG("Failed to modify detail time, err: %{public}d", changedRows);
         NapiError::ThrowError(env, JS_INNER_FAIL);
     } else {
-        NAPI_INFO_LOG("success to modify detial time, detailTime: %{public}s, dateTaken: %{public}lld",
+        NAPI_INFO_LOG("success to modify detial time, detailTime: %{public}s, dateTaken: %{public}" PRId64,
             detailTime.c_str(), dateTaken);
     }
 }
