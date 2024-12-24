@@ -26,16 +26,16 @@ namespace Media {
 const std::string CREATE_TEMP_UPGRADE_PHOTO_MAP_TABLE =
     "CREATE TABLE IF NOT EXISTS temp_upgrade_photo_map AS SELECT MIN(map_album) AS map_album, map_asset FROM PhotoMap "
     "INNER JOIN Photos ON PhotoMap.map_asset=Photos.file_id where COALESCE(owner_album_id, 0) = 0 GROUP BY map_asset;";
- 
+
 const std::string QUERY_MATCHED_COUNT =
     "SELECT COUNT(1) from temp_upgrade_photo_map";
- 
+
 const std::string QUERY_SUCCESS_MATCHED_COUNT =
     "SELECT COUNT(1) from Photos where owner_album_id != 0";
 
 const std::string CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_MAP_ASSET =
     "CREATE INDEX IF NOT EXISTS unique_temp_upgrade_index_on_map_asset ON temp_upgrade_photo_map (map_asset);";
- 
+
 const std::string CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_PHOTO_MAP =
     "CREATE UNIQUE INDEX IF NOT EXISTS unique_temp_upgrade_index_on_photo_map ON "
     "temp_upgrade_photo_map (map_album, map_asset);";
@@ -81,27 +81,7 @@ const std::string PHOTO_ALBUM_NOTIFY_FUNC =
     " FROM " + PhotoColumn::PHOTOS_TABLE +
     " WHERE " + MediaColumn::MEDIA_ID + " = NEW." + MediaColumn::MEDIA_ID + "));";
 
-const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
-    "CREATE TRIGGER IF NOT EXISTS insert_source_photo_create_source_album_trigger AFTER INSERT ON " +
-    PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT + " = 0 " +
-    " BEGIN INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
-    PhotoAlbumColumns::ALBUM_TYPE + " , " +
-    PhotoAlbumColumns::ALBUM_SUBTYPE + " , " +
-    PhotoAlbumColumns::ALBUM_NAME + " , " +
-    PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " , " +
-    PhotoAlbumColumns::ALBUM_LPATH + " , " +
-    PhotoAlbumColumns::ALBUM_PRIORITY + " , " +
-    PhotoAlbumColumns::ALBUM_DATE_ADDED +
-    " ) VALUES ( " +
-    std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " , " +
-    std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) + " , " +
-    "NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " , " +
-    "NEW." + MediaColumn::MEDIA_OWNER_PACKAGE + " , " +
-    "COALESCE((SELECT lpath from album_plugin WHERE ((bundle_name = "
-    "NEW.owner_package AND COALESCE(NEW.owner_package,'')!= '') OR album_name = NEW.package_name) "
-    "and priority ='1'), '/Pictures/'||NEW.package_name), 1, "
-    "strftime('%s000', 'now')" +
-    ");" + FILL_ALBUM_ID_FOR_PHOTOS + "; " + PHOTO_ALBUM_NOTIFY_FUNC + " END;";
+const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER = SOURCE_ALBUM_SQL;
 
 const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS insert_source_photo_update_album_id_trigger AFTER INSERT ON " +
