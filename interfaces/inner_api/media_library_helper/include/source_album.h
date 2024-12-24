@@ -324,7 +324,7 @@ const std::string SOURCE_ALBUM_SQL = "CREATE TRIGGER insert_source_photo_create_
             WHERE \
                 album_type = 2048 \
                 AND album_subtype = 2049 \
-                AND lpath = COALESCE( \
+                AND LOWER(lpath) = LOWER(COALESCE( \
                 ( \
                     SELECT \
                         lpath \
@@ -337,7 +337,7 @@ const std::string SOURCE_ALBUM_SQL = "CREATE TRIGGER insert_source_photo_create_
                         AND priority = '1' \
                     ), \
                     '/Pictures/' || NEW.package_name \
-                ) \
+                )) \
             ORDER BY priority DESC \
             LIMIT 1 \
         ) \
