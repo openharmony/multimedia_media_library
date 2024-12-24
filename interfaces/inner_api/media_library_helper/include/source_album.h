@@ -22,7 +22,7 @@
 #include "vision_album_column.h"
 #include "vision_column.h"
 #include "vision_photo_map_column.h"
- 
+
 namespace OHOS {
 namespace Media {
 const std::string COVER_URI_VALUE_INSERT =
@@ -234,6 +234,117 @@ const std::string INSERT_SOURCE_ALBUM_MAP_FROM_PHOTOS_FULL = "INSERT INTO " + Ph
 
 const std::string ADD_PHOTO_ALBUM_IS_LOCAL = "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
     PhotoAlbumColumns::ALBUM_IS_LOCAL + " INT";
+
+const std::string SOURCE_ALBUM_SQL = "CREATE TRIGGER insert_source_photo_create_source_album_trigger \
+        AFTER INSERT ON Photos \
+        WHEN NEW.package_name IS NOT NULL \
+        AND NEW.package_name != '' \
+        AND ( \
+            SELECT \
+                COUNT( 1 ) \
+            FROM \
+                PhotoAlbum \
+            WHERE \
+            (   album_name = NEW.package_name OR ( bundle_name = NEW.owner_package \
+                AND COALESCE( NEW.owner_package, '' ) <> '' ) ) \
+                AND album_type = 2048 \
+                AND album_subtype = 2049 \
+                AND album_id = NEW.owner_album_id \
+            ) = 0 \
+    BEGIN \
+        INSERT INTO PhotoAlbum \
+        ( \
+            album_type, \
+            album_subtype, \
+            album_name, \
+            bundle_name, \
+            lpath, \
+            priority, \
+            date_added ) \
+        SELECT \
+            INPUT.album_type, \
+            INPUT.album_subtype, \
+            CASE \
+                WHEN COALESCE( album_plugin.album_name, '' ) <> '' THEN \
+                    album_plugin.album_name \
+                ELSE INPUT.album_name \
+                END AS album_name,\
+            CASE \
+                WHEN COALESCE( album_plugin.bundle_name, '' ) = '' THEN \
+                    INPUT.bundle_name \
+                ELSE album_plugin.bundle_name \
+                END AS bundle_name,\
+            CASE \
+                WHEN COALESCE( album_plugin.lpath, '' ) = '' THEN \
+                    INPUT.lpath \
+                ELSE album_plugin.lpath \
+                END AS lpath,\
+            CASE \
+                WHEN album_plugin.priority IS NULL THEN \
+                    INPUT.priority \
+                ELSE album_plugin.priority \
+                END AS priority, \
+            strftime( '%s000', 'now' ) AS date_added \
+        FROM \
+            ( \
+                SELECT \
+                    2048 AS album_type, \
+                    2049 AS album_subtype, \
+                    NEW.package_name AS album_name, \
+                    NEW.owner_package AS bundle_name, \
+                    COALESCE( \
+                        ( \
+                        SELECT \
+                            lpath \
+                        FROM\
+                            album_plugin \
+                        WHERE\
+                        ( \
+                            ( bundle_name = NEW.owner_package \
+                            AND COALESCE( NEW.owner_package, '' ) != '' ) OR album_name = NEW.package_name ) \
+                            AND priority = 1 \
+                        ),\
+                        '/Pictures/' || NEW.package_name \
+                    ) AS lpath, \
+                    1 AS priority \
+            ) AS INPUT \
+            LEFT JOIN album_plugin ON \
+                LOWER( INPUT.lpath ) = LOWER( album_plugin.lpath ) \
+            LEFT JOIN PhotoAlbum ON \
+                LOWER( INPUT.lpath ) = LOWER( PhotoAlbum.lpath ) \
+        WHERE \
+            PhotoAlbum.lpath IS NULL \
+        LIMIT 1; \
+        UPDATE Photos \
+        SET owner_album_id = ( \
+            SELECT \
+                album_id \
+            FROM \
+                PhotoAlbum \
+            WHERE \
+                album_type = 2048 \
+                AND album_subtype = 2049 \
+                AND LOWER(lpath) = LOWER(COALESCE( \
+                ( \
+                    SELECT \
+                        lpath \
+                    FROM\
+                        album_plugin \
+                    WHERE\
+                    ( \
+                        ( bundle_name = NEW.owner_package \
+                        AND COALESCE( NEW.owner_package, '' ) != '' ) OR album_name = NEW.package_name ) \
+                        AND priority = '1' \
+                    ), \
+                    '/Pictures/' || NEW.package_name \
+                )) \
+            ORDER BY priority DESC \
+            LIMIT 1 \
+        ) \
+        WHERE \
+            file_id = new.file_id; \
+    END";
+
 } // namespace Media
 } // namespace OHOS
 #endif // INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_SOURCE_ALBUM_H

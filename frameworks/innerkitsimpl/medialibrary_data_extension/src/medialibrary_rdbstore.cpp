@@ -3858,7 +3858,7 @@ static void AddPortraitCoverSelectionColumn(RdbStore &store)
 static void UpdatePortraitCoverSelectionColumns(RdbStore &store)
 {
     MEDIA_INFO_LOG("Start update portrait cover selection columns");
- 
+
     const vector<string> sqls = {
         "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + BEAUTY_BOUNDER_VERSION + " TEXT default '' ",
         "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + IS_EXCLUDED + " INT default 0 ",
@@ -4048,7 +4048,7 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
         AddThumbnailReadyColumnsFix(store);
     }
 
-    if (oldVersion < VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER) {
+    if (oldVersion < VERSION_UPDATE_NEW_SOURCE_PHOTO_ALBUM_TRIGGER) {
         UpdateSourcePhotoAlbumTrigger(store);
     }
 }
@@ -4215,7 +4215,7 @@ static void UpgradeExtensionPart1(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_UPDATE_PORTRAIT_COVER_SELECTION_COLUMNS) {
         UpdatePortraitCoverSelectionColumns(store);
     }
-    
+
     if (oldVersion < VERSION_ADD_APP_URI_PERMISSION_INFO) {
         AddAppUriPermissionInfo(store);
     }
