@@ -47,7 +47,7 @@ void MtpFileObserver::EraseFromWatchMap(const std::string &path)
     {
         lock_guard<mutex> lock(eventLock_);
         std::vector<int> eraseList;
-        std::string separatorPath = g_moveInfo.path + PATH_SEPARATOR;
+        std::string separatorPath = path + PATH_SEPARATOR;
         for (const auto &item : watchMap_) {
             // remove the path in watchMap_ which is the subdirectory of the deleted path
             if (separatorPath.compare(item.second.substr(0, separatorPath.size())) == 0) {
@@ -227,6 +227,19 @@ void MtpFileObserver::AddFileInotify(const std::string &path, const std::string 
             std::thread watchThread([&context] { WatchPathThread(context); });
             watchThread.detach();
             startThread_ = true;
+        }
+    }
+}
+
+void MtpFileObserver::AddPathToWatchMap(const std::string &path)
+{
+    CHECK_AND_RETURN_LOG(!path.empty(), "AddPathToWatchMap path is empty");
+    {
+        lock_guard<mutex> lock(eventLock_);
+        int ret = inotify_add_watch(inotifyFd_, path.c_str(),
+            IN_CLOSE_WRITE | IN_MOVED_FROM | IN_MOVED_TO | IN_CREATE | IN_DELETE | IN_ISDIR);
+        if (ret > 0) {
+            watchMap_.insert(make_pair(ret, path));
         }
     }
 }
