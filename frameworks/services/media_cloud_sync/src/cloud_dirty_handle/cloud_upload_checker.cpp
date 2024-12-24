@@ -47,10 +47,7 @@ void CloudUploadChecker::HandleNoOriginPhoto()
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
-    if (!prefs) {
-        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
     int32_t curFileId = prefs->GetInt(NO_ORIGIN_PHOTO_NUMBER, 0);
     MEDIA_INFO_LOG("start file id: %{public}d", curFileId);
     while (GetPhotoCount(curFileId) > 0) {
@@ -105,10 +102,7 @@ void CloudUploadChecker::UpdateDirty(std::vector<std::string> idList, int32_t di
 int32_t CloudUploadChecker::GetPhotoCount(int32_t startFileId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Failed to get rdbstore!");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, 0, "Failed to get rdbstore!");
     std::string queryCount = " COUNT(*) AS Count";
     std::string sql = GetQuerySql(startFileId, queryCount);
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
@@ -131,17 +125,12 @@ std::vector<CheckedPhotoInfo> CloudUploadChecker::QueryPhotoInfo(int32_t startFi
 {
     std::vector<CheckedPhotoInfo> photoInfos;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Failed to get rdbstore!");
-        return photoInfos;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, photoInfos, "Failed to get rdbstore!");
     const std::string mediaColumns = Media::PhotoColumn::MEDIA_ID + ", " + Media::PhotoColumn::MEDIA_FILE_PATH;
     std::string sql = GetQuerySql(startFileId, mediaColumns);
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("resultSet is null or count is 0");
-        return photoInfos;
-    }
+    bool cond = (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_LOG(cond, photoInfos, "resultSet is null or count is 0");
     int32_t fileId = startFileId;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         CheckedPhotoInfo photoInfo;

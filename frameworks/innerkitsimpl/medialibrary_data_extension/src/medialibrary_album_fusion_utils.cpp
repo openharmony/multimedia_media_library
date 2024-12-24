@@ -138,17 +138,12 @@ int32_t MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(
     const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
 {
     MEDIA_INFO_LOG("ALBUM_FUSE: STEP_0: Start remove misadded hidden data");
-    if (upgradeStore == nullptr) {
-        MEDIA_INFO_LOG("fail to get rdbstore");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(upgradeStore != nullptr, E_DB_FAIL, "fail to get rdbstore");
     int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t err = upgradeStore->ExecuteSql(DROP_UNWANTED_ALBUM_RELATIONSHIP_FOR_HIDDEN_ALBUM_ASSET);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to drop unwanted album relationship for .hiddenAlbum! Failed to exec: %{public}s",
-            DROP_UNWANTED_ALBUM_RELATIONSHIP_FOR_HIDDEN_ALBUM_ASSET.c_str());
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
+        "Failed to drop unwanted album relationship for .hiddenAlbum! Failed to exec: %{public}s",
+        DROP_UNWANTED_ALBUM_RELATIONSHIP_FOR_HIDDEN_ALBUM_ASSET.c_str());
     MEDIA_INFO_LOG("ALBUM_FUSE: STEP_0: End remove misadded hidden data, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
     return E_OK;
@@ -157,16 +152,13 @@ int32_t MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(
 static int32_t PrepareTempUpgradeTable(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, int32_t &matchedCount)
 {
     int32_t err = upgradeStore->ExecuteSql(DROP_TEMP_UPGRADE_PHOTO_MAP_TABLE);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", DROP_TEMP_UPGRADE_PHOTO_MAP_TABLE.c_str());
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
+        "Fatal error! Failed to exec: %{public}s", DROP_TEMP_UPGRADE_PHOTO_MAP_TABLE.c_str());
     MEDIA_INFO_LOG("ALBUM_FUSE begin exec: %{public}s", CREATE_TEMP_UPGRADE_PHOTO_MAP_TABLE.c_str());
     err = upgradeStore->ExecuteSql(CREATE_TEMP_UPGRADE_PHOTO_MAP_TABLE);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", CREATE_TEMP_UPGRADE_PHOTO_MAP_TABLE.c_str());
-        return err;
-    }
+
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
+        "Fatal error! Failed to exec: %{public}s", CREATE_TEMP_UPGRADE_PHOTO_MAP_TABLE.c_str());
     auto resultSet = upgradeStore->QuerySql(QUERY_MATCHED_COUNT);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Query matched data fails");
@@ -175,15 +167,11 @@ static int32_t PrepareTempUpgradeTable(const std::shared_ptr<MediaLibraryRdbStor
     resultSet->GetInt(0, matchedCount);
     MEDIA_INFO_LOG("ALBUM_FUSE: There are %{public}d matched items", matchedCount);
     err = upgradeStore->ExecuteSql(CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_MAP_ASSET);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_MAP_ASSET.c_str());
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
+        "Fatal error! Failed to exec: %{public}s", CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_MAP_ASSET.c_str());
     err = upgradeStore->ExecuteSql(CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_PHOTO_MAP);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_PHOTO_MAP.c_str());
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
+        "Fatal error! Failed to exec: %{public}s", CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_PHOTO_MAP.c_str());
     return E_OK;
 }
 
@@ -667,10 +655,8 @@ static int32_t UpdateCoverInfoForAlbum(const std::shared_ptr<MediaLibraryRdbStor
     const std::string UPDATE_ALBUM_COVER_URI =
         "UPDATE PhotoAlbum SET cover_uri = '" + newCoverUri +"' WHERE album_id = " + to_string(ownerAlbumId);
     int32_t ret = upgradeStore->ExecuteSql(UPDATE_ALBUM_COVER_URI);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("update cover uri failed, ret = %{public}d, target album is %{public}d", ret, ownerAlbumId);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "update cover uri failed, ret = %{public}d, target album is %{public}d", ret, ownerAlbumId);
     return E_OK;
 }
 
@@ -837,9 +823,8 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(const std::shared_ptr<
     MEDIA_INFO_LOG("Begin copy thumbnail original scrPath is %{public}s, and target path is %{public}s",
         srcPath.c_str(), targetPath.c_str());
     int32_t err = CopyOriginThumbnail(srcPath, targetPath);
-    if (err != E_OK) {
-        return err;
-    }
+    CHECK_AND_RETURN_RET(err == E_OK, err);
+
     MediaAssetCopyInfo copyInfo(targetPath, true, ownerAlbumId);
     NativeRdb::ValuesBucket values;
     err = BuildInsertValuesBucket(upgradeStore, values, resultSet, copyInfo);
@@ -857,22 +842,13 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(const std::shared_ptr<
     }
     ThumbnailService::GetInstance()->CreateAstcCloudDownload(to_string(newAssetId), true);
     err = UpdateRelationship(upgradeStore, assetId, newAssetId, ownerAlbumId, false);
-    if (err != E_OK) {
-        return err;
-    }
+    CHECK_AND_RETURN_RET(err == E_OK, err);
     UpdateCoverInfoForAlbum(upgradeStore, assetId, ownerAlbumId, newAssetId, targetPath);
     return E_OK;
 }
 
 void SendNewAssetNotify(string newFileAssetUri, const shared_ptr<MediaLibraryRdbStore> &rdbStore)
 {
-    auto watch = MediaLibraryNotify::GetInstance();
-    if (watch == nullptr) {
-        MEDIA_ERR_LOG("Can not get MediaLibraryNotify, fail to send new asset notify.");
-        return;
-    }
-    watch->Notify(newFileAssetUri, NotifyType::NOTIFY_ADD);
-
     vector<string> systemAlbumsExcludeSource = {
         to_string(PhotoAlbumSubType::FAVORITE),
         to_string(PhotoAlbumSubType::VIDEO),
@@ -883,6 +859,13 @@ void SendNewAssetNotify(string newFileAssetUri, const shared_ptr<MediaLibraryRdb
     };
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, systemAlbumsExcludeSource);
     MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, { newFileAssetUri });
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("Can not get MediaLibraryNotify, fail to send new asset notify.");
+        return;
+    }
+    watch->Notify(newFileAssetUri, NotifyType::NOTIFY_ADD);
 }
 
 int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, const string title)
@@ -1410,10 +1393,7 @@ int32_t MediaLibraryAlbumFusionUtils::RebuildAlbumAndFillCloudValue(
 int32_t MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
     shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t &sourceAlbumId, const int64_t &targetAlbumId)
 {
-    if (upgradeStore == nullptr) {
-        MEDIA_INFO_LOG("fail to get rdbstore");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(upgradeStore != nullptr, E_DB_FAIL, "fail to get rdbstore");
     MEDIA_INFO_LOG("MergeClashSourceAlbum %{public}d, target album is %{public}" PRId64,
         sourceAlbumId, targetAlbumId);
     DeleteAlbumAndUpdateRelationship(upgradeStore, sourceAlbumId, targetAlbumId, IsCloudAlbum(resultSet));
@@ -1423,10 +1403,7 @@ int32_t MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(const std::shared_pt
 static int32_t MergeScreenShotAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
     shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
-    if (upgradeStore == nullptr) {
-        MEDIA_INFO_LOG("fail to get rdbstore");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(upgradeStore != nullptr, E_DB_FAIL, "fail to get rdbstore");
     MEDIA_INFO_LOG("Begin handle expired screen shot album data ");
     int32_t oldAlbumId = -1;
     int64_t newAlbumId = -1;
@@ -1617,9 +1594,7 @@ static int32_t DeleteDuplicatePhoto(const std::shared_ptr<MediaLibraryRdbStore> 
         SQL_GET_DUPLICATE_PHOTO + " )";
 
     int32_t err = store->ExecuteSql(sql);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("DeleteDuplicatePhoto fail %{public}d", err);
-    }
+    CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "DeleteDuplicatePhoto fail %{public}d", err);
     return err;
 }
 
@@ -1758,11 +1733,8 @@ static int32_t TransferMisMatchScreenRecord(const std::shared_ptr<MediaLibraryRd
             " Values ('2048', '2049', '屏幕录制', 'com.huawei.hmos.screenrecorder', '1', '1',"
             " strftime('%s000', 'now'), '/Pictures/Screenrecords', '1')";
         int32_t err = upgradeStore->ExecuteSql(CREATE_SCREEN_RECORDS_ALBUM);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s",
-                CREATE_SCREEN_RECORDS_ALBUM.c_str());
-            return err;
-        }
+        CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
+            "Fatal error! Failed to exec: %{public}s", CREATE_SCREEN_RECORDS_ALBUM.c_str());
     }
     const std::string TRANSFER_MISS_MATCH_ASSET =
         "UPDATE Photos SET owner_album_id = "
@@ -1770,11 +1742,8 @@ static int32_t TransferMisMatchScreenRecord(const std::shared_ptr<MediaLibraryRd
         "WHERE owner_album_id = (SELECT album_id FROM PhotoAlbum WHERE "
         "bundle_name ='com.huawei.hmos.screenshot' AND dirty <>'4' limit 1) AND media_type =2";
     int32_t err = upgradeStore->ExecuteSql(TRANSFER_MISS_MATCH_ASSET);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s",
-                TRANSFER_MISS_MATCH_ASSET.c_str());
-            return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
+        "Fatal error! Failed to exec: %{public}s", TRANSFER_MISS_MATCH_ASSET.c_str());
     MEDIA_INFO_LOG("Transfer miss matched screenRecord end");
     return E_OK;
 }

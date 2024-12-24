@@ -52,10 +52,7 @@ static vector<string> GetIds(const CloudSyncHandleData &handleData)
 static void UpdateCloudAlbum(const string &id, int32_t count)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Can not get rdbstore");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Can not get rdbstore");
     int changeRows = 0;
     NativeRdb::ValuesBucket valuesNew;
     valuesNew.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
@@ -63,9 +60,7 @@ static void UpdateCloudAlbum(const string &id, int32_t count)
     NativeRdb::RdbPredicates rdbPredicates(PhotoAlbumColumns::TABLE);
     rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, id);
     rdbStore->Update(changeRows, valuesNew, rdbPredicates);
-    if (changeRows < 0) {
-        MEDIA_ERR_LOG("Failed to update cloudAlbum , ret = %{public}d", changeRows);
-    }
+    CHECK_AND_PRINT_LOG(changeRows >= 0, "Failed to update cloudAlbum , ret = %{public}d", changeRows);
 }
 static int32_t GetCloudAlbumCount(const string &id)
 {

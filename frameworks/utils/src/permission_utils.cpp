@@ -397,17 +397,11 @@ bool PermissionUtils::GetTokenCallerForUid(const int &uid, AccessTokenID &tokenC
     if (appIndex == 0) {
         err = bundleMgr_->GetBundleInfoV9(bundleName,
             static_cast<int32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION), bundleInfo, userId);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("main app tokenid from uid fail");
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "main app tokenid from uid fail");
     } else {
         err = bundleMgr_->GetCloneBundleInfo(bundleName,
             static_cast<int32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION), appIndex, bundleInfo, userId);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("clone app get tokenid from uid fail");
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "clone app get tokenid from uid fail");
     }
     tokenCaller = bundleInfo.applicationInfo.accessTokenId;
     return true;
@@ -425,16 +419,10 @@ bool PermissionUtils::CheckPhotoCallerPermission(const vector<string> &perms, co
     AccessTokenID &tokenCaller)
 {
     bool err = GetTokenCallerForUid(uid, tokenCaller);
-    if (perms.empty()) {
-        return false;
-    }
-    if (err == false) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(!perms.empty(), false);
+    CHECK_AND_RETURN_RET(err != false, false);
     for (const auto &perm : perms) {
-        if (!CheckPhotoCallerPermission(perm, tokenCaller)) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(CheckPhotoCallerPermission(perm, tokenCaller), false);
     }
     return true;
 }
@@ -478,16 +466,10 @@ bool PermissionUtils::CheckCallerPermission(const string &permission, const int 
 /* Check whether caller has at least one of @perms */
 bool PermissionUtils::CheckHasPermission(const vector<string> &perms)
 {
-    if (perms.empty()) {
-        return false;
-    }
-
+    CHECK_AND_RETURN_RET(!perms.empty(), false);
     for (const auto &perm : perms) {
-        if (CheckCallerPermission(perm)) {
-            return true;
-        }
+        CHECK_AND_RETURN_RET(!CheckCallerPermission(perm), true);
     }
-
     return false;
 }
 
@@ -587,10 +569,7 @@ bool PermissionUtils::SetEPolicy()
 {
     MEDIA_INFO_LOG("SetEPolicy for directory");
     int ret = Security::AccessToken::El5FilekeyManagerKit::SetFilePathPolicy();
-    if (ret != 0) {
-        MEDIA_ERR_LOG("SetEPolicy fail of %{public}d", ret);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == 0, false, "SetEPolicy fail of %{public}d", ret);
     return true;
 }
 }  // namespace Media

@@ -58,16 +58,10 @@ int MtpDriver::OpenDriver()
 {
     MEDIA_INFO_LOG("MtpDriver::OpenDriver start");
     usbfnMtpInterface = IUsbfnMtpInterface::Get();
-    if (usbfnMtpInterface == nullptr) {
-        MEDIA_ERR_LOG("IUsbfnMtpInterface::Get() failed.");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(usbfnMtpInterface != nullptr, E_ERR, "IUsbfnMtpInterface::Get() failed.");
 
     auto ret = usbfnMtpInterface->Start();
-    if (ret != 0) {
-        MEDIA_ERR_LOG("MtpDriver::OpenDriver Start() failed error = %{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "MtpDriver::OpenDriver Start() failed error = %{public}d", ret);
     usbOpenFlag = true;
     MEDIA_INFO_LOG("MtpDriver::OpenDriver end");
     return MTP_SUCCESS;

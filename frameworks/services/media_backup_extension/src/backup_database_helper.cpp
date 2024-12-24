@@ -23,9 +23,8 @@
 namespace OHOS::Media {
 void BackupDatabaseHelper::Init(int32_t sceneCode, bool shouldIncludeSd, const std::string &prefix)
 {
-    if (sceneCode != DUAL_FRAME_CLONE_RESTORE_ID) {
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(sceneCode == DUAL_FRAME_CLONE_RESTORE_ID,
+        "sceneCode is dual clone restore");
     std::vector<int32_t> dbTypeList;
     if (shouldIncludeSd) {
         dbTypeList = { DbType::PHOTO_CACHE, DbType::VIDEO_CACHE, DbType::PHOTO_SD_CACHE, DbType::VIDEO_SD_CACHE };
@@ -37,26 +36,17 @@ void BackupDatabaseHelper::Init(int32_t sceneCode, bool shouldIncludeSd, const s
 
 void BackupDatabaseHelper::InitDb(int32_t dbType, const std::string &prefix)
 {
-    if (HasDb(dbType)) {
-        MEDIA_WARN_LOG("Db %{public}d already exists", dbType);
-        return;
-    }
-    if (DB_INFO_MAP.count(dbType) == 0) {
-        MEDIA_ERR_LOG("No such db type: %{public}d", dbType);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(!HasDb(dbType), "Db %{public}d already exists", dbType);
+    CHECK_AND_RETURN_LOG(DB_INFO_MAP.count(dbType) != 0, "No such db type: %{public}d", dbType);
     DbInfo dbInfo = DB_INFO_MAP.at(dbType);
     std::string dbFullPath = prefix + dbInfo.path;
-    if (!MediaFileUtils::IsFileExists(dbFullPath)) {
-        MEDIA_WARN_LOG("Db not exist, type: %{public}d, path: %{public}s", dbType,
-            BackupFileUtils::GarbleFilePath(dbFullPath, DEFAULT_RESTORE_ID).c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(MediaFileUtils::IsFileExists(dbFullPath),
+        "Db not exist, type: %{public}d, path: %{public}s", dbType,
+        BackupFileUtils::GarbleFilePath(dbFullPath, DEFAULT_RESTORE_ID).c_str());
+
     int32_t errCode = BackupDatabaseUtils::InitDb(dbInfo.rdbStore, dbInfo.name, dbFullPath, BUNDLE_NAME, false);
-    if (dbInfo.rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Init db failed, type: %{public}d, errCode: %{public}d", dbType, errCode);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(dbInfo.rdbStore != nullptr,
+        "Init db failed, type: %{public}d, errCode: %{public}d", dbType, errCode);
     dbInfoMap_[dbType] = dbInfo;
     MEDIA_INFO_LOG("Init db succeeded, type: %{public}d, current size: %{public}zu", dbType, dbInfoMap_.size());
 }

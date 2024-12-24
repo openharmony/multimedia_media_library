@@ -31,7 +31,7 @@ public:
     UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode);
     UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode,
         const std::string &dualDirName);
-    virtual ~UpgradeRestore();
+    virtual ~UpgradeRestore() = default;
     int32_t Init(const std::string &backupRestorePath, const std::string &upgradePath, bool isUpgrade) override;
     std::vector<FileInfo> QueryFileInfos(int32_t offset);
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,

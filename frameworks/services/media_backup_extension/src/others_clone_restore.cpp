@@ -102,12 +102,6 @@ OthersCloneRestore::OthersCloneRestore(int32_t sceneCode, const std::string &med
     MEDIA_INFO_LOG("Set ffrt::set_escape_enable = false");
 }
 
-OthersCloneRestore::~OthersCloneRestore()
-{
-    ffrt::set_escape_enable(true);
-    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = true");
-}
-
 void OthersCloneRestore::CloneInfoPushBack(std::vector<CloneDbInfo> &pushInfos, std::vector<CloneDbInfo> &popInfos)
 {
     std::lock_guard<std::mutex> guard(cloneMutex_);
@@ -173,10 +167,9 @@ void OthersCloneRestore::GetCloneDbInfos(const std::string &dbName, std::vector<
     }
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb;
     int32_t initErr = BackupDatabaseUtils::InitDb(mediaRdb, dbName, dbPath, mediaAppName_, false);
-    if (mediaRdb == nullptr) {
-        MEDIA_ERR_LOG("Init rdb fail, dbName = %{public}s, err = %{public}d", dbName.c_str(), initErr);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(mediaRdb != nullptr,
+        "Init rdb fail, dbName = %{public}s, err = %{public}d",
+        dbName.c_str(), initErr);
 
     std::string selectTotalCloneMediaNumber = "SELECT count(1) AS count FROM mediainfo";
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(mediaRdb, selectTotalCloneMediaNumber, CUSTOM_COUNT);
