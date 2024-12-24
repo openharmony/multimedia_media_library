@@ -358,6 +358,23 @@ const std::vector<std::string> watermarkTypeEnum {
     "DEFAULT", "BRAND_COMMON", "COMMON", "BRAND"
 };
 
+const std::vector<std::string> cloudMediaDownloadTypeEnum {
+    "DOWNLOAD_FORCE", "DOWNLOAD_GENTLE"
+};
+
+const std::vector<std::string> cloudMediaRetainTypeEnum {
+    "RETAIN_FORCE", "RETAIN_GENTLE"
+};
+
+const std::vector<std::string> cloudMediaAssetTaskStatusEnum {
+    "DOWNLOADING", "PAUSED", "IDLE"
+};
+
+const std::vector<std::string> cloudMediaTaskPauseCauseEnum {
+    "NO_PAUSE", "TEMPERATURE_LIMIT", "ROM_LIMIT", "NETWORK_FLOW_LIMIT", "WIFI_UNAVAILABLE",
+    "POWER_LIMIT", "BACKGROUND_TASK_UNAVAILABLE", "FREQUENT_USER_REQUESTS", "CLOUD_ERROR", "USER_PAUSED",
+};
+
 const std::vector<std::string> fileKeyEnumValues {
     MEDIA_DATA_DB_ID,
     MEDIA_DATA_DB_RELATIVE_PATH,

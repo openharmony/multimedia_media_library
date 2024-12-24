@@ -15,6 +15,9 @@
 
 #include "cloud_sync_notify_handler.h"
 
+#include "cloud_media_asset_manager.h"
+#include "cloud_media_asset_types.h"
+#include "cloud_sync_utils.h"
 #include "medialibrary_album_fusion_utils.h"
 #include "notify_responsibility_chain_factory.h"
 #include "thumbnail_service.h"
@@ -51,6 +54,18 @@ static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
     return true;
 }
 
+static void UpdateCloudAssetDownloadTask(const bool verifyFlag)
+{
+    if (!verifyFlag) {
+        MEDIA_INFO_LOG("Current status is not suitable for task.");
+        return;
+    }
+    if (!CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate() && CloudSyncUtils::IsCloudSyncSwitchOn() &&
+        CloudSyncUtils::IsCloudDataAgingPolicyOn()) {
+        CloudMediaAssetManager::GetInstance().StartDownloadCloudAsset(CloudMediaDownloadType::DOWNLOAD_GENTLE);
+    }
+}
+
 void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
 {
     bool isCloudInsertTaskPriorityHigh = IsCloudInsertTaskPriorityHigh();
@@ -58,6 +73,7 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
         MEDIA_INFO_LOG("current status is not suitable for task");
         return;
     }
+    bool verifyFlag = false;
     for (auto &uri : uris) {
         string uriString = uri.ToString();
         auto pos = uriString.find_last_of('/');
@@ -69,13 +85,17 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
             MEDIA_WARN_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
             continue;
         }
-
+        if (!verifyFlag) {
+            verifyFlag = true;
+        }
         ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString, isCloudInsertTaskPriorityHigh);
     }
+    UpdateCloudAssetDownloadTask(verifyFlag);
 }
 
 void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
 {
+    bool verifyFlag = false;
     for (auto &uri : uris) {
         string uriString = uri.ToString();
         auto dateTakenPos = uriString.rfind('/');
@@ -93,8 +113,14 @@ void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
             MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
             continue;
         }
+        if (!verifyFlag) {
+            verifyFlag = true;
+        }
 
         ThumbnailService::GetInstance()->DeleteAstcWithFileIdAndDateTaken(fileId, dateTaken);
+    }
+    if (verifyFlag) {
+        CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
     }
 }
 
