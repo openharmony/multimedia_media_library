@@ -182,9 +182,7 @@ static inline shared_ptr<ResultSet> GetUserAlbum(const shared_ptr<MediaLibraryRd
     } else {
         predicates.In(PhotoAlbumColumns::ALBUM_ID, userAlbumIds);
     }
-    if (rdbStore == nullptr) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, nullptr);
     return rdbStore->Query(predicates, columns);
 }
 
@@ -195,9 +193,7 @@ static inline shared_ptr<ResultSet> GetAnalysisAlbum(const shared_ptr<MediaLibra
     if (!analysisAlbumIds.empty()) {
         predicates.In(PhotoAlbumColumns::ALBUM_ID, analysisAlbumIds);
     }
-    if (rdbStore == nullptr) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, nullptr);
     return rdbStore->Query(predicates, columns);
 }
 
@@ -210,9 +206,7 @@ static inline shared_ptr<ResultSet> GetSourceAlbum(const shared_ptr<MediaLibrary
     } else {
         predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC));
     }
-    if (rdbStore == nullptr) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, nullptr);
     return rdbStore->Query(predicates, columns);
 }
 
@@ -226,9 +220,7 @@ static inline shared_ptr<ResultSet> GetAnalysisAlbumBySubtype(const shared_ptr<M
         predicates.In(ALBUM_SUBTYPE, ALL_ANALYSIS_ALBUM);
     }
 
-    if (rdbStore == nullptr) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, nullptr);
     return rdbStore->Query(predicates, columns);
 }
 
@@ -313,9 +305,7 @@ static int32_t ForEachRow(const shared_ptr<MediaLibraryRdbStore> rdbStore, const
             return err;
         };
         err = trans->RetryTrans(transFunc);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("ForEachRow: trans retry fail!, ret:%{public}d", err);
-        }
+        CHECK_AND_PRINT_LOG(err == E_OK, "ForEachRow: trans retry fail!, ret:%{public}d", err);
     }
     return E_SUCCESS;
 }
@@ -552,9 +542,7 @@ static int32_t QueryAlbumCount(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         GetAlbumPredicates(subtype, albumId, predicates, false);
     }
     auto fetchResult = QueryGoToFirst(rdbStore, predicates, columns);
-    if (fetchResult == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(fetchResult != nullptr, E_HAS_DB_ERROR);
     return GetFileCount(fetchResult);
 }
 
@@ -571,9 +559,7 @@ static int32_t QueryAlbumVideoCount(const shared_ptr<MediaLibraryRdbStore> rdbSt
     predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
     auto fetchResult = QueryGoToFirst(rdbStore, predicates, columns);
-    if (fetchResult == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(fetchResult != nullptr, E_HAS_DB_ERROR);
     return GetFileCount(fetchResult);
 }
 
@@ -588,9 +574,7 @@ static int32_t QueryAlbumHiddenCount(const shared_ptr<MediaLibraryRdbStore> rdbS
         GetAlbumPredicates(subtype, albumId, predicates, true);
     }
     auto fetchResult = QueryGoToFirst(rdbStore, predicates, columns);
-    if (fetchResult == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(fetchResult != nullptr, E_HAS_DB_ERROR);
     return GetFileCount(fetchResult);
 }
 
@@ -598,25 +582,19 @@ static int32_t SetAlbumCounts(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     int32_t albumId, PhotoAlbumSubType subtype, AlbumCounts &albumCounts)
 {
     int ret = QueryAlbumCount(rdbStore, albumId, subtype);
-    if (ret < E_SUCCESS) {
-        MEDIA_ERR_LOG("Failed to QueryAlbumCount, ret:%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= E_SUCCESS, ret,
+        "Failed to QueryAlbumCount, ret:%{public}d", ret);
     albumCounts.count = ret;
 
     ret = QueryAlbumVideoCount(rdbStore, albumId, subtype);
-    if (ret < E_SUCCESS) {
-        MEDIA_ERR_LOG("Failed to QueryAlbumVideoCount, ret:%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= E_SUCCESS, ret,
+        "Failed to QueryAlbumVideoCount, ret:%{public}d", ret);
     albumCounts.videoCount = ret;
     albumCounts.imageCount = albumCounts.count - albumCounts.videoCount;
 
     ret = QueryAlbumHiddenCount(rdbStore, albumId, subtype);
-    if (ret < E_SUCCESS) {
-        MEDIA_ERR_LOG("Failed to QueryAlbumCount, ret:%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= E_SUCCESS, ret,
+        "Failed to QueryAlbumCount, ret:%{public}d", ret);
     albumCounts.hiddenCount = ret;
     return E_SUCCESS;
 }
@@ -643,10 +621,7 @@ static int32_t SetAlbumCoverUri(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     predicates.Limit(1);
 
     auto fetchResult = QueryGoToFirst(rdbStore, predicates, columns);
-    if (fetchResult == nullptr) {
-        MEDIA_ERR_LOG("QueryGoToFirst failed");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(fetchResult != nullptr, E_HAS_DB_ERROR, "QueryGoToFirst failed");
     uri = GetCover(fetchResult);
     return E_SUCCESS;
 }
@@ -669,10 +644,7 @@ static int32_t SetAlbumCoverHiddenUri(const shared_ptr<MediaLibraryRdbStore> rdb
     }
     predicates.Limit(1);
     auto fetchResult = QueryGoToFirst(rdbStore, predicates, columns);
-    if (fetchResult == nullptr) {
-        MEDIA_ERR_LOG("QueryGoToFirst failed");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(fetchResult != nullptr, E_HAS_DB_ERROR, "QueryGoToFirst failed");
     uri = GetCover(fetchResult);
     return E_SUCCESS;
 }
@@ -682,26 +654,18 @@ static int32_t FillOneAlbumCountAndCoverUri(const shared_ptr<MediaLibraryRdbStor
 {
     AlbumCounts albumCounts = { 0, 0, 0, 0 };
     int32_t ret = SetAlbumCounts(rdbStore, albumId, subtype, albumCounts);
-    if (ret != E_SUCCESS) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == E_SUCCESS, ret);
     string coverUri;
     ret = SetAlbumCoverUri(rdbStore, albumId, subtype, coverUri);
-    if (ret != E_SUCCESS) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == E_SUCCESS, ret);
     string coverHiddenUri;
     if (albumCounts.hiddenCount != 0) {
         ret = SetAlbumCoverHiddenUri(rdbStore, albumId, subtype, coverHiddenUri);
-        if (ret != E_SUCCESS) {
-            return ret;
-        }
+        CHECK_AND_RETURN_RET(ret == E_SUCCESS, ret);
     }
 
-    if (albumId < 0) {
-        MEDIA_ERR_LOG("Can not get correct albumId, error albumId is %{public}d", albumId);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(albumId >= 0, E_HAS_DB_ERROR,
+        "Can not get correct albumId, error albumId is %{public}d", albumId);
     string coverUriSql = PhotoAlbumColumns::ALBUM_COVER_URI;
     if (coverUri.empty()) {
         coverUriSql += " = NULL";
@@ -745,15 +709,11 @@ static int32_t RefreshAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         int32_t albumId = data.albumId;
         string sql;
         int32_t ret = FillOneAlbumCountAndCoverUri(rdbStore, albumId, subtype, sql);
-        if (ret != E_SUCCESS) {
-            return ret;
-        }
+        CHECK_AND_RETURN_RET(ret == E_SUCCESS, ret);
 
         ret = rdbStore->ExecuteSql(sql);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to execute sql:%{private}s", sql.c_str());
-            return E_HAS_DB_ERROR;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+            "Failed to execute sql:%{private}s", sql.c_str());
         MEDIA_DEBUG_LOG("Execute sql %{private}s success", sql.c_str());
         refreshProcessHandler(PhotoAlbumType::SYSTEM, subtype, albumId);
     }
@@ -764,10 +724,8 @@ static void DeleteAllAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
     string updateRefreshTableSql = "DELETE FROM " + ALBUM_REFRESH_TABLE;
     int32_t ret = rdbStore->ExecuteSql(updateRefreshTableSql);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to execute sql:%{private}s", updateRefreshTableSql.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK,
+        "Failed to execute sql:%{private}s", updateRefreshTableSql.c_str());
     MEDIA_INFO_LOG("Delete AlbumRefreshTable success");
 }
 
@@ -779,10 +737,7 @@ static int32_t GetSystemRefreshAlbums(const shared_ptr<MediaLibraryRdbStore> rdb
     predicates.SetWhereClause(PhotoAlbumColumns::ALBUM_ID + " IN (SELECT " + REFRESHED_ALBUM_ID + " FROM " +
         ALBUM_REFRESH_TABLE + ")");
     auto resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Can not query ALBUM_REFRESH_TABLE");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Can not query ALBUM_REFRESH_TABLE");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         RefreshAlbumData data;
         data.albumId = GetAlbumId(resultSet);
@@ -801,10 +756,7 @@ static int32_t GetAnalysisRefreshAlbums(const shared_ptr<MediaLibraryRdbStore> r
     predicates.SetWhereClause(PhotoAlbumColumns::ALBUM_ID + " IN (SELECT " + REFRESHED_ALBUM_ID +
         " - 100000000 FROM " + ALBUM_REFRESH_TABLE + " WHERE refresh_album_id > 100000000)");
     auto resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Can not query ALBUM_REFRESH_TABLE");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Can not query ALBUM_REFRESH_TABLE");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         RefreshAlbumData data;
         data.albumId = GetAlbumId(resultSet);
@@ -829,35 +781,24 @@ shared_ptr<ResultSet> QueryAlbumById(const shared_ptr<MediaLibraryRdbStore> rdbS
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     predicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
     auto resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Can not Query from rdb");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "Can not Query from rdb");
     return resultSet;
 }
 
 int32_t MediaLibraryRdbUtils::IsNeedRefreshByCheckTable(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     bool &signal)
 {
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdb is nullptr");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdb is nullptr");
 
     RdbPredicates predicates(ALBUM_REFRESH_TABLE);
     vector<string> columns = { REFRESHED_ALBUM_ID };
     auto resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Can not query ALBUM_REFRESH_TABLE");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Can not query ALBUM_REFRESH_TABLE");
 
     int32_t count = 0;
     int32_t ret = resultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GetRowCount failed ret:%{public}d", ret);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "GetRowCount failed ret:%{public}d", ret);
     if (count == 0) {
         MEDIA_DEBUG_LOG("count is zero, should not refresh");
         signal = false;
@@ -951,17 +892,13 @@ static bool IsCoverValid(const shared_ptr<MediaLibraryRdbStore> rdbStore, const 
     predicates.Limit(1);
     vector<string> columns;
     auto resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Can not query Photos, albumId: %{public}s, fileId: %{public}s", albumId.c_str(), fileId.c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false,
+        "Can not query Photos, albumId: %{public}s, fileId: %{public}s", albumId.c_str(), fileId.c_str());
     int32_t count = 0;
     int32_t ret = resultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GetRowCount failed, albumId: %{public}s, fileId: %{public}s, ret:%{public}d", albumId.c_str(),
-            fileId.c_str(), ret);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false,
+        "GetRowCount failed, albumId: %{public}s, fileId: %{public}s, ret:%{public}d", albumId.c_str(),
+        fileId.c_str(), ret);
     if (count == 0) {
         MEDIA_WARN_LOG("Invalid cover: albumId: %{public}s, fileId: %{public}s not exist", albumId.c_str(),
             fileId.c_str());
@@ -1025,9 +962,7 @@ static shared_ptr<ResultSet> QueryPortraitAlbumCover(const shared_ptr<MediaLibra
     const vector<string> columns = { columnFileId, columnDisplayName, columnData };
     auto resultSet = rdbStore->StepQueryWithoutCheck(predicates, columns);
     string sql = RdbSqlUtils::BuildQueryString(predicates, columns);
-    if (resultSet == nullptr) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, nullptr);
     int32_t err = resultSet->GoToFirstRow();
     MediaLibraryRestore::GetInstance().CheckRestore(err);
     return resultSet;
@@ -1057,10 +992,8 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<MediaLibraryRdbStore> rd
         return E_SUCCESS;
     }
     shared_ptr<ResultSet> coverResult = QueryPortraitAlbumCover(rdbStore, albumId);
-    if (coverResult == nullptr) {
-        MEDIA_ERR_LOG("Failed to query Portrait Album Cover");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(coverResult != nullptr, E_HAS_DB_ERROR,
+        "Failed to query Portrait Album Cover");
     SetPortraitCover(coverResult, data, values, newCount);
     return E_SUCCESS;
 }
@@ -1094,10 +1027,7 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
     }
     auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
-    if (fileResult == nullptr) {
-        MEDIA_ERR_LOG("Failed to query fileResult");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(fileResult != nullptr, E_HAS_DB_ERROR, "Failed to query fileResult");
     int32_t newCount = SetCount(fileResult, data, values, hiddenState, subtype);
     if (subtype != PhotoAlbumSubType::HIGHLIGHT && subtype != PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
         SetCover(fileResult, data, values, hiddenState);
@@ -1117,10 +1047,7 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
                 "(" + queryCondition + ") AND " + MediaColumn::MEDIA_TYPE + " = " + to_string(MEDIA_TYPE_VIDEO));
         }
         auto fileResultVideo = QueryGoToFirst(rdbStore, predicates, columns);
-        if (fileResultVideo == nullptr) {
-            MEDIA_ERR_LOG("Failed to query fileResultVideo");
-            return E_HAS_DB_ERROR;
-        }
+        CHECK_AND_RETURN_RET_LOG(fileResultVideo != nullptr, E_HAS_DB_ERROR, "Failed to query fileResultVideo");
         SetImageVideoCount(newCount, fileResultVideo, data, values);
     }
     return E_SUCCESS;
@@ -1133,10 +1060,7 @@ static void QueryAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbStore, const 
         "Distinct " + PhotoColumn::PHOTO_OWNER_ALBUM_ID
     };
     auto resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_WARN_LOG("Failed to Query");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to Query");
     while (resultSet->GoToNextRow() == E_OK) {
         albumId.push_back(to_string(GetIntValFromColumn(resultSet, 0)));
     }
@@ -1147,18 +1071,12 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore> rd
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateUserAlbumIfNeeded");
-    if (trans == nullptr) {
-        MEDIA_ERR_LOG("transactionOprn is null");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
     ValuesBucket values;
     int err = SetUpdateValues(rdbStore, data, values, static_cast<PhotoAlbumSubType>(0), hiddenState);
-    if (err < 0) {
-        MEDIA_ERR_LOG(
-            "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
-            data.albumId, hiddenState ? 1 : 0);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err >= 0, err,
+        "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
+        data.albumId, hiddenState ? 1 : 0);
     if (values.IsEmpty()) {
         return E_SUCCESS;
     }
@@ -1168,11 +1086,9 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore> rd
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
     int32_t changedRows = 0;
     err = trans->Update(changedRows, values, predicates);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
-            data.albumId, hiddenState ? 1 : 0);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
+        "Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
+        data.albumId, hiddenState ? 1 : 0);
     return E_SUCCESS;
 }
 
@@ -1181,14 +1097,9 @@ static int32_t UpdatePortraitAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdatePortraitAlbumIfNeeded");
-    if (trans == nullptr) {
-        MEDIA_ERR_LOG("transactionOprn is null");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
-    if (subtype != PhotoAlbumSubType::PORTRAIT) {
-        return E_SUCCESS;
-    }
+    CHECK_AND_RETURN_RET(subtype == PhotoAlbumSubType::PORTRAIT, E_SUCCESS);
 
     ValuesBucket values;
     int32_t albumId = data.albumId;
@@ -1206,11 +1117,8 @@ static int32_t UpdatePortraitAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
     int32_t changedRows = 0;
     int updateRet = trans->Update(changedRows, values, predicates);
-    if (updateRet != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to update album count and cover! album id: %{public}d, err: %{public}d", albumId,
-            updateRet);
-        return updateRet;
-    }
+    CHECK_AND_RETURN_RET_LOG(updateRet == NativeRdb::E_OK, updateRet,
+        "Failed to update album count and cover! album id: %{public}d, err: %{public}d", albumId, updateRet);
     return E_SUCCESS;
 }
 
@@ -1222,12 +1130,9 @@ static int32_t UpdateAnalysisAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore
     ValuesBucket values;
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
     int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
-    if (err < 0) {
-        MEDIA_ERR_LOG(
-            "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
-                data.albumId, hiddenState ? 1 : 0);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err >= 0, err,
+        "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
+        data.albumId, hiddenState ? 1 : 0);
     if (values.IsEmpty()) {
         return E_SUCCESS;
     }
@@ -1241,32 +1146,24 @@ static int32_t UpdateAnalysisAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore
         err = trans->Update(changedRows, values, predicates);
     }
 
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
-            data.albumId, hiddenState ? 1 : 0);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
+        "Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
+        data.albumId, hiddenState ? 1 : 0);
     return E_SUCCESS;
 }
 
 static int32_t UpdateSourceAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     const UpdateAlbumData &data, const bool hiddenState, std::shared_ptr<TransactionOperations> trans)
 {
-    if (trans == nullptr) {
-        MEDIA_ERR_LOG("transactionOprn is null");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSourceAlbumIfNeeded");
     ValuesBucket values;
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
     int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
-    if (err < 0) {
-        MEDIA_ERR_LOG(
-            "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
-                data.albumId, hiddenState ? 1 : 0);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err >= 0, err,
+        "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
+        data.albumId, hiddenState ? 1 : 0);
     if (values.IsEmpty()) {
         return E_SUCCESS;
     }
@@ -1276,32 +1173,24 @@ static int32_t UpdateSourceAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbSt
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC));
     int32_t changedRows = 0;
     err = trans->Update(changedRows, values, predicates);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
-            data.albumId, hiddenState ? 1 : 0);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
+        "Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
+        data.albumId, hiddenState ? 1 : 0);
     return E_SUCCESS;
 }
 
 static int32_t UpdateSysAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbStore> rdbStore, const UpdateAlbumData &data,
     const bool hiddenState, std::shared_ptr<TransactionOperations> trans)
 {
-    if (trans == nullptr) {
-        MEDIA_ERR_LOG("transactionOprn is null");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSysAlbum: " + to_string(subtype));
     ValuesBucket values;
     int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
-    if (err < 0) {
-        MEDIA_ERR_LOG(
-            "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
-                data.albumId, hiddenState ? 1 : 0);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err >= 0, err,
+        "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
+        data.albumId, hiddenState ? 1 : 0);
     if (values.IsEmpty()) {
         return E_SUCCESS;
     }
@@ -1311,11 +1200,9 @@ static int32_t UpdateSysAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbStore
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(data.albumId));
     int32_t changedRows = 0;
     err = trans->Update(changedRows, values, predicates);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
-            data.albumId, hiddenState ? 1 : 0);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
+        "Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
+        data.albumId, hiddenState ? 1 : 0);
     return E_SUCCESS;
 }
 
@@ -1330,9 +1217,7 @@ static void UpdateUserAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> rd
         PhotoAlbumColumns::HIDDEN_COUNT,
         PhotoAlbumColumns::HIDDEN_COVER,
     });
-    if (albumResult == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(albumResult != nullptr, "album result is null");
     std::vector<UpdateAlbumData> datas;
     while (albumResult->GoToNextRow() == E_OK) {
         UpdateAlbumData data;
@@ -1354,9 +1239,7 @@ static bool CopyAssetIfNeed(int32_t fileId, int32_t albumId,
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
     vector<string> columns;
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, false);
     bool needCopy = true;
     int64_t newAssetId = -1;
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
@@ -1426,9 +1309,7 @@ void MediaLibraryRdbUtils::UpdateUserAlbumInternal(const shared_ptr<MediaLibrary
         PhotoAlbumColumns::ALBUM_VIDEO_COUNT,
     };
     auto albumResult = GetUserAlbum(rdbStore, userAlbumIds, columns);
-    if (albumResult == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(albumResult != nullptr, "album result is null");
 
     std::vector<UpdateAlbumData> datas;
     while (albumResult->GoToNextRow() == E_OK) {
@@ -1447,33 +1328,21 @@ void MediaLibraryRdbUtils::UpdateUserAlbumInternal(const shared_ptr<MediaLibrary
 
 static int32_t GetIntFromResultSet(shared_ptr<ResultSet> resultSet, const string &column, int &value)
 {
-    if (resultSet == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, E_HAS_DB_ERROR);
     int index = -1;
     resultSet->GetColumnIndex(column, index);
-    if (index == -1) {
-        return E_HAS_DB_ERROR;
-    }
-    if (resultSet->GetInt(index, value) != NativeRdb::E_OK) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(index != -1, E_HAS_DB_ERROR);
+    CHECK_AND_RETURN_RET(resultSet->GetInt(index, value) == NativeRdb::E_OK, E_HAS_DB_ERROR);
     return E_OK;
 }
 
 static int32_t GetStringFromResultSet(shared_ptr<ResultSet> resultSet, const string &column, string &value)
 {
-    if (resultSet == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, E_HAS_DB_ERROR);
     int index = -1;
     resultSet->GetColumnIndex(column, index);
-    if (index == -1) {
-        return E_HAS_DB_ERROR;
-    }
-    if (resultSet->GetString(index, value) != NativeRdb::E_OK) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(index != -1, E_HAS_DB_ERROR);
+    CHECK_AND_RETURN_RET(resultSet->GetString(index, value) == NativeRdb::E_OK, E_HAS_DB_ERROR);
     return E_OK;
 }
 
@@ -1540,10 +1409,8 @@ int32_t MediaLibraryRdbUtils::UpdateRemovedAssetToTrash(const shared_ptr<MediaLi
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     rdbStore->Update(updateRows, values, predicatesPhotos);
-    if (updateRows <= 0) {
-        MEDIA_ERR_LOG("Failed to remove assets, updateRows: %{public}d", updateRows);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(updateRows > 0, E_HAS_DB_ERROR,
+        "Failed to remove assets, updateRows: %{public}d", updateRows);
     return updateRows;
 }
 
@@ -1577,9 +1444,7 @@ int32_t MediaLibraryRdbUtils::UpdateOwnerAlbumId(const shared_ptr<MediaLibraryRd
     updateValues.PutString(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
     int32_t changedRowsNoNeedCopy = 0;
     int err = rdbStore->Update(changedRowsNoNeedCopy, updateValues, updatePredicates);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to update owner album id");
-    }
+    CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "Failed to update owner album id");
     return updateRows + changedRowsNoNeedCopy;
 }
 
@@ -1590,10 +1455,7 @@ static void QueryAnalysisAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbStore
         "Distinct " + PhotoMap::ALBUM_ID
     };
     auto resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_WARN_LOG("Failed to Query Analysis Album ID");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to Query Analysis Album ID");
     while (resultSet->GoToNextRow() == E_OK) {
         albumId.push_back(to_string(GetIntValFromColumn(resultSet, 0)));
     }
@@ -1649,9 +1511,7 @@ int32_t MediaLibraryRdbUtils::GetAlbumIdsForPortrait(const shared_ptr<MediaLibra
         ALBUM_ID,
     };
     auto resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, E_HAS_DB_ERROR);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         string albumId = to_string(GetIntValFromColumn(resultSet, ALBUM_ID));
         if (resultAlbumIds.find(albumId) == resultAlbumIds.end()) {
@@ -1676,22 +1536,16 @@ int32_t MediaLibraryRdbUtils::GetAlbumSubtypeArgument(const RdbPredicates &predi
             argsIndex++;
         }
     }
-    if (argsIndex > whereArgs.size() - 1) {
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET(argsIndex <= whereArgs.size() - 1, E_ERR);
     const string &subtype = whereArgs[argsIndex];
-    if (subtype.empty() || !MediaLibraryDataManagerUtils::IsNumber(subtype)) {
-        return E_ERR;
-    }
+    bool cond = subtype.empty() || !MediaLibraryDataManagerUtils::IsNumber(subtype);
+    CHECK_AND_RETURN_RET(!cond, E_ERR);
     return std::stoi(subtype);
 }
 
 static void GetUpdateAlbumDataInfo(shared_ptr<ResultSet> albumResult, std::vector<UpdateAlbumData> &datas)
 {
-    if (albumResult == nullptr) {
-        MEDIA_ERR_LOG("albumResult is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(albumResult != nullptr, "albumResult is nullptr");
     while (albumResult->GoToNextRow() == E_OK) {
         UpdateAlbumData data;
         data.albumId = GetAlbumId(albumResult);
@@ -1717,10 +1571,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<MediaLib
         GetAlbumIdsForPortrait(rdbStore, tempAlbumId);
     }
     auto albumResult = GetAnalysisAlbum(rdbStore, tempAlbumId, columns);
-    if (albumResult == nullptr) {
-        MEDIA_ERR_LOG("Failed to get Analysis Album");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(albumResult != nullptr, "Failed to get Analysis Album");
     std::vector<UpdateAlbumData> datas;
     GetUpdateAlbumDataInfo(albumResult, datas);
     albumResult->Close();
@@ -1742,9 +1593,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<MediaLib
             return err;
         };
         err = trans->RetryTrans(func);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("UpdateAnalysisAlbumInternal: tans finish fail!, ret:%{public}d", err);
-        }
+        CHECK_AND_PRINT_LOG(err == E_OK, "UpdateAnalysisAlbumInternal: tans finish fail!, ret:%{public}d", err);
         int32_t costTime = static_cast<int32_t>(MediaFileUtils::UTCTimeMilliSeconds() - start);
         if (costTime > UPDATE_ALBUM_TIME_OUT) {
             MEDIA_INFO_LOG("udpate analysis album: %{public}d cost %{public}d", data.albumId, costTime);
@@ -1755,10 +1604,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<MediaLib
 void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const vector<string> &fileIds, const vector<int> &albumTypes)
 {
-    if (fileIds.empty()) {
-        MEDIA_ERR_LOG("Failed to UpdateAnalysisAlbumByFile cause fileIds empty");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(!fileIds.empty(), "Failed to UpdateAnalysisAlbumByFile cause fileIds empty");
     MediaLibraryTracer tracer;
     tracer.Start("UpdateAnalysisAlbumByFile");
     vector<string> columns = {
@@ -1783,10 +1629,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<MediaLibra
         predicates.In(PhotoMap::ASSET_ID, fileIds);
     }
     shared_ptr<ResultSet> mapResult = rdbStore->Query(predicates, columns);
-    if (mapResult == nullptr) {
-        MEDIA_ERR_LOG("Failed query AnalysisAlbum");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(mapResult != nullptr, "Failed query AnalysisAlbum");
     vector<string> albumIds;
     while (mapResult->GoToNextRow() == E_OK) {
         albumIds.push_back(to_string(GetIntValFromColumn(mapResult, PhotoMap::ALBUM_ID)));
@@ -1814,9 +1657,7 @@ static void UpdateSourceAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> 
         PhotoAlbumColumns::HIDDEN_COUNT,
         PhotoAlbumColumns::HIDDEN_COVER,
     });
-    if (albumResult == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(albumResult != nullptr, "album result is null");
     std::vector<UpdateAlbumData> datas;
     while (albumResult->GoToNextRow() == E_OK) {
         UpdateAlbumData data;
@@ -1883,9 +1724,7 @@ void MediaLibraryRdbUtils::UpdateSourceAlbumInternal(const shared_ptr<MediaLibra
         PhotoAlbumColumns::ALBUM_VIDEO_COUNT,
     };
     auto albumResult = GetSourceAlbum(rdbStore, sourceAlbumIds, columns);
-    if (albumResult == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(albumResult != nullptr, "album result is null");
     std::vector<UpdateAlbumData> datas;
     while (albumResult->GoToNextRow() == E_OK) {
         UpdateAlbumData data;
@@ -1929,9 +1768,7 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumInternal(const shared_ptr<MediaLibra
         PhotoAlbumColumns::ALBUM_VIDEO_COUNT,
     };
     auto albumResult = GetSystemAlbum(rdbStore, subtypes, columns);
-    if (albumResult == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(albumResult != nullptr, "album result is null");
     std::vector<UpdateAlbumData> datas;
     while (albumResult->GoToNextRow() == E_OK) {
         UpdateAlbumData data;
@@ -1976,9 +1813,7 @@ void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<MediaLibra
         albumResult = GetSystemAlbum(rdbStore, subtypes, columns);
     }
 
-    if (albumResult == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(albumResult != nullptr, "album result is null");
     std::vector<UpdateAlbumData> datas;
     while (albumResult->GoToNextRow() == E_OK) {
         UpdateAlbumData data;
@@ -2000,10 +1835,8 @@ void MediaLibraryRdbUtils::UpdateAllAlbums(shared_ptr<MediaLibraryRdbStore> rdbS
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Failed to get rdbstore, try again!");
         rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-        if (rdbStore == nullptr) {
-            MEDIA_ERR_LOG("Fatal error! Failed to get rdbstore, new cloud data is not processed!!");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(rdbStore != nullptr,
+            "Fatal error! Failed to get rdbstore, new cloud data is not processed!!");
     }
 
     vector<string> systemAlbumsExcludeSource = {
@@ -2024,9 +1857,7 @@ void MediaLibraryRdbUtils::UpdateAllAlbums(shared_ptr<MediaLibraryRdbStore> rdbS
 static int32_t UpdateAlbumReplacedSignal(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const vector<string> &albumIdVector)
 {
-    if (albumIdVector.empty()) {
-        return E_SUCCESS;
-    }
+    CHECK_AND_RETURN_RET(!albumIdVector.empty(), E_SUCCESS);
 
     ValuesBucket refreshValues;
     string insertRefreshTableSql = "INSERT OR IGNORE INTO " + ALBUM_REFRESH_TABLE + " VALUES ";
@@ -2040,19 +1871,15 @@ static int32_t UpdateAlbumReplacedSignal(const shared_ptr<MediaLibraryRdbStore> 
     MEDIA_DEBUG_LOG("output insertRefreshTableSql:%{public}s", insertRefreshTableSql.c_str());
 
     int32_t ret = rdbStore->ExecuteSql(insertRefreshTableSql);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Can not insert refreshed table, ret:%{public}d", ret);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Can not insert refreshed table, ret:%{public}d", ret);
     return E_SUCCESS;
 }
 
 static int32_t UpdateBussinessRecord(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const vector<BussinessRecordValue> &updateValue)
 {
-    if (updateValue.empty()) {
-        return E_SUCCESS;
-    }
+    CHECK_AND_RETURN_RET(!updateValue.empty(), E_SUCCESS);
 
     ValuesBucket refreshValues;
     string insertTableSql = "INSERT OR IGNORE INTO " + MedialibraryBusinessRecordColumn::TABLE + "(" +
@@ -2070,10 +1897,8 @@ static int32_t UpdateBussinessRecord(const shared_ptr<MediaLibraryRdbStore> rdbS
     MEDIA_DEBUG_LOG("output insertTableSql:%{public}s", insertTableSql.c_str());
 
     int32_t ret = rdbStore->ExecuteSql(insertTableSql);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Can not insert bussinessRecord table, ret:%{public}d", ret);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Can not insert bussinessRecord table, ret:%{public}d", ret);
     return E_SUCCESS;
 }
 
@@ -2086,9 +1911,7 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumCountInternal(const shared_ptr<Media
 
     vector<string> columns = { PhotoAlbumColumns::ALBUM_ID };
     auto albumResult = GetSystemAlbum(rdbStore, subtypes, columns);
-    if (albumResult == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(albumResult != nullptr, "album result is null");
 
     vector<string> replaceSignalAlbumVector;
     while (albumResult->GoToNextRow() == NativeRdb::E_OK) {
@@ -2101,9 +1924,7 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumCountInternal(const shared_ptr<Media
     }
     if (!replaceSignalAlbumVector.empty()) {
         int32_t ret = UpdateAlbumReplacedSignal(rdbStore, replaceSignalAlbumVector);
-        if (ret != E_OK) {
-            MEDIA_WARN_LOG("Update sysalbum replaced signal failed ret:%{public}d", ret);
-        }
+        CHECK_AND_WARN_LOG(ret == E_OK, "Update sysalbum replaced signal failed ret:%{public}d", ret);
     }
     // Do not call SetNeedRefreshAlbum in this function
     // This is set by the notification from dfs
@@ -2119,9 +1940,7 @@ void MediaLibraryRdbUtils::UpdateUserAlbumCountInternal(const shared_ptr<MediaLi
 
     vector<string> columns = { PhotoAlbumColumns::ALBUM_ID };
     auto albumResult = GetUserAlbum(rdbStore, userAlbumIds, columns);
-    if (albumResult == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(albumResult != nullptr, "album result is null");
 
     vector<string> replaceSignalAlbumVector;
     while (albumResult->GoToNextRow() == NativeRdb::E_OK) {
@@ -2134,10 +1953,7 @@ void MediaLibraryRdbUtils::UpdateUserAlbumCountInternal(const shared_ptr<MediaLi
     }
     if (!replaceSignalAlbumVector.empty()) {
         int32_t ret = UpdateAlbumReplacedSignal(rdbStore, replaceSignalAlbumVector);
-        if (ret != E_OK) {
-            MEDIA_WARN_LOG("Update user album replaced signal failed ret:%{public}d", ret);
-            return;
-        }
+        CHECK_AND_WARN_LOG(ret == E_OK, "Update user album replaced signal failed ret:%{public}d", ret);
     }
     // Do not call SetNeedRefreshAlbum in this function
     // This is set by the notification from dfs
@@ -2153,9 +1969,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumCountInternal(const shared_ptr<Med
 
     vector<string> columns = { ALBUM_ID, ALBUM_SUBTYPE };
     auto albumResult = GetAnalysisAlbumBySubtype(rdbStore, subtypes, columns);
-    if (albumResult == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(albumResult != nullptr, "album result is null");
 
     vector<BussinessRecordValue> updateAlbumIdList;
     while (albumResult->GoToNextRow() == NativeRdb::E_OK) {
@@ -2169,9 +1983,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumCountInternal(const shared_ptr<Med
     }
     if (!updateAlbumIdList.empty()) {
         int32_t ret = UpdateBussinessRecord(rdbStore, updateAlbumIdList);
-        if (ret != E_OK) {
-            MEDIA_WARN_LOG("Update sysalbum replaced signal failed ret:%{public}d", ret);
-        }
+        CHECK_AND_WARN_LOG(ret == E_OK, "Update sysalbum replaced signal failed ret:%{public}d", ret);
     }
     // Do not call SetNeedRefreshAlbum in this function
     // This is set by the notification from dfs
@@ -2186,9 +1998,7 @@ static void HandleAnalysisAlbum(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (isUpdateAllAnalysis) {
         MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
     } else {
-        if (albums.empty()) {
-            return;
-        }
+        CHECK_AND_RETURN_LOG(!albums.empty(), "no album");
         count = static_cast<int32_t>(albums.size());
         std::vector<std::string> albumIds(count);
         for (int32_t i = 0; i < count; i++) {
@@ -2211,10 +2021,7 @@ int RefreshPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     int ret = GetSystemRefreshAlbums(rdbStore, systeAlbums);
     ret = GetAnalysisRefreshAlbums(rdbStore, analysisAlbums, isUpdateAllAnalysis);
     DeleteAllAlbumId(rdbStore);
-    if (ret != E_SUCCESS) {
-        MEDIA_ERR_LOG("failed to get refresh system albumids");
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "failed to get refresh system albumids");
     if (systeAlbums.empty() && analysisAlbums.empty()) {
         MEDIA_INFO_LOG("all album are empty");
         return E_EMPTY_ALBUM_ID;
@@ -2234,10 +2041,7 @@ static int32_t RefreshAnalysisAlbums(const shared_ptr<MediaLibraryRdbStore> rdbS
 {
     for (auto data : datas) {
         int ret = UpdateAnalysisAlbumIfNeeded(rdbStore, data, false);
-        if (ret != E_SUCCESS) {
-            MEDIA_ERR_LOG("UpdateAnalysisAlbumIfNeeded fail");
-            return E_HAS_DB_ERROR;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_HAS_DB_ERROR, "UpdateAnalysisAlbumIfNeeded fail");
         auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
         int32_t albumId = data.albumId;
         refreshProcessHandler(PhotoAlbumType::SMART, subtype, albumId);
@@ -2246,10 +2050,8 @@ static int32_t RefreshAnalysisAlbums(const shared_ptr<MediaLibraryRdbStore> rdbS
     string deleteRefreshTableSql = "DELETE FROM " + MedialibraryBusinessRecordColumn::TABLE + " WHERE " +
         MedialibraryBusinessRecordColumn::BUSINESS_TYPE + " = '" + ANALYSIS_REFRESH_BUSINESS_TYPE + "'";
     int32_t ret = rdbStore->ExecuteSql(deleteRefreshTableSql);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to execute sql:%{private}s", deleteRefreshTableSql.c_str());
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Failed to execute sql:%{private}s", deleteRefreshTableSql.c_str());
     MEDIA_DEBUG_LOG("Delete RefreshAnalysisAlbums success");
     return E_SUCCESS;
 }
@@ -2267,17 +2069,12 @@ static int32_t GetRefreshAnalysisAlbumIds(const shared_ptr<MediaLibraryRdbStore>
 
     vector<string> columns = { MedialibraryBusinessRecordColumn::VALUE };
     auto resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Can not query ALBUM_REFRESH_TABLE");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Can not query ALBUM_REFRESH_TABLE");
 
     int32_t count = 0;
     int32_t ret = resultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GetRowCount failed ret:%{public}d", ret);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "GetRowCount failed ret:%{public}d", ret);
     if (count == 0) {
         MEDIA_DEBUG_LOG("count is zero, break");
         return E_SUCCESS;
@@ -2286,16 +2083,12 @@ static int32_t GetRefreshAnalysisAlbumIds(const shared_ptr<MediaLibraryRdbStore>
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t columnIndex = 0;
         ret = resultSet->GetColumnIndex(MedialibraryBusinessRecordColumn::VALUE, columnIndex);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("GetColumnIndex failed ret:%{public}d", ret);
-            return E_HAS_DB_ERROR;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+            "GetColumnIndex failed ret:%{public}d", ret);
         string refreshAlbumId;
         ret = resultSet->GetString(columnIndex, refreshAlbumId);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("GetString failed ret:%{public}d", ret);
-            return E_HAS_DB_ERROR;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+            "GetString failed ret:%{public}d", ret);
         albumIds.push_back(refreshAlbumId);
     }
     return E_SUCCESS;
@@ -2307,9 +2100,7 @@ int RefreshAnalysisPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     vector<string> albumIds;
     int ret = GetRefreshAnalysisAlbumIds(rdbStore, albumIds, subtypes);
-    if (ret != E_SUCCESS) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == E_SUCCESS, ret);
     if (albumIds.empty()) {
         MEDIA_DEBUG_LOG("albumIds is empty");
         return E_EMPTY_ALBUM_ID;
@@ -2347,10 +2138,7 @@ static bool IsRefreshAlbumEmpty(const shared_ptr<MediaLibraryRdbStore> rdbStore)
     RdbPredicates predicates(ALBUM_REFRESH_TABLE);
     vector<string> columns = { MEDIA_COLUMN_COUNT_1 };
     auto resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Can not query ALBUM_REFRESH_TABLE");
-        return true;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, true, "Can not query ALBUM_REFRESH_TABLE");
     int32_t count = GetFileCount(resultSet);
     MEDIA_DEBUG_LOG("RefreshAllAlbuming remain count:%{public}d", count);
     return count <= 0;
@@ -2371,10 +2159,7 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<MediaLibraryRdbS
     MediaLibraryTracer tracer;
     tracer.Start("RefreshAllAlbums");
 
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Can not get rdb");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Can not get rdb");
 
     int ret = E_SUCCESS;
     bool isRefresh = false;
@@ -2475,9 +2260,7 @@ int QueryCount(const std::shared_ptr<MediaLibraryRdbStore> rdbStore, const RdbPr
 {
     const vector<string> columns = { MEDIA_COLUMN_COUNT_1 };
     auto fetchResult = QueryGoToFirst(rdbStore, predicates, columns);
-    if (fetchResult == nullptr) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET(fetchResult != nullptr, 0);
     return GetFileCount(fetchResult);
 }
 
@@ -2525,9 +2308,7 @@ int GetNewDictionaryDataCount(const std::shared_ptr<MediaLibraryRdbStore> rdbSto
         ->And()->IsNotNull(GEO_KNOWLEDGE_TABLE + "." + COUNTRY)->EndWrap();
     vector<string> columns;
     auto resultSet = QueryGoToFirst(rdbStore, predicates, columns);
-    if (resultSet == nullptr) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, 0);
     set<string> citySet;
     do {
         string cityId = GetStringValFromColumn(resultSet, CITY_ID);
@@ -2654,10 +2435,7 @@ bool HasHighLightData(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
 
 bool MediaLibraryRdbUtils::HasDataToAnalysis(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("HasDataToAnalysis rdbstore is null");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "HasDataToAnalysis rdbstore is null");
     bool loc = HasLocationData(rdbStore);
     bool cv = HasCvData(rdbStore);
     bool search = HasSearchData(rdbStore);
@@ -2669,10 +2447,7 @@ int32_t MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(const std::sha
     const int64_t fileId)
 {
     int32_t err = -1;
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("RdbStore is null!");
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, err, "RdbStore is null!");
 
     ValuesBucket values;
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, 0);
@@ -2683,9 +2458,7 @@ int32_t MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(const std::sha
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     int32_t changedRows = 0;
     err = rdbStore->Update(changedRows, values, predicates);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update failed! err: %{public}d", err);
-    }
+    CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "RdbStore Update failed! err: %{public}d", err);
     return err;
 }
 } // namespace OHOS::Media
