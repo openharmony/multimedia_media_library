@@ -648,6 +648,6 @@ export enum VideoPlayerState {
 }
 
 export enum SaveMode {
-  SAVE_AS_NEW = 0,
-  SAVE_AS_REPLACE = 1
+  SAVE_AS = 0,
+  OVERWRITE = 1
 }
