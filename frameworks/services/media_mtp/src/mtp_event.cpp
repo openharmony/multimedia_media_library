@@ -77,7 +77,7 @@ void MtpEvent::SendObjectRemoved(const std::string &path)
     }
 }
 
-void MtpEvent::SendObjectRemovedByHandle(const uint32_t handle)
+void MtpEvent::SendObjectRemovedByHandle(uint32_t handle)
 {
     CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "SendObjectRemovedByHandle failed, mtpContextPtr_ is nullptr");
     mtpContextPtr_->eventHandle = handle;
