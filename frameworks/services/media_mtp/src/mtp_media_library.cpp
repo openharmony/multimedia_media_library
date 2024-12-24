@@ -24,6 +24,7 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "mtp_error_utils.h"
+#include "mtp_file_observer.h"
 #include "mtp_packet_tools.h"
 #include "mtp_storage_manager.h"
 #include "image_packer.h"
@@ -698,6 +699,24 @@ uint32_t MtpMediaLibrary::MoveObjectSub(const sf::path &fromPath, const sf::path
     return MTP_SUCCESS;
 }
 
+void CrossCopyAfter(bool isDir, const std::string &toPath)
+{
+    CHECK_AND_RETURN_LOG(isDir, "MoveObjectAfter not dir");
+    CHECK_AND_RETURN_LOG(!toPath.empty(), "MoveObjectAfter path is empty");
+    std::error_code ec;
+    CHECK_AND_RETURN_LOG(sf::exists(toPath, ec), "MoveObjectAfter path is not exists");
+
+    MtpFileObserver::GetInstance().AddPathToWatchMap(toPath);
+    for (const auto& entry : sf::recursive_directory_iterator(toPath, ec)) {
+        if (ec.value() != MTP_SUCCESS) {
+            continue;
+        }
+        if (sf::is_directory(entry.path(), ec)) {
+            MtpFileObserver::GetInstance().AddPathToWatchMap(entry.path().string());
+        }
+    }
+}
+
 int32_t MtpMediaLibrary::MoveObject(const std::shared_ptr<MtpOperationContext> &context, uint32_t &repeatHandle)
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
@@ -727,6 +746,7 @@ int32_t MtpMediaLibrary::MoveObject(const std::shared_ptr<MtpOperationContext> &
     } else {
         // move between different storage
         sf::copy(fromPath, toPath, sf::copy_options::recursive | sf::copy_options::overwrite_existing, ec);
+        CrossCopyAfter(isDir, toPath);
     }
 
     MEDIA_INFO_LOG("MTP:MoveObject:from[%{public}s],to[%{public}s]", fromPath.c_str(), toPath.c_str());
