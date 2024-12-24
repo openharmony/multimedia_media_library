@@ -419,7 +419,7 @@ int32_t ThumbnailService::InvalidateDistributeThumbnail(const string &udid)
 }
 #endif
 
-void ThumbnailService::InvalidateThumbnail(const std::string &id,
+bool ThumbnailService::HasInvalidateThumbnail(const std::string &id,
     const std::string &tableName, const std::string &path, const std::string &dateTaken)
 {
     ThumbRdbOpt opts = {
@@ -430,10 +430,14 @@ void ThumbnailService::InvalidateThumbnail(const std::string &id,
         .dateTaken = dateTaken,
     };
     ThumbnailData thumbnailData;
-    ThumbnailUtils::DeleteOriginImage(opts);
-    if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-        MediaLibraryPhotoOperations::DropThumbnailSize(id);
+    if (!ThumbnailUtils::DeleteOriginImage(opts)) {
+        MEDIA_ERR_LOG("failed to delete origin image");
+        return false;
     }
+    if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
+        return MediaLibraryPhotoOperations::HasDroppedThumbnailSize(id);
+    }
+    return true;
 }
 
 int32_t ThumbnailService::GetAgingDataSize(const int64_t &time, int &count)

@@ -87,6 +87,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { CHECK_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
         { PAH_CLOUD_ENHANCEMENT_OPERATE, OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE },
         { TAB_OLD_PHOTO, OperationObject::TAB_OLD_PHOTO },
+        { CLOUD_MEDIA_ASSET_OPERATE, OperationObject::CLOUD_MEDIA_ASSET_OPERATE},
 
         // use in Vision
         { PAH_ANA_OCR, OperationObject::VISION_OCR },
@@ -206,6 +207,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::APP_URI_PERMISSION_INNER,
             { { OperationType::UNKNOWN_TYPE, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE } } },
         { OperationObject::PTP_OPERATION, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } }},
+        { OperationObject::CLOUD_MEDIA_ASSET_OPERATE, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
     };
     return tableNameMap;
 }
@@ -308,6 +310,12 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_ALL_DUPLICATE_ASSETS, OperationType::ALL_DUPLICATE_ASSETS },
         { OPRN_CAN_DEL_DUPLICATE_ASSETS, OperationType::CAN_DEL_DUPLICATE_ASSETS },
         { OPRN_UPDATE_OWNER_ALBUM_ID, OperationType::SET_OWNER_ALBUM_ID },
+        { CLOUD_MEDIA_ASSET_TASK_START_FORCE, OperationType::CLOUD_MEDIA_ASSET_TASK_START_FORCE },
+        { CLOUD_MEDIA_ASSET_TASK_START_GENTLE, OperationType::CLOUD_MEDIA_ASSET_TASK_START_GENTLE },
+        { CLOUD_MEDIA_ASSET_TASK_PAUSE, OperationType::CLOUD_MEDIA_ASSET_TASK_PAUSE },
+        { CLOUD_MEDIA_ASSET_TASK_CANCEL, OperationType::CLOUD_MEDIA_ASSET_TASK_CANCEL },
+        { CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE, OperationType::CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE },
+        { CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY, OperationType::CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY },
     };
     return oprnTypeMap;
 }

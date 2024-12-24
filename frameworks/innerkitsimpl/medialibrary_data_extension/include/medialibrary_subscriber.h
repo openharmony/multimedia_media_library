@@ -43,6 +43,8 @@ public:
     EXPORT virtual ~MedialibrarySubscriber();
 
     EXPORT virtual void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
+    EXPORT static bool IsCellularNetConnected();
+    EXPORT static bool IsWifiConnected();
 
 private:
     static const std::vector<std::string> events_;
@@ -50,9 +52,10 @@ private:
     bool isCharging_ {false};
     bool isPowerSufficient_{false};
     bool isDeviceTemperatureProper_{false};
-    bool isWifiConn_{ false };
+    static bool isWifiConnected_;
     bool currentStatus_{false};
     bool timerStatus_{false};
+    static bool isCellularNetConnected_;
     std::mutex mutex_;
     int32_t agingCount_ {0};
     int32_t deviceTemperatureLevel_ {0};
@@ -76,12 +79,14 @@ private:
     int64_t GetNowTime();
     void Init();
     void UpdateBackgroundOperationStatus(const AAFwk::Want &want, const StatusEventType statusEventType);
+    void UpdateCloudMediaAssetDownloadStatus(const AAFwk::Want &want, const StatusEventType statusEventType);
     void UpdateCurrentStatus();
     void CheckHalfDayMissions();
     void UpdateBackgroundTimer();
     void DoThumbnailOperation();
     bool IsDelayTaskTimeOut();
     void EndBackgroundOperationThread();
+    void UpdateCloudMediaAssetDownloadTaskStatus();
 };
 }  // namespace Media
 }  // namespace OHOS
