@@ -2418,7 +2418,7 @@ static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
 
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
     if (context == nullptr) {
-        NAPI_ERR_LOG("Failed to check becuase context is nullptr");
+        NAPI_ERR_LOG("Failed to check because context is nullptr");
         return;
     }
     if (context->objectInfo == nullptr || context->objectInfo->GetFileAssetInstance() == nullptr) {

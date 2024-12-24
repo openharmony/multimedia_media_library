@@ -63,7 +63,6 @@
 #include "post_event_utils.h"
 #include "userfilemgr_uri.h"
 #include "dfx_utils.h"
-#include "medialibrary_common_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1046,8 +1045,7 @@ unique_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetByPredicates(const Na
 
 shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromId(const string &id, const string &networkId)
 {
-    if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) ||
-        (MediaLibraryCommonUtils::SafeStoi(id) == -1)) {
+    if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) || (stoi(id) == -1)) {
         MEDIA_ERR_LOG("Id for the path is incorrect: %{private}s", id.c_str());
         return nullptr;
     }
@@ -1162,8 +1160,7 @@ string MediaLibraryObjectUtils::GetStringColumnByIdFromDb(const string &id, cons
         return value;
     }
 
-    if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) ||
-        (MediaLibraryCommonUtils::SafeStoi(id) == -1)) {
+    if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) || (stoi(id) == -1)) {
         MEDIA_ERR_LOG("Id for the path is incorrect or rdbStore is null");
         return value;
     }
@@ -1330,8 +1327,7 @@ int32_t MediaLibraryObjectUtils::ModifyInfoByIdInDb(MediaLibraryCommand &cmd, co
     string strDeleteCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
     if (strDeleteCondition.empty()) {
         string strRow = fileId.empty() ? cmd.GetOprnFileId() : fileId;
-        if (strRow.empty() || !MediaLibraryDataManagerUtils::IsNumber(strRow) ||
-            (MediaLibraryCommonUtils::SafeStoi(strRow) == -1)) {
+        if (strRow.empty() || !MediaLibraryDataManagerUtils::IsNumber(strRow) || (stoi(strRow) == -1)) {
             MEDIA_ERR_LOG("DeleteFile: Index not digit");
             return E_INVALID_FILEID;
         }
