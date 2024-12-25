@@ -138,7 +138,7 @@ private:
     BackupDatabaseHelper backupDatabaseHelper_;
     std::vector<int> galleryFailedOffsets;
     std::vector<int> externalFailedOffsets;
-    std::unique_ptr<ffrt::queue> queue_ = nullptr;
+    int32_t maxId_{-1};
 };
 } // namespace Media
 } // namespace OHOS
