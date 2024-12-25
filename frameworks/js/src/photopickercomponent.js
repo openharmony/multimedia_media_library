@@ -44,6 +44,7 @@ export class PhotoPickerComponent extends ViewPU {
         this.onSelectedItemsDeleted = void 0;
         this.onExceedMaxSelected = void 0;
         this.onCurrentAlbumDeleted = void 0;
+        this.onVideoPlayStateChanged = void 0;
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
         this.setInitiallyProvidedValue(o);
@@ -62,6 +63,7 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.onSelectedItemsDeleted && (this.onSelectedItemsDeleted = e.onSelectedItemsDeleted);
         void 0 !== e.onExceedMaxSelected && (this.onExceedMaxSelected = e.onExceedMaxSelected);
         void 0 !== e.onCurrentAlbumDeleted && (this.onCurrentAlbumDeleted = e.onCurrentAlbumDeleted);
+        void 0 !== e.onVideoPlayStateChanged && (this.onVideoPlayStateChanged = e.onVideoPlayStateChanged);
         this.__pickerController.set(e.pickerController);
         void 0 !== e.proxy && (this.proxy = e.proxy);
     }
@@ -221,6 +223,8 @@ export class PhotoPickerComponent extends ViewPU {
             }
         } else if ('onPhotoBrowserChanged' === o) {
             this.handlePhotoBrowserChange(e);
+        } else if ('onVideoPlayStateChanged' === o) {
+            this.handleVideoPlayStateChanged(e);
         } else {
             this.handleOtherOnReceive(e);
             console.info('PhotoPickerComponent onReceive: other case');
@@ -305,6 +309,13 @@ export class PhotoPickerComponent extends ViewPU {
             this.onPhotoBrowserChanged(o);
         }
         console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + o.uri);
+    }
+
+    handleVideoPlayStateChanged(e) {
+        if (this.onVideoPlayStateChanged) {
+            this.onVideoPlayStateChanged(e.state);
+            console.info('PhotoPickerComponent onReceive: onVideoPlayStateChanged = ' + JSON.stringify(e));
+        }
     }
 
     convertMIMETypeToFilterType(e) {
@@ -462,5 +473,15 @@ export var PhotoBrowserUIElement;
     e[e.BACK_BUTTON = 1] = 'BACK_BUTTON';
 }(PhotoBrowserUIElement || (PhotoBrowserUIElement = {}));
 
+export var VideoPlayerState;
+!function(e) {
+    e[e.PLAYING = 0] = 'PLAYING';
+    e[e.PAUSED = 1] = 'PAUSED';
+    e[e.STOPPED = 2] = 'STOPPED';
+    e[e.SEEK_START = 3] = 'SEEK_START';
+    e[e.SEEK_FINISH = 4] = 'SEEK_FINISH';
+}(VideoPlayerState || (VideoPlayerState = {}));
+
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
-    MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement };
+    MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement, 
+    VideoPlayerState };
