@@ -45,6 +45,7 @@ const std::string LIVE_PHOTO_VIDEO_INFO_METADATA = "VideoInfoMetadata";
 const std::string LIVE_PHOTO_SIGHT_TREMBLE_META_DATA = "SightTrembleMetadata";
 const std::string LIVE_PHOTO_VERSION_AND_FRAME_NUM = "VersionAndFrameNum";
 constexpr int32_t HEX_BASE = 16;
+constexpr int64_t AUTO_PLAY_DURATION_MS = 600;
 
 static string GetVersionPositionTag(uint32_t frame, bool hasExtraData, const string& data = "")
 {
@@ -73,13 +74,22 @@ static string GetVersionPositionTag(uint32_t frame, bool hasExtraData, const str
     return buffer;
 }
 
-static string GetDurationTag(const string& data = "")
+static string GetDurationTag(int64_t coverPosition, const string& data = "")
 {
+    int64_t frame = coverPosition / 1000;
+    if (coverPosition < 0) {
+        frame = 0;
+        MEDIA_WARN_LOG("coverPosition data err %{public}" PRId64, coverPosition);
+    }
     string buffer;
     if (data.size() != 0) {
         buffer += data;
     } else {
-        buffer += "0:0";
+        if (frame < AUTO_PLAY_DURATION_MS) {
+            buffer += "0:" + to_string(frame);
+        } else {
+            buffer += to_string(frame - AUTO_PLAY_DURATION_MS) + ":" + to_string(frame);
+        }
     }
     uint16_t left = PLAY_INFO_LEN - buffer.length();
     for (uint16_t i = 0; i < left; ++i) {
@@ -216,7 +226,7 @@ static int32_t ReadExtraFile(const std::string& extraPath, map<string, string>& 
 }
 
 static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhotoFd, const UniqueFd& videoFd,
-    uint32_t frameIndex)
+    int64_t coverPosition)
 {
     map<string, string> extraData;
     bool hasExtraData{false};
@@ -231,13 +241,14 @@ static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhoto
             return E_ERR;
         }
     }
-    string versonAndFrameNum = GetVersionPositionTag(frameIndex, hasExtraData,
-        extraData[LIVE_PHOTO_VERSION_AND_FRAME_NUM]);
+    string versonAndFrameNum = GetVersionPositionTag(MovingPhotoFileUtils::GetFrameIndex(coverPosition, videoFd.Get()),
+        hasExtraData, extraData[LIVE_PHOTO_VERSION_AND_FRAME_NUM]);
     if (AddStringToFile(livePhotoFd, versonAndFrameNum) == E_ERR) {
         MEDIA_ERR_LOG("write version position tag err");
         return E_ERR;
     }
-    if (AddStringToFile(livePhotoFd, GetDurationTag(extraData[LIVE_PHOTO_SIGHT_TREMBLE_META_DATA])) == E_ERR) {
+    if (AddStringToFile(livePhotoFd,
+        GetDurationTag(coverPosition, extraData[LIVE_PHOTO_SIGHT_TREMBLE_META_DATA])) == E_ERR) {
         MEDIA_ERR_LOG("write duration tag err");
         return E_ERR;
     }
@@ -255,7 +266,7 @@ static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhoto
 }
 
 int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& imagePath, const string& videoPath,
-    uint32_t frameIndex, off_t& fileSize)
+    uint32_t frameIndex, off_t& fileSize, int64_t coverPosition)
 {
     string absImagePath;
     if (!PathToRealPath(imagePath, absImagePath)) {
@@ -284,7 +295,7 @@ int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& imagePath, const str
         MEDIA_ERR_LOG("write version position tag err");
         return E_ERR;
     }
-    if (AddStringToFile(extraDataFd, GetDurationTag()) == E_ERR) {
+    if (AddStringToFile(extraDataFd, GetDurationTag(coverPosition)) == E_ERR) {
         MEDIA_ERR_LOG("write duration tag err");
         return E_ERR;
     }
@@ -297,7 +308,7 @@ int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& imagePath, const str
 }
 
 static int32_t MergeFile(const UniqueFd& imageFd, const UniqueFd& videoFd, const UniqueFd& livePhotoFd,
-    const string& extraPath, uint32_t frameIndex)
+    const string& extraPath, int64_t coverPosition)
 {
     if (WriteContentTofile(livePhotoFd, imageFd) == E_ERR) {
         MEDIA_ERR_LOG("failed to sendfile from image file");
@@ -307,7 +318,7 @@ static int32_t MergeFile(const UniqueFd& imageFd, const UniqueFd& videoFd, const
         MEDIA_ERR_LOG("failed to sendfile from video file");
         return E_ERR;
     }
-    if (WriteExtraData(extraPath, livePhotoFd, videoFd, frameIndex) == E_ERR) {
+    if (WriteExtraData(extraPath, livePhotoFd, videoFd, coverPosition) == E_ERR) {
         MEDIA_ERR_LOG("write cinemagraph info err");
         return E_ERR;
     }
@@ -319,6 +330,9 @@ uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
     MediaLibraryTracer tracer;
     tracer.Start("GetFrameIndex");
     uint32_t index{0};
+    if (time == 0) {
+        return index;
+    }
     if (fd < 0) {
         MEDIA_ERR_LOG("file is error");
         return index;
@@ -383,7 +397,7 @@ int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagep
         MEDIA_ERR_LOG("failed to open live photo file, errno: %{public}d", errno);
         return E_ERR;
     }
-    if (MergeFile(imageFd, videoFd, livePhotoFd, extraPath, GetFrameIndex(coverPosition, videoFd.Get())) == E_ERR) {
+    if (MergeFile(imageFd, videoFd, livePhotoFd, extraPath, coverPosition) == E_ERR) {
         MEDIA_ERR_LOG("failed to MergeFile file");
         if (!MediaFileUtils::DeleteFile(absCachePath)) {
             MEDIA_ERR_LOG("failed to delete cache file, errno: %{public}d", errno);
