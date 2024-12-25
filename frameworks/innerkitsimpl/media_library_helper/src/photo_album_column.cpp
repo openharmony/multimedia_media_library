@@ -357,7 +357,7 @@ void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype
         }
         default: {
             predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(0));
-            MEDIA_WARN_LOG("Unsupported system album subtype: %{public}d", subtype);
+            MEDIA_ERR_LOG("Unsupported system album subtype: %{public}d", subtype);
             return;
         }
     }
