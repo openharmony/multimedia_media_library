@@ -918,5 +918,118 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_
     auto res = serverTest->GenerateHighlightThumbnailBackground();
     EXPECT_EQ(res < 0, true);
 }
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_023, TestSize.Level0)
+{
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    bool isSourceEx = true;
+    auto res = ThumbnailUtils::CompressPicture(data.isSourceEx);
+    EXPECT_EQ(res, true);
+    bool isSourceEx2 = false;
+    auto res2 = ThumbnailUtils::CompressPicture(data.isSourceEx);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_024, TestSize.Level0)
+{
+    ThumbnailData data;
+    ThumbRdbOpt opts;
+    auto res = ThumbnailUtils::DoUpdateAstcDateTaken(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_025, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    auto res = ThumbnailUtils::DoDeleteMonthAndYearAstc(opts);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_026, TestSize.Level0)
+{
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    ThumbRdbOpt opts;
+    auto res = ThumbnailUtils::CheckDateTaken(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_027, TestSize.Level0)
+{
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    ThumbRdbOpt opts;
+    auto res = ThumbnailUtils::CheckDateTaken(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_028, TestSize.Level0)
+{
+    auto res = ThumbnailUtils::CheckCloudThumbnailDownloadFinish(storePtr);
+    EXPECT_EQ(res, false);
+    const string dbPath = "/data/test/medialibrary_thumbnail_service_test_db";
+    NativeRdb::RdbStoreConfig(dbPath);
+    ConfigTestOpenCall helper;
+    int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, 1, helper);
+    storePtr = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    auto res2 = ThumbnailUtils::CheckCloudThumbnailDownloadFinish(storePtr);
+    EXPECT_EQ(res2, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_029, TestSize.Level0)
+{
+    const string dbPath = "/data/test/medialibrary_thumbnail_service_test_db";
+    NativeRdb::RdbStoreConfig(dbPath);
+    ConfigTestOpenCall helper;
+    int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, 1, helper);
+    storePtr = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    vector<ThumbnailData> infos;
+    const std::string table = "Photos";
+    auto res = ThumbnailUtils::QueryOldKeyAstcInfos(storePtr, table, infos);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_024, TestSize.Level0)
+{
+    ThumbnailData data;
+    ThumbRdbOpt opts;
+    int32_t err = E_ERR;
+    auto res = ThumbnailUtils::UpdateLcdReadyStatus(opts, data, err, LcdReady::GENERATE_LCD_COMPLETED);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_005, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    auto res = ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
+    EXPECT_EQ(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_006, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    int32_t timeStamp = 100;
+    int32_t type = 1;
+    auto res = ThumbnailGenerateHelper::GetKeyFrameThumbnailPixelMap(opts, timeStamp, type);
+    EXPECT_NE(res, E_ERR);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_006, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    ThumbnailData data;data.path = "path";
+    data.timeStamp = "timeStamp";
+    int32_t thumbType = 1;
+    std::string fileName;
+    suto res = ThumbnailGenerateHelper::GetAvailableKeyFrameFile(opts, data, thumbType, fileName);
+    EXPECT_NE(res, E_OK);
+}
 } // namespace Media
 } // namespace OHOS
