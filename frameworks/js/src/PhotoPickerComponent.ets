@@ -31,6 +31,7 @@ export struct PhotoPickerComponent {
   onSelectedItemsDeleted?: ItemsDeletedCallback;
   onExceedMaxSelected?: ExceedMaxSelectedCallback;
   onCurrentAlbumDeleted?: CurrentAlbumDeletedCallback;
+  onVideoPlayStateChanged?: VideoPlayStateChangedCallback;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
   private proxy: UIExtensionProxy | undefined;
 
@@ -159,6 +160,8 @@ export struct PhotoPickerComponent {
       }
     } else if (dataType === 'onPhotoBrowserChanged') {
       this.handlePhotoBrowserChange(wantParam);
+    } else if (dataType === 'onVideoPlayStateChanged') {
+      this.handleVideoPlayStateChange(wantParam)
     } else {
       this.handleOtherOnReceive(wantParam);
       console.info('PhotoPickerComponent onReceive: other case');
@@ -268,6 +271,13 @@ export struct PhotoPickerComponent {
     console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + browserItemInfo.uri);
   }
 
+  private handleVideoPlayStateChange(wantParam: Record<string, Object>): void {
+    if(this.onVideoPlayStateChanged) {
+      this.onVideoPlayStateChanged(wantParam.state as VideoPlayerState)
+    }
+    console.info('PhotoPickerComponent onReceive: onVideoPlayStateChanged = ' + JSON.stringify(wantParam));
+  }
+
   private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string {
     let filterType: string;
     if (mimeType === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE) {
@@ -287,6 +297,8 @@ export type ItemsDeletedCallback = (baseItemInfos: Array<BaseItemInfo>) => void;
 export type ExceedMaxSelectedCallback = (exceedMaxCountType: MaxCountType) => void;
 
 export type CurrentAlbumDeletedCallback = () => void;
+
+export type VideoPlayStateChanged = (state: VideoPlayerState) => {} void;
 
 @Observed
 export class PickerController {
@@ -450,4 +462,12 @@ export enum PhotoBrowserRange {
 export enum PhotoBrowserUIElement {
   CHECKBOX = 0,
   BACK_BUTTON = 1
+}
+
+export enum VideoPlayerState {
+  PLAYING = 0,
+  PAUSED = 1,
+  STOPPED = 3,
+  SEEK_START = 4,
+  SEEK_FINISH = 5
 }
