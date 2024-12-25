@@ -65,10 +65,7 @@ void PtpAlbumHandles::RemoveHandle(int32_t value)
 
 void PtpAlbumHandles::AddAlbumHandles(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet)
 {
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
     std::lock_guard<std::mutex> lock(mutex_);
     dataHandles_.clear();
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -87,10 +84,7 @@ bool PtpAlbumHandles::FindHandle(int32_t value)
 
 int32_t PtpAlbumHandles::ChangeHandle(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet)
 {
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "resultSet is nullptr");
     std::vector<int32_t> data;
     do {
         int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
@@ -100,9 +94,7 @@ int32_t PtpAlbumHandles::ChangeHandle(const std::shared_ptr<DataShare::DataShare
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto value : dataHandles_) {
         auto iter = std::find(data.begin(), data.end(), value);
-        if (iter == data.end()) {
-            return value;
-        }
+        CHECK_AND_RETURN_RET(iter != data.end(), value);
     }
     MEDIA_ERR_LOG("no data handle to remove");
     return E_ERR;

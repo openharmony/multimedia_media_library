@@ -106,6 +106,7 @@ private:
     bool IsProperFgTemperature();
     void InitStartDownloadTaskStatus(const bool &isForeground);
     void ResetParameter();
+    bool IsNetworkUnavailable();
 
     void SetTaskStatus(Status status);
     std::shared_ptr<NativeRdb::ResultSet> QueryDownloadFilesNeeded(const bool &isQueryInfo);
@@ -116,7 +117,7 @@ private:
     void StartBatchDownload(const int64_t batchNum, const int64_t batchSize);
     EXPORT int32_t DoRecoverExecute();
     EXPORT int32_t PassiveStatusRecover();
-    
+    int32_t SubmitBatchDownloadAgain();
     void MoveDownloadFileToCache(const DownloadProgressObj &progress);
     void MoveDownloadFileToNotFound(const DownloadProgressObj &progress);
 
@@ -126,6 +127,7 @@ public:
     // Confirmation of the notification
     bool isThumbnailUpdate_ = true;
     bool isBgDownloadPermission_ = false;
+    bool isUnlimitedTrafficStatusOn_ = false;
 
 private:
     std::reference_wrapper<CloudSyncManager> cloudSyncManager_ = CloudSyncManager::GetInstance();
@@ -143,22 +145,14 @@ private:
     DownloadFileData notFoundForDownload_;
 
     // data cache
-    int64_t downloadIdCache_ = -1;
-    int32_t fileNumCache_ = 0;
     DownloadFileData cacheForDownload_;
 
     // data downloading
     bool isCache_ = false;
     int64_t downloadId_ = -1;
-    int64_t downloadNum_ = 0;
     DownloadFileData dataForDownload_;
 
     // common info
-    int64_t batchDownloadTotalNum_ = 0;
-    int64_t batchDownloadTotalSize_ = 0;
-    int64_t hasDownloadNum_ = 0;
-    int64_t hasDownloadSize_ = 0;
-
     int64_t totalCount_ = 0;
     int64_t totalSize_ = 0;
     int64_t remainCount_ = 0;

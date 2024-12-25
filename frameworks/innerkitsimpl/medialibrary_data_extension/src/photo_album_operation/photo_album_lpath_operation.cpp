@@ -86,9 +86,7 @@ PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::CleanInvalidPhotoAlbums()
     // Delete the invalid albums
     std::string sql = this->SQL_PHOTO_ALBUM_EMPTY_DELETE;
     int32_t ret = this->rdbStorePtr_->ExecuteSql(sql);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Media_Operation: Failed to exec: %{public}s", sql.c_str());
-    }
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Operation: Failed to exec: %{public}s", sql.c_str());
     MEDIA_INFO_LOG("Media_Operation: clean invalid album completed! "
                    "total: %{public}d, ret: %{public}d",
         total,
@@ -151,9 +149,7 @@ int32_t PhotoAlbumLPathOperation::CleanDuplicatePhotoAlbum(const PhotoAlbumInfoP
         return NativeRdb::E_OK;
     }
     std::vector<PhotoAlbumInfoPo> subAlbumInfoList = this->GetDuplicatelPathAlbumInfoSub(mainAlbumInfo);
-    if (subAlbumInfoList.empty()) {
-        return NativeRdb::E_OK;
-    }
+    CHECK_AND_RETURN_RET(!subAlbumInfoList.empty(), NativeRdb::E_OK);
     int32_t index = 0;
     int32_t total = static_cast<int32_t>(subAlbumInfoList.size());
     for (const auto &subAlbumInfo : subAlbumInfoList) {
@@ -217,9 +213,7 @@ std::string PhotoAlbumLPathOperation::ToString(const std::vector<NativeRdb::Valu
 
 int32_t PhotoAlbumLPathOperation::UpdateAlbumInfoFromAlbumPluginByAlbumId(const PhotoAlbumInfoPo &albumInfo)
 {
-    if (this->rdbStorePtr_ == nullptr) {
-        return NativeRdb::E_ERROR;
-    }
+    CHECK_AND_RETURN_RET(this->rdbStorePtr_ != nullptr, NativeRdb::E_ERROR);
     bool isInvalid = albumInfo.albumId <= 0 || albumInfo.lPath.empty();
     if (isInvalid) {
         return NativeRdb::E_ERROR;
@@ -239,9 +233,7 @@ int32_t PhotoAlbumLPathOperation::UpdateAlbumInfoFromAlbumPluginByAlbumId(const 
 
 int32_t PhotoAlbumLPathOperation::UpdateAlbumLPathByAlbumId(const PhotoAlbumInfoPo &albumInfo)
 {
-    if (this->rdbStorePtr_ == nullptr) {
-        return NativeRdb::E_ERROR;
-    }
+    CHECK_AND_RETURN_RET(this->rdbStorePtr_ != nullptr, NativeRdb::E_ERROR);
     bool isInvalid = albumInfo.lPath.empty() || albumInfo.albumId <= 0;
     if (isInvalid) {
         return NativeRdb::E_ERROR;
@@ -335,9 +327,7 @@ std::vector<PhotoAlbumInfoPo> PhotoAlbumLPathOperation::GetDuplicatelPathAlbumIn
     std::string sql = this->SQL_PHOTO_ALBUM_DUPLICATE_LPATH_SUB_QUERY;
     const std::vector<NativeRdb::ValueObject> bindArgs = {albumInfo.albumId, albumInfo.lPath};
     auto resultSet = this->rdbStorePtr_->QuerySql(sql, bindArgs);
-    if (resultSet == nullptr) {
-        return {};
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, {});
     std::vector<PhotoAlbumInfoPo> result;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         result.emplace_back(PhotoAlbumInfoPo().Parse(resultSet));

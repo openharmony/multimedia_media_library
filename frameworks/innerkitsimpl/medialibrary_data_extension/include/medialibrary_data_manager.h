@@ -109,7 +109,7 @@ public:
     EXPORT void SetStartupParameter();
     EXPORT void ReCreateMediaDir();
     EXPORT int32_t CheckCloudThumbnailDownloadFinish();
-    EXPORT void UploadDBFileInner();
+    EXPORT void UploadDBFileInner(int64_t totalFileSize);
     EXPORT int32_t UpdateDateTakenWhenZero();
 
 private:

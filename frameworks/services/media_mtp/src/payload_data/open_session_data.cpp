@@ -40,7 +40,6 @@ int OpenSessionData::Parser(const vector<uint8_t> &buffer, int32_t readSize)
         return MTP_FAIL;
     }
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    MtpPacketTool::Dump(buffer, offset);
     context_->tempSessionID = MtpPacketTool::GetUInt32(buffer, offset);
     return MTP_SUCCESS;
 }

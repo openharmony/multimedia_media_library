@@ -68,6 +68,8 @@ public:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryWithFilter(const NativeRdb::AbsRdbPredicates &predicates,
         const std::vector<std::string> &columns);
     EXPORT static int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> StepQueryWithoutCheck(
+        const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns);
     EXPORT static int32_t UpdateWithDateTime(NativeRdb::ValuesBucket &values,
         const NativeRdb::AbsRdbPredicates &predicates);
     static void ReplacePredicatesUriToId(NativeRdb::AbsRdbPredicates &predicates);
@@ -97,10 +99,10 @@ public:
     EXPORT static void UpdateIndexForCover(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateLcdStatusNotUploaded(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddReadyCountIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void FixDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static int32_t ReconstructMediaLibraryStorageFormat(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryEditDataExists(
         const NativeRdb::AbsRdbPredicates &predicates);
-    EXPORT static int32_t CompletelyDeleteDBData(int32_t &deletedRows, const NativeRdb::AbsRdbPredicates &predicates);
     EXPORT int Update(int &changedRows, const std::string &table, const NativeRdb::ValuesBucket &row,
         const std::string &whereClause, const std::vector<std::string> &args);
     EXPORT std::string ObtainDistributedTableName(const std::string &device, const std::string &table, int &errCode);

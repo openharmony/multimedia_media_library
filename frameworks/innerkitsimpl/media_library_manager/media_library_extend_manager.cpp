@@ -202,6 +202,7 @@ static void MakePredicatesForCheckPhotoUriPermission(int32_t &checkFlag, DataSha
             return;
     }
     predicates.And()->In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
+    predicates.OrderByDesc(AppUriPermissionColumn::PERMISSION_TYPE);
 }
 
 int32_t MediaLibraryExtendManager::CheckPhotoUriPermissionQueryOperation(const DataSharePredicates &predicates,
@@ -414,7 +415,11 @@ int32_t MediaLibraryExtendManager::CancelPhotoUriPermission(uint32_t srcTokenId,
         }
         MEDIA_DEBUG_LOG("CancelPermission fileId:%{private}s, tableType:%{private}d", fileId.c_str(), tableType);
         predicates.BeginWrap();
+        predicates.BeginWrap();
         predicates.EqualTo(AppUriPermissionColumn::SOURCE_TOKENID, (int64_t)srcTokenId);
+        predicates.Or();
+        predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)srcTokenId);
+        predicates.EndWrap();
         predicates.EqualTo(AppUriPermissionColumn::FILE_ID, fileId);
         predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)targetTokenId);
         predicates.EqualTo(AppUriPermissionColumn::URI_TYPE, tableType);

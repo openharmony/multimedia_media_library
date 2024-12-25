@@ -155,17 +155,10 @@ static void InitCloudEnhancementAsync(AsyncTaskData *data)
 bool EnhancementManager::InitAsync()
 {
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_INFO_LOG("can not get async worker");
-        return false;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, false, "can not get async worker");
     shared_ptr<MediaLibraryAsyncTask> asyncTask = make_shared<MediaLibraryAsyncTask>(InitCloudEnhancementAsync,
         nullptr);
-    if (asyncTask == nullptr) {
-        MEDIA_ERR_LOG("InitCloudEnhancementAsync create task fail");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(asyncTask != nullptr, false, "InitCloudEnhancementAsync create task fail");
     MEDIA_INFO_LOG("InitCloudEnhancementAsync add task success");
     asyncWorker->AddTask(asyncTask, false);
     return true;
@@ -635,10 +628,7 @@ int32_t EnhancementManager::HandleSyncOperation()
         MEDIA_ERR_LOG("sync tasks failed: enhancment service error");
         return E_ERR;
     }
-    if (taskIdList.empty()) {
-        MEDIA_INFO_LOG("no pending tasks from cloud enhancement service");
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET_LOG(!taskIdList.empty(), E_OK, "no pending tasks from cloud enhancement service");
     MEDIA_INFO_LOG("enhancement pending tasks count from cloud enhancement: %{public}zu",
         taskIdList.size());
     vector<string> columns = {

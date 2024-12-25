@@ -19,8 +19,6 @@
 #include <sys/stat.h>
 
 #include "base_restore.h"
-#include "ffrt.h"
-#include "ffrt_inner.h"
 #include "photos_restore.h"
 
 namespace OHOS {
@@ -36,7 +34,7 @@ struct CloneDbInfo {
 class OthersCloneRestore : public BaseRestore {
 public:
     OthersCloneRestore(int32_t sceneCode, const std::string &mediaAppName, const std::string &bundleInfo = "");
-    virtual ~OthersCloneRestore();
+    virtual ~OthersCloneRestore() = default;
 
     int32_t Init(const std::string &backupRetorePath, const std::string &upgradePath, bool isUpgrade);
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
@@ -78,7 +76,6 @@ private:
     PhotoAlbumDao photoAlbumDao_;
     PhotoAlbumRestore photoAlbumRestore_;
     PhotosRestore photosRestore_;
-    std::unique_ptr<ffrt::queue> queue_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

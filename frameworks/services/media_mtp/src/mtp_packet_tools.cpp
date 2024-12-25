@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "MtpPacketTool"
 #include "mtp_packet_tools.h"
 #include <codecvt>
 #include <cctype>
@@ -21,6 +22,8 @@
 #include "media_log.h"
 #include "mtp_packet.h"
 #include "securec.h"
+#include "parameters.h"
+#include "media_mtp_utils.h"
 namespace OHOS {
 namespace Media {
 namespace {
@@ -40,6 +43,10 @@ namespace {
     static const std::string UNKNOWN_STR = "Unknown";
     static const char *UTF16_CERROR = "__CONVERSION_ERROR__";
     static const char16_t *UTF8_CERROR = u"__CONVERSION_ERROR__";
+    static const std::string KEY_MTP_SHOW_DUMP = "multimedia.medialibrary.mtp_show_dump";
+    static const std::string MTP_SHOW_DUMP_DEFAULT = "0";
+    static const std::string ALLOW_SHOW_DUMP = "1";
+
     static const std::map<uint32_t, std::string> AssociationMap = {
         { MTP_ASSOCIATION_TYPE_UNDEFINED_CODE, "MTP_ASSOCIATION_TYPE_UNDEFINED" },
         { MTP_ASSOCIATION_TYPE_GENERIC_FOLDER_CODE, "MTP_ASSOCIATION_TYPE_GENERIC_FOLDER" },
@@ -968,8 +975,38 @@ std::string MtpPacketTool::GetIndentBlank(size_t indent)
     return indentStr;
 }
 
+bool MtpPacketTool::CanDump()
+{
+    std::string mtpShowDump = OHOS::system::GetParameter(KEY_MTP_SHOW_DUMP, MTP_SHOW_DUMP_DEFAULT);
+    return mtpShowDump.compare(ALLOW_SHOW_DUMP) == 0;
+}
+
+void MtpPacketTool::DumpPacket(const std::vector<uint8_t> &outBuffer)
+{
+    if (!MtpPacketTool::CanDump()) {
+        MEDIA_DEBUG_LOG("MtpPacketTool::CanDump return false");
+        return;
+    }
+    int offset = 0;
+    uint32_t containerLength = MtpPacketTool::GetUInt32(outBuffer[offset], outBuffer[offset + OFFSET_1],
+        outBuffer[offset + OFFSET_2], outBuffer[offset + OFFSET_3]);
+    uint16_t containerType = MtpPacketTool::GetUInt16(outBuffer[offset + OFFSET_4],
+        outBuffer[offset + OFFSET_5]);
+    if (containerType == DATA_CONTAINER_TYPE) {
+        MEDIA_DEBUG_LOG("Packet type: %{public}d, Payload Size: %{public}d",
+            DATA_CONTAINER_TYPE, containerLength - PACKET_HEADER_LENGETH);
+        MtpPacketTool::Dump(outBuffer, 0, PACKET_HEADER_LENGETH);
+    } else {
+        MEDIA_DEBUG_LOG("Packet type: %{public}d, Packet size: %{public}d",
+            containerType, containerLength);
+        MtpPacketTool::Dump(outBuffer);
+    }
+}
+
 void MtpPacketTool::Dump(const std::vector<uint8_t> &data, uint32_t offset, uint32_t sum)
 {
+    CHECK_AND_RETURN_LOG(data.size() > 0, "Dump data is empty");
+
     std::unique_ptr<char[]> hexBuf = std::make_unique<char[]>(DUMP_HEXBUF_MAX);
     std::unique_ptr<char[]> txtBuf = std::make_unique<char[]>(DUMP_TXTBUF_MAX);
     if (!DumpClear(offset, hexBuf, DUMP_HEXBUF_MAX, txtBuf, DUMP_TXTBUF_MAX)) {

@@ -160,6 +160,8 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     MEDIA_DATA_DB_IS_FAV,
     MEDIA_DATA_DB_TIME_PENDING,
     MEDIA_DATA_DB_POSITION,
+    MEDIA_DATA_DB_HIGHLIGHT_ID,
+    MEDIA_DATA_DB_HIGHLIGHT_STATUS,
     PhotoColumn::PHOTO_THUMB_STATUS,
     PhotoColumn::PHOTO_SUBTYPE,
     PhotoColumn::PHOTO_IS_TEMP,
