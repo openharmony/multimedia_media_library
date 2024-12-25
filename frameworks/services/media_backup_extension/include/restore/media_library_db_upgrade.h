@@ -145,7 +145,9 @@ private:
             album_subtype, \
             album_name, \
             bundle_name, \
-            lpath \
+            lpath, \
+            date_modified, \
+            date_added \
         ) \
         SELECT \
             PA1.album_type, \
@@ -155,7 +157,9 @@ private:
             CASE \
                 WHEN COALESCE(album_plugin.lpath,'') <> '' THEN album_plugin.lpath \
                 ELSE '/Pictures/'||PA1.album_name \
-            END AS lpath \
+            END AS lpath, \
+            strftime('%s000', 'now') AS date_modified, \
+            strftime('%s000', 'now') AS date_added \
         FROM PhotoAlbum AS PA1 \
             INNER JOIN temp_album_bundle_name AS M \
             ON PA1.bundle_name=M.bundle_name_old \
