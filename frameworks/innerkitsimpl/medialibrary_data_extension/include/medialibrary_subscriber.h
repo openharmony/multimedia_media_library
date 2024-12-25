@@ -32,7 +32,8 @@ enum class StatusEventType {
     SCREEN_OFF,
     SCREEN_ON,
     BATTERY_CHANGED,
-    THERMAL_LEVEL_CHANGED
+    THERMAL_LEVEL_CHANGED,
+    TIME_TICK
 };
 
 class EXPORT MedialibrarySubscriber : public EventFwk::CommonEventSubscriber {
@@ -87,6 +88,7 @@ private:
     bool IsDelayTaskTimeOut();
     void EndBackgroundOperationThread();
     void UpdateCloudMediaAssetDownloadTaskStatus();
+    void DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType);
 };
 }  // namespace Media
 }  // namespace OHOS
