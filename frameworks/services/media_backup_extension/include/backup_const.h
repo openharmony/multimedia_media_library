@@ -373,6 +373,7 @@ struct AlbumInfo {
     PhotoAlbumSubType albumSubType;
     std::string lPath;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
+    int64_t dateModified {0};
 };
 
 struct GalleryAlbumInfo {
