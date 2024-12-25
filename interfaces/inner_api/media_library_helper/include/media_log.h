@@ -60,6 +60,14 @@
         }                                              \
     } while (0)
 
+#define CHECK_AND_RETURN_INFO_LOG(cond, fmt, ...)           \
+    do {                                               \
+        if (!(cond)) {                                 \
+            MEDIA_INFO_LOG(fmt, ##__VA_ARGS__);         \
+            return;                                    \
+        }                                              \
+    } while (0)
+
 #define CHECK_AND_PRINT_LOG(cond, fmt, ...)            \
     do {                                               \
         if (!(cond)) {                                 \

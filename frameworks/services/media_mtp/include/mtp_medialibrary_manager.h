@@ -65,7 +65,7 @@ private:
     int32_t SetObjectInfo(const std::unique_ptr<FileAsset> &fileAsset, std::shared_ptr<ObjectInfo> &outObjectInfo);
     int32_t SetObject(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
         const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<ObjectInfo> &outObjectInfo);
-    bool CompressImage(std::unique_ptr<PixelMap> &pixelMap, Size &size, std::vector<uint8_t> &data);
+    bool CompressImage(std::unique_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data);
     int32_t GetAssetById(const int32_t id, std::shared_ptr<FileAsset> &outFileAsset);
     int32_t GetAssetByPath(const std::string &path, std::shared_ptr<FileAsset> &outFileAsset);
     int32_t GetAssetByPredicates(const DataShare::DataSharePredicates &predicates,
@@ -74,15 +74,19 @@ private:
         bool isHandle);
     std::shared_ptr<DataShare::DataShareResultSet> GetPhotosInfo(const std::shared_ptr<MtpOperationContext> &context,
         bool isHandle);
+    int32_t GetAlbumCloud();
+    int32_t GetAlbumCloudDisplay(std::vector<std::string> &ownerAlbumIds);
     int32_t HaveMovingPhotesHandle(const std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         std::shared_ptr<UInt32List> &outHandles, const uint32_t parent);
     uint32_t GetSizeFromOfft(const off_t &size);
     std::vector<std::string> GetBurstKeyFromPhotosInfo();
     std::shared_ptr<DataShare::DataShareResultSet> GetOwnerAlbumIdList();
+    std::string GetThumbUri(const int32_t &id, const std::string &thumbSizeValue, const std::string &dataPath);
 private:
     static std::mutex mutex_;
     static std::shared_ptr<MtpMedialibraryManager> instance_;
     static std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
+    static sptr<IRemoteObject> getThumbToken_;
 };
 } // namespace Media
 } // namespace OHOS

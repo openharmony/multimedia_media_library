@@ -27,9 +27,11 @@ namespace Media {
 shared_ptr<MediaLibraryPeriodWorker> MediaLibraryPeriodWorker::periodWorkerInstance_{nullptr};
 mutex MediaLibraryPeriodWorker::instanceMtx_;
 mutex MediaLibraryPeriodWorker::mtx_;
+atomic<bool> MediaLibraryPeriodWorker::stop_ = true;
 std::map<int32_t, std::shared_ptr<MedialibraryPeriodTask>>MediaLibraryPeriodWorker::tasks_;
 static constexpr int32_t NOTIFY_TIME = 100;
 static constexpr int32_t UPDATE_ANALYSIS_TIME = 2000;
+static constexpr int32_t WAIT_FOR_DETACH_TIME = 100;
 
 shared_ptr<MediaLibraryPeriodWorker> MediaLibraryPeriodWorker::GetInstance()
 {
@@ -47,6 +49,9 @@ MediaLibraryPeriodWorker::MediaLibraryPeriodWorker() {}
 
 MediaLibraryPeriodWorker::~MediaLibraryPeriodWorker()
 {
+    lock_guard<mutex> lockGuard(instanceMtx_);
+    stop_.store(true);
+    this_thread::sleep_for(chrono::milliseconds(WAIT_FOR_DETACH_TIME));
     periodWorkerInstance_ = nullptr;
 }
 
@@ -102,7 +107,7 @@ void MediaLibraryPeriodWorker::HandleTask(PeriodTaskType periodTaskType)
     {
         lock_guard<mutex> lockGuard(mtx_);
         auto iterator = tasks_.find(periodTaskType);
-        if (iterator == tasks_.end() || !iterator->second) {
+        if (iterator == tasks_.end() || iterator->second == nullptr) {
             return;
         }
         task = iterator->second;
@@ -110,7 +115,8 @@ void MediaLibraryPeriodWorker::HandleTask(PeriodTaskType periodTaskType)
     string name = task->threadName_;
     pthread_setname_np(pthread_self(), name.c_str());
     MEDIA_INFO_LOG("start %{public}s", name.c_str());
-    while (task && task->isThreadRunning_.load()) {
+    stop_.store(false);
+    while (!stop_.load() && task->isThreadRunning_.load()) {
         task->executor_(task->data_);
         if (task->isStop_.load()) {
             task->isThreadRunning_.store(false);

@@ -43,7 +43,8 @@ public:
     EXPORT virtual ~MedialibrarySubscriber();
 
     EXPORT virtual void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
-    EXPORT static bool GetIsCellularNetConnected();
+    EXPORT static bool IsCellularNetConnected();
+    EXPORT static bool IsWifiConnected();
 
 private:
     static const std::vector<std::string> events_;
@@ -51,7 +52,7 @@ private:
     bool isCharging_ {false};
     bool isPowerSufficient_{false};
     bool isDeviceTemperatureProper_{false};
-    bool isWifiConnected_{ false };
+    static bool isWifiConnected_;
     bool currentStatus_{false};
     bool timerStatus_{false};
     static bool isCellularNetConnected_;

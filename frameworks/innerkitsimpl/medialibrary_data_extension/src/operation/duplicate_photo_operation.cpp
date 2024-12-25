@@ -25,9 +25,16 @@
 
 namespace OHOS {
 namespace Media {
+std::once_flag DuplicatePhotoOperation::onceFlag_;
+
 const std::string ASTERISK = "*";
 
 const std::string SELECT_COLUMNS = "SELECT_COLUMNS";
+
+const std::string IDX_DUPLICATE_ASSETS = "\
+    CREATE INDEX \
+    IF \
+      NOT EXISTS idx_duplicate_assets ON Photos (title, size, orientation)";
 
 const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
     SELECT\
@@ -42,7 +49,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
       FROM\
         Photos \
       WHERE\
-        date_trashed = 0 \
+        sync_status = 0 \
+        AND clean_flag = 0 \
+        AND date_trashed = 0 \
         AND hidden = 0 \
         AND time_pending = 0 \
         AND is_temp = 0 \
@@ -58,7 +67,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
       AND Photos.size = IMG.size \
       AND Photos.orientation = IMG.orientation \
     WHERE\
-      date_trashed = 0 \
+      sync_status = 0 \
+      AND clean_flag = 0 \
+      AND date_trashed = 0 \
       AND hidden = 0 \
       AND time_pending = 0 \
       AND is_temp = 0 \
@@ -74,7 +85,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
       FROM\
         Photos \
       WHERE\
-        date_trashed = 0 \
+        sync_status = 0 \
+        AND clean_flag = 0 \
+        AND date_trashed = 0 \
         AND hidden = 0 \
         AND time_pending = 0 \
         AND is_temp = 0 \
@@ -88,7 +101,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
       ) AS VID ON Photos.title = VID.title \
       AND Photos.size = VID.size \
     WHERE\
-      date_trashed = 0 \
+      sync_status = 0 \
+      AND clean_flag = 0 \
+      AND date_trashed = 0 \
       AND hidden = 0 \
       AND time_pending = 0 \
       AND is_temp = 0 \
@@ -116,7 +131,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT = "\
         FROM\
           Photos \
         WHERE\
-          date_trashed = 0 \
+          sync_status = 0 \
+          AND clean_flag = 0 \
+          AND date_trashed = 0 \
           AND hidden = 0 \
           AND time_pending = 0 \
           AND is_temp = 0 \
@@ -132,7 +149,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT = "\
         AND Photos.size = IMG.size \
         AND Photos.orientation = IMG.orientation \
       WHERE\
-        date_trashed = 0 \
+        sync_status = 0 \
+        AND clean_flag = 0 \
+        AND date_trashed = 0 \
         AND hidden = 0 \
         AND time_pending = 0 \
         AND is_temp = 0 \
@@ -148,7 +167,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT = "\
         FROM\
           Photos \
         WHERE\
-          date_trashed = 0 \
+          sync_status = 0 \
+          AND clean_flag = 0 \
+          AND date_trashed = 0 \
           AND hidden = 0 \
           AND time_pending = 0 \
           AND is_temp = 0 \
@@ -162,7 +183,9 @@ const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT = "\
         ) AS VID ON Photos.title = VID.title \
         AND Photos.size = VID.size \
       WHERE\
-        date_trashed = 0 \
+        sync_status = 0 \
+        AND clean_flag = 0 \
+        AND date_trashed = 0 \
         AND hidden = 0 \
         AND time_pending = 0 \
         AND is_temp = 0 \
@@ -202,7 +225,9 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS = "\
         Photos\
         LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
       WHERE\
-        date_trashed = 0 \
+        sync_status = 0 \
+        AND clean_flag = 0 \
+        AND date_trashed = 0 \
         AND hidden = 0 \
         AND time_pending = 0 \
         AND is_temp = 0 \
@@ -242,7 +267,9 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS = "\
         Photos\
         LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
       WHERE\
-        date_trashed = 0 \
+        sync_status = 0 \
+        AND clean_flag = 0 \
+        AND date_trashed = 0 \
         AND hidden = 0 \
         AND time_pending = 0 \
         AND is_temp = 0 \
@@ -294,7 +321,9 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT = "\
           Photos\
           LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
         WHERE\
-          date_trashed = 0 \
+          sync_status = 0 \
+          AND clean_flag = 0 \
+          AND date_trashed = 0 \
           AND hidden = 0 \
           AND time_pending = 0 \
           AND is_temp = 0 \
@@ -334,7 +363,9 @@ const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT = "\
           Photos\
           LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
         WHERE\
-          date_trashed = 0 \
+          sync_status = 0 \
+          AND clean_flag = 0 \
+          AND date_trashed = 0 \
           AND hidden = 0 \
           AND time_pending = 0 \
           AND is_temp = 0 \
@@ -376,6 +407,7 @@ std::shared_ptr<NativeRdb::ResultSet> DuplicatePhotoOperation::GetAllDuplicateAs
     MediaLibraryTracer tracer;
     if (find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT) != columns.end()) {
         tracer.Start("QueryAllDuplicateAssets_count");
+        std::call_once(onceFlag_, [&]() { rdbStore->ExecuteSql(IDX_DUPLICATE_ASSETS); });
         return rdbStore->QueryByStep(SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT);
     }
 

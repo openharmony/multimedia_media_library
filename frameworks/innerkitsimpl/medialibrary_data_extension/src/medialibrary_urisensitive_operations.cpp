@@ -83,7 +83,8 @@ static void DeleteAllSensitiveOperation(AsyncTaskData *data)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("UriSensitive update operation, rdbStore is null.");
+        MEDIA_ERR_LOG("UriSensitive delete operation fail, rdbStore is null.");
+        return;
     }
     
     int32_t ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::DROP_APP_URI_SENSITIVE_TABLE);

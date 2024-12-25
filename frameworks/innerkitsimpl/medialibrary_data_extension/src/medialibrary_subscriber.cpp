@@ -71,6 +71,7 @@
 #endif
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
+#include "photo_other_album_trans_operation.h"
 
 using namespace OHOS::AAFwk;
 
@@ -88,7 +89,7 @@ const int32_t WIFI_STATE_CONNECTED = 4;
 const int32_t DELAY_TASK_TIME = 30000;
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
 const int32_t MegaByte = 1024*1024;
-const int32_t MAX_FILE_SIZE_MB = 200;
+const int32_t MAX_FILE_SIZE_MB = 10240;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
 
@@ -97,6 +98,7 @@ const int32_t NET_CONN_STATE_CONNECTED = 3;
 // The net bearer type is in net_all_capabilities.h
 const int32_t BEARER_CELLULAR = 0;
 bool MedialibrarySubscriber::isCellularNetConnected_ = false;
+bool MedialibrarySubscriber::isWifiConnected_ = false;
 
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
@@ -189,7 +191,8 @@ static void UploadDBFile()
     }
     totalFileSize /= MegaByte; // Convert bytes to MB
     if (totalFileSize > MAX_FILE_SIZE_MB) {
-        MEDIA_WARN_LOG("DB file over 200MB are not uploaded, totalFileSize is %{public}ld MB", (long)(totalFileSize));
+        MEDIA_WARN_LOG("DB file over 10GB are not uploaded, totalFileSize is %{public}ld MB",
+            static_cast<long>(totalFileSize));
         return ;
     }
     if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateDirectory(destPath)) {
@@ -201,7 +204,7 @@ static void UploadDBFile()
         MEDIA_ERR_LOG("dataManager is nullptr");
         return;
     }
-    dataManager->UploadDBFileInner();
+    dataManager->UploadDBFileInner(totalFileSize);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("Handle %{public}ld MB DBFile success, cost %{public}ld ms", (long)(totalFileSize),
         (long)(end - begin));
@@ -319,9 +322,14 @@ void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadStatus(const AAFwk::Wa
     }
 }
 
-bool MedialibrarySubscriber::GetIsCellularNetConnected()
+bool MedialibrarySubscriber::IsCellularNetConnected()
 {
     return isCellularNetConnected_;
+}
+
+bool MedialibrarySubscriber::IsWifiConnected()
+{
+    return isWifiConnected_;
 }
 
 void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadTaskStatus()
@@ -423,11 +431,6 @@ void MedialibrarySubscriber::DoThumbnailOperation()
 {
     auto dataManager = MediaLibraryDataManager::GetInstance();
     if (dataManager == nullptr) {
-        return;
-    }
-    
-    if (isWifiConnected_ && dataManager->CheckCloudThumbnailDownloadFinish() != E_OK) {
-        MEDIA_INFO_LOG("CheckCloudThumbnailDownloadFinish failed");
         return;
     }
 
@@ -580,9 +583,8 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DoUpdateDateTakenWhenZero faild");
     }
-
     RecoverBackgroundDownloadCloudMediaAsset();
-
+    CloudMediaAssetManager::GetInstance().StartDeleteCloudMediaAssets();
     // compat old-version moving photo
     MovingPhotoProcessor::StartProcess();
 
@@ -616,6 +618,8 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
     PauseBackgroundDownloadCloudMedia();
     PhotoAlbumLPathOperation::GetInstance().Stop();
+    PhotoOtherAlbumTransOperation::GetInstance().Stop();
+    CloudMediaAssetManager::GetInstance().StopDeleteCloudMediaAssets();
 }
 
 #ifdef MEDIALIBRARY_MTP_ENABLE

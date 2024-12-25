@@ -39,10 +39,8 @@ std::string PhotoAlbumClone::ToString(const std::vector<NativeRdb::ValueObject> 
 int32_t PhotoAlbumClone::GetPhotoAlbumCountInOriginalDb()
 {
     std::string querySql = this->SQL_PHOTO_ALBUM_COUNT_FOR_CLONE;
-    if (this->mediaLibraryOriginalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryOriginalRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
+        "Media_Restore: mediaLibraryOriginalRdb_ is null.");
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to query album! querySql = %{public}s", querySql.c_str());
@@ -58,10 +56,8 @@ std::shared_ptr<NativeRdb::ResultSet> PhotoAlbumClone::GetPhotoAlbumInOriginalDb
 {
     std::string querySql = this->SQL_PHOTO_ALBUM_SELECT_FOR_CLONE;
     std::vector<NativeRdb::ValueObject> bindArgs = {offset, pageSize};
-    if (this->mediaLibraryOriginalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryOriginalRdb_ is null.");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, nullptr,
+        "Media_Restore: mediaLibraryOriginalRdb_ is null.");
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql, bindArgs);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to query album! querySql = %{public}s, bindArgs = %{public}s",

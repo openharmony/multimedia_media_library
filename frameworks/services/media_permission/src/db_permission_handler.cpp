@@ -34,7 +34,7 @@ using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media {
-static set<int> readPermSet{0, 1, 3, 4};
+static set<int> readPermSet{0, 1, 2, 3, 4};
 
 static set<int> writePermSet{2, 3, 4};
 static string UFM_PHOTO_PREFIX = "datashare:///media/userfilemgr_photo_operation";

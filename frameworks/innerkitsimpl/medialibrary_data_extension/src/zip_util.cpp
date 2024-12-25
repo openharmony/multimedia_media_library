@@ -28,6 +28,7 @@ constexpr int READ_MORE_LENGTH = 100 * 1024;
 constexpr int ERROR_MEMSET_STRUCT = 1001;
 constexpr int ERROR_GET_HANDLE = 1002;
 };
+const int32_t ZIP64 = 1;
 
 zipFile ZipUtil::CreateZipFile(const std::string& zipPath, int32_t zipMode)
 {
@@ -54,8 +55,8 @@ int ZipUtil::AddFileInZip(
         return ERROR_GET_HANDLE;
     }
     std::string srcFileName = GetDestFilePath(srcFile, destFileName, keepParentPathStatus);
-    zipOpenNewFileInZip(
-        zipfile, srcFileName.c_str(), &zipInfo, nullptr, 0, nullptr, 0, nullptr, Z_DEFLATED, Z_DEFAULT_COMPRESSION);
+    zipOpenNewFileInZip64(zipfile, srcFileName.c_str(), &zipInfo, nullptr, 0, nullptr, 0, nullptr,
+        Z_DEFLATED, Z_DEFAULT_COMPRESSION, ZIP64);
 
     int errcode = 0;
     char buf[READ_MORE_LENGTH] = {0};

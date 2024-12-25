@@ -422,8 +422,6 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_014, TestSize.L
     MediaLibraryAlbumFusionUtils::SetParameterToStopSync();
     MediaLibraryAlbumFusionUtils::SetParameterToStartSync();
     MediaLibraryAlbumFusionUtils::GetAlbumFuseUpgradeStatus();
-    MediaLibraryAlbumFusionUtils::TransOtherAlbumData(upgradeStore);
-    MediaLibraryAlbumFusionUtils::TransOtherAlbumData(rdbStorePtr);
     MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(NUM_INVALID);
     MediaLibraryAlbumFusionUtils::SetAlbumFuseUpgradeStatus(NUM_ONE);
     MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(upgradeStore);
