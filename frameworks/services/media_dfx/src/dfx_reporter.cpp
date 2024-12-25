@@ -225,17 +225,18 @@ void DfxReporter::ReportThumbnailGeneration(const ThumbnailData::GenerateStats &
     }
 }
 
-void DfxReporter::ReportPhotoInfo(int32_t localImageCount, int32_t localVideoCount, int32_t cloudImageCount,
-    int32_t cloudVideoCount)
+void DfxReporter::ReportPhotoInfo(const PhotoStatistics& stats)
 {
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
         "MEDIALIB_PHOTO_INFO",
         HiviewDFX::HiSysEvent::EventType::STATISTIC,
-        "LOCAL_IMAGE_COUNT", localImageCount,
-        "LOCAL_VIDEO_COUNT", localVideoCount,
-        "CLOUD_IMAGE_COUNT", cloudImageCount,
-        "CLOUD_VIDEO_COUNT", cloudVideoCount);
+        "LOCAL_IMAGE_COUNT", stats.localImageCount,
+        "LOCAL_VIDEO_COUNT", stats.localVideoCount,
+        "CLOUD_IMAGE_COUNT", stats.cloudImageCount,
+        "CLOUD_VIDEO_COUNT", stats.cloudVideoCount,
+        "SHARED_IMAGE_COUNT", stats.sharedImageCount,
+        "SHARED_VIDEO_COUNT", stats.sharedVideoCount);
     if (ret != 0) {
         MEDIA_ERR_LOG("ReportPhotoInfo error:%{public}d", ret);
     }

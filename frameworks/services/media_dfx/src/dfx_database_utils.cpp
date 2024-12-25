@@ -31,22 +31,22 @@ namespace Media {
 const std::string RECORD_COUNT = "recordCount";
 const std::string ABNORMAL_VALUE = "-1";
 
-int32_t DfxDatabaseUtils::QueryFromPhotos(int32_t mediaType, bool isLocal)
+int32_t DfxDatabaseUtils::QueryFromPhotos(int32_t mediaType, int32_t position)
 {
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, mediaType);
-    if (isLocal) {
-        predicates.IsNull(PhotoColumn::PHOTO_CLOUD_ID);
-    } else {
-        predicates.IsNotNull(PhotoColumn::PHOTO_CLOUD_ID);
-    }
+    predicates.EqualTo(PhotoColumn::PHOTO_POSITION, position);
+
     std::vector<std::string> columns = { "count(1) AS count" };
     std::string queryColumn = "count";
+
     int32_t count;
     int32_t errCode = QueryInt(predicates, columns, queryColumn, count);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("query local image fail: %{public}d", errCode);
+        MEDIA_ERR_LOG("query photos fail: %{public}d mediaType: %{public}d position: %{public}d",
+            errCode, mediaType, position);
     }
+
     return count;
 }
 
