@@ -38,6 +38,11 @@ namespace Media {
 shared_ptr<DfxManager> DfxManager::dfxManagerInstance_{nullptr};
 mutex DfxManager::instanceLock_;
 
+struct QueryParams {
+    MediaType mediaType;
+    PhotoPositionType positionType;
+};
+
 shared_ptr<DfxManager> DfxManager::GetInstance()
 {
     lock_guard<mutex> lockGuard(instanceLock_);
@@ -193,15 +198,40 @@ void DfxManager::HandleDeleteBehavior(int32_t type, int32_t size, std::vector<st
     dfxWorker_->AddTask(deleteBehaviorTask);
 }
 
-static void HandlePhotoInfo(std::shared_ptr<DfxReporter> &dfxReporter)
+static void HandlePhotoInfo(std::shared_ptr<DfxReporter>& dfxReporter)
 {
-    int32_t localImageCount = DfxDatabaseUtils::QueryFromPhotos(MediaType::MEDIA_TYPE_IMAGE, true);
-    int32_t localVideoCount = DfxDatabaseUtils::QueryFromPhotos(MediaType::MEDIA_TYPE_VIDEO, true);
-    int32_t cloudImageCount = DfxDatabaseUtils::QueryFromPhotos(MediaType::MEDIA_TYPE_IMAGE, false);
-    int32_t cloudVideoCount = DfxDatabaseUtils::QueryFromPhotos(MediaType::MEDIA_TYPE_VIDEO, false);
-    MEDIA_INFO_LOG("localImageCount: %{public}d, localVideoCount: %{public}d, cloudImageCount: %{public}d, \
-        cloudVideoCount: %{public}d", localImageCount, localVideoCount, cloudImageCount, cloudVideoCount);
-    dfxReporter->ReportPhotoInfo(localImageCount, localVideoCount, cloudImageCount, cloudVideoCount);
+    const std::vector<QueryParams> queryParamsList = {
+        {MediaType::MEDIA_TYPE_IMAGE, PhotoPositionType::LOCAL},
+        {MediaType::MEDIA_TYPE_VIDEO, PhotoPositionType::LOCAL},
+        {MediaType::MEDIA_TYPE_IMAGE, PhotoPositionType::CLOUD},
+        {MediaType::MEDIA_TYPE_VIDEO, PhotoPositionType::CLOUD},
+        {MediaType::MEDIA_TYPE_IMAGE, PhotoPositionType::LOCAL_AND_CLOUD},
+        {MediaType::MEDIA_TYPE_VIDEO, PhotoPositionType::LOCAL_AND_CLOUD}
+    };
+
+    PhotoStatistics stats = {};
+    int32_t* countPtrs[] = {
+        &stats.localImageCount,
+        &stats.localVideoCount,
+        &stats.cloudImageCount,
+        &stats.cloudVideoCount,
+        &stats.sharedImageCount,
+        &stats.sharedVideoCount
+    };
+
+    for (size_t i = 0; i < queryParamsList.size(); i++) {
+        const auto& params = queryParamsList[i];
+        *countPtrs[i] = DfxDatabaseUtils::QueryFromPhotos(params.mediaType, static_cast<int32_t>(params.positionType));
+    }
+
+    MEDIA_INFO_LOG("localImageCount: %{public}d, localVideoCount: %{public}d, "
+                   "cloudImageCount: %{public}d, cloudVideoCount: %{public}d, "
+                   "sharedImageCount: %{public}d, sharedVideoCount: %{public}d",
+                   stats.localImageCount, stats.localVideoCount,
+                   stats.cloudImageCount, stats.cloudVideoCount,
+                   stats.sharedImageCount, stats.sharedVideoCount);
+
+    dfxReporter->ReportPhotoInfo(stats);
 }
 
 static void HandleAlbumInfoBySubtype(std::shared_ptr<DfxReporter> &dfxReporter, int32_t albumSubType)
