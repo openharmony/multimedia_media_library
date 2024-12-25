@@ -6151,8 +6151,9 @@ static std::string GetLabelAnalysisProgress()
     };
     vector<string> columns = {
         "COUNT(*) AS totalCount",
-        "SUM(CASE WHEN (aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 AND"
-            " saliency != 0 AND segmentation != 0 AND head != 0) THEN 1 ELSE 0 END) AS finishedCount",
+        "SUM(CASE WHEN ((aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 "
+            "AND saliency != 0 AND segmentation != 0 AND head != 0 AND Photos.media_type = 1) OR "
+            "(label != 0 AND face != 0 AND Photos.media_type = 2)) THEN 1 ELSE 0 END) AS finishedCount",
         "SUM(CASE WHEN label != 0 THEN 1 ELSE 0 END) AS LabelCount"
     };
     nlohmann::json jsonObj;
@@ -6168,8 +6169,9 @@ static std::string GetFaceAnalysisProgress()
     };
     vector<string> columns = {
         "COUNT(*) AS totalCount",
-        "SUM(CASE WHEN (aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 AND"
-            " saliency != 0 AND segmentation != 0 AND head != 0) THEN 1 ELSE 0 END) AS finishedCount",
+        "SUM(CASE WHEN ((aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 "
+            "AND saliency != 0 AND segmentation != 0 AND head != 0 AND Photos.media_type = 1) OR "
+            "(label != 0 AND face != 0 AND Photos.media_type = 2)) THEN 1 ELSE 0 END) AS finishedCount",
         "SUM(CASE WHEN face = 3 THEN 1 ELSE 0 END) AS PortraitCoverCount",
         "SUM(CASE WHEN face > 0 THEN 1 ELSE 0 END) AS PortraitCount"
     };
@@ -6186,8 +6188,9 @@ static std::string GetGeoAnalysisProgress()
     };
     vector<string> columns = {
         "COUNT(*) AS totalCount",
-        "SUM(CASE WHEN (aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 AND"
-            " saliency != 0 AND segmentation != 0 AND head != 0) THEN 1 ELSE 0 END) AS finishedCount",
+        "SUM(CASE WHEN ((aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 "
+            "AND saliency != 0 AND segmentation != 0 AND head != 0 AND Photos.media_type = 1) OR "
+            "(label != 0 AND face != 0 AND Photos.media_type = 2)) THEN 1 ELSE 0 END) AS finishedCount"
     };
     nlohmann::json jsonObj;
     GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
