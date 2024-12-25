@@ -1922,6 +1922,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_013, Test
     MediaLibraryCommand cmd(uri);
     int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
     EXPECT_EQ(changedRows, 1);
+
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, "1");
+    MediaLibraryCommand cmd2(uri);
+    changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd2, values2, predicates);
+    EXPECT_LT(changedRows, 0);
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_013");
 }
  
