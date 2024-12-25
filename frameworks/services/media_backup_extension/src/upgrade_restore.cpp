@@ -333,6 +333,7 @@ void UpgradeRestore::RestorePhoto()
         // restore Photos
         RestoreFromGallery();
     } else {
+        maxId_ = 0;
         SetErrorCode(RestoreError::GALLERY_DATABASE_CORRUPTION);
         ErrorInfo errorInfo(RestoreError::GALLERY_DATABASE_CORRUPTION, 0, "", dbIntegrityCheck);
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
@@ -445,6 +446,7 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
     MEDIA_INFO_LOG("start restore from %{public}s", (isCamera ? "camera" : "others"));
     int32_t maxId = BackupDatabaseUtils::QueryInt(galleryRdb_, isCamera ?
         QUERY_MAX_ID_CAMERA_SCREENSHOT : QUERY_MAX_ID_OTHERS, CUSTOM_MAX_ID);
+    maxId = (maxId_ == -1) ? maxId : maxId_;
     int32_t type = isCamera ? SourceType::EXTERNAL_CAMERA : SourceType::EXTERNAL_OTHERS;
     int32_t totalNumber = QueryNotSyncTotalNumber(maxId, isCamera);
     MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
