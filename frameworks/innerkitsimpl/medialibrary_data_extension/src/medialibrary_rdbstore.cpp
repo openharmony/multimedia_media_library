@@ -409,6 +409,18 @@ void MediaLibraryRdbStore::AddReadyCountIndex(const shared_ptr<MediaLibraryRdbSt
     MEDIA_INFO_LOG("end add ready count index");
 }
 
+void MediaLibraryRdbStore::FixDateAddedIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start fix date added index");
+    const vector<string> sqls = {
+        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::INDEX_SCHPT_ADDTIME_ALBUM,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end fix date added index");
+}
+
 int32_t MediaLibraryRdbStore::Init()
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
@@ -857,6 +869,35 @@ void MediaLibraryRdbStore::BuildQuerySql(const AbsRdbPredicates &predicates, con
     }
 }
 
+shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::StepQueryWithoutCheck(const AbsRdbPredicates &predicates,
+    const vector<string> &columns)
+{
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        VariantMap map = { { KEY_ERR_FILE, __FILE__ },
+            { KEY_ERR_LINE, __LINE__ },
+            { KEY_ERR_CODE, E_HAS_DB_ERROR },
+            { KEY_OPT_TYPE, OptType::QUERY } };
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return nullptr;
+    }
+
+    MediaLibraryRdbUtils::AddQueryFilter(const_cast<AbsRdbPredicates &>(predicates));
+    DfxTimer dfxTimer(RDB_QUERY, INVALID_DFX, RDB_TIME_OUT, false);
+    MediaLibraryTracer tracer;
+    tracer.Start("StepQueryWithoutCheck");
+    MEDIA_DEBUG_LOG("Predicates Statement is %{public}s", predicates.GetStatement().c_str());
+    auto resultSet = MediaLibraryRdbStore::GetRaw()->QueryByStep(predicates, columns, false);
+    if (resultSet == nullptr) {
+        VariantMap map = { { KEY_ERR_FILE, __FILE__ },
+            { KEY_ERR_LINE, __LINE__ },
+            { KEY_ERR_CODE, E_HAS_DB_ERROR },
+            { KEY_OPT_TYPE, OptType::QUERY } };
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+    }
+    return resultSet;
+}
+
 /**
  * Returns last insert row id. If insert succeed but no new rows inserted, then return -1.
  * Return E_HAS_DB_ERROR on error cases.
@@ -891,22 +932,6 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
     }
     CloudSyncHelper::GetInstance()->StartSync();
     return deletedRows;
-}
-
-int32_t MediaLibraryRdbStore::CompletelyDeleteDBData(int32_t &deletedRows,
-    const NativeRdb::AbsRdbPredicates &predicates)
-{
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return E_HAS_DB_ERROR;
-    }
-    int32_t ret = rdbStore_->Delete(deletedRows, predicates);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to execute delete, ret: %{public}d", ret);
-        MediaLibraryRestore::GetInstance().CheckRestore(ret);
-        return E_HAS_DB_ERROR;
-    }
-    return ret;
 }
 
 /**
@@ -1409,6 +1434,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTO_TABLE,
     PhotoColumn::CREATE_CLOUD_ID_INDEX,
     PhotoColumn::INDEX_SCTHP_ADDTIME,
+    PhotoColumn::INDEX_SCHPT_ADDTIME_ALBUM,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::INDEX_SCHPT_READY,
     PhotoColumn::CREATE_YEAR_INDEX,
@@ -3832,7 +3858,7 @@ static void AddPortraitCoverSelectionColumn(RdbStore &store)
 static void UpdatePortraitCoverSelectionColumns(RdbStore &store)
 {
     MEDIA_INFO_LOG("Start update portrait cover selection columns");
- 
+
     const vector<string> sqls = {
         "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + BEAUTY_BOUNDER_VERSION + " TEXT default '' ",
         "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + IS_EXCLUDED + " INT default 0 ",
@@ -4022,7 +4048,7 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
         AddThumbnailReadyColumnsFix(store);
     }
 
-    if (oldVersion < VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER) {
+    if (oldVersion < VERSION_UPDATE_NEW_SOURCE_PHOTO_ALBUM_TRIGGER) {
         UpdateSourcePhotoAlbumTrigger(store);
     }
 }
@@ -4189,7 +4215,7 @@ static void UpgradeExtensionPart1(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_UPDATE_PORTRAIT_COVER_SELECTION_COLUMNS) {
         UpdatePortraitCoverSelectionColumns(store);
     }
-    
+
     if (oldVersion < VERSION_ADD_APP_URI_PERMISSION_INFO) {
         AddAppUriPermissionInfo(store);
     }

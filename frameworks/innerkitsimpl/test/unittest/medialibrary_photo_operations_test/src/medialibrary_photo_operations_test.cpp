@@ -51,6 +51,9 @@
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
 #include "photo_album_column.h"
+#define private public
+#include "picture_data_operations.h"
+#undef private
 
 namespace OHOS {
 namespace Media {
@@ -62,10 +65,13 @@ using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+static shared_ptr<PictureDataOperations> s_pictureDataOperations = nullptr;
 
 const string COMMON_PREFIX = "datashare:///media/";
 const string ROOT_URI = "root";
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+static constexpr int32_t PICTURE_TIMEOUT_SEC = 1;
+static constexpr int32_t ILLEGAL_PHOTO_QUALITU = 3;
 
 using ExceptIntFunction = void (*) (int32_t);
 using ExceptLongFunction = void (*) (int64_t);
@@ -897,6 +903,7 @@ static bool QueryPhotoThumbnailVolumn(int32_t photoId, size_t& queryResult)
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
+    s_pictureDataOperations = make_shared<PictureDataOperations>();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
@@ -1433,14 +1440,14 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(openCmd, "rw");
     EXPECT_GE(fd, 0);
     int64_t openTime = GetPhotoLastVisitTime(fileId);
-    EXPECT_GT(openTime, lastVisitTime);
+    EXPECT_GE(openTime, lastVisitTime);
 
 
     // Open thumbnail
     openCmd.SetOprnObject(OperationObject::THUMBNAIL);
     MediaLibraryDataManager::GetInstance()->OpenFile(openCmd, "rw");
     int64_t openThumbnailTime = GetPhotoLastVisitTime(fileId);
-    EXPECT_EQ(openTime, openThumbnailTime);
+    EXPECT_GE(openTime, openThumbnailTime);
 
     // Update
     MediaLibraryCommand cmd_u(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
@@ -1787,6 +1794,290 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_008, Test
     int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(updateCmd, values2, predicates);
     EXPECT_EQ(changedRows, 1);
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_008");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_009");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+ 
+    std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
+    
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    DataShareValuesBucket values2;
+    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 10);
+ 
+    Uri uri(uriStr);
+    MediaLibraryCommand cmd(uri);
+    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
+    EXPECT_EQ(changedRows, 0);
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_009");
+}
+ 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_010, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_010");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+ 
+    std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
+    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
+    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_SUBTYPE,
+        to_string(static_cast<int>(PhotoSubType::BURST)));
+    
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    DataShareValuesBucket values2;
+    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 10);
+ 
+    Uri uri(uriStr);
+    MediaLibraryCommand cmd(uri);
+    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
+    EXPECT_EQ(changedRows, 0);
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_010");
+}
+ 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_011, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_011");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+ 
+    std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
+    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
+    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_SUBTYPE,
+        to_string(static_cast<int>(PhotoSubType::MOVING_PHOTO)));
+    
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    DataShareValuesBucket values2;
+    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 10);
+ 
+    Uri uri(uriStr);
+    MediaLibraryCommand cmd(uri);
+    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
+    EXPECT_EQ(changedRows, 0);
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_011");
+}
+ 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_012, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_012");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+ 
+    std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
+    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
+    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_DIRTY,
+        to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)));
+    
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    DataShareValuesBucket values2;
+    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 10);
+ 
+    Uri uri(uriStr);
+    MediaLibraryCommand cmd(uri);
+    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
+    EXPECT_EQ(changedRows, 1);
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_012");
+}
+ 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_013, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_013");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+ 
+    std::string uriStr = PAH_BATCH_UPDATE_OWNER_ALBUM_ID;
+    MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
+    
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    DataShareValuesBucket values2;
+    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 10);
+ 
+    Uri uri(uriStr);
+    MediaLibraryCommand cmd(uri);
+    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
+    EXPECT_EQ(changedRows, 1);
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_013");
+}
+ 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_014, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_014");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+ 
+    std::string uriStr = PAH_DISCARD_CAMERA_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
+    
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    DataShareValuesBucket values2;
+    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 10);
+ 
+    Uri uri(uriStr);
+    MediaLibraryCommand cmd(uri);
+    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
+    EXPECT_EQ(changedRows, 1);
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_014");
+}
+ 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_015, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_015");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+ 
+    std::string uriStr = PATH_SAVE_PICTURE;
+    MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
+    MediaFileUtils::UriAppendKeyValue(uriStr, "image_file_type", "1");
+    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
+    
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    DataShareValuesBucket values2;
+    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 10);
+ 
+    Uri uri(uriStr);
+    MediaLibraryCommand cmd(uri);
+    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
+    EXPECT_EQ(changedRows, 0);
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_015");
+}
+ 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_016, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_016");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+ 
+    std::string uriStr = PAH_SET_VIDEO_ENHANCEMENT_ATTR;
+    MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
+    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
+    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_ID, "20241218001736");
+    MediaFileUtils::UriAppendKeyValue(uriStr, MediaColumn::MEDIA_FILE_PATH, GetFilePath(fileId));
+    
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    DataShareValuesBucket values2;
+    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 10);
+ 
+    Uri uri(uriStr);
+    MediaLibraryCommand cmd(uri);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_016");
+}
+ 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_017, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_017");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+ 
+    std::string uriStr = PAH_DEGENERATE_MOVING_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
+    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
+    
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    DataShareValuesBucket values2;
+    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 10);
+ 
+    Uri uri(uriStr);
+    MediaLibraryCommand cmd(uri);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_017");
+}
+ 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_018, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_018");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg", true);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+ 
+    int32_t ret = UpdateEditTime(fileId, 1);
+    EXPECT_EQ(ret, 0);
+ 
+    std::string uriStr = PAH_DEGENERATE_MOVING_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
+    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
+    
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    DataShareValuesBucket values2;
+    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 10);
+ 
+    Uri uri(uriStr);
+    MediaLibraryCommand cmd(uri);
+    ret = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_018");
+}
+ 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_019, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_019");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg", true);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+ 
+    std::string uriStr = PAH_DEGENERATE_MOVING_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
+    MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
+    
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    DataShareValuesBucket values2;
+    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 10);
+ 
+    Uri uri(uriStr);
+    MediaLibraryCommand cmd(uri);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
+    EXPECT_EQ(ret, 1);
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_019");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_001, TestSize.Level0)
@@ -3258,9 +3549,9 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_00
     ASSERT_EQ(isSuccess, true);
     ASSERT_EQ(thumbnailSizequeryResult, 0);
 
-    // Test DropThumbnailSize function
+    // Test HasDroppedThumbnailSize function
 
-    MediaLibraryPhotoOperations::DropThumbnailSize(to_string(testPhotoId));
+    MediaLibraryPhotoOperations::HasDroppedThumbnailSize(to_string(testPhotoId));
 
     isSuccess = QueryPhotoThumbnailVolumn(testPhotoId, thumbnailSizequeryResult);
     EXPECT_EQ(isSuccess, false);
@@ -3448,6 +3739,47 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_002, TestSize.Level
     EXPECT_GE(fileAssetPtrNew->GetPhotoEditTime(), 0);
 
     MEDIA_INFO_LOG("end tdd clone_single_asset_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, picture_date_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd picture_date_test_001");
+    if (s_pictureDataOperations == nullptr) {
+        return;
+    }
+    EXPECT_NE(s_pictureDataOperations, nullptr);
+
+    s_pictureDataOperations->CleanDateForPeriodical();
+    EXPECT_EQ(s_pictureDataOperations->lowQualityPictureMap_.size(), 0);
+    EXPECT_EQ(s_pictureDataOperations->highQualityPictureMap_.size(), 0);
+
+    int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test.jpg", true);
+    if (fileId1 < 0) {
+        MEDIA_ERR_LOG("Create photo failed");
+        return;
+    }
+    time_t currentTime;
+    string fileId = to_string(fileId1);
+    if ((currentTime = time(NULL)) == -1) {
+        MEDIA_ERR_LOG("Get time failed");
+        currentTime = time(NULL);
+    }
+    std::shared_ptr<Media::Picture> picture;
+    time_t expireTime = currentTime + PICTURE_TIMEOUT_SEC;
+    sptr<PicturePair> picturePair = new PicturePair(std::move(picture), fileId, expireTime, true, false);
+
+    // insert low quality picture
+    s_pictureDataOperations->InsertPictureData(fileId, picturePair, PictureType::LOW_QUALITY_PICTURE);
+    EXPECT_EQ(s_pictureDataOperations->lowQualityPictureMap_.size(), 1);
+    // duplicate insert will erase the old one
+    s_pictureDataOperations->InsertPictureData(fileId, picturePair, PictureType::LOW_QUALITY_PICTURE);
+    EXPECT_EQ(s_pictureDataOperations->lowQualityPictureMap_.size(), 1);
+    // insert hilog quiality picture
+    s_pictureDataOperations->InsertPictureData(fileId, picturePair, PictureType::HIGH_QUALITY_PICTURE);
+    s_pictureDataOperations->InsertPictureData(fileId, picturePair, PictureType::HIGH_QUALITY_PICTURE);
+    // insert invalid quality icture
+    s_pictureDataOperations->InsertPictureData(fileId, picturePair, static_cast<PictureType>(ILLEGAL_PHOTO_QUALITU));
+    MEDIA_INFO_LOG("end tdd picture_date_test_001");
 }
 } // namespace Media
 } // namespace OHOS

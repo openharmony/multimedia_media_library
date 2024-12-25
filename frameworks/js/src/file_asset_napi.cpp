@@ -1550,15 +1550,15 @@ static bool CheckFileOpenStatus(FileAssetAsyncContext *context, int fd)
     auto fileAssetPtr = context->objectPtr;
     int ret = fileAssetPtr->GetOpenStatus(fd);
     if (ret < 0) {
+        NAPI_ERR_LOG("get fd openStatus is invalid");
         return false;
-    } else {
-        fileAssetPtr->RemoveOpenStatus(fd);
-        if (ret == OPEN_TYPE_READONLY) {
-            return false;
-        } else {
-            return true;
-        }
     }
+    fileAssetPtr->RemoveOpenStatus(fd);
+    if (ret == OPEN_TYPE_READONLY) {
+        close(fd);
+        return false;
+    }
+    return true;
 }
 
 static void JSCloseExecute(FileAssetAsyncContext *context)
@@ -1591,10 +1591,11 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
         return;
     }
 
-    int32_t uniFd = context->valuesBucket.Get(MEDIA_FILEDESCRIPTOR, isValid);
-    if (!CheckFileOpenStatus(context, uniFd)) {
+    int32_t mediaFd = context->valuesBucket.Get(MEDIA_FILEDESCRIPTOR, isValid);
+    if (!CheckFileOpenStatus(context, mediaFd)) {
         return;
     }
+    UniqueFd uniFd(mediaFd);
 
     string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
@@ -2820,7 +2821,7 @@ static bool GetDateTakenFromResultSet(const shared_ptr<DataShare::DataShareResul
 }
 
 static void UpdateDetailTimeByDateTaken(napi_env env, const shared_ptr<FileAsset> &fileAssetPtr,
-    const string &detailTime)
+    const string &detailTime, int64_t &dateTaken)
 {
     string uri = PAH_UPDATE_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
@@ -2831,9 +2832,12 @@ static void UpdateDetailTimeByDateTaken(napi_env env, const shared_ptr<FileAsset
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ MediaFileUtils::GetIdFromUri(fileAssetPtr->GetUri()) });
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
-    if (changedRows < 0) {
+    if (changedRows <= 0) {
         NAPI_ERR_LOG("Failed to modify detail time, err: %{public}d", changedRows);
         NapiError::ThrowError(env, JS_INNER_FAIL);
+    } else {
+        NAPI_INFO_LOG("success to modify detial time, detailTime: %{public}s, dateTaken: %{public}lld",
+            detailTime.c_str(), dateTaken);
     }
 }
 
@@ -2861,7 +2865,7 @@ static napi_value HandleGettingDetailTimeKey(napi_env env, const shared_ptr<File
             }
             string detailTime = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
             napi_create_string_utf8(env, detailTime.c_str(), NAPI_AUTO_LENGTH, &jsResult);
-            UpdateDetailTimeByDateTaken(env, fileAssetPtr, detailTime);
+            UpdateDetailTimeByDateTaken(env, fileAssetPtr, detailTime, dateTaken);
         } else {
             NapiError::ThrowError(env, JS_INNER_FAIL);
         }
@@ -3299,10 +3303,11 @@ static void UserFileMgrCloseExecute(napi_env env, void *data)
     tracer.Start("UserFileMgrCloseExecute");
 
     auto *context = static_cast<FileAssetAsyncContext*>(data);
-    int32_t unifd = context->fd;
-    if (!CheckFileOpenStatus(context, unifd)) {
+    int32_t mediaFd = context->fd;
+    if (!CheckFileOpenStatus(context, mediaFd)) {
         return;
     }
+    UniqueFd uniFd(mediaFd);
     string closeUri;
     if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
         context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
@@ -3811,10 +3816,11 @@ static void PhotoAccessHelperCloseExecute(napi_env env, void *data)
     tracer.Start("PhotoAccessHelperCloseExecute");
 
     auto *context = static_cast<FileAssetAsyncContext*>(data);
-    int32_t unifd = context->fd;
-    if (!CheckFileOpenStatus(context, unifd)) {
+    int32_t mediaFd = context->fd;
+    if (!CheckFileOpenStatus(context, mediaFd)) {
         return;
     }
+    UniqueFd uniFd(mediaFd);
     string closeUri;
     if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
         context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {

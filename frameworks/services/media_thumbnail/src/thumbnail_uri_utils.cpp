@@ -60,11 +60,15 @@ bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString, string &outF
     }
 
     if (queryKey.count(THUMBNAIL_WIDTH) != 0) {
-        outSize.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+        if (MediaFileUtils::IsValidInteger(queryKey[THUMBNAIL_WIDTH])) {
+            outSize.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+        }
     }
 
     if (queryKey.count(THUMBNAIL_HEIGHT) != 0) {
-        outSize.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+        if (MediaFileUtils::IsValidInteger(queryKey[THUMBNAIL_HEIGHT])) {
+            outSize.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+        }
     }
 
     if (queryKey.count(THUMBNAIL_PATH) != 0) {
@@ -96,11 +100,15 @@ bool ThumbnailUriUtils::ParseKeyFrameThumbnailInfo(const string &uriString, stri
     }
 
     if (queryKey.count(THUMBNAIL_BEGIN_STAMP) != 0) {
-        outBeginStamp = stoi(queryKey[THUMBNAIL_BEGIN_STAMP]);
+        if (MediaFileUtils::IsValidInteger(queryKey[THUMBNAIL_BEGIN_STAMP])) {
+            outBeginStamp = stoi(queryKey[THUMBNAIL_BEGIN_STAMP]);
+        }
     }
 
     if (queryKey.count(THUMBNAIL_TYPE) != 0) {
-        outType = stoi(queryKey[THUMBNAIL_TYPE]);
+        if (MediaFileUtils::IsValidInteger(queryKey[THUMBNAIL_TYPE])) {
+            outType = stoi(queryKey[THUMBNAIL_TYPE]);
+        }
     }
 
     if (queryKey.count(THUMBNAIL_PATH) != 0) {

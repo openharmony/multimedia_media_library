@@ -22,9 +22,9 @@
 #include "mtp_subscriber.h"
 #include "mtp_medialibrary_manager.h"
 #include "os_account_manager.h"
+#include "parameters.h"
 #include "usb_srv_client.h"
 #include "usb_srv_support.h"
-#include "mtp_medialibrary_manager.h"
 
 #include <thread>
 
@@ -34,6 +34,10 @@ namespace {
     static std::mutex mutex_;
     std::shared_ptr<MtpService> mtpServicePtr = nullptr;
     std::atomic<bool> isMtpServiceRunning = false;
+    const std::string KEY_CUST = "const.cust.custPath";
+    const std::string CUST_DEFAULT = "phone";
+    const std::string CUST_TOBBASIC = "tobbasic";
+    const std::string CUST_HWIT = "hwit";
 } // namespace
 
 MtpManager &MtpManager::GetInstance()
@@ -55,6 +59,13 @@ void MtpManager::Init()
 {
     std::thread([]() {
         MEDIA_INFO_LOG("MtpManager Init");
+        // IT管控 PC - tobasic/hwit 不启动MTP服务 start
+        std::string cust = OHOS::system::GetParameter(KEY_CUST, CUST_DEFAULT);
+        if (cust.find(CUST_TOBBASIC) != std::string::npos || cust.find(CUST_HWIT) != std::string::npos) {
+            MEDIA_INFO_LOG("MtpManager Init Return cust = [%{public}s]", cust.c_str());
+            return;
+        }
+        // IT管控 PC - tobasic/hwit 不启动MTP服务 end
         bool result = MtpSubscriber::Subscribe();
         MEDIA_INFO_LOG("MtpManager Subscribe result = %{public}d", result);
 

@@ -88,10 +88,7 @@ void MediaFuseManager::Start()
     int32_t ret = E_OK;
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
 
-    if (fuseDaemon_ != nullptr) {
-        MEDIA_INFO_LOG("Fuse daemon already started");
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(fuseDaemon_ == nullptr, "Fuse daemon already started");
 
     std::string mountpoint;
     ret = MountFuse(mountpoint);
@@ -129,12 +126,10 @@ static int32_t countSubString(const string &uri, const string &substr)
 
 static bool IsFullUri(const string &uri)
 {
-    if ((uri.find("/Photo") == 0) && (countSubString(uri, "/") == URI_SLASH_NUM_API10)) {
-        return true;
-    }
-    if ((uri.find("/image") == 0) && (countSubString(uri, "/") == URI_SLASH_NUM_API9)) {
-        return true;
-    }
+    bool cond = ((uri.find("/Photo") == 0) && (countSubString(uri, "/") == URI_SLASH_NUM_API10));
+    CHECK_AND_RETURN_RET(!cond, true);
+    cond = (uri.find("/image") == 0) && (countSubString(uri, "/") == URI_SLASH_NUM_API9);
+    CHECK_AND_RETURN_RET(!cond, true);
     return false;
 }
 
@@ -144,32 +139,39 @@ static int32_t GetFileIdFromUri(string &fileId, string &fileName, const string &
     int32_t pos;
     int32_t virtualId;
     fileName = "";
+    /* uri = "/Photo/fileid/filename/displayname.jpg" */
     if (uri.find("/Photo") == 0) {
+        /* tmppath = "fileid/filename/displayname.jpg" */
         tmpPath = uri.substr(strlen("/Photo/"));
+        /* get fileid end pos */
         pos = tmpPath.find("/");
+        /* get fileid */
         fileId = tmpPath.substr(0, pos);
+        /* tmppath = "filename/displayname.jpg" */
         tmpPath = tmpPath.substr(pos + 1);
+        /* get fileid name end pos */
         pos = tmpPath.find("/");
+        /* get file name */
         fileName = tmpPath.substr(0, pos);
+        if (fileName.empty()) {
+            return E_ERR;
+        }
+        /* get display name, displayname.jpg */
         string displayName = tmpPath.substr(pos + 1);
+         /* get ext name start pos*/
         pos = displayName.find(".");
+        /* get ext name, .jpg */
         string extName = displayName.substr(pos);
+        /* get real file name, filename.jpg */
         fileName = fileName + extName;
     } else if (uri.find("/image") == 0) {
         tmpPath = uri.substr(strlen("/image/"));
-        if (tmpPath.empty()) {
-            return E_ERR;
-        }
-        if (!all_of(tmpPath.begin(), tmpPath.end(), ::isdigit)) {
-            return E_ERR;
-        }
+        CHECK_AND_RETURN_RET(!tmpPath.empty(), E_ERR);
+        CHECK_AND_RETURN_RET(all_of(tmpPath.begin(), tmpPath.end(), ::isdigit), E_ERR);
         virtualId = stoi(tmpPath.c_str());
-        if ((virtualId + FUSE_PHOTO_VIRTUAL_IDENTIFIER) % FUSE_VIRTUAL_ID_DIVIDER == 0) {
-            fileId = to_string((virtualId + FUSE_PHOTO_VIRTUAL_IDENTIFIER) / FUSE_VIRTUAL_ID_DIVIDER);
-        } else {
-            MEDIA_ERR_LOG("virtual id err");
-            return E_ERR;
-        }
+        bool cond = ((virtualId + FUSE_PHOTO_VIRTUAL_IDENTIFIER) % FUSE_VIRTUAL_ID_DIVIDER == 0);
+        CHECK_AND_RETURN_RET_LOG(cond, E_ERR, "virtual id err");
+        fileId = to_string((virtualId + FUSE_PHOTO_VIRTUAL_IDENTIFIER) / FUSE_VIRTUAL_ID_DIVIDER);
     } else {
         MEDIA_ERR_LOG("uri err");
         return E_ERR;
@@ -194,8 +196,8 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId, const s
         MEDIA_ERR_LOG("Failed to get rslt");
         return E_ERR;
     }
-    resultSet->GetRowCount(numRows);
-    if (numRows == 0) {
+    int32_t ret = resultSet->GetRowCount(numRows);
+    if ((ret != NativeRdb::E_OK) || (numRows <= 0)) {
         MEDIA_ERR_LOG("Failed to get filePath");
         return E_ERR;
     }
@@ -218,24 +220,17 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
     string fileId;
     string fileName;
     string target = path;
-    if (path == nullptr || strlen(path) == 0 || ((target.find("/Photo") != 0) && (target.find("/image") != 0))) {
-        MEDIA_ERR_LOG("Invalid path, %{private}s", path == nullptr ? "null" : path);
-        return E_ERR;
-    }
+    bool cond = (path == nullptr || strlen(path) == 0 ||
+        ((target.find("/Photo") != 0) && (target.find("/image") != 0)));
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Invalid path, %{private}s", path == nullptr ? "null" : path);
     int32_t ret;
     if (IsFullUri(target) == false) {
         ret = lstat(FUSE_ROOT_MEDIA_DIR.c_str(), stbuf);
     } else {
         ret = GetFileIdFromUri(fileId, fileName, path);
-        if (ret != E_SUCCESS) {
-            MEDIA_ERR_LOG("get attr fileid fail");
-            return E_ERR;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "get attr fileid fail");
         ret = GetPathFromFileId(target, fileId, fileName);
-        if (ret != E_SUCCESS) {
-            MEDIA_ERR_LOG("get attr path fail");
-            return E_ERR;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "get attr path fail");
         ret = lstat(target.c_str(), stbuf);
     }
     stbuf->st_mode = stbuf->st_mode | 0x6;
@@ -275,29 +270,18 @@ static int32_t DbCheckPermission(const string &filePath, const string &mode, con
     auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
     int32_t permissionType = 0;
     int32_t numRows = 0;
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to get permission type");
-        return E_PERMISSION_DENIED;
-    }
-    resultSet->GetRowCount(numRows);
-    if (numRows == 0) {
-        MEDIA_ERR_LOG("Failed to get permission type");
-        return E_PERMISSION_DENIED;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_PERMISSION_DENIED, "Failed to get permission type");
+    int32_t ret = resultSet->GetRowCount(numRows);
+    bool cond = ((ret != NativeRdb::E_OK) || (numRows <= 0));
+    CHECK_AND_RETURN_RET_LOG(!cond, E_PERMISSION_DENIED, "Failed to get permission type");
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
         permissionType = MediaLibraryRdbStore::GetInt(resultSet, FIELD_PERMISSION_TYPE);
         MEDIA_INFO_LOG("get permissionType %{public}d", permissionType);
     }
-    if (mode.find("r") != string::npos) {
-        if (readPermSet.count(permissionType) == 0) {
-            return E_PERMISSION_DENIED;
-        }
-    }
-    if (mode.find("w") != string::npos) {
-        if (writePermSet.count(permissionType) == 0) {
-            return E_PERMISSION_DENIED;
-        }
-    }
+    cond = ((mode.find("r") != string::npos) && (readPermSet.count(permissionType) == 0));
+    CHECK_AND_RETURN_RET(!cond, E_PERMISSION_DENIED);
+    cond = ((mode.find("w") != string::npos) && (writePermSet.count(permissionType) == 0));
+    CHECK_AND_RETURN_RET(!cond, E_PERMISSION_DENIED);
     return E_SUCCESS;
 }
 
@@ -385,30 +369,19 @@ int32_t MediaFuseManager::MountFuse(std::string &mountpoint)
 
     // get user id
     ErrCode errCode = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(userId);
-    if (errCode != ERR_OK) {
-        MEDIA_ERR_LOG("Get account fail, ret code %{public}d, result is not credible", errCode);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == ERR_OK, errCode,
+        "Get account fail, ret code %{public}d, result is not credible", errCode);
 
     // mount fuse
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (samgr == nullptr) {
-        MEDIA_ERR_LOG("Get system ability mgr failed.");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(samgr != nullptr, E_FAIL, "Get system ability mgr failed.");
 
     auto remote = samgr->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
-    if (remote == nullptr) {
-        MEDIA_ERR_LOG("GetSystemAbility Service Failed.");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(remote != nullptr, E_FAIL, "GetSystemAbility Service Failed.");
 
     sptr<StorageManager::IStorageManager> proxy_ = iface_cast<StorageManager::IStorageManager>(remote);
     int32_t err = proxy_->MountMediaFuse(userId, devFd);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Mount failed for media fuse daemon, err = %{public}d", err);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Mount failed for media fuse daemon, err = %{public}d", err);
 
     mountpoint = "/dev/fd/" + std::to_string(devFd);
     return E_OK;
@@ -420,20 +393,16 @@ int32_t MediaFuseManager::UMountFuse()
 
     // get user id
     ErrCode errCode = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(userId);
-    if (errCode != ERR_OK) {
-        MEDIA_ERR_LOG("Get account fail, ret code %{public}d, result is not credible", errCode);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == ERR_OK, errCode,
+        "Get account fail, ret code %{public}d, result is not credible", errCode);
 
     // umount fuse
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remote = samgr->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
     sptr<StorageManager::IStorageManager> proxy_ = iface_cast<StorageManager::IStorageManager>(remote);
     int32_t err = proxy_->UMountMediaFuse(userId);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("UMount failed for media fuse daemon, err = %{public}d", err);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err,
+        "UMount failed for media fuse daemon, err = %{public}d", err);
     return E_OK;
 }
 } // namespace Media
