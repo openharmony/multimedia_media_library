@@ -40,7 +40,7 @@ napi_value MediaLibraryCommNapi::CreatePhotoAssetNapi(
     shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
     fileAsset->SetUri(uri);
     string fileId = MediaFileUtils::GetIdFromUri(uri);
-    if (!fileId.empty()) {
+    if (MediaFileUtils::IsValidInteger(fileId)) {
         fileAsset->SetId(stoi(fileId));
     }
 

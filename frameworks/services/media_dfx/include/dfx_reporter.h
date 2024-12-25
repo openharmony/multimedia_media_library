@@ -37,6 +37,15 @@ struct AlbumFusionDfxDataPoint {
     std::string hiddenAssetInfo;
 };
 
+struct PhotoStatistics {
+    int32_t localImageCount;   // 纯本地照片数量
+    int32_t localVideoCount;   // 纯本地视频数量
+    int32_t cloudImageCount;   // 纯云端图片数量
+    int32_t cloudVideoCount;   // 纯云端视频数量
+    int32_t sharedImageCount;  // 端云共存照片数量
+    int32_t sharedVideoCount;  // 端云共存视频数量
+};
+
 class DfxReporter {
 public:
     DfxReporter();
@@ -50,8 +59,7 @@ public:
     void ReportDeleteStatistic();
     void ReportDeleteBehavior(std::string bundleName, int32_t type, std::string path);
     void ReportThumbnailGeneration(const ThumbnailData::GenerateStats &stats);
-    void ReportPhotoInfo(int32_t localImageCount, int32_t localVideoCount, int32_t cloudImageCount,
-        int32_t cloudVideCount);
+    void ReportPhotoInfo(const PhotoStatistics& stats);
     void ReportAlbumInfo(const std::string &albumName, int32_t albumImageCount, int32_t albumVideoCount,
         bool isLocal);
     void ReportDirtyCloudPhoto(const std::string &data, int32_t dirty, int32_t cloudVersion);

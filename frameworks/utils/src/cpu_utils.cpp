@@ -31,20 +31,16 @@ void CpuUtils::SlowDown()
     for (int cpu = CpuAffinityType::CPU_IDX_0; cpu <= CpuAffinityType::CPU_IDX_6; cpu++) {
         CPU_SET(cpu, &cpuSet);
     }
-    if (sched_setaffinity(0, sizeof(cpuSet), &cpuSet) < 0) {
-        MEDIA_ERR_LOG("set thread affinity failed, errno %{public}d", errno);
-    }
+    CHECK_AND_PRINT_LOG(sched_setaffinity(0, sizeof(cpuSet), &cpuSet) >= 0,
+        "set thread affinity failed, errno %{public}d", errno);
 }
 
 void CpuUtils::ResetCpu()
 {
     cpu_set_t cpuSet;
     CPU_ZERO(&cpuSet);
-
-    if (sched_setaffinity(0, sizeof(cpuSet), &cpuSet) < 0) {
-        MEDIA_ERR_LOG("set thread affinity failed, errno %{public}d", errno);
-        return;
-    }
+    CHECK_AND_PRINT_LOG(sched_setaffinity(0, sizeof(cpuSet), &cpuSet) >= 0,
+        "set thread affinity failed, errno %{public}d", errno);
 }
 
 void CpuUtils::SetSelfThreadAffinity(CpuAffinityType cpuAffinityType)
@@ -58,19 +54,16 @@ void CpuUtils::SetSelfThreadAffinity(CpuAffinityType cpuAffinityType)
     for (int cpu = CpuAffinityType::CPU_IDX_0; cpu <= cpuAffinityType; cpu++) {
         CPU_SET(cpu, &cpuSet);
     }
-
-    if (pthread_setaffinity_np(pthread_self(), sizeof(cpuSet), &cpuSet) != 0) {
-        MEDIA_WARN_LOG("Set affinity failed, errno %{public}d, cpuAffinityType:%{public}d", errno, cpuAffinityType);
-    }
+    CHECK_AND_WARN_LOG(pthread_setaffinity_np(pthread_self(), sizeof(cpuSet), &cpuSet) == 0,
+        "Set affinity failed, errno %{public}d, cpuAffinityType:%{public}d", errno, cpuAffinityType);
 }
 
 void CpuUtils::ResetSelfThreadAffinity()
 {
     cpu_set_t cpuSet;
     CPU_ZERO(&cpuSet);
-    if (pthread_setaffinity_np(pthread_self(), sizeof(cpuSet), &cpuSet) != 0) {
-        MEDIA_WARN_LOG("Reset affinity failed, errno %{public}d", errno);
-    }
+    CHECK_AND_WARN_LOG(pthread_setaffinity_np(pthread_self(), sizeof(cpuSet), &cpuSet) == 0,
+        "Reset affinity failed, errno %{public}d", errno);
 }
 } // namespace Media
 } // namespace OHOS

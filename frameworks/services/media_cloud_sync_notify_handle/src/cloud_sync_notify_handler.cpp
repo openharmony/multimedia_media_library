@@ -57,10 +57,7 @@ static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
 
 static void UpdateCloudAssetDownloadTask(const bool verifyFlag)
 {
-    if (!verifyFlag) {
-        MEDIA_INFO_LOG("Current status is not suitable for task.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(verifyFlag, "Current status is not suitable for task.");
     if (!CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate() && CloudSyncUtils::IsCloudSyncSwitchOn() &&
         CloudSyncUtils::IsCloudDataAgingPolicyOn()) {
         CloudMediaAssetManager::GetInstance().StartDownloadCloudAsset(CloudMediaDownloadType::DOWNLOAD_GENTLE);
@@ -96,6 +93,7 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
 
 void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
 {
+    bool verifyFlag = false;
     for (auto &uri : uris) {
         string uriString = uri.ToString();
         auto dateTakenPos = uriString.rfind('/');
@@ -113,9 +111,15 @@ void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
             MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
             continue;
         }
+        if (!verifyFlag) {
+            verifyFlag = true;
+        }
 
         ThumbnailService::GetInstance()->DeleteAstcWithFileIdAndDateTaken(fileId, dateTaken);
-        MediaLibraryPhotoOperations::DropThumbnailSize(fileId);
+        MediaLibraryPhotoOperations::HasDroppedThumbnailSize(fileId);
+    }
+    if (verifyFlag) {
+        CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
     }
 }
 

@@ -22,6 +22,7 @@
 #include "medialibrary_errno.h"
 #include "userfilemgr_uri.h"
 #include "oh_media_asset.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -37,6 +38,67 @@ std::shared_ptr<MediaAssetHelper> MediaAssetHelperFactory::CreateMediaAssetHelpe
 MediaAssetHelperImpl::MediaAssetHelperImpl() {}
 
 MediaAssetHelperImpl::~MediaAssetHelperImpl() {}
+
+static bool CheckUri(const std::string &uri)
+{
+    if (uri.find("..") != std::string::npos) {
+        return false;
+    }
+    std::string uriprex = "file://media";
+    return uri.substr(0, uriprex.size()) == uriprex;
+}
+
+std::shared_ptr<OH_MediaAsset> MediaAssetHelperImpl::GetOhMediaAsset(const std::string &uri)
+{
+    if (!CheckUri(uri)) {
+        MEDIA_ERR_LOG("invalid uri");
+        return nullptr;
+    }
+    if (!UserFileClient::IsValid()) {
+        UserFileClient::Init();
+    }
+    std::string fileId = MediaFileUtils::GetIdFromUri(uri);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    std::vector<std::string> columns = { PhotoColumn::MEDIA_SIZE,        PhotoColumn::MEDIA_DATE_MODIFIED,
+        PhotoColumn::PHOTO_WIDTH,       PhotoColumn::PHOTO_HEIGHT,
+        PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::MEDIA_DATE_ADDED,
+        PhotoColumn::MEDIA_DATE_TAKEN,  PhotoColumn::MEDIA_DURATION,
+        PhotoColumn::MEDIA_IS_FAV,      PhotoColumn::MEDIA_TITLE };
+
+    Uri queryUri(PAH_QUERY_PHOTO);
+    int errCode;
+    auto resultSet = UserFileClient::Query(queryUri, predicates, columns, errCode);
+    if (!TryToGoToFirstRow(resultSet)) {
+        MEDIA_ERR_LOG("try to got to first row failed");
+        return nullptr;
+    }
+
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, nullptr, "create file asset failed");
+
+    fileAsset->SetUri(uri);
+    fileAsset->SetId(stoi(fileId));
+    fileAsset->SetDisplayName(MediaFileUtils::GetFileName(uri));
+    fileAsset->SetSize(GetInt64Val(PhotoColumn::MEDIA_SIZE, resultSet));
+    fileAsset->SetDateModified(GetInt64Val(PhotoColumn::MEDIA_DATE_MODIFIED, resultSet));
+    fileAsset->SetWidth(GetInt32Val(PhotoColumn::PHOTO_WIDTH, resultSet));
+    fileAsset->SetHeight(GetInt32Val(PhotoColumn::PHOTO_HEIGHT, resultSet));
+    fileAsset->SetOrientation(GetInt32Val(PhotoColumn::PHOTO_ORIENTATION, resultSet));
+    fileAsset->SetDateAdded(GetInt64Val(PhotoColumn::MEDIA_DATE_ADDED, resultSet));
+    fileAsset->SetDateTaken(GetInt64Val(PhotoColumn::MEDIA_DATE_TAKEN, resultSet));
+    fileAsset->SetDuration(GetInt32Val(PhotoColumn::MEDIA_DURATION, resultSet));
+    fileAsset->SetFavorite(GetInt32Val(PhotoColumn::MEDIA_IS_FAV, resultSet));
+    fileAsset->SetTitle(GetStringVal(PhotoColumn::MEDIA_TITLE, resultSet));
+
+    auto mediaAsset = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    CHECK_AND_RETURN_RET_LOG(mediaAsset != nullptr, nullptr, "create media asset failed");
+
+    std::shared_ptr<OH_MediaAsset> ohMediaAsset = std::make_shared<OH_MediaAsset>(mediaAsset);
+    CHECK_AND_RETURN_RET_LOG(ohMediaAsset != nullptr, nullptr, "create oh media asset failed");
+
+    return ohMediaAsset;
+}
 
 OH_MediaAsset* MediaAssetHelperImpl::GetMediaAsset(std::string uri, int32_t cameraShotType, std::string burstKey)
 {

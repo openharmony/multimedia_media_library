@@ -16,6 +16,7 @@
 #include "mtp_driver.h"
 #include "media_log.h"
 #include "media_mtp_utils.h"
+#include "medialibrary_tracer.h"
 #include "mtp_operation_utils.h"
 #include "mtp_packet_tools.h"
 #include <fcntl.h>
@@ -58,16 +59,10 @@ int MtpDriver::OpenDriver()
 {
     MEDIA_INFO_LOG("MtpDriver::OpenDriver start");
     usbfnMtpInterface = IUsbfnMtpInterface::Get();
-    if (usbfnMtpInterface == nullptr) {
-        MEDIA_ERR_LOG("IUsbfnMtpInterface::Get() failed.");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(usbfnMtpInterface != nullptr, E_ERR, "IUsbfnMtpInterface::Get() failed.");
 
     auto ret = usbfnMtpInterface->Start();
-    if (ret != 0) {
-        MEDIA_ERR_LOG("MtpDriver::OpenDriver Start() failed error = %{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "MtpDriver::OpenDriver Start() failed error = %{public}d", ret);
     usbOpenFlag = true;
     MEDIA_INFO_LOG("MtpDriver::OpenDriver end");
     return MTP_SUCCESS;
@@ -86,6 +81,8 @@ int MtpDriver::CloseDriver()
 
 int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MTP MtpDriver::Read");
     if (usbOpenFlag == false) {
         int ret = OpenDriver();
         if (ret < 0) {
@@ -100,8 +97,12 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
 
     MEDIA_DEBUG_LOG("MtpDriver::Read start");
     outBuffer.resize(outReadSize);
+
+    tracer.Start("MTP usbfnMtpInterface->Read");
     auto ret = usbfnMtpInterface->Read(outBuffer);
-    MEDIA_DEBUG_LOG("MtpDriver::Read end");
+    tracer.Finish();
+
+    MEDIA_DEBUG_LOG("MtpDriver::Read end ret:%{public}d", ret);
     if (ret != 0) {
         outBuffer.resize(0);
         outReadSize = 0;
@@ -109,20 +110,30 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
         return E_ERR;
     }
     outReadSize = outBuffer.size();
+    MtpPacketTool::DumpPacket(outBuffer);
     return MTP_SUCCESS;
 }
 
 void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t &bufferSize)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MTP MtpDriver::Write");
     CHECK_AND_RETURN_LOG(usbfnMtpInterface != nullptr, "Write: usbfnMtpInterface is nullptr");
+    MtpPacketTool::DumpPacket(buffer);
     MEDIA_DEBUG_LOG("MtpDriver::Write start, buffer.size:%{public}zu", buffer.size());
+
+    tracer.Start("MTP usbfnMtpInterface->Write");
     auto ret = usbfnMtpInterface->Write(buffer);
+    tracer.Finish();
+
     bufferSize = static_cast<uint32_t>(ret);
     MEDIA_DEBUG_LOG("MtpDriver::Write end, ret:%{public}d", ret);
 }
 
 int MtpDriver::ReceiveObj(MtpFileRange &mfr)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MTP MtpDriver::ReceiveObj");
     CHECK_AND_RETURN_RET_LOG(usbfnMtpInterface != nullptr, E_ERR, "ReceiveObj: usbfnMtpInterface is nullptr");
     MEDIA_DEBUG_LOG("MtpDriver::ReceiveObj start");
     struct UsbFnMtpFileSlice mfs = {
@@ -132,13 +143,19 @@ int MtpDriver::ReceiveObj(MtpFileRange &mfr)
         .command = mfr.command,
         .transactionId = mfr.transaction_id,
     };
+
+    tracer.Start("MTP usbfnMtpInterface->ReceiveFile");
     auto ret = usbfnMtpInterface->ReceiveFile(mfs);
-    MEDIA_DEBUG_LOG("MtpDriver::ReceiveObj end");
+    tracer.Finish();
+
+    MEDIA_DEBUG_LOG("MtpDriver::ReceiveObj end ret:%{public}d", ret);
     return ret;
 }
 
 int MtpDriver::SendObj(MtpFileRange &mfr)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MTP MtpDriver::SendObj");
     CHECK_AND_RETURN_RET_LOG(usbfnMtpInterface != nullptr, E_ERR, "SendObj: usbfnMtpInterface is nullptr");
     MEDIA_DEBUG_LOG("MtpDriver::SendObj start");
     struct UsbFnMtpFileSlice mfs = {
@@ -148,17 +165,28 @@ int MtpDriver::SendObj(MtpFileRange &mfr)
         .command = mfr.command,
         .transactionId = mfr.transaction_id,
     };
+
+    tracer.Start("MTP usbfnMtpInterface->SendFile");
     auto ret = usbfnMtpInterface->SendFile(mfs);
-    MEDIA_DEBUG_LOG("MtpDriver::SendObj end");
+    tracer.Finish();
+
+    MEDIA_DEBUG_LOG("MtpDriver::SendObj end ret:%{public}d", ret);
     return ret;
 }
 
 int MtpDriver::WriteEvent(EventMtp &em)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MTP MtpDriver::WriteEvent");
     CHECK_AND_RETURN_RET_LOG(usbfnMtpInterface != nullptr, E_ERR, "WriteEvent: usbfnMtpInterface is nullptr");
+    MtpPacketTool::DumpPacket(em.data);
     MEDIA_DEBUG_LOG("MtpDriver::WriteEvent start");
+
+    tracer.Start("MTP usbfnMtpInterface->SendEvent");
     auto ret =  usbfnMtpInterface->SendEvent(em.data);
-    MEDIA_DEBUG_LOG("MtpDriver::WriteEvent end");
+    tracer.Finish();
+
+    MEDIA_DEBUG_LOG("MtpDriver::WriteEvent end ret:%{public}d", ret);
     return ret;
 }
 } // namespace Media

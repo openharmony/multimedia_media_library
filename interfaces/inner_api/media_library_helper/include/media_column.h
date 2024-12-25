@@ -146,6 +146,7 @@ public:
     static const std::string PHOTO_DATE_MONTH_INDEX EXPORT;
     static const std::string PHOTO_DATE_DAY_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_ADDED_INDEX EXPORT;
+    static const std::string PHOTO_SCHPT_ADDED_ALBUM_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_MEDIA_TYPE_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_DAY_INDEX EXPORT;
     static const std::string PHOTO_HIDDEN_TIME_INDEX EXPORT;
@@ -202,6 +203,8 @@ public:
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;
     static const std::string DROP_INDEX_SCTHP_ADDTIME EXPORT;
+    static const std::string INDEX_SCHPT_ADDTIME_ALBUM EXPORT;
+    static const std::string DROP_INDEX_SCHPT_ADDTIME_ALBUM EXPORT;
     static const std::string INDEX_CAMERA_SHOT_KEY EXPORT;
     static const std::string INDEX_SCHPT_READY EXPORT;
     static const std::string DROP_INDEX_SCHPT_READY EXPORT;

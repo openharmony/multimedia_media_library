@@ -82,20 +82,14 @@ bool CloudSyncUtils::IsUnlimitedTrafficStatusOn()
 bool CloudSyncUtils::IsCloudSyncSwitchOn()
 {
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper = GetCloudHelper(CLOUD_SYNC_URI);
-    if (cloudHelper == nullptr) {
-        MEDIA_INFO_LOG("cloudHelper is null");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(cloudHelper != nullptr, false, "cloudHelper is null");
 
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo("bundleName", "generic.cloudstorage");
     Uri cloudUri(CLOUD_SYNC_SWITCH_URI);
     vector<string> columns = { "isSwitchOn" };
     shared_ptr<DataShare::DataShareResultSet> resultSet = cloudHelper->Query(cloudUri, predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_INFO_LOG("resultSet is nullptr");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultSet is null");
 
     string switchOn = "0";
     if (resultSet->GoToNextRow() == E_OK) {
@@ -107,20 +101,14 @@ bool CloudSyncUtils::IsCloudSyncSwitchOn()
 bool CloudSyncUtils::IsCloudDataAgingPolicyOn()
 {
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper = GetCloudHelper(CLOUD_DATASHARE_URI);
-    if (cloudHelper == nullptr) {
-        MEDIA_INFO_LOG("cloudHelper is null");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(cloudHelper != nullptr, false, "cloudHelper is null");
     
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo("key", "dataAgingPolicy");
     Uri cloudUri(CLOUD_AGING_URI);
     vector<string> columns = { "value" };
     shared_ptr<DataShare::DataShareResultSet> resultSet = cloudHelper->Query(cloudUri, predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_INFO_LOG("resultSet is nullptr");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultSet is nullptr");
     string switchOn = "0";
     if (resultSet->GoToNextRow() == E_OK) {
         resultSet->GetString(0, switchOn);

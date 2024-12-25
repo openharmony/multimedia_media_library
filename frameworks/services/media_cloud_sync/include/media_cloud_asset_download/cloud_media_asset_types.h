@@ -37,7 +37,6 @@ enum class CloudMediaAssetTaskStatus : int32_t {
 
 enum class CloudMediaRetainType : int32_t {
     RETAIN_FORCE = 0,
-    RETAIN_GENTLE,
 };
 
 enum class CloudMediaTaskPauseCause : int32_t {

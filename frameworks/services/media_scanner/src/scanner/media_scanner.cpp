@@ -144,7 +144,7 @@ void MediaScannerObj::Scan()
 
 int32_t MediaScannerObj::InvokeCallback(int32_t err)
 {
-    if (callback_ == nullptr) {
+    if (callback_ == nullptr || err == E_NO_THUMB) {
         return E_OK;
     }
 
@@ -604,6 +604,7 @@ int32_t MediaScannerObj::ScanFileInternal()
         // no return here for fs metadata being updated or inserted
     }
 
+    bool isShareScene = data_->GetForAdd() && data_->GetOwnerPackage() == "com.huawei.hmos.instantshare";
     err = Commit();
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to commit err %{public}d", err);
@@ -613,7 +614,7 @@ int32_t MediaScannerObj::ScanFileInternal()
         return err;
     }
 
-    return E_OK;
+    return isShareScene ? E_NO_THUMB : E_OK;
 }
 
 int32_t MediaScannerObj::BuildFileInfo(const string &parent, int32_t parentId)

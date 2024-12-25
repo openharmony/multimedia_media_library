@@ -567,17 +567,23 @@ static void GetUriParamsFromQueryKey(UriParams& uriParams,
         uriParams.path = queryKey[THUMBNAIL_PATH];
     }
     if (queryKey.count(THUMBNAIL_WIDTH) != 0) {
-        uriParams.size.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+        if (MediaFileUtils::IsValidInteger(queryKey[THUMBNAIL_WIDTH])) {
+            uriParams.size.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+        }
     }
     if (queryKey.count(THUMBNAIL_HEIGHT) != 0) {
-        uriParams.size.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+        if (MediaFileUtils::IsValidInteger(queryKey[THUMBNAIL_HEIGHT])) {
+            uriParams.size.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+        }
     }
     if (queryKey.count(THUMBNAIL_OPER) != 0) {
         uriParams.isAstc = queryKey[THUMBNAIL_OPER] == MEDIA_DATA_DB_THUMB_ASTC;
     }
     uriParams.dynamicRange = DecodeDynamicRange::AUTO;
     if (queryKey.count(DYNAMIC_RANGE) != 0) {
-        uriParams.dynamicRange = static_cast<DecodeDynamicRange>(stoi(queryKey[DYNAMIC_RANGE]));
+        if (MediaFileUtils::IsValidInteger(queryKey[DYNAMIC_RANGE])) {
+            uriParams.dynamicRange = static_cast<DecodeDynamicRange>(stoi(queryKey[DYNAMIC_RANGE]));
+        }
     }
 }
 

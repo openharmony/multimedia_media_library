@@ -58,7 +58,7 @@ public:
 #endif
     EXPORT int32_t CreateThumbnailFileScaned(const std::string &uri, const std::string &path,
         bool isSync = false);
-    void InvalidateThumbnail(const std::string &id, const std::string &tableName,
+    bool HasInvalidateThumbnail(const std::string &id, const std::string &tableName,
         const std::string &path = "", const std::string &dateTaken = "");
     EXPORT void Init(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
 #ifdef DISTRIBUTED

@@ -16,6 +16,7 @@
 #ifndef OHOS_MEDIALIBRARY_DUPLICATE_PHOTO_OPERATION_H
 #define OHOS_MEDIALIBRARY_DUPLICATE_PHOTO_OPERATION_H
 
+#include <mutex>
 #include <unordered_set>
 
 #include "abs_shared_result_set.h"
@@ -31,6 +32,9 @@ public:
 
 private:
     static std::string GetSelectColumns(const std::unordered_set<std::string> &columns);
+
+private:
+    static std::once_flag onceFlag_;
 };
 } // namespace Media
 } // namespace OHOS
