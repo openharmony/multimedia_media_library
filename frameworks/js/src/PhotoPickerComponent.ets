@@ -160,7 +160,7 @@ export struct PhotoPickerComponent {
       this.handlePhotoBrowserChange(wantParam);
     } else if (dataType === 'onVideoPlayStateChanged') {
       this.handleVideoPlayStateChange(wantParam)
-      else {
+    } else {
       this.handleOtherOnReceive(wantParam);
       console.info('PhotoPickerComponent onReceive: other case');
     }
