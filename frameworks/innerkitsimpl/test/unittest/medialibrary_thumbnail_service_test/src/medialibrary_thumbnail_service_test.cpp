@@ -1044,7 +1044,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_008, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_009, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    NativeRdb::RdbPredicates predicate{PHOTOS_TABLE};
+    NativeRdb::RdbPredicates predicate{PhotoColumn::PHOTOS_TABLE};
     int32_t requestId = 1;
     auto res = ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, predicate, requestId);
     EXPECT_EQ(res, E_ERR);
