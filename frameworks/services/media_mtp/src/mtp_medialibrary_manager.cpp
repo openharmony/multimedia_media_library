@@ -119,7 +119,9 @@ void MtpMedialibraryManager::Init(const sptr<IRemoteObject> &token, const std::s
 void MtpMedialibraryManager::Clear()
 {
     MEDIA_INFO_LOG("MtpMediaLibrary::Ptp Clear is called");
-    mediaPhotoObserver_->StopNotifyThread();
+    if (mediaPhotoObserver_ != nullptr) {
+        mediaPhotoObserver_->StopNotifyThread();
+    }
     if (dataShareHelper_ != nullptr) {
         dataShareHelper_->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_URI_PREFIX), mediaPhotoObserver_);
         dataShareHelper_->UnregisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX), mediaPhotoObserver_);
