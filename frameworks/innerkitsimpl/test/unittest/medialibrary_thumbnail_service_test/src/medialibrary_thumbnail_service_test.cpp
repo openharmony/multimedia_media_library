@@ -925,11 +925,11 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_023, Tes
     std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
     data.source.SetPixelMap(pixelMap);
     bool isSourceEx = true;
-    auto res = ThumbnailUtils::CompressPicture(data.isSourceEx);
+    auto res = ThumbnailUtils::CompressPicture(data, isSourceEx);
     EXPECT_EQ(res, true);
     bool isSourceEx2 = false;
-    auto res2 = ThumbnailUtils::CompressPicture(data.isSourceEx);
-    EXPECT_EQ(res, false);
+    auto res2 = ThumbnailUtils::CompressPicture(data, isSourceEx2);
+    EXPECT_EQ(res2, false);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_024, TestSize.Level0)
@@ -972,7 +972,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_028, Tes
     auto res = ThumbnailUtils::CheckCloudThumbnailDownloadFinish(storePtr);
     EXPECT_EQ(res, false);
     const string dbPath = "/data/test/medialibrary_thumbnail_service_test_db";
-    NativeRdb::RdbStoreConfig(dbPath);
+    NativeRdb::RdbStoreConfig config(dbPath);
     ConfigTestOpenCall helper;
     int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, 1, helper);
     storePtr = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -983,7 +983,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_028, Tes
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_029, TestSize.Level0)
 {
     const string dbPath = "/data/test/medialibrary_thumbnail_service_test_db";
-    NativeRdb::RdbStoreConfig(dbPath);
+    NativeRdb::RdbStoreConfig config(dbPath);
     ConfigTestOpenCall helper;
     int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, 1, helper);
     storePtr = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -993,7 +993,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_029, Tes
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_024, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_032, TestSize.Level0)
 {
     ThumbnailData data;
     ThumbRdbOpt opts;
