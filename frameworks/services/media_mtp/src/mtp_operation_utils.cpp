@@ -585,6 +585,15 @@ uint16_t MtpOperationUtils::SendObjectInfo(shared_ptr<PayloadData> &data, int &e
         data = make_shared<RespCommonData>();
         return CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL);
     }
+    
+    auto manager = MtpStorageManager::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(manager != nullptr, MTP_INVALID_PARAMETER_CODE, "MtpStorageManager instance is nullptr");
+    if (context_->sendObjectFileSize > manager->GetFreeSize()) {
+        data = make_shared<RespCommonData>();
+        MEDIA_DEBUG_LOG("sendObjectFileSize %{public}d , FreeSpaceInBytes %{public}llu , run out of memory",
+            context_->sendObjectFileSize, manager->GetFreeSize());
+        return MTP_STORE_FULL_CODE;
+    }
 
     uint32_t storageID = 0;
     uint32_t parent = 0;
