@@ -119,7 +119,9 @@ void MtpMedialibraryManager::Init(const sptr<IRemoteObject> &token, const std::s
 void MtpMedialibraryManager::Clear()
 {
     MEDIA_INFO_LOG("MtpMediaLibrary::Ptp Clear is called");
-    mediaPhotoObserver_->StopNotifyThread();
+    if (mediaPhotoObserver_ != nullptr) {
+        mediaPhotoObserver_->StopNotifyThread();
+    }
     if (dataShareHelper_ != nullptr) {
         dataShareHelper_->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_URI_PREFIX), mediaPhotoObserver_);
         dataShareHelper_->UnregisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX), mediaPhotoObserver_);
@@ -598,6 +600,10 @@ int32_t MtpMedialibraryManager::GetThumb(const shared_ptr<MtpOperationContext> &
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
     MEDIA_DEBUG_LOG("GetThumb handle::%{public}u", context->handle);
+    if (context->handle < COMMON_PHOTOS_OFFSET) {
+        MEDIA_INFO_LOG("handle is album");
+        return MTP_SUCCESS;
+    }
     shared_ptr<DataShare::DataShareResultSet> resultSet = GetPhotosInfo(context, false);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
         MTP_ERROR_STORE_NOT_AVAILABLE, "fail to get handles");
@@ -632,17 +638,11 @@ int32_t MtpMedialibraryManager::GetThumb(const shared_ptr<MtpOperationContext> &
 std::string MtpMedialibraryManager::GetThumbUri(const int32_t &id,
     const std::string &thumbSizeValue, const std::string &dataPath)
 {
-    size_t colonPos = thumbSizeValue.find(':');
-    if (colonPos == std::string::npos || colonPos + SIZE_ONE >= thumbSizeValue.size()) {
-        return "";
-    }
-    std::string widthStr = thumbSizeValue.substr(0, colonPos);
-    std::string heightStr = thumbSizeValue.substr(colonPos + SIZE_ONE);
-
     std::string startUri = NORMAL_MEDIA_URI;
     size_t commaPos = dataPath.rfind(".");
     size_t underlinePos = dataPath.rfind("/");
     if (commaPos == std::string::npos || underlinePos == std::string::npos || commaPos < underlinePos) {
+        MEDIA_DEBUG_LOG("fail to query datapath");
         return "";
     }
     std::string suffixStr = dataPath.substr(commaPos);
@@ -651,6 +651,14 @@ std::string MtpMedialibraryManager::GetThumbUri(const int32_t &id,
     startUri += lastStr;
     startUri += lastStr;
     startUri += suffixStr;
+
+    size_t colonPos = thumbSizeValue.find(':');
+    if (colonPos == std::string::npos || colonPos + SIZE_ONE >= thumbSizeValue.size()) {
+        MEDIA_DEBUG_LOG("fail to query thumbnail size");
+        return startUri + "?oper=thumbnail";
+    }
+    std::string widthStr = thumbSizeValue.substr(0, colonPos);
+    std::string heightStr = thumbSizeValue.substr(colonPos + SIZE_ONE);
 
     return startUri + "?oper=thumbnail" + "&width=" +
         widthStr + "&height=" + heightStr + "&path=" + dataPath;

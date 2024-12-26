@@ -503,6 +503,10 @@ let PickerController = class {
     }
 
     saveTrustedPhotoAssets(e, callback, config, saveMode) {
+        if (!e || e.length === 0) {
+            callback({'code': 14000002, 'message': 'Invalid URI', name: ''}, []);
+            return;
+        }
         this.getAppName().then((appName) => {
             let date = Math.random();
             this.data = new Map([['SAVE_REPLACE_PHOTO_ASSETS', [e, config, saveMode, appName, date]]]);
@@ -649,8 +653,8 @@ export var VideoPlayerState;
 
 export var SaveMode;
 !function(e) {
-    e[e.SAVE_AS_NEW = 0] = 'SAVE_AS_NEW';
-    e[e.SAVE_AS_REPLACE = 1] = 'SAVE_AS_REPLACE';
+    e[e.SAVE_AS = 0] = 'SAVE_AS';
+    e[e.OVERWRITE = 1] = 'OVERWRITE';
 }(SaveMode || (SaveMode = {}));
 
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
