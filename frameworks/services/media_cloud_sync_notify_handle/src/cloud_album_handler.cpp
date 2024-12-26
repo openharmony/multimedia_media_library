@@ -112,7 +112,11 @@ static int32_t DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates)
     predicates.EndWrap();
     predicates.Or()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
     predicates.EndWrap();
-    int deleteRow = MediaLibraryRdbStore::Delete(predicates);
+    int deleteRow = -1;
+    auto ret = rdbStore->Delete(deleteRow, predicates);
+    if (ret != NativeRdb::E_OK || deleteRow <= 0) {
+        MEDIA_ERR_LOG("DeletePhotoAlbum failed, errCode = %{public}d, deleteRow = %{public}d", ret, deleteRow);
+    }
     auto watch = MediaLibraryNotify::GetInstance();
     const vector<string> &notifyUris = predicates.GetWhereArgs();
     size_t count = notifyUris.size() - AFTER_AGR_SIZE;
