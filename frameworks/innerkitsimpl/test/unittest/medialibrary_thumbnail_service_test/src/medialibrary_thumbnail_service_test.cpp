@@ -1036,7 +1036,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_008, T
 {
     ThumbRdbOpt opts;
     opts.store = storePtr;
-    OPTS.TABLE = "test";
+    opts.table = "test";
     auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, false);
     EXPECT_NE(res, E_OK);
 }
@@ -1044,7 +1044,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_008, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_009, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    NativeRdb::RdbPredicates predicate {PHOTOS_TABLE};
+    NativeRdb::RdbPredicates predicate{PHOTOS_TABLE};
     int32_t requestId = 1;
     auto res = ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, predicate, requestId);
     EXPECT_EQ(res, E_ERR);
@@ -1073,7 +1073,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_011, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_012, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    opts.store storePtr;
+    opts.store = storePtr;
     std::string id = "id";
     std::string tracks = "tracks";
     std::string trigger = "trigger";
@@ -1085,7 +1085,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_012, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_013, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    opts.store storePtr;
+    opts.store = storePtr;
     auto res = ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
     EXPECT_NE(res, E_OK);
 }
@@ -1093,7 +1093,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_013, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_037, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    opts.store storePtr;
+    opts.store = storePtr;
     opts.row = "row";
     opts.table = "table";
     auto res = IThumbnailHelper::IsPureCloudImage(opts);
@@ -1103,7 +1103,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_037, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_038, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    opts.store storePtr;
+    opts.store = storePtr;
     ThumbnailData data;
     data.path = "/storage/cloud/files/";
     auto res = IThumbnailHelper::UpdateSuccessState(opts, data);
@@ -1113,7 +1113,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_038, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_039, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    opts.store storePtr;
+    opts.store = storePtr;
     ThumbnailData data;
     std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
     data.source.SetPixelMap(pixelMap);
@@ -1125,7 +1125,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_040, T
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    std::shared_ptr<PixelMap> pixelMapEX= make_shared<SetPixelMapEx>();
+    std::shared_ptr<PixelMap> pixelMapEX = make_shared<SetPixelMapEx>();
     data.source.SetPixelMapEx(pixelMapEX);
     auto res = IThumbnailHelper::GenThumbnailEx(opts, data);
     EXPECT_EQ(res, false);
