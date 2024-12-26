@@ -16,6 +16,7 @@
 
 #include "thumbnail_service.h"
 
+#include "cloud_sync_helper.h"
 #include "display_manager.h"
 #include "ipc_skeleton.h"
 #include "ithumbnail_helper.h"
@@ -566,6 +567,25 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
             return err;
         }
         count += tempCount;
+    }
+    return E_OK;
+}
+
+int32_t ThumbnailService::LocalThumbnailGeneration()
+{
+    if (!CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_) {
+        MEDIA_INFO_LOG("active local thumb genetaion exists");
+        return E_OK;
+    }
+    CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = false;
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+    };
+    int err = ThumbnailGenerateHelper::CreateLocalThumbnail(opts);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("LocalThumbnailGeneration failed : %{public}d", err);
+        return err;
     }
     return E_OK;
 }
