@@ -854,4 +854,10 @@ export default {
   CloudEnhancementTaskState: photoAccessHelper.CloudEnhancementTaskState,
   VideoEnhancementType: photoAccessHelper.VideoEnhancementType,
   WatermarkType: photoAccessHelper.WatermarkType,
+  CloudMediaAssetManager: photoAccessHelper.CloudMediaAssetManager,
+  CloudMediaDownloadType: photoAccessHelper.CloudMediaDownloadType,
+  CloudMediaRetainType: photoAccessHelper.CloudMediaRetainType,
+  CloudMediaAssetTaskStatus: photoAccessHelper.CloudMediaAssetTaskStatus,
+  CloudMediaTaskPauseCause: photoAccessHelper.CloudMediaTaskPauseCause,
+  CloudMediaAssetStatus: photoAccessHelper.CloudMediaAssetStatus,
 };

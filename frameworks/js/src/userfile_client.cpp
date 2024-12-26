@@ -284,6 +284,15 @@ void UserFileClient::UnregisterObserverExt(const Uri &uri, std::shared_ptr<DataS
     sDataShareHelper_->UnregisterObserverExt(uri, std::move(dataObserver));
 }
 
+std::string UserFileClient::GetType(Uri &uri)
+{
+    if (!IsValid()) {
+        NAPI_ERR_LOG("get type fail, helper null");
+        return "";
+    }
+    return sDataShareHelper_->GetType(uri);
+}
+
 void UserFileClient::Clear()
 {
     sDataShareHelper_ = nullptr;
