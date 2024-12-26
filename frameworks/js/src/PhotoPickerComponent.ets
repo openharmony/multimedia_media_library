@@ -494,7 +494,7 @@ export class PickerController {
 
   saveTrustedPhotoAssets(selectedMediaUris: Array<string>, callback: AsyncCallback<Array<string>>,
     config?: Array<photoAccessHelper.PhotoCreationConfig>, saveMode?: SaveMode) {
-    if (selectedMediaUris.length === 0) {
+    if (!selectedMediaUris || selectedMediaUris.length === 0) {
       callback({'code': 14000002, 'message': 'Invalid URI', name: ''}, []);
       return;
     }
