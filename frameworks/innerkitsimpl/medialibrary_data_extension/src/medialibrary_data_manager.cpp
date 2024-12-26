@@ -27,6 +27,7 @@
 #include "acl.h"
 #include "background_cloud_file_processor.h"
 #include "background_task_mgr_helper.h"
+#include "cloud_media_asset_manager.h"
 #include "cloud_sync_switch_observer.h"
 #include "datashare_abs_result_set.h"
 #ifdef DISTRIBUTED
@@ -502,6 +503,15 @@ void MediaLibraryDataManager::SetOwner(const shared_ptr<MediaDataShareExtAbility
 
 string MediaLibraryDataManager::GetType(const Uri &uri)
 {
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::GetType");
+    MediaLibraryCommand cmd(uri);
+    switch (cmd.GetOprnObject()) {
+        case OperationObject::CLOUD_MEDIA_ASSET_OPERATE:
+            return CloudMediaAssetManager::GetInstance().HandleCloudMediaAssetGetTypeOperations(cmd);
+        default:
+            break;
+    }
+
     MEDIA_INFO_LOG("GetType uri: %{private}s", uri.ToString().c_str());
     return "";
 }
