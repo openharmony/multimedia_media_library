@@ -22,8 +22,10 @@
 #include "ithumbnail_helper.h"
 #include "thumbnail_generate_helper.h"
 #undef private
+#include "medialibrary_db_const_sqls.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
+#include "vision_db_sqls.h"
 
 using namespace std;
 using namespace OHOS;
@@ -57,6 +59,44 @@ int ConfigTestOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersio
 }
 
 shared_ptr<MediaLibraryRdbStore> storePtr = nullptr;
+shared_ptr<ThumbnailService> serverTest = nullptr;
+
+void CleanTestTables()
+{
+    vector<string> dropTableList = {
+        PhotoColumn::PHOTOS_TABLE,
+        MEDIALIBRARY_TABLE,
+        VISION_VIDEO_LABEL_TABLE,
+        AudioColumn::AUDIOS_TABLE,
+    };
+    for (auto &dropTable : dropTableList) {
+        string dropSql = "DROP TABLE " + dropTable + ";";
+        int32_t ret = storePtr->ExecuteSql(dropSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Drop %{public}s table failed", dropTable.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Drop %{public}s table success", dropTable.c_str());
+    }
+}
+
+void SetTables()
+{
+    vector<string> createTableSqlList = {
+        PhotoColumn::CREATE_PHOTO_TABLE,
+        CREATE_TAB_ANALYSIS_VIDEO_LABEL,
+        CREATE_MEDIA_TABLE,
+        AudioColumn::CREATE_AUDIO_TABLE,
+    };
+    for (auto &createTableSql : createTableSqlList) {
+        int32_t ret = storePtr->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
 
 void MediaLibraryThumbnailServiceTest::SetUpTestCase(void)
 {
@@ -67,18 +107,36 @@ void MediaLibraryThumbnailServiceTest::SetUpTestCase(void)
     EXPECT_EQ(ret, E_OK);
     storePtr = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(storePtr, nullptr);
+    SetTables();
 }
 
 void MediaLibraryThumbnailServiceTest::TearDownTestCase(void)
 {
+    CleanTestTables();
     MediaLibraryUnitTestUtils::StopUnistore();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 // SetUp:Execute before each test case
-void MediaLibraryThumbnailServiceTest::SetUp() {}
+void MediaLibraryThumbnailServiceTest::SetUp()
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    serverTest = ThumbnailService::GetInstance();
+    shared_ptr<OHOS::AbilityRuntime::Context> context;
+    #ifdef DISTRIBUTED
+        shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
+        serverTest->Init(storePtr, kvStorePtr, context);
+    #else
+        serverTest->Init(storePtr, context);
+    #endif
+}
 
-void MediaLibraryThumbnailServiceTest::TearDown(void) {}
+void MediaLibraryThumbnailServiceTest::TearDown(void)
+{
+    serverTest->ReleaseService();
+}
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetThumbnail_test_001, TestSize.Level0)
 {
@@ -170,7 +228,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_
     }
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     int32_t ret = serverTest->GenerateThumbnailBackground();
-    EXPECT_EQ(ret, -1);
+    EXPECT_EQ(ret, 0);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
 #ifdef DISTRIBUTED
@@ -186,7 +244,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_
     serverTest->Init(storePtr, context);
 #endif
     ret = serverTest->GenerateThumbnailBackground();
-    EXPECT_EQ(ret, E_GETROUWCOUNT_ERROR);
+    EXPECT_EQ(ret, 0);
     serverTest->ReleaseService();
 }
 
@@ -272,7 +330,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcBatchOnDemand_test
     NativeRdb::RdbPredicates predicate { PhotoColumn::PHOTOS_TABLE };
     int32_t requestId = 1;
     int32_t result = serverTest->CreateAstcBatchOnDemand(predicate, requestId);
-    EXPECT_EQ(result, E_GETROUWCOUNT_ERROR);
+    EXPECT_EQ(result, E_THUMBNAIL_ASTC_ALL_EXIST);
     serverTest->ReleaseService();
 }
 
@@ -786,13 +844,26 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_014, Te
     data.dateTaken = "b";
     ThumbnailType type = ThumbnailType::MTH_ASTC;
     auto res = ThumbnailUtils::SaveAstcDataToKvStore(data, type);
-    EXPECT_EQ(res >= 0, true);
+    EXPECT_EQ(res, -1);
     const ThumbnailType type2 = ThumbnailType::YEAR_ASTC;
     auto res2 = ThumbnailUtils::SaveAstcDataToKvStore(data, type2);
-    EXPECT_EQ(res2 >= 0, true);
+    EXPECT_EQ(res2, -1);
     const ThumbnailType type3 = ThumbnailType::LCD;
     auto res3 = ThumbnailUtils::SaveAstcDataToKvStore(data, type3);
     EXPECT_EQ(res3, -1);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_015, TestSize.Level0)
+{
+    ThumbnailData data;
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = PhotoColumn::PHOTOS_TABLE,
+    };
+    vector<ThumbnailData> infos;
+    int err;
+    auto res = ThumbnailUtils::QueryLocalNoThumbnailInfos(opts, infos, err);
+    EXPECT_EQ(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_017, TestSize.Level0)
@@ -876,31 +947,20 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_002, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_003, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
-    opts.table = "test";
-    auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, false);
-    EXPECT_NE(res, E_OK);
-}
-
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_004, TestSize.Level0)
-{
-    ThumbRdbOpt opts;
     auto res = ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
     EXPECT_EQ(res, -1);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, UpgradeThumbnailBackground_test_001, TestSize.Level0)
 {
-    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     auto res = serverTest->UpgradeThumbnailBackground(false);
-    EXPECT_NE(res, E_OK);
+    EXPECT_EQ(res, E_OK);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_001, TestSize.Level0)
 {
-    ThumbRdbOpt opts;
-    auto res = ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
-    EXPECT_EQ(res, -1);
+    auto res = serverTest->GenerateHighlightThumbnailBackground();
+    EXPECT_EQ(res, E_OK);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_002, TestSize.Level0)
@@ -916,7 +976,13 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_
 {
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     auto res = serverTest->GenerateHighlightThumbnailBackground();
-    EXPECT_EQ(res < 0, true);
+    EXPECT_EQ(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, LocalThumbnailGeneration_test_001, TestSize.Level0)
+{
+    auto res = serverTest->LocalThumbnailGeneration();
+    EXPECT_EQ(res, E_OK);
 }
 } // namespace Media
 } // namespace OHOS
