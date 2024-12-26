@@ -1060,10 +1060,6 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore> rd
     tracer.Start("UpdateUserAlbumIfNeeded");
     CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
     ValuesBucket values;
-    int err = SetUpdateValues(rdbStore, data, values, static_cast<PhotoAlbumSubType>(0), hiddenState);
-    CHECK_AND_RETURN_RET_LOG(err >= 0, err,
-        "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
-        data.albumId, hiddenState ? 1 : 0);
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
     int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
     CHECK_AND_RETURN_RET_LOG(err >= 0, err,
