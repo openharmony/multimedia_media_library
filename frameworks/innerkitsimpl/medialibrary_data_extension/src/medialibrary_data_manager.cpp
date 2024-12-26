@@ -333,6 +333,11 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         MediaLibraryRdbStore::AddReadyCountIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_READY_COUNT_INDEX);
     }
+
+    if (oldVersion < VERSION_FIX_DATE_ADDED_INDEX) {
+        MediaLibraryRdbStore::FixDateAddedIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_FIX_DATE_ADDED_INDEX);
+    }
 }
 
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()
