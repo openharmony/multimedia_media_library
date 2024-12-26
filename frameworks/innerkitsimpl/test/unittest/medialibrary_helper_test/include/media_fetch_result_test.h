@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_HELPER_TEST_H
-#define MEDIA_HELPER_TEST_H
+#ifndef MEDIA_FETCH_RESULT_TEST_H
+#define MEDIA_FETCH_RESULT_TEST_H
 
 #include "gtest/gtest.h"
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryHelperUnitTest : public testing::Test {
+class MediaLibraryFetchResultUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -29,4 +29,4 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIA_HELPER_TEST_H
+#endif // MEDIA_FETCH_RESULT_TEST_H

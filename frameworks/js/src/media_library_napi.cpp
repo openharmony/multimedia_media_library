@@ -6151,11 +6151,14 @@ static std::string GetLabelAnalysisProgress()
     };
     vector<string> columns = {
         "COUNT(*) AS totalCount",
-        "SUM(CASE WHEN status != 0 THEN 1 ELSE 0 END) AS finishedCount",
+        "SUM(CASE WHEN ((aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 "
+            "AND saliency != 0 AND segmentation != 0 AND head != 0 AND Photos.media_type = 1) OR "
+            "(label != 0 AND face != 0 AND Photos.media_type = 2)) THEN 1 ELSE 0 END) AS finishedCount",
         "SUM(CASE WHEN label != 0 THEN 1 ELSE 0 END) AS LabelCount"
     };
     nlohmann::json jsonObj;
     GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
+    NAPI_INFO_LOG("Progress json is %{public}s", jsonObj.dump().c_str());
     return jsonObj.dump();
 }
 
@@ -6166,12 +6169,15 @@ static std::string GetFaceAnalysisProgress()
     };
     vector<string> columns = {
         "COUNT(*) AS totalCount",
-        "SUM(CASE WHEN status != 0 THEN 1 ELSE 0 END) AS finishedCount",
+        "SUM(CASE WHEN ((aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 "
+            "AND saliency != 0 AND segmentation != 0 AND head != 0 AND Photos.media_type = 1) OR "
+            "(label != 0 AND face != 0 AND Photos.media_type = 2)) THEN 1 ELSE 0 END) AS finishedCount",
         "SUM(CASE WHEN face = 3 THEN 1 ELSE 0 END) AS PortraitCoverCount",
         "SUM(CASE WHEN face > 0 THEN 1 ELSE 0 END) AS PortraitCount"
     };
     nlohmann::json jsonObj;
     GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
+    NAPI_INFO_LOG("Progress json is %{public}s", jsonObj.dump().c_str());
     return jsonObj.dump();
 }
 
@@ -6182,7 +6188,9 @@ static std::string GetGeoAnalysisProgress()
     };
     vector<string> columns = {
         "COUNT(*) AS totalCount",
-        "SUM(CASE WHEN status != 0 THEN 1 ELSE 0 END) AS finishedCount",
+        "SUM(CASE WHEN ((aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 "
+            "AND saliency != 0 AND segmentation != 0 AND head != 0 AND Photos.media_type = 1) OR "
+            "(label != 0 AND face != 0 AND Photos.media_type = 2)) THEN 1 ELSE 0 END) AS finishedCount"
     };
     nlohmann::json jsonObj;
     GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
@@ -6196,11 +6204,12 @@ static std::string GetGeoAnalysisProgress()
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, albumColumns, errCode);
     if (ret == nullptr) {
-        NAPI_ERR_LOG("ret is nullptr");
+        NAPI_ERR_LOG("ret is nullptr and progress json is %{public}s", jsonObj.dump().c_str());
         return jsonObj.dump();
     }
     if (errCode != DataShare::E_OK) {
-        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
+        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d, progress json is %{public}s", errCode,
+            jsonObj.dump().c_str());
         ret->Close();
         return jsonObj.dump();
     }
@@ -6208,11 +6217,13 @@ static std::string GetGeoAnalysisProgress()
     int tmp = -1;
     int32_t retCode = ret->GetRowCount(tmp);
     if (retCode != DataShare::E_OK) {
-        NAPI_ERR_LOG("Can not get row count from resultSet, errCode=%{public}d", retCode);
+        NAPI_ERR_LOG("Can not get row count from resultSet, errCode is %{public}d, progress json is %{public}s",
+            retCode, jsonObj.dump().c_str());
         return jsonObj.dump();
     }
     jsonObj[idxToCount[columns.size()]] = tmp;
     ret->Close();
+    NAPI_INFO_LOG("Progress json is %{public}s", jsonObj.dump().c_str());
     return jsonObj.dump();
 }
 
@@ -6248,6 +6259,7 @@ static std::string GetHighlightAnalysisProgress()
         jsonObj[idxToCount[i]] = tmp;
     }
     ret->Close();
+    NAPI_INFO_LOG("Progress json is %{public}s", jsonObj.dump().c_str());
     return jsonObj.dump();
 }
 

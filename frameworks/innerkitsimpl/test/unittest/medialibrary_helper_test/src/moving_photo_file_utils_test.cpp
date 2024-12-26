@@ -298,7 +298,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_001, T
     string videoPath = dirPath + "/" + "video.mp4";
     EXPECT_EQ(WriteFileContent(videoPath, FILE_TEST_MP4, sizeof(FILE_TEST_MP4)), true);
     off_t fileSize{0};
-    EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen(imagePath, videoPath, 0, fileSize), E_OK);
+    EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen(imagePath, videoPath, 0, 0, fileSize), E_OK);
     EXPECT_EQ(fileSize, MIN_STANDARD_SIZE);
 }
 
@@ -318,7 +318,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_002, T
     EXPECT_EQ(WriteFileContent(extraPath, FILE_TEST_EXTRA_DATA, sizeof(FILE_TEST_EXTRA_DATA)), true);
 
     off_t fileSize{0};
-    EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen(imagePath, videoPath, 0, fileSize), E_OK);
+    EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen(imagePath, videoPath, 0, 0, fileSize), E_OK);
     EXPECT_EQ(fileSize, sizeof(FILE_TEST_EXTRA_DATA));
 }
 
