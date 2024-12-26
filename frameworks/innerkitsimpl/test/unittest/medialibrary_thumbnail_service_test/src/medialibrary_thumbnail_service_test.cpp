@@ -922,7 +922,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_023, TestSize.Level0)
 {
     ThumbnailData data;
-    std::shared_ptr<PixelMap> = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
     data.source.SetPixelMap(pixelMap);
     bool isSourceEx = true;
     auto res = ThumbnailUtils::CompressPicture(data.isSourceEx);
@@ -950,7 +950,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_025, Tes
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_026, TestSize.Level0)
 {
     ThumbnailData data;
-    std::shared_ptr<PixelMap> = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
     data.source.SetPixelMap(pixelMap);
     ThumbRdbOpt opts;
     auto res = ThumbnailUtils::CheckDateTaken(opts, data);
@@ -960,7 +960,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_026, Tes
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_027, TestSize.Level0)
 {
     ThumbnailData data;
-    std::shared_ptr<PixelMap> = make_shared<PixelMap>();
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
     data.source.SetPixelMap(pixelMap);
     ThumbRdbOpt opts;
     auto res = ThumbnailUtils::CheckDateTaken(opts, data);
@@ -1020,7 +1020,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_006, T
     EXPECT_NE(res, E_ERR);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_007, TestSize.Level0)
 {
     ThumbRdbOpt opts;
     opts.store = storePtr;
@@ -1028,8 +1028,147 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_006, T
     data.timeStamp = "timeStamp";
     int32_t thumbType = 1;
     std::string fileName;
-    suto res = ThumbnailGenerateHelper::GetAvailableKeyFrameFile(opts, data, thumbType, fileName);
+    auto res = ThumbnailGenerateHelper::GetAvailableKeyFrameFile(opts, data, thumbType, fileName);
     EXPECT_NE(res, E_OK);
 }
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_008, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    OPTS.TABLE = "test";
+    auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, false);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_009, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    NativeRdb::RdbPredicates predicate {PHOTOS_TABLE};
+    int32_t requestId = 1;
+    auto res = ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, predicate, requestId);
+    EXPECT_EQ(res, E_ERR);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_010, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    ThumbnailType thumbType = ThumbnailType::THUMB_ASTC;
+    std::string fileName;
+    auto res = ThumbnailGenerateHelper::GetAvailableFile(opts, data, thumbType, fileName);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_011, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    int32_t thumbType = 2;
+    std::string fileName;
+    auto res = ThumbnailGenerateHelper::GetAvailableKeyFrameFile(opts, data, thumbType, fileName);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_012, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store storePtr;
+    std::string id = "id";
+    std::string tracks = "tracks";
+    std::string trigger = "trigger";
+    std::string genType = "update";
+    auto res = ThumbnailGenerateHelper::TriggerHighlightThumbnail(opts, id, tracks, trigger, genType);
+    EXPECT_EQ(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_013, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store storePtr;
+    auto res = ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_037, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store storePtr;
+    opts.row = "row";
+    opts.table = "table";
+    auto res = IThumbnailHelper::IsPureCloudImage(opts);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_038, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store storePtr;
+    ThumbnailData data;
+    data.path = "/storage/cloud/files/";
+    auto res = IThumbnailHelper::UpdateSuccessState(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_039, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store storePtr;
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    auto res = IThumbnailHelper::IsCreateThumbnailSuccess(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_040, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMapEX= make_shared<SetPixelMapEx>();
+    data.source.SetPixelMapEx(pixelMapEX);
+    auto res = IThumbnailHelper::GenThumbnailEx(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_041, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    auto res = IThumbnailHelper::IsCreateLcdExSuccess(opts, data);
+    EXPECT_EQ(res, false);
+    std::shared_ptr<PixelMap> pixelMapEX = make_shared<SetPixelMapEx>();
+    data.source.SetPixelMapEx(pixelMapEX);
+    res = IThumbnailHelper::IsCreateLcdExSuccess(opts, data);
+    EXPECT_EQ(res, false);
+    std::shared_ptr<Picture> picture = Picture::Create(pixelMap);
+    data.source.SetPicture(picture);
+    res = IThumbnailHelper::IsCreateLcdExSuccess(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_042, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    std::shared_ptr<PixelMap> pixelMapEX = make_shared<SetPixelMapEx>();
+    data.source.SetPixelMapEx(pixelMapEX);
+    auto res = IThumbnailHelper::IsCreateLcdExSuccess(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_043, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    std::shared_ptr<Picture> picture = Picture::Create(pixelMap);
+    data.source.SetPicture(picture);
+    auto res IThumbnailHelper::IsCreateLcdSuccess(opts, data);
+    EXPECT_EQ(res, false);
 } // namespace Media
 } // namespace OHOS
