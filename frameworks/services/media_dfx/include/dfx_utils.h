@@ -30,6 +30,7 @@ public:
     static std::string GetCurrentDateMillisecond();
     static std::string JoinStrings(const std::unordered_set<std::string>& strSet, char delimiter);
     static std::unordered_set<std::string> SplitString(const std::string& input, char delimiter);
+    static std::string GetSafeAlbumName(const std::string &value);
 
 private:
     static std::string GetSafeDiaplayName(std::string &displayName);
