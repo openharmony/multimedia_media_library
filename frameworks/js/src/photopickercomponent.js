@@ -503,7 +503,7 @@ let PickerController = class {
     }
 
     saveTrustedPhotoAssets(e, callback, config, saveMode) {
-        if (e.length === 0) {
+        if (!e || e.length === 0) {
             callback({'code': 14000002, 'message': 'Invalid URI', name: ''}, []);
             return;
         }
