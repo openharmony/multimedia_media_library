@@ -503,6 +503,10 @@ let PickerController = class {
     }
 
     saveTrustedPhotoAssets(e, callback, config, saveMode) {
+        if (e.length === 0) {
+            callback({'code': 14000002, 'message': 'Invalid URI', name: ''}, []);
+            return;
+        }
         this.getAppName().then((appName) => {
             let date = Math.random();
             this.data = new Map([['SAVE_REPLACE_PHOTO_ASSETS', [e, config, saveMode, appName, date]]]);
