@@ -18,6 +18,7 @@
 #include "medialibrary_async_worker.h"
 #include "medialibrary_period_worker.h"
 #include "data_ability_helper_impl.h"
+#include "dfx_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_command.h"
@@ -122,6 +123,21 @@ static int SolveAlbumUri(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
     }
 }
 
+static void PrintNotifyInfo(NotifyType type, const list<Uri> &uris, const string &uri = "")
+{
+    string temp;
+    for (auto it : uris) {
+        temp += DfxUtils::GetSafeUri(it.ToString()) + ",";
+    }
+    if (type == NotifyType::NOTIFY_UPDATE || type == NotifyType::NOTIFY_REMOVE
+        || type == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET) {
+        if (!uri.empty()) {
+            MEDIA_INFO_LOG("album uri is %{public}s", uri.c_str());
+        }
+        MEDIA_INFO_LOG("type is %{public}d, info is %{public}s", static_cast<int>(type), temp.c_str());
+    }
+}
+
 static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
 {
     int ret;
@@ -129,11 +145,13 @@ static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
         if (uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX) != string::npos) {
             Uri notifyUri = Uri(uri);
             ret = SolveAlbumUri(notifyUri, type, uris);
+            PrintNotifyInfo(type, uris, uri);
         } else {
             auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
             MEDIA_DEBUG_LOG("obsMgrClient->NotifyChangeExt URI is %{public}s, type is %{public}d",
                 uri.c_str(), static_cast<int>(type));
             ret = obsMgrClient->NotifyChangeExt({static_cast<ChangeType>(type), uris});
+            PrintNotifyInfo(type, uris);
         }
         if (ret != E_OK) {
             MEDIA_ERR_LOG("PushNotification failed, errorCode = %{public}d", ret);
