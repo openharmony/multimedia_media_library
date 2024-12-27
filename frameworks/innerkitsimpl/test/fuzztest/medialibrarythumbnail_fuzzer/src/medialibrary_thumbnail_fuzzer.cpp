@@ -93,7 +93,8 @@ static inline Media::Size FuzzSize(const uint8_t* data, size_t size)
 {
     Media::Size value;
     value.width = FuzzInt32(data);
-    value.height = FuzzInt32(data);
+    const uint8_t *data2 = data + sizeof(int32_t);
+    value.height = FuzzInt32(data2);
     return value;
 }
 
@@ -304,6 +305,9 @@ static void ThumhnailTest(const uint8_t* data, size_t size)
 
 static void ThumbnailSourceTest(const uint8_t* data, size_t size)
 {
+    if (size < sizeof(int32_t)) {
+        return;
+    }
     Media::GetLocalThumbnailPath(FuzzString(data, size), FuzzString(data, size));
     int32_t error;
     int32_t minSize = FuzzInt32(data);
