@@ -1160,11 +1160,13 @@ static int32_t BuildAlbumInsertValues(const std::shared_ptr<MediaLibraryRdbStore
     if (values.GetObject(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, valueObject)) {
         valueObject.GetString(bundle_name);
         if (bundle_name == "com.huawei.ohos.screenshot") {
-            bundle_name = "com.huawei.homs.screenshot";
+            bundle_name = "com.huawei.hmos.screenshot";
+            values.Delete(PhotoAlbumColumns::ALBUM_BUNDLE_NAME);
             values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundle_name);
         }
         if (bundle_name == "com.huawei.ohos.screenrecorder") {
-            bundle_name = "com.huawei.homs.screenrecorder";
+            bundle_name = "com.huawei.hmos.screenrecorder";
+            values.Delete(PhotoAlbumColumns::ALBUM_BUNDLE_NAME);
             values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundle_name);
         }
     }
