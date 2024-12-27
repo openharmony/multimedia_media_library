@@ -984,5 +984,306 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, LocalThumbnailGeneration_test_001, Te
     auto res = serverTest->LocalThumbnailGeneration();
     EXPECT_EQ(res, E_OK);
 }
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_023, TestSize.Level0)
+{
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    bool isSourceEx = true;
+    std::shared_ptr<Picture> pictureEx = Picture::Create(pixelMap);
+    data.source.SetPictureEx(pictureEx);
+    auto res = ThumbnailUtils::CompressPicture(data, isSourceEx);
+    EXPECT_EQ(res, true);
+    bool isSourceEx2 = false;
+    auto res2 = ThumbnailUtils::CompressPicture(data, isSourceEx2);
+    EXPECT_EQ(res2, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_024, TestSize.Level0)
+{
+    ThumbnailData data;
+    ThumbRdbOpt opts;
+    auto res = ThumbnailUtils::DoUpdateAstcDateTaken(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_025, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    auto res = ThumbnailUtils::DoDeleteMonthAndYearAstc(opts);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_026, TestSize.Level0)
+{
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    ThumbRdbOpt opts;
+    auto res = ThumbnailUtils::CheckDateTaken(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_027, TestSize.Level0)
+{
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    ThumbRdbOpt opts;
+    auto res = ThumbnailUtils::CheckDateTaken(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_028, TestSize.Level0)
+{
+    auto res = ThumbnailUtils::CheckCloudThumbnailDownloadFinish(storePtr);
+    EXPECT_EQ(res, false);
+    const string dbPath = "/data/test/medialibrary_thumbnail_service_test_db";
+    NativeRdb::RdbStoreConfig config(dbPath);
+    ConfigTestOpenCall helper;
+    int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, 1, helper);
+    storePtr = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    auto res2 = ThumbnailUtils::CheckCloudThumbnailDownloadFinish(storePtr);
+    EXPECT_EQ(res2, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_029, TestSize.Level0)
+{
+    const string dbPath = "/data/test/medialibrary_thumbnail_service_test_db";
+    NativeRdb::RdbStoreConfig config(dbPath);
+    ConfigTestOpenCall helper;
+    int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, 1, helper);
+    storePtr = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    vector<ThumbnailData> infos;
+    const std::string table = "Photos";
+    auto res = ThumbnailUtils::QueryOldKeyAstcInfos(storePtr, table, infos);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_032, TestSize.Level0)
+{
+    ThumbnailData data;
+    ThumbRdbOpt opts;
+    int32_t err = E_ERR;
+    auto res = ThumbnailUtils::UpdateLcdReadyStatus(opts, data, err, LcdReady::GENERATE_LCD_COMPLETED);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_005, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    auto res = ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
+    EXPECT_EQ(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_006, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    int32_t timeStamp = 100;
+    int32_t type = 1;
+    auto res = ThumbnailGenerateHelper::GetKeyFrameThumbnailPixelMap(opts, timeStamp, type);
+    EXPECT_NE(res, E_ERR);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_007, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    ThumbnailData data;data.path = "path";
+    data.timeStamp = "timeStamp";
+    int32_t thumbType = 1;
+    std::string fileName;
+    auto res = ThumbnailGenerateHelper::GetAvailableKeyFrameFile(opts, data, thumbType, fileName);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_008, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    opts.table = "test";
+    auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, false);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_009, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    NativeRdb::RdbPredicates predicate{PhotoColumn::PHOTOS_TABLE};
+    int32_t requestId = 1;
+    auto res = ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, predicate, requestId);
+    EXPECT_EQ(res, E_ERR);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_010, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    ThumbnailType thumbType = ThumbnailType::THUMB_ASTC;
+    std::string fileName;
+    auto res = ThumbnailGenerateHelper::GetAvailableFile(opts, data, thumbType, fileName);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_011, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    int32_t thumbType = 2;
+    std::string fileName;
+    auto res = ThumbnailGenerateHelper::GetAvailableKeyFrameFile(opts, data, thumbType, fileName);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_012, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    std::string id = "id";
+    std::string tracks = "tracks";
+    std::string trigger = "trigger";
+    std::string genType = "update";
+    auto res = ThumbnailGenerateHelper::TriggerHighlightThumbnail(opts, id, tracks, trigger, genType);
+    EXPECT_EQ(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_013, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    auto res = ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_037, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    opts.row = "row";
+    opts.table = "table";
+    auto res = IThumbnailHelper::IsPureCloudImage(opts);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_038, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    ThumbnailData data;
+    data.path = "/storage/cloud/files/";
+    auto res = IThumbnailHelper::UpdateSuccessState(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_039, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = std::make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    auto res = IThumbnailHelper::IsCreateThumbnailSuccess(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_040, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMapEX = std::make_shared<PixelMap>();
+    data.source.SetPixelMapEx(pixelMapEX);
+    auto res = IThumbnailHelper::GenThumbnailEx(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_041, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = std::make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    auto res = IThumbnailHelper::IsCreateLcdExSuccess(opts, data);
+    EXPECT_EQ(res, false);
+    std::shared_ptr<PixelMap> pixelMapEX = std::make_shared<PixelMap>();
+    data.source.SetPixelMapEx(pixelMapEX);
+    res = IThumbnailHelper::IsCreateLcdExSuccess(opts, data);
+    EXPECT_EQ(res, false);
+    std::shared_ptr<Picture> picture = Picture::Create(pixelMap);
+    data.source.SetPicture(picture);
+    res = IThumbnailHelper::IsCreateLcdExSuccess(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_042, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = std::make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    std::shared_ptr<PixelMap> pixelMapEX = std::make_shared<PixelMap>();
+    data.source.SetPixelMapEx(pixelMapEX);
+    auto res = IThumbnailHelper::IsCreateLcdExSuccess(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_043, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = std::make_shared<PixelMap>();
+    std::shared_ptr<Picture> picture = Picture::Create(pixelMap);
+    data.source.SetPicture(picture);
+    auto res = IThumbnailHelper::IsCreateLcdSuccess(opts, data);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, GetThumbFd_test_001, TestSize.Level0)
+{
+    string path = " ";
+    string table = PhotoColumn::PHOTOS_TABLE;
+    string id = "0";
+    string uri = " ";
+    Size desiredSize;
+    bool isAstc = false;
+    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
+    int res = serverTest->GetThumbFd(path, table, id, uri, desiredSize, isAstc);
+    EXPECT_EQ(res < 0, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, GetKeyFrameThumbFd_test_001, TestSize.Level0)
+{
+    string path = " ";
+    string table = PhotoColumn::PHOTOS_TABLE;
+    string id = "0";
+    string uri = " ";
+    int32_t beginStamp = 0;
+    int32_t type = 1;
+    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
+    shared_ptr<OHOS::AbilityRuntime::Context> context;
+    serverTest->Init(storePtr, context);
+    int32_t res = serverTest->GetKeyFrameThumbFd(path, table, id, uri, beginStamp, type);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, GetAgingDataSize_test_001, TestSize.Level0)
+{
+    int64_t time = -100;
+    int count = 0;
+    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
+    int32_t res = serverTest->GetAgingDataSize(time, count);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, CreateAstcCloudDownload_test_001, TestSize.Level0)
+{
+    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
+    string id = "invalidId";
+    bool isCloudInsertTaskPriorityHigh = false;
+    int32_t res = serverTest->CreateAstcCloudDownload(id, isCloudInsertTaskPriorityHigh);
+    EXPECT_NE(res, E_OK);
+}
 } // namespace Media
 } // namespace OHOS

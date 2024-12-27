@@ -65,10 +65,10 @@ public:
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
 #endif
     const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
-    int32_t GetAgingDataSize(const int64_t &time, int &count);
+    EXPORT int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
     void DeleteAstcWithFileIdAndDateTaken(const std::string &fileId, const std::string &dateTaken);
-    int32_t CreateAstcCloudDownload(const std::string &id, bool isCloudInsertTaskPriorityHigh = false);
+    EXPORT int32_t CreateAstcCloudDownload(const std::string &id, bool isCloudInsertTaskPriorityHigh = false);
     EXPORT int32_t LocalThumbnailGeneration();
     EXPORT int32_t CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
     EXPORT void CancelAstcBatchTask(int32_t requestId);
@@ -85,9 +85,9 @@ private:
     bool CheckSizeValid();
     int32_t ParseThumbnailParam(const std::string &uri, std::string &fileId, std::string &networkId,
         std::string &tableName);
-    int GetThumbFd(const std::string &path, const std::string &table, const std::string &id,
+    EXPORT int GetThumbFd(const std::string &path, const std::string &table, const std::string &id,
         const std::string &uri, const Size &size, bool isAstc = false);
-    int GetKeyFrameThumbFd(const std::string &path, const std::string &table, const std::string &id,
+    EXPORT int GetKeyFrameThumbFd(const std::string &path, const std::string &table, const std::string &id,
         const std::string &uri, int32_t &beginStamp, int32_t &type);
     static std::shared_ptr<ThumbnailService> thumbnailServiceInstance_;
     static std::mutex instanceLock_;
