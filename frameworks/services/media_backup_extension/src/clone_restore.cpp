@@ -189,8 +189,8 @@ Value GetValueFromMap(const unordered_map<Key, Value> &map, const Key &key, cons
 CloneRestore::CloneRestore()
 {
     sceneCode_ = CLONE_RESTORE_ID;
-    ffrt::set_escape_enable(false);
-    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = false");
+    ffrt_disable_worker_escape();
+    MEDIA_INFO_LOG("Set ffrt_disable_worker_escape");
 }
 
 void CloneRestore::StartRestore(const string &backupRestoreDir, const string &upgradePath)

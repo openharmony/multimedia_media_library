@@ -63,8 +63,8 @@ UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::str
     mediaAppName_ = mediaAppName;
     sceneCode_ = sceneCode;
     audioAppName_ = "Audio";
-    ffrt::set_escape_enable(false);
-    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = false");
+    ffrt_disable_worker_escape();
+    MEDIA_INFO_LOG("Set ffrt_disable_worker_escape");
 }
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode,
@@ -74,8 +74,8 @@ UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::str
     mediaAppName_ = mediaAppName;
     sceneCode_ = sceneCode;
     dualDirName_ = dualDirName;
-    ffrt::set_escape_enable(false);
-    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = false");
+    ffrt_disable_worker_escape();
+    MEDIA_INFO_LOG("Set ffrt_disable_worker_escape");
 }
 
 int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::string &upgradeFilePath, bool isUpgrade)
