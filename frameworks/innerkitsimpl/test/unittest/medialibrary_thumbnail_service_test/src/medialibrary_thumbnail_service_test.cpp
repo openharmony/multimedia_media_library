@@ -991,7 +991,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_023, Tes
     std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
     data.source.SetPixelMap(pixelMap);
     bool isSourceEx = true;
-    std::shared_ptr<PixelMap> pictureEx = Picture::Create(pixerlMap);
+    std::shared_ptr<Picture> pictureEx = Picture::Create(pixelMap);
     data.source.SetPictureEx(pictureEx);
     auto res = ThumbnailUtils::CompressPicture(data, isSourceEx);
     EXPECT_EQ(res, true);
@@ -1273,7 +1273,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, GetAgingDataSize_test_001, TestSize.L
     int64_t time = -100;
     int count = 0;
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
-    int32_t result = serverTest->GetAgingDataSize(time, count);
+    int32_t res = serverTest->GetAgingDataSize(time, count);
     EXPECT_NE(res, E_OK);
 }
 
