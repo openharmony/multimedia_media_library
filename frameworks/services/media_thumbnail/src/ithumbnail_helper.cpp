@@ -18,6 +18,7 @@
 
 #include "ability_manager_client.h"
 #include "background_task_mgr_helper.h"
+#include "cloud_sync_helper.h"
 #include "dfx_cloud_manager.h"
 #include "dfx_utils.h"
 #include "hitrace_meter.h"
@@ -55,6 +56,13 @@ void StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data)
     if (tmpPath.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
         MediaLibraryPhotoOperations::StoreThumbnailSize(photoId, tmpPath);
     }
+}
+
+void IThumbnailHelper::CloudSyncOnGenerationComplete(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = true;
+    CloudSyncHelper::GetInstance()->StartSync();
+    MEDIA_INFO_LOG("CloudSyncOnGenerationComplete complete");
 }
 
 void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
@@ -151,8 +159,24 @@ void IThumbnailHelper::UpdateAstcDateTaken(std::shared_ptr<ThumbnailTaskData> &d
     }
 }
 
+void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, const ThumbnailTaskType &taskType,
+    const ThumbnailTaskPriority &priority)
+{
+    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
+        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(taskType);
+    if (thumbnailWorker == nullptr) {
+        MEDIA_ERR_LOG("thumbnailWorker is null");
+        return;
+    }
+
+    std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>();
+    std::shared_ptr<ThumbnailGenerateTask> task = std::make_shared<ThumbnailGenerateTask>(executor, taskData);
+    thumbnailWorker->AddTask(task, priority);
+}
+
 void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts,
-    ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority)
+    ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority,
+    std::shared_ptr<ExecuteParamBuilder> param)
 {
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(taskType);
@@ -162,7 +186,7 @@ void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executo
     }
 
     std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(opts, thumbData);
-    std::shared_ptr<ThumbnailGenerateTask> task = std::make_shared<ThumbnailGenerateTask>(executor, taskData);
+    std::shared_ptr<ThumbnailGenerateTask> task = std::make_shared<ThumbnailGenerateTask>(executor, taskData, param);
     thumbnailWorker->AddTask(task, priority);
 }
 
@@ -896,16 +920,10 @@ bool IThumbnailHelper::DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
-bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
+static bool ScaleLcdToThumbnail(ThumbnailData &data)
 {
-    MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
-    data.isNeedStoreSize = false;
-    if (!DoCreateLcd(opts, data, ret)) {
-        MEDIA_ERR_LOG("Fail to create lcd, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+    if (data.source.IsEmptySource()) {
+        MEDIA_ERR_LOG("data source is empty when scaling from lcd to thumb");
         return false;
     }
 
@@ -929,15 +947,17 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
         MEDIA_ERR_LOG("Fail to scale from LCD_EX to THM_EX, path: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
     }
-
-    if (!DoCreateThumbnail(opts, data, ret)) {
-        MEDIA_ERR_LOG("Fail to create thumbnail, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return false;
-    }
     return true;
+}
+
+bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
+{
+    MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    data.isNeedStoreSize = false;
+    DoCreateLcd(opts, data, ret);
+    ScaleLcdToThumbnail(data);
+    return DoCreateThumbnail(opts, data, ret);
 }
 
 std::string GetAvailableThumbnailSuffix(ThumbnailData &data)

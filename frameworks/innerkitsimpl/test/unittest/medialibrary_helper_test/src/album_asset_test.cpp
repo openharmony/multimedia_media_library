@@ -25,6 +25,11 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+void MediaLibraryHelperUnitTest::SetUpTestCase(void) {}
+void MediaLibraryHelperUnitTest::TearDownTestCase(void) {}
+void MediaLibraryHelperUnitTest::SetUp(void) {}
+void MediaLibraryHelperUnitTest::TearDown(void) {}
+
 /*
  * Feature : MediaLibraryHelperUnitTest
  * Function : Check set get function

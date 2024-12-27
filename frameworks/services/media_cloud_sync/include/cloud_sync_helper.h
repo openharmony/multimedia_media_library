@@ -18,6 +18,7 @@
 
 #include <mutex>
 
+#include <atomic>
 #include <timer.h>
 
 #include "cloud_sync_manager.h"
@@ -35,6 +36,7 @@ constexpr int32_t SYNC_INTERVAL = 5000;
 class CloudSyncHelper final {
 public:
     EXPORT static std::shared_ptr<CloudSyncHelper> GetInstance();
+    std::atomic<bool> isThumbnailGenerationCompleted_ = true;
     virtual ~CloudSyncHelper();
 
     EXPORT void StartSync();
