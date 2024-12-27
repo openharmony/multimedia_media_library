@@ -1123,7 +1123,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_010, T
     ThumbRdbOpt opts;
     ThumbnailData data;
     ThumbnailType thumbType = ThumbnailType::THUMB_ASTC;
-    std::string fileName;   
+    std::string fileName;
     auto res = ThumbnailGenerateHelper::GetAvailableFile(opts, data, thumbType, fileName);
     EXPECT_NE(res, E_OK);
 }
