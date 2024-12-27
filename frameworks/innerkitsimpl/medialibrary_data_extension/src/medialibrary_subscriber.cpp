@@ -80,6 +80,9 @@ namespace Media {
 // The task can be performed when the battery level reaches the value
 const int32_t PROPER_DEVICE_BATTERY_CAPACITY = 50;
 
+const int TIME_START_RELEASE_TEMPERATURE_LIMIT = 1;
+const int TIME_STOP_RELEASE_TEMPERATURE_LIMIT = 6;
+
 // The task can be performed only when the temperature of the device is lower than the value
 const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 1;
 const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_HOT = 3;
@@ -109,7 +112,8 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED,
     EventFwk::CommonEventSupport::COMMON_EVENT_THERMAL_LEVEL_CHANGED,
     EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE,
-    EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE
+    EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE,
+    EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK
 };
 
 const std::map<std::string, StatusEventType> BACKGROUND_OPERATION_STATUS_MAP = {
@@ -119,7 +123,16 @@ const std::map<std::string, StatusEventType> BACKGROUND_OPERATION_STATUS_MAP = {
     {EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON, StatusEventType::SCREEN_ON},
     {EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED, StatusEventType::BATTERY_CHANGED},
     {EventFwk::CommonEventSupport::COMMON_EVENT_THERMAL_LEVEL_CHANGED, StatusEventType::THERMAL_LEVEL_CHANGED},
+    {EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK, StatusEventType::TIME_TICK},
 };
+
+std::tm *GetNowLocalTime()
+{
+    auto now = std::chrono::system_clock::now();
+    std::time_t nowTime = std::chrono::system_clock::to_time_t(now);
+    std::tm *nowLocalTime = std::localtime(&nowTime);
+    return nowLocalTime;
+}
 
 MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo)
     : EventFwk::CommonEventSubscriber(subscriberInfo)
@@ -228,21 +241,24 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (deviceTemperatureLevel_ != newTemperatureLevel_) {
-        deviceTemperatureLevel_ = newTemperatureLevel_;
-        ThumbnailService::GetInstance()->NotifyTempStatusForReady(deviceTemperatureLevel_);
+    std::tm *nowLocalTime = GetNowLocalTime();
+    bool newStatus = false;
+    if (nowLocalTime != nullptr && nowLocalTime->tm_hour >= TIME_START_RELEASE_TEMPERATURE_LIMIT &&
+        nowLocalTime->tm_hour < TIME_STOP_RELEASE_TEMPERATURE_LIMIT) {
+        newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ &&
+            newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_HOT;
+    } else {
+        newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ &&
+            newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL;
     }
-    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
 
     if (currentStatus_ == newStatus) {
         return;
     }
 
     MEDIA_INFO_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
-        currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
-    PowerEfficiencyManager::SetSubscriberStatus(isCharging_, isScreenOff_);
+        currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, newTemperatureLevel_);
     currentStatus_ = newStatus;
-    ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(newStatus);
     EndBackgroundOperationThread();
     if (currentStatus_) {
         isTaskWaiting_ = true;
@@ -266,21 +282,15 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
     switch (statusEventType) {
         case StatusEventType::SCREEN_OFF:
             isScreenOff_ = true;
-            CheckHalfDayMissions();
-            WalCheckPointAsync();
             break;
         case StatusEventType::SCREEN_ON:
             isScreenOff_ = false;
-            CheckHalfDayMissions();
             break;
         case StatusEventType::CHARGING:
             isCharging_ = true;
-            CheckHalfDayMissions();
-            WalCheckPointAsync();
             break;
         case StatusEventType::DISCHARGING:
             isCharging_ = false;
-            CheckHalfDayMissions();
             break;
         case StatusEventType::BATTERY_CHANGED:
             isPowerSufficient_ = want.GetIntParam(COMMON_EVENT_KEY_BATTERY_CAPACITY,
@@ -290,9 +300,10 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             newTemperatureLevel_ = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
                 COMMON_EVENT_KEY_GET_DEFAULT_PARAM);
             isDeviceTemperatureProper_ = newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL;
-            PowerEfficiencyManager::UpdateAlbumUpdateInterval(isDeviceTemperatureProper_);
             break;
         }
+        case StatusEventType::TIME_TICK:
+            break;
         default:
             MEDIA_WARN_LOG("StatusEventType:%{public}d is not invalid", statusEventType);
             return;
@@ -300,6 +311,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
 
     UpdateCurrentStatus();
     UpdateBackgroundTimer();
+    DealWithEventsAfterUpdateStatus(statusEventType);
 }
 
 void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadStatus(const AAFwk::Want &want,
@@ -353,7 +365,8 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
 {
     const AAFwk::Want &want = eventData.GetWant();
     std::string action = want.GetAction();
-    if (action != EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED) {
+    if (action != EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED &&
+        action != EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK) {
         MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
     }
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
@@ -641,12 +654,6 @@ void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleNam
 
 void MedialibrarySubscriber::UpdateBackgroundTimer()
 {
-    if (isCharging_ && isScreenOff_) {
-        CloudSyncDfxManager::GetInstance().RunDfx();
-    }
-
-    ThumbnailGenerateWorkerManager::GetInstance().TryCloseThumbnailWorkerTimer();
-
     std::lock_guard<std::mutex> lock(mutex_);
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ &&
         isDeviceTemperatureProper_ && isWifiConnected_;
@@ -687,6 +694,39 @@ void MedialibrarySubscriber::EndBackgroundOperationThread()
         return;
     }
     backgroundOperationThread_.join();
+}
+
+void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (deviceTemperatureLevel_ != newTemperatureLevel_) {
+        deviceTemperatureLevel_ = newTemperatureLevel_;
+        ThumbnailService::GetInstance()->NotifyTempStatusForReady(deviceTemperatureLevel_);
+    }
+
+    if (isCharging_ && isScreenOff_) {
+        CloudSyncDfxManager::GetInstance().RunDfx();
+    }
+
+    ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(currentStatus_);
+    ThumbnailGenerateWorkerManager::GetInstance().TryCloseThumbnailWorkerTimer();
+    PowerEfficiencyManager::SetSubscriberStatus(isCharging_, isScreenOff_);
+
+    if (statusEventType == StatusEventType::SCREEN_OFF || statusEventType == StatusEventType::CHARGING) {
+        WalCheckPointAsync();
+        CheckHalfDayMissions();
+        return;
+    }
+
+    if (statusEventType == StatusEventType::SCREEN_ON || statusEventType == StatusEventType::DISCHARGING) {
+        CheckHalfDayMissions();
+        return;
+    }
+
+    if (statusEventType == StatusEventType::THERMAL_LEVEL_CHANGED) {
+        MEDIA_INFO_LOG("Current temperature level is %{public}d", newTemperatureLevel_);
+        PowerEfficiencyManager::UpdateAlbumUpdateInterval(isDeviceTemperatureProper_);
+    }
 }
 }  // namespace Media
 }  // namespace OHOS

@@ -324,6 +324,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     cloudPhotoObserver_ = std::make_shared<CloudSyncObserver>();
     cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
+    shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_TRIGGER_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_, true);
     HandleUpgradeRdbAsync();
@@ -459,6 +460,7 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         MEDIA_ERR_LOG("DataShareHelper is null");
         return;
     }
+    shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_TRIGGER_PREFIX), cloudPhotoObserver_);
     shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_);
     shareHelper->UnregisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_);
     rdbStore_ = nullptr;
@@ -1257,6 +1259,51 @@ static void CacheAging()
     }
 }
 
+static int32_t ClearInvalidDeletedAlbum()
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return E_FAIL;
+    }
+
+    const std::string QUERY_NO_CLOUD_DELETED_ALBUM_INFO =
+        "SELECT album_id, album_name FROM PhotoAlbum WHERE " + PhotoAlbumColumns::ALBUM_DIRTY +
+        " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
+        " AND " + PhotoColumn::PHOTO_CLOUD_ID + " is NULL";
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_NO_CLOUD_DELETED_ALBUM_INFO);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query not match data fails");
+        return E_HAS_DB_ERROR;
+    }
+
+    vector<string> albumIds;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int columnIndex = 0;
+        int32_t albumId = -1;
+        if (resultSet->GetColumnIndex(PhotoAlbumColumns::ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetInt(columnIndex, albumId);
+            albumIds.emplace_back(to_string(albumId));
+        }
+        std::string albumName = "";
+        if (resultSet->GetColumnIndex(PhotoAlbumColumns::ALBUM_NAME, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetString(columnIndex, albumName);
+        }
+        MEDIA_INFO_LOG("Handle name %{public}s id %{public}d", DfxUtils::GetSafeAlbumName(albumName).c_str(), albumId);
+    }
+
+    NativeRdb::RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
+    int deleteRow = -1;
+    auto ret = rdbStore->Delete(deleteRow, predicates);
+    MEDIA_INFO_LOG("Delete invalid album, deleteRow is %{public}d", deleteRow);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Delete invalid album failed, ret = %{public}d, deleteRow is %{public}d", ret, deleteRow);
+        return E_HAS_DB_ERROR;
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryDataManager::DoAging()
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
@@ -1267,6 +1314,8 @@ int32_t MediaLibraryDataManager::DoAging()
     }
 
     CacheAging(); // aging file in .cache
+
+    ClearInvalidDeletedAlbum(); // Clear invalid album data with null cloudid and dirty '4'
 
     shared_ptr<TrashAsyncTaskWorker> asyncWorker = TrashAsyncTaskWorker::GetInstance();
     if (asyncWorker == nullptr) {
@@ -2070,6 +2119,8 @@ int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryComm
         return E_OK;
     } else if (cmd.GetOprnType() == OperationType::GENERATE_THUMBNAILS_RESTORE) {
         return thumbnailService_->RestoreThumbnailDualFrame();
+    } else if (cmd.GetOprnType() == OperationType::LOCAL_THUMBNAIL_GENERATION) {
+        return thumbnailService_->LocalThumbnailGeneration();
     } else {
         MEDIA_ERR_LOG("invalid mediaLibrary command");
         return E_INVALID_ARGUMENTS;

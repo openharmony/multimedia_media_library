@@ -111,6 +111,7 @@ constexpr int32_t THUMBNAIL_GENERATE_BATCH_COUNT = 200;
 constexpr int32_t ASTC_GENERATE_COUNT_AFTER_RESTORE = 500;
 constexpr int32_t READY_TEMPERATURE_LEVEL = 4;
 constexpr int32_t EVEN_BASE_NUMBER = 2;
+constexpr int32_t LOCAL_GENERATION_BATTERY_CAPACITY = 10;
 const std::string DEFAULT_EXIF_ORIENTATION = "1";
 
 const std::string THUMBNAIL_LCD_SUFFIX = "LCD";     // The size fit to screen
@@ -132,6 +133,7 @@ constexpr uint8_t THUMBNAIL_HIGH = 100;
 constexpr uint8_t ASTC_LOW_QUALITY = 20;
 
 constexpr uint32_t THUMBNAIL_QUERY_MAX = 2000;
+constexpr uint32_t THUMBNAIL_QUERY_MIN = 200;
 constexpr int64_t AV_FRAME_TIME = 0;
 constexpr int64_t MS_TRANSFER_US = 1000;
 
