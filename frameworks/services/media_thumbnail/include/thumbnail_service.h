@@ -65,10 +65,10 @@ public:
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
 #endif
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
-    int32_t GetAgingDataSize(const int64_t &time, int &count);
+    EXPORT int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
     void DeleteAstcWithFileIdAndDateTaken(const std::string &fileId, const std::string &dateTaken);
-    int32_t CreateAstcCloudDownload(const std::string &id, bool isCloudInsertTaskPriorityHigh = false);
+    EXPORT int32_t CreateAstcCloudDownload(const std::string &id, bool isCloudInsertTaskPriorityHigh = false);
     EXPORT int32_t CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
     EXPORT void CancelAstcBatchTask(int32_t requestId);
     void UpdateAstcWithNewDateTaken(const std::string &fileId, const std::string &newDateTaken,
