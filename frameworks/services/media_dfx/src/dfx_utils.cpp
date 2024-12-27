@@ -163,5 +163,22 @@ unordered_set<string> DfxUtils::SplitString(const string& input, char delimiter)
     return result;
 }
 
+string DfxUtils::GetSafeAlbumName(const string& albumName)
+{
+    if (albumName == "") {
+        return albumName;
+    }
+    uint32_t length = albumName.size();
+    string safeAlbumName;
+    if (length <= GARBLE_SMALL) {
+        safeAlbumName = GARBLE + albumName.substr(length - GARBLE_LAST_ONE);
+    } else if (length > GARBLE_LARGE) {
+        safeAlbumName = GARBLE + albumName.substr(GARBLE_LARGE);
+    } else {
+        safeAlbumName = GARBLE + albumName.substr(length - GARBLE_LAST_TWO);
+    }
+    return safeAlbumName;
+}
+
 } // namespace Media
 } // namespace OHOS

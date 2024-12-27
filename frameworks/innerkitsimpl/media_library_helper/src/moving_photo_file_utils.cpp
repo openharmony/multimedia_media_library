@@ -266,7 +266,7 @@ static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhoto
 }
 
 int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& imagePath, const string& videoPath,
-    uint32_t frameIndex, off_t& fileSize, int64_t coverPosition)
+    uint32_t frameIndex, int64_t coverPosition, off_t &fileSize)
 {
     string absImagePath;
     if (!PathToRealPath(imagePath, absImagePath)) {
