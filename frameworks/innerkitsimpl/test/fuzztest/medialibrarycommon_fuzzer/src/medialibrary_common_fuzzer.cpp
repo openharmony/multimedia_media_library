@@ -127,9 +127,13 @@ static void FileUriTest(const uint8_t *data, size_t size)
     Media::MediaFileUri::GetPhotoId(FuzzString(data, size));
     Media::MediaFileUri::RemoveAllFragment(uriStr);
     Media::MediaFileUri::GetMediaTypeUri(static_cast<Media::MediaType>(FuzzInt32(data)), FuzzInt32(data));
+    if (size < sizeof(int32_t)) {
+        return;
+    }
     vector<string> timeIdBatch;
     int start = FuzzInt32(data);
-    int count = FuzzInt32(data);
+    const uint8_t *data2 = data + sizeof(int32_t);
+    int count = FuzzInt32(data2);
     Media::MediaFileUri::GetTimeIdFromUri(FuzzVectorString(data, size), timeIdBatch);
     Media::MediaFileUri::GetTimeIdFromUri(FuzzVectorString(data, size), timeIdBatch, start, count);
     Media::MediaFileUri::CreateAssetBucket(FuzzInt32(data), count);
