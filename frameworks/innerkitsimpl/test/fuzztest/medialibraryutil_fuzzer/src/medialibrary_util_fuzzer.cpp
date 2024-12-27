@@ -137,6 +137,9 @@ static void UriPermissionTest(const uint8_t *data, size_t size)
 
 static void AnalysisTest(const uint8_t *data, size_t size)
 {
+    if (size < sizeof(int32_t)) {
+        return;
+    }
     std::vector<std::string> columns;
     NativeRdb::ValuesBucket values;
     DataShare::DataSharePredicates pred;
@@ -146,7 +149,8 @@ static void AnalysisTest(const uint8_t *data, size_t size)
     Media::MergeAlbumInfo info1;
     info1.albumId = FuzzInt32(data);
     Media::MergeAlbumInfo info2;
-    info2.albumId = FuzzInt32(data);
+    const uint8_t *data2 = data + sizeof(int32_t);
+    info2.albumId = FuzzInt32(data2);
     std::vector<Media::MergeAlbumInfo> infos;
     infos.push_back(info1);
     infos.push_back(info2);

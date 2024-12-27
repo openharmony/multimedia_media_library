@@ -281,7 +281,11 @@ static void EnhancementTaskManagerTest(const uint8_t *data, size_t size)
     vector<string> taskIds = FuzzVectorString(data, size);
     Media::EnhancementTaskManager::RemoveAllEnhancementTask(taskIds);
 
-    fileId = FuzzInt32(data, size);
+    if (size < sizeof(int32_t)) {
+        return;
+    }
+    const uint8_t *data2 = data + sizeof(int32_t);
+    fileId = FuzzInt32(data2, size);
     photoId = FuzzString(data, size);
     Media::EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
     Media::EnhancementTaskManager::InProcessingTask(photoId);
