@@ -2110,11 +2110,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisGetPhotoIndex_Test_002, TestSize
     vector<string> columns = {to_string(id2), to_string(albumId)};
     int errCode = 0;
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryCmd, columns, predicatesQuery, errCode);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
-    resultSet->GoToFirstRow();
-    int index = -1;
-    resultSet->GetInt(0, index);
-    EXPECT_EQ(index, -1);
+    EXPECT_EQ(queryResultSet, nullptr);
 }
 
 void CreatTestImage()
