@@ -651,10 +651,9 @@ bool MtpPacketTool::GetUInt64(const std::vector<uint8_t> &buffer, size_t &offset
 
 bool MtpPacketTool::GetUInt128(const std::vector<uint8_t> &buffer, size_t &offset, uint128_t &value)
 {
-    if (!GetUInt32(buffer, offset, value[OFFSET_0]) || !GetUInt32(buffer, offset, value[OFFSET_1]) ||
-        !GetUInt32(buffer, offset, value[OFFSET_2]) || !GetUInt32(buffer, offset, value[OFFSET_3])) {
-        return false;
-    }
+    bool cond = (!GetUInt32(buffer, offset, value[OFFSET_0]) || !GetUInt32(buffer, offset, value[OFFSET_1]) ||
+        !GetUInt32(buffer, offset, value[OFFSET_2]) || !GetUInt32(buffer, offset, value[OFFSET_3]));
+    CHECK_AND_RETURN_RET(!cond, false);
     return true;
 }
 
@@ -700,10 +699,10 @@ bool MtpPacketTool::GetInt64(const std::vector<uint8_t> &buffer, size_t &offset,
 bool MtpPacketTool::GetInt128(const std::vector<uint8_t> &buffer, size_t &offset, int128_t &value)
 {
     uint128_t uValue = {0};
-    if (!GetUInt32(buffer, offset, uValue[OFFSET_0]) || !GetUInt32(buffer, offset, uValue[OFFSET_1]) ||
-        !GetUInt32(buffer, offset, uValue[OFFSET_2]) || !GetUInt32(buffer, offset, uValue[OFFSET_3])) {
-        return false;
-    }
+    bool cond = (!GetUInt32(buffer, offset, uValue[OFFSET_0]) || !GetUInt32(buffer, offset, uValue[OFFSET_1]) ||
+        !GetUInt32(buffer, offset, uValue[OFFSET_2]) || !GetUInt32(buffer, offset, uValue[OFFSET_3]));
+    CHECK_AND_RETURN_RET(!cond, false);
+
     value[OFFSET_0] = static_cast<int32_t>(uValue[OFFSET_0]);
     value[OFFSET_1] = static_cast<int32_t>(uValue[OFFSET_1]);
     value[OFFSET_2] = static_cast<int32_t>(uValue[OFFSET_2]);
@@ -849,9 +848,7 @@ int MtpPacketTool::GetObjectPropTypeByPropCode(uint16_t propCode)
 bool MtpPacketTool::Int8ToString(const int8_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_32] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%02x, dec=%d", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%02x, dec=%d", value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -859,9 +856,7 @@ bool MtpPacketTool::Int8ToString(const int8_t &value, std::string &outStr)
 bool MtpPacketTool::UInt8ToString(const uint8_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_32] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%02x, dec=%u", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%02x, dec=%u", value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -869,9 +864,7 @@ bool MtpPacketTool::UInt8ToString(const uint8_t &value, std::string &outStr)
 bool MtpPacketTool::Int16ToString(const int16_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_32] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%04x, dec=%d", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%04x, dec=%d", value, value) != -1,  false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -879,9 +872,7 @@ bool MtpPacketTool::Int16ToString(const int16_t &value, std::string &outStr)
 bool MtpPacketTool::UInt16ToString(const uint16_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_32] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%04x, dec=%u", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%04x, dec=%u", value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -889,9 +880,7 @@ bool MtpPacketTool::UInt16ToString(const uint16_t &value, std::string &outStr)
 bool MtpPacketTool::Int32ToString(const int32_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_64] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%08x, dec=%d", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%08x, dec=%d", value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -899,9 +888,7 @@ bool MtpPacketTool::Int32ToString(const int32_t &value, std::string &outStr)
 bool MtpPacketTool::UInt32ToString(const uint32_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_64] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%08x, dec=%u", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%08x, dec=%u", value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -909,9 +896,8 @@ bool MtpPacketTool::UInt32ToString(const uint32_t &value, std::string &outStr)
 bool MtpPacketTool::Int64ToString(const int64_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_64] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%016" PRIx64 ", dec=%" PRIi64 "", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%016" PRIx64 ", dec=%" PRIi64 "",
+        value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -919,9 +905,8 @@ bool MtpPacketTool::Int64ToString(const int64_t &value, std::string &outStr)
 bool MtpPacketTool::UInt64ToString(const uint64_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_64] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%016" PRIx64 ", dec=%" PRIu64 "", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%016" PRIx64 ", dec=%" PRIu64 "",
+        value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -929,11 +914,9 @@ bool MtpPacketTool::UInt64ToString(const uint64_t &value, std::string &outStr)
 bool MtpPacketTool::Int128ToString(const int128_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_128] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=(%08x,%08x,%08x,%08x), dec=(%d,%d,%d,%d)", value[OFFSET_0],
-        value[OFFSET_1], value[OFFSET_2], value[OFFSET_3], value[OFFSET_0], value[OFFSET_1], value[OFFSET_2],
-        value[OFFSET_3]) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=(%08x,%08x,%08x,%08x), dec=(%d,%d,%d,%d)",
+        value[OFFSET_0], value[OFFSET_1], value[OFFSET_2], value[OFFSET_3], value[OFFSET_0], value[OFFSET_1],
+        value[OFFSET_2], value[OFFSET_3]) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
