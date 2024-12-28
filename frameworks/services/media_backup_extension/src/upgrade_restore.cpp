@@ -496,16 +496,10 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
 {
     std::vector<FileInfo> result;
     result.reserve(QUERY_COUNT);
-    if (galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(galleryRdb_ != nullptr, result, "galleryRdb_ is nullptr, Maybe init failed.");
     auto resultSet = this->photosRestore_.GetGalleryMedia(
         offset, QUERY_COUNT, this->shouldIncludeSd_, this->hasLowQualityImage_);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo tmpInfo;
         if (ParseResultSetFromGallery(resultSet, tmpInfo)) {
@@ -519,24 +513,18 @@ bool UpgradeRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb::Res
 {
     info.oldPath = GetStringVal(EXTERNAL_FILE_DATA, resultSet);
     int32_t mediaType = GetInt32Val(EXTERNAL_MEDIA_TYPE, resultSet);
-    if (mediaType != DUAL_MEDIA_TYPE::AUDIO_TYPE) {
-        MEDIA_ERR_LOG("Invalid media type: %{public}d, path: %{public}s", mediaType,
-            BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(mediaType == DUAL_MEDIA_TYPE::AUDIO_TYPE, false,
+        "Invalid media type: %{public}d, path: %{public}s", mediaType,
+        BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str());
     info.fileType = MediaType::MEDIA_TYPE_AUDIO;
-    if (!BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath)) {
-        MEDIA_ERR_LOG("Invalid path: %{public}s.",
-            BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath,
+        info.relativePath), false, "Invalid path: %{public}s.",
+        BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str());
     info.displayName = GetStringVal(EXTERNAL_DISPLAY_NAME, resultSet);
     info.title = GetStringVal(EXTERNAL_TITLE, resultSet);
     info.fileSize = GetInt64Val(EXTERNAL_FILE_SIZE, resultSet);
-    if (info.fileSize < GARBAGE_PHOTO_SIZE) {
-        MEDIA_WARN_LOG("maybe garbage path = %{public}s.",
-            BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str());
-    }
+    CHECK_AND_WARN_LOG(info.fileSize >= GARBAGE_PHOTO_SIZE, "maybe garbage path = %{public}s.",
+        BackupFileUtils::GarbleFilePath(info.oldPath, DEFAULT_RESTORE_ID).c_str());
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(EXTERNAL_IS_FAVORITE, resultSet);
     info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
@@ -547,19 +535,13 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfosFromExternal(int32_t offset,
 {
     std::vector<FileInfo> result;
     result.reserve(QUERY_COUNT);
-    if (externalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdb_ is nullptr, Maybe init failed.");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(externalRdb_ != nullptr, result, "Pointer rdb_ is nullptr, Maybe init failed.");
     std::string queryCamera = isCamera ? IN_CAMERA : NOT_IN_CAMERA;
     std::string queryFilesByCount = QUERY_FILE_COLUMN + queryCamera + " AND " +
         COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC + " limit " + std::to_string(offset) + ", " +
         std::to_string(QUERY_COUNT);
     auto resultSet = externalRdb_->QuerySql(queryFilesByCount);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo tmpInfo;
         if (ParseResultSetFromExternal(resultSet, tmpInfo)) {
@@ -588,9 +570,7 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     string dbName)
 {
     // only parse image and video
-    if (!IsBasicInfoValid(resultSet, info, dbName)) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(IsBasicInfoValid(resultSet, info, dbName), false);
     info.title = GetStringVal(GALLERY_TITLE, resultSet);
     info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
@@ -628,10 +608,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
 
     bool isSuccess = ParseResultSet(resultSet, info, GALLERY_DB_NAME);
-    if (!isSuccess) {
-        MEDIA_ERR_LOG("ParseResultSetFromGallery fail");
-        return isSuccess;
-    }
+    CHECK_AND_RETURN_RET_LOG(isSuccess, isSuccess, "ParseResultSetFromGallery fail");
     info.burstKey = burstKeyGenerator_.FindBurstKey(info);
     // Pre-Fetch: sourcePath, lPath
     info.sourcePath = GetStringVal(GALLERY_MEDIA_SOURCE_PATH, resultSet);
@@ -653,10 +630,7 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
     } else {
         isSuccess = ParseResultSet(resultSet, info, EXTERNAL_DB_NAME);
     }
-    if (!isSuccess) {
-        MEDIA_ERR_LOG("ParseResultSetFromExternal fail");
-        return isSuccess;
-    }
+    CHECK_AND_RETURN_RET_LOG(isSuccess, isSuccess, "ParseResultSetFromExternal fail");
     info.showDateToken = GetInt64Val(EXTERNAL_DATE_TAKEN, resultSet);
     info.dateTaken = GetInt64Val(EXTERNAL_DATE_TAKEN, resultSet);
     info.sourcePath = GetStringVal(EXTERNAL_FILE_DATA, resultSet);
@@ -718,9 +692,8 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
     std::string &newPath, std::string &relativePath)
 {
     size_t pos = 0;
-    if (!BackupFileUtils::GetPathPosByPrefixLevel(sceneCode_, srcPath, INTERNAL_PREFIX_LEVEL, pos)) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(BackupFileUtils::GetPathPosByPrefixLevel(sceneCode_, srcPath,
+        INTERNAL_PREFIX_LEVEL, pos), false);
     newPath = prefix + srcPath;
     relativePath = srcPath.substr(pos);
     return true;
@@ -774,10 +747,8 @@ void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
         std::vector<std::string> tagIds;
         vector<PortraitAlbumInfo> portraitAlbumInfos = QueryPortraitAlbumInfos(offset,
             tagNameToDeleteSelection);
-        if (!BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(tagNameToDeleteSelection, tagIds, mediaLibraryRdb_)) {
-            MEDIA_ERR_LOG("Batch delete duplicate portrait album failed.");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(tagNameToDeleteSelection,
+            tagIds, mediaLibraryRdb_), "Batch delete duplicate portrait album failed.");
         InsertPortraitAlbum(portraitAlbumInfos);
     }
 
@@ -800,10 +771,7 @@ vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset
         " FROM " + GALLERY_PORTRAIT_ALBUM_TABLE;
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         PortraitAlbumInfo portraitAlbumInfo;
         if (!ParsePortraitAlbumResultSet(resultSet, portraitAlbumInfo)) {
@@ -842,14 +810,8 @@ bool UpgradeRestore::SetAttributes(PortraitAlbumInfo &portraitAlbumInfo)
 
 void UpgradeRestore::InsertPortraitAlbum(std::vector<PortraitAlbumInfo> &portraitAlbumInfos)
 {
-    if (mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
-        return;
-    }
-    if (portraitAlbumInfos.empty()) {
-        MEDIA_ERR_LOG("portraitAlbumInfos are empty");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
+    CHECK_AND_RETURN_LOG(!portraitAlbumInfos.empty(), "portraitAlbumInfos are empty");
 
     int64_t startInsertAlbum = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t albumRowNum = InsertPortraitAlbumByTable(portraitAlbumInfos, true);
@@ -880,9 +842,7 @@ int32_t UpgradeRestore::InsertPortraitAlbumByTable(std::vector<PortraitAlbumInfo
     int64_t rowNum = 0;
     std::string tableName = isAlbum ? ANALYSIS_ALBUM_TABLE : VISION_FACE_TAG_TABLE;
     int32_t errCode = BatchInsertWithRetry(tableName, values, rowNum);
-    if (errCode != E_OK) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET(errCode == E_OK, 0);
     return rowNum;
 }
 
@@ -926,9 +886,7 @@ void UpgradeRestore::BatchQueryAlbum(std::vector<PortraitAlbumInfo> &portraitAlb
     std::string querySql = "SELECT " + ALBUM_ID + ", " + TAG_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
         TAG_ID + " IN (" + tagIdSelection + ")";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-    if (resultSet == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t albumId = GetInt32Val(ALBUM_ID, resultSet);
         std::string tagId = GetStringVal(TAG_ID, resultSet);
@@ -952,10 +910,7 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
     std::string querySql = "SELECT DISTINCT " + GALLERY_MERGE_FACE_HASH + " FROM " + GALLERY_FACE_TABLE_JOIN_TAG +
         " HAVING " + GALLERY_MEDIA_ID + " IN (" + selection + ") AND " + GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string hash = GetStringVal(GALLERY_MERGE_FACE_HASH, resultSet);
         if (hash.empty()) {
@@ -963,9 +918,7 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
         }
         needQuerySet.insert(hash);
     }
-    if (needQuerySet.empty()) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(!needQuerySet.empty(), false);
     needQueryMap[PhotoRelatedType::PORTRAIT] = needQuerySet;
     return true;
 }
@@ -977,10 +930,8 @@ void UpgradeRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInf
     if (needQueryMap.count(PhotoRelatedType::PORTRAIT) == 0) {
         return;
     }
-    if (mediaLibraryRdb_ == nullptr || fileInfos.empty()) {
-        MEDIA_ERR_LOG("mediaLibraryRdb_ is null or fileInfos empty");
-        return;
-    }
+    bool cond = (mediaLibraryRdb_ == nullptr || fileInfos.empty());
+    CHECK_AND_RETURN_LOG(!cond, "mediaLibraryRdb_ is null or fileInfos empty");
 
     std::string hashSelection;
     std::unordered_map<std::string, FileInfo> fileInfoMap;
@@ -1057,10 +1008,7 @@ std::vector<FaceInfo> UpgradeRestore::QueryFaceInfos(const std::string &hashSele
         GALLERY_MERGE_FACE_FACE_ID;
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FaceInfo faceInfo;
         if (!ParseFaceResultSet(resultSet, faceInfo)) {
@@ -1093,10 +1041,8 @@ bool UpgradeRestore::ParseFaceResultSet(const std::shared_ptr<NativeRdb::ResultS
     faceInfo.faceId = GetStringVal(GALLERY_MERGE_FACE_FACE_ID, resultSet);
     faceInfo.tagIdOld = GetStringVal(GALLERY_MERGE_FACE_TAG_ID, resultSet);
     faceInfo.landmarks = BackupDatabaseUtils::GetLandmarksStr(GALLERY_LANDMARKS, resultSet);
-    if (faceInfo.landmarks.empty()) {
-        MEDIA_ERR_LOG("Get invalid landmarks for face %{public}s", faceInfo.faceId.c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(!faceInfo.landmarks.empty(), false,
+        "Get invalid landmarks for face %{public}s", faceInfo.faceId.c_str());
     return true;
 }
 
@@ -1115,9 +1061,7 @@ int32_t UpgradeRestore::InsertFaceAnalysisDataByTable(const std::vector<FaceInfo
     int64_t rowNum = 0;
     std::string tableName = isMap ? ANALYSIS_PHOTO_MAP_TABLE : VISION_IMAGE_FACE_TABLE;
     int32_t errCode = BatchInsertWithRetry(tableName, values, rowNum);
-    if (errCode != E_OK) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET(errCode == E_OK, 0);
     return rowNum;
 }
 
@@ -1208,9 +1152,7 @@ void UpgradeRestore::UpdateDualCloneFaceAnalysisStatus()
 
 std::string UpgradeRestore::CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode)
 {
-    if (errCode != E_NO_SUCH_FILE) {
-        return "";
-    }
+    CHECK_AND_RETURN_RET(errCode == E_NO_SUCH_FILE, "");
     int32_t dbType = BackupDatabaseHelper::DbType::DEFAULT;
     int32_t dbStatus = E_OK;
     int32_t fileStatus = E_OK;
