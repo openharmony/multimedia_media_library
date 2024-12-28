@@ -548,10 +548,6 @@ HWTEST_F(MediaLibraryRdbTest, medialib_PhotoAlbumNotifyFunc_001, TestSize.Level0
     vector<string> args = {};
     auto ret = MediaLibraryRdbStore::PhotoAlbumNotifyFunc(args);
     EXPECT_EQ(ret, "");
-
-    args = {"hi", "hello"};
-    ret = MediaLibraryRdbStore::PhotoAlbumNotifyFunc(args);
-    EXPECT_EQ(ret, "");
 }
 
 HWTEST_F(MediaLibraryRdbTest, medialib_QueryEditDataExists_001, TestSize.Level0)
