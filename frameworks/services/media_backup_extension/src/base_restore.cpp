@@ -132,9 +132,7 @@ bool BaseRestore::ConvertPathToRealPath(const std::string &srcPath, const std::s
             }
         }
     }
-    if (count < prefixLevel) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(count >= prefixLevel, false);
     relativePath = srcPath.substr(pos);
     if (!dualDirName_.empty() && relativePath.find(dualDirName_) != string::npos) {
         std::size_t posStart = relativePath.find_first_of("/");
@@ -194,17 +192,13 @@ int32_t BaseRestore::IsFileValid(FileInfo &fileInfo, const int32_t sceneCode)
     }
 
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
-        if (!MediaFileUtils::IsFileValid(fileInfo.movingPhotoVideoPath)) {
-            MEDIA_ERR_LOG("Moving photo video is not valid: %{public}s, errno=%{public}d.",
-                BackupFileUtils::GarbleFilePath(fileInfo.movingPhotoVideoPath, sceneCode).c_str(), errno);
-            return E_FAIL;
-        }
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileValid(fileInfo.movingPhotoVideoPath), E_FAIL,
+            "Moving photo video is not valid: %{public}s, errno=%{public}d.",
+            BackupFileUtils::GarbleFilePath(fileInfo.movingPhotoVideoPath, sceneCode).c_str(), errno);
 
-        if (!MediaFileUtils::IsFileValid(fileInfo.extraDataPath)) {
-            MEDIA_WARN_LOG("Media extra data is not valid: %{public}s, errno=%{public}d.",
-                BackupFileUtils::GarbleFilePath(fileInfo.extraDataPath, sceneCode).c_str(), errno);
-            return E_FAIL;
-        }
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileValid(fileInfo.extraDataPath), E_FAIL,
+            "Media extra data is not valid: %{public}s, errno=%{public}d.",
+            BackupFileUtils::GarbleFilePath(fileInfo.extraDataPath, sceneCode).c_str(), errno);
     }
     return E_OK;
 }
@@ -386,9 +380,7 @@ void BaseRestore::RecursiveCreateDir(std::string &relativePath, std::string &suf
 {
     CreateDir(relativePath);
     size_t pos = suffix.find('/');
-    if (pos == std::string::npos) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(pos != std::string::npos, "Can not find slash");
     std::string prefix = suffix.substr(0, pos + 1);
     std::string suffixTmp = suffix.erase(0, prefix.length());
     prefix = relativePath + prefix;
@@ -472,12 +464,10 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
     string tmpPath = fileInfo.cloudPath;
     string localPath = tmpPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
     int32_t errCode = BackupFileUtils::MoveFile(fileInfo.filePath, localPath, sceneCode);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("MoveFile failed, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
-            BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(),
-            BackupFileUtils::GarbleFilePath(localPath, sceneCode).c_str(), errCode, errno);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, false,
+        "MoveFile failed, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
+        BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(),
+        BackupFileUtils::GarbleFilePath(localPath, sceneCode).c_str(), errCode, errno);
     BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
 
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
@@ -594,29 +584,21 @@ int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vec
     trans.SetBackupRdbStore(mediaLibraryRdb_);
     std::function<int(void)> func = [&]()->int {
         errCode = trans.BatchInsert(rowNum, tableName, values);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
-        }
+        CHECK_AND_PRINT_LOG(errCode == E_OK,
+            "InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
         return errCode;
     };
     errCode = trans.RetryTrans(func, true);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("BatchInsertWithRetry: tans finish fail!, ret:%{public}d", errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode == E_OK, "BatchInsertWithRetry: tans finish fail!, ret:%{public}d", errCode);
     return errCode;
 }
 
 int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string &dstDir, bool deleteOriginalFile) const
 {
-    if (!MediaFileUtils::CreateDirectory(dstDir)) {
-        MEDIA_ERR_LOG("Create dstDir %{public}s failed",
-            BackupFileUtils::GarbleFilePath(dstDir, DEFAULT_RESTORE_ID).c_str());
-        return E_FAIL;
-    }
-    if (!MediaFileUtils::IsFileExists(srcDir)) {
-        MEDIA_WARN_LOG("%{public}s doesn't exist, skip.", srcDir.c_str());
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dstDir), E_FAIL,
+        "Create dstDir %{public}s failed", BackupFileUtils::GarbleFilePath(dstDir, DEFAULT_RESTORE_ID).c_str());
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(srcDir), E_OK,
+        "%{public}s doesn't exist, skip.", srcDir.c_str());
     for (const auto &dirEntry : std::filesystem::directory_iterator{ srcDir }) {
         std::string srcFilePath = dirEntry.path();
         std::string tmpFilePath = srcFilePath;
@@ -627,13 +609,10 @@ int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string 
         } else {
             opRet = this->CopyFile(srcFilePath, dstFilePath);
         }
-        if (opRet != E_OK) {
-            MEDIA_ERR_LOG("Move file from %{public}s to %{public}s failed, deleteOriginalFile=%{public}d",
-                BackupFileUtils::GarbleFilePath(srcFilePath, sceneCode_).c_str(),
-                BackupFileUtils::GarbleFilePath(dstFilePath, DEFAULT_RESTORE_ID).c_str(),
-                deleteOriginalFile);
-            return E_FAIL;
-        }
+        CHECK_AND_RETURN_RET_LOG(opRet == E_OK, E_FAIL,
+            "Move file from %{public}s to %{public}s failed, deleteOriginalFile=%{public}d",
+            BackupFileUtils::GarbleFilePath(srcFilePath, sceneCode_).c_str(),
+            BackupFileUtils::GarbleFilePath(dstFilePath, DEFAULT_RESTORE_ID).c_str(), deleteOriginalFile);
     }
     return E_OK;
 }
@@ -751,9 +730,7 @@ void BaseRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &tot
     }
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(PhotoMap::TABLE, values, rowNum);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Batch insert map failed, errCode: %{public}d", errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode == E_OK, "Batch insert map failed, errCode: %{public}d", errCode);
     totalRowNum += rowNum;
 }
 
@@ -927,17 +904,13 @@ void BaseRestore::SetParameterForClone()
     auto currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
     MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
     bool retFlag = system::SetParameter(CLONE_FLAG, currentTime);
-    if (!retFlag) {
-        MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
-    }
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
 }
 
 void BaseRestore::StopParameterForClone(int32_t sceneCode)
 {
     bool retFlag = system::SetParameter(CLONE_FLAG, "0");
-    if (!retFlag) {
-        MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
-    }
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
 }
 
 void BaseRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType)
@@ -1158,10 +1131,7 @@ void BaseRestore::UpdateDatabase()
 void BaseRestore::NotifyAlbum()
 {
     auto watch = MediaLibraryNotify::GetInstance();
-    if (watch == nullptr) {
-        MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
     watch->Notify(PhotoColumn::DEFAULT_PHOTO_URI, NotifyType::NOTIFY_ADD);
 }
 
