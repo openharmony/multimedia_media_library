@@ -71,6 +71,24 @@ string DfxUtils::GetSafePath(const string &path)
     return safePath;
 }
 
+string DfxUtils::GetSafeUri(const string &uri)
+{
+    string safeUri = uri;
+    if (uri == "") {
+        return safeUri;
+    }
+    size_t splitIndex = safeUri.find_last_of(SPLIT_PATH);
+    string displayName;
+    if (splitIndex == string::npos) {
+        return safeUri;
+    } else {
+        displayName = safeUri.substr(splitIndex + 1);
+    }
+    string safeDisplayName = GetSafeDiaplayName(displayName);
+    safeUri = safeUri.substr(0, splitIndex) + "/" + safeDisplayName;
+    return safeUri;
+}
+
 string DfxUtils::GetSafeDiaplayName(string &displayName)
 {
     if (displayName == "") {
