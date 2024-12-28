@@ -26,6 +26,7 @@ class DfxUtils {
 public:
     static std::vector<std::string> Split(std::string &input, const std::string &pattern);
     static std::string GetSafePath(const std::string &path);
+    static std::string GetSafeUri(const std::string &uri);
     static std::string GetCurrentDate();
     static std::string GetCurrentDateMillisecond();
     static std::string JoinStrings(const std::unordered_set<std::string>& strSet, char delimiter);
