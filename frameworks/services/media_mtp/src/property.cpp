@@ -41,14 +41,8 @@ void Property::Value::Dump(uint32_t valueType)
 std::string Property::Value::ToString(uint32_t valueType)
 {
     std::string outStr;
-    if (StrToString(valueType, outStr)) {
-        return outStr;
-    }
-
-    if (BinToString(valueType, outStr)) {
-        return outStr;
-    }
-
+    CHECK_AND_RETURN_RET(!StrToString(valueType, outStr), outStr);
+    CHECK_AND_RETURN_RET(!BinToString(valueType, outStr), outStr);
     outStr.assign("unknown type ");
     outStr.append(std::to_string(valueType));
     return outStr;
@@ -99,10 +93,7 @@ bool Property::Value::BinToString(uint32_t valueType, std::string &outStr)
 
 bool Property::Value::StrToString(uint32_t valueType, std::string &outStr)
 {
-    if (valueType != MTP_TYPE_STRING_CODE) {
-        return false;
-    }
-
+    CHECK_AND_RETURN_RET(valueType == MTP_TYPE_STRING_CODE, false);
     outStr.assign("str={");
     if (str_ == nullptr) {
         outStr.append("nullptr");
@@ -110,7 +101,6 @@ bool Property::Value::StrToString(uint32_t valueType, std::string &outStr)
         outStr.append(MtpPacketTool::StrToString(*str_));
     }
     outStr.append("}");
-
     return true;
 }
 
@@ -493,37 +483,31 @@ bool Property::ReadValueEx(const std::vector<uint8_t> &buffer, size_t &offset, V
     switch (type_) {
         case MTP_TYPE_INT64_CODE:
         case MTP_TYPE_AINT64_CODE: {
-            if (!MtpPacketTool::GetInt64(buffer, offset, value.bin_.i64)) {
-                return false;
-            }
+            CHECK_AND_RETURN_RET(MtpPacketTool::GetInt64(buffer, offset,
+                value.bin_.i64), false);
             break;
         }
         case MTP_TYPE_UINT64_CODE:
         case MTP_TYPE_AUINT64_CODE: {
-            if (!MtpPacketTool::GetUInt64(buffer, offset, value.bin_.ui64)) {
-                return false;
-            }
+            CHECK_AND_RETURN_RET(MtpPacketTool::GetUInt64(buffer, offset,
+                value.bin_.ui64), false);
             break;
         }
         case MTP_TYPE_INT128_CODE:
         case MTP_TYPE_AINT128_CODE: {
-            if (!MtpPacketTool::GetInt128(buffer, offset, value.bin_.i128)) {
-                return false;
-            }
+            CHECK_AND_RETURN_RET(MtpPacketTool::GetInt128(buffer, offset,
+                value.bin_.i128), false);
             break;
         }
         case MTP_TYPE_UINT128_CODE:
         case MTP_TYPE_AUINT128_CODE: {
-            if (!MtpPacketTool::GetUInt128(buffer, offset, value.bin_.ui128)) {
-                return false;
-            }
+            CHECK_AND_RETURN_RET(MtpPacketTool::GetUInt128(buffer, offset,
+                value.bin_.ui128), false);
             break;
         }
         case MTP_TYPE_STRING_CODE: {
             std::string str;
-            if (!MtpPacketTool::GetString(buffer, offset, str)) {
-                return false;
-            }
+            CHECK_AND_RETURN_RET(MtpPacketTool::GetString(buffer, offset, str), false);
             value.str_ = std::make_shared<std::string>(str);
             break;
         }
@@ -603,27 +587,19 @@ bool Property::ReadArrayValues(const std::vector<uint8_t> &buffer, size_t &offse
     std::shared_ptr<std::vector<Value>> &values)
 {
     uint32_t length = 0;
-    if (!MtpPacketTool::GetUInt32(buffer, offset, length)) {
-        return false;
-    }
-
-    if (length == 0 || (length >= (INT32_MAX / sizeof(Value)))) {
-        return false;
-    }
-
+    CHECK_AND_RETURN_RET(MtpPacketTool::GetUInt32(buffer, offset, length), false);
+    bool cond = (length == 0 || (length >= (INT32_MAX / sizeof(Value))));
+    CHECK_AND_RETURN_RET(!cond, false);
     if (values == nullptr) {
         values = std::make_shared<std::vector<Value>>();
     }
-    values->clear();
 
+    values->clear();
     for (uint32_t i = 0; i < length; i++) {
         Value value;
-        if (!ReadValue(buffer, offset, value)) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(ReadValue(buffer, offset, value), false);
         values->push_back(value);
     }
-
     return true;
 }
 
