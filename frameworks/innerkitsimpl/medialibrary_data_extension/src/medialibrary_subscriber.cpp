@@ -575,9 +575,8 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     DoThumbnailOperation();
     // update burst from gallery
     int32_t ret = DoUpdateBurstFromGallery();
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("DoUpdateBurstFromGallery faild");
-    }
+    CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstFromGallery faild");
+    CloudUploadChecker::RepairNoOriginButLcd();
     CloudUploadChecker::HandleNoOriginPhoto();
 
     // migration highlight info to new path
