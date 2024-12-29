@@ -1398,6 +1398,10 @@ int32_t MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(const std::shared_pt
     CHECK_AND_RETURN_RET_LOG(upgradeStore != nullptr, E_DB_FAIL, "fail to get rdbstore");
     MEDIA_INFO_LOG("MergeClashSourceAlbum %{public}d, target album is %{public}" PRId64,
         sourceAlbumId, targetAlbumId);
+    if (sourceAlbumId == targetAlbumId) {
+        return E_OK;
+    }
+
     DeleteAlbumAndUpdateRelationship(upgradeStore, sourceAlbumId, targetAlbumId, IsCloudAlbum(resultSet));
     return E_OK;
 }
