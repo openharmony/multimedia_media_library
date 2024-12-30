@@ -2950,7 +2950,7 @@ void UpdateHighlightTablePrimaryKey(RdbStore &store)
 
 void AddBussinessRecordAlbum(RdbStore &store)
 {
-    string updateDirtyForShootingMode = "UPDATE Photos SET dirty = 2 WHERE cloud_id is not null AND " +
+    string updateDirtyForShootingMode = "UPDATE Photos SET dirty = 2 WHERE position <> 1 AND " +
         PhotoColumn::PHOTO_SHOOTING_MODE + " is not null AND " +
         PhotoColumn::PHOTO_SHOOTING_MODE + " != ''";
     const vector<string> sqls = {
