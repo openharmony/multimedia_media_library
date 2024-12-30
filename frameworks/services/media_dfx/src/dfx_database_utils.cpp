@@ -73,7 +73,7 @@ std::vector<PhotoInfo> DfxDatabaseUtils::QueryDirtyCloudPhoto()
 {
     vector<PhotoInfo> photoInfoList;
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.IsNotNull(PhotoColumn::PHOTO_CLOUD_ID);
+    predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, 1);
     predicates.NotEqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t> (DirtyType::TYPE_SYNCED));
     predicates.Limit(DIRTY_PHOTO_COUNT);
     std::vector<std::string> columns = { MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_DIRTY,
