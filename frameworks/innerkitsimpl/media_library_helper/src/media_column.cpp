@@ -354,13 +354,13 @@ const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         "CREATE TRIGGER IF NOT EXISTS photos_delete_trigger AFTER UPDATE ON " +
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN new." + PhotoColumn::PHOTO_DIRTY +
                         " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
-                        " AND OLD." + PhotoColumn::PHOTO_CLOUD_ID + " is NULL AND is_caller_self_func() = 'true'" +
+                        " AND OLD." + PhotoColumn::PHOTO_POSITION + " = 1 AND is_caller_self_func() = 'true'" +
                         " BEGIN DELETE FROM " + PhotoColumn::PHOTOS_TABLE +
                         " WHERE " + PhotoColumn::MEDIA_ID + " = old." + PhotoColumn::MEDIA_ID + "; END;";
 
 const std::string PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER =
                         "CREATE TRIGGER IF NOT EXISTS photos_fdirty_trigger AFTER UPDATE ON " +
-                        PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL AND" +
+                        PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.position <> 1 AND" +
                         " new.date_modified <> old.date_modified " +
                         " AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
                         " BEGIN " +
@@ -372,7 +372,7 @@ const std::string PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER =
 
 const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
                         "CREATE TRIGGER IF NOT EXISTS photos_mdirty_trigger AFTER UPDATE ON " +
-                        PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL" +
+                        PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.position <> 1" +
                         " AND new.date_modified = old.date_modified AND ( old.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) + " OR old.dirty =" +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SDIRTY)) +
