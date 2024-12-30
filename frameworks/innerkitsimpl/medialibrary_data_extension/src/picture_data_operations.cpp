@@ -114,14 +114,12 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
     lock_guard<mutex>  lock(pictureMapMutex_);
     // 清理低质量图
     auto iterPicture = lowQualityPictureMap_.find(imageId);
-    if (iterPicture != lowQualityPictureMap_.end()) {
-        iterPicture->second = nullptr;
+    if ((iterPicture->second)->isCleanImmediately_ && iterPicture != lowQualityPictureMap_.end()) {
         lowQualityPictureMap_.erase(iterPicture);
     }
     // 存储高质量图
     iterPicture = highQualityPictureMap_.find(imageId);
-    if (iterPicture != highQualityPictureMap_.end()) {
-        iterPicture->second = nullptr;
+    if ((iterPicture->second)->isCleanImmediately_ && iterPicture != highQualityPictureMap_.end()) {
         highQualityPictureMap_.erase(iterPicture);
     }
     highQualityPictureMap_[imageId] = picturePair;
@@ -134,7 +132,6 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
         std::string imageId = *iter;
         std::map<std::string, sptr<PicturePair>>::iterator iterPicture = highQualityPictureMap_.find(imageId);
         if (iterPicture != highQualityPictureMap_.end() && (iterPicture->second)->isCleanImmediately_) {
-            iterPicture->second = nullptr;
             highQualityPictureMap_.erase(iterPicture);
             iter = pictureImageIdList.erase(iter);
         } else {
