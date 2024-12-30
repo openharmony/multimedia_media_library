@@ -3135,6 +3135,17 @@ static void UpdateSourcePhotoAlbumTrigger(RdbStore &store)
     MEDIA_INFO_LOG("end update source photo album trigger");
 }
 
+static void UpdateSearchStatusTriggerForOwnerAlbumId(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start update search status trigger for owner album id");
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS " + UPDATE_SEARCH_STATUS_TRIGGER,
+        CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end update search status trigger for owner album id");
+}
+
 static void AddSupportedWatermarkType(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -3992,6 +4003,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_NEW_SOURCE_PHOTO_ALBUM_TRIGGER) {
         UpdateSourcePhotoAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID) {
+        UpdateSearchStatusTriggerForOwnerAlbumId(store);
     }
 }
 

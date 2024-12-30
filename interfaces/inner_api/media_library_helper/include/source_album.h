@@ -235,7 +235,7 @@ const std::string INSERT_SOURCE_ALBUM_MAP_FROM_PHOTOS_FULL = "INSERT INTO " + Ph
 const std::string ADD_PHOTO_ALBUM_IS_LOCAL = "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
     PhotoAlbumColumns::ALBUM_IS_LOCAL + " INT";
 
-const std::string SOURCE_ALBUM_SQL = "CREATE TRIGGER insert_source_photo_create_source_album_trigger \
+const std::string SOURCE_ALBUM_SQL = "CREATE TRIGGER IF NOT EXISTS insert_source_photo_create_source_album_trigger \
         AFTER INSERT ON Photos \
         WHEN NEW.package_name IS NOT NULL \
         AND NEW.package_name != '' \
