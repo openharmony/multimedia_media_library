@@ -350,7 +350,8 @@ uint16_t MtpOperationUtils::GetObjectPropList(shared_ptr<PayloadData> &data,
 
     shared_ptr<vector<Property>> props = make_shared<vector<Property>>();
     if (MtpManager::GetInstance().IsMtpMode()) {
-        mtpMediaLibrary_->GetObjectPropList(context_, props);
+        errorCode = mtpMediaLibrary_->GetObjectPropList(context_, props);
+        CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, CheckErrorCode(errorCode), "GetObjectPropList fail!");
     } else {
         mtpMedialibraryManager_->GetObjectPropList(context_, props);
     }
