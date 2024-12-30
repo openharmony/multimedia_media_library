@@ -406,16 +406,16 @@ void MediaLibraryRdbStore::AddReadyCountIndex(const shared_ptr<MediaLibraryRdbSt
     MEDIA_INFO_LOG("end add ready count index");
 }
 
-void MediaLibraryRdbStore::FixDateAddedIndex(const shared_ptr<MediaLibraryRdbStore> store)
+void MediaLibraryRdbStore::RevertFixDateAddedIndex(const shared_ptr<MediaLibraryRdbStore> store)
 {
-    MEDIA_INFO_LOG("start fix date added index");
+    MEDIA_INFO_LOG("start revert fix date added index");
     const vector<string> sqls = {
         PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
         PhotoColumn::INDEX_SCTHP_ADDTIME,
-        PhotoColumn::INDEX_SCHPT_ADDTIME_ALBUM,
+        PhotoColumn::DROP_INDEX_SCHPT_ADDTIME_ALBUM,
     };
     ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end fix date added index");
+    MEDIA_INFO_LOG("end revert fix date added index");
 }
 
 int32_t MediaLibraryRdbStore::Init()
@@ -1407,7 +1407,6 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTO_TABLE,
     PhotoColumn::CREATE_CLOUD_ID_INDEX,
     PhotoColumn::INDEX_SCTHP_ADDTIME,
-    PhotoColumn::INDEX_SCHPT_ADDTIME_ALBUM,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::INDEX_SCHPT_READY,
     PhotoColumn::CREATE_YEAR_INDEX,
