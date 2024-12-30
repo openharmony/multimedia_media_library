@@ -359,7 +359,7 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::AddQueryDateT
     return resultSet;
 }
 
-std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::QueryRdb(
+std::shared_ptr<NativeRdb::ResultSet> MediaAssetRdbStore::QueryRdb(
     const DataShare::DataSharePredicates& predicates, std::vector<std::string>& columns, OperationObject& object)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, nullptr, "fail to acquire rdb when query");
@@ -373,17 +373,8 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::QueryRdb(
     }
 
     AddQueryFilter(rdbPredicates);
-    auto resultSet = rdbStore_->Query(rdbPredicates, columns);
+    auto resultSet = rdbStore_->QueryByStep(rdbPredicates, columns, false);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "fail to acquire result from visitor query");
-    int rowCount = 0;
-    if (!resultSet->GetRowCount(rowCount) && rowCount == 0) {
-        std::string columnStr = "";
-        for (auto& column : columns) {
-            columnStr += column + " ";
-        }
-        MEDIA_INFO_LOG("MediaAssetRdbStore predicates:%{public}s, columns:%{public}s, object:%{public}d",
-            rdbPredicates.ToString().c_str(), columnStr.c_str(), object);
-    }
     return resultSet;
 }
 
