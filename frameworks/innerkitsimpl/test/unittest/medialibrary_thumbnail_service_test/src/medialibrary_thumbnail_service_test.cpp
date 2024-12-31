@@ -1285,5 +1285,23 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, CreateAstcCloudDownload_test_001, Tes
     int32_t res = serverTest->CreateAstcCloudDownload(id, isCloudInsertTaskPriorityHigh);
     EXPECT_NE(res, E_OK);
 }
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_031, TestSize.Level0)
+{
+    ThumbnailData data;
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    int32_t err = E_ERR;
+    auto res = ThumbnailUtils::UpdateLcdReadyStatus(opts, data, err, LcdReady::GENERATE_LCD_COMPLETED);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_033, TestSize.Level0)
+{
+    ThumbnailData data;
+    Size desiredSize;
+    auto res = ThumbnailUtils::GenTargetPixelmap(data, desiredSize);
+    EXPECT_EQ(res, false);
+}
 } // namespace Media
 } // namespace OHOS
