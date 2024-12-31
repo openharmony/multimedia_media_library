@@ -392,6 +392,10 @@ void MediaLibraryRdbStore::UpdateLcdStatusNotUploaded(const std::shared_ptr<Medi
     MEDIA_INFO_LOG("start update lcd status for photos have not been uploaded");
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("finish update lcd status for photos have not been uploaded");
+
+    MEDIA_INFO_LOG("start CheckLcdSizeAndUpdateStatus");
+    ThumbnailService::GetInstance()->CheckLcdSizeAndUpdateStatus();
+    MEDIA_INFO_LOG("finish CheckLcdSizeAndUpdateStatus");
 }
 
 void MediaLibraryRdbStore::AddReadyCountIndex(const shared_ptr<MediaLibraryRdbStore> store)
