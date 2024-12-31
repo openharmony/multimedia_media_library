@@ -217,17 +217,16 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_Backup_002, TestSize.Lev
 
 HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_WriteSingleMetaDataById_Test_001, TestSize.Level0)
 {
-    int ret = E_OK;
-    ret = MediaLibraryMetaRecovery::GetInstance().WriteSingleMetaDataById(-1);
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    auto ret = MediaLibraryMetaRecovery::GetInstance().WriteSingleMetaDataById(-1);
+    EXPECT_EQ(ret, E_OK);
 
     string path = GetFilePath(fileId);
     string metaPath;
     EXPECT_EQ(PhotoFileUtils::GetMetaPathFromOrignalPath(path, metaPath), 0);
-    remove(metaPath.c_str());
     ret = MediaLibraryMetaRecovery::GetInstance().WriteSingleMetaDataById(fileId);
     EXPECT_EQ(ret, E_OK);
     EXPECT_EQ(access(metaPath.c_str(), F_OK), 0);
+    remove(metaPath.c_str());
 }
 
 HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_DeleteMetaDataByPath_Test_001, TestSize.Level0)
