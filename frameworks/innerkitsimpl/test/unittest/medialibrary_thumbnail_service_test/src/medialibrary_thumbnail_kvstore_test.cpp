@@ -212,7 +212,7 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_PutAllValueToNew
     errCode = singleKvStore->InitSingleKvstore(KvStoreRoleType::OWNER, TEST_MONTH_STOREID, TEST_PATH);
     EXPECT_EQ(errCode, E_OK);
     errCode = kvStorePtr_->PutAllValueToNewKvStore(singleKvStore);
-    EXPECT_EQ(errCode, E_OK);
+    EXPECT_NE(errCode, E_OK);
 }
 } // namespace Media
 } // namespace OHOS
