@@ -96,7 +96,7 @@ public:
     EXPORT static void ClearAudios(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateIndexForCover(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddReadyCountIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void FixDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void RevertFixDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static int32_t ReconstructMediaLibraryStorageFormat(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT int Update(int &changedRows, const std::string &table, const NativeRdb::ValuesBucket &row,
         const std::string &whereClause, const std::vector<std::string> &args);
