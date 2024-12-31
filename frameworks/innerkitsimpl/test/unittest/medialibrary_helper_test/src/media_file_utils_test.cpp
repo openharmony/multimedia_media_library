@@ -909,9 +909,9 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyDirectory_Test_002, Test
     string testPath = "/data/test/copydirectory_002";
     string oldDir = testPath + "/copydirectory_002_srcdir";
     string newDir = testPath + "/copydirectory_002_dstdir";
-    EXPECT_EQ(MediaFileUtils::CreateFile(oldDir), true);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(oldDir), true);
     int32_t ret = MediaFileUtils::CopyDirectory(oldDir, newDir);
-    EXPECT_EQ(ret, E_FAIL);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyDirectory_Test_003, TestSize.Level0)
@@ -977,6 +977,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetDateModified_Test_001, Te
     EXPECT_EQ(MediaFileUtils::CreateFile(filePath), true);
     EXPECT_EQ(MediaFileUtils::GetDateModified(filePath, dateModified), true);
     EXPECT_GT(dateModified, 0);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(filePath), true);
 }
 } // namespace Media
 } // namespace OHOS
