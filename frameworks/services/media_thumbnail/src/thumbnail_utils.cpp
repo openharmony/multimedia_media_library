@@ -1969,6 +1969,16 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
             return isDelete;
         }
     }
+    ValuesBucket values;
+    int changedRows;
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, 0);
+    values.PutLong(PhotoColumn::PHOTO_LCD_VISIT_TIME, 0);
+    int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+        vector<string> { opts.row });
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
+        return false;
+    }
     MEDIA_INFO_LOG("Start DeleteOriginImage, id: %{public}s, path: %{public}s",
         opts.row.c_str(), DfxUtils::GetSafePath(tmpData.path).c_str());
     if (!opts.dateTaken.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC)) {
