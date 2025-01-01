@@ -1170,11 +1170,24 @@ void MediaLibraryDataManager::InterruptBgworker()
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return;
     }
-    CHECK_AND_RETURN_LOG(thumbnailService_ != nullptr, "thumbnailService_ is nullptr");
-    thumbnailService_->InterruptBgworker();
+    shared_ptr<MediaLibraryAsyncWorker> mediaAsyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (mediaAsyncWorker != nullptr) {
+        mediaAsyncWorker->Interrupt();
+    }
     shared_ptr<TrashAsyncTaskWorker> asyncWorker = TrashAsyncTaskWorker::GetInstance();
     CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "asyncWorker null");
     asyncWorker->Interrupt();
+}
+
+void MediaLibraryDataManager::InterruptThumbnailBgWorker()
+{
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return;
+    }
+    CHECK_AND_RETURN_LOG(thumbnailService_ != nullptr, "thumbnailService_ is nullptr");
+    thumbnailService_->InterruptBgworker();
 }
 
 int32_t MediaLibraryDataManager::GenerateThumbnailBackground()
