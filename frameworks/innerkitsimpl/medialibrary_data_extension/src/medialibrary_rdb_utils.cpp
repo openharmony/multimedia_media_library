@@ -607,6 +607,8 @@ static int32_t SetAlbumCoverUri(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
     } else if (subtype == PhotoAlbumSubType::FAVORITE) {
         predicates.IndexedBy(PhotoColumn::PHOTO_FAVORITE_INDEX);
+    } else if (subtype == PhotoAlbumSubType::CLOUD_ENHANCEMENT) {
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX);
     } else {
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
     }
@@ -1010,6 +1012,8 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
     } else if (subtype == PhotoAlbumSubType::FAVORITE) {
         predicates.IndexedBy(PhotoColumn::PHOTO_FAVORITE_INDEX);
+    } else if (subtype == PhotoAlbumSubType::CLOUD_ENHANCEMENT) {
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX);
     } else {
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
     }
