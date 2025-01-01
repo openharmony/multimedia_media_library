@@ -6203,28 +6203,30 @@ static std::string GetGeoAnalysisProgress()
     predicates.GreaterThan(PhotoAlbumColumns::ALBUM_COUNT, 0);
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, albumColumns, errCode);
+    string retStr = jsonObj.dump();
     if (ret == nullptr) {
-        NAPI_ERR_LOG("ret is nullptr and progress json is %{public}s", jsonObj.dump().c_str());
-        return jsonObj.dump();
+        NAPI_ERR_LOG("ret is nullptr and progress json is %{public}s", retStr.c_str());
+        return retStr;
     }
     if (errCode != DataShare::E_OK) {
-        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d, progress json is %{public}s", errCode,
-            jsonObj.dump().c_str());
+        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d, json is %{public}s", errCode, retStr.c_str());
         ret->Close();
-        return jsonObj.dump();
+        return retStr;
     }
 
     int tmp = -1;
     int32_t retCode = ret->GetRowCount(tmp);
     if (retCode != DataShare::E_OK) {
         NAPI_ERR_LOG("Can not get row count from resultSet, errCode is %{public}d, progress json is %{public}s",
-            retCode, jsonObj.dump().c_str());
-        return jsonObj.dump();
+            retCode, retStr.c_str());
+        ret->Close();
+        return retStr;
     }
     jsonObj[idxToCount[columns.size()]] = tmp;
     ret->Close();
-    NAPI_INFO_LOG("Progress json is %{public}s", jsonObj.dump().c_str());
-    return jsonObj.dump();
+    string jsonStr = jsonObj.dump();
+    NAPI_INFO_LOG("Progress json is %{public}s", jsonStr.c_str());
+    return jsonStr;
 }
 
 static std::string GetHighlightAnalysisProgress()
@@ -6259,8 +6261,9 @@ static std::string GetHighlightAnalysisProgress()
         jsonObj[idxToCount[i]] = tmp;
     }
     ret->Close();
-    NAPI_INFO_LOG("Progress json is %{public}s", jsonObj.dump().c_str());
-    return jsonObj.dump();
+    string retStr = jsonObj.dump();
+    NAPI_INFO_LOG("Progress json is %{public}s", retStr.c_str());
+    return retStr;
 }
 
 static void JSGetAnalysisProgressExecute(MediaLibraryAsyncContext* context)
