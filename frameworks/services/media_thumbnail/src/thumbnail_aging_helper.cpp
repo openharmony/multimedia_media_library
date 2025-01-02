@@ -264,6 +264,24 @@ int32_t ThumbnailAgingHelper::InvalidateDistributeBatch(ThumbRdbOpt &opts)
     }
     return E_OK;
 }
+
+int32_t ThumbnailAgingHelper::ClearKeyAndRecordFromMap(ThumbRdbOpt &opts)
+{
+    int32_t err = E_ERR;
+    vector<ThumbnailData> infos;
+    if (!ThumbnailUtils::QueryDeviceThumbnailRecords(opts, infos, err)) {
+        MEDIA_ERR_LOG("Failed to QueryDeviceThumbnailRecords %{public}d", err);
+        return err;
+    }
+
+    for (uint32_t i = 0; i < infos.size(); i++) {
+        opts.row = infos[i].id;
+        if (ThumbnailUtils::DeleteOriginImage(opts)) {
+            ThumbnailUtils::DeleteDistributeThumbnailInfo(opts);
+        }
+    }
+    return E_OK;
+}
 #endif
 } // namespace Media
 } // namespace OHOS

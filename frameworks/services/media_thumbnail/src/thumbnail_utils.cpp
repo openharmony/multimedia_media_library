@@ -1976,7 +1976,7 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
+        MEDIA_ERR_LOG("RdbStore Update Failed Before Delete Thumbnail! %{public}d", err);
         return false;
     }
     MEDIA_INFO_LOG("Start DeleteOriginImage, id: %{public}s, path: %{public}s",
