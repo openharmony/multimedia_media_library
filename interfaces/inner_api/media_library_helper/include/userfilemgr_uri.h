@@ -254,6 +254,7 @@ const std::string PAH_GEO_PHOTOS = "phaccess_geo_photos_operation";
 const std::string PAH_MULTISTAGES_CAPTURE = "phaccess_multistages_capture_operation";
 const std::string PAH_HIGHLIGHT_COVER = "phaccess_highlight_cover_operation";
 const std::string PAH_HIGHLIGHT_PLAY = "phaccess_highlight_play_operation";
+const std::string PAH_HIGHLIGHT_DELETE = "phaccess_highlight_delete";
 const std::string PAH_BATCH_THUMBNAIL_OPERATE = "phaccess_batch_thumbnail_operation";
 const std::string PAH_CLOUD_ENHANCEMENT_OPERATE = "cloud_enhancement_operation";
 const std::string SEARCH_INDEX_CONSTRUCTION_STATUS = "phaccess_search_index_construction_operation";
@@ -385,6 +386,7 @@ const std::string PAH_QUERY_HIGHLIGHT_PLAY = MEDIALIBRARY_DATA_URI + "/" + PAH_H
 const std::string PAH_QUERY_ANA_TOTAL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_TOTAL + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_MULTI_CROP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MULTI_CROP + "/" + OPRN_QUERY;
 const std::string PAH_UPDATE_ANA_FACE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_FACE + "/" + OPRN_UPDATE;
+const std::string PAH_DELETE_HIGHLIGHT_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_HIGHLIGHT_DELETE + "/" + OPRN_DELETE;
 
 // PhotoAccessHelper moving photo
 const std::string PAH_MOVING_PHOTO_SCAN = MEDIALIBRARY_DATA_URI + "/" + MEDIA_MOVING_PHOTO_OPRN_KEYWORD + "/" +

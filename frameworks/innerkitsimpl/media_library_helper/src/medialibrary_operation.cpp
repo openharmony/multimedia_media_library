@@ -130,6 +130,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_HIGHLIGHT_PLAY, OperationObject::STORY_PLAY },
         { PAH_ANA_ASSET_SD, OperationObject::ANALYSIS_ASSET_SD_MAP },
         { PAH_ANA_ALBUM_ASSET, OperationObject::ANALYSIS_ALBUM_ASSET_MAP },
+        { PAH_HIGHLIGHT_DELETE, OperationObject::HIGHLIGHT_DELETE },
 
         // others
         { MISC_OPERATION, OperationObject::MISCELLANEOUS },
@@ -213,6 +214,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
             { { OperationType::UNKNOWN_TYPE, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE } } },
         { OperationObject::CLOUD_MEDIA_ASSET_OPERATE, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::PTP_OPERATION, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } }},
+        { OperationObject::HIGHLIGHT_DELETE, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_ALBUM_TABLE } }},
     };
     return tableNameMap;
 }
