@@ -927,6 +927,9 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         case OperationObject::PHOTO_ALBUM: {
             return MediaLibraryAlbumOperations::DeletePhotoAlbum(rdbPredicate);
         }
+        case OperationObject::HIGHLIGHT_DELETE: {
+            return MediaLibraryAlbumOperations::DeleteHighlightAlbums(rdbPredicate);
+        }
         case OperationObject::PHOTO_MAP: {
             return PhotoMapOperations::RemovePhotoAssets(rdbPredicate);
         }

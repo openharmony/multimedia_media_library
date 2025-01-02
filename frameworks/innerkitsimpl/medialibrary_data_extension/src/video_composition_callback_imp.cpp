@@ -155,23 +155,29 @@ void VideoCompositionCallbackImpl::AddCompositionTask(std::string& assetPath, st
     if (curWorkerNum_ < MAX_CONCURRENT_NUM) {
         ++curWorkerNum_;
         mutex_.unlock();
-        CHECK_AND_RETURN_LOG(CallStartComposite(sourceVideoPath, videoPath, editData) == E_OK,
-            "Failed to CallStartComposite, path:%{private}s", videoPath.c_str());
+        if (CallStartComposite(sourceVideoPath, videoPath, editData) != E_OK) {
+            MEDIA_ERR_LOG("Failed to CallStartComposite, path:%{private}s", videoPath.c_str());
+            CHECK_AND_RETURN_LOG(MediaFileUtils::CopyFileUtil(sourceVideoPath, videoPath),
+                "Copy sourceVideoPath to videoPath, path:%{private}s", sourceVideoPath.c_str());
+        }
     } else {
+        MEDIA_WARN_LOG("Failed to CallStartComposite, curWorkerNum over MAX_CONCURRENT_NUM");
         Task newWaitTask{sourceVideoPath, videoPath, editData};
         waitQueue_.push(std::move(newWaitTask));
         mutex_.unlock();
     }
 }
 
-void VideoCompositionCallbackImpl::EraseStickerField(std::string& editData, size_t index)
+void VideoCompositionCallbackImpl::EraseStickerField(std::string& editData, size_t index, bool isTimingSticker)
 {
     auto begin = index - START_DISTANCE;
     auto end = index;
     while (editData[end] != '}') {
         ++end;
     }
-    ++end;
+    if (!isTimingSticker) {
+        ++end;
+    }
     auto len = end - begin + 1;
     editData.erase(begin, len);
 }
