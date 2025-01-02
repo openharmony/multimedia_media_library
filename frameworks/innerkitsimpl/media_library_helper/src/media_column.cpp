@@ -129,6 +129,7 @@ const std::string PhotoColumn::PHOTO_BURSTKEY_INDEX = "idx_burstkey";
 const std::string PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX = "idx_schpt_media_type_ready";
 const std::string PhotoColumn::PHOTO_SCHPT_DATE_YEAR_COUNT_READY_INDEX = "idx_schpt_date_year_ready";
 const std::string PhotoColumn::PHOTO_SCHPT_DATE_MONTH_COUNT_READY_INDEX = "idx_schpt_date_month_ready";
+const std::string PhotoColumn::PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX = "idx_schpt_cloud_enhancement_album_index";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -284,6 +285,12 @@ const std::string PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX = BaseC
     "," + MEDIA_TIME_PENDING + "," + MEDIA_HIDDEN + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
     "," + MEDIA_TYPE + ");";
 
+const std::string PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_SYNC_STATUS +
+    "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING + "," +
+    PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + PHOTO_STRONG_ASSOCIATION + "," + MEDIA_TYPE + "," +
+    MEDIA_DATE_TAKEN + " DESC, " + MEDIA_ID + " DESC);";
+
 const std::string PhotoColumn::DROP_SCHPT_YEAR_COUNT_READY_INDEX = "DROP INDEX IF EXISTS " +
     PHOTO_SCHPT_DATE_YEAR_COUNT_READY_INDEX;
 
@@ -435,8 +442,7 @@ const std::string PhotoColumn::UPDATA_PHOTOS_DATA_UNIQUE = "CREATE UNIQUE INDEX 
 
 const std::string PhotoColumn::UPDATE_LCD_STATUS_NOT_UPLOADED =
                         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_LCD_VISIT_TIME +
-                        " = 0 " + " WHERE " + PhotoColumn::PHOTO_DIRTY + " = 1" +
-                        " AND " + PhotoColumn::PHOTO_POSITION + " = 1; END;";
+                        " = 0 " + " WHERE " + PhotoColumn::PHOTO_DIRTY + " = 1; END;";
 
 const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE,

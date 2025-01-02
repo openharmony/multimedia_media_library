@@ -1160,11 +1160,13 @@ static int32_t BuildAlbumInsertValues(const std::shared_ptr<MediaLibraryRdbStore
     if (values.GetObject(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, valueObject)) {
         valueObject.GetString(bundle_name);
         if (bundle_name == "com.huawei.ohos.screenshot") {
-            bundle_name = "com.huawei.homs.screenshot";
+            bundle_name = "com.huawei.hmos.screenshot";
+            values.Delete(PhotoAlbumColumns::ALBUM_BUNDLE_NAME);
             values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundle_name);
         }
         if (bundle_name == "com.huawei.ohos.screenrecorder") {
-            bundle_name = "com.huawei.homs.screenrecorder";
+            bundle_name = "com.huawei.hmos.screenrecorder";
+            values.Delete(PhotoAlbumColumns::ALBUM_BUNDLE_NAME);
             values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundle_name);
         }
     }
@@ -1396,6 +1398,10 @@ int32_t MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(const std::shared_pt
     CHECK_AND_RETURN_RET_LOG(upgradeStore != nullptr, E_DB_FAIL, "fail to get rdbstore");
     MEDIA_INFO_LOG("MergeClashSourceAlbum %{public}d, target album is %{public}" PRId64,
         sourceAlbumId, targetAlbumId);
+    if (sourceAlbumId == targetAlbumId) {
+        return E_OK;
+    }
+
     DeleteAlbumAndUpdateRelationship(upgradeStore, sourceAlbumId, targetAlbumId, IsCloudAlbum(resultSet));
     return E_OK;
 }
