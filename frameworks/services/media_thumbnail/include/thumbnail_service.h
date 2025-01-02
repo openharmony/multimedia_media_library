@@ -50,7 +50,7 @@ public:
     EXPORT int32_t TriggerHighlightThumbnail(std::string &id, std::string &tracks, std::string &trigger,
         std::string &genType);
 
-    EXPORT int32_t RestoreThumbnailDualFrame();
+    EXPORT int32_t RestoreThumbnailDualFrame(const int32_t &restoreAstcCount = ASTC_GENERATE_COUNT_AFTER_RESTORE);
     EXPORT void InterruptBgworker();
     EXPORT void StopAllWorker();
 #ifdef DISTRIBUTED

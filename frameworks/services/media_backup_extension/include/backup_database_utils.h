@@ -114,6 +114,8 @@ public:
         std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum);
     static std::string CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
         const std::string &dbTag = "");
+    static int32_t QueryLocalNoAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
+    static int32_t QueryReadyAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
 
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);

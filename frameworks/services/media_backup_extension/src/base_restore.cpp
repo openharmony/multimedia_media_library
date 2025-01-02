@@ -1079,6 +1079,9 @@ SubProcessInfo BaseRestore::GetSubProcessInfo(const std::string &type)
         UpdateProcessedNumber(updateProcessStatus_, updateProcessedNumber_, updateTotalNumber_);
         success = updateProcessedNumber_;
         total = updateTotalNumber_;
+    } else if (type == STAT_TYPE_THUMBNAIL) {
+        success = thumbnailProcessedNumber_;
+        total = thumbnailTotalNumber_;
     } else if (type == STAT_TYPE_OTHER) {
         UpdateProcessedNumber(otherProcessStatus_, otherProcessedNumber_, otherTotalNumber_);
         success = otherProcessedNumber_;
@@ -1161,13 +1164,34 @@ void BaseRestore::GetUpdateUniqueNumberCount()
 
 void BaseRestore::RestoreThumbnail()
 {
-    // restore thumbnail for date fronted 500 photos
-    MEDIA_INFO_LOG("Start RestoreThumbnail");
-    otherProcessStatus_ = ProcessStatus::START;
-    otherTotalNumber_ += THUMBNAIL_NUM;
-    MEDIA_INFO_LOG("onProcess Update otherTotalNumber_: %{public}lld", (long long)otherTotalNumber_);
-    BackupFileUtils::GenerateThumbnailsAfterRestore();
-    otherProcessStatus_ = ProcessStatus::STOP;
+    // restore thumbnail for date fronted 2000 photos
+    int32_t localNoAstcCount = BackupDatabaseUtils::QueryLocalNoAstcCount(mediaLibraryRdb_);
+    CHECK_AND_RETURN_LOG(localNoAstcCount > 0, "No need to RestoreThumbnail");
+    int32_t restoreAstcCount = localNoAstcCount < MAX_RESTORE_ASTC_NUM ? localNoAstcCount : MAX_RESTORE_ASTC_NUM;
+    thumbnailTotalNumber_ = static_cast<uint64_t>(restoreAstcCount);
+    int32_t readyAstcCount = BackupDatabaseUtils::QueryReadyAstcCount(mediaLibraryRdb_);
+
+    MEDIA_INFO_LOG("Start RestoreThumbnail, readyAstcCount:%{public}d, restoreAstcCount:%{public}d",
+        readyAstcCount, restoreAstcCount);
+    BackupFileUtils::GenerateThumbnailsAfterRestore(restoreAstcCount);
+    uint64_t thumbnailProcessedNumber = 0;
+    while (thumbnailProcessedNumber < thumbnailTotalNumber_) {
+        thumbnailProcessedNumber_ = thumbnailProcessedNumber;
+        sleep(THUMBNAIL_QUERY_INTERVAL);
+        int32_t newReadyAstcCount = BackupDatabaseUtils::QueryReadyAstcCount(mediaLibraryRdb_);
+        if (newReadyAstcCount <= readyAstcCount) {
+            MEDIA_WARN_LOG("Stop RestoreThumbnail, oldReadyAstcCount:%{public}d, newReadyAstcCount:%{public}d",
+                readyAstcCount, newReadyAstcCount);
+            break;
+        }
+        thumbnailProcessedNumber += static_cast<uint64_t>(newReadyAstcCount - readyAstcCount);
+        readyAstcCount = newReadyAstcCount;
+    }
+    uint64_t thumbnailTotalNumber = thumbnailTotalNumber_;
+    thumbnailProcessedNumber_ = thumbnailProcessedNumber < thumbnailTotalNumber ?
+        thumbnailProcessedNumber : thumbnailTotalNumber;
+    MEDIA_INFO_LOG("Finish RestoreThumbnail, readyAstcCount:%{public}d, restoreAstcCount:%{public}d",
+        readyAstcCount, restoreAstcCount);
 }
 
 void BaseRestore::StartBackup()

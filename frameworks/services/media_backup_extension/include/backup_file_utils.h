@@ -60,7 +60,7 @@ public:
     static std::string GetFailedFile(int32_t sceneCode, const std::string &failedFilePath,
         const FailedFileInfo &failedFileInfo);
     static void CreateDataShareHelper(const sptr<IRemoteObject> &token);
-    static void GenerateThumbnailsAfterRestore();
+    static void GenerateThumbnailsAfterRestore(int32_t restoreAstcCount);
     static bool GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel, size_t &pos);
     static bool ShouldIncludeSd(const std::string &prefix);
     static void DeleteSdDatabase(const std::string &prefix);

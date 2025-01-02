@@ -490,7 +490,7 @@ void BackupFileUtils::CreateDataShareHelper(const sptr<IRemoteObject> &token)
     }
 }
 
-void BackupFileUtils::GenerateThumbnailsAfterRestore()
+void BackupFileUtils::GenerateThumbnailsAfterRestore(int32_t restoreAstcCount)
 {
     if (sDataShareHelper_ == nullptr) {
         return;
@@ -500,7 +500,7 @@ void BackupFileUtils::GenerateThumbnailsAfterRestore()
     Uri uri(updateUri);
     DataShare::DataSharePredicates emptyPredicates;
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_THUMBNAIL_READY, 0);
+    valuesBucket.Put(RESTORE_REQUEST_ASTC_GENERATE_COUNT, restoreAstcCount);
     int result = sDataShareHelper_->Update(uri, emptyPredicates, valuesBucket);
     if (result < 0) {
         MEDIA_ERR_LOG("generate thumbnails after restore failed, the sDataShareHelper_ update error");

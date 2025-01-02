@@ -2118,7 +2118,11 @@ int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryComm
         thumbnailService_->CancelAstcBatchTask(requestId);
         return E_OK;
     } else if (cmd.GetOprnType() == OperationType::GENERATE_THUMBNAILS_RESTORE) {
-        return thumbnailService_->RestoreThumbnailDualFrame();
+        int32_t restoreAstcCount = 0;
+        if (value.GetObject(RESTORE_REQUEST_ASTC_GENERATE_COUNT, valueObject)) {
+            valueObject.GetInt(restoreAstcCount);
+        }
+        return thumbnailService_->RestoreThumbnailDualFrame(restoreAstcCount);
     } else if (cmd.GetOprnType() == OperationType::LOCAL_THUMBNAIL_GENERATION) {
         return thumbnailService_->LocalThumbnailGeneration();
     } else {

@@ -1108,7 +1108,8 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
     return true;
 }
 
-bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
+bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err,
+    const int32_t &restoreAstcCount)
 {
     vector<string> column = {
         MEDIA_DATA_DB_ID,
@@ -1121,10 +1122,9 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
-    rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->
-        EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
+    rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->EndWrap();
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
-    rdbPredicates.Limit(ASTC_GENERATE_COUNT_AFTER_RESTORE);
+    rdbPredicates.Limit(restoreAstcCount);
     if (opts.store == nullptr) {
         MEDIA_ERR_LOG("opts.store is nullptr");
         return false;
