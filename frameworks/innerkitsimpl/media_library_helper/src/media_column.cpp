@@ -117,6 +117,8 @@ const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_INDEX = "date_month_index";
 const std::string PhotoColumn::PHOTO_DATE_DAY_INDEX = "date_day_index";
 const std::string PhotoColumn::PHOTO_SCHPT_ADDED_INDEX = "idx_schpt_date_added";
+// index of date_added for photo table
+const std::string PhotoColumn::PHOTO_SCHPT_PHOTO_DATEADDED_INDEX = "idx_schpt_date_added_new";
 const std::string PhotoColumn::PHOTO_SCHPT_ADDED_ALBUM_INDEX = "idx_schpt_date_added_album";
 const std::string PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX = "idx_schpt_media_type";
 const std::string PhotoColumn::PHOTO_SCHPT_DAY_INDEX = "idx_schpt_date_day";
@@ -340,6 +342,12 @@ const std::string PhotoColumn::INDEX_SCTHP_ADDTIME =
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN + "," +
     MEDIA_TIME_PENDING + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + MEDIA_DATE_TAKEN + " DESC, " +
     MEDIA_ID + " DESC);";
+
+// Create dateadded index
+const std::string PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED =
+    BaseColumn::CreateIndex() + PHOTO_SCHPT_PHOTO_DATEADDED_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN + "," +
+    MEDIA_TIME_PENDING + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + MEDIA_DATE_ADDED + " DESC);";
 
 const std::string PhotoColumn::DROP_INDEX_SCTHP_ADDTIME = BaseColumn::DropIndex() + PHOTO_SCHPT_ADDED_INDEX;
 

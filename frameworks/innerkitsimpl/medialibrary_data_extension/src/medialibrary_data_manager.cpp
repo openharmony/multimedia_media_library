@@ -366,6 +366,10 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         MediaLibraryRdbStore::AddCloudEnhancementAlbumIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX);
     }
+    if (oldVersion < VERSION_ADD_PHOTO_DATEADD_INDEX) {
+        MediaLibraryRdbStore::AddPhotoDateAddedIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_PHOTO_DATEADD_INDEX);
+    }
 }
 
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()
