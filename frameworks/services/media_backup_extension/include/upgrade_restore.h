@@ -109,6 +109,7 @@ private:
     int32_t GetNoNeedMigrateCount() override;
     bool IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         const std::string &dbName);
+    std::string CheckGalleryDbIntegrity();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
@@ -135,6 +136,7 @@ private:
     BackupDatabaseHelper backupDatabaseHelper_;
     std::vector<int> galleryFailedOffsets;
     std::vector<int> externalFailedOffsets;
+    int32_t maxId_{-1};
 };
 } // namespace Media
 } // namespace OHOS
