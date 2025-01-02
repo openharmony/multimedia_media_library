@@ -2883,6 +2883,18 @@ void UpdateVideoFaceTable(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddHighlightChangeFunction(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + ANALYSIS_PHOTO_MAP_TABLE + " ADD COLUMN " + ORDER_POSITION + " INT ",
+        "ALTER TABLE " + HIGHLIGHT_COVER_INFO_TABLE + " ADD COLUMN " + COVER_STATUS + " INT ",
+        "ALTER TABLE " + HIGHLIGHT_PLAY_INFO_TABLE + " ADD COLUMN " + PLAY_INFO_STATUS + " INT ",
+        "ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " + HIGHLIGHT_PIN_TIME + " BIGINT ",
+    };
+    MEDIA_INFO_LOG("start add highlight change function");
+    ExecSqls(sqls, store);
+}
+
 void AddStoryTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
@@ -3750,6 +3762,13 @@ static void UpgradeUriPermissionTable(RdbStore &store, int32_t oldVersion)
     }
 }
 
+static void UpgradeHighlightAlbumChange(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_HIGHLIGHT_CHANGE_FUNCTION) {
+        AddHighlightChangeFunction(store);
+    }
+}
+
 static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_MISSING_UPDATES) {
@@ -4373,6 +4392,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeHistory(store, oldVersion);
     UpgradeExtension(store, oldVersion);
     UpgradeUriPermissionTable(store, oldVersion);
+    UpgradeHighlightAlbumChange(store, oldVersion);
 
     AlwaysCheck(store);
     if (!g_upgradeErr) {

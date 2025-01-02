@@ -155,6 +155,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::PAH_MULTISTAGES_CAPTURE,
         OperationObject::STORY_ALBUM,
         OperationObject::STORY_COVER,
+        OperationObject::HIGHLIGHT_DELETE,
         OperationObject::STORY_PLAY,
         OperationObject::USER_PHOTOGRAPHY,
         OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
