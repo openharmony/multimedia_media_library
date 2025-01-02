@@ -422,6 +422,16 @@ void MediaLibraryRdbStore::RevertFixDateAddedIndex(const shared_ptr<MediaLibrary
     MEDIA_INFO_LOG("end revert fix date added index");
 }
 
+void MediaLibraryRdbStore::AddCloudEnhancementAlbumIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX
+    };
+    MEDIA_INFO_LOG("start create idx_schpt_cloud_enhancement_album_index");
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end create idx_schpt_cloud_enhancement_album_index");
+}
+
 int32_t MediaLibraryRdbStore::Init()
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
@@ -3102,16 +3112,6 @@ static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
     return false;
 }
 
-static void AddCloudEnhancementAlbumIndex(RdbStore& store)
-{
-    const vector<string> sqls = {
-        PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX
-    };
-    MEDIA_INFO_LOG("start create idx_schpt_cloud_enhancement_album_index");
-    ExecSqls(sqls, store);
-    MEDIA_INFO_LOG("end create idx_schpt_cloud_enhancement_album_index");
-}
-
 static void AddCloudEnhanceColumnsFix(RdbStore& store)
 {
     bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_CE_AVAILABLE);
@@ -4022,10 +4022,6 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID) {
         UpdateSearchStatusTriggerForOwnerAlbumId(store);
-    }
-
-    if (oldVersion < VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX) {
-        AddCloudEnhancementAlbumIndex(store);
     }
 }
 
