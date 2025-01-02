@@ -361,6 +361,11 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         MediaLibraryRdbStore::RevertFixDateAddedIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_REVERT_FIX_DATE_ADDED_INDEX);
     }
+
+    if (oldVersion < VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX) {
+        MediaLibraryRdbStore::AddCloudEnhancementAlbumIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX);
+    }
 }
 
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()
