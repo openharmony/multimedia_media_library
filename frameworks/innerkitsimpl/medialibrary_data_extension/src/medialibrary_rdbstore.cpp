@@ -422,6 +422,16 @@ void MediaLibraryRdbStore::RevertFixDateAddedIndex(const shared_ptr<MediaLibrary
     MEDIA_INFO_LOG("end revert fix date added index");
 }
 
+void MediaLibraryRdbStore::AddCloudEnhancementAlbumIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX
+    };
+    MEDIA_INFO_LOG("start create idx_schpt_cloud_enhancement_album_index");
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end create idx_schpt_cloud_enhancement_album_index");
+}
+
 int32_t MediaLibraryRdbStore::Init()
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
@@ -1540,6 +1550,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::INDEX_HIGHLIGHT_FILEID,
+    PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
