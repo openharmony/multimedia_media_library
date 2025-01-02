@@ -406,7 +406,7 @@ int DoCreatePhotoAlbum(const string &albumName, const string &relativePath, cons
     return lastInsertRowId;
 }
 
-static int32_t QueryExistingAlbumByLpath(const string& albumName, bool& isDeleted)
+static int32_t QueryExistingAlbumByLpath(const string& albumName, bool& isDeleted, bool& isSameName)
 {
     const string lpath = ALBUM_LPATH_PREFIX + albumName;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -415,9 +415,9 @@ static int32_t QueryExistingAlbumByLpath(const string& albumName, bool& isDelete
         return E_FAIL;
     }
 
-    const string sql = "SELECT album_id, dirty FROM " + PhotoAlbumColumns::TABLE +
-        " WHERE lpath = ? AND album_name <> ?";
-    const vector<ValueObject> bindArgs { lpath, albumName };
+    const string sql = "SELECT album_id, album_name, dirty FROM " + PhotoAlbumColumns::TABLE +
+        " WHERE lpath = ?";
+    const vector<ValueObject> bindArgs { lpath };
     auto resultSet = rdbStore->QueryByStep(sql, bindArgs);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query failed, lpath is: %{public}s", lpath.c_str());
@@ -436,6 +436,8 @@ static int32_t QueryExistingAlbumByLpath(const string& albumName, bool& isDelete
         "Failed to go to first row, lpath is: %{public}s", lpath.c_str());
     isDeleted =
         GetInt32Val(PhotoAlbumColumns::ALBUM_DIRTY, resultSet) == static_cast<int32_t>(DirtyTypes::TYPE_DELETED);
+    string existingName = GetStringVal(PhotoAlbumColumns::ALBUM_NAME, resultSet);
+    isSameName = existingName == albumName;
     return GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
 }
 
@@ -531,9 +533,10 @@ int CreatePhotoAlbum(const string &albumName)
     // try to reuse existing record with same lpath first
     int32_t id = -1;
     bool isDeleted = false;
+    bool isSameName = false;
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     std::function<int(void)> tryReuseDeleted = [&]()->int {
-        id = QueryExistingAlbumByLpath(albumName, isDeleted);
+        id = QueryExistingAlbumByLpath(albumName, isDeleted, isSameName);
         if (id <= 0) {
             // id < 0 means error has occurred, id == 0 means no existing record.
             // needs to return in either case.
@@ -551,7 +554,7 @@ int CreatePhotoAlbum(const string &albumName)
         MEDIA_ERR_LOG("Try trans fail!, ret: %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
-    if (id > 0) {
+    if (id > 0 && (!isSameName || isDeleted)) {
         return id;
     }
 
