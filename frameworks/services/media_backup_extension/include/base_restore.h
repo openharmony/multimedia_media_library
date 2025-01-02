@@ -132,9 +132,11 @@ protected:
     std::atomic<uint64_t> totalNumber_{0};
     std::atomic<uint64_t> audioTotalNumber_{0};
     std::atomic<uint64_t> updateTotalNumber_{0};
+    std::atomic<uint64_t> thumbnailTotalNumber_{0};
     std::atomic<uint64_t> otherTotalNumber_{0};
     std::atomic<uint64_t> ongoingTotalNumber_{0};
     std::atomic<uint64_t> updateProcessedNumber_{0};
+    std::atomic<uint64_t> thumbnailProcessedNumber_{0};
     std::atomic<uint64_t> otherProcessedNumber_{0};
     std::atomic<uint64_t> migratePhotoDuplicateNumber_{0};
     std::atomic<uint64_t> migrateVideoDuplicateNumber_{0};

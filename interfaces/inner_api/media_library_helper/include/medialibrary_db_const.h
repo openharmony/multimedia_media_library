@@ -425,6 +425,8 @@ const std::string MEDIA_DB_FILE_SLAVE_WAL = "/data/storage/el2/database/rdb/medi
 // requestId for generating thumbnail in batches
 const std::string THUMBNAIL_BATCH_GENERATE_REQUEST_ID = "thumbnail_request_id";
 const std::string IMAGE_FILE_TYPE = "image_file_type";
+
+const std::string RESTORE_REQUEST_ASTC_GENERATE_COUNT = "restore_request_astc_generate_count";
 } // namespace Media
 } // namespace OHOS
 

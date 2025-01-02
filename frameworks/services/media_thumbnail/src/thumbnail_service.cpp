@@ -430,13 +430,13 @@ int32_t ThumbnailService::TriggerHighlightThumbnail(std::string &id, std::string
     return err;
 }
 
-int32_t ThumbnailService::RestoreThumbnailDualFrame()
+int32_t ThumbnailService::RestoreThumbnailDualFrame(const int32_t &restoreAstcCount)
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE
     };
-    return ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
+    return ThumbnailGenerateHelper::RestoreAstcDualFrame(opts, restoreAstcCount);
 }
 
 int32_t ThumbnailService::LcdAging()
