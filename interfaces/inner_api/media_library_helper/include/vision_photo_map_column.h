@@ -22,6 +22,7 @@ namespace OHOS {
 namespace Media {
 const std::string MAP_ALBUM = "map_album";
 const std::string MAP_ASSET = "map_asset";
+const std::string ORDER_POSITION = "order_position";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_PHOTO_MAP_COLUMN_H
