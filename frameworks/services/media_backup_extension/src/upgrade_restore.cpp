@@ -55,7 +55,7 @@ constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
-const std::string DB_INTEGRITY_CHECK = "ok"
+const std::string DB_INTEGRITY_CHECK = "ok";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -388,7 +388,7 @@ void UpgradeRestore::AnalyzeGallerySource()
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
         .ReportGallery(this->galleryRdb_, this->shouldIncludeSd_);
-    MEDIA_INFO_LOG("start AnalyzeGallerySource.");
+    MEDIA_INFO_LOG("end AnalyzeGallerySource.");
 }
 
 void UpgradeRestore::InitGarbageAlbum()
