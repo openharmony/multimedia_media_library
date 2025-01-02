@@ -78,6 +78,7 @@ constexpr int32_t FACE_NO_NEED_ANALYSIS_STATE = -2;
 constexpr int32_t ALBUM_NAME_NOT_NULL_ENABLED = 1;
 constexpr int32_t ALBUM_PRIORITY_DEFAULT = 1;
 constexpr int32_t ALBUM_SETNAME_OK = 1;
+constexpr int32_t HIGHLIGHT_DELETED = -2;
 const std::string ALBUM_LPATH_PREFIX = "/Pictures/Users/";
 const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
 
@@ -619,6 +620,35 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
         }
     }
     return deleteRow;
+}
+
+int32_t MediaLibraryAlbumOperations::DeleteHighlightAlbums(RdbPredicates &predicates)
+{
+    // Only Highlight albums can be deleted by this way
+    MEDIA_INFO_LOG("Delete highlight albums");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("DeleteHighlightAlbum failed. rdbStore is null");
+        return E_HAS_DB_ERROR;
+    }
+
+    ValuesBucket values;
+    values.PutInt(HIGHLIGHT_STATUS, HIGHLIGHT_DELETED);
+    int32_t changedRows = 0;
+    int32_t result = rdbStore->Update(changedRows, values, predicates);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Delete highlight album failed, result is %{private}d", result);
+        return E_HAS_DB_ERROR;
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    const vector<string> &notifyUris = predicates.GetWhereArgs();
+    if (changedRows > 0) {
+        for (size_t i = 0; i < notifyUris.size(); ++i) {
+            watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX,
+                notifyUris[i]), NotifyType::NOTIFY_REMOVE);
+        }
+    }
+    return changedRows;
 }
 
 static void NotifyPortraitAlbum(const vector<int32_t> &changedAlbumIds)
