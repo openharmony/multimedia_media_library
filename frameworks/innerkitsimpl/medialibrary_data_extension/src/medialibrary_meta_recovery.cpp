@@ -698,7 +698,8 @@ bool MediaLibraryMetaRecovery::WriteJsonFile(const std::string &filePath, const 
         MEDIA_ERR_LOG("open filePath: %{private}s failed", filePath.c_str());
         return false;
     }
-    outFile << j << std::endl;
+    std::string jsonString = j.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+    outFile << jsonString << std::endl;
     outFile.close();
     return true;
 }

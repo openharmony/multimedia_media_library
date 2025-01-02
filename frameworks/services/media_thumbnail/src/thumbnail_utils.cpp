@@ -757,9 +757,12 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &i
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_POSITION,
+        MEDIA_DATA_DB_ORIENTATION,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_LCD_VISIT_TIME, "0");
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_POSITION, "1");
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
     if (opts.store == nullptr) {
         MEDIA_ERR_LOG("opts.store is nullptr");
@@ -777,6 +780,47 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &i
     err = resultSet->GoToFirstRow();
     if (err != E_OK) {
         MEDIA_ERR_LOG("QueryNoLcdInfos failed GoToFirstRow %{public}d", err);
+        return false;
+    }
+
+    ThumbnailData data;
+    do {
+        ParseQueryResult(resultSet, data, err, column);
+        if (!data.path.empty()) {
+            infos.push_back(data);
+        }
+    } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
+bool ThumbnailUtils::QueryLocalNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
+{
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+    };
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_LCD_VISIT_TIME, "0");
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_DIRTY, "1");
+    rdbPredicates.Limit(MAXIMUM_LCD_CHECK_NUM);
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("QueryLocalNoLcdInfos failed %{public}d", err);
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
+
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("QueryLocalNoLcdInfos failed GoToFirstRow %{public}d", err);
         return false;
     }
 
