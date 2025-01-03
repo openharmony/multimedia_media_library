@@ -371,6 +371,11 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         MediaLibraryRdbStore::AddAlbumIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_ALBUM_INDEX);
     }
+
+    if (oldVersion < VERSION_ADD_PHOTO_DATEADD_INDEX) {
+        MediaLibraryRdbStore::AddPhotoDateAddedIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_PHOTO_DATEADD_INDEX);
+    }
 }
 
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()
@@ -927,6 +932,9 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         }
         case OperationObject::PHOTO_ALBUM: {
             return MediaLibraryAlbumOperations::DeletePhotoAlbum(rdbPredicate);
+        }
+        case OperationObject::HIGHLIGHT_DELETE: {
+            return MediaLibraryAlbumOperations::DeleteHighlightAlbums(rdbPredicate);
         }
         case OperationObject::PHOTO_MAP: {
             return PhotoMapOperations::RemovePhotoAssets(rdbPredicate);
