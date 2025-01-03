@@ -41,6 +41,7 @@ const string LOW_QUALITY_PATH = "Documents/cameradata/";
 const size_t INVALID_RET = -1;
 const int32_t APP_TWIN_DATA_START = 128;
 const int32_t APP_TWIN_DATA_END = 147;
+const int32_t CROSS_POLICY_ERR = 18;
 
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
 std::shared_ptr<DataShare::DataShareHelper> BackupFileUtils::sDataShareHelper_ = nullptr;
@@ -333,7 +334,13 @@ int32_t BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, 
         MEDIA_ERR_LOG("new path: %{public}s is exists.", GarbleFilePath(newPath, sceneCode).c_str());
         return E_FILE_EXIST;
     }
-    return rename(oldPath.c_str(), newPath.c_str());
+    int ret = rename(oldPath.c_str(), newPath.c_str());
+    if (ret < 0 && errno == CROSS_POLICY_ERR) {
+        ret = MediaFileUtils::CopyFileAndDelSrc(oldPath, newPath) ? 0 : -1;
+        MEDIA_INFO_LOG("sendfile result: %{public}d, old path:%{public}s, new path: %{public}s",
+            ret, GarbleFilePath(oldPath, sceneCode).c_str(), GarbleFilePath(newPath, sceneCode).c_str());
+    }
+    return ret;
 }
 
 std::string BackupFileUtils::GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,

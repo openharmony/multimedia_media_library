@@ -91,6 +91,7 @@ const string PHOTO_ALBUM_URI_PREFIX_V0 = "file://media/PhotoAlbum/";
 constexpr int SAVE_PHOTO_WAIT_MS = 300;
 constexpr int TASK_NUMBER_MAX = 5;
 
+constexpr int32_t CROSS_POLICY_ERR = 18;
 constexpr int32_t ORIENTATION_0 = 1;
 constexpr int32_t ORIENTATION_90 = 6;
 constexpr int32_t ORIENTATION_180 = 3;
@@ -780,6 +781,7 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUr
     } else {
         watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_REMOVE);
         watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
+        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(trashAlbumId), NotifyType::NOTIFY_UPDATE);
     }
     vector<int64_t> formIds;
     for (const auto &notifyUri : notifyUris) {
@@ -1865,6 +1867,10 @@ static int32_t Move(const string& srcPath, const string& destPath)
     if (ret < 0) {
         MEDIA_ERR_LOG("Failed to rename, src: %{public}s, dest: %{public}s, ret: %{public}d, errno: %{public}d",
             srcPath.c_str(), destPath.c_str(), ret, errno);
+        if (errno == CROSS_POLICY_ERR) {
+            ret = MediaFileUtils::CopyFileAndDelSrc(srcPath, destPath) ? 0 : -1;
+            MEDIA_INFO_LOG("sendfile result:%{public}d", ret);
+        }
     }
     return ret;
 }
