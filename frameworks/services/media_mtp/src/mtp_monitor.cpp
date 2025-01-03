@@ -19,7 +19,8 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
-constexpr int32_t SLEEP_TIME = 10;
+constexpr int32_t SLEEP_TIME = 1;
+constexpr uint32_t MAX_WAIT_TIMES = 100;
 MtpMonitor::MtpMonitor(void)
 {
     Init();
@@ -39,13 +40,20 @@ void MtpMonitor::Stop()
 {
     interruptFlag = true;
     // make sure stop done after other operations.
-    std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
+    MEDIA_DEBUG_LOG("MtpMonitor::Stop start");
+    uint32_t waitTimes = 0;
+    while (threadRunning_.load() && waitTimes < MAX_WAIT_TIMES) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
+        waitTimes++;
+    }
+    MEDIA_DEBUG_LOG("MtpMonitor::Stop end");
 }
 
 void MtpMonitor::Run()
 {
     string name("MtpMonitor::Run");
     pthread_setname_np(pthread_self(), name.c_str());
+    threadRunning_.store(true);
     while (!interruptFlag) {
         if (operationPtr_ == nullptr) {
             operationPtr_ = make_shared<MtpOperation>();
@@ -57,6 +65,7 @@ void MtpMonitor::Run()
     if (operationPtr_ != nullptr) {
         operationPtr_.reset();
     }
+    threadRunning_.store(false);
 }
 } // namespace Media
 } // namespace OHOS
