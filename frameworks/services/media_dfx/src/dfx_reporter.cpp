@@ -241,6 +241,21 @@ void DfxReporter::ReportPhotoInfo(const PhotoStatistics& stats)
     }
 }
 
+void DfxReporter::ReportAstcInfo(const LcdAndAstcCount& count)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_ASTC_INFO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "LOCAL_LCD_COUNT", count.localLcdCount,
+        "LOCAL_ASTC_COUNT", count.localAstcCount,
+        "CLOUD_LCD_COUNT", count.cloudLcdCount,
+        "CLOUD_ASTC_COUNT", count.cloudAstcCount);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportAstcInfo error:%{public}d", ret);
+    }
+}
+
 void DfxReporter::ReportAlbumInfo(const std::string &albumName, int32_t albumImageCount, int32_t albumVideoCount,
     bool isLocal)
 {
