@@ -110,6 +110,7 @@ public:
         std::vector<ThumbnailData> &infos, int &err);
 #endif
     EXPORT static bool QueryNoLcdInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
+    EXPORT static bool QueryLocalNoLcdInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos,
         bool isWifiConnected, int &err);

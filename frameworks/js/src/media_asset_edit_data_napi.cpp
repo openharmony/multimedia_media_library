@@ -27,7 +27,7 @@ namespace OHOS::Media {
 static const string MEDIA_ASSET_EDIT_DATA_CLASS = "MediaAssetEditData";
 thread_local napi_ref MediaAssetEditDataNapi::constructor_ = nullptr;
 
-constexpr int32_t EDIT_DATA_MAX_LENGTH = 65536;
+constexpr int32_t EDIT_DATA_MAX_LENGTH = 5 * 1024 * 1024;
 constexpr int32_t EDIT_FORMAT_MAX_LENGTH = 256;
 
 napi_value MediaAssetEditDataNapi::Init(napi_env env, napi_value exports)

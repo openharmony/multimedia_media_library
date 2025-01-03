@@ -68,7 +68,7 @@ public:
     EXPORT bool TryRemoveExternalStorage(const std::string &fsUuid, uint32_t &storageId);
     EXPORT int GetStorageIds();
     EXPORT void DeleteHandlePathMap(const std::string &path, const uint32_t id);
-    EXPORT int ObserverAddPathToMap(const std::string &path);
+    EXPORT uint32_t ObserverAddPathToMap(const std::string &path);
     EXPORT void ObserverDeletePathToMap(const std::string &path);
 
 private:

@@ -2705,11 +2705,15 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<F
         // erase sticker field
         auto index = editData.find(FRAME_STICKER);
         if (index != std::string::npos) {
-            VideoCompositionCallbackImpl::EraseStickerField(editData, index);
+            VideoCompositionCallbackImpl::EraseStickerField(editData, index, false);
         }
         index = editData.find(INPLACE_STICKER);
         if (index != std::string::npos) {
-            VideoCompositionCallbackImpl::EraseStickerField(editData, index);
+            VideoCompositionCallbackImpl::EraseStickerField(editData, index, false);
+        }
+        index = editData.find(TIMING_STICKER);
+        if (index != std::string::npos) {
+            VideoCompositionCallbackImpl::EraseStickerField(editData, index, true);
         }
         index = editData.find(FILTERS_FIELD);
         if (index == std::string::npos) {
@@ -2720,6 +2724,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<F
             MEDIA_INFO_LOG("MovingPhoto video only supports filter now.");
             return SaveTempMovingPhotoVideo(assetPath);
         }
+        MEDIA_INFO_LOG("AddFiltersToVideoExecute after EraseStickerField, editData = %{public}s", editData.c_str());
         CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(fileAsset, assetPath, true) == E_OK, E_HAS_FS_ERROR,
             "Failed to save source video, path = %{public}s", assetPath.c_str());
         VideoCompositionCallbackImpl::AddCompositionTask(assetPath, editData);

@@ -17,7 +17,6 @@
 #include "mtp_media_library.h"
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <fstream>
 #include <shared_mutex>
 #include "mtp_data_utils.h"
 #include "media_file_utils.h"
@@ -216,7 +215,7 @@ void MtpMediaLibrary::ModifyPathHandleMap(const std::string &path, const uint32_
 bool MtpMediaLibrary::StartsWith(const std::string& str, const std::string& prefix)
 {
     if (prefix.size() > str.size() || prefix.empty() || str.empty()) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::StartsWith prefix size error");
+        MEDIA_DEBUG_LOG("MtpMediaLibrary::StartsWith prefix size error");
         return false;
     }
 
@@ -239,7 +238,7 @@ void MtpMediaLibrary::DeleteHandlePathMap(const std::string &path, const uint32_
     }
 }
 
-int MtpMediaLibrary::ObserverAddPathToMap(const std::string &path)
+uint32_t MtpMediaLibrary::ObserverAddPathToMap(const std::string &path)
 {
     MEDIA_DEBUG_LOG("MtpMediaLibrary::ObserverAddPathToMap path[%{public}s]", path.c_str());
     {
@@ -251,13 +250,13 @@ int MtpMediaLibrary::ObserverAddPathToMap(const std::string &path)
 void MtpMediaLibrary::ObserverDeletePathToMap(const std::string &path)
 {
     MEDIA_DEBUG_LOG("MtpMediaLibrary::ObserverDeletePathToMap path[%{public}s]", path.c_str());
-    uint32_t id;
-    if (GetIdByPath(path, id) != MTP_SUCCESS) {
-        return;
-    }
     {
         WriteLock lock(g_mutex);
-        ErasePathInfo(id, path);
+        auto it = pathToHandleMap.find(path);
+        if (it == pathToHandleMap.end()) {
+            return;
+        }
+        ErasePathInfo(it->second, path);
     }
 }
 
@@ -599,13 +598,6 @@ int32_t MtpMediaLibrary::SendObjectInfo(const std::shared_ptr<MtpOperationContex
             MEDIA_ERR_LOG("MtpMediaLibrary::SendObjectInfo normalized path failed");
             return MtpErrorUtils::SolveSendObjectInfoError(E_HAS_FS_ERROR);
         }
-        std::ofstream ofs(path.c_str());
-        if (ofs.is_open()) {
-            ofs.close();
-        } else {
-            MEDIA_ERR_LOG("MtpMediaLibrary::SendObjectInfo create file failed");
-            return MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR);
-        }
     }
     uint32_t outObjectHandle;
     {
@@ -740,24 +732,22 @@ int32_t MtpMediaLibrary::MoveObject(const std::shared_ptr<MtpOperationContext> &
     // compare the prefix of the two paths
     const auto len = PUBLIC_REAL_PATH_PRE.size();
     bool isSameStorage = from.substr(0, len).compare(to.substr(0, len)) == 0;
-    if (isSameStorage) {
-        // move in the same storage
-        sf::rename(fromPath, toPath, ec);
-    } else {
-        // move between different storage
-        sf::copy(fromPath, toPath, sf::copy_options::recursive | sf::copy_options::overwrite_existing, ec);
-        CrossCopyAfter(isDir, toPath);
-    }
-
-    MEDIA_INFO_LOG("MTP:MoveObject:from[%{public}s],to[%{public}s]", fromPath.c_str(), toPath.c_str());
-    CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveMoveObjectError(E_FAIL),
-        "MtpMediaLibrary::MoveObject failed");
     {
         WriteLock lock(g_mutex);
+        if (isSameStorage) {
+            // move in the same storage
+            sf::rename(fromPath, toPath, ec);
+        } else {
+            // move between different storage
+            sf::copy(fromPath, toPath, sf::copy_options::recursive | sf::copy_options::overwrite_existing, ec);
+            CrossCopyAfter(isDir, toPath);
+            isDir ? sf::remove_all(fromPath, ec) : sf::remove(fromPath, ec);
+        }
+
+        MEDIA_INFO_LOG("MTP:MoveObject:from[%{public}s],to[%{public}s]", fromPath.c_str(), toPath.c_str());
+        CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveMoveObjectError(E_FAIL),
+            "MtpMediaLibrary::MoveObject failed");
         MoveObjectSub(fromPath, toPath, isDir, repeatHandle);
-    }
-    if (!isSameStorage) {
-        isDir ? sf::remove_all(fromPath, ec) : sf::remove(fromPath, ec);
     }
     return MTP_SUCCESS;
 }
@@ -789,7 +779,7 @@ int32_t MtpMediaLibrary::CopyObject(const std::shared_ptr<MtpOperationContext> &
         "MtpMediaLibrary::CopyObject failed");
     {
         WriteLock lock(g_mutex);
-        outObjectHandle = AddPathToMap(toPath);
+        outObjectHandle = AddPathToMap(toPath.string());
         MEDIA_INFO_LOG("CopyObject successful to[%{public}s], handle[%{public}d]", toPath.c_str(), outObjectHandle);
     }
     return MTP_SUCCESS;
@@ -848,12 +838,11 @@ int32_t MtpMediaLibrary::SetObjectPropValue(const std::shared_ptr<MtpOperationCo
         MEDIA_ERR_LOG("MtpMediaLibrary::SetObjectPropValue rename failed, file/doc exists");
         return MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR);
     }
-
-    sf::rename(path, to, ec);
-    CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR),
-        "MtpMediaLibrary::SetObjectPropValue rename failed");
     {
         WriteLock lock(g_mutex);
+        sf::rename(path, to, ec);
+        CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR),
+            "MtpMediaLibrary::SetObjectPropValue rename failed");
         ModifyHandlePathMap(path, to);
         if (sf::is_directory(to, ec)) {
             MoveHandlePathMap(path, to);
@@ -876,7 +865,6 @@ void MtpMediaLibrary::GetHandles(const uint32_t handle, const std::string &root,
     CHECK_AND_RETURN_LOG(out != nullptr, "out is nullptr");
     auto it = handleToPathMap.find(handle);
     if (it == handleToPathMap.end()) {
-        out->emplace(DEFAULT_PARENT_ID, root);
         return;
     }
     out->emplace(handle, it->second);
@@ -923,7 +911,7 @@ void MtpMediaLibrary::CorrectStorageId(const std::shared_ptr<MtpOperationContext
     CHECK_AND_RETURN_LOG(context->handle > 0, "no need correct");
 
     auto it = handleToPathMap.find(context->handle);
-    CHECK_AND_RETURN_LOG(it != handleToPathMap.end(), "no need correct");
+    CHECK_AND_RETURN_LOG(it != handleToPathMap.end(), "no find by context->handle");
 
     for (auto storage = storageIdToPathMap.begin(); storage != storageIdToPathMap.end(); ++storage) {
         if (it->second.compare(0, storage->second.size(), storage->second) == 0) {
