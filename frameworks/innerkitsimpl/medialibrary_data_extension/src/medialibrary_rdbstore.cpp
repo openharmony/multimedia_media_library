@@ -457,6 +457,16 @@ int32_t MediaLibraryRdbStore::Init()
     return E_OK;
 }
 
+void MediaLibraryRdbStore::AddPhotoDateAddedIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start AddPhotoDateAddedIndex");
+    const vector<string> sqls = {
+        PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end AddPhotoDateAddedIndex");
+}
+
 int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", version);
@@ -1421,6 +1431,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTO_TABLE,
     PhotoColumn::CREATE_CLOUD_ID_INDEX,
     PhotoColumn::INDEX_SCTHP_ADDTIME,
+    PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::INDEX_SCHPT_READY,
     PhotoColumn::CREATE_YEAR_INDEX,
