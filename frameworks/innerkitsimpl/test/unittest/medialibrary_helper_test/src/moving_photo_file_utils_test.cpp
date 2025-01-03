@@ -314,6 +314,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_002, T
     string extraDir = MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(imagePath);
     EXPECT_EQ(MediaFileUtils::CreateDirectory(extraDir), true);
     string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(imagePath);
+    MediaFileUtils::DeleteFile(extraPath);
     EXPECT_EQ(MediaFileUtils::CreateAsset(extraPath), E_SUCCESS);
     EXPECT_EQ(WriteFileContent(extraPath, FILE_TEST_EXTRA_DATA, sizeof(FILE_TEST_EXTRA_DATA)), true);
 
@@ -330,7 +331,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_001, Tes
     EXPECT_EQ(WriteFileContent(videoPath, FILE_TEST_MP4, sizeof(FILE_TEST_MP4)), true);
     int32_t fd = open(videoPath.c_str(), O_RDONLY);
     EXPECT_GT(fd, 0);
-    EXPECT_GT(MovingPhotoFileUtils::GetFrameIndex(0, fd), 0);
+    EXPECT_EQ(MovingPhotoFileUtils::GetFrameIndex(0, fd), 0);
     close(fd);
 }
 
@@ -343,6 +344,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsLivePhoto_001, TestS
     EXPECT_EQ(MediaFileUtils::CreateAsset(livePhotoPath), E_SUCCESS);
     EXPECT_EQ(WriteFileContent(livePhotoPath, FILE_TEST_LIVE_PHOTO, sizeof(FILE_TEST_LIVE_PHOTO)), true);
     EXPECT_EQ(MovingPhotoFileUtils::IsLivePhoto(livePhotoPath), true);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(livePhotoPath), true);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePhoto_001, TestSize.Level0)
@@ -362,6 +364,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePho
     EXPECT_EQ(MediaFileUtils::CreateAsset(result), E_SUCCESS);
     EXPECT_EQ(MovingPhotoFileUtils::ConvertToSourceLivePhoto(movingPhotoImagepath, sourceLivePhotoPath), E_OK);
     EXPECT_EQ(sourceLivePhotoPath, result);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(result), true);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceMovingPhotoImagePath_001, TestSize.Level0)

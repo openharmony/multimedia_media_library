@@ -266,19 +266,19 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
     return E_OK;
 }
 
-bool NeedGenerateLcd(ThumbnailData &data)
+bool NeedGenerateLocalLcd(ThumbnailData &data)
 {
-    std::string lcdPath = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
-    if (access(lcdPath.c_str(), F_OK) != 0) {
-        return true;
-    }
+    std::string lcdLocalPath = GetLocalThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
     size_t lcdSize = -1;
-    if (!MediaFileUtils::GetFileSize(lcdPath, lcdSize) || lcdSize >= LCD_UPLOAD_LIMIT_SIZE) {
-        MEDIA_INFO_LOG("Lcd size is larger than uploaded limit size: %{public}s",
-            DfxUtils::GetSafePath(data.path).c_str());
-        return true;
+
+    // Local LCD exist, and its size is less than upload limit
+    if (access(lcdLocalPath.c_str(), F_OK) == 0 && MediaFileUtils::GetFileSize(lcdLocalPath, lcdSize) &&
+        lcdSize < LCD_UPLOAD_LIMIT_SIZE) {
+        return false;
     }
-    return false;
+    MEDIA_INFO_LOG("Local file Lcd need to be generate, size: %{public}d, path: %{public}s",
+        static_cast<int>(lcdSize), DfxUtils::GetSafePath(data.path).c_str());
+    return true;
 }
 
 int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
@@ -303,7 +303,7 @@ int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
         opts.row = infos[i].id;
 
         // Check whether LCD exists or is over upload limit, if it does, just update the database
-        if (!NeedGenerateLcd(infos[i])) {
+        if (!NeedGenerateLocalLcd(infos[i])) {
             MEDIA_INFO_LOG("Skip CreateLcdBackground, lcd exists: %{public}s",
                 DfxUtils::GetSafePath(infos[i].path).c_str());
             ThumbnailUtils::UpdateLcdReadyStatus(opts, infos[i], err, LcdReady::GENERATE_LCD_COMPLETED);
@@ -312,6 +312,37 @@ int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
         infos[i].loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcd,
             opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
+    }
+    return E_OK;
+}
+
+int32_t ThumbnailGenerateHelper::CheckLcdSizeAndUpdateStatus(ThumbRdbOpt &opts)
+{
+    if (opts.store == nullptr) {
+        return E_ERR;
+    }
+
+    vector<ThumbnailData> infos;
+    int32_t err = GetLocalNoLcdData(opts, infos);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to CheckLcdSizeAndUpdateStatus %{public}d", err);
+        return err;
+    }
+    if (infos.empty()) {
+        MEDIA_INFO_LOG("No need CheckLcdSizeAndUpdateStatus.");
+        return E_THUMBNAIL_LCD_ALL_EXIST;
+    }
+
+    MEDIA_INFO_LOG("CheckLcdSizeAndUpdateStatus size: %{public}d", static_cast<int>(infos.size()));
+    for (uint32_t i = 0; i < infos.size(); i++) {
+        opts.row = infos[i].id;
+
+        // Check whether LCD exists or is over upload limit, if it does, just update the database
+        if (!NeedGenerateLocalLcd(infos[i])) {
+            MEDIA_INFO_LOG("Check lcd size succeeded, lcd exists: %{public}s",
+                DfxUtils::GetSafePath(infos[i].path).c_str());
+            ThumbnailUtils::UpdateLcdReadyStatus(opts, infos[i], err, LcdReady::GENERATE_LCD_COMPLETED);
+        }
     }
     return E_OK;
 }
@@ -331,6 +362,16 @@ int32_t ThumbnailGenerateHelper::GetNoLcdData(ThumbRdbOpt &opts, vector<Thumbnai
     int32_t err = E_ERR;
     if (!ThumbnailUtils::QueryNoLcdInfos(opts, outDatas, err)) {
         MEDIA_ERR_LOG("Failed to QueryNoLcdInfos %{private}d", err);
+        return err;
+    }
+    return E_OK;
+}
+
+int32_t ThumbnailGenerateHelper::GetLocalNoLcdData(ThumbRdbOpt &opts, vector<ThumbnailData> &outDatas)
+{
+    int32_t err = E_ERR;
+    if (!ThumbnailUtils::QueryLocalNoLcdInfos(opts, outDatas, err)) {
+        MEDIA_ERR_LOG("Failed to QueryLocalNoLcdInfos %{private}d", err);
         return err;
     }
     return E_OK;

@@ -392,6 +392,10 @@ void MediaLibraryRdbStore::UpdateLcdStatusNotUploaded(const std::shared_ptr<Medi
     MEDIA_INFO_LOG("start update lcd status for photos have not been uploaded");
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("finish update lcd status for photos have not been uploaded");
+
+    MEDIA_INFO_LOG("start CheckLcdSizeAndUpdateStatus");
+    ThumbnailService::GetInstance()->CheckLcdSizeAndUpdateStatus();
+    MEDIA_INFO_LOG("finish CheckLcdSizeAndUpdateStatus");
 }
 
 void MediaLibraryRdbStore::AddReadyCountIndex(const shared_ptr<MediaLibraryRdbStore> store)
@@ -406,16 +410,26 @@ void MediaLibraryRdbStore::AddReadyCountIndex(const shared_ptr<MediaLibraryRdbSt
     MEDIA_INFO_LOG("end add ready count index");
 }
 
-void MediaLibraryRdbStore::FixDateAddedIndex(const shared_ptr<MediaLibraryRdbStore> store)
+void MediaLibraryRdbStore::RevertFixDateAddedIndex(const shared_ptr<MediaLibraryRdbStore> store)
 {
-    MEDIA_INFO_LOG("start fix date added index");
+    MEDIA_INFO_LOG("start revert fix date added index");
     const vector<string> sqls = {
         PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
         PhotoColumn::INDEX_SCTHP_ADDTIME,
-        PhotoColumn::INDEX_SCHPT_ADDTIME_ALBUM,
+        PhotoColumn::DROP_INDEX_SCHPT_ADDTIME_ALBUM,
     };
     ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end fix date added index");
+    MEDIA_INFO_LOG("end revert fix date added index");
+}
+
+void MediaLibraryRdbStore::AddCloudEnhancementAlbumIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX
+    };
+    MEDIA_INFO_LOG("start create idx_schpt_cloud_enhancement_album_index");
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end create idx_schpt_cloud_enhancement_album_index");
 }
 
 int32_t MediaLibraryRdbStore::Init()
@@ -441,6 +455,16 @@ int32_t MediaLibraryRdbStore::Init()
     }
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), SUCCESS");
     return E_OK;
+}
+
+void MediaLibraryRdbStore::AddPhotoDateAddedIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start AddPhotoDateAddedIndex");
+    const vector<string> sqls = {
+        PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end AddPhotoDateAddedIndex");
 }
 
 int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
@@ -1407,7 +1431,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTO_TABLE,
     PhotoColumn::CREATE_CLOUD_ID_INDEX,
     PhotoColumn::INDEX_SCTHP_ADDTIME,
-    PhotoColumn::INDEX_SCHPT_ADDTIME_ALBUM,
+    PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::INDEX_SCHPT_READY,
     PhotoColumn::CREATE_YEAR_INDEX,
@@ -1537,6 +1561,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::INDEX_HIGHLIGHT_FILEID,
+    PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2858,6 +2883,18 @@ void UpdateVideoFaceTable(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddHighlightChangeFunction(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + ANALYSIS_PHOTO_MAP_TABLE + " ADD COLUMN " + ORDER_POSITION + " INT ",
+        "ALTER TABLE " + HIGHLIGHT_COVER_INFO_TABLE + " ADD COLUMN " + COVER_STATUS + " INT ",
+        "ALTER TABLE " + HIGHLIGHT_PLAY_INFO_TABLE + " ADD COLUMN " + PLAY_INFO_STATUS + " INT ",
+        "ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " + HIGHLIGHT_PIN_TIME + " BIGINT ",
+    };
+    MEDIA_INFO_LOG("start add highlight change function");
+    ExecSqls(sqls, store);
+}
+
 void AddStoryTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
@@ -2951,7 +2988,7 @@ void UpdateHighlightTablePrimaryKey(RdbStore &store)
 
 void AddBussinessRecordAlbum(RdbStore &store)
 {
-    string updateDirtyForShootingMode = "UPDATE Photos SET dirty = 2 WHERE cloud_id is not null AND " +
+    string updateDirtyForShootingMode = "UPDATE Photos SET dirty = 2 WHERE position <> 1 AND " +
         PhotoColumn::PHOTO_SHOOTING_MODE + " is not null AND " +
         PhotoColumn::PHOTO_SHOOTING_MODE + " != ''";
     const vector<string> sqls = {
@@ -3134,6 +3171,17 @@ static void UpdateSourcePhotoAlbumTrigger(RdbStore &store)
     };
     ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end update source photo album trigger");
+}
+
+static void UpdateSearchStatusTriggerForOwnerAlbumId(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start update search status trigger for owner album id");
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS " + UPDATE_SEARCH_STATUS_TRIGGER,
+        CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end update search status trigger for owner album id");
 }
 
 static void AddSupportedWatermarkType(RdbStore &store)
@@ -3714,6 +3762,13 @@ static void UpgradeUriPermissionTable(RdbStore &store, int32_t oldVersion)
     }
 }
 
+static void UpgradeHighlightAlbumChange(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_HIGHLIGHT_CHANGE_FUNCTION) {
+        AddHighlightChangeFunction(store);
+    }
+}
+
 static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_MISSING_UPDATES) {
@@ -3993,6 +4048,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_NEW_SOURCE_PHOTO_ALBUM_TRIGGER) {
         UpdateSourcePhotoAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID) {
+        UpdateSearchStatusTriggerForOwnerAlbumId(store);
     }
 }
 
@@ -4333,6 +4392,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeHistory(store, oldVersion);
     UpgradeExtension(store, oldVersion);
     UpgradeUriPermissionTable(store, oldVersion);
+    UpgradeHighlightAlbumChange(store, oldVersion);
 
     AlwaysCheck(store);
     if (!g_upgradeErr) {

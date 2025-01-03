@@ -2836,7 +2836,7 @@ static void UpdateDetailTimeByDateTaken(napi_env env, const shared_ptr<FileAsset
         NAPI_ERR_LOG("Failed to modify detail time, err: %{public}d", changedRows);
         NapiError::ThrowError(env, JS_INNER_FAIL);
     } else {
-        NAPI_INFO_LOG("success to modify detial time, detailTime: %{public}s, dateTaken: %{public}lld",
+        NAPI_INFO_LOG("success to modify detial time, detailTime: %{public}s, dateTaken: %{public}" PRId64,
             detailTime.c_str(), dateTaken);
     }
 }
@@ -5096,7 +5096,7 @@ napi_value FileAssetNapi::PhotoAccessHelperCommitEditedAsset(napi_env env, napi_
     CHECK_ARGS_THROW_INVALID_PARAM(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_THREE));
     string editData;
-    const static int32_t EDIT_DATA_MAX_LENGTH = 65536;
+    const static int32_t EDIT_DATA_MAX_LENGTH = 5 * 1024 * 1024;
     CHECK_ARGS_THROW_INVALID_PARAM(env,
         MediaLibraryNapiUtils::GetParamStringWithLength(env, asyncContext->argv[0], EDIT_DATA_MAX_LENGTH, editData));
     CHECK_ARGS_THROW_INVALID_PARAM(env,

@@ -357,9 +357,18 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         rdbStore->SetOldVersion(VERSION_FIX_PICTURE_LCD_SIZE);
     }
 
-    if (oldVersion < VERSION_FIX_DATE_ADDED_INDEX) {
-        MediaLibraryRdbStore::FixDateAddedIndex(rdbStore);
-        rdbStore->SetOldVersion(VERSION_FIX_DATE_ADDED_INDEX);
+    if (oldVersion < VERSION_REVERT_FIX_DATE_ADDED_INDEX) {
+        MediaLibraryRdbStore::RevertFixDateAddedIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_REVERT_FIX_DATE_ADDED_INDEX);
+    }
+
+    if (oldVersion < VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX) {
+        MediaLibraryRdbStore::AddCloudEnhancementAlbumIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX);
+    }
+    if (oldVersion < VERSION_ADD_PHOTO_DATEADD_INDEX) {
+        MediaLibraryRdbStore::AddPhotoDateAddedIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_PHOTO_DATEADD_INDEX);
     }
 }
 
@@ -917,6 +926,9 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         }
         case OperationObject::PHOTO_ALBUM: {
             return MediaLibraryAlbumOperations::DeletePhotoAlbum(rdbPredicate);
+        }
+        case OperationObject::HIGHLIGHT_DELETE: {
+            return MediaLibraryAlbumOperations::DeleteHighlightAlbums(rdbPredicate);
         }
         case OperationObject::PHOTO_MAP: {
             return PhotoMapOperations::RemovePhotoAssets(rdbPredicate);

@@ -111,6 +111,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::STORY_ALBUM,
     OperationObject::STORY_COVER,
     OperationObject::STORY_PLAY,
+    OperationObject::HIGHLIGHT_DELETE,
     OperationObject::USER_PHOTOGRAPHY,
     OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
     OperationObject::INDEX_CONSTRUCTION_STATUS,
