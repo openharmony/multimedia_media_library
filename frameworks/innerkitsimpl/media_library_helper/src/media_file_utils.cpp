@@ -68,6 +68,7 @@ const std::string EDIT_DATA_DIR = ".editData";
 const std::string THUMBS_PHOTO_DIR = ".thumbs/Photo";
 const std::string EDIT_DATA_PHOTO_DIR = ".editData/Photo";
 const std::string CLOUD_FILE_PATH = "/storage/cloud/files";
+const std::string TMP_SUFFIX = "tmp";
 const std::vector<std::string> SET_LISTEN_DIR = {
     PHOTO_DIR, AUDIO_DIR, THUMBS_DIR, EDIT_DATA_DIR, THUMBS_PHOTO_DIR, EDIT_DATA_PHOTO_DIR
 };
@@ -444,21 +445,29 @@ bool MediaFileUtils::DeleteDir(const string &dirName)
 
 bool MediaFileUtils::CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile)
 {
-    if (IsFileExists(destFile)) {
+    bool fileExist = IsFileExists(destFile);
+    if (fileExist) {
         MEDIA_INFO_LOG("destFile:%{private}s already exists", destFile.c_str());
-        CHECK_AND_PRINT_LOG(DeleteFile(destFile), "delete destFile:%{private}s error", destFile.c_str());
+        CHECK_AND_RETURN_RET_LOG(CopyFileUtil(destFile, destFile + TMP_SUFFIX), false,
+            "copy destfile:%{private}s failed", destFile.c_str());
+        CHECK_AND_RETURN_RET_LOG(DeleteFile(destFile), false, "delete destFile:%{private}s error", destFile.c_str());
     }
-    CHECK_AND_RETURN_RET_LOG(CreateFile(destFile), false,
-        "create destFile:%{private}s failed", destFile.c_str());
-    
+
     if (CopyFileUtil(srcFile, destFile)) {
         CHECK_AND_PRINT_LOG(DeleteFile(srcFile), "delete srcFile:%{private}s failed", srcFile.c_str());
+        CHECK_AND_PRINT_LOG(DeleteFile(destFile + TMP_SUFFIX), "delete tmpFile:%{private}s failed", srcFile.c_str());
         return true;
+    }
+
+    if (fileExist) {
+        CHECK_AND_PRINT_LOG(CopyFileUtil(destFile + TMP_SUFFIX, destFile),
+            "recover destFile:%{private}s error", destFile.c_str());
+        CHECK_AND_PRINT_LOG(DeleteFile(destFile + TMP_SUFFIX), "delete tmpFile:%{private}s failed", srcFile.c_str());
     } else {
         bool delDestFileRet = DeleteFile(destFile);
         MEDIA_ERR_LOG("copy srcFile:%{private}s failed,delDestFileRet:%{public}d", srcFile.c_str(), delDestFileRet);
-        return false;
     }
+    return false;
 }
 
 /**
