@@ -497,7 +497,6 @@ int32_t MtpOperationUtils::DoRecevieSendObject()
         mtpMedialibraryManager_->CloseFd(context_, fd);
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "DoRecevieSendObject CloseFd fail!");
 
-    SendEventPacket(context_->handle, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
     return MTP_SUCCESS;
 }
 
