@@ -347,7 +347,7 @@ const std::string PhotoColumn::INDEX_SCTHP_ADDTIME =
 
 const std::string PhotoColumn::INDEX_SCHPT_ALBUM_GENERAL =
     BaseColumn::CreateIndex() + PHOTO_SCHPT_ALBUM_GENERAL_INDEX + " ON " + PHOTOS_TABLE +
-     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," +
     MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
     "," + PHOTO_OWNER_ALBUM_ID + ");";
 
