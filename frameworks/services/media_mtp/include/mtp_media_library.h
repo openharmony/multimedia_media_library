@@ -45,6 +45,7 @@ public:
         std::shared_ptr<UInt32List> &outHandles);
     EXPORT int32_t GetObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<ObjectInfo> &outObjectInfo);
+    EXPORT bool IsExistObject(const std::shared_ptr<MtpOperationContext> &context);
     EXPORT int32_t GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd);
     EXPORT int32_t GetThumb(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<UInt8List> &outThumb);
