@@ -405,8 +405,16 @@ uint16_t MtpOperationUtils::GetObjectDataDeal()
         "mtpMedialibraryManager_ is null");
 
     int fd = 0;
-    int errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetFd(context_, fd) :
-        mtpMedialibraryManager_->GetFd(context_, fd, MEDIA_FILEMODE_READONLY);
+    int errorCode = 0;
+    if (MtpManager::GetInstance().IsMtpMode()) {
+        if (!mtpMediaLibrary_->IsExistObject(context_)) {
+            SendEventPacket(context_->handle, MTP_EVENT_OBJECT_REMOVED_CODE);
+            return MTP_INVALID_OBJECTHANDLE_CODE;
+        }
+        errorCode = mtpMediaLibrary_->GetFd(context_, fd);
+    } else {
+        errorCode = mtpMedialibraryManager_->GetFd(context_, fd, MEDIA_FILEMODE_READONLY);
+    }
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "GetObjectDataDeal GetFd fail!");
 
     MtpFileRange object;

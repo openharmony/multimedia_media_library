@@ -419,6 +419,22 @@ int32_t MtpMediaLibrary::GetObjectInfo(const std::shared_ptr<MtpOperationContext
     return MtpErrorUtils::SolveGetObjectInfoError(E_SUCCESS);
 }
 
+bool MtpMediaLibrary::IsExistObject(const std::shared_ptr<MtpOperationContext> &context)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, false, "context is nullptr");
+
+    std::string realPath("");
+    if (GetPathById(context->handle, realPath) != MTP_SUCCESS) {
+        MEDIA_ERR_LOG("MtpMediaLibrary::IsExistObject handle not found");
+        return false;
+    }
+    bool ret = sf::exists(realPath);
+    if (!ret) {
+        DeleteHandlePathMap(realPath, context->handle);
+    }
+    return ret;
+}
+
 int32_t MtpMediaLibrary::GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd)
 {
     MEDIA_INFO_LOG("MtpMediaLibrary::GetFd");
