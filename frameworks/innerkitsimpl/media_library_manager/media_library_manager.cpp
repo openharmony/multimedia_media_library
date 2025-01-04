@@ -107,15 +107,9 @@ void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &tok
 sptr<IRemoteObject> MediaLibraryManager::InitToken()
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saManager == nullptr) {
-        MEDIA_ERR_LOG("get system ability mgr failed.");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(saManager != nullptr, nullptr, "get system ability mgr failed.");
     auto remoteObj = saManager->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
-    if (remoteObj == nullptr) {
-        MEDIA_ERR_LOG("GetSystemAbility Service failed.");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(remoteObj != nullptr, nullptr, "GetSystemAbility Service failed.");
     return remoteObj;
 }
 
@@ -257,25 +251,17 @@ int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
 int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
 {
     auto dataShareHelper = DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is null");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_FAIL, "dataShareHelper is null");
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN_QUERYVOLUME + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
     DataSharePredicates predicates;
     auto queryResultSet = dataShareHelper->Query(uri, predicates, columns);
-    if (queryResultSet == nullptr) {
-        MEDIA_ERR_LOG("queryResultSet is null!");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, E_FAIL, "queryResultSet is null!");
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("get rdbstore failed");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "get rdbstore failed");
     MEDIA_INFO_LOG("count = %{public}d", (int)count);
+
     if (count >= 0) {
         int thumbnailType = -1;
         while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -312,10 +298,7 @@ std::shared_ptr<DataShareResultSet> GetResultSetFromPhotos(const string &value, 
     string fileId = MediaFileUtils::GetIdFromUri(value);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     DatashareBusinessError businessError;
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("datashareHelper is nullptr");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "datashareHelper is nullptr");
     return dataShareHelper->Query(queryUri, predicates, columns, &businessError);
 }
 
@@ -333,10 +316,7 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
 
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is null");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "dataShareHelper is null");
     return dataShareHelper->Query(uri, predicates, columns, &businessError);
 }
 
@@ -801,15 +781,9 @@ static int32_t GetAstcsBatch(const vector<string> &uriBatch, vector<vector<uint8
     }
 
     auto kvStore = MediaLibraryKvStoreManager::GetInstance().GetKvStore(KvStoreRoleType::VISITOR, valueType);
-    if (kvStore == nullptr) {
-        MEDIA_ERR_LOG("GetAstcsBatch kvStore is nullptr");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(kvStore != nullptr, E_DB_FAIL, "GetAstcsBatch kvStore is nullptr");
     int32_t status = kvStore->BatchQuery(timeIdBatch, astcBatch);
-    if (status != E_OK) {
-        MEDIA_ERR_LOG("GetAstcsBatch failed, status %{public}d", status);
-        return status;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == E_OK, status, "GetAstcsBatch failed, status %{public}d", status);
     return E_OK;
 }
 
@@ -837,19 +811,13 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeAstc(UniqueFd &uniqueFd)
     SourceOptions opts;
     uint32_t err = 0;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(uniqueFd.Get(), opts, err);
-    if (imageSource  == nullptr) {
-        MEDIA_ERR_LOG("CreateImageSource err %{public}d", err);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, nullptr, "CreateImageSource err %{public}d", err);
 
     DecodeOptions decodeOpts;
     decodeOpts.fastAstc = true;
     decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    if (pixelMap == nullptr) {
-        MEDIA_ERR_LOG("CreatePixelMap err %{public}d", err);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, nullptr, "CreatePixelMap err %{public}d", err);
     return pixelMap;
 }
 
@@ -918,11 +886,8 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, const strin
         return E_ERR;
     }
 
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("Failed to read video of moving photo, datashareHelper is nullptr");
-        return E_ERR;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_ERR,
+        "Failed to read video of moving photo, datashareHelper is nullptr");
     string videoUri = uri;
     MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, option);
     Uri openVideoUri(videoUri);
@@ -967,12 +932,8 @@ int32_t MediaLibraryManager::ReadPrivateMovingPhoto(const string &uri)
         MEDIA_ERR_LOG("invalid uri: %{public}s", uri.c_str());
         return E_ERR;
     }
-
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("Failed to read video of moving photo, datashareHelper is nullptr");
-        return E_ERR;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_ERR,
+        "Failed to read video of moving photo, datashareHelper is nullptr");
     string movingPhotoUri = uri;
     MediaFileUtils::UriAppendKeyValue(movingPhotoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_PRIVATE_LIVE_PHOTO);
     Uri openMovingPhotoUri(movingPhotoUri);
@@ -1189,17 +1150,12 @@ static int32_t CheckPhotoUriPermissionQueryOperation(const sptr<IRemoteObject> &
     };
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("Failed to checkPhotoUriPermission, datashareHelper is nullptr");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_ERR,
+        "Failed to checkPhotoUriPermission, datashareHelper is nullptr");
 
     Uri uri(MEDIALIBRARY_CHECK_URIPERM_URI);
     auto queryResultSet = dataShareHelper->Query(uri, predicates, columns);
-    if (queryResultSet == nullptr) {
-        MEDIA_ERR_LOG("queryResultSet is null!");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, E_ERR, "queryResultSet is null!");
     while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         string fileId = GetStringVal(AppUriPermissionColumn::FILE_ID, queryResultSet);
         int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryResultSet);
@@ -1259,15 +1215,12 @@ int32_t MediaLibraryManager::CheckPhotoUriPermission(uint32_t tokenId, const str
     const vector<string> &urisSource, vector<bool> &results, uint32_t flag)
 {
     auto ret = CheckInputParameters(urisSource, flag);
-    if (ret != E_SUCCESS) {
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
     vector<string> photoFileIds;
     vector<string> audioFileIds;
     ret = UrisSourceMediaTypeClassify(urisSource, photoFileIds, audioFileIds);
-    if (ret != E_SUCCESS) {
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
+
     int32_t queryPhotoFlag = URI_PERMISSION_FLAG_READWRITE;
     int32_t queryAudioFlag = URI_PERMISSION_FLAG_READWRITE;
     if (photoFileIds.empty()) {
@@ -1287,18 +1240,14 @@ int32_t MediaLibraryManager::CheckPhotoUriPermission(uint32_t tokenId, const str
         MakePredicatesForCheckPhotoUriPermission(queryPhotoFlag, predicates,
             appid, TableType::TYPE_PHOTOS, photoFileIds);
         auto ret = CheckPhotoUriPermissionQueryOperation(token_, predicates, photoResultMap);
-        if (ret != E_SUCCESS) {
-            return E_ERR;
-        }
+        CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
     }
     if (queryAudioFlag != -1) {
         DataSharePredicates predicates;
         MakePredicatesForCheckPhotoUriPermission(queryAudioFlag, predicates,
             appid, TableType::TYPE_AUDIOS, audioFileIds);
         auto ret = CheckPhotoUriPermissionQueryOperation(token_, predicates, audioResultMap);
-        if (ret != E_SUCCESS) {
-            return E_ERR;
-        }
+        CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
     }
     return SetCheckPhotoUriPermissionResult(urisSource, results, photoResultMap, audioResultMap,
         queryPhotoFlag, queryAudioFlag);
@@ -1325,10 +1274,8 @@ int32_t MediaLibraryManager::GrantPhotoUriPermission(const string &appid, const 
     }
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is nullptr");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_ERR, "dataShareHelper is nullptr");
+
     for (const auto &uri : uris) {
         int32_t tableType = -1;
         for (const auto &iter : tableMap) {
