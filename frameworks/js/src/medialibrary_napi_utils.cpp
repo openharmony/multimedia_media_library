@@ -1522,12 +1522,13 @@ napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env, vect
     predicates.In(MediaColumn::MEDIA_ID, fileIds);
     std::vector<std::string> columns = PHOTO_COLUMN;
     std::shared_ptr<NativeRdb::ResultSet> result = UserFileClient::QueryRdb(photoUri, predicates, columns);
-    napi_value value = nullptr;
-    napi_status status = napi_create_array_with_length(env, fileIds.size(), &value);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Create array error!");
-        return value;
-    }
+
+    return GetSharedPhotoAssets(env, result, fileIds.size(), isSingleResult);
+}
+
+napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env,
+    std::shared_ptr<NativeRdb::ResultSet> result, int32_t size, bool isSingleResult)
+{
     if (result == nullptr) {
         return value;
     }
@@ -1538,58 +1539,58 @@ napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env, vect
         }
         result->Close();
         return assetValue;
-    } else {
-        int elementIndex = 0;
-        while (result->GoToNextRow() == NativeRdb::E_OK) {
-            napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
-            if (assetValue == nullptr) {
-                return nullptr;
-            }
-            status = napi_set_element(env, value, elementIndex++, assetValue);
-            if (status != napi_ok) {
-                NAPI_ERR_LOG("Set photo asset value failed");
-                return nullptr;
-            }
-        }
-        result->Close();
     }
+    napi_value value = nullptr;
+    napi_status status = napi_create_array_with_length(env, size, &value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create array error!");
+        result->Close();
+        return value;
+    }
+    int elementIndex = 0;
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
+        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
+        if (assetValue == nullptr) {
+            result->Close();
+            return nullptr;
+        }
+        status = napi_set_element(env, value, elementIndex++, assetValue);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Set photo asset value failed");
+            result->Close();
+            return nullptr;
+        }
+    }
+    result->Close();
     return value;
 }
 
-napi_value MediaLibraryNapiUtils::GetSharedAlbumAssets(const napi_env& env, vector<string>& albumIds)
+napi_value MediaLibraryNapiUtils::GetSharedAlbumAssets(const napi_env& env,
+    std::shared_ptr<NativeRdb::ResultSet> result, int32_t size)
 {
-    string queryUri = PAH_QUERY_PHOTO_ALBUM;
-    Uri albumUri(queryUri);
-    DataShare::DataSharePredicates predicates;
-    predicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
-    std::vector<std::string> columns = ALBUM_COLUMN;
-    std::shared_ptr<NativeRdb::ResultSet> result = UserFileClient::QueryRdb(albumUri, predicates, columns);
+    if (result == nullptr) {
+        return value;
+    }
     napi_value value = nullptr;
-    napi_status status = napi_create_array_with_length(env, albumIds.size(), &value);
+    napi_status status = napi_create_array_with_length(env, size, &value);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Create array error!");
         return value;
     }
-    if (result == nullptr) {
-        return value;
-    }
-    int err = result->GoToFirstRow();
-    if (err != napi_ok) {
-        NAPI_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return value;
-    }
     int elementIndex = 0;
-    do {
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
         napi_value assetValue = MediaLibraryNapiUtils::GetNextRowAlbumObject(env, result);
         if (assetValue == nullptr) {
+            result->Close();
             return nullptr;
         }
         status = napi_set_element(env, value, elementIndex++, assetValue);
         if (status != napi_ok) {
             NAPI_ERR_LOG("Set albumn asset Value failed");
+            result->Close();
             return nullptr;
         }
-    } while (result->GoToNextRow() == E_OK);
+    }
     result->Close();
     return value;
 }
