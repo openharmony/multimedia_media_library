@@ -61,13 +61,14 @@ public:
     EXPORT virtual void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
     EXPORT static bool IsCellularNetConnected();
     EXPORT static bool IsWifiConnected();
+    EXPORT static bool IsCurrentStatusOn();
 private:
     static const std::vector<std::string> events_;
     bool isScreenOff_ {false};
     bool isCharging_ {false};
     bool isDeviceTemperatureProper_{false};
     static bool isWifiConnected_;
-    bool currentStatus_{false};
+    static bool currentStatus_;
     bool thumbnailBgGenerationStatus_{false};
     bool timerStatus_{false};
     static bool isCellularNetConnected_;
