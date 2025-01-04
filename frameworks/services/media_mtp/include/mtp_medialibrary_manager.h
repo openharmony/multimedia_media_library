@@ -82,6 +82,13 @@ private:
     std::vector<std::string> GetBurstKeyFromPhotosInfo();
     std::shared_ptr<DataShare::DataShareResultSet> GetOwnerAlbumIdList();
     std::string GetThumbUri(const int32_t &id, const std::string &thumbSizeValue, const std::string &dataPath);
+    int32_t GetFileAssetFromPhotosInfo(const std::shared_ptr<MtpOperationContext> &context,
+        std::shared_ptr<FileAsset> &fileAsset);
+    int32_t CopyAndDumpFile(const std::shared_ptr<MtpOperationContext> &context,
+        const std::string &oldDataPath, const std::string &newDataPath);
+    int32_t GetMovingPhotoVideoPath(const std::string &dataPath, std::string &displayName,
+        std::string &movingPhotoDataPath, MediaType &mediaType);
+    int32_t InsertCopyObject(const std::string &displayName, const MediaType &mediaType);
 private:
     static std::mutex mutex_;
     static std::shared_ptr<MtpMedialibraryManager> instance_;
