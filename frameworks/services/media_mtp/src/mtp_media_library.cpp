@@ -535,13 +535,23 @@ static int32_t GetVideoThumbSizeByFd(shared_ptr<AVMetadataHelper> &avMetadataHel
     CHECK_AND_RETURN_RET_LOG(avMetadataHelper != nullptr, MTP_ERROR_NO_THUMBNAIL_PRESENT,
         "avMetadataHelper is nullptr");
     std::unordered_map<int32_t, string> resultMap = avMetadataHelper->ResolveMetadata();
-    string strHeight = resultMap.at(OHOS::Media::AV_KEY_VIDEO_HEIGHT);
+    auto item = resultMap.find(OHOS::Media::AV_KEY_VIDEO_HEIGHT);
+    if (item == resultMap.end()) {
+        MEDIA_ERR_LOG("AV_KEY_VIDEO_HEIGHT not found");
+        return MTP_ERROR_NO_THUMBNAIL_PRESENT;
+    }
+    string strHeight = item->second;
     if (strHeight.empty() || !std::isdigit(strHeight[0])) {
         MEDIA_ERR_LOG("strHeight is err");
         return MTP_ERROR_NO_THUMBNAIL_PRESENT;
     }
     int32_t height = static_cast<int32_t>(atoi(strHeight.c_str()));
-    string strWidth = resultMap.at(OHOS::Media::AV_KEY_VIDEO_WIDTH);
+    item = resultMap.find(OHOS::Media::AV_KEY_VIDEO_WIDTH);
+    if (item == resultMap.end()) {
+        MEDIA_ERR_LOG("AV_KEY_VIDEO_WIDTH not found");
+        return MTP_ERROR_NO_THUMBNAIL_PRESENT;
+    }
+    string strWidth = item->second;
     if (strWidth.empty() || !std::isdigit(strWidth[0])) {
         MEDIA_ERR_LOG("strWidth is err");
         return MTP_ERROR_NO_THUMBNAIL_PRESENT;
