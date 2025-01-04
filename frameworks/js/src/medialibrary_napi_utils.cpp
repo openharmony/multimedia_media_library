@@ -1453,7 +1453,10 @@ void MediaLibraryNapiUtils::HandleCoverSharedPhotoAsset(napi_env env, int32_t in
     }
     vector<string> albumIds;
     albumIds.push_back(GetFileIdFromUriString(coverUri));
+    MediaLibraryTracer tracer;
+    tracer.Start("HandleCoverSharedPhotoAsset");
     napi_value coverValue = GetSharedPhotoAssets(env, albumIds, true);
+    tracer.Finish();
     napi_set_named_property(env, result, "coverSharedPhotoAsset", coverValue);
 }
 
@@ -1529,6 +1532,12 @@ napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env, vect
 napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env,
     std::shared_ptr<NativeRdb::ResultSet> result, int32_t size, bool isSingleResult)
 {
+    napi_value value = nullptr;
+    napi_status status = napi_create_array_with_length(env, size, &value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create array error!");
+        return value;
+    }
     if (result == nullptr) {
         return value;
     }
@@ -1540,8 +1549,6 @@ napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env,
         result->Close();
         return assetValue;
     }
-    napi_value value = nullptr;
-    napi_status status = napi_create_array_with_length(env, size, &value);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Create array error!");
         result->Close();
@@ -1568,11 +1575,15 @@ napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env,
 napi_value MediaLibraryNapiUtils::GetSharedAlbumAssets(const napi_env& env,
     std::shared_ptr<NativeRdb::ResultSet> result, int32_t size)
 {
+    napi_value value = nullptr;
+    napi_status status = napi_create_array_with_length(env, size, &value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create array error!");
+        return value;
+    }
     if (result == nullptr) {
         return value;
     }
-    napi_value value = nullptr;
-    napi_status status = napi_create_array_with_length(env, size, &value);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Create array error!");
         return value;
