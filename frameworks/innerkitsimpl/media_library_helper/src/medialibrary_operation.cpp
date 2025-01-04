@@ -117,6 +117,9 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ANA_ADDRESS, OperationObject::ANALYSIS_ADDRESS },
         { PAH_GEO_PHOTOS, OperationObject::GEO_PHOTO },
 
+        // use in convert
+        { PAH_CONVERT_PHOTOS, OperationObject::CONVERT_PHOTO },
+
         // use in search
         { SEARCH_TOTAL_TABLE, OperationObject::SEARCH_TOTAL },
         { SEARCH_INDEX_CONSTRUCTION_STATUS, OperationObject::INDEX_CONSTRUCTION_STATUS },
@@ -189,6 +192,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::GEO_DICTIONARY, { { OperationType::UNKNOWN_TYPE, GEO_DICTIONARY_TABLE } } },
         { OperationObject::GEO_KNOWLEDGE, { { OperationType::UNKNOWN_TYPE, GEO_KNOWLEDGE_TABLE } } },
         { OperationObject::GEO_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
+        { OperationObject::CONVERT_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::ANALYSIS_PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_TABLE } } },
         { OperationObject::ANALYSIS_PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
         { OperationObject::PAH_FORM_MAP, { { OperationType::UNKNOWN_TYPE, FormMap::FORM_MAP_TABLE } } },
