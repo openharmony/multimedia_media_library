@@ -322,11 +322,6 @@ int32_t ThumbnailService::CreateThumbnailFileScaned(const std::string &uri, cons
 
 void ThumbnailService::InterruptBgworker()
 {
-    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker != nullptr) {
-        asyncWorker->Interrupt();
-    }
-
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::BACKGROUND);
     if (thumbnailWorker == nullptr) {

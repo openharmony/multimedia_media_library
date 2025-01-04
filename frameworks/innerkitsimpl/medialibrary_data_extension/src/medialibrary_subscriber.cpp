@@ -79,6 +79,7 @@ namespace OHOS {
 namespace Media {
 // The task can be performed when the battery level reaches the value
 const int32_t PROPER_DEVICE_BATTERY_CAPACITY = 50;
+const int32_t PROPER_DEVICE_BATTERY_CAPACITY_THUMBNAIL = 20;
 
 const int TIME_START_RELEASE_TEMPERATURE_LIMIT = 1;
 const int TIME_STOP_RELEASE_TEMPERATURE_LIMIT = 6;
@@ -146,7 +147,7 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
     auto chargeState = batteryClient.GetChargingStatus();
     isCharging_ = (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_ENABLE) ||
         (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_FULL);
-    isPowerSufficient_ = batteryClient.GetCapacity() >= PROPER_DEVICE_BATTERY_CAPACITY;
+    batteryCapacity_ = batteryClient.GetCapacity();
 #endif
 #ifdef HAS_THERMAL_MANAGER_PART
     auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
@@ -165,13 +166,10 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
     }
 #endif
     MEDIA_DEBUG_LOG("MedialibrarySubscriber current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
-        isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_, isWifiConnected_);
+        isScreenOff_, isCharging_, batteryCapacity_, newTemperatureLevel_, isWifiConnected_);
 }
 
-MedialibrarySubscriber::~MedialibrarySubscriber()
-{
-    EndBackgroundOperationThread();
-}
+MedialibrarySubscriber::~MedialibrarySubscriber() = default;
 
 bool MedialibrarySubscriber::Subscribe(void)
 {
@@ -243,12 +241,13 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
     std::lock_guard<std::mutex> lock(mutex_);
     std::tm *nowLocalTime = GetNowLocalTime();
     bool newStatus = false;
+    bool isPowerSufficient = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY;
     if (nowLocalTime != nullptr && nowLocalTime->tm_hour >= TIME_START_RELEASE_TEMPERATURE_LIMIT &&
         nowLocalTime->tm_hour < TIME_STOP_RELEASE_TEMPERATURE_LIMIT) {
-        newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ &&
+        newStatus = isScreenOff_ && isCharging_ && isPowerSufficient &&
             newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_HOT;
     } else {
-        newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ &&
+        newStatus = isScreenOff_ && isCharging_ && isPowerSufficient &&
             newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL;
     }
 
@@ -257,12 +256,11 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
     }
 
     MEDIA_INFO_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
-        currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, newTemperatureLevel_);
+        currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient, newTemperatureLevel_);
     currentStatus_ = newStatus;
-    EndBackgroundOperationThread();
+    backgroundDelayTask_.EndBackgroundOperationThread();
     if (currentStatus_) {
-        isTaskWaiting_ = true;
-        backgroundOperationThread_ = std::thread([this] { this->DoBackgroundOperation(); });
+        backgroundDelayTask_.SetOperationThread([this] { this->DoBackgroundOperation(); });
     } else {
         StopBackgroundOperation();
     }
@@ -293,8 +291,8 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
             isCharging_ = false;
             break;
         case StatusEventType::BATTERY_CHANGED:
-            isPowerSufficient_ = want.GetIntParam(COMMON_EVENT_KEY_BATTERY_CAPACITY,
-                COMMON_EVENT_KEY_GET_DEFAULT_PARAM) >= PROPER_DEVICE_BATTERY_CAPACITY;
+            batteryCapacity_ = want.GetIntParam(COMMON_EVENT_KEY_BATTERY_CAPACITY,
+                COMMON_EVENT_KEY_GET_DEFAULT_PARAM);
             break;
         case StatusEventType::THERMAL_LEVEL_CHANGED: {
             newTemperatureLevel_ = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
@@ -310,6 +308,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
     }
 
     UpdateCurrentStatus();
+    UpdateThumbnailBgGenerationStatus();
     UpdateBackgroundTimer();
     DealWithEventsAfterUpdateStatus(statusEventType);
 }
@@ -440,29 +439,14 @@ void DeleteTemporaryPhotos()
     MEDIA_INFO_LOG("delete %{public}d temp files exceeding 24 hous or exceed maximum quantity.", changedRows);
 }
 
-void MedialibrarySubscriber::DoThumbnailOperation()
+void MedialibrarySubscriber::DoAgingOperation()
 {
     auto dataManager = MediaLibraryDataManager::GetInstance();
     if (dataManager == nullptr) {
         return;
     }
 
-    auto result = dataManager->GenerateThumbnailBackground();
-    if (result != E_OK) {
-        MEDIA_ERR_LOG("GenerateThumbnailBackground faild");
-    }
-
-    result = dataManager->UpgradeThumbnailBackground(isWifiConnected_);
-    if (result != E_OK) {
-        MEDIA_ERR_LOG("UpgradeThumbnailBackground faild");
-    }
-
-    result = dataManager->GenerateHighlightThumbnailBackground();
-    if (result != E_OK) {
-        MEDIA_ERR_LOG("GenerateHighlightThumbnailBackground failed %{public}d", result);
-    }
-
-    result = dataManager->DoAging();
+    int32_t result = dataManager->DoAging();
     if (result != E_OK) {
         MEDIA_ERR_LOG("DoAging faild");
     }
@@ -555,7 +539,7 @@ static int32_t DoUpdateDateTakenWhenZero()
 
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
-    if (!IsDelayTaskTimeOut() || !currentStatus_) {
+    if (!backgroundDelayTask_.IsDelayTaskTimeOut() || !currentStatus_) {
         MEDIA_INFO_LOG("The conditions for DoBackgroundOperation are not met, will return.");
         return;
     }
@@ -572,7 +556,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
     Init();
-    DoThumbnailOperation();
+    DoAgingOperation();
     // update burst from gallery
     int32_t ret = DoUpdateBurstFromGallery();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstFromGallery faild");
@@ -634,6 +618,61 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     CloudMediaAssetManager::GetInstance().StopDeleteCloudMediaAssets();
 }
 
+void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    bool isPowerSufficientForThumbnail = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY_THUMBNAIL;
+    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficientForThumbnail &&
+        newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_HOT;
+    if (thumbnailBgGenerationStatus_ == newStatus) {
+        return;
+    }
+    MEDIA_INFO_LOG("update status thumbnailBg:%{public}d, new:%{public}d, "
+        "%{public}d, %{public}d, %{public}d, %{public}d",
+        thumbnailBgGenerationStatus_, newStatus, isScreenOff_,
+        isCharging_, isPowerSufficientForThumbnail, newTemperatureLevel_);
+    thumbnailBgGenerationStatus_ = newStatus;
+    thumbnailBgDelayTask_.EndBackgroundOperationThread();
+    if (thumbnailBgGenerationStatus_) {
+        thumbnailBgDelayTask_.SetOperationThread([this] { this->DoThumbnailBgOperation(); });
+    } else {
+        StopThumbnailBgOperation();
+    }
+}
+
+void MedialibrarySubscriber::DoThumbnailBgOperation()
+{
+    if (!thumbnailBgDelayTask_.IsDelayTaskTimeOut() || !thumbnailBgGenerationStatus_) {
+        MEDIA_INFO_LOG("The conditions for DoThumbnailBgOperation are not met, will return.");
+        return;
+    }
+
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    if (dataManager == nullptr) {
+        return;
+    }
+
+    auto result = dataManager->GenerateThumbnailBackground();
+    if (result != E_OK) {
+        MEDIA_ERR_LOG("GenerateThumbnailBackground faild");
+    }
+
+    result = dataManager->UpgradeThumbnailBackground(isWifiConnected_);
+    if (result != E_OK) {
+        MEDIA_ERR_LOG("UpgradeThumbnailBackground faild");
+    }
+
+    result = dataManager->GenerateHighlightThumbnailBackground();
+    if (result != E_OK) {
+        MEDIA_ERR_LOG("GenerateHighlightThumbnailBackground failed %{public}d", result);
+    }
+}
+
+void MedialibrarySubscriber::StopThumbnailBgOperation()
+{
+    MediaLibraryDataManager::GetInstance()->InterruptThumbnailBgWorker();
+}
+
 #ifdef MEDIALIBRARY_MTP_ENABLE
 void MedialibrarySubscriber::DoStartMtpService()
 {
@@ -654,7 +693,8 @@ void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleNam
 void MedialibrarySubscriber::UpdateBackgroundTimer()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ &&
+    bool isPowerSufficient = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY;
+    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient &&
         isDeviceTemperatureProper_ && isWifiConnected_;
     if (timerStatus_ == newStatus) {
         return;
@@ -662,7 +702,7 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
 
     MEDIA_INFO_LOG("update timer status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, "
         "%{public}d, %{public}d",
-        timerStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_,
+        timerStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient, isDeviceTemperatureProper_,
         isWifiConnected_);
 
     timerStatus_ = newStatus;
@@ -673,28 +713,6 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
     }
 }
 
-bool MedialibrarySubscriber::IsDelayTaskTimeOut()
-{
-    std::unique_lock<std::mutex> lock(delayTaskLock_);
-    return !delayTaskCv_.wait_for(lock, std::chrono::milliseconds(DELAY_TASK_TIME), [this]() {
-        return !isTaskWaiting_;
-    });
-}
-
-void MedialibrarySubscriber::EndBackgroundOperationThread()
-{
-    {
-        std::unique_lock<std::mutex> lock(delayTaskLock_);
-        isTaskWaiting_ = false;
-    }
-    MediaLibraryMetaRecovery::GetInstance().InterruptRecovery();
-    delayTaskCv_.notify_all();
-    if (!backgroundOperationThread_.joinable()) {
-        return;
-    }
-    backgroundOperationThread_.join();
-}
-
 void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -703,11 +721,8 @@ void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventTy
         ThumbnailService::GetInstance()->NotifyTempStatusForReady(deviceTemperatureLevel_);
     }
 
-    if (isCharging_ && isScreenOff_) {
-        CloudSyncDfxManager::GetInstance().RunDfx();
-    }
-
-    ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(currentStatus_);
+    CloudSyncDfxManager::GetInstance().RunDfx();
+    ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(thumbnailBgGenerationStatus_);
     ThumbnailGenerateWorkerManager::GetInstance().TryCloseThumbnailWorkerTimer();
     PowerEfficiencyManager::SetSubscriberStatus(isCharging_, isScreenOff_);
 
@@ -726,6 +741,43 @@ void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventTy
         MEDIA_INFO_LOG("Current temperature level is %{public}d", newTemperatureLevel_);
         PowerEfficiencyManager::UpdateAlbumUpdateInterval(isDeviceTemperatureProper_);
     }
+}
+
+bool MedialibrarySubscriber::DelayTask::IsDelayTaskTimeOut()
+{
+    std::unique_lock<std::mutex> lock(this->lock);
+    return !cv.wait_for(lock, std::chrono::milliseconds(DELAY_TASK_TIME), [this]() {
+        return !isTaskWaiting;
+    });
+}
+
+void MedialibrarySubscriber::DelayTask::EndBackgroundOperationThread()
+{
+    {
+        std::unique_lock<std::mutex> lock(this->lock);
+        isTaskWaiting = false;
+        MEDIA_INFO_LOG("DelayTask %{public}s EndBackgroundOperationThread", taskName.c_str());
+    }
+#ifdef META_RECOVERY_SUPPORT
+    MediaLibraryMetaRecovery::GetInstance().InterruptRecovery();
+#endif
+    cv.notify_all();
+    if (!operationThread.joinable()) {
+        return;
+    }
+    operationThread.join();
+}
+
+void MedialibrarySubscriber::DelayTask::SetOperationThread(std::function<void()> operationTask)
+{
+    if (operationThread.joinable()) {
+        operationThread.join();
+    }
+    {
+        std::unique_lock<std::mutex> lock(this->lock);
+        isTaskWaiting = true;
+    }
+    this->operationThread = std::thread(operationTask);
 }
 }  // namespace Media
 }  // namespace OHOS
