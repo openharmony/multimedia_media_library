@@ -50,7 +50,8 @@ constexpr size_t GARBLE_UNIT = 2;
 constexpr uint32_t COVER_URI_NUM = 3;
 constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
-constexpr uint32_t THUMBNAIL_NUM = 500;
+constexpr int32_t MAX_RESTORE_ASTC_NUM = 2000;
+constexpr uint32_t THUMBNAIL_QUERY_INTERVAL = 3;
 constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 constexpr int32_t MAX_THREAD_NUM = 4;
@@ -149,11 +150,12 @@ const std::string STAT_TYPE_VIDEO = "video";
 const std::string STAT_TYPE_AUDIO = "audio";
 const std::string STAT_TYPE_PHOTO_VIDEO = "photo&video";
 const std::string STAT_TYPE_UPDATE = "update";
+const std::string STAT_TYPE_THUMBNAIL = "thumbnail";
 const std::string STAT_TYPE_OTHER = "other";
 const std::string STAT_TYPE_ONGOING = "ongoing";
 const std::vector<std::string> STAT_TYPES = { STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO };
 const std::vector<std::string> STAT_PROGRESS_TYPES = { STAT_TYPE_PHOTO_VIDEO, STAT_TYPE_AUDIO, STAT_TYPE_UPDATE,
-    STAT_TYPE_OTHER, STAT_TYPE_ONGOING };
+    STAT_TYPE_THUMBNAIL, STAT_TYPE_OTHER, STAT_TYPE_ONGOING };
 
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";

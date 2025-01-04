@@ -894,5 +894,18 @@ std::string BackupDatabaseUtils::CheckDbIntegrity(std::shared_ptr<NativeRdb::Rdb
     MEDIA_INFO_LOG("Check db integrity: %{public}d, %{public}s, %{public}s", sceneCode, dbTag.c_str(), result.c_str());
     return result;
 }
+
+int32_t BackupDatabaseUtils::QueryLocalNoAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
+{
+    const std::string QUERY_LOCAL_NO_ASTC_COUNT = "SELECT count(1) AS count FROM Photos "
+        "WHERE thumbnail_ready = 0 AND position = 1";
+    return QueryInt(rdbStore, QUERY_LOCAL_NO_ASTC_COUNT, CUSTOM_COUNT);
+}
+
+int32_t BackupDatabaseUtils::QueryReadyAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
+{
+    const std::string QUERY_READY_ASTC_COUNT = "SELECT count(1) AS count FROM Photos WHERE thumbnail_ready > 0";
+    return QueryInt(rdbStore, QUERY_READY_ASTC_COUNT, CUSTOM_COUNT);
+}
 } // namespace Media
 } // namespace OHOS
