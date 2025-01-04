@@ -2536,12 +2536,12 @@ static napi_status SetSharedAssetArray(const napi_env& env, const char* fieldStr
 static napi_status SetSubUris(const napi_env& env, ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper,
     napi_value& result)
 {
-    uint32_t len = wrapper->extraUris.size();
+    uint32_t len = wrapper->extraUris_.size();
     napi_status status = napi_invalid_arg;
     napi_value subUriArray = nullptr;
     napi_create_array_with_length(env, len, &subUriArray);
     int subElementIndex = 0;
-    for (auto iter = wrapper->extraUris_.begin(); iter != wrapper.extraUris_end(); iter++) {
+    for (auto iter = wrapper->extraUris_.begin(); iter != wrapper->extraUris_.end(); iter++) {
         string subUri = *iter;
         if (subUri.empty()) {
             NAPI_ERR_LOG("Failed to read sub uri");
@@ -2596,7 +2596,7 @@ string ChangeListenerNapi::GetTrashAlbumUri()
     return albumSet->GetFirstObject()->GetAlbumUri();
 }
 
-napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
+napi_value ChangeListenerNapi::SolveOnChange(napi_env env, ChangeListenerNapi::JsOnChangeCallbackWrapper* wrapper)
 {
     UvChangeMsg* msg = wrapper->msg_;
     static napi_value result;
@@ -2631,7 +2631,6 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
         napi_status status = SetSubUris(env, wrapper, result);
         if (status != napi_ok) {
             NAPI_ERR_LOG("Set subArray named property error! field: subUris");
-            return nullptr;
         }
     } else {
         SetValueInt32(env, "type", (int)msg->changeInfo_.changeType_, result);
@@ -2639,7 +2638,7 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
     return result;
 }
 
-std::shared_ptr<NativeRdb::Result> ChangeListener::GetSharedResultSetFromIds(std::vector<string>& Ids,
+std::shared_ptr<NativeRdb::ResultSet> ChangeListenerNapi::GetSharedResultSetFromIds(std::vector<string>& Ids,
     bool isPhoto)
 {
     string queryString = isPhoto ? PAH_QUERY_PHOTO : PAH_QUERY_PHOTO_ALBUM;
@@ -2651,15 +2650,15 @@ std::shared_ptr<NativeRdb::Result> ChangeListener::GetSharedResultSetFromIds(std
     } else {
         predicates.In(PhotoAlbumColumns::ALBUM_ID, Ids);
     }
-    std::vector<str::string> columns = isPhoto ? PHOTO_COLUMN : ALBUM_COLUMN;
-    return UserFileClient(QueryRdb(queryUri, predicates, columns));
+    std::vector<std::string> columns = isPhoto ? PHOTO_COLUMN : ALBUM_COLUMN;
+    return UserFileClient::QueryRdb(queryUri, predicates, columns);
 }
 
-void ChangeListener::GetIdsFromUris(std::list<Uri>& listValue, std::vector<std::string>& ids, bool isPhoto)
+void ChangeListenerNapi::GetIdsFromUris(std::list<Uri>& listValue, std::vector<std::string>& ids, bool isPhoto)
 {
     for (auto& uri : listValue) {
         string assetId = isPhoto ? MediaLibraryNapiUtils::GetFileIdFromUriString(uri.ToString()) :
-            MediaLibraryUtils::GetAlbumIdFromUriString(uri.ToString());
+            MediaLibraryNapiUtils::GetAlbumIdFromUriString(uri.ToString());
         if (assetId == "") {
             NAPI_WARN_LOG("Failed to read assetId");
             continue;
@@ -2668,14 +2667,14 @@ void ChangeListener::GetIdsFromUris(std::list<Uri>& listValue, std::vector<std::
     }
 }
 
-void ChangeListerNapi::GetResultFromMsg(UvChangeMsg *msg, JsOnChangeCallbackWrapper* wrapper)
+void ChangeListenerNapi::GetResultSetFromMsg(UvChangeMsg *msg, JsOnChangeCallbackWrapper* wrapper)
 {
     std::vector<string> ids = {};
     std::shared_ptr<NativeRdb::ResultSet> sharedAssets = nullptr;
-    if (msg->strUri_find(PhotoAlbumColumn::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
+    if (msg->strUri_.find(PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
         GetIdsFromUris(msg->changeInfo_.uris_, ids, false);
         sharedAssets = GetSharedResultSetFromIds(ids, false);
-    } else if (msg->strUri_find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
+    } else if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
         GetIdsFromUris(msg->changeInfo_.uris_, ids, true);
         sharedAssets = GetSharedResultSetFromIds(ids, true);
     } else {
@@ -2697,15 +2696,15 @@ void ChangeListerNapi::GetResultFromMsg(UvChangeMsg *msg, JsOnChangeCallbackWrap
                 NAPI_ERR_LOG("Failed to read sub uri");
                 continue;
             }
-            wrapper->extraUris.push_back(subUri);
+            wrapper->extraUris_.push_back(subUri);
             extraIds.push_back(MediaLibraryNapiUtils::GetFileIdFromUriString(subUri));
         }
         if (len > MAX_QUERY_LIMIT) {
             NAPI_INFO_LOG("subUri length exceed the limit.");
-            wrapper->extraSharedAsset = nullptr;
+            wrapper->extraSharedAssets_ = nullptr;
             return;
         }
-        wrapper->extraSharedAsset_ = GetSharedResultSetFromIds(extraIds, true);
+        wrapper->extraSharedAssets_ = GetSharedResultSetFromIds(extraIds, true);
     }
 }
 
@@ -2750,7 +2749,7 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
     }
     JsOnChangeCallbackWrapper* wrapper = new (std::nothrow) JsOnChangeCallbackWrapper();
     wrapper->msg_ = msg;
-    MediaLibrary tracer;
+    MediaLibraryTracer tracer;
     tracer.Start("GetResultSetFromMsg");
     GetResultSetFromMsg(msg, wrapper);
     tracer.Finish();

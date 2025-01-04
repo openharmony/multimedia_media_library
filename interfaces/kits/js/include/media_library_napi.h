@@ -97,7 +97,7 @@ public:
         uint32_t uriSize_ { 0 };
         std::shared_ptr<NativeRdb::ResultSet> sharedAssets_;
         std::shared_ptr<NativeRdb::ResultSet> extraSharedAssets_;
-    }
+    };
 
     explicit ChangeListenerNapi(napi_env env) : env_(env) {}
 
