@@ -2381,5 +2381,120 @@ HWTEST_F(MediaLibraryManagerTest, GetSandboxMovingPhotoTime_001, TestSize.Level0
     auto ret = manager.GetSandboxMovingPhotoTime(uri);
     EXPECT_EQ(ret, -1);
 }
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_emptyuris, TestSize.Level0)
+{
+    string appid = "testApp";
+    // empty uris GrantPhotoUriPermission will return E_ERR
+    vector<string> uris;
+    PhotoPermissionType photoPermissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    HideSensitiveType hideSensitiveTpye = HideSensitiveType::ALL_DESENSITIZE;
+    int32_t ret = mediaLibraryManager->GrantPhotoUriPermission(appid, uris, photoPermissionType, hideSensitiveTpye);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_exceedMax, TestSize.Level0)
+{
+    string appid = "testApp";
+    vector<string> uris(URI_SIZE + 1, "testUri");
+    PhotoPermissionType photoPermissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    HideSensitiveType hideSensitiveTpye = HideSensitiveType::ALL_DESENSITIZE;
+    int32_t ret = mediaLibraryManager->GrantPhotoUriPermission(appid, uris, photoPermissionType, hideSensitiveTpye);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_invalid_permission_type, TestSize.Level0)
+{
+    string appid = "testApp";
+    vector<string> uris ={ "testUri" };
+    PhotoPermissionType photoPermissionType = static_cast<PhotoPermissionType>(100);
+    HideSensitiveType hideSensitiveTpye = HideSensitiveType::ALL_DESENSITIZE;
+    int32_t ret = mediaLibraryManager->GrantPhotoUriPermission(appid, uris, photoPermissionType, hideSensitiveTpye);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_invalid_hide_type, TestSize.Level0)
+{
+    string appid = "testApp";
+    vector<string> uris ={ "testUri" };
+    PhotoPermissionType photoPermissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    HideSensitiveType hideSensitiveTpye = static_cast<HideSensitiveType>(100);
+    int32_t ret = mediaLibraryManager->GrantPhotoUriPermission(appid, uris, photoPermissionType, hideSensitiveTpye);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_invalid_uris, TestSize.Level0)
+{
+    string appid = "testApp";
+    vector<string> uris ={ "testUri" };
+    PhotoPermissionType photoPermissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    HideSensitiveType hideSensitiveTpye = HideSensitiveType::ALL_DESENSITIZE;
+    int32_t ret = mediaLibraryManager->GrantPhotoUriPermission(appid, uris, photoPermissionType, hideSensitiveTpye);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_normal_uris, TestSize.Level0)
+{
+    string appid = "testApp";
+    vector<string> uris;
+    for (int i = 0; i < 5; i++) {
+        uris.push_back(CreatePhotoAsset("test.mp4"));
+    }
+    PhotoPermissionType photoPermissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    HideSensitiveType hideSensitiveTpye = HideSensitiveType::ALL_DESENSITIZE;
+    int32_t ret = mediaLibraryManager->GrantPhotoUriPermission(appid, uris, photoPermissionType, hideSensitiveTpye);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_checkinput_failed, TestSize.Level0)
+{
+    uint32_t flag = 1;
+    uint32_t tokenId = 1;
+    vector<bool> results;
+    string appid = "testAppId";
+    vector<string> urisSource;
+
+    auto ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, urisSource, results, flag);
+    EXPECT_EQ(ret, E_ERR);
+
+    urisSource.assign(URI_SIZE + 1, "tesUri");
+    ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, urisSource, results, flag);
+    EXPECT_EQ(ret, E_ERR);
+
+    flag = 0;
+    urisSource.assign(2, "testUri");
+    ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, urisSource, results, flag);
+    EXPECT_EQ(ret, E_ERR);
+
+    flag = 4;
+    ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, urisSource, results, flag);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_typeClassify_failed, TestSize.Level0)
+{
+    uint32_t flag = 1;
+    uint32_t tokenId = 1;
+    vector<bool> results;
+    string appid = "testAppId";
+    vector<string> urisSource = { "testuri" };
+
+    auto ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, urisSource, results, flag);
+    EXPECT_EQ(ret, E_ERR);
+
+    urisSource.clear();
+    for (int i = 0; i < 5; i++) {
+        urisSource.push_back(CreatePhotoAsset("test.mp4"));
+    }
+    ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, urisSource, results, flag);
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstc_emptyUris, TestSize.Level0)
+{
+    string uriStr;
+    auto pixelMap = mediaLibraryManager->GetAstc(Uri(uriStr));
+    EXPECT_EQ(pixelMap, nullptr);
+}
 } // namespace Media
 } // namespace OHOS
