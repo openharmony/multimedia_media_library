@@ -46,6 +46,13 @@ struct PhotoStatistics {
     int32_t sharedVideoCount;  // 端云共存视频数量
 };
 
+struct LcdAndAstcCount {
+    int32_t localLcdCount;
+    int32_t localAstcCount;
+    int32_t cloudLcdCount;
+    int32_t cloudAstcCount;
+};
+
 class DfxReporter {
 public:
     DfxReporter();
@@ -72,6 +79,7 @@ public:
     void ReportPhotoRecordInfo();
     static int32_t ReportMedialibraryAPI(const std::string& callerPackage, const std::string& saveUri);
     static int32_t ReportAlbumFusion(const AlbumFusionDfxDataPoint& reportData);
+    void ReportAstcInfo(const LcdAndAstcCount& count);
 };
 } // namespace Media
 } // namespace OHOS

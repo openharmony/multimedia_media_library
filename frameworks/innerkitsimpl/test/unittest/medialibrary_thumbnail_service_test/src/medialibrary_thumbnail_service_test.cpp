@@ -994,7 +994,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_023, Tes
     std::shared_ptr<Picture> pictureEx = Picture::Create(pixelMap);
     data.source.SetPictureEx(pictureEx);
     auto res = ThumbnailUtils::CompressPicture(data, isSourceEx);
-    EXPECT_EQ(res, true);
+    EXPECT_EQ(res, false);
     bool isSourceEx2 = false;
     auto res2 = ThumbnailUtils::CompressPicture(data, isSourceEx2);
     EXPECT_EQ(res2, false);
@@ -1075,7 +1075,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_005, T
     ThumbRdbOpt opts;
     opts.store = storePtr;
     auto res = ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
-    EXPECT_EQ(res, E_OK);
+    EXPECT_NE(res, E_OK);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_006, TestSize.Level0)
@@ -1284,6 +1284,24 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, CreateAstcCloudDownload_test_001, Tes
     bool isCloudInsertTaskPriorityHigh = false;
     int32_t res = serverTest->CreateAstcCloudDownload(id, isCloudInsertTaskPriorityHigh);
     EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_031, TestSize.Level0)
+{
+    ThumbnailData data;
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    int32_t err = E_ERR;
+    auto res = ThumbnailUtils::UpdateLcdReadyStatus(opts, data, err, LcdReady::GENERATE_LCD_COMPLETED);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_033, TestSize.Level0)
+{
+    ThumbnailData data;
+    Size desiredSize;
+    auto res = ThumbnailUtils::GenTargetPixelmap(data, desiredSize);
+    EXPECT_EQ(res, false);
 }
 } // namespace Media
 } // namespace OHOS

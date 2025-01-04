@@ -146,6 +146,8 @@ public:
     static const std::string PHOTO_DATE_MONTH_INDEX EXPORT;
     static const std::string PHOTO_DATE_DAY_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_ADDED_INDEX EXPORT;
+    static const std::string PHOTO_SCHPT_ALBUM_GENERAL_INDEX EXPORT;
+    static const std::string PHOTO_SCHPT_ALBUM_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_PHOTO_DATEADDED_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_ADDED_ALBUM_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_MEDIA_TYPE_INDEX EXPORT;
@@ -216,6 +218,8 @@ public:
     static const std::string DROP_SCHPT_MONTH_COUNT_READY_INDEX;
     static const std::string DROP_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX;
     static const std::string CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX;
+    static const std::string INDEX_SCHPT_ALBUM_GENERAL;
+    static const std::string INDEX_SCHPT_ALBUM;
     static const std::string INDEX_SCTHP_PHOTO_DATEADDED;
 
     // create Photo cloud sync trigger
