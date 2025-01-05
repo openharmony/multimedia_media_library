@@ -422,7 +422,7 @@ static int32_t QueryExistingAlbumByLpath(const string& albumName, bool& isDelete
     }
 
     const string sql = "SELECT album_id, album_name, dirty FROM " + PhotoAlbumColumns::TABLE +
-        " WHERE lpath = ?";
+        " WHERE LOWER(lpath) = LOWER(?)";
     const vector<ValueObject> bindArgs { lpath };
     auto resultSet = rdbStore->QueryByStep(sql, bindArgs);
     if (resultSet == nullptr) {
