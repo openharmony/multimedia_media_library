@@ -190,7 +190,6 @@ static void QueryUriSensitive(MediaLibraryCommand &cmd, const std::vector<DataSh
     DataSharePredicates predicates;
     bool isValid;
     int64_t targetTokenId = values.at(0).Get(AppUriSensitiveColumn::TARGET_TOKENID, isValid);
-    int64_t srcTokenId = values.at(0).Get(AppUriSensitiveColumn::SOURCE_TOKENID, isValid);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("UriSensitive query operation, rdbStore is null.");
@@ -202,7 +201,6 @@ static void QueryUriSensitive(MediaLibraryCommand &cmd, const std::vector<DataSh
     }
     predicates.In(AppUriSensitiveColumn::FILE_ID, predicateInColumns);
     predicates.And()->EqualTo(AppUriSensitiveColumn::TARGET_TOKENID, (int64_t)targetTokenId);
-    predicates.And()->EqualTo(AppUriSensitiveColumn::SOURCE_TOKENID, (int64_t)srcTokenId);
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
     resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
     return;
