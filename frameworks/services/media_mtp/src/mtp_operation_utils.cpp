@@ -480,6 +480,8 @@ int32_t MtpOperationUtils::DoRecevieSendObject()
     errorCode = RecevieSendObject(object, fd);
     CHECK_AND_RETURN_RET_LOG(errorCode != MTP_ERROR_TRANSFER_CANCELLED, MTP_ERROR_TRANSFER_CANCELLED,
         "DoRecevieSendObject ReceiveObj Cancelled = %{public}d", MTP_ERROR_TRANSFER_CANCELLED);
+    CHECK_AND_RETURN_RET_LOG(errorCode != MTP_ERROR_TRANSFER_FAILED, MTP_ERROR_TRANSFER_FAILED,
+        "DoRecevieSendObject ReceiveObj Failed = %{public}d", MTP_ERROR_TRANSFER_FAILED);
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_RESPONSE_GENERAL,
         "DoRecevieSendObject ReceiveObj fail errorCode = %{public}d", errorCode);
 
@@ -526,6 +528,9 @@ int32_t MtpOperationUtils::RecevieSendObject(MtpFileRange &object, int fd)
         mtpMediaLibrary_->DeleteHandlePathMap(filePath, context_->handle);
     } else {
         mtpMedialibraryManager_->DeleteCanceledObject(context_->handle);
+    }
+    if (errorCode == RECEVIE_OBJECT_FAILED) {
+        return MTP_ERROR_TRANSFER_FAILED;
     }
     return MTP_ERROR_TRANSFER_CANCELLED;
 }
@@ -826,6 +831,8 @@ uint16_t MtpOperationUtils::CheckErrorCode(int errorCode)
             return MTP_SPECIFICATION_BY_GROUP_UNSUPPORTED_CODE;
         case MTP_ERROR_SPECIFICATION_BY_DEPTH_UNSUPPORTED:
             return MTP_SPECIFICATION_BY_DEPTH_UNSUPPORTED_CODE;
+        case MTP_ERROR_TRANSFER_FAILED:
+            return MTP_STORE_FULL_CODE;
         default:
             return MTP_OK_CODE;
     }
