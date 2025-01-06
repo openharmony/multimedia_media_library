@@ -324,7 +324,6 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     cloudPhotoObserver_ = std::make_shared<CloudSyncObserver>();
     cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
-    shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_TRIGGER_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_, true);
     HandleUpgradeRdbAsync();
@@ -475,7 +474,6 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         MEDIA_ERR_LOG("DataShareHelper is null");
         return;
     }
-    shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_TRIGGER_PREFIX), cloudPhotoObserver_);
     shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_);
     shareHelper->UnregisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_);
     rdbStore_ = nullptr;

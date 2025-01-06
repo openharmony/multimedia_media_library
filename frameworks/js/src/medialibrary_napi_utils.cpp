@@ -1549,11 +1549,6 @@ napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env,
         result->Close();
         return assetValue;
     }
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Create array error!");
-        result->Close();
-        return value;
-    }
     int elementIndex = 0;
     while (result->GoToNextRow() == NativeRdb::E_OK) {
         napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
@@ -1582,10 +1577,6 @@ napi_value MediaLibraryNapiUtils::GetSharedAlbumAssets(const napi_env& env,
         return value;
     }
     if (result == nullptr) {
-        return value;
-    }
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Create array error!");
         return value;
     }
     int elementIndex = 0;

@@ -1335,6 +1335,31 @@ void MediaLibraryAlbumOperations::DealwithNoAlbumAssets(const vector<string> &wh
     }
 }
 
+static bool isRecoverToHiddenAlbum(const string& uri)
+{
+    string fileId = MediaFileUtils::GetIdFromUri(uri);
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("get uniStore fail");
+        return false;
+    }
+    vector<string> columns = { MediaColumn::MEDIA_HIDDEN };
+    auto resultSet = uniStore->Query(predicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("fail to query file on photo");
+        return false;
+    }
+    int isHiddenIndex = -1;
+    int32_t isHidden = 0;
+    resultSet->GetColumnIndex(MediaColumn::MEDIA_HIDDEN, isHiddenIndex);
+    if (resultSet->GetInt(isHiddenIndex, isHidden) != NativeRdb::E_OK) {
+        return false;
+    }
+    return isHidden == 1;
+}
+
 int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
@@ -1358,13 +1383,17 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), whereArgs);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, whereArgs);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, whereArgs, NotifyAlbumType::SYS_ALBUM);
 
     auto watch = MediaLibraryNotify::GetInstance();
     size_t count = whereArgs.size() - THAN_AGR_SIZE;
     for (size_t i = 0; i < count; i++) {
         string notifyUri = MediaFileUtils::Encode(whereArgs[i]);
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
+        if (isRecoverToHiddenAlbum(notifyUri)) {
+            watch->Notify(notifyUri, NotifyType::NOTIFY_UPDATE);
+        } else {
+            watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
+        }
         watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSET);
     }
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
