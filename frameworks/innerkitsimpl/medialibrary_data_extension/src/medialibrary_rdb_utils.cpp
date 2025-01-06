@@ -22,6 +22,7 @@
 
 #include "datashare_values_bucket.h"
 #include "media_analysis_helper.h"
+#include "media_app_uri_permission_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -34,6 +35,7 @@
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_tracer.h"
+#include "permission_utils.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "result_set.h"
@@ -69,6 +71,8 @@ constexpr int32_t FACE_FEATURE = 2;
 constexpr int32_t FACE_CLUSTERED = 3;
 constexpr int32_t CLOUD_POSITION_STATUS = 2;
 constexpr int32_t UPDATE_ALBUM_TIME_OUT = 1000;
+constexpr int32_t PERSIST_READ_IMAGEVIDEO = 1;
+constexpr int32_t PERSIST_READWRITE_IMAGEVIDEO = 4;
 mutex MediaLibraryRdbUtils::sRefreshAlbumMutex_;
 
 // 注意，端云同步代码仓也有相同常量，添加新相册时，请通知端云同步进行相应修改
@@ -2452,5 +2456,77 @@ int32_t MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(const std::sha
     err = rdbStore->Update(changedRows, values, predicates);
     CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "RdbStore Update failed! err: %{public}d", err);
     return err;
+}
+
+static shared_ptr<NativeRdb::ResultSet> QueryNeedTransformPermission(const shared_ptr<MediaLibraryRdbStore> &store)
+{
+    NativeRdb::RdbPredicates rdbPredicate(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    vector<string> permissionTypes;
+    permissionTypes.emplace_back(to_string(PERSIST_READ_IMAGEVIDEO));
+    permissionTypes.emplace_back(to_string(PERSIST_READWRITE_IMAGEVIDEO));
+    rdbPredicate.In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
+    rdbPredicate.BeginWrap();
+    rdbPredicate.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, "");
+    rdbPredicate.Or();
+    rdbPredicate.IsNull(AppUriPermissionColumn::TARGET_TOKENID);
+    rdbPredicate.EndWrap();
+    vector<string> columns{
+        AppUriPermissionColumn::APP_ID
+    };
+    rdbPredicate.GroupBy(columns);
+    return store->Query(rdbPredicate, columns);
+}
+
+static std::map<std::string, int64_t> QueryTokenIdMap(const shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    std::map<std::string, int64_t> appIdTokenIdMap;
+    while (resultSet->GoToNextRow() == E_OK) {
+        string appId;
+        GetStringFromResultSet(resultSet, AppUriPermissionColumn::APP_ID, appId);
+        int64_t tokenId;
+        if (PermissionUtils::GetMainTokenId(appId, tokenId)) {
+            appIdTokenIdMap.emplace(appId, tokenId);
+        }
+    }
+    return appIdTokenIdMap;
+}
+
+void MediaLibraryRdbUtils::TrasformAppId2TokenId(const shared_ptr<MediaLibraryRdbStore> &store)
+{
+    MEDIA_INFO_LOG("TrasformAppId2TokenId start!");
+    auto resultSet = QueryNeedTransformPermission(store);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("TrasformAppId2TokenId failed");
+        return;
+    }
+    std::map<std::string, int64_t> tokenIdMap = QueryTokenIdMap(resultSet);
+    resultSet->Close();
+    if (tokenIdMap.size() == 0) {
+        MEDIA_WARN_LOG("TrasformAppId2TokenId tokenIdMap empty");
+        return;
+    }
+    int32_t successCount = 0;
+    for (auto &pair : tokenIdMap) {
+        NativeRdb::RdbPredicates rdbPredicate(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+        vector<string> permissionTypes;
+        permissionTypes.emplace_back(to_string(PERSIST_READ_IMAGEVIDEO));
+        permissionTypes.emplace_back(to_string(PERSIST_READWRITE_IMAGEVIDEO));
+        rdbPredicate.In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
+        rdbPredicate.EqualTo(AppUriPermissionColumn::APP_ID, pair.first);
+        rdbPredicate.BeginWrap();
+        rdbPredicate.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, "");
+        rdbPredicate.Or();
+        rdbPredicate.IsNull(AppUriPermissionColumn::TARGET_TOKENID);
+        rdbPredicate.EndWrap();
+        ValuesBucket refreshValues;
+        refreshValues.PutLong(AppUriPermissionColumn::TARGET_TOKENID, pair.second);
+        refreshValues.PutLong(AppUriPermissionColumn::SOURCE_TOKENID, pair.second);
+        int changeRows = 0;
+        if (store->Update(changeRows, refreshValues, rdbPredicate) == E_OK) {
+            successCount++;
+        }
+    }
+    MEDIA_INFO_LOG("TrasformAppId2TokenId updatecount:%{public}u, successcount:%{public}d",
+        tokenIdMap.size(), successCount);
 }
 } // namespace OHOS::Media

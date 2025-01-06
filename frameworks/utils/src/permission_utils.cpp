@@ -243,6 +243,29 @@ void PermissionUtils::GetPackageName(const int uid, std::string &packageName)
     GetPackageNameFromCache(uid, bundleName, packageName);
 }
 
+// not available for clone app
+int64_t PermissionUtils::GetMainTokenId(const string &appId, int64_t &tokenId)
+{
+    bundleMgr_ = GetSysBundleManager();
+    if (bundleMgr_ == nullptr) {
+        MEDIA_ERR_LOG("Get bundleMgr failed");
+        return E_ERR;
+    }
+    string bundleName;
+    int32_t err = bundleMgr_->GetBundleNameByAppId(appId, bundleName);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Get bundle name failed");
+        return err;
+    }
+    int userId = getuid() / BASE_USER_RANGE;
+    OHOS::AppExecFwk::BundleInfo bundleInfo;
+    err = bundleMgr_->GetBundleInfoV9(bundleName,
+        static_cast<int32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION), bundleInfo, userId);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "main app tokenid from appId fail");
+    tokenId = static_cast<int64_t>(bundleInfo.applicationInfo.accessTokenId);
+    return E_OK;
+}
+
 bool inline ShouldAddPermissionRecord(const AccessTokenID &token)
 {
     return (AccessTokenKit::GetTokenTypeFlag(token) == TOKEN_HAP);

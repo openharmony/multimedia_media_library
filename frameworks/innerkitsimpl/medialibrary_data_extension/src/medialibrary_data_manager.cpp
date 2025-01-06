@@ -379,6 +379,10 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         MediaLibraryRdbStore::AddAlbumIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_ALBUM_INDEX);
     }
+    if (oldVersion < VERSION_REFRESH_PERMISSION_APPID) {
+        MediaLibraryRdbUtils::TrasformAppId2TokenId(rdbStore);
+        rdbStore->SetOldVersion(VERSION_REFRESH_PERMISSION_APPID);
+    }
 }
 
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()
