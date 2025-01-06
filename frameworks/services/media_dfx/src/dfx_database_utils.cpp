@@ -297,7 +297,7 @@ int32_t DfxDatabaseUtils::QueryASTCThumb(bool isLocal)
 
     std::vector<std::string> columns = { "count(1) AS count" };
     std::string queryColumn = "count";
-    int32_t count;
+    int32_t count = 0;
     int32_t errCode = QueryInt(predicates, columns, queryColumn, count);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("query astc thumb fail: %{public}d", errCode);
@@ -340,7 +340,7 @@ int32_t DfxDatabaseUtils::QueryLCDThumb(bool isLocal)
     std::vector<std::string> columns = { "count(1) AS count" };
     std::string queryColumn = "count";
 
-    int32_t count;
+    int32_t count = 0;
     int32_t errCode = QueryInt(predicates, columns, queryColumn, count);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("query lcd thumb fail: %{public}d", errCode);
