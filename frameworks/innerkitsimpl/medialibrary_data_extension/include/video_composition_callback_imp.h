@@ -27,6 +27,7 @@ namespace Media {
 static const std::string FRAME_STICKER = "FrameSticker";
 static const std::string INPLACE_STICKER = "InplaceSticker";
 static const std::string TIMING_STICKER = "TimingSticker";
+static const std::string FESTIVAL_STICKER = "FestivalSticker";
 static const std::string FILTERS_FIELD = "filters";
 static const char FILTERS_END = ',';
 static const int32_t MAX_CONCURRENT_NUM = 5;

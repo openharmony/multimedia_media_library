@@ -2164,7 +2164,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
         CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourcePath, path, editData) == E_OK, E_FAIL,
             "Failed to add filters to photo");
         if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-            CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset) == E_OK, E_FAIL,
+            CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset, false) == E_OK, E_FAIL,
                 "Failed to add filters to video");
         }
     }
@@ -2559,7 +2559,7 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
             PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, fileAssetColumns);
         CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
             "Failed to GetFileAssetFromDb, fileId = %{public}d", id);
-        return AddFiltersToVideoExecute(fileAsset);
+        return AddFiltersToVideoExecute(fileAsset, true);
     }
 
     if (IsCameraEditData(cmd)) {
@@ -2694,7 +2694,22 @@ int32_t SaveTempMovingPhotoVideo(const string &assetPath)
     return E_ERR;
 }
 
-int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<FileAsset>& fileAsset)
+int32_t MediaLibraryPhotoOperations::CopyVideoFile(const string& assetPath, bool toSource)
+{
+    string sourceImagePath = PhotoFileUtils::GetEditDataSourcePath(assetPath);
+    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
+    string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourceImagePath);
+    if (toSource) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(videoPath, sourceVideoPath), E_HAS_FS_ERROR,
+            "Copy videoPath to sourceVideoPath, path:%{private}s", videoPath.c_str());
+    } else {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(sourceVideoPath, videoPath), E_HAS_FS_ERROR,
+            "Copy sourceVideoPath to videoPath, path:%{private}s", sourceVideoPath.c_str());
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<FileAsset>& fileAsset, bool isSaveVideo)
 {
     string assetPath = fileAsset->GetFilePath();
     string editDataCameraPath = MediaLibraryAssetOperations::GetEditDataCameraPath(assetPath);
@@ -2715,14 +2730,22 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<F
         if (index != std::string::npos) {
             VideoCompositionCallbackImpl::EraseStickerField(editData, index, true);
         }
+        index = editData.find(FESTIVAL_STICKER);
+        if (index != std::string::npos) {
+            VideoCompositionCallbackImpl::EraseStickerField(editData, index, false);
+        }
         index = editData.find(FILTERS_FIELD);
         if (index == std::string::npos) {
             MEDIA_ERR_LOG("Can not find Video filters field.");
             return E_ERR;
         }
-        if (editData[index + START_DISTANCE] == FILTERS_END) {
+        if (editData[index + START_DISTANCE] == FILTERS_END && isSaveVideo) {
             MEDIA_INFO_LOG("MovingPhoto video only supports filter now.");
-            return SaveTempMovingPhotoVideo(assetPath);
+            CHECK_AND_RETURN_RET_LOG(SaveTempMovingPhotoVideo(assetPath) == E_OK, E_HAS_FS_ERROR,
+                "Failed to save temp movingphoto video, path = %{public}s", assetPath.c_str());
+            return CopyVideoFile(assetPath, true);
+        } else if (editData[index + START_DISTANCE] == FILTERS_END && !isSaveVideo) {
+            return CopyVideoFile(assetPath, false);
         }
         MEDIA_INFO_LOG("AddFiltersToVideoExecute after EraseStickerField, editData = %{public}s", editData.c_str());
         CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(fileAsset, assetPath, true) == E_OK, E_HAS_FS_ERROR,
@@ -2854,9 +2877,8 @@ int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(const shared_ptr<FileAs
     string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourceImagePath);
     CHECK_AND_RETURN_RET_LOG(!sourceVideoPath.empty(), E_INVALID_PATH, "Can not get source video path");
     if (!MediaFileUtils::IsFileExists(sourceVideoPath)) {
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(videoPath, sourceVideoPath) == E_SUCCESS,
-            E_HAS_FS_ERROR, "Move video file failed, srcPath:%{private}s, newPath:%{private}s",
-            videoPath.c_str(), sourceVideoPath.c_str());
+        CHECK_AND_RETURN_RET_LOG(Move(videoPath, sourceVideoPath) == E_SUCCESS, E_HAS_FS_ERROR,
+            "Can not move %{private}s to %{private}s", videoPath.c_str(), sourceVideoPath.c_str());
     }
     return E_OK;
 }
