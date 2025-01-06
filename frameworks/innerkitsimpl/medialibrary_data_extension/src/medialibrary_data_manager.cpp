@@ -80,6 +80,7 @@
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_story_operations.h"
+#include "medialibrary_subscriber.h"
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_tab_old_photos_operations.h"
 #include "medialibrary_tracer.h"
@@ -139,6 +140,8 @@ mutex MediaLibraryDataManager::mutex_;
 static const int32_t UUID_STR_LENGTH = 37;
 const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 2;
 const int32_t LARGE_FILE_SIZE_MB = 200;
+const int32_t WRONG_VALUE = 0;
+const int32_t BATCH_QUERY_NUMBER = 200;
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -2267,6 +2270,72 @@ int32_t MediaLibraryDataManager::UpdateDateTakenWhenZero()
     }
     MEDIA_DEBUG_LOG("UpdateDateTakenWhenZero end");
     return ret;
+}
+
+static int32_t DoUpdateBurstCoverLevelOperation(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const std::vector<std::string> &fileIdVec)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore is nullptr");
+    AbsRdbPredicates updatePredicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    updatePredicates.In(MediaColumn::MEDIA_ID, fileIdVec);
+    updatePredicates.BeginWrap();
+    updatePredicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, WRONG_VALUE);
+    updatePredicates.Or();
+    updatePredicates.IsNull(PhotoColumn::PHOTO_BURST_COVER_LEVEL);
+    updatePredicates.EndWrap();
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, static_cast<int32_t>(BurstCoverLevelType::COVER));
+
+    int32_t changedRows = -1;
+    int32_t ret = rdbStore->Update(changedRows, values, updatePredicates);
+    CHECK_AND_RETURN_RET_LOG((ret == E_OK && changedRows > 0), E_FAIL,
+        "Failed to UpdateBurstCoverLevelFromGallery, ret: %{public}d, updateRows: %{public}d", ret, changedRows);
+    MEDIA_INFO_LOG("UpdateBurstCoverLevelFromGallery success, changedRows: %{public}d, fileIdVec.size(): %{public}d.",
+        changedRows, static_cast<int32_t>(fileIdVec.size()));
+    return ret;
+}
+
+int32_t MediaLibraryDataManager::UpdateBurstCoverLevelFromGallery()
+{
+    MEDIA_INFO_LOG("UpdateBurstCoverLevelFromGallery start");
+    CHECK_AND_RETURN_RET_LOG(refCnt_.load() > 0, E_FAIL, "MediaLibraryDataManager is not initialized");
+    CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_FAIL, "rdbStore_ is nullptr");
+
+    const std::vector<std::string> columns = { MediaColumn::MEDIA_ID };
+    AbsRdbPredicates predicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, WRONG_VALUE);
+    predicates.Or();
+    predicates.IsNull(PhotoColumn::PHOTO_BURST_COVER_LEVEL);
+    predicates.EndWrap();
+    predicates.Limit(BATCH_QUERY_NUMBER);
+
+    bool nextUpdate = true;
+    while (nextUpdate && MedialibrarySubscriber::IsCurrentStatusOn()) {
+        auto resultSet = rdbStore_->Query(predicates, columns);
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "Failed to query resultSet");
+        int32_t rowCount = 0;
+        int32_t ret = resultSet->GetRowCount(rowCount);
+        CHECK_AND_RETURN_RET_LOG((ret == E_OK && rowCount >= 0), E_FAIL, "Failed to GetRowCount");
+        if (rowCount == 0) {
+            MEDIA_INFO_LOG("No need to UpdateBurstCoverLevelFromGallery.");
+            return E_OK;
+        }
+        if (rowCount < BATCH_QUERY_NUMBER) {
+            nextUpdate = false;
+        }
+
+        std::vector<std::string> fileIdVec;
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            std::string fileId = GetStringVal(MediaColumn::MEDIA_ID, resultSet);
+            fileIdVec.push_back(fileId);
+        }
+        resultSet->Close();
+
+        CHECK_AND_RETURN_RET_LOG(DoUpdateBurstCoverLevelOperation(rdbStore_, fileIdVec) == E_OK,
+            E_FAIL, "Failed to DoUpdateBurstCoverLevelOperation");
+    }
+    return E_OK;
 }
 }  // namespace Media
 }  // namespace OHOS
