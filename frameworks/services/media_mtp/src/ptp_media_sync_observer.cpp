@@ -17,6 +17,7 @@
 
 #include <chrono>
 #include <cctype>
+#include <securec.h>
 
 #include "media_log.h"
 #include "ptp_album_handles.h"
@@ -363,6 +364,89 @@ void MediaSyncObserver::SendEventToPTP(int32_t suff_int, ChangeType changeType)
     }
 }
 
+bool MediaSyncObserver::ParseNotifyData(const ChangeInfo &changeInfo, vector<string> &fileIds)
+{
+    if (changeInfo.data_ == nullptr || changeInfo.size_ <= 0) {
+        MEDIA_DEBUG_LOG("changeInfo.data_ is null or changeInfo.size_ is invalid");
+        return false;
+    }
+    MEDIA_DEBUG_LOG("changeInfo.size_ is %{public}d.", changeInfo.size_);
+    uint8_t *parcelData = static_cast<uint8_t *>(malloc(changeInfo.size_));
+    if (parcelData == nullptr) {
+        MEDIA_ERR_LOG("parcelData malloc failed");
+        return false;
+    }
+    if (memcpy_s(parcelData, changeInfo.size_, changeInfo.data_, changeInfo.size_) != 0) {
+        MEDIA_ERR_LOG("parcelData copy parcel data failed");
+        free(parcelData);
+        return false;
+    }
+    shared_ptr<MessageParcel> parcel = make_shared<MessageParcel>();
+    // parcel析构函数中会free掉parcelData，成功调用ParseFrom后不可进行free(parcelData)
+    if (!parcel->ParseFrom(reinterpret_cast<uintptr_t>(parcelData), changeInfo.size_)) {
+        MEDIA_ERR_LOG("Parse parcelData failed");
+        free(parcelData);
+        return false;
+    }
+    uint32_t len = 0;
+    if (!parcel->ReadUint32(len)) {
+        MEDIA_ERR_LOG("Failed to read sub uri list length");
+        return false;
+    }
+    MEDIA_DEBUG_LOG("read sub uri list length: %{public}u .", len);
+    for (uint32_t i = 0; i < len; i++) {
+        string subUri = parcel->ReadString();
+        if (subUri.empty()) {
+            MEDIA_ERR_LOG("Failed to read sub uri");
+            return false;
+        }
+        MEDIA_DEBUG_LOG("notify data subUri string %{public}s.", subUri.c_str());
+        MediaFileUri fileUri(subUri);
+        string fileId = fileUri.GetFileId();
+        if (!IsNumber(fileId)) {
+            MEDIA_ERR_LOG("Failed to read sub uri fileId");
+            continue;
+        }
+        fileIds.push_back(fileId);
+    }
+    return true;
+}
+
+void MediaSyncObserver::HandleMovePhotoEvent(const ChangeInfo &changeInfo)
+{
+    if (changeInfo.changeType_ != static_cast<int32_t>(NotifyType::NOTIFY_ADD)) {
+        return;
+    }
+    vector<string> fileIds;
+    bool errCode = ParseNotifyData(changeInfo, fileIds);
+    if (!errCode || fileIds.empty()) {
+        MEDIA_DEBUG_LOG("parse changInfo data failed or have no fileId");
+        return;
+    }
+    Uri uri(PAH_QUERY_PHOTO);
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    shared_ptr<DataShare::DataShareResultSet> resultSet;
+    columns.push_back(MediaColumn::MEDIA_ID);
+    columns.push_back(PhotoColumn::PHOTO_SUBTYPE);
+    predicates.In(MediaColumn::MEDIA_ID, fileIds);
+    predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, POSITION);
+    CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "Mtp dataShareHelper_ is nullptr");
+    resultSet = dataShareHelper_->Query(uri, predicates, columns);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Mtp get handles failed");
+    CHECK_AND_RETURN_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, "Mtp get resultSet failed");
+    do {
+        int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+        int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+        SendEventPackets(fileId + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+        SendEventPackets(fileId + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
+        if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            SendEventPackets(fileId + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+            SendEventPackets(fileId + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
+        }
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+}
+
 void MediaSyncObserver::OnChangeEx(const ChangeInfo &changeInfo)
 {
     std::string PhotoPrefix = PhotoColumn::PHOTO_URI_PREFIX;
@@ -378,7 +462,7 @@ void MediaSyncObserver::OnChangeEx(const ChangeInfo &changeInfo)
                 fileId = "";
             }
             if (fileId.empty() && changeInfo.changeType_ != static_cast<int32_t>(NotifyType::NOTIFY_REMOVE)) {
-                MEDIA_ERR_LOG("MtpMediaLibrary suffixString is empty");
+                MEDIA_DEBUG_LOG("MtpMediaLibrary suffixString is empty");
                 continue;
             }
             MEDIA_DEBUG_LOG("MtpMediaLibrary suffixString [%{public}s]", fileId.c_str());
@@ -393,6 +477,7 @@ void MediaSyncObserver::OnChangeEx(const ChangeInfo &changeInfo)
             if (albumIdNum <= RESERVE_ALBUM) {
                 continue;
             }
+            HandleMovePhotoEvent(changeInfo);
             SendEventToPTP(albumIdNum, changeInfo.changeType_);
         }
     }
@@ -402,7 +487,17 @@ void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
 {
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        changeInfoQueue_.push(changeInfo);
+        ChangeInfo changeInfoCopy = changeInfo;
+        if (changeInfo.data_ != nullptr && changeInfo.size_ > 0) {
+            changeInfoCopy.data_ = malloc(changeInfo.size_);
+            if (memcpy_s(const_cast<void*>(changeInfoCopy.data_),
+                changeInfo.size_, changeInfo.data_, changeInfo.size_) != 0) {
+                MEDIA_ERR_LOG("changeInfoCopy copy data failed");
+                free(const_cast<void*>(changeInfoCopy.data_));
+                return;
+            }
+        }
+        changeInfoQueue_.push(changeInfoCopy);
     }
     cv_.notify_one();
 }
@@ -439,6 +534,9 @@ void MediaSyncObserver::ChangeNotifyThread()
             changeInfoQueue_.pop();
         }
         OnChangeEx(changeInfo);
+        if (changeInfo.data_ != nullptr) {
+            free(const_cast<void*>(changeInfo.data_));
+        }
     }
 }
 } // namespace Media

@@ -63,6 +63,8 @@ private:
     int32_t GetAddEditAlbumHandle(int32_t handle);
     void AddPhotoHandle(int32_t handle);
     void SendPhotoRemoveEvent(std::string &suffixString);
+    bool ParseNotifyData(const ChangeInfo &changeInfo, std::vector<std::string> &fileIds);
+    void HandleMovePhotoEvent(const ChangeInfo &changeInfo);
 private:
     std::thread notifythread_;
     std::queue<ChangeInfo> changeInfoQueue_;
