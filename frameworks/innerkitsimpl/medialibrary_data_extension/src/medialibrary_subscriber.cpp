@@ -51,6 +51,7 @@
 #include "medialibrary_meta_recovery.h"
 #endif
 #include "medialibrary_restore.h"
+#include "medialibrary_subscriber_database_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
@@ -85,8 +86,9 @@ const int TIME_START_RELEASE_TEMPERATURE_LIMIT = 1;
 const int TIME_STOP_RELEASE_TEMPERATURE_LIMIT = 6;
 
 // The task can be performed only when the temperature of the device is lower than the value
-const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 1;
-const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_HOT = 3;
+const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_37 = 1;
+const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_40 = 2;
+const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_43 = 3;
 
 // WIFI should be available in this state
 const int32_t WIFI_STATE_CONNECTED = 4;
@@ -101,6 +103,7 @@ const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
 const int32_t NET_CONN_STATE_CONNECTED = 3;
 // The net bearer type is in net_all_capabilities.h
 const int32_t BEARER_CELLULAR = 0;
+const int32_t THUMB_ASTC_ENOUGH = 20000;
 bool MedialibrarySubscriber::isCellularNetConnected_ = false;
 bool MedialibrarySubscriber::isWifiConnected_ = false;
 bool MedialibrarySubscriber::currentStatus_ = false;
@@ -153,7 +156,7 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
 #ifdef HAS_THERMAL_MANAGER_PART
     auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
     newTemperatureLevel_ = static_cast<int32_t>(thermalMgrClient.GetThermalLevel());
-    isDeviceTemperatureProper_ = newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL;
+    isDeviceTemperatureProper_ = newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37;
 #endif
 #ifdef HAS_WIFI_MANAGER_PART
     auto wifiDevicePtr = Wifi::WifiDevice::GetInstance(WIFI_DEVICE_ABILITY_ID);
@@ -246,10 +249,10 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
     if (nowLocalTime != nullptr && nowLocalTime->tm_hour >= TIME_START_RELEASE_TEMPERATURE_LIMIT &&
         nowLocalTime->tm_hour < TIME_STOP_RELEASE_TEMPERATURE_LIMIT) {
         newStatus = isScreenOff_ && isCharging_ && isPowerSufficient &&
-            newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_HOT;
+            newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_43;
     } else {
         newStatus = isScreenOff_ && isCharging_ && isPowerSufficient &&
-            newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL;
+            newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37;
     }
 
     if (currentStatus_ == newStatus) {
@@ -298,7 +301,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
         case StatusEventType::THERMAL_LEVEL_CHANGED: {
             newTemperatureLevel_ = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
                 COMMON_EVENT_KEY_GET_DEFAULT_PARAM);
-            isDeviceTemperatureProper_ = newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL;
+            isDeviceTemperatureProper_ = newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37;
             break;
         }
         case StatusEventType::TIME_TICK:
@@ -323,7 +326,7 @@ void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadStatus(const AAFwk::Wa
     int32_t taskStatus = CloudMediaAssetManager::GetInstance().GetTaskStatus();
     int32_t downloadType = CloudMediaAssetManager::GetInstance().GetDownloadType();
     bool foregroundTemperature = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
-        COMMON_EVENT_KEY_GET_DEFAULT_PARAM) <= PROPER_DEVICE_TEMPERATURE_LEVEL_HOT;
+        COMMON_EVENT_KEY_GET_DEFAULT_PARAM) <= PROPER_DEVICE_TEMPERATURE_LEVEL_43;
     if (!foregroundTemperature && downloadType == static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE)) {
         CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::TEMPERATURE_LIMIT);
         return;
@@ -658,15 +661,27 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     bool isPowerSufficientForThumbnail = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY_THUMBNAIL;
-    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficientForThumbnail &&
-        newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_HOT;
+    bool newStatus = false;
+    if (isCharging_) {
+        newStatus = isScreenOff_ && isPowerSufficientForThumbnail &&
+            newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_43;
+    } else if (isScreenOff_ && newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_40 &&
+        batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY) {
+        int32_t thumbAstcCount = 0;
+        MedialibrarySubscriberDatabaseUtils::QueryThumbAstc(thumbAstcCount);
+        bool isThumbAstcEnough = thumbAstcCount > THUMB_ASTC_ENOUGH;
+        newStatus = !isThumbAstcEnough;
+        MEDIA_INFO_LOG("ThumbnailBg generate status: isThumbAstcEnough:%{public}d, "
+            "thumbAstcCount:%{public}d", isThumbAstcEnough, thumbAstcCount);
+    }
+
     if (thumbnailBgGenerationStatus_ == newStatus) {
         return;
     }
     MEDIA_INFO_LOG("update status thumbnailBg:%{public}d, new:%{public}d, "
         "%{public}d, %{public}d, %{public}d, %{public}d",
         thumbnailBgGenerationStatus_, newStatus, isScreenOff_,
-        isCharging_, isPowerSufficientForThumbnail, newTemperatureLevel_);
+        isCharging_, batteryCapacity_, newTemperatureLevel_);
     thumbnailBgGenerationStatus_ = newStatus;
     thumbnailBgDelayTask_.EndBackgroundOperationThread();
     if (thumbnailBgGenerationStatus_) {
@@ -814,6 +829,32 @@ void MedialibrarySubscriber::DelayTask::SetOperationThread(std::function<void()>
         isTaskWaiting = true;
     }
     this->operationThread = std::thread(operationTask);
+}
+
+int32_t MedialibrarySubscriberDatabaseUtils::QueryThumbAstc(int32_t& thumbAstcCount)
+{
+    std::vector<std::string> columns = { "count(1) AS count" };
+    std::string queryColumn = "count";
+    NativeRdb::RdbPredicates astcPredicates(PhotoColumn::PHOTOS_TABLE);
+    astcPredicates.GreaterThanOrEqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY,
+        static_cast<int32_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
+    int32_t errCode = QueryInt(astcPredicates, columns, queryColumn, thumbAstcCount);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Query thumbAstcCount fail: %{public}d", errCode);
+        return errCode;
+    }
+    return E_OK;
+}
+
+int32_t MedialibrarySubscriberDatabaseUtils::QueryInt(const NativeRdb::AbsRdbPredicates &predicates,
+    const std::vector<std::string> &columns, const std::string &queryColumn, int32_t &value)
+{
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return E_DB_FAIL;
+    }
+    value = GetInt32Val(queryColumn, resultSet);
+    return E_OK;
 }
 }  // namespace Media
 }  // namespace OHOS
