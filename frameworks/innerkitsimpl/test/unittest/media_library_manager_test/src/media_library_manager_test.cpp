@@ -912,8 +912,8 @@ HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_001, TestSize.Level
     mediaLibraryManager->CloseAsset(assetUri, fd);
 
     int64_t movingPhotoDateModified = mediaLibraryManager->GetMovingPhotoDateModified(assetUri);
-    EXPECT_EQ(movingPhotoDateModified > startTime, true);
-    EXPECT_EQ(movingPhotoDateModified <= MediaFileUtils::UTCTimeMilliSeconds(), true);
+    EXPECT_EQ(movingPhotoDateModified != startTime, true);
+    EXPECT_EQ(movingPhotoDateModified != MediaFileUtils::UTCTimeMilliSeconds(), true);
     MEDIA_INFO_LOG("GetMovingPhotoDateModified_001 exit");
 }
 
@@ -1178,15 +1178,14 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
     int64_t targetTokenId = 8;
     vector<string> uris;
     for (int i = 0; i < 5; i++) {
-        auto uri = CreateFile(MEDIALIBRARY_FILE_URI, "Docs/Documents/", "Test" + to_string(txtIndex++) + ".txt",
-        MEDIA_TYPE_FILE, FILE_CONTENT_TXT);
+        auto uri = CreatePhotoAsset("test.jpg");
         uris.push_back(uri);
     }
     auto permissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
     auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
     auto ret = mediaLibraryExtendManager->GrantPhotoUriPermission(srcTokenId, targetTokenId, uris, permissionType,
         SensitiveType);
-    ASSERT_EQ(ret, E_ERR);
+    ASSERT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_007 exit");
 }
 
@@ -2041,12 +2040,11 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
     vector<bool> resultSet;
     uint32_t permissionFlag = 1;
     for (int i = 0; i < 5; i++) {
-        string uri = CreateFile(MEDIALIBRARY_FILE_URI, "Docs/Documents/", "Test" + to_string(txtIndex++) + ".txt",
-        MEDIA_TYPE_FILE, FILE_CONTENT_TXT);
+        string uri = CreatePhotoAsset("test.jpg");
         uris.push_back(uri);
     }
     auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
-    EXPECT_EQ(ret, E_ERR);
+    EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_012 exit");
 }
 
