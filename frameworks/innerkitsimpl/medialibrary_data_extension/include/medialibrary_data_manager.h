@@ -92,6 +92,8 @@ public:
 
     // update burst photo from gallery
     EXPORT int32_t UpdateBurstFromGallery();
+    // update burst_cover_level from gallery
+    EXPORT int32_t UpdateBurstCoverLevelFromGallery();
 
     EXPORT std::shared_ptr<MediaLibraryRdbStore> rdbStore_;
 
