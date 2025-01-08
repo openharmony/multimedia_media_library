@@ -4316,34 +4316,6 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
     // !! Do not add upgrade code here !!
 }
 
-static void CheckDateAdded(RdbStore &store)
-{
-    vector<string> sqls = {
-        " UPDATE Photos "
-        " SET date_added = "
-            " CASE "
-                " WHEN date_added = 0 AND date_taken = 0 AND date_modified = 0 THEN strftime('%s', 'now') "
-                " WHEN date_added = 0 AND date_taken = 0 THEN date_modified "
-                " WHEN date_added = 0 AND date_taken <> 0 THEN date_taken "
-                " ELSE date_added "
-            " END "
-        " WHERE date_added = 0 OR strftime('%Y%m%d', date_added, 'unixepoch', 'localtime') <> date_day;",
-        " UPDATE Photos "
-        " SET "
-            " date_year = strftime('%Y', date_added, 'unixepoch', 'localtime'), "
-            " date_month = strftime('%Y%m', date_added, 'unixepoch', 'localtime'), "
-            " date_day = strftime('%Y%m%d', date_added, 'unixepoch', 'localtime'), "
-            " dirty = 2 "
-        " WHERE date_added = 0 OR strftime('%Y%m%d', date_added, 'unixepoch', 'localtime') <> date_day;",
-    };
-    ExecSqls(sqls, store);
-}
-
-static void AlwaysCheck(RdbStore &store)
-{
-    CheckDateAdded(store);
-}
-
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MediaLibraryTracer tracer;
@@ -4407,7 +4379,6 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeUriPermissionTable(store, oldVersion);
     UpgradeHighlightAlbumChange(store, oldVersion);
 
-    AlwaysCheck(store);
     if (!g_upgradeErr) {
         VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};
         PostEventUtils::GetInstance().PostStatProcess(StatType::DB_UPGRADE_STAT, map);
@@ -4649,6 +4620,16 @@ void MediaLibraryRdbStore::WalCheckPoint()
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("wal_checkpoint ExecuteSql failed, errCode: %{public}d", errCode);
     }
+}
+
+int MediaLibraryRdbStore::ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
+    const std::vector<NativeRdb::ValueObject> &args)
+{
+    if (!CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+    return ExecSqlWithRetry([&]() { return GetRaw()->ExecuteForChangedRowCount(outValue, sql, args); });
 }
 
 #ifdef DISTRIBUTED
