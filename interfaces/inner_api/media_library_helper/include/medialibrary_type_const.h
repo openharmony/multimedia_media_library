@@ -245,6 +245,9 @@ const std::string CLOUD_ENHANCEMENT_WATER_MARK_DIR = "/sys_prod/resource/camera"
 const std::string CACHE_DIR_VALUE = ".cache";
 const std::string HIGHLIGHT_INFO_OLD = ".thumbs/highlight";
 const std::string HIGHLIGHT_INFO_NEW = "highlight";
+const std::string MEDIA_PHOTO_URI = "file://media/Photo/";
+const std::string HMDFS = "/mnt/hmdfs/";
+const std::string CLOUD_MERGE_VIEW = "/account/cloud_merge_view/files/";
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
