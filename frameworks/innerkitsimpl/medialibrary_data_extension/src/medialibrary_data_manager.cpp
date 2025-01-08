@@ -94,6 +94,7 @@
 #include "enhancement_manager.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
+#include "photo_day_month_year_operation.h"
 #include "photo_map_operations.h"
 #include "resource_type.h"
 #include "rdb_store.h"
@@ -374,14 +375,20 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         MediaLibraryRdbStore::AddPhotoDateAddedIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_PHOTO_DATEADD_INDEX);
     }
-    
+
     if (oldVersion < VERSION_ADD_ALBUM_INDEX) {
         MediaLibraryRdbStore::AddAlbumIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_ALBUM_INDEX);
     }
+
     if (oldVersion < VERSION_REFRESH_PERMISSION_APPID) {
         MediaLibraryRdbUtils::TrasformAppId2TokenId(rdbStore);
         rdbStore->SetOldVersion(VERSION_REFRESH_PERMISSION_APPID);
+    }
+
+    if (oldVersion < VERSION_UPDATE_PHOTOS_DATE_AND_IDX) {
+        PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_PHOTOS_DATE_AND_IDX);
     }
 }
 
