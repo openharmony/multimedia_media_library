@@ -1036,16 +1036,18 @@ void MediaScannerDb::UpdateAlbumInfoByMetaData(const Metadata &metadata)
         return;
     }
     if (metadata.GetFileMediaType() == MEDIA_TYPE_IMAGE) {
-        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, { to_string(PhotoAlbumSubType::IMAGE) });
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, { to_string(PhotoAlbumSubType::IMAGE) },
+            metadata.GetForAdd());
     } else if (metadata.GetFileMediaType() == MEDIA_TYPE_VIDEO) {
-        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, { to_string(PhotoAlbumSubType::VIDEO) });
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, { to_string(PhotoAlbumSubType::VIDEO) },
+            metadata.GetForAdd());
     } else {
         MEDIA_WARN_LOG("Invalid mediaType : %{public}d", metadata.GetFileMediaType());
     }
     if (!metadata.GetOwnerPackage().empty()) {
         if (metadata.GetFileId() != FILE_ID_DEFAULT) {
             std::string uri = PhotoColumn::PHOTO_URI_PREFIX + to_string(metadata.GetFileId());
-            MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {uri});
+            MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {uri}, metadata.GetForAdd());
         }
     }
 }
