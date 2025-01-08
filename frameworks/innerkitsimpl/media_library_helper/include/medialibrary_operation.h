@@ -72,6 +72,7 @@ enum class EXPORT OperationObject : uint32_t {
     GEO_DICTIONARY,
     GEO_KNOWLEDGE,
     GEO_PHOTO,
+    CONVERT_PHOTO,
     ANALYSIS_PHOTO_ALBUM,
     ANALYSIS_PHOTO_MAP,
     PAH_FORM_MAP,

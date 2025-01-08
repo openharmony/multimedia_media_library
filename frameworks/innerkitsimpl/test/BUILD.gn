@@ -40,6 +40,7 @@ group("test") {
     "unittest/medialibrary_datamanager_test:unittest",
     "unittest/medialibrary_dfx_test:unittest",
     "unittest/medialibrary_fuse_test:unittest",
+    "unittest/medialibrary_handler_test:unittest",
     "unittest/medialibrary_helper_test:unittest",
     "unittest/medialibrary_location_test:unittest",
     "unittest/medialibrary_manager_utils_test:unittest",
