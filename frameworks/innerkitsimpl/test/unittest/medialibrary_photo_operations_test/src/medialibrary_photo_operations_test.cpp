@@ -20,6 +20,7 @@
 #include <chrono>
 #include <fcntl.h>
 #include <fstream>
+#include <future>
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>
@@ -3744,6 +3745,57 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_002, TestSize.Level
     EXPECT_GE(fileAssetPtrNew->GetPhotoEditTime(), 0);
 
     MEDIA_INFO_LOG("end tdd clone_single_asset_002");
+}
+
+// 多线程访问clone接口tdd测试
+HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd clone_single_asset_003");
+
+    // create asset
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    // open photo and video cache file
+    string fileName;
+    int32_t fd = OpenCacheFile(false, fileName);
+    EXPECT_GE(fd, 0);
+
+    // edit by cache
+    int ret = MovingPhotoEditByCache(fileId, fileName, fileName, true);
+    EXPECT_EQ(ret, fileId);
+
+    string title = "";
+    for (int i = 0; i < 251; i++) {
+        title += "1";
+    }
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLONE_ASSET, MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.Put(MediaColumn::MEDIA_ID, fileId);
+    values.Put(MediaColumn::MEDIA_TITLE, title);
+    cmd.SetValueBucket(values);
+    cmd.SetBundleName("values");
+
+    std::vector<std::future<int64_t>> futures;
+    for (int i = 0; i < 10; i++) {
+        futures.push_back(
+            std::async(std::launch::async, [&]() { return MediaLibraryPhotoOperations::CloneSingleAsset(cmd); }));
+    }
+
+    for (auto &future : futures) {
+        if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+            EXPECT_EQ(false, true);
+        }
+
+        int64_t ret = future.get();
+        EXPECT_GE(ret, fileId);
+    }
+
+    MEDIA_INFO_LOG("end tdd clone_single_asset_003");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, picture_date_test_001, TestSize.Level0)
