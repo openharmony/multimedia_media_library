@@ -6371,7 +6371,7 @@ static void JSGetAnalysisDataCompleteCallback(napi_env env, napi_status status, 
     MediaLibraryTracer tracer;
     tracer.Start("JSGetAnalysisDataCompleteCallback");
 
-    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
@@ -6401,7 +6401,7 @@ static void JSGetAnalysisDataCompleteCallback(napi_env env, napi_status status, 
     delete context;
 }
 
-static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
+static void JSGetAnalysisDataExecute(MediaLibraryAsyncContext *context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSGetAnalysisDataExecute");
@@ -6420,7 +6420,7 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
         columns = { PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, PhotoColumn::PHOTOS_TABLE + "." + LATITUDE,
             PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, LANGUAGE, COUNTRY, ADMIN_AREA, SUB_ADMIN_AREA, LOCALITY,
             SUB_LOCALITY, THOROUGHFARE, SUB_THOROUGHFARE, FEATURE_NAME, CITY_NAME, ADDRESS_DESCRIPTION, LOCATION_TYPE,
-            AOI, POI, FIRST_AOI, FIRST_POI, LOCATION_VERSION, FIRST_AOI_CATEGORY, FIRST_POI_CATEGORY}
+            AOI, POI, FIRST_AOI, FIRST_POI, LOCATION_VERSION, FIRST_AOI_CATEGORY, FIRST_POI_CATEGORY};
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
         vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
             GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
@@ -6432,7 +6432,7 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
     }
 
     int errCode = 0;
-    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("Query geo assets list failed");
         return;
@@ -6482,7 +6482,7 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> 
             NAPI_INFO_LOG("Skip invalid asset, mediaType: %{public}d", obj->GetMediaType());
             continue;
         }
-        assetsArray.push_back(to_string(obj->GetFileId());
+        assetsArray.push_back(to_string(obj->GetFileId()));
     }
 
     napi_value result = nullptr;
@@ -6493,8 +6493,8 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> 
 static napi_value ParseArgsAnalysisData(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    size_t minArgs = ARGS_ONE;
-    size_t maxArgs = ARGS_THREE;
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_THREE;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
         napi_ok, "Failed to get object info");
     
@@ -6525,7 +6525,7 @@ static napi_value ParseArgsAnalysisData(napi_env env, napi_callback_info info,
     return result;
 }
 
-napi_value FileAssetNapi::PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info)
+napi_value MediaLibraryNapi::PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperGetAnalysisData");
