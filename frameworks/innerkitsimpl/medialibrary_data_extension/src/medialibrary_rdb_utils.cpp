@@ -2211,6 +2211,12 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<MediaLibraryRdbS
         this_thread::sleep_for(chrono::milliseconds(PowerEfficiencyManager::GetAlbumUpdateInterval()));
         isRefresh = true;
     }
+    // update SHOOTING_MODE album
+    vector<string> subtype = { std::to_string(PhotoAlbumSubType::SHOOTING_MODE) };
+    ret = RefreshAnalysisPhotoAlbums(rdbStore, refreshProcessHandler, subtype);
+    if (ret == E_EMPTY_ALBUM_ID) {
+        ret = E_SUCCESS;
+    }
 
     if (ret != E_SUCCESS) {
         // refresh failed and set flag, try to refresh next time
