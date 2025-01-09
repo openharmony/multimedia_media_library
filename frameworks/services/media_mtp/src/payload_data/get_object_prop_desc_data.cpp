@@ -53,7 +53,6 @@ int GetObjectPropDescData::Parser(const std::vector<uint8_t> &buffer, int32_t re
     }
 
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    MtpPacketTool::Dump(buffer, offset);
 
     context_->property = MtpPacketTool::GetUInt32(buffer, offset);
     context_->format = MtpPacketTool::GetUInt32(buffer, offset);
@@ -73,7 +72,6 @@ int GetObjectPropDescData::Maker(std::vector<uint8_t> &outBuffer)
         return MTP_INVALID_OBJECTHANDLE_CODE;
     }
     prop->Write(outBuffer);
-    MtpPacketTool::Dump(outBuffer);
     return MTP_SUCCESS;
 }
 
