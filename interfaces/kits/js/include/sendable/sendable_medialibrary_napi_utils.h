@@ -227,11 +227,11 @@ public:
     static napi_value GetNapiValueArray(napi_env env, napi_value arg, std::vector<napi_value> &values);
     static napi_value GetStringArray(
         napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
-    static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     static napi_value CreateValueByIndex(napi_env env, int32_t index, std::string name,
-        std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
+        std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
     static void handleTimeInfo(napi_env env, const std::string& name, napi_value result,
-        int32_t index, const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet);
+        int32_t index, const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
 
     template <class AsyncContext>
     static napi_status ParsePredicates(napi_env env,
