@@ -1046,6 +1046,8 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         predicates.IndexedBy(PhotoColumn::PHOTO_FAVORITE_INDEX);
     } else if (subtype == PhotoAlbumSubType::CLOUD_ENHANCEMENT) {
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX);
+    } else if (subtype == PhotoAlbumSubType::USER_GENERIC || subtype == PhotoAlbumSubType::SOURCE_GENERIC) {
+        predicates.IndexedBy(PhotoColumn::INDEX_SCHPT_ALBUM_GENERAL);
     } else {
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
     }
