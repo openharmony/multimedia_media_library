@@ -32,6 +32,7 @@
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
 #include "location_column.h"
+#include "locale_config.h"
 #include "media_device_column.h"
 #include "media_directory_type_column.h"
 #include "media_file_asset_columns.h"
@@ -355,6 +356,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", PhotoAccessGetSharedPhotoAssets),
             DECLARE_NAPI_FUNCTION("getSupportedPhotoFormats", PhotoAccessGetSupportedPhotoFormats),
             DECLARE_NAPI_FUNCTION("setForceHideSensitiveType", PhotoAccessHelperSetForceHideSensitiveType),
+            DECLARE_NAPI_FUNCTION("getAnslysisData", PhotoAccessHelperGetAnalysisData),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -6362,6 +6364,185 @@ napi_value MediaLibraryNapi::PhotoAccessHelperGetDataAnalysisProgress(napi_env e
             auto context = static_cast<MediaLibraryAsyncContext*>(data);
             JSGetAnalysisProgressExecute(context);
         }, reinterpret_cast<CompleteCallback>(JSGetDataAnalysisProgressCompleteCallback));
+}
+
+static void JSGetAnalysisDataCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAnalysisDataCompleteCallback");
+
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        napi_value returnArray;
+        napi_create_array(env, &returnArray);
+        for (size_t i = 0; i < context->analysisDatas.size(); ++i) {
+            napi_value element;
+            napi_create_string_utf8(env, context->analysisDatas[i].c_str(), NAPI_AUTO_LENGTH, &element);
+            napi_set_element(env, returnArray, i, element);
+        }
+        jsContext->data = returnArray;
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAnalysisDataExecute");
+    
+    std::string analysisUri;
+    if (context->isForce) {
+        analysisUri = PAH_QUERY_ANA_ADDRESS_ASSETS_ACTIVE;
+    } else {
+        analysisUri = PAH_QUERY_ANA_ADDRESS_ASSETS;
+    }
+    Uri uri(analysisUri);
+    DataSharePredicates predicates;
+    vector<string> columns;
+    
+    if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
+        columns = { PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, PhotoColumn::PHOTOS_TABLE + "." + LATITUDE,
+            PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, LANGUAGE, COUNTRY, ADMIN_AREA, SUB_ADMIN_AREA, LOCALITY,
+            SUB_LOCALITY, THOROUGHFARE, SUB_THOROUGHFARE, FEATURE_NAME, CITY_NAME, ADDRESS_DESCRIPTION, LOCATION_TYPE,
+            AOI, POI, FIRST_AOI, FIRST_POI, LOCATION_VERSION, FIRST_AOI_CATEGORY, FIRST_POI_CATEGORY}
+        string language = Global::I18n::LocaleConfig::GetSystemLanguage();
+        vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
+            GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
+            GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \'" + language + "\'" };
+        predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(onClause);
+        predicates.In(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, context->uris);
+    } else {
+        predicates.In(MediaColumn::MEDIA_ID, context->uris);
+    }
+
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("Query geo assets list failed");
+        return;
+    }
+    while(resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        nlohmann::json jsonObject;
+        for (uint32_t i = 0; i < columns.size(); i++) {
+            string columnName = columns[i];
+            jsonObject[columnName] = MediaLibraryNapiUtils::GetStringValueByColumn(resultSet, columnName);
+        }
+        context->analysisDatas.push_back(jsonObject.dump());
+    }
+}
+
+static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> &assetsArray)
+{
+    bool isArray = false;
+    CHECK_ARGS(env, napi_is_array(env, arg, &isArray), JS_INNER_FAIL);
+    if (!isArray) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check array type");
+        return nullptr;
+    }
+
+    uint32_t len = 0;
+    CHECK_ARGS(env, napi_get_array_length(env, arg, &len), JS_INNER_FAIL);
+    if (len <= 0) {
+        NAPI_ERR_LOG("Failed to check array length: %{public}u", len);
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check array length");
+        return nullptr;
+    }
+
+    for (uint32_t i = 0; i < len; i++) {
+        napi_value asset = nullptr;
+        CHECK_ARGS(env, napi_get_element(env, arg, i, &asset), JS_INNER_FAIL);
+        if (asset == nullptr) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to get asset element");
+            return nullptr;
+        }
+
+        FileAssetNapi *obj = nullptr;
+        CHECK_ARGS(env, napi_unwrap(env, asset, reinterpret_cast<void **>(&obj)), JS_INNER_FAIL);
+        if (obj == nullptr) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to get asset napi object");
+            return nullptr;
+        }
+        if ((obj->GetMediaType() != MEDIA_TYPE_IMAGE && obj->GetMediaType() != MEDIA_TYPE_VIDEO)) {
+            NAPI_INFO_LOG("Skip invalid asset, mediaType: %{public}d", obj->GetMediaType());
+            continue;
+        }
+        assetsArray.push_back(to_string(obj->GetFileId());
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static napi_value ParseArgsAnalysisData(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    size_t minArgs = ARGS_ONE;
+    size_t maxArgs = ARGS_THREE;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, "Failed to get object info");
+    
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    // Parse analysis type
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_ZERO], context->analysisType),
+        JS_ERR_PARAMETER_INVALID);
+
+    // Parse asset uris
+    vector<string> uris;
+    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[ARGS_ONE], uris));
+    if (uris.empty()) {
+        NAPI_ERR_LOG("Geo assets list empty");
+        return nullptr;
+    }
+    context->uris = uris;
+
+    //Parse isForce
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamBool(env, context->argv[ARGS_TWO], context->isForce),
+        JS_ERR_PARAMETER_INVALID);
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperGetAnalysisData");
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &result));
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
+
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_NULLPTR_RET(ParseArgsAnalysisData(env, info, asyncContext));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperGetAnalysisData",
+        [](napi_env env, void *data) {
+            auto context = static_cast<MediaLibraryAsyncContext*>(data);
+            JSGetAnalysisDataExecute(context);
+        }, reinterpret_cast<CompleteCallback>(JSGetAnalysisDataCompleteCallback));
 }
 
 napi_value MediaLibraryNapi::JSGetPhotoAssets(napi_env env, napi_callback_info info)

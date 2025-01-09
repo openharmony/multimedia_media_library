@@ -1780,8 +1780,9 @@ shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, co
 
     if (!(latitude == "0" && longitude == "0") && addressDescription.empty()) {
         const std::vector<std::string> geoInfo{ fileId, latitude, longitude };
+        bool isForceQuery = false;
         std::future<bool> futureResult =
-            std::async(std::launch::async, MediaAnalysisHelper::ParseGeoInfo, std::move(geoInfo));
+            std::async(std::launch::async, MediaAnalysisHelper::ParseGeoInfo, std::move(geoInfo), isForceQuery);
 
         bool parseResult = false;
         const int timeout = 5;
@@ -1798,6 +1799,57 @@ shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, co
         }
         MEDIA_INFO_LOG("ParseGeoInfo completed, fileId: %{public}s, parseResult: %{public}d", fileId.c_str(),
             parseResult);
+    }
+    return queryResult;
+}
+
+shared_ptr<NativeRdb::ResultSet> QueryGeoAssets(const RdbPredicates &rdbPredicates, const vector<string> &columns,
+    bool isforce)
+{
+    MEDIA_INFO_LOG("Query Geo Assets");
+    auto queryResult = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
+    if (queryResult == nullptr) {
+        MEDIA_ERR_LOG("Query Geographic Information Failed, queryResult is nullptr");
+        return queryResult;
+    }
+    const vector<string> &whereArgs = rdbPredicates.GetWhereArgs();
+    if (whereArgs.empty() || whereArgs.front().empty()) {
+        MEDIA_ERR_LOG("Query Geographic Information can not get info");
+        return queryResult;
+    }
+    if (isForce) {
+        std::vector<std::string> geoInfo;
+        while (queryResult->GoToNextRow() == NativeRdb::E_OK) {
+            string fileId = to_string(GetInt32Val(MediaColumn::MEDIA_ID, queryResult));
+            string latitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, queryResult);
+            string longitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult);
+            string addressDescription = GetStringVal(ADDRESS_DESCRIPTION, queryResult);
+            MEDIA_INFO_LOG(
+                "QueryGeoAssets, fileId: %{public}s, latitude: %{public}s,
+                longitude: %{public}s, addressDescription: %{private}s",
+                fileId.c_str(), latitude.c_str(), longitude.c_str(), addressDescription.c_str());
+            if (!(latitude == "0" && longitude == "0") && addressDescription.empty()) {
+                geoInfo.push_back(fileId + "," + latitude + "," + longitude);
+            }
+        }
+    
+        bool isForceQuery = true;
+        std::future<bool> futureResult =
+            std::async(std::launch::async, MediaAnalysisHelper::ParseGeoInfo, std::move(geoInfo), isForceQuery);
+
+        bool parseResult = false;
+        const int timeout = 5;
+        std::future_status futureStatus = futureResult.wait_for(std::chrono::seconds(timeout));
+        if (futureStatus == std::future_status::ready) {
+            parseResult = futureResult.get();
+        } else {
+            MEDIA_ERR_LOG("ParseGeoInfoAssets Failed, futureStatus: %{public}d", static_cast<int>(futureStatus));
+        }
+
+        if (parseResult) {
+            queryResult = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
+        }
+        MEDIA_INFO_LOG("ParseGeoInfoAssets completed, parseResult: %{public}d", parseResult);
     }
     return queryResult;
 }
@@ -1860,6 +1912,10 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
         case OperationObject::ANALYSIS_ADDRESS:
             return QueryGeo(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        case OperationObject::ANALYSIS_ADDRESS_ASSETS:
+            return QueryGeoAssets(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns, false);
+        case OperationObject::ANALYSIS_ADDRESS_ASSETS_ACTIVE:
+            return QueryGeoAssets(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns, true);
         case OperationObject::TAB_OLD_PHOTO:
             return MediaLibraryTabOldPhotosOperations().Query(
                 RdbUtils::ToPredicates(predicates, TabOldPhotosColumn::OLD_PHOTOS_TABLE), columns);

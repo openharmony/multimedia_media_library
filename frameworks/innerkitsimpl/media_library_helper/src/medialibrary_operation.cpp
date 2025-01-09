@@ -115,6 +115,8 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
         { GEO_KNOWLEDGE_TABLE, OperationObject::GEO_KNOWLEDGE },
         { PAH_ANA_ADDRESS, OperationObject::ANALYSIS_ADDRESS },
+        { PAH_ANA_ADDRESS_ASSETS, OperationObject::ANALYSIS_ADDRESS_ASSETS },
+        { PAH_ANA_ADDRESS_ASSETS_ACTIVE, OperationObject::ANALYSIS_ADDRESS_ASSETS_ACTIVE },
         { PAH_GEO_PHOTOS, OperationObject::GEO_PHOTO },
 
         // use in convert
