@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "MtpPacketTool"
 #include "mtp_packet_tools.h"
 #include <codecvt>
 #include <cctype>
@@ -21,6 +22,8 @@
 #include "media_log.h"
 #include "mtp_packet.h"
 #include "securec.h"
+#include "parameters.h"
+#include "media_mtp_utils.h"
 namespace OHOS {
 namespace Media {
 namespace {
@@ -40,6 +43,10 @@ namespace {
     static const std::string UNKNOWN_STR = "Unknown";
     static const char *UTF16_CERROR = "__CONVERSION_ERROR__";
     static const char16_t *UTF8_CERROR = u"__CONVERSION_ERROR__";
+    static const std::string KEY_MTP_SHOW_DUMP = "multimedia.medialibrary.mtp_show_dump";
+    static const std::string MTP_SHOW_DUMP_DEFAULT = "0";
+    static const std::string ALLOW_SHOW_DUMP = "1";
+
     static const std::map<uint32_t, std::string> AssociationMap = {
         { MTP_ASSOCIATION_TYPE_UNDEFINED_CODE, "MTP_ASSOCIATION_TYPE_UNDEFINED" },
         { MTP_ASSOCIATION_TYPE_GENERIC_FOLDER_CODE, "MTP_ASSOCIATION_TYPE_GENERIC_FOLDER" },
@@ -644,10 +651,9 @@ bool MtpPacketTool::GetUInt64(const std::vector<uint8_t> &buffer, size_t &offset
 
 bool MtpPacketTool::GetUInt128(const std::vector<uint8_t> &buffer, size_t &offset, uint128_t &value)
 {
-    if (!GetUInt32(buffer, offset, value[OFFSET_0]) || !GetUInt32(buffer, offset, value[OFFSET_1]) ||
-        !GetUInt32(buffer, offset, value[OFFSET_2]) || !GetUInt32(buffer, offset, value[OFFSET_3])) {
-        return false;
-    }
+    bool cond = (!GetUInt32(buffer, offset, value[OFFSET_0]) || !GetUInt32(buffer, offset, value[OFFSET_1]) ||
+        !GetUInt32(buffer, offset, value[OFFSET_2]) || !GetUInt32(buffer, offset, value[OFFSET_3]));
+    CHECK_AND_RETURN_RET(!cond, false);
     return true;
 }
 
@@ -693,10 +699,10 @@ bool MtpPacketTool::GetInt64(const std::vector<uint8_t> &buffer, size_t &offset,
 bool MtpPacketTool::GetInt128(const std::vector<uint8_t> &buffer, size_t &offset, int128_t &value)
 {
     uint128_t uValue = {0};
-    if (!GetUInt32(buffer, offset, uValue[OFFSET_0]) || !GetUInt32(buffer, offset, uValue[OFFSET_1]) ||
-        !GetUInt32(buffer, offset, uValue[OFFSET_2]) || !GetUInt32(buffer, offset, uValue[OFFSET_3])) {
-        return false;
-    }
+    bool cond = (!GetUInt32(buffer, offset, uValue[OFFSET_0]) || !GetUInt32(buffer, offset, uValue[OFFSET_1]) ||
+        !GetUInt32(buffer, offset, uValue[OFFSET_2]) || !GetUInt32(buffer, offset, uValue[OFFSET_3]));
+    CHECK_AND_RETURN_RET(!cond, false);
+
     value[OFFSET_0] = static_cast<int32_t>(uValue[OFFSET_0]);
     value[OFFSET_1] = static_cast<int32_t>(uValue[OFFSET_1]);
     value[OFFSET_2] = static_cast<int32_t>(uValue[OFFSET_2]);
@@ -842,9 +848,7 @@ int MtpPacketTool::GetObjectPropTypeByPropCode(uint16_t propCode)
 bool MtpPacketTool::Int8ToString(const int8_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_32] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%02x, dec=%d", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%02x, dec=%d", value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -852,9 +856,7 @@ bool MtpPacketTool::Int8ToString(const int8_t &value, std::string &outStr)
 bool MtpPacketTool::UInt8ToString(const uint8_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_32] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%02x, dec=%u", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%02x, dec=%u", value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -862,9 +864,7 @@ bool MtpPacketTool::UInt8ToString(const uint8_t &value, std::string &outStr)
 bool MtpPacketTool::Int16ToString(const int16_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_32] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%04x, dec=%d", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%04x, dec=%d", value, value) != -1,  false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -872,9 +872,7 @@ bool MtpPacketTool::Int16ToString(const int16_t &value, std::string &outStr)
 bool MtpPacketTool::UInt16ToString(const uint16_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_32] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%04x, dec=%u", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%04x, dec=%u", value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -882,9 +880,7 @@ bool MtpPacketTool::UInt16ToString(const uint16_t &value, std::string &outStr)
 bool MtpPacketTool::Int32ToString(const int32_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_64] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%08x, dec=%d", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%08x, dec=%d", value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -892,9 +888,7 @@ bool MtpPacketTool::Int32ToString(const int32_t &value, std::string &outStr)
 bool MtpPacketTool::UInt32ToString(const uint32_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_64] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%08x, dec=%u", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%08x, dec=%u", value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -902,9 +896,8 @@ bool MtpPacketTool::UInt32ToString(const uint32_t &value, std::string &outStr)
 bool MtpPacketTool::Int64ToString(const int64_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_64] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%016" PRIx64 ", dec=%" PRIi64 "", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%016" PRIx64 ", dec=%" PRIi64 "",
+        value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -912,9 +905,8 @@ bool MtpPacketTool::Int64ToString(const int64_t &value, std::string &outStr)
 bool MtpPacketTool::UInt64ToString(const uint64_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_64] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%016" PRIx64 ", dec=%" PRIu64 "", value, value) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%016" PRIx64 ", dec=%" PRIu64 "",
+        value, value) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -922,11 +914,9 @@ bool MtpPacketTool::UInt64ToString(const uint64_t &value, std::string &outStr)
 bool MtpPacketTool::Int128ToString(const int128_t &value, std::string &outStr)
 {
     char tmpbuf[BIT_128] = {0};
-    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=(%08x,%08x,%08x,%08x), dec=(%d,%d,%d,%d)", value[OFFSET_0],
-        value[OFFSET_1], value[OFFSET_2], value[OFFSET_3], value[OFFSET_0], value[OFFSET_1], value[OFFSET_2],
-        value[OFFSET_3]) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=(%08x,%08x,%08x,%08x), dec=(%d,%d,%d,%d)",
+        value[OFFSET_0], value[OFFSET_1], value[OFFSET_2], value[OFFSET_3], value[OFFSET_0], value[OFFSET_1],
+        value[OFFSET_2], value[OFFSET_3]) != -1, false);
     outStr.assign(tmpbuf);
     return true;
 }
@@ -968,8 +958,38 @@ std::string MtpPacketTool::GetIndentBlank(size_t indent)
     return indentStr;
 }
 
+bool MtpPacketTool::CanDump()
+{
+    std::string mtpShowDump = OHOS::system::GetParameter(KEY_MTP_SHOW_DUMP, MTP_SHOW_DUMP_DEFAULT);
+    return mtpShowDump.compare(ALLOW_SHOW_DUMP) == 0;
+}
+
+void MtpPacketTool::DumpPacket(const std::vector<uint8_t> &outBuffer)
+{
+    if (!MtpPacketTool::CanDump()) {
+        MEDIA_DEBUG_LOG("MtpPacketTool::CanDump return false");
+        return;
+    }
+    int offset = 0;
+    uint32_t containerLength = MtpPacketTool::GetUInt32(outBuffer[offset], outBuffer[offset + OFFSET_1],
+        outBuffer[offset + OFFSET_2], outBuffer[offset + OFFSET_3]);
+    uint16_t containerType = MtpPacketTool::GetUInt16(outBuffer[offset + OFFSET_4],
+        outBuffer[offset + OFFSET_5]);
+    if (containerType == DATA_CONTAINER_TYPE) {
+        MEDIA_DEBUG_LOG("Packet type: %{public}d, Payload Size: %{public}d",
+            DATA_CONTAINER_TYPE, containerLength - PACKET_HEADER_LENGETH);
+        MtpPacketTool::Dump(outBuffer, 0, PACKET_HEADER_LENGETH);
+    } else {
+        MEDIA_DEBUG_LOG("Packet type: %{public}d, Packet size: %{public}d",
+            containerType, containerLength);
+        MtpPacketTool::Dump(outBuffer);
+    }
+}
+
 void MtpPacketTool::Dump(const std::vector<uint8_t> &data, uint32_t offset, uint32_t sum)
 {
+    CHECK_AND_RETURN_LOG(data.size() > 0, "Dump data is empty");
+
     std::unique_ptr<char[]> hexBuf = std::make_unique<char[]>(DUMP_HEXBUF_MAX);
     std::unique_ptr<char[]> txtBuf = std::make_unique<char[]>(DUMP_TXTBUF_MAX);
     if (!DumpClear(offset, hexBuf, DUMP_HEXBUF_MAX, txtBuf, DUMP_TXTBUF_MAX)) {
