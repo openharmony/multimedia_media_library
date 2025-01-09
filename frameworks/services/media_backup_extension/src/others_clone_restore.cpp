@@ -420,12 +420,14 @@ void OthersCloneRestore::InsertPhoto(std::vector<FileInfo> &fileInfos)
     int32_t fileMoveCount = 0;
     int32_t videoFileMoveCount = 0;
     MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode_);
+    int64_t startUpdate = MediaFileUtils::UTCTimeMilliSeconds();
+    UpdatePhotosByFileInfoMap(mediaLibraryRdb_, fileInfos);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld"
-        ", and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld.",
+        ", and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld. update cost %{public}ld",
         (long)(startInsert - start), (long)rowNum, (long)(startMove - startInsert),
         (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
-        (long)videoFileMoveCount, (long)(end - startMove));
+        (long)videoFileMoveCount, (long)(startUpdate - startMove), (long)(end - startUpdate));
 }
 
 bool OthersCloneRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos,
@@ -562,8 +564,17 @@ bool OthersCloneRestore::HasSameFileForDualClone(FileInfo &fileInfo)
     if (fileId <= 0 || cloudPath.empty()) {
         return false;
     }
+    fileInfo.isNew = false;
     fileInfo.fileIdNew = fileId;
     fileInfo.cloudPath = cloudPath;
+    bool isInCloud = rowData.cleanFlag == 1 && rowData.position == static_cast<int32_t>(PhotoPositionType::CLOUD);
+    // If the file was in cloud previously, only require update flags.
+    if (fileId > 0 && isInCloud) {
+        fileInfo.updateMap["clean_flag"] = "0";
+        fileInfo.updateMap["position"] = to_string(static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+        return false;
+    }
+    fileInfo.needMove = false;
     return true;
 }
 
