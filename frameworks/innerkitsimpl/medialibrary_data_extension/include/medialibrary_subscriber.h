@@ -45,6 +45,7 @@ public:
     EXPORT virtual void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
     EXPORT static bool IsCellularNetConnected();
     EXPORT static bool IsWifiConnected();
+    EXPORT static bool IsCurrentStatusOn();
 
 private:
     static const std::vector<std::string> events_;
@@ -53,7 +54,7 @@ private:
     bool isPowerSufficient_{false};
     bool isDeviceTemperatureProper_{false};
     static bool isWifiConnected_;
-    bool currentStatus_{false};
+    static bool currentStatus_;
     bool timerStatus_{false};
     static bool isCellularNetConnected_;
     std::mutex mutex_;

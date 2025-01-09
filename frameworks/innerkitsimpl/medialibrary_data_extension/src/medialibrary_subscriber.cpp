@@ -96,6 +96,7 @@ const int32_t NET_CONN_STATE_CONNECTED = 3;
 const int32_t BEARER_CELLULAR = 0;
 bool MedialibrarySubscriber::isCellularNetConnected_ = false;
 bool MedialibrarySubscriber::isWifiConnected_ = false;
+bool MedialibrarySubscriber::currentStatus_ = false;
 
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
@@ -336,6 +337,11 @@ bool MedialibrarySubscriber::IsWifiConnected()
     return isWifiConnected_;
 }
 
+bool MedialibrarySubscriber::IsCurrentStatusOn()
+{
+    return currentStatus_;
+}
+
 void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadTaskStatus()
 {
     if (!isCellularNetConnected_) {
@@ -544,6 +550,38 @@ static void RecoverBackgroundDownloadCloudMediaAsset()
     }
 }
 
+static void UpdateBurstCoverLevelFromGallery(AsyncTaskData *data)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    if (dataManager == nullptr) {
+        return;
+    }
+
+    int32_t result = dataManager->UpdateBurstCoverLevelFromGallery();
+    if (result != E_OK) {
+        MEDIA_ERR_LOG("UpdateBurstCoverLevelFromGallery faild");
+    }
+}
+
+static int32_t DoUpdateBurstCoverLevelFromGallery()
+{
+    MEDIA_INFO_LOG("Begin DoUpdateBurstCoverLevelFromGallery");
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Failed to get async worker instance!");
+        return E_FAIL;
+    }
+    shared_ptr<MediaLibraryAsyncTask> updateBurstCoverLevelTask =
+        make_shared<MediaLibraryAsyncTask>(UpdateBurstCoverLevelFromGallery, nullptr);
+    if (updateBurstCoverLevelTask != nullptr) {
+        asyncWorker->AddTask(updateBurstCoverLevelTask, false);
+    } else {
+        MEDIA_ERR_LOG("Failed to create async task for updateBurstCoverLevelTask!");
+        return E_FAIL;
+    }
+    return E_SUCCESS;
+}
+
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     if (!IsDelayTaskTimeOut() || !currentStatus_) {
@@ -569,11 +607,12 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DoUpdateDateTakenWhenZero faild");
     }
+    ret = DoUpdateBurstCoverLevelFromGallery();
+    CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstCoverLevelFromGallery faild");
     RecoverBackgroundDownloadCloudMediaAsset();
     CloudMediaAssetManager::GetInstance().StartDeleteCloudMediaAssets();
     // compat old-version moving photo
     MovingPhotoProcessor::StartProcess();
-
     MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
     auto watch = MediaLibraryInotify::GetInstance();
     if (watch != nullptr) {
