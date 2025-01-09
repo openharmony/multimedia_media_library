@@ -631,6 +631,35 @@ napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack(napi_env env, napi_call
     return napi_ok;
 }
 
+napi_value MediaLibraryNapiUtils::ParseAssetIdArray(napi_env env, napi_value arg, vector<string> &idArray)
+{
+    vector<napi_value> napiValues;
+    napi_valuetype valueType = napi_undefined;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, arg, napiValues));
+    CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetIdArrayFromAssets(env, napiValues, idArray));
+    RETURN_NAPI_TRUE(env);
+}
+
+napi_value MediaLibraryNapiUtils::ParseIntegerArray(napi_env env, napi_value arg, std::vector<int32_t> &intArray)
+{
+    vector<napi_value> napiValues;
+    napi_valuetype valueType = napi_undefined;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, arg, napiValues));
+    CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    intArray.clear();
+    for (const auto &napiValue: napiValues) {
+        CHECK_ARGS(env, napi_typeof(env, napiValue, &valueType), JS_ERR_PARAMETER_INVALID);
+        CHECK_COND(env, valueType == napi_number, JS_ERR_PARAMETER_INVALID);
+        int32_t intVal;
+        CHECK_ARGS(env, napi_get_value_int32(env, napiValue, &intVal), JS_ERR_PARAMETER_INVALID);
+        intArray.push_back(intVal);
+    }
+    RETURN_NAPI_TRUE(env);
+}
+
 AssetType MediaLibraryNapiUtils::GetAssetType(MediaType type)
 {
     AssetType result;
@@ -1702,6 +1731,27 @@ napi_value MediaLibraryNapiUtils::GetUriArrayFromAssets(
             continue;
         }
         values.push_back(GetUriFromAsset(obj));
+    }
+    napi_value ret = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &ret), JS_INNER_FAIL);
+    return ret;
+}
+
+napi_value MediaLibraryNapiUtils::GetIdArrayFromAssets(napi_env env, vector<napi_value> &napiValues,
+    vector<string> &values)
+{
+    FileAssetNapi *fileAsset = nullptr;
+    for (const auto &napiValue: napiValues) {
+        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void **>(&fileAsset)), JS_INNER_FAIL);
+        if (fileAsset == nullptr) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset napi object");
+            return nullptr;
+        }
+        if (fileAsset->GetMediaType() != MEDIA_TYPE_IMAGE && fileAsset->GetMediaType() != MEDIA_TYPE_VIDEO) {
+            NAPI_INFO_LOG("Skip invalid asset, mediaType: %{public}d", fileAsset->GetMediaType());
+            continue;
+        }
+        values.push_back(std::to_string(fileAsset->GetFileId()));
     }
     napi_value ret = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &ret), JS_INNER_FAIL);
