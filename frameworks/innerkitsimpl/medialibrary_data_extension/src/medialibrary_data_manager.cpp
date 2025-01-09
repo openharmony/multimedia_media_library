@@ -1184,6 +1184,10 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             return EnhancementManager::GetInstance().HandleEnhancementUpdateOperation(cmd);
         case OperationObject::VISION_IMAGE_FACE:
             return HandleAnalysisFaceUpdate(cmd, value, predicates);
+        case OperationObject::ANALYSIS_PHOTO_MAP:
+            if (cmd.GetOprnType() == OperationType::UPDATE_ORDER) {
+                return MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
+            }
         default:
             break;
     }
@@ -1600,6 +1604,15 @@ void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri, const stri
     }
 }
 
+static shared_ptr<NativeRdb::ResultSet> HandleAnalysisAlbumQuery(MediaLibraryCommand &cmd,
+    const vector<string> &columns, const DataSharePredicates &predicates)
+{
+    if (cmd.GetOprnType() == OperationType::QUERY_ORDER) {
+        return MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+    }
+    return PhotoMapOperations::QueryPhotoAssets(RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);
+}
+
 shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
 {
@@ -1831,8 +1844,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return QueryAnalysisAlbum(cmd, columns, predicates);
         case OperationObject::PHOTO_MAP:
         case OperationObject::ANALYSIS_PHOTO_MAP:
-            return PhotoMapOperations::QueryPhotoAssets(
-                RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);
+            return HandleAnalysisAlbumQuery(cmd, columns, predicates);
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO:
         case OperationObject::PAH_MOVING_PHOTO:

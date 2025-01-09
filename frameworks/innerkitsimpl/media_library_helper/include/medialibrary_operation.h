@@ -194,6 +194,8 @@ enum class EXPORT OperationType : uint32_t {
     SET_OWNER_ALBUM_ID,
     UPDATE_SEARCH_INDEX,
     EDIT_DATA_EXISTS,
+    QUERY_ORDER,
+    UPDATE_ORDER,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()
