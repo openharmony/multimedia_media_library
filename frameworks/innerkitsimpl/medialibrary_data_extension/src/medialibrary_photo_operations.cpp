@@ -58,6 +58,7 @@
 #include "parameters.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
+#include "photo_custom_restore_operation.h"
 #include "photo_map_column.h"
 #include "photo_map_operations.h"
 #include "picture.h"
@@ -3486,6 +3487,53 @@ int32_t MediaLibraryPhotoOperations::UpdateOwnerAlbumId(MediaLibraryCommand &cmd
             NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
     }
     return rowId;
+}
+
+int32_t MediaLibraryPhotoOperations::ProcessCustomRestore(MediaLibraryCommand& cmd)
+{
+    const ValuesBucket& values = cmd.GetValueBucket();
+    string albumLpath;
+    string keyPath;
+    string isDeduplication;
+    string bundleName;
+    string appName;
+    string appId;
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "albumLpath", albumLpath),
+        E_INVALID_VALUES, "Failed to get albumLpath: %{public}s", albumLpath.c_str());
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "keyPath", keyPath),
+        E_INVALID_VALUES, "Failed to get keyPath: %{public}s", keyPath.c_str());
+    string dir = CUSTOM_RESTORE_DIR + "/" + keyPath;
+    CHECK_AND_RETURN_RET_LOG(
+        MediaFileUtils::IsFileExists(dir), E_NO_SUCH_FILE, "sourceDir: %{public}s does not exist!", dir.c_str());
+    GetStringFromValuesBucket(values, "isDeduplication", isDeduplication);
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "isDeduplication", isDeduplication),
+        E_INVALID_VALUES, "Failed to get isDeduplication: %{public}s", isDeduplication.c_str());
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "bundleName", bundleName),
+        E_INVALID_VALUES, "Failed to get bundleName: %{public}s", bundleName.c_str());
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "appName", appName),
+        E_INVALID_VALUES, "Failed to get appName: %{public}s", appName.c_str());
+    GetStringFromValuesBucket(values, "appId", appId);
+
+    RestoreTaskInfo restoreTaskInfo = {.albumLpath = albumLpath,
+        .keyPath = keyPath,
+        .isDeduplication = isDeduplication == "true",
+        .bundleName = bundleName,
+        .packageName = appName,
+        .appId = appId,
+        .sourceDir = dir};
+    PhotoCustomRestoreOperation::GetInstance().AddTask(restoreTaskInfo).Start();
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::CancelCustomRestore(MediaLibraryCommand& cmd)
+{
+    const ValuesBucket& values = cmd.GetValueBucket();
+    string keyPath;
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "keyPath", keyPath),
+        E_INVALID_VALUES, "Failed to get keyPath: %{public}s", keyPath.c_str());
+    RestoreTaskInfo restoreTaskInfo = {.keyPath = keyPath};
+    PhotoCustomRestoreOperation::GetInstance().CancelTask(restoreTaskInfo);
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

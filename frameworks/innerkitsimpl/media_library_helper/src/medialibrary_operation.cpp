@@ -283,6 +283,8 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_DISMISS_ASSET, OperationType::DISMISS_ASSET },
         { OPRN_PORTRAIT_COVER_URI, OperationType::PORTRAIT_COVER_URI },
         { OPRN_SUBMIT_CACHE, OperationType::SUBMIT_CACHE },
+        { OPRN_CUSTOM_RESTORE, OperationType::CUSTOM_RESTORE },
+        { OPRN_CUSTOM_RESTORE_CANCEL, OperationType::CUSTOM_RESTORE_CANCEL },
         { OPRN_BATCH_UPDATE_FAV, OperationType::BATCH_UPDATE_FAV },
         { OPRN_BATCH_UPDATE_USER_COMMENT, OperationType::BATCH_UPDATE_USER_COMMENT },
         { OPRN_BATCH_UPDATE_OWNER_ALBUM_ID, OperationType::BATCH_UPDATE_OWNER_ALBUM_ID },
