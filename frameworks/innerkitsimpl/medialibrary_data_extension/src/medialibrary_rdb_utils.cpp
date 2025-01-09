@@ -2536,18 +2536,18 @@ static std::map<std::string, int64_t> QueryTokenIdMap(const shared_ptr<NativeRdb
     return appIdTokenIdMap;
 }
 
-void MediaLibraryRdbUtils::TrasformAppId2TokenId(const shared_ptr<MediaLibraryRdbStore> &store)
+void MediaLibraryRdbUtils::TransformAppId2TokenId(const shared_ptr<MediaLibraryRdbStore> &store)
 {
-    MEDIA_INFO_LOG("TrasformAppId2TokenId start!");
+    MEDIA_INFO_LOG("TransformAppId2TokenId start!");
     auto resultSet = QueryNeedTransformPermission(store);
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("TrasformAppId2TokenId failed");
+        MEDIA_ERR_LOG("TransformAppId2TokenId failed");
         return;
     }
     std::map<std::string, int64_t> tokenIdMap = QueryTokenIdMap(resultSet);
     resultSet->Close();
     if (tokenIdMap.size() == 0) {
-        MEDIA_WARN_LOG("TrasformAppId2TokenId tokenIdMap empty");
+        MEDIA_WARN_LOG("TransformAppId2TokenId tokenIdMap empty");
         return;
     }
     int32_t successCount = 0;
@@ -2571,7 +2571,7 @@ void MediaLibraryRdbUtils::TrasformAppId2TokenId(const shared_ptr<MediaLibraryRd
             successCount++;
         }
     }
-    MEDIA_INFO_LOG("TrasformAppId2TokenId updatecount:%{public}u, successcount:%{public}d",
+    MEDIA_INFO_LOG("TransformAppId2TokenId updatecount:%{public}u, successcount:%{public}d",
         tokenIdMap.size(), successCount);
 }
 } // namespace OHOS::Media
