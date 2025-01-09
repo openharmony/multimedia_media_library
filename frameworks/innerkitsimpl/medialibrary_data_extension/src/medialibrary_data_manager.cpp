@@ -381,7 +381,7 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
     }
 
     if (oldVersion < VERSION_REFRESH_PERMISSION_APPID) {
-        MediaLibraryRdbUtils::TrasformAppId2TokenId(rdbStore);
+        MediaLibraryRdbUtils::TransformAppId2TokenId(rdbStore);
         rdbStore->SetOldVersion(VERSION_REFRESH_PERMISSION_APPID);
     }
 
@@ -2223,6 +2223,9 @@ void MediaLibraryDataManager::SubscriberPowerConsumptionDetection()
 {
 #ifdef DEVICE_STANDBY_ENABLE
     auto subscriber = new (std::nothrow) MediaLibraryStandbyServiceSubscriber();
+    if (subscriber == nullptr) {
+        return;
+    }
     subscriber->SetSubscriberName(SUBSCRIBER_NAME);
     subscriber->SetModuleName(MODULE_NAME);
     DevStandbyMgr::StandbyServiceClient::GetInstance().SubscribeStandbyCallback(subscriber);
