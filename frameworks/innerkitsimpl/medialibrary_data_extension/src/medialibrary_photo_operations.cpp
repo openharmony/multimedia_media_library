@@ -682,13 +682,12 @@ static void SetAssetDisplayName(const string &displayName, FileAsset &fileAsset,
     isContains = true;
 }
 
-int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
+int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand &cmd)
 {
     FileAsset fileAsset;
     ValuesBucket &values = cmd.GetValueBucket();
     string displayName;
     string extention;
-    string title;
     bool isContains = false;
     bool isNeedGrant = false;
     if (GetStringFromValuesBucket(values, PhotoColumn::MEDIA_NAME, displayName)) {
@@ -698,6 +697,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, ASSET_EXTENTION, extention), E_HAS_DB_ERROR);
         isNeedGrant = true;
         fileAsset.SetTimePending(UNOPEN_FILE_COMPONENT_TIMEPENDING);
+        string title;
         if (GetStringFromValuesBucket(values, PhotoColumn::MEDIA_TITLE, title)) {
             displayName = title + "." + extention;
             SetAssetDisplayName(displayName, fileAsset, isContains);
@@ -715,8 +715,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t outRow = -1;
     std::function<int(void)> func = [&]()->int {
-        errCode = isContains ? SetAssetPathInCreate(fileAsset, trans) :
-            SetAssetPath(fileAsset, extention, trans);
+        errCode = isContains ? SetAssetPathInCreate(fileAsset, trans) : SetAssetPath(fileAsset, extention, trans);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Set Path, Name=%{private}s", displayName.c_str());
         outRow = InsertAssetInDb(trans, cmd, fileAsset);
         AuditLog auditLog = { true, "USER BEHAVIOR", "ADD", "io", 1, "running", "ok" };
