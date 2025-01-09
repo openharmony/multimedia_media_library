@@ -340,7 +340,7 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
     std::vector<string> audiosValues;
     std::vector<int32_t> dbOperation;
     std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet;
-    std::vector<ValuesBucket>  batchInsertBucket;
+    std::vector<ValuesBucket> batchInsertBucket;
     bool photoNeedToUpdate = false;
     bool audioNeedToUpdate = false;
     bool needToInsert = false;
@@ -382,10 +382,7 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
         return err;
     };
     err = trans->RetryTrans(func);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("GrantUriSensitive: tans finish fail!, ret:%{public}d", err);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GrantUriSensitive: tans finish fail!, ret:%{public}d", err);
     return E_OK;
 }
 
