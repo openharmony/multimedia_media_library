@@ -25,6 +25,8 @@ const std::string MEDIA_OPERN_KEYWORD = "operation";
 const std::string MEDIA_MOVING_PHOTO_OPRN_KEYWORD = "moving_photo_operation";
 const std::string MEDIA_QUERYOPRN = "query_operation";
 const std::string OPRN_CREATE = "create";
+const std::string OPRN_CUSTOM_RESTORE = "custom_restore";
+const std::string OPRN_CUSTOM_RESTORE_CANCEL = "custom_restore_cancel";
 const std::string OPRN_CREATE_COMPONENT = "create_component";
 const std::string OPRN_CLOSE = "close";
 const std::string OPRN_DELETE = "delete";
@@ -291,6 +293,9 @@ const std::string PATH_SAVE_PICTURE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + 
 const std::string PAH_ALL_DUPLICATE_ASSETS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + URI_ALL_DUPLICATE_ASSETS;
 const std::string PAH_CAN_DEL_DUPLICATE_ASSETS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + URI_CAN_DEL_DUPLICATE_ASSETS;
 const std::string PAH_CLONE_ASSET = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CLONE_ASSET;
+const std::string PAH_CUSTOM_RESTORE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CUSTOM_RESTORE;
+const std::string PAH_CUSTOM_RESTORE_CANCEL =
+    MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CUSTOM_RESTORE_CANCEL;
 
 // MultiStages capture related operation uri
 const std::string PAH_SET_PHOTO_QUALITY = MEDIALIBRARY_DATA_URI + "/ "+ PAH_PHOTO + "/" + OPRN_SET_PHOTO_QUALITY;
