@@ -329,6 +329,8 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY, OperationType::CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY },
         { OPRN_UPDATE_OWNER_ALBUM_ID, OperationType::SET_OWNER_ALBUM_ID },
         { UPDATE_INDEX, OperationType::UPDATE_SEARCH_INDEX},
+        { OPRN_QUERY_ORDER, OperationType::QUERY_ORDER },
+        { OPRN_UPDATE_ORDER, OperationType::UPDATE_ORDER },
     };
     return oprnTypeMap;
 }
