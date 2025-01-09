@@ -84,7 +84,8 @@ public:
     EXPORT static int32_t DoRevertFilters(const std::shared_ptr<FileAsset> &fileAsset,
         std::string &path, std::string &sourcePath);
     EXPORT static int32_t CopyVideoFile(const std::string& assetPath, bool toSource);
-
+    EXPORT static int32_t ProcessCustomRestore(MediaLibraryCommand &cmd);
+    EXPORT static int32_t CancelCustomRestore(MediaLibraryCommand &cmd);
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);

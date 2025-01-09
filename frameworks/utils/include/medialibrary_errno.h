@@ -201,6 +201,11 @@ constexpr int32_t E_NOTIFY_CHANGE_EXT_FAILED =         MEDIA_LIBRARY_ERR(E_MEDIA
 constexpr int32_t E_PARCEL_GET_SIZE_FAILED =           MEDIA_LIBRARY_ERR(E_MEDIA_NOTIFY_OFFSET, 4);
 constexpr int32_t E_GET_ALBUM_ID_FAILED =              MEDIA_LIBRARY_ERR(E_MEDIA_NOTIFY_OFFSET, 5);
 constexpr int32_t E_DO_NOT_NEDD_SEND_NOTIFY =          MEDIA_LIBRARY_ERR(E_MEDIA_NOTIFY_OFFSET, 6);
+
+// media on custom restore error code { 17000, 17099 }
+constexpr int32_t E_MEDIA_CUSTOM_RESTORE_OFFSET = 17000;
+constexpr int32_t E_DATASHARE_IS_NULL =                MEDIA_LIBRARY_ERR(E_MEDIA_CUSTOM_RESTORE_OFFSET, 1);
+constexpr int32_t E_CALLBACK_IS_NULL =                 MEDIA_LIBRARY_ERR(E_MEDIA_CUSTOM_RESTORE_OFFSET, 2);
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIALIBRARY_ERRNO_H
