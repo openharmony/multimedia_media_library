@@ -255,7 +255,9 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
             UpdateDuplicateNumber(fileInfos[i].fileType);
             continue;
         }
-        values.emplace_back(value);
+        if (fileInfos[i].isNew) {
+            values.emplace_back(value);
+        }
     }
     return values;
 }
@@ -508,6 +510,7 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
             continue;
         }
         if (!MoveAndModifyFile(fileInfos[i], sceneCode)) {
+            fileInfos[i].updateMap.clear();
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
             ErrorInfo errorInfo(RestoreError::MOVE_FAILED, 1, strerror(errno),
                 BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i]));
@@ -557,12 +560,15 @@ int BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos
     int32_t videoFileMoveCount = 0;
     MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
     this->tabOldPhotosRestore_.Restore(this->mediaLibraryRdb_, fileInfos);
+    int64_t startUpdate = MediaFileUtils::UTCTimeMilliSeconds();
+    UpdatePhotosByFileInfoMap(mediaLibraryRdb_, fileInfos);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related"
-        " cost %{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld.",
+        " cost %{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld. update cost"
+        " %{public}ld.",
         (long)(startInsert - startGenerate), (long)rowNum, (long)(startInsertRelated - startInsert),
         (long)(startMove - startInsertRelated), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
-        (long)videoFileMoveCount, (long)(end - startMove));
+        (long)videoFileMoveCount, (long)(startUpdate - startMove), long(end - startUpdate));
     return E_OK;
 }
 
@@ -1223,6 +1229,33 @@ std::string BaseRestore::GetRestoreTotalInfo()
 int32_t BaseRestore::GetNoNeedMigrateCount()
 {
     return 0;
+}
+
+void BaseRestore::UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    const std::vector<FileInfo>& fileInfos)
+{
+    for (const FileInfo &fileInfo : fileInfos) {
+        auto &updateMap = fileInfo.updateMap;
+        if (fileInfo.fileIdNew <= 0 || fileInfo.isNew || updateMap.empty()) {
+            continue;
+        }
+        int32_t changeRows = 0;
+        std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+            make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
+        predicates->SetWhereClause("file_id=?");
+        predicates->SetWhereArgs({ to_string(fileInfo.fileIdNew) });
+        NativeRdb::ValuesBucket updatePostBucket;
+        for (auto it = updateMap.begin(); it != updateMap.end(); it++) {
+            updatePostBucket.Put(it->first, it->second);
+        }
+        BackupDatabaseUtils::Update(mediaLibraryRdb, changeRows, updatePostBucket, predicates);
+        if (changeRows <= 0) {
+            MEDIA_ERR_LOG("update failed, fileId: %{public}d", fileInfo.fileIdNew);
+            ErrorInfo errorInfo(RestoreError::UPDATE_PHOTOS_FAILED, 1, "",
+                BackupLogUtils::FileInfoToString(this->sceneCode_, fileInfo));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        }
+    }
 }
 } // namespace Media
 } // namespace OHOS
