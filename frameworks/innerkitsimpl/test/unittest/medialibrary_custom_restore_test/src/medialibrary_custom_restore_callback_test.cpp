@@ -49,11 +49,10 @@ void MediaLibraryCustomRestoreCallbackTest::SetUp(void) {}
 
 void MediaLibraryCustomRestoreCallbackTest::TearDown(void) {}
 
-class MockCustomRestoreCallback: public CustomRestoreCallback {
-    
+class MockCustomRestoreCallback : public CustomRestoreCallback {
     int32_t OnRestoreResult(RestoreResult restoreResult) override
     {
-        MEDIA_INFO_LOG("MockCustomRestoreCallback OnRestoreResult stage: %{public}s, " 
+        MEDIA_INFO_LOG("MockCustomRestoreCallback OnRestoreResult stage: %{public}s, "
             "errCode: %{public}d, progress: %{public}d, "
             "uriType: %{public}d, uri: %{public}s, totalNum: %{public}d, "
             "successNum: %{public}d, failedNum: %{public}d, sameNum: %{public}d, "

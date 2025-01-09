@@ -139,8 +139,8 @@ void MediaLibraryCustomRestoreTest::TearDown(void) {}
 HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("custom_restore_test_001 Start");
-    CustomRestore customRestore("/Huawei Share", "test", true);
-    customRestore.Init("com.huawei.hmos.instantshare", "华为分享", "/test", 0);
+    CustomRestore customRestore("/Share", "test", true);
+    customRestore.Init("com.example.hmos.instantshare", "分享", "/test", 0);
     auto result = customRestore.Restore();
     EXPECT_EQ(result, -13);
     MEDIA_INFO_LOG("custom_restore_test_001 End");
@@ -149,7 +149,7 @@ HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_test_001, TestSize.Level0
 HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("custom_restore_test_002 Start");
-    CustomRestore customRestore("/Huawei Share", "test", true);
+    CustomRestore customRestore("/Share", "test", true);
     auto result = customRestore.Restore();
     EXPECT_NE(result, E_OK);
     MEDIA_INFO_LOG("custom_restore_test_002 End");
@@ -158,8 +158,8 @@ HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_test_002, TestSize.Level0
 HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("custom_restore_test_003 Start");
-    CustomRestore customRestore("/Huawei Share", "test", true);
-    customRestore.Init("com.huawei.hmos.instantshare", "华为分享", "/test", 0);
+    CustomRestore customRestore("/Share", "test", true);
+    customRestore.Init("com.example.hmos.instantshare", "分享", "/test", 0);
     auto result = customRestore.Restore();
     EXPECT_EQ(result, -13);
     MEDIA_INFO_LOG("custom_restore_test_003 End");
@@ -168,7 +168,7 @@ HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_test_003, TestSize.Level0
 HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_test_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("custom_restore_test_004 Start");
-    CustomRestore customRestore("/Huawei Share", "test", true);
+    CustomRestore customRestore("/Share", "test", true);
     auto result = customRestore.Restore();
     EXPECT_NE(result, E_OK);
     MEDIA_INFO_LOG("custom_restore_test_004 End");

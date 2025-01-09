@@ -192,7 +192,5 @@ HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_Operation_Test_01
     EXPECT_EQ(operatorObj.IsCancelTask(restoreTaskInfo), false);
     MEDIA_INFO_LOG("Photo_Custom_Restore_Operation_Test_012 End");
 }
-
-
 }
 }
