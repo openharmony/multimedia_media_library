@@ -29,6 +29,14 @@
 
 namespace OHOS {
 namespace Media {
+
+class AlbumData {
+public:
+    AlbumData() = default;
+    ~AlbumData() = default;
+    std::vector<bool> isHidden = {};
+};
+
 #define EXPORT __attribute__ ((visibility ("default")))
 class MediaLibraryPhotoOperations : public MediaLibraryAssetOperations {
 public:
@@ -68,7 +76,8 @@ public:
     EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, const std::string &path);
     EXPORT static int32_t RemoveTempVideo(const std::string &path);
     EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs);
-    EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris);
+    EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris,
+        std::shared_ptr<AlbumData> AlbumData = nullptr);
 
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);

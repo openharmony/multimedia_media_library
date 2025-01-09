@@ -57,6 +57,8 @@ static void NotifySystemAlbumFunc(PhotoAlbumType albumtype, PhotoAlbumSubType su
     const static set<PhotoAlbumSubType> NEED_FLUSH_PHOTO_ALBUM = {
         PhotoAlbumSubType::IMAGE,
         PhotoAlbumSubType::VIDEO,
+        PhotoAlbumSubType::USER_GENERIC,
+        PhotoAlbumSubType::SOURCE_GENERIC,
     };
     if (NEED_FLUSH_PHOTO_ALBUM.find(subtype) != NEED_FLUSH_PHOTO_ALBUM.end()) {
         auto watch = MediaLibraryNotify::GetInstance();
@@ -70,6 +72,7 @@ static void NotifySystemAlbumFunc(PhotoAlbumType albumtype, PhotoAlbumSubType su
         } else {
             watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
         }
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
     }
 }
 
