@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
+#include <sstream>
 
 #include "media_log.h"
 #include "medialibrary_db_const.h"
@@ -839,5 +840,31 @@ void MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(int3
         MEDIA_ERR_LOG("ExecuteSql error, fileId: %{public}d, ret: %{public}d.", fileId, ret);
         return;
     }
+}
+
+int32_t MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(MediaLibraryCommand &cmd)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("get rdbStore fail");
+        return E_HAS_DB_ERROR;
+    }
+    stringstream updatePositionSql;
+    auto valueBucket = cmd.GetValueBucket();
+    const string orderPositionColumn = ORDER_POSITION;
+    ValueObject orderPositionValue;
+    valueBucket.GetObject(orderPositionColumn, orderPositionValue);
+    string orderPositionStr;
+    orderPositionValue.GetString(orderPositionStr);
+
+    updatePositionSql << "UPDATE " << cmd.GetTableName() << " SET " << orderPositionColumn << " = " << orderPositionStr
+                      << " WHERE " << cmd.GetAbsRdbPredicates()->GetWhereClause();
+
+    std::string sqlStr = updatePositionSql.str();
+    auto args = cmd.GetAbsRdbPredicates()->GetBindArgs();
+
+    int ret = rdbStore->ExecuteSql(sqlStr, args);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Update orderPositions failed, error id: %{public}d", ret);
+    return ret;
 }
 } // namespace OHOS::Media
