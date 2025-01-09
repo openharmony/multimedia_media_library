@@ -248,11 +248,12 @@ const std::string HIGHLIGHT_INFO_NEW = "highlight";
 const std::string MEDIA_PHOTO_URI = "file://media/Photo/";
 const std::string HMDFS = "/mnt/hmdfs/";
 const std::string CLOUD_MERGE_VIEW = "/account/cloud_merge_view/files/";
+const std::string CUSTOM_RESTORE_VALUES = "custom_restore";
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
     PHOTO_BUCKET + "/", AUDIO_BUCKET + "/", BACKUP_DATA_DIR_VALUE, EDIT_DATA_DIR_VALUE + "/",
-    BACKUP_SINGLE_DATA_DIR_VALUE, CACHE_DIR_VALUE
+    BACKUP_SINGLE_DATA_DIR_VALUE, CACHE_DIR_VALUE, CUSTOM_RESTORE_VALUES
 };
 
 const std::vector<std::string> E_POLICY_DIRS = {

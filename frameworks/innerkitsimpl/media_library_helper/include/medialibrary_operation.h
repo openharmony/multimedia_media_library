@@ -196,6 +196,8 @@ enum class EXPORT OperationType : uint32_t {
     EDIT_DATA_EXISTS,
     QUERY_ORDER,
     UPDATE_ORDER,
+    CUSTOM_RESTORE,
+    CUSTOM_RESTORE_CANCEL,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()
