@@ -6437,7 +6437,7 @@ static void JSGetAnalysisDataExecute(MediaLibraryAsyncContext *context)
         NAPI_ERR_LOG("Query geo assets list failed");
         return;
     }
-    while(resultSet->GoToNextRow() == NativeRdb::E_OK) {
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         nlohmann::json jsonObject;
         for (uint32_t i = 0; i < columns.size(); i++) {
             string columnName = columns[i];
