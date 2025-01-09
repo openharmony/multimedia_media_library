@@ -74,6 +74,8 @@ private:
         bool isHandle);
     std::shared_ptr<DataShare::DataShareResultSet> GetPhotosInfo(const std::shared_ptr<MtpOperationContext> &context,
         bool isHandle);
+    int32_t GetAlbumCloud();
+    int32_t GetAlbumCloudDisplay(std::vector<std::string> &ownerAlbumIds);
     int32_t HaveMovingPhotesHandle(const std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         std::shared_ptr<UInt32List> &outHandles, const uint32_t parent);
     uint32_t GetSizeFromOfft(const off_t &size);

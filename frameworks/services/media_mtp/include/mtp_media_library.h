@@ -68,7 +68,7 @@ public:
     EXPORT bool TryRemoveExternalStorage(const std::string &fsUuid, uint32_t &storageId);
     EXPORT int GetStorageIds();
     EXPORT void DeleteHandlePathMap(const std::string &path, const uint32_t id);
-    EXPORT int ObserverAddPathToMap(const std::string &path);
+    EXPORT uint32_t ObserverAddPathToMap(const std::string &path);
     EXPORT void ObserverDeletePathToMap(const std::string &path);
 
 private:
@@ -103,6 +103,7 @@ private:
     int32_t GetPictureThumb(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<UInt8List> &outThumb);
     void CondCloseFd(const bool condition, const int fd);
+    void CorrectStorageId(const std::shared_ptr<MtpOperationContext> &context);
 
     static std::shared_ptr<MtpMediaLibrary> instance_;
     static std::atomic<uint32_t> id_;
