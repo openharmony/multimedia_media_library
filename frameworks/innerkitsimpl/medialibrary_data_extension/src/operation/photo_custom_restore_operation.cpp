@@ -105,7 +105,7 @@ void PhotoCustomRestoreOperation::ApplyEfficiencyQuota(int32_t fileNum)
     }
     string module = BUNDLE_NAME;
     string reason = "Custom Restore";
-    MEDIA_INFO_LOG("ApplyEfficiencyQuota. quota: %{public}ld", quota);
+    MEDIA_INFO_LOG("ApplyEfficiencyQuota. quota: %{public}" PRId64, quota);
 
     void *resourceQuotaMgrHandle_ = dlopen(ABNORMAL_MANAGER_LIB.c_str(), RTLD_NOW);
     if (!resourceQuotaMgrHandle_) {
@@ -144,7 +144,7 @@ void PhotoCustomRestoreOperation::DoCustomRestore(RestoreTaskInfo &restoreTaskIn
 
     bool isFirstRestoreSuccess = false;
     int32_t firstRestoreIndex = 0;
-    for (int32_t index = 0; index < files.size(); index++) {
+    for (size_t index = 0; index < files.size(); index++) {
         if (IsCancelTask(restoreTaskInfo)) {
             break;
         }
@@ -212,12 +212,12 @@ void PhotoCustomRestoreOperation::ReportCustomRestoreTask(RestoreTaskInfo &resto
         point.failedNum = point.totalNum - point.successNum - point.sameNum;
     }
     point.totalTime = restoreTaskInfo.endTime - restoreTaskInfo.beginTime;
-    MEDIA_ERR_LOG("report custom restore finished. cost:%{public}ld", point.totalTime);
+    MEDIA_ERR_LOG("report custom restore finished. cost:%{public}" PRId64, point.totalTime);
     DfxReporter::ReportCustomRestoreFusion(point);
 }
 
 bool PhotoCustomRestoreOperation::HandleFirstRestoreFile(
-    RestoreTaskInfo &restoreTaskInfo, vector<string> &files, int32_t &index, int32_t &firstRestoreIndex)
+    RestoreTaskInfo &restoreTaskInfo, vector<string> &files, size_t &index, int32_t &firstRestoreIndex)
 {
     vector<string> subFiles(files.begin() + index, files.begin() + index + 1);
     int32_t errCode = HandleCustomRestore(restoreTaskInfo, subFiles, true);
@@ -262,8 +262,8 @@ void PhotoCustomRestoreOperation::InitRestoreTask(RestoreTaskInfo &restoreTaskIn
 int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
     RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst)
 {
-    MEDIA_INFO_LOG(
-        "HandleCustomRestore begin. size: %{public}ld isFirst: %{public}d ", filePathVector.size(), isFirst ? 1 : 0);
+    MEDIA_INFO_LOG("HandleCustomRestore begin. size: %{public}" PRId64 " isFirst: %{public}d ",
+        filePathVector.size(), isFirst ? 1 : 0);
     UniqueNumber uniqueNumber;
     vector<FileInfo> restoreFiles = GetFileInfos(filePathVector, uniqueNumber);
     MEDIA_INFO_LOG("GetFileInfos finished");
@@ -512,7 +512,7 @@ vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
     }
     sameFileNum = restoreFiles.size() - insertFiles.size();
     sameNum.fetch_add(sameFileNum);
-    MEDIA_INFO_LOG("BatchInsert values size: %{public}ld, sameNum:%{public}d", values.size(), sameFileNum);
+    MEDIA_INFO_LOG("BatchInsert values size: %{public}" PRId64 ", sameNum:%{public}d", values.size(), sameFileNum);
     if (values.size() == 0) {
         return insertFiles;
     }
@@ -523,7 +523,7 @@ vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
     std::function<int(void)> func = [&]() -> int {
         errCode = trans.BatchInsert(rowNum, PhotoColumn::PHOTOS_TABLE, values);
         if (errCode != E_OK) {
-            MEDIA_ERR_LOG("BatchInsert failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
+            MEDIA_ERR_LOG("BatchInsert failed, errCode: %{public}d, rowNum: %{public}" PRId64, errCode, rowNum);
         }
         return errCode;
     };
@@ -631,7 +631,7 @@ int32_t PhotoCustomRestoreOperation::InitPhotoCache(RestoreTaskInfo &restoreTask
             displayName + "_" + to_string(mediaSize) + "_" + to_string(mediaType) + "_" + to_string(orientation));
     }
     restoreTaskInfo.hasPhotoCache = true;
-    MEDIA_ERR_LOG("InitPhotoCache success, num:%{public}ld", photoCache.size());
+    MEDIA_ERR_LOG("InitPhotoCache success, num:%{public}" PRId64, photoCache.size());
     return E_OK;
 }
 

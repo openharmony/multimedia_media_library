@@ -170,9 +170,9 @@ ohos_shared_library("media_library_custom_restore") {
   install_enable = true
 
   sources = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/medialibrary_custom_restore_notify.cpp",
     "./media_library_custom_restore.cpp",
     "./src/medialibrary_custom_restore_observer_manager.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/medialibrary_custom_restore_notify.cpp",
   ]
 
   include_dirs = [
@@ -194,8 +194,8 @@ ohos_shared_library("media_library_custom_restore") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "hilog:libhilog",
-    "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
+    "hitrace:hitrace_meter",
     "samgr:samgr_proxy",
   ]
 
