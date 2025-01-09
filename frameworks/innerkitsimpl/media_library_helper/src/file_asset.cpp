@@ -666,6 +666,7 @@ int32_t FileAsset::GetPhotoIndex() const
 
 void FileAsset::SetResultTypeMap(const string &colName, ResultSetDataType type)
 {
+    lock_guard<mutex> lock(resultTypeMapMutex_);
     if (resultTypeMap_.count(colName) != 0) {
         return;
     }

@@ -230,6 +230,7 @@ private:
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> member_;
     std::mutex openStatusMapMutex_;
     std::shared_ptr<std::unordered_map<int32_t, int32_t>> openStatusMap_;
+    std::mutex resultTypeMapMutex_;
     std::unordered_map<std::string, ResultSetDataType> resultTypeMap_;
 };
 } // namespace Media
