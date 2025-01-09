@@ -262,8 +262,8 @@ void PhotoCustomRestoreOperation::InitRestoreTask(RestoreTaskInfo &restoreTaskIn
 int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
     RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst)
 {
-    MEDIA_INFO_LOG("HandleCustomRestore begin. size: %{public}" PRId64 " isFirst: %{public}d ",
-        filePathVector.size(), isFirst ? 1 : 0);
+    MEDIA_INFO_LOG("HandleCustomRestore begin. size: %{public}d, isFirst: %{public}d",
+        static_cast<int32_t>(filePathVector.size()), isFirst ? 1 : 0);
     UniqueNumber uniqueNumber;
     vector<FileInfo> restoreFiles = GetFileInfos(filePathVector, uniqueNumber);
     MEDIA_INFO_LOG("GetFileInfos finished");
@@ -512,7 +512,8 @@ vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
     }
     sameFileNum = restoreFiles.size() - insertFiles.size();
     sameNum.fetch_add(sameFileNum);
-    MEDIA_INFO_LOG("BatchInsert values size: %{public}" PRId64 ", sameNum:%{public}d", values.size(), sameFileNum);
+    MEDIA_INFO_LOG("BatchInsert values size: %{public}d, sameNum:%{public}d",
+        static_cast<int32_t>(values.size()), sameFileNum);
     if (values.size() == 0) {
         return insertFiles;
     }
@@ -534,7 +535,7 @@ vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
         MEDIA_ERR_LOG("RetryTrans: trans retry fail!, ret:%{public}d", errCode);
         return insertFiles;
     }
-    MEDIA_INFO_LOG("BatchInsert success rowNum: %{public}ld", rowNum);
+    MEDIA_INFO_LOG("BatchInsert success rowNum: %{public}" PRId64, rowNum);
     return insertFiles;
 }
 
@@ -631,7 +632,7 @@ int32_t PhotoCustomRestoreOperation::InitPhotoCache(RestoreTaskInfo &restoreTask
             displayName + "_" + to_string(mediaSize) + "_" + to_string(mediaType) + "_" + to_string(orientation));
     }
     restoreTaskInfo.hasPhotoCache = true;
-    MEDIA_ERR_LOG("InitPhotoCache success, num:%{public}" PRId64, photoCache.size());
+    MEDIA_ERR_LOG("InitPhotoCache success, num:%{public}d", static_cast<int32_t>(photoCache.size()));
     return E_OK;
 }
 
