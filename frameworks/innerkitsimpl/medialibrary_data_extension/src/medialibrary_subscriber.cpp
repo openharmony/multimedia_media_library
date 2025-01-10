@@ -443,11 +443,6 @@ void MedialibrarySubscriber::DoThumbnailOperation()
     if (dataManager == nullptr) {
         return;
     }
-    
-    if (isWifiConnected_ && dataManager->CheckCloudThumbnailDownloadFinish() != E_OK) {
-        MEDIA_INFO_LOG("CheckCloudThumbnailDownloadFinish failed");
-        return;
-    }
 
     auto result = dataManager->GenerateThumbnailBackground();
     if (result != E_OK) {
