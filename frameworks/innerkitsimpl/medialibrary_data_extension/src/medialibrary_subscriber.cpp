@@ -73,6 +73,7 @@
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
 #include "photo_other_album_trans_operation.h"
+#include "background_cloud_file_processor.h"
 
 using namespace OHOS::AAFwk;
 
@@ -118,7 +119,8 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_THERMAL_LEVEL_CHANGED,
     EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE,
     EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE,
-    EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK
+    EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK,
+    EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT
 };
 
 const std::map<std::string, StatusEventType> BACKGROUND_OPERATION_STATUS_MAP = {
@@ -396,6 +398,10 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         RevertPendingByPackage(packageName);
         MediaLibraryBundleManager::GetInstance()->Clear();
         PermissionUtils::ClearBundleInfoInCache();
+    } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT) {
+        // when turn off gallery switch or quit account, clear the download lastest finished flag,
+        // so we can download lastest images for the subsequent login new account
+        BackgroundCloudFileProcessor::SetDownloadLatestFinished(false);
     }
 }
 
