@@ -6091,7 +6091,7 @@ napi_value MediaLibraryNapi::PhotoAccessStartCreateThumbnailTask(napi_env env, n
 
 void ThumbnailBatchGenerateObserver::OnChange(const ChangeInfo &changeInfo)
 {
-    if (changeInfo.changeType_ != static_cast<int32_t>(NotifyType::NOTIFY_THUMB_ADD)) {
+    if (changeInfo.changeType_ != static_cast<int32_t>(NotifyType::NOTIFY_THUMB_UPDATE)) {
         return;
     }
 
