@@ -1370,21 +1370,25 @@ napi_value MediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32_t index
     switch (dataType.first) {
         case TYPE_STRING:
             status = resultSet->GetString(index, stringVal);
+            NAPI_DEBUG_LOG("CreateValueByIndex TYPE_STRING: %{public}d", status);
             napi_create_string_utf8(env, stringVal.c_str(), NAPI_AUTO_LENGTH, &value);
             asset->GetMemberMap().emplace(name, stringVal);
             break;
         case TYPE_INT32:
             status = resultSet->GetInt(index, integerVal);
+            NAPI_DEBUG_LOG("CreateValueByIndex TYPE_INT32: %{public}d", status);
             napi_create_int32(env, integerVal, &value);
             asset->GetMemberMap().emplace(name, integerVal);
             break;
         case TYPE_INT64:
             status = resultSet->GetLong(index, longVal);
+            NAPI_DEBUG_LOG("CreateValueByIndex TYPE_INT64: %{public}d", status);
             napi_create_int64(env, longVal, &value);
             asset->GetMemberMap().emplace(name, longVal);
             break;
         case TYPE_DOUBLE:
             status = resultSet->GetDouble(index, doubleVal);
+            NAPI_DEBUG_LOG("CreateValueByIndex TYPE_DOUBLE: %{public}d", status);
             napi_create_double(env, doubleVal, &value);
             asset->GetMemberMap().emplace(name, doubleVal);
             break;
@@ -1406,6 +1410,7 @@ void MediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name
     int status;
     napi_value value = nullptr;
     status = resultSet->GetLong(index, longVal);
+    NAPI_DEBUG_LOG("handleTimeInfo status: %{public}d", status);
     int64_t modifieldValue = longVal / 1000;
     napi_create_int64(env, modifieldValue, &value);
     auto dataType = MediaLibraryNapiUtils::GetTimeTypeMap().at(name);
@@ -1422,6 +1427,7 @@ static void handleThumbnailReady(napi_env env, const std::string& name, napi_val
     int status;
     napi_value value = nullptr;
     status = resultSet->GetLong(index, longVal);
+    NAPI_DEBUG_LOG("handleThumbnailReady status: %{public}d", status);
     bool resultVal = longVal > 0;
     napi_create_int32(env, resultVal, &value);
     napi_set_named_property(env, result, "thumbnailReady", value);
