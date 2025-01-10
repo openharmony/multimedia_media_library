@@ -342,12 +342,10 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
         }
         return HandleIndexOfUri(cmd, predicates, photoId, albumId);
     }
-    int limit = predicates.GetLimit();
-    int offset = predicates.GetOffset();
-    CHECK_AND_RETURN_RET(cmd.GetOprnType() != OperationType::ALL_DUPLICATE_ASSETS,
-        DuplicatePhotoOperation::GetAllDuplicateAssets(columns, offset, limit));
-    CHECK_AND_RETURN_RET(cmd.GetOprnType() != OperationType::CAN_DEL_DUPLICATE_ASSETS,
-        DuplicatePhotoOperation::GetCanDelDuplicateAssets(columns, offset, limit));
+    CHECK_AND_RETURN_RET(cmd.GetOprnType() != OperationType::FIND_DUPLICATE_ASSETS,
+        DuplicatePhotoOperation::GetAllDuplicateAssets(predicates, columns));
+    CHECK_AND_RETURN_RET(cmd.GetOprnType() != OperationType::FIND_DUPLICATE_ASSETS_TO_DELETE,
+        DuplicatePhotoOperation::GetDuplicateAssetsToDelete(predicates, columns));
     CHECK_AND_RETURN_RET(cmd.GetOprnType() != OperationType::UPDATE_SEARCH_INDEX,
         MediaLibraryRdbStore::Query(predicates, columns));
     CHECK_AND_RETURN_RET(cmd.GetOprnType() != OperationType::EDIT_DATA_EXISTS,

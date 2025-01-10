@@ -17,6 +17,7 @@
 #include "medialibrary_rdbstore.h"
 
 #include <mutex>
+#include <regex>
 
 #include "album_plugin_table_event_handler.h"
 #include "cloud_sync_helper.h"
@@ -212,6 +213,16 @@ const std::string MediaLibraryRdbStore::IsCallerSelfFunc(const std::vector<std::
     return "true";
 }
 
+const std::string MediaLibraryRdbStore::RegexReplaceFunc(const std::vector<std::string> &args)
+{
+    const std::string &input = args[0];
+    const std::string &pattern = args[1];
+    const std::string &replacement = args[2];
+
+    std::regex re(pattern);
+    return std::regex_replace(input, re, replacement);
+}
+
 const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<std::string> &args)
 {
     if (args.size() < 1) {
@@ -227,6 +238,7 @@ const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<s
     return "";
 }
 
+constexpr int REGEXP_REPLACE_PARAM_NUM = 3;
 MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
     if (context == nullptr) {
@@ -246,6 +258,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetSecurityLevel(SecurityLevel::S3);
     config_.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     config_.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
+    config_.SetScalarFunction("REGEXP_REPLACE", REGEXP_REPLACE_PARAM_NUM, RegexReplaceFunc);
     config_.SetScalarFunction("begin_generate_highlight_thumbnail", STAMP_PARAM, BeginGenerateHighlightThumbnail);
     config_.SetWalLimitSize(RDB_WAL_LIMIT_SIZE);
     config_.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
