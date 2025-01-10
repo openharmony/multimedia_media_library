@@ -200,7 +200,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::PAH_FORM_MAP, { { OperationType::UNKNOWN_TYPE, FormMap::FORM_MAP_TABLE } } },
         { OperationObject::ANALYSIS_ADDRESS, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::ANALYSIS_ADDRESS_ASSETS, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
-        { OperationObject::ANALYSIS_ADDRESS_ASSETS_ACTIVE, 
+        { OperationObject::ANALYSIS_ADDRESS_ASSETS_ACTIVE,
             { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
             { { OperationType::UNKNOWN_TYPE, VISION_ANALYSIS_ALBUM_TOTAL_TABLE } } },
