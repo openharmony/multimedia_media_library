@@ -70,7 +70,7 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.onVideoPlayStateChanged && (this.onVideoPlayStateChanged = e.onVideoPlayStateChanged);
         this.__pickerController.set(e.pickerController);
         void 0 !== e.proxy && (this.proxy = e.proxy);
-        if(e.revokeIndex !== undefined) {
+        if (e.revokeIndex !== undefined) {
             this.revokeIndex = e.revokeIndex;
         }
     }
