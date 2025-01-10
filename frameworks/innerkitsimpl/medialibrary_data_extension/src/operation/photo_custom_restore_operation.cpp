@@ -144,20 +144,22 @@ void PhotoCustomRestoreOperation::DoCustomRestore(RestoreTaskInfo &restoreTaskIn
 
     bool isFirstRestoreSuccess = false;
     int32_t firstRestoreIndex = 0;
-    for (size_t index = 0; index < files.size(); index++) {
+    int32_t total = static_cast<int32_t>(files.size());
+    int32_t lastIndex = total - 1;
+    for (int32_t index = 0; index < total; index++) {
         if (IsCancelTask(restoreTaskInfo)) {
             break;
         }
         if (index == 0 || !isFirstRestoreSuccess) {
             isFirstRestoreSuccess = HandleFirstRestoreFile(restoreTaskInfo, files, index, firstRestoreIndex);
-            if (!isFirstRestoreSuccess && index == files.size() - 1) {
+            if (!isFirstRestoreSuccess && index == lastIndex) {
                 break;
             }
             continue;
         }
         int32_t num1 = (index + 1) % MAX_RESTORE_FILE_NUM;
         int32_t num2 = (index + 1) / MAX_RESTORE_FILE_NUM;
-        if (num1 == 0 || index == files.size() - 1) {
+        if (num1 == 0 || index == lastIndex) {
             int32_t fileNum = num1 == 0 && num2 > 0 ? MAX_RESTORE_FILE_NUM : num1;
             int32_t beginOffset = index - fileNum + 1;
             if (beginOffset <= firstRestoreIndex) {
@@ -165,7 +167,7 @@ void PhotoCustomRestoreOperation::DoCustomRestore(RestoreTaskInfo &restoreTaskIn
                 beginOffset = firstRestoreIndex + 1;
                 fileNum = index - beginOffset + 1;
             }
-            int32_t notifyType = index == files.size() - 1 ? NOTIFY_LAST : NOTIFY_PROGRESS;
+            int32_t notifyType = index == lastIndex ? NOTIFY_LAST : NOTIFY_PROGRESS;
             vector<string> subFiles(files.begin() + beginOffset, files.begin() + index + 1);
             ffrt::submit(
                 [this, &restoreTaskInfo, notifyType, subFiles]() {
@@ -217,19 +219,20 @@ void PhotoCustomRestoreOperation::ReportCustomRestoreTask(RestoreTaskInfo &resto
 }
 
 bool PhotoCustomRestoreOperation::HandleFirstRestoreFile(
-    RestoreTaskInfo &restoreTaskInfo, vector<string> &files, size_t &index, int32_t &firstRestoreIndex)
+    RestoreTaskInfo &restoreTaskInfo, vector<string> &files, int32_t &index, int32_t &firstRestoreIndex)
 {
     vector<string> subFiles(files.begin() + index, files.begin() + index + 1);
     int32_t errCode = HandleCustomRestore(restoreTaskInfo, subFiles, true);
     bool isFirstRestoreSuccess = errCode == E_OK;
-    if (!isFirstRestoreSuccess && index == files.size() - 1) {
+    int32_t lastIndex = static_cast<int32_t>(files.size() - 1);
+    if (!isFirstRestoreSuccess && index == lastIndex) {
         MEDIA_ERR_LOG("first file restore failed. stop restore task.");
         SendNotifyMessage(restoreTaskInfo, NOTIFY_FIRST, errCode, 1);
     }
     if (isFirstRestoreSuccess) {
         MEDIA_ERR_LOG("first file restore success.");
         firstRestoreIndex = index;
-        int notifyType = index = files.size() - 1 ? NOTIFY_FIRST : NOTIFY_LAST;
+        int notifyType = index = lastIndex ? NOTIFY_FIRST : NOTIFY_LAST;
         SendNotifyMessage(restoreTaskInfo, notifyType, errCode, 1);
     }
     return isFirstRestoreSuccess;
