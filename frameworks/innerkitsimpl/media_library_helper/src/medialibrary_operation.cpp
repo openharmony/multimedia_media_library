@@ -115,7 +115,12 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
         { GEO_KNOWLEDGE_TABLE, OperationObject::GEO_KNOWLEDGE },
         { PAH_ANA_ADDRESS, OperationObject::ANALYSIS_ADDRESS },
+        { PAH_ANA_ADDRESS_ASSETS, OperationObject::ANALYSIS_ADDRESS_ASSETS },
+        { PAH_ANA_ADDRESS_ASSETS_ACTIVE, OperationObject::ANALYSIS_ADDRESS_ASSETS_ACTIVE },
         { PAH_GEO_PHOTOS, OperationObject::GEO_PHOTO },
+
+        // use in convert
+        { PAH_CONVERT_PHOTOS, OperationObject::CONVERT_PHOTO },
 
         // use in search
         { SEARCH_TOTAL_TABLE, OperationObject::SEARCH_TOTAL },
@@ -189,10 +194,14 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::GEO_DICTIONARY, { { OperationType::UNKNOWN_TYPE, GEO_DICTIONARY_TABLE } } },
         { OperationObject::GEO_KNOWLEDGE, { { OperationType::UNKNOWN_TYPE, GEO_KNOWLEDGE_TABLE } } },
         { OperationObject::GEO_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
+        { OperationObject::CONVERT_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::ANALYSIS_PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_TABLE } } },
         { OperationObject::ANALYSIS_PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
         { OperationObject::PAH_FORM_MAP, { { OperationType::UNKNOWN_TYPE, FormMap::FORM_MAP_TABLE } } },
         { OperationObject::ANALYSIS_ADDRESS, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
+        { OperationObject::ANALYSIS_ADDRESS_ASSETS, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
+        { OperationObject::ANALYSIS_ADDRESS_ASSETS_ACTIVE,
+            { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
             { { OperationType::UNKNOWN_TYPE, VISION_ANALYSIS_ALBUM_TOTAL_TABLE } } },
         { OperationObject::TAB_OLD_PHOTO, { { OperationType::UNKNOWN_TYPE, TabOldPhotosColumn::OLD_PHOTOS_TABLE } }},
@@ -279,6 +288,8 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_DISMISS_ASSET, OperationType::DISMISS_ASSET },
         { OPRN_PORTRAIT_COVER_URI, OperationType::PORTRAIT_COVER_URI },
         { OPRN_SUBMIT_CACHE, OperationType::SUBMIT_CACHE },
+        { OPRN_CUSTOM_RESTORE, OperationType::CUSTOM_RESTORE },
+        { OPRN_CUSTOM_RESTORE_CANCEL, OperationType::CUSTOM_RESTORE_CANCEL },
         { OPRN_BATCH_UPDATE_FAV, OperationType::BATCH_UPDATE_FAV },
         { OPRN_BATCH_UPDATE_USER_COMMENT, OperationType::BATCH_UPDATE_USER_COMMENT },
         { OPRN_BATCH_UPDATE_OWNER_ALBUM_ID, OperationType::BATCH_UPDATE_OWNER_ALBUM_ID },
@@ -325,6 +336,8 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY, OperationType::CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY },
         { OPRN_UPDATE_OWNER_ALBUM_ID, OperationType::SET_OWNER_ALBUM_ID },
         { UPDATE_INDEX, OperationType::UPDATE_SEARCH_INDEX},
+        { OPRN_QUERY_ORDER, OperationType::QUERY_ORDER },
+        { OPRN_UPDATE_ORDER, OperationType::UPDATE_ORDER },
     };
     return oprnTypeMap;
 }

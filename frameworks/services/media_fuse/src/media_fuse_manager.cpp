@@ -43,7 +43,6 @@
 #include "permission_used_type.h"
 #include "medialibrary_object_utils.h"
 #include "media_file_utils.h"
-#include "medialibrary_bundle_manager.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -318,7 +317,7 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
     uid_t uid = ctx->uid;
     string bundleName;
     AccessTokenID tokenCaller = INVALID_TOKENID;
-    MediaLibraryBundleManager::GetInstance()->GetBundleNameByUID(uid, bundleName);
+    PermissionUtils::GetClientBundle(uid, bundleName);
     string appId = PermissionUtils::GetAppIdByBundleName(bundleName, uid);
     class MediafusePermCheckInfo info(filePath, mode, fileId, appId, uid, tokenCaller);
     int32_t permGranted = info.CheckPermission();

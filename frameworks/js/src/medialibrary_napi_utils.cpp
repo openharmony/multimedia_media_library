@@ -631,6 +631,35 @@ napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack(napi_env env, napi_call
     return napi_ok;
 }
 
+napi_value MediaLibraryNapiUtils::ParseAssetIdArray(napi_env env, napi_value arg, vector<string> &idArray)
+{
+    vector<napi_value> napiValues;
+    napi_valuetype valueType = napi_undefined;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, arg, napiValues));
+    CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetIdArrayFromAssets(env, napiValues, idArray));
+    RETURN_NAPI_TRUE(env);
+}
+
+napi_value MediaLibraryNapiUtils::ParseIntegerArray(napi_env env, napi_value arg, std::vector<int32_t> &intArray)
+{
+    vector<napi_value> napiValues;
+    napi_valuetype valueType = napi_undefined;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, arg, napiValues));
+    CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    intArray.clear();
+    for (const auto &napiValue: napiValues) {
+        CHECK_ARGS(env, napi_typeof(env, napiValue, &valueType), JS_ERR_PARAMETER_INVALID);
+        CHECK_COND(env, valueType == napi_number, JS_ERR_PARAMETER_INVALID);
+        int32_t intVal;
+        CHECK_ARGS(env, napi_get_value_int32(env, napiValue, &intVal), JS_ERR_PARAMETER_INVALID);
+        intArray.push_back(intVal);
+    }
+    RETURN_NAPI_TRUE(env);
+}
+
 AssetType MediaLibraryNapiUtils::GetAssetType(MediaType type)
 {
     AssetType result;
@@ -1341,21 +1370,25 @@ napi_value MediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32_t index
     switch (dataType.first) {
         case TYPE_STRING:
             status = resultSet->GetString(index, stringVal);
+            NAPI_DEBUG_LOG("CreateValueByIndex TYPE_STRING: %{public}d", status);
             napi_create_string_utf8(env, stringVal.c_str(), NAPI_AUTO_LENGTH, &value);
             asset->GetMemberMap().emplace(name, stringVal);
             break;
         case TYPE_INT32:
             status = resultSet->GetInt(index, integerVal);
+            NAPI_DEBUG_LOG("CreateValueByIndex TYPE_INT32: %{public}d", status);
             napi_create_int32(env, integerVal, &value);
             asset->GetMemberMap().emplace(name, integerVal);
             break;
         case TYPE_INT64:
             status = resultSet->GetLong(index, longVal);
+            NAPI_DEBUG_LOG("CreateValueByIndex TYPE_INT64: %{public}d", status);
             napi_create_int64(env, longVal, &value);
             asset->GetMemberMap().emplace(name, longVal);
             break;
         case TYPE_DOUBLE:
             status = resultSet->GetDouble(index, doubleVal);
+            NAPI_DEBUG_LOG("CreateValueByIndex TYPE_DOUBLE: %{public}d", status);
             napi_create_double(env, doubleVal, &value);
             asset->GetMemberMap().emplace(name, doubleVal);
             break;
@@ -1377,6 +1410,7 @@ void MediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name
     int status;
     napi_value value = nullptr;
     status = resultSet->GetLong(index, longVal);
+    NAPI_DEBUG_LOG("handleTimeInfo status: %{public}d", status);
     int64_t modifieldValue = longVal / 1000;
     napi_create_int64(env, modifieldValue, &value);
     auto dataType = MediaLibraryNapiUtils::GetTimeTypeMap().at(name);
@@ -1393,6 +1427,7 @@ static void handleThumbnailReady(napi_env env, const std::string& name, napi_val
     int status;
     napi_value value = nullptr;
     status = resultSet->GetLong(index, longVal);
+    NAPI_DEBUG_LOG("handleThumbnailReady status: %{public}d", status);
     bool resultVal = longVal > 0;
     napi_create_int32(env, resultVal, &value);
     napi_set_named_property(env, result, "thumbnailReady", value);
@@ -1702,6 +1737,27 @@ napi_value MediaLibraryNapiUtils::GetUriArrayFromAssets(
             continue;
         }
         values.push_back(GetUriFromAsset(obj));
+    }
+    napi_value ret = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &ret), JS_INNER_FAIL);
+    return ret;
+}
+
+napi_value MediaLibraryNapiUtils::GetIdArrayFromAssets(napi_env env, vector<napi_value> &napiValues,
+    vector<string> &values)
+{
+    FileAssetNapi *fileAsset = nullptr;
+    for (const auto &napiValue: napiValues) {
+        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void **>(&fileAsset)), JS_INNER_FAIL);
+        if (fileAsset == nullptr) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset napi object");
+            return nullptr;
+        }
+        if (fileAsset->GetMediaType() != MEDIA_TYPE_IMAGE && fileAsset->GetMediaType() != MEDIA_TYPE_VIDEO) {
+            NAPI_INFO_LOG("Skip invalid asset, mediaType: %{public}d", fileAsset->GetMediaType());
+            continue;
+        }
+        values.push_back(std::to_string(fileAsset->GetFileId()));
     }
     napi_value ret = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &ret), JS_INNER_FAIL);

@@ -42,6 +42,7 @@ enum class AlbumChangeOperation {
     DISMISS_ASSET,
     SET_IS_ME,
     DISMISS,
+    SET_ORDER_POSITION,
 };
 
 struct PhotoAlbumPtrCompare {
@@ -62,6 +63,7 @@ public:
     EXPORT ~MediaAlbumChangeRequestNapi() override = default;
 
     EXPORT static napi_value Init(napi_env env, napi_value exports);
+    EXPORT static napi_value MediaAnalysisAlbumChangeRequestInit(napi_env env, napi_value exports);
 
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
     std::shared_ptr<PhotoAlbum> GetReferencePhotoAlbumInstance() const;
@@ -71,6 +73,7 @@ public:
     std::vector<std::string> GetRecoverAssetArray() const;
     std::vector<std::string> GetDeleteAssetArray() const;
     std::vector<std::string> GetDismissAssetArray() const;
+    std::vector<std::pair<std::string, int32_t>> GetIdOrderPositionPairs() const;
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> GetMoveMap() const;
     void RecordMoveAssets(std::vector<std::string>& assetArray, std::shared_ptr<PhotoAlbum>& targetAlbum);
     void ClearAddAssetArray();
@@ -102,6 +105,7 @@ private:
     EXPORT static napi_value JSDismissAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetIsMe(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDismiss(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetOrderPosition(napi_env env, napi_callback_info info);
     EXPORT static bool CheckDismissAssetVaild(std::vector<std::string> &dismissAssets,
         std::vector<std::string> &newAssetArray);
 
@@ -109,6 +113,7 @@ private:
     bool CheckChangeOperations(napi_env env);
 
     static thread_local napi_ref constructor_;
+    static thread_local napi_ref mediaAnalysisAlbumChangeRequestConstructor_;
     std::shared_ptr<PhotoAlbum> photoAlbum_ = nullptr;
     std::shared_ptr<PhotoAlbum> referencePhotoAlbum_ = nullptr;
     std::shared_ptr<PhotoAlbum> targetAlbum_ = nullptr;
@@ -119,6 +124,7 @@ private:
     std::vector<std::string> dismissAssets_;
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> moveMap_;
     std::vector<AlbumChangeOperation> albumChangeOperations_;
+    std::vector<std::pair<std::string, int32_t>> idOrderPositionPairs_;
 };
 
 struct MediaAlbumChangeRequestAsyncContext : public NapiError {

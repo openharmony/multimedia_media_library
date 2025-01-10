@@ -256,10 +256,10 @@ const std::string PhotoColumn::CREATE_MONTH_INDEX = BaseColumn::CreateIndex() +
 const std::string PhotoColumn::CREATE_DAY_INDEX = BaseColumn::CreateIndex() +
     PHOTO_DATE_DAY_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_DATE_DAY + " DESC)";
 
-const std::string PhotoColumn::CREATE_SCHPT_DAY_INDEX = BaseColumn::CreateIndex() +
-    PHOTO_SCHPT_DAY_INDEX + " ON " + PHOTOS_TABLE +
-    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
-    "," + MEDIA_DATE_TRASHED + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + PHOTO_DATE_DAY + " DESC);";
+const std::string PhotoColumn::CREATE_SCHPT_DAY_INDEX = BaseColumn::CreateIndex() + PHOTO_SCHPT_DAY_INDEX + " ON " +
+    PHOTOS_TABLE + " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + PHOTO_THUMBNAIL_VISIBLE + "," +
+    MEDIA_DATE_TRASHED + "," + MEDIA_TIME_PENDING + "," + MEDIA_HIDDEN + "," + PHOTO_IS_TEMP + "," +
+    PHOTO_BURST_COVER_LEVEL + "," + PHOTO_DATE_DAY + " DESC);";
 
 const std::string PhotoColumn::DROP_SCHPT_DAY_INDEX = BaseColumn::DropIndex() + PHOTO_SCHPT_DAY_INDEX;
 
@@ -289,11 +289,11 @@ const std::string PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX = BaseC
     "," + MEDIA_TIME_PENDING + "," + MEDIA_HIDDEN + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
     "," + MEDIA_TYPE + ");";
 
-const std::string PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX = BaseColumn::CreateIndex() +
-    PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_SYNC_STATUS +
-    "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING + "," +
-    PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + PHOTO_STRONG_ASSOCIATION + "," + MEDIA_TYPE + "," +
-    MEDIA_DATE_TAKEN + " DESC, " + MEDIA_ID + " DESC);";
+const std::string PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX =
+    BaseColumn::CreateIndex() + PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
+    "," + MEDIA_DATE_TRASHED + "," + PHOTO_IS_TEMP + "," + PHOTO_STRONG_ASSOCIATION + "," + PHOTO_BURST_COVER_LEVEL +
+    "," + MEDIA_DATE_TAKEN + " DESC);";
 
 const std::string PhotoColumn::DROP_SCHPT_YEAR_COUNT_READY_INDEX = "DROP INDEX IF EXISTS " +
     PHOTO_SCHPT_DATE_YEAR_COUNT_READY_INDEX;

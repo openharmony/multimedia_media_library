@@ -58,6 +58,7 @@
 #include "parameters.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
+#include "photo_custom_restore_operation.h"
 #include "photo_map_column.h"
 #include "photo_map_operations.h"
 #include "picture.h"
@@ -682,13 +683,12 @@ static void SetAssetDisplayName(const string &displayName, FileAsset &fileAsset,
     isContains = true;
 }
 
-int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
+int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand &cmd)
 {
     FileAsset fileAsset;
     ValuesBucket &values = cmd.GetValueBucket();
     string displayName;
     string extention;
-    string title;
     bool isContains = false;
     bool isNeedGrant = false;
     if (GetStringFromValuesBucket(values, PhotoColumn::MEDIA_NAME, displayName)) {
@@ -698,6 +698,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, ASSET_EXTENTION, extention), E_HAS_DB_ERROR);
         isNeedGrant = true;
         fileAsset.SetTimePending(UNOPEN_FILE_COMPONENT_TIMEPENDING);
+        string title;
         if (GetStringFromValuesBucket(values, PhotoColumn::MEDIA_TITLE, title)) {
             displayName = title + "." + extention;
             SetAssetDisplayName(displayName, fileAsset, isContains);
@@ -715,8 +716,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t outRow = -1;
     std::function<int(void)> func = [&]()->int {
-        errCode = isContains ? SetAssetPathInCreate(fileAsset, trans) :
-            SetAssetPath(fileAsset, extention, trans);
+        errCode = isContains ? SetAssetPathInCreate(fileAsset, trans) : SetAssetPath(fileAsset, extention, trans);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Set Path, Name=%{private}s", displayName.c_str());
         outRow = InsertAssetInDb(trans, cmd, fileAsset);
         AuditLog auditLog = { true, "USER BEHAVIOR", "ADD", "io", 1, "running", "ok" };
@@ -2203,7 +2203,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
         CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourcePath, path, editData) == E_OK, E_FAIL,
             "Failed to add filters to photo");
         if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-            CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset) == E_OK, E_FAIL,
+            CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset, false) == E_OK, E_FAIL,
                 "Failed to add filters to video");
         }
     }
@@ -2598,7 +2598,7 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
             PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, fileAssetColumns);
         CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
             "Failed to GetFileAssetFromDb, fileId = %{public}d", id);
-        return AddFiltersToVideoExecute(fileAsset);
+        return AddFiltersToVideoExecute(fileAsset, true);
     }
 
     if (IsCameraEditData(cmd)) {
@@ -2733,7 +2733,22 @@ int32_t SaveTempMovingPhotoVideo(const string &assetPath)
     return E_ERR;
 }
 
-int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<FileAsset>& fileAsset)
+int32_t MediaLibraryPhotoOperations::CopyVideoFile(const string& assetPath, bool toSource)
+{
+    string sourceImagePath = PhotoFileUtils::GetEditDataSourcePath(assetPath);
+    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
+    string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourceImagePath);
+    if (toSource) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(videoPath, sourceVideoPath), E_HAS_FS_ERROR,
+            "Copy videoPath to sourceVideoPath, path:%{private}s", videoPath.c_str());
+    } else {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(sourceVideoPath, videoPath), E_HAS_FS_ERROR,
+            "Copy sourceVideoPath to videoPath, path:%{private}s", sourceVideoPath.c_str());
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<FileAsset>& fileAsset, bool isSaveVideo)
 {
     string assetPath = fileAsset->GetFilePath();
     string editDataCameraPath = MediaLibraryAssetOperations::GetEditDataCameraPath(assetPath);
@@ -2754,14 +2769,22 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<F
         if (index != std::string::npos) {
             VideoCompositionCallbackImpl::EraseStickerField(editData, index, true);
         }
+        index = editData.find(FESTIVAL_STICKER);
+        if (index != std::string::npos) {
+            VideoCompositionCallbackImpl::EraseStickerField(editData, index, false);
+        }
         index = editData.find(FILTERS_FIELD);
         if (index == std::string::npos) {
             MEDIA_ERR_LOG("Can not find Video filters field.");
             return E_ERR;
         }
-        if (editData[index + START_DISTANCE] == FILTERS_END) {
+        if (editData[index + START_DISTANCE] == FILTERS_END && isSaveVideo) {
             MEDIA_INFO_LOG("MovingPhoto video only supports filter now.");
-            return SaveTempMovingPhotoVideo(assetPath);
+            CHECK_AND_RETURN_RET_LOG(SaveTempMovingPhotoVideo(assetPath) == E_OK, E_HAS_FS_ERROR,
+                "Failed to save temp movingphoto video, path = %{public}s", assetPath.c_str());
+            return CopyVideoFile(assetPath, true);
+        } else if (editData[index + START_DISTANCE] == FILTERS_END && !isSaveVideo) {
+            return CopyVideoFile(assetPath, false);
         }
         MEDIA_INFO_LOG("AddFiltersToVideoExecute after EraseStickerField, editData = %{public}s", editData.c_str());
         CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(fileAsset, assetPath, true) == E_OK, E_HAS_FS_ERROR,
@@ -2893,9 +2916,8 @@ int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(const shared_ptr<FileAs
     string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourceImagePath);
     CHECK_AND_RETURN_RET_LOG(!sourceVideoPath.empty(), E_INVALID_PATH, "Can not get source video path");
     if (!MediaFileUtils::IsFileExists(sourceVideoPath)) {
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(videoPath, sourceVideoPath) == E_SUCCESS,
-            E_HAS_FS_ERROR, "Move video file failed, srcPath:%{private}s, newPath:%{private}s",
-            videoPath.c_str(), sourceVideoPath.c_str());
+        CHECK_AND_RETURN_RET_LOG(Move(videoPath, sourceVideoPath) == E_SUCCESS, E_HAS_FS_ERROR,
+            "Can not move %{private}s to %{private}s", videoPath.c_str(), sourceVideoPath.c_str());
     }
     return E_OK;
 }
@@ -3465,6 +3487,53 @@ int32_t MediaLibraryPhotoOperations::UpdateOwnerAlbumId(MediaLibraryCommand &cmd
             NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
     }
     return rowId;
+}
+
+int32_t MediaLibraryPhotoOperations::ProcessCustomRestore(MediaLibraryCommand& cmd)
+{
+    const ValuesBucket& values = cmd.GetValueBucket();
+    string albumLpath;
+    string keyPath;
+    string isDeduplication;
+    string bundleName;
+    string appName;
+    string appId;
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "albumLpath", albumLpath),
+        E_INVALID_VALUES, "Failed to get albumLpath: %{public}s", albumLpath.c_str());
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "keyPath", keyPath),
+        E_INVALID_VALUES, "Failed to get keyPath: %{public}s", keyPath.c_str());
+    string dir = CUSTOM_RESTORE_DIR + "/" + keyPath;
+    CHECK_AND_RETURN_RET_LOG(
+        MediaFileUtils::IsFileExists(dir), E_NO_SUCH_FILE, "sourceDir: %{public}s does not exist!", dir.c_str());
+    GetStringFromValuesBucket(values, "isDeduplication", isDeduplication);
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "isDeduplication", isDeduplication),
+        E_INVALID_VALUES, "Failed to get isDeduplication: %{public}s", isDeduplication.c_str());
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "bundleName", bundleName),
+        E_INVALID_VALUES, "Failed to get bundleName: %{public}s", bundleName.c_str());
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "appName", appName),
+        E_INVALID_VALUES, "Failed to get appName: %{public}s", appName.c_str());
+    GetStringFromValuesBucket(values, "appId", appId);
+
+    RestoreTaskInfo restoreTaskInfo = {.albumLpath = albumLpath,
+        .keyPath = keyPath,
+        .isDeduplication = isDeduplication == "true",
+        .bundleName = bundleName,
+        .packageName = appName,
+        .appId = appId,
+        .sourceDir = dir};
+    PhotoCustomRestoreOperation::GetInstance().AddTask(restoreTaskInfo).Start();
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::CancelCustomRestore(MediaLibraryCommand& cmd)
+{
+    const ValuesBucket& values = cmd.GetValueBucket();
+    string keyPath;
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "keyPath", keyPath),
+        E_INVALID_VALUES, "Failed to get keyPath: %{public}s", keyPath.c_str());
+    RestoreTaskInfo restoreTaskInfo = {.keyPath = keyPath};
+    PhotoCustomRestoreOperation::GetInstance().CancelTask(restoreTaskInfo);
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

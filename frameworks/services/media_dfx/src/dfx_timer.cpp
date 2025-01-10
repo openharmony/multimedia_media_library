@@ -20,6 +20,7 @@
 #include "media_log.h"
 #include "dfx_manager.h"
 #include "medialibrary_bundle_manager.h"
+#include "permission_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -50,7 +51,7 @@ DfxTimer::~DfxTimer()
 
     std::string bundleName;
     if (uid_ > 0) {
-        MediaLibraryBundleManager::GetInstance()->GetBundleNameByUID(uid_, bundleName);
+        PermissionUtils::GetClientBundle(uid_, bundleName);
     } else {
         bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     }
