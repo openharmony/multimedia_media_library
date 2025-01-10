@@ -805,22 +805,60 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     return result;
 }
 
+// Easter egg operation: query duplicate assets
+static bool EasterEgg(SendablePhotoAccessHelperAsyncContext* context)
+{
+    string queryUri;
+    if (context->uri == URI_FIND_ALL_DUPLICATE_ASSETS) {
+        queryUri = PAH_FIND_ALL_DUPLICATE_ASSETS;
+    } else if (context->uri == URI_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE) {
+        queryUri = PAH_FIND_DUPLICATE_ASSETS_TO_DELETE;
+    } else {
+        return false;
+    }
+    if (!SendableMediaLibraryNapiUtils::IsSystemApp()) {
+        NAPI_ERR_LOG("Easter egg operation failed, taget is not system app");
+        return false;
+    };
+    bool isQueryCount = find(context->fetchColumn.begin(), context->fetchColumn.end(), MEDIA_COLUMN_COUNT)
+        != context->fetchColumn.end();
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    NAPI_INFO_LOG(
+        "Easter egg operation start: %{public}s, is query count: %{public}d",
+        queryUri == PAH_FIND_ALL_DUPLICATE_ASSETS ?
+        "find all duplicate assets" : "find all duplicate assets to delete", isQueryCount);
+    int errCode = 0;
+    Uri uri(queryUri);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
+        context->predicates, context->fetchColumn, errCode);
+    if (resultSet == nullptr) {
+        context->SaveError(errCode);
+        NAPI_ERR_LOG("Easter egg operation failed, errCode: %{public}d", errCode);
+        return true;
+    }
+    context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    NAPI_INFO_LOG(
+        "Easter egg operation end: %{public}s, is query count: %{public}d, cost time: %{public}" PRId64 "ms",
+        queryUri == PAH_FIND_ALL_DUPLICATE_ASSETS ?
+        "find all duplicate assets" : "find all duplicate assets to delete", isQueryCount,
+        MediaFileUtils::UTCTimeMilliSeconds() - startTime);
+    return true;
+}
+
 static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessGetAssetsExecute");
 
     auto *context = static_cast<SendablePhotoAccessHelperAsyncContext*>(data);
+    if (EasterEgg(context)) {
+        return;
+    }
     string queryUri;
     switch (context->assetType) {
         case TYPE_PHOTO: {
-            if (context->uri == URI_ALL_DUPLICATE_ASSETS) {
-                queryUri = PAH_ALL_DUPLICATE_ASSETS;
-            } else if (context->uri == URI_CAN_DEL_DUPLICATE_ASSETS) {
-                queryUri = PAH_CAN_DEL_DUPLICATE_ASSETS;
-            } else {
-                queryUri = PAH_QUERY_PHOTO;
-            }
+            queryUri = PAH_QUERY_PHOTO;
             SendableMediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
             break;
         }
