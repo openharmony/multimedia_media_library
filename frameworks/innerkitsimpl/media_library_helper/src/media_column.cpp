@@ -20,6 +20,7 @@
 
 #include "base_column.h"
 #include "medialibrary_db_const.h"
+#include "media_log.h"
 #include "userfile_manager_types.h"
 
 namespace OHOS {
@@ -644,5 +645,34 @@ const std::string PhotoColumn::PHOTOS_QUERY_FILTER =
     MediaColumn::MEDIA_TIME_PENDING + " = 0" + " AND " +
     PhotoColumn::PHOTO_IS_TEMP + " = 0" + " AND " +
     PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 ";
+
+std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilterOption option)
+{
+    switch (option) {
+        case PhotoQueryFilterOption::FILTER_VISIBLE:
+            return GetSqlWhereClause(PhotoQueryFilterConfig{});
+            break;
+        case PhotoQueryFilterOption::FILTER_HIDDEN:
+            return GetSqlWhereClause(PhotoQueryFilterConfig{true, false});
+            break;
+        case PhotoQueryFilterOption::FILTER_TRASHED:
+            return GetSqlWhereClause(PhotoQueryFilterConfig{false, true});
+            break;
+        default:
+            MEDIA_ERR_LOG("Invalid option: %{public}d", static_cast<int>(option));
+            return "";
+            break;
+    }
+}
+
+std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilterConfig &config)
+{
+    std::string whereClause = "";
+    whereClause += "clean_flag = 0 AND time_pending = 0 AND is_temp = 0 AND burst_cover_level = 1 AND ";
+    whereClause += "date_trashed = " + std::string(config.isQueryTrashed ? "1" : "0") + " AND ";
+    whereClause += "hidden = " + std::string(config.isQueryHidden ? "1" : "0");
+    return whereClause;
+}
+
 }  // namespace Media
 }  // namespace OHOS
