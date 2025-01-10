@@ -1192,14 +1192,17 @@ void BaseRestore::RestoreThumbnail()
     int32_t localNoAstcCount = BackupDatabaseUtils::QueryLocalNoAstcCount(mediaLibraryRdb_);
     CHECK_AND_RETURN_LOG(localNoAstcCount > 0, "No need to RestoreThumbnail");
     int32_t restoreAstcCount = localNoAstcCount < MAX_RESTORE_ASTC_NUM ? localNoAstcCount : MAX_RESTORE_ASTC_NUM;
-    thumbnailTotalNumber_ = static_cast<uint64_t>(restoreAstcCount);
+    uint64_t thumbnailTotalNumber = static_cast<uint64_t>(restoreAstcCount);
+    thumbnailTotalNumber_ = thumbnailTotalNumber;
     int32_t readyAstcCount = BackupDatabaseUtils::QueryReadyAstcCount(mediaLibraryRdb_);
+    uint64_t waitAstcNum = sceneCode_ != UPGRADE_RESTORE_ID ? thumbnailTotalNumber :
+        std::min(thumbnailTotalNumber, MAX_UPGRADE_WAIT_ASTC_NUM);
 
-    MEDIA_INFO_LOG("Start RestoreThumbnail, readyAstcCount:%{public}d, restoreAstcCount:%{public}d",
-        readyAstcCount, restoreAstcCount);
+    MEDIA_INFO_LOG("Start RestoreThumbnail, readyAstcCount:%{public}d, restoreAstcCount:%{public}d, "
+        "waitAstcNum:%{public}" PRIu64, readyAstcCount, restoreAstcCount, waitAstcNum);
     BackupFileUtils::GenerateThumbnailsAfterRestore(restoreAstcCount);
     uint64_t thumbnailProcessedNumber = 0;
-    while (thumbnailProcessedNumber < thumbnailTotalNumber_) {
+    while (thumbnailProcessedNumber < waitAstcNum) {
         thumbnailProcessedNumber_ = thumbnailProcessedNumber;
         sleep(THUMBNAIL_QUERY_INTERVAL);
         int32_t newReadyAstcCount = BackupDatabaseUtils::QueryReadyAstcCount(mediaLibraryRdb_);
@@ -1211,7 +1214,6 @@ void BaseRestore::RestoreThumbnail()
         thumbnailProcessedNumber += static_cast<uint64_t>(newReadyAstcCount - readyAstcCount);
         readyAstcCount = newReadyAstcCount;
     }
-    uint64_t thumbnailTotalNumber = thumbnailTotalNumber_;
     thumbnailProcessedNumber_ = thumbnailProcessedNumber < thumbnailTotalNumber ?
         thumbnailProcessedNumber : thumbnailTotalNumber;
     MEDIA_INFO_LOG("Finish RestoreThumbnail, readyAstcCount:%{public}d, restoreAstcCount:%{public}d",
