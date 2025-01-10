@@ -38,6 +38,7 @@ export struct PhotoPickerComponent {
   onVideoPlayStateChanged?: VideoPlayStateChangedCallback;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
   private proxy: UIExtensionProxy | undefined;
+  @State revokeIndex = 0;
 
   private onChanged(): void {
     if (!this.proxy) {
@@ -150,6 +151,7 @@ export struct PhotoPickerComponent {
       Column() {
         SecurityUIExtensionComponent({
           parameters: {
+            errorRevokeIndex: this.revokeIndex,
             "ability.want.params.uiExtensionTargetType": "photoPicker",
             uri: "multipleselect",
             targetPage: "photoPage",
@@ -191,8 +193,12 @@ export struct PhotoPickerComponent {
             let wantParam: Record<string, Object> = data as Record<string, Object>;
             this.handleOnReceive(wantParam);
           })
-          .onError(() => {
-            console.info('PhotoPickerComponent onError');
+          .onError((error) => {
+            console.info('PhotoPickerComponent onError: ' + JSON.stringify(error));
+            console.info('PhotoPickerComponent revokeIndex: ' + this.revokeIndex);
+            if (error.code === 100014 && this.revokeIndex < 3) {
+              this.revokeIndex++;
+            }
           });
       }
       .width('100%')
@@ -224,6 +230,9 @@ export struct PhotoPickerComponent {
       this.handleCreateCallback(wantParam);
     } else if (dataType === 'saveCallback') {
       this.handleSaveCallback(wantParam);
+    } else if (dataType === 'onBackground') {
+      console.info('PhotoPickerComponent onReceive: onBackground');
+      this.revokeIndex = 0;
     } else {
       this.handleOtherOnReceive(wantParam);
       console.info('PhotoPickerComponent onReceive: other case');
