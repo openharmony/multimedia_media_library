@@ -2609,9 +2609,9 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, ChangeListenerNapi::J
     napi_create_object(env, &result);
     SetValueArray(env, "uris", msg->changeInfo_.uris_, result);
     if (msg->strUri_.find(PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
-        SetSharedAssetArray(env, "SharedAlbumAssets", wrapper, result, false);
+        SetSharedAssetArray(env, "sharedalbumassets", wrapper, result, false);
     } else if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
-        SetSharedAssetArray(env, "SharedPhotoAssets", wrapper, result, true);
+        SetSharedAssetArray(env, "sharedphotoassets", wrapper, result, true);
     } else {
         NAPI_DEBUG_LOG("other albums notify");
     }
