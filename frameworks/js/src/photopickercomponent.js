@@ -267,7 +267,7 @@ export class PhotoPickerComponent extends ViewPU {
             SecurityUIExtensionComponent.onError(((error) => {
                 console.info('PhotoPickerComponent onError: ' + JSON.stringify(error));
                 console.info('PhotoPickerComponent revokeIndex: ' + this.revokeIndex);
-                if (error.code === 100014 && this.revokeIndex < 3) {
+                if (error.code === 100014 && this.revokeIndex < 5) {
                     this.revokeIndex++;
                 }
             }));
@@ -300,9 +300,6 @@ export class PhotoPickerComponent extends ViewPU {
             this.handlePhotoBrowserChange(e);
         } else if ('onVideoPlayStateChanged' === o) {
             this.handleVideoPlayStateChanged(e);
-        } else if ('onBackground' === o) {
-            console.info('PhotoPickerComponent onReceive: onBackground');
-            this.revokeIndex = 0;
         } else {
             this.handleOtherOnReceive(e);
             console.info('PhotoPickerComponent onReceive: other case');
