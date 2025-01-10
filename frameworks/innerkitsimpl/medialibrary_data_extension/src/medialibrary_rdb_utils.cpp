@@ -1232,7 +1232,7 @@ static int32_t UpdateSysAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbStore
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(data.albumId));
     int32_t changedRows = 0;
     err = trans->Update(changedRows, values, predicates);
-    int ret = trans->Finish();
+    int ret = trans->Commit();
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
         "Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
