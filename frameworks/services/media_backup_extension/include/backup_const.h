@@ -51,6 +51,7 @@ constexpr uint32_t COVER_URI_NUM = 3;
 constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
 constexpr int32_t MAX_RESTORE_ASTC_NUM = 2000;
+constexpr uint64_t MAX_UPGRADE_WAIT_ASTC_NUM = 100;
 constexpr uint32_t THUMBNAIL_QUERY_INTERVAL = 3;
 constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
