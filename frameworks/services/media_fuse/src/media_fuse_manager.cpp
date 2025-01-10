@@ -191,10 +191,14 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId)
 int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
 {
     string fileId;
-    string fileName;
     string target = path;
+#ifdef MEDIALIBRARY_EMULATOR
+    bool cond = (path == nullptr || strlen(path) == 0 ||
+        ((target.find("/Photo") != 0) && (target.find("/image") != 0) && (target != "/")));
+#else
     bool cond = (path == nullptr || strlen(path) == 0 ||
         ((target.find("/Photo") != 0) && (target.find("/image") != 0)));
+#endif
     CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Invalid path, %{private}s", path == nullptr ? "null" : path);
     int32_t ret;
     if (IsFullUri(target) == false) {
@@ -305,7 +309,6 @@ int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
 {
     int realFlag = flags & (O_RDONLY | O_WRONLY | O_RDWR | O_TRUNC | O_APPEND);
     string fileId;
-    string fileName;
     string target;
     GetFileIdFromUri(fileId, path);
     GetPathFromFileId(target, fileId);
@@ -321,7 +324,6 @@ int32_t MediaFuseManager::DoRelease(const char *path, const int &fd)
 {
     string fileId;
     string filePath;
-    string fileName;
     GetFileIdFromUri(fileId, path);
     GetPathFromFileId(filePath, fileId);
     if (fd >= 0) {
