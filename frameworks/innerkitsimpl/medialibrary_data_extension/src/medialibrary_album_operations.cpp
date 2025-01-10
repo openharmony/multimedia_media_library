@@ -417,7 +417,7 @@ static int32_t QueryExistingAlbumByLpath(const string& albumName, bool& isDelete
     }
 
     const string sql = "SELECT album_id, album_name, dirty FROM " + PhotoAlbumColumns::TABLE +
-        " WHERE lpath = ?";
+        " WHERE LOWER(lpath) = LOWER(?)";
     const vector<ValueObject> bindArgs { lpath };
     auto resultSet = rdbStore->QueryByStep(sql, bindArgs);
     if (resultSet == nullptr) {
@@ -1393,6 +1393,7 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
             watch->Notify(notifyUri, NotifyType::NOTIFY_UPDATE);
         } else {
             watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
+            watch->Notify(notifyUri, NotifyType::NOTIFY_THUMB_ADD);
         }
         watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSET);
     }

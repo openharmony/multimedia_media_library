@@ -110,6 +110,9 @@ void CloudSyncSwitchManager::RegisterObserver()
     std::string queryUri = QUERY_URI + CLOUDDRIVE_BUNDLE_NAME + "/sync_switch?bundleName=" + GALLERY_BUNDLE_NAME;
 
     sptr<CloudSyncSwitchObserver> switchObserver(new (std::nothrow) CloudSyncSwitchObserver());
+    if (switchObserver == nullptr) {
+        return;
+    }
     Uri observerUri(queryUri);
     dataShareHelper->RegisterObserver(observerUri, switchObserver);
 }

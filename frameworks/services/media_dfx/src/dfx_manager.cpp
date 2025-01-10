@@ -601,6 +601,7 @@ void CloudSyncDfxManager::StartTimer()
         return;
     }
     Utils::Timer::TimerCallback timerCallback = [this]() {
+        (void)this;
         if (IsReported()) {
             return;
         }

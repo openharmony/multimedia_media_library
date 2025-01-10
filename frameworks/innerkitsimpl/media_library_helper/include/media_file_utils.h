@@ -192,6 +192,8 @@ public:
     EXPORT static bool IsCalledBySelf();
     EXPORT static std::vector<std::string> GetAllTypes(const int32_t extension);
     EXPORT static bool IsValidInteger(const std::string &value);
+    EXPORT static int32_t CreateAssetRealName(
+        int32_t fileId, int32_t mediaType, const std::string &extension, std::string &name);
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
     static int32_t RemoveDirectory(const std::string &path);

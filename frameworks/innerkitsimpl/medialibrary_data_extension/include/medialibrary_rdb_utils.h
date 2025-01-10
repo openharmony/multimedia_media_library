@@ -103,6 +103,7 @@ public:
         const std::vector<std::string> &whereIdArgs);
     EXPORT static int32_t UpdateThumbnailRelatedDataToDefault(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const int64_t fileId);
+    EXPORT static void TransformAppId2TokenId(const std::shared_ptr<MediaLibraryRdbStore> &store);
 
 private:
     static std::atomic<bool> isNeedRefreshAlbum;

@@ -391,6 +391,10 @@ public:
     template <class AsyncContext>
     static napi_status ParseArgsOnlyCallBack(napi_env env, napi_callback_info info, AsyncContext &context);
 
+    static napi_value ParseAssetIdArray(napi_env env, napi_value arg, std::vector<std::string> &idArray);
+
+    static napi_value ParseIntegerArray(napi_env env, napi_value arg, std::vector<int32_t> &intArray);
+
     static AssetType GetAssetType(MediaType type);
 
     static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition);
@@ -465,6 +469,8 @@ public:
 
     static napi_value GetNapiValueArray(napi_env env, napi_value arg, std::vector<napi_value> &values);
     static napi_value GetUriArrayFromAssets(
+        napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
+    static napi_value GetIdArrayFromAssets(
         napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
     static napi_value GetStringArray(
         napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
