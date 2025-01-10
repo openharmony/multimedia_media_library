@@ -314,6 +314,7 @@ private:
     EXPORT static napi_value PhotoAccessStopCreateThumbnailTask(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetBurstAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetDataAnalysisProgress(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperSetForceHideSensitiveType(napi_env env, napi_callback_info info);
     
@@ -470,12 +471,14 @@ struct MediaLibraryAsyncContext : public NapiError {
     OHOS::DataShare::DataSharePredicates predicates;
     std::vector<std::string> fetchColumn;
     std::vector<std::string> uris;
+    bool isForce = false;
     bool hiddenOnly = false;
     bool isAnalysisAlbum = false;
     int32_t hiddenAlbumFetchMode = -1;
     std::string formId;
     std::string indexProgress;
     std::shared_ptr<PickerCallBack> pickerCallBack;
+    std::vector<std::string> analysisDatas;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

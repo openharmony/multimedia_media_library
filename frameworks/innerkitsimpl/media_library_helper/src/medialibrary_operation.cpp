@@ -115,6 +115,8 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
         { GEO_KNOWLEDGE_TABLE, OperationObject::GEO_KNOWLEDGE },
         { PAH_ANA_ADDRESS, OperationObject::ANALYSIS_ADDRESS },
+        { PAH_ANA_ADDRESS_ASSETS, OperationObject::ANALYSIS_ADDRESS_ASSETS },
+        { PAH_ANA_ADDRESS_ASSETS_ACTIVE, OperationObject::ANALYSIS_ADDRESS_ASSETS_ACTIVE },
         { PAH_GEO_PHOTOS, OperationObject::GEO_PHOTO },
 
         // use in convert
@@ -197,6 +199,9 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::ANALYSIS_PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
         { OperationObject::PAH_FORM_MAP, { { OperationType::UNKNOWN_TYPE, FormMap::FORM_MAP_TABLE } } },
         { OperationObject::ANALYSIS_ADDRESS, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
+        { OperationObject::ANALYSIS_ADDRESS_ASSETS, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
+        { OperationObject::ANALYSIS_ADDRESS_ASSETS_ACTIVE,
+            { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
             { { OperationType::UNKNOWN_TYPE, VISION_ANALYSIS_ALBUM_TOTAL_TABLE } } },
         { OperationObject::TAB_OLD_PHOTO, { { OperationType::UNKNOWN_TYPE, TabOldPhotosColumn::OLD_PHOTOS_TABLE } }},
