@@ -268,6 +268,7 @@ const std::string SEARCH_INDEX_CONSTRUCTION_STATUS = "phaccess_search_index_cons
 const std::string PAH_ANA_MULTI_CROP = "phaccess_ana_multi_crop_operation";
 const std::string PAH_ANA_ASSET_SD = "tab_analysis_asset_sd_map";
 const std::string PAH_ANA_ALBUM_ASSET = "tab_analysis_album_asset_map";
+const std::string PAH_ANA_INTIMACY = "phaccess_ana_intimacy_operation";
 // PhotoAccessHelper photo operation constants
 const std::string PAH_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CREATE;
 const std::string PAH_CREATE_PHOTO_COMPONENT = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CREATE_COMPONENT;
@@ -406,6 +407,7 @@ const std::string PAH_QUERY_ANA_TOTAL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_TO
 const std::string PAH_QUERY_MULTI_CROP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MULTI_CROP + "/" + OPRN_QUERY;
 const std::string PAH_UPDATE_ANA_FACE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_FACE + "/" + OPRN_UPDATE;
 const std::string PAH_DELETE_HIGHLIGHT_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_HIGHLIGHT_DELETE + "/" + OPRN_DELETE;
+const std::string PAH_QUERY_ANA_INTIMACY = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_INTIMACY + "/" + OPRN_QUERY;
 
 // PhotoAccessHelper moving photo
 const std::string PAH_MOVING_PHOTO_SCAN = MEDIALIBRARY_DATA_URI + "/" + MEDIA_MOVING_PHOTO_OPRN_KEYWORD + "/" +

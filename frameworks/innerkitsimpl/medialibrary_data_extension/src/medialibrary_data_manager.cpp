@@ -106,8 +106,11 @@
 #include "value_object.h"
 #include "post_event_utils.h"
 #include "medialibrary_formmap_operations.h"
+#include "intimacy_column.h"
 #include "ithumbnail_helper.h"
+#include "vision_album_column.h"
 #include "vision_face_tag_column.h"
+#include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
 #include "parameter.h"
 #include "parameters.h"
@@ -1879,6 +1882,28 @@ shared_ptr<NativeRdb::ResultSet> QueryIndex(MediaLibraryCommand &cmd, const vect
     }
 }
 
+shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryIntimacyInfo(MediaLibraryCommand &cmd,
+    const vector<string> &columns)
+{
+    string isMeSqlQuery = "SELECT " + ALBUM_ID + "," + TAG_ID + "," + IS_ME + " FROM " + ANALYSIS_ALBUM_TABLE + \
+        " WHERE " + ALBUM_ID + "=" + columns[0];
+    MEDIA_INFO_LOG("isMeSqlQuery:%{public}s", isMeSqlQuery.c_str());
+    auto resultSet = rdbStore_->QuerySql(isMeSqlQuery);
+    resultSet->GoToFirstRow();
+    int isMe = GetInt32Val(IS_ME, resultSet);
+    if (isMe == 1) {
+        string sqlQuery = "SELECT " + ALBUM_ID + "," + INTIMACY_IMPORTANCE + \
+            " FROM " + INTIMACY_INFO_TABLE + " ORDER BY " + INTIMACY_IMPORTANCE + " DESC LIMIT 100";
+        MEDIA_INFO_LOG("Importance sqlQuery:%{public}s", sqlQuery.c_str());
+        return rdbStore_->QuerySql(sqlQuery);
+    } else {
+        string sqlQuery = "SELECT " + INTIMACY_DATA + " FROM " + INTIMACY_INFO_TABLE + \
+            " WHERE " + ALBUM_ID + "=" + columns[0];
+        MEDIA_INFO_LOG("Similarity sqlQuery:%{public}s", sqlQuery.c_str());
+        return rdbStore_->QuerySql(sqlQuery);
+    }
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
@@ -1930,6 +1955,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::TAB_OLD_PHOTO:
             return MediaLibraryTabOldPhotosOperations().Query(
                 RdbUtils::ToPredicates(predicates, TabOldPhotosColumn::OLD_PHOTOS_TABLE), columns);
+        case OperationObject::INTIMACY_INFO:
+            return QueryIntimacyInfo(cmd, columns);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
