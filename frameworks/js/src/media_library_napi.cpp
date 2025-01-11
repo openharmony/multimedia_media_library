@@ -6357,7 +6357,7 @@ static bool EasterEgg(MediaLibraryAsyncContext* context)
         return false;
     }
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NAPI_ERR_LOG("Easter egg operation failed, taget is not system app");
+        NAPI_ERR_LOG("Easter egg operation failed, target is not system app");
         return false;
     };
     bool isQueryCount = find(context->fetchColumn.begin(), context->fetchColumn.end(), MEDIA_COLUMN_COUNT)

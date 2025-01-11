@@ -668,7 +668,8 @@ std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilterOption opt
 std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilterConfig &config)
 {
     std::string whereClause = "";
-    whereClause += "clean_flag = 0 AND time_pending = 0 AND is_temp = 0 AND burst_cover_level = 1 AND ";
+    whereClause += "sync_status = 0 AND clean_flag = 0 AND time_pending = 0 \
+        AND is_temp = 0 AND burst_cover_level = 1 AND ";
     whereClause += "date_trashed = " + std::string(config.isQueryTrashed ? "1" : "0") + " AND ";
     whereClause += "hidden = " + std::string(config.isQueryHidden ? "1" : "0");
     return whereClause;
