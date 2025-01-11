@@ -137,6 +137,9 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ANA_ALBUM_ASSET, OperationObject::ANALYSIS_ALBUM_ASSET_MAP },
         { PAH_HIGHLIGHT_DELETE, OperationObject::HIGHLIGHT_DELETE },
 
+        // intimacy
+        { PAH_ANA_INTIMACY, OperationObject::INTIMACY_INFO},
+
         // others
         { MISC_OPERATION, OperationObject::MISCELLANEOUS },
         { PTP_OPERATION, OperationObject::PTP_OPERATION },
