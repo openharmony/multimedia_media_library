@@ -105,6 +105,7 @@ enum class EXPORT OperationObject : uint32_t {
     CLOUD_MEDIA_ASSET_OPERATE,
     PTP_OPERATION,
     EDIT_DATA_EXISTS,
+    INTIMACY_INFO,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -200,6 +201,7 @@ enum class EXPORT OperationType : uint32_t {
     UPDATE_ORDER,
     CUSTOM_RESTORE,
     CUSTOM_RESTORE_CANCEL,
+    QUERY_INTIMACY_INFO,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()
