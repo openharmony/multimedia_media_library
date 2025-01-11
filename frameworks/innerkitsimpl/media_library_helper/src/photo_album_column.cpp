@@ -49,6 +49,7 @@ const string PhotoAlbumColumns::ALBUM_IS_LOCAL = "is_local";
 const string PhotoAlbumColumns::ALBUM_DATE_ADDED = "date_added";
 const string PhotoAlbumColumns::ALBUM_PRIORITY = "priority";
 const string PhotoAlbumColumns::ALBUM_LPATH = "lpath";
+const string PhotoAlbumColumns::ALBUM_CHECK_FLAG = "check_flag";
 
 // For api9 compatibility
 const string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
@@ -130,7 +131,8 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     ALBUM_IS_LOCAL + " INT, " +
     ALBUM_DATE_ADDED + " BIGINT DEFAULT 0, " +
     ALBUM_LPATH + " TEXT, " +
-    ALBUM_PRIORITY + " INT)";
+    ALBUM_PRIORITY + " INT, " +
+    ALBUM_CHECK_FLAG + " INT DEFAULT 0)";
 
 // Create indexes
 const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +

@@ -17,6 +17,7 @@
 #include "thumbnail_service.h"
 
 #include "display_manager.h"
+#include "dfx_utils.h"
 #include "ipc_skeleton.h"
 #include "ithumbnail_helper.h"
 #include "media_column.h"
@@ -34,6 +35,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_helper.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_source_loading.h"
 #include "thumbnail_uri_utils.h"
 #include "post_event_utils.h"
 #ifdef HAS_THERMAL_MANAGER_PART
@@ -234,6 +236,49 @@ int32_t ThumbnailService::ParseThumbnailParam(const std::string &uri, string &fi
         MEDIA_ERR_LOG("ParseThumbnailInfo faild");
         return E_ERR;
     }
+    return E_OK;
+}
+
+int32_t ThumbnailService::CreateThumbnailPastDirtyDataFix(const std::string &fileId)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .row = fileId
+    };
+    int err = 0;
+    ThumbnailData data;
+
+    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, fileId, data, err);
+    CHECK_AND_RETURN_RET_LOG(
+        err == E_OK, err,
+        "QueryThumbnailDataFromFileId failed, path: %{public}s",
+        DfxUtils::GetSafePath(data.path).c_str());
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    IThumbnailHelper::AddThumbnailGenerateTask(
+        IThumbnailHelper::CreateThumbnail, opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::LOW);
+    return E_OK;
+}
+
+int32_t ThumbnailService::CreateLcdPastDirtyDataFix(const std::string &fileId, const uint8_t quality)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .row = fileId
+    };
+    int err = 0;
+    ThumbnailData data;
+    data.thumbnailQuality = quality;
+
+    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, fileId, data, err);
+    CHECK_AND_RETURN_RET_LOG(
+        err == E_OK, err,
+        "QueryThumbnailDataFromFileId failed, path: %{public}s",
+        DfxUtils::GetSafePath(data.path).c_str());
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    IThumbnailHelper::AddThumbnailGenerateTask(
+        IThumbnailHelper::CreateLcd, opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::LOW);
     return E_OK;
 }
 
