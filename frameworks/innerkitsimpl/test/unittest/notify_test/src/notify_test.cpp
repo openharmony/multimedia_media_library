@@ -235,7 +235,7 @@ static void CheckInfo(shared_ptr<TestObserver> obs, const std::string &uriPrefix
             EXPECT_EQ(obs->changeInfo_.uris_.begin()->ToString(), PhotoColumn::PHOTO_URI_PREFIX + uriPostfix);
         }
     } else {
-        EXPECT_TRUE(false);
+        EXPECT_NE(obs, nullptr);
     }
 }
 
