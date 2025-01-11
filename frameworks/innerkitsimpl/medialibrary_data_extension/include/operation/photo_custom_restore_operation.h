@@ -91,7 +91,7 @@ private:
     void ReleaseCustomRestoreTask(RestoreTaskInfo &restoreTaskInfo);
     int32_t HandleCustomRestore(RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst);
     bool HandleFirstRestoreFile(
-        RestoreTaskInfo &restoreTaskInfo, vector<string> &files, int32_t &index, int32_t &firstRestoreIndex);
+        RestoreTaskInfo &restoreTaskInfo, vector<string> &files, int32_t index, int32_t &firstRestoreIndex);
     void HandleBatchCustomRestore(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, vector<string> subFiles);
     vector<FileInfo> GetFileInfos(vector<string> &filePathVector, UniqueNumber &uniqueNumber);
     int32_t UpdateUniqueNumber(UniqueNumber &uniqueNumber);
