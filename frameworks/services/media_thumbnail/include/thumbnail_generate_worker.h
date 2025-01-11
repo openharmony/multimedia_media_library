@@ -102,6 +102,7 @@ public:
     bool isThreadWaiting_ = false;
     int32_t taskNum_ = 0;
     CpuAffinityType cpuAffinityType = CpuAffinityType::CPU_IDX_DEFAULT;
+    CpuAffinityType cpuAffinityTypeLowPriority = CpuAffinityType::CPU_IDX_DEFAULT;
 };
 
 class ThumbnailGenerateWorker {

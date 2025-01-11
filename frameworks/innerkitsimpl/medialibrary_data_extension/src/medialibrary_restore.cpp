@@ -136,6 +136,8 @@ void MediaLibraryRestore::ResetHAModeSwitchStatus()
 #ifdef CLOUD_SYNC_MANAGER
     auto ret = FileManagement::CloudSync::CloudSyncManager::GetInstance().StartSync(BUNDLE_NAME);
     MEDIA_INFO_LOG("ResetHAModeSwitchStatus::StartSync [%{public}d]", ret);
+    ret = FileManagement::CloudSync::CloudSyncManager::GetInstance().DownloadThumb();
+    MEDIA_INFO_LOG("ResetHAModeSwitchStatus::DownloadThumb [%{public}d]", ret);
 #endif
 }
 
