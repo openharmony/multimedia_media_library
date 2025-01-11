@@ -21,7 +21,6 @@
 #include <fcntl.h>
 #include <functional>
 #include <sys/sendfile.h>
-#include <nlohmann/json.hpp>
 
 #include "access_token.h"
 #include "accesstoken_kit.h"
@@ -32,8 +31,6 @@
 #include "file_ex.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
-#include "intimacy_column.h"
-#include "intimacy_similarity.h"
 #include "location_column.h"
 #include "locale_config.h"
 #include "media_device_column.h"
@@ -360,7 +357,6 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getSupportedPhotoFormats", PhotoAccessGetSupportedPhotoFormats),
             DECLARE_NAPI_FUNCTION("setForceHideSensitiveType", PhotoAccessHelperSetForceHideSensitiveType),
             DECLARE_NAPI_FUNCTION("getAnslysisData", PhotoAccessHelperGetAnalysisData),
-            DECLARE_NAPI_FUNCTION("getIntimacyInfo", PhotoAccessGetIntimacyInfo),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -9247,113 +9243,5 @@ napi_value MediaLibraryNapi::PhotoAccessGetSharedPhotoAssets(napi_env env, napi_
     resultSet->Close();
     return jsFileArray;
 }
-
-static napi_value ParseArgsGetIntimacyInfo(napi_env env, napi_callback_info info,
-    unique_ptr<MediaLibraryAsyncContext> &context)
-{
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return nullptr;
-    }
-
-    constexpr size_t minArgs = ARGS_ONE;
-    constexpr size_t maxArgs = ARGS_ONE;
-    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
-        JS_ERR_PARAMETER_INVALID);
-    
-    string uri;
-    MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], uri);
-
-    MediaFileUri albumUri(uri);
-    CHECK_COND(env, albumUri.GetUriType() == API10_PHOTOALBUM_URI ||
-        albumUri.GetUriType() == API10_ANALYSISALBUM_URI, JS_ERR_PARAMETER_INVALID);
-    context->fetchColumn.emplace_back(albumUri.GetFileId());
-
-    napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
-    return result;
-}
-
-static void PhotoAccessGetIntimacyInfoExecute(napi_env env, void *data)
-{
-    NAPI_INFO_LOG("PhotoAccessGetIntimacyInfoExecute enter");
-    MediaLibraryTracer tracer;
-    tracer.Start("PhotoAccessGetIntimacyInfoExecute");
-
-    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
-    string queryUri = PAH_QUERY_ANA_INTIMACY;
-    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-
-    Uri uri(queryUri);
-    int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
-    if (resultSet == nullptr) {
-        context->SaveError(errCode);
-        return;
-    }
-
-    int rowCount = 0;
-    if (resultSet->GetRowCount(rowCount) != NativeRdb::E_OK || rowCount == 0) {
-        NAPI_INFO_LOG("invalid row count");
-        context->intimacyInfo = "[]";
-        return;
-    }
-
-    if (rowCount == 1) {
-        resultSet->GoToFirstRow();
-        context->intimacyInfo = GetStringVal(INTIMACY_DATA, resultSet);
-    } else {
-        vector<IntimacySimilarity> intimacyImportance;
-        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            int32_t albumId = GetInt32Val(ALBUM_ID, resultSet);
-            double importance = GetDoubleVal(INTIMACY_IMPORTANCE, resultSet);
-
-            if (stoi(context->fetchColumn[0]) != albumId) {
-                intimacyImportance.emplace_back(albumId, importance);
-            }
-        }
-        nlohmann::json importanceJson = intimacyImportance;
-        context->intimacyInfo = importanceJson.dump();
-    }
-    
-    tracer.Finish();
-    NAPI_INFO_LOG("PhotoAccessGetIntimacyInfoExecute exit");
-}
-
-static void GetIntimacyInfoAsyncCallbackComplete(napi_env env, napi_status status, void *data)
-{
-    NAPI_INFO_LOG("GetIntimacyInfoAsyncCallbackComplete enter");
-
-    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
-    auto jsContext = make_unique<JSAsyncContextOutput>();
-    jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_ERR_PARAMETER_INVALID);
-    if (context->error != ERR_DEFAULT) {
-        context->HandleError(env, jsContext->error);
-    } else {
-        jsContext->status = true;
-        napi_create_string_utf8(env, context->intimacyInfo.c_str(), NAPI_AUTO_LENGTH, &jsContext->data);
-    }
-
-    if (context->work != nullptr) {
-        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
-                                                   context->work, *jsContext);
-    }
-    delete context;
-
-    NAPI_INFO_LOG("GetIntimacyInfoAsyncCallbackComplete exit");
-}
-
-napi_value MediaLibraryNapi::PhotoAccessGetIntimacyInfo(napi_env env, napi_callback_info info)
-{
-    NAPI_INFO_LOG("PhotoAccessGetIntimacyInfo enter");
-    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    CHECK_NULLPTR_RET(ParseArgsGetIntimacyInfo(env, info, asyncContext));
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetIntimacyInfo",
-        PhotoAccessGetIntimacyInfoExecute, GetIntimacyInfoAsyncCallbackComplete);
-}
-
 } // namespace Media
 } // namespace OHOS
