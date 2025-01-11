@@ -350,14 +350,16 @@ HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12
     }
 
     int ret = -1;
+    int64_t targetId = 21;
     OHOS::DataShare::DataShareValuesBucket dataShareValue;
     dataShareValue.Put(AppUriSensitiveColumn::FILE_ID, photoId);
     dataShareValue.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE,
         AppUriSensitiveColumn::SENSITIVE_ALL_DESENSITIZE);
     dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE,
         AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
+    dataShareValue.Put(AppUriPermissionColumn::TARGET_TOKENID, targetId);
     ret = TestInsert(dataShareValue);
-    EXPECT_EQ(ret, MediaLibraryAppUriSensitiveOperations::ERROR);
+    EXPECT_EQ(ret, MediaLibraryAppUriSensitiveOperations::SUCCEED);
 
     MEDIA_INFO_LOG("end tdd app_uri_sensitive_oprn_api12_test_004");
 }
