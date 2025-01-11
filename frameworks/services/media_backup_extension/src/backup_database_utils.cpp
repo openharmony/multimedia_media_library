@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -906,6 +906,23 @@ int32_t BackupDatabaseUtils::QueryReadyAstcCount(std::shared_ptr<NativeRdb::RdbS
 {
     const std::string QUERY_READY_ASTC_COUNT = "SELECT count(1) AS count FROM Photos WHERE thumbnail_ready > 0";
     return QueryInt(rdbStore, QUERY_READY_ASTC_COUNT, CUSTOM_COUNT);
+}
+
+std::unordered_map<int32_t, int32_t> BackupDatabaseUtils::QueryMediaTypeCount(
+    const std::shared_ptr<NativeRdb::RdbStore>& rdbStore, const std::string& querySql)
+{
+    std::unordered_map<int32_t, int32_t> mediaTypeCountMap;
+    auto resultSet = GetQueryResultSet(rdbStore, querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is nullptr");
+        return mediaTypeCountMap;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t mediaType = GetInt32Val(EXTERNAL_MEDIA_TYPE, resultSet);
+        int32_t count = GetInt32Val(CUSTOM_COUNT, resultSet);
+        mediaTypeCountMap[mediaType] = count;
+    }
+    return mediaTypeCountMap;
 }
 } // namespace Media
 } // namespace OHOS
