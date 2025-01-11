@@ -107,6 +107,7 @@ const std::string PhotoColumn::PHOTO_STRONG_ASSOCIATION = "strong_association";
 const std::string PhotoColumn::PHOTO_ASSOCIATE_FILE_ID = "associate_file_id";
 const std::string PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK = "has_cloud_watermark";
 const std::string PhotoColumn::PHOTO_DETAIL_TIME = "detail_time";
+const std::string PhotoColumn::PHOTO_CHECK_FLAG = "check_flag";
 
 const std::string PhotoColumn::PHOTO_OWNER_ALBUM_ID = "owner_album_id";
 const std::string PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID = "original_asset_cloud_id";
@@ -143,6 +144,8 @@ const std::string PhotoColumn::PHOTO_CLOUD_URI_PREFIX = "file://cloudsync/Photo/
 
 const std::string PhotoColumn::PHOTO_HEIGHT_ERROR_URI_PREFIX = "file://cloudsync/Photo/HeightError/";
 const std::string PhotoColumn::PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX = "file://cloudsync/Photo/DownloadSucceed/";
+
+const std::string PhotoColumn::PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX = "file:://cloudsync/gallery/rebuild/";
 
 const std::string PhotoColumn::PHOTO_REQUEST_PICTURE = "file://media/Photo/picture/";
 const std::string PhotoColumn::PHOTO_REQUEST_PICTURE_BUFFER = "file://media/Photo/pictureBuffer/";
@@ -226,7 +229,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_OWNER_ALBUM_ID + " INT DEFAULT 0, " +
     PHOTO_ORIGINAL_ASSET_CLOUD_ID + " TEXT, " +
     PHOTO_THUMBNAIL_VISIBLE + " INT DEFAULT 0, " +
-    PHOTO_SOURCE_PATH + " TEXT)";
+    PHOTO_SOURCE_PATH + " TEXT, " +
+    PHOTO_CHECK_FLAG + " INT DEFAULT 0)";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
     PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";

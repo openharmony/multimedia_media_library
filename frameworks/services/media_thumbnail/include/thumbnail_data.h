@@ -151,6 +151,7 @@ public:
     EXPORT int32_t orientation {0};
     EXPORT int32_t photoHeight {0};
     EXPORT int32_t photoWidth {0};
+    EXPORT uint8_t thumbnailQuality {THUMBNAIL_MID};
 
     // Loaded lcd source can be resized to generate thumbnail in order
     EXPORT bool needResizeLcd {false};
