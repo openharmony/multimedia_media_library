@@ -66,6 +66,8 @@ public:
     static std::shared_ptr<NativeRdb::ResultSet> QueryPortraitAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
     static void DealwithNoAlbumAssets(const std::vector<std::string> &whereArgs);
+    static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUserAlbum, int64_t &newAlbumId);
+    static int32_t GetLPathFromSourcePath(const string &sourcePath, string &lPath, int32_t mediaType);
 };
 } // namespace Media
 } // namespace OHOS

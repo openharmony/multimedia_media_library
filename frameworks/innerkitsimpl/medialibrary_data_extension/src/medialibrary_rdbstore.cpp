@@ -2948,6 +2948,19 @@ static void AddThumbnailReady(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddCheckFlag(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_CHECK_FLAG + " INT DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::ALBUM_CHECK_FLAG + " INT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("start add check_flag columns");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add check_flag columns");
+}
+
 static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
 {
     std::string checkSql = "PRAGMA table_info(" + PhotoColumn::PHOTOS_TABLE + ")";
@@ -3784,6 +3797,10 @@ static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_SUPPORTED_WATERMARK_TYPE) {
         AddSupportedWatermarkType(store);
+    }
+
+    if (oldVersion < VERSION_ADD_CHECK_FLAG) {
+        AddCheckFlag(store);
     }
 }
 

@@ -60,6 +60,16 @@ enum DirType {
     DIR_TYPE_MAX
 };
 
+enum class CloudSyncErrType : int32_t {
+    OTHER_ERROR = 0,
+    CONTENT_NOT_FOUND,
+    THM_NOT_FOUND,
+    LCD_NOT_FOUND,
+    LCD_SIZE_IS_TOO_LARGE,
+    CONTENT_SIZE_IS_ZERO,
+    ALBUM_NOT_FOUND
+};
+
 enum PrivateAlbumType {
     TYPE_FAVORITE = 0,
     TYPE_TRASH,

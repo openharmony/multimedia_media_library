@@ -1114,7 +1114,8 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     return changedRows;
 }
 
-static int32_t GetLPathFromSourcePath(const string &sourcePath, string &lPath, int32_t mediaType)
+int32_t MediaLibraryAlbumOperations::GetLPathFromSourcePath(const string& sourcePath, string& lPath,
+                                                            int32_t mediaType)
 {
     size_t pos1 = SOURCE_PATH_PREFIX.length();
     size_t pos2 = sourcePath.find_last_of("/");
@@ -1157,16 +1158,11 @@ static bool HasSameLpath(const string &lPath, const string &assetId)
     return true;
 }
 
-static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUserAlbum, int64_t &newAlbumId)
+void MediaLibraryAlbumOperations::RecoverAlbum(const string& assetId, const string& lPath,
+                                               bool& isUserAlbum, int64_t& newAlbumId)
 {
-    if (lPath.empty()) {
-        MEDIA_ERR_LOG("lPath empyt, cannot recover album");
-        return;
-    }
-    if (HasSameLpath(lPath, assetId)) {
-        MEDIA_ERR_LOG("Has same lpath, no need to build new one");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(!lPath.empty(), "lPath empty, cannot recover album");
+    CHECK_AND_RETURN_LOG(!HasSameLpath(lPath, assetId), "Has same lpath, no need to build new one");
     const string userAlbumMark = "/Users/";
     if (lPath.find(userAlbumMark) != string::npos) {
         isUserAlbum = true;
@@ -1200,17 +1196,11 @@ static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUse
     values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundleName);
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
     int32_t ret = rdbStore->Insert(newAlbumId, PhotoAlbumColumns::TABLE, values);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Insert album failed on recover assets");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "Insert album failed on recover assets");
     const std::string UPDATE_NEW_ALBUM_ID_IN_PHOTOS = "UPDATE Photos SET owner_album_id = " +
         to_string(newAlbumId) + " WHERE file_id = " + assetId;
     ret = rdbStore->ExecuteSql(UPDATE_NEW_ALBUM_ID_IN_PHOTOS);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Update new album is fails");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "Update new album is fails");
 }
 
 static int32_t RebuildDeletedAlbum(shared_ptr<NativeRdb::ResultSet> &photoResultSet, std::string &assetId)
@@ -1222,8 +1212,8 @@ static int32_t RebuildDeletedAlbum(shared_ptr<NativeRdb::ResultSet> &photoResult
         GetInt32Val(PhotoColumn::MEDIA_TYPE, photoResultSet);
     bool isUserAlbum = false;
     int64_t newAlbumId = -1;
-    GetLPathFromSourcePath(sourcePath, lPath, mediaType);
-    RecoverAlbum(assetId, lPath, isUserAlbum, newAlbumId);
+    MediaLibraryAlbumOperations::GetLPathFromSourcePath(sourcePath, lPath, mediaType);
+    MediaLibraryAlbumOperations::RecoverAlbum(assetId, lPath, isUserAlbum, newAlbumId);
     if (newAlbumId == -1) {
         MEDIA_ERR_LOG("Recover album fails");
         return E_INVALID_ARGUMENTS;
