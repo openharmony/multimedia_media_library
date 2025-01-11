@@ -213,8 +213,13 @@ const std::string MediaLibraryRdbStore::IsCallerSelfFunc(const std::vector<std::
     return "true";
 }
 
+constexpr int REGEXP_REPLACE_PARAM_NUM = 3;
 const std::string MediaLibraryRdbStore::RegexReplaceFunc(const std::vector<std::string> &args)
 {
+    if (args.size() < REGEXP_REPLACE_PARAM_NUM) {
+        MEDIA_ERR_LOG("Invalid arg count %{public}zu: args must contain at least 3 strings", args.size());
+        return "";
+    }
     const std::string &input = args[0];
     const std::string &pattern = args[1];
     const std::string &replacement = args[2];
@@ -238,7 +243,6 @@ const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<s
     return "";
 }
 
-constexpr int REGEXP_REPLACE_PARAM_NUM = 3;
 MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
     if (context == nullptr) {
