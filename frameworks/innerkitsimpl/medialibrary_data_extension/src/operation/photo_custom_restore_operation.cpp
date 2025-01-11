@@ -219,7 +219,7 @@ void PhotoCustomRestoreOperation::ReportCustomRestoreTask(RestoreTaskInfo &resto
 }
 
 bool PhotoCustomRestoreOperation::HandleFirstRestoreFile(
-    RestoreTaskInfo &restoreTaskInfo, vector<string> &files, int32_t &index, int32_t &firstRestoreIndex)
+    RestoreTaskInfo &restoreTaskInfo, vector<string> &files, int32_t index, int32_t &firstRestoreIndex)
 {
     vector<string> subFiles(files.begin() + index, files.begin() + index + 1);
     int32_t errCode = HandleCustomRestore(restoreTaskInfo, subFiles, true);
@@ -232,7 +232,7 @@ bool PhotoCustomRestoreOperation::HandleFirstRestoreFile(
     if (isFirstRestoreSuccess) {
         MEDIA_ERR_LOG("first file restore success.");
         firstRestoreIndex = index;
-        int notifyType = index = lastIndex ? NOTIFY_FIRST : NOTIFY_LAST;
+        int notifyType = index == lastIndex ? NOTIFY_FIRST : NOTIFY_LAST;
         SendNotifyMessage(restoreTaskInfo, notifyType, errCode, 1);
     }
     return isFirstRestoreSuccess;
