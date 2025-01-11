@@ -19,6 +19,7 @@
 #include "medialibrary_db_const.h"
 
 #include <unordered_map>
+#include <unordered_set>
 
 namespace OHOS {
 namespace Media {
@@ -128,6 +129,7 @@ const std::string PHOTO_URI_PREFIX = "file://media/Photo/";
 
 const std::string THUMBNAIL_FORMAT = "image/jpeg";
 const std::string THUMBASTC_FORMAT = "image/astc/4*4";
+constexpr uint8_t THUMBNAIL_EIGHTY = 80;
 constexpr uint8_t THUMBNAIL_MID = 90;
 constexpr uint8_t THUMBNAIL_HIGH = 100;
 constexpr uint8_t ASTC_LOW_QUALITY = 20;
@@ -173,6 +175,12 @@ const size_t LCD_UPLOAD_LIMIT_SIZE = 2048000;
 
 // Only check the latest 3000 data to avoid opreation taking too long time
 const uint32_t MAXIMUM_LCD_CHECK_NUM = 3000;
+
+const std::unordered_set<uint8_t> THUMBNAIL_QUALITY_SET = {
+    THUMBNAIL_EIGHTY,
+    THUMBNAIL_MID,
+    THUMBNAIL_HIGH,
+};
 
 static inline std::string GetThumbnailPath(const std::string &path, const std::string &key)
 {
