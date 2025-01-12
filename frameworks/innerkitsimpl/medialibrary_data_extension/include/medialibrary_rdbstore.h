@@ -86,7 +86,6 @@ public:
         const std::string &tableName);
     static void AddColumnIfNotExists(NativeRdb::RdbStore &store, const std::string &columnName,
         const std::string &columnType, const std::string &tableName);
-    static void AddHighlightAnalysisProgress(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static int32_t QueryPragma(const std::string &key, int64_t &value);
     EXPORT static void SetOldVersion(int32_t oldVersion);
     EXPORT static int32_t GetOldVersion();
