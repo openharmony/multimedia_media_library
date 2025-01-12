@@ -82,6 +82,7 @@
 #include "window.h"
 #include "permission_utils.h"
 #include "userfilemgr_uri.h"
+#include "user_photography_info_column.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -6164,21 +6165,35 @@ static std::string GetLabelAnalysisProgress()
 
 static std::string GetFaceAnalysisProgress()
 {
-    unordered_map<int, string> idxToCount = {
-        {0, "totalCount"}, {1, "finishedCount"}, {2, "PortraitCoverCount"}, {3, "PortraitCount"},
-    };
+    Uri uri(URI_USER_PHOTOGRAPHY_INFO)
     vector<string> columns = {
-        "COUNT(*) AS totalCount",
-        "SUM(CASE WHEN ((aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 "
-            "AND saliency != 0 AND segmentation != 0 AND head != 0 AND Photos.media_type = 1) OR "
-            "(label != 0 AND face != 0 AND Photos.media_type = 2)) THEN 1 ELSE 0 END) AS finishedCount",
-        "SUM(CASE WHEN face = 3 THEN 1 ELSE 0 END) AS PortraitCoverCount",
-        "SUM(CASE WHEN face > 0 THEN 1 ELSE 0 END) AS PortraitCount"
+        HIGHLIGHT_ANALYSIS_PROGRESS
     };
-    nlohmann::json jsonObj;
-    GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
-    NAPI_INFO_LOG("Progress json is %{public}s", jsonObj.dump().c_str());
-    return jsonObj.dump();
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(AVERAGE_AESTHETICS_SCORE, -1)->And()
+        ->EqualTo(CAPTURE_AESTHETICS_SCORE, -1)->And()
+        ->EqualTo(AVERAGE_AESTHETICS_COUNT, -1)->And()
+        ->EqualTo(CAPTURE_AESTHETICS_COUNT, -1)->And()
+        ->EqualTo(CALCULATE_TIME_START, -1)->And()
+        ->EqualTo(CALCULATE_TIME_END, -1);
+
+    string retJson = "";
+    int32_t index = 0;
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, columns, errCode);
+    if (ret == nullptr) {
+        NAPI_ERR_LOG("ret is nullptr");
+        return "";
+    }
+    if (ret->GetColumnIndex(HIGHLIGHT_ANALYSIS_PROGRESS, index) != DataShare::E_OK) {
+        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
+        ret->Close();
+        return "";
+    }
+    ret->GetString(index, retJson);
+    ret->Close();
+    NAPI_INFO_LOG("Progress json is %{public}s", retJson.c_str());
+    return retJson;
 }
 
 static std::string GetGeoAnalysisProgress()
@@ -6217,6 +6232,7 @@ static std::string GetGeoAnalysisProgress()
     int tmp = -1;
     int32_t retCode = ret->GetRowCount(tmp);
     if (retCode != DataShare::E_OK) {
+         
         NAPI_ERR_LOG("Can not get row count from resultSet, errCode is %{public}d, progress json is %{public}s",
             retCode, retStr.c_str());
         ret->Close();
