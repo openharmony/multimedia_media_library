@@ -3227,6 +3227,15 @@ static void UpdateSearchStatusTriggerForOwnerAlbumId(RdbStore &store)
     MEDIA_INFO_LOG("end update search status trigger for owner album id");
 }
 
+static void AddHighlightAnalysisProgress(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + HIGHLIGHT_ANALYSIS_PROGRESS + " TEXT"
+    };
+    MEDIA_INFO_LOG("start add highlight_analysis_progress column");
+    ExecSqls(sqls, store);
+}
+
 static void AddSupportedWatermarkType(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4098,6 +4107,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
     }
     if (oldVersion < VERSION_ADD_CHECK_FLAG) {
         AddCheckFlag(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_ANALYSIS_PROGRESS) {
+        AddHighlightAnalysisProgress(store);
     }
 }
 
