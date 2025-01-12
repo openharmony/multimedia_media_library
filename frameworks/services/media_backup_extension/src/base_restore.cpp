@@ -250,9 +250,35 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
             UpdateDuplicateNumber(fileInfos[i].fileType);
             continue;
         }
-        values.emplace_back(value);
+        if (fileInfos[i].isNew) {
+            values.emplace_back(value);
+        }
     }
     return values;
+}
+
+static void InsertDateTaken(std::unique_ptr<Metadata> &metadata, FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
+{
+    int64_t dateTaken = metadata->GetDateTaken();
+    if (dateTaken != 0) {
+        value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
+        fileInfo.dateTaken = dateTaken;
+        return;
+    }
+
+    int64_t dateAdded = metadata->GetFileDateAdded();
+    if (dateAdded == 0) {
+        int64_t dateModified = metadata->GetFileDateModified();
+        if (dateModified == 0) {
+            dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+        } else {
+            dateTaken = dateModified;
+        }
+    } else {
+        dateTaken = dateAdded;
+    }
+    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
+    fileInfo.dateTaken = dateTaken;
 }
 
 static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
@@ -340,7 +366,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     }
     value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
     value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
-    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, data->GetDateTaken());
+    InsertDateTaken(data, fileInfo, value);
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
     value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
@@ -361,11 +387,11 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     }
     fileInfo.dateAdded = dateAdded;
     value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, fileInfo.dateTaken));
     value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, fileInfo.dateTaken));
     value.PutString(PhotoColumn::PHOTO_DATE_DAY,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, fileInfo.dateTaken));
     SetCoverPosition(fileInfo, data, value);
 }
 
@@ -500,6 +526,7 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
             continue;
         }
         if (!MoveAndModifyFile(fileInfos[i], sceneCode)) {
+            fileInfos[i].updateMap.clear();
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
             ErrorInfo errorInfo(RestoreError::MOVE_FAILED, 1, "",
                 BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i]));
@@ -549,12 +576,15 @@ int BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos
     int32_t videoFileMoveCount = 0;
     MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
     this->tabOldPhotosRestore_.Restore(this->mediaLibraryRdb_, fileInfos);
+    int64_t startUpdate = MediaFileUtils::UTCTimeMilliSeconds();
+    UpdatePhotosByFileInfoMap(mediaLibraryRdb_, fileInfos);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related"
-        " cost %{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld.",
+        " cost %{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld. update cost"
+        " %{public}ld.",
         (long)(startInsert - startGenerate), (long)rowNum, (long)(startInsertRelated - startInsert),
         (long)(startMove - startInsertRelated), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
-        (long)videoFileMoveCount, (long)(end - startMove));
+        (long)videoFileMoveCount, (long)(startUpdate - startMove), long(end - startUpdate));
     return E_OK;
 }
 
@@ -1079,6 +1109,9 @@ SubProcessInfo BaseRestore::GetSubProcessInfo(const std::string &type)
         UpdateProcessedNumber(updateProcessStatus_, updateProcessedNumber_, updateTotalNumber_);
         success = updateProcessedNumber_;
         total = updateTotalNumber_;
+    } else if (type == STAT_TYPE_THUMBNAIL) {
+        success = thumbnailProcessedNumber_;
+        total = thumbnailTotalNumber_;
     } else if (type == STAT_TYPE_OTHER) {
         UpdateProcessedNumber(otherProcessStatus_, otherProcessedNumber_, otherTotalNumber_);
         success = otherProcessedNumber_;
@@ -1161,13 +1194,36 @@ void BaseRestore::GetUpdateUniqueNumberCount()
 
 void BaseRestore::RestoreThumbnail()
 {
-    // restore thumbnail for date fronted 500 photos
-    MEDIA_INFO_LOG("Start RestoreThumbnail");
-    otherProcessStatus_ = ProcessStatus::START;
-    otherTotalNumber_ += THUMBNAIL_NUM;
-    MEDIA_INFO_LOG("onProcess Update otherTotalNumber_: %{public}lld", (long long)otherTotalNumber_);
-    BackupFileUtils::GenerateThumbnailsAfterRestore();
-    otherProcessStatus_ = ProcessStatus::STOP;
+    // restore thumbnail for date fronted 2000 photos
+    int32_t localNoAstcCount = BackupDatabaseUtils::QueryLocalNoAstcCount(mediaLibraryRdb_);
+    CHECK_AND_RETURN_LOG(localNoAstcCount > 0, "No need to RestoreThumbnail");
+    int32_t restoreAstcCount = localNoAstcCount < MAX_RESTORE_ASTC_NUM ? localNoAstcCount : MAX_RESTORE_ASTC_NUM;
+    uint64_t thumbnailTotalNumber = static_cast<uint64_t>(restoreAstcCount);
+    thumbnailTotalNumber_ = thumbnailTotalNumber;
+    int32_t readyAstcCount = BackupDatabaseUtils::QueryReadyAstcCount(mediaLibraryRdb_);
+    uint64_t waitAstcNum = sceneCode_ != UPGRADE_RESTORE_ID ? thumbnailTotalNumber :
+        std::min(thumbnailTotalNumber, MAX_UPGRADE_WAIT_ASTC_NUM);
+
+    MEDIA_INFO_LOG("Start RestoreThumbnail, readyAstcCount:%{public}d, restoreAstcCount:%{public}d, "
+        "waitAstcNum:%{public}" PRIu64, readyAstcCount, restoreAstcCount, waitAstcNum);
+    BackupFileUtils::GenerateThumbnailsAfterRestore(restoreAstcCount);
+    uint64_t thumbnailProcessedNumber = 0;
+    while (thumbnailProcessedNumber < waitAstcNum) {
+        thumbnailProcessedNumber_ = thumbnailProcessedNumber;
+        sleep(THUMBNAIL_QUERY_INTERVAL);
+        int32_t newReadyAstcCount = BackupDatabaseUtils::QueryReadyAstcCount(mediaLibraryRdb_);
+        if (newReadyAstcCount <= readyAstcCount) {
+            MEDIA_WARN_LOG("Stop RestoreThumbnail, oldReadyAstcCount:%{public}d, newReadyAstcCount:%{public}d",
+                readyAstcCount, newReadyAstcCount);
+            break;
+        }
+        thumbnailProcessedNumber += static_cast<uint64_t>(newReadyAstcCount - readyAstcCount);
+        readyAstcCount = newReadyAstcCount;
+    }
+    thumbnailProcessedNumber_ = thumbnailProcessedNumber < thumbnailTotalNumber ?
+        thumbnailProcessedNumber : thumbnailTotalNumber;
+    MEDIA_INFO_LOG("Finish RestoreThumbnail, readyAstcCount:%{public}d, restoreAstcCount:%{public}d",
+        readyAstcCount, restoreAstcCount);
 }
 
 void BaseRestore::StartBackup()
@@ -1195,6 +1251,33 @@ std::string BaseRestore::GetRestoreTotalInfo()
 int32_t BaseRestore::GetNoNeedMigrateCount()
 {
     return 0;
+}
+
+void BaseRestore::UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    const std::vector<FileInfo>& fileInfos)
+{
+    for (const FileInfo &fileInfo : fileInfos) {
+        auto &updateMap = fileInfo.updateMap;
+        if (fileInfo.fileIdNew <= 0 || fileInfo.isNew || updateMap.empty()) {
+            continue;
+        }
+        int32_t changeRows = 0;
+        std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+            make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
+        predicates->SetWhereClause("file_id=?");
+        predicates->SetWhereArgs({ to_string(fileInfo.fileIdNew) });
+        NativeRdb::ValuesBucket updatePostBucket;
+        for (auto it = updateMap.begin(); it != updateMap.end(); it++) {
+            updatePostBucket.Put(it->first, it->second);
+        }
+        BackupDatabaseUtils::Update(mediaLibraryRdb, changeRows, updatePostBucket, predicates);
+        if (changeRows <= 0) {
+            MEDIA_ERR_LOG("update failed, fileId: %{public}d", fileInfo.fileIdNew);
+            ErrorInfo errorInfo(RestoreError::UPDATE_PHOTOS_FAILED, 1, "",
+                BackupLogUtils::FileInfoToString(this->sceneCode_, fileInfo));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        }
+    }
 }
 } // namespace Media
 } // namespace OHOS

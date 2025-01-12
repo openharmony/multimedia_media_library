@@ -101,6 +101,9 @@ public:
     EXPORT static void UpdateLcdStatusNotUploaded(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddReadyCountIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void RevertFixDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void AddAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void AddCloudEnhancementAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void AddPhotoDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static int32_t ReconstructMediaLibraryStorageFormat(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryEditDataExists(
         const NativeRdb::AbsRdbPredicates &predicates);
@@ -132,11 +135,14 @@ public:
         return MediaLibraryRdbStore::GetRaw()->ExecuteSql(sql, args);
     }
     static void WalCheckPoint();
+    EXPORT int ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &args = {});
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
+    EXPORT static const std::string RegexReplaceFunc(const std::vector<std::string> &args);
     friend class TransactionOperations;
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     EXPORT static const std::string BeginGenerateHighlightThumbnail(const std::vector<std::string>& args);

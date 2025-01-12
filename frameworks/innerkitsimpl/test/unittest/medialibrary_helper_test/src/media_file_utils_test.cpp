@@ -979,5 +979,26 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetDateModified_Test_001, Te
     EXPECT_GT(dateModified, 0);
     EXPECT_EQ(MediaFileUtils::DeleteFile(filePath), true);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetAllTypes_Test_001, TestSize.Level0)
+{
+    int32_t extension = MEDIA_TYPE_IMAGE;
+    vector<std::string> allTypesOut = MediaFileUtils::GetAllTypes(extension);
+    EXPECT_GT(allTypesOut.size(), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetAllTypes_Test_002, TestSize.Level0)
+{
+    int32_t extension = MEDIA_TYPE_VIDEO;
+    vector<std::string> allTypesOut = MediaFileUtils::GetAllTypes(extension);
+    EXPECT_GT(allTypesOut.size(), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetAllTypes_Test_003, TestSize.Level0)
+{
+    int32_t extension = MEDIA_TYPE_FILE;
+    vector<std::string> allTypesOut = MediaFileUtils::GetAllTypes(extension);
+    EXPECT_TRUE(allTypesOut.empty());
+}
 } // namespace Media
 } // namespace OHOS

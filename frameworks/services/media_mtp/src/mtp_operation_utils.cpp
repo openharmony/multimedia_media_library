@@ -405,8 +405,16 @@ uint16_t MtpOperationUtils::GetObjectDataDeal()
         "mtpMedialibraryManager_ is null");
 
     int fd = 0;
-    int errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetFd(context_, fd) :
-        mtpMedialibraryManager_->GetFd(context_, fd, MEDIA_FILEMODE_READONLY);
+    int errorCode = 0;
+    if (MtpManager::GetInstance().IsMtpMode()) {
+        if (!mtpMediaLibrary_->IsExistObject(context_)) {
+            SendEventPacket(context_->handle, MTP_EVENT_OBJECT_REMOVED_CODE);
+            return MTP_INVALID_OBJECTHANDLE_CODE;
+        }
+        errorCode = mtpMediaLibrary_->GetFd(context_, fd);
+    } else {
+        errorCode = mtpMedialibraryManager_->GetFd(context_, fd, MEDIA_FILEMODE_READONLY);
+    }
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "GetObjectDataDeal GetFd fail!");
 
     MtpFileRange object;
@@ -472,6 +480,8 @@ int32_t MtpOperationUtils::DoRecevieSendObject()
     errorCode = RecevieSendObject(object, fd);
     CHECK_AND_RETURN_RET_LOG(errorCode != MTP_ERROR_TRANSFER_CANCELLED, MTP_ERROR_TRANSFER_CANCELLED,
         "DoRecevieSendObject ReceiveObj Cancelled = %{public}d", MTP_ERROR_TRANSFER_CANCELLED);
+    CHECK_AND_RETURN_RET_LOG(errorCode != MTP_ERROR_TRANSFER_FAILED, MTP_ERROR_TRANSFER_FAILED,
+        "DoRecevieSendObject ReceiveObj Failed = %{public}d", MTP_ERROR_TRANSFER_FAILED);
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_RESPONSE_GENERAL,
         "DoRecevieSendObject ReceiveObj fail errorCode = %{public}d", errorCode);
 
@@ -489,7 +499,6 @@ int32_t MtpOperationUtils::DoRecevieSendObject()
         mtpMedialibraryManager_->CloseFd(context_, fd);
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "DoRecevieSendObject CloseFd fail!");
 
-    SendEventPacket(context_->handle, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
     return MTP_SUCCESS;
 }
 
@@ -519,6 +528,9 @@ int32_t MtpOperationUtils::RecevieSendObject(MtpFileRange &object, int fd)
         mtpMediaLibrary_->DeleteHandlePathMap(filePath, context_->handle);
     } else {
         mtpMedialibraryManager_->DeleteCanceledObject(context_->handle);
+    }
+    if (errorCode == RECEVIE_OBJECT_FAILED) {
+        return MTP_ERROR_TRANSFER_FAILED;
     }
     return MTP_ERROR_TRANSFER_CANCELLED;
 }
@@ -819,6 +831,8 @@ uint16_t MtpOperationUtils::CheckErrorCode(int errorCode)
             return MTP_SPECIFICATION_BY_GROUP_UNSUPPORTED_CODE;
         case MTP_ERROR_SPECIFICATION_BY_DEPTH_UNSUPPORTED:
             return MTP_SPECIFICATION_BY_DEPTH_UNSUPPORTED_CODE;
+        case MTP_ERROR_TRANSFER_FAILED:
+            return MTP_STORE_FULL_CODE;
         default:
             return MTP_OK_CODE;
     }

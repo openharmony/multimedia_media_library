@@ -190,20 +190,11 @@ std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriSensitiveOperation
 std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriSensitiveOperations::QueryNewData(
     OHOS::NativeRdb::ValuesBucket &valueBucket, int &resultFlag)
 {
-    // source tokenId
-    int srcTokenId;
-    bool srcTokenRet = GetIntFromValuesBucket(valueBucket, AppUriSensitiveColumn::SOURCE_TOKENID, srcTokenId);
-
     // target tokenId
-    int targetTokenId;
-    bool targetTokenIdRet = GetIntFromValuesBucket(valueBucket, AppUriSensitiveColumn::TARGET_TOKENID, targetTokenId);
-   
-    ValueObject appidVO;
-    bool appIdRet = valueBucket.GetObject(AppUriSensitiveColumn::APP_ID, appidVO);
-    if (!appIdRet && (!srcTokenRet || !targetTokenIdRet)) {
-        MEDIA_ERR_LOG("param without appId or tokenId");
-        resultFlag = ERROR;
-        return nullptr;
+    int64_t targetTokenId;
+    ValueObject valueObject;
+    if (valueBucket.GetObject(AppUriSensitiveColumn::TARGET_TOKENID, valueObject)) {
+        valueObject.GetLong(targetTokenId);
     }
 
     // parse fileId
@@ -223,16 +214,7 @@ std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriSensitiveOperation
     OHOS::DataShare::DataSharePredicates sensitivePredicates;
     sensitivePredicates.And()->EqualTo(AppUriSensitiveColumn::FILE_ID, fileId);
     sensitivePredicates.And()->EqualTo(AppUriSensitiveColumn::URI_TYPE, uriType);
-    if (appIdRet) {
-        string appId = appidVO;
-        sensitivePredicates.And()->EqualTo(AppUriSensitiveColumn::APP_ID, appId);
-    }
-    if (srcTokenRet) {
-        sensitivePredicates.And()->EqualTo(AppUriSensitiveColumn::SOURCE_TOKENID, srcTokenId);
-    }
-    if (targetTokenIdRet) {
-        sensitivePredicates.And()->EqualTo(AppUriSensitiveColumn::TARGET_TOKENID, targetTokenId);
-    }
+    sensitivePredicates.And()->EqualTo(AppUriSensitiveColumn::TARGET_TOKENID, targetTokenId);
     vector<string> fetchColumns;
     fetchColumns.push_back(AppUriSensitiveColumn::ID);
     fetchColumns.push_back(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
@@ -267,10 +249,8 @@ int MediaLibraryAppUriSensitiveOperations::UpdateSensitiveType(shared_ptr<Result
     updateVB.PutLong(AppUriSensitiveColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     int32_t idDB = MediaLibraryRdbStore::GetInt(resultSetDB, AppUriSensitiveColumn::ID);
 
-    OHOS::DataShare::DataSharePredicates updatePredicates;
-    updatePredicates.EqualTo(AppUriSensitiveColumn::ID, idDB);
-    RdbPredicates updateRdbPredicates =
-        RdbUtils::ToPredicates(updatePredicates, AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
+    RdbPredicates updateRdbPredicates(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
+    updateRdbPredicates.EqualTo(AppUriSensitiveColumn::ID, idDB);
     int32_t updateRows = MediaLibraryRdbStore::UpdateWithDateTime(updateVB, updateRdbPredicates);
     if (updateRows < 1) {
         MEDIA_ERR_LOG("upgrade SensitiveType error,idDB=%{public}d", idDB);
@@ -299,10 +279,8 @@ int MediaLibraryAppUriSensitiveOperations::UpdateSensitiveTypeAndForceHideSensit
     }
     int32_t idDB = MediaLibraryRdbStore::GetInt(resultSetDB, AppUriSensitiveColumn::ID);
 
-    OHOS::DataShare::DataSharePredicates updatePredicates;
-    updatePredicates.EqualTo(AppUriSensitiveColumn::ID, idDB);
-    RdbPredicates updateRdbPredicates =
-        RdbUtils::ToPredicates(updatePredicates, AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
+    RdbPredicates updateRdbPredicates(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
+    updateRdbPredicates.EqualTo(AppUriSensitiveColumn::ID, idDB);
     int32_t updateRows = MediaLibraryRdbStore::UpdateWithDateTime(updateVB, updateRdbPredicates);
     if (updateRows < 1) {
         MEDIA_ERR_LOG("upgrade SensitiveType error,idDB=%{public}d", idDB);

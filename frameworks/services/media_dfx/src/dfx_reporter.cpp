@@ -241,6 +241,21 @@ void DfxReporter::ReportPhotoInfo(const PhotoStatistics& stats)
     }
 }
 
+void DfxReporter::ReportAstcInfo(const LcdAndAstcCount& count)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_ASTC_INFO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "LOCAL_LCD_COUNT", count.localLcdCount,
+        "LOCAL_ASTC_COUNT", count.localAstcCount,
+        "CLOUD_LCD_COUNT", count.cloudLcdCount,
+        "CLOUD_ASTC_COUNT", count.cloudAstcCount);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportAstcInfo error:%{public}d", ret);
+    }
+}
+
 void DfxReporter::ReportAlbumInfo(const std::string &albumName, int32_t albumImageCount, int32_t albumVideoCount,
     bool isLocal)
 {
@@ -480,5 +495,27 @@ int32_t DfxReporter::ReportAlbumFusion(const AlbumFusionDfxDataPoint& reportData
     }
     return E_SUCCESS;
 }
+
+int32_t DfxReporter::ReportCustomRestoreFusion(const CustomRestoreDfxDataPoint& reportData)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_CUSTOM_RESTORE",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "CUSTOM_RESTORE_PACKAGE_NAME", reportData.customRestorePackageName,
+        "ALBUM_LPATH", reportData.albumLPath,
+        "KEY_PATH", reportData.keyPath,
+        "TOTAL_NUM", reportData.totalNum,
+        "SUCCESS_NUM", reportData.successNum,
+        "FAILED_NUM", reportData.failedNum,
+        "SAME_NUM", reportData.sameNum,
+        "CANCEL_NUM", reportData.cancelNum,
+        "TOTAL_TIME", reportData.totalTime);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Report CustomRestoreFusion error: %{public}d", ret);
+    }
+    return ret;
+}
+
 } // namespace Media
 } // namespace OHOS

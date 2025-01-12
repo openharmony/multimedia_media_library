@@ -60,6 +60,7 @@ struct BundleInfo {
     std::string bundleName;
     std::string packageName;
     std::string appId;
+    uint32_t tokenId;
 };
 
 class PermissionUtils {
@@ -91,6 +92,7 @@ public:
         const Security::AccessToken::PermissionUsedType type, const int &uid);
     static void ClearBundleInfoInCache();
     static bool SetEPolicy();
+    static int64_t GetMainTokenId(const std::string &appId, int64_t &tokenId);
 
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();

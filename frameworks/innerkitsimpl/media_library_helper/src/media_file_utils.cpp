@@ -68,12 +68,16 @@ const std::string EDIT_DATA_DIR = ".editData";
 const std::string THUMBS_PHOTO_DIR = ".thumbs/Photo";
 const std::string EDIT_DATA_PHOTO_DIR = ".editData/Photo";
 const std::string CLOUD_FILE_PATH = "/storage/cloud/files";
+const std::string TMP_SUFFIX = "tmp";
 const std::vector<std::string> SET_LISTEN_DIR = {
     PHOTO_DIR, AUDIO_DIR, THUMBS_DIR, EDIT_DATA_DIR, THUMBS_PHOTO_DIR, EDIT_DATA_PHOTO_DIR
 };
 const std::string KVSTORE_FILE_ID_TEMPLATE = "0000000000";
 const std::string KVSTORE_DATE_KEY_TEMPLATE = "0000000000000";
 const std::string MAX_INTEGER = "2147483648";
+const std::string DEFAULT_IMAGE_NAME = "IMG_";
+const std::string DEFAULT_VIDEO_NAME = "VID_";
+const std::string DEFAULT_AUDIO_NAME = "AUD_";
 #define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)
 #define HMFS_IOCTL_HW_SET_FLAGS _IOR(0XF5, 71, unsigned int)
 
@@ -380,6 +384,38 @@ string MediaFileUtils::GetFileName(const string &filePath)
     return fileName;
 }
 
+int32_t MediaFileUtils::CreateAssetRealName(int32_t fileId, int32_t mediaType,
+    const string &extension, string &name)
+{
+    const int32_t maxComplementAssetId = 999;
+    string fileNumStr = to_string(fileId);
+    if (fileId <= maxComplementAssetId) {
+        size_t fileIdLen = fileNumStr.length();
+        fileNumStr = ("00" + fileNumStr).substr(fileIdLen - 1);
+    }
+
+    string mediaTypeStr;
+    switch (mediaType) {
+        case MediaType::MEDIA_TYPE_IMAGE:
+            mediaTypeStr = DEFAULT_IMAGE_NAME;
+            break;
+        case MediaType::MEDIA_TYPE_VIDEO:
+            mediaTypeStr = DEFAULT_VIDEO_NAME;
+            break;
+        case MediaType::MEDIA_TYPE_AUDIO:
+            mediaTypeStr = DEFAULT_AUDIO_NAME;
+            break;
+        default:
+            MEDIA_ERR_LOG("This mediatype %{public}d can not get real name", mediaType);
+            return E_INVALID_VALUES;
+    }
+
+    static const int32_t CONFLICT_TIME = 100;
+    name = mediaTypeStr + to_string(MediaFileUtils::UTCTimeSeconds() + CONFLICT_TIME) + "_" +
+        fileNumStr + "." + extension;
+    return E_OK;
+}
+
 bool MediaFileUtils::IsDirectory(const string &dirName, shared_ptr<int> errCodePtr)
 {
     struct stat statInfo {};
@@ -444,21 +480,29 @@ bool MediaFileUtils::DeleteDir(const string &dirName)
 
 bool MediaFileUtils::CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile)
 {
-    if (IsFileExists(destFile)) {
+    bool fileExist = IsFileExists(destFile);
+    if (fileExist) {
         MEDIA_INFO_LOG("destFile:%{private}s already exists", destFile.c_str());
-        CHECK_AND_PRINT_LOG(DeleteFile(destFile), "delete destFile:%{private}s error", destFile.c_str());
+        CHECK_AND_RETURN_RET_LOG(CopyFileUtil(destFile, destFile + TMP_SUFFIX), false,
+            "copy destfile:%{private}s failed", destFile.c_str());
+        CHECK_AND_RETURN_RET_LOG(DeleteFile(destFile), false, "delete destFile:%{private}s error", destFile.c_str());
     }
-    CHECK_AND_RETURN_RET_LOG(CreateFile(destFile), false,
-        "create destFile:%{private}s failed", destFile.c_str());
-    
+
     if (CopyFileUtil(srcFile, destFile)) {
         CHECK_AND_PRINT_LOG(DeleteFile(srcFile), "delete srcFile:%{private}s failed", srcFile.c_str());
+        CHECK_AND_PRINT_LOG(DeleteFile(destFile + TMP_SUFFIX), "delete tmpFile:%{private}s failed", srcFile.c_str());
         return true;
+    }
+
+    if (fileExist) {
+        CHECK_AND_PRINT_LOG(CopyFileUtil(destFile + TMP_SUFFIX, destFile),
+            "recover destFile:%{private}s error", destFile.c_str());
+        CHECK_AND_PRINT_LOG(DeleteFile(destFile + TMP_SUFFIX), "delete tmpFile:%{private}s failed", srcFile.c_str());
     } else {
         bool delDestFileRet = DeleteFile(destFile);
         MEDIA_ERR_LOG("copy srcFile:%{private}s failed,delDestFileRet:%{public}d", srcFile.c_str(), delDestFileRet);
-        return false;
     }
+    return false;
 }
 
 /**

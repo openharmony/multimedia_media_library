@@ -1108,7 +1108,8 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
     return true;
 }
 
-bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
+bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err,
+    const int32_t &restoreAstcCount)
 {
     vector<string> column = {
         MEDIA_DATA_DB_ID,
@@ -1121,10 +1122,9 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
-    rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->
-        EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
+    rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->EndWrap();
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
-    rdbPredicates.Limit(ASTC_GENERATE_COUNT_AFTER_RESTORE);
+    rdbPredicates.Limit(restoreAstcCount);
     if (opts.store == nullptr) {
         MEDIA_ERR_LOG("opts.store is nullptr");
         return false;
@@ -2012,6 +2012,15 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
             MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
             return isDelete;
         }
+    }
+    ValuesBucket values;
+    int changedRows;
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, 0);
+    values.PutLong(PhotoColumn::PHOTO_LCD_VISIT_TIME, 0);
+    int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+        vector<string> { opts.row });
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("RdbStore Update Failed Before Delete Thumbnail! %{public}d", err);
     }
     MEDIA_INFO_LOG("Start DeleteOriginImage, id: %{public}s, path: %{public}s",
         opts.row.c_str(), DfxUtils::GetSafePath(tmpData.path).c_str());

@@ -248,6 +248,8 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("OWNER_ALBUM_ID",            PhotoColumn::PHOTO_OWNER_ALBUM_ID),
     std::make_pair("THUMBNAIL_VISIBLE",         PhotoColumn::PHOTO_THUMBNAIL_VISIBLE),
     std::make_pair("SUPPORTED_WATERMARK_TYPE",  PhotoColumn::SUPPORTED_WATERMARK_TYPE),
+    std::make_pair("LATITUDE",                  PhotoColumn::PHOTO_LATITUDE),
+    std::make_pair("LONGITUDE",                 PhotoColumn::PHOTO_LONGITUDE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
