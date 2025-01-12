@@ -674,11 +674,16 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
     } else if (isScreenOff_ && newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_40 &&
         batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY) {
         int32_t thumbAstcCount = 0;
+        int32_t thumbTotalCount = 0;
         MedialibrarySubscriberDatabaseUtils::QueryThumbAstc(thumbAstcCount);
-        bool isThumbAstcEnough = thumbAstcCount > THUMB_ASTC_ENOUGH;
+        MedialibrarySubscriberDatabaseUtils::QueryThumbTotal(thumbTotalCount);
+        bool isThumbAstcEnough = thumbAstcCount > THUMB_ASTC_ENOUGH || thumbAstcCount == thumbTotalCount;
         newStatus = !isThumbAstcEnough;
-        MEDIA_INFO_LOG("ThumbnailBg generate status: isThumbAstcEnough:%{public}d, "
-            "thumbAstcCount:%{public}d", isThumbAstcEnough, thumbAstcCount);
+        if (!isThumbAstcEnough) {
+            MEDIA_INFO_LOG("ThumbnailBg generate status: isThumbAstcEnough:%{public}d, "
+                "thumbAstcCount:%{public}d, thumbTotalCount:%{public}d",
+                isThumbAstcEnough, thumbAstcCount, thumbTotalCount);
+        }
     }
 
     if (thumbnailBgGenerationStatus_ == newStatus) {
@@ -847,6 +852,19 @@ int32_t MedialibrarySubscriberDatabaseUtils::QueryThumbAstc(int32_t& thumbAstcCo
     int32_t errCode = QueryInt(astcPredicates, columns, queryColumn, thumbAstcCount);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("Query thumbAstcCount fail: %{public}d", errCode);
+        return errCode;
+    }
+    return E_OK;
+}
+
+int32_t MedialibrarySubscriberDatabaseUtils::QueryThumbTotal(int32_t& thumbTotalCount)
+{
+    std::vector<std::string> columns = { "count(1) AS count" };
+    std::string queryColumn = "count";
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    int32_t errCode = QueryInt(predicates, columns, queryColumn, thumbTotalCount);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Query thumbTotalCount fail: %{public}d", errCode);
         return errCode;
     }
     return E_OK;
