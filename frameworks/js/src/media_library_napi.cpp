@@ -6194,36 +6194,74 @@ static std::string GetLabelAnalysisProgress()
     return jsonObj.dump();
 }
 
-static std::string GetFaceAnalysisProgress()
+static std::string GetTotalCount()
 {
-    Uri uri(URI_USER_PHOTOGRAPHY_INFO);
-    vector<string> column = {
-        HIGHLIGHT_ANALYSIS_PROGRESS
-    };
+    Uri uri(URI_TOTAL);
+    string clause = VISION_TOTAL_TABLE + "." + MediaColumn::MEDIA_ID + " = " + PhotoColumn::PHOTOS_TABLE+ "." +
+        MediaColumn::MEDIA_ID;
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(AVERAGE_AESTHETICS_SCORE, -1)->And()
-        ->EqualTo(CAPTURE_AESTHETICS_SCORE, -1)->And()
-        ->EqualTo(AVERAGE_AESTHETICS_COUNT, -1)->And()
-        ->EqualTo(CAPTURE_AESTHETICS_COUNT, -1)->And()
-        ->EqualTo(CALCULATE_TIME_START, -1)->And()
-        ->EqualTo(CALCULATE_TIME_END, -1);
+    predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ clause });
+    predicates.EqualTo(PhotoColumn::PHOTO_HIDDEN_TIME, 0)->And()
+        ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0)->And()
+        ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
 
-    string retJson = "";
-    int32_t index = 0;
+    vector<string> column = {
+        "COUNT(*) AS totalCount"
+    };
+
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, column, errCode);
     if (ret == nullptr) {
         NAPI_ERR_LOG("ret is nullptr");
         return "";
     }
-    if (ret->GetColumnIndex(HIGHLIGHT_ANALYSIS_PROGRESS, index) != DataShare::E_OK) {
+    if (ret->GoToFirstRow() != NativeRdb::E_OK) {
+        ret->Close();
         NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
+        return "";
+    }
+    int totalCount = 0;
+    ret->GetInt(0, totalCount);
+    ret->Close();
+    return to_string(totalCount);
+}
+
+static std::string GetFaceAnalysisProgress()
+{
+    string curTotalCount = GetTotalCount();
+
+    Uri uri(URI_USER_PHOTOGRAPHY_INFO);
+    vector<string> column = {
+        HIGHLIGHT_ANALYSIS_PROGRESS
+    };
+    DataShare::DataSharePredicates predicates;
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, column, errCode);
+    if (ret == nullptr) {
+        NAPI_ERR_LOG("ret is nullptr");
+        return "";
+    }
+    if (ret->GoToNextRow() != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("Progress GetFaceAnalysisProgress failed and errCode is %{public}d", errCode);
         ret->Close();
         return "";
     }
-    ret->GetString(index, retJson);
+    string retJson = MediaLibraryNapiUtils::GetStringValueByColumn(ret, HIGHLIGHT_ANALYSIS_PROGRESS);
+    if (retJson == "") {
+        ret->Close();
+        NAPI_ERR_LOG("retJson is empty");
+        return "";
+    }
+    nlohmann::json curJsonObj = nlohmann::json::parse(retJson);
+    int preTotalCount = curJsonObj["totalCount"];
+    if (to_string(preTotalCount) != curTotalCount) {
+        NAPI_ERR_LOG("preTotalCount != curTotalCount, curTotalCount is %{public}s, preTotalCount is %{public}d",
+            curTotalCount.c_str(), preTotalCount);
+        curJsonObj["totalCount"] = curTotalCount;
+    }
+    retJson = curJsonObj.dump();
+    NAPI_INFO_LOG("GoToNextRow successfully and json is %{public}s", retJson.c_str());
     ret->Close();
-    NAPI_INFO_LOG("Progress json is %{public}s", retJson.c_str());
     return retJson;
 }
 
