@@ -136,6 +136,7 @@ public:
     static const std::string PHOTO_DETAIL_TIME EXPORT;
     static const std::string SUPPORTED_WATERMARK_TYPE EXPORT;
     static const std::string PHOTO_METADATA_FLAGS EXPORT;
+    static const std::string PHOTO_CHECK_FLAG EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
