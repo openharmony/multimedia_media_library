@@ -112,6 +112,7 @@ const std::string PhotoColumn::PHOTO_ASSOCIATE_FILE_ID = "associate_file_id";
 const std::string PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK = "has_cloud_watermark";
 const std::string PhotoColumn::SUPPORTED_WATERMARK_TYPE = "supported_watermark_type";
 const std::string PhotoColumn::PHOTO_METADATA_FLAGS = "metadata_flags";
+const std::string PhotoColumn::PHOTO_CHECK_FLAG = "check_flag";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -243,7 +244,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_HAS_CLOUD_WATERMARK + " INT DEFAULT 0, " +
     PHOTO_THUMBNAIL_VISIBLE + " INT DEFAULT 0, " +
     SUPPORTED_WATERMARK_TYPE + " INT, " +
-    PHOTO_METADATA_FLAGS + " INT DEFAULT 0)";
+    PHOTO_METADATA_FLAGS + " INT DEFAULT 0, " +
+    PHOTO_CHECK_FLAG + " INT DEFAULT 0)";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
     PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";
