@@ -74,7 +74,7 @@ HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_001, TestSize.Level0)
     uris.push_back(fileContent);
     ConvertFileUriToMntPath(uris, results);
     EXPECT_TRUE(results.size() == uris.size());
-    std::regex pattern("^mnt/hmdfs/[0-9]+/account/cloud_merge_view/files/Photo/[0-9]+/.+$");
+    std::regex pattern("^/mnt/hmdfs/[0-9]+/account/cloud_merge_view/files/Photo/[0-9]+/.+$");
     EXPECT_TRUE(std::regex_match(results[0], pattern));
 
     uris.push_back(fileContent);
