@@ -17,6 +17,7 @@
 #include "medialibrary_rdbstore.h"
 
 #include <mutex>
+#include <regex>
 
 #include "album_plugin_table_event_handler.h"
 #include "cloud_sync_helper.h"
@@ -212,6 +213,21 @@ const std::string MediaLibraryRdbStore::IsCallerSelfFunc(const std::vector<std::
     return "true";
 }
 
+constexpr int REGEXP_REPLACE_PARAM_NUM = 3;
+const std::string MediaLibraryRdbStore::RegexReplaceFunc(const std::vector<std::string> &args)
+{
+    if (args.size() < REGEXP_REPLACE_PARAM_NUM) {
+        MEDIA_ERR_LOG("Invalid arg count %{public}zu: args must contain at least 3 strings", args.size());
+        return "";
+    }
+    const std::string &input = args[0];
+    const std::string &pattern = args[1];
+    const std::string &replacement = args[2];
+
+    std::regex re(pattern);
+    return std::regex_replace(input, re, replacement);
+}
+
 const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<std::string> &args)
 {
     if (args.size() < 1) {
@@ -246,6 +262,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetSecurityLevel(SecurityLevel::S3);
     config_.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     config_.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
+    config_.SetScalarFunction("REGEXP_REPLACE", REGEXP_REPLACE_PARAM_NUM, RegexReplaceFunc);
     config_.SetScalarFunction("begin_generate_highlight_thumbnail", STAMP_PARAM, BeginGenerateHighlightThumbnail);
     config_.SetWalLimitSize(RDB_WAL_LIMIT_SIZE);
     config_.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
@@ -422,6 +439,27 @@ void MediaLibraryRdbStore::RevertFixDateAddedIndex(const shared_ptr<MediaLibrary
     MEDIA_INFO_LOG("end revert fix date added index");
 }
 
+void MediaLibraryRdbStore::AddCloudEnhancementAlbumIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX
+    };
+    MEDIA_INFO_LOG("start create idx_schpt_cloud_enhancement_album_index");
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end create idx_schpt_cloud_enhancement_album_index");
+}
+
+void MediaLibraryRdbStore::AddAlbumIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start add album index");
+    const vector<string> sqls = {
+        PhotoColumn::INDEX_SCHPT_ALBUM_GENERAL,
+        PhotoColumn::INDEX_SCHPT_ALBUM,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end add album index");
+}
+
 int32_t MediaLibraryRdbStore::Init()
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
@@ -445,6 +483,16 @@ int32_t MediaLibraryRdbStore::Init()
     }
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), SUCCESS");
     return E_OK;
+}
+
+void MediaLibraryRdbStore::AddPhotoDateAddedIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start AddPhotoDateAddedIndex");
+    const vector<string> sqls = {
+        PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end AddPhotoDateAddedIndex");
 }
 
 int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
@@ -1411,6 +1459,9 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTO_TABLE,
     PhotoColumn::CREATE_CLOUD_ID_INDEX,
     PhotoColumn::INDEX_SCTHP_ADDTIME,
+    PhotoColumn::INDEX_SCHPT_ALBUM_GENERAL,
+    PhotoColumn::INDEX_SCHPT_ALBUM,
+    PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::INDEX_SCHPT_READY,
     PhotoColumn::CREATE_YEAR_INDEX,
@@ -1540,6 +1591,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::INDEX_HIGHLIGHT_FILEID,
+    PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2861,6 +2913,18 @@ void UpdateVideoFaceTable(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddHighlightChangeFunction(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + ANALYSIS_PHOTO_MAP_TABLE + " ADD COLUMN " + ORDER_POSITION + " INT ",
+        "ALTER TABLE " + HIGHLIGHT_COVER_INFO_TABLE + " ADD COLUMN " + COVER_STATUS + " INT ",
+        "ALTER TABLE " + HIGHLIGHT_PLAY_INFO_TABLE + " ADD COLUMN " + PLAY_INFO_STATUS + " INT ",
+        "ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " + HIGHLIGHT_PIN_TIME + " BIGINT ",
+    };
+    MEDIA_INFO_LOG("start add highlight change function");
+    ExecSqls(sqls, store);
+}
+
 void AddStoryTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
@@ -3737,6 +3801,13 @@ static void UpgradeUriPermissionTable(RdbStore &store, int32_t oldVersion)
     }
 }
 
+static void UpgradeHighlightAlbumChange(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_HIGHLIGHT_CHANGE_FUNCTION) {
+        AddHighlightChangeFunction(store);
+    }
+}
+
 static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_MISSING_UPDATES) {
@@ -4275,34 +4346,6 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
     // !! Do not add upgrade code here !!
 }
 
-static void CheckDateAdded(RdbStore &store)
-{
-    vector<string> sqls = {
-        " UPDATE Photos "
-        " SET date_added = "
-            " CASE "
-                " WHEN date_added = 0 AND date_taken = 0 AND date_modified = 0 THEN strftime('%s', 'now') "
-                " WHEN date_added = 0 AND date_taken = 0 THEN date_modified "
-                " WHEN date_added = 0 AND date_taken <> 0 THEN date_taken "
-                " ELSE date_added "
-            " END "
-        " WHERE date_added = 0 OR strftime('%Y%m%d', date_added, 'unixepoch', 'localtime') <> date_day;",
-        " UPDATE Photos "
-        " SET "
-            " date_year = strftime('%Y', date_added, 'unixepoch', 'localtime'), "
-            " date_month = strftime('%Y%m', date_added, 'unixepoch', 'localtime'), "
-            " date_day = strftime('%Y%m%d', date_added, 'unixepoch', 'localtime'), "
-            " dirty = 2 "
-        " WHERE date_added = 0 OR strftime('%Y%m%d', date_added, 'unixepoch', 'localtime') <> date_day;",
-    };
-    ExecSqls(sqls, store);
-}
-
-static void AlwaysCheck(RdbStore &store)
-{
-    CheckDateAdded(store);
-}
-
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MediaLibraryTracer tracer;
@@ -4364,8 +4407,8 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeHistory(store, oldVersion);
     UpgradeExtension(store, oldVersion);
     UpgradeUriPermissionTable(store, oldVersion);
+    UpgradeHighlightAlbumChange(store, oldVersion);
 
-    AlwaysCheck(store);
     if (!g_upgradeErr) {
         VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};
         PostEventUtils::GetInstance().PostStatProcess(StatType::DB_UPGRADE_STAT, map);
@@ -4607,6 +4650,16 @@ void MediaLibraryRdbStore::WalCheckPoint()
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("wal_checkpoint ExecuteSql failed, errCode: %{public}d", errCode);
     }
+}
+
+int MediaLibraryRdbStore::ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
+    const std::vector<NativeRdb::ValueObject> &args)
+{
+    if (!CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+    return ExecSqlWithRetry([&]() { return GetRaw()->ExecuteForChangedRowCount(outValue, sql, args); });
 }
 
 #ifdef DISTRIBUTED

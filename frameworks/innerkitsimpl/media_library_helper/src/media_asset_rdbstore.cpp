@@ -335,31 +335,38 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::AddQueryDateT
         extraWhereSql = " AND thumbnail_visible = 1 ";
     }
 
-    std::string sql = "\
-        WITH DateGrouped AS ( \
-            SELECT \
-                strftime('%Y%m%d', date_taken / 1000, 'unixepoch', 'localtime') AS date_day_tmp, \
-                count(*) as count, date_taken, burst_key, display_name, file_id, media_type, subtype \
-            FROM Photos \
-            WHERE sync_status = 0 AND clean_flag = 0 AND date_trashed = 0 AND time_pending = 0 AND \
-                hidden = 0 AND is_temp = 0 AND burst_cover_level = 1 " + extraWhereSql +
-            "GROUP BY date_day_tmp \
-        ) \
-        SELECT \
-            count, date_taken, date_day_tmp as date_day, burst_key, display_name, file_id, media_type, subtype \
-        FROM DateGrouped \
-        ORDER BY date_day DESC;";
+    std::string sql = ""
+        "SELECT"
+        "  count( * ) AS count,"
+        "  date_taken,"
+        "  date_day,"
+        "  burst_key,"
+        "  display_name,"
+        "  file_id,"
+        "  media_type,"
+        "  subtype "
+        "FROM"
+        "  Photos "
+        "WHERE"
+        "  sync_status = 0 "
+        "  AND clean_flag = 0 "
+        "  AND date_trashed = 0 "
+        "  AND time_pending = 0 "
+        "  AND hidden = 0 "
+        "  AND is_temp = 0 "
+        "  AND burst_cover_level = 1 " +
+        extraWhereSql +
+        "GROUP BY"
+        "  date_day "
+        "ORDER BY"
+        "  date_day DESC;";
 
     auto resultSet = rdbStore_->QuerySql(sql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "fail to acquire result from visitor query");
-    int rowCount = 0;
-    if (!resultSet->GetRowCount(rowCount) && rowCount == 0) {
-        MEDIA_ERR_LOG("fail to acquire result GetRowCount");
-    }
     return resultSet;
 }
 
-std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::QueryRdb(
+std::shared_ptr<NativeRdb::ResultSet> MediaAssetRdbStore::QueryRdb(
     const DataShare::DataSharePredicates& predicates, std::vector<std::string>& columns, OperationObject& object)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, nullptr, "fail to acquire rdb when query");
@@ -373,17 +380,8 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::QueryRdb(
     }
 
     AddQueryFilter(rdbPredicates);
-    auto resultSet = rdbStore_->Query(rdbPredicates, columns);
+    auto resultSet = rdbStore_->QueryByStep(rdbPredicates, columns, false);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "fail to acquire result from visitor query");
-    int rowCount = 0;
-    if (!resultSet->GetRowCount(rowCount) && rowCount == 0) {
-        std::string columnStr = "";
-        for (auto& column : columns) {
-            columnStr += column + " ";
-        }
-        MEDIA_INFO_LOG("MediaAssetRdbStore predicates:%{public}s, columns:%{public}s, object:%{public}d",
-            rdbPredicates.ToString().c_str(), columnStr.c_str(), object);
-    }
     return resultSet;
 }
 

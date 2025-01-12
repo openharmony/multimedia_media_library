@@ -29,6 +29,14 @@
 
 namespace OHOS {
 namespace Media {
+
+class AlbumData {
+public:
+    AlbumData() = default;
+    ~AlbumData() = default;
+    std::vector<bool> isHidden = {};
+};
+
 #define EXPORT __attribute__ ((visibility ("default")))
 class MediaLibraryPhotoOperations : public MediaLibraryAssetOperations {
 public:
@@ -64,16 +72,20 @@ public:
     EXPORT static int64_t CloneSingleAsset(MediaLibraryCommand &cmd);
     EXPORT static int32_t AddFiltersForCloudEnhancementPhoto(int32_t fileId, const std::string& assetPath,
         const std::string& editDataCameraSourcePath, const std::string& mimeType);
-    EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs);
-    EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris);
+    EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs,
+        std::shared_ptr<AlbumData> AlbumData = nullptr);
+    EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris,
+        std::shared_ptr<AlbumData> AlbumData = nullptr);
     EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, const std::string &path);
     EXPORT static int32_t RemoveTempVideo(const std::string &path);
     EXPORT static int32_t SaveSourceVideoFile(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &assetPath, const bool &isTemp);
-    EXPORT static int32_t AddFiltersToVideoExecute(const std::shared_ptr<FileAsset>& fileAsset);
+    EXPORT static int32_t AddFiltersToVideoExecute(const std::shared_ptr<FileAsset>& fileAsset, bool isSaveVideo);
     EXPORT static int32_t DoRevertFilters(const std::shared_ptr<FileAsset> &fileAsset,
         std::string &path, std::string &sourcePath);
-
+    EXPORT static int32_t CopyVideoFile(const std::string& assetPath, bool toSource);
+    EXPORT static int32_t ProcessCustomRestore(MediaLibraryCommand &cmd);
+    EXPORT static int32_t CancelCustomRestore(MediaLibraryCommand &cmd);
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);

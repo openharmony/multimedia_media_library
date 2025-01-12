@@ -117,24 +117,14 @@ static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket 
 #endif
 }
 
-static inline void SetDateDay(const int64_t dateAdded, ValuesBucket &outValues)
+static inline void SetDateDay(const int64_t dateTaken, ValuesBucket &outValues)
 {
     outValues.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateTaken));
     outValues.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateTaken));
     outValues.PutString(PhotoColumn::PHOTO_DATE_DAY,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
-}
-
-static inline void SetDateAdded(const int64_t dateAdded, const Metadata &metadata, ValuesBucket &outValues)
-{
-    outValues.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
-    MediaType type = metadata.GetFileMediaType();
-    if ((type != MEDIA_TYPE_PHOTO) && (type != MEDIA_TYPE_IMAGE) && (type != MEDIA_TYPE_VIDEO)) {
-        return;
-    }
-    SetDateDay(dateAdded, outValues);
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateTaken));
 }
 
 static void InsertDateAdded(const Metadata &metadata, ValuesBucket &outValues)
@@ -159,20 +149,16 @@ static void InsertDateAdded(const Metadata &metadata, ValuesBucket &outValues)
                 static_cast<long long>(dateAdded));
         }
     }
-    SetDateAdded(dateAdded, metadata, outValues);
+    outValues.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
 }
 
 static inline void FixDateDayIfNeeded(const Metadata &metadata, ValuesBucket &outValues)
 {
-    MediaType type = metadata.GetFileMediaType();
-    if ((type != MEDIA_TYPE_PHOTO) && (type != MEDIA_TYPE_IMAGE) && (type != MEDIA_TYPE_VIDEO)) {
-        return;
-    }
-    int64_t dateAdded = metadata.GetFileDateAdded();
+    int64_t dateTaken = metadata.GetDateTaken();
     string dateDayOld = metadata.GetDateDay();
-    string dateDayNew = MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded);
+    string dateDayNew = MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateTaken);
     if (dateDayOld != dateDayNew) {
-        SetDateDay(dateAdded, outValues);
+        SetDateDay(dateTaken, outValues);
     }
 }
 
@@ -180,6 +166,18 @@ static inline void HandleDateAdded(const Metadata &metadata, const bool isInsert
 {
     if (isInsert) {
         InsertDateAdded(metadata, outValues);
+    }
+}
+
+static inline void HandleDateDay(const Metadata &metadata, const bool isInsert, ValuesBucket &outValues)
+{
+    MediaType type = metadata.GetFileMediaType();
+    if ((type != MEDIA_TYPE_PHOTO) && (type != MEDIA_TYPE_IMAGE) && (type != MEDIA_TYPE_VIDEO)) {
+        return;
+    }
+    if (isInsert) {
+        int64_t dateTaken = metadata.GetDateTaken();
+        SetDateDay(dateTaken, outValues);
         return;
     }
 
@@ -204,6 +202,7 @@ static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &va
 
     SetValuesFromMetaDataAndType(metadata, values, mediaType, table);
     HandleDateAdded(metadata, isInsert, values);
+    HandleDateDay(metadata, isInsert, values);
 }
 
 static void HandleMovingPhotoDirty(const Metadata &metadata, ValuesBucket &values)
@@ -278,6 +277,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     }
 
     HandleDateAdded(metadata, isInsert, values);
+    HandleDateDay(metadata, isInsert, values);
 }
 
 static void GetTableNameByPath(int32_t mediaType, string &tableName, const string &path = "")
@@ -1036,16 +1036,18 @@ void MediaScannerDb::UpdateAlbumInfoByMetaData(const Metadata &metadata)
         return;
     }
     if (metadata.GetFileMediaType() == MEDIA_TYPE_IMAGE) {
-        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, { to_string(PhotoAlbumSubType::IMAGE) });
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, { to_string(PhotoAlbumSubType::IMAGE) },
+            metadata.GetForAdd());
     } else if (metadata.GetFileMediaType() == MEDIA_TYPE_VIDEO) {
-        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, { to_string(PhotoAlbumSubType::VIDEO) });
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, { to_string(PhotoAlbumSubType::VIDEO) },
+            metadata.GetForAdd());
     } else {
         MEDIA_WARN_LOG("Invalid mediaType : %{public}d", metadata.GetFileMediaType());
     }
     if (!metadata.GetOwnerPackage().empty()) {
         if (metadata.GetFileId() != FILE_ID_DEFAULT) {
             std::string uri = PhotoColumn::PHOTO_URI_PREFIX + to_string(metadata.GetFileId());
-            MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {uri});
+            MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {uri}, metadata.GetForAdd());
         }
     }
 }

@@ -712,7 +712,7 @@ napi_value SendablePhotoAlbumNapi::JSPhotoAccessGetSharedPhotoAssets(napi_env en
     Uri uri(PAH_QUERY_PHOTO_MAP);
     ConvertColumnsForPortrait(context);
     ConvertColumnsForFeaturedSinglePortrait(context);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
+    shared_ptr<NativeRdb::ResultSet> resultSet = UserFileClient::QueryRdb(uri,
         context->predicates, context->fetchColumn);
     CHECK_NULLPTR_RET(resultSet);
 
@@ -736,10 +736,15 @@ napi_value SendablePhotoAlbumNapi::JSPhotoAccessGetSharedPhotoAssets(napi_env en
 static void PhotoAccessHelperGetFaceIdExec(napi_env env, void *data)
 {
     auto *context = static_cast<SendablePhotoAlbumNapiAsyncContext *>(data);
-    auto jsContext = make_unique<SendableJSAsyncContextOutput>();
-    jsContext->status = false;
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    PhotoAlbumSubType albumSubType = context->objectInfo->GetPhotoAlbumInstance()->GetPhotoAlbumSubType();
+    auto *objectInfo = context->objectInfo;
+    CHECK_NULL_PTR_RETURN_VOID(objectInfo, "objectInfo is null");
+
+    auto photoAlbumInstance = objectInfo->GetPhotoAlbumInstance();
+    CHECK_NULL_PTR_RETURN_VOID(photoAlbumInstance, "photoAlbumInstance is null");
+
+    PhotoAlbumSubType albumSubType = photoAlbumInstance->GetPhotoAlbumSubType();
     if (albumSubType != PhotoAlbumSubType::PORTRAIT && albumSubType != PhotoAlbumSubType::GROUP_PHOTO) {
         NAPI_WARN_LOG("albumSubType: %{public}d, not support getFaceId", albumSubType);
         return;
@@ -747,7 +752,7 @@ static void PhotoAccessHelperGetFaceIdExec(napi_env env, void *data)
 
     Uri uri(PAH_QUERY_ANA_PHOTO_ALBUM);
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, context->objectInfo->GetAlbumId());
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, objectInfo->GetAlbumId());
     vector<string> fetchColumn = { GROUP_TAG };
     int errCode = 0;
 

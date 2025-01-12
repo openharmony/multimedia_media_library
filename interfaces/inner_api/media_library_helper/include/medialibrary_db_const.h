@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 144;
+const int32_t MEDIA_RDB_VERSION = 150;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -169,7 +169,13 @@ enum {
     VERSION_UPDATE_NEW_SOURCE_PHOTO_ALBUM_TRIGGER = 141,
     VERSION_REVERT_FIX_DATE_ADDED_INDEX = 142,
     VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID = 143,
-    VERSION_ADD_HIGHLIGHT_ANALYSIS_PROGRESS = 144,
+    VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX = 144,
+    VERSION_HIGHLIGHT_CHANGE_FUNCTION = 145,
+    VERSION_ADD_PHOTO_DATEADD_INDEX = 146,
+    VERSION_ADD_ALBUM_INDEX = 147,
+    VERSION_REFRESH_PERMISSION_APPID = 148,
+    VERSION_UPDATE_PHOTOS_DATE_AND_IDX = 149,
+    VERSION_ADD_HIGHLIGHT_ANALYSIS_PROGRESS = 150,
 };
 
 enum {
@@ -426,6 +432,8 @@ const std::string MEDIA_DB_FILE_SLAVE_WAL = "/data/storage/el2/database/rdb/medi
 // requestId for generating thumbnail in batches
 const std::string THUMBNAIL_BATCH_GENERATE_REQUEST_ID = "thumbnail_request_id";
 const std::string IMAGE_FILE_TYPE = "image_file_type";
+
+const std::string RESTORE_REQUEST_ASTC_GENERATE_COUNT = "restore_request_astc_generate_count";
 } // namespace Media
 } // namespace OHOS
 

@@ -117,6 +117,12 @@ int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &
         case OperationType::SUBMIT_CACHE:
             errCode = MediaLibraryPhotoOperations::SubmitCache(cmd);
             break;
+        case OperationType::CUSTOM_RESTORE:
+            errCode = MediaLibraryPhotoOperations::ProcessCustomRestore(cmd);
+            break;
+        case OperationType::CUSTOM_RESTORE_CANCEL:
+            errCode = MediaLibraryPhotoOperations::CancelCustomRestore(cmd);
+            break;
         case OperationType::ADD_FILTERS:
             errCode = MediaLibraryPhotoOperations::AddFilters(cmd);
             break;

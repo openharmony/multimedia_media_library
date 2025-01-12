@@ -783,16 +783,13 @@ int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts, b
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts)
+int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts, const int32_t &restoreAstcCount)
 {
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is not init");
-        return E_ERR;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(restoreAstcCount > 0, E_ERR, "RestoreAstcCount:%{public}d is invalid", restoreAstcCount);
+    CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_ERR, "RdbStore is not init");
     vector<ThumbnailData> infos;
     int32_t err = 0;
-    if (!ThumbnailUtils::QueryNoAstcInfosRestored(opts, infos, err)) {
+    if (!ThumbnailUtils::QueryNoAstcInfosRestored(opts, infos, err, restoreAstcCount)) {
         MEDIA_ERR_LOG("Failed to QueryNoAstcInfosRestored %{public}d", err);
         return err;
     }
@@ -801,14 +798,11 @@ int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts)
         return E_OK;
     }
 
-    MEDIA_INFO_LOG("create astc for restored dual frame photos count:%{public}zu", infos.size());
+    MEDIA_INFO_LOG("create astc for restored dual frame photos count:%{public}zu, restoreAstcCount:%{public}d",
+        infos.size(), restoreAstcCount);
 
     for (auto &info : infos) {
         opts.row = info.id;
-        if (!info.isLocalFile) {
-            MEDIA_INFO_LOG("skip restoring cloud photo astc path:%{public}s", DfxUtils::GetSafePath(info.path).c_str());
-            continue;
-        }
         info.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::RESTORE, LoadSourceType::LOCAL_PHOTO);
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateThumbnail, opts, info,
