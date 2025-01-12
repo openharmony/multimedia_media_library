@@ -26,6 +26,7 @@
 #include "rdb_helper.h"
 #include "result_set.h"
 #include "tab_old_photos_restore.h"
+#include "highlight_restore.h"
 
 namespace OHOS {
 namespace Media {
@@ -171,6 +172,7 @@ protected:
     std::string taskId_ = std::to_string(MediaFileUtils::UTCTimeSeconds());
     TabOldPhotosRestore tabOldPhotosRestore_;
     bool needReportFailed_ = false;
+    HighlightRestore highlightRestore_;
 };
 } // namespace Media
 } // namespace OHOS

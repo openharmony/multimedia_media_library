@@ -21,6 +21,7 @@ import("//foundation/multimedia/media_library/media_library.gni")
 ohos_shared_library("mediabackup") {
   include_dirs = [
     "./include",
+    "./include/highlight",
     "./include/log",
     "./include/restore",
     "./include/report",
@@ -45,6 +46,7 @@ ohos_shared_library("mediabackup") {
     "./src/base_restore.cpp",
     "./src/burst_key_generator.cpp",
     "./src/clone_restore.cpp",
+    "./src/highlight/highlight_restore.cpp",
     "./src/log/backup_hi_audit.cpp",
     "./src/log/backup_hi_audit_helper.cpp",
     "./src/log/backup_log_utils.cpp",
