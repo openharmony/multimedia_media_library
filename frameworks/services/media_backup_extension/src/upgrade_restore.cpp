@@ -149,6 +149,7 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
     ParseXml(xmlPath);
     this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
+    highlightRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -323,6 +324,7 @@ void UpgradeRestore::RestorePhoto()
         // restore PhotoAlbum
         this->photoAlbumRestore_.Restore();
         RestoreFromGalleryPortraitAlbum();
+        highlightRestore_.RestoreAlbums();
         // restore Photos
         RestoreFromGallery();
     } else {
@@ -349,6 +351,7 @@ void UpgradeRestore::RestorePhoto()
         UpdateDualCloneFaceAnalysisStatus();
     }
 
+    highlightRestore_.UpdateAlbums();
     ReportPortraitStat(sceneCode_);
     (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
 }
@@ -618,6 +621,8 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.bundleName = this->photosRestore_.FindBundleName(info);
     info.packageName = this->photosRestore_.FindPackageName(info);
     info.photoQuality = this->photosRestore_.FindPhotoQuality(info);
+    info.storyIds = GetStringVal("story_id", resultSet);
+    info.portraitIds = GetStringVal("portrait_id", resultSet);
     return isSuccess;
 }
 

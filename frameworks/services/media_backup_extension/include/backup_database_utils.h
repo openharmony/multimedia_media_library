@@ -118,6 +118,8 @@ public:
     static int32_t QueryReadyAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static std::unordered_map<int32_t, int32_t> QueryMediaTypeCount(
         const std::shared_ptr<NativeRdb::RdbStore>& rdbStore, const std::string& querySql);
+    static std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        const std::string &querySql, const std::vector<NativeRdb::ValueObject> &params);
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
     template <typename T>
