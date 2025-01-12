@@ -48,6 +48,8 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+using namespace FileManagement::CloudSync;
+
 static const std::string UNKNOWN_VALUE = "NA";
 std::shared_ptr<CloudMediaAssetDownloadOperation> CloudMediaAssetManager::operation_ = nullptr;
 std::mutex CloudMediaAssetManager::mutex_;
@@ -216,6 +218,25 @@ int32_t CloudMediaAssetManager::ReadyDataForDelete(std::vector<std::string> &fil
     return E_OK;
 }
 
+static string GetEditDataDirPath(const string &path)
+{
+    if (path.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    return MEDIA_EDIT_DATA_DIR + path.substr(ROOT_MEDIA_DIR.length());
+}
+
+static int32_t DeleteEditdata(const std::string &path)
+{
+    string editDataDirPath = GetEditDataDirPath(path);
+    CHECK_AND_RETURN_RET_LOG(!editDataDirPath.empty(), E_ERR, "Cannot get editPath, path: %{private}s", path.c_str());
+    if (MediaFileUtils::IsFileExists(editDataDirPath)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteDir(editDataDirPath), E_ERR,
+            "Failed to delete edit data, path: %{private}s", editDataDirPath.c_str());
+    }
+    return E_OK;
+}
+
 void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -234,12 +255,17 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
                 ret, static_cast<int32_t>(fileIds.size()));
             break;
         }
+        bool deleteFlag = true;
         for (size_t i = 0; i < fileIds.size(); i++) {
-            if (!ThumbnailService::GetInstance()->HasInvalidateThumbnail(
+            if (DeleteEditdata(paths[i]) != E_OK || !ThumbnailService::GetInstance()->HasInvalidateThumbnail(
                 fileIds[i], PhotoColumn::PHOTOS_TABLE, paths[i], dateTakens[i])) {
-                MEDIA_ERR_LOG("HasInvalidateThumbnail failed!");
+                deleteFlag = false;
                 break;
             }
+        }
+        if (!deleteFlag) {
+            MEDIA_ERR_LOG("DeleteEditdata or InvalidateThumbnail failed!");
+            break;
         }
         ret = DeleteBatchCloudFile(fileIds);
         if (ret != E_OK) {
@@ -314,6 +340,7 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia()
     int32_t ret = UpdateCloudMeidaAssets();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "ForceRetainDownloadCloudMedia failed. ret %{public}d.", ret);
     MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
+    CloudSyncManager::GetInstance().CleanGalleryDentryFile();
     TaskDeleteState expect = TaskDeleteState::IDLE;
     if (doDeleteTask_.compare_exchange_strong(expect, TaskDeleteState::ACTIVE_DELETE)) {
         MEDIA_INFO_LOG("start delete cloud media assets task.");

@@ -111,6 +111,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::STORY_ALBUM,
     OperationObject::STORY_COVER,
     OperationObject::STORY_PLAY,
+    OperationObject::HIGHLIGHT_DELETE,
     OperationObject::USER_PHOTOGRAPHY,
     OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
     OperationObject::INDEX_CONSTRUCTION_STATUS,
@@ -462,7 +463,7 @@ static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
     static const set<OperationObject> NO_NEED_PERM_CHECK_OBJ = {
         OperationObject::ALL_DEVICE,
         OperationObject::ACTIVE_DEVICE,
-        OperationObject::MISCELLANEOUS,
+        OperationObject::MISCELLANEOUS
     };
 
     string uri = cmd.GetUri().ToString();

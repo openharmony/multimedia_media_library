@@ -146,6 +146,9 @@ public:
     static const std::string PHOTO_DATE_MONTH_INDEX EXPORT;
     static const std::string PHOTO_DATE_DAY_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_ADDED_INDEX EXPORT;
+    static const std::string PHOTO_SCHPT_ALBUM_GENERAL_INDEX EXPORT;
+    static const std::string PHOTO_SCHPT_ALBUM_INDEX EXPORT;
+    static const std::string PHOTO_SCHPT_PHOTO_DATEADDED_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_ADDED_ALBUM_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_MEDIA_TYPE_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_DAY_INDEX EXPORT;
@@ -153,6 +156,7 @@ public:
     static const std::string PHOTO_SCHPT_HIDDEN_TIME_INDEX EXPORT;
     static const std::string PHOTO_FAVORITE_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_READY_INDEX EXPORT;
+    static const std::string PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX EXPORT;
     // for clone query
     static const std::string PHOTO_DISPLAYNAME_INDEX EXPORT;
     // for burst query
@@ -213,6 +217,10 @@ public:
     static const std::string DROP_SCHPT_YEAR_COUNT_READY_INDEX;
     static const std::string DROP_SCHPT_MONTH_COUNT_READY_INDEX;
     static const std::string DROP_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX;
+    static const std::string CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX;
+    static const std::string INDEX_SCHPT_ALBUM_GENERAL;
+    static const std::string INDEX_SCHPT_ALBUM;
+    static const std::string INDEX_SCTHP_PHOTO_DATEADDED;
 
     // create Photo cloud sync trigger
     static const std::string CREATE_PHOTOS_DELETE_TRIGGER EXPORT;
@@ -295,6 +303,25 @@ public:
 
     // create table sql
     static const std::string CREATE_PHOTO_EXT_TABLE EXPORT;
+};
+
+enum class PhotoQueryFilterOption {
+    FILTER_VISIBLE,
+    FILTER_HIDDEN,
+    FILTER_TRASHED,
+};
+
+struct PhotoQueryFilterConfig {
+    bool isQueryHidden = false;
+    bool isQueryTrashed = false;
+};
+
+class PhotoQueryFilter {
+public:
+    static std::string GetSqlWhereClause(const PhotoQueryFilterOption option) EXPORT;
+
+private:
+    static std::string GetSqlWhereClause(const PhotoQueryFilterConfig& config) EXPORT;
 };
 
 } // namespace OHOS::Media

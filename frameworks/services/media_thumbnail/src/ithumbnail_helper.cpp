@@ -1006,7 +1006,6 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
-    CloudSyncDfxManager::GetInstance().RunDfx();
     return true;
 }
 
@@ -1091,7 +1090,6 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, Wa
     }
 
     thumbnailWait.UpdateCloudLoadThumbnailMap(CloudLoadType::CLOUD_DOWNLOAD, true);
-    CloudSyncDfxManager::GetInstance().RunDfx();
     return true;
 }
 

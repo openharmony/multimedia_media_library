@@ -19,6 +19,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <sstream>
 
 #include "file_asset_napi.h"
 #include "media_file_utils.h"
@@ -37,7 +38,9 @@ using namespace std;
 
 namespace OHOS::Media {
 static const string MEDIA_ALBUM_CHANGE_REQUEST_CLASS = "MediaAlbumChangeRequest";
+static const string MEDIA_ANALYSIS_ALBUM_CHANGE_REQUEST_CLASS = "MediaAnalysisAlbumChangeRequest";
 thread_local napi_ref MediaAlbumChangeRequestNapi::constructor_ = nullptr;
+thread_local napi_ref MediaAlbumChangeRequestNapi::mediaAnalysisAlbumChangeRequestConstructor_ = nullptr;
 
 napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
 {
@@ -47,6 +50,7 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
         .props = {
             DECLARE_NAPI_STATIC_FUNCTION("createAlbumRequest", JSCreateAlbumRequest),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAlbums", JSDeleteAlbums),
+            DECLARE_NAPI_STATIC_FUNCTION("deleteHighlightAlbums", JSDeleteHighlightAlbums),
             DECLARE_NAPI_FUNCTION("getAlbum", JSGetAlbum),
             DECLARE_NAPI_FUNCTION("addAssets", JSAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", JSRemoveAssets),
@@ -61,6 +65,35 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("dismissAssets", JSDismissAssets),
             DECLARE_NAPI_FUNCTION("setIsMe", JSSetIsMe),
             DECLARE_NAPI_FUNCTION("dismiss", JSDismiss),
+        } };
+    MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
+    return exports;
+}
+
+napi_value MediaAlbumChangeRequestNapi::MediaAnalysisAlbumChangeRequestInit(napi_env env, napi_value exports)
+{
+    NapiClassInfo info = { .name = MEDIA_ANALYSIS_ALBUM_CHANGE_REQUEST_CLASS,
+        .ref = &mediaAnalysisAlbumChangeRequestConstructor_,
+        .constructor = Constructor,
+        .props = {
+            DECLARE_NAPI_STATIC_FUNCTION("createAlbumRequest", JSCreateAlbumRequest),
+            DECLARE_NAPI_STATIC_FUNCTION("deleteAlbums", JSDeleteAlbums),
+            DECLARE_NAPI_STATIC_FUNCTION("deleteHighlightAlbums", JSDeleteHighlightAlbums),
+            DECLARE_NAPI_FUNCTION("getAlbum", JSGetAlbum),
+            DECLARE_NAPI_FUNCTION("addAssets", JSAddAssets),
+            DECLARE_NAPI_FUNCTION("removeAssets", JSRemoveAssets),
+            DECLARE_NAPI_FUNCTION("moveAssets", JSMoveAssets),
+            DECLARE_NAPI_FUNCTION("recoverAssets", JSRecoverAssets),
+            DECLARE_NAPI_FUNCTION("deleteAssets", JSDeleteAssets),
+            DECLARE_NAPI_FUNCTION("setAlbumName", JSSetAlbumName),
+            DECLARE_NAPI_FUNCTION("setCoverUri", JSSetCoverUri),
+            DECLARE_NAPI_FUNCTION("placeBefore", JSPlaceBefore),
+            DECLARE_NAPI_FUNCTION("setDisplayLevel", JSSetDisplayLevel),
+            DECLARE_NAPI_FUNCTION("mergeAlbum", JSMergeAlbum),
+            DECLARE_NAPI_FUNCTION("dismissAssets", JSDismissAssets),
+            DECLARE_NAPI_FUNCTION("setIsMe", JSSetIsMe),
+            DECLARE_NAPI_FUNCTION("dismiss", JSDismiss),
+            DECLARE_NAPI_FUNCTION("setOrderPosition", JSSetOrderPosition),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -158,6 +191,11 @@ vector<string> MediaAlbumChangeRequestNapi::GetDeleteAssetArray() const
 vector<string> MediaAlbumChangeRequestNapi::GetDismissAssetArray() const
 {
     return dismissAssets_;
+}
+
+std::vector<std::pair<std::string, int32_t>> MediaAlbumChangeRequestNapi::GetIdOrderPositionPairs() const
+{
+    return idOrderPositionPairs_;
 }
 
 map<shared_ptr<PhotoAlbum>, vector<string>, PhotoAlbumPtrCompare> MediaAlbumChangeRequestNapi::GetMoveMap() const
@@ -353,8 +391,9 @@ static napi_value ParseArgsDeleteAlbums(
         CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
         CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get album napi object");
         CHECK_COND_WITH_MESSAGE(env,
-            PhotoAlbum::IsUserPhotoAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()),
-            "Only user album can be deleted");
+            PhotoAlbum::IsUserPhotoAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsHighlightAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()),
+            "Only user and highlight album can be deleted");
         deleteIds.push_back(to_string(obj->GetAlbumId()));
     }
     context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
@@ -404,6 +443,55 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAlbums(napi_env env, napi_callba
     CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteAlbums(env, info, asyncContext), "Failed to parse args");
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(
         env, asyncContext, "ChangeRequestDeleteAlbums", DeleteAlbumsExecute, DeleteAlbumsCompleteCallback);
+}
+
+static void DeleteHighlightAlbumsCompleteCallback(napi_env env, napi_status status, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSDeleteHighlightAlbumsCompleteCallback");
+    auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+    napi_get_undefined(env, &jsContext->error);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
+            env, context->deferred, context->callbackRef, context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void DeleteHighlightAlbumsExecute(napi_env env, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSDeleteHighlightAlbumsExecute");
+    NAPI_INFO_LOG("Start delete highlight album(s)");
+
+    auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
+    Uri deleteAlbumUri(PAH_DELETE_HIGHLIGHT_ALBUM);
+    int ret = UserFileClient::Delete(deleteAlbumUri, context->predicates);
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Failed to delete highlight albums, err: %{public}d", ret);
+        return;
+    }
+    NAPI_INFO_LOG("Delete highlight album(s): %{public}d", ret);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSDeleteHighlightAlbums(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteAlbums(env, info, asyncContext), "Failed to parse highlight args");
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env, asyncContext, "ChangeRequestDeleteHighlightAlbums",
+        DeleteHighlightAlbumsExecute, DeleteHighlightAlbumsCompleteCallback);
 }
 
 napi_value MediaAlbumChangeRequestNapi::JSAddAssets(napi_env env, napi_callback_info info)
@@ -738,6 +826,66 @@ napi_value MediaAlbumChangeRequestNapi::JSSetDisplayLevel(napi_env env, napi_cal
     return result;
 }
 
+napi_value MediaAlbumChangeRequestNapi::JSSetOrderPosition(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetOrderPosition");
+
+    // make undefined
+    napi_value undefinedObject = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &undefinedObject));
+
+    // make async context, if error then return undefined
+    unique_ptr<MediaAlbumChangeRequestAsyncContext> asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, undefinedObject, "Failed to create asyncContext");
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) == napi_ok,
+        "Failed to get object info");
+
+    // get this album, check it is an analysis album
+    auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "Failed to get photo album instance");
+    CHECK_COND_WITH_MESSAGE(env,
+        PhotoAlbum::IsAnalysisAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only analysis album can set asset order positions");
+
+    // get assets, check duplicated
+    vector<string> assetIdArray;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseAssetIdArray(env, asyncContext->argv[PARAM0], assetIdArray),
+        "Failed to parse assets");
+    CHECK_COND_WITH_MESSAGE(
+        env, assetIdArray.size() > 0, "The setOrderPosition operation needs at least one asset id");
+    NAPI_INFO_LOG("setOrderPosition id length: %{public}d", static_cast<int>(assetIdArray.size()));
+    std::set<std::string> idSet(assetIdArray.begin(), assetIdArray.end());
+    CHECK_COND_WITH_MESSAGE(
+        env, assetIdArray.size() == idSet.size(), "The setOrderPosition operation has same assets");
+
+    // get order positions, check duplicated
+    vector<int32_t> orderPositionArray;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseIntegerArray(env, asyncContext->argv[PARAM1], orderPositionArray),
+        "Failed to parse order positions");
+    NAPI_INFO_LOG("setOrderPosition order length: %{public}d", static_cast<int>(orderPositionArray.size()));
+    std::set<int32_t> positionSet(orderPositionArray.begin(), orderPositionArray.end());
+    CHECK_COND_WITH_MESSAGE(env,
+        orderPositionArray.size() == positionSet.size(),
+        "The setOrderPosition operation has same order positions");
+    CHECK_COND_WITH_MESSAGE(env,
+        assetIdArray.size() == orderPositionArray.size(),
+        "The setOrderPosition operation needs same assets and order positions size");
+
+    // store pairs
+    auto &pairs = asyncContext->objectInfo->idOrderPositionPairs_;
+    for (size_t i = 0; i < assetIdArray.size(); i++) {
+        pairs.emplace_back(assetIdArray[i], orderPositionArray[i]);
+    }
+
+    // add task to queue
+    asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_ORDER_POSITION);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 napi_value MediaAlbumChangeRequestNapi::JSDismiss(napi_env env, napi_callback_info info)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -1069,6 +1217,39 @@ static bool OrderAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
     return true;
 }
 
+static bool SetOrderPositionExecute(MediaAlbumChangeRequestAsyncContext &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetOrderPositionExecute");
+
+    DataShare::DataSharePredicates predicates;
+    const auto &photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
+    const auto &pairs = context.objectInfo->GetIdOrderPositionPairs();
+    Uri updateAlbumUri(PAH_UPDATE_ORDER_ANA_ALBUM);
+    vector<string> ids;
+    ids.reserve(pairs.size());
+    stringstream orderString;
+    const string mapTable = ANALYSIS_PHOTO_MAP_TABLE;
+    orderString << "CASE " << mapTable << "." << MAP_ASSET << " ";
+    for (const auto &[assetId, orderPosition] : pairs) {
+        orderString << "WHEN " << assetId << " THEN " << orderPosition << " ";
+        ids.push_back(assetId);
+    }
+    orderString << "END";
+    predicates.EqualTo(mapTable + "." + MAP_ALBUM, photoAlbum->GetAlbumId())
+        ->And()
+        ->In(mapTable + "." + MAP_ASSET, ids);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(ORDER_POSITION, orderString.str());
+    int32_t result = UserFileClient::Update(updateAlbumUri, predicates, valuesBucket);
+    if (result < 0) {
+        context.SaveError(result);
+        NAPI_ERR_LOG("Failed to set order position err: %{public}d", result);
+        return false;
+    }
+    return true;
+}
+
 static void UpdateTabAnalysisImageFace(std::shared_ptr<PhotoAlbum>& photoAlbum,
     MediaAlbumChangeRequestAsyncContext& context)
 {
@@ -1250,6 +1431,7 @@ static const unordered_map<AlbumChangeOperation, bool (*)(MediaAlbumChangeReques
     { AlbumChangeOperation::ORDER_ALBUM, OrderAlbumExecute },
     { AlbumChangeOperation::MERGE_ALBUM, MergeAlbumExecute },
     { AlbumChangeOperation::DISMISS_ASSET, DismissAssetExecute },
+    { AlbumChangeOperation::SET_ORDER_POSITION, SetOrderPositionExecute },
 };
 
 static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)
