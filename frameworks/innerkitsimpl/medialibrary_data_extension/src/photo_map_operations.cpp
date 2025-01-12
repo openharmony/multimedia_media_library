@@ -61,16 +61,16 @@ static int32_t InsertAnalysisAsset(const DataShareValuesBucket &value,
     }
     /**
      * Build insert sql:
-     * INSERT INTO AnalysisPhotoMap (map_album, map_asset) SELECT
-     * ?, ?
+     * INSERT INTO AnalysisPhotoMap (map_album, map_asset, order_position) SELECT
+     * ?, ?, ?
      * WHERE
      *     (NOT EXISTS (SELECT * FROM AnalysisPhotoMap WHERE map_album = ? AND map_asset = ?))
      *     AND (EXISTS (SELECT file_id FROM Photos WHERE file_id = ?))
      *     AND (EXISTS (SELECT album_id FROM AnalysisAlbum WHERE album_id = ?));
      */
     static const std::string INSERT_MAP_SQL = "INSERT OR IGNORE INTO " + ANALYSIS_PHOTO_MAP_TABLE +
-        " (" + PhotoMap::ALBUM_ID + ", " + PhotoMap::ASSET_ID + ") " +
-        "SELECT ?, ? WHERE " +
+        " (" + PhotoMap::ALBUM_ID + ", " + PhotoMap::ASSET_ID + ", " + ORDER_POSITION + ") " +
+        "SELECT ?, ?, ? WHERE " +
         "(NOT EXISTS (SELECT 1 FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE " +
             PhotoMap::ALBUM_ID + " = ? AND " + PhotoMap::ASSET_ID + " = ?)) " +
         "AND (EXISTS (SELECT 1 FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
@@ -86,7 +86,13 @@ static int32_t InsertAnalysisAsset(const DataShareValuesBucket &value,
     if (!isValid) {
         return -EINVAL;
     }
-    vector<ValueObject> bindArgs = { albumId, assetId, albumId, assetId, assetId, albumId};
+    const int defaultValue = -1;
+    int32_t orderPosition = value.Get(ORDER_POSITION, isValid);
+    if (!isValid) {
+        orderPosition = defaultValue;
+    }
+
+    vector<ValueObject> bindArgs = { albumId, assetId, orderPosition, albumId, assetId, assetId, albumId};
     return trans->ExecuteForLastInsertedRowId(INSERT_MAP_SQL, bindArgs);
 }
 

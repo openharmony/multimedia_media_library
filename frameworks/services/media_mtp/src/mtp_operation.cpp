@@ -16,6 +16,7 @@
 #include "mtp_operation.h"
 #include <algorithm>
 #include "header_data.h"
+#include "medialibrary_tracer.h"
 #include "media_log.h"
 #include "media_mtp_utils.h"
 #include "mtp_constants.h"
@@ -58,9 +59,16 @@ void MtpOperation::Init()
 
 void MtpOperation::Execute()
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MtpOperation::Execute");
     int errorCode;
     ResetOperation();
     ReceiveRequestPacket(errorCode);
+    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "mtpContextPtr_ is null");
+    if (mtpContextPtr_->operationCode == 0) {
+        MEDIA_DEBUG_LOG("operationCode is 0, read error, no need to send response");
+        return;
+    }
     if (errorCode != MTP_SUCCESS) {
         SendMakeResponsePacket(errorCode);
         MEDIA_ERR_LOG("MtpOperation::Execute Out ReceiveRequestPacket fail err: %{public}d", errorCode);

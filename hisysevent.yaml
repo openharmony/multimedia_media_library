@@ -167,3 +167,15 @@ MEDIALIB_BACKUP_RESTORE_RESULT:
   DUPLICATE_COUNT: { type: INT32, desc: Number of existing assets of the new device }
   FAILED_COUNT: { type: INT32, desc: Number of assets that fail to be migrated }
   SUCCESS_COUNT: { type: INT32, desc: Number of Successfully Migrated Assets }
+
+MEDIALIB_CUSTOM_RESTORE:
+  __BASE: {type: STATISTIC, level: CRITICAL, desc: Report the data transfer result after Upgrade Restore task, preserve: true }
+  CUSTOM_RESTORE_PACKAGE_NAME: { type: STRING, desc: custorm restore package name }
+  ALBUM_LPATH: { type: STRING, desc: custorm restore album lpath }
+  KEY_PATH: { type: STRING, desc: custorm restore key path }
+  TOTAL_NUM: { type: INT32, desc: Number of custorm restore  }
+  SUCCESS_NUM: { type: INT32, desc: Number of existing assets of the new device }
+  FAILED_NUM: { type: INT32, desc: Number of existing assets of the new device }
+  SAME_NUM: { type: INT32, desc: Number of existing assets of the new device }
+  CANCEL_NUM: { type: INT32, desc: Number of existing assets of the new device }
+  TOTAL_TIME: { type: UINT64, desc: total time cost of custorm restore }

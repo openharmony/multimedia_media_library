@@ -167,7 +167,8 @@ int32_t QueryPhotosCount()
 std::vector<std::string> QueryCurDownloadFiles()
 {
     std::vector<std::string> curDownloadFiles;
-    auto resultSet = BackgroundCloudFileProcessor::QueryCloudFiles();
+    double freeRatio = 0.5;
+    auto resultSet = BackgroundCloudFileProcessor::QueryCloudFiles(freeRatio);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to query cloud files!");
         return curDownloadFiles;

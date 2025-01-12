@@ -26,6 +26,8 @@ namespace OHOS {
 namespace Media {
 static const std::string FRAME_STICKER = "FrameSticker";
 static const std::string INPLACE_STICKER = "InplaceSticker";
+static const std::string TIMING_STICKER = "TimingSticker";
+static const std::string FESTIVAL_STICKER = "FestivalSticker";
 static const std::string FILTERS_FIELD = "filters";
 static const char FILTERS_END = ',';
 static const int32_t MAX_CONCURRENT_NUM = 5;
@@ -54,7 +56,7 @@ public:
     static int32_t CallStartComposite(const std::string& sourceVideoPath, const std::string& videoPath,
         const std::string& effectDescription);
     static void AddCompositionTask(std::string& assetPath, std::string& editData);
-    static void EraseStickerField(std::string& editData, size_t index);
+    static void EraseStickerField(std::string& editData, size_t index, bool isTimingSticker);
 
 private:
     static std::unordered_map<uint32_t, std::shared_ptr<VideoEditor>> editorMap_;

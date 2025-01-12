@@ -105,6 +105,7 @@ int32_t MediaLibraryKvStore::GetCount(const std::string& key, int32_t& count)
     } else {
         count = output->GetCount();
     }
+    status = kvStorePtr_->CloseResultSet(output);
     return static_cast<int32_t>(status);
 }
 
