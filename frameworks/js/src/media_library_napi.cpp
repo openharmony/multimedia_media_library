@@ -6263,7 +6263,6 @@ static std::string GetGeoAnalysisProgress()
     int tmp = -1;
     int32_t retCode = ret->GetRowCount(tmp);
     if (retCode != DataShare::E_OK) {
-         
         NAPI_ERR_LOG("Can not get row count from resultSet, errCode is %{public}d, progress json is %{public}s",
             retCode, retStr.c_str());
         ret->Close();
