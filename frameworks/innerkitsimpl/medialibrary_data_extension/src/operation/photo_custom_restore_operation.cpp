@@ -522,7 +522,7 @@ void PhotoCustomRestoreOperation::QueryAlbumId(RestoreTaskInfo &restoreTaskInfo)
 
     const string queryAlbumPathSql =
         "SELECT lpath from album_plugin WHERE (bundle_name = ? OR album_name = ?) AND priority = '1';";
-    std::vector<NativeRdb::ValueObject> albumPathParams = {restoreTaskInfo.bundleName, restoreTaskInfo.bundleName};
+    std::vector<NativeRdb::ValueObject> albumPathParams = {restoreTaskInfo.bundleName, restoreTaskInfo.packageName};
     auto albumPathResult = rdbStore->QuerySql(queryAlbumPathSql, albumPathParams);
     string lpath;
     if (albumPathResult == nullptr) {
