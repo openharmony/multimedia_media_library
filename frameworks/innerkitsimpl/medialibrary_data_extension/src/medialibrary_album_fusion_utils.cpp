@@ -883,6 +883,7 @@ void SendNewAssetNotify(string newFileAssetUri, const shared_ptr<MediaLibraryRdb
         return;
     }
     watch->Notify(newFileAssetUri, NotifyType::NOTIFY_ADD);
+    watch->Notify(newFileAssetUri, NotifyType::NOTIFY_THUMB_ADD);
     watch->Notify(newFileAssetUri, NotifyType::NOTIFY_ALBUM_ADD_ASSET);
 }
 
