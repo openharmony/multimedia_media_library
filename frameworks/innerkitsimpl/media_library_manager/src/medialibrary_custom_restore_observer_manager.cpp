@@ -76,11 +76,11 @@ bool CustomRestoreObserverManager::AttachObserver(std::shared_ptr<CustomRestoreC
 {
     MEDIA_DEBUG_LOG("AttachObserver callback");
     if (callback == nullptr) {
-        MEDIA_ERR_LOG("QueryObserver callback is nullptr");
+        MEDIA_ERR_LOG("AttachObserver callback is nullptr");
         return false;
     }
     if (notifyObserver == nullptr) {
-        MEDIA_ERR_LOG("QueryObserver notifyObserver is nullptr");
+        MEDIA_ERR_LOG("AttachObserver notifyObserver is nullptr");
         return false;
     }
     callbackMap_.Insert(callback, notifyObserver);
@@ -91,7 +91,7 @@ bool CustomRestoreObserverManager::DetachObserver(std::shared_ptr<CustomRestoreC
 {
     MEDIA_DEBUG_LOG("DetachObserver callback");
     if (callback == nullptr) {
-        MEDIA_ERR_LOG("QueryObserver callback is nullptr");
+        MEDIA_ERR_LOG("AttachObserver callback is nullptr");
         return false;
     }
     callbackMap_.Erase(callback);

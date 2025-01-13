@@ -124,7 +124,6 @@ private:
     void DeleteDatabaseRecord(int32_t fileId);
 
 private:
-    std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr_;
     std::atomic<bool> isRunning_{false};
     static std::shared_ptr<PhotoCustomRestoreOperation> instance_;
     static std::mutex objMutex_;
