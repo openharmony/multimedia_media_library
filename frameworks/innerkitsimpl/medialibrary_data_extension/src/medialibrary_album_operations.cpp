@@ -1159,7 +1159,8 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     return changedRows;
 }
 
-static int32_t GetLPathFromSourcePath(const string &sourcePath, string &lPath, int32_t mediaType)
+int32_t MediaLibraryAlbumOperations::GetLPathFromSourcePath(const string& sourcePath, string& lPath,
+                                                            int32_t mediaType)
 {
     size_t pos1 = SOURCE_PATH_PREFIX.length();
     size_t pos2 = sourcePath.find_last_of("/");
@@ -1202,7 +1203,8 @@ static bool HasSameLpath(const string &lPath, const string &assetId)
     return true;
 }
 
-static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUserAlbum, int64_t &newAlbumId)
+void MediaLibraryAlbumOperations::RecoverAlbum(const string& assetId, const string& lPath,
+                                               bool& isUserAlbum, int64_t& newAlbumId)
 {
     if (lPath.empty()) {
         MEDIA_ERR_LOG("lPath empyt, cannot recover album");
@@ -1262,8 +1264,8 @@ static int32_t RebuildDeletedAlbum(shared_ptr<NativeRdb::ResultSet> &photoResult
         GetInt32Val(PhotoColumn::MEDIA_TYPE, photoResultSet);
     bool isUserAlbum = false;
     int64_t newAlbumId = -1;
-    GetLPathFromSourcePath(sourcePath, lPath, mediaType);
-    RecoverAlbum(assetId, lPath, isUserAlbum, newAlbumId);
+    MediaLibraryAlbumOperations::GetLPathFromSourcePath(sourcePath, lPath, mediaType);
+    MediaLibraryAlbumOperations::RecoverAlbum(assetId, lPath, isUserAlbum, newAlbumId);
     if (newAlbumId == -1) {
         MEDIA_ERR_LOG("Recover album fails");
         return E_INVALID_ARGUMENTS;
