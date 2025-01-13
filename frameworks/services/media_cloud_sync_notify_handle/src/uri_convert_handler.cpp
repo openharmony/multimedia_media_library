@@ -36,6 +36,9 @@ static void AddNewNotify(CloudSyncHandleData &newHandleData,
     if (sendUris.size() <= 0) {
         return;
     }
+    if (changeType == ChangeType::INSERT) {
+        return;
+    }
     ChangeType sendType = static_cast<ChangeType>(NotifyTypeChangeMap[changeType]);
     if (newHandleData.notifyInfo.find(sendType) == newHandleData.notifyInfo.end()) {
         newHandleData.notifyInfo[sendType] = sendUris;

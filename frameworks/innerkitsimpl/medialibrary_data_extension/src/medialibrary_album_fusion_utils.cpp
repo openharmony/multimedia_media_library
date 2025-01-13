@@ -874,7 +874,7 @@ void SendNewAssetNotify(string newFileAssetUri, const shared_ptr<MediaLibraryRdb
         to_string(PhotoAlbumSubType::IMAGE),
         to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
     };
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, systemAlbumsExcludeSource);
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, systemAlbumsExcludeSource, true);
     MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, { newFileAssetUri });
 
     auto watch = MediaLibraryNotify::GetInstance();
@@ -883,6 +883,7 @@ void SendNewAssetNotify(string newFileAssetUri, const shared_ptr<MediaLibraryRdb
         return;
     }
     watch->Notify(newFileAssetUri, NotifyType::NOTIFY_ADD);
+    watch->Notify(newFileAssetUri, NotifyType::NOTIFY_ALBUM_ADD_ASSET);
 }
 
 int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, const string title)
