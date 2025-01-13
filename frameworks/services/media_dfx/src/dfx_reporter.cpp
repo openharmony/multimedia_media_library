@@ -29,7 +29,7 @@
 #include "preferences_helper.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_inotify.h"
-
+#include "medialibrary_astc_stat.h"
 using namespace std;
 namespace OHOS {
 namespace Media {
@@ -250,9 +250,12 @@ void DfxReporter::ReportAstcInfo(const LcdAndAstcCount& count)
         "LOCAL_LCD_COUNT", count.localLcdCount,
         "LOCAL_ASTC_COUNT", count.localAstcCount,
         "CLOUD_LCD_COUNT", count.cloudLcdCount,
-        "CLOUD_ASTC_COUNT", count.cloudAstcCount);
+        "CLOUD_ASTC_COUNT", count.cloudAstcCount,
+        "PHASE_DETAIL", MediaLibraryAstcStat::GetInstance().GetJson());
     if (ret != 0) {
         MEDIA_ERR_LOG("ReportAstcInfo error:%{public}d", ret);
+    } else {
+        MediaLibraryAstcStat::GetInstance().ClearOldData();
     }
 }
 

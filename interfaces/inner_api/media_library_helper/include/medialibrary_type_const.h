@@ -216,6 +216,7 @@ const std::string MEDIA_EDIT_DATA_DIR = ROOT_MEDIA_DIR + ".editData/";
 const std::string META_RECOVERY_PHOTO_RELATIVE_PATH = "/Photo/";
 const std::string META_RECOVERY_META_RELATIVE_PATH = "/.meta/Photo/";
 const std::string META_RECOVERY_META_FILE_SUFFIX = ".json";
+const std::string ASTC_JSON_FILE_PATH = "/data/storage/el2/base/preferences/astcphase.json";
 const char SLASH_CHAR = '/';
 const std::string SLASH_STR = "/";
 const int32_t KEY_FRAME_LCD = 1;

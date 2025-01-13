@@ -380,5 +380,11 @@ void ThumbnailGenerateWorker::TryCloseTimer()
         MEDIA_INFO_LOG("ThumbnailGenerateWorker timer Shutdown, taskType:%{public}d", taskType_);
     }
 }
+
+bool ThumbnailGenerateWorker::IsLowerQueueEmpty()
+{
+    MEDIA_DEBUG_LOG("lower queue size %{public}d", lowPriorityTaskQueue_.Size());
+    return lowPriorityTaskQueue_.Empty();
+}
 } // namespace Media
 } // namespace OHOS
