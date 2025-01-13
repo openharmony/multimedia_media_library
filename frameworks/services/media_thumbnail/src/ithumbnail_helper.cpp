@@ -41,7 +41,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_source_loading.h"
-
+#include "medialibrary_astc_stat.h"
 using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
@@ -116,8 +116,11 @@ void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateAstc failed, data is null");
         return;
     }
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     bool isSuccess = DoCreateAstc(data->opts_, data->thumbnailData_);
     UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    MediaLibraryAstcStat::GetInstance().AddAstcInfo(startTime,
+        data->thumbnailData_.stats.scene, AstcGenScene::NOCHARGING_SCREENOFF, data->thumbnailData_.id);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -822,6 +825,7 @@ int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const Thum
 
 bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     ThumbnailWait thumbnailWait(true);
     ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB);
     if (ret != WaitStatus::INSERT) {
@@ -837,6 +841,8 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
         MEDIA_ERR_LOG("Fail to create thumbnailEx, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
     }
     thumbnailWait.UpdateThumbnailMap();
+    MediaLibraryAstcStat::GetInstance().AddAstcInfo(startTime, data.stats.scene,
+        AstcGenScene::SCREEN_ON, data.id);
     return true;
 }
 

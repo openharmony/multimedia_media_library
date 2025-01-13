@@ -72,6 +72,7 @@
 #endif
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
+#include "medialibrary_astc_stat.h"
 #include "photo_other_album_trans_operation.h"
 #include "background_cloud_file_processor.h"
 
@@ -694,10 +695,14 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
         thumbnailBgGenerationStatus_, newStatus, isScreenOff_,
         isCharging_, batteryCapacity_, newTemperatureLevel_);
     thumbnailBgGenerationStatus_ = newStatus;
+
     thumbnailBgDelayTask_.EndBackgroundOperationThread();
     if (thumbnailBgGenerationStatus_) {
         thumbnailBgDelayTask_.SetOperationThread([this] { this->DoThumbnailBgOperation(); });
     } else {
+        MediaLibraryAstcStat::GetInstance().GetInterruptInfo(isScreenOff_, isCharging_,
+            isPowerSufficientForThumbnail,
+            newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_40);
         StopThumbnailBgOperation();
     }
 }
