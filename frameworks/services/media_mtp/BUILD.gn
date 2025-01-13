@@ -34,7 +34,6 @@ if (defined(medialibrary_mtp_enable)) {
       "src/mtp_error_utils.cpp",
       "src/mtp_event.cpp",
       "src/mtp_file_observer.cpp",
-      "src/mtp_global.cpp",
       "src/mtp_manager.cpp",
       "src/mtp_media_library.cpp",
       "src/mtp_medialibrary_manager.cpp",
