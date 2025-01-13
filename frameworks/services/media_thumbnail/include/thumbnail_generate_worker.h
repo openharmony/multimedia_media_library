@@ -115,6 +115,7 @@ public:
         const std::shared_ptr<ThumbnailGenerateTask> &task, const ThumbnailTaskPriority &taskPriority);
     EXPORT void IgnoreTaskByRequestId(int32_t requestId);
     EXPORT void TryCloseTimer();
+    EXPORT bool IsLowerQueueEmpty();
 
 private:
     void StartWorker(std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus);
