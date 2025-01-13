@@ -749,7 +749,8 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     return deleteRows;
 }
 
-void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUris)
+void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUris,
+    shared_ptr<AlbumData> albumData)
 {
     auto watch = MediaLibraryNotify::GetInstance();
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
@@ -760,11 +761,16 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUr
         return;
     }
     if (notifyUris.size() == 1) {
-        watch->Notify(notifyUris[0], NotifyType::NOTIFY_REMOVE);
+        if (albumData != nullptr && albumData->isHidden.size() != 0) {
+            watch->Notify(notifyUris[0], albumData->isHidden[0] ?
+                NotifyType::NOTIFY_UPDATE : NotifyType::NOTIFY_REMOVE);
+        } else {
+            watch->Notify(notifyUris[0], NotifyType::NOTIFY_REMOVE);
+        }
         watch->Notify(notifyUris[0], NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
         watch->Notify(notifyUris[0], NotifyType::NOTIFY_ALBUM_ADD_ASSET, trashAlbumId);
     } else {
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_REMOVE);
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
         watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
     }
     vector<int64_t> formIds;
@@ -774,6 +780,29 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUr
     if (!formIds.empty()) {
         MediaLibraryFormMapOperations::PublishedChange("", formIds, false);
     }
+}
+
+static void GetPhotoHiddenStatus(std::shared_ptr<AlbumData> data, const string& assetId)
+{
+    if (data == nullptr) {
+        return;
+    }
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    const std::string queryAssetHiddenInfo = "SELECT hidden FROM Photos WHERE file_id = " + assetId;
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(queryAssetHiddenInfo);
+    if (resultSet == nullptr) {
+        return;
+    }
+    int32_t isHidden = 0;
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t isHiddenIndex = -1;
+        resultSet->GetColumnIndex(MediaColumn::MEDIA_HIDDEN, isHiddenIndex);
+        if (resultSet->GetInt(isHiddenIndex, isHidden) != NativeRdb::E_OK) {
+            return;
+        }
+    }
+    data->isHidden.push_back(isHidden);
+    resultSet->Close();
 }
 
 void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereArgs)
@@ -843,8 +872,11 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicate);
 
     MultiStagesCaptureManager::RemovePhotos(rdbPredicate, true);
-
     UpdateSourcePath(rdbPredicate.GetWhereArgs());
+    std::shared_ptr<AlbumData> albumData = std::make_shared<AlbumData>();
+    if (!rdbPredicate.GetWhereArgs().empty()) {
+        GetPhotoHiddenStatus(albumData, rdbPredicate.GetWhereArgs()[0]);
+    }
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     cmd.SetValueBucket(values);
@@ -862,12 +894,12 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     }
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, NotifyAlbumType::SYS_ALBUM);
     if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
         MEDIA_WARN_LOG("Try to notify %{public}zu items, but only %{public}d items updated.",
             notifyUris.size(), updatedRows);
     }
-    TrashPhotosSendNotify(notifyUris);
+    TrashPhotosSendNotify(notifyUris, albumData);
     DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::TRASH_PHOTO, updatedRows, notifyUris);
     return updatedRows;
 }
@@ -1047,6 +1079,9 @@ static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState
         watch->Notify(notifyUri, assetNotifyType);
         watch->Notify(notifyUri, albumNotifyType, 0, true);
         watch->Notify(notifyUri, hiddenAlbumNotifyType, hiddenAlbumId);
+        if (!hiddenState) {
+            watch->Notify(notifyUri, NotifyType::NOTIFY_THUMB_ADD);
+        }
         MediaLibraryFormMapOperations::GetFormMapFormId(notifyUri.c_str(), formIds);
     }
     if (!formIds.empty()) {
@@ -1082,7 +1117,7 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, NotifyAlbumType::SYS_ALBUM);
     SendHideNotify(notifyUris, hiddenState);
     return changedRows;
 }
