@@ -342,6 +342,11 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         MediaLibraryRdbStore::RevertFixDateAddedIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_REVERT_FIX_DATE_ADDED_INDEX);
     }
+
+    if (oldVersion < VERSION_FIX_PICTURE_LCD_SIZE) {
+        MediaLibraryRdbStore::UpdateLcdStatusNotUploaded(rdbStore);
+        rdbStore->SetOldVersion(VERSION_FIX_PICTURE_LCD_SIZE);
+    }
 }
 
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()
