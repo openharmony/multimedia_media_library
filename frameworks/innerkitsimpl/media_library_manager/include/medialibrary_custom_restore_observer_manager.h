@@ -15,7 +15,9 @@
 #ifndef OHOS_MEDIALIBRARY_CUSTOM_RESTORE_OBSERVER_MANAGER_H
 #define OHOS_MEDIALIBRARY_CUSTOM_RESTORE_OBSERVER_MANAGER_H
 
+#include <safe_map.h>
 #include <string>
+
 #include "datashare_helper.h"
 #include "media_library_custom_restore.h"
 
@@ -23,16 +25,14 @@ namespace OHOS {
 namespace Media {
 
 class CustomRestoreNotifyObserver : public DataShare::DataShareObserver {
-private:
-    std::shared_ptr<CustomRestoreCallback> customRestoreCallback_;
 public:
     explicit CustomRestoreNotifyObserver(std::shared_ptr<CustomRestoreCallback> customRestoreCallback)
-        : customRestoreCallback_(customRestoreCallback)
-    {
-    }
+        : customRestoreCallback_(customRestoreCallback) {}
     CustomRestoreNotifyObserver() = default;
     ~CustomRestoreNotifyObserver() = default;
     void OnChange(const ChangeInfo &changeInfo) override;
+private:
+    std::shared_ptr<CustomRestoreCallback> customRestoreCallback_;
 };
 
 class CustomRestoreObserverManager {
@@ -45,8 +45,7 @@ public:
 private:
     CustomRestoreObserverManager() = default;
     ~CustomRestoreObserverManager() = default;
-    std::shared_mutex callbackMapMutex_;
-    std::unordered_map<std::shared_ptr<CustomRestoreCallback>,
+    SafeMap<std::shared_ptr<CustomRestoreCallback>,
         std::shared_ptr<CustomRestoreNotifyObserver>> callbackMap_;
 };
 

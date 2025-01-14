@@ -14,9 +14,10 @@
  */
 #define MLOG_TAG "CustomRestoreObserverManager"
 
+#include "medialibrary_custom_restore_observer_manager.h"
+
 #include "dataobs_mgr_client.h"
 #include "media_log.h"
-#include "medialibrary_custom_restore_observer_manager.h"
 
 namespace OHOS::Media {
 void CustomRestoreNotifyObserver::OnChange(const ChangeInfo &changeInfo)
@@ -62,13 +63,12 @@ std::shared_ptr<CustomRestoreNotifyObserver> CustomRestoreObserverManager::Query
         MEDIA_ERR_LOG("QueryObserver callback is nullptr");
         return nullptr;
     }
-
-    std::shared_lock<std::shared_mutex> lockGuard(callbackMapMutex_);
-    auto it = callbackMap_.find(callback);
-    if (it != callbackMap_.end()) {
-        return it->second;
+    std::shared_ptr<CustomRestoreNotifyObserver> result;
+    if (!callbackMap_.Find(callback, result)) {
+        MEDIA_ERR_LOG("QueryObserver not find");
+        return nullptr;
     }
-    return nullptr;
+    return result;
 }
 
 bool CustomRestoreObserverManager::AttachObserver(std::shared_ptr<CustomRestoreCallback> callback,
@@ -76,15 +76,14 @@ bool CustomRestoreObserverManager::AttachObserver(std::shared_ptr<CustomRestoreC
 {
     MEDIA_DEBUG_LOG("AttachObserver callback");
     if (callback == nullptr) {
-        MEDIA_ERR_LOG("QueryObserver callback is nullptr");
+        MEDIA_ERR_LOG("AttachObserver callback is nullptr");
         return false;
     }
     if (notifyObserver == nullptr) {
-        MEDIA_ERR_LOG("QueryObserver notifyObserver is nullptr");
+        MEDIA_ERR_LOG("AttachObserver notifyObserver is nullptr");
         return false;
     }
-    std::unique_lock<std::shared_mutex> lockGuard(callbackMapMutex_);
-    callbackMap_[callback] = notifyObserver;
+    callbackMap_.Insert(callback, notifyObserver);
     return true;
 }
 
@@ -92,11 +91,10 @@ bool CustomRestoreObserverManager::DetachObserver(std::shared_ptr<CustomRestoreC
 {
     MEDIA_DEBUG_LOG("DetachObserver callback");
     if (callback == nullptr) {
-        MEDIA_ERR_LOG("QueryObserver callback is nullptr");
+        MEDIA_ERR_LOG("AttachObserver callback is nullptr");
         return false;
     }
-    std::unique_lock<std::shared_mutex> lockGuard(callbackMapMutex_);
-    callbackMap_.erase(callback);
+    callbackMap_.Erase(callback);
     return true;
 }
 

@@ -119,6 +119,7 @@
 #include "thermal_mgr_client.h"
 #endif
 #include "zip_util.h"
+#include "photo_custom_restore_operation.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -1366,6 +1367,8 @@ int32_t MediaLibraryDataManager::DoAging()
     }
 
     CacheAging(); // aging file in .cache
+
+    PhotoCustomRestoreOperation::GetInstance().CleanTimeoutCustomRestoreTaskDir();
 
     ClearInvalidDeletedAlbum(); // Clear invalid album data with null cloudid and dirty '4'
 
