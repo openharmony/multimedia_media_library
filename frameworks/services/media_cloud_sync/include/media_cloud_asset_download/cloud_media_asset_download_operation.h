@@ -87,6 +87,7 @@ public:
     EXPORT int32_t CancelDownloadTask();
     EXPORT int32_t ManualActiveRecoverTask(int32_t cloudMediaDownloadType);
     EXPORT int32_t PassiveStatusRecoverTask(const CloudMediaTaskRecoverCause &recoverCause);
+    void CheckStorageAndRecoverDownloadTask();
 
     EXPORT void HandleSuccessCallback(const DownloadProgressObj &progress);
     EXPORT void HandleFailedCallback(const DownloadProgressObj &progress);

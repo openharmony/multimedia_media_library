@@ -54,6 +54,7 @@ enum class CloudMediaTaskPauseCause : int32_t {
 
 enum class CloudMediaTaskRecoverCause : int32_t {
     FOREGROUND_TEMPERATURE_PROPER = 1,
+    STORAGE_NORMAL,
     NETWORK_FLOW_UNLIMIT,
     NETWORK_NORMAL,
     BACKGROUND_TASK_AVAILABLE,
