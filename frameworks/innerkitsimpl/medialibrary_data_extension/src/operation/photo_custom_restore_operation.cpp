@@ -231,7 +231,7 @@ bool PhotoCustomRestoreOperation::HandleFirstRestoreFile(
         SendNotifyMessage(restoreTaskInfo, NOTIFY_FIRST, errCode, 1);
     }
     if (isFirstRestoreSuccess) {
-        MEDIA_ERR_LOG("first file restore success.");
+        MEDIA_DEBUG_LOG("first file restore success.");
         firstRestoreIndex = index;
         int notifyType = index == lastIndex ? NOTIFY_LAST : NOTIFY_FIRST;
         SendNotifyMessage(restoreTaskInfo, notifyType, errCode, 1);
@@ -900,7 +900,7 @@ void PhotoCustomRestoreOperation::CleanTimeoutCustomRestoreTaskDir()
         }
         auto dateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_ctim));
         if ((timestampNow - dateModified) < TIMEOUT_TASK_DIR_CLEAN_INTERVAL) {
-            MEDIA_ERR_LOG("no timeout file");
+            MEDIA_DEBUG_LOG("no timeout file");
             continue;
         }
         if (!MediaFileUtils::DeleteDir(fileStr)) {
