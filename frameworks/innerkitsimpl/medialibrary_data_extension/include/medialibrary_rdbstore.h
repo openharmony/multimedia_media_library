@@ -129,6 +129,8 @@ public:
     {
         return MediaLibraryRdbStore::GetRaw()->ExecuteSql(sql, args);
     }
+    EXPORT int ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &args = {});
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();

@@ -260,6 +260,30 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     return values;
 }
 
+static void InsertDateTaken(std::unique_ptr<Metadata> &metadata, FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
+{
+    int64_t dateTaken = metadata->GetDateTaken();
+    if (dateTaken != 0) {
+        value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
+        fileInfo.dateTaken = dateTaken;
+        return;
+    }
+
+    int64_t dateAdded = metadata->GetFileDateAdded();
+    if (dateAdded == 0) {
+        int64_t dateModified = metadata->GetFileDateModified();
+        if (dateModified == 0) {
+            dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+        } else {
+            dateTaken = dateModified;
+        }
+    } else {
+        dateTaken = dateAdded;
+    }
+    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
+    fileInfo.dateTaken = dateTaken;
+}
+
 static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
 {
     int64_t dateAdded = metadata->GetFileDateAdded();
@@ -344,7 +368,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     }
     value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
     value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
-    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, data->GetDateTaken());
+    InsertDateTaken(data, fileInfo, value);
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
     value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
@@ -365,11 +389,11 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     }
     fileInfo.dateAdded = dateAdded;
     value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, fileInfo.dateTaken));
     value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, fileInfo.dateTaken));
     value.PutString(PhotoColumn::PHOTO_DATE_DAY,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, fileInfo.dateTaken));
     SetCoverPosition(fileInfo, data, value);
 }
 
