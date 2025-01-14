@@ -144,6 +144,7 @@ HWTEST_F(MediaLibraryDeviceTest, medialib_GetUdidByNetworkId_test_001, TestSize.
 HWTEST_F(MediaLibraryDeviceTest, medialib_GetDeviceInfoMap_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
+    EXPECT_NE(deviceTest, nullptr);
     deviceTest->Start();
     unordered_map<string, MediaLibraryDeviceInfo> outDeviceMap;
     deviceTest->GetDeviceInfoMap(outDeviceMap);
@@ -173,6 +174,7 @@ HWTEST_F(MediaLibraryDeviceTest, medialib_QueryAllDeviceUdid_test_001, TestSize.
 HWTEST_F(MediaLibraryDeviceTest, medialib_DeleteDeviceInfo_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
+    EXPECT_NE(deviceTest, nullptr);
     deviceTest->Start();
     string udid = "";
     bool ret = deviceTest->DeleteDeviceInfo(udid);
@@ -185,6 +187,7 @@ HWTEST_F(MediaLibraryDeviceTest, medialib_DeleteDeviceInfo_test_001, TestSize.Le
 HWTEST_F(MediaLibraryDeviceTest, medialib_GetMediaLibraryDeviceInfo_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
+    EXPECT_NE(deviceTest, nullptr);
     deviceTest->Start();
     DistributedHardware::DmDeviceInfo dmInfo;
     dmInfo.networkId[0] = 'a';
@@ -210,6 +213,7 @@ HWTEST_F(MediaLibraryDeviceTest, medialib_QueryDeviceTable_test_001, TestSize.Le
 HWTEST_F(MediaLibraryDeviceTest, medialib_ClearAllDevices_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
+    EXPECT_NE(deviceTest, nullptr);
     deviceTest->Start();
     deviceTest->ClearAllDevices();
     deviceTest->Stop();
@@ -218,6 +222,7 @@ HWTEST_F(MediaLibraryDeviceTest, medialib_ClearAllDevices_test_001, TestSize.Lev
 HWTEST_F(MediaLibraryDeviceTest, medialib_IsHasDevice_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
+    EXPECT_NE(deviceTest, nullptr);
     deviceTest->Start();
     string deviceUdid = "";
     bool ret = deviceTest->IsHasDevice(deviceUdid);
@@ -231,6 +236,7 @@ HWTEST_F(MediaLibraryDeviceTest, medialib_IsHasDevice_test_001, TestSize.Level0)
 HWTEST_F(MediaLibraryDeviceTest, medialib_RegisterToDM_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
+    EXPECT_NE(deviceTest, nullptr);
     deviceTest->Start();
     deviceTest->RegisterToDM();
     deviceTest->Stop();
@@ -239,6 +245,7 @@ HWTEST_F(MediaLibraryDeviceTest, medialib_RegisterToDM_test_001, TestSize.Level0
 HWTEST_F(MediaLibraryDeviceTest, medialib_UnRegisterFromDM_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
+    EXPECT_NE(deviceTest, nullptr);
     deviceTest->Start();
     deviceTest->UnRegisterFromDM();
     deviceTest->Stop();
@@ -247,6 +254,7 @@ HWTEST_F(MediaLibraryDeviceTest, medialib_UnRegisterFromDM_test_001, TestSize.Le
 HWTEST_F(MediaLibraryDeviceTest, medialib_DevOnlineProcess_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
+    EXPECT_NE(deviceTest, nullptr);
     deviceTest->Start();
     DistributedHardware::DmDeviceInfo devInfo;
     deviceTest->DevOnlineProcess(devInfo);
@@ -256,6 +264,7 @@ HWTEST_F(MediaLibraryDeviceTest, medialib_DevOnlineProcess_test_001, TestSize.Le
 HWTEST_F(MediaLibraryDeviceTest, medialib_TryToGetTargetDevMLInfos_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
+    EXPECT_NE(deviceTest, nullptr);
     string udid = "TryToGetTargetDevMLInfos";
     string networkId = "Test";
     deviceTest->TryToGetTargetDevMLInfos(udid, networkId);

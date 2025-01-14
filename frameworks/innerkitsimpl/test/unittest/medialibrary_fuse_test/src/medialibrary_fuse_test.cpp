@@ -447,6 +447,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_PrepareUniqueNumberTable_test_001, T
  
     // Restore rdbStore for other tests
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    EXPECT_NE(g_rdbStore, nullptr);
 }
  
 // Test different media types
