@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -933,6 +933,23 @@ std::string BackupDatabaseUtils::CheckDbIntegrity(std::shared_ptr<NativeRdb::Rdb
     std::string result = GetStringVal(COLUMN_INTEGRITY_CHECK, resultSet);
     MEDIA_INFO_LOG("Check db integrity: %{public}d, %{public}s, %{public}s", sceneCode, dbTag.c_str(), result.c_str());
     return result;
+}
+
+std::unordered_map<int32_t, int32_t> BackupDatabaseUtils::QueryMediaTypeCount(
+    const std::shared_ptr<NativeRdb::RdbStore>& rdbStore, const std::string& querySql)
+{
+    std::unordered_map<int32_t, int32_t> mediaTypeCountMap;
+    auto resultSet = GetQueryResultSet(rdbStore, querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is nullptr");
+        return mediaTypeCountMap;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t mediaType = GetInt32Val(EXTERNAL_MEDIA_TYPE, resultSet);
+        int32_t count = GetInt32Val(CUSTOM_COUNT, resultSet);
+        mediaTypeCountMap[mediaType] = count;
+    }
+    return mediaTypeCountMap;
 }
 } // namespace Media
 } // namespace OHOS
