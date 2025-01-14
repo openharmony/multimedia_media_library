@@ -90,6 +90,7 @@
 #include "enhancement_manager.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
+#include "photo_day_month_year_operation.h"
 #include "photo_map_operations.h"
 #include "resource_type.h"
 #include "rdb_store.h"
@@ -346,6 +347,11 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
     if (oldVersion < VERSION_FIX_PICTURE_LCD_SIZE) {
         MediaLibraryRdbStore::UpdateLcdStatusNotUploaded(rdbStore);
         rdbStore->SetOldVersion(VERSION_FIX_PICTURE_LCD_SIZE);
+    }
+
+    if (oldVersion < VERSION_UPDATE_PHOTOS_DATE_AND_IDX) {
+        PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_PHOTOS_DATE_AND_IDX);
     }
 }
 

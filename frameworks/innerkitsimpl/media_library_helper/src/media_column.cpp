@@ -246,10 +246,10 @@ const std::string PhotoColumn::CREATE_MONTH_INDEX = BaseColumn::CreateIndex() +
 const std::string PhotoColumn::CREATE_DAY_INDEX = BaseColumn::CreateIndex() +
     PHOTO_DATE_DAY_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_DATE_DAY + " DESC)";
 
-const std::string PhotoColumn::CREATE_SCHPT_DAY_INDEX = BaseColumn::CreateIndex() +
-    PHOTO_SCHPT_DAY_INDEX + " ON " + PHOTOS_TABLE +
-    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
-    "," + MEDIA_DATE_TRASHED + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + PHOTO_DATE_DAY + " DESC);";
+const std::string PhotoColumn::CREATE_SCHPT_DAY_INDEX = BaseColumn::CreateIndex() + PHOTO_SCHPT_DAY_INDEX + " ON " +
+    PHOTOS_TABLE + " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + PHOTO_THUMBNAIL_VISIBLE + "," +
+    MEDIA_DATE_TRASHED + "," + MEDIA_TIME_PENDING + "," + MEDIA_HIDDEN + "," + PHOTO_IS_TEMP + "," +
+    PHOTO_BURST_COVER_LEVEL + "," + PHOTO_DATE_DAY + " DESC);";
 
 const std::string PhotoColumn::DROP_SCHPT_DAY_INDEX = BaseColumn::DropIndex() + PHOTO_SCHPT_DAY_INDEX;
 
