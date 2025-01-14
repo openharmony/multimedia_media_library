@@ -282,11 +282,12 @@ int32_t DfxDatabaseUtils::QueryASTCThumb(bool isLocal)
 
     int32_t localImage = 1;
     int32_t cloudImage = 2;
+    int32_t localAndCloudImage = 3;
     int32_t thumbnail_ready = 3;
     if (isLocal) {
         predicates.BeginWrap();
         predicates.EqualTo(PhotoColumn::PHOTO_POSITION, localImage);
-        predicates.Or()->EqualTo(PhotoColumn::PHOTO_POSITION, cloudImage);
+        predicates.Or()->EqualTo(PhotoColumn::PHOTO_POSITION, localAndCloudImage);
         predicates.EndWrap();
     } else {
         predicates.EqualTo(PhotoColumn::PHOTO_POSITION, cloudImage);
