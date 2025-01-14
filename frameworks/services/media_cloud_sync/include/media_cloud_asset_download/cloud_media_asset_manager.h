@@ -54,6 +54,7 @@ public:
     static void DeleteAllCloudMediaAssetsAsync();
     static void StartDeleteCloudMediaAssets();
     static void StopDeleteCloudMediaAssets();
+    EXPORT void CheckStorageAndRecoverDownloadTask();
 
 private:
     CloudMediaAssetManager() {}
