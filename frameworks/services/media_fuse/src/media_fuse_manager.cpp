@@ -58,7 +58,7 @@ const int32_t URI_SLASH_NUM_API9 = 2;
 const int32_t URI_SLASH_NUM_API10 = 4;
 const int32_t FUSE_VIRTUAL_ID_DIVIDER = 5;
 const int32_t FUSE_PHOTO_VIRTUAL_IDENTIFIER = 4;
-
+const int32_t BASE_USER_RANGE = 200000;
 static set<int> readPermSet{0, 1, 3, 4};
 static set<int> writePermSet{2, 3, 4};
 static const map<int32_t, string> MEDIA_OPEN_MODE_MAP = {
@@ -338,12 +338,8 @@ int32_t MediaFuseManager::DoRelease(const char *path, const int &fd)
 int32_t MediaFuseManager::MountFuse(std::string &mountpoint)
 {
     int devFd = -1;
-    int32_t userId = 0;
-
     // get user id
-    ErrCode errCode = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(userId);
-    CHECK_AND_RETURN_RET_LOG(errCode == ERR_OK, errCode,
-        "Get account fail, ret code %{public}d, result is not credible", errCode);
+    int32_t userId =  getuid() / BASE_USER_RANGE;
 
     // mount fuse
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
@@ -362,12 +358,8 @@ int32_t MediaFuseManager::MountFuse(std::string &mountpoint)
 
 int32_t MediaFuseManager::UMountFuse()
 {
-    int32_t userId = 0;
-
     // get user id
-    ErrCode errCode = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(userId);
-    CHECK_AND_RETURN_RET_LOG(errCode == ERR_OK, errCode,
-        "Get account fail, ret code %{public}d, result is not credible", errCode);
+    int32_t userId =  getuid() / BASE_USER_RANGE;
 
     // umount fuse
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
