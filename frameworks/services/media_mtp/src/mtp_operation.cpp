@@ -20,7 +20,6 @@
 #include "media_log.h"
 #include "media_mtp_utils.h"
 #include "mtp_constants.h"
-#include "mtp_global.h"
 #include "mtp_packet.h"
 #include "mtp_packet_tools.h"
 #include "mtp_operation_context.h"
@@ -246,7 +245,6 @@ uint16_t MtpOperation::GetPayloadDataSub(shared_ptr<MtpOperationContext> &contex
     uint16_t containerType, int &errorCode)
 {
     responseCode_ = MTP_UNDEFINED_CODE;
-    CHECK_AND_RETURN_RET_LOG(!MtpGlobal::IsBlocked(), responseCode_, "Not support operation in blocked mode");
     switch (context->operationCode) {
         case MTP_OPERATION_RESET_DEVICE_CODE:
         case MTP_OPERATION_CLOSE_SESSION_CODE:
