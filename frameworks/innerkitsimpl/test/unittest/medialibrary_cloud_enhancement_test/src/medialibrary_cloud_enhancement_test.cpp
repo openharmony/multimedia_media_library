@@ -794,6 +794,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_on_success_001, 
     MEDIA_INFO_LOG("enhancement_callback_on_success_001 Start");
     const char* taskId = "";
     shared_ptr<EnhancementServiceAdapter> enhancementService_ = make_shared<EnhancementServiceAdapter>();
+    EXPECT_NE(enhancementService_, nullptr);
     MediaEnhanceBundleHandle* bundle = nullptr;
     EnhancementServiceCallback::OnSuccess(taskId, bundle);
     const char* taskId2 = "202408302001001";

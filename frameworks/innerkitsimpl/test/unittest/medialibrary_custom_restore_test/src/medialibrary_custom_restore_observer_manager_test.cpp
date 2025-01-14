@@ -91,16 +91,10 @@ HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverMa
     MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_003 End");
 }
 
-HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverManager_Test_004, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_004 Start");
-    CustomRestoreObserverManager::GetInstance().AttachObserver(nullptr, nullptr);
-    MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_004 End");
-}
-
 HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverManager_Test_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_005 Start");
+    CustomRestoreObserverManager::GetInstance().AttachObserver(nullptr, nullptr);
     auto result = CustomRestoreObserverManager::GetInstance().QueryObserver(nullptr);
     EXPECT_EQ(result == nullptr, true);
     MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_005 End");
