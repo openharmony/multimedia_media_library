@@ -130,6 +130,16 @@ int32_t CloudMediaAssetManager::RecoverDownloadCloudAsset(const CloudMediaTaskRe
     return ret;
 }
 
+void CloudMediaAssetManager::CheckStorageAndRecoverDownloadTask()
+{
+    if (operation_ == nullptr || operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::PAUSED ||
+        operation_->GetTaskPauseCause() != CloudMediaTaskPauseCause::ROM_LIMIT) {
+        return;
+    }
+    MEDIA_INFO_LOG("begin to check storage and recover downloadTask.");
+    operation_->CheckStorageAndRecoverDownloadTask();
+}
+
 int32_t CloudMediaAssetManager::PauseDownloadCloudAsset(const CloudMediaTaskPauseCause &pauseCause)
 {
     if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
