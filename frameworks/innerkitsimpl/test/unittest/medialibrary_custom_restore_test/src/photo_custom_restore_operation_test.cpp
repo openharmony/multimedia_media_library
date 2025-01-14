@@ -79,6 +79,7 @@ HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_Operation_Test_00
     RestoreTaskInfo restoreTaskInfo2;
     restoreTaskInfo2.keyPath = "restoreTaskInfo2";
     PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    EXPECT_EQ(PhotoCustomRestoreOperation::instance_ != nullptr, true);
     operatorObj.AddTask(restoreTaskInfo);
     operatorObj.AddTask(restoreTaskInfo2);
     operatorObj.cancelKeySet.insert("restoreTaskInfo2");

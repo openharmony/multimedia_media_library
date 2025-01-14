@@ -254,8 +254,10 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_InterruptBgworker_test_001, 
         exit(1);
     }
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
+    EXPECT_NE(serverTest, nullptr);
     serverTest->InterruptBgworker();
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
+    EXPECT_NE(kvStorePtr, nullptr);
     shared_ptr<OHOS::AbilityRuntime::Context> context;
 #ifdef DISTRIBUTED
     serverTest->Init(storePtr, kvStorePtr, context);
@@ -272,8 +274,10 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_StopAllWorker_test_001, Test
         exit(1);
     }
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
+    EXPECT_NE(serverTest, nullptr);
     serverTest->StopAllWorker();
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
+    EXPECT_NE(kvStorePtr, nullptr);
     shared_ptr<OHOS::AbilityRuntime::Context> context;
 #ifdef DISTRIBUTED
     serverTest->Init(storePtr, kvStorePtr, context);
@@ -340,6 +344,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CancelAstcBatchTask_test_001
         exit(1);
     }
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
+    EXPECT_NE(serverTest, nullptr);
     shared_ptr<OHOS::AbilityRuntime::Context> context;
     serverTest->Init(storePtr, context);
 
@@ -445,7 +450,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_009, T
     ThumbRdbOpt opts;
     ThumbnailData data;
     WaitStatus status;
-    IThumbnailHelper::DoCreateLcd(opts, data, status);
+    auto ret = IThumbnailHelper::DoCreateLcd(opts, data, status);
+    EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_010, TestSize.Level0)
