@@ -12,6 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#define MLOG_TAG "CustomRestore"
+
 #include "media_library_custom_restore.h"
 
 #include "datashare_helper.h"
@@ -117,15 +120,15 @@ int32_t CustomRestore::RegisterCustomRestoreCallback(std::shared_ptr<CustomResto
         MEDIA_ERR_LOG("CustomRestore RegisterCallback callback is null.");
         return E_CALLBACK_IS_NULL;
     }
-    std::shared_ptr<CustomRestoreNotifyObserver> notifyObserver =
-            std::make_shared<CustomRestoreNotifyObserver>(callback);
-    if (notifyObserver == nullptr) {
-        MEDIA_ERR_LOG("CustomRestore RegisterCallback callback is null.");
-        return E_CALLBACK_IS_NULL;
-    }
     if (sDataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("CustomRestore RegisterCallback sDataShareHelper_ is null.");
         return E_DATASHARE_IS_NULL;
+    }
+    std::shared_ptr<CustomRestoreNotifyObserver> notifyObserver =
+            std::make_shared<CustomRestoreNotifyObserver>(callback);
+    if (notifyObserver == nullptr) {
+        MEDIA_ERR_LOG("CustomRestore RegisterCallback notifyObserver is null.");
+        return E_OBSERVER_IS_NULL;
     }
     Uri customRestoreUri(NOTIFY_URI_PREFIX + keyPath_);
     sDataShareHelper_->RegisterObserverExt(customRestoreUri, notifyObserver, true);
@@ -140,15 +143,15 @@ int32_t CustomRestore::UnregisterCustomRestoreCallback(std::shared_ptr<CustomRes
         MEDIA_ERR_LOG("CustomRestore UnRegisterCallback callback is null.");
         return E_CALLBACK_IS_NULL;
     }
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("CustomRestore UnregisterCallback sDataShareHelper_ is null.");
+        return E_DATASHARE_IS_NULL;
+    }
     std::shared_ptr<CustomRestoreNotifyObserver> notifyObserver =
         CustomRestoreObserverManager::GetInstance().QueryObserver(callback);
     if (notifyObserver == nullptr) {
         MEDIA_ERR_LOG("CustomRestore UnRegisterCallback notifyObserver is null.");
-        return E_CALLBACK_IS_NULL;
-    }
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("CustomRestore UnregisterCallback sDataShareHelper_ is null.");
-        return E_DATASHARE_IS_NULL;
+        return E_OBSERVER_IS_NULL;
     }
     Uri customRestoreUri(NOTIFY_URI_PREFIX + keyPath_);
     sDataShareHelper_->UnregisterObserverExt(customRestoreUri, notifyObserver);

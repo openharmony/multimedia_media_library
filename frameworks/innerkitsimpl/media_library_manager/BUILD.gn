@@ -170,7 +170,6 @@ ohos_shared_library("media_library_custom_restore") {
   install_enable = true
 
   sources = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/medialibrary_custom_restore_notify.cpp",
     "./media_library_custom_restore.cpp",
     "./src/medialibrary_custom_restore_observer_manager.cpp",
   ]
@@ -178,10 +177,8 @@ ohos_shared_library("media_library_custom_restore") {
   include_dirs = [
     "./include",
     "${MEDIALIB_UTILS_PATH}/include",
-    "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/operation",
   ]
 
   public_configs = [ ":media_library_manager_config" ]
@@ -190,7 +187,6 @@ ohos_shared_library("media_library_custom_restore") {
 
   external_deps = [
     "c_utils:utils",
-    "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "hilog:libhilog",
@@ -220,9 +216,6 @@ ohos_shared_library("media_library_custom_restore") {
       stack_protector_ret = true
     }
   }
-
-  defines = []
-  defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
   part_name = "media_library"
   subsystem_name = "multimedia"

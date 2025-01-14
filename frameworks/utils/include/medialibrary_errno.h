@@ -204,8 +204,9 @@ constexpr int32_t E_DO_NOT_NEDD_SEND_NOTIFY =          MEDIA_LIBRARY_ERR(E_MEDIA
 
 // media on custom restore error code { 17000, 17099 }
 constexpr int32_t E_MEDIA_CUSTOM_RESTORE_OFFSET = 17000;
-constexpr int32_t E_DATASHARE_IS_NULL =                MEDIA_LIBRARY_ERR(E_MEDIA_CUSTOM_RESTORE_OFFSET, 1);
-constexpr int32_t E_CALLBACK_IS_NULL =                 MEDIA_LIBRARY_ERR(E_MEDIA_CUSTOM_RESTORE_OFFSET, 2);
+constexpr int32_t E_DATASHARE_IS_NULL =                MEDIA_LIBRARY_ERR(E_MEDIA_CUSTOM_RESTORE_OFFSET, 0);
+constexpr int32_t E_CALLBACK_IS_NULL =                 MEDIA_LIBRARY_ERR(E_MEDIA_CUSTOM_RESTORE_OFFSET, 1);
+constexpr int32_t E_OBSERVER_IS_NULL =                 MEDIA_LIBRARY_ERR(E_MEDIA_CUSTOM_RESTORE_OFFSET, 2);
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIALIBRARY_ERRNO_H
