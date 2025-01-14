@@ -32,6 +32,7 @@
 #include "media_library_manager.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_tracer.h"
 #include "media_smart_map_column.h"
 #include "moving_photo_file_utils.h"
 #include "photo_album_column.h"
@@ -640,6 +641,8 @@ int32_t MtpMedialibraryManager::GetThumb(const shared_ptr<MtpOperationContext> &
 
 int32_t MtpMedialibraryManager::GetThumbnailFromPath(string &path, shared_ptr<UInt8List> &outThumb)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MTP MtpMedialibraryManager::GetThumbnailFromPath");
     if (outThumb == nullptr) {
         MEDIA_ERR_LOG("mtp outThumb is null");
         return E_ERR;
