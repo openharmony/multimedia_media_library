@@ -25,7 +25,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t MEDIA_RDB_VERSION = 147;
+const int32_t MEDIA_RDB_VERSION = 148;
 
 enum {
     VERSION_ADD_CLOUD = 2,
@@ -154,6 +154,7 @@ enum {
     VERSION_FIX_DATE_ADDED_INDEX = 145,
     VERSION_REVERT_FIX_DATE_ADDED_INDEX = 146,
     VERSION_FIX_PICTURE_LCD_SIZE = 147,
+    VERSION_UPDATE_PHOTOS_DATE_AND_IDX = 148,
 };
 
 enum {

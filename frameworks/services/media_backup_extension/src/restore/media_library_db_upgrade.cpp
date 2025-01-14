@@ -23,6 +23,7 @@
 #include "album_plugin_table_event_handler.h"
 #include "db_upgrade_utils.h"
 #include "medialibrary_rdb_transaction.h"
+#include "photo_day_month_year_operation.h"
 
 namespace OHOS::Media {
 namespace DataTransfer {
@@ -61,14 +62,13 @@ int32_t MediaLibraryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     return NativeRdb::E_OK;
 }
 
-int32_t MediaLibraryDbUpgrade::ExecSqlsInternal(
-    NativeRdb::RdbStore &store, const std::string &sql, const std::vector<NativeRdb::ValueObject> &args)
+int32_t MediaLibraryDbUpgrade::ExecSqlWithRetry(std::function<int32_t()> execSql)
 {
     int currentTime = 0;
     int32_t busyRetryTime = 0;
     int32_t err = NativeRdb::E_OK;
     while (busyRetryTime < MAX_BUSY_TRY_TIMES && currentTime <= MAX_TRY_TIMES) {
-        err = store.ExecuteSql(sql, args);
+        err = execSql();
         if (err == NativeRdb::E_OK) {
             break;
         } else if (err == NativeRdb::E_SQLITE_LOCKED) {
@@ -91,7 +91,7 @@ int32_t MediaLibraryDbUpgrade::MergeAlbumFromOldBundleNameToNewBundleName(Native
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::MergeAlbumFromOldBundleNameToNewBundleName start");
     int32_t ret = NativeRdb::E_OK;
     for (const auto &executeSql : this->SQL_MERGE_ALBUM_FROM_OLD_BUNDLE_NAME_TO_NEW_BUNDLE_NAME) {
-        ret = ExecSqlsInternal(store, executeSql);
+        ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(executeSql); });
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Media_Restore: executeSql failed, sql: %{public}s", executeSql.c_str());
             return ret;
@@ -106,7 +106,7 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotosBelongsToAlbum(NativeRdb::RdbStore &
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::UpgradePhotosBelongsToAlbum start");
     int32_t ret = NativeRdb::E_OK;
     for (const auto &executeSql : this->SQL_PHOTOS_NEED_TO_BELONGS_TO_ALBUM) {
-        ret = ExecSqlsInternal(store, executeSql);
+        ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(executeSql); });
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Media_Restore: executeSql failed, sql: %{public}s", executeSql.c_str());
             return ret;
@@ -155,7 +155,7 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotoAlbum(NativeRdb::RdbStore &store)
 int32_t MediaLibraryDbUpgrade::UpdatelPathColumn(NativeRdb::RdbStore &store)
 {
     std::string executeSql = this->SQL_PHOTO_ALBUM_TABLE_UPDATE_LPATH_COLUMN;
-    int32_t ret = ExecSqlsInternal(store, executeSql);
+    int32_t ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(executeSql); });
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Media_Restore: MediaLibraryDbUpgrade::UpdatelPathColumn failed, ret=%{public}d, sql=%{public}s",
             ret,
@@ -175,7 +175,7 @@ int32_t MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store)
         return NativeRdb::E_OK;
     }
     std::string sql = this->SQL_PHOTOS_TABLE_ADD_OWNER_ALBUM_ID;
-    int32_t ret = ExecSqlsInternal(store, sql);
+    int32_t ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(sql); });
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG(
             "Media_Restore: MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn failed, ret=%{public}d, sql=%{public}s",
@@ -195,7 +195,7 @@ int32_t MediaLibraryDbUpgrade::AddlPathColumn(NativeRdb::RdbStore &store)
         return NativeRdb::E_OK;
     }
     std::string sql = this->SQL_PHOTO_ALBUM_TABLE_ADD_LPATH_COLUMN;
-    return ExecSqlsInternal(store, sql);
+    return ExecSqlWithRetry([&]() { return store.ExecuteSql(sql); });
 }
 
 /**
@@ -256,6 +256,10 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotos(NativeRdb::RdbStore &store)
     if (ret != NativeRdb::E_OK) {
         return ret;
     }
+
+    ret = ExecSqlWithRetry([&]() { return PhotoDayMonthYearOperation::UpdatePhotosDate(store); });
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "update photos date failed, ret=%{public}d", ret);
+
     return NativeRdb::E_OK;
 }
 
