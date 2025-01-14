@@ -260,6 +260,7 @@ const std::string SOURCE_ALBUM_SQL = "CREATE TRIGGER IF NOT EXISTS insert_source
             bundle_name, \
             lpath, \
             priority, \
+            date_modified, \
             date_added ) \
         SELECT \
             INPUT.album_type, \
@@ -284,6 +285,7 @@ const std::string SOURCE_ALBUM_SQL = "CREATE TRIGGER IF NOT EXISTS insert_source
                     INPUT.priority \
                 ELSE album_plugin.priority \
                 END AS priority, \
+            strftime( '%s000', 'now' ) AS date_modified, \
             strftime( '%s000', 'now' ) AS date_added \
         FROM \
             ( \
