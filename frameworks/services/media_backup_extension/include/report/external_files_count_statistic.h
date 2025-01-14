@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,6 +30,11 @@ public:
         this->externalRdb_ = externalRdb;
         return *this;
     }
+    ExternalFilesCountStatistic &SetGalleryRdb(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
+    {
+        this->galleryRdb_ = galleryRdb;
+        return *this;
+    }
     ExternalFilesCountStatistic &SetSceneCode(int32_t sceneCode)
     {
         this->sceneCode_ = sceneCode;
@@ -43,14 +48,17 @@ public:
     std::vector<AlbumMediaStatisticInfo> Load();
 
 private:
-    int32_t QueryExternalImageCount();
-    int32_t QueryExternalVideoCount();
     int32_t QueryExternalAudioCount();
+    std::unordered_map<int32_t, int32_t> QueryExternalImageAndVideoCount();
+    std::unordered_map<int32_t, int32_t> QueryGalleryNotSyncMedia(const int32_t maxId);
     AlbumMediaStatisticInfo GetMediaStatInfo();
     AlbumMediaStatisticInfo GetAudioStatInfo();
-
+    AlbumMediaStatisticInfo GetGalleryNotSyncMediaStatInfo();
+    void GetMediaStatInfoFromMap(const std::unordered_map<int32_t, int32_t>& mediaTypeCountMap,
+        AlbumMediaStatisticInfo& info);
 private:
     std::shared_ptr<NativeRdb::RdbStore> externalRdb_;
+    std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     int32_t sceneCode_;
     std::string taskId_;
 };
