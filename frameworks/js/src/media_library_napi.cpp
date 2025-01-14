@@ -6242,9 +6242,16 @@ static std::string GetFaceAnalysisProgress()
         return "";
     }
     if (ret->GoToNextRow() != NativeRdb::E_OK) {
-        NAPI_ERR_LOG("Progress GetFaceAnalysisProgress failed and errCode is %{public}d", errCode);
         ret->Close();
-        return "";
+        nlohmann::json jsonObj;
+        jsonObj["cvFinishedCount"] = 0;
+        jsonObj["geoFinishedCount"] = 0;
+        jsonObj["searchFinishedCount"] = 0;
+        jsonObj["totalCount"] = curTotalCount;
+        string retJson = jsonObj.dump();
+        NAPI_ERR_LOG("GetFaceAnalysisProgress failed, errCode is %{public}d, json is %{public}s", errCode,
+            retJson.c_str());
+        return retJson;
     }
     string retJson = MediaLibraryNapiUtils::GetStringValueByColumn(ret, HIGHLIGHT_ANALYSIS_PROGRESS);
     if (retJson == "") {
