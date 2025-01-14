@@ -1796,13 +1796,14 @@ shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, co
         fileId.c_str(), latitude.c_str(), longitude.c_str(), addressDescription.c_str());
 
     if (!(latitude == "0" && longitude == "0") && addressDescription.empty()) {
-        const std::vector<std::string> geoInfo{ fileId, latitude, longitude };
-        bool isForceQuery = false;
-        std::future<bool> futureResult =
-            std::async(std::launch::async, MediaAnalysisHelper::ParseGeoInfo, std::move(geoInfo), isForceQuery);
+        std::packaged_task<bool()> pt([=] {
+            return MediaAnalysisHelper::ParseGeoInfo({ fileId, latitude, longitude }, false);
+        });
+        std::future<bool> futureResult = pt.get_future();
+        std::thread(std::move(pt)).detach();
 
         bool parseResult = false;
-        const int timeout = 5;
+        const int timeout = 2;
         std::future_status futureStatus = futureResult.wait_for(std::chrono::seconds(timeout));
         if (futureStatus == std::future_status::ready) {
             parseResult = futureResult.get();
@@ -1850,9 +1851,9 @@ shared_ptr<NativeRdb::ResultSet> QueryGeoAssets(const RdbPredicates &rdbPredicat
             }
         }
     
-        bool isForceQuery = true;
-        std::future<bool> futureResult =
-            std::async(std::launch::async, MediaAnalysisHelper::ParseGeoInfo, std::move(geoInfo), isForceQuery);
+        std::packaged_task<bool()> pt([&] { return MediaAnalysisHelper::ParseGeoInfo(std::move(geoInfo), true); });
+        std::future<bool> futureResult = pt.get_future();
+        std::thread(std::move(pt)).detach();
 
         bool parseResult = false;
         const int timeout = 5;
