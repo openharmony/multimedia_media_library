@@ -188,6 +188,7 @@ public:
     static const std::string CREATE_PHOTO_BURSTKEY_INDEX EXPORT;
     static const std::string UPDATE_READY_ON_THUMBNAIL_UPGRADE EXPORT;
     static const std::string UPDATA_PHOTOS_DATA_UNIQUE EXPORT;
+    static const std::string UPDATE_LCD_STATUS_NOT_UPLOADED EXPORT;
 
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;

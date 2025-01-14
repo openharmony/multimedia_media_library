@@ -77,6 +77,7 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "medialibrary_rdb_transaction.h"
+#include "thumbnail_service.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -366,6 +367,32 @@ void MediaLibraryRdbStore::RevertFixDateAddedIndex(const shared_ptr<MediaLibrary
     MEDIA_INFO_LOG("end revert fix date added index");
 }
 
+void MediaLibraryRdbStore::UpdateLcdStatusNotUploaded(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::UPDATE_LCD_STATUS_NOT_UPLOADED,
+    };
+    MEDIA_INFO_LOG("start update lcd status for photos have not been uploaded");
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("finish update lcd status for photos have not been uploaded");
+
+    MEDIA_INFO_LOG("start CheckLcdSizeAndUpdateStatus");
+    ThumbnailService::GetInstance()->CheckLcdSizeAndUpdateStatus();
+    MEDIA_INFO_LOG("finish CheckLcdSizeAndUpdateStatus");
+}
+
+void MediaLibraryRdbStore::AddReadyCountIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start add ready count index");
+    const vector<string> sqls = {
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
+        PhotoColumn::CREATE_SCHPT_YEAR_COUNT_READY_INDEX,
+        PhotoColumn::CREATE_SCHPT_MONTH_COUNT_READY_INDEX,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end add ready count index");
+}
+
 int32_t MediaLibraryRdbStore::Init()
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
@@ -385,18 +412,6 @@ int32_t MediaLibraryRdbStore::Init()
     }
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Init(), SUCCESS");
     return E_OK;
-}
-
-void MediaLibraryRdbStore::AddReadyCountIndex(const shared_ptr<MediaLibraryRdbStore> store)
-{
-    MEDIA_INFO_LOG("start add ready count index");
-    const vector<string> sqls = {
-        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
-        PhotoColumn::CREATE_SCHPT_YEAR_COUNT_READY_INDEX,
-        PhotoColumn::CREATE_SCHPT_MONTH_COUNT_READY_INDEX,
-    };
-    ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end add ready count index");
 }
 
 int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
