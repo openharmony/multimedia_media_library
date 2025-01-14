@@ -233,7 +233,7 @@ bool PhotoCustomRestoreOperation::HandleFirstRestoreFile(
     if (isFirstRestoreSuccess) {
         MEDIA_ERR_LOG("first file restore success.");
         firstRestoreIndex = index;
-        int notifyType = index == lastIndex ? NOTIFY_FIRST : NOTIFY_LAST;
+        int notifyType = index == lastIndex ? NOTIFY_LAST : NOTIFY_FIRST;
         SendNotifyMessage(restoreTaskInfo, notifyType, errCode, 1);
     }
     return isFirstRestoreSuccess;
