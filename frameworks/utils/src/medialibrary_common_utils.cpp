@@ -26,6 +26,7 @@
 #include "media_old_photos_column.h"
 #include "media_smart_album_column.h"
 #include "openssl/sha.h"
+#include "photo_album_column.h"
 #include "vision_aesthetics_score_column.h"
 #include "vision_column.h"
 #include "vision_face_tag_column.h"
@@ -180,6 +181,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
 
     // PhotoAlbum table columns
     COMPAT_ALBUM_SUBTYPE,
+    PhotoAlbumColumns::ALBUM_LPATH,
 
     // Analysis table columns
     TAG_ID,
