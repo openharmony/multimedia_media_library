@@ -492,6 +492,7 @@ function getPhotoAccessHelper(context) {
     helper.createDeleteRequest = createDeleteRequest;
     helper.showAssetsCreationDialog = showAssetsCreationDialog;
     helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
+    helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
   }
   return helper;
 }
@@ -529,6 +530,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
+          helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
         }
         return helper;
       })
@@ -548,6 +550,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
           helper.createDeleteRequest = createDeleteRequest;
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
+          helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
         }
         asyncCallback(err, helper);
       }
