@@ -38,6 +38,7 @@ public:
     DatabaseReport &ReportExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb,
         std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
     DatabaseReport &ReportMedia(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, int32_t period);
+    DatabaseReport &ReportAudio(const uint64_t audioCount);
 
 public:
     enum { PERIOD_OLD = -1, PERIOD_BEFORE = 0, PERIOD_AFTER = 1 };
