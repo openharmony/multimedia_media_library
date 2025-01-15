@@ -477,5 +477,83 @@ HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_Operation_Test_03
     MEDIA_INFO_LOG("Photo_Custom_Restore_Operation_Test_039 End");
 }
 
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_UpdatePhotoAlbum_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdatePhotoAlbum_Test Start");
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "restoreTaskInfo";
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+
+    FileInfo fileInfo;
+    auto ret = operatorObj.UpdatePhotoAlbum(restoreTaskInfo, fileInfo);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_UpdatePhotoAlbum_Test End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GenerateCustomRestoreNotify_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GenerateCustomRestoreNotify_Test Start");
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.totalNum = 0;
+    int type = 0;
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    InnerRestoreResult ret = operatorObj.GenerateCustomRestoreNotify(restoreTaskInfo, type);
+    EXPECT_EQ(ret.successNum, 0);
+
+    restoreTaskInfo.totalNum = 100;
+    type = NOTIFY_LAST;
+    ret = operatorObj.GenerateCustomRestoreNotify(restoreTaskInfo, type);
+    EXPECT_EQ(ret.cancelNum, 0);
+
+    type = NOTIFY_FIRST;
+    ret = operatorObj.GenerateCustomRestoreNotify(restoreTaskInfo, type);
+    EXPECT_EQ(ret.cancelNum, 0);
+
+    type = NOTIFY_CANCEL;
+    operatorObj.GenerateCustomRestoreNotify(restoreTaskInfo, type);
+    EXPECT_EQ(ret.cancelNum, 100);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GenerateCustomRestoreNotify_Test End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetAssetRootDir_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAssetRootDir_Test Start");
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    string dirPath;
+    int32_t mediaType = MEDIA_TYPE_VIDEO;
+    operatorObj.GetAssetRootDir(mediaType, dirPath);
+    EXPECT_EQ(dirPath, "Photo/");
+
+    mediaType = MEDIA_TYPE_DEFAULT;
+    operatorObj.GetAssetRootDir(mediaType, dirPath);
+    EXPECT_EQ(dirPath, "Document/");
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetAssetRootDir_Test End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_InitPhotoCache_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_InitPhotoCache_Test Start");
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.isDeduplication = false;
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    auto ret = operatorObj.InitPhotoCache(restoreTaskInfo);
+    EXPECT_EQ(ret, E_OK);
+
+    restoreTaskInfo.isDeduplication = true;
+    restoreTaskInfo.albumId = 21;
+    ret = operatorObj.InitPhotoCache(restoreTaskInfo);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_InitPhotoCache_Test End");
+}
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GetInsertValue_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetInsertValue_Test Start");
+    RestoreTaskInfo restoreTaskInfo;
+    FileInfo fileInfo;
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    EXPECT_EQ(PhotoCustomRestoreOperation::instance_ != nullptr, true);
+    operatorObj.GetInsertValue(restoreTaskInfo, fileInfo);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_GetInsertValue_Test End");
+}
 }
 }
