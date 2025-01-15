@@ -1245,6 +1245,7 @@ void MediaLibraryAlbumOperations::RecoverAlbum(const string& assetId, const stri
     values.PutString(PhotoAlbumColumns::ALBUM_LPATH, lPath);
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
     values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundleName);
+    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
     int32_t ret = rdbStore->Insert(newAlbumId, PhotoAlbumColumns::TABLE, values);
 
