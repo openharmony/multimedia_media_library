@@ -402,8 +402,8 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     dataShareValue02.Put(AppUriPermissionColumn::APP_ID, "appid01");
     dataShareValue02.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue02.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
-    dataShareValue01.Put(AppUriPermissionColumn::SOURCE_TOKENID, sourceId);
-    dataShareValue01.Put(AppUriPermissionColumn::TARGET_TOKENID, targetId);
+    dataShareValue02.Put(AppUriPermissionColumn::SOURCE_TOKENID, sourceId);
+    dataShareValue02.Put(AppUriPermissionColumn::TARGET_TOKENID, targetId);
     ret = TestInsert(dataShareValue02);
     // expected result: 1, alread exist
     EXPECT_EQ(ret, 1);
