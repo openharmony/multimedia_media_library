@@ -48,6 +48,7 @@ public:
     double GetLatitude() const;
     double GetLongitude() const;
     const std::string& GetAlbumName() const;
+    const std::string& GetLPath() const;
     PhotoAlbumType GetPhotoAlbumType() const;
     PhotoAlbumSubType GetPhotoAlbumSubType() const;
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
@@ -64,6 +65,7 @@ private:
     EXPORT static napi_value JSGetPhotoAlbumSubType(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetCoverUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetDateModified(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumLPath(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
 

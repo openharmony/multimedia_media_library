@@ -23,7 +23,7 @@
     do {                                                                        \
         if (!(cond)) {                                                          \
             NAPI_ERR_LOG(fmt, ##__VA_ARGS__);                                   \
-            NapiError::ThrowError(env, err, __FUNCTION__, __LINE__);            \
+            NapiError::ThrowError(env, err, __FUNCTION__, __LINE__, errmsg);            \
             return ret;                                                         \
         }                                                                       \
     } while (0)
