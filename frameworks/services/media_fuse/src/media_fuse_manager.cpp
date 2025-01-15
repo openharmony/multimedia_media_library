@@ -72,8 +72,8 @@ static const map<int32_t, string> MEDIA_OPEN_MODE_MAP = {
 };
 
 MediafusePermCheckInfo::MediafusePermCheckInfo(const string &filePath, const string &mode, const string &fileId,
-    const string &appId, const int32_t &uid, const uint32_t &tokenCaller)
-    : filePath_(filePath), mode_(mode), fileId_(fileId), appId_(appId), uid_(uid), tokenCaller_(tokenCaller)
+    const string &appId, const int32_t &uid)
+    : filePath_(filePath), mode_(mode), fileId_(fileId), appId_(appId), uid_(uid)
 {}
 
 MediaFuseManager &MediaFuseManager::GetInstance()
@@ -262,17 +262,17 @@ static int32_t DbCheckPermission(const string &filePath, const string &mode, con
     return E_SUCCESS;
 }
 
-int32_t MediafusePermCheckInfo::CheckPermission()
+int32_t MediafusePermCheckInfo::CheckPermission(uint32_t &tokenCaller)
 {
-    int err = WrCheckPermission(filePath_, mode_, uid_, tokenCaller_);
+    int err = WrCheckPermission(filePath_, mode_, uid_, tokenCaller);
     bool rslt;
     if (err == E_SUCCESS) {
-        MEDIA_INFO_LOG("wr check succ");
+        MEDIA_INFO_LOG("wr check succ %{public}d", tokenCaller);
         return true;
     }
-    err = DbCheckPermission(filePath_, mode_, fileId_, appId_, tokenCaller_);
+    err = DbCheckPermission(filePath_, mode_, fileId_, appId_, tokenCaller);
     if (err == E_SUCCESS) {
-        MEDIA_INFO_LOG("db check succ");
+        MEDIA_INFO_LOG("db check succ %{public}d", tokenCaller);
         rslt = true;
     } else {
         rslt = false;
@@ -297,8 +297,8 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
     AccessTokenID tokenCaller = INVALID_TOKENID;
     PermissionUtils::GetClientBundle(uid, bundleName);
     string appId = PermissionUtils::GetAppIdByBundleName(bundleName, uid);
-    class MediafusePermCheckInfo info(filePath, mode, fileId, appId, uid, tokenCaller);
-    int32_t permGranted = info.CheckPermission();
+    class MediafusePermCheckInfo info(filePath, mode, fileId, appId, uid);
+    int32_t permGranted = info.CheckPermission(tokenCaller);
     if (permGranted == false) {
         return E_ERR;
     }
