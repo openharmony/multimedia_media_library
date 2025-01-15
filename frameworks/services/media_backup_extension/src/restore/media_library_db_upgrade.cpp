@@ -23,6 +23,7 @@
 #include "album_plugin_table_event_handler.h"
 #include "db_upgrade_utils.h"
 #include "medialibrary_rdb_transaction.h"
+#include "photo_album_update_date_modified_operation.h"
 #include "photo_day_month_year_operation.h"
 
 namespace OHOS::Media {
@@ -50,6 +51,11 @@ int32_t MediaLibraryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
 
     ret = this->UpgradePhotosBelongsToAlbum(store);
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+
+    ret = this->ExecSqlWithRetry([&]() {
+        return PhotoAlbumUpdateDateModifiedOperation::UpdateAlbumDateNeedFix(store);
+    });
     CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
 
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::OnUpgrade end");

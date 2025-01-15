@@ -4112,6 +4112,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_HIGHLIGHT_ANALYSIS_PROGRESS) {
         AddHighlightAnalysisProgress(store);
     }
+
+    if (oldVersion < VERSION_FIX_SOURCE_PHOTO_ALBUM_DATE_MODIFIED) {
+        UpdateSourcePhotoAlbumTrigger(store);
+    }
 }
 
 static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
