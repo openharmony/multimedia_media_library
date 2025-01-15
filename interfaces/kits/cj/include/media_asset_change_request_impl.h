@@ -100,7 +100,7 @@ public:
     int32_t PutMediaAssetEditData(DataShare::DataShareValuesBucket& valuesBucket);
     int32_t GetImageFileType();
 
-    MediaAssetChangeRequestImpl(OHOS::sptr<PhotoAssetImpl> photoAssert, int32_t* errCode);
+    MediaAssetChangeRequestImpl(std::shared_ptr<FileAsset> fileAssetPtr);
     MediaAssetChangeRequestImpl(int64_t contextId, const std::string& filePath, MediaType meidiaType, int32_t* errCode);
     MediaAssetChangeRequestImpl(int64_t contextId, int32_t photoType, std::string extension, std::string title,
         int32_t subType, int32_t* errCode);
@@ -140,17 +140,17 @@ private:
     OHOS::DataShare::DataShareValuesBucket creationValuesBucket_;
     std::string realPath_;
     std::string cacheFileName_;
-    void* dataBuffer_;
-    size_t dataBufferSize_;
-    AddResourceMode addResourceMode_;
+    void* dataBuffer_ = nullptr;
+    size_t dataBufferSize_ = 0;
+    AddResourceMode addResourceMode_ = AddResourceMode::DATA_BUFFER;
     std::string movingPhotoVideoRealPath_;
     std::string cacheMovingPhotoVideoName_;
-    void* movingPhotoVideoDataBuffer_;
-    size_t movingPhotoVideoBufferSize_;
-    AddResourceMode movingPhotoVideoResourceMode_;
+    void* movingPhotoVideoDataBuffer_ = nullptr;
+    size_t movingPhotoVideoBufferSize_ = 0;
+    AddResourceMode movingPhotoVideoResourceMode_ = AddResourceMode::DATA_BUFFER;
     std::vector<ResourceType> addResourceTypes_; // support adding resource multiple times
     std::vector<AssetChangeOperation> assetChangeOperations_;
-    int32_t imageFileType_;
+    int32_t imageFileType_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

@@ -301,14 +301,15 @@ static int32_t RequestContentToArrayBuffer(int32_t resourceType, string movingPh
     if (readBytes != fileSize) {
         LOGE("read file failed, read bytes is %{public}zu, actual length is %{public}zu, "
             "error: %{public}d", readBytes, fileSize, errno);
+        free(arrayBufferData);
         return E_HAS_FS_ERROR;
     }
     if (fileSize > 0) {
-        result.head = static_cast<uint8_t*>(arrayBufferData);
-        if (result.head == nullptr) {
+        if (arrayBufferData == nullptr) {
             LOGE("get arrayBuffer failed.");
             return E_HAS_FS_ERROR;
         }
+        result.head = static_cast<uint8_t*>(arrayBufferData);
         result.size = static_cast<int64_t>(fileSize);
     }
     return E_OK;

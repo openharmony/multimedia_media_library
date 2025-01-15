@@ -57,8 +57,8 @@ extern "C" {
     {
         PhotoAssetMember assetMember = {
             .memberType = -1,
-            .boolValue = false,
-            .stringValue = nullptr
+            .stringValue = nullptr,
+            .boolValue = false
         };
         auto photoAssetImpl = FFIData::GetData<PhotoAssetImpl>(id);
         if (photoAssetImpl == nullptr) {
@@ -595,7 +595,18 @@ extern "C" {
             *errCode = JS_INNER_FAIL;
             return 0;
         }
-        auto changeRequest = FFIData::Create<MediaAssetChangeRequestImpl>(photoAssetImpl, errCode);
+        auto fileAssetPtr = photoAssetImpl->GetFileAssetInstance();
+        if (fileAssetPtr == nullptr) {
+            *errCode = OHOS_INVALID_PARAM_CODE;
+            LOGE("fileAsset is null");
+            return 0;
+        }
+        if (fileAssetPtr->GetMediaType() != MEDIA_TYPE_IMAGE && fileAssetPtr->GetMediaType() != MEDIA_TYPE_VIDEO) {
+            LOGE("Unsupported type of fileAsset");
+            *errCode = OHOS_INVALID_PARAM_CODE;
+            return 0;
+        }
+        auto changeRequest = FFIData::Create<MediaAssetChangeRequestImpl>(fileAssetPtr);
         if (!changeRequest) {
             *errCode = JS_INNER_FAIL;
             return 0;
@@ -656,7 +667,7 @@ extern "C" {
             LOGE("array is empty");
             return OHOS_INVALID_PARAM_CODE;
         }
-        for (size_t i = 0; i < assets.size; i++) {
+        for (size_t i = 0; i < static_cast<size_t>(assets.size); i++) {
             auto photoAssetImpl = FFIData::GetData<PhotoAssetImpl>(assets.head[i]);
             if (!photoAssetImpl) {
                 return JS_ERR_PARAMETER_INVALID;
@@ -795,7 +806,20 @@ extern "C" {
             *errCode = JS_INNER_FAIL;
             return 0;
         }
-        auto changeRequest = FFIData::Create<MediaAlbumChangeRequestImpl>(photoAlbumImpl, errCode);
+        auto photoAlbumPtr = photoAlbumImpl->GetPhotoAlbumInstance();
+        if (photoAlbumPtr == nullptr) {
+            LOGE("photoAlbum is null");
+            *errCode = OHOS_INVALID_PARAM_CODE;
+            return 0;
+        }
+        if (!(photoAlbumPtr->GetResultNapiType() == ResultNapiType::TYPE_PHOTOACCESS_HELPER &&
+                PhotoAlbum::CheckPhotoAlbumType(photoAlbumPtr->GetPhotoAlbumType()) &&
+                PhotoAlbum::CheckPhotoAlbumSubType(photoAlbumPtr->GetPhotoAlbumSubType()))) {
+            LOGE("Unsupported type of photoAlbum");
+            *errCode = OHOS_INVALID_PARAM_CODE;
+            return 0;
+        }
+        auto changeRequest = FFIData::Create<MediaAlbumChangeRequestImpl>(photoAlbumPtr);
         if (!changeRequest) {
             *errCode = JS_INNER_FAIL;
             return 0;

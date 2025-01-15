@@ -84,7 +84,7 @@ public:
     void OnChange(FfiMediaChangeListener &listener);
     void UvQueueWork(UvChangeMsg *msg);
     void SolveOnChange(UvChangeMsg *msg, ChangeData &changeData);
-    int64_t funcId;
+    int64_t funcId = 0;
     std::function<void(ChangeData)> callbackRef = nullptr;
 
     sptr<AAFwk::IDataAbilityObserver> audioDataObserver_ = nullptr;
