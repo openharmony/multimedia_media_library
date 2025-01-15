@@ -48,6 +48,8 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileInAlbum(const FileInfo &fileInfo
     }
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
+    rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
+    rowData.position = GetInt32Val("position", resultSet);
     return rowData;
 }
 
@@ -75,6 +77,8 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileWithoutAlbum(const FileInfo &fil
     }
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
+    rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
+    rowData.position = GetInt32Val("position", resultSet);
     return rowData;
 }
 
@@ -158,6 +162,8 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileBySourcePath(const FileInfo &fil
     }
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
+    rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
+    rowData.position = GetInt32Val("position", resultSet);
     return rowData;
 }
 

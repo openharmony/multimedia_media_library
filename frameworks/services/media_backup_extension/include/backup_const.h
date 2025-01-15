@@ -235,6 +235,7 @@ enum RestoreError {
     CREATE_PATH_FAILED,
     PREPARE_PATH_FAILED,
     GALLERY_DATABASE_CORRUPTION,
+    UPDATE_PHOTOS_FAILED,
 };
 
 enum class PhotoRelatedType {
@@ -261,6 +262,7 @@ const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::CREATE_PATH_FAILED, "RESTORE_CREATE_PATH_FAILED" },
     { RestoreError::PREPARE_PATH_FAILED, "RESTORE_PREPARE_PATH_FAILED" },
     { RestoreError::GALLERY_DATABASE_CORRUPTION, "RESTORE_GALLERY_DATABASE_CORRUPTION" },
+    { RestoreError::UPDATE_PHOTOS_FAILED, "RESTORE_UPDATE_PHOTOS_FAILED"}
 };
 
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {
@@ -364,6 +366,7 @@ struct FileInfo {
     std::string newAstcDateKey;
     bool isInternal {true};
     int32_t userId {-1};
+    std::unordered_map<std::string, std::string> updateMap;
 };
 
 struct AlbumInfo {
