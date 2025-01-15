@@ -87,21 +87,9 @@ std::shared_ptr<FileAsset> MediaAssetChangeRequestImpl::GetFileAssetInstance() c
     return fileAsset_;
 }
 
-MediaAssetChangeRequestImpl::MediaAssetChangeRequestImpl(OHOS::sptr<PhotoAssetImpl> photoAssert, int32_t* errCode)
+MediaAssetChangeRequestImpl::MediaAssetChangeRequestImpl(std::shared_ptr<FileAsset> fileAssetPtr)
 {
-    auto fileAssetPtr = photoAssert->GetFileAssetInstance();
-    if (fileAssetPtr == nullptr) {
-        *errCode = OHOS_INVALID_PARAM_CODE;
-        LOGE("fileAsset is null");
-        return;
-    }
-    if (fileAssetPtr->GetMediaType() == MEDIA_TYPE_IMAGE || fileAssetPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
-        fileAsset_ = fileAssetPtr;
-        return;
-    }
-    LOGE("Unsupported type of fileAsset");
-    *errCode = OHOS_INVALID_PARAM_CODE;
-    return;
+    fileAsset_ = fileAssetPtr;
 }
 
 static bool ParseFileUri(const std::string& fileUriStr, MediaType mediaType, std::string& realPath)
@@ -1495,13 +1483,9 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestImpl* changeRequest)
     }
 
     // The watermark will trigger the scan. If the watermark is turned on, there is no need to trigger the scan again.
-    bool needScan = std::find(changeOpreations.begin(), changeOpreations.end(), AssetChangeOperation::ADD_FILTERS) ==
-                    changeOpreations.end();
+    bool needScan = std::find(changeOpreations.begin(), changeOpreations.end(),
+        AssetChangeOperation::ADD_FILTERS) == changeOpreations.end();
 
-    if (changeRequest == nullptr) {
-        LOGE("objectInfo is nullptr");
-        return false;
-    }
     auto fileAsset = changeRequest->GetFileAssetInstance();
     if (fileAsset == nullptr) {
         LOGE("fileAsset is nullptr");

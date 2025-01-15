@@ -20,21 +20,8 @@
 
 namespace OHOS {
 namespace Media {
-MediaAlbumChangeRequestImpl::MediaAlbumChangeRequestImpl(OHOS::sptr<PhotoAlbumImpl> photoAlbum, int32_t* errCode)
+MediaAlbumChangeRequestImpl::MediaAlbumChangeRequestImpl(shared_ptr<PhotoAlbum> photoAlbumPtr)
 {
-    auto photoAlbumPtr = photoAlbum->GetPhotoAlbumInstance();
-    if (photoAlbumPtr == nullptr) {
-        LOGE("photoAlbum is null");
-        *errCode = OHOS_INVALID_PARAM_CODE;
-        return;
-    }
-    if (!(photoAlbumPtr->GetResultNapiType() == ResultNapiType::TYPE_PHOTOACCESS_HELPER &&
-            PhotoAlbum::CheckPhotoAlbumType(photoAlbumPtr->GetPhotoAlbumType()) &&
-            PhotoAlbum::CheckPhotoAlbumSubType(photoAlbumPtr->GetPhotoAlbumSubType()))) {
-        LOGE("Unsupported type of photoAlbum");
-        *errCode = OHOS_INVALID_PARAM_CODE;
-        return;
-    }
     photoAlbum_ = photoAlbumPtr;
 }
 

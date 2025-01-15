@@ -44,7 +44,7 @@ public:
     MediaAlbumChangeRequestImpl() = default;
     ~MediaAlbumChangeRequestImpl() override = default;
 
-    MediaAlbumChangeRequestImpl(OHOS::sptr<PhotoAlbumImpl> photoAlbum, int32_t* errCode);
+    MediaAlbumChangeRequestImpl(shared_ptr<PhotoAlbum> photoAlbumPtr);
     int64_t CJGetAlbum(int32_t* errCode);
     int32_t CJSetAlbumName(std::string albumName);
     int32_t CJAddAssets(std::vector<std::string> assetUriArray);
