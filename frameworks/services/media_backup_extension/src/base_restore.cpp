@@ -776,6 +776,10 @@ void BaseRestore::StartRestoreEx(const std::string &backupRetoreDir, const std::
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
         .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_AFTER);
+    DatabaseReport()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .ReportAudio(audioTotalNumber_);
     restoreExInfo = GetRestoreExInfo();
     UpgradeRestoreTaskReport()
         .SetSceneCode(this->sceneCode_)
