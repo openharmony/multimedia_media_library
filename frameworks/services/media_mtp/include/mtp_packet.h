@@ -39,6 +39,7 @@ public:
     void Init(std::shared_ptr<HeaderData> &headerData);
     void Init(std::shared_ptr<HeaderData> &headerData, std::shared_ptr<PayloadData> &payloadData);
     void Reset();
+    void Stop();
 
     uint16_t GetOperationCode();
     uint32_t GetTransactionId();
