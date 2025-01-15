@@ -1854,7 +1854,10 @@ shared_ptr<NativeRdb::ResultSet> QueryGeoAssets(const RdbPredicates &rdbPredicat
                 geoInfo.push_back(fileId + "," + latitude + "," + longitude);
             }
         }
-    
+        if (geoInfo.empty()) {
+            MEDIA_INFO_LOG("No need to query geo info assets");
+            return queryResult;
+        }
         std::packaged_task<bool()> pt([&] { return MediaAnalysisHelper::ParseGeoInfo(std::move(geoInfo), true); });
         std::future<bool> futureResult = pt.get_future();
         std::thread(std::move(pt)).detach();
