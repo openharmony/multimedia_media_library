@@ -17,6 +17,7 @@
 
 #include "cloud_sync_helper.h"
 
+#include "medialibrary_all_album_refresh_processor.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "parameters.h"
@@ -173,7 +174,19 @@ void CloudSyncHelper::OnTimerCallback()
 
 void MediaCloudSyncCallback::OnSyncStateChanged(SyncType type, SyncPromptState state)
 {
-    MEDIA_INFO_LOG("sync type %{public}d, state %{public}d", type, state);
+    MEDIA_INFO_LOG("OnSyncStateChanged SyncType %{public}d, SyncPromptState %{public}d", type, state);
+}
+
+void MediaCloudSyncCallback::OnSyncStateChanged(CloudSyncState state, ErrorType error)
+{
+    MEDIA_INFO_LOG("OnSyncStateChanged CloudSyncState %{public}d, ErrorType %{public}d", state, error);
+    unique_lock<mutex> lock(syncStateMutex_);
+    bool isSyncing = (state == CloudSyncState::UPLOADING || state == CloudSyncState::DOWNLOADING);
+    if (isSyncing_ == isSyncing) {
+        return;
+    }
+    isSyncing_ = isSyncing;
+    MediaLibraryAllAlbumRefreshProcessor::GetInstance()->OnCloudSyncStateChanged(isSyncing_);
 }
 } // namespace Media
 } // namespace OHOS

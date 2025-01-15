@@ -26,6 +26,7 @@
 #include "ability_scheduler_interface.h"
 #include "abs_rdb_predicates.h"
 #include "acl.h"
+#include "albums_refresh_manager.h"
 #include "background_cloud_file_processor.h"
 #include "background_task_mgr_helper.h"
 #include "cloud_media_asset_manager.h"
@@ -326,15 +327,24 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     ReconstructMediaLibraryPhotoMap();
     HandleOtherInitOperations();
 
+    if (AlbumsRefreshManager::GetInstance().HasRefreshingSystemAlbums()) {
+        SyncNotifyInfo info;
+        info.forceRefreshType = ForceRefreshType::EXCEPTION;
+        AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
+    }
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     cloudPhotoObserver_ = std::make_shared<CloudSyncObserver>();
     cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
     galleryRebuildObserver_= std::make_shared<CloudSyncObserver>();
+    cloudGalleryPhotoObserver_ = std::make_shared<CloudSyncObserver>();
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(
         Uri(PhotoColumn::PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX),
         galleryRebuildObserver_, true);
-    shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_, true);
+    shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX),
+        cloudPhotoAlbumObserver_, true);
+    shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX),
+        cloudGalleryPhotoObserver_, true);
 
     HandleUpgradeRdbAsync();
     CloudSyncSwitchManager cloudSyncSwitchManager;

@@ -1,0 +1,252 @@
+/*
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#define MLOG_TAG "AlbumsRefreshWorker"
+
+#include "albums_refresh_worker.h"
+
+#include "media_log.h"
+#include "media_column.h"
+#include "medialibrary_errno.h"
+#include "albums_refresh_manager.h"
+#include "cloud_album_handler.h"
+#include "photo_album_column.h"
+#include "medialibrary_unistore_manager.h"
+
+using namespace std;
+
+namespace OHOS {
+namespace Media {
+static constexpr int32_t WAIT_TIME = 30;
+static constexpr int32_t WAIT_RELEASE = 50;
+static constexpr int32_t CPU_9 = 9;
+static constexpr int32_t MAX_ADD_FUSION_URIS = 1500;
+static constexpr int32_t MAX_OTHER_FUSION_URIS = 500;
+
+static void SetCpu(thread &t)
+{
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(CPU_9, &cpuset);
+    pthread_setaffinity_np(t.native_handle(), sizeof(cpuset), &cpuset);
+}
+
+AlbumsRefreshWorker::AlbumsRefreshWorker()
+{
+    stop = false;
+    isThreadAlive = true;
+    thread taskThread(&AlbumsRefreshWorker::DealWithTasks, this);
+    SetCpu(taskThread);
+    taskThread.detach();
+}
+
+AlbumsRefreshWorker::~AlbumsRefreshWorker()
+{
+    stop = true;
+    condVar_.notify_all();
+    unique_lock<mutex> lock(releaseMutex_);
+    releaseVar_.wait_for(lock, chrono::milliseconds(WAIT_RELEASE), [this]() { return isThreadAlive == false; });
+}
+
+void AlbumsRefreshWorker::StartConsumerThread()
+{
+    if (!isThreadAlive) {
+        isThreadAlive = true;
+        thread taskThread(&AlbumsRefreshWorker::DealWithTasks, this);
+        SetCpu(taskThread);
+        taskThread.detach();
+    }
+}
+
+void AlbumsRefreshWorker::AddAlbumRefreshTask(SyncNotifyInfo &info)
+{
+    {
+        lock_guard<mutex> lock(queueMutex_);
+        taskQueue_.push(info);
+        StartConsumerThread();
+    }
+    condVar_.notify_one();
+}
+
+static string extractIdByPhotoUriString(const string &input)
+{
+    string out = input;
+    string prefix = PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX;
+    size_t pos = out.find(prefix);
+    out.replace(pos, prefix.length(), "");
+    return out;
+}
+
+static string extractIdByAlbumUriString(const string &input)
+{
+    string out = input;
+    string prefix = PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX;
+    size_t pos = out.find(prefix);
+    out.replace(pos, prefix.length(), "");
+    return out;
+}
+
+static void PrintSyncInfo(SyncNotifyInfo &info)
+{
+    MEDIA_DEBUG_LOG(
+        "#test info.taskType: %{public}d, info.syncType: %{public}d, info.notifyType: %{public}d, info.syncId: "
+        "%{public}d, info.totalAssets: %{public}d, info.totalAlbums: %{public}d, info.urisSize: %{public}d",
+        info.taskType,
+        info.syncType,
+        info.notifyType,
+        info.syncId,
+        info.totalAssets,
+        info.totalAlbums,
+        info.urisSize);
+}
+
+void AlbumsRefreshWorker::TaskFusion(SyncNotifyInfo &info)
+{
+    // 队列已判空，至少有一个任务
+    SyncNotifyInfo firstTask = taskQueue_.front();
+    info.forceRefreshType = firstTask.forceRefreshType;
+    if (info.forceRefreshType != ForceRefreshType::NONE) {
+        taskQueue_.pop();
+        return;
+    }
+    PrintSyncInfo(firstTask);
+    for (auto it = firstTask.uris.begin(); it != firstTask.uris.end(); ++it) {
+        string uriString = (*it).ToString();
+        string uriId = extractIdByPhotoUriString(uriString);
+        info.uriIds.insert(uriId);
+        MEDIA_DEBUG_LOG("#testfusion1 uriString: %{public}s, uriId: %{public}s, info.uriIds.size: %{public}zu",
+            uriString.c_str(),
+            uriId.c_str(),
+            info.uriIds.size());
+    }
+    taskQueue_.pop();
+    int32_t maxFusionUriSize = (firstTask.notifyType == NOTIFY_ADD) ? MAX_ADD_FUSION_URIS : MAX_OTHER_FUSION_URIS;
+    while (!taskQueue_.empty()) {
+        SyncNotifyInfo nextTask = taskQueue_.front();
+        PrintSyncInfo(nextTask);
+        if (nextTask.uriType != firstTask.uriType ||
+            nextTask.notifyType != firstTask.notifyType ||
+            static_cast<int32_t>(info.uriIds.size()) > maxFusionUriSize ||
+            nextTask.forceRefreshType != ForceRefreshType::NONE) {
+            break;
+        }
+        for (auto it = nextTask.uris.begin(); it != nextTask.uris.end(); ++it) {
+            string uriString = (*it).ToString();
+            string uriId = extractIdByPhotoUriString(uriString);
+            info.uriIds.insert(uriId);
+            MEDIA_DEBUG_LOG("#testfusion2 uriString: %{public}s, uriId: %{public}s, info.uriIds.size: %{public}zu",
+                uriString.c_str(),
+                uriId.c_str(),
+                info.uriIds.size());
+        }
+        taskQueue_.pop();
+    }
+    info.urisSize = info.uriIds.size();
+    info.notifyType = firstTask.notifyType;
+    PrintSyncInfo(info);
+}
+
+static inline bool CheckCloudIdIsEmpty(string uriString)
+{
+    return extractIdByAlbumUriString(uriString).empty();
+}
+
+void AlbumsRefreshWorker::GetSystemAlbumIds(SyncNotifyInfo &info, std::vector<std::string> &albumIds)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Can not get rdb");
+    for (auto it = info.uris.begin(); it != info.uris.end(); ++it) {
+        string uriString = (*it).ToString();
+        string cloudId = extractIdByAlbumUriString(uriString);
+        if (cloudId.empty()) {
+            continue;
+        }
+        int32_t ablumId = AlbumsRefreshManager::GetInstance().CovertCloudId2AlbumId(rdbStore, cloudId);
+        if (ablumId == -1) {
+            continue;
+        }
+        albumIds.push_back(std::to_string(ablumId));
+        MEDIA_INFO_LOG("#test GetSystemAlbumIds uri: %{public}s, albumId: %{public}d, cloudId: %{public}s",
+            uriString.c_str(),
+            ablumId,
+            cloudId.c_str());
+    }
+}
+
+void AlbumsRefreshWorker::TryDeleteAlbum(SyncNotifyInfo &info, std::vector<std::string> &albumIds)
+{
+    // 删除场景，取第一条uri判断是否有CloudId字样
+    if (info.notifyType != NOTIFY_REMOVE || CheckCloudIdIsEmpty(info.uris.front().ToString())) {
+        return;
+    }
+    // 媒体库处理，如果媒体库本地相册图片数量count为0，则删除相册
+    CloudAlbumHandler::DeleteOrUpdateCloudAlbums(albumIds);
+}
+
+void AlbumsRefreshWorker::TaskExecute(SyncNotifyInfo &info)
+{
+    AlbumsRefreshManager::GetInstance().RefreshPhotoAlbums(info);
+}
+
+void AlbumsRefreshWorker::TaskNotify(SyncNotifyInfo &info)
+{
+    if (info.refershResult != E_SUCCESS) {
+        return;
+    }
+    if (info.notifyAssets) {
+        AlbumsRefreshNotify::SendBatchUris(info.notifyType, info.uris, info.extraUris);
+    }
+    if (info.notifyAlbums) {
+        list<Uri> emptyUris;
+        AlbumsRefreshNotify::SendBatchUris(info.notifyType, info.extraUris, emptyUris);
+    }
+}
+
+void AlbumsRefreshWorker::DealWithTasks()
+{
+    MEDIA_INFO_LOG("albums refresh consumer thread start");
+    bool loopCondition = true;
+    while (loopCondition) {
+        {
+            unique_lock<mutex> lock(queueMutex_);
+            if (condVar_.wait_for(lock, chrono::seconds(WAIT_TIME), [this]() { return !taskQueue_.empty() || stop; })) {
+                if (taskQueue_.empty() || stop) {
+                    loopCondition = false;
+                    break;
+                }
+                // 获取第一个任务的类型
+                // 如果是相册刷新，则通知图库
+                // 如果是资产刷新，则融合->执行->通知处理
+                SyncNotifyInfo task = taskQueue_.front();
+                if (task.uriType == ALBUM_URI_TYPE) {
+                    AlbumsRefreshManager::GetInstance().NotifyPhotoAlbums(task);
+                    taskQueue_.pop();
+                } else {
+                    SyncNotifyInfo info;
+                    TaskFusion(info);
+                    TaskExecute(info);
+                    TaskNotify(info);
+                }
+            } else {
+                loopCondition = false;
+                break;
+            }
+        }
+    }
+    MEDIA_INFO_LOG("albums refresh worker thread task queue is empty for %{public}d seconds", WAIT_TIME);
+    isThreadAlive = false;
+}
+}  // namespace Media
+}  // namespace OHOS

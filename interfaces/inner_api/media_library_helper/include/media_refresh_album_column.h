@@ -22,6 +22,7 @@ namespace OHOS {
 namespace Media {
 const std::string ALBUM_REFRESH_TABLE = "RefreshAlbum";
 const std::string REFRESHED_ALBUM_ID = "refresh_album_id";
+const std::string ALBUM_REFRESH_STATUS = "status";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MEDIA_REFRESH_ALBUM_COLUMN_H

@@ -27,7 +27,8 @@ namespace Media {
 enum ChainType {
     TRANSPARENT = 0,
     PHOTODELETE,
-    ALBUM_DELETE
+    ALBUM_DELETE,
+    GALLERY_PHOTO_DELETE
 };
 
 class NotifyResponsibilityChainFactory {
