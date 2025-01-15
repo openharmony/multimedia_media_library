@@ -1853,7 +1853,7 @@ void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<MediaLibra
 }
 
 void MediaLibraryRdbUtils::UpdateAllAlbums(shared_ptr<MediaLibraryRdbStore> rdbStore, const vector<string> &uris,
-    NotifyAlbumType type)
+    NotifyAlbumType type, bool isBackUpAndRestore)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateAllAlbums");
@@ -1877,7 +1877,11 @@ void MediaLibraryRdbUtils::UpdateAllAlbums(shared_ptr<MediaLibraryRdbStore> rdbS
     MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore);
     MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, uris);
     MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, uris);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, uris);
+    if (!isBackUpAndRestore) {
+        std::thread([rdbStore, uris]() { MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, uris); }).detach();
+    } else {
+        MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, uris);
+    }
 }
 
 static int32_t UpdateAlbumReplacedSignal(const shared_ptr<MediaLibraryRdbStore> rdbStore,

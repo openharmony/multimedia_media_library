@@ -495,6 +495,18 @@ void MediaLibraryRdbStore::AddPhotoDateAddedIndex(const shared_ptr<MediaLibraryR
     MEDIA_INFO_LOG("end AddPhotoDateAddedIndex");
 }
 
+void MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start Update LatitudeAndLongitude Default Null");
+    const vector<string> sqls = {
+        PhotoColumn::INDEX_LATITUDE,
+        PhotoColumn::INDEX_LONGITUDE,
+        PhotoColumn::UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end  Update LatitudeAndLongitude Default Null");
+}
+
 int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", version);

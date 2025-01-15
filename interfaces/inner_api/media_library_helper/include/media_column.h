@@ -158,6 +158,8 @@ public:
     static const std::string PHOTO_FAVORITE_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_READY_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX EXPORT;
+    static const std::string LATITUDE_INDEX EXPORT;
+    static const std::string LONGITUDE_INDEX EXPORT;
     // for clone query
     static const std::string PHOTO_DISPLAYNAME_INDEX EXPORT;
     // for burst query
@@ -204,6 +206,7 @@ public:
     static const std::string UPDATE_READY_ON_THUMBNAIL_UPGRADE EXPORT;
     static const std::string UPDATA_PHOTOS_DATA_UNIQUE EXPORT;
     static const std::string UPDATE_LCD_STATUS_NOT_UPLOADED EXPORT;
+    static const std::string UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL EXPORT;
 
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;
@@ -222,6 +225,8 @@ public:
     static const std::string INDEX_SCHPT_ALBUM_GENERAL;
     static const std::string INDEX_SCHPT_ALBUM;
     static const std::string INDEX_SCTHP_PHOTO_DATEADDED;
+    static const std::string INDEX_LATITUDE;
+    static const std::string INDEX_LONGITUDE;
 
     // create Photo cloud sync trigger
     static const std::string CREATE_PHOTOS_DELETE_TRIGGER EXPORT;

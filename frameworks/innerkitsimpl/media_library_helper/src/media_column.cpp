@@ -136,6 +136,8 @@ const std::string PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX = "idx_s
 const std::string PhotoColumn::PHOTO_SCHPT_DATE_YEAR_COUNT_READY_INDEX = "idx_schpt_date_year_ready";
 const std::string PhotoColumn::PHOTO_SCHPT_DATE_MONTH_COUNT_READY_INDEX = "idx_schpt_date_month_ready";
 const std::string PhotoColumn::PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX = "idx_schpt_cloud_enhancement_album_index";
+const std::string PhotoColumn::LATITUDE_INDEX = "idx_latitude";
+const std::string PhotoColumn::LONGITUDE_INDEX = "idx_longtitude";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -367,6 +369,17 @@ const std::string PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED =
     BaseColumn::CreateIndex() + PHOTO_SCHPT_PHOTO_DATEADDED_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN + "," +
     MEDIA_TIME_PENDING + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + MEDIA_DATE_ADDED + " DESC);";
+
+const std::string PhotoColumn::INDEX_LATITUDE =
+    BaseColumn::CreateIndex() + LATITUDE_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_LATITUDE + ");";
+
+const std::string PhotoColumn::INDEX_LONGITUDE =
+    BaseColumn::CreateIndex() + LONGITUDE_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_LONGITUDE + ");";
+
+const std::string PhotoColumn::UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL =
+    " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_LATITUDE +
+    " = NULL, " + PhotoColumn::PHOTO_LONGITUDE + " = NULL " + " WHERE " +
+    PhotoColumn::PHOTO_LATITUDE + " = 0 AND " + PhotoColumn::PHOTO_LONGITUDE + " = 0;";
 
 const std::string PhotoColumn::DROP_INDEX_SCTHP_ADDTIME = BaseColumn::DropIndex() + PHOTO_SCHPT_ADDED_INDEX;
 

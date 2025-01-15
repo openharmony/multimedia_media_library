@@ -69,7 +69,8 @@ public:
     EXPORT static void UpdateAnalysisAlbumByFile(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &fileIds, const std::vector<int> &albumTypes);
     EXPORT static void UpdateAllAlbums(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-        const std::vector<std::string> &uris = {}, NotifyAlbumType type = NotifyAlbumType::NO_NOTIFY);
+        const std::vector<std::string> &uris = {}, NotifyAlbumType type = NotifyAlbumType::NO_NOTIFY,
+        bool isBackUpAndRestore = false);
 
     EXPORT static int32_t RefreshAllAlbums(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         std::function<void(PhotoAlbumType, PhotoAlbumSubType, int)> refreshProcessHandler,
