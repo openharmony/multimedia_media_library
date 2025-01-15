@@ -505,6 +505,7 @@ void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
 void MediaSyncObserver::StartNotifyThread()
 {
     MEDIA_INFO_LOG("start notify thread");
+    CHECK_AND_PRINT_LOG(!isRunning_.load(), "MediaSyncObserver notify thread is already running");
     isRunning_.store(true);
     notifythread_ = std::thread([this] {this->ChangeNotifyThread();});
 }
