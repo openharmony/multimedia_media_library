@@ -970,7 +970,7 @@ static shared_ptr<ResultSet> QueryPortraitAlbumCover(const shared_ptr<MediaLibra
         "AND Photos.time_pending = 0 "
         "AND Photos.is_temp = 0 "
         "AND Photos.burst_cover_level = 1 "
-        "AND AnalysisAlbum.group_tag = (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
+        "AND AnalysisAlbum.group_tag IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
         albumId +
         " LIMIT 1) "
         "AND AnalysisAlbum.group_tag LIKE '%' || tab_analysis_image_face.tag_id || '%'";
@@ -1081,17 +1081,47 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     return E_SUCCESS;
 }
 
-static void QueryAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbStore, const RdbPredicates predicates,
-    vector<string> &albumId)
+static vector<string> QueryAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbStore, const vector<string> &uris,
+    PhotoAlbumType photoAlbumType)
 {
-    const vector<string> columns = {
-        "Distinct " + PhotoColumn::PHOTO_OWNER_ALBUM_ID
-    };
-    auto resultSet = rdbStore->Query(predicates, columns);
-    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to Query");
-    while (resultSet->GoToNextRow() == E_OK) {
-        albumId.push_back(to_string(GetIntValFromColumn(resultSet, 0)));
+    vector<string> albumIds;
+    string idArgs;
+    for (size_t i = 0; i < uris.size(); i++) {
+        string fileId = GetPhotoId(uris[i]);
+        if (fileId.size() > 0) {
+            idArgs.append("'").append(fileId).append("'").append(",");
+        }
+        if ((i == 0 || i % ALBUM_UPDATE_THRESHOLD != 0) && i < uris.size() - 1) {
+            continue;
+        }
+        if (idArgs.size() == 0) {
+            continue;
+        }
+        idArgs = idArgs.substr(0, idArgs.size() - 1);
+        const string sql = ""
+            "WITH PhotoAlbumIds AS ( SELECT album_id FROM PhotoAlbum WHERE album_type = " +
+            to_string(photoAlbumType) +
+            " ) "
+            "SELECT DISTINCT "
+            "owner_album_id "
+            "FROM"
+            "  Photos"
+            "  INNER JOIN PhotoAlbumIds ON Photos.owner_album_id = PhotoAlbumIds.album_id "
+            "WHERE"
+            "  file_id IN ( " +
+            idArgs + " );";
+        auto resultSet = rdbStore->QueryByStep(sql);
+        if (resultSet == nullptr) {
+            MEDIA_ERR_LOG("Failed to Query AlbumId");
+            continue;
+        }
+        while (resultSet->GoToNextRow() == E_OK) {
+            albumIds.push_back(to_string(GetIntValFromColumn(resultSet, 0)));
+        }
+        resultSet->Close();
+        idArgs.clear();
     }
+    return albumIds;
 }
 
 static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore> rdbStore, UpdateAlbumData &data,
@@ -1301,28 +1331,8 @@ void MediaLibraryRdbUtils::UpdateUserAlbumByUri(const shared_ptr<MediaLibraryRdb
         UpdateUserAlbumInternal(rdbStore);
         UpdateUserAlbumHiddenState(rdbStore);
     }
-    vector<string> albumIds;
-    string idArgs;
-    for (size_t i = 0; i < uris.size(); i++) {
-        string fileId = GetPhotoId(uris[i]);
-        if (fileId.size() > 0) {
-            idArgs.append("'").append(fileId).append("'").append(",");
-        }
-        if ((i == 0 || i % ALBUM_UPDATE_THRESHOLD != 0) && i < uris.size() - 1) {
-            continue;
-        }
-        if (idArgs.size() == 0) {
-            continue;
-        }
-        idArgs = idArgs.substr(0, idArgs.size() - 1);
-        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-        predicates.SetWhereClause(PhotoColumn::MEDIA_ID + " in(" + idArgs + ") and " +
-            PhotoColumn::PHOTO_OWNER_ALBUM_ID + " in(select " + PhotoAlbumColumns::ALBUM_ID + " from " +
-            PhotoAlbumColumns::TABLE + " where " + PhotoAlbumColumns::ALBUM_TYPE + " = " +
-            to_string(PhotoAlbumType::USER) + ")");
-        QueryAlbumId(rdbStore, predicates, albumIds);
-        idArgs.clear();
-    }
+
+    vector<string> albumIds = QueryAlbumId(rdbStore, uris, PhotoAlbumType::USER);
     if (albumIds.size() > 0) {
         UpdateUserAlbumInternal(rdbStore, albumIds, shouldNotify);
         UpdateUserAlbumHiddenState(rdbStore, albumIds);
@@ -1644,7 +1654,6 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<MediaLibra
     tracer.Start("UpdateAnalysisAlbumByFile");
     vector<string> columns = {
         PhotoMap::ALBUM_ID,
-        PhotoMap::ASSET_ID,
     };
     RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
     if (!albumTypes.empty()) {
@@ -1688,7 +1697,6 @@ static void UpdateSourceAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> 
     auto albumResult = GetSourceAlbum(rdbStore, sourceAlbumIds, {
         PhotoAlbumColumns::ALBUM_ID,
         PhotoAlbumColumns::ALBUM_SUBTYPE,
-        PhotoAlbumColumns::CONTAINS_HIDDEN,
         PhotoAlbumColumns::HIDDEN_COUNT,
         PhotoAlbumColumns::HIDDEN_COVER,
     });
@@ -1716,28 +1724,8 @@ void MediaLibraryRdbUtils::UpdateSourceAlbumByUri(const shared_ptr<MediaLibraryR
         UpdateSourceAlbumInternal(rdbStore);
         UpdateSourceAlbumHiddenState(rdbStore);
     }
-    vector<string> albumIds;
-    string idArgs;
-    for (size_t i = 0; i < uris.size(); i++) {
-        string fileId = GetPhotoId(uris[i]);
-        if (fileId.size() > 0) {
-            idArgs.append("'").append(fileId).append("'").append(",");
-        }
-        if ((i == 0 || i % ALBUM_UPDATE_THRESHOLD != 0) && i < uris.size() - 1) {
-            continue;
-        }
-        if (idArgs.size() == 0) {
-            continue;
-        }
-        idArgs = idArgs.substr(0, idArgs.size() - 1);
-        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-        predicates.SetWhereClause(PhotoColumn::MEDIA_ID + " in(" + idArgs + ") and " +
-            PhotoColumn::PHOTO_OWNER_ALBUM_ID + " in(select " + PhotoAlbumColumns::ALBUM_ID + " from " +
-            PhotoAlbumColumns::TABLE + " where " + PhotoAlbumColumns::ALBUM_TYPE + " = " +
-            to_string(PhotoAlbumType::SOURCE) + ")");
-        QueryAlbumId(rdbStore, predicates, albumIds);
-        idArgs.clear();
-    }
+
+    vector<string> albumIds = QueryAlbumId(rdbStore, uris, PhotoAlbumType::SOURCE);
     if (albumIds.size() > 0) {
         UpdateSourceAlbumInternal(rdbStore, albumIds, shouldNotify);
         UpdateSourceAlbumHiddenState(rdbStore, albumIds);
@@ -1832,7 +1820,6 @@ void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<MediaLibra
     const vector<string> columns = {
         PhotoAlbumColumns::ALBUM_ID,
         PhotoAlbumColumns::ALBUM_SUBTYPE,
-        PhotoAlbumColumns::CONTAINS_HIDDEN,
         PhotoAlbumColumns::HIDDEN_COUNT,
         PhotoAlbumColumns::HIDDEN_COVER,
     };
