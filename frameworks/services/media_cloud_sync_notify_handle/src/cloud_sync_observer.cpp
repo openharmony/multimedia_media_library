@@ -26,6 +26,10 @@
 #include "media_column.h"
 #include "media_log.h"
 #include "result_set_utils.h"
+#include "albums_refresh_manager.h"
+#include "photo_album_column.h"
+#include "albums_refresh_notify.h"
+#include "notify_responsibility_chain_factory.h"
 
 using namespace std;
 
@@ -41,9 +45,14 @@ static void HandleCloudNotify(AsyncTaskData *data)
 
 void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
 {
-    CloudSyncNotifyInfo notifyInfo = {changeInfo.uris_, changeInfo.changeType_};
+    CloudSyncNotifyInfo notifyInfo = {changeInfo.uris_, changeInfo.changeType_, changeInfo.data_};
     string uriString = notifyInfo.uris.front().ToString();
+    MEDIA_DEBUG_LOG("#uriString: %{public}s, #uriSize: %{public}zu changeType: %{public}d",
+        uriString.c_str(), changeInfo.uris_.size(), changeInfo.changeType_);
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos && notifyInfo.type == ChangeType::OTHER) {
+        SyncNotifyInfo info = AlbumsRefreshManager::GetInstance().GetSyncNotifyInfo(notifyInfo, PHOTO_URI_TYPE);
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        AlbumsRefreshManager::GetInstance().RefreshPhotoAlbumsBySyncNotifyInfo(rdbStore, info);
         lock_guard<mutex> lock(syncMutex_);
         if (!isPending_) {
             MEDIA_INFO_LOG("set timer handle index");
@@ -52,6 +61,27 @@ void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
             }).detach();
             isPending_ = true;
         }
+    }
+
+    // 都先放到任务队列中，做保序处理，避免出现乱序现象
+    if (uriString.find(PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX) != string::npos) {
+        // 相册刷新下行，只做cloudId到fileid的转换，通知图库
+        SyncNotifyInfo info = AlbumsRefreshManager::GetInstance().GetSyncNotifyInfo(notifyInfo, ALBUM_URI_TYPE);
+        AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
+        return;
+    }
+    
+    if (uriString.find(PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX) != string::npos) {
+        if (notifyInfo.type == ChangeType::UPDATE || notifyInfo.type == ChangeType::OTHER) {
+            CloudSyncHandleData handleData;
+            handleData.orgInfo = notifyInfo;
+            shared_ptr<BaseHandler> chain = NotifyResponsibilityChainFactory::CreateChain(GALLERY_PHOTO_DELETE);
+            chain->Handle(handleData);
+        }
+        // 资产刷新下行，调用刷新模块
+        SyncNotifyInfo info = AlbumsRefreshManager::GetInstance().GetSyncNotifyInfo(notifyInfo, PHOTO_URI_TYPE);
+        AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
+        return;
     }
 
     auto *taskData = new (nothrow) CloudSyncNotifyData(notifyInfo);

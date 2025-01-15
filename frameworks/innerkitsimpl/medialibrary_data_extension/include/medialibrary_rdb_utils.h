@@ -104,6 +104,8 @@ public:
     EXPORT static int32_t UpdateThumbnailRelatedDataToDefault(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const int64_t fileId);
     EXPORT static void TransformAppId2TokenId(const std::shared_ptr<MediaLibraryRdbStore> &store);
+    EXPORT static int32_t FillOneAlbumCountAndCoverUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        int32_t albumId, PhotoAlbumSubType subtype, std::string &sql);
 
 private:
     static std::atomic<bool> isNeedRefreshAlbum;
