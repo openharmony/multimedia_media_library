@@ -56,7 +56,7 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/log/backup_hi_audit_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/log/backup_log_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/log/backup_zip_util.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/audio_count_statistic.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/audios_count_statistic.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/database_report.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/external_files_count_statistic.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/gallery_media_count_statistic.cpp",
