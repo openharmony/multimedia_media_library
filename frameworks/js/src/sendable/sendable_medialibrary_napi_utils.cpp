@@ -1095,7 +1095,7 @@ int32_t SendableMediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbum
 }
 
 napi_value SendableMediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32_t index, string name,
-    shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, const shared_ptr<FileAsset> &asset)
+    shared_ptr<NativeRdb::ResultSet> &resultSet, const shared_ptr<FileAsset> &asset)
 {
     int status;
     int integerVal = 0;
@@ -1134,7 +1134,7 @@ napi_value SendableMediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32
 }
 
 void SendableMediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name, napi_value result,
-    int32_t index, const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
+    int32_t index, const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
 {
     if (TIME_COLUMN.count(name) == 0) {
         return;
@@ -1150,7 +1150,7 @@ void SendableMediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::stri
 }
 
 static void handleThumbnailReady(napi_env env, const std::string& name, napi_value result, int32_t index,
-    const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
+    const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
 {
     if (name != "thumbnail_ready") {
         return;
@@ -1165,7 +1165,7 @@ static void handleThumbnailReady(napi_env env, const std::string& name, napi_val
 }
 
 napi_value SendableMediaLibraryNapiUtils::GetNextRowObject(napi_env env,
-    shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+    shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetNextRowObject fail, result is nullptr");

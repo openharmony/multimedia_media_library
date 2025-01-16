@@ -790,14 +790,14 @@ public:
         bool isSingleResult = false);
     static napi_value GetSharedAlbumAssets(const napi_env& env, std::vector<std::string>& fileIds);
     static void HandleCoverSharedPhotoAsset(napi_env env, int32_t index, napi_value result,
-        const std::string& name, const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet);
-    static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+        const std::string& name, const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         bool isShared = false);
-    static napi_value GetNextRowAlbumObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    static napi_value GetNextRowAlbumObject(napi_env env, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     static napi_value CreateValueByIndex(napi_env env, int32_t index, std::string name,
-        std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
+        std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
     static void handleTimeInfo(napi_env env, const std::string& name, napi_value result, int32_t index,
-        const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet);
+        const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
 
     template <class AsyncContext>
     static napi_status ParsePredicates(napi_env env,

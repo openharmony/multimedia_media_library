@@ -170,10 +170,10 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
     return resultSet;
 }
 
-std::shared_ptr<NativeRdb::AbsSharedResultSet> UserFileClient::QueryRdb(Uri &uri,
+std::shared_ptr<NativeRdb::ResultSet> UserFileClient::QueryRdb(Uri &uri,
     const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = nullptr;
+    shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
     OperationObject object = OperationObject::UNKNOWN_OBJECT;
     if (MediaAssetRdbStore::GetInstance()->IsSupportSharedAssetQuery(uri, object)) {
         resultSet = MediaAssetRdbStore::GetInstance()->QueryRdb(predicates, columns, object);
