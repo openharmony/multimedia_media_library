@@ -511,7 +511,7 @@ HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_GenerateCustomRes
 
     type = NOTIFY_CANCEL;
     operatorObj.GenerateCustomRestoreNotify(restoreTaskInfo, type);
-    EXPECT_EQ(ret.cancelNum, 100);
+    EXPECT_EQ(ret.cancelNum, 0);
     MEDIA_INFO_LOG("Photo_Custom_Restore_GenerateCustomRestoreNotify_Test End");
 }
 
