@@ -87,7 +87,8 @@
         "video/x-matroska" : [ "mkv" ],
         "video/webm" : [ "webm" ],
         "video/H264" : [ "h264" ],
-        "video/x-flv" : [ "flv" ]
+        "video/x-flv" : [ "flv" ],
+        "video/avi" : [ "avi" ]
     },
     "text" : {
         "text/comma-separated-values" : [ "csv" ],
