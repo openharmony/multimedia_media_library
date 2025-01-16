@@ -333,6 +333,10 @@ void CloudSyncNotifyHandler::HandleContentSizeIsZero(const std::list<Uri> &uris)
             MEDIA_ERR_LOG("stat failed : %{public}d", err);
             continue;
         }
+        if (st.st_size == 0) {
+            MEDIA_INFO_LOG("HandleContentSizeIsZero, file size is zero");
+            continue;
+        }
         NativeRdb::ValuesBucket valuesNew;
         valuesNew.PutLong(PhotoColumn::MEDIA_SIZE, st.st_size);
         NativeRdb::RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
