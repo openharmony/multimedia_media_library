@@ -12,15 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "audio_count_statistic.h"
+#include "audios_count_statistic.h"
 
 namespace OHOS::Media {
-std::vector<AlbumMediaStatisticInfo> AudioCountStatistic::Load()
+std::vector<AlbumMediaStatisticInfo> AudiosCountStatistic::Load()
 {
     return {this->GetAudioCountStatInfo()};
 }
 
-AlbumMediaStatisticInfo AudioCountStatistic::GetAudioCountStatInfo()
+AlbumMediaStatisticInfo AudiosCountStatistic::GetAudioCountStatInfo()
 {
     AlbumMediaStatisticInfo info;
     info.sceneCode = this->sceneCode_;

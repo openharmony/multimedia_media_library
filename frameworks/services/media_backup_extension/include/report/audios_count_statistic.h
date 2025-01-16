@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef OHOS_MEDIA_BACKUP_AUDIO_COUNT_STATISTIC_H
-#define OHOS_MEDIA_BACKUP_AUDIO_COUNT_STATISTIC_H
+#ifndef OHOS_MEDIA_BACKUP_AUDIOS_COUNT_STATISITIC_H
+#define OHOS_MEDIA_BACKUP_AUDIOS_COUNT_STATISITIC_H
 
 #include <string>
 #include <vector>
@@ -21,21 +21,21 @@
 #include "media_backup_report_data_type.h"
 
 namespace OHOS::Media {
-class AudioCountStatistic {
+class AudiosCountStatistic {
 public:
-    AudioCountStatistic &SetSceneCode(int32_t sceneCode)
+    AudiosCountStatistic &SetSceneCode(int32_t sceneCode)
     {
         this->sceneCode_ = sceneCode;
         return *this;
     }
-    AudioCountStatistic &SetTaskId(const std::string &taskId)
+    AudiosCountStatistic &SetTaskId(const std::string &taskId)
     {
         this->taskId_ = taskId;
         return *this;
     }
-    AudioCountStatistic &SetAudioCount(const uint64_t audioCount)
+    AudiosCountStatistic &SetAudioCount(const uint64_t audioCount)
     {
-        this->audioCount_ = audioCount;
+        this->audioCount_ = static_cast<uint64_t>(audioCount);
         return *this;
     }
     std::vector<AlbumMediaStatisticInfo> Load();
@@ -48,4 +48,4 @@ private:
     uint64_t audioCount_ = 0;
 };
 }  // namespace OHOS::Media
-#endif  // OHOS_MEDIA_BACKUP_AUDIO_COUNT_STATISTIC_H
+#endif  // OHOS_MEDIA_BACKUP_AUDIOS_COUNT_STATISITIC_H
