@@ -318,7 +318,7 @@ void RecoverHiddenOrRecycleFile(std::string &currentPath, FileInfo &tmpInfo)
     }
     std::string target = currentPath.substr(lastSlashPos + 1);
     std::vector<std::string> substrings = GetSubString(Base32Decode(target), '|');
-    if (substrings.size() >= 6) {
+    if (substrings.size() == 8) { // 8 : info num after decode
         std::string decodeFileName = substrings[DECODE_NAME_IDX] + substrings[DECODE_SURFIX_IDX];
         std::string newPath = currentPath.substr(0, lastSlashPos + 1) + decodeFileName;
         rename(currentPath.c_str(), newPath.c_str());
