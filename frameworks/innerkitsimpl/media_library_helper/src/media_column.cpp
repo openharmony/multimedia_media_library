@@ -158,6 +158,7 @@ const std::string PhotoColumn::HIGHTLIGHT_URI = "/highlight/video";
 
 const std::string PhotoColumn::PHOTO_CLOUD_URI_PREFIX = "file://cloudsync/Photo/";
 const std::string PhotoColumn::PHOTO_CLOUD_TRIGGER_PREFIX = "file://cloudsync/triggerGeneration/";
+const std::string PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX = "file://cloudsync/gallery/Photo/";
 
 const std::string PhotoColumn::PHOTO_HEIGHT_ERROR_URI_PREFIX = "file://cloudsync/Photo/HeightError/";
 const std::string PhotoColumn::PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX = "file://cloudsync/Photo/DownloadSucceed/";

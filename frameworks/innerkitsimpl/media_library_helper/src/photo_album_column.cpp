@@ -106,6 +106,7 @@ const string PhotoAlbumColumns::DEFAULT_HIDDEN_ALBUM_URI = "file://media/HiddenA
 const string PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX = "file://media/AnalysisAlbum/";
 
 const string PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX = "file://cloudsync/PhotoAlbum/";
+const string PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX = "file://cloudsync/gallery/PhotoAlbum/";
 
 // Create tables
 const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
