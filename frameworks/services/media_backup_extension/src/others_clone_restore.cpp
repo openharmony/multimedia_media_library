@@ -61,6 +61,12 @@ const std::string OTHER_CLONE_MODIFIED = "date_modified";
 const std::string OTHER_CLONE_TAKEN = "datetaken";
 const std::string OTHER_MUSIC_ROOT_PATH = "/storage/emulated/0/";
 
+static constexpr uint32_t CHAR_ARRAY_LEHGTH = 5;
+static constexpr uint32_t ASCII_CHAR_LEHGTH = 8;
+static constexpr uint32_t DECODE_NAME_IDX = 4;
+static constexpr uint32_t DECODE_SURFIX_IDX = 5;
+static constexpr uint32_t DECODE_TIME_IDX = 3;
+
 static std::string GetPhoneName()
 {
     int arr[] = { PHONE_FIRST_NUMBER, PHONE_SECOND_NUMBER, PHONE_THIRD_NUMBER, PHONE_FOURTH_NUMBER, PHONE_FIFTH_NUMBER,
@@ -219,6 +225,8 @@ NativeRdb::ValuesBucket OthersCloneRestore::GetInsertValue(const FileInfo &fileI
     if (fileInfo.dateModified != 0) {
         values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, fileInfo.dateModified);
     }
+    values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
+    values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.dateTrashed);
     return values;
 }
 
@@ -233,11 +241,84 @@ static std::string ParseSourcePathToPath(const std::string &sourcePath, const st
     return result;
 }
 
+std::string Base32Decode(const std::string &input)
+{
+    std::string result;
+    uint32_t val = 0;
+    uint32_t valbits = 0;
+    for (char c : input) {
+        if (c >= 'A' && c <= 'Z') {
+            val = (val << CHAR_ARRAY_LEHGTH) + (c - 'A');
+            valbits += CHAR_ARRAY_LEHGTH;
+        } else if (c >= '2' && c <= '7') {
+            val = (val << CHAR_ARRAY_LEHGTH) + (c - '2' + 26); //26 : A - Z
+            valbits += CHAR_ARRAY_LEHGTH;
+        }
+        if (valbits >= ASCII_CHAR_LEHGTH) {
+            valbits -= ASCII_CHAR_LEHGTH;
+            result += static_cast<char>(val >> valbits);
+            val &= (1 << valbits) - 1;
+        }
+    }
+    return result;
+}
+
+std::vector<std::string> GetSubString(const std::string &originalString, char delimiter)
+{
+    std::vector<std::string> substrings;
+    size_t start = 0;
+    size_t end = originalString.find(delimiter);
+
+    while (end != std::string::npos) {
+        substrings.push_back(originalString.substr(start, end - start));
+        start = end + 1:
+        end = originalString.find(delimiter, start);
+    }
+
+    substrings.push_back(originalString.substr(start));
+    return substrings;
+}
+
+void RecoverHiddenOrRecycleFile(std::string &currentPath, FileInfo &tmpInfo)
+{
+    size_t hiddenAlbumPos = currentPath.find("hiddenAlbum/bin/0");
+    size_t recyclePos = currentPath.find("recycle/bin/0");
+    bool recycleFlag = false;
+    if (hiddenAlbumPos != std::string::npos) {
+        tmpInfo.hidden = 1;
+    } else if (recyclePos != std::string::npos) {
+        recycleFlag = true;
+    } else {
+        MEDIA_INFO_LOG("currentPath %{public}s is normal", currentPath.c_str());
+        return;
+    }
+
+    size_t lastSlashPos = currentPath.find_last_of('/');
+    if (lastSlashPos == std::string::npos) {
+        MEDIA_ERR_LOG("currentPath %{public}s is abnormal", currentPath.c_str());
+        return;
+    }
+    std::string target = currentPath.substr(lastSlashPos + 1);
+    std::vector<std::string> substrings = GetSubString(Base32Decode(target), '|');
+    if (substrings.size() >= 6) {
+        std::string decodeFileName = substrings[DECODE_NAME_IDX] + substrings[DECODE_SURFIX_IDX];
+        std::string newPath = currentPath.substr(0, lastSlashPos + 1) + decodeFileName;
+        rename(currentPath.c_str(), newPath.c_str());
+        currentPath = newPath;
+    }
+    if (recycleFlag) {
+        tmpInfo.dateTrashed = std::stoll(substrings[DECODE_TIME_IDX], nullptr, 10); //10 : decimal
+    }
+}
+
 void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struct stat &statInfo)
 {
     FileInfo tmpInfo;
-    tmpInfo.filePath = file;
-    tmpInfo.displayName = ExtractFileName(file);
+    std::string tmpFile = file;
+
+    RecoverHiddenOrRecycleFile(tmpFile, tmpInfo);
+    tmpInfo.filePath = tmpFile;
+    tmpInfo.displayName = ExtractFileName(tmpFile);
     tmpInfo.title = BackupFileUtils::GetFileTitle(tmpInfo.displayName);
     tmpInfo.fileType = MediaFileUtils::GetMediaType(tmpInfo.displayName);
     tmpInfo.fileSize = statInfo.st_size;
@@ -257,9 +338,9 @@ void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struc
         if (tmpInfo.fileType  == MediaType::MEDIA_TYPE_IMAGE || tmpInfo.fileType  == MediaType::MEDIA_TYPE_VIDEO) {
             UpDateFileModifiedTime(tmpInfo);
             photoInfos_.emplace_back(tmpInfo);
-            MEDIA_WARN_LOG("Not supported media %{public}s", BackupFileUtils::GarbleFilePath(file, sceneCode_).c_str());
+            MEDIA_WARN_LOG("Not supported media %{public}s", BackupFileUtils::GarbleFilePath(tmpFile, sceneCode_).c_str());
         } else {
-            MEDIA_WARN_LOG("Not supported file %{public}s", BackupFileUtils::GarbleFilePath(file, sceneCode_).c_str());
+            MEDIA_WARN_LOG("Not supported file %{public}s", BackupFileUtils::GarbleFilePath(tmpFile, sceneCode_).c_str());
         }
     }
 }
