@@ -43,6 +43,7 @@
 #endif
 
 #include "medialibrary_album_fusion_utils.h"
+#include "medialibrary_all_album_refresh_processor.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
@@ -172,6 +173,9 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
         }
     }
 #endif
+    MediaLibraryAllAlbumRefreshProcessor::GetInstance()->OnCurrentStatusChanged(
+        isScreenOff_ && isCharging_ && batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY
+        && isDeviceTemperatureProper_);
     MEDIA_DEBUG_LOG("MedialibrarySubscriber current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
         isScreenOff_, isCharging_, batteryCapacity_, newTemperatureLevel_, isWifiConnected_);
 }
@@ -271,6 +275,7 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
     } else {
         StopBackgroundOperation();
     }
+    MediaLibraryAllAlbumRefreshProcessor::GetInstance()->OnCurrentStatusChanged(currentStatus_);
 }
 
 void MedialibrarySubscriber::WalCheckPointAsync()
