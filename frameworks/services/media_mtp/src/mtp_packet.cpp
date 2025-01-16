@@ -75,6 +75,12 @@ void MtpPacket::Reset()
     std::vector<uint8_t>().swap(writeBuffer_);
 }
 
+void MtpPacket::Stop()
+{
+    CHECK_AND_RETURN_LOG(mtpDriver_ != nullptr, "mtpDriver_ is null");
+    (void)mtpDriver_->CloseDriver();
+}
+
 bool MtpPacket::IsNeedDataPhase(uint16_t operationCode)
 {
     switch (operationCode) {

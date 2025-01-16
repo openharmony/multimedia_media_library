@@ -56,6 +56,12 @@ void MtpOperation::Init()
     responseCode_ = MTP_UNDEFINED_CODE;
 }
 
+void MtpOperation::Stop()
+{
+    CHECK_AND_RETURN_LOG(requestPacketPtr_ != nullptr, "requestPacketPtr_ is null");
+    requestPacketPtr_->Stop();
+}
+
 void MtpOperation::Execute()
 {
     MediaLibraryTracer tracer;
