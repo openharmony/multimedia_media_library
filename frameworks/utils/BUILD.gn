@@ -28,7 +28,6 @@ ohos_static_library("medialibrary_common_utils") {
   external_deps = [
     "hilog:libhilog",
     "hitrace:hitrace_meter",
-    "relational_store:native_rdb",
   ]
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
   if (!media_library_link_opt) {

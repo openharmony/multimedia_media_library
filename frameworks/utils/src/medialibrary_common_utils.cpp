@@ -26,7 +26,6 @@
 #include "media_old_photos_column.h"
 #include "media_smart_album_column.h"
 #include "openssl/sha.h"
-#include "photo_album_column.h"
 #include "vision_aesthetics_score_column.h"
 #include "vision_column.h"
 #include "vision_face_tag_column.h"
@@ -38,6 +37,9 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+
+const std::string ALBUM_LPATH = "lpath";
+
 const vector<string> CHAR2HEX_TABLE = {
     "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1A", "1B", "1C", "1D", "1E", "1F",
@@ -181,7 +183,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
 
     // PhotoAlbum table columns
     COMPAT_ALBUM_SUBTYPE,
-    PhotoAlbumColumns::ALBUM_LPATH,
+    ALBUM_LPATH,
 
     // Analysis table columns
     TAG_ID,
