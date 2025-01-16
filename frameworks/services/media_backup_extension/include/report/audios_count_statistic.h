@@ -35,7 +35,7 @@ public:
     }
     AudiosCountStatistic &SetAudioCount(const uint64_t audioCount)
     {
-        this->audioCount_ = static_cast<uint64_t>(audioCount);
+        this->audioCount_ = static_cast<int32_t>(audioCount);
         return *this;
     }
     std::vector<AlbumMediaStatisticInfo> Load();
@@ -45,7 +45,7 @@ private:
 private:
     int32_t sceneCode_;
     std::string taskId_;
-    uint64_t audioCount_ = 0;
+    int32_t audioCount_ = 0;
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_BACKUP_AUDIOS_COUNT_STATISITIC_H
