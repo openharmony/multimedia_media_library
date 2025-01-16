@@ -309,6 +309,7 @@ struct FileInfo {
     int64_t fileSize {0};
     int64_t duration {0};
     int64_t recycledTime {0};
+    int64_t dateTrashed {0};
     int32_t hidden {0};
     int32_t isFavorite {0};
     int32_t fileType {0};
