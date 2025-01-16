@@ -116,6 +116,7 @@ struct UpdateAlbumData {
     uint8_t isCoverSatisfied;
     int32_t newTotalCount { 0 };
     bool shouldNotify { false };
+    bool hasChanged {false};
 };
 
 struct RefreshAlbumData {
@@ -199,7 +200,7 @@ static NotifyType GetTypeFromCountVariation(UpdateAlbumData &data)
 static void SendAlbumIdNotify(UpdateAlbumData &data)
 {
     auto watch = MediaLibraryNotify::GetInstance();
-    if (watch != nullptr && data.shouldNotify && data.albumSubtype != PhotoAlbumSubType::TRASH &&
+    if (watch != nullptr && data.shouldNotify && data.hasChanged && data.albumSubtype != PhotoAlbumSubType::TRASH &&
         data.albumSubtype != PhotoAlbumSubType::HIDDEN) {
         NotifyType type = GetTypeFromCountVariation(data);
         watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, type, data.albumId);
@@ -340,6 +341,7 @@ static int32_t ForEachRow(const shared_ptr<MediaLibraryRdbStore> rdbStore, std::
         };
         err = trans->RetryTrans(transFunc);
         CHECK_AND_PRINT_LOG(err == E_OK, "ForEachRow: trans retry fail!, ret:%{public}d", err);
+        SendAlbumIdNotify(data);
     }
     return E_SUCCESS;
 }
@@ -1148,7 +1150,6 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore> rd
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
         "Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
-    SendAlbumIdNotify(data);
     return E_SUCCESS;
 }
 
@@ -1209,7 +1210,6 @@ static int32_t UpdateAnalysisAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
         "Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
-    SendAlbumIdNotify(data);
     return E_SUCCESS;
 }
 
@@ -1237,7 +1237,6 @@ static int32_t UpdateSourceAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbSt
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
         "Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
-    SendAlbumIdNotify(data);
     return E_SUCCESS;
 }
 
@@ -1262,11 +1261,9 @@ static int32_t UpdateSysAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbStore
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(data.albumId));
     int32_t changedRows = 0;
     err = trans->Update(changedRows, values, predicates);
-    int ret = trans->Commit();
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
         "Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
-    SendAlbumIdNotify(data);
     return E_SUCCESS;
 }
 
