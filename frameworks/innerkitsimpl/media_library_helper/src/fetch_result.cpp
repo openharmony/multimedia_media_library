@@ -566,7 +566,8 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_TYPE, TYPE_INT32, resultSet))));
     photoAlbumData->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_SUBTYPE, TYPE_INT32, resultSet))));
-
+    photoAlbumData->SetLPath(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_LPATH, TYPE_STRING,
+        resultSet)));
     photoAlbumData->SetAlbumName(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_NAME, TYPE_STRING,
         resultSet)));
 

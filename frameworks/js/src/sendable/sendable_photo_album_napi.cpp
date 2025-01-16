@@ -23,6 +23,7 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
+#include "medialibrary_napi_utils_ext.h"
 #include "medialibrary_tracer.h"
 #include "photo_map_column.h"
 #include "result_set_utils.h"
@@ -61,6 +62,7 @@ napi_value SendablePhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value expo
         DECLARE_NAPI_GETTER("albumType", JSGetPhotoAlbumType),
         DECLARE_NAPI_GETTER("albumSubtype", JSGetPhotoAlbumSubType),
         DECLARE_NAPI_GETTER("coverUri", JSGetCoverUri),
+        DECLARE_NAPI_GETTER("lpath", JSGetAlbumLPath),
         DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
         DECLARE_NAPI_FUNCTION("getAssets", JSPhotoAccessGetPhotoAssets),
         DECLARE_NAPI_FUNCTION("convertToPhotoAlbum", ConvertToPhotoAlbum),
@@ -198,6 +200,11 @@ double SendablePhotoAlbumNapi::GetLatitude() const
 double SendablePhotoAlbumNapi::GetLongitude() const
 {
     return photoAlbumPtr->GetLongitude();
+}
+
+const string& SendablePhotoAlbumNapi::GetLPath() const
+{
+    return photoAlbumPtr->GetLPath();
 }
 
 shared_ptr<PhotoAlbum> SendablePhotoAlbumNapi::GetPhotoAlbumInstance() const
@@ -355,6 +362,19 @@ napi_value SendablePhotoAlbumNapi::JSGetCoverUri(napi_env env, napi_callback_inf
     napi_value jsResult = nullptr;
     CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetCoverUri().c_str(), NAPI_AUTO_LENGTH, &jsResult),
         JS_INNER_FAIL);
+    return jsResult;
+}
+
+napi_value SendablePhotoAlbumNapi::JSGetAlbumLPath(napi_env env, napi_callback_info info)
+{
+    CHECK_COND_LOG_THROW_RETURN_RET(env, SendableMediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED,
+        "Get lpath permission denied: not a system app", nullptr, "Get album lpath failed: not a system app");
+    CHECK_COND(env, SendableMediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED);
+    SendablePhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetLPath().c_str(), NAPI_AUTO_LENGTH, &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
 

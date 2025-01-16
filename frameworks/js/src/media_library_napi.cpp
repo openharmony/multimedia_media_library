@@ -3678,6 +3678,15 @@ static napi_value AddDefaultPhotoAlbumColumns(napi_env env, vector<string> &fetc
     return result;
 }
 
+static void AddDefaultColumnsForNonAnalysisAlbums(MediaLibraryAsyncContext& context)
+{
+    if (!context.isAnalysisAlbum) {
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_LPATH);
+    }
+}
+
 #ifdef MEDIALIBRARY_COMPATIBILITY
 static void CompatGetPrivateAlbumExecute(napi_env env, void *data)
 {
@@ -7720,10 +7729,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
     if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
         context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
         CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
-        if (!context->isAnalysisAlbum) {
-            context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
-            context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
-        }
+        AddDefaultColumnsForNonAnalysisAlbums(*context);
         if (context->isHighlightAlbum) {
             context->fetchColumn.erase(std::remove(context->fetchColumn.begin(), context->fetchColumn.end(),
                 PhotoAlbumColumns::ALBUM_ID), context->fetchColumn.end());

@@ -25,6 +25,8 @@
 
 namespace OHOS {
 namespace Media {
+using namespace std;
+
 const std::string MediaColumn::MEDIA_ID = "file_id";
 const std::string MediaColumn::MEDIA_FILE_PATH = "data";
 const std::string MediaColumn::MEDIA_SIZE = "size";
@@ -664,17 +666,20 @@ const std::string PhotoColumn::PHOTOS_QUERY_FILTER =
     PhotoColumn::PHOTO_IS_TEMP + " = 0" + " AND " +
     PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 ";
 
-std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilterOption option)
+std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilter::Option option)
 {
+    PhotoQueryFilter::Config config {};
     switch (option) {
-        case PhotoQueryFilterOption::FILTER_VISIBLE:
-            return GetSqlWhereClause(PhotoQueryFilterConfig{});
+        case PhotoQueryFilter::Option::FILTER_VISIBLE:
+            return GetSqlWhereClause(config);
             break;
-        case PhotoQueryFilterOption::FILTER_HIDDEN:
-            return GetSqlWhereClause(PhotoQueryFilterConfig{true, false});
+        case PhotoQueryFilter::Option::FILTER_HIDDEN:
+            config.hiddenConfig = PhotoQueryFilter::ConfigType::INCLUDE;
+            return GetSqlWhereClause(config);
             break;
-        case PhotoQueryFilterOption::FILTER_TRASHED:
-            return GetSqlWhereClause(PhotoQueryFilterConfig{false, true});
+        case PhotoQueryFilter::Option::FILTER_TRASHED:
+            config.trashedConfig = PhotoQueryFilter::ConfigType::INCLUDE;
+            return GetSqlWhereClause(config);
             break;
         default:
             MEDIA_ERR_LOG("Invalid option: %{public}d", static_cast<int>(option));
@@ -683,13 +688,36 @@ std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilterOption opt
     }
 }
 
-std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilterConfig &config)
+std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilter::Config &config)
 {
-    std::string whereClause = "";
-    whereClause += "sync_status = 0 AND clean_flag = 0 AND time_pending = 0 \
-        AND is_temp = 0 AND burst_cover_level = 1 AND ";
-    whereClause += "date_trashed = " + std::string(config.isQueryTrashed ? "1" : "0") + " AND ";
-    whereClause += "hidden = " + std::string(config.isQueryHidden ? "1" : "0");
+    string whereClause = "";
+    if (config.syncStatusConfig != ConfigType::IGNORE) {
+        whereClause += "sync_status = " + string(config.syncStatusConfig == ConfigType::INCLUDE ? "1" : "0");
+    }
+    if (config.cleanFlagConfig != ConfigType::IGNORE) {
+        whereClause += " AND clean_flag = " + string(config.cleanFlagConfig == ConfigType::INCLUDE ? "1" : "0");
+    }
+    if (config.pendingConfig != ConfigType::IGNORE) {
+        if (config.pendingConfig == ConfigType::INCLUDE) {
+            whereClause += " AND time_pending > 0";
+        } else {
+            whereClause += " AND time_pending = 0";
+        }
+    }
+    if (config.tempConfig != ConfigType::IGNORE) {
+        whereClause += " AND is_temp = " + string(config.tempConfig == ConfigType::INCLUDE ? "1" : "0");
+    }
+    if (config.hiddenConfig != ConfigType::IGNORE) {
+        whereClause += " AND hidden = " + string(config.hiddenConfig == ConfigType::INCLUDE ? "1" : "0");
+    }
+    if (config.trashedConfig != ConfigType::IGNORE) {
+        whereClause += " AND date_trashed = " + string(config.trashedConfig == ConfigType::INCLUDE ? "1" : "0");
+    }
+    if (config.burstCoverOnly != ConfigType::IGNORE) {
+        whereClause += " AND burst_cover_level = " +
+            string(config.burstCoverOnly == ConfigType::INCLUDE ? "1" : "0");
+    }
+
     return whereClause;
 }
 
