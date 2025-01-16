@@ -62,29 +62,29 @@ void MtpOperation::Stop()
     requestPacketPtr_->Stop();
 }
 
-void MtpOperation::Execute()
+int32_t MtpOperation::Execute()
 {
     MediaLibraryTracer tracer;
     tracer.Start("MtpOperation::Execute");
-    int errorCode;
+    int errorCode = 0;
     ResetOperation();
     ReceiveRequestPacket(errorCode);
-    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "mtpContextPtr_ is null");
+    CHECK_AND_RETURN_RET_LOG(mtpContextPtr_ != nullptr, errorCode, "mtpContextPtr_ is null");
     if (mtpContextPtr_->operationCode == 0) {
         MEDIA_DEBUG_LOG("operationCode is 0, read error, no need to send response");
-        return;
+        return errorCode;
     }
     if (errorCode != MTP_SUCCESS) {
         SendMakeResponsePacket(errorCode);
         MEDIA_ERR_LOG("MtpOperation::Execute Out ReceiveRequestPacket fail err: %{public}d", errorCode);
-        return;
+        return errorCode;
     }
 
     DealRequest(mtpContextPtr_->operationCode, errorCode);
     if (errorCode != MTP_SUCCESS) {
         SendMakeResponsePacket(errorCode);
         MEDIA_ERR_LOG("MtpOperation::Execute Out DealRequest fail err: %{public}d", errorCode);
-        return;
+        return errorCode;
     }
 
     if (MtpPacket::IsNeedDataPhase(mtpContextPtr_->operationCode)) {
@@ -96,10 +96,11 @@ void MtpOperation::Execute()
     }
     if (errorCode == MTP_ERROR_TRANSFER_CANCELLED) {
         MEDIA_INFO_LOG("File transfer canceled");
-        return;
+        return errorCode;
     }
 
     SendMakeResponsePacket(errorCode);
+    return errorCode;
 }
 
 void MtpOperation::ReceiveRequestPacket(int &errorCode)
