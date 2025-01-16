@@ -46,6 +46,9 @@ void MtpMonitor::Stop()
         std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
         waitTimes++;
     }
+    if (operationPtr_ != nullptr) {
+        operationPtr_->Stop();
+    }
     MEDIA_DEBUG_LOG("MtpMonitor::Stop end");
 }
 

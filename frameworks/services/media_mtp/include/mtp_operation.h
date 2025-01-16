@@ -29,6 +29,7 @@ public:
     MtpOperation();
     ~MtpOperation() = default;
     void Execute();
+    void Stop();
 
 private:
     void Init();
