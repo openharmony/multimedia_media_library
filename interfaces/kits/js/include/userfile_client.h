@@ -57,7 +57,7 @@ public:
     EXPORT static void UnregisterObserverExt(const Uri &uri,
         std::shared_ptr<DataShare::DataShareObserver> dataObserver);
     EXPORT static void Clear();
-    EXPORT static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryRdb(Uri &uri,
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryRdb(Uri &uri,
         const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns);
     EXPORT static std::string GetType(Uri &uri);
 private:

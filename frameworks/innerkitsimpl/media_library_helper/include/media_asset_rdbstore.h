@@ -43,7 +43,7 @@ public:
     EXPORT bool IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& object,
         const DataShare::DataSharePredicates& predicates, bool isIgnoreSELinux = false);
     EXPORT bool IsSupportSharedAssetQuery(Uri& uri, OperationObject& object, bool isIgnoreSELinux = false);
-    EXPORT std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryRdb(const DataShare::DataSharePredicates& predicates,
+    EXPORT std::shared_ptr<NativeRdb::ResultSet> QueryRdb(const DataShare::DataSharePredicates& predicates,
         std::vector<std::string>& columns, OperationObject& object);
     EXPORT int32_t QueryTimeIdBatch(int32_t start, int32_t count, std::vector<std::string> &batchKeys);
     EXPORT std::shared_ptr<NativeRdb::AbsSharedResultSet> AddQueryDateTakenTime(std::vector<std::string>& colums);

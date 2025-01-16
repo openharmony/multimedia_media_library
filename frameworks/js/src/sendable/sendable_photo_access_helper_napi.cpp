@@ -1754,7 +1754,7 @@ napi_value SendablePhotoAccessHelper::PhotoAccessGetSharedPhotoAssets(napi_env e
     SendableMediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
 
     Uri uri(queryUri);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
+    shared_ptr<NativeRdb::ResultSet> resultSet = UserFileClient::QueryRdb(uri,
         context->predicates, context->fetchColumn);
     CHECK_NULLPTR_RET(resultSet);
 

@@ -1323,7 +1323,7 @@ string MediaLibraryNapiUtils::GetStringFetchProperty(napi_env env, napi_value ar
 }
 
 napi_value MediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32_t index, string name,
-    shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, const shared_ptr<FileAsset> &asset)
+    shared_ptr<NativeRdb::ResultSet> &resultSet, const shared_ptr<FileAsset> &asset)
 {
     int status;
     int integerVal = 0;
@@ -1362,7 +1362,7 @@ napi_value MediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32_t index
 }
 
 void MediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name, napi_value result, int32_t index,
-    const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
+    const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
 {
     if (TIME_COLUMN.count(name) == 0) {
         return;
@@ -1378,7 +1378,7 @@ void MediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name
 }
 
 static void handleThumbnailReady(napi_env env, const std::string& name, napi_value result, int32_t index,
-    const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
+    const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
 {
     if (name != "thumbnail_ready") {
         return;
@@ -1392,7 +1392,7 @@ static void handleThumbnailReady(napi_env env, const std::string& name, napi_val
     napi_set_named_property(env, result, "thumbnailReady", value);
 }
 
-napi_value MediaLibraryNapiUtils::GetNextRowObject(napi_env env, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+napi_value MediaLibraryNapiUtils::GetNextRowObject(napi_env env, shared_ptr<NativeRdb::ResultSet> &resultSet,
     bool isShared)
 {
     if (resultSet == nullptr) {
@@ -1434,7 +1434,7 @@ napi_value MediaLibraryNapiUtils::GetNextRowObject(napi_env env, shared_ptr<Nati
 }
 
 void MediaLibraryNapiUtils::HandleCoverSharedPhotoAsset(napi_env env, int32_t index, napi_value result,
-    const string& name, const shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
+    const string& name, const shared_ptr<NativeRdb::ResultSet>& resultSet)
 {
     if (name != "cover_uri") {
         return;
@@ -1452,7 +1452,7 @@ void MediaLibraryNapiUtils::HandleCoverSharedPhotoAsset(napi_env env, int32_t in
 }
 
 napi_value MediaLibraryNapiUtils::GetNextRowAlbumObject(napi_env env,
-    shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+    shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetNextRowObject fail, result is nullptr");
@@ -1515,7 +1515,7 @@ napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env, vect
     DataShare::DataSharePredicates predicates;
     predicates.In(MediaColumn::MEDIA_ID, fileIds);
     std::vector<std::string> columns = PHOTO_COLUMN;
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> result = UserFileClient::QueryRdb(photoUri, predicates, columns);
+    std::shared_ptr<NativeRdb::ResultSet> result = UserFileClient::QueryRdb(photoUri, predicates, columns);
     napi_value value = nullptr;
     napi_status status = napi_create_array_with_length(env, fileIds.size(), &value);
     if (status != napi_ok) {
@@ -1525,30 +1525,28 @@ napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env, vect
     if (result == nullptr) {
         return value;
     }
-    int count = 0;
-    int elementIndex = 0;
-    int err = result->GoToFirstRow();
-    if (err != napi_ok) {
-        NAPI_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return value;
-    }
-    if (isSingleResult && result->GetRowCount(count), count == 1) {
-        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
+    if (isSingleResult) {
+        napi_value assetValue = nullptr;
+        if (result->GoToNextRow() == NativeRdb::E_OK) {
+            assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
+        }
         result->Close();
         return assetValue;
+    } else {
+        int elementIndex = 0;
+        while (result->GoToNextRow() == NativeRdb::E_OK) {
+            napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
+            if (assetValue == nullptr) {
+                return nullptr;
+            }
+            status = napi_set_element(env, value, elementIndex++, assetValue);
+            if (status != napi_ok) {
+                NAPI_ERR_LOG("Set photo asset value failed");
+                return nullptr;
+            }
+        }
+        result->Close();
     }
-    do {
-        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
-        if (assetValue == nullptr) {
-            return nullptr;
-        }
-        status = napi_set_element(env, value, elementIndex++, assetValue);
-        if (status != napi_ok) {
-            NAPI_ERR_LOG("Set photo asset Value failed");
-            return nullptr;
-        }
-    } while (result->GoToNextRow() == E_OK);
-    result->Close();
     return value;
 }
 
@@ -1559,7 +1557,7 @@ napi_value MediaLibraryNapiUtils::GetSharedAlbumAssets(const napi_env& env, vect
     DataShare::DataSharePredicates predicates;
     predicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
     std::vector<std::string> columns = ALBUM_COLUMN;
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> result = UserFileClient::QueryRdb(albumUri, predicates, columns);
+    std::shared_ptr<NativeRdb::ResultSet> result = UserFileClient::QueryRdb(albumUri, predicates, columns);
     napi_value value = nullptr;
     napi_status status = napi_create_array_with_length(env, albumIds.size(), &value);
     if (status != napi_ok) {

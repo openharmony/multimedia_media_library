@@ -1479,7 +1479,7 @@ napi_value PhotoAlbumNapi::JSPhotoAccessGetSharedPhotoAssets(napi_env env, napi_
 
     Uri uri(PAH_QUERY_PHOTO_MAP);
     ConvertColumnsForPortrait(context);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
+    shared_ptr<NativeRdb::ResultSet> resultSet = UserFileClient::QueryRdb(uri,
         context->predicates, context->fetchColumn);
     CHECK_NULLPTR_RET(resultSet);
 
