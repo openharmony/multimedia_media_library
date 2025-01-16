@@ -674,7 +674,7 @@ static int32_t SetAlbumCoverHiddenUri(const shared_ptr<MediaLibraryRdbStore> rdb
     return E_SUCCESS;
 }
 
-static int32_t FillOneAlbumCountAndCoverUri(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+int32_t MediaLibraryRdbUtils::FillOneAlbumCountAndCoverUri(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     int32_t albumId, PhotoAlbumSubType subtype, string &sql)
 {
     AlbumCounts albumCounts = { 0, 0, 0, 0 };
@@ -733,7 +733,7 @@ static int32_t RefreshAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
         int32_t albumId = data.albumId;
         string sql;
-        int32_t ret = FillOneAlbumCountAndCoverUri(rdbStore, albumId, subtype, sql);
+        int32_t ret = MediaLibraryRdbUtils::FillOneAlbumCountAndCoverUri(rdbStore, albumId, subtype, sql);
         CHECK_AND_RETURN_RET(ret == E_SUCCESS, ret);
 
         ret = rdbStore->ExecuteSql(sql);

@@ -129,7 +129,7 @@ static int32_t DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates)
     return deleteRow;
 }
 
-void DeleteOrUpdateCloudAlbums(const vector<string> &ids)
+void CloudAlbumHandler::DeleteOrUpdateCloudAlbums(const vector<string> &ids)
 {
     for (const auto &id : ids) {
         auto count = GetCloudAlbumCount(id);
