@@ -19,6 +19,7 @@
 
 #include <securec.h>
 #include <dirent.h>
+#include <regex>
 
 #include "album_plugin_config.h"
 #include "backup_database_utils.h"
@@ -44,6 +45,7 @@ const int PHONE_FOURTH_NUMBER = 111;
 const int PHONE_FIFTH_NUMBER = 110;
 const int PHONE_SIXTH_NUMBER = 101;
 const int QUERY_NUMBER = 200;
+const int STRONG_ASSOCIATION_ENABLE = 1;
 constexpr int32_t MAX_CLONE_THREAD_NUM = 2;
 constexpr int64_t SECONDS_LEVEL_LIMIT = 1e10;
 const std::string I_PHONE_LPATH = "/Pictures/";
@@ -218,6 +220,7 @@ NativeRdb::ValuesBucket OthersCloneRestore::GetInsertValue(const FileInfo &fileI
     // only SOURCE album has package_name and owner_package.
     values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, fileInfo.packageName);
     values.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, fileInfo.bundleName);
+    values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, fileInfo.strong_association);
     if (fileInfo.dateTaken != 0) {
         values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.dateTaken);
         values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateTaken);
@@ -323,6 +326,13 @@ void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struc
     tmpInfo.fileType = MediaFileUtils::GetMediaType(tmpInfo.displayName);
     tmpInfo.fileSize = statInfo.st_size;
     tmpInfo.dateModified = MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim);
+    if (tmpInfo.fileType == MediaType::MEDIA_TYPE_IMAGE) {
+        std::regex pattern(R"(.*_enhanced(\.[^.]+)$)");
+        if (std::regex_match(file, pattern)) {
+            MEDIA_INFO_LOG("%{private}s is an enhanced image!", file.c_str());
+            tmpInfo.strong_association = STRONG_ASSOCIATION_ENABLE;
+        }
+    }
     if (tmpInfo.fileType  == MediaType::MEDIA_TYPE_IMAGE || tmpInfo.fileType  == MediaType::MEDIA_TYPE_VIDEO) {
         UpDateFileModifiedTime(tmpInfo);
         photoInfos_.emplace_back(tmpInfo);
@@ -581,8 +591,8 @@ static std::string ParseSourcePathToLPath(int32_t sceneCode, const std::string &
 static void AddGalleryAlbum(std::vector<PhotoAlbumRestore::GalleryAlbumRowData> &galleryAlbumInfos,
     const std::string &lPath)
 {
-    auto pathMatch = [lPath {lPath}](const auto &galleryAlbumInfo) {
-        return galleryAlbumInfo.lPath == lPath;
+    auto pathMatch = [outerLPath {lPath}](const auto &galleryAlbumInfo) {
+        return galleryAlbumInfo.lPath == outerLPath;
     };
     auto it = std::find_if(galleryAlbumInfos.begin(), galleryAlbumInfos.end(), pathMatch);
     if (it != galleryAlbumInfos.end()) {
