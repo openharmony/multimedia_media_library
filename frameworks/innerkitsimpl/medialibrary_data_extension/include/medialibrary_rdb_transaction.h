@@ -52,6 +52,7 @@ public:
     EXPORT TransactionOperations(std::string funcName);
     EXPORT ~TransactionOperations();
     EXPORT int32_t Start(bool isBackup = false);
+    EXPORT int32_t Commit();
     EXPORT int32_t Finish();
     EXPORT int32_t TryTrans(std::function<int(void)> &func, bool isBackup);
     EXPORT int32_t RetryTrans(std::function<int(void)> &func, bool isBackup = false);

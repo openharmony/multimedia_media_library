@@ -242,7 +242,7 @@ void ThumbnailGenerateWorker::NotifyTaskFinished(int32_t requestId)
         return;
     }
     std::string notifyUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
-    watch->Notify(notifyUri, NotifyType::NOTIFY_THUMB_ADD);
+    watch->Notify(notifyUri, NotifyType::NOTIFY_THUMB_UPDATE);
 }
 
 void ThumbnailGenerateWorker::ClearWorkerThreads()

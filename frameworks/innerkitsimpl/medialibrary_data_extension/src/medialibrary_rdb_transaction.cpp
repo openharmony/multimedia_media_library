@@ -85,6 +85,24 @@ int32_t TransactionOperations::Start(bool isBackup)
     return errCode;
 }
 
+int32_t TransactionOperations::Commit()
+{
+    if (transaction_ == nullptr) {
+        reporter_.ReportError(DfxTransaction::AbnormalType::NULLPTR_ERROR, E_HAS_DB_ERROR);
+        MEDIA_ERR_LOG("transaction is null");
+        return E_HAS_DB_ERROR;
+    }
+    MEDIA_INFO_LOG("Commit transaction, funcName is :%{public}s", funcName_.c_str());
+    auto ret = transaction_->Commit();
+    if (ret != NativeRdb::E_OK) {
+        reporter_.ReportError(DfxTransaction::AbnormalType::COMMIT_ERROR, ret);
+        MEDIA_ERR_LOG("transaction commit fail!, ret:%{public}d", ret);
+    } else {
+        reporter_.ReportIfTimeout();
+    }
+    return ret;
+}
+
 int32_t TransactionOperations::Finish()
 {
     if (transaction_ == nullptr) {
