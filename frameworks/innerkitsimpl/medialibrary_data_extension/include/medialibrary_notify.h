@@ -55,6 +55,7 @@ public:
     static void GetNotifyUris(const NativeRdb::AbsRdbPredicates &predicates, std::vector<std::string> &notifyUris);
 
     static std::atomic<uint16_t> counts_;
+    static std::atomic<uint16_t> thumbCounts_;
     static std::mutex mutex_;
     static std::unordered_map<std::string, std::unordered_map<NotifyType, std::list<Uri>>> nfListMap_;
 private:

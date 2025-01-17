@@ -138,6 +138,15 @@ static void PrintNotifyInfo(NotifyType type, const list<Uri> &uris, const string
     }
 }
 
+static bool IsPhtotoNotifyReadyToGo(const NotifyTyoe &type)
+{
+    if (type != NotifyType::NOTIFY_THUMB_ADD && type != NotifyType::NOTIFY_THUMB_UPDATE) {
+        return true;
+    }
+    MediaLibraryNotify::thumbCounts_ = (++MediaLibraryNotify::thumbCounts_) % THUMB_LOOP;
+    return MediaLibraryNotify::thumbCounts_ == 0;
+}
+
 static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
 {
     int ret;
@@ -147,6 +156,9 @@ static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
             ret = SolveAlbumUri(notifyUri, type, uris);
             PrintNotifyInfo(type, uris, uri);
         } else {
+            if (!IsPhotoNotifyReadyToGo(type)) {
+                continue;
+            }
             auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
             MEDIA_DEBUG_LOG("obsMgrClient->NotifyChangeExt URI is %{public}s, type is %{public}d",
                 uri.c_str(), static_cast<int>(type));
