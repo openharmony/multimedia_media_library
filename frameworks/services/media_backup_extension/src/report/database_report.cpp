@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -41,10 +41,12 @@ std::vector<AlbumMediaStatisticInfo> DatabaseReport::LoadGallery(
         .Load();
 }
 
-std::vector<AlbumMediaStatisticInfo> DatabaseReport::LoadExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
+std::vector<AlbumMediaStatisticInfo> DatabaseReport::LoadExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb,
+    std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     return ExternalFilesCountStatistic()
         .SetExternalRdb(externalRdb)
+        .SetGalleryRdb(galleryRdb)
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
         .Load();
@@ -78,9 +80,10 @@ DatabaseReport &DatabaseReport::ReportGallery(std::shared_ptr<NativeRdb::RdbStor
     return *this;
 }
 
-DatabaseReport &DatabaseReport::ReportExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
+DatabaseReport &DatabaseReport::ReportExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb,
+    std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
-    std::vector<AlbumMediaStatisticInfo> albumMediaStatisticInfos = this->LoadExternal(externalRdb);
+    std::vector<AlbumMediaStatisticInfo> albumMediaStatisticInfos = this->LoadExternal(externalRdb, galleryRdb);
     this->Report(albumMediaStatisticInfos);
     return *this;
 }
