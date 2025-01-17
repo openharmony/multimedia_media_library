@@ -4097,6 +4097,16 @@ static void AddHighlightVideoCountCanPack(RdbStore& store)
     ExecSqls(sqls, store);
 }
 
+static void FixSourceAlbumUpdateTriggerToUseLPath(RdbStore& store)
+{
+    const vector<string> sqls = {
+        DROP_INSERT_SOURCE_PHOTO_UPDATE_ALBUM_ID_TRIGGER,
+        CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER
+    };
+    MEDIA_INFO_LOG("Fix source album update trigger to use lpath start");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CREATE_TAB_OLD_PHOTOS) {
@@ -4151,6 +4161,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_REFRESH_ALBUM_STATUS_COLUMN) {
         AddRefreshAlbumStatusColumn(store);
+    }
+
+    if (oldVersion < VERSION_FIX_SOURCE_ALBUM_UPDATE_TRIGGER_TO_USE_LPATH) {
+        FixSourceAlbumUpdateTriggerToUseLPath(store);
     }
 }
 

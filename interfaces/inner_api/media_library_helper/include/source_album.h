@@ -347,6 +347,35 @@ const std::string SOURCE_ALBUM_SQL = "CREATE TRIGGER IF NOT EXISTS insert_source
             file_id = new.file_id; \
     END";
 
+const std::string SELECT_LPATH_BY_ALBUM_NAME =
+    " COALESCE(\
+        (SELECT lpath FROM album_plugin WHERE \
+        ((bundle_name = NEW.owner_package AND COALESCE(NEW.owner_package, '') != '') \
+        OR album_name = NEW.package_name) AND priority = 1), '/Pictures/' || NEW.package_name)";
+
+const std::string SOURCE_ALBUM_WHERE_BY_LPATH =
+    " WHERE " + PhotoAlbumColumns::ALBUM_LPATH + " = " + SELECT_LPATH_BY_ALBUM_NAME + " AND " +
+    PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
+    PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) +
+    " AND dirty != 4";
+
+const std::string WHEN_SOURCE_PHOTO_COUNT_FOR_LPATH =
+    " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND NEW." + MediaColumn::MEDIA_PACKAGE_NAME +
+    " != '' AND ( SELECT COUNT(1) FROM " + PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE_BY_LPATH + " )";
+
+const std::string SELECT_CORRESPONDING_SOURCE_ALBUM_ID =
+    " SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE_BY_LPATH +
+    " LIMIT 1";
+
+const std::string UPDATE_PHOTO_OWNER_ALBUM_ID =
+    " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = (" +
+    SELECT_CORRESPONDING_SOURCE_ALBUM_ID + ") WHERE file_id = new.file_id";
+
+const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
+    "CREATE TRIGGER IF NOT EXISTS insert_source_photo_update_album_id_trigger AFTER INSERT ON " +
+    PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT_FOR_LPATH + "> 0 AND NEW.owner_album_id = 0" +
+    " BEGIN " + UPDATE_PHOTO_OWNER_ALBUM_ID + "; END;";
+
 } // namespace Media
 } // namespace OHOS
 #endif // INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_SOURCE_ALBUM_H
