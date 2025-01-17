@@ -16,10 +16,12 @@
 #ifndef BACKUP_FILE_UTILS_H
 #define BACKUP_FILE_UTILS_H
 
+#include <memory>
 #include <string>
 
 #include "backup_const.h"
 #include "datashare_helper.h"
+#include "image_packer.h"
 #include "metadata.h"
 
 namespace OHOS {
@@ -75,12 +77,30 @@ public:
     static bool IsAppTwinData(const std::string &path);
     static int32_t GetUserId(const std::string &path);
 
+    static bool HandleRotateImage(const std::string &sourceFile, const std::string &targetPath, int32_t degrees);
+
 private:
+    static const std::string IMAGE_FORMAT;
+    static const std::string LCD_FILE_NAME;
+    static const std::string THM_FILE_NAME;
+    static const uint8_t IMAGE_QUALITY;
+    static const uint32_t IMAGE_NUMBER_HINT;
+    static const int32_t IMAGE_MIN_BUF_SIZE;
+
     static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
     static int32_t CreateAssetRealName(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &name);
     static std::shared_ptr<FileAccessHelper> fileAccessHelper_;
+
+    static unique_ptr<ImageSource> LoadImageSource(const std::string &file, uint32_t &err);
+    static bool HandleHdrImage(std::unique_ptr<ImageSource> imageSource,
+        const std::string &targetPath, int32_t degrees);
+    static bool EncodePicture(Picture &picture, const std::string &outFile);
+    static bool HandleSdrImage(std::unique_ptr<ImageSource> imageSource,
+        const std::string &targetPath, int32_t degrees);
+    static bool EncodePixelMap(PixelMap &pixelMap, const std::string &outFile);
+    static bool ScalePixelMap(PixelMap &pixelMap, ImageSource &imageSource, const std::string &outFile);
 };
 } // namespace Media
 } // namespace OHOS

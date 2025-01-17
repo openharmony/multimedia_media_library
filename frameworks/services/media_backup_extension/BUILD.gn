@@ -94,6 +94,7 @@ ohos_shared_library("mediabackup") {
     "ffrt:libffrt",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
+    "image_framework:image_native",
     "init:libbegetutil",
     "kv_store:distributeddata_inner",
     "libxml2:libxml2",
