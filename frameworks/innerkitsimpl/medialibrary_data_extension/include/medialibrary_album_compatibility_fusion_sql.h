@@ -83,11 +83,6 @@ const std::string PHOTO_ALBUM_NOTIFY_FUNC =
 
 const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER = SOURCE_ALBUM_SQL;
 
-const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
-    "CREATE TRIGGER IF NOT EXISTS insert_source_photo_update_album_id_trigger AFTER INSERT ON " +
-    PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT + "> 0 AND NEW.owner_album_id = 0" +
-    " BEGIN " + FILL_ALBUM_ID_FOR_PHOTOS + "; END;";
-
 const std::string QUERY_NOT_MATCHED_DATA_IN_PHOTOMAP_BY_PAGE =
     "SELECT " + PhotoMap::ASSET_ID + ", " + PhotoMap::ALBUM_ID + " FROM " + PhotoMap::TABLE +
     " WHERE dirty <>4 and dirty<>6 LIMIT 0, 200";
