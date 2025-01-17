@@ -972,10 +972,11 @@ static shared_ptr<ResultSet> QueryPortraitAlbumCover(const shared_ptr<MediaLibra
         "AND Photos.burst_cover_level = 1 "
         "AND AnalysisAlbum.group_tag IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
         albumId +
-        " LIMIT 1) "
-        "AND AnalysisAlbum.group_tag LIKE '%' || tab_analysis_image_face.tag_id || '%'";
+        " LIMIT 1) ";
     predicates.SetWhereClause(clause);
 
+    predicates.OrderByAsc(
+        "CASE WHEN AnalysisAlbum.group_tag LIKE '%' || tab_analysis_image_face.tag_id || '%' THEN 0 ELSE 1 END");
     predicates.OrderByDesc(VISION_IMAGE_FACE_TABLE + "." + IS_EXCLUDED);
     predicates.OrderByDesc(VISION_IMAGE_FACE_TABLE + "." + FACE_AESTHETICS_SCORE);
     predicates.OrderByAsc("CASE WHEN tab_analysis_image_face.total_faces = 1 THEN 0 ELSE 1 END");
