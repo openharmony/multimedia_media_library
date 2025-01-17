@@ -174,7 +174,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
   }
 
   async onRestoreEx(bundleVersion: BundleVersion, bundleInfo: string): Promise<string> {
-    console.log(TAG, `onRestoreEx ok ${JSON.stringify(bundleVersion)}, ${JSON.stringify(bundleInfo)}`);
+    console.log(TAG, `onRestoreEx ok ${JSON.stringify(bundleVersion)}`);
     console.time(TAG + ' RESTORE EX');
     const backupDir = this.context.backupDir + 'restore';
     let sceneCode: number = this.getSceneCode(bundleVersion);
