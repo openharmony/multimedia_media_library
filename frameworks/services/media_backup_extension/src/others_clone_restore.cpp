@@ -363,9 +363,11 @@ void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struc
         if (tmpInfo.fileType  == MediaType::MEDIA_TYPE_IMAGE || tmpInfo.fileType  == MediaType::MEDIA_TYPE_VIDEO) {
             UpDateFileModifiedTime(tmpInfo);
             photoInfos_.emplace_back(tmpInfo);
-            MEDIA_WARN_LOG("Not supported media %{public}s", BackupFileUtils::GarbleFilePath(tmpFile, sceneCode_).c_str());
+            MEDIA_WARN_LOG("Not supported media %{public}s",
+                BackupFileUtils::GarbleFilePath(tmpFile, sceneCode_).c_str());
         } else {
-            MEDIA_WARN_LOG("Not supported file %{public}s", BackupFileUtils::GarbleFilePath(tmpFile, sceneCode_).c_str());
+            MEDIA_WARN_LOG("Not supported file %{public}s",
+                BackupFileUtils::GarbleFilePath(tmpFile, sceneCode_).c_str());
         }
     }
 }
