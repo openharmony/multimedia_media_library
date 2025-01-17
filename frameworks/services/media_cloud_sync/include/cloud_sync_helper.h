@@ -40,11 +40,11 @@ public:
     virtual ~CloudSyncHelper();
 
     EXPORT void StartSync();
+    EXPORT bool IsSyncSwitchOpen();
 
 private:
     CloudSyncHelper();
     void OnTimerCallback();
-    bool IsSyncSwitchOpen();
     bool InitDataShareHelper();
 
     /* singleton */
