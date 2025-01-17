@@ -109,6 +109,7 @@ ohos_unittest("medialibrary_backup_test") {
     "ffrt:libffrt",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
+    "image_framework:image_native",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "libxml2:libxml2",
