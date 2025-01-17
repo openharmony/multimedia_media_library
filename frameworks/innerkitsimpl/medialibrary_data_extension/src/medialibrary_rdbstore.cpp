@@ -4030,6 +4030,7 @@ static void AddPortraitCoverSelectionColumn(RdbStore &store)
 static void UpdatePortraitCoverSelectionColumns(RdbStore &store)
 {
     MEDIA_INFO_LOG("Start update portrait cover selection columns");
+
     const vector<string> sqls = {
         "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + BEAUTY_BOUNDER_VERSION + " TEXT default '' ",
         "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + IS_EXCLUDED + " INT default 0 ",
@@ -4214,6 +4215,16 @@ static void AddIsRecentShow(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void FixSourceAlbumCreateTriggersToUseLPath(RdbStore& store)
+{
+    const vector<string> sqls = {
+        DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER
+    };
+    MEDIA_INFO_LOG("Fix source album other triggers to use lpath start");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
@@ -4242,6 +4253,10 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS) {
         TabFaCardPhotosTableEventHandler().OnCreate(store);
+    }
+
+    if (oldVersion < VERSION_FIX_SOURCE_ALBUM_CREATE_TRIGGERS_TO_USE_LPATH) {
+        FixSourceAlbumCreateTriggersToUseLPath(store);
     }
 }
 
@@ -4278,7 +4293,7 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
         AddThumbnailReadyColumnsFix(store);
     }
 
-    if (oldVersion < VERSION_UPDATE_NEW_SOURCE_PHOTO_ALBUM_TRIGGER) {
+    if (oldVersion < VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER) {
         UpdateSourcePhotoAlbumTrigger(store);
     }
 

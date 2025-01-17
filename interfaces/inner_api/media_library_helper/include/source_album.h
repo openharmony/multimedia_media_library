@@ -22,7 +22,7 @@
 #include "vision_album_column.h"
 #include "vision_column.h"
 #include "vision_photo_map_column.h"
-
+ 
 namespace OHOS {
 namespace Media {
 const std::string COVER_URI_VALUE_INSERT =
@@ -235,126 +235,15 @@ const std::string INSERT_SOURCE_ALBUM_MAP_FROM_PHOTOS_FULL = "INSERT INTO " + Ph
 const std::string ADD_PHOTO_ALBUM_IS_LOCAL = "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
     PhotoAlbumColumns::ALBUM_IS_LOCAL + " INT";
 
-const std::string SOURCE_ALBUM_SQL = "CREATE TRIGGER IF NOT EXISTS insert_source_photo_create_source_album_trigger \
-        AFTER INSERT ON Photos \
-        WHEN NEW.package_name IS NOT NULL \
-        AND NEW.package_name != '' \
-        AND ( \
-            SELECT \
-                COUNT( 1 ) \
-            FROM \
-                PhotoAlbum \
-            WHERE \
-            (   album_name = NEW.package_name OR ( bundle_name = NEW.owner_package \
-                AND COALESCE( NEW.owner_package, '' ) <> '' ) ) \
-                AND album_type = 2048 \
-                AND album_subtype = 2049 \
-                AND album_id = NEW.owner_album_id \
-            ) = 0 AND NEW.owner_album_id = 0 \
-    BEGIN \
-        INSERT INTO PhotoAlbum \
-        ( \
-            album_type, \
-            album_subtype, \
-            album_name, \
-            bundle_name, \
-            lpath, \
-            priority, \
-            date_modified, \
-            date_added ) \
-        SELECT \
-            INPUT.album_type, \
-            INPUT.album_subtype, \
-            CASE \
-                WHEN COALESCE( album_plugin.album_name, '' ) <> '' THEN \
-                    album_plugin.album_name \
-                ELSE INPUT.album_name \
-                END AS album_name,\
-            CASE \
-                WHEN COALESCE( album_plugin.bundle_name, '' ) = '' THEN \
-                    INPUT.bundle_name \
-                ELSE album_plugin.bundle_name \
-                END AS bundle_name,\
-            CASE \
-                WHEN COALESCE( album_plugin.lpath, '' ) = '' THEN \
-                    INPUT.lpath \
-                ELSE album_plugin.lpath \
-                END AS lpath,\
-            CASE \
-                WHEN album_plugin.priority IS NULL THEN \
-                    INPUT.priority \
-                ELSE album_plugin.priority \
-                END AS priority, \
-            strftime( '%s000', 'now' ) AS date_modified, \
-            strftime( '%s000', 'now' ) AS date_added \
-        FROM \
-            ( \
-                SELECT \
-                    2048 AS album_type, \
-                    2049 AS album_subtype, \
-                    NEW.package_name AS album_name, \
-                    NEW.owner_package AS bundle_name, \
-                    COALESCE( \
-                        ( \
-                        SELECT \
-                            lpath \
-                        FROM\
-                            album_plugin \
-                        WHERE\
-                        ( \
-                            ( bundle_name = NEW.owner_package \
-                            AND COALESCE( NEW.owner_package, '' ) != '' ) OR album_name = NEW.package_name ) \
-                            AND priority = 1 \
-                        ),\
-                        '/Pictures/' || NEW.package_name \
-                    ) AS lpath, \
-                    1 AS priority \
-            ) AS INPUT \
-            LEFT JOIN album_plugin ON \
-                LOWER( INPUT.lpath ) = LOWER( album_plugin.lpath ) \
-            LEFT JOIN PhotoAlbum ON \
-                LOWER( INPUT.lpath ) = LOWER( PhotoAlbum.lpath ) \
-        WHERE \
-            PhotoAlbum.lpath IS NULL \
-        LIMIT 1; \
-        UPDATE Photos \
-        SET owner_album_id = ( \
-            SELECT \
-                album_id \
-            FROM \
-                PhotoAlbum \
-            WHERE \
-                album_type = 2048 \
-                AND album_subtype = 2049 \
-                AND LOWER(lpath) = LOWER(COALESCE( \
-                ( \
-                    SELECT \
-                        lpath \
-                    FROM\
-                        album_plugin \
-                    WHERE\
-                    ( \
-                        ( bundle_name = NEW.owner_package \
-                        AND COALESCE( NEW.owner_package, '' ) != '' ) OR album_name = NEW.package_name ) \
-                        AND priority = '1' \
-                    ), \
-                    '/Pictures/' || NEW.package_name \
-                )) \
-            ORDER BY priority DESC \
-            LIMIT 1 \
-        ) \
-        WHERE \
-            file_id = new.file_id; \
-    END";
-
-const std::string SELECT_LPATH_BY_ALBUM_NAME =
+const std::string SELECT_LPATH_BY_ALBUM_NAME_OR_BUNDLE_NAME =
     " COALESCE(\
         (SELECT lpath FROM album_plugin WHERE \
         ((bundle_name = NEW.owner_package AND COALESCE(NEW.owner_package, '') != '') \
         OR album_name = NEW.package_name) AND priority = 1), '/Pictures/' || NEW.package_name)";
 
 const std::string SOURCE_ALBUM_WHERE_BY_LPATH =
-    " WHERE " + PhotoAlbumColumns::ALBUM_LPATH + " = " + SELECT_LPATH_BY_ALBUM_NAME + " AND " +
+    " WHERE LOWER(" + PhotoAlbumColumns::ALBUM_LPATH + ") = LOWER(" + SELECT_LPATH_BY_ALBUM_NAME_OR_BUNDLE_NAME +
+    ") AND " +
     PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) +
     " AND dirty != 4";
@@ -375,6 +264,43 @@ const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS insert_source_photo_update_album_id_trigger AFTER INSERT ON " +
     PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT_FOR_LPATH + "> 0 AND NEW.owner_album_id = 0" +
     " BEGIN " + UPDATE_PHOTO_OWNER_ALBUM_ID + "; END;";
+
+const std::string PHOTO_ALBUM_NOTIFY_FUNC =
+    "SELECT photo_album_notify_func((SELECT " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
+    " FROM " + PhotoColumn::PHOTOS_TABLE +
+    " WHERE " + MediaColumn::MEDIA_ID + " = NEW." + MediaColumn::MEDIA_ID + "));";
+
+const std::string DELETED_SOURCE_ALBUM_BY_LPATH_WHERE_CLAUSE =
+    " WHERE LOWER(" + PhotoAlbumColumns::ALBUM_LPATH + ") = LOWER(" + SELECT_LPATH_BY_ALBUM_NAME_OR_BUNDLE_NAME +
+    ") AND " +
+    PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
+    PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) +
+    " AND dirty = 4";
+
+const std::string REMOVE_DELETED_SOURCE_ALBUM =
+    " DELETE FROM " + PhotoAlbumColumns::TABLE + DELETED_SOURCE_ALBUM_BY_LPATH_WHERE_CLAUSE;
+
+const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
+    "CREATE TRIGGER IF NOT EXISTS insert_source_photo_create_source_album_trigger AFTER INSERT ON " +
+    PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT_FOR_LPATH + " = 0 AND NEW.owner_album_id = 0 " +
+    " BEGIN " + REMOVE_DELETED_SOURCE_ALBUM + "; "
+    " INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
+    PhotoAlbumColumns::ALBUM_TYPE + " , " +
+    PhotoAlbumColumns::ALBUM_SUBTYPE + " , " +
+    PhotoAlbumColumns::ALBUM_NAME + " , " +
+    PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " , " +
+    PhotoAlbumColumns::ALBUM_LPATH + " , " +
+    PhotoAlbumColumns::ALBUM_PRIORITY + " , " +
+    PhotoAlbumColumns::ALBUM_DATE_ADDED +
+    " ) VALUES ( " +
+    std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " , " +
+    std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) + " , " +
+    "NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " , " +
+    "NEW." + MediaColumn::MEDIA_OWNER_PACKAGE + " , " +
+    SELECT_LPATH_BY_ALBUM_NAME_OR_BUNDLE_NAME + " , " +
+    "1, "
+    "strftime('%s000', 'now')" +
+    ");" + UPDATE_PHOTO_OWNER_ALBUM_ID + "; " + PHOTO_ALBUM_NOTIFY_FUNC + " END;";
 
 } // namespace Media
 } // namespace OHOS
