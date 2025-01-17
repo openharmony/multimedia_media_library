@@ -60,6 +60,16 @@ enum DirType {
     DIR_TYPE_MAX
 };
 
+enum class CloudSyncErrType : int32_t {
+    OTHER_ERROR = 0,
+    CONTENT_NOT_FOUND,
+    THM_NOT_FOUND,
+    LCD_NOT_FOUND,
+    LCD_SIZE_IS_TOO_LARGE,
+    CONTENT_SIZE_IS_ZERO,
+    ALBUM_NOT_FOUND
+};
+
 enum PrivateAlbumType {
     TYPE_FAVORITE = 0,
     TYPE_TRASH,
@@ -206,6 +216,7 @@ const std::string MEDIA_EDIT_DATA_DIR = ROOT_MEDIA_DIR + ".editData/";
 const std::string META_RECOVERY_PHOTO_RELATIVE_PATH = "/Photo/";
 const std::string META_RECOVERY_META_RELATIVE_PATH = "/.meta/Photo/";
 const std::string META_RECOVERY_META_FILE_SUFFIX = ".json";
+const std::string ASTC_JSON_FILE_PATH = "/data/storage/el2/base/preferences/astcphase.json";
 const char SLASH_CHAR = '/';
 const std::string SLASH_STR = "/";
 const int32_t KEY_FRAME_LCD = 1;

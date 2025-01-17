@@ -104,8 +104,9 @@ const std::string QUERY_NEW_NOT_MATCHED_COUNT_IN_PHOTOMAP =
 
 const std::string CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET =
     "INSERT INTO " + PhotoAlbumColumns::TABLE +
-        "(album_type, album_subtype, album_name,bundle_name, dirty, is_local, date_added, lpath, priority)"
-        " Values ('2048', '2049', '其它', 'com.other.album', '1', '1', strftime('%s000', 'now'), '/Pictures/其它', '1')";
+        "(album_type, album_subtype, album_name,bundle_name, dirty, is_local, date_modified, " +
+        "date_added, lpath, priority) Values ('2048', '2049', '其它', 'com.other.album', '1', '1', " +
+        "strftime('%s000', 'now'), strftime('%s000', 'now'), '/Pictures/其它', '1')";
 
 const std::string CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET =
     "INSERT INTO " + PhotoAlbumColumns::TABLE +

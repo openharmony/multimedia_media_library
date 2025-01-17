@@ -37,24 +37,36 @@
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
+#include "preferences.h"
+#include "preferences_helper.h"
+#include "cloud_sync_utils.h"
 
 namespace OHOS {
 namespace Media {
 using namespace FileManagement::CloudSync;
 
-static constexpr int32_t DOWNLOAD_BATCH_SIZE = 2;
 static constexpr int32_t UPDATE_BATCH_CLOUD_SIZE = 2;
 static constexpr int32_t UPDATE_BATCH_LOCAL_VIDEO_SIZE = 50;
 static constexpr int32_t UPDATE_BATCH_LOCAL_IMAGE_SIZE = 200;
 static constexpr int32_t MAX_RETRY_COUNT = 2;
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
-static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.55;
+static constexpr double DEVICE_STORAGE_FREE_RATIO_HIGH = 0.15;
+static constexpr double DEVICE_STORAGE_FREE_RATIO_LOW = 0.05;
+
+static constexpr int64_t ONEDAY_TO_SEC = 60 * 60 * 24;
+static constexpr int64_t SEC_TO_MSEC = 1e3;
+static constexpr int64_t DOWNLOAD_NUM_FREE_RATIO_HIGH = 1000;
+static constexpr int64_t DOWNLOAD_DAY_FREE_RATIO_HIGH = 30;
+static constexpr int64_t DOWNLOAD_NUM_FREE_RATIO_LOW = 250;
+static constexpr int64_t DOWNLOAD_DAY_FREE_RATIO_LOW = 7;
 
 int32_t BackgroundCloudFileProcessor::processInterval_ = PROCESS_INTERVAL;  // 5 minute
+int32_t BackgroundCloudFileProcessor::downloadInterval_ = DOWNLOAD_INTERVAL;  // 1 minute
 int32_t BackgroundCloudFileProcessor::downloadDuration_ = DOWNLOAD_DURATION; // 10 seconds
 recursive_mutex BackgroundCloudFileProcessor::mutex_;
 Utils::Timer BackgroundCloudFileProcessor::timer_("background_cloud_file_processor");
+uint32_t BackgroundCloudFileProcessor::cloudDataTimerId_ = 0;
 uint32_t BackgroundCloudFileProcessor::startTimerId_ = 0;
 uint32_t BackgroundCloudFileProcessor::stopTimerId_ = 0;
 std::vector<std::string> BackgroundCloudFileProcessor::curDownloadPaths_;
@@ -63,21 +75,98 @@ int32_t BackgroundCloudFileProcessor::cloudUpdateOffset_ = 0;
 int32_t BackgroundCloudFileProcessor::localImageUpdateOffset_ = 0;
 int32_t BackgroundCloudFileProcessor::localVideoUpdateOffset_ = 0;
 int32_t BackgroundCloudFileProcessor::cloudRetryCount_ = 0;
-bool BackgroundCloudFileProcessor::isDownload_ = false;
+
+const std::string BACKGROUND_CLOUD_FILE_CONFIG = "/data/storage/el2/base/preferences/background_cloud_file_config.xml";
+const std::string DOWNLOAD_CNT_CONFIG = "/data/storage/el2/base/preferences/download_count_config.xml";
+
+const std::string DOWNLOAD_LATEST_FINISHED = "download_latest_finished";
+
+void BackgroundCloudFileProcessor::SetDownloadLatestFinished(bool downloadLatestFinished)
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    prefs->PutBool(DOWNLOAD_LATEST_FINISHED, downloadLatestFinished);
+    prefs->FlushSync();
+    MEDIA_INFO_LOG("set preferences %{public}d", downloadLatestFinished);
+}
+
+bool BackgroundCloudFileProcessor::GetDownloadLatestFinished()
+{
+    int32_t errCode;
+    bool downloadLatestFinished = false;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return false;
+    }
+
+    return prefs->GetBool(DOWNLOAD_LATEST_FINISHED, downloadLatestFinished);
+}
+
+void BackgroundCloudFileProcessor::ClearDownloadCnt()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DOWNLOAD_CNT_CONFIG, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+
+    prefs->Clear();
+    prefs->FlushSync();
+}
+
+void BackgroundCloudFileProcessor::UpdateDownloadCnt(std::string path, int64_t cnt)
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DOWNLOAD_CNT_CONFIG, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+
+    prefs->PutLong(path, cnt);
+    prefs->FlushSync();
+}
+
+int64_t BackgroundCloudFileProcessor::GetDownloadCnt(std::string path)
+{
+    int32_t errCode;
+    int64_t defaultCnt = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DOWNLOAD_CNT_CONFIG, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return defaultCnt;
+    }
+
+    return prefs->GetLong(path, defaultCnt);
+}
 
 void BackgroundCloudFileProcessor::DownloadCloudFiles()
 {
-    if (!isDownload_) {
-        MEDIA_DEBUG_LOG("download task is closed");
-        return;
-    }
-    MEDIA_DEBUG_LOG("Start downloading cloud files task");
-    if (IsStorageInsufficient()) {
-        MEDIA_WARN_LOG("Insufficient storage space, stop downloading cloud files");
+    if (!CloudSyncUtils::IsCloudSyncSwitchOn()) {
+        MEDIA_DEBUG_LOG("Cloud sync switch off, skip DownloadCloudFiles");
         return;
     }
 
-    auto resultSet = QueryCloudFiles();
+    MEDIA_DEBUG_LOG("Start downloading cloud files task");
+
+    double freeRatio = 0.0;
+    if (!GetStorageFreeRatio(freeRatio)) {
+        MEDIA_WARN_LOG("GetStorageFreeRatio failed, stop downloading cloud files");
+        return;
+    }
+
+    auto resultSet = QueryCloudFiles(freeRatio);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to query cloud files!");
         return;
@@ -130,31 +219,30 @@ void BackgroundCloudFileProcessor::UpdateCloudData()
 void BackgroundCloudFileProcessor::ProcessCloudData()
 {
     UpdateCloudData();
-    DownloadCloudFiles();
 }
 
-bool BackgroundCloudFileProcessor::IsStorageInsufficient()
+bool BackgroundCloudFileProcessor::GetStorageFreeRatio(double &freeRatio)
 {
     struct statvfs diskInfo;
-    int ret = statvfs("/data", &diskInfo);
+    int ret = statvfs("/data/storage/el2/database", &diskInfo);
     if (ret != 0) {
         MEDIA_ERR_LOG("Get file system status information failed, err: %{public}d", ret);
-        return true;
+        return false;
     }
 
     double totalSize = static_cast<double>(diskInfo.f_bsize) * static_cast<double>(diskInfo.f_blocks);
     if (totalSize < 1e-9) {
         MEDIA_ERR_LOG("Get file system total size failed, totalSize=%{public}f", totalSize);
-        return true;
+        return false;
     }
 
     double freeSize = static_cast<double>(diskInfo.f_bsize) * static_cast<double>(diskInfo.f_bfree);
-    double freeRatio = freeSize / totalSize;
+    freeRatio = freeSize / totalSize;
 
-    return freeRatio < PROPER_DEVICE_STORAGE_CAPACITY_RATIO;
+    return true;
 }
 
-std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryCloudFiles()
+std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryCloudFiles(double freeRatio)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
@@ -162,16 +250,30 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryCloudFi
         return nullptr;
     }
 
-    const string sql = "SELECT " + PhotoColumn::MEDIA_FILE_PATH + ", " + PhotoColumn::MEDIA_TYPE +
-        " FROM(SELECT COUNT(*) AS count, " + PhotoColumn::MEDIA_FILE_PATH + ", " + PhotoColumn::MEDIA_TYPE + ", " +
-        MediaColumn::MEDIA_DATE_MODIFIED + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+    int64_t downloadNum;
+    int64_t downloadMilliSecond;
+
+    if (freeRatio >= DEVICE_STORAGE_FREE_RATIO_HIGH) {
+        downloadNum = DOWNLOAD_NUM_FREE_RATIO_HIGH;
+        downloadMilliSecond = DOWNLOAD_DAY_FREE_RATIO_HIGH * ONEDAY_TO_SEC * SEC_TO_MSEC;
+    } else if ((freeRatio >= DEVICE_STORAGE_FREE_RATIO_LOW) && (freeRatio < DEVICE_STORAGE_FREE_RATIO_HIGH)) {
+        downloadNum = DOWNLOAD_NUM_FREE_RATIO_LOW;
+        downloadMilliSecond = DOWNLOAD_DAY_FREE_RATIO_LOW * ONEDAY_TO_SEC * SEC_TO_MSEC;
+    } else {
+        MEDIA_WARN_LOG("freeRatio is %{public}.2f less than %{public}.2f, stop downloading cloud files",
+                       freeRatio, DEVICE_STORAGE_FREE_RATIO_LOW);
+        return nullptr;
+    }
+
+    auto currentMilliSecond = MediaFileUtils::UTCTimeMilliSeconds();
+
+    string sql = "SELECT " + PhotoColumn::MEDIA_FILE_PATH + ", " + PhotoColumn::PHOTO_POSITION +
+        " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
         PhotoColumn::PHOTO_CLEAN_FLAG + " = " + std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) +
-        " AND " + PhotoColumn::PHOTO_POSITION + " = " + std::to_string(POSITION_CLOUD) + " AND " +
-        PhotoColumn::MEDIA_FILE_PATH + " IS NOT NULL AND " + PhotoColumn::MEDIA_FILE_PATH + " != '' AND " +
-        MediaColumn::MEDIA_SIZE + " > 0 AND(" + PhotoColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) +
-        " OR " + PhotoColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + ") GROUP BY " +
-        PhotoColumn::MEDIA_FILE_PATH + " HAVING count = 1) ORDER BY " + PhotoColumn::MEDIA_TYPE + " DESC, " +
-        MediaColumn::MEDIA_DATE_MODIFIED + " DESC LIMIT " + std::to_string(DOWNLOAD_BATCH_SIZE);
+        " AND " + PhotoColumn::MEDIA_FILE_PATH + " IS NOT NULL AND " + PhotoColumn::MEDIA_FILE_PATH + " != '' AND " +
+        MediaColumn::MEDIA_SIZE + " > 0 AND " + PhotoColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) +
+        " AND " + MediaColumn::MEDIA_DATE_TAKEN + " > " + std::to_string(currentMilliSecond - downloadMilliSecond) +
+        " ORDER BY " + MediaColumn::MEDIA_DATE_TAKEN + " DESC LIMIT " + std::to_string(downloadNum);
 
     return uniStore->QuerySql(sql);
 }
@@ -179,6 +281,7 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryCloudFi
 void BackgroundCloudFileProcessor::ParseDownloadFiles(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
     DownloadFiles &downloadFiles)
 {
+    bool downloadLatestFinished = true;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string path =
             get<std::string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING));
@@ -186,17 +289,28 @@ void BackgroundCloudFileProcessor::ParseDownloadFiles(std::shared_ptr<NativeRdb:
             MEDIA_WARN_LOG("Failed to get cloud file uri!");
             continue;
         }
-        int32_t mediaType =
-            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_TYPE, resultSet, TYPE_INT32));
-        if (mediaType == static_cast<int32_t>(MEDIA_TYPE_VIDEO)) {
-            downloadFiles.paths.clear();
-            downloadFiles.paths.push_back(path);
-            downloadFiles.mediaType = MEDIA_TYPE_VIDEO;
-            return;
+
+        int32_t position =
+            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_POSITION, resultSet, TYPE_INT32));
+        if (position == static_cast<int32_t>(POSITION_CLOUD)) {
+            int64_t cnt = GetDownloadCnt(path);
+            if (cnt < DOWNLOAD_FAIL_MAX_TIMES) {
+                downloadLatestFinished = false;
+                downloadFiles.paths.clear();
+                downloadFiles.paths.push_back(path);
+                downloadFiles.mediaType = MEDIA_TYPE_IMAGE;
+                UpdateDownloadCnt(path, cnt + 1);
+                return;
+            }
         }
-        downloadFiles.paths.push_back(path);
     }
-    downloadFiles.mediaType = MEDIA_TYPE_IMAGE;
+
+    if (downloadLatestFinished) {
+        SetDownloadLatestFinished(downloadLatestFinished);
+        ClearDownloadCnt();
+        timer_.Unregister(startTimerId_);
+        startTimerId_ = 0;
+    }
 }
 
 int32_t BackgroundCloudFileProcessor::AddDownloadTask(const DownloadFiles &downloadFiles)
@@ -226,6 +340,7 @@ void BackgroundCloudFileProcessor::DownloadCloudFilesExecutor(AsyncTaskData *dat
     MEDIA_DEBUG_LOG("Try to download %{public}zu cloud files.", downloadFiles.paths.size());
     for (const auto &path : downloadFiles.paths) {
         int32_t ret = CloudSyncManager::GetInstance().StartDownloadFile(path);
+        MEDIA_DEBUG_LOG("Start to download cloud file, path: %{public}s", path.c_str());
         if (ret != E_OK) {
             MEDIA_ERR_LOG("Failed to download cloud file, err: %{public}d, path: %{public}s", ret, path.c_str());
         }
@@ -233,6 +348,7 @@ void BackgroundCloudFileProcessor::DownloadCloudFilesExecutor(AsyncTaskData *dat
 
     lock_guard<recursive_mutex> lock(mutex_);
     curDownloadPaths_ = downloadFiles.paths;
+
     if (downloadFiles.mediaType == MEDIA_TYPE_VIDEO) {
         if (stopTimerId_ > 0) {
             timer_.Unregister(stopTimerId_);
@@ -536,6 +652,9 @@ void BackgroundCloudFileProcessor::StartTimer()
     lock_guard<recursive_mutex> lock(mutex_);
     MEDIA_INFO_LOG("Turn on the background download cloud file timer");
 
+    if (cloudDataTimerId_ > 0) {
+        timer_.Unregister(cloudDataTimerId_);
+    }
     if (startTimerId_ > 0) {
         timer_.Unregister(startTimerId_);
     }
@@ -544,7 +663,10 @@ void BackgroundCloudFileProcessor::StartTimer()
         MEDIA_ERR_LOG("Failed to start background download cloud files timer, err: %{public}d", ret);
     }
     isUpdating_ = true;
-    startTimerId_ = timer_.Register(ProcessCloudData, processInterval_);
+    cloudDataTimerId_ = timer_.Register(ProcessCloudData, processInterval_);
+    if (!GetDownloadLatestFinished()) {
+        startTimerId_ = timer_.Register(DownloadCloudFiles, downloadInterval_);
+    }
 }
 
 void BackgroundCloudFileProcessor::StopTimer()
@@ -552,9 +674,11 @@ void BackgroundCloudFileProcessor::StopTimer()
     lock_guard<recursive_mutex> lock(mutex_);
     MEDIA_INFO_LOG("Turn off the background download cloud file timer");
 
+    timer_.Unregister(cloudDataTimerId_);
     timer_.Unregister(startTimerId_);
     timer_.Unregister(stopTimerId_);
     timer_.Shutdown();
+    cloudDataTimerId_ = 0;
     startTimerId_ = 0;
     stopTimerId_ = 0;
     StopUpdateData();

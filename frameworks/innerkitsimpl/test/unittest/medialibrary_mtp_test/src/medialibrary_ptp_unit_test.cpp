@@ -24,7 +24,6 @@
 #include "mtp_service.h"
 #include "mtp_test.h"
 #include "mtp_manager.h"
-#include "mtp_global.h"
 #include "mtp_medialibrary_manager.h"
 #include "system_ability_definition.h"
 #include "medialibrary_errno.h"
@@ -44,14 +43,10 @@ std::shared_ptr<MtpOperation> operationPtr_;
 const std::string DEFAULT_THUMBSIZE = "100x100";
 const std::string DEFAULT_DATA_PATH = "/data/media/image";
 
-void MediaLibraryPTPUnitTest::SetUpTestCase(void)
-{
-    OHOS::Media::MtpGlobal::ReleaseBlock();
-}
+void MediaLibraryPTPUnitTest::SetUpTestCase(void) {}
 
 void MediaLibraryPTPUnitTest::TearDownTestCase(void)
 {
-    OHOS::Media::MtpGlobal::ResetBlockStatus();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 // SetUp:Execute before each test case

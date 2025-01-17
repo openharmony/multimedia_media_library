@@ -43,7 +43,9 @@ shared_ptr<MediaLibraryNotify> MediaLibraryNotify::instance_;
 mutex MediaLibraryNotify::mutex_;
 unordered_map<string, NotifyDataMap> MediaLibraryNotify::nfListMap_ = {};
 atomic<uint16_t> MediaLibraryNotify::counts_(0);
+atomic<uint16_t> MediaLibraryNotify::thumbCounts_(0);
 static const uint16_t IDLING_TIME = 50;
+const static uint16_t THUMB_LOOP = 5;
 
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
 {
@@ -206,6 +208,38 @@ static void PushNotification(PeriodTaskData *data)
     }
 }
 
+static int32_t GetThumbVisibleById(const string &fileId)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + fileId;
+    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.SetWhereClause(strQueryCondition);
+    auto resultSet = uniStore->Query(rdbPredicates, {PhotoColumn::PHOTO_THUMBNAIL_VISIBLE});
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("GetThumbVisibleById failed");
+        return 0;
+    }
+    ret = resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, 0, "Failed to GoToFirstRow");
+    return get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE,
+        resultSet, TYPE_INT32));
+}
+
+static bool SkipThumbNotifyIfNotReady(NotifyTaskData* taskData)
+{
+    if (taskData == nullptr) {
+        return false;
+    }
+    if (taskData->notifyType_ != NotifyType::NOTIFY_THUMB_ADD) {
+        return false;
+    }
+    string fileId = GetFileIdFromPhotoUri(taskData->uri_);
+    if (fileId.empty()) {
+        return false;
+    }
+    return GetThumbVisibleById(fileId) == 0;
+}
+
 static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData* taskData)
 {
     NotifyDataMap notifyDataMap;
@@ -214,6 +248,10 @@ static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData
     MEDIA_DEBUG_LOG("AddNotify ,keyUri = %{private}s, uri = %{private}s, "
         "notifyType = %{private}d", keyUri.c_str(), uri.ToString().c_str(), taskData->notifyType_);
     lock_guard<mutex> lock(MediaLibraryNotify::mutex_);
+    if (SkipThumbNotifyIfNotReady(taskData)) {
+        MEDIA_DEBUG_LOG("Skip taskData %{public}s, because not visible", taskData->uri_.c_str());
+        return;
+    }
     if (MediaLibraryNotify::nfListMap_.count(keyUri) == 0) {
         sendUris.emplace_back(uri);
         notifyDataMap.insert(make_pair(taskData->notifyType_, sendUris));

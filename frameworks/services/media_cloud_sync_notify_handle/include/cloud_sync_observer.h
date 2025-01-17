@@ -28,6 +28,7 @@ namespace Media {
 struct CloudSyncNotifyInfo {
     std::list<Uri> uris;
     DataShare::DataShareObserver::ChangeType type;
+    const void* data;
 };
 
 class CloudSyncObserver : public DataShare::DataShareObserver {

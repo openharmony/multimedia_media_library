@@ -70,7 +70,12 @@ private:
 class MediaCloudSyncCallback : public FileManagement::CloudSync::CloudSyncCallback {
 public:
     void OnSyncStateChanged(FileManagement::CloudSync::SyncType type,
-        FileManagement::CloudSync::SyncPromptState state);
+        FileManagement::CloudSync::SyncPromptState state) override;
+    void OnSyncStateChanged(FileManagement::CloudSync::CloudSyncState state,
+        FileManagement::CloudSync::ErrorType error) override;
+private:
+    std::mutex syncStateMutex_;
+    bool isSyncing_ = false;
 };
 } // namespace Media
 } // namespace OHOS

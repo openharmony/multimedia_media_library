@@ -16,11 +16,15 @@
 #include "mtp_monitor.h"
 #include <thread>
 #include "media_log.h"
+#include "mtp_file_observer.h"
+#include "mtp_medialibrary_manager.h"
+#include "mtp_store_observer.h"
 using namespace std;
 namespace OHOS {
 namespace Media {
 constexpr int32_t SLEEP_TIME = 1;
 constexpr uint32_t MAX_WAIT_TIMES = 100;
+constexpr int32_t IPC_SERVER_RELEASED = -204;
 MtpMonitor::MtpMonitor(void)
 {
     Init();
@@ -46,6 +50,9 @@ void MtpMonitor::Stop()
         std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
         waitTimes++;
     }
+    if (operationPtr_ != nullptr) {
+        operationPtr_->Stop();
+    }
     MEDIA_DEBUG_LOG("MtpMonitor::Stop end");
 }
 
@@ -59,13 +66,23 @@ void MtpMonitor::Run()
             operationPtr_ = make_shared<MtpOperation>();
         }
         if (operationPtr_ != nullptr) {
-            operationPtr_->Execute();
+            auto errorCode = operationPtr_->Execute();
+            if (errorCode == IPC_SERVER_RELEASED) {
+                interruptFlag = true;
+                MEDIA_INFO_LOG("MtpMonitor::Run break");
+            }
         }
+    }
+    {
+        MtpFileObserver::GetInstance().StopFileInotify();
+        MtpStoreObserver::StopObserver();
+        MtpMedialibraryManager::GetInstance()->Clear();
     }
     if (operationPtr_ != nullptr) {
         operationPtr_.reset();
     }
     threadRunning_.store(false);
+    MEDIA_DEBUG_LOG("MtpMonitor::Run end");
 }
 } // namespace Media
 } // namespace OHOS

@@ -29,6 +29,8 @@ public:
         std::string data;
         int32_t ownerAlbumId;
         std::string burstKey;
+        int32_t cleanFlag;
+        int32_t position;
     };
 
     struct PhotosBasicInfo {
@@ -71,7 +73,9 @@ private:
     const std::string SQL_PHOTOS_FIND_SAME_FILE_IN_ALBUM = "\
         SELECT \
             p.file_id, \
-            p.data \
+            p.data, \
+            p.clean_flag, \
+            p.position \
         FROM \
         ( \
             SELECT album_id \
@@ -84,6 +88,8 @@ private:
             SELECT \
                 file_id, \
                 data, \
+                clean_flag, \
+                position, \
                 size, \
                 orientation, \
                 owner_album_id \
@@ -99,7 +105,9 @@ private:
     const std::string SQL_PHOTOS_FIND_SAME_FILE_WITHOUT_ALBUM = "\
         SELECT \
             P.file_id, \
-            P.data \
+            P.data, \
+            P.clean_flag, \
+            P.position \
         FROM Photos AS P \
         WHERE file_id <= ? AND \
             display_name = ? AND \
@@ -110,11 +118,15 @@ private:
     const std::string SQL_PHOTOS_FIND_SAME_FILE_BY_SOURCE_PATH = "\
         SELECT \
             file_id, \
-            data \
+            data, \
+            clean_flag, \
+            position \
         FROM \
         ( \
             SELECT file_id, \
                 data, \
+                clean_flag, \
+                position, \
                 display_name, \
                 size, \
                 orientation, \

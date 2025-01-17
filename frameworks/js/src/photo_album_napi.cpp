@@ -22,6 +22,7 @@
 #include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
+#include "medialibrary_napi_utils_ext.h"
 #include "medialibrary_tracer.h"
 #include "photo_map_column.h"
 #include "result_set_utils.h"
@@ -99,6 +100,7 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER("coverUri", JSGetCoverUri),
             DECLARE_NAPI_GETTER("latitude", JSGetLatitude),
             DECLARE_NAPI_GETTER("longitude", JSGetLongitude),
+            DECLARE_NAPI_GETTER("lpath", JSGetAlbumLPath),
             DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
             DECLARE_NAPI_FUNCTION("addAssets", PhotoAccessHelperAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", PhotoAccessHelperRemoveAssets),
@@ -231,6 +233,11 @@ double PhotoAlbumNapi::GetLatitude() const
 double PhotoAlbumNapi::GetLongitude() const
 {
     return photoAlbumPtr->GetLongitude();
+}
+
+const string& PhotoAlbumNapi::GetLPath() const
+{
+    return photoAlbumPtr->GetLPath();
 }
 
 shared_ptr<PhotoAlbum> PhotoAlbumNapi::GetPhotoAlbumInstance() const
@@ -440,6 +447,19 @@ napi_value PhotoAlbumNapi::JSGetLongitude(napi_env env, napi_callback_info info)
 
     napi_value jsResult = nullptr;
     CHECK_ARGS(env, napi_create_double(env, obj->GetLongitude(), &jsResult), JS_INNER_FAIL);
+    return jsResult;
+}
+
+napi_value PhotoAlbumNapi::JSGetAlbumLPath(napi_env env, napi_callback_info info)
+{
+    CHECK_COND_LOG_THROW_RETURN_RET(env, MediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED,
+        "Get lpath permission denied: not a system app", nullptr, "Get album lpath failed: not a system app");
+    CHECK_COND(env, MediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED);
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetLPath().c_str(), NAPI_AUTO_LENGTH, &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
 

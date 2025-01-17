@@ -83,6 +83,7 @@
 #include "window.h"
 #include "permission_utils.h"
 #include "userfilemgr_uri.h"
+#include "user_photography_info_column.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -356,7 +357,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", PhotoAccessGetSharedPhotoAssets),
             DECLARE_NAPI_FUNCTION("getSupportedPhotoFormats", PhotoAccessGetSupportedPhotoFormats),
             DECLARE_NAPI_FUNCTION("setForceHideSensitiveType", PhotoAccessHelperSetForceHideSensitiveType),
-            DECLARE_NAPI_FUNCTION("getAnslysisData", PhotoAccessHelperGetAnalysisData),
+            DECLARE_NAPI_FUNCTION("getAnalysisData", PhotoAccessHelperGetAnalysisData),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -3677,6 +3678,15 @@ static napi_value AddDefaultPhotoAlbumColumns(napi_env env, vector<string> &fetc
     return result;
 }
 
+static void AddDefaultColumnsForNonAnalysisAlbums(MediaLibraryAsyncContext& context)
+{
+    if (!context.isAnalysisAlbum) {
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_LPATH);
+    }
+}
+
 #ifdef MEDIALIBRARY_COMPATIBILITY
 static void CompatGetPrivateAlbumExecute(napi_env env, void *data)
 {
@@ -6193,23 +6203,82 @@ static std::string GetLabelAnalysisProgress()
     return jsonObj.dump();
 }
 
+static std::string GetTotalCount()
+{
+    Uri uri(URI_TOTAL);
+    string clause = VISION_TOTAL_TABLE + "." + MediaColumn::MEDIA_ID + " = " + PhotoColumn::PHOTOS_TABLE+ "." +
+        MediaColumn::MEDIA_ID;
+    DataShare::DataSharePredicates predicates;
+    predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ clause });
+    predicates.EqualTo(PhotoColumn::PHOTO_HIDDEN_TIME, 0)->And()
+        ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0)->And()
+        ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
+
+    vector<string> column = {
+        "COUNT(*) AS totalCount"
+    };
+
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, column, errCode);
+    if (ret == nullptr) {
+        NAPI_ERR_LOG("ret is nullptr");
+        return "";
+    }
+    if (ret->GoToFirstRow() != NativeRdb::E_OK) {
+        ret->Close();
+        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
+        return "";
+    }
+    int totalCount = 0;
+    ret->GetInt(0, totalCount);
+    ret->Close();
+    return to_string(totalCount);
+}
+
 static std::string GetFaceAnalysisProgress()
 {
-    unordered_map<int, string> idxToCount = {
-        {0, "totalCount"}, {1, "finishedCount"}, {2, "PortraitCoverCount"}, {3, "PortraitCount"},
+    string curTotalCount = GetTotalCount();
+
+    Uri uri(URI_USER_PHOTOGRAPHY_INFO);
+    vector<string> column = {
+        HIGHLIGHT_ANALYSIS_PROGRESS
     };
-    vector<string> columns = {
-        "COUNT(*) AS totalCount",
-        "SUM(CASE WHEN ((aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 "
-            "AND saliency != 0 AND segmentation != 0 AND head != 0 AND Photos.media_type = 1) OR "
-            "(label != 0 AND face != 0 AND Photos.media_type = 2)) THEN 1 ELSE 0 END) AS finishedCount",
-        "SUM(CASE WHEN face = 3 THEN 1 ELSE 0 END) AS PortraitCoverCount",
-        "SUM(CASE WHEN face > 0 THEN 1 ELSE 0 END) AS PortraitCount"
-    };
-    nlohmann::json jsonObj;
-    GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
-    NAPI_INFO_LOG("Progress json is %{public}s", jsonObj.dump().c_str());
-    return jsonObj.dump();
+    DataShare::DataSharePredicates predicates;
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, column, errCode);
+    if (ret == nullptr) {
+        NAPI_ERR_LOG("ret is nullptr");
+        return "";
+    }
+    if (ret->GoToNextRow() != NativeRdb::E_OK) {
+        ret->Close();
+        nlohmann::json jsonObj;
+        jsonObj["cvFinishedCount"] = 0;
+        jsonObj["geoFinishedCount"] = 0;
+        jsonObj["searchFinishedCount"] = 0;
+        jsonObj["totalCount"] = curTotalCount;
+        string retJson = jsonObj.dump();
+        NAPI_ERR_LOG("GetFaceAnalysisProgress failed, errCode is %{public}d, json is %{public}s", errCode,
+            retJson.c_str());
+        return retJson;
+    }
+    string retJson = MediaLibraryNapiUtils::GetStringValueByColumn(ret, HIGHLIGHT_ANALYSIS_PROGRESS);
+    if (retJson == "") {
+        ret->Close();
+        NAPI_ERR_LOG("retJson is empty");
+        return "";
+    }
+    nlohmann::json curJsonObj = nlohmann::json::parse(retJson);
+    int preTotalCount = curJsonObj["totalCount"];
+    if (to_string(preTotalCount) != curTotalCount) {
+        NAPI_ERR_LOG("preTotalCount != curTotalCount, curTotalCount is %{public}s, preTotalCount is %{public}d",
+            curTotalCount.c_str(), preTotalCount);
+        curJsonObj["totalCount"] = curTotalCount;
+    }
+    retJson = curJsonObj.dump();
+    NAPI_INFO_LOG("GoToNextRow successfully and json is %{public}s", retJson.c_str());
+    ret->Close();
+    return retJson;
 }
 
 static std::string GetGeoAnalysisProgress()
@@ -6234,28 +6303,30 @@ static std::string GetGeoAnalysisProgress()
     predicates.GreaterThan(PhotoAlbumColumns::ALBUM_COUNT, 0);
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, albumColumns, errCode);
+    string retStr = jsonObj.dump();
     if (ret == nullptr) {
-        NAPI_ERR_LOG("ret is nullptr and progress json is %{public}s", jsonObj.dump().c_str());
-        return jsonObj.dump();
+        NAPI_ERR_LOG("ret is nullptr and progress json is %{public}s", retStr.c_str());
+        return retStr;
     }
     if (errCode != DataShare::E_OK) {
-        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d, progress json is %{public}s", errCode,
-            jsonObj.dump().c_str());
+        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d, json is %{public}s", errCode, retStr.c_str());
         ret->Close();
-        return jsonObj.dump();
+        return retStr;
     }
 
     int tmp = -1;
     int32_t retCode = ret->GetRowCount(tmp);
     if (retCode != DataShare::E_OK) {
         NAPI_ERR_LOG("Can not get row count from resultSet, errCode is %{public}d, progress json is %{public}s",
-            retCode, jsonObj.dump().c_str());
-        return jsonObj.dump();
+            retCode, retStr.c_str());
+        ret->Close();
+        return retStr;
     }
     jsonObj[idxToCount[columns.size()]] = tmp;
     ret->Close();
-    NAPI_INFO_LOG("Progress json is %{public}s", jsonObj.dump().c_str());
-    return jsonObj.dump();
+    string jsonStr = jsonObj.dump();
+    NAPI_INFO_LOG("Progress json is %{public}s", jsonStr.c_str());
+    return jsonStr;
 }
 
 static std::string GetHighlightAnalysisProgress()
@@ -6290,8 +6361,9 @@ static std::string GetHighlightAnalysisProgress()
         jsonObj[idxToCount[i]] = tmp;
     }
     ret->Close();
-    NAPI_INFO_LOG("Progress json is %{public}s", jsonObj.dump().c_str());
-    return jsonObj.dump();
+    string retStr = jsonObj.dump();
+    NAPI_INFO_LOG("Progress json is %{public}s", retStr.c_str());
+    return retStr;
 }
 
 static void JSGetAnalysisProgressExecute(MediaLibraryAsyncContext* context)
@@ -6555,22 +6627,60 @@ napi_value MediaLibraryNapi::JSGetPhotoAssets(napi_env env, napi_callback_info i
         JSGetAssetsExecute, GetFileAssetsAsyncCallbackComplete);
 }
 
+// Easter egg operation: query duplicate assets
+static bool EasterEgg(MediaLibraryAsyncContext* context)
+{
+    string queryUri;
+    if (context->uri == URI_FIND_ALL_DUPLICATE_ASSETS) {
+        queryUri = PAH_FIND_ALL_DUPLICATE_ASSETS;
+    } else if (context->uri == URI_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE) {
+        queryUri = PAH_FIND_DUPLICATE_ASSETS_TO_DELETE;
+    } else {
+        return false;
+    }
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NAPI_ERR_LOG("Easter egg operation failed, target is not system app");
+        return false;
+    };
+    bool isQueryCount = find(context->fetchColumn.begin(), context->fetchColumn.end(), MEDIA_COLUMN_COUNT)
+        != context->fetchColumn.end();
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    NAPI_INFO_LOG(
+        "Easter egg operation start: %{public}s, is query count: %{public}d",
+        queryUri == PAH_FIND_ALL_DUPLICATE_ASSETS ?
+        "find all duplicate assets" : "find all duplicate assets to delete", isQueryCount);
+    int errCode = 0;
+    Uri uri(queryUri);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
+        context->predicates, context->fetchColumn, errCode);
+    if (resultSet == nullptr) {
+        context->SaveError(errCode);
+        NAPI_ERR_LOG("Easter egg operation failed, errCode: %{public}d", errCode);
+        return true;
+    }
+    context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    NAPI_INFO_LOG(
+        "Easter egg operation end: %{public}s, is query count: %{public}d, cost time: %{public}" PRId64 "ms",
+        queryUri == PAH_FIND_ALL_DUPLICATE_ASSETS ?
+        "find all duplicate assets" : "find all duplicate assets to delete", isQueryCount,
+        MediaFileUtils::UTCTimeMilliSeconds() - startTime);
+    return true;
+}
+
 static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessGetAssetsExecute");
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    if (EasterEgg(context)) {
+        return;
+    }
     string queryUri;
     switch (context->assetType) {
         case TYPE_PHOTO: {
-            if (context->uri == URI_ALL_DUPLICATE_ASSETS) {
-                queryUri = PAH_ALL_DUPLICATE_ASSETS;
-            } else if (context->uri == URI_CAN_DEL_DUPLICATE_ASSETS) {
-                queryUri = PAH_CAN_DEL_DUPLICATE_ASSETS;
-            } else {
-                queryUri = PAH_QUERY_PHOTO;
-            }
+            queryUri = PAH_QUERY_PHOTO;
             MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
             break;
         }
@@ -7619,10 +7729,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
     if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
         context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
         CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
-        if (!context->isAnalysisAlbum) {
-            context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
-            context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
-        }
+        AddDefaultColumnsForNonAnalysisAlbums(*context);
         if (context->isHighlightAlbum) {
             context->fetchColumn.erase(std::remove(context->fetchColumn.begin(), context->fetchColumn.end(),
                 PhotoAlbumColumns::ALBUM_ID), context->fetchColumn.end());

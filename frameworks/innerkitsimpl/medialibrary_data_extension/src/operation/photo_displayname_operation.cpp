@@ -14,8 +14,9 @@
  */
 #define MLOG_TAG "PhotoDisplayNameOperation"
 
-#include "display_name_info.h"
 #include "photo_displayname_operation.h"
+
+#include "display_name_info.h"
 
 namespace OHOS::Media {
 PhotoDisplayNameOperation &PhotoDisplayNameOperation::SetTargetPhotoInfo(const PhotoAssetInfo &photoAssetInfo)

@@ -312,16 +312,16 @@ void MediaLibraryMultiStagesPhotoCaptureTest::TearDown(void) {}
 HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_result_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_result_001 Start");
+    EXPECT_NE(g_rdbStore, nullptr);
     MultiStagesCaptureDfxResult::Report("123456", 0, static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
-
     MEDIA_INFO_LOG("dfx_result_001 End");
 }
 
 HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_result_invalid_param_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_result_invalid_param_002 Start");
+    EXPECT_NE(g_rdbStore, nullptr);
     MultiStagesCaptureDfxResult::Report("", 0, static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
-
     MEDIA_INFO_LOG("dfx_result_invalid_param_002 End");
 }
 
@@ -619,7 +619,7 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, deferred_proc_adapter_null_ses
 {
     MEDIA_INFO_LOG("deferred_proc_adapter_null_session_001 Start");
     std::shared_ptr<DeferredPhotoProcessingAdapter> deferredProcSession = make_shared<DeferredPhotoProcessingAdapter>();
-
+    EXPECT_NE(deferredProcSession, nullptr);
     // test deferredProcSession_ is nullptr;
     deferredProcSession->deferredPhotoProcSession_ = nullptr;
 

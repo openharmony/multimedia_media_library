@@ -477,7 +477,7 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetImageAlbumInfo()
     info.favoriteCount =
         this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetFavoriteType(SINGLE_FAVORITE_TYPE_FAVORITE));
     info.burstTotalCount =
-        this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
+        this->QueryTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
     info.burstCoverCount =
         this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_COVER));
     // build the album name.
@@ -597,7 +597,7 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetFavoriteAlbumStatInfo()
     info.favoriteCount =
         this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetFavoriteType(SINGLE_FAVORITE_TYPE_FAVORITE));
     info.burstTotalCount =
-        this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
+        this->QueryTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
     info.burstCoverCount =
         this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_COVER));
     // build the album name.
@@ -639,7 +639,7 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetTrashedAlbumStatInfo()
     info.favoriteCount =
         this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetFavoriteType(SINGLE_FAVORITE_TYPE_FAVORITE));
     info.burstTotalCount =
-        this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
+        this->QueryTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
     info.burstCoverCount =
         this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_COVER));
     // build the album name.
@@ -681,7 +681,7 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetHiddenAlbumStatInfo()
     info.favoriteCount =
         this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetFavoriteType(SINGLE_FAVORITE_TYPE_FAVORITE));
     info.burstTotalCount =
-        this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
+        this->QueryTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_ALL));
     info.burstCoverCount =
         this->QueryPicturesTotalCount(SearchCondition(defaultCondition).SetBurstType(SINGLE_BURST_TYPE_COVER));
     // build the album name.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,6 +27,7 @@
 #include "gallery_media_count_statistic.h"
 #include "media_log.h"
 #include "photos_count_statistic.h"
+#include "audios_count_statistic.h"
 
 namespace OHOS::Media {
 static constexpr char MEDIA_LIBRARY[] = "MEDIALIBRARY";
@@ -41,10 +42,12 @@ std::vector<AlbumMediaStatisticInfo> DatabaseReport::LoadGallery(
         .Load();
 }
 
-std::vector<AlbumMediaStatisticInfo> DatabaseReport::LoadExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
+std::vector<AlbumMediaStatisticInfo> DatabaseReport::LoadExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb,
+    std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     return ExternalFilesCountStatistic()
         .SetExternalRdb(externalRdb)
+        .SetGalleryRdb(galleryRdb)
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
         .Load();
@@ -58,6 +61,15 @@ std::vector<AlbumMediaStatisticInfo> DatabaseReport::LoadMedia(
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
         .SetPeriod(period)
+        .Load();
+}
+
+std::vector<AlbumMediaStatisticInfo> DatabaseReport::LoadAudio(const uint64_t audioCount)
+{
+    return AudiosCountStatistic()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .SetAudioCount(audioCount)
         .Load();
 }
 
@@ -78,9 +90,10 @@ DatabaseReport &DatabaseReport::ReportGallery(std::shared_ptr<NativeRdb::RdbStor
     return *this;
 }
 
-DatabaseReport &DatabaseReport::ReportExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
+DatabaseReport &DatabaseReport::ReportExternal(std::shared_ptr<NativeRdb::RdbStore> externalRdb,
+    std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
-    std::vector<AlbumMediaStatisticInfo> albumMediaStatisticInfos = this->LoadExternal(externalRdb);
+    std::vector<AlbumMediaStatisticInfo> albumMediaStatisticInfos = this->LoadExternal(externalRdb, galleryRdb);
     this->Report(albumMediaStatisticInfos);
     return *this;
 }
@@ -88,6 +101,13 @@ DatabaseReport &DatabaseReport::ReportExternal(std::shared_ptr<NativeRdb::RdbSto
 DatabaseReport &DatabaseReport::ReportMedia(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, int32_t period)
 {
     std::vector<AlbumMediaStatisticInfo> albumMediaStatisticInfos = this->LoadMedia(mediaLibraryRdb, period);
+    this->Report(albumMediaStatisticInfos);
+    return *this;
+}
+
+DatabaseReport &DatabaseReport::ReportAudio(const uint64_t audioCount)
+{
+    std::vector<AlbumMediaStatisticInfo> albumMediaStatisticInfos = this->LoadAudio(audioCount);
     this->Report(albumMediaStatisticInfos);
     return *this;
 }

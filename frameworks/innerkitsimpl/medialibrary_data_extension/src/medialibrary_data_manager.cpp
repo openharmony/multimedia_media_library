@@ -26,6 +26,7 @@
 #include "ability_scheduler_interface.h"
 #include "abs_rdb_predicates.h"
 #include "acl.h"
+#include "albums_refresh_manager.h"
 #include "background_cloud_file_processor.h"
 #include "background_task_mgr_helper.h"
 #include "cloud_media_asset_manager.h"
@@ -119,6 +120,7 @@
 #include "thermal_mgr_client.h"
 #endif
 #include "zip_util.h"
+#include "photo_custom_restore_operation.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -325,11 +327,25 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     ReconstructMediaLibraryPhotoMap();
     HandleOtherInitOperations();
 
+    if (AlbumsRefreshManager::GetInstance().HasRefreshingSystemAlbums()) {
+        SyncNotifyInfo info;
+        info.forceRefreshType = ForceRefreshType::EXCEPTION;
+        AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
+    }
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     cloudPhotoObserver_ = std::make_shared<CloudSyncObserver>();
     cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
+    galleryRebuildObserver_= std::make_shared<CloudSyncObserver>();
+    cloudGalleryPhotoObserver_ = std::make_shared<CloudSyncObserver>();
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
-    shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_, true);
+    shareHelper->RegisterObserverExt(
+        Uri(PhotoColumn::PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX),
+        galleryRebuildObserver_, true);
+    shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX),
+        cloudPhotoAlbumObserver_, true);
+    shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX),
+        cloudGalleryPhotoObserver_, true);
+
     HandleUpgradeRdbAsync();
     CloudSyncSwitchManager cloudSyncSwitchManager;
     cloudSyncSwitchManager.RegisterObserver();
@@ -388,6 +404,11 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
     if (oldVersion < VERSION_UPDATE_PHOTOS_DATE_AND_IDX) {
         PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_PHOTOS_DATE_AND_IDX);
+    }
+    
+    if (oldVersion < VERSION_UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL) {
+        MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL);
     }
 }
 
@@ -489,6 +510,7 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         return;
     }
     shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_);
+    shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX), cloudPhotoObserver_);
     shareHelper->UnregisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_);
     rdbStore_ = nullptr;
     MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
@@ -1361,6 +1383,8 @@ int32_t MediaLibraryDataManager::DoAging()
 
     CacheAging(); // aging file in .cache
 
+    PhotoCustomRestoreOperation::GetInstance().CleanTimeoutCustomRestoreTaskDir();
+
     ClearInvalidDeletedAlbum(); // Clear invalid album data with null cloudid and dirty '4'
 
     shared_ptr<TrashAsyncTaskWorker> asyncWorker = TrashAsyncTaskWorker::GetInstance();
@@ -1791,13 +1815,14 @@ shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, co
         fileId.c_str(), latitude.c_str(), longitude.c_str(), addressDescription.c_str());
 
     if (!(latitude == "0" && longitude == "0") && addressDescription.empty()) {
-        const std::vector<std::string> geoInfo{ fileId, latitude, longitude };
-        bool isForceQuery = false;
-        std::future<bool> futureResult =
-            std::async(std::launch::async, MediaAnalysisHelper::ParseGeoInfo, std::move(geoInfo), isForceQuery);
+        std::packaged_task<bool()> pt([=] {
+            return MediaAnalysisHelper::ParseGeoInfo({ fileId, latitude, longitude }, false);
+        });
+        std::future<bool> futureResult = pt.get_future();
+        std::thread(std::move(pt)).detach();
 
         bool parseResult = false;
-        const int timeout = 5;
+        const int timeout = 2;
         std::future_status futureStatus = futureResult.wait_for(std::chrono::seconds(timeout));
         if (futureStatus == std::future_status::ready) {
             parseResult = futureResult.get();
@@ -1844,10 +1869,13 @@ shared_ptr<NativeRdb::ResultSet> QueryGeoAssets(const RdbPredicates &rdbPredicat
                 geoInfo.push_back(fileId + "," + latitude + "," + longitude);
             }
         }
-    
-        bool isForceQuery = true;
-        std::future<bool> futureResult =
-            std::async(std::launch::async, MediaAnalysisHelper::ParseGeoInfo, std::move(geoInfo), isForceQuery);
+        if (geoInfo.empty()) {
+            MEDIA_INFO_LOG("No need to query geo info assets");
+            return queryResult;
+        }
+        std::packaged_task<bool()> pt([&] { return MediaAnalysisHelper::ParseGeoInfo(std::move(geoInfo), true); });
+        std::future<bool> futureResult = pt.get_future();
+        std::thread(std::move(pt)).detach();
 
         bool parseResult = false;
         const int timeout = 5;

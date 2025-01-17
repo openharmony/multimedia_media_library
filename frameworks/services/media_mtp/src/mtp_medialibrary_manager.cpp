@@ -32,6 +32,7 @@
 #include "media_library_manager.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_tracer.h"
 #include "media_smart_map_column.h"
 #include "moving_photo_file_utils.h"
 #include "photo_album_column.h"
@@ -50,6 +51,8 @@ namespace Media {
 sptr<IRemoteObject> MtpMedialibraryManager::getThumbToken_ = nullptr;
 constexpr int32_t NORMAL_WIDTH = 256;
 constexpr int32_t NORMAL_HEIGHT = 256;
+const string THUMBNAIL_WIDTH = "256";
+const string THUMBNAIL_HEIGHT = "256";
 constexpr int32_t COMPRE_SIZE_LEVEL_1 = 256;
 constexpr int32_t COMPRE_SIZE_LEVEL_2 = 204800;
 constexpr size_t SIZE_ONE = 1;
@@ -607,15 +610,23 @@ int32_t MtpMedialibraryManager::GetThumb(const shared_ptr<MtpOperationContext> &
         MTP_ERROR_INVALID_OBJECTHANDLE, "fetchFileResult is nullptr");
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "fileAsset is nullptr");
-
+    std::string dataPath = fileAsset->GetFilePath();
+    if (fileAsset->GetId() < static_cast<int32_t>(COMMON_PHOTOS_OFFSET)) {
+        return MTP_SUCCESS;
+    }
+    int32_t id = fileAsset->GetId() % COMMON_PHOTOS_OFFSET;
+    auto thumbSizeValue = fileAsset->GetStrMember(PhotoColumn::PHOTO_THUMB_SIZE);
+    std::string path = GetThumbUri(id, thumbSizeValue, dataPath);
+    std::string startUri = NORMAL_MEDIA_URI;
+    startUri += to_string(id);
+    if (GetThumbnailFromPath(startUri, outThumb) == MTP_SUCCESS) {
+        MEDIA_DEBUG_LOG("mtp GetThumbnailFromPath SUCESSE");
+        return MTP_SUCCESS;
+    }
     auto mediaLibraryManager = MediaLibraryManager::GetMediaLibraryManager();
     CHECK_AND_RETURN_RET_LOG(mediaLibraryManager != nullptr,
         MTP_ERROR_ACCESS_DENIED, "mediaLibraryManager is nullptr");
     mediaLibraryManager->InitMediaLibraryManager(getThumbToken_);
-    std::string dataPath = fileAsset->GetFilePath();
-    int32_t id = fileAsset->GetId() % COMMON_PHOTOS_OFFSET;
-    auto thumbSizeValue = fileAsset->GetStrMember(PhotoColumn::PHOTO_THUMB_SIZE);
-    std::string path = GetThumbUri(id, thumbSizeValue, dataPath);
     CHECK_AND_RETURN_RET_LOG(path.size() != 0, MTP_ERROR_NO_THIS_FILE, "path is null");
     MEDIA_DEBUG_LOG("GetThumb path:%{private}s", path.c_str());
 
@@ -625,6 +636,48 @@ int32_t MtpMedialibraryManager::GetThumb(const shared_ptr<MtpOperationContext> &
 
     bool ret = CompressImage(pixelMap, *outThumb);
     CHECK_AND_RETURN_RET_LOG(ret == true, MTP_ERROR_NO_THUMBNAIL_PRESENT, "CompressImage failed");
+    return MTP_SUCCESS;
+}
+
+int32_t MtpMedialibraryManager::GetThumbnailFromPath(string &path, shared_ptr<UInt8List> &outThumb)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MTP MtpMedialibraryManager::GetThumbnailFromPath");
+    if (outThumb == nullptr) {
+        MEDIA_ERR_LOG("mtp outThumb is null");
+        return E_ERR;
+    }
+    if (path.empty()) {
+        MEDIA_ERR_LOG("mtp path is null");
+        return E_ERR;
+    }
+    string openUriStr = path + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH +
+        "=" + THUMBNAIL_WIDTH + "&" + MEDIA_DATA_DB_HEIGHT + "=" + THUMBNAIL_HEIGHT;
+    MEDIA_DEBUG_LOG("mtp openUriStr::%{public}s", openUriStr.c_str());
+    Uri openUri(openUriStr);
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
+        MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
+    int32_t fd = dataShareHelper_->OpenFile(openUri, "R");
+    if (fd < 0) {
+        MEDIA_ERR_LOG("mtp get fd fail");
+        return E_ERR;
+    }
+    struct stat fileInfo;
+    if (fstat(fd, &fileInfo) != E_OK) {
+        int32_t ret = close(fd);
+        CHECK_AND_PRINT_LOG(ret == MTP_SUCCESS, "CloseFd fail!");
+        return E_ERR;
+    }
+    outThumb->resize(fileInfo.st_size);
+    ssize_t numBytes = read(fd, outThumb->data(), fileInfo.st_size);
+    if (numBytes == E_ERR) {
+        int32_t ret = close(fd);
+        CHECK_AND_PRINT_LOG(ret == MTP_SUCCESS, "CloseFd fail!");
+        MEDIA_ERR_LOG("mtp fread fail");
+        return E_ERR;
+    }
+    int32_t ret = close(fd);
+    CHECK_AND_PRINT_LOG(ret == MTP_SUCCESS, "CloseFd fail!");
     return MTP_SUCCESS;
 }
 

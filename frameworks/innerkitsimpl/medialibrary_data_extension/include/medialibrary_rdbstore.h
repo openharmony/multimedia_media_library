@@ -103,6 +103,7 @@ public:
     EXPORT static void AddAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddCloudEnhancementAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddPhotoDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static int32_t ReconstructMediaLibraryStorageFormat(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryEditDataExists(
         const NativeRdb::AbsRdbPredicates &predicates);
@@ -141,6 +142,7 @@ private:
     EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
+    EXPORT static const std::string RegexReplaceFunc(const std::vector<std::string> &args);
     friend class TransactionOperations;
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     EXPORT static const std::string BeginGenerateHighlightThumbnail(const std::vector<std::string>& args);

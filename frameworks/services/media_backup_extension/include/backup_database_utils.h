@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -37,6 +37,8 @@ public:
     static int32_t InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
         const std::string &dbPath, const std::string &bundleName, bool isMediaLibary,
             int32_t area = DEFAULT_AREA_VERSION);
+    static int32_t InitReadOnlyRdb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
+        const std::string &dbPath, const std::string &bundleName);
     static int32_t QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
         const std::string &column);
     static int32_t Update(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t &changeRows,
@@ -58,6 +60,9 @@ public:
     static std::string GarbleInfoName(const std::string &infoName);
     static void UpdateSelection(std::string &selection, const std::string &selectionToAdd, bool needWrap = false);
     static void UpdateSdWhereClause(std::string &querySql, bool shouldIncludeSd);
+    static bool QueryThumbImage(NativeRdb::RdbStore &rdbStore,
+        const std::string &keyValue, std::vector<uint8_t> &blob);
+    static bool SaveImage(std::vector<uint8_t> &data, const std::string &outFile);
     static int32_t GetBlob(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet,
         std::vector<uint8_t> &blobVal);
     static std::string GetLandmarksStr(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet);
@@ -116,7 +121,8 @@ public:
         const std::string &dbTag = "");
     static int32_t QueryLocalNoAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static int32_t QueryReadyAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
-
+    static std::unordered_map<int32_t, int32_t> QueryMediaTypeCount(
+        const std::shared_ptr<NativeRdb::RdbStore>& rdbStore, const std::string& querySql);
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
     template <typename T>

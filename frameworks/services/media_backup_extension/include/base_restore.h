@@ -122,6 +122,8 @@ protected:
     void RestoreThumbnail();
     std::string GetRestoreTotalInfo();
     virtual int32_t GetNoNeedMigrateCount();
+    void UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+        const std::vector<FileInfo>& fileInfos);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};

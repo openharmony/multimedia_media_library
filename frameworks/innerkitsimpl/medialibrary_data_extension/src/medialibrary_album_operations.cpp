@@ -283,7 +283,6 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
         return nullptr;
     }
 
-    RefreshAlbums(true);
     if (cmd.GetOprnObject() == OperationObject::MEDIA_VOLUME) {
         size_t photoThumbnailVolumn = QueryPhotoThumbnailVolumn(uniStore);
         string queryThumbnailSql = "SELECT cast(" + to_string(photoThumbnailVolumn) +
@@ -894,7 +893,6 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
 shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
-    RefreshAlbums(true);
     if (cmd.GetAbsRdbPredicates()->GetOrder().empty()) {
         cmd.GetAbsRdbPredicates()->OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
     }
@@ -1159,7 +1157,8 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     return changedRows;
 }
 
-static int32_t GetLPathFromSourcePath(const string &sourcePath, string &lPath, int32_t mediaType)
+int32_t MediaLibraryAlbumOperations::GetLPathFromSourcePath(const string& sourcePath, string& lPath,
+                                                            int32_t mediaType)
 {
     size_t pos1 = SOURCE_PATH_PREFIX.length();
     size_t pos2 = sourcePath.find_last_of("/");
@@ -1202,7 +1201,8 @@ static bool HasSameLpath(const string &lPath, const string &assetId)
     return true;
 }
 
-static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUserAlbum, int64_t &newAlbumId)
+void MediaLibraryAlbumOperations::RecoverAlbum(const string& assetId, const string& lPath,
+                                               bool& isUserAlbum, int64_t& newAlbumId)
 {
     if (lPath.empty()) {
         MEDIA_ERR_LOG("lPath empyt, cannot recover album");
@@ -1243,6 +1243,7 @@ static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUse
     values.PutString(PhotoAlbumColumns::ALBUM_LPATH, lPath);
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
     values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundleName);
+    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
     int32_t ret = rdbStore->Insert(newAlbumId, PhotoAlbumColumns::TABLE, values);
 
@@ -1262,8 +1263,8 @@ static int32_t RebuildDeletedAlbum(shared_ptr<NativeRdb::ResultSet> &photoResult
         GetInt32Val(PhotoColumn::MEDIA_TYPE, photoResultSet);
     bool isUserAlbum = false;
     int64_t newAlbumId = -1;
-    GetLPathFromSourcePath(sourcePath, lPath, mediaType);
-    RecoverAlbum(assetId, lPath, isUserAlbum, newAlbumId);
+    MediaLibraryAlbumOperations::GetLPathFromSourcePath(sourcePath, lPath, mediaType);
+    MediaLibraryAlbumOperations::RecoverAlbum(assetId, lPath, isUserAlbum, newAlbumId);
     if (newAlbumId == -1) {
         MEDIA_ERR_LOG("Recover album fails");
         return E_INVALID_ARGUMENTS;

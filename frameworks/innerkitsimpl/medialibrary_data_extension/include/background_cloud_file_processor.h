@@ -28,7 +28,9 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 constexpr int32_t PROCESS_INTERVAL = 5 * 60 * 1000;  // 5 minute
+constexpr int32_t DOWNLOAD_INTERVAL = 1 * 60 * 1000;  // 1 minute
 constexpr int32_t DOWNLOAD_DURATION = 10 * 1000; // 10 seconds
+constexpr int32_t DOWNLOAD_FAIL_MAX_TIMES = 3; // 3 times
 
 typedef struct {
     bool isCloud;
@@ -39,6 +41,8 @@ class BackgroundCloudFileProcessor {
 public:
     EXPORT static void StartTimer();
     EXPORT static void StopTimer();
+    EXPORT static void SetDownloadLatestFinished(bool downloadLatestFinished);
+    EXPORT static bool GetDownloadLatestFinished();
 
 private:
     typedef struct {
@@ -80,8 +84,11 @@ private:
     };
 
     static void DownloadCloudFiles();
-    static bool IsStorageInsufficient();
-    static std::shared_ptr<NativeRdb::ResultSet> QueryCloudFiles();
+    static bool GetStorageFreeRatio(double &freeRatio);
+    static void ClearDownloadCnt();
+    static void UpdateDownloadCnt(std::string path, int64_t cnt);
+    static int64_t GetDownloadCnt(std::string path);
+    static std::shared_ptr<NativeRdb::ResultSet> QueryCloudFiles(double freeRatio);
     static void ParseDownloadFiles(std::shared_ptr<NativeRdb::ResultSet> &resultSet, DownloadFiles &downloadFiles);
     static int32_t AddDownloadTask(const DownloadFiles &downloadFiles);
     static void DownloadCloudFilesExecutor(AsyncTaskData *data);
@@ -101,9 +108,11 @@ private:
     static void UpdateCurrentOffset(bool isCloud, bool isVideo);
 
     static int32_t processInterval_;
+    static int32_t downloadInterval_;
     static int32_t downloadDuration_;
     static std::recursive_mutex mutex_;
     static Utils::Timer timer_;
+    static uint32_t cloudDataTimerId_;
     static uint32_t startTimerId_;
     static uint32_t stopTimerId_;
     static std::vector<std::string> curDownloadPaths_;
@@ -112,7 +121,6 @@ private:
     static int32_t localImageUpdateOffset_;
     static int32_t localVideoUpdateOffset_;
     static int32_t cloudRetryCount_;
-    static bool isDownload_;
 };
 } // namespace Media
 } // namespace OHOS

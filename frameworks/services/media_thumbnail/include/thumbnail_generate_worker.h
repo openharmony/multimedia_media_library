@@ -102,6 +102,7 @@ public:
     bool isThreadWaiting_ = false;
     int32_t taskNum_ = 0;
     CpuAffinityType cpuAffinityType = CpuAffinityType::CPU_IDX_DEFAULT;
+    CpuAffinityType cpuAffinityTypeLowPriority = CpuAffinityType::CPU_IDX_DEFAULT;
 };
 
 class ThumbnailGenerateWorker {
@@ -114,6 +115,7 @@ public:
         const std::shared_ptr<ThumbnailGenerateTask> &task, const ThumbnailTaskPriority &taskPriority);
     EXPORT void IgnoreTaskByRequestId(int32_t requestId);
     EXPORT void TryCloseTimer();
+    EXPORT bool IsLowerQueueEmpty();
 
 private:
     void StartWorker(std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus);

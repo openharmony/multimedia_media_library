@@ -58,7 +58,7 @@ const int32_t URI_SLASH_NUM_API9 = 2;
 const int32_t URI_SLASH_NUM_API10 = 4;
 const int32_t FUSE_VIRTUAL_ID_DIVIDER = 5;
 const int32_t FUSE_PHOTO_VIRTUAL_IDENTIFIER = 4;
-
+const int32_t BASE_USER_RANGE = 200000;
 static set<int> readPermSet{0, 1, 3, 4};
 static set<int> writePermSet{2, 3, 4};
 static const map<int32_t, string> MEDIA_OPEN_MODE_MAP = {
@@ -72,8 +72,8 @@ static const map<int32_t, string> MEDIA_OPEN_MODE_MAP = {
 };
 
 MediafusePermCheckInfo::MediafusePermCheckInfo(const string &filePath, const string &mode, const string &fileId,
-    const string &appId, const int32_t &uid, const uint32_t &tokenCaller)
-    : filePath_(filePath), mode_(mode), fileId_(fileId), appId_(appId), uid_(uid), tokenCaller_(tokenCaller)
+    const string &appId, const int32_t &uid)
+    : filePath_(filePath), mode_(mode), fileId_(fileId), appId_(appId), uid_(uid)
 {}
 
 MediaFuseManager &MediaFuseManager::GetInstance()
@@ -132,12 +132,11 @@ static bool IsFullUri(const string &uri)
     return false;
 }
 
-static int32_t GetFileIdFromUri(string &fileId, string &fileName, const string &uri)
+static int32_t GetFileIdFromUri(string &fileId, const string &uri)
 {
     string tmpPath;
     int32_t pos;
     int32_t virtualId;
-    fileName = "";
     /* uri = "/Photo/fileid/filename/displayname.jpg" */
     if (uri.find("/Photo") == 0) {
         /* tmppath = "fileid/filename/displayname.jpg" */
@@ -146,23 +145,6 @@ static int32_t GetFileIdFromUri(string &fileId, string &fileName, const string &
         pos = tmpPath.find("/");
         /* get fileid */
         fileId = tmpPath.substr(0, pos);
-        /* tmppath = "filename/displayname.jpg" */
-        tmpPath = tmpPath.substr(pos + 1);
-        /* get fileid name end pos */
-        pos = tmpPath.find("/");
-        /* get file name */
-        fileName = tmpPath.substr(0, pos);
-        if (fileName.empty()) {
-            return E_ERR;
-        }
-        /* get display name, displayname.jpg */
-        string displayName = tmpPath.substr(pos + 1);
-         /* get ext name start pos*/
-        pos = displayName.find(".");
-        /* get ext name, .jpg */
-        string extName = displayName.substr(pos);
-        /* get real file name, filename.jpg */
-        fileName = fileName + extName;
     } else if (uri.find("/image") == 0) {
         tmpPath = uri.substr(strlen("/image/"));
         CHECK_AND_RETURN_RET(!tmpPath.empty(), E_ERR);
@@ -178,7 +160,7 @@ static int32_t GetFileIdFromUri(string &fileId, string &fileName, const string &
     return E_SUCCESS;
 }
 
-static int32_t GetPathFromFileId(string &filePath, const string &fileId, const string &fileName)
+static int32_t GetPathFromFileId(string &filePath, const string &fileId)
 {
     NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
     rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
@@ -202,14 +184,6 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId, const s
     }
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
         filePath = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
-        if (!fileName.empty()) {
-            int32_t pos = filePath.rfind("/");
-            string name = filePath.substr(pos + 1);
-            if (name != fileName) {
-                MEDIA_ERR_LOG("fileName check fail, %{private}s %{private}s", name.c_str(), fileName.c_str());
-                return E_ERR;
-            }
-        }
     }
     return E_SUCCESS;
 }
@@ -217,18 +191,22 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId, const s
 int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
 {
     string fileId;
-    string fileName;
     string target = path;
+#ifdef MEDIALIBRARY_EMULATOR
+    bool cond = (path == nullptr || strlen(path) == 0 ||
+        ((target.find("/Photo") != 0) && (target.find("/image") != 0) && (target != "/")));
+#else
     bool cond = (path == nullptr || strlen(path) == 0 ||
         ((target.find("/Photo") != 0) && (target.find("/image") != 0)));
+#endif
     CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Invalid path, %{private}s", path == nullptr ? "null" : path);
     int32_t ret;
     if (IsFullUri(target) == false) {
         ret = lstat(FUSE_ROOT_MEDIA_DIR.c_str(), stbuf);
     } else {
-        ret = GetFileIdFromUri(fileId, fileName, path);
+        ret = GetFileIdFromUri(fileId, path);
         CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "get attr fileid fail");
-        ret = GetPathFromFileId(target, fileId, fileName);
+        ret = GetPathFromFileId(target, fileId);
         CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "get attr path fail");
         ret = lstat(target.c_str(), stbuf);
     }
@@ -284,17 +262,17 @@ static int32_t DbCheckPermission(const string &filePath, const string &mode, con
     return E_SUCCESS;
 }
 
-int32_t MediafusePermCheckInfo::CheckPermission()
+int32_t MediafusePermCheckInfo::CheckPermission(uint32_t &tokenCaller)
 {
-    int err = WrCheckPermission(filePath_, mode_, uid_, tokenCaller_);
+    int err = WrCheckPermission(filePath_, mode_, uid_, tokenCaller);
     bool rslt;
     if (err == E_SUCCESS) {
-        MEDIA_INFO_LOG("wr check succ");
+        MEDIA_INFO_LOG("wr check succ %{public}d", tokenCaller);
         return true;
     }
-    err = DbCheckPermission(filePath_, mode_, fileId_, appId_, tokenCaller_);
+    err = DbCheckPermission(filePath_, mode_, fileId_, appId_, tokenCaller);
     if (err == E_SUCCESS) {
-        MEDIA_INFO_LOG("db check succ");
+        MEDIA_INFO_LOG("db check succ %{public}d", tokenCaller);
         rslt = true;
     } else {
         rslt = false;
@@ -319,8 +297,8 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
     AccessTokenID tokenCaller = INVALID_TOKENID;
     PermissionUtils::GetClientBundle(uid, bundleName);
     string appId = PermissionUtils::GetAppIdByBundleName(bundleName, uid);
-    class MediafusePermCheckInfo info(filePath, mode, fileId, appId, uid, tokenCaller);
-    int32_t permGranted = info.CheckPermission();
+    class MediafusePermCheckInfo info(filePath, mode, fileId, appId, uid);
+    int32_t permGranted = info.CheckPermission(tokenCaller);
     if (permGranted == false) {
         return E_ERR;
     }
@@ -331,10 +309,9 @@ int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
 {
     int realFlag = flags & (O_RDONLY | O_WRONLY | O_RDWR | O_TRUNC | O_APPEND);
     string fileId;
-    string fileName;
     string target;
-    GetFileIdFromUri(fileId, fileName, path);
-    GetPathFromFileId(target, fileId, fileName);
+    GetFileIdFromUri(fileId, path);
+    GetPathFromFileId(target, fileId);
     fd = OpenFile(target, fileId, MEDIA_OPEN_MODE_MAP.at(realFlag));
     if (fd < 0) {
         MEDIA_ERR_LOG("Open failed, path = %{private}s, errno = %{public}d", target.c_str(), errno);
@@ -347,9 +324,8 @@ int32_t MediaFuseManager::DoRelease(const char *path, const int &fd)
 {
     string fileId;
     string filePath;
-    string fileName;
-    GetFileIdFromUri(fileId, fileName, path);
-    GetPathFromFileId(filePath, fileId, fileName);
+    GetFileIdFromUri(fileId, path);
+    GetPathFromFileId(filePath, fileId);
     if (fd >= 0) {
         close(fd);
         MediaLibraryObjectUtils::ScanFileAsync(filePath, fileId, MediaLibraryApi::API_10);
@@ -364,12 +340,8 @@ int32_t MediaFuseManager::DoRelease(const char *path, const int &fd)
 int32_t MediaFuseManager::MountFuse(std::string &mountpoint)
 {
     int devFd = -1;
-    int32_t userId = 0;
-
     // get user id
-    ErrCode errCode = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(userId);
-    CHECK_AND_RETURN_RET_LOG(errCode == ERR_OK, errCode,
-        "Get account fail, ret code %{public}d, result is not credible", errCode);
+    int32_t userId =  getuid() / BASE_USER_RANGE;
 
     // mount fuse
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
@@ -388,12 +360,8 @@ int32_t MediaFuseManager::MountFuse(std::string &mountpoint)
 
 int32_t MediaFuseManager::UMountFuse()
 {
-    int32_t userId = 0;
-
     // get user id
-    ErrCode errCode = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(userId);
-    CHECK_AND_RETURN_RET_LOG(errCode == ERR_OK, errCode,
-        "Get account fail, ret code %{public}d, result is not credible", errCode);
+    int32_t userId =  getuid() / BASE_USER_RANGE;
 
     // umount fuse
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
