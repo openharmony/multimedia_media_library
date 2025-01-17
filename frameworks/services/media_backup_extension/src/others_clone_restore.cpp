@@ -235,7 +235,7 @@ NativeRdb::ValuesBucket OthersCloneRestore::GetInsertValue(const FileInfo &fileI
     // only SOURCE album has package_name and owner_package.
     values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, fileInfo.packageName);
     values.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, fileInfo.bundleName);
-    values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, fileInfo.strong_association);
+    values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, fileInfo.strongAssociation);
     if (fileInfo.dateTaken != 0) {
         values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.dateTaken);
         values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateTaken);
@@ -345,7 +345,7 @@ void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struc
         std::regex pattern(R"(.*_enhanced(\.[^.]+)$)");
         if (std::regex_match(file, pattern)) {
             MEDIA_INFO_LOG("%{private}s is an enhanced image!", file.c_str());
-            tmpInfo.strong_association = STRONG_ASSOCIATION_ENABLE;
+            tmpInfo.strongAssociation = STRONG_ASSOCIATION_ENABLE;
         }
     }
     if (tmpInfo.fileType  == MediaType::MEDIA_TYPE_IMAGE || tmpInfo.fileType  == MediaType::MEDIA_TYPE_VIDEO) {
