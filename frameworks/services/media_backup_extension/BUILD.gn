@@ -52,6 +52,7 @@ ohos_shared_library("mediabackup") {
     "./src/medialibrary_backup_napi.cpp",
     "./src/native_module_ohos_medialibrary_backup.cpp",
     "./src/others_clone_restore.cpp",
+    "./src/report/audios_count_statistic.cpp",
     "./src/report/database_report.cpp",
     "./src/report/external_files_count_statistic.cpp",
     "./src/report/gallery_media_count_statistic.cpp",
