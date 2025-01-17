@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -114,6 +114,8 @@ public:
         std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum);
     static std::string CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
         const std::string &dbTag = "");
+    static std::unordered_map<int32_t, int32_t> QueryMediaTypeCount(
+        const std::shared_ptr<NativeRdb::RdbStore>& rdbStore, const std::string& querySql);
 
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);

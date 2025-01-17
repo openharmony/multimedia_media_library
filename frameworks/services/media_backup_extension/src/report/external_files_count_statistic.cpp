@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,25 +20,26 @@
 #include "media_backup_report_data_type.h"
 
 namespace OHOS::Media {
+static const int32_t INIT_FAIL_TOTAL_COUNT = -1;
+static const int32_t IMAGE_MEDIA_TYPE = 1;
+static const int32_t VIDEO_MEDIA_TYPE = 3;
 std::vector<AlbumMediaStatisticInfo> ExternalFilesCountStatistic::Load()
 {
     if (this->externalRdb_ == nullptr) {
         MEDIA_ERR_LOG("externalRdb_ is nullptr, Maybe init failed.");
         return {};
     }
-    return {this->GetMediaStatInfo(), this->GetAudioStatInfo()};
+    return {this->GetMediaStatInfo(), this->GetAudioStatInfo(), this->GetGalleryNotSyncMediaStatInfo()};
 }
 
 AlbumMediaStatisticInfo ExternalFilesCountStatistic::GetMediaStatInfo()
 {
-    int32_t externalImageCount = this->QueryExternalImageCount();
-    int32_t externalVideoCount = this->QueryExternalVideoCount();
     AlbumMediaStatisticInfo info;
     info.sceneCode = this->sceneCode_;
     info.taskId = this->taskId_;
     info.albumName = "External_Media";
-    info.imageCount = externalImageCount;
-    info.videoCount = externalVideoCount;
+    auto mediaTypeCountMap = this->QueryExternalImageAndVideoCount();
+    GetMediaStatInfoFromMap(mediaTypeCountMap, info);
     return info;
 }
 
@@ -53,6 +54,43 @@ AlbumMediaStatisticInfo ExternalFilesCountStatistic::GetAudioStatInfo()
     return info;
 }
 
+AlbumMediaStatisticInfo ExternalFilesCountStatistic::GetGalleryNotSyncMediaStatInfo()
+{
+    AlbumMediaStatisticInfo info;
+    info.sceneCode = this->sceneCode_;
+    info.taskId = this->taskId_;
+    info.albumName = "Extermal_Restore_Gallery_Not_Sync_Media";
+    if (this->galleryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
+        info.totalCount = INIT_FAIL_TOTAL_COUNT;
+        return info;
+    }
+    int32_t maxId = BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_MAX_ID_ALL, CUSTOM_MAX_ID);
+    auto mediaTypeCountMap = this->QueryGalleryNotSyncMedia(maxId);
+    GetMediaStatInfoFromMap(mediaTypeCountMap, info);
+    return info;
+}
+
+void ExternalFilesCountStatistic::GetMediaStatInfoFromMap(
+    const std::unordered_map<int32_t, int32_t>& mediaTypeCountMap, AlbumMediaStatisticInfo& info)
+{
+    for (auto iter = mediaTypeCountMap.begin(); iter != mediaTypeCountMap.end(); iter++) {
+        int32_t mediaType = iter->first;
+        int32_t count = iter->second;
+        info.totalCount += count;
+        switch (mediaType) {
+            case IMAGE_MEDIA_TYPE:
+                info.imageCount = count;
+                break;
+            case VIDEO_MEDIA_TYPE:
+                info.videoCount = count;
+                break;
+            default:
+                break;
+        }
+    }
+}
+
 int32_t ExternalFilesCountStatistic::QueryExternalAudioCount()
 {
     static string QUERY_EXTERNAL_AUDIO_COUNT = "SELECT count(1) as count FROM files WHERE media_type = 2 AND _size > 0 \
@@ -60,17 +98,18 @@ int32_t ExternalFilesCountStatistic::QueryExternalAudioCount()
     return BackupDatabaseUtils::QueryInt(this->externalRdb_, QUERY_EXTERNAL_AUDIO_COUNT, CUSTOM_COUNT);
 }
 
-int32_t ExternalFilesCountStatistic::QueryExternalImageCount()
+std::unordered_map<int32_t, int32_t> ExternalFilesCountStatistic::QueryExternalImageAndVideoCount()
 {
-    static string QUERY_EXTERNAL_IMAGE_COUNT =
-        "SELECT count(1) AS count FROM files WHERE  media_type = 1 AND _size > 0";
-    return BackupDatabaseUtils::QueryInt(this->externalRdb_, QUERY_EXTERNAL_IMAGE_COUNT, CUSTOM_COUNT);
+    static string QUERY_EXTERNAL_IMAGE_AND_VIDEO_COUNT = QUERY_MEDIA_TYPE_AND_COUNT_FROM_FILES +
+        IMAGE_AND_VIDEO_TYPE + GROUP_BY_MEIDA_TYPE;
+    return BackupDatabaseUtils::QueryMediaTypeCount(this->externalRdb_, QUERY_EXTERNAL_IMAGE_AND_VIDEO_COUNT);
 }
 
-int32_t ExternalFilesCountStatistic::QueryExternalVideoCount()
+std::unordered_map<int32_t, int32_t> ExternalFilesCountStatistic::QueryGalleryNotSyncMedia(const int32_t maxId)
 {
-    static string QUERY_EXTERNAL_VIDEO_COUNT =
-        "SELECT count(1) AS count FROM files WHERE  media_type = 3 AND _size > 0";
-    return BackupDatabaseUtils::QueryInt(this->externalRdb_, QUERY_EXTERNAL_VIDEO_COUNT, CUSTOM_COUNT);
+    std::string queryNotSyncByCount = QUERY_MEDIA_TYPE_AND_COUNT_FROM_FILES + IS_PENDING + " AND " +
+        COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC + GROUP_BY_MEIDA_TYPE;
+    return BackupDatabaseUtils::QueryMediaTypeCount(externalRdb_, queryNotSyncByCount);
 }
+
 }  // namespace OHOS::Media
