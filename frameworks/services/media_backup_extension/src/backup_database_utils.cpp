@@ -17,6 +17,7 @@
 
 #include "backup_database_utils.h"
 
+#include <fcntl.h>
 #include <nlohmann/json.hpp>
 #include <safe_map.h>
 
@@ -40,6 +41,8 @@ const size_t LANDMARKS_SIZE = 5;
 const std::string LANDMARK_X = "x";
 const std::string LANDMARK_Y = "y";
 const std::string COLUMN_INTEGRITY_CHECK = "quick_check";
+const std::string SQL_QUOTES = "\"";
+
 const std::vector<uint32_t> HEX_MAX = { 0xff, 0xffff, 0xffffff, 0xffffffff };
 static SafeMap<int32_t, int32_t> fileIdOld2NewForCloudEnhancement;
 
@@ -61,6 +64,19 @@ int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbSto
         config.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
         config.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
     }
+    int32_t err;
+    RdbCallback cb;
+    rdbStore = NativeRdb::RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, cb, err);
+    return err;
+}
+
+int32_t BackupDatabaseUtils::InitReadOnlyRdb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    const std::string &dbName, const std::string &dbPath, const std::string &bundleName)
+{
+    NativeRdb::RdbStoreConfig config(dbName);
+    config.SetPath(dbPath);
+    config.SetBundleName(bundleName);
+    config.SetReadConSize(CONNECT_SIZE);
     int32_t err;
     RdbCallback cb;
     rdbStore = NativeRdb::RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, cb, err);
@@ -272,6 +288,42 @@ void BackupDatabaseUtils::UpdateSdWhereClause(std::string &querySql, bool should
         return;
     }
     querySql += " AND " + EXCLUDE_SD;
+}
+
+bool BackupDatabaseUtils::QueryThumbImage(NativeRdb::RdbStore &rdbStore,
+    const std::string &keyValue, std::vector<uint8_t> &blob)
+{
+    std::string query = "SELECT v FROM general_kv where k = " + SQL_QUOTES + keyValue + SQL_QUOTES +";";
+    auto resultSet = rdbStore.QueryByStep(query);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Failed to QueryByStep");
+    int32_t count = -1;
+    int err = resultSet->GetRowCount(count);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false,
+        "Failed to get count, err: %{public}d, %{public}s", err, query.c_str());
+    if (count != 1) {
+        MEDIA_ERR_LOG("Failed to get count: %{public}d,", count);
+        resultSet->Close();
+        return false;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        resultSet->GetBlob(0, blob);
+    }
+    resultSet->Close();
+    return true;
+}
+
+bool BackupDatabaseUtils::SaveImage(std::vector<uint8_t> &data, const std::string &outFile)
+{
+    auto output = data.data();
+    auto writeSize = data.size();
+    const mode_t fileMode = 0644;
+    UniqueFd fd(open(outFile.c_str(), O_WRONLY | O_CREAT | O_TRUNC, fileMode));
+    CHECK_AND_RETURN_RET_LOG(fd.Get() > 0, false, "Open file error: %{public}d", errno);
+    int ret = write(fd.Get(), output, writeSize);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, false, "Write file error: %{public}d", errno);
+    int32_t errCode = fsync(fd.Get());
+    CHECK_AND_RETURN_RET_LOG(errCode >= 0, false, "Fsync file error: %{public}d", errno);
+    return true;
 }
 
 int32_t BackupDatabaseUtils::GetBlob(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet,
