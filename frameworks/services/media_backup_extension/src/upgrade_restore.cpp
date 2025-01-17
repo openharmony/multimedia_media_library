@@ -23,6 +23,7 @@
 #include "backup_file_utils.h"
 #include "backup_log_utils.h"
 #include "database_report.h"
+#include "cloud_sync_helper.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
 #include "gallery_db_upgrade.h"
@@ -55,6 +56,7 @@ constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
+constexpr int32_t RESTORE_CLOUD_QUERY_COUNT = 200;
 const std::string DB_INTEGRITY_CHECK = "ok";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
@@ -325,6 +327,12 @@ void UpgradeRestore::RestorePhoto()
         RestoreFromGalleryPortraitAlbum();
         // restore Photos
         RestoreFromGallery();
+        MEDIA_INFO_LOG("the isAccountValid is %{public}d, sync switch open is %{public}d", isAccountValid_,
+            CloudSyncHelper::GetInstance()->IsSyncSwitchOpen());
+        if (isAccountValid_ && CloudSyncHelper::GetInstance()->IsSyncSwitchOpen()) {
+            MEDIA_INFO_LOG("here cloud clone");
+            RestoreCloudFromGallery();
+        }
     } else {
         maxId_ = 0;
         SetErrorCode(RestoreError::GALLERY_DATABASE_CORRUPTION);
@@ -402,6 +410,7 @@ void UpgradeRestore::RestoreFromGallery()
 {
     this->photosRestore_.LoadPhotoAlbums();
     HasLowQualityImage();
+    // local count
     int32_t totalNumber = this->photosRestore_.GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
@@ -418,6 +427,43 @@ void UpgradeRestore::RestoreFromGallery()
     for (size_t offset = 0; offset < vectorLen; offset++) {
         RestoreBatch(galleryFailedOffsets[offset]);
     }
+}
+
+void UpgradeRestore::RestoreCloudFromGallery()
+{
+    MEDIA_INFO_LOG("RestoreCloudFromGallery");
+    this->photosRestore_.LoadPhotoAlbums();
+    // cloud count
+    int32_t cloudMetaCount = this->photosRestore_.GetCloudMetaCount(this->shouldIncludeSd_, false);
+    MEDIA_INFO_LOG("the cloud count is %{public}d", cloudMetaCount);
+    ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
+    needReportFailed_ = false;
+    totalNumber_ += static_cast<uint64_t>(cloudMetaCount);
+    for (int32_t offset = 0; offset < cloudMetaCount; offset += RESTORE_CLOUD_QUERY_COUNT) {
+        MEDIA_INFO_LOG("the offset is %{public}d", offset);
+        ffrt::submit([this, offset]() { RestoreBatchForCloud(offset); }, { &offset }, {},
+            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
+    }
+    ffrt::wait();
+    size_t vectorLen = galleryFailedOffsets.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestoreBatchForCloud(galleryFailedOffsets[offset]);
+    }
+}
+
+void UpgradeRestore::RestoreBatchForCloud(int32_t offset)
+{
+    MEDIA_INFO_LOG("START STEP 1 RESTORE BATCH");
+    std::vector<FileInfo> infos = QueryCloudFileInfos(offset);
+    MEDIA_INFO_LOG("the infos size is %{public}zu", infos.size());
+    if (InsertCloudPhoto(sceneCode_, infos, SourceType::GALLERY) != E_OK) {
+        galleryFailedOffsets.push_back(offset);
+    }
+    this->tabOldPhotosRestore_.Restore(this->mediaLibraryRdb_, infos);
+    auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
+    BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
+    MEDIA_INFO_LOG("END STEP 1 RESTORE BATCH");
 }
 
 void UpgradeRestore::RestoreBatch(int32_t offset)
@@ -509,6 +555,24 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
     return result;
 }
 
+std::vector<FileInfo> UpgradeRestore::QueryCloudFileInfos(int32_t offset)
+{
+    MEDIA_INFO_LOG("UpgradeRestore::QueryCloudFileInfos");
+    std::vector<FileInfo> result;
+    result.reserve(RESTORE_CLOUD_QUERY_COUNT);
+    CHECK_AND_RETURN_RET_LOG(galleryRdb_ != nullptr, result, "cloud galleryRdb_ is nullptr, Maybe init failed.");
+    auto resultSet = this->photosRestore_.GetCloudGalleryMedia(
+        offset, RESTORE_CLOUD_QUERY_COUNT, this->shouldIncludeSd_, this->hasLowQualityImage_);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query cloud resultSql is null.");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        FileInfo tmpInfo;
+        if (ParseResultSetFromGallery(resultSet, tmpInfo)) {
+            result.emplace_back(tmpInfo);
+        }
+    }
+    return result;
+}
+
 bool UpgradeRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
 {
     info.oldPath = GetStringVal(EXTERNAL_FILE_DATA, resultSet);
@@ -576,7 +640,9 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
     info.specialFileType = GetInt32Val(GALLERY_SPECIAL_FILE_TYPE, resultSet);
-    if (BackupFileUtils::IsLivePhoto(info) && !BackupFileUtils::ConvertToMovingPhoto(info)) {
+    // only local data need livePhoto path
+    if (info.localMediaId != -1 && BackupFileUtils::IsLivePhoto(info) &&
+        !BackupFileUtils::ConvertToMovingPhoto(info)) {
         ErrorInfo errorInfo(RestoreError::MOVING_PHOTO_CONVERT_FAILED, 1, "",
             BackupLogUtils::FileInfoToString(sceneCode_, info));
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
@@ -606,6 +672,11 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.hashCode = GetStringVal(GALLERY_HASH, resultSet);
     info.fileIdOld = GetInt32Val(GALLERY_ID, resultSet);
     info.photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
+    info.thumbType = GetInt32Val(GALLERY_THUMB_TYPE, resultSet);
+    info.filePath = GetStringVal(GALLERY_FILE_DATA, resultSet);
+    info.albumId = GetStringVal(GALLERY_ALBUM_ID, resultSet);
+    info.orientation = GetInt32Val(GALLERY_ORIENTATION, resultSet);
+    info.uniqueId = GetStringVal(GALLERY_UNIQUE_ID, resultSet);
 
     bool isSuccess = ParseResultSet(resultSet, info, GALLERY_DB_NAME);
     CHECK_AND_RETURN_RET_LOG(isSuccess, isSuccess, "ParseResultSetFromGallery fail");
@@ -685,6 +756,13 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, this->photosRestore_.FindSourcePath(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, this->photosRestore_.FindStrongAssociation(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, this->photosRestore_.FindCeAvailable(fileInfo));
+    // for cloud clone
+    if (fileInfo.localMediaId == -1) {
+        values.PutString(PhotoColumn::PHOTO_CLOUD_ID, fileInfo.uniqueId);
+        values.PutInt(PhotoColumn::PHOTO_POSITION, PHOTO_CLOUD_POSITION);
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_SYNCED));
+        values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, PHOTO_SYNC_STATUS_NOT_VISIBLE);
+    }
     return values;
 }
 
@@ -1188,13 +1266,15 @@ bool UpgradeRestore::IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
         return false;
     }
-    if (sceneCode_ == UPGRADE_RESTORE_ID ?
-        !BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath) :
-        !ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath, info)) {
-        ErrorInfo errorInfo(RestoreError::PATH_INVALID, 1, "",
-            BackupLogUtils::FileInfoToString(sceneCode_, info));
-        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
-        return false;
+    if (info.thumbType != 0) {
+        if (sceneCode_ == UPGRADE_RESTORE_ID ?
+            !BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath) :
+            !ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath, info)) {
+            ErrorInfo errorInfo(RestoreError::PATH_INVALID, 1, "",
+                BackupLogUtils::FileInfoToString(sceneCode_, info));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+            return false;
+        }
     }
     info.fileType = this->photosRestore_.FindMediaType(info);
     if (info.fileType != MediaType::MEDIA_TYPE_IMAGE && info.fileType != MediaType::MEDIA_TYPE_VIDEO) {

@@ -100,6 +100,14 @@ const std::string GALLERY_SPECIAL_FILE_TYPE = "special_file_type";
 const std::string GALLERY_FIRST_UPDATE_TIME = "first_update_time";
 const std::string GALLERY_DATE_TAKEN = "datetaken";
 const std::string GALLERY_DETAIL_TIME = "detail_time";
+const std::string GALLERY_THUMB_TYPE = "thumbType";
+const std::string GALLERY_ALBUM_ID = "albumId";
+const std::string GALLERY_UNIQUE_ID = "uniqueId";
+
+// dentryInfo fileType
+const std::string DENTRY_INFO_ORIGIN = "CONTENT";
+const std::string DENTRY_INFO_LCD = "LCD";
+const std::string DENTRY_INFO_THM = "THM";
 
 // external column
 const std::string EXTERNAL_IS_FAVORITE = "is_favorite";
@@ -183,6 +191,11 @@ const int RESTORE_THUMBNAIL_VISIBLE_FALSE = 0;
 const int RESTORE_THUMBNAIL_VISIBLE_TRUE = 1;
 const int RESTORE_LCD_VISIT_TIME_SUCCESS = 2;
 const int RESTORE_LCD_VISIT_TIME_NO_LCD = 0;
+
+const int PHOTO_IS_DIRTY = 1;
+const int PHOTO_CLOUD_POSITION = 2;
+const int PHOTO_SYNC_STATUS_VISIBLE = 0;
+const int PHOTO_SYNC_STATUS_NOT_VISIBLE = -1;
 
 const std::string MEDIA_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data";
 const std::string MEDIA_KVSTORE_YEAR_STOREID = "medialibrary_year_astc_data";
@@ -304,6 +317,10 @@ struct FileInfo {
     std::string movingPhotoVideoPath;
     std::string extraDataPath;
     std::string detailTime;
+    std::string syncStatus{0};
+    std::string albumId;
+    std::string uniqueId;
+    int32_t thumbType {-1};
     int32_t fileIdOld {-1};
     int32_t fileIdNew {-1};
     int64_t fileSize {0};
@@ -324,6 +341,7 @@ struct FileInfo {
     int32_t mediaAlbumId {-1};  // 单相册id
     int32_t localMediaId {-1};
     bool isNew {true};
+    bool needVisible {true};
     int64_t dateTaken {0};
     int64_t firstUpdateTime {0};
     int64_t thumbnailReady {0};
