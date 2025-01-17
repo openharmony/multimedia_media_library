@@ -54,9 +54,6 @@ private:
     void UpdateAlbumInfo(FileInfo &info);
     bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
     void SetFileInfosInCurrentDir(const std::string &file, struct stat &statInfo);
-    std::string Base32Decode(const std::string &input);
-    std::vector<std::string> GetSubString(const std::string &originalString, char delimiter);
-    void RecoverHiddenOrRecycleFile(std::string &currentPath, FileInfo &tmpInfo);
     int32_t GetAllfilesInCurrentDir(const std::string &path);
     void UpDateFileModifiedTime(FileInfo &fileInfo);
     void GetCloneDbInfos(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo);
