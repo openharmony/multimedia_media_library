@@ -59,7 +59,8 @@ int MtpDriver::OpenDriver()
 {
     MEDIA_INFO_LOG("MtpDriver::OpenDriver start");
     usbfnMtpInterface = IUsbfnMtpInterface::Get();
-    CHECK_AND_RETURN_RET_LOG(usbfnMtpInterface != nullptr, E_ERR, "IUsbfnMtpInterface::Get() failed.");
+    CHECK_AND_RETURN_RET_LOG(usbfnMtpInterface != nullptr, HDF_DEV_ERR_DEV_INIT_FAIL,
+        "IUsbfnMtpInterface::Get() failed.");
 
     auto ret = usbfnMtpInterface->Start();
     CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "MtpDriver::OpenDriver Start() failed error = %{public}d", ret);
@@ -70,11 +71,6 @@ int MtpDriver::OpenDriver()
 
 int MtpDriver::CloseDriver()
 {
-    if (usbfnMtpInterface != nullptr) {
-        auto ret = usbfnMtpInterface->Stop();
-        MEDIA_ERR_LOG("MtpDriver::CloseDriver Error: %{public}d", ret);
-    }
-
     usbOpenFlag = false;
     return MTP_SUCCESS;
 }
@@ -86,7 +82,7 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
     if (usbOpenFlag == false) {
         int ret = OpenDriver();
         if (ret < 0) {
-            return MTP_ERROR_DRIVER_OPEN_FAILED;
+            return ret;
         }
     }
 
@@ -104,10 +100,9 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
 
     MEDIA_DEBUG_LOG("MtpDriver::Read end ret:%{public}d", ret);
     if (ret != 0) {
-        outBuffer.resize(0);
         outReadSize = 0;
         MEDIA_ERR_LOG("MtpDriver::Read Out Error: %{public}d", ret);
-        return E_ERR;
+        return ret;
     }
     outReadSize = outBuffer.size();
     MtpPacketTool::DumpPacket(outBuffer);
