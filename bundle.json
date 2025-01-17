@@ -120,7 +120,6 @@
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/unittest/medialibrary_tool:mediatool",
             "//foundation/multimedia/media_library/frameworks/services/media_backup_extension:mediabackup",
             "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp",
-            "//foundation/multimedia/media_library/frameworks/services/media_mtp:mtpservice",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_ext_hap"
           ]
         },
