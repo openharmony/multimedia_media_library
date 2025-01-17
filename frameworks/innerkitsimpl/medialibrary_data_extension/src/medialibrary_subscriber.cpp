@@ -677,7 +677,7 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
     if (isCharging_) {
         newStatus = isScreenOff_ && isPowerSufficientForThumbnail &&
             newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_43;
-    } else if (isScreenOff_ && newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_40 &&
+    } else if (isScreenOff_ && newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37 &&
         batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY) {
         int32_t thumbAstcCount = 0;
         int32_t thumbTotalCount = 0;
