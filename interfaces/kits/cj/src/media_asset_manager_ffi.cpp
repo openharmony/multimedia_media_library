@@ -388,18 +388,6 @@ bool IsSaveCallbackInfoByTranscoder(MediaObject &mediaObject,
         return true;
     }
     OnDataPrepared(mediaObject, assetHandler, valueOfInfoMap);
-    if (mediaObject.imageData.head != nullptr) {
-        free(mediaObject.imageData.head);
-        mediaObject.imageData.size = 0;
-    }
-    if (valueOfInfoMap.head != nullptr) {
-        for (int64_t i = 0; i < valueOfInfoMap.size; i++) {
-            free(valueOfInfoMap.head[i].key);
-            free(valueOfInfoMap.head[i].value);
-        }
-        free(valueOfInfoMap.head);
-        valueOfInfoMap.size = 0;
-    }
     return false;
 }
 
@@ -450,6 +438,7 @@ void MediaAssetManagerImpl::GetByteArrayObject(const string &requestUri,
     close(imageFd);
     if (readRet != imgLen) {
         LOGE("read image failed");
+        free(buffer);
         return;
     }
     mediaObject.imageData.head = static_cast<uint8_t*>(buffer);
@@ -627,6 +616,22 @@ static void DeleteDataHandler(NotifyMode notifyMode, const string &requestUri, c
     inProcessFastRequests.Erase(requestId);
 }
 
+void FreeArrAndMap(CArrUI8 &arr, HashMapArray &map)
+{
+    if (arr.head != nullptr) {
+        free(arr.head);
+        arr.size = 0;
+    }
+    if (map.head != nullptr) {
+        for (int64_t i = 0; i < map.size; i++) {
+            free(map.head[i].key);
+            free(map.head[i].value);
+        }
+        free(map.head);
+        map.size = 0;
+    }
+}
+
 void MediaAssetManagerImpl::NotifyMediaDataPrepared(AssetHandler *assetHandler)
 {
     if (assetHandler->dataHandler == -1) {
@@ -657,8 +662,10 @@ void MediaAssetManagerImpl::NotifyMediaDataPrepared(AssetHandler *assetHandler)
     MediaObject mediaObject;
     GetValueOfMedia(assetHandler, mediaObject);
     if (IsSaveCallbackInfoByTranscoder(mediaObject, assetHandler, valueOfInfoMap)) {
+        FreeArrAndMap(mediaObject.imageData, valueOfInfoMap);
         return;
     }
+    FreeArrAndMap(mediaObject.imageData, valueOfInfoMap);
     DeleteDataHandler(assetHandler->notifyMode, assetHandler->requestUri, assetHandler->requestId);
     DeleteAssetHandlerSafe(assetHandler);
 }
