@@ -25,7 +25,7 @@ AlbumMediaStatisticInfo AudiosCountStatistic::GetAudioCountStatInfo()
     AlbumMediaStatisticInfo info;
     info.sceneCode = this->sceneCode_;
     info.taskId = this->taskId_;
-    info.albumName = "All_Restore_audio";
+    info.albumName = "All_Restore_Audio";
     info.totalCount = this->audioCount_;
     return info;
 }
