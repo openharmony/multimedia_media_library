@@ -17,6 +17,7 @@
 #include "medialibrary_rdbstore.h"
 
 #include <mutex>
+#include <regex>
 
 #include "album_plugin_table_event_handler.h"
 #include "cloud_sync_helper.h"
@@ -212,6 +213,21 @@ const std::string MediaLibraryRdbStore::IsCallerSelfFunc(const std::vector<std::
     return "true";
 }
 
+constexpr int REGEXP_REPLACE_PARAM_NUM = 3;
+const std::string MediaLibraryRdbStore::RegexReplaceFunc(const std::vector<std::string> &args)
+{
+    if (args.size() < REGEXP_REPLACE_PARAM_NUM) {
+        MEDIA_ERR_LOG("Invalid arg count %{public}zu: args must contain at least 3 strings", args.size());
+        return "";
+    }
+    const std::string &input = args[0];
+    const std::string &pattern = args[1];
+    const std::string &replacement = args[2];
+
+    std::regex re(pattern);
+    return std::regex_replace(input, re, replacement);
+}
+
 const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<std::string> &args)
 {
     if (args.size() < 1) {
@@ -246,6 +262,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetSecurityLevel(SecurityLevel::S3);
     config_.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     config_.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
+    config_.SetScalarFunction("REGEXP_REPLACE", REGEXP_REPLACE_PARAM_NUM, RegexReplaceFunc);
     config_.SetScalarFunction("begin_generate_highlight_thumbnail", STAMP_PARAM, BeginGenerateHighlightThumbnail);
     config_.SetWalLimitSize(RDB_WAL_LIMIT_SIZE);
     config_.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
@@ -476,6 +493,18 @@ void MediaLibraryRdbStore::AddPhotoDateAddedIndex(const shared_ptr<MediaLibraryR
     };
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("end AddPhotoDateAddedIndex");
+}
+
+void MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start Update LatitudeAndLongitude Default Null");
+    const vector<string> sqls = {
+        PhotoColumn::INDEX_LATITUDE,
+        PhotoColumn::INDEX_LONGITUDE,
+        PhotoColumn::UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end  Update LatitudeAndLongitude Default Null");
 }
 
 int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
@@ -1437,6 +1466,14 @@ static const string &TriggerDeleteAudioClearAppUriPermission()
     return TRIGGER_AUDIO_DELETE_APP_URI_PERMISSION;
 }
 
+static const string& AddStatusColumnForRefreshAlbumTable()
+{
+    static const string ADD_STATUS_COLUMN_FOR_REFRESH_ALBUM_TABLE =
+        "ALTER TABLE " + ALBUM_REFRESH_TABLE + " ADD COLUMN " +
+        ALBUM_REFRESH_STATUS + " INT DEFAULT 0 NOT NULL";
+    return ADD_STATUS_COLUMN_FOR_REFRESH_ALBUM_TABLE;
+}
+
 static const vector<string> onCreateSqlStrs = {
     CREATE_MEDIA_TABLE,
     PhotoColumn::CREATE_PHOTO_TABLE,
@@ -1575,6 +1612,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::INDEX_HIGHLIGHT_FILEID,
     PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
+    AddStatusColumnForRefreshAlbumTable(),
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -3132,6 +3170,19 @@ static void AddThumbnailReady(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddCheckFlag(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_CHECK_FLAG + " INT DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::ALBUM_CHECK_FLAG + " INT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("start add check_flag columns");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add check_flag columns");
+}
+
 static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
 {
     std::string checkSql = "PRAGMA table_info(" + PhotoColumn::PHOTOS_TABLE + ")";
@@ -3195,6 +3246,26 @@ static void UpdateSearchStatusTriggerForOwnerAlbumId(RdbStore &store)
     };
     ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end update search status trigger for owner album id");
+}
+
+static void AddHighlightAnalysisProgress(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + HIGHLIGHT_ANALYSIS_PROGRESS + " TEXT"
+    };
+    MEDIA_INFO_LOG("start add highlight_analysis_progress column");
+    ExecSqls(sqls, store);
+}
+
+static void AddRefreshAlbumStatusColumn(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start add status column for refresh album table");
+    const vector<string> sqls = {
+        "ALTER TABLE " + ALBUM_REFRESH_TABLE + " ADD COLUMN " +
+            ALBUM_REFRESH_STATUS + " INT DEFAULT 0 NOT NULL"
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add status column for refresh album table");
 }
 
 static void AddSupportedWatermarkType(RdbStore &store)
@@ -4065,6 +4136,21 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID) {
         UpdateSearchStatusTriggerForOwnerAlbumId(store);
+    }
+    if (oldVersion < VERSION_ADD_CHECK_FLAG) {
+        AddCheckFlag(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_ANALYSIS_PROGRESS) {
+        AddHighlightAnalysisProgress(store);
+    }
+
+    if (oldVersion < VERSION_FIX_SOURCE_PHOTO_ALBUM_DATE_MODIFIED) {
+        UpdateSourcePhotoAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_REFRESH_ALBUM_STATUS_COLUMN) {
+        AddRefreshAlbumStatusColumn(store);
     }
 }
 

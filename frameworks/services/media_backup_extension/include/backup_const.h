@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -51,6 +51,7 @@ constexpr uint32_t COVER_URI_NUM = 3;
 constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
 constexpr int32_t MAX_RESTORE_ASTC_NUM = 2000;
+constexpr uint64_t MAX_UPGRADE_WAIT_ASTC_NUM = 100;
 constexpr uint32_t THUMBNAIL_QUERY_INTERVAL = 3;
 constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
@@ -238,6 +239,7 @@ enum RestoreError {
     CREATE_PATH_FAILED,
     PREPARE_PATH_FAILED,
     GALLERY_DATABASE_CORRUPTION,
+    UPDATE_PHOTOS_FAILED,
 };
 
 enum class PhotoRelatedType {
@@ -264,6 +266,7 @@ const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::CREATE_PATH_FAILED, "RESTORE_CREATE_PATH_FAILED" },
     { RestoreError::PREPARE_PATH_FAILED, "RESTORE_PREPARE_PATH_FAILED" },
     { RestoreError::GALLERY_DATABASE_CORRUPTION, "RESTORE_GALLERY_DATABASE_CORRUPTION" },
+    { RestoreError::UPDATE_PHOTOS_FAILED, "RESTORE_UPDATE_PHOTOS_FAILED"}
 };
 
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {
@@ -306,6 +309,7 @@ struct FileInfo {
     int64_t fileSize {0};
     int64_t duration {0};
     int64_t recycledTime {0};
+    int64_t dateTrashed {0};
     int32_t hidden {0};
     int32_t isFavorite {0};
     int32_t fileType {0};
@@ -324,6 +328,7 @@ struct FileInfo {
     int64_t firstUpdateTime {0};
     int64_t thumbnailReady {0};
     int32_t lcdVisitTime {0};
+    int32_t strongAssociation {0};
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
     std::unordered_map<std::string, std::unordered_set<int32_t>> tableAlbumSetMap;
     /**
@@ -365,6 +370,7 @@ struct FileInfo {
     std::string newAstcDateKey;
     bool isInternal {true};
     int32_t userId {-1};
+    std::unordered_map<std::string, std::string> updateMap;
 };
 
 struct AlbumInfo {
@@ -556,11 +562,19 @@ const std::string IN_CAMERA = " bucket_id IN (-1739773001, 0, 1028075469, 0) AND
 
 const std::string NOT_IN_CAMERA = " bucket_id NOT IN (-1739773001, 0, 1028075469, 0 ) AND is_pending = 0";
 
+const std::string IS_PENDING = " is_pending = 0";
+
 const std::string QUERY_NOT_SYNC = " _id < 1000000000 AND media_type IN (1, 3) AND _size > 0 ";
+
+const std::string IMAGE_AND_VIDEO_TYPE = " media_type IN (1, 3) AND _size > 0";
+
+const std::string GROUP_BY_MEIDA_TYPE = " group by media_type";
 
 const std::string COMPARE_ID = " _id > ";
 
 const std::string QUERY_COUNT_FROM_FILES = "SELECT count(1) AS count FROM files WHERE";
+
+const std::string QUERY_MEDIA_TYPE_AND_COUNT_FROM_FILES = "SELECT media_type,count(1) AS count FROM files WHERE";
 
 // sql for gallery
 const std::string QUERY_GARBAGE_ALBUM = "SELECT type, cache_dir, nick_dir, nick_name FROM garbage_album";
@@ -573,6 +587,10 @@ const std::string QUERY_MAX_ID_CAMERA_SCREENSHOT = "SELECT max(local_media_id) A
 const std::string QUERY_MAX_ID_OTHERS = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND bucket_id NOT IN (-1739773001, 0, 1028075469, 0) AND \
     (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
+    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
+
+const std::string QUERY_MAX_ID_ALL = "SELECT max(local_media_id) AS max_id FROM gallery_media \
+    WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
     (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
 
 const std::string ALL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND (relative_bucket_id IS NULL OR \

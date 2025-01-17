@@ -53,6 +53,8 @@ struct FileInfo {
     MediaType mediaType;
     int32_t size;
     int32_t orientation;
+    bool isLivePhoto;
+    int32_t fileId;
 };
 
 struct UniqueNumber {
@@ -76,7 +78,9 @@ const int BASE_EFFICIENCY_QUOTA = 712;
 const int BASE_FILE_NUM = 25000;
 const int MAX_PHOTO_CACHE_NUM = 5000;
 const int MODULE_POWER_OVERUSED = 8;
+const int64_t TIMEOUT_TASK_DIR_CLEAN_INTERVAL = 43200000;   //12h
 const std::string ABNORMAL_MANAGER_LIB = "libabnormal_mgr.z.so";
+const std::string ALBUM_PATH_PREFIX = "/Pictures/";
 
 class PhotoCustomRestoreOperation {
 public:
@@ -84,6 +88,7 @@ public:
     PhotoCustomRestoreOperation &AddTask(RestoreTaskInfo restoreTaskInfo);
     PhotoCustomRestoreOperation &Start();
     void CancelTask(RestoreTaskInfo restoreTaskInfo);
+    void CleanTimeoutCustomRestoreTaskDir();
 
 private:
     void DoCustomRestore(RestoreTaskInfo &restoreTaskInfo);
@@ -91,7 +96,7 @@ private:
     void ReleaseCustomRestoreTask(RestoreTaskInfo &restoreTaskInfo);
     int32_t HandleCustomRestore(RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst);
     bool HandleFirstRestoreFile(
-        RestoreTaskInfo &restoreTaskInfo, vector<string> &files, size_t &index, int32_t &firstRestoreIndex);
+        RestoreTaskInfo &restoreTaskInfo, vector<string> &files, int32_t index, int32_t &firstRestoreIndex);
     void HandleBatchCustomRestore(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, vector<string> subFiles);
     vector<FileInfo> GetFileInfos(vector<string> &filePathVector, UniqueNumber &uniqueNumber);
     int32_t UpdateUniqueNumber(UniqueNumber &uniqueNumber);
@@ -103,7 +108,7 @@ private:
     NativeRdb::ValuesBucket GetInsertValue(RestoreTaskInfo &restoreTaskInfo, FileInfo &fileInfo);
     int32_t FillMetadata(std::unique_ptr<Metadata> &data);
     int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
-    void RenameFiles(vector<FileInfo> &restoreFiles);
+    int32_t RenameFiles(vector<FileInfo> &restoreFiles);
     int32_t UpdatePhotoAlbum(RestoreTaskInfo &restoreTaskInfo, FileInfo fileInfo);
     void SendNotifyMessage(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, int32_t errCode, int32_t fileNum);
     InnerRestoreResult GenerateCustomRestoreNotify(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType);
@@ -115,20 +120,21 @@ private:
     int32_t InitPhotoCache(RestoreTaskInfo &restoreTaskInfo);
     void QueryAlbumId(RestoreTaskInfo &restoreTaskInfo);
     void ReportCustomRestoreTask(RestoreTaskInfo &restoreTaskInfo);
+    int32_t MoveLivePhoto(string originFilePath, string filePath);
+    void DeleteDatabaseRecord(int32_t fileId);
 
 private:
-    std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr_;
     std::atomic<bool> isRunning_{false};
     static std::shared_ptr<PhotoCustomRestoreOperation> instance_;
     static std::mutex objMutex_;
     std::queue<RestoreTaskInfo> taskQueue_;
-    std::unordered_set<std::string> cancelKeySet;
-    std::mutex g_uniqueNumberLock_;
-    std::mutex g_cancelOprationLock_;
-    std::atomic<int32_t> successNum{0};
-    std::atomic<int32_t> failNum{0};
-    std::atomic<int32_t> sameNum{0};
-    std::unordered_set<std::string> photoCache;
+    std::unordered_set<std::string> cancelKeySet_;
+    std::mutex uniqueNumberLock_;
+    std::mutex cancelOprationLock_;
+    std::atomic<int32_t> successNum_{0};
+    std::atomic<int32_t> failNum_{0};
+    std::atomic<int32_t> sameNum_{0};
+    std::unordered_set<std::string> photoCache_;
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTO_CUSTOM_RESTORE_OPERATION_H

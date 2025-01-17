@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,28 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define MLOG_TAG "MtpGlobal"
-#include "mtp_global.h"
+#include "audios_count_statistic.h"
 
-namespace OHOS {
-namespace Media {
-bool MtpGlobal::isBlock_ = true;
-
-bool MtpGlobal::IsBlocked()
+namespace OHOS::Media {
+std::vector<AlbumMediaStatisticInfo> AudiosCountStatistic::Load()
 {
-    return isBlock_;
+    return {this->GetAudioCountStatInfo()};
 }
 
-void MtpGlobal::ReleaseBlock()
+AlbumMediaStatisticInfo AudiosCountStatistic::GetAudioCountStatInfo()
 {
-    isBlock_ = false;
+    AlbumMediaStatisticInfo info;
+    info.sceneCode = this->sceneCode_;
+    info.taskId = this->taskId_;
+    info.albumName = "All_Restore_Audio";
+    info.totalCount = this->audioCount_;
+    return info;
 }
 
-void MtpGlobal::ResetBlockStatus()
-{
-    isBlock_ = true;
-}
-
-} // namespace Media
-} // namespace OHOS
-
+}  // namespace OHOS::Media

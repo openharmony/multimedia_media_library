@@ -20,7 +20,6 @@
 #include "media_log.h"
 #include "media_mtp_utils.h"
 #include "mtp_constants.h"
-#include "mtp_global.h"
 #include "mtp_packet.h"
 #include "mtp_packet_tools.h"
 #include "mtp_operation_context.h"
@@ -57,29 +56,35 @@ void MtpOperation::Init()
     responseCode_ = MTP_UNDEFINED_CODE;
 }
 
-void MtpOperation::Execute()
+void MtpOperation::Stop()
+{
+    CHECK_AND_RETURN_LOG(requestPacketPtr_ != nullptr, "requestPacketPtr_ is null");
+    requestPacketPtr_->Stop();
+}
+
+int32_t MtpOperation::Execute()
 {
     MediaLibraryTracer tracer;
     tracer.Start("MtpOperation::Execute");
-    int errorCode;
+    int errorCode = 0;
     ResetOperation();
     ReceiveRequestPacket(errorCode);
-    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "mtpContextPtr_ is null");
+    CHECK_AND_RETURN_RET_LOG(mtpContextPtr_ != nullptr, errorCode, "mtpContextPtr_ is null");
     if (mtpContextPtr_->operationCode == 0) {
         MEDIA_DEBUG_LOG("operationCode is 0, read error, no need to send response");
-        return;
+        return errorCode;
     }
     if (errorCode != MTP_SUCCESS) {
         SendMakeResponsePacket(errorCode);
         MEDIA_ERR_LOG("MtpOperation::Execute Out ReceiveRequestPacket fail err: %{public}d", errorCode);
-        return;
+        return errorCode;
     }
 
     DealRequest(mtpContextPtr_->operationCode, errorCode);
     if (errorCode != MTP_SUCCESS) {
         SendMakeResponsePacket(errorCode);
         MEDIA_ERR_LOG("MtpOperation::Execute Out DealRequest fail err: %{public}d", errorCode);
-        return;
+        return errorCode;
     }
 
     if (MtpPacket::IsNeedDataPhase(mtpContextPtr_->operationCode)) {
@@ -91,10 +96,11 @@ void MtpOperation::Execute()
     }
     if (errorCode == MTP_ERROR_TRANSFER_CANCELLED) {
         MEDIA_INFO_LOG("File transfer canceled");
-        return;
+        return errorCode;
     }
 
     SendMakeResponsePacket(errorCode);
+    return errorCode;
 }
 
 void MtpOperation::ReceiveRequestPacket(int &errorCode)
@@ -246,7 +252,6 @@ uint16_t MtpOperation::GetPayloadDataSub(shared_ptr<MtpOperationContext> &contex
     uint16_t containerType, int &errorCode)
 {
     responseCode_ = MTP_UNDEFINED_CODE;
-    CHECK_AND_RETURN_RET_LOG(!MtpGlobal::IsBlocked(), responseCode_, "Not support operation in blocked mode");
     switch (context->operationCode) {
         case MTP_OPERATION_RESET_DEVICE_CODE:
         case MTP_OPERATION_CLOSE_SESSION_CODE:

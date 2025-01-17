@@ -50,9 +50,9 @@ struct AssetHandler {
     std::string destUri;
     int64_t dataHandler;
     ReturnDataType returnDataType;
-    NotifyMode notifyMode;
-    SourceMode sourceMode;
-    CompatibleMode compatibleMode;
+    NotifyMode notifyMode = NotifyMode::FAST_NOTIFY;
+    SourceMode sourceMode = SourceMode::ORIGINAL_MODE;
+    CompatibleMode compatibleMode = CompatibleMode::ORIGINAL_FORMAT_MODE;
     MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     bool needsExtraInfo = false;
 

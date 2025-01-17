@@ -31,6 +31,7 @@ group("test") {
     "unittest/medialibrary_analysis_album_operation_test:unittest",
     "unittest/medialibrary_app_uri_permission_operations_test:unittest",
     "unittest/medialibrary_app_uri_sensitive_operations_test:unittest",
+    "unittest/medialibrary_astc_phase_test:unittest",
     "unittest/medialibrary_audio_operations_test:unittest",
     "unittest/medialibrary_backup_clone_test:unittest",
     "unittest/medialibrary_backup_test:unittest",

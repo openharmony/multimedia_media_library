@@ -61,6 +61,9 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_dirty_handle",
   ]
 
+  include_albums_refresh =
+      [ "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/include" ]
+
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -90,6 +93,7 @@ config("media_data_extension_public_config") {
   include_dirs += include_cloud_enhancement
   include_dirs += include_cloud_asset_download
   include_dirs += include_cloud_dirty_handle
+  include_dirs += include_albums_refresh
 
   if (defined(global_parts_info) &&
       defined(
@@ -269,6 +273,12 @@ ohos_shared_library("medialibrary_data_extension") {
 
   media_cloud_dirty_handle_source = [ "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_dirty_handle/cloud_upload_checker.cpp" ]
 
+  media_albums_refresh_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_notify.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_worker.cpp",
+  ]
+
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
@@ -285,11 +295,13 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_album_fusion_utils.cpp",
     "src/medialibrary_album_operations.cpp",
     "src/medialibrary_album_refresh.cpp",
+    "src/medialibrary_all_album_refresh_processor.cpp",
     "src/medialibrary_analysis_album_operations.cpp",
     "src/medialibrary_app_uri_permission_operations.cpp",
     "src/medialibrary_app_uri_sensitive_operations.cpp",
     "src/medialibrary_appstate_observer.cpp",
     "src/medialibrary_asset_operations.cpp",
+    "src/medialibrary_astc_stat.cpp",
     "src/medialibrary_audio_operations.cpp",
     "src/medialibrary_bundle_manager.cpp",
     "src/medialibrary_command.cpp",
@@ -329,6 +341,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/operation/photo_source_path_operation.cpp",
     "src/photo_album_operation/photo_album_lpath_operation.cpp",
     "src/photo_album_operation/photo_album_merge_operation.cpp",
+    "src/photo_album_operation/photo_album_update_date_modified_operation.cpp",
     "src/photo_map_operations.cpp",
     "src/picture_data_operations.cpp",
     "src/picture_handle_service.cpp",
@@ -350,6 +363,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_power_efficiency_source
   sources += media_cloud_asset_download_source
   sources += media_cloud_dirty_handle_source
+  sources += media_albums_refresh_source
 
   public_configs = [ ":media_data_extension_public_config" ]
 
@@ -366,7 +380,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_CLOUD_SYNC_PATH}/include",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_SERVICES_PATH}/media_mtp/include",
-    "${MEDIALIB_INNERKITS_PATH}/media_library_manager/include",
   ]
 
   external_deps = [
@@ -503,6 +516,10 @@ ohos_shared_library("medialibrary_data_extension") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_efficiency_manager)) {
     defines += [ "EFFICIENCY_MANAGER_ENABLE" ]
+  }
+
+  if (is_emulator) {
+    defines += [ "MEDIALIBRARY_EMULATOR" ]
   }
 
   subsystem_name = "multimedia"

@@ -31,6 +31,7 @@ const std::string AVERAGE_AESTHETICS_COUNT = "average_aesthetics_count";
 const std::string CAPTURE_AESTHETICS_COUNT = "capture_aesthetics_count";
 const std::string CALCULATE_TIME_START = "calculate_time_start";
 const std::string CALCULATE_TIME_END = "calculate_time_end";
+const std::string HIGHLIGHT_ANALYSIS_PROGRESS = "highlight_analysis_progress";
 
 const std::string URI_USER_PHOTOGRAPHY_INFO = MEDIALIBRARY_DATA_URI + "/" + USER_PHOTOGRAPHY_INFO_TABLE;
 } // namespace Media

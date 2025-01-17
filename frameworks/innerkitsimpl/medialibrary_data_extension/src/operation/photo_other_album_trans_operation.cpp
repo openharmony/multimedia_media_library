@@ -141,7 +141,8 @@ bool PhotoOtherAlbumTransOperation::CheckIfNeedTransOtherAlbumData(
     }
 
     const std::string QUERY_OTHER_ALBUM_WECHAT_TRANS =
-        "SELECT * FROM Photos WHERE owner_album_id = " + std::to_string(otherAlbumId) + " AND title LIKE 'mmexport%'";
+        "SELECT * FROM Photos WHERE owner_album_id = " + std::to_string(otherAlbumId) +
+        " AND (title LIKE 'mmexport%' OR title LIKE 'wx_camera_%')";
     shared_ptr<NativeRdb::ResultSet> resultSetWechat = upgradeStore->QuerySql(QUERY_OTHER_ALBUM_WECHAT_TRANS);
     resultSetWechat->GetRowCount(rowCount);
     if (rowCount > 0) {
@@ -167,7 +168,7 @@ int32_t PhotoOtherAlbumTransOperation::DealWithOtherAlbumTrans(const std::shared
         sqlWherePrefix = "title LIKE 'SVID_%'";
     } else if (transAlbumName == WECHAT_ALBUM_NAME) {
         sourcePathName = "Pictures/WeiXin";
-        sqlWherePrefix = "title LIKE 'mmexport%'";
+        sqlWherePrefix = "title LIKE 'mmexport%' OR title LIKE 'wx_camera_%'";
     } else if (transAlbumName == ALBUM_NAME_CAMERA) {
         sourcePathName = "DCIM/camera";
         sqlWherePrefix = "(title LIKE 'IMG_%' OR title LIKE 'VID_%')";

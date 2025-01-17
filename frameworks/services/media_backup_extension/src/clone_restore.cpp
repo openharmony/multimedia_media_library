@@ -352,11 +352,12 @@ void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fi
     vector<std::string> moveFailedData;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath) || fileInfos[i].cloudPath.empty() ||
-            !fileInfos[i].isNew) {
+            !fileInfos[i].needMove) {
             continue;
         }
         int32_t errCode = MoveAsset(fileInfos[i]);
         if (errCode != E_OK) {
+            fileInfos[i].updateMap.clear();
             MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s, error:%{public}s",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
                 strerror(errno));
@@ -401,12 +402,14 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     int64_t fileMoveCount = 0;
     int64_t videoFileMoveCount = 0;
     MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount);
+    int64_t startUpdate = MediaFileUtils::UTCTimeMilliSeconds();
+    UpdatePhotosByFileInfoMap(mediaLibraryRdb_, fileInfos);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("generate cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related cost "
-        "%{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld.",
+        "%{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld. update cost %{public}ld",
         (long)(startInsertPhoto - startGenerate), (long)photoRowNum, (long)(startInsertRelated - startInsertPhoto),
         (long)(startMove - startInsertRelated), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
-        (long)videoFileMoveCount, (long)(end - startMove));
+        (long)videoFileMoveCount, (long)(startUpdate - startMove), (long)(end - startUpdate));
     return E_OK;
 }
 
@@ -425,9 +428,10 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
         if (!PrepareCloudPath(PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
             continue;
         }
-        NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], fileInfos[i].cloudPath, sourceType);
-        fileInfos[i].isNew = true;
-        values.emplace_back(value);
+        if (fileInfos[i].isNew) {
+            NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], fileInfos[i].cloudPath, sourceType);
+            values.emplace_back(value);
+        }
     }
     return values;
 }
@@ -1041,7 +1045,7 @@ void CloneRestore::BatchNotifyPhoto(const vector<FileInfo> &fileInfos)
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_LOG(watch != nullptr, "Get MediaLibraryNotify instance failed");
     for (const auto &fileInfo : fileInfos) {
-        if (!fileInfo.isNew || fileInfo.cloudPath.empty()) {
+        if (!fileInfo.needMove || fileInfo.cloudPath.empty()) {
             continue;
         }
         string extraUri = MediaFileUtils::GetExtraUri(fileInfo.displayName, fileInfo.cloudPath);
@@ -1648,9 +1652,21 @@ bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInf
     PhotosDao::PhotosRowData rowData = this->photosClone_.FindSameFile(fileInfo);
     int32_t fileId = rowData.fileId;
     std::string cloudPath = rowData.data;
-    bool isNew = fileId <= 0 || cloudPath.empty();
-    fileInfo.isNew = isNew;
-    return !isNew;
+    if (fileId <= 0 || cloudPath.empty()) {
+        return false;
+    }
+    fileInfo.isNew = false;
+    fileInfo.fileIdNew = fileId;
+    fileInfo.cloudPath = cloudPath;
+    bool isInCloud = rowData.cleanFlag == 1 && rowData.position == static_cast<int32_t>(PhotoPositionType::CLOUD);
+    // If the file was in cloud previously, only require update flags.
+    if (fileId > 0 && isInCloud) {
+        fileInfo.updateMap["clean_flag"] = "0";
+        fileInfo.updateMap["position"] = to_string(static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+        return false;
+    }
+    fileInfo.needMove = false;
+    return true;
 }
 
 void CloneRestore::RestoreFromGalleryPortraitAlbum()

@@ -47,6 +47,7 @@ public:
     static const std::string ALBUM_DATE_ADDED EXPORT;
     static const std::string ALBUM_PRIORITY EXPORT;
     static const std::string ALBUM_LPATH EXPORT;
+    static const std::string ALBUM_CHECK_FLAG EXPORT;
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH EXPORT;
 
@@ -86,6 +87,7 @@ public:
 
     // cloud sync uri
     static const std::string ALBUM_CLOUD_URI_PREFIX EXPORT;
+    static const std::string ALBUM_GALLERY_CLOUD_URI_PREFIX EXPORT;
 
     EXPORT static bool IsPhotoAlbumColumn(const std::string &columnName);
 

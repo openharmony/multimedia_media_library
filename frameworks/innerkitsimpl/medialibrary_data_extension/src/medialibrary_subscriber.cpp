@@ -43,6 +43,7 @@
 #endif
 
 #include "medialibrary_album_fusion_utils.h"
+#include "medialibrary_all_album_refresh_processor.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
@@ -72,7 +73,9 @@
 #endif
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
+#include "medialibrary_astc_stat.h"
 #include "photo_other_album_trans_operation.h"
+#include "background_cloud_file_processor.h"
 
 using namespace OHOS::AAFwk;
 
@@ -118,7 +121,8 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_THERMAL_LEVEL_CHANGED,
     EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE,
     EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE,
-    EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK
+    EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK,
+    EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT
 };
 
 const std::map<std::string, StatusEventType> BACKGROUND_OPERATION_STATUS_MAP = {
@@ -169,6 +173,9 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
         }
     }
 #endif
+    MediaLibraryAllAlbumRefreshProcessor::GetInstance()->OnCurrentStatusChanged(
+        isScreenOff_ && isCharging_ && batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY
+        && isDeviceTemperatureProper_);
     MEDIA_DEBUG_LOG("MedialibrarySubscriber current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
         isScreenOff_, isCharging_, batteryCapacity_, newTemperatureLevel_, isWifiConnected_);
 }
@@ -268,6 +275,7 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
     } else {
         StopBackgroundOperation();
     }
+    MediaLibraryAllAlbumRefreshProcessor::GetInstance()->OnCurrentStatusChanged(currentStatus_);
 }
 
 void MedialibrarySubscriber::WalCheckPointAsync()
@@ -396,6 +404,10 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         RevertPendingByPackage(packageName);
         MediaLibraryBundleManager::GetInstance()->Clear();
         PermissionUtils::ClearBundleInfoInCache();
+    } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT) {
+        // when turn off gallery switch or quit account, clear the download lastest finished flag,
+        // so we can download lastest images for the subsequent login new account
+        BackgroundCloudFileProcessor::SetDownloadLatestFinished(false);
     }
 }
 
@@ -665,14 +677,19 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
     if (isCharging_) {
         newStatus = isScreenOff_ && isPowerSufficientForThumbnail &&
             newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_43;
-    } else if (isScreenOff_ && newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_40 &&
+    } else if (isScreenOff_ && newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37 &&
         batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY) {
         int32_t thumbAstcCount = 0;
+        int32_t thumbTotalCount = 0;
         MedialibrarySubscriberDatabaseUtils::QueryThumbAstc(thumbAstcCount);
-        bool isThumbAstcEnough = thumbAstcCount > THUMB_ASTC_ENOUGH;
+        MedialibrarySubscriberDatabaseUtils::QueryThumbTotal(thumbTotalCount);
+        bool isThumbAstcEnough = thumbAstcCount > THUMB_ASTC_ENOUGH || thumbAstcCount == thumbTotalCount;
         newStatus = !isThumbAstcEnough;
-        MEDIA_INFO_LOG("ThumbnailBg generate status: isThumbAstcEnough:%{public}d, "
-            "thumbAstcCount:%{public}d", isThumbAstcEnough, thumbAstcCount);
+        if (!isThumbAstcEnough) {
+            MEDIA_INFO_LOG("ThumbnailBg generate status: isThumbAstcEnough:%{public}d, "
+                "thumbAstcCount:%{public}d, thumbTotalCount:%{public}d",
+                isThumbAstcEnough, thumbAstcCount, thumbTotalCount);
+        }
     }
 
     if (thumbnailBgGenerationStatus_ == newStatus) {
@@ -683,10 +700,14 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
         thumbnailBgGenerationStatus_, newStatus, isScreenOff_,
         isCharging_, batteryCapacity_, newTemperatureLevel_);
     thumbnailBgGenerationStatus_ = newStatus;
+
     thumbnailBgDelayTask_.EndBackgroundOperationThread();
     if (thumbnailBgGenerationStatus_) {
         thumbnailBgDelayTask_.SetOperationThread([this] { this->DoThumbnailBgOperation(); });
     } else {
+        MediaLibraryAstcStat::GetInstance().GetInterruptInfo(isScreenOff_, isCharging_,
+            isPowerSufficientForThumbnail,
+            newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_40);
         StopThumbnailBgOperation();
     }
 }
@@ -841,6 +862,19 @@ int32_t MedialibrarySubscriberDatabaseUtils::QueryThumbAstc(int32_t& thumbAstcCo
     int32_t errCode = QueryInt(astcPredicates, columns, queryColumn, thumbAstcCount);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("Query thumbAstcCount fail: %{public}d", errCode);
+        return errCode;
+    }
+    return E_OK;
+}
+
+int32_t MedialibrarySubscriberDatabaseUtils::QueryThumbTotal(int32_t& thumbTotalCount)
+{
+    std::vector<std::string> columns = { "count(1) AS count" };
+    std::string queryColumn = "count";
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    int32_t errCode = QueryInt(predicates, columns, queryColumn, thumbTotalCount);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Query thumbTotalCount fail: %{public}d", errCode);
         return errCode;
     }
     return E_OK;

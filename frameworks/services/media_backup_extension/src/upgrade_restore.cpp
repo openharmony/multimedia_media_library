@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -359,7 +359,7 @@ void UpgradeRestore::AnalyzeSource()
     DatabaseReport()
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
-        .ReportExternal(this->externalRdb_)
+        .ReportExternal(this->externalRdb_,  this->galleryRdb_)
         .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_BEFORE);
     MEDIA_INFO_LOG("end AnalyzeSource.");
 }
@@ -731,8 +731,17 @@ bool UpgradeRestore::HasSameFileForDualClone(FileInfo &fileInfo)
     if (fileId <= 0 || cloudPath.empty()) {
         return false;
     }
+    fileInfo.isNew = false;
     fileInfo.fileIdNew = fileId;
     fileInfo.cloudPath = cloudPath;
+    bool isInCloud = rowData.cleanFlag == 1 && rowData.position == static_cast<int32_t>(PhotoPositionType::CLOUD);
+    // If the file was in cloud previously, only require update flags.
+    if (fileId > 0 && isInCloud) {
+        fileInfo.updateMap["clean_flag"] = "0";
+        fileInfo.updateMap["position"] = to_string(static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+        return false;
+    }
+    fileInfo.needMove = false;
     return true;
 }
 

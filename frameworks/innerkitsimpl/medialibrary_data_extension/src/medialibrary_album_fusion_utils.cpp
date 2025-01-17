@@ -40,6 +40,7 @@
 #include "photo_source_path_operation.h"
 #include "medialibrary_rdb_transaction.h"
 #include "photo_album_lpath_operation.h"
+#include "photo_album_update_date_modified_operation.h"
 #include "photo_other_album_trans_operation.h"
 
 namespace OHOS::Media {
@@ -1842,6 +1843,13 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     if (isOtherAlbumNeedUpdate) {
         SetRefreshAlbum(true);
     }
+
+    PhotoAlbumUpdateDateModifiedOperation photoAlbumOperation;
+    if (photoAlbumOperation.CheckAlbumDateNeedFix(rdbStore)) {
+        photoAlbumOperation.UpdateAlbumDateNeedFix(rdbStore);
+        SetRefreshAlbum(true);
+    }
+
     SetParameterToStartSync();
     if (isNeedRefreshAlbum.load() == true) {
         RefreshAllAlbums();

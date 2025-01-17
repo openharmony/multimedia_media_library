@@ -89,6 +89,7 @@ private:
     int32_t GetMovingPhotoVideoPath(const std::string &dataPath, std::string &displayName,
         std::string &movingPhotoDataPath, MediaType &mediaType);
     int32_t InsertCopyObject(const std::string &displayName, const MediaType &mediaType);
+    int32_t GetThumbnailFromPath(std::string &path, std::shared_ptr<UInt8List> &outThumb);
 private:
     static std::mutex mutex_;
     static std::shared_ptr<MtpMedialibraryManager> instance_;
