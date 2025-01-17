@@ -309,6 +309,7 @@ struct FileInfo {
     int64_t fileSize {0};
     int64_t duration {0};
     int64_t recycledTime {0};
+    int64_t dateTrashed {0};
     int32_t hidden {0};
     int32_t isFavorite {0};
     int32_t fileType {0};
@@ -327,6 +328,7 @@ struct FileInfo {
     int64_t firstUpdateTime {0};
     int64_t thumbnailReady {0};
     int32_t lcdVisitTime {0};
+    int32_t strongAssociation {0};
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
     std::unordered_map<std::string, std::unordered_set<int32_t>> tableAlbumSetMap;
     /**
