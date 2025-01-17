@@ -1354,6 +1354,7 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
             watch->Notify(notifyUri, NotifyType::NOTIFY_UPDATE);
         } else {
             watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
+            watch->Notify(notifyUri, NotifyType::NOTIFY_THUMB_ADD);
         }
         watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSET);
     }
