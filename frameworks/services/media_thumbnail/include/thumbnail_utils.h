@@ -156,6 +156,7 @@ public:
     EXPORT static bool CheckCloudThumbnailDownloadFinish(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr);
     EXPORT static bool QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr,
         const std::string &table, std::vector<ThumbnailData> &infos);
+    EXPORT static bool CheckRemainSpaceMeetCondition(const int32_t &freeSizePercentLimit);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
