@@ -200,6 +200,7 @@ enum class EXPORT OperationType : uint32_t {
     UPDATE_ORDER,
     CUSTOM_RESTORE,
     CUSTOM_RESTORE_CANCEL,
+    DELETE_LOCAL_ASSETS_PERMANENTLY,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

@@ -29,6 +29,7 @@
 #include "accesstoken_kit.h"
 #include "delete_callback.h"
 #include "directory_ex.h"
+#include "delete_permanently_operations_uri.h"
 #include "file_uri.h"
 #include "image_packer.h"
 #include "ipc_skeleton.h"
@@ -89,6 +90,7 @@ const std::string DEFAULT_TITLE_TIME_FORMAT = "%Y%m%d_%H%M%S";
 const std::string DEFAULT_TITLE_IMG_PREFIX = "IMG_";
 const std::string DEFAULT_TITLE_VIDEO_PREFIX = "VID_";
 const std::string MOVING_PHOTO_VIDEO_EXTENSION = "mp4";
+static const size_t BATCH_DELETE_MAX_NUMBER = 500;
 
 int32_t MediaDataSource::ReadData(const shared_ptr<AVSharedMemory>& mem, uint32_t length)
 {
@@ -137,6 +139,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_STATIC_FUNCTION("createAssetRequest", JSCreateAssetRequest),
             DECLARE_NAPI_STATIC_FUNCTION("createImageAssetRequest", JSCreateImageAssetRequest),
             DECLARE_NAPI_STATIC_FUNCTION("createVideoAssetRequest", JSCreateVideoAssetRequest),
+            DECLARE_NAPI_STATIC_FUNCTION("deleteLocalAssetsPermanently", JSDeleteLocalAssetsPermanently),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAssets", JSDeleteAssets),
             DECLARE_NAPI_FUNCTION("getAsset", JSGetAsset),
             DECLARE_NAPI_FUNCTION("setEditData", JSSetEditData),
@@ -2500,5 +2503,94 @@ napi_value MediaAssetChangeRequestNapi::ApplyChanges(napi_env env, napi_callback
     addResourceTypes_.clear();
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ApplyMediaAssetChangeRequest",
         ApplyAssetChangeRequestExecute, ApplyAssetChangeRequestCompleteCallback);
+}
+
+static napi_value ParseArgsDeleteLocalAssetsPermanently(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext>& context)
+{
+    NAPI_DEBUG_LOG("enter ParseArgsDeleteLocalAssetsPermanently.");
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_THREE;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, minArgs, maxArgs) == napi_ok,
+        "Failed to get args");
+    CHECK_COND(env, MediaAssetChangeRequestNapi::InitUserFileClient(env, info), JS_INNER_FAIL);
+
+    vector<napi_value> napiValues;
+    napi_valuetype valueType = napi_undefined;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues));
+    CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
+
+    if (napiValues.size() > BATCH_DELETE_MAX_NUMBER) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
+            "Exceeded the maximum batch output quantity, cannot be deleted.");
+        return nullptr;
+    }
+    vector<string> deleteIds;
+    for (const auto& napiValue : napiValues) {
+        FileAssetNapi* obj = nullptr;
+        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
+        CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get photo napi object");
+        deleteIds.push_back(to_string(obj->GetFileId()));
+    }
+    context->predicates.In(PhotoColumn::MEDIA_ID, deleteIds);
+    RETURN_NAPI_TRUE(env);
+}
+
+static void DeleteLocalAssetsPermanentlydExecute(napi_env env, void* data)
+{
+    NAPI_DEBUG_LOG("enter DeleteLocalAssetsPermanentlydExecute.");
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteLocalAssetsPermanentlydExecute");
+
+    auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+    Uri deleteLocalAssetsCompletedUri(URI_DELETE_PHOTOS_COMPLETED);
+    int ret = UserFileClient::Update(deleteLocalAssetsCompletedUri, context->predicates, valuesBucket);
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Failed to delete assets from local album permanently, err: %{public}d", ret);
+        return;
+    }
+}
+
+static void DeleteLocalAssetsPermanentlyCallback(napi_env env, napi_status status, void* data)
+{
+    NAPI_DEBUG_LOG("enter DeleteLocalAssetsPermanentlyCallback.");
+    auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+    napi_get_undefined(env, &jsContext->error);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
+            env, context->deferred, context->callbackRef, context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaAssetChangeRequestNapi::JSDeleteLocalAssetsPermanently(napi_env env, napi_callback_info info)
+{
+    NAPI_DEBUG_LOG("enter JSDeleteLocalAssetsPermanently.");
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteLocalAssetsPermanently(env, info, asyncContext),
+        "Failed to parse args");
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env, asyncContext, "ChangeRequestDeleteLocalAssetsPermanently",
+        DeleteLocalAssetsPermanentlydExecute, DeleteLocalAssetsPermanentlyCallback);
 }
 } // namespace OHOS::Media
