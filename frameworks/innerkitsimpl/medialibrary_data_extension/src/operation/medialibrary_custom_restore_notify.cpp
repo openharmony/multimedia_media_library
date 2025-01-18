@@ -14,9 +14,10 @@
  */
 #define MLOG_TAG "CustomRestoreNotify"
 
+#include "medialibrary_custom_restore_notify.h"
+
 #include "dataobs_mgr_client.h"
 #include "media_log.h"
-#include "medialibrary_custom_restore_notify.h"
 
 namespace OHOS::Media {
 const std::string CustomRestoreNotify::NOTIFY_URI_PREFIX = "file://media/custom_restore/";

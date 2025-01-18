@@ -175,6 +175,7 @@ void MtpFileObserver::SendBattery(const ContextSptr &context)
 
 bool MtpFileObserver::StopFileInotify()
 {
+    CHECK_AND_RETURN_RET_LOG(isRunning_, false, "MtpFileObserver FileInotify is not running");
     isRunning_ = false;
     lock_guard<mutex> lock(eventLock_);
     for (auto ret : watchMap_) {

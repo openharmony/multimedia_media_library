@@ -27,6 +27,7 @@
 #include <chrono>
 #include <algorithm>
 #include <map>
+#include <sys/statvfs.h>
 
 #include "common_event_utils.h"
 #include "cloud_sync_common.h"
@@ -83,6 +84,8 @@ static const int32_t STATUS_CHANGE_ARG_SIZE = 3;
 static const int32_t INDEX_ZERO = 0;
 static const int32_t INDEX_ONE = 1;
 static const int32_t INDEX_TWO = 2;
+static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.1;
+static const std::string STORAGE_PATH = "/data/storage/el2/database/";
 
 static const std::map<Status, std::vector<int32_t>> STATUS_MAP = {
     { Status::FORCE_DOWNLOADING, {0, 0, 0} },
@@ -103,6 +106,7 @@ static const std::map<Status, std::vector<int32_t>> STATUS_MAP = {
 
 static const std::map<CloudMediaTaskRecoverCause, CloudMediaTaskPauseCause> RECOVER_RELATIONSHIP_MAP = {
     { CloudMediaTaskRecoverCause::FOREGROUND_TEMPERATURE_PROPER, CloudMediaTaskPauseCause::TEMPERATURE_LIMIT },
+    { CloudMediaTaskRecoverCause::STORAGE_NORMAL, CloudMediaTaskPauseCause::ROM_LIMIT },
     { CloudMediaTaskRecoverCause::NETWORK_FLOW_UNLIMIT, CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT },
     { CloudMediaTaskRecoverCause::BACKGROUND_TASK_AVAILABLE, CloudMediaTaskPauseCause::BACKGROUND_TASK_UNAVAILABLE },
     { CloudMediaTaskRecoverCause::RETRY_FOR_FREQUENT_REQUESTS, CloudMediaTaskPauseCause::FREQUENT_USER_REQUESTS },
@@ -543,6 +547,31 @@ int32_t CloudMediaAssetDownloadOperation::PassiveStatusRecoverTask(const CloudMe
         return E_ERR;
     }
     return PassiveStatusRecover();
+}
+
+static bool IsStorageSufficient()
+{
+    struct statvfs diskInfo;
+    int ret = statvfs(STORAGE_PATH.c_str(), &diskInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, false, "Get file system status information failed, err: %{public}d", ret);
+
+    double totalSize = static_cast<double>(diskInfo.f_bsize) * static_cast<double>(diskInfo.f_blocks);
+    CHECK_AND_RETURN_RET_LOG(totalSize >= 1e-9, false,
+        "Get file system total size failed, totalSize=%{public}f", totalSize);
+
+    double freeSize = static_cast<double>(diskInfo.f_bsize) * static_cast<double>(diskInfo.f_bfree);
+    double freeRatio = freeSize / totalSize;
+    MEDIA_INFO_LOG("Get freeRatio, freeRatio= %{public}f", freeRatio);
+
+    return freeRatio > PROPER_DEVICE_STORAGE_CAPACITY_RATIO;
+}
+
+void CloudMediaAssetDownloadOperation::CheckStorageAndRecoverDownloadTask()
+{
+    if (IsStorageSufficient()) {
+        MEDIA_INFO_LOG("storage is sufficient, begin to recover downloadTask.");
+        PassiveStatusRecoverTask(CloudMediaTaskRecoverCause::STORAGE_NORMAL);
+    }
 }
 
 int32_t CloudMediaAssetDownloadOperation::PauseDownloadTask(const CloudMediaTaskPauseCause &pauseCause)

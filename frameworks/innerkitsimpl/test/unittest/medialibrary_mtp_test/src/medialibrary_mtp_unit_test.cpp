@@ -24,7 +24,6 @@
 #include "mtp_service.h"
 #include "mtp_test.h"
 #include "mtp_manager.h"
-#include "mtp_global.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -37,14 +36,10 @@ static std::vector<uint8_t> testData_open = {  0x10, 0x00, 0x00, 0x00, 0x01, 0x0
 
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
-void MediaLibraryMTPUnitTest::SetUpTestCase(void)
-{
-    OHOS::Media::MtpGlobal::ReleaseBlock();
-}
+void MediaLibraryMTPUnitTest::SetUpTestCase(void) {}
 
 void MediaLibraryMTPUnitTest::TearDownTestCase(void)
 {
-    OHOS::Media::MtpGlobal::ResetBlockStatus();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 // SetUp:Execute before each test case

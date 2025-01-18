@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,25 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef OHOS_MTP_GLOBAL_H
-#define OHOS_MTP_GLOBAL_H
 
+#ifndef MEDIALIBRARY_ASTC_PHASE_UNIT_TEST_H
+#define MEDIALIBRARY_ASTC_PHASE_UNIT_TEST_H
+
+#include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {
-
-class MtpGlobal {
+class MediaLibraryAstcStat;
+class MediaLibraryAstcPhaseUnitTest : public testing::Test {
 public:
-    static bool IsBlocked();
-    static void ResetBlockStatus();
-    static void ReleaseBlock();
-private:
-    MtpGlobal() = delete;
-    ~MtpGlobal() = delete;
-    static bool isBlock_;
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
 };
-
-
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_MTP_GLOBAL_H
+#endif // MEDIALIBRARY_ASTC_PHASE_UNIT_TEST_H

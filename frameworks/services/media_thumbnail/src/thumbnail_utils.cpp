@@ -401,12 +401,12 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, Size &desiredSize)
     return sourceLoader.RunLoading();
 }
 
-bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isHigh, bool isAstc,
-    bool forceSdr)
+bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isAstc,
+    bool forceSdr, const uint8_t quality)
 {
     PackOption option = {
         .format = isAstc ? THUMBASTC_FORMAT : THUMBNAIL_FORMAT,
-        .quality = isAstc ? ASTC_LOW_QUALITY : (isHigh ? THUMBNAIL_HIGH : THUMBNAIL_MID),
+        .quality = isAstc ? ASTC_LOW_QUALITY : quality,
         .numberHint = NUMBER_HINT_1,
         .desiredDynamicRange = forceSdr ? EncodeDynamicRange::SDR :EncodeDynamicRange::AUTO
     };
@@ -468,6 +468,12 @@ bool CheckAfterPacking(const std::string &tempOutputPath, const std::string &out
 
 bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx)
 {
+    CHECK_AND_RETURN_RET_LOG(
+        THUMBNAIL_QUALITY_SET.count(data.thumbnailQuality),
+        false,
+        "compress thumbnail quality not in thumbnail quality set, quality: %{public}d",
+        data.thumbnailQuality);
+
     MEDIA_INFO_LOG("CompressPicture %{public}s", DfxUtils::GetSafePath(data.path).c_str());
     auto outputPath = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
     auto picture = isSourceEx ? data.source.GetPictureEx() : data.source.GetPicture();
@@ -479,7 +485,7 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx)
     Media::ImagePacker imagePacker;
     PackOption option = {
         .format = THUMBNAIL_FORMAT,
-        .quality = THUMBNAIL_MID,
+        .quality = data.thumbnailQuality,
         .numberHint = NUMBER_HINT_1,
         .desiredDynamicRange = EncodeDynamicRange::AUTO,
         .needsPackProperties = false
@@ -2801,6 +2807,22 @@ bool ThumbnailUtils::QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbS
         ParseQueryResult(resultSet, data, err, column);
         infos.push_back(data);
     } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
+bool ThumbnailUtils::CheckRemainSpaceMeetCondition(const int32_t &freeSizePercentLimit)
+{
+    static int64_t totalSize = MediaFileUtils::GetTotalSize();
+    if (totalSize <= 0) {
+        totalSize = MediaFileUtils::GetTotalSize();
+    }
+    CHECK_AND_RETURN_RET_LOG(totalSize > 0, false, "Get total size failed, totalSize:%{public}" PRId64, totalSize);
+    int64_t freeSize = MediaFileUtils::GetFreeSize();
+    CHECK_AND_RETURN_RET_LOG(freeSize > 0, false, "Get free size failed, freeSize:%{public}" PRId64, freeSize);
+    int32_t freeSizePercent = static_cast<int32_t>(freeSize * 100 / totalSize);
+    CHECK_AND_RETURN_RET_LOG(freeSizePercent > freeSizePercentLimit, false,
+        "Check free size failed, totalSize:%{public}" PRId64 ", freeSize:%{public}" PRId64 ", "
+        "freeSizePercentLimit:%{public}d", totalSize, freeSize, freeSizePercentLimit);
     return true;
 }
 } // namespace Media

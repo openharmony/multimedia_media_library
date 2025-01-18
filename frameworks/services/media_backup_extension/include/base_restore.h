@@ -45,9 +45,11 @@ public:
     void ReportPortraitStat(int32_t sceneCode);
     std::string GetProgressInfo();
     virtual void StartBackup();
+    std::string restoreInfo_;
 
 protected:
     int32_t Init(void);
+    static std::mutex fileInfoMutext_;
 
     virtual void RestorePhoto(void) = 0;
     virtual void RestoreAudio(void) = 0;
@@ -66,11 +68,15 @@ protected:
     virtual std::string CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
+    std::vector<NativeRdb::ValuesBucket> GetCloudInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
+        int32_t sourceType);
     int32_t CopyFile(const std::string &srcFile, const std::string &dstFile) const;
+    void GetAccountValid();
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
     int InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
+    int InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
     void InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfos);
     void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
@@ -100,9 +106,19 @@ protected:
     void DeleteMoveFailedData(std::vector<std::string> &moveFailedData);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
         int32_t sceneCode);
+    bool RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
+    bool RestoreLcdAndThumbFromKvdb(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
+    int32_t BatchCreateDentryFile(std::vector<FileInfo> fileInfos, std::vector<std::string> &failCloudIds,
+        std::string fileType);
+    void SetVisiblePhoto(std::vector<FileInfo> &fileInfos);
+    void HandleFailData(std::vector<FileInfo> &fileInfos, std::vector<std::string> &failCloudIds,
+        std::string fileType);
+    void MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
+        int32_t sceneCode);
     void SetParameterForClone();
     void StopParameterForClone(int32_t sceneCode);
     void InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType);
+    void UpdateLcdVisibleColumn(const FileInfo &fileInfo);
     bool NeedBatchQueryPhoto(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
     bool NeedBatchQueryPhotoForPhotoMap(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
     bool NeedQuery(const FileInfo &fileInfo, const NeedQueryMap &needQueryMap);
@@ -152,11 +168,14 @@ protected:
     std::atomic<uint32_t> videoNumber_{0};
     std::atomic<uint64_t> migrateDatabaseMapNumber_{0};
     std::atomic<uint32_t> audioNumber_{0};
+    std::atomic<uint64_t> lcdMigrateFileNumber_{0};
+    std::atomic<uint64_t> thumbMigrateFileNumber_{0};
     std::atomic<int32_t> updateProcessStatus_{ProcessStatus::STOP};
     std::atomic<int32_t> otherProcessStatus_{ProcessStatus::STOP};
     std::string dualDirName_ = "";
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::string backupRestoreDir_;
+    std::string upgradeRestoreDir_;
     std::mutex imageMutex_;
     std::mutex videoMutex_;
     std::mutex audioMutex_;
@@ -172,6 +191,7 @@ protected:
     std::string taskId_ = std::to_string(MediaFileUtils::UTCTimeSeconds());
     TabOldPhotosRestore tabOldPhotosRestore_;
     bool needReportFailed_ = false;
+    bool isAccountValid_ = false;
     HighlightRestore highlightRestore_;
 };
 } // namespace Media

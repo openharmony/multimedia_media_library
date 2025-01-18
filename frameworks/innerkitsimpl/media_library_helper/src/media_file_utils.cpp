@@ -26,6 +26,7 @@
 #include <sstream>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <unordered_map>
@@ -78,6 +79,10 @@ const std::string MAX_INTEGER = "2147483648";
 const std::string DEFAULT_IMAGE_NAME = "IMG_";
 const std::string DEFAULT_VIDEO_NAME = "VID_";
 const std::string DEFAULT_AUDIO_NAME = "AUD_";
+const int64_t UNIT = 1000;
+const int64_t STD_UNIT = 1024;
+const int64_t THRESHOLD = 512;
+const std::string DATA_PATH = "/data/storage/el2/base";
 #define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)
 #define HMFS_IOCTL_HW_SET_FLAGS _IOR(0XF5, 71, unsigned int)
 
@@ -164,6 +169,7 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIM
     { "video/webm", { "webm" } },
     { "video/H264", { "h264" } },
     { "video/x-flv", { "flv" } },
+    { "video/avi", { "avi" } },
     { "text/comma-separated-values", { "csv" } },
     { "text/plain", { "diff", "po", "txt" } },
     { "text/rtf", { "rtf" } },
@@ -210,7 +216,6 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_EXT
     { "image/x-xbitmap", { "xbm" } },
     { "image/x-xpixmap", { "xpm" } },
     { "image/x-xwindowdump", { "xwd" } },
-    { "video/avi", { "avi" } },
     { "video/x-pn-realvideo", { "rmvb" } },
     { "video/annodex", { "axv" } },
     { "video/dl", { "dl" } },
@@ -2157,5 +2162,41 @@ bool MediaFileUtils::IsValidInteger(const std::string &value)
         MEDIA_ERR_LOG("KeyWord is out length!");
         return false;
     }
+}
+
+static int64_t GetRoundSize(int64_t size)
+{
+    uint64_t val = 1;
+    int64_t multple = UNIT;
+    int64_t stdMultiple = STD_UNIT;
+    while (static_cast<int64_t>(val) * stdMultiple < size) {
+        val <<= 1;
+        if (val > THRESHOLD) {
+            val = 1;
+            multple *= UNIT;
+            stdMultiple *= STD_UNIT;
+        }
+    }
+    return static_cast<int64_t>(val) * multple;
+}
+
+int64_t MediaFileUtils::GetTotalSize()
+{
+    struct statvfs diskInfo;
+    int ret = statvfs(DATA_PATH.c_str(), &diskInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, E_ERR, "Get total size failed, errno:%{public}d", errno);
+    int64_t totalSize = static_cast<long long>(diskInfo.f_bsize) * static_cast<long long>(diskInfo.f_blocks);
+    CHECK_AND_RETURN_RET_LOG(totalSize > 0, E_ERR, "Get total size failed, totalSize:%{public}" PRId64, totalSize);
+    totalSize = GetRoundSize(totalSize);
+    return totalSize;
+}
+
+int64_t MediaFileUtils::GetFreeSize()
+{
+    struct statvfs diskInfo;
+    int ret = statvfs(DATA_PATH.c_str(), &diskInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, E_ERR, "Get free size failed, errno:%{public}d", errno);
+    int64_t freeSize = static_cast<int64_t>(diskInfo.f_bsize) * static_cast<int64_t>(diskInfo.f_bfree);
+    return freeSize;
 }
 } // namespace OHOS::Media

@@ -50,7 +50,7 @@ static std::string GetNormalizedPhotosSubquery()
         FROM \
           Photos \
         WHERE " +
-          PhotoQueryFilter::GetSqlWhereClause(PhotoQueryFilterOption::FILTER_VISIBLE) + " ";
+          PhotoQueryFilter::GetSqlWhereClause(PhotoQueryFilter::Option::FILTER_VISIBLE) + " ";
 
     return SQL_NORMALIZED_PHOTO_SUBQUERY;
 }

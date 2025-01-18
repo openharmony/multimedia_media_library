@@ -309,6 +309,8 @@ void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixStrin
 
 std::shared_ptr<DataShare::DataShareResultSet> MediaSyncObserver::GetAlbumInfo()
 {
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, nullptr,
+        "MediaSyncObserver::GetAlbumInfo dataShareHelper_ is nullptr");
     DataShare::DataSharePredicates predicates;
     Uri uri(PAH_QUERY_PHOTO_ALBUM);
     vector<string> columns;
@@ -505,6 +507,7 @@ void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
 void MediaSyncObserver::StartNotifyThread()
 {
     MEDIA_INFO_LOG("start notify thread");
+    CHECK_AND_PRINT_LOG(!isRunning_.load(), "MediaSyncObserver notify thread is already running");
     isRunning_.store(true);
     notifythread_ = std::thread([this] {this->ChangeNotifyThread();});
 }

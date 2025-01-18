@@ -58,6 +58,8 @@ public:
 #endif
     EXPORT int32_t CreateThumbnailFileScaned(const std::string &uri, const std::string &path,
         bool isSync = false);
+    EXPORT int32_t CreateThumbnailPastDirtyDataFix(const std::string &fileId);
+    EXPORT int32_t CreateLcdPastDirtyDataFix(const std::string &fileId, const uint8_t quality = THUMBNAIL_MID);
     bool HasInvalidateThumbnail(const std::string &id, const std::string &tableName,
         const std::string &path = "", const std::string &dateTaken = "");
     EXPORT void Init(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,

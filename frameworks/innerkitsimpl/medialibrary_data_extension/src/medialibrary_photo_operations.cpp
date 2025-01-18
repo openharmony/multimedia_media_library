@@ -3446,41 +3446,25 @@ int32_t MediaLibraryPhotoOperations::UpdateOwnerAlbumId(MediaLibraryCommand &cmd
     int32_t targetAlbumId = 0;
     CHECK_AND_RETURN_RET(
         GetInt32FromValuesBucket(values, PhotoColumn::PHOTO_OWNER_ALBUM_ID, targetAlbumId), E_HAS_DB_ERROR);
-
-    vector<string> columns = { PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::MEDIA_ID };
-    auto predicates = cmd.GetAbsRdbPredicates();
-    auto resultSetQuery = MediaLibraryRdbStore::QueryWithFilter(*predicates, columns);
-    if (resultSetQuery == nullptr) {
-        MEDIA_ERR_LOG("album id is not exist");
-        return E_INVALID_ARGUMENTS;
-    }
-    if (resultSetQuery->GoToFirstRow() != NativeRdb::E_OK) {
-        return E_HAS_DB_ERROR;
-    }
-    int32_t originalAlbumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSetQuery);
-    resultSetQuery->Close();
-
     int32_t rowId = UpdateFileInDb(cmd);
     if (rowId < 0) {
         MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
         return rowId;
     }
-
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
-        { to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO) });
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(originalAlbumId) });
-    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(originalAlbumId) });
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) });
-    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) });
-
+    PhotoAlbumType type;
+    PhotoAlbumSubType subType;
+    CHECK_AND_RETURN_RET_LOG(GetAlbumTypeSubTypeById(to_string(targetAlbumId), type, subType) ==
+        E_SUCCESS, E_INVALID_ARGUMENTS, "invalid album uri");
+    if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
+        MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) });
+    }
+    if (PhotoAlbum::IsSourceAlbum(type, subType)) {
+        MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) });
+    }
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch != nullptr) {
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-            NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, originalAlbumId);
         watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
             NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
     }
@@ -3503,7 +3487,6 @@ int32_t MediaLibraryPhotoOperations::ProcessCustomRestore(MediaLibraryCommand& c
     string dir = CUSTOM_RESTORE_DIR + "/" + keyPath;
     CHECK_AND_RETURN_RET_LOG(
         MediaFileUtils::IsFileExists(dir), E_NO_SUCH_FILE, "sourceDir: %{public}s does not exist!", dir.c_str());
-    GetStringFromValuesBucket(values, "isDeduplication", isDeduplication);
     CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "isDeduplication", isDeduplication),
         E_INVALID_VALUES, "Failed to get isDeduplication: %{public}s", isDeduplication.c_str());
     CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "bundleName", bundleName),

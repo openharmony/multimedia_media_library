@@ -1560,6 +1560,49 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
 }
 
 /**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_001
+ * @tc.name      : Check only read system permission uri permission results
+ * @tc.desc      : Grant system read permission to see CheckPhotoUriPermission results
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_001 enter");
+    vector<string> uris;
+    vector<bool> resultSet;
+    vector<string> perms;
+    uint64_t tokenId = 0;
+    perms.push_back("ohos.permission.READ_MEDIA");
+    perms.push_back("ohos.permission.WRITE_MEDIA");
+    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
+    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
+    
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+    for (int i = 0; i < 10; i++) {
+        auto uri = CreatePhotoAsset("test.jpg");
+        uris.push_back(uri);
+    }
+
+    int32_t permissionFlag = 1;
+    auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
+    EXPECT_EQ(ret, E_SUCCESS);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, true);
+    }
+    permissionFlag = 2;
+    mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, true);
+    }
+    permissionFlag = 3;
+    mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, true);
+    }
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_001 exit");
+}
+
+/**
  * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_002
  * @tc.name      : Check has read and wirte system permission uri permission results
  * @tc.desc      : Grant system read and write permission to see CheckPhotoUriPermission results
@@ -1866,6 +1909,65 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
         permissionFlag++;
         MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_008 exit");
     }
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_009
+ * @tc.name      : Has read system permissions and also uri have grant other permissions
+ * @tc.desc      : Check uri permissions results when has system read permission and other permission
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_009 enter");
+    vector<string> uris;
+    vector<bool> resultSet;
+    vector<bool> expectWriteResult;
+    vector<bool> expectReadWriteResult;
+    auto permissionType = PhotoPermissionType::PERSIST_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    uint64_t tokenId = 0;
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_MEDIA");
+    perms.push_back("ohos.permission.WRITE_MEDIA");
+    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
+    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
+
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+    for (int i = 0; i < 10; i++) {
+        string uri = CreatePhotoAsset("test.jpg");
+        vector<string> Tempuris{uri};
+        uris.push_back(uri);
+        permissionType = GetRandomTemporaryPermission();
+        if (static_cast<int32_t>(permissionType) == 0) {
+            expectWriteResult.push_back(false);
+            expectReadWriteResult.push_back(false);
+        } else if (static_cast<int32_t>(permissionType) == 2) {
+            expectWriteResult.push_back(true);
+            expectReadWriteResult.push_back(true);
+        } else {
+            expectWriteResult.push_back(true);
+            expectReadWriteResult.push_back(true);
+        }
+        mediaLibraryExtendManager->GrantPhotoUriPermission(tokenId, tokenId, Tempuris, permissionType, SensitiveType);
+    }
+
+    uint32_t permissionFlag = 1;
+    mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], true);
+    }
+    permissionFlag = 2;
+    mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], expectWriteResult[i]);
+    }
+    permissionFlag = 3;
+    mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], expectReadWriteResult[i]);
+    }
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_009 exit");
 }
 
 /**

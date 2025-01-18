@@ -230,6 +230,11 @@ ohos_shared_library("medialibrary_nutils") {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
   }
 
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.multimedia_video_processing_engine)) {
+    defines += [ "USE_VIDEO_PROCESSING_ENGINE" ]
+  }
+
   if (ability_runtime_graphics) {
     external_deps += [
       "ace_engine:ace_uicontent",

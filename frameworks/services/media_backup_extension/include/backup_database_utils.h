@@ -37,6 +37,8 @@ public:
     static int32_t InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
         const std::string &dbPath, const std::string &bundleName, bool isMediaLibary,
             int32_t area = DEFAULT_AREA_VERSION);
+    static int32_t InitReadOnlyRdb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
+        const std::string &dbPath, const std::string &bundleName);
     static int32_t QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
         const std::string &column);
     static int32_t Update(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t &changeRows,
@@ -58,6 +60,9 @@ public:
     static std::string GarbleInfoName(const std::string &infoName);
     static void UpdateSelection(std::string &selection, const std::string &selectionToAdd, bool needWrap = false);
     static void UpdateSdWhereClause(std::string &querySql, bool shouldIncludeSd);
+    static bool QueryThumbImage(NativeRdb::RdbStore &rdbStore,
+        const std::string &keyValue, std::vector<uint8_t> &blob);
+    static bool SaveImage(std::vector<uint8_t> &data, const std::string &outFile);
     static int32_t GetBlob(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet,
         std::vector<uint8_t> &blobVal);
     static std::string GetLandmarksStr(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet);

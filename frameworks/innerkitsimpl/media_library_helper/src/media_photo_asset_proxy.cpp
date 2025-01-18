@@ -303,6 +303,7 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
     uint32_t packResult = imagePacker.FinalizePacking(packedSize);
     if (packResult != E_OK || buffer == nullptr) {
         MEDIA_ERR_LOG("packet pixelMap failed packResult: %{public}d", packResult);
+        delete[] buffer;
         return E_ERR;
     }
     MEDIA_INFO_LOG("pack pixelMap success, packedSize: %{public}" PRId64, packedSize);

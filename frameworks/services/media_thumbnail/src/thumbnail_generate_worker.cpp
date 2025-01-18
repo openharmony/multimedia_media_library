@@ -102,14 +102,17 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
     std::string threadName;
     taskType_ = taskType;
     CpuAffinityType cpuAffinityType;
+    CpuAffinityType cpuAffinityTypeLowPriority;
     if (taskType == ThumbnailTaskType::FOREGROUND) {
         threadNum = THREAD_NUM_FOREGROUND;
         threadName = THREAD_NAME_FOREGROUND;
         cpuAffinityType = CpuAffinityType::CPU_IDX_9;
+        cpuAffinityTypeLowPriority = CpuAffinityType::CPU_IDX_3;
     } else if (taskType == ThumbnailTaskType::BACKGROUND) {
         threadNum = THREAD_NUM_BACKGROUND;
         threadName = THREAD_NAME_BACKGROUND;
         cpuAffinityType = CpuAffinityType::CPU_IDX_9;
+        cpuAffinityTypeLowPriority = CpuAffinityType::CPU_IDX_9;
     } else {
         MEDIA_ERR_LOG("invalid task type");
         return E_ERR;
@@ -120,6 +123,7 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
         std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus =
             std::make_shared<ThumbnailGenerateThreadStatus>(i);
         threadStatus->cpuAffinityType = cpuAffinityType;
+        threadStatus->cpuAffinityTypeLowPriority = cpuAffinityTypeLowPriority;
         std::thread thread([this, threadStatus] { this->StartWorker(threadStatus); });
         pthread_setname_np(thread.native_handle(), threadName.c_str());
         threads_.emplace_back(std::move(thread));
@@ -208,9 +212,9 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
         if (!WaitForTask(threadStatus)) {
             continue;
         }
-        CpuUtils::SetSelfThreadAffinity(threadStatus->cpuAffinityType);
         std::shared_ptr<ThumbnailGenerateTask> task;
         if (!highPriorityTaskQueue_.Empty() && highPriorityTaskQueue_.Pop(task) && task != nullptr) {
+            CpuUtils::SetSelfThreadAffinity(threadStatus->cpuAffinityType);
             if (NeedIgnoreTask(task->data_->requestId_)) {
                 continue;
             }
@@ -221,6 +225,7 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
         }
 
         if (!midPriorityTaskQueue_.Empty() && midPriorityTaskQueue_.Pop(task) && task != nullptr) {
+            CpuUtils::SetSelfThreadAffinity(threadStatus->cpuAffinityType);
             if (NeedIgnoreTask(task->data_->requestId_)) {
                 continue;
             }
@@ -231,6 +236,7 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
         }
 
         if (!lowPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Pop(task) && task != nullptr) {
+            CpuUtils::SetSelfThreadAffinity(threadStatus->cpuAffinityTypeLowPriority);
             if (NeedIgnoreTask(task->data_->requestId_)) {
                 continue;
             }
@@ -373,6 +379,12 @@ void ThumbnailGenerateWorker::TryCloseTimer()
         timerId_ = 0;
         MEDIA_INFO_LOG("ThumbnailGenerateWorker timer Shutdown, taskType:%{public}d", taskType_);
     }
+}
+
+bool ThumbnailGenerateWorker::IsLowerQueueEmpty()
+{
+    MEDIA_DEBUG_LOG("lower queue size %{public}d", lowPriorityTaskQueue_.Size());
+    return lowPriorityTaskQueue_.Empty();
 }
 } // namespace Media
 } // namespace OHOS
