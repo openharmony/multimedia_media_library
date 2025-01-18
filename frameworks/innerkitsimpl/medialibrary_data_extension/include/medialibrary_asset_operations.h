@@ -118,6 +118,25 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_METADATA_FLAGS, MEMBER_TYPE_INT32 }
 };
 
+typedef struct {
+    int64_t sizeMp4;
+    int64_t sizeExtra;
+    int64_t size;
+    int64_t dateModified;
+    int64_t editTime;
+    int32_t subType;
+    int32_t effectMode;
+    int32_t originalSubType;
+    std::string videoPath;
+    std::string extraPath;
+    std::string editDataPath;
+    std::string editDataCameraPath;
+    std::string editDataSourcePath;
+    std::string path;
+    std::string cloudId;
+    std::string displayName;
+} ExternalInfo;
+
 class MediaLibraryAssetOperations {
 public:
     static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
@@ -135,6 +154,8 @@ public:
         std::string &filePath);
     EXPORT static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
         const bool compatible = false);
+    EXPORT static int32_t DeletePermanently(NativeRdb::AbsRdbPredicates &predicates, const bool isAging);
+    EXPORT static int32_t DeleteNormalPhotoPermanently(std::shared_ptr<FileAsset> &fileAsset);
     EXPORT static std::string GetEditDataSourcePath(const std::string &path);
     EXPORT static int32_t GetAlbumIdByPredicates(const std::string &whereClause,
         const std::vector<std::string> &whereArgs);

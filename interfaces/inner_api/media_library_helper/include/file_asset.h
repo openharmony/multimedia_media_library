@@ -73,6 +73,9 @@ public:
     EXPORT int64_t GetSize() const;
     EXPORT void SetSize(int64_t size);
 
+    EXPORT const std::string &GetCloudId() const;
+    EXPORT void SetCloudId(const std::string &cloudId);
+
     EXPORT int64_t GetDateAdded() const;
     EXPORT void SetDateAdded(int64_t dataAdded);
 

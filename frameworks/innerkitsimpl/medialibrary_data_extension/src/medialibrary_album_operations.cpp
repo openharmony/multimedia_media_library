@@ -1474,6 +1474,20 @@ static inline int32_t DeletePhotoAssets(const DataSharePredicates &predicates,
     return deletedRows;
 }
 
+static inline int32_t DeletePhotoAssetsCompleted(const DataSharePredicates &predicates,
+    const bool isAging)
+{
+    MEDIA_DEBUG_LOG("DeletePhotoAssetsCompleted start.");
+    DealWithHighlightSdTable(predicates);
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
+    int32_t deletedRows = MediaLibraryAssetOperations::DeletePermanently(rdbPredicates, isAging);
+    if (!isAging) {
+        MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
+            static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_DELETE_INDEX));
+    }
+    return deletedRows;
+}
+
 int32_t AgingPhotoAssets(shared_ptr<int> countPtr)
 {
     auto time = MediaFileUtils::UTCTimeMilliSeconds();
@@ -2558,6 +2572,8 @@ int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opTyp
             return DeletePhotoAssets(predicates, false, false);
         case OperationType::COMPAT_ALBUM_DELETE_ASSETS:
             return DeletePhotoAssets(predicates, false, true);
+        case OperationType::DELETE_LOCAL_ASSETS_PERMANENTLY:
+            return DeletePhotoAssetsCompleted(predicates, false);
         case OperationType::AGING:
             return AgingPhotoAssets(countPtr);
         case OperationType::ALBUM_ORDER:
