@@ -410,6 +410,16 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL);
     }
+
+    if (oldVersion < VERSION_UPDATE_PHOTOS_DATE_IDX) {
+        PhotoDayMonthYearOperation::UpdatePhotosDateIdx(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_PHOTOS_DATE_IDX);
+    }
+
+    if (oldVersion < VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX) {
+        MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX);
+    }
 }
 
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()
