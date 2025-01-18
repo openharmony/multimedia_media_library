@@ -23,7 +23,13 @@
 namespace OHOS::Media {
 const std::string SQL_QUERY_COUNT_ALBUM_DATE_NEED_FIX = "\
     SELECT COUNT(*) AS count FROM PhotoAlbum \
-    WHERE album_type != 1024 AND dirty != 4 AND (COALESCE(date_modified, 0) = 0) OR COALESCE(date_added, 0) = 0);";
+    WHERE album_type != 1024 AND \
+        dirty != 4 AND \
+        ( \
+            COALESCE(date_modified, 0) = 0 OR \
+            COALESCE(date_added, 0) = 0 \
+        ) \
+    ;";
 
 const std::string SQL_UPDATE_ALBUM_DATE_NEED_FIX = "\
     UPDATE PhotoAlbum \
@@ -38,7 +44,13 @@ const std::string SQL_UPDATE_ALBUM_DATE_NEED_FIX = "\
             ELSE date_added \
         END, \
         dirty = 2 \
-    WHERE album_type != 1024 AND dirty != 4 AND (COALESCE(date_modified, 0) = 0) OR COALESCE(date_added, 0) = 0);";
+    WHERE album_type != 1024 AND \
+        dirty != 4 AND \
+        ( \
+            COALESCE(date_modified, 0) = 0 OR \
+            COALESCE(date_added, 0) = 0 \
+        ) \
+    ;";
 
 bool PhotoAlbumUpdateDateModifiedOperation::CheckAlbumDateNeedFix(
     std::shared_ptr<MediaLibraryRdbStore> &rdbStore)
