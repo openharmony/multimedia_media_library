@@ -30,7 +30,7 @@ config("ffi_config") {
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
   ]
 
-  if (defined(medialibrary_mtp_enable)) {
+  if (media_library_feature_mtp) {
     include_dirs += [ "${MEDIALIB_MTP_PATH}/include" ]
   }
 
@@ -117,7 +117,7 @@ ohos_shared_library("cj_photoaccesshelper_ffi") {
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
-  if (defined(medialibrary_mtp_enable)) {
+  if (media_library_feature_mtp) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
   if (!media_library_link_opt) {
