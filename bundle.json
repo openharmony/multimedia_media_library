@@ -17,7 +17,13 @@
         "SystemCapability.FileManagement.UserFileManager.DistributedCore",
         "SystemCapability.FileManagement.PhotoAccessHelper.Core"
       ],
-      "features": ["media_library_link_opt"],
+      "features": [
+        "media_library_link_opt",
+        "media_library_feature_mtp",
+        "media_library_feature_back_up",
+        "media_library_feature_cloud_enhancement",
+        "media_library_feature_take_photo"
+      ],
       "adapted_system_type": [ "small", "standard" ],
       "rom": "10444KB",
       "ram": "35093KB",
@@ -118,9 +124,9 @@
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:userfilemanager_mimetypes.json",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/unittest/medialibrary_scanner:scanner",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/unittest/medialibrary_tool:mediatool",
-            "//foundation/multimedia/media_library/frameworks/services/media_backup_extension:mediabackup",
-            "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp",
-            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_ext_hap"
+            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_ext_hap",
+            "//foundation/multimedia/media_library/frameworks/services/media_backup_extension:media_backup_package",
+            "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp_package"
           ]
         },
         "inner_kits": [
