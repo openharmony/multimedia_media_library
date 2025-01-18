@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-if (defined(medialibrary_mtp_enable)) {
+if (media_library_feature_mtp) {
   group("unittest") {
     testonly = true
     deps = [ ":mtp_native_test" ]
