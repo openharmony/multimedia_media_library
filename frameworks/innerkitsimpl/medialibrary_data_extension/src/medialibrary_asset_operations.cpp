@@ -58,8 +58,12 @@
 #include "medialibrary_unistore_manager.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
+#endif
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
+#endif
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "rdb_errno.h"
@@ -136,9 +140,11 @@ int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &
         case OperationType::SCAN_WITHOUT_ALBUM_UPDATE:
             errCode = MediaLibraryPhotoOperations::ScanFileWithoutAlbumUpdate(cmd);
             break;
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
         case OperationType::FINISH_REQUEST_PICTURE:
             errCode = MediaLibraryPhotoOperations::FinishRequestPicture(cmd);
             break;
+#endif
         case OperationType::CLONE_ASSET:
             errCode = MediaLibraryPhotoOperations::CloneSingleAsset(cmd);
             break;
@@ -2713,11 +2719,15 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     CHECK_AND_RETURN_RET_LOG(!ids.empty(), deletedRows, "Failed to delete files in db, ids size: 0");
 
     // notify deferred processing session to remove image
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     MultiStagesCaptureManager::RemovePhotos(predicates, false);
+#endif
 
     // delete cloud enhanacement task
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     vector<string> photoIds;
     EnhancementManager::GetInstance().RemoveTasksInternal(ids, photoIds);
+#endif
 
     deletedRows = DeleteDbByIds(predicates.GetTableName(), ids, compatible);
     if (deletedRows <= 0) {
