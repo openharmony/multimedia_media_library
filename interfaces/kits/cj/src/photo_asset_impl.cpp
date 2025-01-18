@@ -98,8 +98,8 @@ static PhotoAssetMember HandleDateTransitionKey(const string &key,
 {
     PhotoAssetMember assetMember = {
         .memberType = -1,
-        .boolValue = false,
-        .stringValue = nullptr
+        .stringValue = nullptr,
+        .boolValue = false
     };
     if (fileAssetPtr->GetMemberMap().count(key) == 0) {
         errCode = JS_E_FILE_KEY;
@@ -132,8 +132,8 @@ static PhotoAssetMember HandleGettingSpecialKey(const string &key, const shared_
 {
     PhotoAssetMember assetMember = {
         .memberType = -1,
-        .boolValue = false,
-        .stringValue = nullptr
+        .stringValue = nullptr,
+        .boolValue = false
     };
     if (key == PENDING_STATUS) {
         assetMember.memberType = MEMBER_TYPE_STRING; // 2
@@ -159,8 +159,8 @@ PhotoAssetMember PhotoAssetImpl::UserFileMgrGet(string &inputKey, int32_t &errCo
 {
     PhotoAssetMember assetMember = {
         .memberType = -1,
-        .boolValue = false,
-        .stringValue = nullptr
+        .stringValue = nullptr,
+        .boolValue = false
     };
     if (CheckSystemApiKeys(inputKey) < 0) {
         return assetMember;

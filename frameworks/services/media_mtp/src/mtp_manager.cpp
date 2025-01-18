@@ -131,12 +131,6 @@ void MtpManager::StopMtpService()
         }
         auto service = GetMtpService();
         CHECK_AND_RETURN_LOG(service != nullptr, "MtpManager mtpServicePtr is nullptr");
-        if (mtpMode_ == MtpMode::MTP_MODE) {
-            MtpFileObserver::GetInstance().StopFileInotify();
-            MtpStoreObserver::StopObserver();
-        } else if (mtpMode_ == MtpMode::PTP_MODE) {
-            MtpMedialibraryManager::GetInstance()->Clear();
-        }
         mtpMode_ = MtpMode::NONE_MODE;
         service->StopService();
         isMtpServiceRunning = false;

@@ -17,10 +17,7 @@ import("//foundation/multimedia/media_library/media_library.gni")
 if (defined(medialibrary_mtp_enable)) {
   group("mtp") {
     if (defined(global_parts_info.hdf_drivers_interface_usb)) {
-      deps = [
-        ":media_mtp",
-        ":mtpservice",
-      ]
+      deps = [ ":media_mtp" ]
     }
   }
 
@@ -34,7 +31,6 @@ if (defined(medialibrary_mtp_enable)) {
       "src/mtp_error_utils.cpp",
       "src/mtp_event.cpp",
       "src/mtp_file_observer.cpp",
-      "src/mtp_global.cpp",
       "src/mtp_manager.cpp",
       "src/mtp_media_library.cpp",
       "src/mtp_medialibrary_manager.cpp",
@@ -162,38 +158,5 @@ if (defined(medialibrary_mtp_enable)) {
     innerapi_tags = [ "platformsdk" ]
     part_name = "media_library"
     subsystem_name = "multimedia"
-  }
-
-  ohos_shared_library("mtpservice") {
-    include_dirs = [
-      "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
-      "${MEDIALIB_MTP_PATH}/include",
-    ]
-    ldflags = [ "-Wl" ]
-
-    sources = [ "${MEDIALIB_JS_PATH}/src/mtp_service_napi.cpp" ]
-
-    deps = [ "${MEDIALIB_MTP_PATH}:media_mtp" ]
-
-    external_deps = [
-      "ability_base:want",
-      "ability_runtime:ability_manager",
-      "ability_runtime:napi_base_context",
-      "drivers_interface_usb:usbfn_mtp_idl_headers",
-      "hilog:libhilog",
-      "ipc:ipc_core",
-      "ipc:rpc",
-      "napi:ace_napi",
-    ]
-
-    sanitize = {
-      cfi = true
-      cfi_cross_dso = true
-      debug = false
-    }
-
-    relative_install_dir = "module/multimedia"
-    subsystem_name = "multimedia"
-    part_name = "media_library"
   }
 }

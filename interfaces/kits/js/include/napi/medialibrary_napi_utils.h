@@ -342,12 +342,14 @@ public:
     static MediaType GetMediaTypeFromUri(const std::string &uri);
     template <class AsyncContext>
     static napi_status GetPredicate(napi_env env, const napi_value arg, const std::string &propName,
-        AsyncContext &context, const FetchOptionType &fetchOptType);
+        AsyncContext &context, const FetchOptionType &fetchOptType,
+        std::vector<DataShare::OperationItem> operations = {});
     template <class AsyncContext>
     static napi_status ParseAlbumFetchOptCallback(napi_env env, napi_callback_info info, AsyncContext &context);
     template <class AsyncContext>
     static bool HandleSpecialPredicate(AsyncContext &context,
-        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate, const FetchOptionType &fetchOptType);
+        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate, const FetchOptionType &fetchOptType,
+        std::vector<DataShare::OperationItem> operations = {});
     template <class AsyncContext>
     static void UpdateMediaTypeSelections(AsyncContext *context);
 
@@ -361,7 +363,7 @@ public:
 
     template <class AsyncContext>
     static napi_status GetFetchOption(napi_env env, napi_value arg, const FetchOptionType &fetchOptType,
-        AsyncContext &context);
+        AsyncContext &context, std::vector<DataShare::OperationItem> operations = {});
 
     template <class AsyncContext>
     static napi_status GetAlbumFetchOption(napi_env env, napi_value arg, const FetchOptionType &fetchOptType,

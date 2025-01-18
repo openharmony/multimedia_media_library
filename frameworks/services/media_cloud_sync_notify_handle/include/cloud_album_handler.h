@@ -25,6 +25,7 @@ namespace Media {
 class CloudAlbumHandler : public BaseHandler {
 public:
     void Handle(const CloudSyncHandleData &handleData) override;
+    static void DeleteOrUpdateCloudAlbums(const std::vector<std::string> &ids);
 };
 } //namespace Media
 } //namespace OHOS

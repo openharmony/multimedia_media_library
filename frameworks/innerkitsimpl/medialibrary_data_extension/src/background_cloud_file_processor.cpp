@@ -51,7 +51,7 @@ static constexpr int32_t UPDATE_BATCH_LOCAL_IMAGE_SIZE = 200;
 static constexpr int32_t MAX_RETRY_COUNT = 2;
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
-static constexpr double DEVICE_STORAGE_FREE_RATIO_HIHG = 0.15;
+static constexpr double DEVICE_STORAGE_FREE_RATIO_HIGH = 0.15;
 static constexpr double DEVICE_STORAGE_FREE_RATIO_LOW = 0.05;
 
 static constexpr int64_t ONEDAY_TO_SEC = 60 * 60 * 24;
@@ -87,12 +87,12 @@ void BackgroundCloudFileProcessor::SetDownloadLatestFinished(bool downloadLatest
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
     if (!prefs) {
-        MEDIA_ERR_LOG("SetDownloadLatestFinished: get preferences error: %{public}d", errCode);
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
         return;
     }
     prefs->PutBool(DOWNLOAD_LATEST_FINISHED, downloadLatestFinished);
     prefs->FlushSync();
-    MEDIA_INFO_LOG("SetDownloadLatestFinished: set preferences %{public}d", downloadLatestFinished);
+    MEDIA_INFO_LOG("set preferences %{public}d", downloadLatestFinished);
 }
 
 bool BackgroundCloudFileProcessor::GetDownloadLatestFinished()
@@ -102,7 +102,7 @@ bool BackgroundCloudFileProcessor::GetDownloadLatestFinished()
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
     if (!prefs) {
-        MEDIA_ERR_LOG("GetDownloadLatestFinished: get preferences error: %{public}d", errCode);
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
         return false;
     }
 
@@ -144,7 +144,7 @@ int64_t BackgroundCloudFileProcessor::GetDownloadCnt(std::string path)
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(DOWNLOAD_CNT_CONFIG, errCode);
     if (!prefs) {
-        MEDIA_ERR_LOG("GetDownloadLatestFinished: get preferences error: %{public}d", errCode);
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
         return defaultCnt;
     }
 
@@ -253,10 +253,10 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryCloudFi
     int64_t downloadNum;
     int64_t downloadMilliSecond;
 
-    if (freeRatio >= DEVICE_STORAGE_FREE_RATIO_HIHG) {
+    if (freeRatio >= DEVICE_STORAGE_FREE_RATIO_HIGH) {
         downloadNum = DOWNLOAD_NUM_FREE_RATIO_HIGH;
         downloadMilliSecond = DOWNLOAD_DAY_FREE_RATIO_HIGH * ONEDAY_TO_SEC * SEC_TO_MSEC;
-    } else if ((freeRatio >= DEVICE_STORAGE_FREE_RATIO_LOW) && (freeRatio < DEVICE_STORAGE_FREE_RATIO_HIHG)) {
+    } else if ((freeRatio >= DEVICE_STORAGE_FREE_RATIO_LOW) && (freeRatio < DEVICE_STORAGE_FREE_RATIO_HIGH)) {
         downloadNum = DOWNLOAD_NUM_FREE_RATIO_LOW;
         downloadMilliSecond = DOWNLOAD_DAY_FREE_RATIO_LOW * ONEDAY_TO_SEC * SEC_TO_MSEC;
     } else {

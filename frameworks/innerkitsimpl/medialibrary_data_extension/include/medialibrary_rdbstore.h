@@ -103,6 +103,7 @@ public:
     EXPORT static void AddAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddCloudEnhancementAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddPhotoDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static int32_t ReconstructMediaLibraryStorageFormat(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryEditDataExists(
         const NativeRdb::AbsRdbPredicates &predicates);
@@ -136,6 +137,7 @@ public:
     static void WalCheckPoint();
     EXPORT int ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
         const std::vector<NativeRdb::ValueObject> &args = {});
+    static void UpdateMediaTypeAndThumbnailReadyIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();

@@ -136,6 +136,7 @@ public:
     static const std::string PHOTO_DETAIL_TIME EXPORT;
     static const std::string SUPPORTED_WATERMARK_TYPE EXPORT;
     static const std::string PHOTO_METADATA_FLAGS EXPORT;
+    static const std::string PHOTO_CHECK_FLAG EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
@@ -157,6 +158,8 @@ public:
     static const std::string PHOTO_FAVORITE_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_READY_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX EXPORT;
+    static const std::string LATITUDE_INDEX EXPORT;
+    static const std::string LONGITUDE_INDEX EXPORT;
     // for clone query
     static const std::string PHOTO_DISPLAYNAME_INDEX EXPORT;
     // for burst query
@@ -203,6 +206,7 @@ public:
     static const std::string UPDATE_READY_ON_THUMBNAIL_UPGRADE EXPORT;
     static const std::string UPDATA_PHOTOS_DATA_UNIQUE EXPORT;
     static const std::string UPDATE_LCD_STATUS_NOT_UPLOADED EXPORT;
+    static const std::string UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL EXPORT;
 
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;
@@ -221,6 +225,8 @@ public:
     static const std::string INDEX_SCHPT_ALBUM_GENERAL;
     static const std::string INDEX_SCHPT_ALBUM;
     static const std::string INDEX_SCTHP_PHOTO_DATEADDED;
+    static const std::string INDEX_LATITUDE;
+    static const std::string INDEX_LONGITUDE;
 
     // create Photo cloud sync trigger
     static const std::string CREATE_PHOTOS_DELETE_TRIGGER EXPORT;
@@ -245,10 +251,12 @@ public:
     // cloud sync uri
     static const std::string PHOTO_CLOUD_URI_PREFIX EXPORT;
     static const std::string PHOTO_CLOUD_TRIGGER_PREFIX EXPORT;
+    static const std::string PHOTO_GALLERY_CLOUD_URI_PREFIX EXPORT;
 
     // cloud notify uri
     static const std::string PHOTO_HEIGHT_ERROR_URI_PREFIX EXPORT;
     static const std::string PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX EXPORT;
+    static const std::string PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX EXPORT;
     // yuv uri
     static const std::string PHOTO_REQUEST_PICTURE EXPORT;
     static const std::string PHOTO_REQUEST_PICTURE_BUFFER EXPORT;
@@ -305,23 +313,35 @@ public:
     static const std::string CREATE_PHOTO_EXT_TABLE EXPORT;
 };
 
-enum class PhotoQueryFilterOption {
-    FILTER_VISIBLE,
-    FILTER_HIDDEN,
-    FILTER_TRASHED,
-};
 
-struct PhotoQueryFilterConfig {
-    bool isQueryHidden = false;
-    bool isQueryTrashed = false;
-};
 
 class PhotoQueryFilter {
 public:
-    static std::string GetSqlWhereClause(const PhotoQueryFilterOption option) EXPORT;
+    enum class Option {
+        CUSTOM_FILTER,
+        FILTER_VISIBLE,
+        FILTER_HIDDEN,
+        FILTER_TRASHED,
+    };
 
-private:
-    static std::string GetSqlWhereClause(const PhotoQueryFilterConfig& config) EXPORT;
+    enum class ConfigType {
+        INCLUDE,
+        EXCLUDE,
+        IGNORE,
+    };
+
+    struct Config {
+        ConfigType hiddenConfig = ConfigType::EXCLUDE;
+        ConfigType trashedConfig = ConfigType::EXCLUDE;
+        ConfigType tempConfig = ConfigType::EXCLUDE;
+        ConfigType pendingConfig = ConfigType::EXCLUDE;
+        ConfigType burstCoverOnly = ConfigType::INCLUDE;
+        ConfigType syncStatusConfig = ConfigType::EXCLUDE;
+        ConfigType cleanFlagConfig = ConfigType::EXCLUDE;
+    };
+
+    static std::string GetSqlWhereClause(const PhotoQueryFilter::Option option) EXPORT;
+    static std::string GetSqlWhereClause(const PhotoQueryFilter::Config& config) EXPORT;
 };
 
 } // namespace OHOS::Media

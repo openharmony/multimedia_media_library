@@ -460,6 +460,25 @@ void MediaLibraryRdbStore::AddAlbumIndex(const shared_ptr<MediaLibraryRdbStore> 
     MEDIA_INFO_LOG("end add album index");
 }
 
+void MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(const shared_ptr<MediaLibraryRdbStore> rdbStore)
+{
+    if (rdbStore == nullptr || !rdbStore->CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return;
+    }
+
+    const vector<string> sqls = {
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
+        PhotoColumn::DROP_INDEX_SCHPT_READY,
+        PhotoColumn::INDEX_SCHPT_READY,
+    };
+
+    MEDIA_INFO_LOG("start update idx_schpt_media_type_ready and idx_schpt_thumbnail_ready");
+    ExecSqls(sqls, *rdbStore->GetRaw().get());
+    MEDIA_INFO_LOG("end update idx_schpt_media_type_ready and idx_schpt_thumbnail_ready");
+}
+
 int32_t MediaLibraryRdbStore::Init()
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
@@ -493,6 +512,18 @@ void MediaLibraryRdbStore::AddPhotoDateAddedIndex(const shared_ptr<MediaLibraryR
     };
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("end AddPhotoDateAddedIndex");
+}
+
+void MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start Update LatitudeAndLongitude Default Null");
+    const vector<string> sqls = {
+        PhotoColumn::INDEX_LATITUDE,
+        PhotoColumn::INDEX_LONGITUDE,
+        PhotoColumn::UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end  Update LatitudeAndLongitude Default Null");
 }
 
 int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
@@ -1454,6 +1485,14 @@ static const string &TriggerDeleteAudioClearAppUriPermission()
     return TRIGGER_AUDIO_DELETE_APP_URI_PERMISSION;
 }
 
+static const string& AddStatusColumnForRefreshAlbumTable()
+{
+    static const string ADD_STATUS_COLUMN_FOR_REFRESH_ALBUM_TABLE =
+        "ALTER TABLE " + ALBUM_REFRESH_TABLE + " ADD COLUMN " +
+        ALBUM_REFRESH_STATUS + " INT DEFAULT 0 NOT NULL";
+    return ADD_STATUS_COLUMN_FOR_REFRESH_ALBUM_TABLE;
+}
+
 static const vector<string> onCreateSqlStrs = {
     CREATE_MEDIA_TABLE,
     PhotoColumn::CREATE_PHOTO_TABLE,
@@ -1592,6 +1631,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::INDEX_HIGHLIGHT_FILEID,
     PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
+    AddStatusColumnForRefreshAlbumTable(),
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -3149,6 +3189,19 @@ static void AddThumbnailReady(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddCheckFlag(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_CHECK_FLAG + " INT DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::ALBUM_CHECK_FLAG + " INT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("start add check_flag columns");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add check_flag columns");
+}
+
 static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
 {
     std::string checkSql = "PRAGMA table_info(" + PhotoColumn::PHOTOS_TABLE + ")";
@@ -3212,6 +3265,26 @@ static void UpdateSearchStatusTriggerForOwnerAlbumId(RdbStore &store)
     };
     ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end update search status trigger for owner album id");
+}
+
+static void AddHighlightAnalysisProgress(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + HIGHLIGHT_ANALYSIS_PROGRESS + " TEXT"
+    };
+    MEDIA_INFO_LOG("start add highlight_analysis_progress column");
+    ExecSqls(sqls, store);
+}
+
+static void AddRefreshAlbumStatusColumn(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start add status column for refresh album table");
+    const vector<string> sqls = {
+        "ALTER TABLE " + ALBUM_REFRESH_TABLE + " ADD COLUMN " +
+            ALBUM_REFRESH_STATUS + " INT DEFAULT 0 NOT NULL"
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add status column for refresh album table");
 }
 
 static void AddSupportedWatermarkType(RdbStore &store)
@@ -4043,6 +4116,16 @@ static void AddHighlightVideoCountCanPack(RdbStore& store)
     ExecSqls(sqls, store);
 }
 
+static void FixSourceAlbumUpdateTriggerToUseLPath(RdbStore& store)
+{
+    const vector<string> sqls = {
+        DROP_INSERT_SOURCE_PHOTO_UPDATE_ALBUM_ID_TRIGGER,
+        CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER
+    };
+    MEDIA_INFO_LOG("Fix source album update trigger to use lpath start");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CREATE_TAB_OLD_PHOTOS) {
@@ -4082,6 +4165,25 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID) {
         UpdateSearchStatusTriggerForOwnerAlbumId(store);
+    }
+    if (oldVersion < VERSION_ADD_CHECK_FLAG) {
+        AddCheckFlag(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_ANALYSIS_PROGRESS) {
+        AddHighlightAnalysisProgress(store);
+    }
+
+    if (oldVersion < VERSION_FIX_SOURCE_PHOTO_ALBUM_DATE_MODIFIED) {
+        UpdateSourcePhotoAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_REFRESH_ALBUM_STATUS_COLUMN) {
+        AddRefreshAlbumStatusColumn(store);
+    }
+
+    if (oldVersion < VERSION_FIX_SOURCE_ALBUM_UPDATE_TRIGGER_TO_USE_LPATH) {
+        FixSourceAlbumUpdateTriggerToUseLPath(store);
     }
 }
 

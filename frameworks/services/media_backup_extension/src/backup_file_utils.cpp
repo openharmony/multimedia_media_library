@@ -31,6 +31,8 @@
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_data_manager_utils.h"
 #include "moving_photo_file_utils.h"
+#include "post_proc.h"
+#include "thumbnail_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -46,6 +48,13 @@ const int32_t CROSS_POLICY_ERR = 18;
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
 std::shared_ptr<DataShare::DataShareHelper> BackupFileUtils::sDataShareHelper_ = nullptr;
 std::shared_ptr<FileAccessHelper> BackupFileUtils::fileAccessHelper_ = std::make_shared<FileAccessHelper>();
+
+const std::string BackupFileUtils::IMAGE_FORMAT = "image/jpeg";
+const std::string BackupFileUtils::LCD_FILE_NAME = "LCD.jpg";
+const std::string BackupFileUtils::THM_FILE_NAME = "THM.jpg";
+const uint8_t BackupFileUtils::IMAGE_QUALITY = 90;
+const uint32_t BackupFileUtils::IMAGE_NUMBER_HINT = 1;
+const int32_t BackupFileUtils::IMAGE_MIN_BUF_SIZE = 8192;
 
 bool FileAccessHelper::GetValidPath(string &filePath)
 {
@@ -153,6 +162,10 @@ string BackupFileUtils::ConvertLowQualityPath(int32_t sceneCode, const std::stri
 
 int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
 {
+    string extension = ScannerUtils::GetFileExtension(data->GetFileName()); // in case when trashed or hidden
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
+    data->SetFileExtension(extension);
+    data->SetFileMimeType(mimeType);
     std::string path = data->GetFilePath();
     struct stat statInfo {};
     if (stat(path.c_str(), &statInfo) != 0) {
@@ -169,10 +182,6 @@ int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
     if (dateModified != 0 && data->GetFileDateModified() == 0) {
         data->SetFileDateModified(dateModified);
     }
-    string extension = ScannerUtils::GetFileExtension(data->GetFileName()); // in case when trashed or hidden
-    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
-    data->SetFileExtension(extension);
-    data->SetFileMimeType(mimeType);
     return E_OK;
 }
 
@@ -693,6 +702,137 @@ int32_t BackupFileUtils::GetUserId(const std::string &path)
         return userId;
     }
     return std::atoi(userIdStr.c_str());
+}
+
+bool BackupFileUtils::HandleRotateImage(const std::string &sourceFile, const std::string &targetPath, int32_t degrees)
+{
+    uint32_t err = E_OK;
+    std::unique_ptr<ImageSource> imageSource = LoadImageSource(sourceFile, err);
+    if (err != E_OK || imageSource == nullptr) {
+        MEDIA_ERR_LOG("LoadImageSource error: %{public}d, errno: %{public}d", err, errno);
+        return false;
+    }
+    if (imageSource->IsHdrImage()) {
+        return BackupFileUtils::HandleHdrImage(std::move(imageSource), targetPath, degrees);
+    } else {
+        return BackupFileUtils::HandleSdrImage(std::move(imageSource), targetPath, degrees);
+    }
+}
+
+unique_ptr<ImageSource> BackupFileUtils::LoadImageSource(const std::string &file, uint32_t &err)
+{
+    SourceOptions opts;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(file, opts, err);
+    if (err != E_OK || !imageSource) {
+        MEDIA_ERR_LOG("Failed to LoadImageSource, file exists: %{public}d", MediaFileUtils::IsFileExists(file));
+        return imageSource;
+    }
+    return imageSource;
+}
+
+bool BackupFileUtils::HandleHdrImage(std::unique_ptr<ImageSource> imageSource,
+    const std::string &targetPath, int32_t degrees)
+{
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, false, "Hdr imagesource null.");
+    DecodingOptionsForPicture pictOpts;
+    pictOpts.desireAuxiliaryPictures = {AuxiliaryPictureType::GAINMAP};
+    uint32_t err = E_OK;
+    auto picturePtr = imageSource->CreatePicture(pictOpts, err);
+    if (err != E_OK || picturePtr == nullptr) {
+        MEDIA_ERR_LOG("Failed to CreatePicture failed, err: %{public}d", err);
+        return false;
+    }
+    std::shared_ptr<Picture> picture = std::move(picturePtr);
+    auto pixelMap = picture->GetMainPixel();
+    auto gainMap = picture->GetGainmapPixelMap();
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "Failed to CreatePicture, main pixelMap is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(gainMap != nullptr, false, "Failed to CreatePicture, gainmap is nullptr.");
+    if (pixelMap->GetWidth() * pixelMap->GetHeight() == 0) {
+        MEDIA_ERR_LOG("Failed to CreatePicture, pixelMap size invalid, width: %{public}d, height: %{public}d",
+            pixelMap->GetWidth(), pixelMap->GetHeight());
+        return false;
+    }
+    pixelMap->rotate(static_cast<float>(degrees));
+    gainMap->rotate(static_cast<float>(degrees));
+    if (!EncodePicture(*picture, targetPath + LCD_FILE_NAME)) {
+        return false;
+    }
+    return ScalePixelMap(*pixelMap, *imageSource, targetPath + THM_FILE_NAME);
+}
+
+bool BackupFileUtils::EncodePicture(Picture &picture, const std::string &outFile)
+{
+    Media::ImagePacker imagePacker;
+    PackOption option = {
+        .format = IMAGE_FORMAT,
+        .quality = IMAGE_QUALITY,
+        .numberHint = IMAGE_NUMBER_HINT,
+        .desiredDynamicRange = EncodeDynamicRange::AUTO,
+        .needsPackProperties = false
+    };
+    uint32_t err = imagePacker.StartPacking(outFile, option);
+    CHECK_AND_RETURN_RET_LOG(err == 0, false, "Failed to StartPacking %{public}d", err);
+    err = imagePacker.AddPicture(picture);
+    CHECK_AND_RETURN_RET_LOG(err == 0, false, "Failed to AddPicture %{public}d", err);
+    err = imagePacker.FinalizePacking();
+    CHECK_AND_RETURN_RET_LOG(err == 0, false, "Failed to FinalizePacking %{public}d", err);
+    return true;
+}
+
+bool BackupFileUtils::HandleSdrImage(std::unique_ptr<ImageSource> imageSource,
+    const std::string &targetPath, int32_t degrees)
+{
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, false, "Sdr imagesource null.");
+    DecodeOptions decodeOpts;
+    uint32_t err = ERR_OK;
+    unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "CreatePixelMap err: %{public}d", err);
+    pixelMap->rotate(static_cast<float>(degrees));
+    if (!EncodePixelMap(*pixelMap, targetPath + LCD_FILE_NAME)) {
+        return false;
+    }
+    return ScalePixelMap(*pixelMap, *imageSource, targetPath + THM_FILE_NAME);
+}
+
+bool BackupFileUtils::ScalePixelMap(PixelMap &pixelMap, ImageSource &imageSource, const std::string &outFile)
+{
+    ImageInfo imageInfo;
+    uint32_t err = imageSource.GetImageInfo(0, imageInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to Get ImageInfo");
+        return false;
+    }
+    int targetWidth = imageInfo.size.height;
+    int targetHeight = imageInfo.size.width;
+    if (!ThumbnailUtils::ResizeThumb(targetWidth, targetHeight)) {
+        return false;
+    }
+    Size targetSize{targetWidth, targetHeight};
+    PostProc postProc;
+    if (!postProc.ScalePixelMapEx(targetSize, pixelMap, Media::AntiAliasingOption::HIGH)) {
+        MEDIA_ERR_LOG("ScalePixelMapEx failed, targetSize: %{public}d * %{public}d",
+            targetSize.width, targetSize.height);
+        return false;
+    }
+    return EncodePixelMap(pixelMap, outFile);
+}
+
+bool BackupFileUtils::EncodePixelMap(PixelMap &pixelMap, const std::string &outFile)
+{
+    PackOption option = {
+        .format = IMAGE_FORMAT,
+        .quality = IMAGE_QUALITY,
+        .numberHint = IMAGE_NUMBER_HINT,
+        .desiredDynamicRange = EncodeDynamicRange::SDR,
+    };
+    ImagePacker imagePacker;
+    uint32_t err = imagePacker.StartPacking(outFile, option);
+    CHECK_AND_RETURN_RET_LOG(err == 0, false, "Failed to StartPacking %{public}d", err);
+    err = imagePacker.AddImage(pixelMap);
+    CHECK_AND_RETURN_RET_LOG(err == 0, false, "Failed to AddPicture %{public}d", err);
+    err = imagePacker.FinalizePacking();
+    CHECK_AND_RETURN_RET_LOG(err == 0, false, "Failed to FinalizePacking %{public}d", err);
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

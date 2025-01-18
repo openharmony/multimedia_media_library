@@ -15,7 +15,6 @@
 #define MLOG_TAG "MtpSetDevicePropValueData"
 #include "payload_data/set_device_prop_value_data.h"
 #include "media_log.h"
-#include "mtp_global.h"
 #include "media_mtp_utils.h"
 #include "mtp_packet_tools.h"
 #include "mtp_operation_utils.h"
@@ -23,8 +22,6 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 static constexpr int32_t PARSER_PARAM_SUM = 1;
-const std::string WINDOWS = "Windows";
-const std::string OPEN_HARMONY = "OpenHarmony";
 
 SetDevicePropValueData::SetDevicePropValueData(std::shared_ptr<MtpOperationContext> &context)
     : PayloadData(context)
@@ -77,20 +74,6 @@ uint32_t SetDevicePropValueData::CalculateSize()
     return tmpVar.size();
 }
 
-static bool IsValidSystem(const std::string &value)
-{
-    if (value.empty()) {
-        return false;
-    }
-    if (value.size() >= WINDOWS.size() && WINDOWS.compare(value.substr(0, WINDOWS.size())) == 0) {
-        return true;
-    }
-    if (value.size() >= OPEN_HARMONY.size() && OPEN_HARMONY.compare(value.substr(0, OPEN_HARMONY.size())) == 0) {
-        return true;
-    }
-    return false;
-}
-
 void SetDevicePropValueData::PaserPropValue(const std::vector<uint8_t> &buffer, size_t &offset, uint32_t propertyCode)
 {
     string value = MtpPacketTool::GetString(buffer, offset);
@@ -105,10 +88,7 @@ void SetDevicePropValueData::PaserPropValue(const std::vector<uint8_t> &buffer, 
             // This function will be completed later
             break;
         case MTP_DEVICE_PROPERTY_SESSION_INITIATOR_VERSION_INFO_CODE:
-            if (IsValidSystem(value)) {
-                MtpGlobal::ReleaseBlock();
-                MEDIA_INFO_LOG("SetDevicePropValueData::Parser ReleaseBlock");
-            }
+            // This function will be completed later
             break;
         default:
             MEDIA_INFO_LOG("property do not find");

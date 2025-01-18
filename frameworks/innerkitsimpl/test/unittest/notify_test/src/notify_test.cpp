@@ -636,8 +636,9 @@ HWTEST_F(NotifyTest, handle_empty_data_002, TestSize.Level0)
     MEDIA_INFO_LOG("handle_empty_data_002 enter");
     CloudSyncHandleData emptyHandleData;
     emptyHandleData.orgInfo.type = DataShareObserver::ChangeType::OTHER;
-    UriConvertHandler handler;
-    handler.Handle(emptyHandleData);
+    auto handler = make_shared<NotifyHandler>();
+    EXPECT_NE(handler, nullptr);
+    handler->Handle(emptyHandleData);
     MEDIA_INFO_LOG("handle_empty_data_002 exit");
 }
 
@@ -652,8 +653,9 @@ HWTEST_F(NotifyTest, handle_empty_data_003, TestSize.Level0)
     MEDIA_INFO_LOG("handle_empty_data_003 enter");
     CloudSyncHandleData emptyHandleData;
     emptyHandleData.orgInfo.type = DataShareObserver::ChangeType::OTHER;
-    NotifyHandler handler;
-    handler.Handle(emptyHandleData);
+    auto handler = make_shared<NotifyHandler>();
+    EXPECT_NE(handler, nullptr);
+    handler->Handle(emptyHandleData);
     MEDIA_INFO_LOG("handle_empty_data_003 exit");
 }
 
@@ -668,8 +670,9 @@ HWTEST_F(NotifyTest, handle_special_change_type_001, TestSize.Level0)
     MEDIA_INFO_LOG("handle_special_change_type_001 enter");
     CloudSyncHandleData specialHandleData;
     specialHandleData.notifyInfo[static_cast<DataShare::DataShareObserver::ChangeType>(-1)] = {};
-    NotifyHandler handler;
-    handler.Handle(specialHandleData);
+    auto handler = make_shared<NotifyHandler>();
+    EXPECT_NE(handler, nullptr);
+    handler->Handle(specialHandleData);
     MEDIA_INFO_LOG("handle_special_change_type_001 exit");
 }
 } // namespace OHOS::Media

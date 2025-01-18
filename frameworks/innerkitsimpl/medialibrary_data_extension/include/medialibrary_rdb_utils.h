@@ -69,7 +69,8 @@ public:
     EXPORT static void UpdateAnalysisAlbumByFile(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &fileIds, const std::vector<int> &albumTypes);
     EXPORT static void UpdateAllAlbums(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-        const std::vector<std::string> &uris = {}, NotifyAlbumType type = NotifyAlbumType::NO_NOTIFY);
+        const std::vector<std::string> &uris = {}, NotifyAlbumType type = NotifyAlbumType::NO_NOTIFY,
+        bool isBackUpAndRestore = false);
 
     EXPORT static int32_t RefreshAllAlbums(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         std::function<void(PhotoAlbumType, PhotoAlbumSubType, int)> refreshProcessHandler,
@@ -104,6 +105,8 @@ public:
     EXPORT static int32_t UpdateThumbnailRelatedDataToDefault(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const int64_t fileId);
     EXPORT static void TransformAppId2TokenId(const std::shared_ptr<MediaLibraryRdbStore> &store);
+    EXPORT static int32_t FillOneAlbumCountAndCoverUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        int32_t albumId, PhotoAlbumSubType subtype, std::string &sql);
 
 private:
     static std::atomic<bool> isNeedRefreshAlbum;

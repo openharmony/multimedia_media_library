@@ -22,6 +22,7 @@
 #include "media_library_custom_restore.h"
 #include "medialibrary_custom_restore_notify.h"
 #include "medialibrary_custom_restore_observer_manager.h"
+#include "medialibrary_errno.h"
 
 using namespace testing;
 using namespace std;
@@ -91,7 +92,7 @@ HWTEST_F(MediaLibraryCustomRestoreCallbackTest, Custom_Restore_Callback_Test_001
         restoreResult.cancelNum = i;
         customRestoreNotify.Notify("customRestoreCallback", restoreResult);
     }
-    std::this_thread::sleep_for(std::chrono::seconds(10));
+    std::this_thread::sleep_for(std::chrono::seconds(2));
     EXPECT_EQ(customRestore.UnregisterCustomRestoreCallback(callback), E_OK);
     MEDIA_INFO_LOG("Custom_Restore_Callback_Test_001 End");
 }
@@ -130,7 +131,7 @@ HWTEST_F(MediaLibraryCustomRestoreCallbackTest, Custom_Restore_Callback_Test_005
     MockCustomRestoreCallback customRestoreCallback;
     std::shared_ptr<MockCustomRestoreCallback> callback =
         std::make_shared<MockCustomRestoreCallback>(customRestoreCallback);
-    CustomRestoreObserverManager::GetInstance().callbackMap_.clear();
+    CustomRestoreObserverManager::GetInstance().callbackMap_.Clear();
     EXPECT_NE(customRestore.UnregisterCustomRestoreCallback(callback), E_OK);
     MEDIA_INFO_LOG("Custom_Restore_Callback_Test_005 End");
 }

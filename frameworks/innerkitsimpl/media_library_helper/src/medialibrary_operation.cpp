@@ -27,6 +27,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "ptp_medialibrary_manager_uri.h"
+#include "delete_permanently_operations_uri.h"
 #include "search_column.h"
 #include "story_album_column.h"
 #include "story_cover_info_column.h"
@@ -338,6 +339,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { UPDATE_INDEX, OperationType::UPDATE_SEARCH_INDEX},
         { OPRN_QUERY_ORDER, OperationType::QUERY_ORDER },
         { OPRN_UPDATE_ORDER, OperationType::UPDATE_ORDER },
+        { OPRN_DELETE_LOCAL_ASSETS_PERMANENTLY, OperationType::DELETE_LOCAL_ASSETS_PERMANENTLY },
     };
     return oprnTypeMap;
 }

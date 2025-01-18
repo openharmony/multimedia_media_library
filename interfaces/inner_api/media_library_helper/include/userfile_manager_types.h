@@ -200,7 +200,8 @@ enum NotifyType {
     NOTIFY_ALBUM_REMOVE_ASSET,
     NOTIFY_ALBUM_DISMISS_ASSET,
     NOTIFY_THUMB_ADD,
-    NOTIFY_THUMB_UPDATE
+    NOTIFY_THUMB_UPDATE,
+    NOTIFY_INVALID
 };
 
 enum class RequestPhotoType : int32_t {

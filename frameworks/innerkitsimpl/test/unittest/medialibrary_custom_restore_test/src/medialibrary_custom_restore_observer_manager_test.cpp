@@ -91,16 +91,10 @@ HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverMa
     MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_003 End");
 }
 
-HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverManager_Test_004, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_004 Start");
-    CustomRestoreObserverManager::GetInstance().AttachObserver(nullptr, nullptr);
-    MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_004 End");
-}
-
 HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverManager_Test_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_005 Start");
+    CustomRestoreObserverManager::GetInstance().AttachObserver(nullptr, nullptr);
     auto result = CustomRestoreObserverManager::GetInstance().QueryObserver(nullptr);
     EXPECT_EQ(result == nullptr, true);
     MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_005 End");
@@ -109,7 +103,7 @@ HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverMa
 HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverManager_Test_006, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_006 Start");
-    CustomRestoreObserverManager::GetInstance().callbackMap_.clear();
+    CustomRestoreObserverManager::GetInstance().callbackMap_.Clear();
     SecondMockCustomRestoreCallback customRestoreCallback;
     std::shared_ptr<SecondMockCustomRestoreCallback> callback =
         std::make_shared<SecondMockCustomRestoreCallback>(customRestoreCallback);
@@ -121,7 +115,7 @@ HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverMa
 HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverManager_Test_007, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_007 Start");
-    CustomRestoreObserverManager::GetInstance().callbackMap_.clear();
+    CustomRestoreObserverManager::GetInstance().callbackMap_.Clear();
     SecondMockCustomRestoreCallback customRestoreCallback;
     std::shared_ptr<SecondMockCustomRestoreCallback> callback =
         std::make_shared<SecondMockCustomRestoreCallback>(customRestoreCallback);
@@ -136,7 +130,7 @@ HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverMa
 HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverManager_Test_008, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_008 Start");
-    CustomRestoreObserverManager::GetInstance().callbackMap_.clear();
+    CustomRestoreObserverManager::GetInstance().callbackMap_.Clear();
     auto result = CustomRestoreObserverManager::GetInstance().DetachObserver(nullptr);
     EXPECT_EQ(result, false);
     MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_008 End");
@@ -145,7 +139,7 @@ HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverMa
 HWTEST_F(MediaLibraryCustomRestoreObserverManagerTest, Custom_Restore_ObserverManager_Test_009, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Custom_Restore_ObserverManager_Test_009 Start");
-    CustomRestoreObserverManager::GetInstance().callbackMap_.clear();
+    CustomRestoreObserverManager::GetInstance().callbackMap_.Clear();
     SecondMockCustomRestoreCallback customRestoreCallback;
     std::shared_ptr<SecondMockCustomRestoreCallback> callback =
         std::make_shared<SecondMockCustomRestoreCallback>(customRestoreCallback);

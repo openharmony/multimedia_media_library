@@ -18,6 +18,7 @@
 
 #include <pthread.h>
 
+#include "cloud_media_asset_manager.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "dfx_manager.h"
@@ -85,6 +86,7 @@ static void HandleLoopTask(DfxData *data)
         prefs->PutLong(LAST_REPORT_TIME, lastReportTime);
         prefs->FlushSync();
     }
+    CloudMediaAssetManager::GetInstance().CheckStorageAndRecoverDownloadTask();
 }
 
 void DfxWorker::Prepare()

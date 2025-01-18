@@ -27,6 +27,7 @@
 #include "gallery_media_count_statistic.h"
 #include "media_log.h"
 #include "photos_count_statistic.h"
+#include "audios_count_statistic.h"
 
 namespace OHOS::Media {
 static constexpr char MEDIA_LIBRARY[] = "MEDIALIBRARY";
@@ -63,6 +64,15 @@ std::vector<AlbumMediaStatisticInfo> DatabaseReport::LoadMedia(
         .Load();
 }
 
+std::vector<AlbumMediaStatisticInfo> DatabaseReport::LoadAudio(const uint64_t audioCount)
+{
+    return AudiosCountStatistic()
+        .SetSceneCode(this->sceneCode_)
+        .SetTaskId(this->taskId_)
+        .SetAudioCount(audioCount)
+        .Load();
+}
+
 int32_t DatabaseReport::Report(std::vector<AlbumMediaStatisticInfo> statisticInfos)
 {
     for (const auto &info : statisticInfos) {
@@ -91,6 +101,13 @@ DatabaseReport &DatabaseReport::ReportExternal(std::shared_ptr<NativeRdb::RdbSto
 DatabaseReport &DatabaseReport::ReportMedia(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, int32_t period)
 {
     std::vector<AlbumMediaStatisticInfo> albumMediaStatisticInfos = this->LoadMedia(mediaLibraryRdb, period);
+    this->Report(albumMediaStatisticInfos);
+    return *this;
+}
+
+DatabaseReport &DatabaseReport::ReportAudio(const uint64_t audioCount)
+{
+    std::vector<AlbumMediaStatisticInfo> albumMediaStatisticInfos = this->LoadAudio(audioCount);
     this->Report(albumMediaStatisticInfos);
     return *this;
 }
