@@ -154,7 +154,7 @@ bool UserFileClient::IsValid()
 
 void UserFileClient::Init(const sptr<IRemoteObject> &token, bool isSetHelper)
 {
-    sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, GetMediaLibraryDataUri());
     if (isSetHelper) {
         MediaLibraryHelperContainer::GetInstance()->SetDataShareHelper(sDataShareHelper_);
     }
