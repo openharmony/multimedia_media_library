@@ -211,7 +211,7 @@ std::vector<PhotosDao::PhotosRowData> PhotosClone::FindDuplicateBurstKey()
 
 int32_t PhotosClone::FindPhotoQuality(const FileInfo &fileInfo)
 {
-    if (fileInfo.photoQuality == 1 && fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
+    if (fileInfo.photoQuality == 1) {
         return 0;
     }
     return fileInfo.photoQuality;
