@@ -162,6 +162,10 @@ string BackupFileUtils::ConvertLowQualityPath(int32_t sceneCode, const std::stri
 
 int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
 {
+    string extension = ScannerUtils::GetFileExtension(data->GetFileName()); // in case when trashed or hidden
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
+    data->SetFileExtension(extension);
+    data->SetFileMimeType(mimeType);
     std::string path = data->GetFilePath();
     struct stat statInfo {};
     if (stat(path.c_str(), &statInfo) != 0) {
@@ -178,10 +182,6 @@ int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
     if (dateModified != 0 && data->GetFileDateModified() == 0) {
         data->SetFileDateModified(dateModified);
     }
-    string extension = ScannerUtils::GetFileExtension(data->GetFileName()); // in case when trashed or hidden
-    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
-    data->SetFileExtension(extension);
-    data->SetFileMimeType(mimeType);
     return E_OK;
 }
 

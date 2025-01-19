@@ -449,6 +449,13 @@ napi_status GetCompatibleMode(napi_env env, const napi_value arg, const string &
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "invalid compatible mode value");
         return napi_invalid_arg;
     }
+#ifndef USE_VIDEO_PROCESSING_ENGINE
+    if (static_cast<CompatibleMode>(mode) == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
+        NAPI_ERR_LOG("current environment not support transcoder");
+        NapiError::ThrowError(env, OHOS_NOT_SUPPORT_TRANSCODER_CODE, "not support transcoder");
+        return napi_invalid_arg;
+    }
+#endif
     compatibleMode = static_cast<CompatibleMode>(mode);
     return napi_ok;
 }
@@ -1456,7 +1463,11 @@ void MediaAssetManagerNapi::GetPictureNapiObject(const std::string &fileUri, nap
     std::string tempStr = fileUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length());
     std::size_t index = tempStr.find("/");
     std::string fileId = tempStr.substr(0, index);
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     auto pic = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()));
+#else
+    auto pic = nullptr;
+#endif
     if (pic == nullptr) {
         NAPI_ERR_LOG("picture is null");
         isPicture = false;

@@ -109,7 +109,7 @@ const std::vector<std::string> SHOOTING_PARAM_EXIF = {
 
 MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode, const string &fileId,
     const int32_t type)
-    : path_(path), mode_(mode), fileId_(fileId), type_(type), fuseFlag_(false)
+    : path_(path), mode_(mode), fileId_(fileId), type_(type), uid_(0), tokenId_(0), fuseFlag_(false)
 {}
 
 MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode, const string &fileId,

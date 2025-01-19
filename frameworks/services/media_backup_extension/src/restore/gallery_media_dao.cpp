@@ -44,6 +44,22 @@ std::shared_ptr<NativeRdb::ResultSet> GalleryMediaDao::GetGalleryMedia(
 }
 
 /**
+ * @brief Get the gallery_media to restore cloud to Photos.
+ */
+std::shared_ptr<NativeRdb::ResultSet> GalleryMediaDao::GetCloudGalleryMedia(
+    int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
+{
+    if (this->galleryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
+        return nullptr;
+    }
+    int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
+    int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
+    std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag, offset, pageSize};
+    return this->galleryRdb_->QuerySql(this->SQL_GALLERY_CLOUD_QUERY_FOR_RESTORE, params);
+}
+
+/**
  * @brief Get the row count of gallery_media.
  */
 int32_t GalleryMediaDao::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQualityImage)
@@ -56,6 +72,25 @@ int32_t GalleryMediaDao::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQ
         return 0;
     }
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_COUNT, params);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return 0;
+    }
+    return GetInt32Val("count", resultSet);
+}
+
+/**
+ * @brief Get the row count of cloud_meta.
+ */
+int32_t GalleryMediaDao::GetCloudMetaCount(bool shouldIncludeSd, bool hasLowQualityImage)
+{
+    if (this->galleryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Cloud_meta_Restore: galleryRdb_ is null.");
+        return 0;
+    }
+    int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
+    int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
+    std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag};
+    auto resultSet = this->galleryRdb_->QuerySql(this->SQL_CLOUD_META_QUERY_COUNT, params);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return 0;
     }

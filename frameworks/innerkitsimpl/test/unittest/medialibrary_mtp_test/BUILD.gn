@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-if (defined(medialibrary_mtp_enable)) {
+if (media_library_feature_mtp) {
   module_output_path = "media_library/medialibrary_mtp"
   group("unittest") {
     testonly = true

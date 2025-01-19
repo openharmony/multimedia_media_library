@@ -170,6 +170,9 @@ const std::string RDB_QUERY_COUNT = "count";
 
 const int32_t THUMBNAIL_READY_FAILED = 2;
 
+const int32_t THUMBNAIL_FREE_SIZE_LIMIT_1 = 1;
+const int32_t THUMBNAIL_FREE_SIZE_LIMIT_10 = 10;
+
 // LCD that is over 2MB would not be uploaded
 const size_t LCD_UPLOAD_LIMIT_SIZE = 2048000;
 

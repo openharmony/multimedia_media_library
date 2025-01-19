@@ -38,8 +38,12 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
+#endif
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
+#endif
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 
@@ -1370,7 +1374,9 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 
     MediaLibraryAlbumOperations::DealwithNoAlbumAssets(rdbPredicates.GetWhereArgs());
     // notify deferred processing session to restore image
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     MultiStagesCaptureManager::RestorePhotos(rdbPredicates);
+#endif
 
     ValuesBucket rdbValues;
     rdbValues.PutInt(MediaColumn::MEDIA_DATE_TRASHED, 0);
@@ -1380,7 +1386,9 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
         return changedRows;
     }
     // set cloud enhancement to available
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().RecoverTrashUpdateInternal(rdbPredicates.GetWhereArgs());
+#endif
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), whereArgs);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -1467,6 +1475,20 @@ static inline int32_t DeletePhotoAssets(const DataSharePredicates &predicates,
     DealWithHighlightSdTable(predicates);
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     int32_t deletedRows = MediaLibraryAssetOperations::DeleteFromDisk(rdbPredicates, isAging, compatible);
+    if (!isAging) {
+        MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
+            static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_DELETE_INDEX));
+    }
+    return deletedRows;
+}
+
+static inline int32_t DeletePhotoAssetsCompleted(const DataSharePredicates &predicates,
+    const bool isAging)
+{
+    MEDIA_DEBUG_LOG("DeletePhotoAssetsCompleted start.");
+    DealWithHighlightSdTable(predicates);
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
+    int32_t deletedRows = MediaLibraryAssetOperations::DeletePermanently(rdbPredicates, isAging);
     if (!isAging) {
         MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_DELETE_INDEX));
@@ -2558,6 +2580,8 @@ int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opTyp
             return DeletePhotoAssets(predicates, false, false);
         case OperationType::COMPAT_ALBUM_DELETE_ASSETS:
             return DeletePhotoAssets(predicates, false, true);
+        case OperationType::DELETE_LOCAL_ASSETS_PERMANENTLY:
+            return DeletePhotoAssetsCompleted(predicates, false);
         case OperationType::AGING:
             return AgingPhotoAssets(countPtr);
         case OperationType::ALBUM_ORDER:

@@ -93,6 +93,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, TYPE_INT32 },
         { PhotoColumn::SUPPORTED_WATERMARK_TYPE, TYPE_INT32},
         { PhotoColumn::PHOTO_QUALITY, TYPE_INT32},
+        { PhotoColumn::PHOTO_CLOUD_ID, TYPE_STRING},
     };
     return RESULT_TYPE_MAP;
 }

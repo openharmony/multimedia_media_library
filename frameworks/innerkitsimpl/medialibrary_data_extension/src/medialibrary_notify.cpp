@@ -43,9 +43,7 @@ shared_ptr<MediaLibraryNotify> MediaLibraryNotify::instance_;
 mutex MediaLibraryNotify::mutex_;
 unordered_map<string, NotifyDataMap> MediaLibraryNotify::nfListMap_ = {};
 atomic<uint16_t> MediaLibraryNotify::counts_(0);
-atomic<uint16_t> MediaLibraryNotify::thumbCounts_(0);
 static const uint16_t IDLING_TIME = 50;
-const static uint16_t THUMB_LOOP = 5;
 
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
 {
@@ -140,15 +138,6 @@ static void PrintNotifyInfo(NotifyType type, const list<Uri> &uris, const string
     }
 }
 
-static bool IsPhtotoNotifyReadyToGo(const NotifyTyoe &type)
-{
-    if (type != NotifyType::NOTIFY_THUMB_ADD && type != NotifyType::NOTIFY_THUMB_UPDATE) {
-        return true;
-    }
-    MediaLibraryNotify::thumbCounts_ = (++MediaLibraryNotify::thumbCounts_) % THUMB_LOOP;
-    return MediaLibraryNotify::thumbCounts_ == 0;
-}
-
 static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
 {
     int ret;
@@ -158,9 +147,6 @@ static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
             ret = SolveAlbumUri(notifyUri, type, uris);
             PrintNotifyInfo(type, uris, uri);
         } else {
-            if (!IsPhotoNotifyReadyToGo(type)) {
-                continue;
-            }
             auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
             MEDIA_DEBUG_LOG("obsMgrClient->NotifyChangeExt URI is %{public}s, type is %{public}d",
                 uri.c_str(), static_cast<int>(type));
@@ -208,21 +194,37 @@ static void PushNotification(PeriodTaskData *data)
     }
 }
 
-static int32_t GetThumbVisibleById(const string &fileId)
+static int32_t IsThumbReadyById(const string &fileId)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + fileId;
-    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicates.SetWhereClause(strQueryCondition);
-    auto resultSet = uniStore->Query(rdbPredicates, {PhotoColumn::PHOTO_THUMBNAIL_VISIBLE});
+    vector<string> columns = {
+        MediaColumn::MEDIA_HIDDEN,
+        MediaColumn::MEDIA_DATE_TRASHED,
+        PhotoColumn::PHOTO_THUMBNAIL_VISIBLE,
+        PhotoColumn::PHOTO_SUBTYPE,
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+    };
+    NativeRdb::RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    auto resultSet = uniStore->Query(rdbPredicates, columns);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("GetThumbVisibleById failed");
         return 0;
     }
-    ret = resultSet->GoToFirstRow();
+    int ret = resultSet->GoToFirstRow();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, 0, "Failed to GoToFirstRow");
-    return get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE,
+    int32_t isVisible = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE,
         resultSet, TYPE_INT32));
+    int64_t isTrashed = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_DATE_TRASHED,
+        resultSet, TYPE_INT64));
+    int32_t subtype = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE,
+        resultSet, TYPE_INT64));
+    int32_t burstCoverLevel = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        resultSet, TYPE_INT64));
+    int32_t isHidden = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_HIDDEN,
+        resultSet, TYPE_INT64));
+    return isVisible && isTrashed == 0 && isHidden == 0 && !(subtype == static_cast<int32_t>(PhotoSubType::BURST) &&
+        burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::MEMBER));
 }
 
 static bool SkipThumbNotifyIfNotReady(NotifyTaskData* taskData)
@@ -230,14 +232,15 @@ static bool SkipThumbNotifyIfNotReady(NotifyTaskData* taskData)
     if (taskData == nullptr) {
         return false;
     }
-    if (taskData->notifyType_ != NotifyType::NOTIFY_THUMB_ADD) {
+    if (taskData->notifyType_ != NotifyType::NOTIFY_THUMB_ADD && taskData->notifyType_ !=
+        NotifyType::NOTIFY_THUMB_UPDATE) {
         return false;
     }
-    string fileId = GetFileIdFromPhotoUri(taskData->uri_);
+    string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(taskData->uri_);
     if (fileId.empty()) {
         return false;
     }
-    return GetThumbVisibleById(fileId) == 0;
+    return !IsThumbReadyById(fileId);
 }
 
 static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData* taskData)

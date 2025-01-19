@@ -52,7 +52,7 @@ static int Open(const char *path, struct fuse_file_info *fi)
     int32_t err = MediaFuseManager::GetInstance().DoOpen(path, fi->flags, fd);
     CHECK_AND_RETURN_RET_LOG(err == 0, err, "Open file failed, path = %{private}s", path);
 
-    fi->fh = fd;
+    fi->fh = static_cast<uint64_t>(fd);
     return 0;
 }
 
