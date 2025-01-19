@@ -33,13 +33,19 @@ int32_t UserFileClient::userId_ = -1;
 int32_t UserFileClient::lastUserId_ = -1;
 std::string MULTI_USER_URI_FLAG = "user=";
 std::string USER_STR = "user";
-static void DataShareCreator(const sptr<IRemoteObject> &token, shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
+
+static std::string GetMediaLibraryDataUri()
 {
     std::string mediaLibraryDataUri = MEDIALIBRARY_DATA_URI;
     if (UserFileClient::GetUserId() != -1) {
         mediaLibraryDataUri = mediaLibraryDataUri + "?" + MULTI_USER_URI_FLAG + to_string(UserFileClient::GetUserId());
     }
-    dataShareHelper = DataShare::DataShareHelper::Creator(token, mediaLibraryDataUri);
+    return mediaLibraryDataUri;
+}
+
+static void DataShareCreator(const sptr<IRemoteObject> &token, shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
+{
+    dataShareHelper = DataShare::DataShareHelper::Creator(token, GetMediaLibraryDataUri());
     if (dataShareHelper == nullptr) {
         NAPI_ERR_LOG("dataShareHelper Creator failed");
         dataShareHelper = DataShare::DataShareHelper::Creator(token, mediaLibraryDataUri);
