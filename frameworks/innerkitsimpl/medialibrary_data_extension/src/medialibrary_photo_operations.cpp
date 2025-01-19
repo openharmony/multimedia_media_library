@@ -517,7 +517,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     size_t pos = cmdUri.find(MULTI_USER_URI_FLAG);
     string userId = "";
     if (pos != std::string::npos) {
-        userId = cmdUri.substr(pos + 5);
+        userId = cmdUri.substr(pos + MULTI_USER_URI_FLAG.length());
         uriString = uriString + "?" + MULTI_USER_URI_FLAG + userId;
     }
     shared_ptr<FileAsset> fileAsset = GetFileAssetByUri(uriString, true,  PHOTO_COLUMN_VECTOR, pendingStatus);
