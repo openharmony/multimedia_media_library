@@ -39,16 +39,9 @@ public:
     static int Update(Uri &uri, const DataShare::DataSharePredicates &predicates,
         const DataShare::DataShareValuesBucket &value);
     static void Clear();
-    static void SetUserId(const int32_t userId);
-    static int32_t GetUserId();
-    static void SetLastUserId(const int32_t userId);
-    static int32_t GetLastUserId();
-    static void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value);
 
 private:
     static inline std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
-    static int32_t userId_;
-    static int32_t lastUserId_;
 };
 }
 }
