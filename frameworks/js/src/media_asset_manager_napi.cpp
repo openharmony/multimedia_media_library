@@ -766,12 +766,12 @@ napi_status MediaAssetManagerNapi::ParseEfficentRequestMediaArgs(napi_env env, n
 
 bool MediaAssetManagerNapi::InitUserFileClient(napi_env env, napi_callback_info info)
 {
-    if (UserFileClient::IsValid()) {
+    if (UserFileClient::IsValid() && UserFileClient::GetLastUserId() == UserFileClient::GetUserId()) {
         return true;
     }
 
     std::unique_lock<std::mutex> helperLock(MediaLibraryNapi::sUserFileClientMutex_);
-    if (!UserFileClient::IsValid()) {
+    if (UserFileClient::GetLastUserId() != UserFileClient::GetUserId() || !UserFileClient::IsValid()) {
         UserFileClient::Init(env, info);
     }
     helperLock.unlock();
