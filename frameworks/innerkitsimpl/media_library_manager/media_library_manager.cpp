@@ -504,7 +504,7 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
         userId = str.substr(pos + MULTI_USER_URI_FLAG.length());
         MEDIA_DEBUG_LOG("OpenThumbnail for other user is %{public}s", userId.c_str());
     }
-    auto dataShareHelper = userId != "" ? DataShare::DataShareHelper::Creator(token_,
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper = userId != "" ? DataShare::DataShareHelper::Creator(token_,
         MEDIALIBRARY_DATA_URI + "?" + MULTI_USER_URI_FLAG + userId) : sDataShareHelper_;
     if (dataShareHelper == nullptr) {
         MEDIA_ERR_LOG("Failed to open thumbnail, dataShareHelper is nullptr");
