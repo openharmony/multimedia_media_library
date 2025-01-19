@@ -76,6 +76,7 @@ void BackupRestoreService::Init(const RestoreInfo &info)
     } else {
         restoreService_ = std::make_unique<CloneRestore>();
     }
+    restoreService_ -> restoreInfo_ = info.bundleInfo;
 }
 
 void BackupRestoreService::StartRestore(const std::shared_ptr<AbilityRuntime::Context> &context,

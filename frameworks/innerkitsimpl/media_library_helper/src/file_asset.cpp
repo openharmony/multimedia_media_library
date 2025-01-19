@@ -136,6 +136,16 @@ void FileAsset::SetSize(int64_t size)
     member_[MEDIA_DATA_DB_SIZE] = size;
 }
 
+const string &FileAsset::GetCloudId() const
+{
+    return GetStrMember(PhotoColumn::PHOTO_CLOUD_ID);
+}
+
+void FileAsset::SetCloudId(const string &cloudId)
+{
+    member_[PhotoColumn::PHOTO_CLOUD_ID] = cloudId;
+}
+
 int64_t FileAsset::GetDateAdded() const
 {
     return GetInt64Member(MEDIA_DATA_DB_DATE_ADDED);

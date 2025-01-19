@@ -18,6 +18,14 @@ import("//foundation/ability/ability_runtime/ability_runtime.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
+group("media_backup_package") {
+  deps = []
+  if (media_library_feature_back_up) {
+    deps += [ ":mediabackup" ]
+  } else {
+  }
+}
+
 ohos_shared_library("mediabackup") {
   include_dirs = [
     "./include",
@@ -100,6 +108,8 @@ ohos_shared_library("mediabackup") {
     "kv_store:distributeddata_inner",
     "libxml2:libxml2",
     "napi:ace_napi",
+    "os_account:libaccountkits",  # ohos_account
+    "os_account:os_account_innerkits",  # os_account
     "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",

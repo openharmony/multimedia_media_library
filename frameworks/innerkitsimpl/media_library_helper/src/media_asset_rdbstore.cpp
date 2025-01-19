@@ -241,6 +241,7 @@ void AddQueryFilter(AbsRdbPredicates &predicates)
 
     /* rebuild */
     string queryCondition = predicates.GetWhereClause();
+    MEDIA_DEBUG_LOG("queryCondition: %{public}s", queryCondition.c_str());
     queryCondition = queryCondition.empty() ? filters : filters + " AND " + queryCondition;
     predicates.SetWhereClause(queryCondition);
 }

@@ -20,6 +20,7 @@
 #include <memory>
 #include <mutex>
 #include <sstream>
+#include <sys/stat.h>
 
 #include "cloud_media_asset_manager.h"
 #include "dfx_utils.h"
@@ -57,8 +58,12 @@
 #include "medialibrary_unistore_manager.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
+#endif
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
+#endif
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "rdb_errno.h"
@@ -77,6 +82,8 @@
 #include "dfx_const.h"
 #include "moving_photo_file_utils.h"
 #include "userfilemgr_uri.h"
+#include "medialibrary_album_fusion_utils.h"
+#include "unique_fd.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -91,6 +98,10 @@ const string DEFAULT_AUDIO_NAME = "AUD_";
 constexpr int32_t NO_DESENSITIZE = 3;
 const string PHOTO_ALBUM_URI_PREFIX = "file://media/PhotoAlbum/";
 constexpr int32_t UNKNOWN_VALUE = -1;
+constexpr int32_t LOCAL_PHOTO_POSITION = 1;
+constexpr int32_t BOTH_LOCAL_CLOUD_PHOTO_POSITION = 3;
+constexpr int32_t MAX_PROCESS_NUM = 30;
+constexpr int64_t INVALID_SIZE = 0;
 
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
@@ -129,9 +140,11 @@ int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &
         case OperationType::SCAN_WITHOUT_ALBUM_UPDATE:
             errCode = MediaLibraryPhotoOperations::ScanFileWithoutAlbumUpdate(cmd);
             break;
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
         case OperationType::FINISH_REQUEST_PICTURE:
             errCode = MediaLibraryPhotoOperations::FinishRequestPicture(cmd);
             break;
+#endif
         case OperationType::CLONE_ASSET:
             errCode = MediaLibraryPhotoOperations::CloneSingleAsset(cmd);
             break;
@@ -2428,6 +2441,242 @@ int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
     return E_OK;
 }
 
+static int32_t GetFileAssetsFromResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
+    const vector<string> &fileColumns, vector<shared_ptr<FileAsset>> &fileAssets)
+{
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "The provided resultSet is nullptr");
+    int32_t fileCount = 0;
+    CHECK_AND_RETURN_RET_LOG(resultSet->GetRowCount(fileCount) == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Cannot get fileCount of resultset");
+    CHECK_AND_RETURN_RET_LOG(fileCount > 0, E_HAS_DB_ERROR, "ResultSet fileCount is %{public}d", fileCount);
+
+    fileAssets.reserve(fileCount);
+    for (int32_t i = 0; i < fileCount; i++) {
+        CHECK_AND_RETURN_RET_LOG(
+            resultSet->GoToNextRow() == NativeRdb::E_OK, E_HAS_DB_ERROR, "Failed to go to next row");
+        auto fileAsset = FetchFileAssetFromResultSet(resultSet, fileColumns);
+        CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_HAS_DB_ERROR, "Failed to fetch fileAsset from resultSet");
+        fileAssets.push_back(fileAsset);
+    }
+    resultSet->Close();
+    return E_OK;
+}
+
+static int64_t GetAssetSize(const std::string &extraPath)
+{
+    MEDIA_DEBUG_LOG("GetAssetSize start.");
+    string absExtraPath;
+    if (!PathToRealPath(extraPath, absExtraPath)) {
+        MEDIA_ERR_LOG("file is not real path: %{private}s", extraPath.c_str());
+        return static_cast<int64_t>(E_ERR);
+    }
+    UniqueFd fd(open(absExtraPath.c_str(), O_RDONLY));
+    if (fd.Get() == E_ERR) {
+        MEDIA_ERR_LOG("failed to open extra file");
+        return static_cast<int64_t>(E_ERR);
+    }
+    struct stat st;
+    if (fstat(fd.Get(), &st) != E_OK) {
+        MEDIA_ERR_LOG("failed to get file size");
+        return static_cast<int64_t>(E_ERR);
+    }
+    off_t fileSize = st.st_size;
+    return static_cast<int64_t>(fileSize);
+}
+
+static void GetMovingPhotoExternalInfo(ExternalInfo &exInfo, vector<string> &attachment)
+{
+    MEDIA_DEBUG_LOG("GetMovingPhotoExternalInfo start.");
+    if (!MovingPhotoFileUtils::IsMovingPhoto(exInfo.subType, exInfo.effectMode, exInfo.originalSubType)) {
+        return;
+    }
+    exInfo.videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(exInfo.path);
+    exInfo.extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(exInfo.path);
+    if (!exInfo.videoPath.empty()) {
+        attachment.push_back(exInfo.videoPath);
+    } else {
+        MEDIA_WARN_LOG("videoPath is empty.");
+    }
+    if (!exInfo.extraPath.empty()) {
+        attachment.push_back(exInfo.extraPath);
+    } else {
+        MEDIA_WARN_LOG("extraPath is empty.");
+    }
+    MEDIA_DEBUG_LOG("videoPath is %{public}s, extraPath is %{public}s.", exInfo.videoPath.c_str(),
+        exInfo.extraPath.c_str());
+    exInfo.sizeMp4 = GetAssetSize(exInfo.videoPath);
+    exInfo.sizeExtra = GetAssetSize(exInfo.extraPath);
+    if (exInfo.sizeMp4 <= INVALID_SIZE) {
+        MEDIA_WARN_LOG("failed to get mp4 size.");
+    } else {
+        exInfo.size += exInfo.sizeMp4;
+    }
+    if (exInfo.sizeExtra <= INVALID_SIZE) {
+        MEDIA_WARN_LOG("failed to get extra size.");
+    } else {
+        exInfo.size += exInfo.sizeExtra;
+    }
+    MEDIA_DEBUG_LOG("MovingPhoto size is %{public}" PRId64, exInfo.size);
+}
+
+static void GetEditPhotoExternalInfo(ExternalInfo &exInfo, vector<string> &attachment)
+{
+    MEDIA_DEBUG_LOG("GetEditPhotoExternalInfo start.");
+    if (exInfo.editTime == 0) {
+        return;
+    }
+    exInfo.editDataPath = PhotoFileUtils::GetEditDataPath(exInfo.path);
+    exInfo.editDataCameraPath = PhotoFileUtils::GetEditDataCameraPath(exInfo.path);
+    exInfo.editDataSourcePath = PhotoFileUtils::GetEditDataSourcePath(exInfo.path);
+    if (!exInfo.editDataPath.empty()) {
+        attachment.push_back(exInfo.editDataPath);
+    } else {
+        MEDIA_WARN_LOG("editDataPath is empty.");
+    }
+    if (!exInfo.editDataCameraPath.empty()) {
+        attachment.push_back(exInfo.editDataCameraPath);
+    } else {
+        MEDIA_WARN_LOG("editDataCameraPath is empty.");
+    }
+    if (!exInfo.editDataSourcePath.empty()) {
+        attachment.push_back(exInfo.editDataSourcePath);
+    } else {
+        MEDIA_WARN_LOG("editDataSourcePath is empty.");
+    }
+    MEDIA_DEBUG_LOG("editDataPath is %{public}s, editDataCameraPath is %{public}s, editDataSourcePath is %{public}s",
+        exInfo.editDataPath.c_str(), exInfo.editDataCameraPath.c_str(), exInfo.editDataSourcePath.c_str());
+}
+
+static CleanFileInfo GetCleanFileInfo(shared_ptr<FileAsset> &fileAssetPtr)
+{
+    MEDIA_DEBUG_LOG("GetCleanFileInfo start.");
+    if (fileAssetPtr == nullptr) {
+        MEDIA_ERR_LOG("GetCleanFileInfo fileAssetPtr is nullptr.");
+        return {};
+    }
+    CleanFileInfo cleanFileInfo;
+    ExternalInfo externalInfo;
+    externalInfo.size = fileAssetPtr->GetSize();
+    if (externalInfo.size == INVALID_SIZE) {
+        externalInfo.size = GetAssetSize(externalInfo.path);
+        if (externalInfo.size <= INVALID_SIZE) {
+            MEDIA_ERR_LOG("failed to get asset size.");
+            return {};
+        }
+    }
+    externalInfo.path = fileAssetPtr->GetPath();
+    MEDIA_DEBUG_LOG("path is %{public}s", externalInfo.path.c_str());
+    externalInfo.cloudId = fileAssetPtr->GetCloudId();
+    externalInfo.subType = fileAssetPtr->GetPhotoSubType();
+    externalInfo.effectMode = fileAssetPtr->GetMovingPhotoEffectMode();
+    externalInfo.originalSubType = fileAssetPtr->GetOriginalSubType();
+    GetMovingPhotoExternalInfo(externalInfo, cleanFileInfo.attachment);
+    MEDIA_DEBUG_LOG("size is %{public}" PRId64, externalInfo.size);
+    externalInfo.dateModified = fileAssetPtr->GetDateModified();
+    externalInfo.displayName = fileAssetPtr->GetDisplayName();
+    externalInfo.editTime = fileAssetPtr->GetPhotoEditTime();
+    GetEditPhotoExternalInfo(externalInfo, cleanFileInfo.attachment);
+    cleanFileInfo.cloudId = externalInfo.cloudId;
+    cleanFileInfo.size = externalInfo.size;
+    cleanFileInfo.modifiedTime = externalInfo.dateModified;
+    cleanFileInfo.path = externalInfo.path;
+    cleanFileInfo.fileName = externalInfo.displayName;
+    return cleanFileInfo;
+}
+
+static int32_t GetBurstFileInfo(const string &key, vector<CleanFileInfo> &fileInfos)
+{
+    MEDIA_DEBUG_LOG("GetBurstFileInfo start.");
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.EqualTo(PhotoColumn::PHOTO_BURST_KEY, key);
+    vector<string> columns = {
+        PhotoColumn::PHOTO_CLOUD_ID,
+        MediaColumn::MEDIA_SIZE,
+        MediaColumn::MEDIA_DATE_MODIFIED,
+        MediaColumn::MEDIA_FILE_PATH,
+        MediaColumn::MEDIA_NAME,
+        MediaColumn::MEDIA_ID,
+        PhotoColumn::PHOTO_POSITION,
+        PhotoColumn::PHOTO_BURST_KEY,
+        PhotoColumn::PHOTO_SUBTYPE,
+        PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+        PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
+        PhotoColumn::PHOTO_EDIT_TIME,
+    };
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rbdPredicates, columns);
+    vector<shared_ptr<FileAsset>> fileAssetVector;
+    GetFileAssetsFromResultSet(resultSet, columns, fileAssetVector);
+    if (fileAssetVector.empty()) {
+        MEDIA_ERR_LOG("GetBurstFileInfo fileAssetVector is empty.");
+        return E_HAS_DB_ERROR;
+    }
+    for (auto& fileAssetPtr : fileAssetVector) {
+        fileInfos.push_back(GetCleanFileInfo(fileAssetPtr));
+    }
+    return E_OK;
+}
+
+static void BatchDeleteLocalAndCloud(const vector<CleanFileInfo> &fileInfos)
+{
+    if (fileInfos.empty()) {
+        MEDIA_ERR_LOG("Batch delete local and cloud fileInfo is empty.");
+        return;
+    }
+    vector<string> failCloudId;
+    MediaLibraryTracer tracer;
+    tracer.Start("BatchDeleteLocalAndCloud");
+    auto ret = CloudSyncManager::GetInstance().BatchCleanFile(fileInfos, failCloudId);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Failed to delete loacl and cloud photos permanently.");
+    } else if (!failCloudId.empty()) {
+        for (const auto& element : failCloudId) {
+            MEDIA_ERR_LOG("Failed to delete, cloudId is %{public}s.", element.c_str());
+        }
+    } else {
+        MEDIA_DEBUG_LOG("Delete loacl and cloud photos permanently success");
+    }
+}
+
+static int32_t DeleteLocalAndCloudPhotos(vector<shared_ptr<FileAsset>> &subFileAsset)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteLocalAndCloudPhotos");
+    MEDIA_DEBUG_LOG("DeleteLocalAndCloudPhotos start.");
+    vector<CleanFileInfo> fileInfos;
+    if (subFileAsset.empty()) {
+        MEDIA_ERR_LOG("DeleteLocalAndCloudPhotos subFileAsset is empty.");
+        return E_HAS_DB_ERROR;
+    }
+    
+    for (auto& fileAssetPtr : subFileAsset) {
+        if (fileAssetPtr == nullptr) {
+            continue;
+        }
+        string burst_key = fileAssetPtr->GetBurstKey();
+        if (burst_key != "") {
+            GetBurstFileInfo(burst_key, fileInfos);
+            continue;
+        }
+        fileInfos.push_back(GetCleanFileInfo(fileAssetPtr));
+    }
+    vector<CleanFileInfo> subFileInfo;
+    int32_t count = 0;
+    for (const auto& element : fileInfos) {
+        MEDIA_INFO_LOG("delete local and cloud file displayName is %{public}s", element.fileName.c_str());
+        subFileInfo.push_back(element);
+        count++;
+        if (count == MAX_PROCESS_NUM) {
+            BatchDeleteLocalAndCloud(subFileInfo);
+            subFileInfo.clear();
+            count = 0;
+        }
+    }
+    if (!subFileInfo.empty()) {
+        BatchDeleteLocalAndCloud(subFileInfo);
+    }
+    return E_OK;
+}
+
 static inline int32_t DeleteDbByIds(const string &table, vector<string> &ids, const bool compatible)
 {
     AbsRdbPredicates predicates(table);
@@ -2470,11 +2719,15 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     CHECK_AND_RETURN_RET_LOG(!ids.empty(), deletedRows, "Failed to delete files in db, ids size: 0");
 
     // notify deferred processing session to remove image
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     MultiStagesCaptureManager::RemovePhotos(predicates, false);
+#endif
 
     // delete cloud enhanacement task
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     vector<string> photoIds;
     EnhancementManager::GetInstance().RemoveTasksInternal(ids, photoIds);
+#endif
 
     deletedRows = DeleteDbByIds(predicates.GetTableName(), ids, compatible);
     if (deletedRows <= 0) {
@@ -2498,6 +2751,189 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     
     CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
     return deletedRows;
+}
+
+int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteNormalPhotoPermanently");
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_HAS_DB_ERROR,
+        "Photo Asset is nullptr");
+    string filePath = fileAsset->GetPath();
+    string displayName = fileAsset->GetDisplayName();
+    MEDIA_INFO_LOG("Delete Photo displayName is %{public}s", displayName.c_str());
+    MEDIA_DEBUG_LOG("Delete Photo path is %{public}s", filePath.c_str());
+    CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INVALID_PATH, "get file path failed");
+    bool res = MediaFileUtils::DeleteFile(filePath);
+    CHECK_AND_RETURN_RET_LOG(res, E_HAS_FS_ERROR, "Delete photo file failed, errno: %{public}d", errno);
+
+    //delete thumbnail
+    int32_t fileId = fileAsset->GetId();
+    MediaLibraryAssetOperations::InvalidateThumbnail(to_string(fileId), fileAsset->GetMediaType());
+
+    // delete file in db
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::DELETE);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    int32_t deleteRows = DeleteAssetInDb(cmd);
+    MEDIA_DEBUG_LOG("Total delete row in db is %{public}d", deleteRows);
+    CHECK_AND_RETURN_RET_LOG(deleteRows > 0, E_HAS_DB_ERROR,
+        "Delete photo in database failed, errCode=%{public}d", deleteRows);
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_HAS_FS_ERROR, "watch is nullptr");
+    string notifyDeleteUri =
+        MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(deleteRows),
+            MediaFileUtils::GetExtraUri(displayName, filePath));
+    watch->Notify(notifyDeleteUri, NotifyType::NOTIFY_REMOVE);
+
+    MediaLibraryPhotoOperations::DeleteRevertMessage(filePath);
+    return E_OK;
+}
+
+static int32_t DeletePhotoPermanentlyFromVector(vector<shared_ptr<FileAsset>> &fileAssetVector)
+{
+    for (auto& fileAssetPtr : fileAssetVector) {
+        MEDIA_DEBUG_LOG("Delete photo display name %{public}s", fileAssetPtr->GetDisplayName().c_str());
+        CHECK_AND_RETURN_RET_LOG(fileAssetPtr != nullptr, E_HAS_DB_ERROR,
+            "Photo Asset is nullptr");
+        MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(fileAssetPtr);
+    }
+    return E_OK;
+}
+
+static int32_t DeleteBurstPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
+{
+    MEDIA_DEBUG_LOG("DeleteBurstPhotoPermanently begin");
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_HAS_DB_ERROR,
+        "Photo Asset is nullptr");
+    string burstKey = fileAsset->GetBurstKey();
+    MEDIA_DEBUG_LOG("Deleteburst is %{public}s", burstKey.c_str());
+    if (burstKey == "") {
+        return E_OK;
+    }
+    vector<shared_ptr<FileAsset>> burstFileAssetVector;
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.EqualTo(PhotoColumn::PHOTO_BURST_KEY, burstKey);
+    vector<string> columns = {
+        MediaColumn::MEDIA_FILE_PATH,
+        MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_TYPE,
+    };
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rbdPredicates, columns);
+    GetFileAssetsFromResultSet(resultSet, columns, burstFileAssetVector);
+    DeletePhotoPermanentlyFromVector(burstFileAssetVector);
+    return E_OK;
+}
+
+static int32_t DeleteMovingPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
+{
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_HAS_DB_ERROR, "Photo Asset is nullptr");
+    int32_t subType = fileAsset->GetPhotoSubType();
+    int32_t effectMode = fileAsset->GetMovingPhotoEffectMode();
+    int32_t originalSubType = fileAsset->GetOriginalSubType();
+    if (MovingPhotoFileUtils::IsMovingPhoto(subType, effectMode, originalSubType)) {
+        string path = fileAsset->GetPath();
+        string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(path);
+        bool res = MediaFileUtils::DeleteFile(videoPath);
+        if (!res) {
+            MEDIA_WARN_LOG("delete video path is %{public}s, errno: %{public}d", videoPath.c_str(), errno);
+        }
+        string exVideoPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(path);
+        res = MediaFileUtils::DeleteFile(exVideoPath);
+        if (!res) {
+            MEDIA_WARN_LOG("delete extra data path is %{public}s, errno: %{public}d", exVideoPath.c_str(), errno);
+        }
+    }
+    return E_OK;
+}
+
+static int32_t DeleteEditPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
+{
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_HAS_DB_ERROR,
+        "Photo Asset is nullptr");
+    int64_t editTime = fileAsset->GetPhotoEditTime();
+    if (editTime != 0) {
+        string path = fileAsset->GetPath();
+        string editDataPath = PhotoFileUtils::GetEditDataPath(path);
+        MEDIA_DEBUG_LOG("edit photo editDataPath path is %{public}s", editDataPath.c_str());
+        bool res = MediaFileUtils::DeleteFile(editDataPath);
+        if (!res) {
+            MEDIA_WARN_LOG("delete edit data path is %{public}s, errno: %{public}d", editDataPath.c_str(), errno);
+        }
+    }
+    return E_OK;
+}
+
+static int32_t DeleteLocalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
+    vector<shared_ptr<FileAsset>> &subFileAssetVector)
+{
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_HAS_DB_ERROR,
+        "Photo Asset is nullptr");
+    int32_t position = fileAsset->GetPosition();
+    MEDIA_DEBUG_LOG("Photo position is %{public}d", position);
+    if (position == LOCAL_PHOTO_POSITION) {
+        int32_t id = fileAsset->GetId();
+        if (DeleteEditPhotoPermanently(fileAsset) != E_OK) {
+            MEDIA_WARN_LOG("Delete edit photo file failed id %{public}d", id);
+        }
+        if (DeleteMovingPhotoPermanently(fileAsset) != E_OK) {
+            MEDIA_WARN_LOG("Delete moving photo file failed id %{public}d", id);
+        }
+        if (DeleteBurstPhotoPermanently(fileAsset) != E_OK) {
+            MEDIA_WARN_LOG("Delete moving photo file failed id %{public}d", id);
+        }
+        if (MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(fileAsset) != E_OK) {
+            MEDIA_WARN_LOG("Delete moving photo file failed id %{public}d", id);
+        }
+    }
+    if (position == CLOUD_PHOTO_POSITION) {
+        MEDIA_DEBUG_LOG("Don't delete cloud Photo");
+    }
+    if (position == BOTH_LOCAL_CLOUD_PHOTO_POSITION) {
+        subFileAssetVector.push_back(fileAsset);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predicates, const bool isAging)
+{
+    MEDIA_DEBUG_LOG("DeletePermanently begin");
+    MediaLibraryTracer tracer;
+    tracer.Start("DeletePermanently");
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
+    vector<string> agingNotifyUris;
+
+    // Query asset uris for notify before delete.
+    if (isAging) {
+        MediaLibraryNotify::GetNotifyUris(predicates, agingNotifyUris);
+    }
+
+    vector<string> columns = {
+        PhotoColumn::PHOTO_CLOUD_ID,
+        MediaColumn::MEDIA_SIZE,
+        MediaColumn::MEDIA_DATE_MODIFIED,
+        MediaColumn::MEDIA_FILE_PATH,
+        MediaColumn::MEDIA_NAME,
+        MediaColumn::MEDIA_ID,
+        PhotoColumn::PHOTO_POSITION,
+        PhotoColumn::PHOTO_BURST_KEY,
+        MediaColumn::MEDIA_TYPE,
+        PhotoColumn::PHOTO_SUBTYPE,
+        PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+        PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
+        PhotoColumn::PHOTO_EDIT_TIME,
+    };
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
+    vector<shared_ptr<FileAsset>> fileAssetVector;
+    vector<shared_ptr<FileAsset>> subFileAssetVector;
+    GetFileAssetsFromResultSet(resultSet, columns, fileAssetVector);
+    for (auto& fileAssetPtr : fileAssetVector) {
+        DeleteLocalPhotoPermanently(fileAssetPtr, subFileAssetVector);
+    }
+
+    //delete both local and cloud image
+    DeleteLocalAndCloudPhotos(subFileAssetVector);
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

@@ -61,7 +61,7 @@ const int32_t FUSE_PHOTO_VIRTUAL_IDENTIFIER = 4;
 const int32_t BASE_USER_RANGE = 200000;
 static set<int> readPermSet{0, 1, 3, 4};
 static set<int> writePermSet{2, 3, 4};
-static const map<int32_t, string> MEDIA_OPEN_MODE_MAP = {
+static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
     { O_RDONLY, MEDIA_FILEMODE_READONLY },
     { O_WRONLY, MEDIA_FILEMODE_WRITEONLY },
     { O_RDWR, MEDIA_FILEMODE_READWRITE },
@@ -135,7 +135,7 @@ static bool IsFullUri(const string &uri)
 static int32_t GetFileIdFromUri(string &fileId, const string &uri)
 {
     string tmpPath;
-    int32_t pos;
+    uint32_t pos;
     int32_t virtualId;
     /* uri = "/Photo/fileid/filename/displayname.jpg" */
     if (uri.find("/Photo") == 0) {
@@ -149,7 +149,8 @@ static int32_t GetFileIdFromUri(string &fileId, const string &uri)
         tmpPath = uri.substr(strlen("/image/"));
         CHECK_AND_RETURN_RET(!tmpPath.empty(), E_ERR);
         CHECK_AND_RETURN_RET(all_of(tmpPath.begin(), tmpPath.end(), ::isdigit), E_ERR);
-        virtualId = stoi(tmpPath.c_str());
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsValidInteger(tmpPath), E_ERR, "virtual id invalid");
+        virtualId = stoi(tmpPath);
         bool cond = ((virtualId + FUSE_PHOTO_VIRTUAL_IDENTIFIER) % FUSE_VIRTUAL_ID_DIVIDER == 0);
         CHECK_AND_RETURN_RET_LOG(cond, E_ERR, "virtual id err");
         fileId = to_string((virtualId + FUSE_PHOTO_VIRTUAL_IDENTIFIER) / FUSE_VIRTUAL_ID_DIVIDER);
@@ -307,7 +308,7 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
 
 int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
 {
-    int realFlag = flags & (O_RDONLY | O_WRONLY | O_RDWR | O_TRUNC | O_APPEND);
+    uint32_t realFlag = static_cast<uint32_t>(flags) & (O_RDONLY | O_WRONLY | O_RDWR | O_TRUNC | O_APPEND);
     string fileId;
     string target;
     GetFileIdFromUri(fileId, path);

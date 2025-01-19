@@ -42,11 +42,28 @@ std::shared_ptr<NativeRdb::ResultSet> PhotosRestore::GetGalleryMedia(
 }
 
 /**
+ * @brief Get the gallery_media for cloud to restore to Photos.
+ */
+std::shared_ptr<NativeRdb::ResultSet> PhotosRestore::GetCloudGalleryMedia(
+    int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
+{
+    return this->galleryMediaDao_.GetCloudGalleryMedia(offset, pageSize, shouldIncludeSd, hasLowQualityImage);
+}
+
+/**
  * @brief Get the row count of gallery_media.
  */
 int32_t PhotosRestore::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQualityImage)
 {
     return this->galleryMediaDao_.GetGalleryMediaCount(shouldIncludeSd, hasLowQualityImage);
+}
+
+/**
+ * @brief Get the row count of cloud_meta.
+ */
+int32_t PhotosRestore::GetCloudMetaCount(bool shouldIncludeSd, bool hasLowQualityImage)
+{
+    return this->galleryMediaDao_.GetCloudMetaCount(shouldIncludeSd, hasLowQualityImage);
 }
 
 /**

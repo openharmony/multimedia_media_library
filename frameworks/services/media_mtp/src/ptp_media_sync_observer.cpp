@@ -309,6 +309,8 @@ void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixStrin
 
 std::shared_ptr<DataShare::DataShareResultSet> MediaSyncObserver::GetAlbumInfo()
 {
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, nullptr,
+        "MediaSyncObserver::GetAlbumInfo dataShareHelper_ is nullptr");
     DataShare::DataSharePredicates predicates;
     Uri uri(PAH_QUERY_PHOTO_ALBUM);
     vector<string> columns;

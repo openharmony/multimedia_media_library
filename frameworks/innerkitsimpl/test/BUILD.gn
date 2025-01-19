@@ -33,8 +33,6 @@ group("test") {
     "unittest/medialibrary_app_uri_sensitive_operations_test:unittest",
     "unittest/medialibrary_astc_phase_test:unittest",
     "unittest/medialibrary_audio_operations_test:unittest",
-    "unittest/medialibrary_backup_clone_test:unittest",
-    "unittest/medialibrary_backup_test:unittest",
     "unittest/medialibrary_cloud_asset_download_test:unittest",
     "unittest/medialibrary_cloud_enhancement_test:unittest",
     "unittest/medialibrary_common_utils_test:unittest",
@@ -75,7 +73,14 @@ group("test") {
   ]
 
   if (defined(global_parts_info.hdf_drivers_interface_usb) &&
-      defined(medialibrary_mtp_enable)) {
+      media_library_feature_mtp) {
     deps += [ "unittest/medialibrary_mtp_test:unittest" ]
+  }
+
+  if (media_library_feature_back_up) {
+    deps += [
+      "unittest/medialibrary_backup_clone_test:unittest",
+      "unittest/medialibrary_backup_test:unittest",
+    ]
   }
 }
