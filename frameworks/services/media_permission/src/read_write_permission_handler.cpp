@@ -291,7 +291,6 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     if (err != E_SUCCESS) {
         return err;
     }
-    UnifyOprnObject(cmd);
 
     err = SystemApiCheck(cmd);
     if (err != E_SUCCESS) {
@@ -392,7 +391,6 @@ int32_t ReadWritePermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &
         if (err != E_SUCCESS) {
             return err;
         }
-        UnifyOprnObject(cmd);
         permParam.isWrite = ContainsFlag(permParam.openFileNode, 'w');
         return CheckOpenFilePermission(cmd, permParam);
     }
