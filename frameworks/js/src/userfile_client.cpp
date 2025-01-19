@@ -48,7 +48,7 @@ static void DataShareCreator(const sptr<IRemoteObject> &token, shared_ptr<DataSh
     dataShareHelper = DataShare::DataShareHelper::Creator(token, GetMediaLibraryDataUri());
     if (dataShareHelper == nullptr) {
         NAPI_ERR_LOG("dataShareHelper Creator failed");
-        dataShareHelper = DataShare::DataShareHelper::Creator(token, mediaLibraryDataUri);
+        dataShareHelper = DataShare::DataShareHelper::Creator(token, GetMediaLibraryDataUri());
     }
 }
 
