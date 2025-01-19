@@ -277,7 +277,7 @@ static napi_value CreateNewInstance(napi_env env, napi_callback_info info, napi_
         if (valueType == napi_number) {
             NAPI_CALL(env, napi_get_value_int32(env, argv[ARGS_ONE], &userId));
             if (userId != -1 && !SendableMediaLibraryNapiUtils::IsSystemApp()) {
-                NAPI_ERR_LOG("Easter egg operation failed, target is not system app");
+                NAPI_ERR_LOG("CreateNewInstance failed, target is not system app");
                 return nullptr;
             }
             UserFileClient::SetUserId(userId);
