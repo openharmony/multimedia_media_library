@@ -368,6 +368,14 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     return E_OK;
 }
 
+void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_FIX_PHOTO_QUALITY_CLONED) {
+        MediaLibraryRdbStore::UpdatePhotoQualityCloned(rdbStore);
+        rdbStore->SetOldVersion(VERSION_FIX_PHOTO_QUALITY_CLONED);
+    }
+}
+
 void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_READY_COUNT_INDEX) {
@@ -424,6 +432,9 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX);
     }
+
+    HandleUpgradeRdbAsyncPart1(rdbStore, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()

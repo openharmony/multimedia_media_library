@@ -381,6 +381,10 @@ const std::string PhotoColumn::UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL =
     " = NULL, " + PhotoColumn::PHOTO_LONGITUDE + " = NULL " + " WHERE " +
     PhotoColumn::PHOTO_LATITUDE + " = 0 AND " + PhotoColumn::PHOTO_LONGITUDE + " = 0;";
 
+const std::string PhotoColumn::UPDATE_PHOTO_QUALITY_OF_NULL_PHOTO_ID =
+    " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_QUALITY + " = 0 WHERE " +
+    PhotoColumn::PHOTO_QUALITY + " = 1 AND " + PhotoColumn::PHOTO_ID + " IS NULL;";
+
 const std::string PhotoColumn::DROP_INDEX_SCTHP_ADDTIME = BaseColumn::DropIndex() + PHOTO_SCHPT_ADDED_INDEX;
 
 const std::string PhotoColumn::DROP_INDEX_SCHPT_ADDTIME_ALBUM = BaseColumn::DropIndex() + PHOTO_SCHPT_ADDED_ALBUM_INDEX;
