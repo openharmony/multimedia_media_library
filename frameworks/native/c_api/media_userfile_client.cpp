@@ -31,6 +31,10 @@ static const int STORAGE_MANAGER_MANAGER_ID = 5003;
 namespace OHOS {
 namespace Media {
 
+int32_t UserFileClient::userId_ = -1;
+int32_t UserFileClient::lastUserId_ = -1;
+std::string MULTI_USER_URI_FLAG = "user=";
+std::string USER_STR = "user";
 bool UserFileClient::IsValid()
 {
     return sDataShareHelper_ != nullptr;
@@ -58,8 +62,13 @@ void UserFileClient::Init()
 
 void UserFileClient::Init(const sptr<IRemoteObject> &token, bool isSetHelper)
 {
+    std::string mediaLibraryDataUri = MEDIALIBRARY_DATA_URI;
+    if (GetUserId() != -1) {
+        mediaLibraryDataUri = mediaLibraryDataUri + "?" + MULTI_USER_URI_FLAG + to_string(GetUserId());
+        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, mediaLibraryDataUri);
+    }
     if (sDataShareHelper_ == nullptr) {
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, mediaLibraryDataUri);
     }
 
     if (isSetHelper) {
@@ -75,9 +84,16 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
         return nullptr;
     }
 
+    std::string uriString = uri.ToString();
+    if (GetUserId() != -1) {
+        UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
+    }
+    uri = Uri(uriString);
+
     shared_ptr<DataShareResultSet> resultSet = nullptr;
     OperationObject object = OperationObject::UNKNOWN_OBJECT;
-    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates)) {
+    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) &&
+        !uriString.find(MULTI_USER_URI_FLAG)) {
         resultSet = MediaAssetRdbStore::GetInstance()->Query(predicates, columns, object, errCode);
     } else {
         DatashareBusinessError businessError;
@@ -93,6 +109,11 @@ int UserFileClient::Insert(Uri &uri, const DataShareValuesBucket &value)
         MEDIA_ERR_LOG("insert fail, helper null");
         return E_FAIL;
     }
+    std::string uriString = uri.ToString();
+    if (GetUserId() != -1) {
+        UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
+    }
+    uri = Uri(uriString);
     int index = sDataShareHelper_->Insert(uri, value);
     return index;
 }
@@ -103,6 +124,11 @@ int UserFileClient::InsertExt(Uri &uri, const DataShareValuesBucket &value, stri
         MEDIA_ERR_LOG("insert fail, helper null");
         return E_FAIL;
     }
+    std::string uriString = uri.ToString();
+    if (GetUserId() != -1) {
+        UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
+    }
+    uri = Uri(uriString);
     int index = sDataShareHelper_->InsertExt(uri, value, result);
     return index;
 }
@@ -114,6 +140,11 @@ int UserFileClient::Delete(Uri &uri, const DataSharePredicates &predicates)
         MEDIA_ERR_LOG("delete fail, helper null");
         return E_FAIL;
     }
+    std::string uriString = uri.ToString();
+    if (GetUserId() != -1) {
+        UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
+    }
+    uri = Uri(uriString);
     return sDataShareHelper_->Delete(uri, predicates);
 }
 
@@ -123,6 +154,11 @@ int UserFileClient::OpenFile(Uri &uri, const std::string &mode)
         MEDIA_ERR_LOG("Open file fail, helper null");
         return E_FAIL;
     }
+    std::string uriString = uri.ToString();
+    if (GetUserId() != -1) {
+        UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
+    }
+    uri = Uri(uriString);
     return sDataShareHelper_->OpenFile(uri, mode);
 }
 
@@ -133,6 +169,11 @@ int UserFileClient::Update(Uri &uri, const DataSharePredicates &predicates,
         MEDIA_ERR_LOG("update fail, helper null");
         return E_FAIL;
     }
+    std::string uriString = uri.ToString();
+    if (GetUserId() != -1) {
+        UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
+    }
+    uri = Uri(uriString);
     return sDataShareHelper_->Update(uri, predicates, value);
 }
 
@@ -141,5 +182,42 @@ void UserFileClient::Clear()
     sDataShareHelper_ = nullptr;
 }
 
+void UserFileClient::SetUserId(const int32_t userId)
+{
+    userId_ = userId;
+}
+
+int32_t UserFileClient::GetUserId()
+{
+    return userId_;
+}
+
+void UserFileClient::SetLastUserId(const int32_t userId)
+{
+    lastUserId_ = userId;
+}
+
+int32_t UserFileClient::GetLastUserId()
+{
+    return lastUserId_;
+}
+
+void UserFileClient::UriAppendKeyValue(string &uri, const string &key, const string &value)
+{
+    string uriKey = key + '=';
+    if (uri.find(uriKey) != string::npos) {
+        return;
+    }
+
+    char queryMark = (uri.find('?') == string::npos) ? '?' : '&';
+    string append = queryMark + key + '=' + value;
+
+    size_t posJ = uri.find('#');
+    if (posJ == string::npos) {
+        uri += append;
+    } else {
+        uri.insert(posJ, append);
+    }
+}
 }
 }

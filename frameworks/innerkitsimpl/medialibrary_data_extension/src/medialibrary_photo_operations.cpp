@@ -105,6 +105,8 @@ enum ImageFileType : int32_t {
     HEIF = 2
 };
 
+const std::string MULTI_USER_URI_FLAG = "user=";
+
 const std::string MIME_TYPE_JPEG = "image/jpeg";
 
 const std::string MIME_TYPE_HEIF = "image/heif";
@@ -505,6 +507,13 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     string id = MediaFileUtils::GetIdFromUri(uriString);
     CHECK_AND_RETURN_RET(!uriString.empty() && MediaLibraryDataManagerUtils::IsNumber(id), E_INVALID_URI);
     string pendingStatus = cmd.GetQuerySetParam(MediaColumn::MEDIA_TIME_PENDING);
+    string cmdUri = cmd.GetUri().ToString();
+    size_t pos = cmdUri.find(MULTI_USER_URI_FLAG);
+    string userId = "";
+    if (pos != std::string::npos) {
+        userId = cmdUri.substr(pos + 5);
+        uriString = uriString + "?" + MULTI_USER_URI_FLAG + userId;
+    }
     shared_ptr<FileAsset> fileAsset = GetFileAssetByUri(uriString, true,  PHOTO_COLUMN_VECTOR, pendingStatus);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_URI,
         "Get FileAsset From Uri Failed, uri:%{public}s", uriString.c_str());
