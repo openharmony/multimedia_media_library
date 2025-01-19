@@ -501,7 +501,7 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
     size_t pos = str.find(MULTI_USER_URI_FLAG);
     std::string userId = "";
     if (pos != std::string::npos) {
-        userId = str.substr(pos + 5);
+        userId = str.substr(pos + MULTI_USER_URI_FLAG.length());
         MEDIA_DEBUG_LOG("OpenThumbnail for other user is %{public}s", userId.c_str());
     }
     auto dataShareHelper = userId != "" ? DataShare::DataShareHelper::Creator(token_,
