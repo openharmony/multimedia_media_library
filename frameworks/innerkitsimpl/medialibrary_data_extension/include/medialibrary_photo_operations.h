@@ -54,21 +54,29 @@ public:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> ScanMovingPhoto(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
     EXPORT static int32_t AddFilters(MediaLibraryCommand &cmd);
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     EXPORT static int32_t ProcessMultistagesPhoto(bool isEdited, const std::string &path,
         const uint8_t *addr, const long bytes, int32_t fileId);
+#endif
     EXPORT static void StoreThumbnailSize(const std::string& photoId, const std::string& photoPath);
     EXPORT static bool HasDroppedThumbnailSize(const std::string& photoId);
     EXPORT static int32_t ScanFileWithoutAlbumUpdate(MediaLibraryCommand &cmd);
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     EXPORT static int32_t ProcessMultistagesPhotoForPicture(bool isEdited, const std::string &path,
         std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type);
+#endif
     EXPORT static int32_t Save(bool isEdited, const std::string &path,
         const uint8_t *addr, const long bytes, int32_t fileId);
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     EXPORT static int32_t AddFiltersToPicture(std::shared_ptr<Media::Picture>& inPicture,
         const std::string &outputPath, std::string &editdata, const std::string &mime_type);
     EXPORT static int32_t SavePicture(const int32_t &fileType, const int32_t &fileId);
+#endif
     EXPORT static int32_t GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
         bool isCleanImmediately, std::string &photoId, bool &isHighQualityPicture);
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     EXPORT static int32_t FinishRequestPicture(MediaLibraryCommand &cmd);
+#endif
     EXPORT static int64_t CloneSingleAsset(MediaLibraryCommand &cmd);
     EXPORT static int32_t AddFiltersForCloudEnhancementPhoto(int32_t fileId, const std::string& assetPath,
         const std::string& editDataCameraSourcePath, const std::string& mimeType);
@@ -76,8 +84,10 @@ public:
         std::shared_ptr<AlbumData> AlbumData = nullptr);
     EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris,
         std::shared_ptr<AlbumData> AlbumData = nullptr);
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, const std::string &path);
     EXPORT static int32_t RemoveTempVideo(const std::string &path);
+#endif
     EXPORT static int32_t SaveSourceVideoFile(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &assetPath, const bool &isTemp);
     EXPORT static int32_t AddFiltersToVideoExecute(const std::shared_ptr<FileAsset>& fileAsset, bool isSaveVideo);

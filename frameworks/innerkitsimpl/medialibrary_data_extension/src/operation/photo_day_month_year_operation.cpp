@@ -113,6 +113,7 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDate(const std::shared_ptr<Media
     auto needChangedSize = needUpdateFileIds.size();
     CHECK_AND_RETURN_RET(needChangedSize > 0, NativeRdb::E_OK);
 
+    int32_t ret = NativeRdb::E_OK;
     int64_t totalChanged = 0;
     for (size_t start = 0; start < needChangedSize; start += UPDATE_BATCH_SIZE) {
         size_t end = std::min(start + UPDATE_BATCH_SIZE, needChangedSize);
@@ -129,6 +130,7 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDate(const std::shared_ptr<Media
         int64_t changedRowCount = 0;
         auto errCode = rdbStore->ExecuteForChangedRowCount(changedRowCount, updateSql.str());
         if (errCode != NativeRdb::E_OK) {
+            ret = errCode;
             MEDIA_ERR_LOG("update photos date failed, errCode: %{public}d, batchStart: %{public}" PRId64
                 ", cost: %{public}" PRId64,
                 errCode, batchStart, MediaFileUtils::UTCTimeMilliSeconds() - batchStart);
@@ -143,27 +145,7 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDate(const std::shared_ptr<Media
     MEDIA_INFO_LOG("update photos date end, startTime: %{public}" PRId64 ", cost: %{public}" PRId64
         ", needChangedSize: %{public}zu, totalChanged: %{public}" PRId64,
         startTime, MediaFileUtils::UTCTimeMilliSeconds() - startTime, needChangedSize, totalChanged);
-    return NativeRdb::E_OK;
-}
-
-int32_t PhotoDayMonthYearOperation::UpdateIdxSchptDateDay(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
-{
-    MEDIA_INFO_LOG("update photo idx_schpt_date_day start");
-    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
-    if (rdbStore == nullptr || !rdbStore->CheckRdbStore()) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return NativeRdb::E_ERROR;
-    }
-
-    auto ret = rdbStore->ExecuteSql(PhotoColumn::DROP_SCHPT_DAY_INDEX);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "drop idx_schpt_date_day failed, ret=%{public}d", ret);
-
-    ret = rdbStore->ExecuteSql(PhotoColumn::CREATE_SCHPT_DAY_INDEX);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "create idx_schpt_date_day failed, ret=%{public}d", ret);
-
-    MEDIA_INFO_LOG("update photo idx_schpt_date_day end, startTime: %{public}" PRId64 ", cost: %{public}" PRId64,
-        startTime, (MediaFileUtils::UTCTimeMilliSeconds() - startTime));
-    return NativeRdb::E_OK;
+    return ret;
 }
 
 int32_t PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
@@ -175,10 +157,7 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(const std::shared_ptr
         return NativeRdb::E_ERROR;
     }
 
-    auto ret = UpdateIdxSchptDateDay(rdbStore);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "update idx_schpt_date_day failed, ret=%{public}d", ret);
-
-    ret = UpdatePhotosDate(rdbStore);
+    auto ret = UpdatePhotosDate(rdbStore);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "update day month year failed, ret=%{public}d", ret);
 
     MEDIA_INFO_LOG("update phots date end, startTime: %{public}" PRId64 ", cost: %{public}" PRId64, startTime,
@@ -222,6 +201,38 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDate(NativeRdb::RdbStore &rdbSto
     MEDIA_INFO_LOG("update photos date end, startTime: %{public}" PRId64 ", cost: %{public}" PRId64
         ", needChangedSize: %{public}zu, changedRowCount: %{public}" PRId64,
         startTime, MediaFileUtils::UTCTimeMilliSeconds() - startTime, needChangedSize, changedRowCount);
+    return NativeRdb::E_OK;
+}
+
+int32_t PhotoDayMonthYearOperation::UpdatePhotosDateIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
+{
+    MEDIA_INFO_LOG("update photos date idx start");
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    if (rdbStore == nullptr || !rdbStore->CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return NativeRdb::E_ERROR;
+    }
+
+    auto ret = rdbStore->ExecuteSql(PhotoColumn::DROP_SCHPT_DAY_INDEX);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "drop idx date_day failed, ret=%{public}d", ret);
+
+    ret = rdbStore->ExecuteSql(PhotoColumn::CREATE_SCHPT_DAY_INDEX);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "create idx date_day failed, ret=%{public}d", ret);
+
+    ret = rdbStore->ExecuteSql(PhotoColumn::DROP_SCHPT_MONTH_COUNT_READY_INDEX);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "drop idx date_month failed, ret=%{public}d", ret);
+
+    ret = rdbStore->ExecuteSql(PhotoColumn::CREATE_SCHPT_MONTH_COUNT_READY_INDEX);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "create idx date_month failed, ret=%{public}d", ret);
+
+    ret = rdbStore->ExecuteSql(PhotoColumn::DROP_SCHPT_YEAR_COUNT_READY_INDEX);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "drop idx date_year failed, ret=%{public}d", ret);
+
+    ret = rdbStore->ExecuteSql(PhotoColumn::CREATE_SCHPT_YEAR_COUNT_READY_INDEX);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "create idx date_year failed, ret=%{public}d", ret);
+
+    MEDIA_INFO_LOG("update photos date idx end, startTime: %{public}" PRId64 ", cost: %{public}" PRId64, startTime,
+        (MediaFileUtils::UTCTimeMilliSeconds() - startTime));
     return NativeRdb::E_OK;
 }
 } // namespace Media
