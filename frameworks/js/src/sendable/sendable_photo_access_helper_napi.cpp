@@ -266,7 +266,7 @@ static napi_value CreateNewInstance(napi_env env, napi_callback_info info, napi_
         argc = ARGS_TWO;
         NAPI_CALL(env, napi_get_boolean(env, true, &argv[ARGS_ONE]));
         argv[ARGS_ONE] = argv[argContext];
-    } 
+    }
     int32_t userId = -1;
     if (argc > 1 && !isAsync) {
         argc = ARGS_TWO;
@@ -276,6 +276,10 @@ static napi_value CreateNewInstance(napi_env env, napi_callback_info info, napi_
         napi_typeof(env, argv[ARGS_ONE], &valueType);
         if (valueType == napi_number) {
             NAPI_CALL(env, napi_get_value_int32(env, argv[ARGS_ONE], &userId));
+            if (userId != -1 && !SendableMediaLibraryNapiUtils::IsSystemApp()) {
+                NAPI_ERR_LOG("Easter egg operation failed, target is not system app");
+                return nullptr;
+            }
             UserFileClient::SetUserId(userId);
             NAPI_INFO_LOG("CreateNewInstance for other user is %{public}d", userId);
         }
