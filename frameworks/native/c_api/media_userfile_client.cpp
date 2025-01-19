@@ -35,6 +35,16 @@ int32_t UserFileClient::userId_ = -1;
 int32_t UserFileClient::lastUserId_ = -1;
 std::string MULTI_USER_URI_FLAG = "user=";
 std::string USER_STR = "user";
+
+static std::string GetMediaLibraryDataUri()
+{
+    std::string mediaLibraryDataUri = MEDIALIBRARY_DATA_URI;
+    if (UserFileClient::GetUserId() != -1) {
+        mediaLibraryDataUri = mediaLibraryDataUri + "?" + MULTI_USER_URI_FLAG + to_string(UserFileClient::GetUserId());
+    }
+    return mediaLibraryDataUri;
+}
+
 bool UserFileClient::IsValid()
 {
     return sDataShareHelper_ != nullptr;
@@ -62,13 +72,9 @@ void UserFileClient::Init()
 
 void UserFileClient::Init(const sptr<IRemoteObject> &token, bool isSetHelper)
 {
-    std::string mediaLibraryDataUri = MEDIALIBRARY_DATA_URI;
-    if (GetUserId() != -1) {
-        mediaLibraryDataUri = mediaLibraryDataUri + "?" + MULTI_USER_URI_FLAG + to_string(GetUserId());
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, mediaLibraryDataUri);
-    }
+    sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, GetMediaLibraryDataUri());
     if (sDataShareHelper_ == nullptr) {
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, mediaLibraryDataUri);
+        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, GetMediaLibraryDataUri());
     }
 
     if (isSetHelper) {
