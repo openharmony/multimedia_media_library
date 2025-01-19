@@ -262,27 +262,24 @@ static napi_value CreateNewInstance(napi_env env, napi_callback_info info, napi_
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     NAPI_CALL(env, napi_get_reference_value(env, ref, &ctor));
 
+    if (isAsync) {
+        argc = ARGS_TWO;
+        NAPI_CALL(env, napi_get_boolean(env, true, &argv[ARGS_ONE]));
+        argv[ARGS_ONE] = argv[argContext];
+    } 
     int32_t userId = -1;
-    if (argc > 1) {
-        if (isAsync) {
-            argc = ARGS_TWO;
-            NAPI_CALL(env, napi_get_boolean(env, true, &argv[ARGS_ONE]));
-            argv[ARGS_ONE] = argv[argContext];
-        } else {
-            argc = ARGS_TWO;
-            NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-            NAPI_CALL(env, napi_get_reference_value(env, ref, &ctor));
-            napi_valuetype valueType = napi_undefined;
-            napi_typeof(env, argv[ARGS_ONE], &valueType);
-            if (valueType == napi_number) {
-                NAPI_CALL(env, napi_get_value_int32(env, argv[ARGS_ONE], &userId));
-            }
-            argc = ARGS_ONE;
-        }
-        if (userId != -1) {
+    if (argc > 1 && !isAsync) {
+        argc = ARGS_TWO;
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+        NAPI_CALL(env, napi_get_reference_value(env, ref, &ctor));
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, argv[ARGS_ONE], &valueType);
+        if (valueType == napi_number) {
+            NAPI_CALL(env, napi_get_value_int32(env, argv[ARGS_ONE], &userId));
             UserFileClient::SetUserId(userId);
             NAPI_INFO_LOG("CreateNewInstance for other user is %{public}d", userId);
         }
+        argc = ARGS_ONE;
     }
 
     napi_value result = nullptr;
