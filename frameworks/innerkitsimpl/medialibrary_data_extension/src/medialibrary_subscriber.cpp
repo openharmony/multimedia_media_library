@@ -575,6 +575,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     CloudUploadChecker::RepairNoOriginButLcd();
     CloudUploadChecker::HandleNoOriginPhoto();
 
+    CloudUploadChecker::RepairNoDetailTime();
     // migration highlight info to new path
     if (MediaFileUtils::IsFileExists(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD)) {
         MEDIA_INFO_LOG("Migration highlight info to new path");
