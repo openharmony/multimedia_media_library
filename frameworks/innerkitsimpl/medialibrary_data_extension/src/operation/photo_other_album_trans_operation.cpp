@@ -168,7 +168,7 @@ int32_t PhotoOtherAlbumTransOperation::DealWithOtherAlbumTrans(const std::shared
         sqlWherePrefix = "title LIKE 'SVID_%'";
     } else if (transAlbumName == WECHAT_ALBUM_NAME) {
         sourcePathName = "Pictures/WeiXin";
-        sqlWherePrefix = "title LIKE 'mmexport%' OR title LIKE 'wx_camera_%'";
+        sqlWherePrefix = "(title LIKE 'mmexport%' OR title LIKE 'wx_camera_%')";
     } else if (transAlbumName == ALBUM_NAME_CAMERA) {
         sourcePathName = "DCIM/camera";
         sqlWherePrefix = "(title LIKE 'IMG_%' OR title LIKE 'VID_%')";
