@@ -18,6 +18,14 @@ import("//foundation/ability/ability_runtime/ability_runtime.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
+group("media_backup_package") {
+  deps = []
+  if (media_library_feature_back_up) {
+    deps += [ ":mediabackup" ]
+  } else {
+  }
+}
+
 ohos_shared_library("mediabackup") {
   include_dirs = [
     "./include",

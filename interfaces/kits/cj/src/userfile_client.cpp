@@ -23,6 +23,7 @@
 #include "medialibrary_helper_container.h"
 #include "medialibrary_operation.h"
 #include "userfilemgr_uri.h"
+#include "medialibrary_napi_utils.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -30,6 +31,31 @@ using namespace OHOS::AppExecFwk;
 
 namespace OHOS {
 namespace Media {
+
+int32_t UserFileClient::userId_ = -1;
+int32_t UserFileClient::lastUserId_ = -1;
+std::string MULTI_USER_URI_FLAG = "user=";
+std::string USER_STR = "user";
+
+static std::string GetMediaLibraryDataUri()
+{
+    std::string mediaLibraryDataUri = MEDIALIBRARY_DATA_URI;
+    if (UserFileClient::GetUserId() != -1) {
+        mediaLibraryDataUri = mediaLibraryDataUri + "?" + MULTI_USER_URI_FLAG + to_string(UserFileClient::GetUserId());
+    }
+    return mediaLibraryDataUri;
+}
+
+static Uri MultiUserUriRecognition(Uri &uri)
+{
+    if (UserFileClient::GetUserId() == -1) {
+        return uri;
+    }
+    std::string uriString = uri.ToString();
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriString, USER_STR, to_string(UserFileClient::GetUserId()));
+    return Uri(uriString);
+}
+
 bool UserFileClient::IsValid()
 {
     return sDataShareHelper_ != nullptr;
@@ -37,8 +63,9 @@ bool UserFileClient::IsValid()
 
 void UserFileClient::Init(const sptr<IRemoteObject> &token)
 {
+    sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, GetMediaLibraryDataUri());
     if (sDataShareHelper_ == nullptr) {
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, GetMediaLibraryDataUri());
     }
     MediaLibraryHelperContainer::GetInstance()->SetDataShareHelper(sDataShareHelper_);
 }
@@ -51,7 +78,7 @@ void UserFileClient::Init(int64_t contextId)
         return;
     }
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper =
-        DataShare::DataShareHelper::Creator(context->GetToken(), MEDIALIBRARY_DATA_URI);
+        DataShare::DataShareHelper::Creator(context->GetToken(), GetMediaLibraryDataUri());
     MediaLibraryHelperContainer::GetInstance()->SetDataShareHelper(dataShareHelper);
     sDataShareHelper_ = dataShareHelper;
 }
@@ -63,9 +90,12 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
         LOGE("Query fail, helper null");
         return nullptr;
     }
+    uri = MultiUserUriRecognition(uri);
+
     shared_ptr<DataShareResultSet> resultSet = nullptr;
     OperationObject object = OperationObject::UNKNOWN_OBJECT;
-    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates)) {
+    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) &&
+        !uri.ToString().find(MULTI_USER_URI_FLAG)) {
         resultSet = MediaAssetRdbStore::GetInstance()->Query(predicates, columns, object, errCode);
     } else {
         DatashareBusinessError businessError;
@@ -81,6 +111,7 @@ int UserFileClient::Insert(Uri &uri, const DataShareValuesBucket &value)
         LOGE("insert fail, helper null");
         return E_FAIL;
     }
+    uri = MultiUserUriRecognition(uri);
     int index = sDataShareHelper_->Insert(uri, value);
     return index;
 }
@@ -133,6 +164,7 @@ int UserFileClient::Update(Uri &uri, const DataSharePredicates &predicates,
         LOGE("update fail, helper null");
         return E_FAIL;
     }
+    uri = MultiUserUriRecognition(uri);
     return sDataShareHelper_->Update(uri, predicates, value);
 }
 
@@ -151,6 +183,7 @@ int UserFileClient::OpenFile(Uri &uri, const std::string &mode)
         LOGE("Open file fail, helper null");
         return E_FAIL;
     }
+    uri = MultiUserUriRecognition(uri);
     return sDataShareHelper_->OpenFile(uri, mode);
 }
 
@@ -160,6 +193,7 @@ int UserFileClient::Delete(Uri &uri, const DataSharePredicates &predicates)
         LOGE("delete fail, helper null");
         return E_FAIL;
     }
+    uri = MultiUserUriRecognition(uri);
     return sDataShareHelper_->Delete(uri, predicates);
 }
 
@@ -169,6 +203,7 @@ int UserFileClient::InsertExt(Uri &uri, const DataShareValuesBucket &value, stri
         LOGE("insert fail, helper null");
         return E_FAIL;
     }
+    uri = MultiUserUriRecognition(uri);
     int index = sDataShareHelper_->InsertExt(uri, value, result);
     return index;
 }
@@ -179,7 +214,28 @@ int UserFileClient::BatchInsert(Uri& uri, const std::vector<DataShare::DataShare
         LOGE("Batch insert fail, helper null");
         return E_FAIL;
     }
+    uri = MultiUserUriRecognition(uri);
     return sDataShareHelper_->BatchInsert(uri, values);
+}
+
+void UserFileClient::SetUserId(const int32_t userId)
+{
+    userId_ = userId;
+}
+
+int32_t UserFileClient::GetUserId()
+{
+    return userId_;
+}
+
+void UserFileClient::SetLastUserId(const int32_t userId)
+{
+    lastUserId_ = userId;
+}
+
+int32_t UserFileClient::GetLastUserId()
+{
+    return lastUserId_;
 }
 }
 }

@@ -91,8 +91,12 @@
 #include "medialibrary_vision_operations.h"
 #include "medialibrary_search_operations.h"
 #include "mimetype_utils.h"
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
+#endif
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
+#endif
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "photo_day_month_year_operation.h"
@@ -364,6 +368,14 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     return E_OK;
 }
 
+void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_FIX_PHOTO_QUALITY_CLONED) {
+        MediaLibraryRdbStore::UpdatePhotoQualityCloned(rdbStore);
+        rdbStore->SetOldVersion(VERSION_FIX_PHOTO_QUALITY_CLONED);
+    }
+}
+
 void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_READY_COUNT_INDEX) {
@@ -420,6 +432,9 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX);
     }
+
+    HandleUpgradeRdbAsyncPart1(rdbStore, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()
@@ -1204,15 +1219,19 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryStoryOperations::UpdateOperation(cmd);
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             std::vector<std::string> columns;
             MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
             return E_OK;
         }
+#endif
         case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE:
             return ProcessThumbnailBatchCmd(cmd, value, predicates);
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
         case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
             return EnhancementManager::GetInstance().HandleEnhancementUpdateOperation(cmd);
+#endif
         case OperationObject::VISION_IMAGE_FACE:
             return HandleAnalysisFaceUpdate(cmd, value, predicates);
         case OperationObject::ANALYSIS_PHOTO_MAP:
@@ -1955,10 +1974,14 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
                 columns);
         case OperationObject::SEARCH_TOTAL:
             return QueryIndex(cmd, columns, predicates);
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
             return MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
+#endif
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
         case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
             return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
+#endif
         case OperationObject::ANALYSIS_ADDRESS:
             return QueryGeo(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::ANALYSIS_ADDRESS_ASSETS:

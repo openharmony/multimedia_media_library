@@ -766,12 +766,12 @@ napi_status MediaAssetManagerNapi::ParseEfficentRequestMediaArgs(napi_env env, n
 
 bool MediaAssetManagerNapi::InitUserFileClient(napi_env env, napi_callback_info info)
 {
-    if (UserFileClient::IsValid()) {
+    if (UserFileClient::IsValid() && UserFileClient::GetLastUserId() == UserFileClient::GetUserId()) {
         return true;
     }
 
     std::unique_lock<std::mutex> helperLock(MediaLibraryNapi::sUserFileClientMutex_);
-    if (!UserFileClient::IsValid()) {
+    if (UserFileClient::GetLastUserId() != UserFileClient::GetUserId() || !UserFileClient::IsValid()) {
         UserFileClient::Init(env, info);
     }
     helperLock.unlock();
@@ -1463,7 +1463,11 @@ void MediaAssetManagerNapi::GetPictureNapiObject(const std::string &fileUri, nap
     std::string tempStr = fileUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length());
     std::size_t index = tempStr.find("/");
     std::string fileId = tempStr.substr(0, index);
+#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     auto pic = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()));
+#else
+    auto pic = nullptr;
+#endif
     if (pic == nullptr) {
         NAPI_ERR_LOG("picture is null");
         isPicture = false;

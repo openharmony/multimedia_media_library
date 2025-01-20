@@ -1129,6 +1129,7 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
     rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->EndWrap();
+    rdbPredicates.BeginWrap()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0")->EndWrap();
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
     rdbPredicates.Limit(restoreAstcCount);
     if (opts.store == nullptr) {

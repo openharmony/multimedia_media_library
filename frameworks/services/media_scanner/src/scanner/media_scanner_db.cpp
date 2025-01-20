@@ -253,8 +253,14 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutInt(PhotoColumn::PHOTO_HEIGHT, metadata.GetFileHeight());
         values.PutInt(PhotoColumn::PHOTO_WIDTH, metadata.GetFileWidth());
         values.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata.GetOrientation());
-        values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, metadata.GetLongitude());
-        values.PutDouble(PhotoColumn::PHOTO_LATITUDE, metadata.GetLatitude());
+        constexpr double DOUBLE_EPSILON = 1e-15;
+        if (fabs(metadata.GetLongitude()) > DOUBLE_EPSILON || fabs(metadata.GetLatitude()) > DOUBLE_EPSILON) {
+            values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, metadata.GetLongitude());
+            values.PutDouble(PhotoColumn::PHOTO_LATITUDE, metadata.GetLatitude());
+        } else {
+            values.PutNull(PhotoColumn::PHOTO_LONGITUDE);
+            values.PutNull(PhotoColumn::PHOTO_LATITUDE);
+        }
         if (skipPhoto) {
             values.PutString(PhotoColumn::PHOTO_USER_COMMENT, metadata.GetUserComment());
         }
