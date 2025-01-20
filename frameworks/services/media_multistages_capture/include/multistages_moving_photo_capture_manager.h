@@ -13,30 +13,23 @@
  * limitations under the License.
  */
 
+#ifndef FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTI_STAGES_MOVING_PHOTO_CAPTURE_MANAGER_H
+#define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTI_STAGES_MOVING_PHOTO_CAPTURE_MANAGER_H
 
-#ifndef MEDIALIBRARY_SUBSCRIBER_DATABASE_UTILS_H
-#define MEDIALIBRARY_SUBSCRIBER_DATABASE_UTILS_H
-
-#include <string>
-#include <vector>
-
-#include "rdb_helper.h"
-#include "result_set.h"
-#include "rdb_predicates.h"
-#include "thumbnail_const.h"
+#include "multistages_video_capture_manager.h"
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-class MedialibrarySubscriberDatabaseUtils {
+
+class MultiStagesMovingPhotoCaptureManager {
 public:
-    EXPORT static int32_t QueryThumbAstc(int32_t& thunmbAstcCount);
-    EXPORT static int32_t QueryThumbTotal(int32_t& thunmbTotalCount);
-private:
-    static int32_t QueryInt(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,
-        const std::string &queryColumn, int32_t &value);
+    EXPORT MultiStagesMovingPhotoCaptureManager();
+    EXPORT ~MultiStagesMovingPhotoCaptureManager();
+
+    EXPORT static void SaveMovingPhotoVideoFinished(const std::string &photoId);
+    EXPORT static void AddVideoFromMovingPhoto(const std::string &photoId);
 };
 } // namespace Media
 } // namespace OHOS
-
-#endif  // MEDIALIBRARY_SUBSCRIBER_DATABASE_UTILS_H
+#endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTI_STAGES_MOVING_PHOTO_CAPTURE_MANAGER_H

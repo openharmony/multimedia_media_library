@@ -526,6 +526,16 @@ void MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(const std::shar
     MEDIA_INFO_LOG("end  Update LatitudeAndLongitude Default Null");
 }
 
+void MediaLibraryRdbStore::UpdatePhotoQualityCloned(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start UpdatePhotoQualityCloned");
+    const vector<string> sqls = {
+        PhotoColumn::UPDATE_PHOTO_QUALITY_OF_NULL_PHOTO_ID,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end UpdatePhotoQualityCloned");
+}
+
 int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", version);
@@ -1632,6 +1642,8 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INDEX_HIGHLIGHT_FILEID,
     PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
     AddStatusColumnForRefreshAlbumTable(),
+    PhotoColumn::INDEX_LATITUDE,
+    PhotoColumn::INDEX_LONGITUDE,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -3220,7 +3232,9 @@ static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
 
 static void AddCloudEnhanceColumnsFix(RdbStore& store)
 {
+    MEDIA_INFO_LOG("Start checking cloud enhancement column");
     bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_CE_AVAILABLE);
+    MEDIA_INFO_LOG("End checking cloud enhancement column: %{public}d", hasColumn);
     if (!hasColumn) {
         AddCloudEnhancementColumns(store);
         MEDIA_INFO_LOG("Add Cloud Enhance Cols completed successfully");
@@ -3229,7 +3243,9 @@ static void AddCloudEnhanceColumnsFix(RdbStore& store)
 
 static void AddDynamicRangeColumnsFix(RdbStore& store)
 {
+    MEDIA_INFO_LOG("Start checking dynamic_range_type column");
     bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE);
+    MEDIA_INFO_LOG("End checking dynamic_range_type column: %{public}d", hasColumn);
     if (!hasColumn) {
         AddDynamicRangeType(store);
         MEDIA_INFO_LOG("Add Dynamic Range Cols completed successfully");
@@ -3238,7 +3254,9 @@ static void AddDynamicRangeColumnsFix(RdbStore& store)
 
 static void AddThumbnailReadyColumnsFix(RdbStore& store)
 {
+    MEDIA_INFO_LOG("Start checking thumbnail_ready column");
     bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_THUMBNAIL_READY);
+    MEDIA_INFO_LOG("End checking thumbnail_ready column: %{public}d", hasColumn);
     if (!hasColumn) {
         AddThumbnailReady(store);
         MEDIA_INFO_LOG("Add ThumbnailReady Column");
@@ -3295,6 +3313,17 @@ static void AddSupportedWatermarkType(RdbStore &store)
     };
     MEDIA_INFO_LOG("start add supported_watermark_type column");
     ExecSqls(sqls, store);
+}
+
+static void AddStageVideoTaskStatus(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start add stage_video_task_status column");
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::STAGE_VIDEO_TASK_STATUS + " INT NOT NULL DEFAULT 0 "
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add stage_video_task_status column");
 }
 
 static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
@@ -4184,6 +4213,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_FIX_SOURCE_ALBUM_UPDATE_TRIGGER_TO_USE_LPATH) {
         FixSourceAlbumUpdateTriggerToUseLPath(store);
+    }
+
+    if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
+        AddStageVideoTaskStatus(store);
     }
 }
 

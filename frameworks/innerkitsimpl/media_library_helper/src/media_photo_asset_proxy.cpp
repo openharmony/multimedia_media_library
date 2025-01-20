@@ -134,6 +134,7 @@ DataShare::DataShareValuesBucket PhotoAssetProxy::HandleAssetValues(const sptr<P
     values.Put(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(mediaType));
     if (cameraShotType_ == CameraShotType::MOVING_PHOTO) {
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+        values.Put(PhotoColumn::STAGE_VIDEO_TASK_STATUS, static_cast<int32_t>(StageVideoTaskStatus::NEED_TO_STAGE));
     }
     if (cameraShotType_ == CameraShotType::BURST) {
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));

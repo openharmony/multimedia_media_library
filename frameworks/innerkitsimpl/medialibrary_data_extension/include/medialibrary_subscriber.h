@@ -87,7 +87,7 @@ private:
     EXPORT void StopBackgroundOperation();
     EXPORT void StopThumbnailBgOperation();
     EXPORT void StartAnalysisService();
-    void WalCheckPointAsync();
+    EXPORT void WalCheckPointAsync();
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();

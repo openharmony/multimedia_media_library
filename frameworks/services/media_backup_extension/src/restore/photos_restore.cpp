@@ -254,7 +254,7 @@ bool PhotosRestore::IsDuplicateData(const std::string &data)
  */
 int32_t PhotosRestore::FindPhotoQuality(const FileInfo &fileInfo)
 {
-    bool cond = (fileInfo.photoQuality == 1 && fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO);
+    bool cond = (fileInfo.photoQuality == 1);
     CHECK_AND_RETURN_RET(!cond, 0);
     return fileInfo.photoQuality;
 }

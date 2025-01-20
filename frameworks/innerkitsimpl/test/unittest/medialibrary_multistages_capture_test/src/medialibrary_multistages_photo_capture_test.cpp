@@ -313,7 +313,7 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_result_001, TestSize.Level
 {
     MEDIA_INFO_LOG("dfx_result_001 Start");
     EXPECT_NE(g_rdbStore, nullptr);
-    MultiStagesCaptureDfxResult::Report("123456", 0, static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
+    MultiStagesCaptureDfxResult::Report("123456", 0, static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     MEDIA_INFO_LOG("dfx_result_001 End");
 }
 
@@ -321,7 +321,7 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_result_invalid_param_002, 
 {
     MEDIA_INFO_LOG("dfx_result_invalid_param_002 Start");
     EXPECT_NE(g_rdbStore, nullptr);
-    MultiStagesCaptureDfxResult::Report("", 0, static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
+    MultiStagesCaptureDfxResult::Report("", 0, static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     MEDIA_INFO_LOG("dfx_result_invalid_param_002 End");
 }
 
@@ -334,7 +334,8 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_total_time_001, TestSize.L
 
     // sleep for 1234 milliseconds
     this_thread::sleep_for(chrono::milliseconds(1234));
-    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId);
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId,
+        static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     EXPECT_EQ(MultiStagesCaptureDfxTotalTime::GetInstance().startTimes_.empty(), true);
 
     MEDIA_INFO_LOG("dfx_total_time_001 End");
@@ -346,7 +347,8 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_total_time_two_start_002, 
     string photoId = "1234566";
 
     // test that photo_id is not add start time
-    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId);
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId,
+        static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     EXPECT_EQ(MultiStagesCaptureDfxTotalTime::GetInstance().startTimes_.empty(), true);
 
     string photoId2 = "12345666";
@@ -355,10 +357,12 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_total_time_two_start_002, 
 
     // sleep for 1234 milliseconds
     this_thread::sleep_for(chrono::milliseconds(1234));
-    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId);
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId,
+        static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     EXPECT_EQ(MultiStagesCaptureDfxTotalTime::GetInstance().startTimes_.empty(), false);
 
-    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId2);
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId2,
+        static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     EXPECT_EQ(MultiStagesCaptureDfxTotalTime::GetInstance().startTimes_.empty(), true);
 
     MEDIA_INFO_LOG("dfx_total_time_two_start_002 End");
@@ -390,7 +394,8 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_total_time_invalid_param_0
 
     // sleep for 1234 milliseconds
     this_thread::sleep_for(chrono::milliseconds(1234));
-    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId);
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId,
+        static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     EXPECT_EQ(MultiStagesCaptureDfxTotalTime::GetInstance().startTimes_.empty(), true);
 
     MEDIA_INFO_LOG("dfx_total_time_invalid_param_004 End");

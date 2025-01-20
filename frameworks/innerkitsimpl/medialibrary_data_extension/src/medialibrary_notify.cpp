@@ -42,8 +42,10 @@ static const int32_t WAIT_TIME = 2;
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::instance_;
 mutex MediaLibraryNotify::mutex_;
 unordered_map<string, NotifyDataMap> MediaLibraryNotify::nfListMap_ = {};
+atomic<uint16_t> MediaLibraryNotify::thumbCounts_(0);
 atomic<uint16_t> MediaLibraryNotify::counts_(0);
 static const uint16_t IDLING_TIME = 50;
+cosnt static uint16_t THUMB_LOOP = 5;
 
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
 {
@@ -215,14 +217,15 @@ static int32_t IsThumbReadyById(const string &fileId)
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, 0, "Failed to GoToFirstRow");
     int32_t isVisible = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE,
         resultSet, TYPE_INT32));
-    int64_t isTrashed = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_DATE_TRASHED,
+    int64_t isTrashed = get<int64_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_DATE_TRASHED,
         resultSet, TYPE_INT64));
     int32_t subtype = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE,
-        resultSet, TYPE_INT64));
+        resultSet, TYPE_INT32));
     int32_t burstCoverLevel = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
-        resultSet, TYPE_INT64));
+        resultSet, TYPE_INT32));
     int32_t isHidden = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_HIDDEN,
-        resultSet, TYPE_INT64));
+        resultSet, TYPE_INT32));
+    resultSet->Close();
     return isVisible && isTrashed == 0 && isHidden == 0 && !(subtype == static_cast<int32_t>(PhotoSubType::BURST) &&
         burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::MEMBER));
 }

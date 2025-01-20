@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 157;
+const int32_t MEDIA_RDB_VERSION = 159;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -183,6 +183,8 @@ enum {
     VERSION_FIX_SOURCE_ALBUM_UPDATE_TRIGGER_TO_USE_LPATH = 155,
     VERSION_UPDATE_PHOTOS_DATE_IDX = 156,
     VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX = 157,
+    VERSION_FIX_PHOTO_QUALITY_CLONED = 158,
+    VERSION_ADD_STAGE_VIDEO_TASK_STATUS = 159,
 };
 
 enum {
@@ -358,6 +360,7 @@ const std::string MEDIA_DATA_DB_PHOTO_ID = "photo_id";
 const std::string MEDIA_DATA_DB_PHOTO_QUALITY = "photo_quality";
 const std::string MEDIA_DATA_DB_FIRST_VISIT_TIME = "first_visit_time";
 const std::string MEDIA_DATA_DB_DEFERRED_PROC_TYPE = "deferred_proc_type";
+const std::string MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS = "stage_video_task_status";
 
 const std::string MEDIA_COLUMN_COUNT = "count(*)";
 const std::string MEDIA_COLUMN_COUNT_1 = "count(1)";
