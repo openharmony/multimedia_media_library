@@ -45,11 +45,11 @@ static std::string GetMediaLibraryDataUri()
 
 static Uri MultiUserUriRecognition(Uri &uri)
 {
-    if (GetUserId() == -1) {
+    if (UserFileClient::GetUserId() == -1) {
         return uri;
     }
     std::string uriString = uri.ToString();
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriString, USER_STR, to_string(UserFileClient::GetUserId()));
     return Uri(uriString);
 }
 
