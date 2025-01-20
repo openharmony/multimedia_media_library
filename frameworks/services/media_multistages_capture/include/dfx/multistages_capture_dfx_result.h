@@ -31,8 +31,10 @@ enum class MultiStagesCaptureResultErrCode : int32_t {
 };
  
 enum class MultiStagesCaptureMediaType : int32_t {
-    Photo,
-    Video,
+    IMAGE,
+    VIDEO,
+    MOVING_PHOTO_IMAGE,
+    MOVING_PHOTO_VIDEO,
 };
 
 class MultiStagesCaptureDfxResult {

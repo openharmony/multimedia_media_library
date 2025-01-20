@@ -174,6 +174,15 @@ enum class MultiStagesPhotoQuality : int32_t {
     LOW,
 };
 
+enum class StageVideoTaskStatus : int32_t {
+    NO_NEED_TO_STAGE = 0,
+    NEED_TO_STAGE,
+    STAGE_TASK_TO_DELIVER,
+    STAGE_TASK_DELIVERED,
+    STAGE_TASK_FAIL,
+    STAGE_TASK_SUCCESS,
+};
+
 constexpr int32_t DEFAULT_INT32 = 0;
 constexpr int64_t DEFAULT_INT64 = 0;
 constexpr int64_t DEFAULT_DOUBLE = 0;
