@@ -29,7 +29,7 @@ class HighlightRestore {
 public:
     void Init(int32_t sceneCode, std::string taskId,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
-    void RestoreAlbums();
+    void RestoreAlbums(const std::string &albumOdid);
     void RestoreMaps(std::vector<FileInfo> &fileInfos);
     void UpdateAlbums();
 
@@ -50,6 +50,7 @@ private:
         std::string clusterCondition;
         int32_t highlightStatus {-1};
         int32_t id {-1};
+        std::string albumOdid;
         std::vector<nlohmann::json> effectline;
 
         std::string ToString() const
@@ -68,7 +69,7 @@ private:
         }
     };
 
-    void GetAlbumInfos();
+    void GetAlbumInfos(const std::string &albumOdid);
     bool HasSameHighlightAlbum(HighlightAlbumInfo &info);
     void TransferClusterInfo(HighlightAlbumInfo &info);
     void InsertIntoAnalysisAlbum();

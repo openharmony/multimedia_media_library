@@ -63,21 +63,21 @@ void HighlightRestore::Init(int32_t sceneCode, std::string taskId,
     tracksParseFailCnt_ = 0;
 }
 
-void HighlightRestore::RestoreAlbums()
+void HighlightRestore::RestoreAlbums(const std::string &albumOdid)
 {
     if (galleryRdb_ == nullptr || mediaLibraryRdb_ == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return;
     }
-    GetAlbumInfos();
+    GetAlbumInfos(albumOdid);
     InsertIntoAnalysisAlbum();
     UpdateAlbumIds();
     InsertIntoHighlightTables();
 }
 
-void HighlightRestore::GetAlbumInfos()
+void HighlightRestore::GetAlbumInfos(const std::string &albumOdid)
 {
-    const std::string QUERY_SQL = "SELECT story_id, date, name, min_datetaken, max_datetaken,"
+    const std::string QUERY_SQL = "SELECT story_id, date, name, min_datetaken, max_datetaken, "
         "cover_id, album_type, generatedtime, cluster_type, cluster_sub_type, cluster_condition, "
         "(SELECT COUNT(1) FROM t_story_album_suggestion "
         "WHERE t_story_album_suggestion.story_id = t_story_album.story_id) AS suggestion "
@@ -93,6 +93,7 @@ void HighlightRestore::GetAlbumInfos()
         }
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             HighlightAlbumInfo info;
+            info.albumOdid = albumOdid;
             info.albumIdOld = GetInt32Val("story_id", resultSet);
             info.subTitle = GetStringVal("date", resultSet);
             info.albumName = GetStringVal("name", resultSet);
@@ -127,7 +128,7 @@ bool HighlightRestore::HasSameHighlightAlbum(HighlightAlbumInfo &info)
         "tab_highlight_album highlight "
         "LEFT JOIN AnalysisAlbum album ON highlight.album_id = album.album_id "
         "WHERE highlight.cluster_type = ? AND highlight.cluster_sub_type = ? AND highlight.cluster_condition = ? "
-        "AND album.album_name = ?";
+        "AND album.album_name = ? AND highlight.highlight_status = 1";
     std::vector<NativeRdb::ValueObject> params = {
         info.clusterType, info.clusterSubType, info.clusterCondition, info.albumName
     };
@@ -156,6 +157,7 @@ void HighlightRestore::TransferClusterInfo(HighlightAlbumInfo &info)
         info.clusterCondition = jsonObjects.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
         return;
     }
+
     info.clusterType = CLUSTER_TYPE_MAP.count(info.clusterType) > 0 ?
         CLUSTER_TYPE_MAP.at(info.clusterType) : info.clusterType;
     nlohmann::json jsonObjects;
@@ -378,6 +380,10 @@ void HighlightRestore::UpdateHighlightIds()
 
 void HighlightRestore::RestoreMaps(std::vector<FileInfo> &fileInfos)
 {
+    if (albumInfos_.empty()) {
+        MEDIA_INFO_LOG("albumInfos_ is empty, no need to restore maps.");
+        return;
+    }
     std::vector<NativeRdb::ValuesBucket> values;
     BatchQueryPhoto(fileInfos);
     for (const auto &fileInfo : fileInfos) {
