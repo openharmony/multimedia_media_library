@@ -479,13 +479,13 @@ function createAssetWithShortTermPermission(photoCreationConfig) {
   return createAssetWithShortTermPermissionOk(photoCreationConfig);
 }
 
-function getPhotoAccessHelper(context) {
+function getPhotoAccessHelper(context, userId = -1) {
   if (context === undefined) {
     console.log('photoAccessHelper gContext undefined');
     throw Error('photoAccessHelper gContext undefined');
   }
   gContext = context;
-  let helper = photoAccessHelper.getPhotoAccessHelper(gContext);
+  let helper = photoAccessHelper.getPhotoAccessHelper(gContext, userId);
   if (helper !== undefined) {
     console.log('photoAccessHelper getPhotoAccessHelper inner add createDeleteRequest and showAssetsCreationDialog');
     helper.createDeleteRequest = createDeleteRequest;
@@ -679,6 +679,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.subWindowName = option.subWindowName;
     config.parameters.themeColor = option.themeColor;
     config.parameters.completeButtonText = option.completeButtonText;
+    config.parameters.userId = option.userId;
   }
 
   return config;
@@ -762,6 +763,7 @@ function PhotoSelectOptions() {
   this.isEditSupported = true;
   this.isOriginalSupported = false;
   this.completeButtonText = CompleteButtonText.TEXT_DONE;
+  this.userId = -1;
 }
 
 function PhotoSelectResult(uris, isOriginalPhoto) {

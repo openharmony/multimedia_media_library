@@ -60,9 +60,15 @@ public:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryRdb(Uri &uri,
         const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns);
     EXPORT static std::string GetType(Uri &uri);
+    EXPORT static void SetUserId(const int32_t userId);
+    EXPORT static int32_t GetUserId();
+    EXPORT static void SetLastUserId(const int32_t userId);
+    EXPORT static int32_t GetLastUserId();
 private:
     static inline std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info);
+    static int32_t userId_;
+    static int32_t lastUserId_;
 };
 }
 }
