@@ -900,6 +900,10 @@ static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, c
     if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
         return;
     }
+    if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        outValues.PutInt(PhotoColumn::STAGE_VIDEO_TASK_STATUS,
+            static_cast<int32_t>(StageVideoTaskStatus::NEED_TO_STAGE));
+    }
 
     int32_t photoQuality = UNKNOWN_VALUE;
     if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_QUALITY, value)) {
