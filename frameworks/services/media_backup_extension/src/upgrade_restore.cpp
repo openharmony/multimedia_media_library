@@ -332,6 +332,24 @@ int32_t UpgradeRestore::GetHighlightCloudMediaCnt()
     return cnt;
 }
 
+void UpgradeRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
+{
+    int32_t highlightCloudMediaCnt = GetHighlightCloudMediaCnt();
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
+        .Report("Highlight Restore", "",
+        "sceneCode_: " + std::to_string(sceneCode_) +
+        ", dualDeviceSoftName_: " + dualDeviceSoftName_ +
+        ", highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
+        ", isAccountValid_: " + std::to_string(isAccountValid_) +
+        ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOpen));
+    if ((sceneCode_ == UPGRADE_RESTORE_ID || dualDeviceSoftName_.empty()
+        || dualDeviceSoftName_.find("4", dualDeviceSoftName_.find(" ")) == dualDeviceSoftName_.find(" ") + 1)
+        && (highlightCloudMediaCnt == 0 || (isAccountValid_ && isSyncSwitchOpen))) {
+        MEDIA_INFO_LOG("start to restore highlight albums");
+        highlightRestore_.RestoreAlbums(albumOdid_);
+    }
+}
+
 void UpgradeRestore::RestorePhoto()
 {
     AnalyzeSource();
@@ -348,20 +366,7 @@ void UpgradeRestore::RestorePhoto()
         // restore PhotoAlbum
         this->photoAlbumRestore_.Restore();
         RestoreFromGalleryPortraitAlbum();
-        int32_t highlightCloudMediaCnt = GetHighlightCloudMediaCnt();
-        UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
-            .Report("Highlight Restore", "",
-            "sceneCode_: " + std::to_string(sceneCode_) +
-            ", dualDeviceSoftName_: " + dualDeviceSoftName_ +
-            ", highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
-            ", isAccountValid_: " + std::to_string(isAccountValid_) +
-            ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOpen));
-        if ((sceneCode_ == UPGRADE_RESTORE_ID || dualDeviceSoftName_.empty()
-            || dualDeviceSoftName_.find("HarmonyOS 4") == 0)
-            && (highlightCloudMediaCnt == 0 || (isAccountValid_ && isSyncSwitchOpen))) {
-            MEDIA_INFO_LOG("start to restore highlight albums");
-            highlightRestore_.RestoreAlbums(albumOdid_);
-        }
+        RestoreHighlightAlbums(isSyncSwitchOpen);
         // restore Photos
         RestoreFromGallery();
         if (isAccountValid_ && isSyncSwitchOpen) {

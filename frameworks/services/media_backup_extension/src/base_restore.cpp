@@ -111,10 +111,10 @@ void BaseRestore::GetSourceDeviceInfo()
         if (!item.contains("type") || !item.contains("detail")) {
             continue;
         }
-        if (item["type"] == "albumOdid_") {
+        if (item["type"] == "dualOdid") {
             albumOdid_ = item["detail"];
         }
-        if (item["type"] == "dualDeviceSoftName_") {
+        if (item["type"] == "dualDeviceSoftName") {
             dualDeviceSoftName_ = item["detail"];
             MEDIA_INFO_LOG("get dualDeviceSoftName, %{public}s", dualDeviceSoftName_.c_str());
         }
