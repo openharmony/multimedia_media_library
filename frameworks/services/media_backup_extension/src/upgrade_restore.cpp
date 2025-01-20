@@ -332,6 +332,10 @@ void UpgradeRestore::RestorePhoto()
         if (isAccountValid_ && CloudSyncHelper::GetInstance()->IsSyncSwitchOpen()) {
             MEDIA_INFO_LOG("here cloud clone");
             RestoreCloudFromGallery();
+            MEDIA_INFO_LOG("Migrate Lcd is :%{public}" PRIu64 ",Thm: %{public}" PRIu64
+            ",Rotate Lcd %{public}" PRIu64 ",Thm: %{public}" PRIu64,
+            lcdMigrateFileNumber_.load(), thumbMigrateFileNumber_.load(),
+            rotateLcdMigrateFileNumber_.load(), rotateThmMigrateFileNumber_.load());
         }
     } else {
         maxId_ = 0;
@@ -412,7 +416,7 @@ void UpgradeRestore::RestoreFromGallery()
     HasLowQualityImage();
     // local count
     int32_t totalNumber = this->photosRestore_.GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
-    MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
+    MEDIA_INFO_LOG("local totalNumber = %{public}d", totalNumber);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);

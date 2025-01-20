@@ -107,9 +107,9 @@ protected:
         int32_t sceneCode);
     bool RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
     bool RestoreLcdAndThumbFromKvdb(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
-    int32_t BatchCreateDentryFile(std::vector<FileInfo> fileInfos, std::vector<std::string> &failCloudIds,
+    int32_t BatchCreateDentryFile(std::vector<FileInfo> &fileInfos, std::vector<std::string> &failCloudIds,
         std::string fileType);
-    void SetVisiblePhoto(std::vector<FileInfo> &fileInfos);
+    int32_t SetVisiblePhoto(std::vector<FileInfo> &fileInfos);
     void HandleFailData(std::vector<FileInfo> &fileInfos, std::vector<std::string> &failCloudIds,
         std::string fileType);
     void MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
@@ -169,6 +169,8 @@ protected:
     std::atomic<uint32_t> audioNumber_{0};
     std::atomic<uint64_t> lcdMigrateFileNumber_{0};
     std::atomic<uint64_t> thumbMigrateFileNumber_{0};
+    std::atomic<uint64_t> rotateLcdMigrateFileNumber_{0};
+    std::atomic<uint64_t> rotateThmMigrateFileNumber_{0};
     std::atomic<int32_t> updateProcessStatus_{ProcessStatus::STOP};
     std::atomic<int32_t> otherProcessStatus_{ProcessStatus::STOP};
     std::string dualDirName_ = "";
