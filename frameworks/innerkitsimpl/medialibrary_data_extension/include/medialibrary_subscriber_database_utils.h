@@ -27,10 +27,11 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MedialibrarySubscriberDatabaseUtils {
 public:
-    static int32_t QueryThumbAstc(int32_t& thunmbAstcCount);
-    static int32_t QueryThumbTotal(int32_t& thunmbTotalCount);
+    EXPORT static int32_t QueryThumbAstc(int32_t& thunmbAstcCount);
+    EXPORT static int32_t QueryThumbTotal(int32_t& thunmbTotalCount);
 private:
     static int32_t QueryInt(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,
         const std::string &queryColumn, int32_t &value);
