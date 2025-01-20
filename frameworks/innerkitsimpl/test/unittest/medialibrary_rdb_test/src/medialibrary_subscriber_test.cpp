@@ -19,6 +19,7 @@
 #define private public
 #include "medialibrary_subscriber.h"
 #include "moving_photo_processor.h"
+#include "medialibrary_subscriber_database_utils.h"
 #undef private
 
 using namespace std;
@@ -28,6 +29,7 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 constexpr int32_t SLEEP_TIME = 1;
+static constexpr int32_t EVENTTYPE = 7;
 HWTEST_F(MediaLibraryRdbTest, medialib_Subscribe_test_001, TestSize.Level0)
 {
     bool ret = MedialibrarySubscriber::Subscribe();
@@ -108,6 +110,40 @@ HWTEST_F(MediaLibraryRdbTest, medialib_MovingPhotoProcessor_test_001, TestSize.L
     EXPECT_EQ(MovingPhotoProcessor::isProcessing_, false); // no moving photo to process
     MovingPhotoProcessor::StopProcess();
     EXPECT_EQ(MovingPhotoProcessor::isProcessing_, false);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_QueryThumbAstc_test, TestSize.Level0)
+{
+    int count = 0;
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    EXPECT_NE(medialibrarySubscriberPtr, nullptr);
+
+    medialibrarySubscriberPtr->DoThumbnailBgOperation();
+    medialibrarySubscriberPtr->WalCheckPointAsync();
+    MedialibrarySubscriberDatabaseUtils::QueryThumbAstc(count);
+    MedialibrarySubscriberDatabaseUtils::QueryThumbTotal(count);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_UpdateBackgroundOperationStatus_test, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    EXPECT_NE(medialibrarySubscriberPtr, nullptr);
+    EventFwk::CommonEventData eventData;
+    AAFwk::Want want = eventData.GetWant();
+    std::array<StatusEventType, EVENTTYPE> events = {{
+        StatusEventType::CHARGING,
+        StatusEventType::DISCHARGING,
+        StatusEventType::SCREEN_OFF,
+        StatusEventType::SCREEN_ON,
+        StatusEventType::BATTERY_CHANGED,
+        StatusEventType::THERMAL_LEVEL_CHANGED,
+        StatusEventType::TIME_TICK
+    }};
+
+    for (const auto& event : events) {
+        medialibrarySubscriberPtr->UpdateBackgroundOperationStatus(want, event);
+    }
+    medialibrarySubscriberPtr->UpdateBackgroundOperationStatus(want, static_cast<StatusEventType>(100));
 }
 } // namespace Media
 } // namespace OHOS

@@ -950,7 +950,7 @@ std::string BackupDatabaseUtils::CheckDbIntegrity(std::shared_ptr<NativeRdb::Rdb
 int32_t BackupDatabaseUtils::QueryLocalNoAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
 {
     const std::string QUERY_LOCAL_NO_ASTC_COUNT = "SELECT count(1) AS count FROM Photos "
-        "WHERE thumbnail_ready = 0 AND position = 1";
+        "WHERE thumbnail_ready = 0 AND position = 1 AND time_pending = 0";
     return QueryInt(rdbStore, QUERY_LOCAL_NO_ASTC_COUNT, CUSTOM_COUNT);
 }
 
