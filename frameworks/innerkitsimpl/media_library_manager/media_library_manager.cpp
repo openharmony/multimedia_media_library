@@ -75,12 +75,15 @@ constexpr uint32_t URI_PERMISSION_FLAG_READ = 1;
 constexpr uint32_t URI_PERMISSION_FLAG_WRITE = 2;
 constexpr uint32_t URI_PERMISSION_FLAG_READWRITE = 3;
 
+const std::string MULTI_USER_URI_FLAG = "user=";
+
 struct UriParams {
     string path;
     string fileUri;
     Size size;
     bool isAstc;
     DecodeDynamicRange dynamicRange;
+    string user;
 };
 static map<string, TableType> tableMap = {
     { MEDIALIBRARY_TYPE_IMAGE_URI, TableType::TYPE_PHOTOS },
@@ -494,14 +497,23 @@ static int32_t GetFdFromSandbox(const string &path, string &sandboxPath, bool is
 int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size, bool isAstc)
 {
     // To ensure performance.
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("Failed to open thumbnail, sDataShareHelper_ is nullptr");
+    std::string str = uriStr;
+    size_t pos = str.find(MULTI_USER_URI_FLAG);
+    std::string userId = "";
+    if (pos != std::string::npos) {
+        userId = str.substr(pos + MULTI_USER_URI_FLAG.length());
+        MEDIA_DEBUG_LOG("OpenThumbnail for other user is %{public}s", userId.c_str());
+    }
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper = userId != "" ? DataShare::DataShareHelper::Creator(token_,
+        MEDIALIBRARY_DATA_URI + "?" + MULTI_USER_URI_FLAG + userId) : sDataShareHelper_;
+    if (dataShareHelper == nullptr) {
+        MEDIA_ERR_LOG("Failed to open thumbnail, dataShareHelper is nullptr");
         return E_ERR;
     }
     if (path.empty()) {
         MEDIA_ERR_LOG("OpenThumbnail path is empty");
         Uri openUri(uriStr);
-        return sDataShareHelper_->OpenFile(openUri, "R");
+        return dataShareHelper->OpenFile(openUri, "R");
     }
     string sandboxPath = GetSandboxPath(path, size, isAstc);
     int32_t fd = GetFdFromSandbox(path, sandboxPath, isAstc);
@@ -514,7 +526,7 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
         uriStr += "&" + THUMBNAIL_PATH + "=" + path;
     }
     Uri openUri(uriStr);
-    return sDataShareHelper_->OpenFile(openUri, "R");
+    return dataShareHelper->OpenFile(openUri, "R");
 }
 
 /**
@@ -558,6 +570,9 @@ static void GetUriParamsFromQueryKey(UriParams& uriParams,
     }
     if (queryKey.count(THUMBNAIL_OPER) != 0) {
         uriParams.isAstc = queryKey[THUMBNAIL_OPER] == MEDIA_DATA_DB_THUMB_ASTC;
+    }
+    if (queryKey.count(THUMBNAIL_USER) != 0) {
+        uriParams.user = queryKey[THUMBNAIL_USER];
     }
     uriParams.dynamicRange = DecodeDynamicRange::AUTO;
     if (queryKey.count(DYNAMIC_RANGE) != 0) {
@@ -677,6 +692,12 @@ unique_ptr<PixelMap> MediaLibraryManager::QueryThumbnail(UriParams& params)
     string oper = params.isAstc ? MEDIA_DATA_DB_THUMB_ASTC : MEDIA_DATA_DB_THUMBNAIL;
     string openUriStr = params.fileUri + "?" + MEDIA_OPERN_KEYWORD + "=" + oper + "&" + MEDIA_DATA_DB_WIDTH +
         "=" + to_string(params.size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(params.size.height);
+    if (params.user != "") {
+        openUriStr = openUriStr + "&" + THUMBNAIL_USER + "=" + params.user;
+        if (!params.path.empty() && !params.path.find(MULTI_USER_URI_FLAG)) {
+            params.path = params.path + "&" + THUMBNAIL_USER + "=" + params.user;
+        }
+    }
     tracer.Start("DataShare::OpenThumbnail");
     UniqueFd uniqueFd(MediaLibraryManager::OpenThumbnail(openUriStr, params.path, params.size, params.isAstc));
     if (uniqueFd.Get() < 0) {
@@ -844,6 +865,12 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetAstc(const Uri &uri)
     string openUriStr = uriParams.fileUri + "?" + MEDIA_OPERN_KEYWORD + "=" +
         MEDIA_DATA_DB_THUMB_ASTC + "&" + MEDIA_DATA_DB_WIDTH + "=" + to_string(uriParams.size.width) +
             "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(uriParams.size.height);
+    if (uriParams.user != "") {
+        openUriStr = openUriStr + "&" + THUMBNAIL_USER + "=" + uriParams.user;
+        if (!uriParams.path.empty() && !uriParams.path.find(MULTI_USER_URI_FLAG)) {
+            uriParams.path = uriParams.path + "&" + THUMBNAIL_USER + "=" + uriParams.user;
+        }
+    }
     tracer.Start("MediaLibraryManager::OpenThumbnail");
     UniqueFd uniqueFd(MediaLibraryManager::OpenThumbnail(openUriStr, uriParams.path, uriParams.size, true));
     if (uniqueFd.Get() < 0) {

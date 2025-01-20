@@ -115,6 +115,7 @@ const std::string PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK = "has_cloud_watermark"
 const std::string PhotoColumn::SUPPORTED_WATERMARK_TYPE = "supported_watermark_type";
 const std::string PhotoColumn::PHOTO_METADATA_FLAGS = "metadata_flags";
 const std::string PhotoColumn::PHOTO_CHECK_FLAG = "check_flag";
+const std::string PhotoColumn::STAGE_VIDEO_TASK_STATUS = "stage_video_task_status";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -252,7 +253,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_THUMBNAIL_VISIBLE + " INT DEFAULT 0, " +
     SUPPORTED_WATERMARK_TYPE + " INT, " +
     PHOTO_METADATA_FLAGS + " INT DEFAULT 0, " +
-    PHOTO_CHECK_FLAG + " INT DEFAULT 0)";
+    PHOTO_CHECK_FLAG + " INT DEFAULT 0, " +
+    STAGE_VIDEO_TASK_STATUS + " INT NOT NULL DEFAULT 0) ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
     PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";
@@ -380,6 +382,10 @@ const std::string PhotoColumn::UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL =
     " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_LATITUDE +
     " = NULL, " + PhotoColumn::PHOTO_LONGITUDE + " = NULL " + " WHERE " +
     PhotoColumn::PHOTO_LATITUDE + " = 0 AND " + PhotoColumn::PHOTO_LONGITUDE + " = 0;";
+
+const std::string PhotoColumn::UPDATE_PHOTO_QUALITY_OF_NULL_PHOTO_ID =
+    " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_QUALITY + " = 0 WHERE " +
+    PhotoColumn::PHOTO_QUALITY + " = 1 AND " + PhotoColumn::PHOTO_ID + " IS NULL;";
 
 const std::string PhotoColumn::DROP_INDEX_SCTHP_ADDTIME = BaseColumn::DropIndex() + PHOTO_SCHPT_ADDED_INDEX;
 

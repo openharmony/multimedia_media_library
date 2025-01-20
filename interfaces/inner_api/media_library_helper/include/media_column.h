@@ -137,6 +137,7 @@ public:
     static const std::string SUPPORTED_WATERMARK_TYPE EXPORT;
     static const std::string PHOTO_METADATA_FLAGS EXPORT;
     static const std::string PHOTO_CHECK_FLAG EXPORT;
+    static const std::string STAGE_VIDEO_TASK_STATUS EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
@@ -207,6 +208,7 @@ public:
     static const std::string UPDATA_PHOTOS_DATA_UNIQUE EXPORT;
     static const std::string UPDATE_LCD_STATUS_NOT_UPLOADED EXPORT;
     static const std::string UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL EXPORT;
+    static const std::string UPDATE_PHOTO_QUALITY_OF_NULL_PHOTO_ID EXPORT;
 
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;

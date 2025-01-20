@@ -354,6 +354,7 @@ ohos_shared_library("medialibrary_data_extension") {
       "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_capture_manager.cpp",
       "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_photo_capture_manager.cpp",
       "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_video_capture_manager.cpp",
+      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_moving_photo_capture_manager.cpp",
     ]
     sources += media_multistages_capture_source
     sources += [
