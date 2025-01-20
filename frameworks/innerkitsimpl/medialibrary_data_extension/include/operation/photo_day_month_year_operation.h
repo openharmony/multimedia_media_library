@@ -29,6 +29,10 @@ public:
 
     EXPORT static int32_t UpdatePhotosDate(NativeRdb::RdbStore &rdbStore);
 
+    EXPORT static std::pair<int32_t, std::vector<std::string>> QueryNeedUpdateFileIds(const int32_t batchSize);
+
+    EXPORT static int32_t UpdateAbnormalDayMonthYear(std::vector<std::string> &fileIds);
+
 private:
     static int32_t UpdatePhotosDate(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
 };
