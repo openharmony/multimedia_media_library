@@ -19,6 +19,7 @@
 
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_unistore_manager.h"
 #include "result_set_utils.h"
 
 namespace OHOS {
@@ -233,6 +234,78 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDateIdx(const std::shared_ptr<Me
 
     MEDIA_INFO_LOG("update photos date idx end, startTime: %{public}" PRId64 ", cost: %{public}" PRId64, startTime,
         (MediaFileUtils::UTCTimeMilliSeconds() - startTime));
+    return NativeRdb::E_OK;
+}
+
+std::pair<int32_t, std::vector<std::string>> PhotoDayMonthYearOperation::QueryNeedUpdateFileIds(const int32_t batchSize)
+{
+    MEDIA_DEBUG_LOG("Query need update fileIds start");
+
+    std::vector<std::string> needUpdateFileIds;
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr!");
+        return { NativeRdb::E_ERROR, needUpdateFileIds };
+    }
+
+    const std::string sql = ""
+        "SELECT"
+        "  file_id "
+        "FROM"
+        "  Photos "
+        "WHERE"
+        "  date_added = 0 "
+        "  OR date_taken = 0 "
+        "  OR date_day <> strftime( '%Y%m%d', date_taken / 1000, 'unixepoch', 'localtime' ) "
+        "  LIMIT " +
+        std::to_string(batchSize) + ";";
+
+    auto resultSet = rdbStore->QueryByStep(sql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("query need update fileIds by step failed!");
+        return { NativeRdb::E_ERROR, needUpdateFileIds };
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        needUpdateFileIds.push_back(GetStringVal(PhotoColumn::MEDIA_ID, resultSet));
+    }
+    resultSet->Close();
+
+    return { NativeRdb::E_OK, needUpdateFileIds };
+}
+
+int32_t PhotoDayMonthYearOperation::UpdateAbnormalDayMonthYear(std::vector<std::string> &fileIds)
+{
+    MEDIA_DEBUG_LOG("update abnormal day month year data start");
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr!");
+        return NativeRdb::E_ERROR;
+    }
+
+    auto needChangedSize = fileIds.size();
+    CHECK_AND_RETURN_RET(needChangedSize > 0, NativeRdb::E_OK);
+
+    std::stringstream updateSql;
+    updateSql << UPDATE_DAY_MONTH_YEAR;
+    for (size_t i = 0; i < needChangedSize; ++i) {
+        if (i != 0) {
+            updateSql << ", ";
+        }
+        updateSql << fileIds[i];
+    }
+    updateSql << " );";
+    int64_t changedRowCount = 0;
+    auto errCode = rdbStore->ExecuteForChangedRowCount(changedRowCount, updateSql.str());
+    if (errCode != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("update abnormal day month year data failed, errCode: %{public}d, needChangedSize: %{public}zu",
+            errCode, needChangedSize);
+        return errCode;
+    }
+    MEDIA_DEBUG_LOG(
+        "update abnormal day month year data end, needChangedSize: %{public}zu, changedRowCount: %{public}" PRId64,
+        needChangedSize, changedRowCount);
     return NativeRdb::E_OK;
 }
 } // namespace Media
