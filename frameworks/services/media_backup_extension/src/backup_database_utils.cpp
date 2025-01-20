@@ -978,7 +978,7 @@ std::unordered_map<int32_t, int32_t> BackupDatabaseUtils::QueryMediaTypeCount(
 }
 
 std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::QuerySql(
-    const std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &querySql,
+    std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &querySql,
     const std::vector<NativeRdb::ValueObject> &params)
 {
     if (rdbStore == nullptr) {

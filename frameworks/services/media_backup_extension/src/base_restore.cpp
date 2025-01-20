@@ -100,12 +100,34 @@ void BaseRestore::GetAccountValid()
     isAccountValid_ = ((oldId != "") && (oldId == newId));
 }
 
+void BaseRestore::GetSourceDeviceInfo()
+{
+    nlohmann::json jsonArray = nlohmann::json::parse(restoreInfo_, nullptr, false);
+    if (jsonArray.is_discarded()) {
+        MEDIA_ERR_LOG("GetSourceDeviceInfo parse restoreInfo_ fail.");
+        return;
+    }
+    for (const auto& item : jsonArray) {
+        if (!item.contains("type") || !item.contains("detail")) {
+            continue;
+        }
+        if (item["type"] == "albumOdid_") {
+            albumOdid_ = item["detail"];
+        }
+        if (item["type"] == "dualDeviceSoftName_") {
+            dualDeviceSoftName_ = item["detail"];
+            MEDIA_INFO_LOG("get dualDeviceSoftName, %{public}s", dualDeviceSoftName_.c_str());
+        }
+    }
+}
+
 void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::string &upgradePath)
 {
     backupRestoreDir_ = backupRetoreDir;
     upgradeRestoreDir_ = upgradePath;
     int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     GetAccountValid();
+    GetSourceDeviceInfo();
     if (errorCode == E_OK) {
         RestorePhoto();
         RestoreAudio();
@@ -921,6 +943,7 @@ int BaseRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &file
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
     InsertPhotoRelated(fileInfos, sourceType);
+    highlightRestore_.RestoreMaps(fileInfos);
 
     // create dentry file for cloud origin, save failed cloud id
     std::vector<std::string> dentryFailedOrigin;
