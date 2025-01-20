@@ -46,6 +46,16 @@ static std::string GetMediaLibraryDataUri()
     return mediaLibraryDataUri;
 }
 
+static Uri MultiUserUriRecognition(Uri &uri)
+{
+    if (GetUserId() == -1) {
+        return uri;
+    }
+    std::string uriString = uri.ToString();
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
+    return Uri(uriString);
+}
+
 bool UserFileClient::IsValid()
 {
     return sDataShareHelper_ != nullptr;
@@ -80,16 +90,12 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
         LOGE("Query fail, helper null");
         return nullptr;
     }
-    std::string uriString = uri.ToString();
-    if (GetUserId() != -1) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
-    }
-    uri = Uri(uriString);
+    uri = MultiUserUriRecognition(uri);
 
     shared_ptr<DataShareResultSet> resultSet = nullptr;
     OperationObject object = OperationObject::UNKNOWN_OBJECT;
     if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) &&
-        !uriString.find(MULTI_USER_URI_FLAG)) {
+        !uri.ToString().find(MULTI_USER_URI_FLAG)) {
         resultSet = MediaAssetRdbStore::GetInstance()->Query(predicates, columns, object, errCode);
     } else {
         DatashareBusinessError businessError;
@@ -105,11 +111,7 @@ int UserFileClient::Insert(Uri &uri, const DataShareValuesBucket &value)
         LOGE("insert fail, helper null");
         return E_FAIL;
     }
-    std::string uriString = uri.ToString();
-    if (GetUserId() != -1) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
-    }
-    uri = Uri(uriString);
+    uri = MultiUserUriRecognition(uri);
     int index = sDataShareHelper_->Insert(uri, value);
     return index;
 }
@@ -162,11 +164,7 @@ int UserFileClient::Update(Uri &uri, const DataSharePredicates &predicates,
         LOGE("update fail, helper null");
         return E_FAIL;
     }
-    std::string uriString = uri.ToString();
-    if (GetUserId() != -1) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
-    }
-    uri = Uri(uriString);
+    uri = MultiUserUriRecognition(uri);
     return sDataShareHelper_->Update(uri, predicates, value);
 }
 
@@ -185,11 +183,7 @@ int UserFileClient::OpenFile(Uri &uri, const std::string &mode)
         LOGE("Open file fail, helper null");
         return E_FAIL;
     }
-    std::string uriString = uri.ToString();
-    if (GetUserId() != -1) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
-    }
-    uri = Uri(uriString);
+    uri = MultiUserUriRecognition(uri);
     return sDataShareHelper_->OpenFile(uri, mode);
 }
 
@@ -199,11 +193,7 @@ int UserFileClient::Delete(Uri &uri, const DataSharePredicates &predicates)
         LOGE("delete fail, helper null");
         return E_FAIL;
     }
-    std::string uriString = uri.ToString();
-    if (GetUserId() != -1) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
-    }
-    uri = Uri(uriString);
+    uri = MultiUserUriRecognition(uri);
     return sDataShareHelper_->Delete(uri, predicates);
 }
 
@@ -213,11 +203,7 @@ int UserFileClient::InsertExt(Uri &uri, const DataShareValuesBucket &value, stri
         LOGE("insert fail, helper null");
         return E_FAIL;
     }
-    std::string uriString = uri.ToString();
-    if (GetUserId() != -1) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
-    }
-    uri = Uri(uriString);
+    uri = MultiUserUriRecognition(uri);
     int index = sDataShareHelper_->InsertExt(uri, value, result);
     return index;
 }
@@ -228,11 +214,7 @@ int UserFileClient::BatchInsert(Uri& uri, const std::vector<DataShare::DataShare
         LOGE("Batch insert fail, helper null");
         return E_FAIL;
     }
-    std::string uriString = uri.ToString();
-    if (GetUserId() != -1) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uriString, USER_STR, to_string(GetUserId()));
-    }
-    uri = Uri(uriString);
+    uri = MultiUserUriRecognition(uri);
     return sDataShareHelper_->BatchInsert(uri, values);
 }
 
