@@ -245,16 +245,16 @@ static bool SkipThumbNotifyIfNotReady(NotifyTaskData* taskData)
 
 static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData* taskData)
 {
+    if (SkipThumbNotifyIfNotReady(taskData)) {
+        MEDIA_DEBUG_LOG("Skip taskData %{public}s, because not visible", taskData->uri_.c_str());
+        return;
+    }
     NotifyDataMap notifyDataMap;
     list<Uri> sendUris;
     Uri uri(srcUri);
     MEDIA_DEBUG_LOG("AddNotify ,keyUri = %{private}s, uri = %{private}s, "
         "notifyType = %{private}d", keyUri.c_str(), uri.ToString().c_str(), taskData->notifyType_);
     lock_guard<mutex> lock(MediaLibraryNotify::mutex_);
-    if (SkipThumbNotifyIfNotReady(taskData)) {
-        MEDIA_DEBUG_LOG("Skip taskData %{public}s, because not visible", taskData->uri_.c_str());
-        return;
-    }
     if (MediaLibraryNotify::nfListMap_.count(keyUri) == 0) {
         sendUris.emplace_back(uri);
         notifyDataMap.insert(make_pair(taskData->notifyType_, sendUris));
