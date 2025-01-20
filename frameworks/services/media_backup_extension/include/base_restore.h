@@ -26,6 +26,7 @@
 #include "rdb_helper.h"
 #include "result_set.h"
 #include "tab_old_photos_restore.h"
+#include "geo_knowledge_restore.h"
 
 namespace OHOS {
 namespace Media {
@@ -191,6 +192,7 @@ protected:
     TabOldPhotosRestore tabOldPhotosRestore_;
     bool needReportFailed_ = false;
     bool isAccountValid_ = false;
+    GeoKnowledgeRestore geoKnowledgeRestore_;
 };
 } // namespace Media
 } // namespace OHOS

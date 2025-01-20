@@ -114,7 +114,9 @@ private:
             CASE WHEN COALESCE(gallery_album.lPath, '') <> '' \
                 THEN gallery_album.lPath \
                 ELSE album_v2.lPath \
-            END AS lPath \
+            END AS lPath, \
+            latitude, \
+            longitude \
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
