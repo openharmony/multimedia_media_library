@@ -19,6 +19,7 @@
 #include <condition_variable>
 #include <ios>
 #include <mutex>
+#include <set>
 #include <vector>
 
 #include "datashare_helper.h"
@@ -56,9 +57,10 @@ private:
     void SendEventPacketAlbum(uint32_t objectHandle, uint16_t eventCode);
     void SendPhotoEvent(ChangeType changeType, std::string suffixString);
     std::vector<int32_t> GetHandlesFromPhotosInfoBurstKeys(std::vector<std::string> &handle);
-    void SendEventToPTP(int32_t suff_int, ChangeType changeType);
+    void SendEventToPTP(ChangeType changeType, const std::vector<int32_t> &albumIds);
     std::vector<std::string> GetAllDeleteHandles();
-    std::shared_ptr<DataShare::DataShareResultSet> GetAlbumInfo();
+    void GetAlbumIdList(std::set<int32_t> &albumIds);
+    void GetOwnerAlbumIdList(std::set<int32_t> &albumIds);
     void GetAddEditPhotoHandles(int32_t handle);
     int32_t GetAddEditAlbumHandle(int32_t handle);
     void AddPhotoHandle(int32_t handle);

@@ -17,6 +17,7 @@
 #define FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_PTP_ALBUM_HANDLES_H_
 
 #include <iostream>
+#include <set>
 #include <vector>
 #include <mutex>
 #include <memory>
@@ -41,7 +42,7 @@ public:
     void RemoveHandle(int32_t value);
     void AddAlbumHandles(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
     bool FindHandle(int32_t value);
-    int32_t ChangeHandle(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
+    void UpdateHandle(const std::set<int32_t> &albumIds, std::vector<int32_t> &removeIds);
 
 private:
     std::vector<int32_t> dataHandles_;
