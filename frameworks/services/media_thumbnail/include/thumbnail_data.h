@@ -182,7 +182,6 @@ public:
     EXPORT Size thumbDesiredSize;
     EXPORT GenerateStats stats;
     EXPORT SourceLoaderOptions loaderOpts;
-    EXPORT bool isThumbExisted {false};
     EXPORT int64_t thumbnailReady { -1 };
     EXPORT int64_t lcdVisitTime { -1 };
 };

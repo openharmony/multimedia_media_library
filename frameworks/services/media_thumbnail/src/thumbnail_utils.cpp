@@ -2329,9 +2329,6 @@ int ThumbnailUtils::SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailTy
         return E_ERR;
     }
 
-    int32_t count = 0;
-    kvStore->GetCount(key, count);
-    data.isThumbExisted = count > 0;
     int status = kvStore->Insert(key, type == ThumbnailType::MTH_ASTC ? data.monthAstc : data.yearAstc);
     if (status != E_OK) {
         MEDIA_ERR_LOG("Insert failed, type:%{public}d, field_id:%{public}s, status:%{public}d",

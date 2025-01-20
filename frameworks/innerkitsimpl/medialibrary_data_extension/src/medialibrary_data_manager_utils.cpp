@@ -85,5 +85,19 @@ std::string MediaLibraryDataManagerUtils::GetTypeUriByUri(std::string &uri)
     }
     return typeUri;
 }
+
+std::string MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(std::string &uri)
+{
+    auto startIndex = uri.find(PhotoColumn::PHOTO_URI_PREFIX);
+    if (startIndex == std::string::npos) {
+        return "";
+    }
+    auto endIndex = uri.find("/", startIndex + PhotoColumn::PHOTO_URI_PREFIX.length());
+    if (endIndex == std::string::npos) {
+        return uri.substr(startIndex + PhotoColumn::PHOTO_URI_PREFIX.length());
+    }
+    return uri.substr(startIndex + PhotoColumn::PHOTO_URI_PREFIX.length(),
+        endIndex - startIndex - PhotoColumn::PHOTO_URI_PREFIX.length());
+}
 } // namespace Media
 } // namespace OHOS
