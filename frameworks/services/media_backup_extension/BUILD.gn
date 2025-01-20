@@ -29,6 +29,7 @@ group("media_backup_package") {
 ohos_shared_library("mediabackup") {
   include_dirs = [
     "./include",
+    "./include/geo_knowledge",
     "./include/log",
     "./include/restore",
     "./include/report",
@@ -53,6 +54,7 @@ ohos_shared_library("mediabackup") {
     "./src/base_restore.cpp",
     "./src/burst_key_generator.cpp",
     "./src/clone_restore.cpp",
+    "./src/geo_knowledge/geo_knowledge_restore.cpp",
     "./src/log/backup_hi_audit.cpp",
     "./src/log/backup_hi_audit_helper.cpp",
     "./src/log/backup_log_utils.cpp",
@@ -103,6 +105,7 @@ ohos_shared_library("mediabackup") {
     "ffrt:libffrt",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
+    "i18n:intl_util",
     "image_framework:image_native",
     "init:libbegetutil",
     "kv_store:distributeddata_inner",
