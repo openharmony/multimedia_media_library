@@ -63,6 +63,7 @@ public:
 
     static void SendBatchUris(const NotifyType type, std::list<Uri> &uris, std::list<Uri> &extraUris);
     static void SendBatchUris(const NotifyType type, std::list<Uri> &uris);
+    static void SendDeleteUris(std::list<Uri> &uris);
 };
 } // namespace Media
 } // namespace OHOS
