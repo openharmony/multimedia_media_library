@@ -1642,6 +1642,8 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INDEX_HIGHLIGHT_FILEID,
     PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
     AddStatusColumnForRefreshAlbumTable(),
+    PhotoColumn::INDEX_LATITUDE,
+    PhotoColumn::INDEX_LONGITUDE,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
