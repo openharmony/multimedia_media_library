@@ -2051,9 +2051,10 @@ int RefreshPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     std::vector<RefreshAlbumData> analysisAlbums;
     bool isUpdateAllAnalysis = false;
     int ret = GetSystemRefreshAlbums(rdbStore, systeAlbums);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "failed to get system album id from refresh album");
     ret = GetAnalysisRefreshAlbums(rdbStore, analysisAlbums, isUpdateAllAnalysis);
     DeleteAllAlbumId(rdbStore);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "failed to get refresh system albumids");
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "failed to get analysis album id from refresh album");
     if (systeAlbums.empty() && analysisAlbums.empty()) {
         MEDIA_INFO_LOG("all album are empty");
         return E_EMPTY_ALBUM_ID;
