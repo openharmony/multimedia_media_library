@@ -57,6 +57,7 @@
 #include "mimetype_utils.h"
 #ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
+#include "multistages_moving_photo_capture_manager.h"
 #endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
@@ -82,6 +83,7 @@
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_vision_operations.h"
 #include "dfx_manager.h"
+#include "dfx_utils.h"
 #include "moving_photo_file_utils.h"
 #include "hi_audit.h"
 #include "video_composition_callback_imp.h"
@@ -2620,11 +2622,12 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
         ScanMovingPhoto(cmd, columns);
 
         vector<string> fileAssetColumns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
-            PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME };
+            PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_ID };
         shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
             PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, fileAssetColumns);
         CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
             "Failed to GetFileAssetFromDb, fileId = %{public}d", id);
+        MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(fileAsset->GetPhotoId());
         return AddFiltersToVideoExecute(fileAsset, true);
     }
 
@@ -3266,15 +3269,16 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::ProcessMultistagesVideo(bool isEdited, const std::string &path)
+int32_t MediaLibraryPhotoOperations::ProcessMultistagesVideo(bool isEdited, bool isMovingPhoto, const std::string &path)
 {
-    MEDIA_INFO_LOG("ProcessMultistagesVideo path:%{public}s, isEdited: %{public}d", path.c_str(), isEdited);
-    return FileUtils::SaveVideo(path, isEdited);
+    MEDIA_INFO_LOG("ProcessMultistagesVideo path:%{public}s, isEdited: %{public}d, isMovingPhoto: %{public}d",
+        DfxUtils::GetSafePath(path).c_str(), isEdited, isMovingPhoto);
+    return FileUtils::SaveVideo(path, isEdited, isMovingPhoto);
 }
 
 int32_t MediaLibraryPhotoOperations::RemoveTempVideo(const std::string &path)
 {
-    MEDIA_INFO_LOG("RemoveTempVideo path: %{public}s", path.c_str());
+    MEDIA_INFO_LOG("RemoveTempVideo path: %{public}s", DfxUtils::GetSafePath(path).c_str());
     return FileUtils::DeleteTempVideoFile(path);
 }
 #endif

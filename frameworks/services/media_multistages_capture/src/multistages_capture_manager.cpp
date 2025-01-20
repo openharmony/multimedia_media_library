@@ -41,13 +41,15 @@ void MultiStagesCaptureManager::RemovePhotos(const NativeRdb::AbsRdbPredicates &
     }
 
     NativeRdb::AbsRdbPredicates predicatesNew(predicates.GetTableName());
-    string where = predicates.GetWhereClause() + " AND " + PhotoColumn::PHOTO_QUALITY + "=" +
-        to_string(static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
+    string where = predicates.GetWhereClause() + " AND (" + PhotoColumn::PHOTO_QUALITY + "=" +
+        to_string(static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) + " OR " +
+        PhotoColumn::STAGE_VIDEO_TASK_STATUS + " = " +
+        to_string(static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_DELIVERED)) + ")";
 
     predicatesNew.SetWhereClause(where);
     predicatesNew.SetWhereArgs(predicates.GetWhereArgs());
     vector<string> columns { MediaColumn::MEDIA_ID, MEDIA_DATA_DB_PHOTO_ID, MEDIA_DATA_DB_PHOTO_QUALITY,
-        MEDIA_DATA_DB_MEDIA_TYPE };
+        MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS };
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicatesNew, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_INFO_LOG("Result set is empty");
@@ -56,9 +58,16 @@ void MultiStagesCaptureManager::RemovePhotos(const NativeRdb::AbsRdbPredicates &
 
     do {
         string photoId = GetStringVal(MEDIA_DATA_DB_PHOTO_ID, resultSet);
+        int32_t stageVideoTaskStatus = GetInt32Val(MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS, resultSet);
+        // Moving photo remove video task
+        if (stageVideoTaskStatus == static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_DELIVERED)) {
+            MultiStagesVideoCaptureManager::GetInstance().RemoveVideo(photoId, isRestorable);
+            continue;
+        }
+
         int32_t photoQuality = GetInt32Val(MEDIA_DATA_DB_PHOTO_QUALITY, resultSet);
         if (photoId.empty() || photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
-            MEDIA_DEBUG_LOG("photoId is empty or full quality ");
+            MEDIA_DEBUG_LOG("photoId is empty or task status invalid ");
             continue;
         }
 
@@ -117,6 +126,25 @@ void MultiStagesCaptureManager::RestorePhotos(const NativeRdb::AbsRdbPredicates 
                 break;
         }
     } while (!resultSet->GoToNextRow());
+}
+
+int32_t MultiStagesCaptureManager::QuerySubType(const string &photoId)
+{
+    NativeRdb::AbsRdbPredicates predicatesNew(PhotoColumn::PHOTOS_TABLE);
+    string where = PhotoColumn::PHOTO_ID + " = ? ";
+    vector<string> whereArgs { photoId };
+    predicatesNew.SetWhereClause(where);
+    predicatesNew.SetWhereArgs(whereArgs);
+    vector<string> columns { PhotoColumn::PHOTO_SUBTYPE };
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicatesNew, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Result set is empty, photoId: %{public}s", photoId.c_str());
+        return static_cast<int32_t>(PhotoSubType::CAMERA);
+    }
+
+    int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    resultSet->Close();
+    return subType;
 }
 } // Media
 } // OHOS
