@@ -47,8 +47,11 @@ static inline string FuzzString(const uint8_t *data, size_t size)
     return {reinterpret_cast<const char*>(data), size};
 }
 
-static inline int32_t FuzzInt32(const uint8_t *data)
+static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int32_t)) {
+        return 0;
+    }
     return static_cast<int32_t>(*data);
 }
 
@@ -69,32 +72,66 @@ static int Init()
 
 static void CommandTest(const uint8_t *data, size_t size)
 {
+    const int32_t int32Count = 10;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
     NativeRdb::ValuesBucket value;
-    Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(FuzzInt32(data)),
-        static_cast<Media::OperationType>(FuzzInt32(data)), static_cast<Media::MediaLibraryApi>(FuzzInt32(data)));
+    int32_t offset = 0;
+    int32_t operationObject1 = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t operationType1 = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t mediaLibraryApi1 = FuzzInt32(data + offset, size);
+    Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(operationObject1),
+        static_cast<Media::OperationType>(operationType1), static_cast<Media::MediaLibraryApi>(mediaLibraryApi1));
     cmd.SetTableName(FuzzString(data, size));
     cmd.SetBundleName(FuzzString(data, size));
     cmd.SetDeviceName(FuzzString(data, size));
     cmd.SetResult(FuzzString(data, size));
-    cmd.SetOprnObject(static_cast<Media::OperationObject>(FuzzInt32(data)));
+    offset += sizeof(int32_t);
+    int32_t operationObject2 = FuzzInt32(data + offset, size);
+    cmd.SetOprnObject(static_cast<Media::OperationObject>(operationObject2));
     cmd.GetOprnFileId();
     cmd.SetOprnAssetId(FuzzString(data, size));
     DataShare::DataSharePredicates pred;
     cmd.SetDataSharePred(pred);
     cmd.SetValueBucket(value);
     Media::MediaLibraryCommand cmdValueBucket(FuzzUri(data, size), value);
-    Media::MediaLibraryCommand cmdValueBucket2(static_cast<Media::OperationObject>(FuzzInt32(data)),
-        static_cast<Media::OperationType>(FuzzInt32(data)), value,
-        static_cast<Media::MediaLibraryApi>(FuzzInt32(data)));
-    Media::MediaLibraryCommand cmdDevice(static_cast<Media::OperationObject>(FuzzInt32(data)),
-        static_cast<Media::OperationType>(FuzzInt32(data)), FuzzString(data, size),
-        static_cast<Media::MediaLibraryApi>(FuzzInt32(data)));
+    offset += sizeof(int32_t);
+    int32_t operationObject3 = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t operationType2 = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t mediaLibraryApi2 = FuzzInt32(data + offset, size);
+    Media::MediaLibraryCommand cmdValueBucket2(static_cast<Media::OperationObject>(operationObject3),
+        static_cast<Media::OperationType>(operationType2), value,
+        static_cast<Media::MediaLibraryApi>(mediaLibraryApi2));
+    offset += sizeof(int32_t);
+    int32_t operationObject4 = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t operationType3 = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t mediaLibraryApi3 = FuzzInt32(data + offset, size);
+    Media::MediaLibraryCommand cmdDevice(static_cast<Media::OperationObject>(operationObject4),
+        static_cast<Media::OperationType>(operationType3), FuzzString(data, size),
+        static_cast<Media::MediaLibraryApi>(mediaLibraryApi3));
 }
 
 static void DirOperationTest(const uint8_t *data, size_t size)
 {
-    Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(FuzzInt32(data)),
-        static_cast<Media::OperationType>(FuzzInt32(data)), static_cast<Media::MediaLibraryApi>(FuzzInt32(data)));
+    const int32_t int32Count = 2;
+    if (data == nullptr || sizeof(int32_t) * int32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    int32_t operationObject = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t operationType = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t mediaLibraryApi = FuzzInt32(data + offset, size);
+    Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(operationObject),
+        static_cast<Media::OperationType>(operationType), static_cast<Media::MediaLibraryApi>(mediaLibraryApi));
     Media::MediaLibraryDirOperations::HandleDirOperation(cmd);
     Media::MediaLibraryDirOperations::CreateDirOperation(cmd);
     Media::MediaLibraryDirOperations::TrashDirOperation(cmd);
@@ -102,25 +139,38 @@ static void DirOperationTest(const uint8_t *data, size_t size)
 
 static void UriPermissionTest(const uint8_t *data, size_t size)
 {
-    Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(FuzzInt32(data)),
-        static_cast<Media::OperationType>(FuzzInt32(data)), static_cast<Media::MediaLibraryApi>(FuzzInt32(data)));
+    const int32_t int32Count = 6;
+    if (data == nullptr || sizeof(int32_t) * int32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    int32_t operationObject = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t operationType = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t mediaLibraryApi = FuzzInt32(data + offset, size);
+    Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(operationObject),
+        static_cast<Media::OperationType>(operationType), static_cast<Media::MediaLibraryApi>(mediaLibraryApi));
     NativeRdb::ValuesBucket rdbValueBucket;
-    rdbValueBucket.Put(Media::PERMISSION_FILE_ID, FuzzInt32(data));
+    offset += sizeof(int32_t);
+    rdbValueBucket.Put(Media::PERMISSION_FILE_ID, FuzzInt32(data + offset, size));
     rdbValueBucket.Put(Media::PERMISSION_BUNDLE_NAME, FuzzString(data, size));
     rdbValueBucket.Put(Media::PERMISSION_MODE, "r");
     rdbValueBucket.Put(Media::PERMISSION_TABLE_TYPE, FuzzString(data, size));
     cmd.SetValueBucket(rdbValueBucket);
     Media::UriPermissionOperations::HandleUriPermOperations(cmd);
     Media::UriPermissionOperations::HandleUriPermInsert(cmd);
-    Media::UriPermissionOperations::InsertBundlePermission(FuzzInt32(data), FuzzString(data, size),
+    offset += sizeof(int32_t);
+    Media::UriPermissionOperations::InsertBundlePermission(FuzzInt32(data + offset, size), FuzzString(data, size),
         FuzzString(data, size), FuzzString(data, size));
     Media::UriPermissionOperations::DeleteBundlePermission(FuzzString(data, size),
         FuzzString(data, size), FuzzString(data, size));
     string mode = "r";
     Media::UriPermissionOperations::CheckUriPermission(FuzzString(data, size), mode);
 
+    offset += sizeof(int32_t);
     Media::UriPermissionOperations::GetUriPermissionMode(FuzzString(data, size), FuzzString(data, size),
-        FuzzInt32(data), mode);
+        FuzzInt32(data + offset, size), mode);
     Media::UriPermissionOperations::UpdateOperation(cmd);
     Media::UriPermissionOperations::InsertOperation(cmd);
     std::vector<NativeRdb::ValuesBucket> rdbValues;
@@ -128,7 +178,11 @@ static void UriPermissionTest(const uint8_t *data, size_t size)
     Media::UriPermissionOperations::DeleteOperation(cmd);
     std::vector<DataShare::DataShareValuesBucket> sharedValues;
     DataShare::DataShareValuesBucket valueTest1;
+    valueTest1.Put(Media::AppUriPermissionColumn::FILE_ID, "file_id");
+    valueTest1.Put(Media::AppUriPermissionColumn::APP_ID, "appid");
     DataShare::DataShareValuesBucket valueTest2;
+    valueTest2.Put(Media::AppUriPermissionColumn::FILE_ID, "file_id");
+    valueTest2.Put(Media::AppUriPermissionColumn::APP_ID, "appid");
     sharedValues.push_back(valueTest1);
     sharedValues.push_back(valueTest2);
     Media::UriPermissionOperations::GrantUriPermission(cmd, sharedValues);
@@ -137,40 +191,63 @@ static void UriPermissionTest(const uint8_t *data, size_t size)
 
 static void AnalysisTest(const uint8_t *data, size_t size)
 {
-    if (size < sizeof(int32_t)) {
+    const int32_t int32Count = 7;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
         return;
     }
     std::vector<std::string> columns;
     NativeRdb::ValuesBucket values;
     DataShare::DataSharePredicates pred;
-    Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(FuzzInt32(data)),
-        static_cast<Media::OperationType>(FuzzInt32(data)), static_cast<Media::MediaLibraryApi>(FuzzInt32(data)));
+    int32_t offset = 0;
+    int32_t operationObject = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t operationType = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t mediaLibraryApi = FuzzInt32(data + offset, size);
+    Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(operationObject),
+        static_cast<Media::OperationType>(operationType), static_cast<Media::MediaLibraryApi>(mediaLibraryApi));
     cmd.SetTableName("Photos");
     Media::MergeAlbumInfo info1;
-    info1.albumId = FuzzInt32(data);
+    offset += sizeof(int32_t);
+    info1.albumId = FuzzInt32(data + offset, size);
     Media::MergeAlbumInfo info2;
-    const uint8_t *data2 = data + sizeof(int32_t);
-    info2.albumId = FuzzInt32(data2);
+    offset += sizeof(int32_t);
+    info2.albumId = FuzzInt32(data + offset, size);
     std::vector<Media::MergeAlbumInfo> infos;
     infos.push_back(info1);
     infos.push_back(info2);
     Media::MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(infos);
+    offset += sizeof(int32_t);
     Media::MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(
-        static_cast<Media::OperationType>(FuzzInt32(data)), values, pred);
+        static_cast<Media::OperationType>(FuzzInt32(data + offset, size)), values, pred);
     Media::MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
-    Media::MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(FuzzInt32(data));
+    offset += sizeof(int32_t);
+    Media::MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(FuzzInt32(data + offset, size));
 }
 
 static void AppPermissionTest(const uint8_t *data, size_t size)
 {
+    const int32_t int32Count = 3;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
     std::vector<std::string> columns;
     NativeRdb::RdbPredicates rdbPred("Photos");
     DataShare::DataSharePredicates sharedPred;
-
-    Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(FuzzInt32(data)),
-        static_cast<Media::OperationType>(FuzzInt32(data)), static_cast<Media::MediaLibraryApi>(FuzzInt32(data)));
+    int32_t offset = 0;
+    int32_t operationObject = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t operationType = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t mediaLibraryApi = FuzzInt32(data + offset, size);
+    Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(operationObject),
+        static_cast<Media::OperationType>(operationType), static_cast<Media::MediaLibraryApi>(mediaLibraryApi));
     Media::MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
     std::vector<DataShare::DataShareValuesBucket> sharedValues;
+    DataShare::DataShareValuesBucket values;
+    values.Put(Media::AppUriPermissionColumn::FILE_ID, "file_id");
+    values.Put(Media::AppUriPermissionColumn::APP_ID, "appid");
+    sharedValues.push_back(values);
     Media::MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, sharedValues);
     Media::MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPred);
     Media::MediaLibraryAppUriPermissionOperations::QueryOperation(sharedPred, columns);
@@ -222,11 +299,17 @@ static void CloudDownloadTest()
 }
 } // namespace OHOS
 
+
+extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
+{
+    OHOS::Init();
+    return 0;
+}
+
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::Init();
     int sleepTime = 100;
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
     OHOS::CommandTest(data, size);
