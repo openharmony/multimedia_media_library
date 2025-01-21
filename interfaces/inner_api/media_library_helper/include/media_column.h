@@ -126,7 +126,7 @@ public:
     static const std::string PHOTO_OWNER_ALBUM_ID EXPORT;
     static const std::string PHOTO_ORIGINAL_ASSET_CLOUD_ID EXPORT;
     static const std::string PHOTO_SOURCE_PATH EXPORT;
-
+    static const std::string PHOTO_CHECK_FLAG EXPORT;
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
     static const std::string PHOTO_DETAIL_TIME EXPORT;
@@ -209,6 +209,7 @@ public:
     // cloud notify uri
     static const std::string PHOTO_HEIGHT_ERROR_URI_PREFIX EXPORT;
     static const std::string PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX EXPORT;
+    static const std::string PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX EXPORT;
     // yuv uri
     static const std::string PHOTO_REQUEST_PICTURE EXPORT;
     static const std::string PHOTO_REQUEST_PICTURE_BUFFER EXPORT;

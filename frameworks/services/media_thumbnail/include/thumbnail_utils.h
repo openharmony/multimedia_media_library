@@ -60,7 +60,7 @@ public:
     EXPORT static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size,
         std::unique_ptr<PixelMap> &pixelMap);
     EXPORT static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
-        bool isHigh = false, bool isAstc = false, bool forceSdr = true);
+        bool isAstc = false, bool forceSdr = true, const uint8_t quality = THUMBNAIL_MID);
     EXPORT static bool CompressPicture(ThumbnailData &data, bool isSourceEx);
     EXPORT static bool CopyPictureSource(std::shared_ptr<Picture> &picture, std::shared_ptr<Picture> &copySource);
     EXPORT static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
