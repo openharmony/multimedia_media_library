@@ -151,6 +151,7 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
     ParseXml(xmlPath);
     this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
+    highlightRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -312,12 +313,52 @@ bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::
     return true;
 }
 
+int32_t UpgradeRestore::GetHighlightCloudMediaCnt()
+{
+    const std::string QUERY_SQL = "SELECT COUNT(1) AS count FROM t_story_album t1 "
+        "WHERE COALESCE(t1.name, '') <> '' AND t1.displayable = 1 "
+        "AND EXISTS "
+        "(SELECT t2._id FROM gallery_media t2 WHERE t2.local_media_id = -1 "
+        "AND (t2.story_id LIKE '%,'||t1.story_id||',%' OR t2.portrait_id LIKE '%,'||t1.story_id||',%'))";
+    std::shared_ptr<NativeRdb::ResultSet> resultSet =
+        BackupDatabaseUtils::QuerySql(this->galleryRdb_, QUERY_SQL, {});
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("query count of highlight cloud media failed.");
+        return -1;
+    }
+    int32_t cnt = GetInt32Val("count", resultSet);
+    MEDIA_INFO_LOG("GetHighlightCloudMediaCnt is %{public}d", cnt);
+    resultSet->Close();
+    return cnt;
+}
+
+void UpgradeRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
+{
+    int32_t highlightCloudMediaCnt = GetHighlightCloudMediaCnt();
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
+        .Report("Highlight Restore", "",
+        "sceneCode_: " + std::to_string(sceneCode_) +
+        ", dualDeviceSoftName_: " + dualDeviceSoftName_ +
+        ", highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
+        ", isAccountValid_: " + std::to_string(isAccountValid_) +
+        ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOpen));
+    if ((sceneCode_ == UPGRADE_RESTORE_ID || dualDeviceSoftName_.empty()
+        || dualDeviceSoftName_.find("4", dualDeviceSoftName_.find(" ")) == dualDeviceSoftName_.find(" ") + 1)
+        && (highlightCloudMediaCnt == 0 || (isAccountValid_ && isSyncSwitchOpen))) {
+        MEDIA_INFO_LOG("start to restore highlight albums");
+        highlightRestore_.RestoreAlbums(albumOdid_);
+    }
+}
+
 void UpgradeRestore::RestorePhoto()
 {
     AnalyzeSource();
 
     std::string dbIntegrityCheck = CheckGalleryDbIntegrity();
     if (dbIntegrityCheck == DB_INTEGRITY_CHECK) {
+        bool isSyncSwitchOpen = CloudSyncHelper::GetInstance()->IsSyncSwitchOpen();
+        MEDIA_INFO_LOG("the isAccountValid is %{public}d, sync switch open is %{public}d", isAccountValid_,
+            isSyncSwitchOpen);
         // upgrade gallery.db
         DataTransfer::GalleryDbUpgrade().OnUpgrade(this->galleryRdb_);
         AnalyzeGallerySource();
@@ -325,11 +366,10 @@ void UpgradeRestore::RestorePhoto()
         // restore PhotoAlbum
         this->photoAlbumRestore_.Restore();
         RestoreFromGalleryPortraitAlbum();
+        RestoreHighlightAlbums(isSyncSwitchOpen);
         // restore Photos
         RestoreFromGallery();
-        MEDIA_INFO_LOG("the isAccountValid is %{public}d, sync switch open is %{public}d", isAccountValid_,
-            CloudSyncHelper::GetInstance()->IsSyncSwitchOpen());
-        if (isAccountValid_ && CloudSyncHelper::GetInstance()->IsSyncSwitchOpen()) {
+        if (isAccountValid_ && isSyncSwitchOpen) {
             MEDIA_INFO_LOG("here cloud clone");
             RestoreCloudFromGallery();
             MEDIA_INFO_LOG("Migrate Lcd is :%{public}" PRIu64 ",Thm: %{public}" PRIu64
@@ -361,6 +401,7 @@ void UpgradeRestore::RestorePhoto()
         UpdateDualCloneFaceAnalysisStatus();
     }
 
+    highlightRestore_.UpdateAlbums();
     ReportPortraitStat(sceneCode_);
     (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
 }
@@ -693,6 +734,8 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.bundleName = this->photosRestore_.FindBundleName(info);
     info.packageName = this->photosRestore_.FindPackageName(info);
     info.photoQuality = this->photosRestore_.FindPhotoQuality(info);
+    info.storyIds = GetStringVal("story_id", resultSet);
+    info.portraitIds = GetStringVal("portrait_id", resultSet);
     return isSuccess;
 }
 
