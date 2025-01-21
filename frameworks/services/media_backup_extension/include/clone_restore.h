@@ -58,7 +58,6 @@ private:
     void AnalyzeSource() override;
     void RestoreAlbum(void);
     void RestoreAudio(void) override;
-    void NotifyAlbum() override;
     int InsertPhoto(std::vector<FileInfo> &fileInfos);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
@@ -99,7 +98,6 @@ private:
     bool HasColumn(const std::unordered_map<std::string, std::string> &columnInfoMap, const std::string &columnName);
     void GetAlbumExtraQueryWhereClause(const std::string &tableName);
     bool IsReadyForRestore(const std::string &tableName);
-    void UpdateAlbumToNotifySet(const std::string &tableName, const std::unordered_set<int32_t> &albumSet);
     void PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,
         const std::unordered_map<std::string, std::string> &commonColumnInfoMap) const;
     void RestoreGallery();
@@ -198,7 +196,6 @@ private:
     std::unordered_map<std::string, std::string> tableExtraQueryWhereClauseMap_;
     std::unordered_map<std::string, std::unordered_map<int32_t, int32_t>> tableAlbumIdMap_;
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tableCommonColumnInfoMap_;
-    std::unordered_set<std::string> albumToNotifySet_;
     std::string garbagePath_;
     std::vector<CoverUriInfo> coverUriInfo_;
     std::vector<PortraitAlbumDfx> portraitAlbumDfx_;
