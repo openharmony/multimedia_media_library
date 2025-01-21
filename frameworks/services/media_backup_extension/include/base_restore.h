@@ -26,6 +26,7 @@
 #include "rdb_helper.h"
 #include "result_set.h"
 #include "tab_old_photos_restore.h"
+#include "highlight_restore.h"
 
 namespace OHOS {
 namespace Media {
@@ -71,6 +72,7 @@ protected:
         int32_t sourceType);
     int32_t CopyFile(const std::string &srcFile, const std::string &dstFile) const;
     void GetAccountValid();
+    void GetSourceDeviceInfo();
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
@@ -177,6 +179,8 @@ protected:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::string backupRestoreDir_;
     std::string upgradeRestoreDir_;
+    std::string albumOdid_;
+    std::string dualDeviceSoftName_;
     std::mutex imageMutex_;
     std::mutex videoMutex_;
     std::mutex audioMutex_;
@@ -193,6 +197,7 @@ protected:
     TabOldPhotosRestore tabOldPhotosRestore_;
     bool needReportFailed_ = false;
     bool isAccountValid_ = false;
+    HighlightRestore highlightRestore_;
 };
 } // namespace Media
 } // namespace OHOS
