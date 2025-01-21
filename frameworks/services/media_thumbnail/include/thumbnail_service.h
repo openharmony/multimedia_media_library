@@ -55,6 +55,8 @@ public:
         bool isSync = false);
     void InvalidateThumbnail(const std::string &id, const std::string &tableName,
         const std::string &path = "", const std::string &dateTaken = "");
+    EXPORT int32_t CreateThumbnailPastDirtyDataFix(const std::string &fileId);
+    EXPORT int32_t CreateLcdPastDirtyDataFix(const std::string &fileId, const uint8_t quality = THUMBNAIL_MID);
     EXPORT void Init(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
 #ifdef DISTRIBUTED
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,

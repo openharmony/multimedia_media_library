@@ -25,7 +25,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t MEDIA_RDB_VERSION = 141;
+const int32_t MEDIA_RDB_VERSION = 142;
 
 enum {
     VERSION_ADD_CLOUD = 2,
@@ -148,6 +148,7 @@ enum {
     VERSION_THUMBNAIL_READY_FIX = 139,
     VERSION_UPDATE_AOI = 140,
     VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER = 141,
+    VERSION_ADD_CHECK_FLAG = 142,
 };
 
 enum {

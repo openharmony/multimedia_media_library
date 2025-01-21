@@ -513,8 +513,7 @@ bool SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSource
         float heightScale = (1.0f * lcdDesiredHeight) / lcdSource->GetHeight();
         lcdSource->scale(widthScale, heightScale);
     }
-    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd,
-        data.mediaType == MEDIA_TYPE_AUDIO, false, false)) {
+    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, false, false, data.thumbnailQuality)) {
         MEDIA_ERR_LOG("CompressImage failed");
         return false;
     }
@@ -590,7 +589,7 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
 
     if (type == ThumbnailType::THUMB || type == ThumbnailType::THUMB_ASTC) {
         if (!ThumbnailUtils::CompressImage(pixelMap, type == ThumbnailType::THUMB ? data.thumbnail : data.thumbAstc,
-            false, type == ThumbnailType::THUMB_ASTC)) {
+            type == ThumbnailType::THUMB_ASTC)) {
             MEDIA_ERR_LOG("CompressImage faild id %{public}s", opts.row.c_str());
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
                 {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -645,7 +644,7 @@ bool IThumbnailHelper::GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
-    if (!ThumbnailUtils::CompressImage(pixelMapEx, data.thumbnail, false, false)) {
+    if (!ThumbnailUtils::CompressImage(pixelMapEx, data.thumbnail, false)) {
         MEDIA_ERR_LOG("CompressImage failed id %{public}s", opts.row.c_str());
         return false;
     }
@@ -678,7 +677,7 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
     }
 #endif
     if (!ThumbnailUtils::CompressImage(pixelMap,
-        (type == ThumbnailType::MTH_ASTC) ? data.monthAstc : data.yearAstc, false, true)) {
+        (type == ThumbnailType::MTH_ASTC) ? data.monthAstc : data.yearAstc, true)) {
         MEDIA_ERR_LOG("CompressImage to astc failed");
         return false;
     }
@@ -840,7 +839,7 @@ bool IThumbnailHelper::DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
-    if (!ThumbnailUtils::CompressImage(pixelMap, data.thumbnail, false, false)) {
+    if (!ThumbnailUtils::CompressImage(pixelMap, data.thumbnail, false)) {
         MEDIA_ERR_LOG("CompressImage faild id %{public}s", data.id.c_str());
         return false;
     }
