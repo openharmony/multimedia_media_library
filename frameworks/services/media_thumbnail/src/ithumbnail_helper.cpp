@@ -417,6 +417,8 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data)
 
 bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
+    MEDIA_INFO_LOG("Start DoCreateLcd, id: %{public}s, path: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
     ThumbnailWait thumbnailWait(true);
     ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::LCD);
     if (ret != WaitStatus::INSERT) {
@@ -774,6 +776,8 @@ int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const Thum
 
 bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
+    MEDIA_INFO_LOG("Start DoCreateThumbnail, id: %{public}s, path: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
     ThumbnailWait thumbnailWait(true);
     ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB);
     if (ret != WaitStatus::INSERT) {

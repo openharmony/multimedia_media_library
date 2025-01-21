@@ -81,6 +81,8 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailBackground(ThumbRdbOpt &opts)
         MEDIA_ERR_LOG("rdbStore is not init");
         return E_ERR;
     }
+    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::CheckRemainSpaceMeetCondition(THUMBNAIL_FREE_SIZE_LIMIT_10),
+        E_FREE_SIZE_NOT_ENOUGH, "Free size is not enough");
 
     vector<ThumbnailData> infos;
     int32_t err = GetNoThumbnailData(opts, infos);
@@ -93,12 +95,20 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailBackground(ThumbRdbOpt &opts)
         MEDIA_DEBUG_LOG("No need generate thumbnail.");
         return E_OK;
     }
+    auto createThumbnailBackgroundTask = [](std::shared_ptr<ThumbnailTaskData> &data) {
+        CHECK_AND_RETURN_LOG(data != nullptr, "Data is null");
+        auto &thumbnailData = data->thumbnailData_;
+        CHECK_AND_RETURN_LOG(ThumbnailUtils::CheckRemainSpaceMeetCondition(THUMBNAIL_FREE_SIZE_LIMIT_10),
+            "CreateThumbnailBackgroundTask free size is not enough, id:%{public}s, path:%{public}s",
+            thumbnailData.id.c_str(), DfxUtils::GetSafePath(thumbnailData.path).c_str());
+        IThumbnailHelper::CreateThumbnail(data);
+    };
 
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
         infos[i].loaderOpts.loadingStates = infos[i].isLocalFile ? SourceLoader::LOCAL_SOURCE_LOADING_STATES :
             SourceLoader::CLOUD_SOURCE_LOADING_STATES;
-        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateThumbnail,
+        IThumbnailHelper::AddThumbnailGenerateTask(createThumbnailBackgroundTask,
             opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     }
 
@@ -113,6 +123,8 @@ int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
     }
 
     CheckMonthAndYearKvStoreValid(opts);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::CheckRemainSpaceMeetCondition(THUMBNAIL_FREE_SIZE_LIMIT_10),
+        E_FREE_SIZE_NOT_ENOUGH, "Free size is not enough");
     vector<ThumbnailData> infos;
     int32_t err = GetNoAstcData(opts, infos);
     if (err != E_OK) {
@@ -127,23 +139,29 @@ int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
         return E_OK;
     }
 
+    auto createAstcBackgroundTask = [](std::shared_ptr<ThumbnailTaskData> &data) {
+        CHECK_AND_RETURN_LOG(data != nullptr, "Data is null");
+        auto &thumbnailData = data->thumbnailData_;
+        CHECK_AND_RETURN_LOG(ThumbnailUtils::CheckRemainSpaceMeetCondition(THUMBNAIL_FREE_SIZE_LIMIT_10),
+            "CreateAstcBackgroundTask free size is not enough, id:%{public}s, path:%{public}s",
+            thumbnailData.id.c_str(), DfxUtils::GetSafePath(thumbnailData.path).c_str());
+        if (thumbnailData.isLocalFile) {
+            thumbnailData.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+            IThumbnailHelper::CreateThumbnail(data);
+        } else {
+            thumbnailData.loaderOpts.loadingStates = thumbnailData.orientation != 0 ?
+                SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES : SourceLoader::CLOUD_SOURCE_LOADING_STATES;
+            thumbnailData.orientation != 0 ? IThumbnailHelper::CreateAstcEx(data) : IThumbnailHelper::CreateAstc(data);
+        }
+    };
+
     MEDIA_INFO_LOG("no astc data size: %{public}d", static_cast<int>(infos.size()));
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
         ThumbnailUtils::RecordStartGenerateStats(infos[i].stats, GenerateScene::BACKGROUND,
             LoadSourceType::LOCAL_PHOTO);
-        infos[i].loaderOpts.loadingStates = infos[i].isLocalFile ? SourceLoader::LOCAL_SOURCE_LOADING_STATES :
-            SourceLoader::CLOUD_SOURCE_LOADING_STATES;
-        if (infos[i].orientation != 0) {
-            infos[i].loaderOpts.loadingStates = infos[i].isLocalFile ? SourceLoader::LOCAL_SOURCE_LOADING_STATES :
-                SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
-            IThumbnailHelper::AddThumbnailGenerateTask(infos[i].isLocalFile ?
-                IThumbnailHelper::CreateThumbnail : IThumbnailHelper::CreateAstcEx, opts, infos[i],
-                ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
-        } else {
-            IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc,
-                opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
-        }
+        IThumbnailHelper::AddThumbnailGenerateTask(createAstcBackgroundTask,
+            opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     }
     return E_OK;
 }
@@ -170,18 +188,26 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts, bool
             MEDIA_ERR_LOG("RdbStore lcd size failed! %{public}d", err);
         }
     }
-    ThumbnailTaskPriority priority = isCloudInsertTaskPriorityHigh ?
-        ThumbnailTaskPriority::MID : ThumbnailTaskPriority::LOW;
-    ThumbnailTaskType taskType = isCloudInsertTaskPriorityHigh ?
-        ThumbnailTaskType::FOREGROUND : ThumbnailTaskType::BACKGROUND;
-        
-    data.loaderOpts.loadingStates = SourceLoader::CLOUD_SOURCE_LOADING_STATES;
-    if (data.orientation != 0) {
-        data.loaderOpts.loadingStates = SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
-        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstcEx, opts, data, taskType, priority);
+
+    data.loaderOpts.loadingStates = data.orientation != 0 ?
+        SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES : SourceLoader::CLOUD_SOURCE_LOADING_STATES;
+    if (isCloudInsertTaskPriorityHigh) {
+        IThumbnailHelper::AddThumbnailGenerateTask(data.orientation != 0 ?
+            IThumbnailHelper::CreateAstcEx : IThumbnailHelper::CreateAstc,
+            opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::MID);
         return E_OK;
     }
-    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc, opts, data, taskType, priority);
+
+    auto lowPriorityCreateAstcCloudDownloadTask = [](std::shared_ptr<ThumbnailTaskData> &data) {
+        CHECK_AND_RETURN_LOG(data != nullptr, "Data is null");
+        auto &thumbnailData = data->thumbnailData_;
+        CHECK_AND_RETURN_LOG(ThumbnailUtils::CheckRemainSpaceMeetCondition(THUMBNAIL_FREE_SIZE_LIMIT_10),
+            "LowPriorityCreateAstcCloudDownloadTask free size is not enough, id:%{public}s, path:%{public}s",
+            thumbnailData.id.c_str(), DfxUtils::GetSafePath(thumbnailData.path).c_str());
+        thumbnailData.orientation != 0 ? IThumbnailHelper::CreateAstcEx(data) : IThumbnailHelper::CreateAstc(data);
+    };
+    IThumbnailHelper::AddThumbnailGenerateTask(lowPriorityCreateAstcCloudDownloadTask,
+        opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     return E_OK;
 }
 
@@ -246,6 +272,8 @@ int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
     if (opts.store == nullptr) {
         return E_ERR;
     }
+    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::CheckRemainSpaceMeetCondition(THUMBNAIL_FREE_SIZE_LIMIT_10),
+        E_FREE_SIZE_NOT_ENOUGH, "Free size is not enough");
 
     vector<ThumbnailData> infos;
     int32_t err = GetNoLcdData(opts, infos);
@@ -257,6 +285,15 @@ int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
         MEDIA_DEBUG_LOG("No need create Lcd.");
         return E_THUMBNAIL_LCD_ALL_EXIST;
     }
+    auto createLcdBackgroundTask = [](std::shared_ptr<ThumbnailTaskData> &data) {
+        CHECK_AND_RETURN_LOG(data != nullptr, "CreateLcd failed, data is null");
+        auto &thumbnailData = data->thumbnailData_;
+        CHECK_AND_RETURN_LOG(ThumbnailUtils::CheckRemainSpaceMeetCondition(THUMBNAIL_FREE_SIZE_LIMIT_10),
+            "CreateLcdBackgroundTask free size is not enough, id:%{public}s, path:%{public}s",
+            thumbnailData.id.c_str(), DfxUtils::GetSafePath(thumbnailData.path).c_str());
+        thumbnailData.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+        IThumbnailHelper::CreateLcd(data);
+    };
 
     MEDIA_INFO_LOG("No lcd data size: %{public}d", static_cast<int>(infos.size()));
     for (uint32_t i = 0; i < infos.size(); i++) {
@@ -269,8 +306,7 @@ int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
             ThumbnailUtils::UpdateLcdReadyStatus(opts, infos[i], err, LcdReady::GENERATE_LCD_COMPLETED);
             continue;
         }
-        infos[i].loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
-        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcd,
+        IThumbnailHelper::AddThumbnailGenerateTask(createLcdBackgroundTask,
             opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     }
     return E_OK;
@@ -551,6 +587,8 @@ int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts, b
         MEDIA_ERR_LOG("rdbStore is not init");
         return E_ERR;
     }
+    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::CheckRemainSpaceMeetCondition(THUMBNAIL_FREE_SIZE_LIMIT_10),
+        E_FREE_SIZE_NOT_ENOUGH, "Free size is not enough");
 
     vector<ThumbnailData> infos;
     int32_t err = GetThumbnailDataNeedUpgrade(opts, infos, isWifiConnected);
