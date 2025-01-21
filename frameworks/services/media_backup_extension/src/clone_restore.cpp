@@ -357,7 +357,7 @@ void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fi
         }
         int32_t errCode = MoveAsset(fileInfos[i]);
         if (errCode != E_OK) {
-            fileInfos[i].updateMap.clear();
+            fileInfos[i].needUpdate = false;
             MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s, error:%{public}s",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
                 strerror(errno));
@@ -1294,7 +1294,8 @@ bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
         UpdateDuplicateNumber(fileInfo.fileType);
         return false;
     }
-    if (MediaFileUtils::IsFileExists(fileInfo.cloudPath) || fileInfo.isRelatedToPhotoMap == 1) {
+    // If the device originally has dentry file in the cloud path, no need to generate new cloud path.
+    if (fileInfo.isNew && (MediaFileUtils::IsFileExists(fileInfo.cloudPath) || fileInfo.isRelatedToPhotoMap == 1)) {
         int32_t uniqueId = GetUniqueId(fileInfo.fileType);
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfo.fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfo.displayName), fileInfo.cloudPath);
@@ -1655,18 +1656,8 @@ bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInf
     if (fileId <= 0 || cloudPath.empty()) {
         return false;
     }
-    fileInfo.isNew = false;
-    fileInfo.fileIdNew = fileId;
-    fileInfo.cloudPath = cloudPath;
-    bool isInCloud = rowData.cleanFlag == 1 && rowData.position == static_cast<int32_t>(PhotoPositionType::CLOUD);
-    // If the file was in cloud previously, only require update flags.
-    if (fileId > 0 && isInCloud) {
-        fileInfo.updateMap["clean_flag"] = "0";
-        fileInfo.updateMap["position"] = to_string(static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
-        return false;
-    }
-    fileInfo.needMove = false;
-    return true;
+    // Meed extra check to determine whether or not to drop the duplicate file.
+    return ExtraCheckForCloneSameFile(fileInfo, rowData);
 }
 
 void CloneRestore::RestoreFromGalleryPortraitAlbum()
