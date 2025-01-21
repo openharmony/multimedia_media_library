@@ -534,7 +534,7 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
             continue;
         }
         if (!MoveAndModifyFile(fileInfos[i], sceneCode)) {
-            fileInfos[i].updateMap.clear();
+            fileInfos[i].needUpdate = false;
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
             ErrorInfo errorInfo(RestoreError::MOVE_FAILED, 1, strerror(errno),
                 BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i]));
@@ -1256,31 +1256,73 @@ int32_t BaseRestore::GetNoNeedMigrateCount()
     return 0;
 }
 
-void BaseRestore::UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
-    const std::vector<FileInfo>& fileInfos)
+bool BaseRestore::ExtraCheckForCloneSameFile(FileInfo &fileInfo, PhotosDao::PhotosRowData &rowData)
 {
-    for (const FileInfo &fileInfo : fileInfos) {
-        auto &updateMap = fileInfo.updateMap;
-        if (fileInfo.fileIdNew <= 0 || fileInfo.isNew || updateMap.empty()) {
+    fileInfo.isNew = false;
+    fileInfo.fileIdNew = rowData.fileId;
+    fileInfo.cloudPath = rowData.data;
+    bool isInCloud = rowData.cleanFlag == 1 && rowData.position == static_cast<int32_t>(PhotoPositionType::CLOUD);
+    // If the file was in cloud previously with clean_flag = 1, reset it's position to local
+    if (rowData.fileId > 0 && isInCloud) {
+        fileInfo.needUpdate = true;
+        return false;
+    }
+    fileInfo.needMove = false;
+    return true;
+}
+
+void BaseRestore::UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    std::vector<FileInfo>& fileInfos)
+{
+    std::vector<std::string> inColumn;
+    for (FileInfo &fileInfo : fileInfos) {
+        if (fileInfo.fileIdNew <= 0 || fileInfo.isNew || !fileInfo.needUpdate) {
             continue;
         }
-        int32_t changeRows = 0;
-        std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
-            make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
-        predicates->SetWhereClause("file_id=?");
-        predicates->SetWhereArgs({ to_string(fileInfo.fileIdNew) });
-        NativeRdb::ValuesBucket updatePostBucket;
-        for (auto it = updateMap.begin(); it != updateMap.end(); it++) {
-            updatePostBucket.Put(it->first, it->second);
-        }
-        BackupDatabaseUtils::Update(mediaLibraryRdb, changeRows, updatePostBucket, predicates);
-        if (changeRows <= 0) {
-            MEDIA_ERR_LOG("update failed, fileId: %{public}d", fileInfo.fileIdNew);
-            ErrorInfo errorInfo(RestoreError::UPDATE_PHOTOS_FAILED, 1, "",
-                BackupLogUtils::FileInfoToString(this->sceneCode_, fileInfo));
-            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        if (MediaFileUtils::IsFileExists(fileInfo.cloudPath)) {
+            int32_t ret = RemoveDentryFileWithConflict(fileInfo);
+            if (ret != E_OK) {
+                fileInfo.needUpdate = false;
+                MEDIA_ERR_LOG("Failed to remove dentry file %{public}s", fileInfo.cloudPath.c_str());
+                continue;
+            }
+            inColumn.push_back(to_string(fileInfo.fileIdNew));
         }
     }
+    BackupDatabaseUtils::BatchUpdatePhotosToLocal(mediaLibraryRdb, inColumn);
+}
+
+int32_t BaseRestore::RemoveDentryFileWithConflict(const FileInfo &fileInfo)
+{
+    // Delete dentry file
+    string dummyPath = fileInfo.cloudPath + ".tmp";
+    int32_t moveToRet = MoveFile(fileInfo.cloudPath, dummyPath);
+    if (moveToRet != E_OK) {
+        MEDIA_ERR_LOG("Move file from %{public}s to %{public}s failed, ret=%{public}d", fileInfo.cloudPath.c_str(),
+            dummyPath.c_str(), moveToRet);
+        return moveToRet;
+    }
+
+    bool dentryDeleted = false;
+    if (MediaFileUtils::IsFileExists(fileInfo.cloudPath)) {
+        (void)MediaFileUtils::DeleteFile(fileInfo.cloudPath);
+        dentryDeleted = true;
+    }
+
+    int32_t moveBackRet = MoveFile(dummyPath, fileInfo.cloudPath);
+    if (moveBackRet != E_OK) {
+        MEDIA_ERR_LOG("Move file from %{public}s to %{public}s failed, ret=%{public}d", dummyPath.c_str(),
+            fileInfo.cloudPath.c_str(), moveBackRet);
+        return moveBackRet;
+    }
+
+    // Delete thumb dentry file
+    string tmpPathThumb = fileInfo.cloudPath;
+    string thumbPath = tmpPathThumb.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_THUMB_CLOUD_DIR);
+    if (MediaFileUtils::IsFileExists(thumbPath) && dentryDeleted) {
+        (void)MediaFileUtils::DeleteDir(thumbPath);
+    }
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS
