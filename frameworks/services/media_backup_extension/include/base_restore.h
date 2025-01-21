@@ -64,7 +64,7 @@ protected:
     virtual bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
     virtual void InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
         int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum);
-    virtual void NotifyAlbum();
+    void NotifyAlbum();
     virtual std::string CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
