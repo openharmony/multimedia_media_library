@@ -167,6 +167,7 @@ private:
     std::shared_ptr<MediaDataShareExtAbility> extension_;
     std::shared_ptr<CloudSyncObserver> cloudPhotoObserver_;
     std::shared_ptr<CloudSyncObserver> cloudPhotoAlbumObserver_;
+    std::shared_ptr<CloudSyncObserver> galleryRebuildObserver_;
 };
 
 // Scanner callback objects
