@@ -48,8 +48,6 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 const int32_t CLONE_QUERY_COUNT = 200;
-const int32_t SYSTEM_ALBUM_ID_START = 1;
-const int32_t SYSTEM_ALBUM_ID_END = 7;
 const string MEDIA_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
 constexpr int64_t SECONDS_LEVEL_LIMIT = 1e10;
 const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
@@ -1161,7 +1159,6 @@ void CloneRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &to
         MEDIA_INFO_LOG("query %{public}zu map infos cost %{public}ld, insert %{public}ld maps cost %{public}ld",
             mapInfos.size(), (long)(startInsert - startQuery), (long)rowNum, (long)(end - startInsert));
     }
-    UpdateAlbumToNotifySet(tableName, currentTableAlbumSet);
 }
 
 NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const MapInfo &mapInfo) const
@@ -1220,30 +1217,6 @@ bool CloneRestore::HasColumn(const unordered_map<string, string> &columnInfoMap,
 bool CloneRestore::IsReadyForRestore(const string &tableName)
 {
     return GetValueFromMap(tableColumnStatusMap_, tableName, false);
-}
-
-void CloneRestore::UpdateAlbumToNotifySet(const string &tableName, const unordered_set<int32_t> &albumSet)
-{
-    string albumUriPrefix = GetValueFromMap(ALBUM_URI_PREFIX_MAP, tableName);
-    CHECK_AND_RETURN_LOG(!albumUriPrefix.empty(), "Get album uri prefix of %{public}s failed",
-        BackupDatabaseUtils::GarbleInfoName(tableName).c_str());
-    for (auto albumId : albumSet) {
-        string albumUri = MediaFileUtils::GetUriByExtrConditions(albumUriPrefix, to_string(albumId));
-        albumToNotifySet_.insert(albumUri);
-    }
-}
-
-void CloneRestore::NotifyAlbum()
-{
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_LOG(watch != nullptr, "Get MediaLibraryNotify instance failed");
-    for (const auto &albumUri : albumToNotifySet_) {
-        watch->Notify(albumUri, NotifyType::NOTIFY_ADD);
-    }
-    for (int32_t systemAlbumId = SYSTEM_ALBUM_ID_START; systemAlbumId <= SYSTEM_ALBUM_ID_END; systemAlbumId++) {
-        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(systemAlbumId), NotifyType::NOTIFY_UPDATE);
-    }
-    MEDIA_INFO_LOG("System albums and %{public}zu albums notified", albumToNotifySet_.size());
 }
 
 void CloneRestore::PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,

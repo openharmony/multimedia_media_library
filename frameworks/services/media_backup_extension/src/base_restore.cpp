@@ -1561,7 +1561,9 @@ void BaseRestore::NotifyAlbum()
 {
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+
     watch->Notify(PhotoColumn::DEFAULT_PHOTO_URI, NotifyType::NOTIFY_ADD);
+    watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
 }
 
 void BaseRestore::GetUpdateTotalCount()
