@@ -1608,7 +1608,7 @@ void BaseRestore::RestoreThumbnail()
     uint64_t thumbnailProcessedNumber = 0;
     while (thumbnailProcessedNumber < waitAstcNum) {
         thumbnailProcessedNumber_ = thumbnailProcessedNumber;
-        sleep(THUMBNAIL_QUERY_INTERVAL);
+        std::this_thread::sleep_for(std::chrono::milliseconds(THUMBNAIL_QUERY_INTERVAL));
         int32_t newReadyAstcCount = BackupDatabaseUtils::QueryReadyAstcCount(mediaLibraryRdb_);
         if (newReadyAstcCount <= readyAstcCount) {
             MEDIA_WARN_LOG("Stop RestoreThumbnail, oldReadyAstcCount:%{public}d, newReadyAstcCount:%{public}d",
