@@ -2528,5 +2528,21 @@ bool ThumbnailUtils::QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbS
     } while (resultSet->GoToNextRow() == E_OK);
     return true;
 }
+
+bool ThumbnailUtils::CheckRemainSpaceMeetCondition(const int32_t &freeSizePercentLimit)
+{
+    static int64_t totalSize = MediaFileUtils::GetTotalSize();
+    if (totalSize <= 0) {
+        totalSize = MediaFileUtils::GetTotalSize();
+    }
+    CHECK_AND_RETURN_RET_LOG(totalSize > 0, false, "Get total size failed, totalSize:%{public}" PRId64, totalSize);
+    int64_t freeSize = MediaFileUtils::GetFreeSize();
+    CHECK_AND_RETURN_RET_LOG(freeSize > 0, false, "Get free size failed, freeSize:%{public}" PRId64, freeSize);
+    int32_t freeSizePercent = static_cast<int32_t>(freeSize * 100 / totalSize);
+    CHECK_AND_RETURN_RET_LOG(freeSizePercent > freeSizePercentLimit, false,
+        "Check free size failed, totalSize:%{public}" PRId64 ", freeSize:%{public}" PRId64 ", "
+        "freeSizePercentLimit:%{public}d", totalSize, freeSize, freeSizePercentLimit);
+    return true;
+}
 } // namespace Media
 } // namespace OHOS
