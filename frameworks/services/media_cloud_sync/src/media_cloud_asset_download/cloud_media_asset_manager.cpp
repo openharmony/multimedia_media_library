@@ -39,6 +39,7 @@
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_notify.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
 #include "thumbnail_service.h"
@@ -52,16 +53,14 @@ using namespace FileManagement::CloudSync;
 
 static const std::string UNKNOWN_VALUE = "NA";
 std::shared_ptr<CloudMediaAssetDownloadOperation> CloudMediaAssetManager::operation_ = nullptr;
-std::mutex CloudMediaAssetManager::mutex_;
+std::mutex CloudMediaAssetManager::deleteMutex_;
+std::mutex CloudMediaAssetManager::updateMutex_;
 std::atomic<TaskDeleteState> CloudMediaAssetManager::doDeleteTask_ = TaskDeleteState::IDLE;
 static const int32_t BATCH_DELETE_CLOUD_FILE = 200;
 static const int32_t CYCLE_NUMBER = 2000;
 static const int32_t SLEEP_FOR_DELETE = 1000;
+static const int32_t BATCH_NOTIFY_CLOUD_FILE = 2000;
 static const std::string DELETE_DISPLAY_NAME = "cloud_media_asset_deleted";
-const std::string UPDATE_DB_DATA_FOR_DELETED =
-    "UPDATE Photos SET clean_flag = 1, dirty = -1, cloud_version = 0, cloud_id = NULL, "
-    "display_name = 'cloud_media_asset_deleted' WHERE file_id IN "
-    "(SELECT file_id FROM Photos WHERE display_name <> 'cloud_media_asset_deleted' AND position = 2 LIMIT 200);";
 
 CloudMediaAssetManager& CloudMediaAssetManager::GetInstance()
 {
@@ -219,7 +218,7 @@ int32_t CloudMediaAssetManager::ReadyDataForDelete(std::vector<std::string> &fil
             MEDIA_WARN_LOG("Failed to get path!");
             continue;
         }
-        MEDIA_INFO_LOG("get path: %{public}s.", MediaFileUtils::DesensitizePath(path).c_str());
+        MEDIA_DEBUG_LOG("get path: %{public}s.", MediaFileUtils::DesensitizePath(path).c_str());
         fileIds.push_back(GetStringVal(MediaColumn::MEDIA_ID, resultSet));
         paths.push_back(path);
         dateTakens.push_back(GetStringVal(MediaColumn::MEDIA_DATE_TAKEN, resultSet));
@@ -249,7 +248,7 @@ static int32_t DeleteEditdata(const std::string &path)
 
 void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(deleteMutex_);
     MEDIA_INFO_LOG("enter DeleteAllCloudMediaAssetsOperation");
     MediaLibraryTracer tracer;
     tracer.Start("DeleteAllCloudMediaAssetsOperation");
@@ -269,9 +268,11 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
         for (size_t i = 0; i < fileIds.size(); i++) {
             if (DeleteEditdata(paths[i]) != E_OK || !ThumbnailService::GetInstance()->HasInvalidateThumbnail(
                 fileIds[i], PhotoColumn::PHOTOS_TABLE, paths[i], dateTakens[i])) {
+                MEDIA_ERR_LOG("Delete error, path: %{public}s.", MediaFileUtils::DesensitizePath(paths[i]).c_str());
                 deleteFlag = false;
                 break;
             }
+            MEDIA_INFO_LOG("Detele cloud file, path: %{public}s.", MediaFileUtils::DesensitizePath(paths[i]).c_str());
         }
         if (!deleteFlag) {
             MEDIA_ERR_LOG("DeleteEditdata or InvalidateThumbnail failed!");
@@ -307,36 +308,95 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsAsync()
     asyncWorker->AddTask(deleteAsyncTask, true);
 }
 
-static bool HasDataForUpdate()
+static bool HasDataForUpdate(std::vector<std::string> &updateFileIds)
 {
+    if (!updateFileIds.empty()) {
+        MEDIA_WARN_LOG("updateFileIds is not null");
+        updateFileIds.clear();
+    }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "HasDataForUpdate failed. rdbStore is null.");
     AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.NotEqualTo(MediaColumn::MEDIA_NAME, DELETE_DISPLAY_NAME);
     predicates.EqualTo(PhotoColumn::PHOTO_POSITION, to_string(static_cast<int32_t>(PhotoPositionType::CLOUD)));
-    predicates.Limit(1);
-    const std::vector<std::string> columns;
-    std::shared_ptr<NativeRdb::ResultSet> resultSetForInfo = rdbStore->Query(predicates, columns);
-    int32_t rowCount = 0;
-    CHECK_AND_RETURN_RET_LOG(resultSetForInfo != nullptr, false, "HasDataForUpdate failed. resultSetForInfo is null.");
-    CHECK_AND_RETURN_RET_LOG(resultSetForInfo->GetRowCount(rowCount) == NativeRdb::E_OK, false, "GetRowCount failed.");
-    resultSetForInfo->Close();
-    CHECK_AND_RETURN_RET_LOG(rowCount > 0, false, "RowCount is invalid.");
+    predicates.Limit(BATCH_DELETE_CLOUD_FILE);
+    std::vector<std::string> columns = { MediaColumn::MEDIA_ID };
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "HasDataForUpdate failed. resultSet is null.");
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string fileId = GetStringVal(MediaColumn::MEDIA_ID, resultSet);
+        updateFileIds.emplace_back(fileId);
+    }
+    resultSet->Close();
+    CHECK_AND_RETURN_RET_LOG(updateFileIds.size() > 0, false, "the size of updateFileIds 0.");
     return true;
+}
+
+static int32_t UpdateCloudAssets(const std::vector<std::string> &updateFileIds)
+{
+    CHECK_AND_RETURN_RET_LOG(!updateFileIds.empty(), E_ERR, "updateFileIds is null.");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "UpdateCloudAssets failed. rdbStore is null.");
+    AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.In(MediaColumn::MEDIA_ID, updateFileIds);
+
+    ValuesBucket values;
+    values.PutString(MediaColumn::MEDIA_NAME, DELETE_DISPLAY_NAME);
+    values.PutInt(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NEED_CLEAN));
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, -1);
+    values.PutInt(PhotoColumn::PHOTO_CLOUD_VERSION, 0);
+    values.PutNull(PhotoColumn::PHOTO_CLOUD_ID);
+
+    int32_t changedRows = -1;
+    int32_t ret = rdbStore->Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG((ret == E_OK && changedRows > 0), E_ERR,
+        "Failed to UpdateCloudAssets, ret: %{public}d, updateRows: %{public}d", ret, changedRows);
+    return E_OK;
+}
+
+static void NotifyUpdateAssetsChange(const std::vector<std::string> &notifyFileIds)
+{
+    CHECK_AND_RETURN_LOG(!notifyFileIds.empty(), "notifyFileIds is null.");
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "watch is null.");
+    for (size_t i = 0; i < notifyFileIds.size(); i++) {
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, notifyFileIds[i]),
+            NotifyType::NOTIFY_REMOVE);
+    }
 }
 
 int32_t CloudMediaAssetManager::UpdateCloudMeidaAssets()
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateCloudMeidaAssets");
+    std::lock_guard<std::mutex> lock(updateMutex_);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "QueryDownloadFilesNeeded failed. rdbStore is null.");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "UpdateCloudMeidaAssets failed. rdbStore is null.");
+
     int32_t cycleNumber = 0;
-    while (HasDataForUpdate() && cycleNumber <= CYCLE_NUMBER) {
-        int32_t ret = rdbStore->ExecuteSql(UPDATE_DB_DATA_FOR_DELETED);
-        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "execute updateSql failed. ret %{public}d.", ret);
+    std::vector<std::string> notifyFileIds = {};
+    std::vector<std::string> updateFileIds = {};
+    while (HasDataForUpdate(updateFileIds) && cycleNumber <= CYCLE_NUMBER) {
+        int32_t ret = UpdateCloudAssets(updateFileIds);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("UpdateCloudAssets failed, ret: %{public}d", ret);
+            break;
+        }
+
+        notifyFileIds.insert(notifyFileIds.end(), updateFileIds.begin(), updateFileIds.end());
+        updateFileIds.clear();
+        if (notifyFileIds.size() == BATCH_NOTIFY_CLOUD_FILE) {
+            NotifyUpdateAssetsChange(notifyFileIds);
+            notifyFileIds.clear();
+        }
+
         cycleNumber++;
         MEDIA_INFO_LOG("cycleNumber is %{public}d", cycleNumber);
+    }
+    if (notifyFileIds.size() > 0) {
+        NotifyUpdateAssetsChange(notifyFileIds);
+        notifyFileIds.clear();
     }
     CHECK_AND_RETURN_RET_LOG(cycleNumber > 0, E_ERR, "No db data need update.");
     return E_OK;
