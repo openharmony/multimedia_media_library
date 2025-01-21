@@ -23,6 +23,7 @@
 #include "backup_const.h"
 #include "media_file_utils.h"
 #include "nlohmann/json.hpp"
+#include "photos_dao.h"
 #include "rdb_helper.h"
 #include "result_set.h"
 #include "tab_old_photos_restore.h"
@@ -140,8 +141,10 @@ protected:
     void RestoreThumbnail();
     std::string GetRestoreTotalInfo();
     virtual int32_t GetNoNeedMigrateCount();
+    bool ExtraCheckForCloneSameFile(FileInfo &fileInfo, PhotosDao::PhotosRowData &rowData);
     void UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
-        const std::vector<FileInfo>& fileInfos);
+        std::vector<FileInfo>& fileInfos);
+    int32_t RemoveDentryFileWithConflict(const FileInfo &fileInfo);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};
