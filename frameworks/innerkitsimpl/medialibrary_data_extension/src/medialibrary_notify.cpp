@@ -45,7 +45,8 @@ unordered_map<string, NotifyDataMap> MediaLibraryNotify::nfListMap_ = {};
 atomic<uint16_t> MediaLibraryNotify::thumbCounts_(0);
 atomic<uint16_t> MediaLibraryNotify::counts_(0);
 static const uint16_t IDLING_TIME = 50;
-cosnt static uint16_t THUMB_LOOP = 5;
+const static uint16_t THUMB_LOOP = 5;
+const static uint16_t THUMB_NOTIFY_SEQ_NUM = 1;
 
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
 {
@@ -162,8 +163,41 @@ static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
     return;
 }
 
+static void ExtractDataMapWithNotifyType(NotifyType type, unordered_map<string, NotifyDataMap>& listMap,
+    NotifyDataMap& dataMap)
+{
+    if (listMap.count(PhotoColumn::PHOTO_URI_PREFIX) == 0) {
+        return;
+    }
+    auto iter = listMap.find(PhotoColumn::PHOTO_URI_PREFIX);
+    auto typeIter = iter->second.find(type);
+    if (typeIter == iter->second.end()) {
+        return;
+    }
+    dataMap.emplace(type, typeIter->second);
+    iter->second.erase(type);
+}
+
+// only call this function after clear listMap
+static void InsertDataMapToListMap(NotifyType type, unordered_map<string, NotifyDataMap>& listMap,
+    NotifyDataMap& dataMap)
+{
+    if (dataMap.size() == 0) {
+        return;
+    }
+    if (listMap.count(PhotoColumn::PHOTO_URI_PREFIX) == 0) {
+        listMap.emplace(PhotoColumn::PHOTO_URI_PREFIX, dataMap);
+        return;
+    }
+    auto iter = listMap.find(PhotoColumn::PHOTO_URI_PREFIX);
+    if (iter->second.count(type) == 0) {
+        iter->second.emplace(type, dataMap.at(type));
+    }
+}
+
 static void PushNotification(PeriodTaskData *data)
 {
+    MediaLibraryNotify::thumbCounts_ == (++MediaLibraryNotify::thumbCounts_) % THUMB_LOOP;
     if (data == nullptr) {
         return;
     }
@@ -178,6 +212,7 @@ static void PushNotification(PeriodTaskData *data)
                     MEDIA_ERR_LOG("failed to get period worker instance");
                     return;
                 }
+                MediaLibraryNotify::thumbCounts_ = 0;
                 periodWorker->StopThread(PeriodTaskType::COMMON_NOTIFY);
                 MEDIA_INFO_LOG("notify task close");
             }
@@ -185,8 +220,17 @@ static void PushNotification(PeriodTaskData *data)
         } else {
             MediaLibraryNotify::counts_.store(0);
         }
+        NotifyDataMap thumbAddMap = {};
+        NotifyDataMap thumbUpdateMap = {};
+        if (MediaLibraryNotify::thumbCounts_ != THUMB_NOTIFY_SEQ_NUM) {
+            ExtractDataMapWithNotifyType(NotifyType::NOTIFY_THUMB_ADD, MediaLibraryNotify::nfListMap_, thumbAddMap);
+            ExtractDataMapWithNotifyType(NotifyType::NOTIFY_THUMB_UPDATE, MediaLibraryNotify::nfListMap_,
+                thumbUpdateMap);
+        }
         MediaLibraryNotify::nfListMap_.swap(tmpNfListMap);
         MediaLibraryNotify::nfListMap_.clear();
+        InsertDataMapToListMap(NotifyType::NOTIFY_THUMB_ADD, MediaLibraryNotify::nfListMap_, thumbAddMap);
+        InsertDataMapToListMap(NotifyType::NOTIFY_THUMB_UPDATE, MediaLibraryNotify::nfListMap_, thumbUpdateMap);
     }
     for (auto &[uri, notifyDataMap] : tmpNfListMap) {
         if (notifyDataMap.empty()) {

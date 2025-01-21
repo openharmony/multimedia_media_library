@@ -115,6 +115,8 @@ public:
         const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap);
     static void UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::vector<FileInfo> &fileInfos);
+    static void BatchUpdatePhotosToLocal(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+        const std::vector<std::string> inColumn);
     static int32_t BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
         std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum);
     static std::string CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
@@ -123,6 +125,8 @@ public:
     static int32_t QueryReadyAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static std::unordered_map<int32_t, int32_t> QueryMediaTypeCount(
         const std::shared_ptr<NativeRdb::RdbStore>& rdbStore, const std::string& querySql);
+    static std::shared_ptr<NativeRdb::ResultSet> QuerySql(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        const std::string &querySql, const std::vector<NativeRdb::ValueObject> &params);
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
     template <typename T>

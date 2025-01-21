@@ -22,6 +22,7 @@ const ARGS_TWO = 2;
 const ARGS_THREE = 3;
 
 const WRITE_PERMISSION = 'ohos.permission.WRITE_IMAGEVIDEO';
+const ACROSS_ACCOUNTS_PERMISSION = 'ohos.permission.INTERACT_ACROSS_LOCAL_ACCOUNTS';
 
 const PERMISSION_DENIED = 13900012;
 const ERR_CODE_PARAMERTER_INVALID = 13900020;
@@ -30,6 +31,7 @@ const ERR_CODE_OHOS_PARAMERTER_INVALID = 401;
 const REQUEST_CODE_SUCCESS = 0;
 const PERMISSION_STATE_ERROR = -1;
 const ERROR_MSG_WRITE_PERMISSION = 'not have ohos.permission.WRITE_IMAGEVIDEO';
+const ERROR_MSG_ACROSS_ACCOUNTS_PERMISSION = 'not have ohos.permission.INTERACT_ACROSS_LOCAL_ACCOUNTS';
 const ERROR_MSG_USER_DENY = 'user deny';
 const ERROR_MSG_PARAMERTER_INVALID = 'input parmaeter invalid';
 const ERROR_MSG_INNER_FAIL = 'System inner fail';
@@ -713,6 +715,13 @@ async function photoPickerSelect(...args) {
 
   const config = parsePhotoPickerSelectOption(args);
   console.log('[picker] config: ' + JSON.stringify(config));
+  if (config.parameters.userId && config.parameters.userId > 0) {
+    let check = await checkInteractAcrossLocalAccounts();
+    if (!check) {
+      console.log('[picker] error: ' + ERROR_MSG_ACROSS_ACCOUNTS_PERMISSION);
+      return undefined;
+    }
+  }
 
   let context = undefined;
   try {
@@ -745,6 +754,22 @@ async function photoPickerSelect(...args) {
     console.error('[picker] error: ' + JSON.stringify(error));
   }
   return undefined;
+}
+
+async function checkInteractAcrossLocalAccounts() {
+  let flags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_REQUESTED_PERMISSION;
+  let { reqPermissionDetails, permissionGrantStates } = await bundleManager.getBundleInfoForSelf(flags);
+  let permissionIndex = -1;
+  for (let i = 0; i < reqPermissionDetails.length; i++) {
+    if (reqPermissionDetails[i].name === ACROSS_ACCOUNTS_PERMISSION) {
+      permissionIndex = i;
+    }
+  }
+  if (permissionIndex < 0 || permissionGrantStates[permissionIndex] === PERMISSION_STATE_ERROR) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 function BaseSelectOptions() {

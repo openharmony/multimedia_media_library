@@ -43,6 +43,8 @@ public:
     void InitGarbageAlbum();
 
 private:
+    int32_t GetHighlightCloudMediaCnt();
+    void RestoreHighlightAlbums(bool isSyncSwitchOpen);
     void RestorePhoto(void) override;
     void RestoreAudio(void) override;
     void HandleRestData(void) override;

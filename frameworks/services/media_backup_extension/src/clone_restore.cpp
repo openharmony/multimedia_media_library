@@ -48,8 +48,6 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 const int32_t CLONE_QUERY_COUNT = 200;
-const int32_t SYSTEM_ALBUM_ID_START = 1;
-const int32_t SYSTEM_ALBUM_ID_END = 7;
 const string MEDIA_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
 constexpr int64_t SECONDS_LEVEL_LIMIT = 1e10;
 const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
@@ -357,7 +355,7 @@ void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fi
         }
         int32_t errCode = MoveAsset(fileInfos[i]);
         if (errCode != E_OK) {
-            fileInfos[i].updateMap.clear();
+            fileInfos[i].needUpdate = false;
             MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s, error:%{public}s",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
                 strerror(errno));
@@ -1161,7 +1159,6 @@ void CloneRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &to
         MEDIA_INFO_LOG("query %{public}zu map infos cost %{public}ld, insert %{public}ld maps cost %{public}ld",
             mapInfos.size(), (long)(startInsert - startQuery), (long)rowNum, (long)(end - startInsert));
     }
-    UpdateAlbumToNotifySet(tableName, currentTableAlbumSet);
 }
 
 NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const MapInfo &mapInfo) const
@@ -1222,30 +1219,6 @@ bool CloneRestore::IsReadyForRestore(const string &tableName)
     return GetValueFromMap(tableColumnStatusMap_, tableName, false);
 }
 
-void CloneRestore::UpdateAlbumToNotifySet(const string &tableName, const unordered_set<int32_t> &albumSet)
-{
-    string albumUriPrefix = GetValueFromMap(ALBUM_URI_PREFIX_MAP, tableName);
-    CHECK_AND_RETURN_LOG(!albumUriPrefix.empty(), "Get album uri prefix of %{public}s failed",
-        BackupDatabaseUtils::GarbleInfoName(tableName).c_str());
-    for (auto albumId : albumSet) {
-        string albumUri = MediaFileUtils::GetUriByExtrConditions(albumUriPrefix, to_string(albumId));
-        albumToNotifySet_.insert(albumUri);
-    }
-}
-
-void CloneRestore::NotifyAlbum()
-{
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_LOG(watch != nullptr, "Get MediaLibraryNotify instance failed");
-    for (const auto &albumUri : albumToNotifySet_) {
-        watch->Notify(albumUri, NotifyType::NOTIFY_ADD);
-    }
-    for (int32_t systemAlbumId = SYSTEM_ALBUM_ID_START; systemAlbumId <= SYSTEM_ALBUM_ID_END; systemAlbumId++) {
-        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(systemAlbumId), NotifyType::NOTIFY_UPDATE);
-    }
-    MEDIA_INFO_LOG("System albums and %{public}zu albums notified", albumToNotifySet_.size());
-}
-
 void CloneRestore::PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,
     const unordered_map<string, string> &commonColumnInfoMap) const
 {
@@ -1294,7 +1267,8 @@ bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
         UpdateDuplicateNumber(fileInfo.fileType);
         return false;
     }
-    if (MediaFileUtils::IsFileExists(fileInfo.cloudPath) || fileInfo.isRelatedToPhotoMap == 1) {
+    // If the device originally has dentry file in the cloud path, no need to generate new cloud path.
+    if (fileInfo.isNew && (MediaFileUtils::IsFileExists(fileInfo.cloudPath) || fileInfo.isRelatedToPhotoMap == 1)) {
         int32_t uniqueId = GetUniqueId(fileInfo.fileType);
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfo.fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfo.displayName), fileInfo.cloudPath);
@@ -1655,18 +1629,8 @@ bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInf
     if (fileId <= 0 || cloudPath.empty()) {
         return false;
     }
-    fileInfo.isNew = false;
-    fileInfo.fileIdNew = fileId;
-    fileInfo.cloudPath = cloudPath;
-    bool isInCloud = rowData.cleanFlag == 1 && rowData.position == static_cast<int32_t>(PhotoPositionType::CLOUD);
-    // If the file was in cloud previously, only require update flags.
-    if (fileId > 0 && isInCloud) {
-        fileInfo.updateMap["clean_flag"] = "0";
-        fileInfo.updateMap["position"] = to_string(static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
-        return false;
-    }
-    fileInfo.needMove = false;
-    return true;
+    // Meed extra check to determine whether or not to drop the duplicate file.
+    return ExtraCheckForCloneSameFile(fileInfo, rowData);
 }
 
 void CloneRestore::RestoreFromGalleryPortraitAlbum()
