@@ -110,6 +110,8 @@ public:
         const std::vector<std::string>& tagIds);
     static void UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
         const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap);
+    static void BatchUpdatePhotosToLocal(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+        const std::vector<std::string> inColumn);
     static int32_t BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
         std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum);
     static std::string CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
