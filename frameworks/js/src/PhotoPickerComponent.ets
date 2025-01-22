@@ -177,6 +177,7 @@ export struct PhotoPickerComponent {
             maxVideoSelectNumber: this.pickerOptions?.maxVideoSelectNumber as number,
             isOnItemClickedSet: this.onItemClicked ? true : false,
             isPreviewForSingleSelectionSupported: this.pickerOptions?.isPreviewForSingleSelectionSupported as boolean,
+            singleSelectionMode: this.pickerOptions?.singleSelectionMode as number,
             isSlidingSelectionSupported: this.pickerOptions?.isSlidingSelectionSupported as boolean,
             photoBrowserCheckboxPosition: this.pickerOptions?.photoBrowserCheckboxPosition as [number, number],
             gridMargin: this.pickerOptions?.gridMargin as Margin,
