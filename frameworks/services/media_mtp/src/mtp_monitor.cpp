@@ -37,6 +37,7 @@ void MtpMonitor::Init()
 
 void MtpMonitor::Start()
 {
+    CHECK_AND_RETURN_LOG(!threadRunning_.load(), "MtpMonitor::Start thread is already running, return");
     std::thread([this] { this->Run(); }).detach();
 }
 
