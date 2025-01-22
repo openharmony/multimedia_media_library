@@ -69,6 +69,12 @@ enum class SourceMode {
     EDITED_MODE,
 };
 
+enum class SingleSelectionMode {
+    BROWSER_MODE = 0,
+    SELECT_MODE,
+    BROWSER_AND_SELECT_MODE,
+};
+
 struct CSize {
     int32_t width = 0;
     int32_t height = 0;
@@ -142,6 +148,7 @@ struct PhotoSelectOptions {
     RecommendationOptions recommendationOptions;
     CArrString preselectedUris;
     bool isPreviewForSingleSelectionSupported;
+    SingleSelectionMode singleSelectionMode;
     bool isEditSupported;
     bool isOriginalSupported;
     char* subWindowName;
