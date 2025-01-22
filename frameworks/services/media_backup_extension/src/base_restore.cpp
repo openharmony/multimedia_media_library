@@ -1191,6 +1191,7 @@ void BaseRestore::NotifyAlbum()
         return;
     }
     watch->Notify(PhotoColumn::DEFAULT_PHOTO_URI, NotifyType::NOTIFY_ADD);
+    watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
 }
 
 void BaseRestore::GetUpdateTotalCount()
