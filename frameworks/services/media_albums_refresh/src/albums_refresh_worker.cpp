@@ -216,6 +216,8 @@ void AlbumsRefreshWorker::DealWithTasks()
     MEDIA_INFO_LOG("albums refresh consumer thread start");
     bool loopCondition = true;
     while (loopCondition) {
+        bool needExecute = false;
+        SyncNotifyInfo info;
         {
             unique_lock<mutex> lock(queueMutex_);
             if (condVar_.wait_for(lock, chrono::seconds(WAIT_TIME), [this]() { return !taskQueue_.empty() || stop; })) {
@@ -228,15 +230,17 @@ void AlbumsRefreshWorker::DealWithTasks()
                     AlbumsRefreshManager::GetInstance().NotifyPhotoAlbums(task);
                     taskQueue_.pop();
                 } else {
-                    SyncNotifyInfo info;
                     TaskFusion(info);
-                    TaskExecute(info);
-                    TaskNotify(info);
+                    needExecute = true;
                 }
             } else {
                 loopCondition = false;
                 break;
             }
+        }
+        if (needExecute) {
+            TaskExecute(info);
+            TaskNotify(info);
         }
     }
     MEDIA_INFO_LOG("albums refresh worker thread task queue is empty for %{public}d seconds", WAIT_TIME);

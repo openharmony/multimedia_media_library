@@ -53,12 +53,13 @@ void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
         SyncNotifyInfo info = AlbumsRefreshManager::GetInstance().GetSyncNotifyInfo(notifyInfo, PHOTO_URI_TYPE);
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         AlbumsRefreshManager::GetInstance().RefreshPhotoAlbumsBySyncNotifyInfo(rdbStore, info);
+        list<Uri> uriList = { Uri(PhotoColumn::PHOTO_URI_PREFIX) };
+        AlbumsRefreshNotify::SendDeleteUris(uriList);
+        AlbumsRefreshNotify::SendDeleteUris(info.extraUris);
         lock_guard<mutex> lock(syncMutex_);
         if (!isPending_) {
             MEDIA_INFO_LOG("set timer handle index");
-            std::thread([this]() {
-                this->HandleIndex();
-            }).detach();
+            std::thread([this]() { this->HandleIndex(); }).detach();
             isPending_ = true;
         }
     }

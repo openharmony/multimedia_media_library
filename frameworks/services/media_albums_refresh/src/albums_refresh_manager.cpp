@@ -149,13 +149,23 @@ static int32_t GetSystemAlbumsFromRefreshAlbumTable(const shared_ptr<MediaLibrar
 static int32_t GetAnalysisRefreshAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     vector<RefreshAlbumData> &analysisAlbums, bool &isUpdateAllAnalysis, ForceRefreshType forceRefreshType)
 {
-    vector<string> columns = {PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_SUBTYPE};
-    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    RdbPredicates refreshAlbumPredicates(ALBUM_REFRESH_TABLE);
+    refreshAlbumPredicates.EqualTo(REFRESHED_ALBUM_ID, -1);
+    vector<string> columns = { REFRESHED_ALBUM_ID };
+    auto resultSet = rdbStore->Query(refreshAlbumPredicates, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow()) {
+        resultSet->Close();
+        isUpdateAllAnalysis = true;
+        return E_OK;
+    }
+
+    columns = {PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_SUBTYPE};
+    RdbPredicates analysisPredicates(ANALYSIS_ALBUM_TABLE);
     if (forceRefreshType == ForceRefreshType::NONE || forceRefreshType == ForceRefreshType::EXCEPTION) {
-        predicates.SetWhereClause(PhotoAlbumColumns::ALBUM_ID + " IN (SELECT " + REFRESHED_ALBUM_ID +
+        analysisPredicates.SetWhereClause(PhotoAlbumColumns::ALBUM_ID + " IN (SELECT " + REFRESHED_ALBUM_ID +
                                   " - 100000000 FROM " + ALBUM_REFRESH_TABLE + " WHERE refresh_album_id > 100000000)");
     }
-    auto resultSet = rdbStore->Query(predicates, columns);
+    resultSet = rdbStore->Query(analysisPredicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Can not query ALBUM_REFRESH_TABLE");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         RefreshAlbumData data;
@@ -314,6 +324,16 @@ static void HandleAnalysisAlbum(
     MEDIA_INFO_LOG("%{public}d analysis albums update cost %{public}ld", count, static_cast<long>(end - start));
 }
 
+static void DeleteAnalysisAlbumIds(const shared_ptr<MediaLibraryRdbStore> rdbStore)
+{
+    // delete analysis album id from refresh album
+    string deleteRefreshAlbumSql = "DELETE FROM " + ALBUM_REFRESH_TABLE + " WHERE " + REFRESHED_ALBUM_ID +
+        " = -1 OR " + REFRESHED_ALBUM_ID + " > 100000000 ";
+    int32_t ret = rdbStore->ExecuteSql(deleteRefreshAlbumSql);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "delete analysis album from refreshAlbum failed");
+    MEDIA_DEBUG_LOG("delete analysis album from refreshAlbum");
+}
+
 void AlbumsRefreshManager::RefreshPhotoAlbumsBySyncNotifyInfo(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     SyncNotifyInfo &info)
 {
@@ -325,6 +345,7 @@ void AlbumsRefreshManager::RefreshPhotoAlbumsBySyncNotifyInfo(const shared_ptr<M
     info.refershResult = ret;
     CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "failed to get refresh system albumids");
     ret = GetAnalysisRefreshAlbums(rdbStore, analysisAlbums, isUpdateAllAnalysis, info.forceRefreshType);
+    DeleteAnalysisAlbumIds(rdbStore);
     info.refershResult = ret;
     CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "failed to get refresh system albumids");
     if (systemAlbums.empty() && analysisAlbums.empty()) {
