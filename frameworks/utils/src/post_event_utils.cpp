@@ -267,12 +267,14 @@ void PostEventUtils::PostMscTotalTimeCostStat(const VariantMap &stat)
 {
     string photoId = GetStringValue(KEY_PHOTO_ID, stat);
     int64_t totalTimeCost = GetInt64Value(KEY_TOTAL_TIME_COST, stat);
+    int32_t mediaType = GetIntValue(KEY_MEDIA_TYPE, stat);
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
         "MEDIALIB_MSC_TOTAL_TIME_STAT",
         HiviewDFX::HiSysEvent::EventType::STATISTIC,
         KEY_PHOTO_ID, photoId,
-        KEY_TOTAL_TIME_COST, totalTimeCost);
+        KEY_TOTAL_TIME_COST, totalTimeCost,
+        KEY_MEDIA_TYPE, mediaType);
     if (ret != 0) {
         MEDIA_ERR_LOG("PostMscTotalTimeCostStat error:%{public}d", ret);
     }

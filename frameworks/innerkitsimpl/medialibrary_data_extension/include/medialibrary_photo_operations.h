@@ -85,7 +85,7 @@ public:
     EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris,
         std::shared_ptr<AlbumData> AlbumData = nullptr);
 #ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
-    EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, const std::string &path);
+    EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, bool isMovingPhoto, const std::string &path);
     EXPORT static int32_t RemoveTempVideo(const std::string &path);
 #endif
     EXPORT static int32_t SaveSourceVideoFile(const std::shared_ptr<FileAsset> &fileAsset,

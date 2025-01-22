@@ -38,6 +38,7 @@ const std::string BATCH_SIZE = "500";
 const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
 const std::string NO_ORIGIN_PHOTO_NUMBER = "no_origin_photo_number";
 const std::string NO_ORIGIN_BUT_LCD_PHOTO_NUMBER = "no_origin_but_lcd_photo_number";
+const std::string NO_DETAIL_TIME = "no_detail_time";
 static const std::string SQL_PHOTOS_TABLE_QUERY_NO_ORIGIN_BUT_LCD_COUNT = "\
     SELECT \
         COUNT(*) AS Count \
@@ -58,6 +59,20 @@ static const std::string SQL_PHOTOS_TABLE_QUERY_NO_ORIGIN_BUT_LCD_PHOTO = "\
         date_trashed = 0 AND \
         file_id > ? \
     LIMIT 500;";
+
+static const std::string SQL_REPAIR_DETAIL_TIME =
+    " UPDATE Photos "
+    " SET detail_time = ("
+    " CASE"
+    "   WHEN date_taken / 10000000000 == 0 THEN strftime( '%Y:%m:%d %H:%M:%S', date_taken, 'unixepoch', 'localtime' )"
+    "   ELSE strftime( '%Y:%m:%d %H:%M:%S', date_taken / 1000, 'unixepoch', 'localtime' )"
+    " END ) "
+    " WHERE"
+    " CASE"
+    "   WHEN date_taken / 10000000000 == 0 THEN strftime( '%Y:%m:%d %H:%M:%S', date_taken, 'unixepoch', 'localtime' )"
+    "   <> detail_time"
+    "   ELSE strftime( '%Y:%m:%d %H:%M:%S', date_taken / 1000, 'unixepoch', 'localtime' ) <> detail_time "
+    " END ;";
 
 static const int32_t NO_ORIGIN_BUT_LCD = 100;
 static const int32_t NO_ORIGIN_NO_LCD = 101;
@@ -252,6 +267,16 @@ void CloudUploadChecker::RepairNoOriginButLcd()
     }
     MEDIA_INFO_LOG("end repair no origin but lcd photo!");
     return;
+}
+
+void CloudUploadChecker::RepairNoDetailTime()
+{
+    MEDIA_INFO_LOG("start repair detail time");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbstore!");
+    int32_t err = rdbStore->ExecuteSql(SQL_REPAIR_DETAIL_TIME);
+    CHECK_AND_RETURN_LOG(err == NativeRdb::E_OK, "Failed to RepairNoDetailTime: %{public}d", err);
+    MEDIA_INFO_LOG("end repair detail time!");
 }
 } // namespace Media
 } // namespace OHOS

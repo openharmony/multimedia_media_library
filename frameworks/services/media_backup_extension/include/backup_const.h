@@ -52,7 +52,7 @@ constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
 constexpr int32_t MAX_RESTORE_ASTC_NUM = 2000;
 constexpr uint64_t MAX_UPGRADE_WAIT_ASTC_NUM = 100;
-constexpr uint32_t THUMBNAIL_QUERY_INTERVAL = 3;
+constexpr uint32_t THUMBNAIL_QUERY_INTERVAL = 3000;
 constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 constexpr int32_t MAX_THREAD_NUM = 4;
@@ -61,6 +61,7 @@ const std::string RESTORE_FILES_CLOUD_DIR = "/storage/cloud/files/";
 const std::string RESTORE_FILES_LOCAL_DIR = "/storage/media/local/files/";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
+const std::string RESTORE_THUMB_CLOUD_DIR = "/storage/cloud/files/.thumbs/Photo";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
 const std::string RESTORE_AUDIO_LOCAL_DIR = "/storage/media/local/files/Audio";
 const std::string RESTORE_MUSIC_LOCAL_DIR = "/storage/media/local/files/Docs/Music/";
@@ -254,6 +255,7 @@ enum RestoreError {
     GALLERY_DATABASE_CORRUPTION,
     UPDATE_PHOTOS_FAILED,
     UPDATE_FAILED,
+    PARSE_TRACK_FAILED,
 };
 
 enum class PhotoRelatedType {
@@ -282,6 +284,7 @@ const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::GALLERY_DATABASE_CORRUPTION, "RESTORE_GALLERY_DATABASE_CORRUPTION" },
     { RestoreError::UPDATE_PHOTOS_FAILED, "RESTORE_UPDATE_PHOTOS_FAILED"},
     { RestoreError::UPDATE_FAILED, "RESTORE_UPDATE_FAILED"},
+    { RestoreError::PARSE_TRACK_FAILED, "RESTORE_HIGHLIGHT_PARSE_TRACK_FAILED"},
 };
 
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {
@@ -393,6 +396,9 @@ struct FileInfo {
     std::unordered_map<std::string, std::string> updateMap;
     double latitude {0.0};
     double longitude {0.0};
+    std::string storyIds;
+    std::string portraitIds;
+    bool needUpdate {false};
 };
 
 struct AlbumInfo {

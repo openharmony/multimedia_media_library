@@ -453,30 +453,22 @@ void DeleteTemporaryPhotos()
     predicates.SetWhereClause(where);
 
     auto changedRows = dataManager->Update(cmd, valuesBucket, predicates);
-    if (changedRows < 0) {
-        MEDIA_INFO_LOG("Failed to update property of asset, err: %{public}d", changedRows);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(changedRows >= 0, "Failed to update property of asset, err: %{public}d", changedRows);
     MEDIA_INFO_LOG("delete %{public}d temp files exceeding 24 hous or exceed maximum quantity.", changedRows);
 }
 
 void MedialibrarySubscriber::DoAgingOperation()
 {
     auto dataManager = MediaLibraryDataManager::GetInstance();
-    if (dataManager == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(dataManager != nullptr, "dataManager is nullptr");
 
     int32_t result = dataManager->DoAging();
-    if (result != E_OK) {
-        MEDIA_ERR_LOG("DoAging faild");
-    }
+    CHECK_AND_PRINT_LOG(result == E_OK, "DoAging faild");
 
     shared_ptr<int> trashCountPtr = make_shared<int>();
     result = dataManager->DoTrashAging(trashCountPtr);
-    if (result != E_OK) {
-        MEDIA_ERR_LOG("DoTrashAging faild");
-    }
+    CHECK_AND_PRINT_LOG(result == E_OK, "DoTrashAging faild");
+
     VariantMap map = {{KEY_COUNT, *trashCountPtr}};
     PostEventUtils::GetInstance().PostStatProcess(StatType::AGING_STAT, map);
 }
@@ -484,32 +476,23 @@ void MedialibrarySubscriber::DoAgingOperation()
 static void QueryBurstNeedUpdate(AsyncTaskData *data)
 {
     auto dataManager = MediaLibraryDataManager::GetInstance();
-    if (dataManager == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(dataManager != nullptr,  "dataManager is nullptr");
 
     int32_t result = dataManager->UpdateBurstFromGallery();
-    if (result != E_OK) {
-        MEDIA_ERR_LOG("UpdateBurstFromGallery faild");
-    }
+    CHECK_AND_PRINT_LOG(result == E_OK, "UpdateBurstFromGallery faild");
 }
 
 static int32_t DoUpdateBurstFromGallery()
 {
     MEDIA_INFO_LOG("Begin DoUpdateBurstFromGallery");
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Failed to get async worker instance!");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL, "Failed to get async worker instance!");
+
     shared_ptr<MediaLibraryAsyncTask> updateBurstTask =
         make_shared<MediaLibraryAsyncTask>(QueryBurstNeedUpdate, nullptr);
-    if (updateBurstTask != nullptr) {
-        asyncWorker->AddTask(updateBurstTask, false);
-    } else {
-        MEDIA_ERR_LOG("Failed to create async task for updateBurstTask!");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(updateBurstTask != nullptr, E_FAIL,
+        "Failed to create async task for updateBurstTask!");
+    asyncWorker->AddTask(updateBurstTask, false);
     return E_SUCCESS;
 }
 
@@ -520,82 +503,61 @@ static void RecoverBackgroundDownloadCloudMediaAsset()
     }
     int32_t ret = CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(
         CloudMediaTaskRecoverCause::BACKGROUND_TASK_AVAILABLE);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("RecoverDownloadCloudAsset faild");
-    }
+    CHECK_AND_PRINT_LOG(ret == E_OK, "RecoverDownloadCloudAsset faild");
 }
 
 static void UpdateDateTakenWhenZero(AsyncTaskData *data)
 {
     auto dataManager = MediaLibraryDataManager::GetInstance();
-    if (dataManager == nullptr) {
-        MEDIA_ERR_LOG("Failed to MediaLibraryDataManager instance!");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(dataManager != nullptr, "Failed to MediaLibraryDataManager instance!");
 
     int32_t result = dataManager->UpdateDateTakenWhenZero();
-    if (result != E_OK) {
-        MEDIA_ERR_LOG("UpdateDateTakenWhenZero faild, result = %{public}d", result);
-    }
+    CHECK_AND_PRINT_LOG(result == E_OK, "UpdateDateTakenWhenZero faild, result = %{public}d", result);
 }
 
 static int32_t DoUpdateDateTakenWhenZero()
 {
     MEDIA_DEBUG_LOG("Begin DoUpdateDateTakenWhenZero");
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Failed to get async worker instance!");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL,
+        "Failed to get async worker instance!");
+
     shared_ptr<MediaLibraryAsyncTask> UpdateDateTakenWhenZeroTask =
         make_shared<MediaLibraryAsyncTask>(UpdateDateTakenWhenZero, nullptr);
-    if (UpdateDateTakenWhenZeroTask != nullptr) {
-        asyncWorker->AddTask(UpdateDateTakenWhenZeroTask, false);
-    } else {
-        MEDIA_ERR_LOG("Failed to create async task for UpdateDateTakenWhenZeroTask !");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(UpdateDateTakenWhenZeroTask != nullptr, E_FAIL,
+        "Failed to create async task for UpdateDateTakenWhenZeroTask !");
+    asyncWorker->AddTask(UpdateDateTakenWhenZeroTask, false);
     return E_SUCCESS;
 }
 
 static void UpdateBurstCoverLevelFromGallery(AsyncTaskData *data)
 {
     auto dataManager = MediaLibraryDataManager::GetInstance();
-    if (dataManager == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(dataManager != nullptr, "dataManager is nullptr");
 
     int32_t result = dataManager->UpdateBurstCoverLevelFromGallery();
-    if (result != E_OK) {
-        MEDIA_ERR_LOG("UpdateBurstCoverLevelFromGallery faild");
-    }
+    CHECK_AND_PRINT_LOG(result == E_OK, "UpdateBurstCoverLevelFromGallery faild");
 }
 
 static int32_t DoUpdateBurstCoverLevelFromGallery()
 {
     MEDIA_INFO_LOG("Begin DoUpdateBurstCoverLevelFromGallery");
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Failed to get async worker instance!");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL,
+        "Failed to get async worker instance!");
+
     shared_ptr<MediaLibraryAsyncTask> updateBurstCoverLevelTask =
         make_shared<MediaLibraryAsyncTask>(UpdateBurstCoverLevelFromGallery, nullptr);
-    if (updateBurstCoverLevelTask != nullptr) {
-        asyncWorker->AddTask(updateBurstCoverLevelTask, false);
-    } else {
-        MEDIA_ERR_LOG("Failed to create async task for updateBurstCoverLevelTask!");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(updateBurstCoverLevelTask != nullptr, E_FAIL,
+        "Failed to create async task for updateBurstCoverLevelTask!");
+    asyncWorker->AddTask(updateBurstCoverLevelTask, false);
     return E_SUCCESS;
 }
 
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
-    if (!backgroundDelayTask_.IsDelayTaskTimeOut() || !currentStatus_) {
-        MEDIA_INFO_LOG("The conditions for DoBackgroundOperation are not met, will return.");
-        return;
-    }
+    bool cond = (!backgroundDelayTask_.IsDelayTaskTimeOut() || !currentStatus_);
+    CHECK_AND_RETURN_LOG(!cond, "The conditions for DoBackgroundOperation are not met, will return.");
 #ifdef META_RECOVERY_SUPPORT
     // check metadata recovery state
     MediaLibraryMetaRecovery::GetInstance().CheckRecoveryState();
@@ -613,6 +575,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     CloudUploadChecker::RepairNoOriginButLcd();
     CloudUploadChecker::HandleNoOriginPhoto();
 
+    CloudUploadChecker::RepairNoDetailTime();
     // migration highlight info to new path
     if (MediaFileUtils::IsFileExists(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD)) {
         MEDIA_INFO_LOG("Migration highlight info to new path");
@@ -685,11 +648,10 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
         MedialibrarySubscriberDatabaseUtils::QueryThumbTotal(thumbTotalCount);
         bool isThumbAstcEnough = thumbAstcCount > THUMB_ASTC_ENOUGH || thumbAstcCount == thumbTotalCount;
         newStatus = !isThumbAstcEnough;
-        if (!isThumbAstcEnough) {
-            MEDIA_INFO_LOG("ThumbnailBg generate status: isThumbAstcEnough:%{public}d, "
-                "thumbAstcCount:%{public}d, thumbTotalCount:%{public}d",
-                isThumbAstcEnough, thumbAstcCount, thumbTotalCount);
-        }
+        CHECK_AND_PRINT_LOG(isThumbAstcEnough,
+            "ThumbnailBg generate status: isThumbAstcEnough:%{public}d,"
+            " thumbAstcCount:%{public}d, thumbTotalCount:%{public}d",
+            isThumbAstcEnough, thumbAstcCount, thumbTotalCount);
     }
 
     if (thumbnailBgGenerationStatus_ == newStatus) {
@@ -714,30 +676,20 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
 
 void MedialibrarySubscriber::DoThumbnailBgOperation()
 {
-    if (!thumbnailBgDelayTask_.IsDelayTaskTimeOut() || !thumbnailBgGenerationStatus_) {
-        MEDIA_INFO_LOG("The conditions for DoThumbnailBgOperation are not met, will return.");
-        return;
-    }
+    bool cond = (!thumbnailBgDelayTask_.IsDelayTaskTimeOut() || !thumbnailBgGenerationStatus_);
+    CHECK_AND_RETURN_LOG(!cond, "The conditions for DoThumbnailBgOperation are not met, will return.");
 
     auto dataManager = MediaLibraryDataManager::GetInstance();
-    if (dataManager == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(dataManager != nullptr, "dataManager is nullptr");
 
     auto result = dataManager->GenerateThumbnailBackground();
-    if (result != E_OK) {
-        MEDIA_ERR_LOG("GenerateThumbnailBackground faild");
-    }
+    CHECK_AND_PRINT_LOG(result == E_OK, "GenerateThumbnailBackground faild");
 
     result = dataManager->UpgradeThumbnailBackground(isWifiConnected_);
-    if (result != E_OK) {
-        MEDIA_ERR_LOG("UpgradeThumbnailBackground faild");
-    }
+    CHECK_AND_PRINT_LOG(result == E_OK, "UpgradeThumbnailBackground faild");
 
     result = dataManager->GenerateHighlightThumbnailBackground();
-    if (result != E_OK) {
-        MEDIA_ERR_LOG("GenerateHighlightThumbnailBackground failed %{public}d", result);
-    }
+    CHECK_AND_PRINT_LOG(result == E_OK, "GenerateHighlightThumbnailBackground failed %{public}d", result);
 }
 
 void MedialibrarySubscriber::StopThumbnailBgOperation()
@@ -860,10 +812,7 @@ int32_t MedialibrarySubscriberDatabaseUtils::QueryThumbAstc(int32_t& thumbAstcCo
     astcPredicates.GreaterThanOrEqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY,
         static_cast<int32_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
     int32_t errCode = QueryInt(astcPredicates, columns, queryColumn, thumbAstcCount);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Query thumbAstcCount fail: %{public}d", errCode);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Query thumbAstcCount fail: %{public}d", errCode);
     return E_OK;
 }
 
@@ -873,10 +822,7 @@ int32_t MedialibrarySubscriberDatabaseUtils::QueryThumbTotal(int32_t& thumbTotal
     std::string queryColumn = "count";
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     int32_t errCode = QueryInt(predicates, columns, queryColumn, thumbTotalCount);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Query thumbTotalCount fail: %{public}d", errCode);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Query thumbTotalCount fail: %{public}d", errCode);
     return E_OK;
 }
 
@@ -884,9 +830,8 @@ int32_t MedialibrarySubscriberDatabaseUtils::QueryInt(const NativeRdb::AbsRdbPre
     const std::vector<std::string> &columns, const std::string &queryColumn, int32_t &value)
 {
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return E_DB_FAIL;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, E_DB_FAIL);
     value = GetInt32Val(queryColumn, resultSet);
     return E_OK;
 }

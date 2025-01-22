@@ -760,20 +760,52 @@ bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailDa
     return isSuccess ? UpdateSuccessState(opts, data) : UpdateFailState(opts, data);
 }
 
+// This method has to be called before updating rdb
+static int32_t IsPhotoVisible(const ThumbRdbOpt &opts, const ThumbnailData &data)
+{
+    vector<string> columns = {
+        PhotoColumn::PHOTO_THUMBNAIL_VISIBLE
+    };
+    if (data.id.empty() && opts.row.empty()) {
+        MEDIA_ERR_LOG("SendThumbNotify thumb is empty");
+        return 0;
+    }
+    string fileId = data.id.empty() ? opts.row : data.id;
+    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + fileId;
+    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.SetWhereClause(strQueryCondition);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("SendThumbNotify opts.store is nullptr");
+        return 0;
+    }
+    auto resultSet = opts.store->QueryByStep(rdbPredicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("SendThumbNotify result is null");
+        return 0;
+    }
+    auto ret = resultSet->GoToFirstRow();
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("SendThumbNotify go to first row failed");
+        return 0;
+    }
+    return GetInt32Val(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, resultSet);
+}
+
 bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
+    int thumbnailVisible = IsPhotoVisible(opts, data);
     int32_t err = UpdateThumbDbState(opts, data);
     if (err != E_OK) {
         MEDIA_ERR_LOG("update thumbnail_ready failed, err = %{public}d", err);
         return false;
     }
-
+    
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
-        MEDIA_ERR_LOG("watch is nullptr");
+        MEDIA_ERR_LOG("SendThumbNotify watch is nullptr");
         return false;
     }
-    if (data.isThumbExisted) {
+    if (thumbnailVisible) {
         watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_UPDATE);
     } else {
         watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_ADD);

@@ -29,7 +29,7 @@ public:
 
     EXPORT void AddStartTime(const std::string &photoId);
     EXPORT void RemoveStartTime(const std::string &photoId);
-    EXPORT void Report(const std::string &photoId);
+    EXPORT void Report(const std::string &photoId, const int32_t mediaType);
 
 private:
     MultiStagesCaptureDfxTotalTime();
