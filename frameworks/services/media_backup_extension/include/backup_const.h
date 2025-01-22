@@ -393,7 +393,6 @@ struct FileInfo {
     std::string newAstcDateKey;
     bool isInternal {true};
     int32_t userId {-1};
-    std::unordered_map<std::string, std::string> updateMap;
     double latitude {0.0};
     double longitude {0.0};
     std::string storyIds;
