@@ -516,6 +516,7 @@ void MediaSyncObserver::OnChangeEx(const ChangeInfo &changeInfo)
 
 void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
 {
+    CHECK_AND_RETURN_LOG(isRunning_.load(), "MediaSyncObserver::OnChange thread is not running");
     {
         std::lock_guard<std::mutex> lock(mutex_);
         ChangeInfo changeInfoCopy = changeInfo;
@@ -525,6 +526,7 @@ void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
                 changeInfo.size_, changeInfo.data_, changeInfo.size_) != 0) {
                 MEDIA_ERR_LOG("changeInfoCopy copy data failed");
                 free(const_cast<void*>(changeInfoCopy.data_));
+                changeInfoCopy.data_ = nullptr;
                 return;
             }
         }
@@ -536,7 +538,7 @@ void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
 void MediaSyncObserver::StartNotifyThread()
 {
     MEDIA_INFO_LOG("start notify thread");
-    CHECK_AND_PRINT_LOG(!isRunning_.load(), "MediaSyncObserver notify thread is already running");
+    CHECK_AND_RETURN_LOG(!isRunning_.load(), "MediaSyncObserver notify thread is already running");
     isRunning_.store(true);
     notifythread_ = std::thread([this] {this->ChangeNotifyThread();});
 }
@@ -546,6 +548,17 @@ void MediaSyncObserver::StopNotifyThread()
     MEDIA_INFO_LOG("stop notify thread");
     isRunning_.store(false);
     cv_.notify_all();
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        while (!changeInfoQueue_.empty()) {
+            ChangeInfo changeInfo = changeInfoQueue_.front();
+            changeInfoQueue_.pop();
+            if (changeInfo.data_ != nullptr) {
+                free(const_cast<void*>(changeInfo.data_));
+                changeInfo.data_ = nullptr;
+            }
+        }
+    }
     if (notifythread_.joinable()) {
         notifythread_.join();
     }
@@ -568,6 +581,7 @@ void MediaSyncObserver::ChangeNotifyThread()
         OnChangeEx(changeInfo);
         if (changeInfo.data_ != nullptr) {
             free(const_cast<void*>(changeInfo.data_));
+            changeInfo.data_ = nullptr;
         }
     }
 }

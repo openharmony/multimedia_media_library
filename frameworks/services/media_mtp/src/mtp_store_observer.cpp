@@ -53,7 +53,7 @@ bool MtpStoreObserver::StartObserver()
     MEDIA_INFO_LOG("MtpStoreObserver StartObserver");
     CHECK_AND_RETURN_RET_LOG(observer_ == nullptr, false, "observer_ is registered");
 
-    EventFwk::MatchingSkills matchingSkills;
+    static EventFwk::MatchingSkills matchingSkills;
     for (const auto &event : events_) {
         matchingSkills.AddEvent(event);
     }
