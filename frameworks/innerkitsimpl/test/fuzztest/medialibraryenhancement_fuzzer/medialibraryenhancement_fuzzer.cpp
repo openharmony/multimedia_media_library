@@ -67,11 +67,17 @@ std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int32_t)) {
+        return 0;
+    }
     return static_cast<int32_t>(*data);
 }
 
 static inline uint32_t FuzzUInt32(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(uint32_t)) {
+        return 0;
+    }
     return static_cast<uint32_t>(*data);
 }
 
@@ -242,6 +248,10 @@ static void Init()
 
 static void EnhancementManagerTest(const uint8_t *data, size_t size)
 {
+    const int32_t int32Count = 2;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
     int32_t fileId = InsertAsset(data, size, FuzzString(data, size));
     Media::EnhancementManager::GetInstance().Init();
     vector<string> fileIds = { to_string(fileId) };
@@ -249,7 +259,8 @@ static void EnhancementManagerTest(const uint8_t *data, size_t size)
     Media::EnhancementManager::GetInstance().CancelTasksInternal(fileIds, photoIds,
         FuzzCloudEnhancementAvailableType(data, size));
     Media::EnhancementManager::GetInstance().RemoveTasksInternal(fileIds, photoIds);
-    Media::EnhancementManager::GetInstance().RevertEditUpdateInternal(FuzzInt32(data, size));
+    int32_t offset = 0;
+    Media::EnhancementManager::GetInstance().RevertEditUpdateInternal(FuzzInt32(data + offset, size));
     Media::EnhancementManager::GetInstance().RecoverTrashUpdateInternal(fileIds);
 
     DataSharePredicates predicates;
@@ -266,13 +277,19 @@ static void EnhancementManagerTest(const uint8_t *data, size_t size)
 
     MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle
         = Media::EnhancementManager::GetInstance().enhancementService_->CreateBundle();
-    Media::EnhancementManager::GetInstance().AddServiceTask(mediaEnhanceBundle, FuzzInt32(data, size),
+    offset += sizeof(int32_t);
+    Media::EnhancementManager::GetInstance().AddServiceTask(mediaEnhanceBundle, FuzzInt32(data + offset, size),
         FuzzString(data, size), FuzzBool(data, size));
 }
 
 static void EnhancementTaskManagerTest(const uint8_t *data, size_t size)
 {
-    int32_t fileId = FuzzInt32(data, size);
+    const int32_t int32Count = 3;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    int32_t fileId = FuzzInt32(data + offset, size);
     string photoId = FuzzString(data, size);
     Media::EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
     Media::EnhancementTaskManager::RemoveEnhancementTask(photoId);
@@ -280,19 +297,16 @@ static void EnhancementTaskManagerTest(const uint8_t *data, size_t size)
 
     vector<string> taskIds = FuzzVectorString(data, size);
     Media::EnhancementTaskManager::RemoveAllEnhancementTask(taskIds);
-
-    if (size < sizeof(int32_t)) {
-        return;
-    }
-    const uint8_t *data2 = data + sizeof(int32_t);
-    fileId = FuzzInt32(data2, size);
+    offset += sizeof(int32_t);
+    fileId = FuzzInt32(data + offset, size);
     photoId = FuzzString(data, size);
     Media::EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
     Media::EnhancementTaskManager::InProcessingTask(photoId);
     Media::EnhancementTaskManager::QueryPhotoIdByFileId(fileId);
 
     photoId = FuzzString(data, size);
-    Media::EnhancementTaskManager::SetTaskRequestCount(photoId, FuzzInt32(data, size));
+    offset += sizeof(int32_t);
+    Media::EnhancementTaskManager::SetTaskRequestCount(photoId, FuzzInt32(data + offset, size));
     Media::EnhancementTaskManager::GetTaskRequestCount(photoId);
 }
 
@@ -326,6 +340,10 @@ static void EnhancementServiceAdpterTest(const uint8_t *data, size_t size)
 
 static void EnhancementServiceCallbackTest(const uint8_t *data, size_t size)
 {
+    const int32_t int32Count = 3;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count + sizeof(uint32_t)) {
+        return;
+    }
     Media::EnhancementServiceCallback::OnServiceReconnected();
 
     string photoId = FuzzString(data, size);
@@ -342,10 +360,16 @@ static void EnhancementServiceCallbackTest(const uint8_t *data, size_t size)
     }
     string displayName = FuzzString(data, size) + ".jpg";
     int32_t hidden = FuzzBool(data, size) ? YES : NO;
+    int32_t offset = 0;
+    int32_t fileId = FuzzInt32(data + offset, size);
     shared_ptr<Media::CloudEnhancementFileInfo> fileInfo = make_shared<Media::CloudEnhancementFileInfo>(
-        FuzzInt32(data, size), FuzzString(data, size), displayName, FuzzPhotoSubType(data, size), hidden);
+        fileId, FuzzString(data, size), displayName, FuzzPhotoSubType(data, size), hidden);
+    offset += sizeof(int32_t);
+    int32_t statusCode = FuzzInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t bytes = FuzzUInt32(data + offset, size);
     Media::CloudEnhancementThreadTask task(FuzzString(data, size),
-        FuzzInt32(data, size), buffer, FuzzUInt32(data, size), FuzzBool(data, size));
+        statusCode, buffer, bytes, FuzzBool(data, size));
     vector<string> columns;
     Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO,
         Media::OperationType::QUERY, Media::MediaLibraryApi::API_10);
@@ -353,7 +377,9 @@ static void EnhancementServiceCallbackTest(const uint8_t *data, size_t size)
     auto resultSet = g_rdbStore->Query(cmd, columns);
     if (resultSet != nullptr && resultSet->GoToFirstRow() == E_OK) {
         Media::EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, resultSet);
-        Media::EnhancementServiceCallback::CreateCloudEnhancementPhoto(FuzzInt32(data, size), fileInfo,
+        offset += sizeof(int32_t);
+        int32_t sourceFileId = FuzzInt32(data + offset, size);
+        Media::EnhancementServiceCallback::CreateCloudEnhancementPhoto(sourceFileId, fileInfo,
             resultSet);
     }
     Media::EnhancementServiceCallback::DealWithSuccessedTask(task);
@@ -363,10 +389,17 @@ static void EnhancementServiceCallbackTest(const uint8_t *data, size_t size)
 #endif
 } // namespace OHOS
 
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     OHOS::Init();
+#endif
+    return 0;
+}
+
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+{
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     OHOS::EnhancementManagerTest(data, size);
     OHOS::EnhancementTaskManagerTest(data, size);
     OHOS::CloudEnhancementGetCountTest(data, size);
