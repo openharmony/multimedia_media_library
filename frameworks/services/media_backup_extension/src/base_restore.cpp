@@ -100,12 +100,34 @@ void BaseRestore::GetAccountValid()
     isAccountValid_ = ((oldId != "") && (oldId == newId));
 }
 
+void BaseRestore::GetSourceDeviceInfo()
+{
+    nlohmann::json jsonArray = nlohmann::json::parse(restoreInfo_, nullptr, false);
+    if (jsonArray.is_discarded()) {
+        MEDIA_ERR_LOG("GetSourceDeviceInfo parse restoreInfo_ fail.");
+        return;
+    }
+    for (const auto& item : jsonArray) {
+        if (!item.contains("type") || !item.contains("detail")) {
+            continue;
+        }
+        if (item["type"] == "dualOdid") {
+            albumOdid_ = item["detail"];
+        }
+        if (item["type"] == "dualDeviceSoftName") {
+            dualDeviceSoftName_ = item["detail"];
+            MEDIA_INFO_LOG("get dualDeviceSoftName, %{public}s", dualDeviceSoftName_.c_str());
+        }
+    }
+}
+
 void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::string &upgradePath)
 {
     backupRestoreDir_ = backupRetoreDir;
     upgradeRestoreDir_ = upgradePath;
     int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     GetAccountValid();
+    GetSourceDeviceInfo();
     if (errorCode == E_OK) {
         RestorePhoto();
         RestoreAudio();
@@ -352,7 +374,7 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetCloudInsertValues(const int32_t 
             this->HasSameFileForDualClone(fileInfos[i])) {
             fileInfos[i].needMove = false;
             RemoveDuplicateDualCloneFiles(fileInfos[i]);
-            MEDIA_WARN_LOG("File %{public}s already exists.",
+            MEDIA_WARN_LOG("Cloud File %{public}s already exists.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             UpdateDuplicateNumber(fileInfos[i].fileType);
             continue;
@@ -607,7 +629,7 @@ static std::string GetThumbnailLocalPath(const string &path)
     return RESTORE_FILES_LOCAL_DIR + ".thumbs/" + suffixStr;
 }
 
-int32_t BaseRestore::BatchCreateDentryFile(std::vector<FileInfo> fileInfos, std::vector<std::string> &failCloudIds,
+int32_t BaseRestore::BatchCreateDentryFile(std::vector<FileInfo> &fileInfos, std::vector<std::string> &failCloudIds,
                                            std::string fileType)
 {
     MEDIA_INFO_LOG("START STEP 4 CREATE DENTRY");
@@ -616,7 +638,10 @@ int32_t BaseRestore::BatchCreateDentryFile(std::vector<FileInfo> fileInfos, std:
         return E_ERR;
     }
     std::vector<FileManagement::CloudSync::DentryFileInfo> dentryInfos;
-    for (int i = 0; i < fileInfos.size(); i++) {
+    for (size_t i = 0; i < fileInfos.size(); i++) {
+        if (!fileInfos[i].needMove) {
+            continue;
+        }
         FileManagement::CloudSync::DentryFileInfo dentryInfo;
         dentryInfo.cloudId = fileInfos[i].uniqueId;
         dentryInfo.modifiedTime = fileInfos[i].dateModified;
@@ -635,6 +660,10 @@ int32_t BaseRestore::BatchCreateDentryFile(std::vector<FileInfo> fileInfos, std:
         }
         dentryInfos.push_back(dentryInfo);
     }
+    if (dentryInfos.empty()) {
+        MEDIA_INFO_LOG("dentryInfos empty.");
+        return E_OK;
+    }
     int32_t ret = FileManagement::CloudSync::CloudSyncManager::GetInstance().BatchDentryFileInsert(
         dentryInfos, failCloudIds);
     if (ret != E_OK) {
@@ -651,26 +680,20 @@ int32_t BaseRestore::BatchCreateDentryFile(std::vector<FileInfo> fileInfos, std:
 
 bool BaseRestore::RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t type, int32_t sceneCode)
 {
-    if (fileInfo.albumId.empty() || fileInfo.uniqueId.empty()) {
-        MEDIA_ERR_LOG("albumId or uniqueId is empty!");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(!fileInfo.albumId.empty(), false, "albumId is empty: %{public}d", fileInfo.localMediaId);
+    CHECK_AND_RETURN_RET_LOG(!fileInfo.uniqueId.empty(), false, "uniqueId is empty: %{public}d", fileInfo.localMediaId);
     std::string tmpStr = type == MIGRATE_CLOUD_LCD_TYPE ? "lcd/" : "thumb/";
     std::string prefixStr = sceneCode == DUAL_FRAME_CLONE_RESTORE_ID ? backupRestoreDir_ : upgradeRestoreDir_;
     std::string srcPath = prefixStr + "/storage/emulated/0/.photoshare/thumb/" + tmpStr + fileInfo.albumId +
         "/" + fileInfo.uniqueId + ".jpg";
     if (access(srcPath.c_str(), E_OK) != 0) {
-        int errorno = errno;
         MEDIA_WARN_LOG("src path access fail, %{public}s, errno: %{public}d",
-            BackupFileUtils::GarbleFilePath(srcPath, sceneCode).c_str(), errorno);
+            BackupFileUtils::GarbleFilePath(srcPath, sceneCode).c_str(), errno);
         return false;
     }
     std::string saveNoRotatePath = fileInfo.orientation == ORIETATION_ZERO ? "" : THM_SAVE_WITHOUT_ROTATE_PATH;
     std::string dstDirPath = GetThumbnailLocalPath(fileInfo.cloudPath) + saveNoRotatePath;
-    if (!MediaFileUtils::CreateDirectory(dstDirPath)) {
-        MEDIA_WARN_LOG("Prepare thumbnail dir path failed");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dstDirPath), false, "Prepare thumbnail dir path failed");
 
     std::string tmpTargetFileName = type == MIGRATE_CLOUD_LCD_TYPE ? "/LCD" : "/THM";
     std::string dstFilePath = dstDirPath + tmpTargetFileName + ".jpg";
@@ -691,12 +714,9 @@ bool BaseRestore::RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t 
             MEDIA_WARN_LOG("Rotate image fail!");
             return false;
         }
+        type == MIGRATE_CLOUD_LCD_TYPE ? rotateLcdMigrateFileNumber_++ : rotateThmMigrateFileNumber_++;
     }
-    if (type == MIGRATE_CLOUD_LCD_TYPE) {
-        lcdMigrateFileNumber_++;
-    } else {
-        thumbMigrateFileNumber_++;
-    }
+    type == MIGRATE_CLOUD_LCD_TYPE ? lcdMigrateFileNumber_++ : thumbMigrateFileNumber_++;
     return true;
 }
 
@@ -717,7 +737,7 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
             continue;
         }
         if (!MoveAndModifyFile(fileInfos[i], sceneCode)) {
-            fileInfos[i].updateMap.clear();
+            fileInfos[i].needUpdate = false;
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
             ErrorInfo errorInfo(RestoreError::MOVE_FAILED, 1, "",
                 BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i]));
@@ -747,6 +767,9 @@ void BaseRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t
     std::vector<FileInfo> LCDNotFound;
     std::vector<FileInfo> THMNotFound;
     for (size_t i = 0; i < fileInfos.size(); i++) {
+        if (!fileInfos[i].needMove) {
+            continue;
+        }
         if ((!RestoreLcdAndThumbFromCloud(fileInfos[i], MIGRATE_CLOUD_LCD_TYPE, sceneCode)) &&
             (!RestoreLcdAndThumbFromKvdb(fileInfos[i], MIGRATE_CLOUD_LCD_TYPE, sceneCode))) {
             LCDNotFound.push_back(fileInfos[i]);
@@ -756,7 +779,6 @@ void BaseRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t
             (!RestoreLcdAndThumbFromKvdb(fileInfos[i], MIGRATE_CLOUD_THM_TYPE, sceneCode))) {
             THMNotFound.push_back(fileInfos[i]);
         }
-        fileMoveCount++;
         videoFileMoveCount += fileInfos[i].fileType == MediaType::MEDIA_TYPE_VIDEO;
     }
     std::vector<std::string> dentryFailedLCD;
@@ -767,7 +789,7 @@ void BaseRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t
     if (BatchCreateDentryFile(THMNotFound, dentryFailedThumb, DENTRY_INFO_THM) == E_OK) {
         HandleFailData(fileInfos, dentryFailedThumb, DENTRY_INFO_THM);
     }
-    SetVisiblePhoto(fileInfos);
+    fileMoveCount = SetVisiblePhoto(fileInfos);
     migrateFileNumber_ += fileMoveCount;
     migrateVideoFileNumber_ += videoFileMoveCount;
     MEDIA_INFO_LOG("END STEP 6 MOVE");
@@ -790,7 +812,11 @@ void BaseRestore::UpdateLcdVisibleColumn(const FileInfo &fileInfo)
 void BaseRestore::HandleFailData(std::vector<FileInfo> &fileInfos, std::vector<std::string> &failCloudIds,
                                  std::string fileType)
 {
-    MEDIA_INFO_LOG("START STEP 5 HANDLE FAIL");
+    MEDIA_INFO_LOG("START STEP 5 HANDLE FAIL, fileInfos size: %{public}zu", fileInfos.size());
+    if (failCloudIds.empty()) {
+        MEDIA_INFO_LOG("HandleFailData failCloudIds empty.");
+        return;
+    }
     vector<std::string> dentryFailedData;
     if ((fileType != DENTRY_INFO_ORIGIN) && (fileType != DENTRY_INFO_LCD) && (fileType != DENTRY_INFO_THM)) {
         MEDIA_ERR_LOG("Invalid fileType: %{public}s", fileType.c_str());
@@ -850,6 +876,7 @@ int BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
     InsertPhotoRelated(fileInfos, sourceType);
     geoKnowledgeRestore_.RestoreMaps(fileInfos);
+    highlightRestore_.RestoreMaps(fileInfos);
 
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     migrateDatabaseNumber_ += rowNum;
@@ -869,14 +896,17 @@ int BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos
     return E_OK;
 }
 
-void BaseRestore::SetVisiblePhoto(std::vector<FileInfo> &fileInfos)
+int32_t BaseRestore::SetVisiblePhoto(std::vector<FileInfo> &fileInfos)
 {
     MEDIA_INFO_LOG("START STEP 7 SET VISIBLE");
     std::vector<std::string> visibleIds;
     for (auto info : fileInfos) {
-        if (info.needVisible) {
+        if (info.needVisible && info.needMove) {
             visibleIds.push_back(info.uniqueId);
         }
+    }
+    if (visibleIds.empty()) {
+        return 0;
     }
 
     NativeRdb::ValuesBucket updatePostBucket;
@@ -884,12 +914,14 @@ void BaseRestore::SetVisiblePhoto(std::vector<FileInfo> &fileInfos)
     std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
         make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
     predicates->In(PhotoColumn::PHOTO_CLOUD_ID, visibleIds);
-    int changeRows = 0;
+    int32_t changeRows = 0;
     int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, updatePostBucket, predicates);
     if (changeRows < 0 || ret < 0) {
         MEDIA_ERR_LOG("Failed to update visible column, ret: %{public}d", ret);
+        changeRows = 0;
     }
-    MEDIA_INFO_LOG("END STEP 7 SET VISIBLE");
+    MEDIA_INFO_LOG("END STEP 7 SET VISIBLE: %{public}d", changeRows);
+    return changeRows;
 }
 
 int BaseRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType)
@@ -921,6 +953,7 @@ int BaseRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &file
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
     InsertPhotoRelated(fileInfos, sourceType);
+    highlightRestore_.RestoreMaps(fileInfos);
 
     // create dentry file for cloud origin, save failed cloud id
     std::vector<std::string> dentryFailedOrigin;
@@ -1460,6 +1493,10 @@ SubProcessInfo BaseRestore::GetSubProcessInfo(const std::string &type)
         duplicate = migratePhotoDuplicateNumber_ + migrateVideoDuplicateNumber_;
         failed = static_cast<uint64_t>(GetFailedFiles(STAT_TYPE_PHOTO).size() + GetFailedFiles(STAT_TYPE_VIDEO).size());
         total = totalNumber_;
+        MEDIA_ERR_LOG("GetSubProcessInfo: %{public}s, migrateFileNumber: %{public}" PRIu64
+        ",migratePhotoDuplicateNumber: %{public}" PRIu64 ",migrateVideoDuplicateNumber :%{public}" PRIu64
+        "totalNumber :%{public}" PRIu64 ",failed :%{public}" PRIu64, type.c_str(), migrateFileNumber_.load(),
+        migratePhotoDuplicateNumber_.load(), migrateVideoDuplicateNumber_.load(), totalNumber_.load(), failed);
     } else if (type == STAT_TYPE_AUDIO) {
         success = migrateAudioFileNumber_;
         duplicate = migrateAudioDuplicateNumber_;
@@ -1525,7 +1562,9 @@ void BaseRestore::NotifyAlbum()
 {
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+
     watch->Notify(PhotoColumn::DEFAULT_PHOTO_URI, NotifyType::NOTIFY_ADD);
+    watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
 }
 
 void BaseRestore::GetUpdateTotalCount()
@@ -1570,7 +1609,7 @@ void BaseRestore::RestoreThumbnail()
     uint64_t thumbnailProcessedNumber = 0;
     while (thumbnailProcessedNumber < waitAstcNum) {
         thumbnailProcessedNumber_ = thumbnailProcessedNumber;
-        sleep(THUMBNAIL_QUERY_INTERVAL);
+        std::this_thread::sleep_for(std::chrono::milliseconds(THUMBNAIL_QUERY_INTERVAL));
         int32_t newReadyAstcCount = BackupDatabaseUtils::QueryReadyAstcCount(mediaLibraryRdb_);
         if (newReadyAstcCount <= readyAstcCount) {
             MEDIA_WARN_LOG("Stop RestoreThumbnail, oldReadyAstcCount:%{public}d, newReadyAstcCount:%{public}d",
@@ -1613,31 +1652,73 @@ int32_t BaseRestore::GetNoNeedMigrateCount()
     return 0;
 }
 
-void BaseRestore::UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
-    const std::vector<FileInfo>& fileInfos)
+bool BaseRestore::ExtraCheckForCloneSameFile(FileInfo &fileInfo, PhotosDao::PhotosRowData &rowData)
 {
-    for (const FileInfo &fileInfo : fileInfos) {
-        auto &updateMap = fileInfo.updateMap;
-        if (fileInfo.fileIdNew <= 0 || fileInfo.isNew || updateMap.empty()) {
+    fileInfo.isNew = false;
+    fileInfo.fileIdNew = rowData.fileId;
+    fileInfo.cloudPath = rowData.data;
+    bool isInCloud = rowData.cleanFlag == 1 && rowData.position == static_cast<int32_t>(PhotoPositionType::CLOUD);
+    // If the file was in cloud previously with clean_flag = 1, reset it's position to local
+    if (rowData.fileId > 0 && isInCloud) {
+        fileInfo.needUpdate = true;
+        return false;
+    }
+    fileInfo.needMove = false;
+    return true;
+}
+
+void BaseRestore::UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    std::vector<FileInfo>& fileInfos)
+{
+    std::vector<std::string> inColumn;
+    for (FileInfo &fileInfo : fileInfos) {
+        if (fileInfo.fileIdNew <= 0 || fileInfo.isNew || !fileInfo.needUpdate) {
             continue;
         }
-        int32_t changeRows = 0;
-        std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
-            make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
-        predicates->SetWhereClause("file_id=?");
-        predicates->SetWhereArgs({ to_string(fileInfo.fileIdNew) });
-        NativeRdb::ValuesBucket updatePostBucket;
-        for (auto it = updateMap.begin(); it != updateMap.end(); it++) {
-            updatePostBucket.Put(it->first, it->second);
-        }
-        BackupDatabaseUtils::Update(mediaLibraryRdb, changeRows, updatePostBucket, predicates);
-        if (changeRows <= 0) {
-            MEDIA_ERR_LOG("update failed, fileId: %{public}d", fileInfo.fileIdNew);
-            ErrorInfo errorInfo(RestoreError::UPDATE_PHOTOS_FAILED, 1, "",
-                BackupLogUtils::FileInfoToString(this->sceneCode_, fileInfo));
-            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        if (MediaFileUtils::IsFileExists(fileInfo.cloudPath)) {
+            int32_t ret = RemoveDentryFileWithConflict(fileInfo);
+            if (ret != E_OK) {
+                fileInfo.needUpdate = false;
+                MEDIA_ERR_LOG("Failed to remove dentry file %{public}s", fileInfo.cloudPath.c_str());
+                continue;
+            }
+            inColumn.push_back(to_string(fileInfo.fileIdNew));
         }
     }
+    BackupDatabaseUtils::BatchUpdatePhotosToLocal(mediaLibraryRdb, inColumn);
+}
+
+int32_t BaseRestore::RemoveDentryFileWithConflict(const FileInfo &fileInfo)
+{
+    // Delete dentry file
+    string dummyPath = fileInfo.cloudPath + ".tmp";
+    int32_t moveToRet = MoveFile(fileInfo.cloudPath, dummyPath);
+    if (moveToRet != E_OK) {
+        MEDIA_ERR_LOG("Move file from %{public}s to %{public}s failed, ret=%{public}d", fileInfo.cloudPath.c_str(),
+            dummyPath.c_str(), moveToRet);
+        return moveToRet;
+    }
+
+    bool dentryDeleted = false;
+    if (MediaFileUtils::IsFileExists(fileInfo.cloudPath)) {
+        (void)MediaFileUtils::DeleteFile(fileInfo.cloudPath);
+        dentryDeleted = true;
+    }
+
+    int32_t moveBackRet = MoveFile(dummyPath, fileInfo.cloudPath);
+    if (moveBackRet != E_OK) {
+        MEDIA_ERR_LOG("Move file from %{public}s to %{public}s failed, ret=%{public}d", dummyPath.c_str(),
+            fileInfo.cloudPath.c_str(), moveBackRet);
+        return moveBackRet;
+    }
+
+    // Delete thumb dentry file
+    string tmpPathThumb = fileInfo.cloudPath;
+    string thumbPath = tmpPathThumb.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_THUMB_CLOUD_DIR);
+    if (MediaFileUtils::IsFileExists(thumbPath) && dentryDeleted) {
+        (void)MediaFileUtils::DeleteDir(thumbPath);
+    }
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

@@ -41,6 +41,7 @@
 #include "dfx_utils.h"
 #include "directory_ex.h"
 #include "efficiency_resource_info.h"
+#include "ffrt_inner.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
 #include "location_column.h"
@@ -1848,7 +1849,7 @@ shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, co
             return MediaAnalysisHelper::ParseGeoInfo({ fileId, latitude, longitude }, false);
         });
         std::future<bool> futureResult = pt.get_future();
-        std::thread(std::move(pt)).detach();
+        ffrt::thread(std::move(pt)).detach();
 
         bool parseResult = false;
         const int timeout = 2;
@@ -1904,7 +1905,7 @@ shared_ptr<NativeRdb::ResultSet> QueryGeoAssets(const RdbPredicates &rdbPredicat
         }
         std::packaged_task<bool()> pt([&] { return MediaAnalysisHelper::ParseGeoInfo(std::move(geoInfo), true); });
         std::future<bool> futureResult = pt.get_future();
-        std::thread(std::move(pt)).detach();
+        ffrt::thread(std::move(pt)).detach();
 
         bool parseResult = false;
         const int timeout = 5;

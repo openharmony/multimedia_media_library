@@ -83,6 +83,14 @@ private:
         UpdateData updateData_;
     };
 
+    class UpdateAbnormalDayMonthYearData : public AsyncTaskData {
+    public:
+        UpdateAbnormalDayMonthYearData(std::vector<std::string> fileIds) : fileIds_(fileIds){};
+        ~UpdateAbnormalDayMonthYearData() override = default;
+
+        std::vector<std::string> fileIds_;
+    };
+
     static void DownloadCloudFiles();
     static bool GetStorageFreeRatio(double &freeRatio);
     static void ClearDownloadCnt();
@@ -95,6 +103,8 @@ private:
     static void StopDownloadFiles();
     static void ProcessCloudData();
     static void UpdateCloudData();
+    static void UpdateAbnormalDayMonthYearExecutor(AsyncTaskData *data);
+    static void UpdateAbnormalDayMonthYear();
     static std::shared_ptr<NativeRdb::ResultSet> QueryUpdateData(bool isCloud, bool isVideo);
     static void SetPredicates(NativeRdb::RdbPredicates &predicates, bool isCloud, bool isVideo);
     static void ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet, UpdateData &updateData,

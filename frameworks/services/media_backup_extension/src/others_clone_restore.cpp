@@ -682,18 +682,8 @@ bool OthersCloneRestore::HasSameFileForDualClone(FileInfo &fileInfo)
     if (fileId <= 0 || cloudPath.empty()) {
         return false;
     }
-    fileInfo.isNew = false;
-    fileInfo.fileIdNew = fileId;
-    fileInfo.cloudPath = cloudPath;
-    bool isInCloud = rowData.cleanFlag == 1 && rowData.position == static_cast<int32_t>(PhotoPositionType::CLOUD);
-    // If the file was in cloud previously, only require update flags.
-    if (fileId > 0 && isInCloud) {
-        fileInfo.updateMap["clean_flag"] = "0";
-        fileInfo.updateMap["position"] = to_string(static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
-        return false;
-    }
-    fileInfo.needMove = false;
-    return true;
+    // Meed extra check to determine whether or not to drop the duplicate file.
+    return ExtraCheckForCloneSameFile(fileInfo, rowData);
 }
 
 static std::string ToLower(const std::string &str)

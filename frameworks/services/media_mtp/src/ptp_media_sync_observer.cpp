@@ -307,14 +307,13 @@ void MediaSyncObserver::SendPhotoEvent(ChangeType changeType, string suffixStrin
     }
 }
 
-std::shared_ptr<DataShare::DataShareResultSet> MediaSyncObserver::GetAlbumInfo()
+void MediaSyncObserver::GetAlbumIdList(std::set<int32_t> &albumIds)
 {
-    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, nullptr,
-        "MediaSyncObserver::GetAlbumInfo dataShareHelper_ is nullptr");
+    CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "Mtp GetAlbumIdList dataShareHelper_ is nullptr");
     DataShare::DataSharePredicates predicates;
     Uri uri(PAH_QUERY_PHOTO_ALBUM);
     vector<string> columns;
-    columns.push_back(PhotoAlbumColumns::ALBUM_ID + " as " + MEDIA_DATA_DB_ID);
+    columns.push_back(PhotoAlbumColumns::ALBUM_ID);
     predicates.IsNotNull(MEDIA_DATA_DB_ALBUM_NAME);
     predicates.NotEqualTo(MEDIA_DATA_DB_ALBUM_NAME, HIDDEN_ALBUM);
     predicates.BeginWrap();
@@ -322,43 +321,68 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaSyncObserver::GetAlbumInfo()
     predicates.Or();
     predicates.IsNull(MEDIA_DATA_DB_IS_LOCAL);
     predicates.EndWrap();
-    return dataShareHelper_->Query(uri, predicates, columns);
+    auto resultSet = dataShareHelper_->Query(uri, predicates, columns);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Mtp GetAlbumIdList Query fail");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        albumIds.insert(GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet));
+    }
 }
 
-void MediaSyncObserver::SendEventToPTP(int32_t suff_int, ChangeType changeType)
+void MediaSyncObserver::GetOwnerAlbumIdList(std::set<int32_t> &albumIds)
 {
+    CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "Mtp GetOwnerAlbumIdList dataShareHelper_ is nullptr");
+    Uri uri(PAH_QUERY_PHOTO);
+    vector<string> columns;
+    columns.push_back(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
+    DataShare::DataSharePredicates predicates;
+    predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, POSITION);
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
+    predicates.Distinct();
+    auto resultSet = dataShareHelper_->Query(uri, predicates, columns);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Mtp GetOwnerAlbumIdList Query fail");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        albumIds.insert(GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet));
+    }
+}
+
+void MediaSyncObserver::SendEventToPTP(ChangeType changeType, const std::vector<int32_t> &albumIds)
+{
+    std::vector<int32_t> removeIds;
+    std::set<int32_t> localAlbumIds;
     auto albumHandles = PtpAlbumHandles::GetInstance();
     CHECK_AND_RETURN_LOG(albumHandles != nullptr, "albumHandles is nullptr");
     switch (changeType) {
         case static_cast<int32_t>(NotifyType::NOTIFY_ADD):
-            MEDIA_DEBUG_LOG("MtpMediaLibrary ALBUM ADD");
-            albumHandles->AddHandle(suff_int);
-            SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_ADDED_CODE);
-            SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-            SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-            break;
         case static_cast<int32_t>(NotifyType::NOTIFY_UPDATE):
-            MEDIA_DEBUG_LOG("MtpMediaLibrary ALBUM UPDATE");
-            if (albumHandles->FindHandle(suff_int)) {
-                SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-                SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-            } else {
-                albumHandles->AddHandle(suff_int);
-                auto suff_removed_int = albumHandles->ChangeHandle(GetAlbumInfo());
-                if (suff_removed_int != E_ERR) {
-                    albumHandles->RemoveHandle(suff_removed_int);
-                    SendEventPacketAlbum(suff_removed_int, MTP_EVENT_OBJECT_REMOVED_CODE);
-                    SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-                }
-                SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_ADDED_CODE);
-                SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-                SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+            MEDIA_DEBUG_LOG("MtpMediaLibrary ALBUM ADD OR UPDATE");
+            GetAlbumIdList(localAlbumIds);
+            GetOwnerAlbumIdList(localAlbumIds);
+            albumHandles->UpdateHandle(localAlbumIds, removeIds);
+            for (auto removeId : removeIds) {
+                albumHandles->RemoveHandle(removeId);
+                SendEventPacketAlbum(removeId, MTP_EVENT_OBJECT_REMOVED_CODE);
             }
+            for (auto albumId : albumIds) {
+                if (localAlbumIds.count(albumId) == 0) {
+                    MEDIA_DEBUG_LOG("MtpMediaLibrary ignore cloud albumId:%{public}d", albumId);
+                    continue;
+                }
+                if (!albumHandles->FindHandle(albumId)) {
+                    albumHandles->AddHandle(albumId);
+                    SendEventPacketAlbum(albumId, MTP_EVENT_OBJECT_ADDED_CODE);
+                }
+                SendEventPacketAlbum(albumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+            }
+            SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
             break;
         case static_cast<int32_t>(NotifyType::NOTIFY_REMOVE):
             MEDIA_DEBUG_LOG("MtpMediaLibrary ALBUM REMOVE");
-            albumHandles->RemoveHandle(suff_int);
-            SendEventPacketAlbum(suff_int, MTP_EVENT_OBJECT_REMOVED_CODE);
+            for (auto albumId : albumIds) {
+                albumHandles->RemoveHandle(albumId);
+                SendEventPacketAlbum(albumId, MTP_EVENT_OBJECT_REMOVED_CODE);
+            }
             SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
             break;
         default:
@@ -451,6 +475,7 @@ void MediaSyncObserver::HandleMovePhotoEvent(const ChangeInfo &changeInfo)
 
 void MediaSyncObserver::OnChangeEx(const ChangeInfo &changeInfo)
 {
+    std::vector<int32_t> albumIds;
     std::string PhotoPrefix = PhotoColumn::PHOTO_URI_PREFIX;
     std::string PhotoAlbumPrefix = PhotoAlbumColumns::ALBUM_URI_PREFIX;
     MEDIA_DEBUG_LOG("MtpMediaLibrary changeType [%{public}d]", changeInfo.changeType_);
@@ -479,9 +504,13 @@ void MediaSyncObserver::OnChangeEx(const ChangeInfo &changeInfo)
             if (albumIdNum <= RESERVE_ALBUM) {
                 continue;
             }
-            HandleMovePhotoEvent(changeInfo);
-            SendEventToPTP(albumIdNum, changeInfo.changeType_);
+            albumIds.push_back(albumIdNum);
         }
+    }
+
+    if (!albumIds.empty()) {
+        HandleMovePhotoEvent(changeInfo);
+        SendEventToPTP(changeInfo.changeType_, albumIds);
     }
 }
 

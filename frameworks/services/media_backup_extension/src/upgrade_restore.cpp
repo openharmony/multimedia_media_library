@@ -152,6 +152,7 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
     this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     geoKnowledgeRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
+    highlightRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -313,12 +314,52 @@ bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::
     return true;
 }
 
+int32_t UpgradeRestore::GetHighlightCloudMediaCnt()
+{
+    const std::string QUERY_SQL = "SELECT COUNT(1) AS count FROM t_story_album t1 "
+        "WHERE COALESCE(t1.name, '') <> '' AND t1.displayable = 1 "
+        "AND EXISTS "
+        "(SELECT t2._id FROM gallery_media t2 WHERE t2.local_media_id = -1 "
+        "AND (t2.story_id LIKE '%,'||t1.story_id||',%' OR t2.portrait_id LIKE '%,'||t1.story_id||',%'))";
+    std::shared_ptr<NativeRdb::ResultSet> resultSet =
+        BackupDatabaseUtils::QuerySql(this->galleryRdb_, QUERY_SQL, {});
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("query count of highlight cloud media failed.");
+        return -1;
+    }
+    int32_t cnt = GetInt32Val("count", resultSet);
+    MEDIA_INFO_LOG("GetHighlightCloudMediaCnt is %{public}d", cnt);
+    resultSet->Close();
+    return cnt;
+}
+
+void UpgradeRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
+{
+    int32_t highlightCloudMediaCnt = GetHighlightCloudMediaCnt();
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
+        .Report("Highlight Restore", "",
+        "sceneCode_: " + std::to_string(sceneCode_) +
+        ", dualDeviceSoftName_: " + dualDeviceSoftName_ +
+        ", highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
+        ", isAccountValid_: " + std::to_string(isAccountValid_) +
+        ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOpen));
+    if ((sceneCode_ == UPGRADE_RESTORE_ID || dualDeviceSoftName_.empty()
+        || dualDeviceSoftName_.find("4", dualDeviceSoftName_.find(" ")) == dualDeviceSoftName_.find(" ") + 1)
+        && (highlightCloudMediaCnt == 0 || (isAccountValid_ && isSyncSwitchOpen))) {
+        MEDIA_INFO_LOG("start to restore highlight albums");
+        highlightRestore_.RestoreAlbums(albumOdid_);
+    }
+}
+
 void UpgradeRestore::RestorePhoto()
 {
     AnalyzeSource();
 
     std::string dbIntegrityCheck = CheckGalleryDbIntegrity();
     if (dbIntegrityCheck == DB_INTEGRITY_CHECK) {
+        bool isSyncSwitchOpen = CloudSyncHelper::GetInstance()->IsSyncSwitchOpen();
+        MEDIA_INFO_LOG("the isAccountValid is %{public}d, sync switch open is %{public}d", isAccountValid_,
+            isSyncSwitchOpen);
         // upgrade gallery.db
         DataTransfer::GalleryDbUpgrade().OnUpgrade(this->galleryRdb_);
         AnalyzeGallerySource();
@@ -327,13 +368,16 @@ void UpgradeRestore::RestorePhoto()
         this->photoAlbumRestore_.Restore();
         RestoreFromGalleryPortraitAlbum();
         geoKnowledgeRestore_.RestoreGeoKnowledgeInfos();
+        RestoreHighlightAlbums(isSyncSwitchOpen);
         // restore Photos
         RestoreFromGallery();
-        MEDIA_INFO_LOG("the isAccountValid is %{public}d, sync switch open is %{public}d", isAccountValid_,
-            CloudSyncHelper::GetInstance()->IsSyncSwitchOpen());
-        if (isAccountValid_ && CloudSyncHelper::GetInstance()->IsSyncSwitchOpen()) {
+        if (isAccountValid_ && isSyncSwitchOpen) {
             MEDIA_INFO_LOG("here cloud clone");
             RestoreCloudFromGallery();
+            MEDIA_INFO_LOG("Migrate Lcd is :%{public}" PRIu64 ",Thm: %{public}" PRIu64
+            ",Rotate Lcd %{public}" PRIu64 ",Thm: %{public}" PRIu64,
+            lcdMigrateFileNumber_.load(), thumbMigrateFileNumber_.load(),
+            rotateLcdMigrateFileNumber_.load(), rotateThmMigrateFileNumber_.load());
         }
     } else {
         maxId_ = 0;
@@ -360,6 +404,7 @@ void UpgradeRestore::RestorePhoto()
     }
 
     geoKnowledgeRestore_.ReportGeoRestoreTask();
+    highlightRestore_.UpdateAlbums();
     ReportPortraitStat(sceneCode_);
     (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
 }
@@ -415,7 +460,7 @@ void UpgradeRestore::RestoreFromGallery()
     HasLowQualityImage();
     // local count
     int32_t totalNumber = this->photosRestore_.GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
-    MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
+    MEDIA_INFO_LOG("local totalNumber = %{public}d", totalNumber);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
@@ -694,6 +739,8 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.photoQuality = this->photosRestore_.FindPhotoQuality(info);
     info.latitude = GetDoubleVal("latitude", resultSet);
     info.longitude = GetDoubleVal("longitude", resultSet);
+    info.storyIds = GetStringVal("story_id", resultSet);
+    info.portraitIds = GetStringVal("portrait_id", resultSet);
     return isSuccess;
 }
 
@@ -814,18 +861,8 @@ bool UpgradeRestore::HasSameFileForDualClone(FileInfo &fileInfo)
     if (fileId <= 0 || cloudPath.empty()) {
         return false;
     }
-    fileInfo.isNew = false;
-    fileInfo.fileIdNew = fileId;
-    fileInfo.cloudPath = cloudPath;
-    bool isInCloud = rowData.cleanFlag == 1 && rowData.position == static_cast<int32_t>(PhotoPositionType::CLOUD);
-    // If the file was in cloud previously, only require update flags.
-    if (fileId > 0 && isInCloud) {
-        fileInfo.updateMap["clean_flag"] = "0";
-        fileInfo.updateMap["position"] = to_string(static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
-        return false;
-    }
-    fileInfo.needMove = false;
-    return true;
+    // Meed extra check to determine whether or not to drop the duplicate file.
+    return ExtraCheckForCloneSameFile(fileInfo, rowData);
 }
 
 void UpgradeRestore::RestoreFromGalleryPortraitAlbum()

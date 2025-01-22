@@ -3315,6 +3315,17 @@ static void AddSupportedWatermarkType(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddStageVideoTaskStatus(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start add stage_video_task_status column");
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::STAGE_VIDEO_TASK_STATUS + " INT NOT NULL DEFAULT 0 "
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add stage_video_task_status column");
+}
+
 static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -4202,6 +4213,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_FIX_SOURCE_ALBUM_UPDATE_TRIGGER_TO_USE_LPATH) {
         FixSourceAlbumUpdateTriggerToUseLPath(store);
+    }
+
+    if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
+        AddStageVideoTaskStatus(store);
     }
 }
 

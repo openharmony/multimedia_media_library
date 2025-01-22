@@ -82,22 +82,14 @@ bool PtpAlbumHandles::FindHandle(int32_t value)
     return iter != dataHandles_.end();
 }
 
-int32_t PtpAlbumHandles::ChangeHandle(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet)
+void PtpAlbumHandles::UpdateHandle(const std::set<int32_t> &albumIds, std::vector<int32_t> &removeIds)
 {
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "resultSet is nullptr");
-    std::vector<int32_t> data;
-    do {
-        int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-        data.push_back(id);
-    } while (!resultSet->GoToNextRow());
-
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto value : dataHandles_) {
-        auto iter = std::find(data.begin(), data.end(), value);
-        CHECK_AND_RETURN_RET(iter != data.end(), value);
+        if (albumIds.count(value) == 0) {
+            removeIds.push_back(value);
+        }
     }
-    MEDIA_ERR_LOG("no data handle to remove");
-    return E_ERR;
 }
 } // namespace Media
 } // namespace OHOS

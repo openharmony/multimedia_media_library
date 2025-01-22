@@ -71,8 +71,9 @@ private:
 
 private:
     static std::shared_ptr<CloudMediaAssetDownloadOperation> operation_;
-    static std::mutex mutex_;
     static std::atomic<TaskDeleteState> doDeleteTask_;
+    static std::mutex deleteMutex_;
+    static std::mutex updateMutex_;
 };
 } // namespace Media
 } // namespace OHOS

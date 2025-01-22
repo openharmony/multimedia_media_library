@@ -33,6 +33,7 @@
 #include "multistages_capture_dfx_result.h"
 #include "multistages_capture_dfx_total_time.h"
 #include "multistages_capture_request_task_manager.h"
+#include "multistages_moving_photo_capture_manager.h"
 #include "result_set_utils.h"
 #include "media_change_effect.h"
 #include "exif_metadata.h"
@@ -123,24 +124,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateCEAvailable(const
     }
 }
 
-int32_t QuerySubType(const string &photoId)
-{
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = PhotoColumn::PHOTO_ID + " = ? ";
-    vector<string> whereArgs { photoId };
-    cmd.GetAbsRdbPredicates()->SetWhereClause(where);
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
-    vector<string> columns { PhotoColumn::PHOTO_SUBTYPE };
-    auto resultSet = DatabaseAdapter::Query(cmd, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
-        MEDIA_ERR_LOG("result set is empty, photoId: %{public}s", photoId.c_str());
-        return static_cast<int32_t>(PhotoSubType::CAMERA);
-    }
-    int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-    resultSet->Close();
-    return subType == 0 ? static_cast<int32_t>(PhotoSubType::CAMERA) : subType;
-}
-
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &imageId, const DpsErrorCode error)
 {
     switch (error) {
@@ -159,8 +142,11 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &i
     }
 
     if (error != ERROR_SESSION_SYNC_NEEDED) {
-        MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(error),
-            static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
+        int32_t mediaType = (MultiStagesCaptureManager::QuerySubType(imageId) ==
+            static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) ?
+            static_cast<int32_t>(MultiStagesCaptureMediaType::MOVING_PHOTO_IMAGE) :
+            static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE);
+        MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(error), mediaType);
     }
 }
 
@@ -172,7 +158,7 @@ std::shared_ptr<NativeRdb::ResultSet> QueryPhotoData(const std::string &imageId)
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_IS_TEMP,
+        PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP,
         PhotoColumn::PHOTO_ORIENTATION};
     return DatabaseAdapter::Query(cmd, columns);
 }
@@ -189,6 +175,10 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     string mimeType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
+    bool isMovingPhoto = (GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet) ==
+        static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    int32_t mediaType = isMovingPhoto ? static_cast<int32_t>(MultiStagesCaptureMediaType::MOVING_PHOTO_IMAGE) :
+        static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE);
     int32_t orientation = GetInt32Val(PhotoColumn::PHOTO_ORIENTATION, resultSet);
     if (orientation != 0) {
         auto metadata = picture->GetExifMetadata();
@@ -209,8 +199,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
         MultiStagesCaptureDfxResult::Report(imageId,
-            static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL),
-            static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
+            static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL), mediaType);
         return;
     }
 
@@ -219,12 +208,16 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
     NotifyIfTempFile(resultSet);
 
-    MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId);
-    MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS),
-        static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);
+    MultiStagesCaptureDfxResult::Report(imageId,
+        static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS), mediaType);
 
     // delete raw file
     MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
+
+    if (isMovingPhoto) {
+        MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(imageId);
+    }
     MEDIA_INFO_LOG("MultistagesCapture yuv success photoid: %{public}s", imageId.c_str());
 }
 
@@ -249,8 +242,9 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
         // 高质量图先上来，直接保存
         MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false);
         MultiStagesCaptureDfxTotalTime::GetInstance().RemoveStartTime(imageId);
+        // When subType query failed, default mediaType is Image
         MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR),
-            static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
+            static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
         return;
     }
     tracer.Finish();
@@ -340,21 +334,24 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
         tracer.Finish();
         MEDIA_INFO_LOG("result set is empty");
         MultiStagesCaptureDfxTotalTime::GetInstance().RemoveStartTime(imageId);
-        MultiStagesCaptureDfxResult::Report(imageId,
-            static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR),
-            static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
+        // When subTyoe query failed, default mediaType is Image
+        MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR),
+            static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
         return;
     }
     tracer.Finish();
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    bool isMovingPhoto = (GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet) ==
+        static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    int32_t mediaType = isMovingPhoto ? static_cast<int32_t>(MultiStagesCaptureMediaType::MOVING_PHOTO_IMAGE) :
+        static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE);
     int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhoto(isEdited, data, addr, bytes, fileId);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
         MultiStagesCaptureDfxResult::Report(imageId,
-            static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL),
-            static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
+            static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL), mediaType);
         return;
     }
 
@@ -368,13 +365,16 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
     NotifyIfTempFile(resultSet);
 
-    MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId);
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);
     MultiStagesCaptureDfxResult::Report(imageId,
-        static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS),
-        static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
+        static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS), mediaType);
 
     // delete raw file
     MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
+
+    if (isMovingPhoto) {
+        MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(imageId);
+    }
     MEDIA_INFO_LOG("success photoid: %{public}s", imageId.c_str());
 }
 
