@@ -956,6 +956,7 @@ static void SetRequestInfo(PhotoSelectOptions &option, AAFwk::Want &request)
     request.SetParam("isPhotoTakingSupported", option.isPhotoTakingSupported);
     request.SetParam("isSearchSupported", option.isSearchSupported);
     request.SetParam("isPreviewForSingleSelectionSupported", option.isPreviewForSingleSelectionSupported);
+    request.SetParam("singleSelectionMode", static_cast<int32_t>(option.singleSelectionMode));
     request.SetParam("isEditSupported", option.isEditSupported);
     request.SetParam("isOriginalSupported", option.isOriginalSupported);
 }
