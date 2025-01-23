@@ -49,6 +49,7 @@
 
 #include "result_set_utils.h"
 #include "story_album_column.h"
+#include "story_cover_info_column.h"
 #include "values_bucket.h"
 #include "medialibrary_formmap_operations.h"
 #include "media_file_uri.h"
@@ -658,6 +659,18 @@ int32_t MediaLibraryAlbumOperations::DeleteHighlightAlbums(RdbPredicates &predic
 }
 
 static void NotifyPortraitAlbum(const vector<int32_t> &changedAlbumIds)
+{
+    if (changedAlbumIds.size() <= 0) {
+        return;
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    for (int32_t albumId : changedAlbumIds) {
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+            PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, to_string(albumId)), NotifyType::NOTIFY_UPDATE);
+    }
+}
+
+static void NotifyHighlightAlbum(const vector<int32_t> &changedAlbumIds)
 {
     if (changedAlbumIds.size() <= 0) {
         return;
@@ -2379,6 +2392,72 @@ void SetMyOldAlbum(vector<string>& updateSqls, shared_ptr<MediaLibraryRdbStore> 
     }
 }
 
+int32_t SetHighlightCoverUri(const ValuesBucket &values, const DataSharePredicates &predicates)
+{
+    MEDIA_INFO_LOG("Start set highlight cover uri");
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
+    auto whereArgs = rdbPredicates.GetWhereArgs();
+    if (whereArgs.size() == 0) {
+        MEDIA_ERR_LOG("no target album id");
+        return E_INVALID_VALUES;
+    }
+    string targetAlbumId = whereArgs[0];
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed update for set highlight cover uri");
+        return E_DB_FAIL;
+    }
+    string coverUri;
+    int err = GetStringVal(values, COVER_URI, coverUri);
+    if (err < 0 || coverUri.empty()) {
+        MEDIA_ERR_LOG("invalid album cover uri");
+        return E_INVALID_VALUES;
+    }
+    std::string updateAnalysisAlbum = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" + coverUri +
+        "' WHERE " + ALBUM_ID + " = " + targetAlbumId;
+    std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE + " SET " + COVER_STATUS + " = 1" +
+        " WHERE " + ALBUM_ID + " = (SELECT id FROM tab_highlight_album WHERE album_id = " + targetAlbumId + " LIMIT 1)";
+    vector<string> updateSqls = { updateAnalysisAlbum, updateCoverInfoTable };
+    err = ExecSqls(updateSqls, uniStore);
+    if (err == E_OK) {
+        vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
+        NotifyHighlightAlbum(changeAlbumIds);
+    }
+    return err;
+}
+
+int32_t SetHighlightAlbumName(const ValuesBucket &values, const DataSharePredicates &predicates)
+{
+    MEDIA_INFO_LOG("Start set highlight album name");
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
+    auto whereArgs = rdbPredicates.GetWhereArgs();
+    if (whereArgs.size() == 0) {
+        MEDIA_ERR_LOG("no target highlight album id");
+        return E_INVALID_VALUES;
+    }
+    string highlightAlbumId = whereArgs[0];
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed update for set highlight album name");
+        return E_DB_FAIL;
+    }
+    string albumName;
+    int err = GetStringVal(values, ALBUM_NAME, albumName);
+    if (err < 0 || coverUri.empty()) {
+        MEDIA_ERR_LOG("invalid album name");
+        return E_INVALID_VALUES;
+    }
+    std::string updateAlbumName = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + ALBUM_NAME + " = '" + albumName +
+        "' WHERE " + ALBUM_ID + " = " + highlightAlbumId;
+    vector<string> updateSqls = { updateAlbumName };
+    err = ExecSqls(updateSqls, uniStore);
+    if (err == E_OK) {
+        vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
+        NotifyHighlightAlbum(changeAlbumIds);
+    }
+    return err;
+}
+
 /**
  * set target album is me
  * @param values is_me
@@ -2558,6 +2637,10 @@ int32_t MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(const OperationTyp
             return SetAlbumName(values, predicates);
         case OperationType::PORTRAIT_COVER_URI:
             return SetCoverUri(values, predicates);
+        case OperationType::HIGHLIGHT_ALBUM_NAME:
+            return SetHighlightAlbumName(values, predicates);
+        case OperationType::PORTRAIT_COVER_URI:
+            return SetHighlightCoverUri(values, predicates);
         case OperationType::DISMISS:
         case OperationType::GROUP_ALBUM_NAME:
         case OperationType::GROUP_COVER_URI:
