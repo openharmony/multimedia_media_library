@@ -31,11 +31,6 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 namespace sf = std::filesystem;
-struct ThumbSize {
-    int32_t width;
-    int32_t height;
-};
-
 class MtpMediaLibrary {
 public:
     EXPORT MtpMediaLibrary() = default;
@@ -104,8 +99,6 @@ private:
     void ErasePathInfo(const uint32_t handle, const std::string &path);
     void ErasePathInfoSub(const std::string &path);
     bool CompressImage(PixelMap &pixelMap, std::vector<uint8_t> &data);
-    int32_t GetThumbSizeByFd(const std::shared_ptr<MtpOperationContext> &context,
-        MediaType mediaType, ThumbSize &outSize);
     int32_t GetVideoThumb(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<UInt8List> &outThumb);
     int32_t GetPictureThumb(const std::shared_ptr<MtpOperationContext> &context,
