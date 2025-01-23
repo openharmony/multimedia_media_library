@@ -58,9 +58,8 @@ int32_t PhotoAlbumMergeOperation::DeleteDuplicateRelationshipInPhotoMap(
     const int32_t &oldAlbumId, const int32_t &newAlbumId)
 {
     bool isInvalid = this->rdbStorePtr_ == nullptr || oldAlbumId <= 0 || newAlbumId <= 0;
-    if (isInvalid) {
-        return NativeRdb::E_ERROR;
-    }
+    CHECK_AND_RETURN_RET(!isInvalid, NativeRdb::E_ERROR);
+
     std::string sql = this->SQL_PHOTO_MAP_DUPLICATE_RELATIONSHIP_DELETE;
     const std::vector<NativeRdb::ValueObject> bindArgs = {oldAlbumId, newAlbumId};
     int32_t ret = this->rdbStorePtr_->ExecuteSql(sql, bindArgs);
@@ -73,9 +72,8 @@ int32_t PhotoAlbumMergeOperation::DeleteDuplicateRelationshipInPhotoMap(
 int32_t PhotoAlbumMergeOperation::UpdateRelationshipInPhotoMap(const int32_t &oldAlbumId, const int32_t &newAlbumId)
 {
     bool isInvalid = this->rdbStorePtr_ == nullptr || oldAlbumId <= 0 || newAlbumId <= 0;
-    if (isInvalid) {
-        return NativeRdb::E_ERROR;
-    }
+    CHECK_AND_RETURN_RET(!isInvalid, NativeRdb::E_ERROR);
+
     std::string sql = this->SQL_PHOTO_MAP_MOVE_RELATIONSHIP_UPDATE;
     const std::vector<NativeRdb::ValueObject> bindArgs = {newAlbumId, oldAlbumId, newAlbumId};
     int32_t ret = this->rdbStorePtr_->ExecuteSql(sql, bindArgs);
@@ -88,9 +86,8 @@ int32_t PhotoAlbumMergeOperation::UpdateRelationshipInPhotoMap(const int32_t &ol
 int32_t PhotoAlbumMergeOperation::UpdateRelationshipInPhotos(const int32_t &oldAlbumId, const int32_t &newAlbumId)
 {
     bool isInvalid = this->rdbStorePtr_ == nullptr || oldAlbumId <= 0 || newAlbumId <= 0;
-    if (isInvalid) {
-        return NativeRdb::E_ERROR;
-    }
+    CHECK_AND_RETURN_RET(!isInvalid, NativeRdb::E_ERROR);
+
     std::string sql = this->SQL_PHOTOS_MOVE_RELATIONSHIP_UPDATE;
     const std::vector<NativeRdb::ValueObject> bindArgs = {newAlbumId, oldAlbumId, newAlbumId};
     int32_t ret = this->rdbStorePtr_->ExecuteSql(sql, bindArgs);
@@ -103,9 +100,8 @@ int32_t PhotoAlbumMergeOperation::UpdateRelationshipInPhotos(const int32_t &oldA
 int32_t PhotoAlbumMergeOperation::DeleteOldAlbum(const int32_t &oldAlbumId)
 {
     bool isInvalid = this->rdbStorePtr_ == nullptr || oldAlbumId <= 0;
-    if (isInvalid) {
-        return NativeRdb::E_ERROR;
-    }
+    CHECK_AND_RETURN_RET(!isInvalid, NativeRdb::E_ERROR);
+
     std::string sql = this->SQL_PHOTO_ALBUM_DELETE;
     const std::vector<NativeRdb::ValueObject> bindArgs = {oldAlbumId};
     int32_t ret = this->rdbStorePtr_->ExecuteSql(sql, bindArgs);
