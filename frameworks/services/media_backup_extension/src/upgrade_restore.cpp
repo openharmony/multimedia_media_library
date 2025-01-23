@@ -151,6 +151,7 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
     ParseXml(xmlPath);
     this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
+    geoKnowledgeRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     highlightRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
@@ -366,6 +367,7 @@ void UpgradeRestore::RestorePhoto()
         // restore PhotoAlbum
         this->photoAlbumRestore_.Restore();
         RestoreFromGalleryPortraitAlbum();
+        geoKnowledgeRestore_.RestoreGeoKnowledgeInfos();
         RestoreHighlightAlbums(isSyncSwitchOpen);
         // restore Photos
         RestoreFromGallery();
@@ -401,6 +403,7 @@ void UpgradeRestore::RestorePhoto()
         UpdateDualCloneFaceAnalysisStatus();
     }
 
+    geoKnowledgeRestore_.ReportGeoRestoreTask();
     highlightRestore_.UpdateAlbums();
     ReportPortraitStat(sceneCode_);
     (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
@@ -734,6 +737,8 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.bundleName = this->photosRestore_.FindBundleName(info);
     info.packageName = this->photosRestore_.FindPackageName(info);
     info.photoQuality = this->photosRestore_.FindPhotoQuality(info);
+    info.latitude = GetDoubleVal("latitude", resultSet);
+    info.longitude = GetDoubleVal("longitude", resultSet);
     info.storyIds = GetStringVal("story_id", resultSet);
     info.portraitIds = GetStringVal("portrait_id", resultSet);
     return isSuccess;
