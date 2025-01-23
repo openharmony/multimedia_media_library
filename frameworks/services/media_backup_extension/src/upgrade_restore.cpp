@@ -30,7 +30,7 @@
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_data_manager.h"sy
+#include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_transaction.h"
 #include "photo_album_restore.h"
