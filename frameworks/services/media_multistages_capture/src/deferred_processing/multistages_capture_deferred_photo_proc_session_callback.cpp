@@ -118,10 +118,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateCEAvailable(const
         static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
     updateCEAvailableCmd.SetValueBucket(updateCEAvailable);
     auto ceAvailableResult = DatabaseAdapter::Update(updateCEAvailableCmd);
-    if (ceAvailableResult < 0) {
-        MEDIA_WARN_LOG("update CE available fail, photoId: %{public}s", photoId.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ceAvailableResult >= 0, "update CE available fail, photoId: %{public}s", photoId.c_str());
 }
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &imageId, const DpsErrorCode error)
@@ -167,10 +164,8 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     const std::string& imageId, std::shared_ptr<Media::Picture> picture,
     std::shared_ptr<NativeRdb::ResultSet> resultSet, bool isCloudEnhancementAvailable)
 {
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
-        MEDIA_INFO_LOG("resultset is empty.");
-        return;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK);
+    CHECK_AND_RETURN_LOG(!cond, "resultset is empty.");
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
@@ -182,10 +177,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     int32_t orientation = GetInt32Val(PhotoColumn::PHOTO_ORIENTATION, resultSet);
     if (orientation != 0) {
         auto metadata = picture->GetExifMetadata();
-        if (metadata == nullptr) {
-            MEDIA_ERR_LOG("metadata is null");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(metadata != nullptr, "metadata is null");
         auto imageSourceOrientation = ORIENTATION_MAP.find(orientation);
         if (imageSourceOrientation == ORIENTATION_MAP.end()) {
             MEDIA_ERR_LOG("imageSourceOrientation value is invalid.");

@@ -65,17 +65,11 @@ static bool IsCloudLivePhotoRefreshed()
 void MovingPhotoProcessor::StartProcessMovingPhoto()
 {
     auto resultSet = QueryMovingPhoto();
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query moving photo");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query moving photo");
 
     MovingPhotoDataList dataList;
     ParseMovingPhotoData(resultSet, dataList);
-    if (dataList.movingPhotos.empty()) {
-        MEDIA_DEBUG_LOG("No moving photo need to be processed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(!dataList.movingPhotos.empty(), "No moving photo need to be processed");
 
     isProcessing_ = true;
     CompatMovingPhoto(dataList);
@@ -95,23 +89,15 @@ static bool IsLivePhotoCompatDone()
 static void SetLivePhotoCompatId(string fileId)
 {
     bool ret = system::SetParameter(COMPAT_LIVE_PHOTO_FILE_ID, fileId);
-    if (!ret) {
-        MEDIA_ERR_LOG("Failed to set parameter for compating local live photo: %{public}s", fileId.c_str());
-    }
+    CHECK_AND_PRINT_LOG(ret, "Failed to set parameter for compating local live photo: %{public}s",
+        fileId.c_str());
 }
 
 void MovingPhotoProcessor::StartProcessLivePhoto()
 {
-    if (IsLivePhotoCompatDone()) {
-        MEDIA_DEBUG_LOG("Live photo compat done or no need to compat");
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(!IsLivePhotoCompatDone(), "Live photo compat done or no need to compat");
     auto resultSet = QueryCandidateLivePhoto();
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query candidate live photo");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query candidate live photo");
 
     LivePhotoDataList dataList;
     ParseLivePhotoData(resultSet, dataList);
@@ -218,20 +204,13 @@ void MovingPhotoProcessor::UpdateMovingPhotoData(const MovingPhotoData& movingPh
     values.PutLong(PhotoColumn::MEDIA_SIZE, movingPhotoData.size);
     values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is null");
-        return;
-    }
-    if (!isProcessing_) {
-        MEDIA_INFO_LOG("stop updateing moving photo data");
-        return;
-    }
+
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is null");
+    CHECK_AND_RETURN_LOG(isProcessing_, "stop updateing moving photo data");
     int32_t updateCount = 0;
     int32_t result = rdbStore->Update(updateCount, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
-    if (result != NativeRdb::E_OK || updateCount <= 0) {
-        MEDIA_ERR_LOG("Update failed. result: %{public}d, updateCount: %{public}d", result, updateCount);
-        return;
-    }
+    bool cond = (result != NativeRdb::E_OK || updateCount <= 0);
+    CHECK_AND_RETURN_LOG(!cond, "Update failed. result: %{public}d, updateCount: %{public}d", result, updateCount);
 }
 
 static string GetDefaultExtraData()
@@ -268,17 +247,15 @@ int32_t MovingPhotoProcessor::GetUpdatedMovingPhotoData(const MovingPhotoData& c
         newData.size = static_cast<int64_t>(imageSize + videoSize + extraSize);
         return E_OK;
     }
+
     string extraDataDir = MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(imagePath);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(extraDataDir), E_HAS_FS_ERROR,
         "Cannot create dir %{private}s, errno:%{public}d", extraDataDir.c_str(), errno);
-    if (!MediaFileUtils::IsFileExists(extraDataPath) && MediaFileUtils::CreateAsset(extraDataPath) != E_OK) {
-        MEDIA_ERR_LOG("Failed to create extraData:%{private}s, errno:%{public}d", extraDataPath.c_str(), errno);
-        return E_HAS_FS_ERROR;
-    }
-    if (!MediaFileUtils::WriteStrToFile(extraDataPath, GetDefaultExtraData())) {
-        MEDIA_ERR_LOG("Failed to write extraData, errno:%{public}d", errno);
-        return E_HAS_FS_ERROR;
-    }
+    bool cond = (!MediaFileUtils::IsFileExists(extraDataPath) && MediaFileUtils::CreateAsset(extraDataPath) != E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_HAS_FS_ERROR,
+        "Failed to create extraData:%{private}s, errno:%{public}d", extraDataPath.c_str(), errno);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(extraDataPath, GetDefaultExtraData()),
+        E_HAS_FS_ERROR, "Failed to write extraData, errno:%{public}d", errno);
     newData.size = static_cast<int64_t>(imageSize + videoSize + DEFAULT_EXTRA_DATA_SIZE);
     return E_OK;
 }
@@ -288,10 +265,7 @@ void MovingPhotoProcessor::CompatMovingPhoto(const MovingPhotoDataList& dataList
     MEDIA_INFO_LOG("Start processing %{public}zu moving photos", dataList.movingPhotos.size());
     int32_t count = 0;
     for (const auto& movingPhoto : dataList.movingPhotos) {
-        if (!isProcessing_) {
-            MEDIA_INFO_LOG("stop compating moving photo");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(isProcessing_, "stop compating moving photo");
         MovingPhotoData newData;
         if (GetUpdatedMovingPhotoData(movingPhoto, newData) != E_OK) {
             MEDIA_INFO_LOG("Failed to get updated data of moving photo, id: %{public}d", movingPhoto.fileId);
@@ -407,11 +381,8 @@ void MovingPhotoProcessor::CompatLivePhoto(const LivePhotoDataList& dataList)
 
 static void addCompatPathSuffix(const string &oldPath, const string &suffix, string &newPath)
 {
-    if (oldPath.empty() || suffix.empty()) {
-        MEDIA_WARN_LOG("oldPath or suffix is empty");
-        return;
-    }
-
+    bool cond = (oldPath.empty() || suffix.empty());
+    CHECK_AND_RETURN_LOG(!cond, "oldPath or suffix is empty");
     newPath = oldPath + ".compat" + suffix;
     while (MediaFileUtils::IsFileExists(newPath)) {
         newPath += ".dup" + suffix;
@@ -433,23 +404,19 @@ static int32_t MoveMovingPhoto(const string &path,
         E_HAS_FS_ERROR, "Failed to create extraData dir of %{private}s", path.c_str());
 
     int32_t ret = rename(compatExtraDataPath.c_str(), movingPhotoExtraDataPath.c_str());
-    if (ret < 0) {
-        MEDIA_ERR_LOG("Failed to rename extraData, src: %{public}s, dest: %{public}s, errno: %{public}d",
-            compatExtraDataPath.c_str(), movingPhotoExtraDataPath.c_str(), errno);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "Failed to rename extraData, src:"
+        " %{public}s, dest: %{public}s, errno: %{public}d",
+        compatExtraDataPath.c_str(), movingPhotoExtraDataPath.c_str(), errno);
+    
     ret = rename(compatVideoPath.c_str(), movingPhotoVideoPath.c_str());
-    if (ret < 0) {
-        MEDIA_ERR_LOG("Failed to rename video, src: %{public}s, dest: %{public}s, errno: %{public}d",
-            compatVideoPath.c_str(), movingPhotoVideoPath.c_str(), errno);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "Failed to rename video, src: %{public}s,"
+        " dest: %{public}s, errno: %{public}d",
+        compatVideoPath.c_str(), movingPhotoVideoPath.c_str(), errno);
+
     ret = rename(compatImagePath.c_str(), path.c_str());
-    if (ret < 0) {
-        MEDIA_ERR_LOG("Failed to rename image, src: %{public}s, dest: %{public}s, errno: %{public}d",
-            compatImagePath.c_str(), path.c_str(), errno);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "Failed to rename image, src: %{public}s,"
+        " dest: %{public}s, errno: %{public}d",
+        compatImagePath.c_str(), path.c_str(), errno);
     return ret;
 }
 
@@ -483,10 +450,9 @@ int32_t MovingPhotoProcessor::ProcessLocalLivePhoto(LivePhotoData& data)
     uint32_t frameIndex = 0;
     bool hasCinemagraphInfo = false;
     string absExtraDataPath;
-    if (!PathToRealPath(compatExtraDataPath, absExtraDataPath)) {
-        MEDIA_ERR_LOG("extraData is not real path: %{private}s, errno: %{public}d", compatExtraDataPath.c_str(), errno);
-        return E_HAS_FS_ERROR;
-    }
+
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(compatExtraDataPath, absExtraDataPath), E_HAS_FS_ERROR,
+        "extraData is not real path: %{private}s, errno: %{public}d", compatExtraDataPath.c_str(), errno);
     UniqueFd extraDataFd(open(absExtraDataPath.c_str(), O_RDONLY));
     (void)MovingPhotoFileUtils::GetVersionAndFrameNum(extraDataFd.Get(), version, frameIndex, hasCinemagraphInfo);
     (void)MovingPhotoFileUtils::GetCoverPosition(compatVideoPath, frameIndex, coverPosition);
@@ -501,16 +467,11 @@ int32_t MovingPhotoProcessor::ProcessLocalLivePhoto(LivePhotoData& data)
 
 int32_t MovingPhotoProcessor::ProcessLocalCloudLivePhoto(LivePhotoData& data)
 {
-    if (data.editTime == 0) {
-        return ProcessLocalLivePhoto(data);
-    }
-
+    CHECK_AND_RETURN_RET(data.editTime != 0, ProcessLocalLivePhoto(data));
     data.isLivePhoto = false;
     string sourcePath = PhotoFileUtils::GetEditDataSourcePath(data.path);
     bool isLivePhotoEdited = MovingPhotoFileUtils::IsLivePhoto(sourcePath);
-    if (!isLivePhotoEdited) {
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET(isLivePhotoEdited, E_OK);
     data.metaDateModified = MediaFileUtils::UTCTimeMilliSeconds();
     data.isLivePhoto = true;
     return E_OK;
@@ -539,24 +500,16 @@ int32_t MovingPhotoProcessor::GetUpdatedLivePhotoData(const LivePhotoData& curre
 
 void MovingPhotoProcessor::UpdateLivePhotoData(const LivePhotoData& livePhotoData)
 {
-    if (!livePhotoData.isLivePhoto) {
-        return;
-    }
-
-    if (livePhotoData.position != static_cast<int32_t>(PhotoPositionType::LOCAL) &&
-        livePhotoData.position != static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD)) {
-        MEDIA_ERR_LOG("Invalid position: %{public}d", livePhotoData.position);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(livePhotoData.isLivePhoto, "Not a live photo Update Failed");
+    bool cond = (livePhotoData.position != static_cast<int32_t>(PhotoPositionType::LOCAL) &&
+        livePhotoData.position != static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+    CHECK_AND_RETURN_LOG(!cond, "Invalid position: %{public}d", livePhotoData.position);
 
     ValuesBucket values;
     string whereClause = PhotoColumn::MEDIA_ID + " = ?";
     vector<string> whereArgs = { to_string(livePhotoData.fileId) };
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is null");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is null");
 
     if (livePhotoData.editTime == 0) {
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, livePhotoData.subtype);
@@ -567,10 +520,8 @@ void MovingPhotoProcessor::UpdateLivePhotoData(const LivePhotoData& livePhotoDat
 
     int32_t updateCount = 0;
     int32_t result = rdbStore->Update(updateCount, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
-    if (result != NativeRdb::E_OK || updateCount <= 0) {
-        MEDIA_ERR_LOG("Update failed. result: %{public}d, updateCount: %{public}d", result, updateCount);
-        return;
-    }
+    cond = (result != NativeRdb::E_OK || updateCount <= 0);
+    CHECK_AND_RETURN_LOG(!cond, "Update failed. result: %{public}d, updateCount: %{public}d", result, updateCount);
 }
 } // namespace Media
 } // namespace OHOS
