@@ -132,18 +132,16 @@ bool BaseRestore::IsRestorePhoto()
         return true;
     }
     for (const auto& item : jsonArray) {
-        if (!item.contains("type") || !item.contains("detail")) {
+        if (!item.contains("type") || !item.contains("detail") || item["type"] != STAT_KEY_BACKUP_INFO) {
             continue;
         }
-        if (item["type"] != STAT_KEY_BACKUP_INFO) {
-            continue;
+        for (const auto& backupInfo : item["detail"]) {
+            if (backupInfo == STAT_TYPE_PHOTO || backupInfo == STAT_TYPE_VIDEO) {
+                return true;
+            }
         }
-        string backupInfo = item["detail"];
-        if (backupInfo.find(STAT_TYPE_PHOTO) == std::string::npos &&
-            backupInfo.find(STAT_TYPE_VIDEO) == std::string::npos) {
-            MEDIA_INFO_LOG("not contains photo and video");
-                return false;
-        }
+        MEDIA_INFO_LOG("not restore photo or video");
+        return false;
     }
     return true;
 }
