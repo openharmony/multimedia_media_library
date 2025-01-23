@@ -2215,7 +2215,8 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
     if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(sourcePath, path) == E_OK, E_HAS_FS_ERROR,
             "Can not modify %{private}s to %{private}s", sourcePath.c_str(), path.c_str());
-        if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        int32_t movingPhotoSubtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+        if (subtype == movingPhotoSubtype || fileAsset->GetOriginalSubType() == movingPhotoSubtype) {
             string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
             string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourcePath);
             CHECK_AND_RETURN_RET_LOG(Move(sourceVideoPath, videoPath) == E_OK, E_HAS_FS_ERROR,
