@@ -74,6 +74,7 @@ protected:
     int32_t CopyFile(const std::string &srcFile, const std::string &dstFile) const;
     void GetAccountValid();
     void GetSourceDeviceInfo();
+    bool IsRestorePhoto();
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
