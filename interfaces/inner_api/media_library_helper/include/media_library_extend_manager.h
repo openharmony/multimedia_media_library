@@ -124,6 +124,7 @@ public:
     EXPORT int32_t ReadPrivateMovingPhoto(string &uri, const HideSensitiveType type);
 private:
 
+    int32_t userId_;
     shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
     int32_t CheckPhotoUriPermissionQueryOperation(const DataShare::DataSharePredicates &predicates,
         std::map<string, int32_t> &resultMap);
