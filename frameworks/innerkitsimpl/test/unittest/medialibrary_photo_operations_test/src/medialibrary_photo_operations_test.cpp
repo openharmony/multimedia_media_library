@@ -52,6 +52,7 @@
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
 #include "photo_album_column.h"
+#include "duplicate_photo_operation.h"
 #define private public
 #include "picture_data_operations.h"
 #undef private
@@ -4032,6 +4033,50 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_09, TestS
     rbdPredicates.EqualTo(PhotoColumn::MEDIA_ID, 1);
     int32_t ret = MediaLibraryAssetOperations::DeletePermanently(rbdPredicates, true);
     EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, getAllDuplicateAssets_test, TestSize.Level0)
+{
+    int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test.jpg", true);
+    if (fileId1 < 0) {
+        MEDIA_ERR_LOG("Create photo failed");
+        return;
+    }
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::FIND_DUPLICATE_ASSETS,
+        MediaLibraryApi::API_10);
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+    cmd.SetDataSharePred(predicates);
+    vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_NAME);
+    columns.push_back(MediaColumn::MEDIA_DATE_ADDED);
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    EXPECT_NE(resultSet, nullptr);
+    columns.push_back(MEDIA_COLUMN_COUNT);
+    resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    EXPECT_NE(resultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, getDuplicateAssetsToDelete_test, TestSize.Level0)
+{
+    int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test.jpg", true);
+    if (fileId1 < 0) {
+        MEDIA_ERR_LOG("Create photo failed");
+        return;
+    }
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::FIND_DUPLICATE_ASSETS_TO_DELETE,
+        MediaLibraryApi::API_10);
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+    cmd.SetDataSharePred(predicates);
+    vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_NAME);
+    columns.push_back(MediaColumn::MEDIA_DATE_ADDED);
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    EXPECT_NE(resultSet, nullptr);
+    columns.push_back(MEDIA_COLUMN_COUNT);
+    resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    EXPECT_NE(resultSet, nullptr);
 }
 } // namespace Media
 } // namespace OHOS
