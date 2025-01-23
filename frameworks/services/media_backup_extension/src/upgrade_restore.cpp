@@ -352,6 +352,9 @@ void UpgradeRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
 
 void UpgradeRestore::RestorePhoto()
 {
+    if (!IsRestorePhoto()) {
+        return;
+    }
     AnalyzeSource();
 
     std::string dbIntegrityCheck = CheckGalleryDbIntegrity();
