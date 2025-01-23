@@ -61,6 +61,8 @@ namespace OHOS::Media {
 static const string MEDIA_ASSET_CHANGE_REQUEST_CLASS = "MediaAssetChangeRequest";
 thread_local napi_ref MediaAssetChangeRequestNapi::constructor_ = nullptr;
 std::atomic<uint32_t> MediaAssetChangeRequestNapi::cacheFileId_ = 0;
+const std::string SET_LOCATION_KEY = "set_location";
+const std::string SET_LOCATION_VALUE = "1";
 
 static const std::array<int, 4> ORIENTATION_ARRAY = {0, 90, 180, 270};
 
@@ -479,6 +481,16 @@ void MediaAssetChangeRequestNapi::SetImageFileType(int32_t imageFileType)
 int32_t MediaAssetChangeRequestNapi::GetImageFileType()
 {
     return imageFileType_;
+}
+
+void MediaAssetChangeRequestNapi::SetIsWriteGpsAdvanced(bool val)
+{
+    isWriteGpsAdvanced_ = val;
+}
+
+bool MediaAssetChangeRequestNapi::GetIsWriteGpsAdvanced()
+{
+    return isWriteGpsAdvanced_;
 }
 
 napi_value MediaAssetChangeRequestNapi::JSGetAsset(napi_env env, napi_callback_info info)
@@ -1145,6 +1157,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetLocation(napi_env env, napi_callbac
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
     }
+    NAPI_INFO_LOG("JSSetLocation begin.");
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     double latitude;
     double longitude;
@@ -1841,7 +1854,21 @@ int32_t MediaAssetChangeRequestNapi::PutMediaAssetEditData(DataShare::DataShareV
     return E_OK;
 }
 
-int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffectMode)
+void HandleValueBucketForSetLocation(std::shared_ptr<FileAsset> fileAsset, DataShare::DataShareValuesBucket& values,
+    bool isWriteGpsAdvanced)
+{
+    if (fileAsset == nullptr) {
+        NAPI_ERR_LOG("fileAsset is nullptr.");
+        return;
+    }
+    if (isWriteGpsAdvanced) {
+        NAPI_INFO_LOG("Need to setLocationAdvanced, check uri is correct.");
+        values.Put(PhotoColumn::PHOTO_LATITUDE, fileAsset->GetLatitude());
+        values.Put(PhotoColumn::PHOTO_LONGITUDE, fileAsset->GetLongitude());
+    }
+}
+
+int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffectMode, bool isWriteGpsAdvanced)
 {
     CHECK_COND_RET(fileAsset_ != nullptr, E_FAIL, "Failed to check fileAsset_");
     CHECK_COND_RET(!cacheFileName_.empty() || !cacheMovingPhotoVideoName_.empty(), E_FAIL,
@@ -1849,6 +1876,10 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
 
     string uri = PAH_SUBMIT_CACHE;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    if (isWriteGpsAdvanced) {
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, SET_LOCATION_KEY, SET_LOCATION_VALUE);
+    }
+    NAPI_INFO_LOG("Check SubmitCache isWriteGpsAdvanced: %{public}d", isWriteGpsAdvanced);
     Uri submitCacheUri(uri);
 
     string assetUri;
@@ -1862,6 +1893,7 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
         if (IsMovingPhoto()) {
             creationValuesBucket_.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
         }
+        HandleValueBucketForSetLocation(fileAsset_, creationValuesBucket_, isWriteGpsAdvanced);
         ret = UserFileClient::InsertExt(submitCacheUri, creationValuesBucket_, assetUri);
     } else {
         DataShare::DataShareValuesBucket valuesBucket;
@@ -1876,9 +1908,9 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
             valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset_->GetMovingPhotoEffectMode());
             valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
         }
+        HandleValueBucketForSetLocation(fileAsset_, valuesBucket, isWriteGpsAdvanced);
         ret = UserFileClient::Insert(submitCacheUri, valuesBucket);
     }
-
     if (ret > 0 && isCreation) {
         SetNewFileAsset(ret, assetUri);
     }
@@ -1895,7 +1927,8 @@ static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
     bool isCreation = IsCreation(context);
     bool isSetEffectMode = IsSetEffectMode(context);
     auto changeRequest = context.objectInfo;
-    int32_t ret = changeRequest->SubmitCache(isCreation, isSetEffectMode);
+    bool isWriteGpsAdvanced = changeRequest->GetIsWriteGpsAdvanced();
+    int32_t ret = changeRequest->SubmitCache(isCreation, isSetEffectMode, isWriteGpsAdvanced);
     if (ret < 0) {
         context.SaveError(ret);
         NAPI_ERR_LOG("Failed to write cache, ret: %{public}d", ret);
@@ -2055,7 +2088,7 @@ static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("AddResourceExecute");
-
+    NAPI_INFO_LOG("JSSetLocation begin.");
     if (!HasWritePermission()) {
         return WriteBySecurityComponent(context);
     }
@@ -2219,7 +2252,12 @@ static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SetLocationExecute");
+    if (context.objectInfo->GetIsWriteGpsAdvanced()) {
+        NAPI_INFO_LOG("SetLocation will execute by addResource.");
+        return true;
+    }
 
+    NAPI_INFO_LOG("SetLocation begin.");
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
@@ -2414,6 +2452,20 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_VIDEO_ENHANCEMENT_ATTR, SetVideoEnhancementAttr },
 };
 
+static void RecordAddResourceAndSetLocation(MediaAssetChangeRequestAsyncContext& context)
+{
+    std::vector<AssetChangeOperation> operations = context.assetChangeOperations;
+    bool isAddResource =
+        std::find(operations.begin(), operations.end(), AssetChangeOperation::ADD_RESOURCE) != operations.end();
+    bool isSetLocation =
+        std::find(operations.begin(), operations.end(), AssetChangeOperation::SET_LOCATION) != operations.end();
+    if (isAddResource && isSetLocation) {
+        context.objectInfo->SetIsWriteGpsAdvanced(true);
+    }
+    NAPI_INFO_LOG("Check addResource and setLocation, isAddResource: %{public}d, isSetLocation: %{public}d",
+        isAddResource, isSetLocation);
+}
+
 static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
 {
     MediaLibraryTracer tracer;
@@ -2429,7 +2481,7 @@ static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
         NAPI_ERR_LOG("Failed to check async context of MediaAssetChangeRequest object");
         return;
     }
-
+    RecordAddResourceAndSetLocation(*context);
     unordered_set<AssetChangeOperation> appliedOperations;
     for (const auto& changeOperation : context->assetChangeOperations) {
         // Keep the final result of each operation, and commit it only once.
