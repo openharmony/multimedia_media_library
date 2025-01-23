@@ -19,10 +19,12 @@
 
 #include "media_log.h"
 #include "media_column.h"
+#include "media_file_utils.h"
 #include "medialibrary_errno.h"
 #include "albums_refresh_manager.h"
 #include "cloud_album_handler.h"
 #include "photo_album_column.h"
+#include "post_event_utils.h"
 #include "medialibrary_unistore_manager.h"
 
 using namespace std;
@@ -102,11 +104,11 @@ static void PrintSyncInfo(SyncNotifyInfo &info)
 {
     MEDIA_DEBUG_LOG(
         "#test info.taskType: %{public}d, info.syncType: %{public}d, info.notifyType: %{public}d, info.syncId: "
-        "%{public}d, info.totalAssets: %{public}d, info.totalAlbums: %{public}d, info.urisSize: %{public}d",
+        "%{public}s, info.totalAssets: %{public}d, info.totalAlbums: %{public}d, info.urisSize: %{public}d",
         info.taskType,
         info.syncType,
         info.notifyType,
-        info.syncId,
+        info.syncId.c_str(),
         info.totalAssets,
         info.totalAlbums,
         info.urisSize);
@@ -116,7 +118,9 @@ void AlbumsRefreshWorker::TaskFusion(SyncNotifyInfo &info)
 {
     SyncNotifyInfo firstTask = taskQueue_.front();
     info.forceRefreshType = firstTask.forceRefreshType;
-    if (info.forceRefreshType != ForceRefreshType::NONE) {
+    info.taskType = firstTask.taskType;
+    info.syncId = firstTask.syncId;
+    if (info.forceRefreshType != ForceRefreshType::NONE || info.taskType != TIME_IN_SYNC) {
         taskQueue_.pop();
         return;
     }
@@ -135,10 +139,9 @@ void AlbumsRefreshWorker::TaskFusion(SyncNotifyInfo &info)
     while (!taskQueue_.empty()) {
         SyncNotifyInfo nextTask = taskQueue_.front();
         PrintSyncInfo(nextTask);
-        if (nextTask.uriType != firstTask.uriType ||
-            nextTask.notifyType != firstTask.notifyType ||
+        if (nextTask.uriType != firstTask.uriType || nextTask.notifyType != firstTask.notifyType ||
             static_cast<int32_t>(info.uriIds.size()) > maxFusionUriSize ||
-            nextTask.forceRefreshType != ForceRefreshType::NONE) {
+            nextTask.forceRefreshType != ForceRefreshType::NONE || nextTask.taskType != TIME_IN_SYNC) {
             break;
         }
         for (auto it = nextTask.uris.begin(); it != nextTask.uris.end(); ++it) {
@@ -194,7 +197,13 @@ void AlbumsRefreshWorker::TryDeleteAlbum(SyncNotifyInfo &info, std::vector<std::
 
 void AlbumsRefreshWorker::TaskExecute(SyncNotifyInfo &info)
 {
-    AlbumsRefreshManager::GetInstance().RefreshPhotoAlbums(info);
+    if (info.taskType == TIME_END_SYNC) {
+        VariantMap map = {{KEY_END_DOWNLOAD_TIME, MediaFileUtils::UTCTimeMilliSeconds()}};
+        PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
+        PostEventUtils::GetInstance().PostCloudDownloadSyncStat(info.syncId);
+    } else {
+        AlbumsRefreshManager::GetInstance().RefreshPhotoAlbums(info);
+    }
 }
 
 void AlbumsRefreshWorker::TaskNotify(SyncNotifyInfo &info)
