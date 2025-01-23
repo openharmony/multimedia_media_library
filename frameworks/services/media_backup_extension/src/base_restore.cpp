@@ -738,6 +738,7 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
         }
         if (!MoveAndModifyFile(fileInfos[i], sceneCode)) {
             fileInfos[i].needUpdate = false;
+            fileInfos[i].needVisible = false;
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
             ErrorInfo errorInfo(RestoreError::MOVE_FAILED, 1, "",
                 BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i]));
@@ -755,6 +756,7 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
         videoFileMoveCount += fileInfos[i].fileType == MediaType::MEDIA_TYPE_VIDEO;
     }
     DeleteMoveFailedData(moveFailedData);
+    SetVisiblePhoto(fileInfos);
     migrateFileNumber_ += fileMoveCount;
     migrateVideoFileNumber_ += videoFileMoveCount;
 }
@@ -901,7 +903,7 @@ int32_t BaseRestore::SetVisiblePhoto(std::vector<FileInfo> &fileInfos)
     std::vector<std::string> visibleIds;
     for (auto info : fileInfos) {
         if (info.needVisible && info.needMove) {
-            visibleIds.push_back(info.uniqueId);
+            visibleIds.push_back(info.cloudPath);
         }
     }
     if (visibleIds.empty()) {
@@ -912,11 +914,11 @@ int32_t BaseRestore::SetVisiblePhoto(std::vector<FileInfo> &fileInfos)
     updatePostBucket.Put(PhotoColumn::PHOTO_SYNC_STATUS, PHOTO_SYNC_STATUS_VISIBLE);
     std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
         make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
-    predicates->In(PhotoColumn::PHOTO_CLOUD_ID, visibleIds);
+    predicates->In(MediaColumn::MEDIA_FILE_PATH, visibleIds);
     int32_t changeRows = 0;
     int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, updatePostBucket, predicates);
     if (changeRows < 0 || ret < 0) {
-        MEDIA_ERR_LOG("Failed to update visible column, ret: %{public}d", ret);
+        MEDIA_ERR_LOG("Failed to update visible column, changeRows: %{public}d, ret: %{public}d", changeRows, ret);
         changeRows = 0;
     }
     MEDIA_INFO_LOG("END STEP 7 SET VISIBLE: %{public}d", changeRows);

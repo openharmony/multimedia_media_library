@@ -30,7 +30,7 @@
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_data_manager.h"
+#include "medialibrary_data_manager.h"sy
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_transaction.h"
 #include "photo_album_restore.h"
@@ -803,12 +803,12 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, this->photosRestore_.FindSourcePath(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, this->photosRestore_.FindStrongAssociation(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, this->photosRestore_.FindCeAvailable(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, PHOTO_SYNC_STATUS_NOT_VISIBLE); // set invisible for local & cloud
     // for cloud clone
     if (fileInfo.localMediaId == -1) {
         values.PutString(PhotoColumn::PHOTO_CLOUD_ID, fileInfo.uniqueId);
         values.PutInt(PhotoColumn::PHOTO_POSITION, PHOTO_CLOUD_POSITION);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_SYNCED));
-        values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, PHOTO_SYNC_STATUS_NOT_VISIBLE);
     }
     return values;
 }
