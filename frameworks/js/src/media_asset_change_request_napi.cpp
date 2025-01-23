@@ -1201,6 +1201,7 @@ static int SavePhotoProxyImage(const UniqueFd& destFd, sptr<PhotoProxy> photoPro
     int ret = write(destFd, buffer, packedSize);
     if (ret < 0) {
         NAPI_ERR_LOG("Failed to write photo proxy to cache file, return %{public}d", ret);
+        delete[] buffer;
         return ret;
     }
     delete[] buffer;
